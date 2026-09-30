@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GUN, SAAT, Simulasyon, durumOzeti } from "@bolge/cekirdek";
 import { miniVeriyiYukle } from "@bolge/veri";
-import { ARKETIPLER, ONAYARLAR, botOlustur, kos, onayarBul } from "../src";
+import { ARKETIPLER, H1_ONAYARLARI, H1_ONAYAR_TANIMLARI, HAM_CIKARIM_TURLERI, ONAYARLAR, PASIF_ONAYAR, botOlustur, kos, onayarBul, onayarYetenekleri } from "../src";
 import type { ArketipAdi, KosuOyuncusu } from "../src";
 
 const KUZEY = ["m_ova", "m_liman", "m_gecit"];
@@ -118,7 +118,7 @@ describe("önayarlar", () => {
   });
 
   it("her önayar tek bölgeli oyuncuda geçerli komut üretir (başarısız oranı düşük)", () => {
-    for (const o of ONAYARLAR) {
+    for (const o of [...ONAYARLAR, ...H1_ONAYARLARI]) {
       const sim = Simulasyon.olustur(miniVeriyiYukle(), 1);
       sim.uygula({ t: 0, oyuncu: "sistem", komut: { tur: "oyuncu_katil", oyuncu: "a", bolgeler: ["m_sehir"] } });
       let ok = 0;
@@ -132,5 +132,56 @@ describe("önayarlar", () => {
       }
       expect(hata).toBeLessThanOrEqual(Math.ceil(0.3 * (ok + hata)));
     }
+  });
+});
+
+describe("H1 v0.2 önayar kümesi", () => {
+  it("v0.1 ile aynı adları taşır; `dengeli` dışındakiler ortak ham tabanını içerir", () => {
+    expect(H1_ONAYARLARI.map((o) => o.ad)).toEqual(ONAYARLAR.map((o) => o.ad));
+    for (const t of H1_ONAYAR_TANIMLARI) {
+      const y = onayarYetenekleri(t);
+      if (t.ad === "dengeli") continue;
+      expect(t.taban).toBe(true);
+      for (const tur of HAM_CIKARIM_TURLERI) expect(y.has(`tur:${tur}`)).toBe(true);
+    }
+  });
+
+  it("hiçbir önayar diğerinin üst kümesi değildir (ihracatci yalnızca ticaret temasıdır)", () => {
+    const sabit = H1_ONAYAR_TANIMLARI.filter((t) => t.ad !== "dengeli").map((t) => ({ ad: t.ad, y: onayarYetenekleri(t) }));
+    for (const a of sabit) {
+      for (const b of sabit) {
+        if (a.ad === b.ad) continue;
+        const ustKume = [...b.y].every((x) => a.y.has(x));
+        expect(ustKume, `${a.ad} ${b.ad}'nin üst kümesi`).toBe(false);
+      }
+    }
+    // v0.1 kümesinde ihracatci ham çıkarımın üst kümesiydi; v0.2'de tema türü yok: yalnız ham taban + ticaret + vergi
+    const ihr = H1_ONAYAR_TANIMLARI.find((t) => t.ad === "ihracatci")!;
+    expect([...onayarYetenekleri(ihr)].filter((x) => x.startsWith("tur:") && !HAM_CIKARIM_TURLERI.includes(x.slice(4)))).toEqual([]);
+    expect(ihr.yontemler).toBeUndefined();
+    expect(ihr.teknolojiler).toBeUndefined();
+    expect(ihr.kenar).toBeUndefined();
+    expect(ihr.askeri).toBeUndefined();
+  });
+
+  it("ortak taban: tematik önayar ham tesis adayını da üretir (aynı bölgede ihracatci ile aynı ham inşa)", () => {
+    const uret = (ad: string): string[] => {
+      const sim = Simulasyon.olustur(miniVeriyiYukle(), 1);
+      sim.uygula({ t: 0, oyuncu: "sistem", komut: { tur: "oyuncu_katil", oyuncu: "a", bolgeler: ["m_dag", "m_col"] } });
+      return (H1_ONAYARLARI.find((o) => o.ad === ad) as (typeof H1_ONAYARLARI)[number])
+        .uygula(sim, "a")
+        .flatMap((k) => (k.tur === "tesis_insa" && HAM_CIKARIM_TURLERI.includes(k.tesisTuru) ? [`${k.bolge}:${k.tesisTuru}`] : []))
+        .sort();
+    };
+    const ihr = uret("ihracatci");
+    expect(ihr.length).toBeGreaterThan(0);
+    // elektronik teması da aynı ham tabanı içerir (bakır/silis/cevher ortak)
+    for (const x of ihr) expect(uret("elektronik")).toContain(x);
+  });
+
+  it("pasif önayar komut üretmez", () => {
+    const sim = Simulasyon.olustur(miniVeriyiYukle(), 1);
+    sim.uygula({ t: 0, oyuncu: "sistem", komut: { tur: "oyuncu_katil", oyuncu: "a", bolgeler: ["m_sehir"] } });
+    expect(PASIF_ONAYAR.uygula(sim, "a")).toEqual([]);
   });
 });

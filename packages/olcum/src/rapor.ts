@@ -66,69 +66,161 @@ function dagilimMetni(d: Kayit, adlar: readonly string[]): string {
     .join(", ");
 }
 
+function tamYuzde(x: unknown, n = 0): string {
+  return typeof x === "number" ? yuzde(x, n) : "—";
+}
+
+function bin(x: unknown): string {
+  return typeof x === "number" ? `${Math.round(x / 100) / 10}k` : "—";
+}
+
 function h1Ayrinti(h: HipotezSonucu): string {
   const a = kayit(h.ayrinti);
-  const ort = kayit(a["tohumOrtalamaTop3Orani"]);
-  const ortEski = kayit(a["tohumOrtalamaTop3OraniEskiSkor"]);
-  const ortNetY = kayit(a["tohumOrtalamaTop3OraniYatirimsizNet"]);
+  const ort = kayit(a["tohumOrtalamaAnlamliIlkUcOrani"]);
+  const ortT = kayit(a["tohumOrtalamaIlkUcOraniToplam7Gun"]);
+  const regret = kayit(a["tohumOrtalamaRegret"]);
+  const regretK = kayit(a["tohumOrtalamaRegretKirpilmamis"]);
+  const enIyiDag = kayit(a["tohumOrtalamaEnIyiDagilimi"]);
   const onayarlar = dizi(a["onayarlar"]);
   const adlar = onayarlar.map((o) => String(o["ad"]));
   const referans = a["referans"] ? kayit(a["referans"]) : null;
   const prm = kayit(h.parametreler);
+  const tie = kayit(a["tieOzeti"]);
+  const bilgi = kayit(a["bilgiGostergeleri"]);
+  const tanim = Array.isArray(a["isletimselTanim"]) ? (a["isletimselTanim"] as string[]) : [];
+  const pencere = String(prm["pencereAdi"] ?? "birincil pencere");
   const parcalar: string[] = [];
   parcalar.push(
-    `**İşletimsel tanım (v0.1)**\n\n` +
-      `- Dünya: ${String(prm["dunya"])}. Arka plan her önayar koşusunda aynı kurulum ve tohumla başlar (ortak rastgele sayılar).\n` +
-      `- Koşu: ${String(prm["gun"])} gün; odak oyuncu t=0'da ve 24 saatte bir önayarı uygular. Bölge örneği: ${String(prm["bolgeSayisi"])}/${String(prm["tumBolgeSayisi"])} (${String(prm["ornekleme"])}).\n` +
-      `- Sıralamaya giren önayarlar: ${adlar.join(", ")}. Referans (sıralama dışı): ${String(prm["referansOnayar"])}.\n` +
-      `- Birincil skor: ${String(prm["skor"])}.\n` +
-      `- Sıra: ${String(prm["sira"])}. Verdict: en yüksek ilk-üç oranı > %70 ise KALDI.`,
+    `**İşletimsel tanım (H1 düzeneği v0.2)**\n\n${tanim.map((t, i) => `${i + 1}. ${t}`).join("\n")}\n\n` +
+      `*Yukarıdaki metin varsayılan düzenektir (7 gün, 4-7. gün penceresi); bu koşuda geçerli pencere: ${pencere}, süre: ${String(prm["gun"])} gün.*\n\n` +
+      `**Bu koşunun kurulumu**\n\n` +
+      `- **Odak kurulumu: ${String(prm["odakKurulumu"])}** (\`--odak bolge_liman\` = odak bölge + en yakın liman; \`--odak bolge\` = yalnız odak bölge, limansız bölgede ticaret yok).\n` +
+      `- Arka plan: ${String(prm["dunya"])}.\n` +
+      `- Koşu: ${String(prm["gun"])} gün; skor penceresi: ${String(prm["skorPenceresi"])}. Bölge örneği: ${String(prm["bolgeSayisi"])}/${String(prm["tumBolgeSayisi"])} (${String(prm["ornekleme"])}).\n` +
+      `- Sıralamaya giren önayarlar: ${adlar.join(", ")}. Pasif referans: ${String(prm["pasifReferans"])}. Genel amaçlı referans (sıralama dışı): ${String(prm["referansOnayar"])}.\n` +
+      `- Skor: ${String(prm["skor"])}.\n` +
+      `- Anlamlı fark: ${String(prm["anlamliFark"])}.\n` +
+      `- Sıra: ${String(prm["sira"])}. **Verdict (PDF eşiği): en yüksek anlamlı ilk-üç oranı > %70 ise KALDI.**`,
   );
+  const ek = kayit(a["ekDegerBilesenleri"]);
+  const ekT = kayit(a["ekDegerBilesenleriToplam7Gun"]);
   const satir1 = onayarlar.map((o) => {
     const ad = String(o["ad"]);
-    return [ad, yuzde(ort[ad] as number), yuzde(ortEski[ad] as number), yuzde(ortNetY[ad] as number), String(o["aciklama"])];
+    return [
+      ad,
+      `**${yuzde(ort[ad] as number)}**`,
+      yuzde(ortT[ad] as number),
+      yuzde(enIyiDag[ad] as number),
+      bin(kayit(ek[ad])["skor"]),
+      yuzde(regret[ad] as number),
+      String(o["aciklama"]),
+    ];
   });
   parcalar.push(
-    `**İlk-üç bölge oranı (tohum ortalaması; yalnızca sabit önayarlar sıralanır)**\n\nBirincil = net değer skoru (verdict bununla). Eski skor ve yatırımsız net yalnızca karşılaştırma içindir.\n\n${tablo(["Önayar", "Birincil (net)", "Eski skor (brüt üretim)", "Net, yatırımsız", "Açıklama"], satir1)}`,
+    `**Anlamlı ilk-üç bölge oranı (tohum ortalaması; yalnızca sabit önayarlar sıralanır; verdict birincil sütunla)**\n\nBirincil = ${pencere} akışında anlamlı ilk-üç oranı. İkincil = 7 günlük toplam skorda aynı kuralla ilk-üç oranı. "Ort. eklenen değer" = önayar − pasif, bölge ve tohum ortalaması (akış penceresi, para).\n\n${tablo(["Önayar", "Anlamlı ilk-üç (birincil)", "İlk-üç (7 gün toplam, ikincil)", "En iyi payı", "Ort. eklenen değer", "Ort. regret", "Açıklama"], satir1)}`,
   );
   const t = h.tohumBasina.map((x) => {
     const o = kayit(x.ozet);
-    return [x.tohum, String(o["enYuksekOnayar"]), yuzde(x.olcum), sayi(o["entropiBit"], 2), sayi(o["entropiNormalize"], 2), o["esitBolge"], yuzde(o["enYuksekEskiSkor"] as number), yuzde(o["enYuksekYatirimsizNet"] as number), x.verdict === "gecti" ? "geçti" : x.verdict === "kaldi" ? "kaldı" : "belirsiz"];
+    return [
+      x.tohum,
+      String(o["enYuksekOnayar"]),
+      `**${yuzde(x.olcum)}**`,
+      yuzde(o["enYuksekToplam7Gun"] as number),
+      sayi(o["entropiNormalize"], 2),
+      yuzde(o["enIyiTekOnayarRegret"] as number),
+      `${o["anlamliBolge"]}/${String(prm["bolgeSayisi"])}`,
+      sayi(o["ilkUcOrtalamaBuyuklugu"], 2),
+      `${o["ilkUcTasanBolge"]} / ${o["esitlikleIlkUcGirenCift"]}`,
+      x.verdict === "gecti" ? "geçti" : x.verdict === "kaldi" ? "kaldı" : "belirsiz",
+    ];
   });
   parcalar.push(
-    `**Tohum başına** (entropi: en iyi önayarın bölgelere dağılımı, bit; normalize = H / log2(${onayarlar.length}); "eşit bölge" = tüm sabit önayarların skoru eşit çıkan bölge sayısı)\n\n${tablo(["Tohum", "En yüksek önayar", "Oran", "Entropi (bit)", "Norm. entropi", "Eşit bölge", "En yüksek (eski skor)", "En yüksek (yatırımsız net)", "Sonuç"], t)}`,
+    `**Tohum başına** ("Anlamlı bölge" = en az bir önayarın pasife göre anlamlı artı değer ürettiği bölge; "İlk-üç büyüklüğü" = bölge başına ilk üçe sayılan önayar sayısı ortalaması; "Taşan bölge / eşitlikle giren" = ilk üçe 3'ten çok önayar sayılan bölge sayısı / eşitlik toleransı olmasaydı ilk üçe girmeyecek önayar-bölge çifti sayısı; "En iyi tek önayar regret" = ortalama regret'i en düşük sabit önayarın regret'i)\n\n${tablo(["Tohum", "En yüksek önayar", "Oran (birincil)", "En yüksek (7 gün toplam)", "Norm. entropi", "En iyi tek önayar regret", "Anlamlı bölge", "İlk-üç büyüklüğü", "Taşan bölge / eşitlikle giren", "Sonuç"], t)}`,
+  );
+  parcalar.push(
+    `**Eşitlik kuralının etkisi (tohum ortalaması)**: bölge başına ilk üçe sayılan ortalama önayar sayısı ${sayi(tie["ilkUcOrtalamaBuyuklugu"], 2)}; ilk üçe 3'ten çok önayar sayılan bölge sayısı ${sayi(tie["ilkUcTasanBolge"], 1)}; **ilk-üçe eşit sayılarak giren önayar-bölge çifti sayısı ${sayi(tie["esitlikleIlkUcGirenCift"], 1)}** (eşitlik toleransı olmadan girmeyecekler); en az bir anlamlı önayarı olan bölge ${sayi(tie["anlamliBolge"], 1)}/${String(prm["bolgeSayisi"])}, hiçbir önayarın pasifi anlamlı aşamadığı bölge ${sayi(tie["hicbiriAnlamliDegil"], 1)}.`,
+  );
+  const bilesenSat = onayarlar.map((o) => {
+    const ad = String(o["ad"]);
+    const b = kayit(ek[ad]);
+    const bt = kayit(ekT[ad]);
+    return [ad, bin(b["hazine"]), bin(b["stok"]), bin(b["yatirim"]), `**${bin(b["skor"])}**`, bin(b["israf"]), bin(bt["hazine"]), bin(bt["stok"]), bin(bt["yatirim"]), `**${bin(bt["skor"])}**`];
+  });
+  parcalar.push(
+    `**Ayrıştırma: eklenen değerin bileşenleri (önayar − pasif; tüm bölgeler ve tohumlar üzerinden ortalama, bin para)**\n\nSkor = Δhazine + Δstok (taban fiyat) + yatırım (yatırım maliyetle geri eklenir). "İsraf farkı" bilgi amaçlıdır (depo taşması + bozulma değeri, skora girmez). Pasif referansın ortalama skoru: ${bin(a["pasifOrtalamaSkor"])} (akış penceresi).\n\n${tablo(["Önayar", "Δhazine (akış)", "Δstok (akış)", "yatırım (akış)", "Eklenen değer (akış)", "İsraf farkı (akış)", "Δhazine (7 gün)", "Δstok (7 gün)", "yatırım (7 gün)", "Eklenen değer (7 gün)"], bilesenSat)}`,
+  );
+  const regSat = onayarlar.map((o) => {
+    const ad = String(o["ad"]);
+    return [ad, yuzde(regret[ad] as number), yuzde(regretK[ad] as number, 0)];
+  });
+  parcalar.push(
+    `**Regret: her sabit önayarın bölge başına en iyi önayara göre kaybı (tohum ortalaması)**\n\nRegret = (en iyi eklenen değer − önayarın eklenen değeri) / en iyi eklenen değer; bölgede hiçbir önayar anlamlı artı değer üretmediyse o bölge regret dışıdır. Birincil sütun [0, %100]'e kırpılır (pasiften kötü = tüm değer kaybı); kırpmasız sütun pasiften kötü önayarların ağırlığını gösterir.\n\n${tablo(["Önayar", "Ortalama regret (kırpılmış)", "Ortalama regret (kırpmasız)"], regSat)}`,
+  );
+  const gos = (x: unknown, yuzdeMi: boolean): string => {
+    const o = kayit(x);
+    const d = o["deger"] as number;
+    const e = o["esik"] as number;
+    return `${yuzdeMi ? yuzde(d) : sayi(d, 2)} (eşik ${yuzdeMi ? `>= ${yuzde(e, 0)}` : `>= ${sayi(e, 2)}`}) → ${o["saglandi"] ? "sağlandı" : "sağlanmadı"}`;
+  };
+  const rg = kayit(bilgi["regret"]);
+  const tf = kayit(bilgi["turBasinaFarkliEnIyi"]);
+  parcalar.push(
+    `**Bilgi göstergeleri (verdict'e KATILMAZ; PDF eşiği bağlayıcıdır)**\n\n${tablo(
+      ["Gösterge", "Değer", "Durum"],
+      [
+        ["Tek sabit önayarın ortalama regret'i (en iyi tek önayar: " + String(rg["onayar"]) + ")", yuzde(rg["deger"] as number), gos(bilgi["regret"], true)],
+        ["Normalize entropi (en iyi önayarın bölgelere dağılımı)", sayi(kayit(bilgi["normalizeEntropi"])["deger"], 2), gos(bilgi["normalizeEntropi"], false)],
+        ["Bölge türü başına farklı en iyi önayar sayısı", String(tf["deger"]), `${String(tf["deger"])} (eşik >= ${String(tf["esik"])}) → ${tf["saglandi"] ? "sağlandı" : "sağlanmadı"}`],
+      ],
+    )}`,
+  );
+  parcalar.push(
+    `**Tohum başına entropi ve regret ayrıntısı**\n\n${tablo(
+      ["Tohum", "Entropi (bit)", "Norm. entropi", ...adlar.map((n) => `regret ${n}`)],
+      h.tohumBasina.map((x) => {
+        const o = kayit(x.ozet);
+        const rt = kayit(o["regretOrtalama"]);
+        return [x.tohum, sayi(o["entropiBit"], 2), sayi(o["entropiNormalize"], 2), ...adlar.map((n) => yuzde(rt[n] as number, 0))];
+      }),
+    )}`,
   );
   if (referans) {
     const rt = h.tohumBasina.map((x) => {
       const o = kayit(x.ozet);
-      return [x.tohum, yuzde(o["referansTop3"] as number), yuzde(o["referansEnIyiOrani"] as number)];
+      return [x.tohum, tamYuzde(o["referansIlkUc"], 1), tamYuzde(o["referansSabitlerinEniyisiniGecti"], 1)];
     });
     parcalar.push(
-      `**Referans: "${String(referans["ad"])}" (sıralama dışı)** — ${String(referans["aciklama"])} Bölgeye uyarlanan genel amaçlı bir politika olduğu için sıralamaya ve verdict'e girmez; yalnızca sabit önayarlarla kıyaslanır.\n\n${tablo(["Tohum", "İlk üç (sabit önayarlarla birlikte sıralanırsa)", "En iyi sabit önayardan daha iyi olduğu bölge oranı"], rt)}`,
+      `**Referans: "${String(referans["ad"])}" (sıralama dışı)** — ${String(referans["aciklama"])} Sıralamaya ve verdict'e girmez; aynı anlamlılık kuralıyla sabit önayarlarla kıyaslanır.\n\n${tablo(["Tohum", "İlk üç (sabit önayarlarla birlikte sıralanırsa)", "En iyi sabit önayardan anlamlı biçimde daha iyi olduğu bölge oranı"], rt)}`,
     );
   }
-  const dag = h.tohumBasina.map((x) => {
-    const d = kayit(kayit(x.ozet)["enIyiOnayarPayi"]);
-    return [x.tohum, ...adlar.map((n) => yuzde(d[n] as number, 0))];
-  });
-  parcalar.push(`**Bölge başına en iyi önayar payı** (eşitlikte pay bölüşülür)\n\n${tablo(["Tohum", ...adlar], dag)}`);
+  const duy = dizi(a["pencereDuyarliligi"]);
+  if (duy.length > 1) {
+    const sat = duy.map((d) => {
+      const o = kayit(d["oranlar"]);
+      return [`${d["birincil"] ? "**" : ""}${String(d["pencere"])}${d["birincil"] ? " (birincil)**" : d["baslangicGunu"] === 0 ? " (7 gün toplam)" : ""}`, String(d["enYuksek"]), yuzde(d["enYuksekOran"] as number), ...adlar.map((n) => yuzde(o[n] as number, 0))];
+    });
+    parcalar.push(
+      `**Skor penceresi duyarlılığı (tohum ortalaması; aynı koşulların gün sonu görüntülerinden, anlamlı ilk-üç oranı)** — Depo tavanı skoru kırptığı için pencere başlangıcı sonucu etkiler: pasif referans tavana en geç ulaşır, daha erken tavana dayanan önayarlar ileri pencerelerde pasife göre geride görünür (ayrıştırma tablosundaki stok bileşenine bakın). Verdict yalnızca birincil satırdır.\n\n${tablo(["Pencere", "En yüksek önayar", "Oran", ...adlar], sat)}`,
+    );
+  }
   const tur = dizi(a["turTablosu"]);
   if (tur.length > 0) {
-    const sat = tur.map((x) => [String(x["tur"]), String(x["aciklama"]), sayi(x["bolgeSayisi"], 1), String(x["enIyi"]), yuzde(x["enIyiPay"] as number, 0), dagilimMetni(kayit(x["dagilim"]), adlar)]);
+    const sat = tur.map((x) => [String(x["tur"]), String(x["aciklama"]), sayi(x["bolgeSayisi"], 1), `**${String(x["enIyi"])}**`, yuzde(x["enIyiPay"] as number, 0), yuzde(x["hicbiriPayi"] as number, 0), dagilimMetni(kayit(x["dagilim"]), adlar)]);
     parcalar.push(
-      `**Bölge türüne göre en iyi önayar (tohum ortalaması)** — bölgeler gerçekten farklıysa farklı türlerin en iyisi farklı önayarlar olmalıdır.\n\n${tablo(["Tür", "Tanım", "Bölge", "En iyi önayar", "Payı", "Dağılım"], sat)}`,
+      `**Bölge türüne göre en iyi önayar (tohum ortalaması)** — bölgeler gerçekten farklıysa farklı türlerin en iyisi farklı önayarlar olmalıdır. "Hiçbiri payı" = o türde hiçbir önayarın anlamlı artı değer üretmediği bölge oranı.\n\n${tablo(["Tür", "Tanım", "Bölge", "En iyi önayar", "Payı", "Hiçbiri payı", "Dağılım"], sat)}`,
     );
   }
   const bt = dizi(a["bolgeTablosuIlkTohum"]);
   if (bt.length > 0) {
-    const refAd = referans ? String(referans["ad"]) : null;
     const sat = bt.map((b) => {
-      const sk = kayit(b["skorlar"]);
-      const k = (n: string): string => Math.round(((sk[n] as number) ?? 0) / 1000) + "k";
-      return [b["bolge"], String(b["tur"]), String(b["enIyi"]), ...adlar.map(k), ...(refAd ? [k(refAd)] : [])];
+      const ev = kayit(b["ekDegerler"]);
+      const kume = Array.isArray(b["kume"]) ? (b["kume"] as string[]) : [];
+      const kurulum = kume.length > 1 ? `bölge+liman (${kume[1]})` : "bölge";
+      const uc = Array.isArray(b["ilkUc"]) ? (b["ilkUc"] as string[]).join(", ") : "";
+      return [b["bolge"], String(b["tur"]), kurulum, bin(b["pasifSkor"]), bin(b["esik"]), ...adlar.map((n) => bin(ev[n])), String(b["enIyi"]), uc || "—"];
     });
     parcalar.push(
-      `**Bölge tablosu (ilk tohum; birincil skor, bin para)**${refAd ? ` — son sütun "${refAd}" referanstır, "En iyi" hesabına girmez` : ""}\n\n${tablo(["Bölge", "Tür", "En iyi", ...adlar, ...(refAd ? [`${refAd} (ref.)`] : [])], sat)}`,
+      `**Bölge tablosu (ilk tohum; eklenen değer = önayar − pasif, ${pencere} akışı, bin para)** — "Odak kurulumu" her bölge için bölge mi bölge+liman mı olduğunu gösterir; "Pasif" pasif referansın akış skoru, "θ" anlamlı fark eşiğidir.\n\n${tablo(["Bölge", "Tür", "Odak kurulumu", "Pasif", "θ", ...adlar, "En iyi", "Anlamlı ilk üç"], sat)}`,
     );
   }
   return parcalar.join("\n\n");

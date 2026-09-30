@@ -4,6 +4,12 @@ import { miniVeriyiYukle, varsayilanVeriyiYukle } from "@bolge/veri";
 import {
   TUM_HIPOTEZLER,
   BOLGE_TURLERI,
+  H1_ISLETIMSEL_TANIM,
+  anlamliEsik,
+  anlamliSiralama,
+  enYakinLiman,
+  odakKumesi,
+  regretHesapla,
   argumanAyristir,
   bolgeOrnekle,
   bolgeTuru,
@@ -23,7 +29,6 @@ import {
   kayanKayipOlc,
   ortalamaSira,
   raporUret,
-  siralamaOzeti,
   stokDegeri,
   tohumAyristir,
   uretimDegeri,
@@ -90,6 +95,16 @@ describe("hipotez ve argüman ayrıştırıcı", () => {
     expect(() => argumanAyristir(["--ad"])).toThrow();
     expect(() => argumanAyristir(["--karsilastir"])).toThrow();
     expect(() => argumanAyristir(["--ad", "../kotu"])).toThrow();
+  });
+  it("H1 v0.2 seçenekleri: --odak, --anlamli, --pencere-bas", () => {
+    expect(argumanAyristir([])).toMatchObject({ odak: undefined, anlamli: undefined, pencereBas: undefined });
+    expect(argumanAyristir(["--odak", "bolge", "--anlamli=0.05", "--pencere-bas", "4"])).toMatchObject({ odak: "bolge", anlamli: 0.05, pencereBas: 4 });
+    expect(argumanAyristir(["--odak=bolge_liman"])).toMatchObject({ odak: "bolge_liman" });
+    expect(() => argumanAyristir(["--odak", "liman"])).toThrow();
+    expect(() => argumanAyristir(["--anlamli", "2"])).toThrow();
+    expect(() => argumanAyristir(["--pencere-bas", "-1"])).toThrow();
+    expect(argumanAyristir(["--h1-gun", "14"]).h1Gun).toBe(14);
+    expect(() => argumanAyristir(["--h1-gun=1"])).toThrow();
   });
   it("dosya adı sonek alır", () => {
     expect(dosyaAdi(["H1"], [1], false)).toBe("olcum-H1-t1");
@@ -170,20 +185,65 @@ describe("H1 yardımcıları", () => {
     for (const b of harita.bolgeler) expect(BOLGE_TURLERI).toContain(bolgeTuru(b));
   });
 
-  it("sıralama özeti: ilk üç, eşitlikte paylaşılan en iyi ve referans", () => {
-    // sütunlar: a, b, c, d sabit; 4. sütun (indeks 4) referans
-    const skor = [
-      [4, 3, 2, 1, 5],
-      [1, 4, 3, 2, 0],
-      [1, 1, 1, 1, 9],
-    ];
-    const o = siralamaOzeti(skor, [0, 1, 2, 3], 4);
-    expect(o.top3[0]).toBeCloseTo(2 / 3, 6); // 1. bölgede sıra 1, 2. bölgede sıra 4, 3. bölgede eşit (sıra 2.5)
-    expect(o.enIyiSayim.reduce((t, x) => t + x, 0)).toBeCloseTo(3, 6);
-    expect(o.esitBolge).toBe(1);
-    expect(o.referansEnIyiOrani).toBeCloseTo(2 / 3, 6);
-    expect(o.referansTop3).toBeCloseTo(2 / 3, 6);
-    expect(siralamaOzeti(skor, [0, 1, 2, 3], -1).referansTop3).toBeNull();
+  it("anlamlı fark eşiği: taban ve pasifin oranı", () => {
+    expect(anlamliEsik(0)).toBe(10_000);
+    expect(anlamliEsik(100_000)).toBe(10_000);
+    expect(anlamliEsik(-1_000_000)).toBe(30_000);
+    expect(anlamliEsik(-1_000_000, 0.05)).toBe(50_000);
+  });
+
+  it("anlamlı sıralama: pasife eşit ilk üçe girmez, eşit grup konum paylaşır", () => {
+    const o = anlamliSiralama([100, 95, 50, 5, -20], 10);
+    expect(o.anlamli).toEqual([true, true, true, false, false]);
+    expect(o.sira.slice(0, 3)).toEqual([1.5, 1.5, 3]);
+    expect(o.sira[3]).toBe(Infinity);
+    expect(o.ilkUc).toEqual([true, true, true, false, false]);
+    expect(o.enIyi).toEqual([0.5, 0.5, 0, 0, 0]);
+    // hiçbiri anlamlı değil: kimse ilk üçte ve en iyi değil
+    const h = anlamliSiralama([5, -3, 9.99], 10);
+    expect(h.ilkUc.some(Boolean)).toBe(false);
+    expect(h.enIyi.every((x) => x === 0)).toBe(true);
+    // yalnız tek anlamlı önayar: tek başına birinci
+    expect(anlamliSiralama([0, 40, 2], 10).enIyi).toEqual([0, 1, 0]);
+  });
+
+  it("anlamlı sıralama: eşitlik nedeniyle ilk üçe girenler kesin sıralamadan ayrılır; zincirleme kaymaz", () => {
+    // beş önayar eşit grupta (konum 1-5, ortalama sıra 3): hepsi ilk üçe girer, kesin sıralamada yalnızca 3'ü
+    const o = anlamliSiralama([100, 99, 98, 97, 96, 60], 10);
+    expect(o.ilkUc).toEqual([true, true, true, true, true, false]);
+    expect(o.kesinIlkUc).toEqual([true, true, true, false, false, false]);
+    // altı kişilik grup: ortalama sıra 3.5 -> kimse ilk üçte değil
+    const g = anlamliSiralama([100, 99, 98, 97, 96, 95], 10);
+    expect(g.ilkUc.some(Boolean)).toBe(false);
+    // grup en iyi üyeye göre kurulur: 100-92 eşit, 84 (100'den 16 geride) yeni grup
+    const z = anlamliSiralama([100, 92, 84, 76], 10);
+    expect(z.sira).toEqual([1.5, 1.5, 3.5, 3.5]);
+    expect(z.ilkUc).toEqual([true, true, false, false]);
+  });
+
+  it("regret: en iyiye göre göreli kayıp, kırpma ve dışlama", () => {
+    const r = regretHesapla([100, 50, -50], 10);
+    expect(r.dahil).toBe(true);
+    expect(r.regret).toEqual([0, 0.5, 1]);
+    expect(r.regretKirpilmamis).toEqual([0, 0.5, 1.5]);
+    expect(regretHesapla([5, -5], 10).dahil).toBe(false);
+  });
+
+  it("en yakın liman: taşıma süresine göre; limansa null; odak kümesi", () => {
+    const mini = miniVeriyiYukle().harita;
+    expect(enYakinLiman(mini, "m_liman")).toBeNull();
+    expect(enYakinLiman(mini, "m_ova")).toBe("m_liman");
+    // m_col: col -> şehir -> ova (hava) -> liman = 9 saat; şehirden denize 24 saat
+    expect(enYakinLiman(mini, "m_col")).toBe("m_liman");
+    expect(odakKumesi(mini, "m_gecit", "bolge_liman")).toEqual(["m_gecit", "m_liman"]);
+    expect(odakKumesi(mini, "m_gecit", "bolge")).toEqual(["m_gecit"]);
+    expect(odakKumesi(mini, "m_liman", "bolge_liman")).toEqual(["m_liman"]);
+    const { harita } = varsayilanVeriyiYukle();
+    for (const b of harita.bolgeler) {
+      const l = enYakinLiman(harita, b.id);
+      if (b.etiketler.includes("liman")) expect(l).toBeNull();
+      else expect(harita.bolgeler.find((x) => x.id === l)?.etiketler).toContain("liman");
+    }
   });
 });
 
@@ -269,24 +329,61 @@ describe("hipotez koşucuları (kısa sürüm)", () => {
   const sonuclar: HipotezSonucu[] = [];
   const tohumlar = [1];
 
-  it("H1: rekabetli dünya, devlet başına 1 bölge × 3 sabit önayar (+ dengeli referans) × 1 gün", () => {
+  it("H1 v0.2: pasif referans, eklenen değer, bölge+liman odağı (devlet başına 1 bölge × 3 sabit önayar + dengeli × 1 gün)", () => {
     const veri = varsayilanVeriyiYukle();
     const h = h1Kos({ tohumlar, kisa: true, veri });
     semaDogru(h, "H1", 1);
     expect(h.parametreler["bolgeSayisi"]).toBe(veri.harita.devletler.length);
     expect(h.parametreler["onayarSayisi"]).toBe(3);
     expect(h.parametreler["referansOnayar"]).toBe("dengeli");
-    const ay = h.ayrinti as { onayarlar: Array<{ ad: string }>; referans: { ad: string }; turTablosu: unknown[]; bolgeTablosuIlkTohum: Array<{ skorlar: Record<string, number> }> };
-    // dengeli sıralamada DEĞİL, yalnızca referans sütununda
+    expect(h.parametreler["odakKurulumu"]).toBe("bolge+liman");
+    expect(String(h.parametreler["pasifReferans"])).toContain("evet");
+    const ay = h.ayrinti as {
+      onayarlar: Array<{ ad: string }>;
+      referans: { ad: string };
+      turTablosu: Array<{ hicbiriPayi: number }>;
+      isletimselTanim: string[];
+      bilgiGostergeleri: Record<string, { saglandi: boolean }>;
+      bolgeTablosuIlkTohum: Array<{ bolge: string; kume: string[]; pasifSkor: number; esik: number; ekDegerler: Record<string, number>; bilesenler: Record<string, Record<string, number>>; referans: { ekDeger: number } | null }>;
+    };
+    expect(ay.isletimselTanim).toEqual([...H1_ISLETIMSEL_TANIM]);
+    // dengeli sıralamada DEĞİL, yalnızca referans olarak
     expect(ay.onayarlar.map((o) => o.ad)).not.toContain("dengeli");
     expect(ay.referans.ad).toBe("dengeli");
-    expect(Object.keys(ay.bolgeTablosuIlkTohum[0]!.skorlar)).toContain("dengeli");
     expect(ay.turTablosu.length).toBeGreaterThan(0);
-    const oz = h.tohumBasina[0]!.ozet as { top3Orani: Record<string, number>; enIyiOnayarPayi: Record<string, number> };
-    expect(Object.keys(oz.top3Orani)).not.toContain("dengeli");
-    expect(Object.values(oz.enIyiOnayarPayi).reduce((t, x) => t + x, 0)).toBeCloseTo(1, 3);
+    expect(Object.keys(ay.bilgiGostergeleri).sort()).toEqual(["normalizeEntropi", "regret", "turBasinaFarkliEnIyi"]);
+    for (const b of ay.bolgeTablosuIlkTohum) {
+      // odak kümesi: bölge (+ limansa yalnız o; değilse en yakın liman)
+      const tan = veri.harita.bolgeler.find((x) => x.id === b.bolge)!;
+      expect(b.kume[0]).toBe(b.bolge);
+      expect(b.kume).toEqual(odakKumesi(veri.harita, b.bolge, "bolge_liman"));
+      expect(b.kume.length).toBe(tan.etiketler.includes("liman") ? 1 : 2);
+      expect(b.esik).toBeGreaterThanOrEqual(10_000);
+      expect(Object.keys(b.ekDegerler)).not.toContain("dengeli");
+      expect(b.referans).not.toBeNull();
+      // eklenen değer = bileşenlerin toplamı (hazine + stok + yatırım)
+      for (const [ad, bl] of Object.entries(b.bilesenler)) {
+        expect(bl["skor"]).toBeCloseTo((bl["hazine"] as number) + (bl["stok"] as number) + (bl["yatirim"] as number), 0);
+        expect(b.ekDegerler[ad]).toBeCloseTo(bl["skor"] as number, 0);
+      }
+    }
+    const oz = h.tohumBasina[0]!.ozet as { anlamliIlkUcOrani: Record<string, number>; enIyiOnayarPayi: Record<string, number>; hicbiriAnlamliDegil: number; anlamliBolge: number };
+    expect(Object.keys(oz.anlamliIlkUcOrani)).not.toContain("dengeli");
+    expect(oz.anlamliBolge + oz.hicbiriAnlamliDegil).toBe(veri.harita.devletler.length);
+    // en iyi payı: anlamlı bölge başına toplam 1
+    expect(Object.values(oz.enIyiOnayarPayi).reduce((t, x) => t + x, 0)).toBeCloseTo(oz.anlamliBolge / veri.harita.devletler.length, 3);
     expect(kararli(h1Kos({ tohumlar, kisa: true, veri }))).toBe(kararli(h));
     sonuclar.push(h);
+  }, 180_000);
+
+  it("H1 v0.2: yalnız bölge odağı ve dengeli referanssız koşu", () => {
+    const veri = varsayilanVeriyiYukle();
+    const h = h1Kos({ tohumlar, kisa: true, veri, odak: "bolge", bolgeSayisi: 2, onayarlar: ["ihracatci"] });
+    semaDogru(h, "H1", 1);
+    expect(h.parametreler["odakKurulumu"]).toBe("bolge");
+    expect(h.parametreler["referansOnayar"]).toBe("yok");
+    const ay = h.ayrinti as { bolgeTablosuIlkTohum: Array<{ kume: string[] }> };
+    for (const b of ay.bolgeTablosuIlkTohum) expect(b.kume).toHaveLength(1);
   }, 120_000);
 
   it("H2: 3 günlük kısa koşu şemaya uygundur ve determinizm", () => {
@@ -354,6 +451,14 @@ describe("hipotez koşucuları (kısa sürüm)", () => {
     expect(md).toContain("**Sürüm/etiket**: (belirtilmedi)");
     expect(md).not.toContain("Önceki ölçüm");
     for (const h of sonuclar) expect(md).toContain(`## ${h.kimlik}`);
+    // H1 v0.2 bölümleri
+    expect(md).toContain("İşletimsel tanım (H1 düzeneği v0.2)");
+    expect(md).toContain("Odak kurulumu: bolge+liman");
+    expect(md).toContain("Ayrıştırma: eklenen değerin bileşenleri");
+    expect(md).toContain("Regret: her sabit önayarın");
+    expect(md).toContain("Bilgi göstergeleri (verdict'e KATILMAZ");
+    expect(md).toContain("Eşitlik kuralının etkisi");
+    expect(md).toContain("Bölge türüne göre en iyi önayar");
   });
 
   it("rapor: etiket ve önceki ölçümle karşılaştırma sütunları", () => {

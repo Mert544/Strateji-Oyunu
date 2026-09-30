@@ -44,6 +44,14 @@ export interface HipotezSecenek {
   bolgeSayisi?: number;
   /** Tam boyut: hipotezin örnekleme yapan koşucuları (H1) tüm birimleri koşturur (yavaş). */
   tam?: boolean;
+  /** H1 odak kurulumu: "bolge_liman" (vars.; odak bölge + en yakın liman) veya "bolge" (yalnız odak bölge). */
+  odak?: "bolge" | "bolge_liman";
+  /** H1 anlamlı fark oranı: pasif referansın mutlak net değerinin bu oranı (vars. 0.03; docs/07 Ö1a). */
+  anlamliOran?: number;
+  /** H1 koşu süresi, gün (vars. 7). Arka plandaki militarist ilk savaşını ~7. günde ilan ettiği için askeri etkiyi görmek için 14 önerilir. */
+  h1Gun?: number;
+  /** H1 birincil skor penceresinin başlangıcı: bu günün sonundan koşu sonuna (vars. 3 = 4-7. gün). */
+  pencereBasGun?: number;
   /** Test için ek küçültme (kısa sürüm); hızlı moddan da küçük olabilir. */
   kisa?: boolean;
   /** İlerleme mesajı geri çağrısı (CLI). */

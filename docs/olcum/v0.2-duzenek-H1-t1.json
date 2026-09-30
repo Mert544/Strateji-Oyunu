@@ -1,0 +1,2248 @@
+{
+  "surum": 1,
+  "tohumlar": [
+    1
+  ],
+  "hizli": false,
+  "tam": false,
+  "etiket": "v0.2-duzenek",
+  "sureMs": 358839,
+  "secenekler": {
+    "hip": [
+      "H1"
+    ],
+    "tohum": "1",
+    "hizli": false,
+    "tam": false,
+    "bolge": null,
+    "odak": "bolge_liman",
+    "anlamli": null,
+    "pencereBas": 3,
+    "h1Gun": 7,
+    "ad": "v0.2-duzenek"
+  },
+  "hipotezler": [
+    {
+      "kimlik": "H1",
+      "hipotez": "Bölgeler gerçekten farklı: aynı politika bölgelerin %70'inden fazlasında ilk üçte değil",
+      "olcum": {
+        "ad": "En yüksek sabit önayarın anlamlı ilk-üç bölge oranı (v0.2: pasife göre eklenen değer, net değer akışı)",
+        "deger": 0.6875,
+        "birim": "oran",
+        "aciklama": "Rekabetli dünyada (arka plan: sanayici, tuccar, lojistikci, militarist) odak oyuncu = bölge + en yakın liman (bölge zaten limansa yalnız bölge); her sabit önayarın (dengeli hariç; t=0 ve 24 saatte bir uygulanan, 7 gün) bölge başına eklenen değeri (önayar − pasif; 4-7. gün net değer akışı) anlamlı fark eşiğiyle (θ = max(10 bin, %3 × |pasif|)) sıralanır; anlamlı ilk üçte olduğu bölge oranının en yükseği."
+      },
+      "esik": {
+        "aciklama": "En yüksek oran > %70 ise vazgeç (kaldı)",
+        "deger": 0.7
+      },
+      "verdict": "gecti",
+      "tohumBasariOrani": 1,
+      "tohumBasina": [
+        {
+          "tohum": 1,
+          "olcum": 0.6875,
+          "verdict": "gecti",
+          "durumOzeti": "a63a58b8e662cc64",
+          "ozet": {
+            "enYuksekOnayar": "ihracatci",
+            "anlamliIlkUcOrani": {
+              "gida_odakli": 0.125,
+              "agir_sanayi": 0.3125,
+              "elektronik": 0.125,
+              "enerji": 0.5625,
+              "ihracatci": 0.6875,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.1875
+            },
+            "ilkUcOraniToplam7Gun": {
+              "gida_odakli": 0.1875,
+              "agir_sanayi": 0.25,
+              "elektronik": 0.1875,
+              "enerji": 0.5,
+              "ihracatci": 0.75,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0
+            },
+            "enYuksekToplam7Gun": 0.75,
+            "pencereDuyarliligi": {
+              "0": {
+                "gida_odakli": 0.1875,
+                "agir_sanayi": 0.25,
+                "elektronik": 0.1875,
+                "enerji": 0.5,
+                "ihracatci": 0.75,
+                "lojistik_yatirimi": 0,
+                "askeri_hazirlik": 0
+              },
+              "1": {
+                "gida_odakli": 0.1875,
+                "agir_sanayi": 0.1875,
+                "elektronik": 0.125,
+                "enerji": 0.5625,
+                "ihracatci": 0.75,
+                "lojistik_yatirimi": 0,
+                "askeri_hazirlik": 0
+              },
+              "2": {
+                "gida_odakli": 0.125,
+                "agir_sanayi": 0.1875,
+                "elektronik": 0.0625,
+                "enerji": 0.5,
+                "ihracatci": 0.625,
+                "lojistik_yatirimi": 0,
+                "askeri_hazirlik": 0.125
+              },
+              "3": {
+                "gida_odakli": 0.125,
+                "agir_sanayi": 0.3125,
+                "elektronik": 0.125,
+                "enerji": 0.5625,
+                "ihracatci": 0.6875,
+                "lojistik_yatirimi": 0,
+                "askeri_hazirlik": 0.1875
+              },
+              "4": {
+                "gida_odakli": 0.125,
+                "agir_sanayi": 0.3125,
+                "elektronik": 0.0625,
+                "enerji": 0.4375,
+                "ihracatci": 0.625,
+                "lojistik_yatirimi": 0,
+                "askeri_hazirlik": 0.1875
+              },
+              "5": {
+                "gida_odakli": 0.125,
+                "agir_sanayi": 0.4375,
+                "elektronik": 0.0625,
+                "enerji": 0.5625,
+                "ihracatci": 0.625,
+                "lojistik_yatirimi": 0,
+                "askeri_hazirlik": 0.125
+              }
+            },
+            "ilkUcOrtalamaBuyuklugu": 2,
+            "ilkUcTasanBolge": 1,
+            "esitlikleIlkUcGirenCift": 1,
+            "anlamliBolge": 13,
+            "hicbiriAnlamliDegil": 3,
+            "enIyiOnayarPayi": {
+              "gida_odakli": 0.0625,
+              "agir_sanayi": 0.0625,
+              "elektronik": 0.0313,
+              "enerji": 0.0625,
+              "ihracatci": 0.4688,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.125
+            },
+            "entropiBit": 1.908,
+            "entropiNormalize": 0.6796,
+            "regretBolgeSayisi": 13,
+            "regretOrtalama": {
+              "gida_odakli": 0.8748,
+              "agir_sanayi": 0.814,
+              "elektronik": 0.8874,
+              "enerji": 0.5366,
+              "ihracatci": 0.2087,
+              "lojistik_yatirimi": 0.9717,
+              "askeri_hazirlik": 0.7654
+            },
+            "regretKirpilmamisOrtalama": {
+              "gida_odakli": 1.8445,
+              "agir_sanayi": 1.1542,
+              "elektronik": 1.633,
+              "enerji": 0.8665,
+              "ihracatci": 0.3601,
+              "lojistik_yatirimi": 1.8644,
+              "askeri_hazirlik": 1.0758
+            },
+            "enIyiTekOnayarRegret": 0.2087,
+            "ekDegerBilesenleri": {
+              "gida_odakli": {
+                "hazine": 43249.7,
+                "stok": -79902,
+                "yatirim": 3900,
+                "skor": -32752.3,
+                "israf": 318127.7
+              },
+              "agir_sanayi": {
+                "hazine": 64754.2,
+                "stok": -39224.7,
+                "yatirim": 1875,
+                "skor": 27404.5,
+                "israf": 258122.7
+              },
+              "elektronik": {
+                "hazine": 8776.7,
+                "stok": -58741.4,
+                "yatirim": 7000,
+                "skor": -42964.7,
+                "israf": 297568.7
+              },
+              "enerji": {
+                "hazine": 220073.9,
+                "stok": 16254.7,
+                "yatirim": 9750,
+                "skor": 246078.6,
+                "israf": 390175.5
+              },
+              "ihracatci": {
+                "hazine": 272421,
+                "stok": 37969.3,
+                "yatirim": 0,
+                "skor": 310390.3,
+                "israf": 258832
+              },
+              "lojistik_yatirimi": {
+                "hazine": -4001.7,
+                "stok": -65556.1,
+                "yatirim": 0,
+                "skor": -69557.9,
+                "israf": 370742.4
+              },
+              "askeri_hazirlik": {
+                "hazine": 194.5,
+                "stok": -14897.3,
+                "yatirim": 0,
+                "skor": -14702.9,
+                "israf": 56005.9
+              }
+            },
+            "ekDegerBilesenleriToplam7Gun": {
+              "gida_odakli": {
+                "hazine": 40220.4,
+                "stok": 188873.5,
+                "yatirim": 33643.8,
+                "skor": 262737.6,
+                "israf": 383874.7
+              },
+              "agir_sanayi": {
+                "hazine": 78698.4,
+                "stok": 99086,
+                "yatirim": 23968.8,
+                "skor": 201753.2,
+                "israf": 341552.6
+              },
+              "elektronik": {
+                "hazine": -31390.1,
+                "stok": 176144.5,
+                "yatirim": 55906.3,
+                "skor": 200660.6,
+                "israf": 375673.6
+              },
+              "enerji": {
+                "hazine": 284697.9,
+                "stok": 154248.9,
+                "yatirim": 39418.8,
+                "skor": 478365.5,
+                "israf": 457620.6
+              },
+              "ihracatci": {
+                "hazine": 415924.6,
+                "stok": 136488.6,
+                "yatirim": 27718.8,
+                "skor": 580131.9,
+                "israf": 308476.2
+              },
+              "lojistik_yatirimi": {
+                "hazine": -37590,
+                "stok": 178283.1,
+                "yatirim": 25843.8,
+                "skor": 166536.9,
+                "israf": 460400.7
+              },
+              "askeri_hazirlik": {
+                "hazine": -45566.5,
+                "stok": -7629.8,
+                "yatirim": 52168.8,
+                "skor": -1027.5,
+                "israf": 94938
+              }
+            },
+            "pasifOrtalamaSkor": -20433.9,
+            "referansIlkUc": null,
+            "referansSabitlerinEniyisiniGecti": null,
+            "komut": 701,
+            "basarisizKomut": 0,
+            "ortalamaYatirim": 3217.9
+          }
+        }
+      ],
+      "ayrinti": {
+        "isletimselTanim": [
+          "Dünya: her devletin bölgeleri bir arka plan botuna verilir (sanayici, tuccar, lojistikci, militarist; devlet sırası tohumla döner). Arka plan her koşuda aynı kurulum ve aynı tohumla başlar (ortak rastgele sayılar); yalnızca odak oyuncunun önayarı değişir.",
+          "Odak oyuncu: örneklenen bölge + (liman değilse) haritada taşıma süresi toplamı en kısa olan en yakın liman bölgesi (kurulum \"bölge+liman\", varsayılan); yalnız bölge kurulumu (`--odak bolge`, limansız tek bölgeli odak) ayrıca seçilebilir. Odak bölge zaten limansa tek bölgedir. Odak bölgeler devletlerinin arka plan botundan çıkarılır.",
+          "Koşu: 7 gün; odak oyuncu t=0'da ve 24 saatte bir önayarını uygular. Her bölge için ayrıca PASİF referans (hiçbir şey yapma) koşulur.",
+          "Skor = pencere içi Δhazine + Δstok (taban fiyat) + yatırım (başlatılan tesis inşaatı ve kenar geliştirme bedeli; maliyetle, amortismansız). Birincil: 4-7. gün akışı (t = 3. gün sonu .. 7. gün sonu; başlangıç stoku dönüşümü ve ilk tavan dolumu dışlanır). İkincil: 7 günlük toplam.",
+          "Eklenen değer = önayar skoru − pasif skoru (aynı bölge, aynı tohum). Önayar kümesi: ortak yerel-ham tabanı (her önayar bölgenin rezerv kaynaklı ham çıkarım tesislerini ortak aday olarak içerir) + tema; ihracatci yalnızca ticaret temasıdır. Hiçbir önayar diğerinin üst kümesi değildir.",
+          "Anlamlı fark eşiği (bölge başına) θ = max(10 bin para, %3 × |pasif skoru|). Eklenen değeri θ'dan küçük önayar pasife eşittir ve ilk üçe girmez. İki önayarın eklenen değeri farkı θ'dan küçükse eşit sayılır.",
+          "Eşitlik kuralı: anlamlı önayarlar eklenen değere göre azalan dizilir; bir eşitlik grubu en iyi üyesinden θ'dan az geride kalanları toplar; grup üyeleri sıra konumlarını paylaşır (ortalama sıra); ortalama sıra <= 3 ise önayar o bölgede \"anlamlı ilk üç\"tedir. Eşitlik yüzünden ilk üçe giren (eşitlik toleransı olmadan girmeyecek) önayar-bölge çifti sayısı raporlanır.",
+          "Verdict (PDF eşiği, bağlayıcı): en yüksek anlamlı ilk-üç bölge oranı > %70 ise KALDI. Bilgi göstergeleri (verdict'e girmez): en iyi tek sabit önayarın ortalama regret'i >= %10; normalize entropi >= 0.75; bölge türü başına en az 4 farklı en iyi önayar."
+        ],
+        "onayarlar": [
+          {
+            "ad": "gida_odakli",
+            "aciklama": "Ortak ham tabanı + gıda fabrikası, mekanize tarım, tahıl/gıda ihracatı, vergi ayarı."
+          },
+          {
+            "ad": "agir_sanayi",
+            "aciklama": "Ortak ham tabanı + çelik/parça zinciri, derin madencilik, elektrik ark, çelik/cevher ihracatı."
+          },
+          {
+            "ad": "elektronik",
+            "aciklama": "Ortak ham tabanı + parça/elektronik zinciri, çelikhane, otomasyon, elektronik ihracatı."
+          },
+          {
+            "ad": "enerji",
+            "aciklama": "Ortak ham tabanı + rafineri (petrol-yakıt), derin kömür, yakıt/petrol ihracatı."
+          },
+          {
+            "ad": "ihracatci",
+            "aciklama": "TİCARET TEMASI: ortak ham tabanı + limandan düşük eşikle her malı ihraç et, vergi ayarı (işleme/yöntem/araştırma/kenar/askeri yok)."
+          },
+          {
+            "ad": "lojistik_yatirimi",
+            "aciklama": "Ortak ham tabanı + kenar kapasite geliştirme, parça fabrikası, otomasyon ve konteyner limanı araştırması."
+          },
+          {
+            "ad": "askeri_hazirlik",
+            "aciklama": "Ortak ham tabanı + çelik/rafineri desteği, mühimmat ve birlik üretimi, askeri rezerv, savunma duruşu."
+          }
+        ],
+        "referans": null,
+        "tohumOrtalamaAnlamliIlkUcOrani": {
+          "gida_odakli": 0.125,
+          "agir_sanayi": 0.3125,
+          "elektronik": 0.125,
+          "enerji": 0.5625,
+          "ihracatci": 0.6875,
+          "lojistik_yatirimi": 0,
+          "askeri_hazirlik": 0.1875
+        },
+        "tohumOrtalamaIlkUcOraniToplam7Gun": {
+          "gida_odakli": 0.1875,
+          "agir_sanayi": 0.25,
+          "elektronik": 0.1875,
+          "enerji": 0.5,
+          "ihracatci": 0.75,
+          "lojistik_yatirimi": 0,
+          "askeri_hazirlik": 0
+        },
+        "tohumOrtalamaEnIyiDagilimi": {
+          "gida_odakli": 0.0625,
+          "agir_sanayi": 0.0625,
+          "elektronik": 0.0313,
+          "enerji": 0.0625,
+          "ihracatci": 0.4688,
+          "lojistik_yatirimi": 0,
+          "askeri_hazirlik": 0.125
+        },
+        "tohumOrtalamaRegret": {
+          "gida_odakli": 0.8748,
+          "agir_sanayi": 0.814,
+          "elektronik": 0.8874,
+          "enerji": 0.5366,
+          "ihracatci": 0.2087,
+          "lojistik_yatirimi": 0.9717,
+          "askeri_hazirlik": 0.7654
+        },
+        "tohumOrtalamaRegretKirpilmamis": {
+          "gida_odakli": 1.8445,
+          "agir_sanayi": 1.1542,
+          "elektronik": 1.633,
+          "enerji": 0.8665,
+          "ihracatci": 0.3601,
+          "lojistik_yatirimi": 1.8644,
+          "askeri_hazirlik": 1.0758
+        },
+        "ekDegerBilesenleri": {
+          "gida_odakli": {
+            "hazine": 43249.7,
+            "stok": -79902,
+            "yatirim": 3900,
+            "skor": -32752.3,
+            "israf": 318127.7
+          },
+          "agir_sanayi": {
+            "hazine": 64754.2,
+            "stok": -39224.7,
+            "yatirim": 1875,
+            "skor": 27404.5,
+            "israf": 258122.7
+          },
+          "elektronik": {
+            "hazine": 8776.7,
+            "stok": -58741.4,
+            "yatirim": 7000,
+            "skor": -42964.7,
+            "israf": 297568.7
+          },
+          "enerji": {
+            "hazine": 220073.9,
+            "stok": 16254.7,
+            "yatirim": 9750,
+            "skor": 246078.6,
+            "israf": 390175.5
+          },
+          "ihracatci": {
+            "hazine": 272421,
+            "stok": 37969.3,
+            "yatirim": 0,
+            "skor": 310390.3,
+            "israf": 258832
+          },
+          "lojistik_yatirimi": {
+            "hazine": -4001.7,
+            "stok": -65556.1,
+            "yatirim": 0,
+            "skor": -69557.9,
+            "israf": 370742.4
+          },
+          "askeri_hazirlik": {
+            "hazine": 194.5,
+            "stok": -14897.3,
+            "yatirim": 0,
+            "skor": -14702.9,
+            "israf": 56005.9
+          }
+        },
+        "ekDegerBilesenleriToplam7Gun": {
+          "gida_odakli": {
+            "hazine": 40220.4,
+            "stok": 188873.5,
+            "yatirim": 33643.8,
+            "skor": 262737.6,
+            "israf": 383874.7
+          },
+          "agir_sanayi": {
+            "hazine": 78698.4,
+            "stok": 99086,
+            "yatirim": 23968.8,
+            "skor": 201753.2,
+            "israf": 341552.6
+          },
+          "elektronik": {
+            "hazine": -31390.1,
+            "stok": 176144.5,
+            "yatirim": 55906.3,
+            "skor": 200660.6,
+            "israf": 375673.6
+          },
+          "enerji": {
+            "hazine": 284697.9,
+            "stok": 154248.9,
+            "yatirim": 39418.8,
+            "skor": 478365.5,
+            "israf": 457620.6
+          },
+          "ihracatci": {
+            "hazine": 415924.6,
+            "stok": 136488.6,
+            "yatirim": 27718.8,
+            "skor": 580131.9,
+            "israf": 308476.2
+          },
+          "lojistik_yatirimi": {
+            "hazine": -37590,
+            "stok": 178283.1,
+            "yatirim": 25843.8,
+            "skor": 166536.9,
+            "israf": 460400.7
+          },
+          "askeri_hazirlik": {
+            "hazine": -45566.5,
+            "stok": -7629.8,
+            "yatirim": 52168.8,
+            "skor": -1027.5,
+            "israf": 94938
+          }
+        },
+        "pasifOrtalamaSkor": -20433.9,
+        "pencereDuyarliligi": [
+          {
+            "baslangicGunu": 0,
+            "pencere": "1-7. gun",
+            "enYuksek": "ihracatci",
+            "enYuksekOran": 0.75,
+            "oranlar": {
+              "gida_odakli": 0.1875,
+              "agir_sanayi": 0.25,
+              "elektronik": 0.1875,
+              "enerji": 0.5,
+              "ihracatci": 0.75,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0
+            },
+            "birincil": false
+          },
+          {
+            "baslangicGunu": 1,
+            "pencere": "2-7. gun",
+            "enYuksek": "ihracatci",
+            "enYuksekOran": 0.75,
+            "oranlar": {
+              "gida_odakli": 0.1875,
+              "agir_sanayi": 0.1875,
+              "elektronik": 0.125,
+              "enerji": 0.5625,
+              "ihracatci": 0.75,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0
+            },
+            "birincil": false
+          },
+          {
+            "baslangicGunu": 2,
+            "pencere": "3-7. gun",
+            "enYuksek": "ihracatci",
+            "enYuksekOran": 0.625,
+            "oranlar": {
+              "gida_odakli": 0.125,
+              "agir_sanayi": 0.1875,
+              "elektronik": 0.0625,
+              "enerji": 0.5,
+              "ihracatci": 0.625,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.125
+            },
+            "birincil": false
+          },
+          {
+            "baslangicGunu": 3,
+            "pencere": "4-7. gun",
+            "enYuksek": "ihracatci",
+            "enYuksekOran": 0.6875,
+            "oranlar": {
+              "gida_odakli": 0.125,
+              "agir_sanayi": 0.3125,
+              "elektronik": 0.125,
+              "enerji": 0.5625,
+              "ihracatci": 0.6875,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.1875
+            },
+            "birincil": true
+          },
+          {
+            "baslangicGunu": 4,
+            "pencere": "5-7. gun",
+            "enYuksek": "ihracatci",
+            "enYuksekOran": 0.625,
+            "oranlar": {
+              "gida_odakli": 0.125,
+              "agir_sanayi": 0.3125,
+              "elektronik": 0.0625,
+              "enerji": 0.4375,
+              "ihracatci": 0.625,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.1875
+            },
+            "birincil": false
+          },
+          {
+            "baslangicGunu": 5,
+            "pencere": "6-7. gun",
+            "enYuksek": "ihracatci",
+            "enYuksekOran": 0.625,
+            "oranlar": {
+              "gida_odakli": 0.125,
+              "agir_sanayi": 0.4375,
+              "elektronik": 0.0625,
+              "enerji": 0.5625,
+              "ihracatci": 0.625,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.125
+            },
+            "birincil": false
+          }
+        ],
+        "tieOzeti": {
+          "ilkUcOrtalamaBuyuklugu": 2,
+          "ilkUcTasanBolge": 1,
+          "esitlikleIlkUcGirenCift": 1,
+          "anlamliBolge": 13,
+          "hicbiriAnlamliDegil": 3
+        },
+        "referansIlkUcOrtalama": null,
+        "referansSabitlerinEniyisiniGectiOrtalama": null,
+        "bilgiGostergeleri": {
+          "regret": {
+            "deger": 0.2087,
+            "esik": 0.1,
+            "saglandi": true,
+            "onayar": "ihracatci"
+          },
+          "normalizeEntropi": {
+            "deger": 0.6796,
+            "esik": 0.75,
+            "saglandi": false
+          },
+          "turBasinaFarkliEnIyi": {
+            "deger": 5,
+            "esik": 4,
+            "saglandi": true
+          }
+        },
+        "turTablosu": [
+          {
+            "tur": "baskent",
+            "aciklama": "nüfus >= 400 bin (kent)",
+            "bolgeSayisi": 1,
+            "enIyi": "ihracatci",
+            "enIyiPay": 1,
+            "hicbiriPayi": 0,
+            "dagilim": {
+              "gida_odakli": 0,
+              "agir_sanayi": 0,
+              "elektronik": 0,
+              "enerji": 0,
+              "ihracatci": 1,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0
+            }
+          },
+          {
+            "tur": "liman",
+            "aciklama": "liman etiketli",
+            "bolgeSayisi": 3,
+            "enIyi": "enerji=ihracatci",
+            "enIyiPay": 0.3333,
+            "hicbiriPayi": 0.3333,
+            "dagilim": {
+              "gida_odakli": 0,
+              "agir_sanayi": 0,
+              "elektronik": 0,
+              "enerji": 0.3333,
+              "ihracatci": 0.3333,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0
+            }
+          },
+          {
+            "tur": "ova_tarim",
+            "aciklama": "baskın rezerv tahıl",
+            "bolgeSayisi": 2,
+            "enIyi": "gida_odakli=askeri_hazirlik",
+            "enIyiPay": 0.5,
+            "hicbiriPayi": 0,
+            "dagilim": {
+              "gida_odakli": 0.5,
+              "agir_sanayi": 0,
+              "elektronik": 0,
+              "enerji": 0,
+              "ihracatci": 0,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.5
+            }
+          },
+          {
+            "tur": "petrol",
+            "aciklama": "baskın rezerv petrol (kıyı/çöl)",
+            "bolgeSayisi": 1,
+            "enIyi": "ihracatci",
+            "enIyiPay": 1,
+            "hicbiriPayi": 0,
+            "dagilim": {
+              "gida_odakli": 0,
+              "agir_sanayi": 0,
+              "elektronik": 0,
+              "enerji": 0,
+              "ihracatci": 1,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0
+            }
+          },
+          {
+            "tur": "maden_dag",
+            "aciklama": "baskın rezerv cevher/kömür/bakır/silis; dağ veya dar geçit",
+            "bolgeSayisi": 5,
+            "enIyi": "agir_sanayi=ihracatci=askeri_hazirlik",
+            "enIyiPay": 0.2,
+            "hicbiriPayi": 0.4,
+            "dagilim": {
+              "gida_odakli": 0,
+              "agir_sanayi": 0.2,
+              "elektronik": 0,
+              "enerji": 0,
+              "ihracatci": 0.2,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.2
+            }
+          },
+          {
+            "tur": "maden_kiyi_col",
+            "aciklama": "baskın rezerv cevher/kömür/bakır/silis; kıyı, ova veya etiketsiz",
+            "bolgeSayisi": 4,
+            "enIyi": "ihracatci",
+            "enIyiPay": 0.875,
+            "hicbiriPayi": 0,
+            "dagilim": {
+              "gida_odakli": 0,
+              "agir_sanayi": 0,
+              "elektronik": 0.125,
+              "enerji": 0,
+              "ihracatci": 0.875,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0
+            }
+          }
+        ],
+        "bolgeSayisi": 16,
+        "bolgeTurleri": {
+          "ak_ova": "ova_tarim",
+          "kuzey_burun": "maden_kiyi_col",
+          "askan_kenti": "baskent",
+          "sis_tepeleri": "maden_dag",
+          "kor_ocak": "maden_dag",
+          "sisli_liman": "liman",
+          "tuz_koyu": "maden_kiyi_col",
+          "yalin_zirve": "maden_dag",
+          "kum_burnu": "petrol",
+          "gunes_kumulu": "maden_kiyi_col",
+          "inci_limani": "liman",
+          "kum_gecidi": "maden_dag",
+          "gundogumu_limani": "liman",
+          "bati_yamaci": "maden_kiyi_col",
+          "yesil_vadi": "ova_tarim",
+          "ulu_dag": "maden_dag"
+        },
+        "odakKumeleri": {
+          "ak_ova": [
+            "ak_ova",
+            "yelken_limani"
+          ],
+          "kuzey_burun": [
+            "kuzey_burun",
+            "kopuk_limani"
+          ],
+          "askan_kenti": [
+            "askan_kenti",
+            "yelken_limani"
+          ],
+          "sis_tepeleri": [
+            "sis_tepeleri",
+            "kopuk_limani"
+          ],
+          "kor_ocak": [
+            "kor_ocak",
+            "gumus_limani"
+          ],
+          "sisli_liman": [
+            "sisli_liman"
+          ],
+          "tuz_koyu": [
+            "tuz_koyu",
+            "gumus_limani"
+          ],
+          "yalin_zirve": [
+            "yalin_zirve",
+            "yelken_limani"
+          ],
+          "kum_burnu": [
+            "kum_burnu",
+            "inci_limani"
+          ],
+          "gunes_kumulu": [
+            "gunes_kumulu",
+            "dogu_limani"
+          ],
+          "inci_limani": [
+            "inci_limani"
+          ],
+          "kum_gecidi": [
+            "kum_gecidi",
+            "celik_limani"
+          ],
+          "gundogumu_limani": [
+            "gundogumu_limani"
+          ],
+          "bati_yamaci": [
+            "bati_yamaci",
+            "celik_limani"
+          ],
+          "yesil_vadi": [
+            "yesil_vadi",
+            "celik_limani"
+          ],
+          "ulu_dag": [
+            "ulu_dag",
+            "gundogumu_limani"
+          ]
+        },
+        "bolgeTablosuIlkTohum": [
+          {
+            "bolge": "ak_ova",
+            "tur": "ova_tarim",
+            "kume": [
+              "ak_ova",
+              "yelken_limani"
+            ],
+            "pasifSkor": -73241.3,
+            "pasifToplamSkor": -61998.6,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": 511197.9,
+              "agir_sanayi": 42025.5,
+              "elektronik": -137475.8,
+              "enerji": 101884.7,
+              "ihracatci": 291025,
+              "lojistik_yatirimi": -137475.8,
+              "askeri_hazirlik": -168500.1
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": 1081952.9,
+              "agir_sanayi": 141607.8,
+              "elektronik": -79000.4,
+              "enerji": 201467,
+              "ihracatci": 529264.1,
+              "lojistik_yatirimi": -79000.4,
+              "askeri_hazirlik": -147066.7
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": 505893.3,
+                "stok": 5304.6,
+                "yatirim": 0,
+                "skor": 511197.9,
+                "israf": 190015.9
+              },
+              "agir_sanayi": {
+                "hazine": 171441,
+                "stok": -129415.5,
+                "yatirim": 0,
+                "skor": 42025.5,
+                "israf": 559294
+              },
+              "elektronik": {
+                "hazine": -9596.6,
+                "stok": -127879.2,
+                "yatirim": 0,
+                "skor": -137475.8,
+                "israf": 934388.1
+              },
+              "enerji": {
+                "hazine": 150921,
+                "stok": -80236.3,
+                "yatirim": 31200,
+                "skor": 101884.7,
+                "israf": 904098.1
+              },
+              "ihracatci": {
+                "hazine": 342250,
+                "stok": -51225,
+                "yatirim": 0,
+                "skor": 291025,
+                "israf": 394897.3
+              },
+              "lojistik_yatirimi": {
+                "hazine": -9596.6,
+                "stok": -127879.2,
+                "yatirim": 0,
+                "skor": -137475.8,
+                "israf": 934388.1
+              },
+              "askeri_hazirlik": {
+                "hazine": -2681,
+                "stok": -165819.1,
+                "yatirim": 0,
+                "skor": -168500.1,
+                "israf": 186619
+              }
+            },
+            "anlamli": [
+              "gida_odakli",
+              "agir_sanayi",
+              "enerji",
+              "ihracatci"
+            ],
+            "ilkUc": [
+              "gida_odakli",
+              "enerji",
+              "ihracatci"
+            ],
+            "enIyi": "gida_odakli",
+            "referans": null
+          },
+          {
+            "bolge": "kuzey_burun",
+            "tur": "maden_kiyi_col",
+            "kume": [
+              "kuzey_burun",
+              "kopuk_limani"
+            ],
+            "pasifSkor": -99366.5,
+            "pasifToplamSkor": -355807.4,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -126372.2,
+              "agir_sanayi": 59360.6,
+              "elektronik": -111255,
+              "enerji": 74591.9,
+              "ihracatci": 166525,
+              "lojistik_yatirimi": -124983,
+              "askeri_hazirlik": -18566.5
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -53985.3,
+              "agir_sanayi": 176402.7,
+              "elektronik": 4134.6,
+              "enerji": 191633.9,
+              "ihracatci": 291076.5,
+              "lojistik_yatirimi": -56103.9,
+              "askeri_hazirlik": -103578.3
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -7149.2,
+                "stok": -119223,
+                "yatirim": 0,
+                "skor": -126372.2,
+                "israf": 414500.4
+              },
+              "agir_sanayi": {
+                "hazine": 177203,
+                "stok": -117842.4,
+                "yatirim": 0,
+                "skor": 59360.6,
+                "israf": -104696.5
+              },
+              "elektronik": {
+                "hazine": 2655.4,
+                "stok": -113910.4,
+                "yatirim": 0,
+                "skor": -111255,
+                "israf": 127998.7
+              },
+              "enerji": {
+                "hazine": 156683,
+                "stok": -113291.1,
+                "yatirim": 31200,
+                "skor": 74591.9,
+                "israf": -104696.5
+              },
+              "ihracatci": {
+                "hazine": 175813.9,
+                "stok": -9288.9,
+                "yatirim": 0,
+                "skor": 166525,
+                "israf": 4312.9
+              },
+              "lojistik_yatirimi": {
+                "hazine": -5760,
+                "stok": -119223,
+                "yatirim": 0,
+                "skor": -124983,
+                "israf": 414500.4
+              },
+              "askeri_hazirlik": {
+                "hazine": 2655.4,
+                "stok": -21221.9,
+                "yatirim": 0,
+                "skor": -18566.5,
+                "israf": -13354.4
+              }
+            },
+            "anlamli": [
+              "agir_sanayi",
+              "enerji",
+              "ihracatci"
+            ],
+            "ilkUc": [
+              "agir_sanayi",
+              "enerji",
+              "ihracatci"
+            ],
+            "enIyi": "ihracatci",
+            "referans": null
+          },
+          {
+            "bolge": "askan_kenti",
+            "tur": "baskent",
+            "kume": [
+              "askan_kenti",
+              "yelken_limani"
+            ],
+            "pasifSkor": 99025.7,
+            "pasifToplamSkor": 53326,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": 161152,
+              "agir_sanayi": 159387.4,
+              "elektronik": -113108.6,
+              "enerji": 164044.3,
+              "ihracatci": 421713.2,
+              "lojistik_yatirimi": -113108.6,
+              "askeri_hazirlik": -337554.2
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": 586535,
+              "agir_sanayi": 543988.3,
+              "elektronik": 241286.6,
+              "enerji": 537220.5,
+              "ihracatci": 905932.6,
+              "lojistik_yatirimi": 241286.6,
+              "askeri_hazirlik": -218273.6
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": 283265.8,
+                "stok": -122113.9,
+                "yatirim": 0,
+                "skor": 161152,
+                "israf": 559385.8
+              },
+              "agir_sanayi": {
+                "hazine": 171961.3,
+                "stok": -12573.9,
+                "yatirim": 0,
+                "skor": 159387.4,
+                "israf": 521234.1
+              },
+              "elektronik": {
+                "hazine": -11520,
+                "stok": -101588.6,
+                "yatirim": 0,
+                "skor": -113108.6,
+                "israf": 886437.5
+              },
+              "enerji": {
+                "hazine": 166201.3,
+                "stok": -2156.9,
+                "yatirim": 0,
+                "skor": 164044.3,
+                "israf": 521234.1
+              },
+              "ihracatci": {
+                "hazine": 464843.3,
+                "stok": -43130.1,
+                "yatirim": 0,
+                "skor": 421713.2,
+                "israf": 213417.6
+              },
+              "lojistik_yatirimi": {
+                "hazine": -11520,
+                "stok": -101588.6,
+                "yatirim": 0,
+                "skor": -113108.6,
+                "israf": 886437.5
+              },
+              "askeri_hazirlik": {
+                "hazine": -13925.7,
+                "stok": -323628.5,
+                "yatirim": 0,
+                "skor": -337554.2,
+                "israf": 655167.7
+              }
+            },
+            "anlamli": [
+              "gida_odakli",
+              "agir_sanayi",
+              "enerji",
+              "ihracatci"
+            ],
+            "ilkUc": [
+              "gida_odakli",
+              "agir_sanayi",
+              "enerji",
+              "ihracatci"
+            ],
+            "enIyi": "ihracatci",
+            "referans": null
+          },
+          {
+            "bolge": "sis_tepeleri",
+            "tur": "maden_dag",
+            "kume": [
+              "sis_tepeleri",
+              "kopuk_limani"
+            ],
+            "pasifSkor": -7909.9,
+            "pasifToplamSkor": -56186,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -194883.5,
+              "agir_sanayi": 183986.2,
+              "elektronik": -191144.5,
+              "enerji": 60882.4,
+              "ihracatci": 152380,
+              "lojistik_yatirimi": -191144.5,
+              "askeri_hazirlik": 43608.6
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -51105.6,
+              "agir_sanayi": 348652.8,
+              "elektronik": -51090.4,
+              "enerji": 243865.9,
+              "ihracatci": 377525.2,
+              "lojistik_yatirimi": -51090.4,
+              "askeri_hazirlik": -212722.6
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": 1308.3,
+                "stok": -196191.8,
+                "yatirim": 0,
+                "skor": -194883.5,
+                "israf": 360291.4
+              },
+              "agir_sanayi": {
+                "hazine": 247345.7,
+                "stok": -63359.5,
+                "yatirim": 0,
+                "skor": 183986.2,
+                "israf": 11967.6
+              },
+              "elektronik": {
+                "hazine": 5032,
+                "stok": -196176.6,
+                "yatirim": 0,
+                "skor": -191144.5,
+                "israf": 236867.7
+              },
+              "enerji": {
+                "hazine": 151492.6,
+                "stok": -121810.2,
+                "yatirim": 31200,
+                "skor": 60882.4,
+                "israf": 599120.7
+              },
+              "ihracatci": {
+                "hazine": 245994.4,
+                "stok": -93614.3,
+                "yatirim": 0,
+                "skor": 152380,
+                "israf": 328666.7
+              },
+              "lojistik_yatirimi": {
+                "hazine": 5032,
+                "stok": -196176.6,
+                "yatirim": 0,
+                "skor": -191144.5,
+                "israf": 236867.7
+              },
+              "askeri_hazirlik": {
+                "hazine": 7724.2,
+                "stok": 35884.4,
+                "yatirim": 0,
+                "skor": 43608.6,
+                "israf": -325135.3
+              }
+            },
+            "anlamli": [
+              "agir_sanayi",
+              "enerji",
+              "ihracatci",
+              "askeri_hazirlik"
+            ],
+            "ilkUc": [
+              "agir_sanayi",
+              "enerji",
+              "ihracatci"
+            ],
+            "enIyi": "agir_sanayi",
+            "referans": null
+          },
+          {
+            "bolge": "kor_ocak",
+            "tur": "maden_dag",
+            "kume": [
+              "kor_ocak",
+              "gumus_limani"
+            ],
+            "pasifSkor": 20294.8,
+            "pasifToplamSkor": -22641.5,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -162277.4,
+              "agir_sanayi": -148818.3,
+              "elektronik": -159413.6,
+              "enerji": -129261.6,
+              "ihracatci": -179947.3,
+              "lojistik_yatirimi": -159413.6,
+              "askeri_hazirlik": 96645.3
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -11210.1,
+              "agir_sanayi": -41589.1,
+              "elektronik": -11210.1,
+              "enerji": -11588.3,
+              "ihracatci": -19044.7,
+              "lojistik_yatirimi": -11210.1,
+              "askeri_hazirlik": -177273.5
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": 2997.5,
+                "stok": -165274.9,
+                "yatirim": 0,
+                "skor": -162277.4,
+                "israf": 286394
+              },
+              "agir_sanayi": {
+                "hazine": -22497.8,
+                "stok": -156320.4,
+                "yatirim": 30000,
+                "skor": -148818.3,
+                "israf": 523001.7
+              },
+              "elektronik": {
+                "hazine": 5861.3,
+                "stok": -165274.9,
+                "yatirim": 0,
+                "skor": -159413.6,
+                "israf": 282183.3
+              },
+              "enerji": {
+                "hazine": 8207.3,
+                "stok": -137468.9,
+                "yatirim": 0,
+                "skor": -129261.6,
+                "israf": 424341.2
+              },
+              "ihracatci": {
+                "hazine": -15068,
+                "stok": -164879.3,
+                "yatirim": 0,
+                "skor": -179947.3,
+                "israf": 755379.1
+              },
+              "lojistik_yatirimi": {
+                "hazine": 5861.3,
+                "stok": -165274.9,
+                "yatirim": 0,
+                "skor": -159413.6,
+                "israf": 282183.3
+              },
+              "askeri_hazirlik": {
+                "hazine": 8207.3,
+                "stok": 88438,
+                "yatirim": 0,
+                "skor": 96645.3,
+                "israf": -221051.8
+              }
+            },
+            "anlamli": [
+              "askeri_hazirlik"
+            ],
+            "ilkUc": [
+              "askeri_hazirlik"
+            ],
+            "enIyi": "askeri_hazirlik",
+            "referans": null
+          },
+          {
+            "bolge": "sisli_liman",
+            "tur": "liman",
+            "kume": [
+              "sisli_liman"
+            ],
+            "pasifSkor": -43265,
+            "pasifToplamSkor": -300514.3,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -2978.9,
+              "agir_sanayi": 0.1,
+              "elektronik": -77308.9,
+              "enerji": 0.1,
+              "ihracatci": -2965.3,
+              "lojistik_yatirimi": -26263.6,
+              "askeri_hazirlik": -19577.3
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -15589.3,
+              "agir_sanayi": -25000,
+              "elektronik": -79412.5,
+              "enerji": -25000,
+              "ihracatci": -565.6,
+              "lojistik_yatirimi": -41273.7,
+              "askeri_hazirlik": -110706.2
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -2965.3,
+                "stok": -13.6,
+                "yatirim": 0,
+                "skor": -2978.9,
+                "israf": 0
+              },
+              "agir_sanayi": {
+                "hazine": 0,
+                "stok": 0.1,
+                "yatirim": 0,
+                "skor": 0.1,
+                "israf": 0
+              },
+              "elektronik": {
+                "hazine": -5760,
+                "stok": -71548.9,
+                "yatirim": 0,
+                "skor": -77308.9,
+                "israf": 0
+              },
+              "enerji": {
+                "hazine": 0,
+                "stok": 0.1,
+                "yatirim": 0,
+                "skor": 0.1,
+                "israf": 0
+              },
+              "ihracatci": {
+                "hazine": -2965.3,
+                "stok": 0,
+                "yatirim": 0,
+                "skor": -2965.3,
+                "israf": 0
+              },
+              "lojistik_yatirimi": {
+                "hazine": -26250,
+                "stok": -13.6,
+                "yatirim": 0,
+                "skor": -26263.6,
+                "israf": 0
+              },
+              "askeri_hazirlik": {
+                "hazine": -6619.1,
+                "stok": -12958.2,
+                "yatirim": 0,
+                "skor": -19577.3,
+                "israf": 0
+              }
+            },
+            "anlamli": [],
+            "ilkUc": [],
+            "enIyi": "hicbiri",
+            "referans": null
+          },
+          {
+            "bolge": "tuz_koyu",
+            "tur": "maden_kiyi_col",
+            "kume": [
+              "tuz_koyu",
+              "gumus_limani"
+            ],
+            "pasifSkor": -69623.5,
+            "pasifToplamSkor": -339016.1,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -152480.6,
+              "agir_sanayi": 37678.4,
+              "elektronik": -84161.4,
+              "enerji": 146511.9,
+              "ihracatci": 185363.2,
+              "lojistik_yatirimi": -156325.7,
+              "askeri_hazirlik": 810.2
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -43542.2,
+              "agir_sanayi": 155149.4,
+              "elektronik": 49412.9,
+              "enerji": 266662,
+              "ihracatci": 303171.9,
+              "lojistik_yatirimi": -51309.8,
+              "askeri_hazirlik": -33145.2
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -20049.6,
+                "stok": -153231,
+                "yatirim": 20800,
+                "skor": -152480.6,
+                "israf": 408991.6
+              },
+              "agir_sanayi": {
+                "hazine": 179146.9,
+                "stok": -141468.5,
+                "yatirim": 0,
+                "skor": 37678.4,
+                "israf": -81149
+              },
+              "elektronik": {
+                "hazine": 3429.2,
+                "stok": -87590.6,
+                "yatirim": 0,
+                "skor": -84161.4,
+                "israf": 77597
+              },
+              "enerji": {
+                "hazine": 158626.9,
+                "stok": -43315,
+                "yatirim": 31200,
+                "skor": 146511.9,
+                "israf": 213339.7
+              },
+              "ihracatci": {
+                "hazine": 180455.6,
+                "stok": 4907.6,
+                "yatirim": 0,
+                "skor": 185363.2,
+                "israf": -22698.2
+              },
+              "lojistik_yatirimi": {
+                "hazine": -5760,
+                "stok": -150565.7,
+                "yatirim": 0,
+                "skor": -156325.7,
+                "israf": 408991.6
+              },
+              "askeri_hazirlik": {
+                "hazine": 3429.2,
+                "stok": -2619.1,
+                "yatirim": 0,
+                "skor": 810.2,
+                "israf": -28331.6
+              }
+            },
+            "anlamli": [
+              "agir_sanayi",
+              "enerji",
+              "ihracatci"
+            ],
+            "ilkUc": [
+              "agir_sanayi",
+              "enerji",
+              "ihracatci"
+            ],
+            "enIyi": "ihracatci",
+            "referans": null
+          },
+          {
+            "bolge": "yalin_zirve",
+            "tur": "maden_dag",
+            "kume": [
+              "yalin_zirve",
+              "yelken_limani"
+            ],
+            "pasifSkor": 26762,
+            "pasifToplamSkor": 63217.7,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -212244.6,
+              "agir_sanayi": -9952,
+              "elektronik": -209784.7,
+              "enerji": -14558.3,
+              "ihracatci": 51488.3,
+              "lojistik_yatirimi": -209784.7,
+              "askeri_hazirlik": 28365.2
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -64994.4,
+              "agir_sanayi": 82426.4,
+              "elektronik": -64994.4,
+              "enerji": 121955.1,
+              "ihracatci": 245424.4,
+              "lojistik_yatirimi": -64994.4,
+              "askeri_hazirlik": -202808.4
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -3867.9,
+                "stok": -208376.8,
+                "yatirim": 0,
+                "skor": -212244.6,
+                "israf": 418830.4
+              },
+              "agir_sanayi": {
+                "hazine": 135335.4,
+                "stok": -145287.3,
+                "yatirim": 0,
+                "skor": -9952,
+                "israf": -46236.3
+              },
+              "elektronik": {
+                "hazine": -1408,
+                "stok": -208376.8,
+                "yatirim": 0,
+                "skor": -209784.7,
+                "israf": 424832.3
+              },
+              "enerji": {
+                "hazine": 134570.2,
+                "stok": -180328.5,
+                "yatirim": 31200,
+                "skor": -14558.3,
+                "israf": 301395.9
+              },
+              "ihracatci": {
+                "hazine": 182915.6,
+                "stok": -131427.4,
+                "yatirim": 0,
+                "skor": 51488.3,
+                "israf": 425227.3
+              },
+              "lojistik_yatirimi": {
+                "hazine": -1408,
+                "stok": -208376.8,
+                "yatirim": 0,
+                "skor": -209784.7,
+                "israf": 424832.3
+              },
+              "askeri_hazirlik": {
+                "hazine": 4046.4,
+                "stok": 24318.9,
+                "yatirim": 0,
+                "skor": 28365.2,
+                "israf": -273301.4
+              }
+            },
+            "anlamli": [
+              "ihracatci",
+              "askeri_hazirlik"
+            ],
+            "ilkUc": [
+              "ihracatci",
+              "askeri_hazirlik"
+            ],
+            "enIyi": "ihracatci",
+            "referans": null
+          },
+          {
+            "bolge": "kum_burnu",
+            "tur": "petrol",
+            "kume": [
+              "kum_burnu",
+              "inci_limani"
+            ],
+            "pasifSkor": 34045.3,
+            "pasifToplamSkor": 422463.4,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -79708.1,
+              "agir_sanayi": -34143.5,
+              "elektronik": 57035,
+              "enerji": 1174192.6,
+              "ihracatci": 1188483.6,
+              "lojistik_yatirimi": 57035,
+              "askeri_hazirlik": -44482.4
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": 543853.5,
+              "agir_sanayi": 534696.8,
+              "elektronik": 538302.9,
+              "enerji": 1952275.7,
+              "ihracatci": 1987608.4,
+              "lojistik_yatirimi": 538302.9,
+              "askeri_hazirlik": 450782.3
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": 1457,
+                "stok": -81165.1,
+                "yatirim": 0,
+                "skor": -79708.1,
+                "israf": 761284.6
+              },
+              "agir_sanayi": {
+                "hazine": -3249.5,
+                "stok": -30894.1,
+                "yatirim": 0,
+                "skor": -34143.5,
+                "israf": 1331025.1
+              },
+              "elektronik": {
+                "hazine": 1461.8,
+                "stok": 55573.1,
+                "yatirim": 0,
+                "skor": 57035,
+                "israf": 815851.7
+              },
+              "enerji": {
+                "hazine": 930547.7,
+                "stok": 243644.9,
+                "yatirim": 0,
+                "skor": 1174192.6,
+                "israf": 1458447.8
+              },
+              "ihracatci": {
+                "hazine": 930546.3,
+                "stok": 257937.3,
+                "yatirim": 0,
+                "skor": 1188483.6,
+                "israf": 1458447.8
+              },
+              "lojistik_yatirimi": {
+                "hazine": 1461.8,
+                "stok": 55573.1,
+                "yatirim": 0,
+                "skor": 57035,
+                "israf": 815851.7
+              },
+              "askeri_hazirlik": {
+                "hazine": -5006.2,
+                "stok": -39476.2,
+                "yatirim": 0,
+                "skor": -44482.4,
+                "israf": 809678
+              }
+            },
+            "anlamli": [
+              "elektronik",
+              "enerji",
+              "ihracatci",
+              "lojistik_yatirimi"
+            ],
+            "ilkUc": [
+              "enerji",
+              "ihracatci"
+            ],
+            "enIyi": "ihracatci",
+            "referans": null
+          },
+          {
+            "bolge": "gunes_kumulu",
+            "tur": "maden_kiyi_col",
+            "kume": [
+              "gunes_kumulu",
+              "dogu_limani"
+            ],
+            "pasifSkor": 72642.4,
+            "pasifToplamSkor": 553892.3,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -92789.8,
+              "agir_sanayi": 437421.9,
+              "elektronik": 113887.2,
+              "enerji": 1313282.6,
+              "ihracatci": 1484714.5,
+              "lojistik_yatirimi": -60633.5,
+              "askeri_hazirlik": 221995.2
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": 563157.5,
+              "agir_sanayi": 353093.6,
+              "elektronik": 772089.5,
+              "enerji": 1628393.5,
+              "ihracatci": 1808864.5,
+              "lojistik_yatirimi": 563157.5,
+              "askeri_hazirlik": 247919.1
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": 4482.1,
+                "stok": -97271.9,
+                "yatirim": 0,
+                "skor": -92789.8,
+                "israf": 879865.5
+              },
+              "agir_sanayi": {
+                "hazine": 8168.9,
+                "stok": 429253,
+                "yatirim": 0,
+                "skor": 437421.9,
+                "israf": 58562.8
+              },
+              "elektronik": {
+                "hazine": 92600.5,
+                "stok": -19713.2,
+                "yatirim": 41000,
+                "skor": 113887.2,
+                "israf": 773982.5
+              },
+              "enerji": {
+                "hazine": 851174.2,
+                "stok": 462108.4,
+                "yatirim": 0,
+                "skor": 1313282.6,
+                "israf": 241722.3
+              },
+              "ihracatci": {
+                "hazine": 953683.2,
+                "stok": 531031.3,
+                "yatirim": 0,
+                "skor": 1484714.5,
+                "israf": 0
+              },
+              "lojistik_yatirimi": {
+                "hazine": 8168.9,
+                "stok": -68802.4,
+                "yatirim": 0,
+                "skor": -60633.5,
+                "israf": 436005.2
+              },
+              "askeri_hazirlik": {
+                "hazine": 8168.9,
+                "stok": 213826.3,
+                "yatirim": 0,
+                "skor": 221995.2,
+                "israf": 46977.1
+              }
+            },
+            "anlamli": [
+              "agir_sanayi",
+              "elektronik",
+              "enerji",
+              "ihracatci",
+              "askeri_hazirlik"
+            ],
+            "ilkUc": [
+              "agir_sanayi",
+              "enerji",
+              "ihracatci"
+            ],
+            "enIyi": "ihracatci",
+            "referans": null
+          },
+          {
+            "bolge": "inci_limani",
+            "tur": "liman",
+            "kume": [
+              "inci_limani"
+            ],
+            "pasifSkor": -57204.4,
+            "pasifToplamSkor": -342294.2,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": 361000.3,
+              "agir_sanayi": 152709.9,
+              "elektronik": 472105.2,
+              "enerji": 1464844.9,
+              "ihracatci": 1474137.5,
+              "lojistik_yatirimi": 472105.2,
+              "askeri_hazirlik": 158720.2
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": 1565675.9,
+              "agir_sanayi": 947329,
+              "elektronik": 1565675.9,
+              "enerji": 2437088.9,
+              "ihracatci": 2465435.1,
+              "lojistik_yatirimi": 1565675.9,
+              "askeri_hazirlik": 925460.6
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -2456.2,
+                "stok": 363456.5,
+                "yatirim": 0,
+                "skor": 361000.3,
+                "israf": 274976.4
+              },
+              "agir_sanayi": {
+                "hazine": -5760,
+                "stok": 158469.9,
+                "yatirim": 0,
+                "skor": 152709.9,
+                "israf": 852066.8
+              },
+              "elektronik": {
+                "hazine": -1217.1,
+                "stok": 473322.3,
+                "yatirim": 0,
+                "skor": 472105.2,
+                "israf": 296124.3
+              },
+              "enerji": {
+                "hazine": 835412.7,
+                "stok": 629432.2,
+                "yatirim": 0,
+                "skor": 1464844.9,
+                "israf": 0
+              },
+              "ihracatci": {
+                "hazine": 832170.4,
+                "stok": 641967.1,
+                "yatirim": 0,
+                "skor": 1474137.5,
+                "israf": 0
+              },
+              "lojistik_yatirimi": {
+                "hazine": -1217.1,
+                "stok": 473322.3,
+                "yatirim": 0,
+                "skor": 472105.2,
+                "israf": 296124.3
+              },
+              "askeri_hazirlik": {
+                "hazine": -11960,
+                "stok": 170680.2,
+                "yatirim": 0,
+                "skor": 158720.2,
+                "israf": 710731.2
+              }
+            },
+            "anlamli": [
+              "gida_odakli",
+              "agir_sanayi",
+              "elektronik",
+              "enerji",
+              "ihracatci",
+              "lojistik_yatirimi",
+              "askeri_hazirlik"
+            ],
+            "ilkUc": [
+              "enerji",
+              "ihracatci"
+            ],
+            "enIyi": "enerji=ihracatci",
+            "referans": null
+          },
+          {
+            "bolge": "kum_gecidi",
+            "tur": "maden_dag",
+            "kume": [
+              "kum_gecidi",
+              "celik_limani"
+            ],
+            "pasifSkor": 121249.8,
+            "pasifToplamSkor": -84782.9,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -235465.8,
+              "agir_sanayi": -227272.2,
+              "elektronik": -183889.5,
+              "enerji": -227591.5,
+              "ihracatci": -230675,
+              "lojistik_yatirimi": -227591.2,
+              "askeri_hazirlik": -103607.6
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -53434,
+              "agir_sanayi": -67980.5,
+              "elektronik": 11708.8,
+              "enerji": -58908.6,
+              "ihracatci": -51155.2,
+              "lojistik_yatirimi": -48908.1,
+              "askeri_hazirlik": -44812.1
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -8226.7,
+                "stok": -227239.1,
+                "yatirim": 0,
+                "skor": -235465.8,
+                "israf": 328076.8
+              },
+              "agir_sanayi": {
+                "hazine": -5760,
+                "stok": -221512.2,
+                "yatirim": 0,
+                "skor": -227272.2,
+                "israf": 431318.3
+              },
+              "elektronik": {
+                "hazine": 621.9,
+                "stok": -184511.5,
+                "yatirim": 0,
+                "skor": -183889.5,
+                "israf": 310947.8
+              },
+              "enerji": {
+                "hazine": -5760,
+                "stok": -221831.5,
+                "yatirim": 0,
+                "skor": -227591.5,
+                "israf": 433397.4
+              },
+              "ihracatci": {
+                "hazine": -9326.6,
+                "stok": -221348.5,
+                "yatirim": 0,
+                "skor": -230675,
+                "israf": 431549.3
+              },
+              "lojistik_yatirimi": {
+                "hazine": -5760,
+                "stok": -221831.2,
+                "yatirim": 0,
+                "skor": -227591.2,
+                "israf": 432472
+              },
+              "askeri_hazirlik": {
+                "hazine": 2344.8,
+                "stok": -105952.4,
+                "yatirim": 0,
+                "skor": -103607.6,
+                "israf": 30903.9
+              }
+            },
+            "anlamli": [],
+            "ilkUc": [],
+            "enIyi": "hicbiri",
+            "referans": null
+          },
+          {
+            "bolge": "gundogumu_limani",
+            "tur": "liman",
+            "kume": [
+              "gundogumu_limani"
+            ],
+            "pasifSkor": -77403,
+            "pasifToplamSkor": -345090.2,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -21619.4,
+              "agir_sanayi": 0.1,
+              "elektronik": -27592.6,
+              "enerji": 21702.7,
+              "ihracatci": 19304.1,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": -28426.1
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -45055.6,
+              "agir_sanayi": -25000,
+              "elektronik": -23742.7,
+              "enerji": -532.4,
+              "ihracatci": 24620.6,
+              "lojistik_yatirimi": -15000,
+              "askeri_hazirlik": -101743.4
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -8157.9,
+                "stok": -13461.5,
+                "yatirim": 0,
+                "skor": -21619.4,
+                "israf": 0
+              },
+              "agir_sanayi": {
+                "hazine": 0,
+                "stok": 0.1,
+                "yatirim": 0,
+                "skor": 0.1,
+                "israf": 0
+              },
+              "elektronik": {
+                "hazine": -5760,
+                "stok": -21832.6,
+                "yatirim": 0,
+                "skor": -27592.6,
+                "israf": 0
+              },
+              "enerji": {
+                "hazine": 0,
+                "stok": 21702.7,
+                "yatirim": 0,
+                "skor": 21702.7,
+                "israf": 0
+              },
+              "ihracatci": {
+                "hazine": -2398.6,
+                "stok": 21702.7,
+                "yatirim": 0,
+                "skor": 19304.1,
+                "israf": 0
+              },
+              "lojistik_yatirimi": {
+                "hazine": 0,
+                "stok": 0,
+                "yatirim": 0,
+                "skor": 0,
+                "israf": 0
+              },
+              "askeri_hazirlik": {
+                "hazine": -3423.6,
+                "stok": -25002.4,
+                "yatirim": 0,
+                "skor": -28426.1,
+                "israf": 0
+              }
+            },
+            "anlamli": [
+              "enerji",
+              "ihracatci"
+            ],
+            "ilkUc": [
+              "enerji",
+              "ihracatci"
+            ],
+            "enIyi": "enerji=ihracatci",
+            "referans": null
+          },
+          {
+            "bolge": "bati_yamaci",
+            "tur": "maden_kiyi_col",
+            "kume": [
+              "bati_yamaci",
+              "celik_limani"
+            ],
+            "pasifSkor": -36096.9,
+            "pasifToplamSkor": -418821.3,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -136227.5,
+              "agir_sanayi": -121104,
+              "elektronik": 38673.9,
+              "enerji": -121427.4,
+              "ihracatci": 46521.3,
+              "lojistik_yatirimi": -121428.4,
+              "askeri_hazirlik": -67295.5
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -54515.4,
+              "agir_sanayi": -62089.3,
+              "elektronik": 103836.2,
+              "enerji": -52997,
+              "ihracatci": 101689,
+              "lojistik_yatirimi": -43002.2,
+              "askeri_hazirlik": -55316.1
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -25430.5,
+                "stok": -131596.9,
+                "yatirim": 20800,
+                "skor": -136227.5,
+                "israf": 211975.1
+              },
+              "agir_sanayi": {
+                "hazine": -5760,
+                "stok": -115344,
+                "yatirim": 0,
+                "skor": -121104,
+                "israf": 243076.2
+              },
+              "elektronik": {
+                "hazine": 54657.9,
+                "stok": -86983.9,
+                "yatirim": 71000,
+                "skor": 38673.9,
+                "israf": 0
+              },
+              "enerji": {
+                "hazine": -5760,
+                "stok": -115667.4,
+                "yatirim": 0,
+                "skor": -121427.4,
+                "israf": 243076.2
+              },
+              "ihracatci": {
+                "hazine": 101510.6,
+                "stok": -54989.4,
+                "yatirim": 0,
+                "skor": 46521.3,
+                "israf": 0
+              },
+              "lojistik_yatirimi": {
+                "hazine": -5760,
+                "stok": -115668.4,
+                "yatirim": 0,
+                "skor": -121428.4,
+                "israf": 211975.1
+              },
+              "askeri_hazirlik": {
+                "hazine": 781.6,
+                "stok": -68077.1,
+                "yatirim": 0,
+                "skor": -67295.5,
+                "israf": 15490.9
+              }
+            },
+            "anlamli": [
+              "elektronik",
+              "ihracatci"
+            ],
+            "ilkUc": [
+              "elektronik",
+              "ihracatci"
+            ],
+            "enIyi": "elektronik=ihracatci",
+            "referans": null
+          },
+          {
+            "bolge": "yesil_vadi",
+            "tur": "ova_tarim",
+            "kume": [
+              "yesil_vadi",
+              "celik_limani"
+            ],
+            "pasifSkor": -147201.2,
+            "pasifToplamSkor": 39280.3,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -15613.1,
+              "agir_sanayi": -8272.6,
+              "elektronik": 26872.2,
+              "enerji": -8209,
+              "ihracatci": -15177.7,
+              "lojistik_yatirimi": -8595.2,
+              "askeri_hazirlik": 143101.4
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": 317589.3,
+              "agir_sanayi": 243571.5,
+              "elektronik": 264976.2,
+              "enerji": 253037.1,
+              "ihracatci": 318932.8,
+              "lojistik_yatirimi": 262650.9,
+              "askeri_hazirlik": -132096.4
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -12878.9,
+                "stok": -2734.2,
+                "yatirim": 0,
+                "skor": -15613.1,
+                "israf": -257242.6
+              },
+              "agir_sanayi": {
+                "hazine": -5760,
+                "stok": -2512.6,
+                "yatirim": 0,
+                "skor": -8272.6,
+                "israf": -257242.8
+              },
+              "elektronik": {
+                "hazine": 5359.5,
+                "stok": 21512.7,
+                "yatirim": 0,
+                "skor": 26872.2,
+                "israf": -388340.6
+              },
+              "enerji": {
+                "hazine": -5375.1,
+                "stok": -2833.9,
+                "yatirim": 0,
+                "skor": -8209,
+                "israf": 596868.3
+              },
+              "ihracatci": {
+                "hazine": -12878.9,
+                "stok": -2298.7,
+                "yatirim": 0,
+                "skor": -15177.7,
+                "israf": -257242.4
+              },
+              "lojistik_yatirimi": {
+                "hazine": -5760,
+                "stok": -2835.2,
+                "yatirim": 0,
+                "skor": -8595.2,
+                "israf": -258105.9
+              },
+              "askeri_hazirlik": {
+                "hazine": 5359.5,
+                "stok": 137741.9,
+                "yatirim": 0,
+                "skor": 143101.4,
+                "israf": -659102
+              }
+            },
+            "anlamli": [
+              "elektronik",
+              "askeri_hazirlik"
+            ],
+            "ilkUc": [
+              "elektronik",
+              "askeri_hazirlik"
+            ],
+            "enIyi": "askeri_hazirlik",
+            "referans": null
+          },
+          {
+            "bolge": "ulu_dag",
+            "tur": "maden_dag",
+            "kume": [
+              "ulu_dag",
+              "gundogumu_limani"
+            ],
+            "pasifSkor": -89650.2,
+            "pasifToplamSkor": -241581,
+            "esik": 10000,
+            "ekDegerler": {
+              "gida_odakli": -124726.3,
+              "agir_sanayi": -84536.1,
+              "elektronik": -100873.8,
+              "enerji": -83633.1,
+              "ihracatci": -86645.5,
+              "lojistik_yatirimi": -105318.1,
+              "askeri_hazirlik": -140482.6
+            },
+            "ekDegerlerToplam": {
+              "gida_odakli": -61529.9,
+              "agir_sanayi": -77209,
+              "elektronik": -31403,
+              "enerji": -30724.7,
+              "ihracatci": -6669.5,
+              "lojistik_yatirimi": -44591.2,
+              "askeri_hazirlik": -101060.2
+            },
+            "bilesenler": {
+              "gida_odakli": {
+                "hazine": -16226.9,
+                "stok": -129299.4,
+                "yatirim": 20800,
+                "skor": -124726.3,
+                "israf": 252697.6
+              },
+              "agir_sanayi": {
+                "hazine": -5748.3,
+                "stok": -78787.8,
+                "yatirim": 0,
+                "skor": -84536.1,
+                "israf": 87741.8
+              },
+              "elektronik": {
+                "hazine": 4009.6,
+                "stok": -104883.4,
+                "yatirim": 0,
+                "skor": -100873.8,
+                "israf": -17771.7
+              },
+              "enerji": {
+                "hazine": -5760,
+                "stok": -77873.1,
+                "yatirim": 0,
+                "skor": -83633.1,
+                "israf": 410463
+              },
+              "ihracatci": {
+                "hazine": -8809.7,
+                "stok": -77835.8,
+                "yatirim": 0,
+                "skor": -86645.5,
+                "israf": 409354.8
+              },
+              "lojistik_yatirimi": {
+                "hazine": -5760,
+                "stok": -99558.1,
+                "yatirim": 0,
+                "skor": -105318.1,
+                "israf": 409355
+              },
+              "askeri_hazirlik": {
+                "hazine": 4009.6,
+                "stok": -144492.2,
+                "yatirim": 0,
+                "skor": -140482.6,
+                "israf": -39197.3
+              }
+            },
+            "anlamli": [],
+            "ilkUc": [],
+            "enIyi": "hicbiri",
+            "referans": null
+          }
+        ]
+      },
+      "parametreler": {
+        "bolgeSayisi": 16,
+        "tumBolgeSayisi": 50,
+        "ornekleme": "devlet basina esit; devlet icinde ture gore siralanip esit aralikli, devlete gore kaydirilmis konumlar",
+        "gun": 7,
+        "pencereAdi": "4-7. gün",
+        "skorPenceresi": "birincil 4-7. gun akisi (t=3. gun sonu..7. gun sonu); ikincil 7 gunluk toplam",
+        "onayarSayisi": 7,
+        "onayarlar": [
+          "gida_odakli",
+          "agir_sanayi",
+          "elektronik",
+          "enerji",
+          "ihracatci",
+          "lojistik_yatirimi",
+          "askeri_hazirlik"
+        ],
+        "referansOnayar": "yok",
+        "pasifReferans": "evet (her bolge/tohum icin ayri kosu; onayar uygulamayan odak oyuncu)",
+        "uygulamaAraligiSaat": 24,
+        "odakKurulumu": "bolge+liman",
+        "odakKumeleri": "ak_ova+yelken_limani,kuzey_burun+kopuk_limani,askan_kenti+yelken_limani,sis_tepeleri+kopuk_limani,kor_ocak+gumus_limani,sisli_liman,tuz_koyu+gumus_limani,yalin_zirve+yelken_limani,kum_burnu+inci_limani,gunes_kumulu+dogu_limani,inci_limani,kum_gecidi+celik_limani,gundogumu_limani,bati_yamaci+celik_limani,yesil_vadi+celik_limani,ulu_dag+gundogumu_limani",
+        "dunya": "rekabetli: her devlet bir arka plan botu (sanayici, tuccar, lojistikci, militarist; devlet sirasi tohumla doner), odak bolge(ler) devletlerinden cikarilip 'odak' oyuncuya verilir",
+        "skor": "eklenen deger = onayar skoru - pasif skoru; skor = Δhazine + Δstok (taban fiyat) + yatirim (baslatilan tesis insaati ve kenar gelistirme bedeli, maliyet bedeliyle, amortismansiz)",
+        "anlamliFark": "θ = max(10000 para, 0.03 × |pasif skoru|); esit grup en iyi uyeden θ icinde; pasife esit (ek < θ) ilk uce girmez",
+        "sira": "yalniz anlamli onayarlar; esit gruplar konum paylasir (ortalama sira); ilk uc = ortalama sira <= 3",
+        "hizli": false,
+        "tam": false
+      },
+      "sureMs": 358838
+    }
+  ]
+}

@@ -88,3 +88,33 @@ Sonuç: bölgeleri şu an strateji değil rezerv ayırıyor. Bu, PDF'nin ana hed
 5. **Ölçüm gücü:** H2, H3 ve H6 için 10 koşul; H3'te eşli gürültü tabanı zaten var.
 
 **Kanıt sınırı (PDF):** simülasyon dengeyi ölçer, eğlenceyi kanıtlamaz. H4 (lojistik okunurluğu) Aşama 3'te insan testiyle ölçülecek. Bunun ön izlemesi `pnpm izle` ile üretilen inceleme sayfasıdır.
+
+## 5. Ek: H1 ölçüm düzeneği v0.2 (oyun kodu v0.1, tohum 1)
+
+[07](07-tasarim-onerileri.md)'deki Ö1 uygulandı. Oyun kuralları değişmedi, yalnızca ölçüm düzeneği değişti:
+- "Hiçbir şey yapmama" referansı eklendi; skor artık eklenen değer.
+- Anlamlı fark eşiği var: pasif skorun %3'ü ya da 10 bin para.
+- Odak, bölgeye en yakın liman eklenerek kuruluyor.
+- Tüm önayarlar ortak ham çıkarım tabanıyla başlıyor.
+- "ihracatçı" yalnızca ticaret teması; hiçbir önayar diğerinin üst kümesi değil.
+- Arka planda bir militarist bot oynuyor.
+- Skor 4–7. gün penceresine göre hesaplanıyor.
+
+Ham rapor: [olcum/v0.2-duzenek-H1-t1.md](olcum/v0.2-duzenek-H1-t1.md).
+
+| Gösterge | v0.1 düzeneği | v0.2 düzeneği |
+|---|---|---|
+| En yüksek (anlamlı) ilk-üç oranı | %87,5 (ihracatçı) | **%68,8 (ihracatçı) → geçti, sınırda** |
+| Pencereye duyarlılık | — | %62,5–75 (7 günlük toplamla %75 → kaldı) |
+| Normalize entropi (hedef ≥ 0,75) | 0,53 | 0,68 |
+| Bölge türü başına farklı en iyi önayar | 2 | 5 |
+| En iyi önayarın ortalama regret'i (hedef ≥ %10) | — | %20,9 |
+
+Yorum:
+- Artefaktların büyük kısmı temizlendi; "elektronik" önayarının tek seferlik stok dönüşümü hilesi de ortadan kalktı.
+- Kalan baskınlık gerçek bir tasarım sinyali. Ham madde ihracatı, işlemeye göre fazla kolay değer üretiyor.
+- İki sınırlama da hâlâ geçerli:
+  - Depo tavanı 3. günde doluyor, bu yüzden 4–7. gün penceresi ihracat yeteneğini ödüllendiriyor.
+  - Militarist bot 7 günden önce savaş başlatmıyor.
+
+Karar sağlam değil; v0.2 oyun değişiklikleri (Ö2 + Ö3) sonrası en az 3 tohumla yeniden ölçülecek.

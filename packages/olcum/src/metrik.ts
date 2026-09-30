@@ -70,6 +70,16 @@ export function stokDegeri(sim: Simulasyon, bolgeler?: BolgeSecici): number {
   return t;
 }
 
+/** Bölgeler kümesinin kümülatif israf değeri (para, taban fiyat): depo taşması + bozulma. */
+export function israfDegeri(sim: Simulasyon, bolgeler?: BolgeSecici): number {
+  let t = 0;
+  for (const i of indeksler(sim, bolgeler)) {
+    const b = sim.dunya.bolgeler[i] as BolgeDurumu;
+    for (let m = 0; m < b.israf.length; m++) t += ((b.israf[m] as number) / MILI) * ((sim.ic.mallar[m]?.tabanFiyat ?? 0) / MILI);
+  }
+  return t;
+}
+
 /** Oyuncunun hazinesi (para). */
 export function hazinePara(sim: Simulasyon, oyuncu: OyuncuId): number {
   return anlikHazine(sim.dunya, oyuncu) / MILI;

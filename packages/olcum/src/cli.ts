@@ -1,5 +1,5 @@
 /**
- * Komut satırı: pnpm olcum --hip H1,H2,H3,H5,H6,H7 --tohum 1-10 --cikti raporlar/ [--hizli] [--tam] [--bolge 16] [--ad v0.1] [--karsilastir onceki.json]
+ * Komut satırı: pnpm olcum --hip H1,H2,H3,H5,H6,H7 --tohum 1-10 --cikti raporlar/ [--hizli] [--tam] [--bolge 16] [--odak bolge_liman|bolge] [--anlamli 0.03] [--pencere-bas 3] [--h1-gun 7] [--ad v0.2] [--karsilastir onceki.json]
  * Varsayılan: tüm hipotezler, tohum 1-3, çıktı "raporlar". Dosya adları deterministiktir (tarih yok):
  * olcum-<hipotezler>-t<tohum aralığı>[-hizli][-<ad>].json / .md
  */
@@ -20,6 +20,14 @@ interface Arguman {
   tam: boolean;
   /** H1 bölge sayısı (devlet başına eşit örnek). */
   bolge: number | undefined;
+  /** H1 odak kurulumu (vars. bolge_liman). */
+  odak: "bolge" | "bolge_liman" | undefined;
+  /** H1 anlamlı fark oranı (vars. 0.03). */
+  anlamli: number | undefined;
+  /** H1 birincil pencere başlangıç günü (vars. 3). */
+  pencereBas: number | undefined;
+  /** H1 koşu süresi, gün (vars. 7). */
+  h1Gun: number | undefined;
   /** Dosya adı soneki ve rapor "Sürüm/etiket" satırı (ör. v0.1). */
   ad: string | undefined;
   /** Önceki ölçüm JSON dosyası (özet tabloda yan yana gösterilir). */
@@ -32,8 +40,29 @@ function bolgeSayisiAyristir(v: string): number {
   return Number(v);
 }
 
+function odakAyristir(v: string): "bolge" | "bolge_liman" {
+  if (v !== "bolge" && v !== "bolge_liman") throw new Error(`--odak 'bolge' veya 'bolge_liman' olmali: ${v}`);
+  return v;
+}
+
+function oranAyristir(v: string): number {
+  const x = Number(v);
+  if (!Number.isFinite(x) || x < 0 || x > 1) throw new Error(`--anlamli 0 ile 1 arasinda bir oran olmali: ${v}`);
+  return x;
+}
+
+function gunAyristir(v: string): number {
+  if (!/^\d+$/.test(v) || Number(v) < 2) throw new Error(`--h1-gun en az 2 olan tamsayi olmali: ${v}`);
+  return Number(v);
+}
+
+function pencereAyristir(v: string): number {
+  if (!/^\d+$/.test(v)) throw new Error(`--pencere-bas negatif olmayan tamsayi olmali: ${v}`);
+  return Number(v);
+}
+
 export function argumanAyristir(argv: readonly string[]): Arguman {
-  const a: Arguman = { hip: "H1,H2,H3,H5,H6,H7", tohum: "1-3", cikti: "raporlar", hizli: false, tam: false, bolge: undefined, ad: undefined, karsilastir: undefined, yardim: false };
+  const a: Arguman = { hip: "H1,H2,H3,H5,H6,H7", tohum: "1-3", cikti: "raporlar", hizli: false, tam: false, bolge: undefined, odak: undefined, anlamli: undefined, pencereBas: undefined, h1Gun: undefined, ad: undefined, karsilastir: undefined, yardim: false };
   for (let i = 0; i < argv.length; i++) {
     const x = argv[i] as string;
     const deger = (): string => {
@@ -47,6 +76,10 @@ export function argumanAyristir(argv: readonly string[]): Arguman {
     else if (x === "--hizli") a.hizli = true;
     else if (x === "--tam") a.tam = true;
     else if (x === "--bolge") a.bolge = bolgeSayisiAyristir(deger());
+    else if (x === "--odak") a.odak = odakAyristir(deger());
+    else if (x === "--anlamli") a.anlamli = oranAyristir(deger());
+    else if (x === "--pencere-bas") a.pencereBas = pencereAyristir(deger());
+    else if (x === "--h1-gun") a.h1Gun = gunAyristir(deger());
     else if (x === "--ad") a.ad = deger();
     else if (x === "--karsilastir") a.karsilastir = deger();
     else if (x === "--yardim" || x === "-h") a.yardim = true;
@@ -54,6 +87,10 @@ export function argumanAyristir(argv: readonly string[]): Arguman {
     else if (x.startsWith("--tohum=")) a.tohum = x.slice(8);
     else if (x.startsWith("--cikti=")) a.cikti = x.slice(8);
     else if (x.startsWith("--bolge=")) a.bolge = bolgeSayisiAyristir(x.slice(8));
+    else if (x.startsWith("--odak=")) a.odak = odakAyristir(x.slice(7));
+    else if (x.startsWith("--anlamli=")) a.anlamli = oranAyristir(x.slice(10));
+    else if (x.startsWith("--pencere-bas=")) a.pencereBas = pencereAyristir(x.slice(14));
+    else if (x.startsWith("--h1-gun=")) a.h1Gun = gunAyristir(x.slice(9));
     else if (x.startsWith("--ad=")) a.ad = x.slice(5);
     else if (x.startsWith("--karsilastir=")) a.karsilastir = x.slice(14);
     else throw new Error(`bilinmeyen secenek: ${x}`);
@@ -62,13 +99,17 @@ export function argumanAyristir(argv: readonly string[]): Arguman {
   return a;
 }
 
-const YARDIM = `Kullanim: pnpm olcum [--hip H1,H2,H3,H5,H6,H7] [--tohum 1-3] [--cikti raporlar/] [--hizli] [--tam] [--bolge 16] [--ad v0.1] [--karsilastir onceki.json]
+const YARDIM = `Kullanim: pnpm olcum [--hip H1,H2,H3,H5,H6,H7] [--tohum 1-3] [--cikti raporlar/] [--hizli] [--tam] [--bolge 16] [--odak bolge_liman|bolge] [--anlamli 0.03] [--pencere-bas 3] [--h1-gun 7] [--ad v0.2] [--karsilastir onceki.json]
   --hip     Calistirilacak hipotezler (vars. tumu)
   --tohum   Tohum araligi veya listesi: 1-10, 1,2,5, 1-3,7 (vars. 1-3)
   --cikti   Rapor klasoru (vars. raporlar)
   --hizli   Kucultulmus boyutlar (H1: 8 bolge, H2: 12 gun, ...)
   --tam     Tam boyut (H1: tum bolgeler; varsayilan 16 bolge ornegi; yavas)
   --bolge   H1 bolge sayisi (devlet basina esit ornek; --tam'i gecersiz kilmaz)
+  --odak    H1 odak kurulumu: bolge_liman (vars.; odak bolge + en yakin liman) veya bolge (yalniz odak bolge)
+  --anlamli H1 anlamli fark orani: pasif referansin mutlak net degerinin orani (vars. 0.03; taban 10 bin para)
+  --pencere-bas  H1 birincil skor penceresinin baslangic gunu (vars. 3 = 4-7. gun; 0 = 7 gunluk toplam)
+  --h1-gun  H1 kosu suresi, gun (vars. 7; arka plandaki militarist ilk savasi ~7. gunde ilan eder, askeri etki icin 14 denenebilir)
   --ad      Dosya adina sonek ve rapora "Surum/etiket" satiri (ornek: --ad v0.1 -> ...-t1-3-v0.1.md)
   --karsilastir  Onceki olcumun JSON dosyasi; ozet tabloda onceki olcum ve sonuc yan yana gosterilir`;
 
@@ -102,6 +143,10 @@ export function ana(argv: readonly string[]): void {
     hizli: arg.hizli,
     tam: arg.tam,
     ...(arg.bolge !== undefined ? { bolgeSayisi: arg.bolge } : {}),
+    ...(arg.odak !== undefined ? { odak: arg.odak } : {}),
+    ...(arg.anlamli !== undefined ? { anlamliOran: arg.anlamli } : {}),
+    ...(arg.pencereBas !== undefined ? { pencereBasGun: arg.pencereBas } : {}),
+    ...(arg.h1Gun !== undefined ? { h1Gun: arg.h1Gun } : {}),
     ilerleme: (m) => console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] ${m}`),
   });
   const sureMs = Date.now() - basla;
@@ -113,7 +158,7 @@ export function ana(argv: readonly string[]): void {
     tam: arg.tam,
     etiket: arg.ad,
     sureMs,
-    secenekler: { hip, tohum: arg.tohum, hizli: arg.hizli, tam: arg.tam, bolge: arg.bolge ?? null, ad: arg.ad ?? null },
+    secenekler: { hip, tohum: arg.tohum, hizli: arg.hizli, tam: arg.tam, bolge: arg.bolge ?? null, odak: arg.odak ?? "bolge_liman", anlamli: arg.anlamli ?? null, pencereBas: arg.pencereBas ?? 3, h1Gun: arg.h1Gun ?? 7, ad: arg.ad ?? null },
   };
   const meta = { ...jsonMeta, karsilastirma };
   writeFileSync(join(arg.cikti, `${ad}.json`), JSON.stringify({ surum: 1, ...jsonMeta, hipotezler: sonuclar }, null, 2) + "\n", "utf8");

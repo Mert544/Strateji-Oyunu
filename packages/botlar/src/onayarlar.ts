@@ -24,7 +24,7 @@ export interface Onayar {
   uygula(sim: Simulasyon, oyuncu: OyuncuId): Komut[];
 }
 
-interface OnayarTanimi {
+export interface OnayarTanimi {
   ad: string;
   aciklama: string;
   /** İzin verilen tesis türleri (boş/undefined = hiçbiri). */
@@ -41,8 +41,16 @@ interface OnayarTanimi {
   askeri?: { oran: number };
   /** Belirtilmişse sivil adayların tümü (dengeli). */
   hepsi?: boolean;
+  /**
+   * H1 v0.2 ortak yerel-ham tabanı: bölgenin rezerv/etiket kaynaklı ham çıkarım tesisleri (çiftlik, maden, kuyu) TÜM
+   * önayarlarda ortak aday olur; `turler` yalnızca temaya özgü EK türleri taşır.
+   */
+  taban?: boolean;
   n?: number;
 }
+
+/** Ham çıkarım tesis türleri (ortak yerel-ham tabanı; rezerv türü başına bir tür). */
+export const HAM_CIKARIM_TURLERI: readonly string[] = ["ciftlik", "cevher_madeni", "komur_ocagi", "bakir_madeni", "silis_ocagi", "petrol_kuyusu"];
 
 function onayarOlustur(t: OnayarTanimi): Onayar {
   return {
@@ -53,7 +61,7 @@ function onayarOlustur(t: OnayarTanimi): Onayar {
       const b = new Bakis(sim, oyuncu);
       if (b.bolgeler.length === 0) return [];
       let adaylar: Aday[] = [];
-      const turler = new Set(t.turler ?? []);
+      const turler = new Set([...(t.turler ?? []), ...(t.taban ? HAM_CIKARIM_TURLERI : [])]);
       const yontemler = new Set(t.yontemler ?? []);
       const teknolojiler = new Set(t.teknolojiler ?? []);
       const mallar = new Set(t.ticaretMal ?? []);
@@ -160,4 +168,118 @@ export function onayarBul(ad: string): Onayar {
   const o = ONAYARLAR.find((x) => x.ad === ad);
   if (!o) throw new Error(`bilinmeyen onayar: ${ad}`);
   return o;
+}
+
+// ---------------------------------------------------------------------------
+// H1 v0.2 önayar kümesi
+// ---------------------------------------------------------------------------
+
+/** Tüm malların ticaret listesi (ticaret teması). */
+const TUM_TICARET_MALLARI = ["tahil", "gida", "cevher", "komur", "celik", "bakir", "silis", "parca", "elektronik", "petrol", "yakit"];
+
+/**
+ * H1 v0.2 önayar tanımları (docs/07 Ö1b): ORTAK YEREL-HAM TABANI + tema.
+ *  - Her önayar, odak kümesinin rezerv/etiket kaynaklı ham çıkarım tesislerini ortak aday olarak içerir (`taban`), böylece
+ *    "ham çıkarımın tüm türlerini kuran" bir üst küme oluşmaz; temalar yalnızca EK karar (işleme zinciri, yöntem,
+ *    araştırma, kenar, askeri) getirir.
+ *  - `ihracatci` artık "tüm ham türler" değil TİCARET TEMASI: tabana ek olarak limandan düşük eşikle her malı ihraç eder
+ *    ve vergiyi ayarlar; işleme tesisi, yöntem, araştırma, kenar ve askeri karar getirmez.
+ *  - Hiçbir önayarın yetenek kümesi (tesis türü + yöntem + teknoloji + ihracat malı + bayraklar) bir diğerininkinin üst
+ *    kümesi değildir (test: botlar.test.ts).
+ * v0.1 kümesi (`ONAYARLAR`) değişmeden kalır; H1 dışındaki kullanımlar onu kullanır.
+ */
+export const H1_ONAYAR_TANIMLARI: readonly OnayarTanimi[] = [
+  {
+    ad: "gida_odakli",
+    aciklama: "Ortak ham tabanı + gıda fabrikası, mekanize tarım, tahıl/gıda ihracatı, vergi ayarı.",
+    taban: true,
+    turler: ["gida_fabrikasi"],
+    yontemler: ["mekanize_tarim"],
+    teknolojiler: ["mekanize_tarim"],
+    ticaretMal: ["tahil", "gida"],
+    vergi: true,
+    n: 8,
+  },
+  {
+    ad: "agir_sanayi",
+    aciklama: "Ortak ham tabanı + çelik/parça zinciri, derin madencilik, elektrik ark, çelik/cevher ihracatı.",
+    taban: true,
+    turler: ["celikhane", "parca_fabrikasi"],
+    yontemler: ["derin_cevher", "derin_komur", "elektrik_ark"],
+    teknolojiler: ["derin_madencilik", "elektrik_ark_ocagi"],
+    ticaretMal: ["cevher", "komur", "celik", "parca"],
+    n: 8,
+  },
+  {
+    ad: "elektronik",
+    aciklama: "Ortak ham tabanı + parça/elektronik zinciri, çelikhane, otomasyon, elektronik ihracatı.",
+    taban: true,
+    turler: ["parca_fabrikasi", "elektronik_fabrikasi", "celikhane"],
+    yontemler: ["otomatik_hat"],
+    teknolojiler: ["mekanize_tarim", "otomasyon"],
+    ticaretMal: ["elektronik", "parca", "bakir", "silis"],
+    n: 8,
+  },
+  {
+    ad: "enerji",
+    aciklama: "Ortak ham tabanı + rafineri (petrol-yakıt), derin kömür, yakıt/petrol ihracatı.",
+    taban: true,
+    turler: ["rafineri"],
+    yontemler: ["derin_komur"],
+    teknolojiler: ["derin_madencilik"],
+    ticaretMal: ["petrol", "yakit", "komur"],
+    n: 8,
+  },
+  {
+    ad: "ihracatci",
+    aciklama: "TİCARET TEMASI: ortak ham tabanı + limandan düşük eşikle her malı ihraç et, vergi ayarı (işleme/yöntem/araştırma/kenar/askeri yok).",
+    taban: true,
+    ticaretMal: TUM_TICARET_MALLARI,
+    ihracatEsigi: 0.03,
+    vergi: true,
+    n: 8,
+  },
+  {
+    ad: "lojistik_yatirimi",
+    aciklama: "Ortak ham tabanı + kenar kapasite geliştirme, parça fabrikası, otomasyon ve konteyner limanı araştırması.",
+    taban: true,
+    turler: ["parca_fabrikasi"],
+    yontemler: ["otomatik_hat", "mekanize_tarim"],
+    teknolojiler: ["mekanize_tarim", "otomasyon", "konteyner_limani"],
+    kenar: true,
+    n: 8,
+  },
+  {
+    ad: "askeri_hazirlik",
+    aciklama: "Ortak ham tabanı + çelik/rafineri desteği, mühimmat ve birlik üretimi, askeri rezerv, savunma duruşu.",
+    taban: true,
+    turler: ["celikhane", "rafineri"],
+    teknolojiler: ["derin_madencilik", "elektrik_ark_ocagi"],
+    askeri: { oran: 0.2 },
+    n: 8,
+  },
+  {
+    ad: "dengeli",
+    aciklama: "Tüm sivil adaylar içinden tahmini faydası en yüksekler (genel amaçlı; H1'de yalnızca referans).",
+    hepsi: true,
+  },
+];
+
+/** H1 v0.2 önayar kümesi (sabit önayarlar + `dengeli` referansı). */
+export const H1_ONAYARLARI: readonly Onayar[] = H1_ONAYAR_TANIMLARI.map(onayarOlustur);
+
+/** Pasif referans: hiçbir şey yapmaz (eklenen değer = önayar − pasif). */
+export const PASIF_ONAYAR: Onayar = { ad: "pasif", aciklama: "Hiçbir şey yapma (referans).", uygula: () => [] };
+
+/** Bir önayar tanımının yetenek kümesi (tesis türü, yöntem, teknoloji, ihracat malı, bayraklar); üst-küme kontrolü için. */
+export function onayarYetenekleri(t: OnayarTanimi): Set<string> {
+  const k = new Set<string>();
+  for (const x of t.turler ?? []) k.add(`tur:${x}`);
+  if (t.taban) for (const x of HAM_CIKARIM_TURLERI) k.add(`tur:${x}`);
+  for (const x of t.yontemler ?? []) k.add(`yontem:${x}`);
+  for (const x of t.teknolojiler ?? []) k.add(`teknoloji:${x}`);
+  for (const x of t.ticaretMal ?? []) k.add(`ihracat:${x}`);
+  for (const f of ["vergi", "kenar", "hepsi"] as const) if (t[f]) k.add(`bayrak:${f}`);
+  if (t.askeri) k.add("bayrak:askeri");
+  return k;
 }
