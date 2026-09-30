@@ -1,0 +1,3856 @@
+{
+  "surum": 1,
+  "tohumlar": [
+    1,
+    2,
+    3
+  ],
+  "hizli": false,
+  "sureMs": 366907,
+  "secenekler": {
+    "hip": [
+      "H1",
+      "H2",
+      "H3",
+      "H5",
+      "H6",
+      "H7"
+    ],
+    "tohum": "1-3",
+    "hizli": false
+  },
+  "hipotezler": [
+    {
+      "kimlik": "H1",
+      "hipotez": "Bölgeler gerçekten farklı: aynı politika bölgelerin %70'inden fazlasında ilk üçte değil",
+      "olcum": {
+        "ad": "En yüksek önayarın ilk-üç bölge oranı",
+        "deger": 0.96,
+        "birim": "oran",
+        "aciklama": "Her önayarın (t=0 ve 24 saatte bir uygulanan, 7 gün) bölge başına skor sıralamasında ilk üçte olduğu bölge oranı; en yükseği."
+      },
+      "esik": {
+        "aciklama": "En yüksek oran > %70 ise vazgeç (kaldı)",
+        "deger": 0.7
+      },
+      "verdict": "kaldi",
+      "tohumBasariOrani": 0,
+      "tohumBasina": [
+        {
+          "tohum": 1,
+          "olcum": 0.96,
+          "verdict": "kaldi",
+          "durumOzeti": "c8eb3f370791a562",
+          "ozet": {
+            "enYuksekOnayar": "dengeli",
+            "top3Orani": {
+              "gida_odakli": 0.24,
+              "agir_sanayi": 0.08,
+              "elektronik": 0.34,
+              "enerji": 0.14,
+              "ihracatci": 0.92,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.32,
+              "dengeli": 0.96
+            },
+            "top3OraniDengeliHaric": {
+              "gida_odakli": 0.24,
+              "agir_sanayi": 0.18,
+              "elektronik": 0.56,
+              "enerji": 0.14,
+              "ihracatci": 1,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.72,
+              "dengeli": 0.96
+            },
+            "enYuksekDengeliHaric": 1,
+            "enIyiOnayarDagilimi": {
+              "gida_odakli": 3,
+              "agir_sanayi": 0,
+              "elektronik": 1,
+              "enerji": 0,
+              "ihracatci": 11,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 3,
+              "dengeli": 32
+            },
+            "entropiBit": 1.4926,
+            "entropiNormalize": 0.4975,
+            "komut": 1700,
+            "basarisizKomut": 0
+          }
+        },
+        {
+          "tohum": 2,
+          "olcum": 0.96,
+          "verdict": "kaldi",
+          "durumOzeti": "25cd64e36bee7cd4",
+          "ozet": {
+            "enYuksekOnayar": "dengeli",
+            "top3Orani": {
+              "gida_odakli": 0.24,
+              "agir_sanayi": 0.08,
+              "elektronik": 0.34,
+              "enerji": 0.14,
+              "ihracatci": 0.92,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.32,
+              "dengeli": 0.96
+            },
+            "top3OraniDengeliHaric": {
+              "gida_odakli": 0.24,
+              "agir_sanayi": 0.18,
+              "elektronik": 0.56,
+              "enerji": 0.14,
+              "ihracatci": 1,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.72,
+              "dengeli": 0.96
+            },
+            "enYuksekDengeliHaric": 1,
+            "enIyiOnayarDagilimi": {
+              "gida_odakli": 3,
+              "agir_sanayi": 0,
+              "elektronik": 1,
+              "enerji": 0,
+              "ihracatci": 11,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 3,
+              "dengeli": 32
+            },
+            "entropiBit": 1.4926,
+            "entropiNormalize": 0.4975,
+            "komut": 1700,
+            "basarisizKomut": 0
+          }
+        },
+        {
+          "tohum": 3,
+          "olcum": 0.96,
+          "verdict": "kaldi",
+          "durumOzeti": "4bcae8ecacaf0c44",
+          "ozet": {
+            "enYuksekOnayar": "dengeli",
+            "top3Orani": {
+              "gida_odakli": 0.24,
+              "agir_sanayi": 0.08,
+              "elektronik": 0.34,
+              "enerji": 0.14,
+              "ihracatci": 0.92,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.32,
+              "dengeli": 0.96
+            },
+            "top3OraniDengeliHaric": {
+              "gida_odakli": 0.24,
+              "agir_sanayi": 0.18,
+              "elektronik": 0.56,
+              "enerji": 0.14,
+              "ihracatci": 1,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 0.72,
+              "dengeli": 0.96
+            },
+            "enYuksekDengeliHaric": 1,
+            "enIyiOnayarDagilimi": {
+              "gida_odakli": 3,
+              "agir_sanayi": 0,
+              "elektronik": 1,
+              "enerji": 0,
+              "ihracatci": 11,
+              "lojistik_yatirimi": 0,
+              "askeri_hazirlik": 3,
+              "dengeli": 32
+            },
+            "entropiBit": 1.4926,
+            "entropiNormalize": 0.4975,
+            "komut": 1700,
+            "basarisizKomut": 0
+          }
+        }
+      ],
+      "ayrinti": {
+        "onayarlar": [
+          {
+            "ad": "gida_odakli",
+            "aciklama": "Tahıl-gıda zinciri, mekanize tarım, gıda ihracatı, vergi ayarı."
+          },
+          {
+            "ad": "agir_sanayi",
+            "aciklama": "Cevher-kömür-çelik-parça zinciri, derin madencilik, çelik/cevher ihracatı."
+          },
+          {
+            "ad": "elektronik",
+            "aciklama": "Bakır-silis-parça-elektronik zinciri, otomasyon, elektronik ihracatı."
+          },
+          {
+            "ad": "enerji",
+            "aciklama": "Petrol-rafineri-yakıt, kömür; derin madencilik; yakıt/petrol ihracatı."
+          },
+          {
+            "ad": "ihracatci",
+            "aciklama": "Ham madde çıkarımı ağırlıklı; limandan düşük eşikle her fazlayı ihraç et."
+          },
+          {
+            "ad": "lojistik_yatirimi",
+            "aciklama": "Kenar kapasite geliştirme, parça fabrikası, otomasyon ve konteyner limanı araştırması."
+          },
+          {
+            "ad": "askeri_hazirlik",
+            "aciklama": "Mühimmat fabrikası, çelik/rafineri desteği, birlik üretimi, askeri rezerv, savunma duruşu."
+          },
+          {
+            "ad": "dengeli",
+            "aciklama": "Tüm sivil adaylar içinden tahmini faydası en yüksekler (genel amaçlı)."
+          }
+        ],
+        "tohumOrtalamaTop3Orani": {
+          "gida_odakli": 0.24,
+          "agir_sanayi": 0.08,
+          "elektronik": 0.34,
+          "enerji": 0.14,
+          "ihracatci": 0.92,
+          "lojistik_yatirimi": 0,
+          "askeri_hazirlik": 0.32,
+          "dengeli": 0.96
+        },
+        "duyarlilikDengeliHaric": {
+          "aciklama": "Bolgeye gore uyarlanan 'dengeli' onayar siralamadan cikarilinca (yalniz sabit temali onayarlar) en yuksek ilk-uc orani",
+          "tohumlar": [
+            {
+              "tohum": 1,
+              "enYuksek": 1
+            },
+            {
+              "tohum": 2,
+              "enYuksek": 1
+            },
+            {
+              "tohum": 3,
+              "enYuksek": 1
+            }
+          ]
+        },
+        "bolgeSayisi": 50,
+        "bolgeTablosuIlkTohum": [
+          {
+            "bolge": "ak_ova",
+            "skorlar": {
+              "gida_odakli": 3756500,
+              "agir_sanayi": 982765.6,
+              "elektronik": 1032753.5,
+              "enerji": 983443.4,
+              "ihracatci": 1964196.5,
+              "lojistik_yatirimi": 957765.6,
+              "askeri_hazirlik": 1033753.9,
+              "dengeli": 3731500
+            },
+            "enIyi": "gida_odakli"
+          },
+          {
+            "bolge": "bereket_dizi",
+            "skorlar": {
+              "gida_odakli": 3836341.6,
+              "agir_sanayi": 2861610.5,
+              "elektronik": 2911594.7,
+              "enerji": 2862605.7,
+              "ihracatci": 3851341.6,
+              "lojistik_yatirimi": 2836610.5,
+              "askeri_hazirlik": 2900607,
+              "dengeli": 3866291.7
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "kuzey_burun",
+            "skorlar": {
+              "gida_odakli": 442261.9,
+              "agir_sanayi": 846111.2,
+              "elektronik": 479141,
+              "enerji": 846111.2,
+              "ihracatci": 873217.7,
+              "lojistik_yatirimi": 404152.3,
+              "askeri_hazirlik": 889100.7,
+              "dengeli": 898204.4
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "yelken_limani",
+            "skorlar": {
+              "gida_odakli": 446562.5,
+              "agir_sanayi": 1044943.9,
+              "elektronik": 485915.2,
+              "enerji": 1045939.7,
+              "ihracatci": 1069488.9,
+              "lojistik_yatirimi": 410927.4,
+              "askeri_hazirlik": 891022.3,
+              "dengeli": 1035567.4
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "askan_kenti",
+            "skorlar": {
+              "gida_odakli": 3852735.8,
+              "agir_sanayi": 2869121.2,
+              "elektronik": 2899105.6,
+              "enerji": 2870114,
+              "ihracatci": 3867735.8,
+              "lojistik_yatirimi": 2844121.2,
+              "askeri_hazirlik": 2907357,
+              "dengeli": 3867716.2
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "sis_tepeleri",
+            "skorlar": {
+              "gida_odakli": 1018418.4,
+              "agir_sanayi": 1933679.2,
+              "elektronik": 1054779.5,
+              "enerji": 1424812.3,
+              "ihracatci": 1961301.8,
+              "lojistik_yatirimi": 979792.7,
+              "askeri_hazirlik": 1467803.4,
+              "dengeli": 1936301.8
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "kopuk_limani",
+            "skorlar": {
+              "gida_odakli": 10344.4,
+              "agir_sanayi": 842,
+              "elektronik": 50830.4,
+              "enerji": 1837.8,
+              "ihracatci": 25344.4,
+              "lojistik_yatirimi": -24158,
+              "askeri_hazirlik": 51830.2,
+              "dengeli": 58271
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "duman_koyu",
+            "skorlar": {
+              "gida_odakli": 244475,
+              "agir_sanayi": 230676.4,
+              "elektronik": 512430,
+              "enerji": 230676.4,
+              "ihracatci": 490239.3,
+              "lojistik_yatirimi": 205676.4,
+              "askeri_hazirlik": 281663.8,
+              "dengeli": 515226.1
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "orta_ova",
+            "skorlar": {
+              "gida_odakli": 3755630.9,
+              "agir_sanayi": 984533.7,
+              "elektronik": 1014521.7,
+              "enerji": 985529.5,
+              "ihracatci": 1958344.5,
+              "lojistik_yatirimi": 959533.7,
+              "askeri_hazirlik": 1035522.2,
+              "dengeli": 3730630.9
+            },
+            "enIyi": "gida_odakli"
+          },
+          {
+            "bolge": "tas_kapi",
+            "skorlar": {
+              "gida_odakli": 441051.4,
+              "agir_sanayi": 839625.7,
+              "elektronik": 477757.2,
+              "enerji": 839625.7,
+              "ihracatci": 866904.5,
+              "lojistik_yatirimi": 402769.2,
+              "askeri_hazirlik": 882616.5,
+              "dengeli": 891890.2
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "kurt_gecidi",
+            "skorlar": {
+              "gida_odakli": 428310.2,
+              "agir_sanayi": 798119.1,
+              "elektronik": 465612,
+              "enerji": 798119.1,
+              "ihracatci": 824959.9,
+              "lojistik_yatirimi": 390625.7,
+              "askeri_hazirlik": 841124.6,
+              "dengeli": 849952.9
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "kara_zirve",
+            "skorlar": {
+              "gida_odakli": 564472,
+              "agir_sanayi": 1058872,
+              "elektronik": 601516.2,
+              "enerji": 551529.4,
+              "ihracatci": 1085856.4,
+              "lojistik_yatirimi": 526529.4,
+              "askeri_hazirlik": 1074391.3,
+              "dengeli": 1110845.5
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "demir_dagi",
+            "skorlar": {
+              "gida_odakli": 580200.7,
+              "agir_sanayi": 1107665,
+              "elektronik": 616390,
+              "enerji": 566402.2,
+              "ihracatci": 1135461.1,
+              "lojistik_yatirimi": 541402.2,
+              "askeri_hazirlik": 1148653.4,
+              "dengeli": 1160448.7
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "kor_ocak",
+            "skorlar": {
+              "gida_odakli": 1029268.5,
+              "agir_sanayi": 1972868.5,
+              "elektronik": 1065428,
+              "enerji": 1430702.4,
+              "ihracatci": 2000693.4,
+              "lojistik_yatirimi": 990440.5,
+              "askeri_hazirlik": 1473691.6,
+              "dengeli": 1975693.4
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "cam_vadisi",
+            "skorlar": {
+              "gida_odakli": 244492.2,
+              "agir_sanayi": 231096.3,
+              "elektronik": 516793.1,
+              "enerji": 231096.3,
+              "ihracatci": 494199.1,
+              "lojistik_yatirimi": 206096.3,
+              "askeri_hazirlik": 282084.9,
+              "dengeli": 519186.6
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "gumus_limani",
+            "skorlar": {
+              "gida_odakli": 11015,
+              "agir_sanayi": 379,
+              "elektronik": 50367.4,
+              "enerji": 1375.2,
+              "ihracatci": 24924,
+              "lojistik_yatirimi": -24621,
+              "askeri_hazirlik": 71422.1,
+              "dengeli": 34708.2
+            },
+            "enIyi": "askeri_hazirlik"
+          },
+          {
+            "bolge": "carvan_kenti",
+            "skorlar": {
+              "gida_odakli": 3807908.9,
+              "agir_sanayi": 2839024,
+              "elektronik": 2854006.6,
+              "enerji": 2840015.9,
+              "ihracatci": 3822908.9,
+              "lojistik_yatirimi": 2814024,
+              "askeri_hazirlik": 2892491.7,
+              "dengeli": 3821721.1
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "cevre_kalesi",
+            "skorlar": {
+              "gida_odakli": 580430.4,
+              "agir_sanayi": 1104878.2,
+              "elektronik": 616987.9,
+              "enerji": 567675,
+              "ihracatci": 1132263.5,
+              "lojistik_yatirimi": 542000,
+              "askeri_hazirlik": 1145865.4,
+              "dengeli": 1157249.2
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "sisli_liman",
+            "skorlar": {
+              "gida_odakli": 91139.9,
+              "agir_sanayi": 81705.8,
+              "elektronik": 113693.5,
+              "enerji": 81705.8,
+              "ihracatci": 106139.9,
+              "lojistik_yatirimi": 56705.8,
+              "askeri_hazirlik": 36565.4,
+              "dengeli": 88127.6
+            },
+            "enIyi": "elektronik"
+          },
+          {
+            "bolge": "tuz_koyu",
+            "skorlar": {
+              "gida_odakli": 439365.5,
+              "agir_sanayi": 835407.3,
+              "elektronik": 476318.1,
+              "enerji": 835407.3,
+              "ihracatci": 862485.2,
+              "lojistik_yatirimi": 401330,
+              "askeri_hazirlik": 878398,
+              "dengeli": 887474.1
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "gun_batimi",
+            "skorlar": {
+              "gida_odakli": 3667847.9,
+              "agir_sanayi": 2738748.6,
+              "elektronik": 2788727.9,
+              "enerji": 2738748.6,
+              "ihracatci": 3682847.9,
+              "lojistik_yatirimi": 2713748.6,
+              "askeri_hazirlik": 2777734.6,
+              "dengeli": 3697803.7
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "kuru_kiyi",
+            "skorlar": {
+              "gida_odakli": 443511.9,
+              "agir_sanayi": 850329.3,
+              "elektronik": 480333,
+              "enerji": 850329.3,
+              "ihracatci": 877493.3,
+              "lojistik_yatirimi": 405345,
+              "askeri_hazirlik": 893319.6,
+              "dengeli": 902480.8
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "demir_gecit",
+            "skorlar": {
+              "gida_odakli": 238214.3,
+              "agir_sanayi": 225406.9,
+              "elektronik": 501377.2,
+              "enerji": 225406.9,
+              "ihracatci": 478355.2,
+              "lojistik_yatirimi": 200406.9,
+              "askeri_hazirlik": 276397.5,
+              "dengeli": 503341.1
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "yalin_zirve",
+            "skorlar": {
+              "gida_odakli": 572557.4,
+              "agir_sanayi": 1089376.4,
+              "elektronik": 609567.4,
+              "enerji": 559579.5,
+              "ihracatci": 1116396.5,
+              "lojistik_yatirimi": 534579.5,
+              "askeri_hazirlik": 1128348.7,
+              "dengeli": 1141380.4
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "golge_tepe",
+            "skorlar": {
+              "gida_odakli": 485785.6,
+              "agir_sanayi": 472915.2,
+              "elektronik": 965771.8,
+              "enerji": 472915.2,
+              "ihracatci": 942699.4,
+              "lojistik_yatirimi": 447915.2,
+              "askeri_hazirlik": 523903.9,
+              "dengeli": 967684.4
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "kum_burnu",
+            "skorlar": {
+              "gida_odakli": 1488447.2,
+              "agir_sanayi": 1475136.9,
+              "elektronik": 1525121.7,
+              "enerji": 2834478.7,
+              "ihracatci": 2861786.1,
+              "lojistik_yatirimi": 1450136.9,
+              "askeri_hazirlik": 1520122.9,
+              "dengeli": 2886238.8
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "altin_col",
+            "skorlar": {
+              "gida_odakli": 494304.6,
+              "agir_sanayi": 481111.2,
+              "elektronik": 995327.3,
+              "enerji": 481111.2,
+              "ihracatci": 972575.1,
+              "lojistik_yatirimi": 456111.2,
+              "askeri_hazirlik": 532101.9,
+              "dengeli": 997562.5
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "gunes_kumulu",
+            "skorlar": {
+              "gida_odakli": 244304.3,
+              "agir_sanayi": 231166,
+              "elektronik": 518810.7,
+              "enerji": 231166,
+              "ihracatci": 495958,
+              "lojistik_yatirimi": 206166,
+              "askeri_hazirlik": 282154.5,
+              "dengeli": 520945.9
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "inci_limani",
+            "skorlar": {
+              "gida_odakli": 17846,
+              "agir_sanayi": 7308.1,
+              "elektronik": 37296.5,
+              "enerji": 5075840,
+              "ihracatci": 5391223.3,
+              "lojistik_yatirimi": -17691.9,
+              "askeri_hazirlik": 58298.6,
+              "dengeli": 5301126.8
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "vaha_kenti",
+            "skorlar": {
+              "gida_odakli": 3784628.9,
+              "agir_sanayi": 2823234.4,
+              "elektronik": 2873217.8,
+              "enerji": 2824228.3,
+              "ihracatci": 3799628.9,
+              "lojistik_yatirimi": 2798234.4,
+              "askeri_hazirlik": 2862228.9,
+              "dengeli": 3814579.9
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "belora_kenti",
+            "skorlar": {
+              "gida_odakli": 570231.6,
+              "agir_sanayi": 568197.4,
+              "elektronik": 1020331.7,
+              "enerji": 569194.6,
+              "ihracatci": 1046233.3,
+              "lojistik_yatirimi": 543197.4,
+              "askeri_hazirlik": 606427.4,
+              "dengeli": 1012321.6
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "dogu_limani",
+            "skorlar": {
+              "gida_odakli": 3518079,
+              "agir_sanayi": 3507499.2,
+              "elektronik": 3557485.3,
+              "enerji": 5974173.3,
+              "ihracatci": 5998663,
+              "lojistik_yatirimi": 3482499.2,
+              "askeri_hazirlik": 3546484.4,
+              "dengeli": 5962641.1
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "kizil_kaya",
+            "skorlar": {
+              "gida_odakli": 491880,
+              "agir_sanayi": 478615.3,
+              "elektronik": 985439.9,
+              "enerji": 478615.3,
+              "ihracatci": 962759.8,
+              "lojistik_yatirimi": 453615.3,
+              "askeri_hazirlik": 529604.8,
+              "dengeli": 987746.7
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "orta_col",
+            "skorlar": {
+              "gida_odakli": 1484981,
+              "agir_sanayi": 1471698.7,
+              "elektronik": 1521685.2,
+              "enerji": 2821711.3,
+              "ihracatci": 2848990.1,
+              "lojistik_yatirimi": 1446698.7,
+              "askeri_hazirlik": 1516684.8,
+              "dengeli": 2873444.4
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "yel_burnu",
+            "skorlar": {
+              "gida_odakli": 245039.4,
+              "agir_sanayi": 231500.4,
+              "elektronik": 517406,
+              "enerji": 231500.4,
+              "ihracatci": 494954.9,
+              "lojistik_yatirimi": 206500.4,
+              "askeri_hazirlik": 282489.4,
+              "dengeli": 519942.7
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "kum_gecidi",
+            "skorlar": {
+              "gida_odakli": 485858.7,
+              "agir_sanayi": 472988.3,
+              "elektronik": 966050.8,
+              "enerji": 472988.3,
+              "ihracatci": 942978.4,
+              "lojistik_yatirimi": 447988.3,
+              "askeri_hazirlik": 523977.3,
+              "dengeli": 967963.3
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "kuru_tepe",
+            "skorlar": {
+              "gida_odakli": 239358.5,
+              "agir_sanayi": 226524.1,
+              "elektronik": 504963.4,
+              "enerji": 226524.1,
+              "ihracatci": 481853.3,
+              "lojistik_yatirimi": 201524.1,
+              "askeri_hazirlik": 277514.6,
+              "dengeli": 506840.1
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "sanayi_ovasi",
+            "skorlar": {
+              "gida_odakli": 3823053.6,
+              "agir_sanayi": 2851004.9,
+              "elektronik": 2900988.6,
+              "enerji": 2852000.8,
+              "ihracatci": 3838053.6,
+              "lojistik_yatirimi": 2826004.9,
+              "askeri_hazirlik": 2889996.9,
+              "dengeli": 3838037.3
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "komur_havzasi",
+            "skorlar": {
+              "gida_odakli": 1029218.6,
+              "agir_sanayi": 1963711.4,
+              "elektronik": 1065354.8,
+              "enerji": 1438391.2,
+              "ihracatci": 1991518.2,
+              "lojistik_yatirimi": 990367.1,
+              "askeri_hazirlik": 1481379.1,
+              "dengeli": 1951518.2
+            },
+            "enIyi": "ihracatci"
+          },
+          {
+            "bolge": "tuz_golu",
+            "skorlar": {
+              "gida_odakli": 1464680.9,
+              "agir_sanayi": 1451197.9,
+              "elektronik": 1501183.4,
+              "enerji": 2743209.2,
+              "ihracatci": 2770688.6,
+              "lojistik_yatirimi": 1426197.9,
+              "askeri_hazirlik": 1496183.4,
+              "dengeli": 2795145.2
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "celik_limani",
+            "skorlar": {
+              "gida_odakli": 14103,
+              "agir_sanayi": 3574.8,
+              "elektronik": 53563.2,
+              "enerji": 4572.3,
+              "ihracatci": 28013,
+              "lojistik_yatirimi": -21425.2,
+              "askeri_hazirlik": 74605.7,
+              "dengeli": 32657.7
+            },
+            "enIyi": "askeri_hazirlik"
+          },
+          {
+            "bolge": "dorsa_kenti",
+            "skorlar": {
+              "gida_odakli": 3834062.9,
+              "agir_sanayi": 1094391.1,
+              "elektronik": 1091017,
+              "enerji": 1094391.1,
+              "ihracatci": 2018149.2,
+              "lojistik_yatirimi": 1069391.1,
+              "askeri_hazirlik": 1036928.1,
+              "dengeli": 3774062.9
+            },
+            "enIyi": "gida_odakli"
+          },
+          {
+            "bolge": "tas_ova",
+            "skorlar": {
+              "gida_odakli": 3814352.4,
+              "agir_sanayi": 2845685.1,
+              "elektronik": 2895670.7,
+              "enerji": 2846348.8,
+              "ihracatci": 3829352.4,
+              "lojistik_yatirimi": 2820685.1,
+              "askeri_hazirlik": 2884680.5,
+              "dengeli": 3844300.9
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "gundogumu_limani",
+            "skorlar": {
+              "gida_odakli": 15144.1,
+              "agir_sanayi": 4511.5,
+              "elektronik": 54499.9,
+              "enerji": 4511.5,
+              "ihracatci": 29052.7,
+              "lojistik_yatirimi": -20488.5,
+              "askeri_hazirlik": 55500.6,
+              "dengeli": 55132.6
+            },
+            "enIyi": "askeri_hazirlik"
+          },
+          {
+            "bolge": "bati_yamaci",
+            "skorlar": {
+              "gida_odakli": 243620.7,
+              "agir_sanayi": 229909.5,
+              "elektronik": 510024.9,
+              "enerji": 229909.5,
+              "ihracatci": 487746.9,
+              "lojistik_yatirimi": 204909.5,
+              "askeri_hazirlik": 280898.7,
+              "dengeli": 512733.4
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "yesil_vadi",
+            "skorlar": {
+              "gida_odakli": 3806504.8,
+              "agir_sanayi": 2840111.5,
+              "elektronik": 2890098,
+              "enerji": 2840787.9,
+              "ihracatci": 3821504.8,
+              "lojistik_yatirimi": 2815111.5,
+              "askeri_hazirlik": 2879108.5,
+              "dengeli": 3836455.1
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "tas_gecit",
+            "skorlar": {
+              "gida_odakli": 426286.3,
+              "agir_sanayi": 789205.1,
+              "elektronik": 463402.9,
+              "enerji": 789205.1,
+              "ihracatci": 816117.7,
+              "lojistik_yatirimi": 388416,
+              "askeri_hazirlik": 832198.9,
+              "dengeli": 841102.8
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "ulu_dag",
+            "skorlar": {
+              "gida_odakli": 571839.8,
+              "agir_sanayi": 1086958.2,
+              "elektronik": 608885,
+              "enerji": 558897.3,
+              "ihracatci": 1113942.6,
+              "lojistik_yatirimi": 533897.3,
+              "askeri_hazirlik": 1101117.1,
+              "dengeli": 1138932.8
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "gri_tepe",
+            "skorlar": {
+              "gida_odakli": 439115.9,
+              "agir_sanayi": 839924.3,
+              "elektronik": 476296.5,
+              "enerji": 839924.3,
+              "ihracatci": 866888.2,
+              "lojistik_yatirimi": 401308.5,
+              "askeri_hazirlik": 882952.4,
+              "dengeli": 891889.7
+            },
+            "enIyi": "dengeli"
+          },
+          {
+            "bolge": "hilal_adasi",
+            "skorlar": {
+              "gida_odakli": 1483611.6,
+              "agir_sanayi": 1470392.8,
+              "elektronik": 1520379.4,
+              "enerji": 3358783.8,
+              "ihracatci": 3385957.6,
+              "lojistik_yatirimi": 1445392.8,
+              "askeri_hazirlik": 1515378.7,
+              "dengeli": 3279652.7
+            },
+            "enIyi": "ihracatci"
+          }
+        ]
+      },
+      "parametreler": {
+        "bolgeSayisi": 50,
+        "tumBolgeSayisi": 50,
+        "gun": 7,
+        "onayarSayisi": 8,
+        "uygulamaAraligiSaat": 24,
+        "skor": "uretimDegeri(sabit taban fiyat) + hazine degisimi (para)",
+        "sira": "esit skorlar ortalama sira",
+        "hizli": false
+      },
+      "sureMs": 106601
+    },
+    {
+      "kimlik": "H2",
+      "hipotez": "Tekrar düşük kalır: 30. günde tekrar endeksi %60'ı aşmaz; karar tükenmesi olmaz",
+      "olcum": {
+        "ad": "Tekrar endeksi (2..N. günler)",
+        "deger": 0.4253,
+        "birim": "oran",
+        "aciklama": "En iyi düzenleme anahtarının bir önceki günle aynı olduğu günlerin oranı (odak oyuncu, klon üzerinde 24 saatlik ileri ölçüm)."
+      },
+      "esik": {
+        "aciklama": "Tekrar endeksi > %60 ise vazgeç (kaldı)",
+        "deger": 0.6
+      },
+      "verdict": "gecti",
+      "tohumBasariOrani": 1,
+      "tohumBasina": [
+        {
+          "tohum": 1,
+          "olcum": 0.4483,
+          "verdict": "gecti",
+          "durumOzeti": "b819be57424dbf20",
+          "ozet": {
+            "tekrarEndeksi": 0.4483,
+            "tekrarEndeksiSon10": 0.7,
+            "tekrarEndeksiSikiBolgeli": 0.1379,
+            "tekrarEndeksiEylemGunleri": 0.4815,
+            "jaccardOrtalama": 0.4407,
+            "ilkSifirGun": null,
+            "sifirGunSayisi": 1,
+            "odakKomut": 196,
+            "odakBasarisiz": 0
+          }
+        },
+        {
+          "tohum": 2,
+          "olcum": 0.4483,
+          "verdict": "gecti",
+          "durumOzeti": "34428ec2e44be8d1",
+          "ozet": {
+            "tekrarEndeksi": 0.4483,
+            "tekrarEndeksiSon10": 0.4,
+            "tekrarEndeksiSikiBolgeli": 0.4483,
+            "tekrarEndeksiEylemGunleri": 0.4483,
+            "jaccardOrtalama": 0.7617,
+            "ilkSifirGun": null,
+            "sifirGunSayisi": 0,
+            "odakKomut": 137,
+            "odakBasarisiz": 0
+          }
+        },
+        {
+          "tohum": 3,
+          "olcum": 0.3793,
+          "verdict": "gecti",
+          "durumOzeti": "cb6474a8fd85f8ff",
+          "ozet": {
+            "tekrarEndeksi": 0.3793,
+            "tekrarEndeksiSon10": 0.7,
+            "tekrarEndeksiSikiBolgeli": 0.3448,
+            "tekrarEndeksiEylemGunleri": 0.3793,
+            "jaccardOrtalama": 0.6301,
+            "ilkSifirGun": null,
+            "sifirGunSayisi": 0,
+            "odakKomut": 223,
+            "odakBasarisiz": 1
+          }
+        }
+      ],
+      "ayrinti": {
+        "ortalamalar": {
+          "tekrarEndeksi": 0.4253,
+          "tekrarEndeksiSon10": 0.6,
+          "tekrarEndeksiSikiBolgeli": 0.3103,
+          "jaccard": 0.6108,
+          "sifirGunSayisi": 0.3333
+        },
+        "tohumlar": [
+          {
+            "tohum": 1,
+            "gunler": [
+              {
+                "gun": 1,
+                "enIyi": "tesis_insa:ciftlik",
+                "bolge": "ak_ova",
+                "marjinal": 116298.5,
+                "pozitif": 6,
+                "aday": 8
+              },
+              {
+                "gun": 2,
+                "enIyi": "tesis_insa:gida_fabrikasi",
+                "bolge": "ak_ova",
+                "marjinal": 191598.7,
+                "pozitif": 6,
+                "aday": 7
+              },
+              {
+                "gun": 3,
+                "enIyi": "tesis_insa:gida_fabrikasi",
+                "bolge": "duman_koyu",
+                "marjinal": 159484.5,
+                "pozitif": 5,
+                "aday": 7
+              },
+              {
+                "gun": 4,
+                "enIyi": "tesis_insa:rafineri",
+                "bolge": "ak_ova",
+                "marjinal": 72457.9,
+                "pozitif": 7,
+                "aday": 9
+              },
+              {
+                "gun": 5,
+                "enIyi": "tesis_insa:parca_fabrikasi",
+                "bolge": "bereket_dizi",
+                "marjinal": 143600.3,
+                "pozitif": 4,
+                "aday": 8
+              },
+              {
+                "gun": 6,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "yelken_limani",
+                "marjinal": 78036.1,
+                "pozitif": 4,
+                "aday": 7
+              },
+              {
+                "gun": 7,
+                "enIyi": "yontem_degistir:yuzey_cevher",
+                "bolge": "kara_zirve",
+                "marjinal": 78638.4,
+                "pozitif": 4,
+                "aday": 5
+              },
+              {
+                "gun": 8,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "yelken_limani",
+                "marjinal": 78036.1,
+                "pozitif": 3,
+                "aday": 5
+              },
+              {
+                "gun": 9,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "yelken_limani",
+                "marjinal": 78036.1,
+                "pozitif": 1,
+                "aday": 5
+              },
+              {
+                "gun": 10,
+                "enIyi": "yontem_degistir:derin_komur",
+                "bolge": "sis_tepeleri",
+                "marjinal": 16760,
+                "pozitif": 1,
+                "aday": 6
+              },
+              {
+                "gun": 11,
+                "enIyi": "yontem_degistir:derin_cevher",
+                "bolge": "kara_zirve",
+                "marjinal": 63153.3,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 12,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "ak_ova",
+                "marjinal": 378285.3,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 13,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "bereket_dizi",
+                "marjinal": 308402.2,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 14,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "ak_ova",
+                "marjinal": 259276.3,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 15,
+                "enIyi": "hicbir_sey",
+                "bolge": "",
+                "marjinal": 0,
+                "pozitif": 0,
+                "aday": 6
+              },
+              {
+                "gun": 16,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "ak_ova",
+                "marjinal": 263467.5,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 17,
+                "enIyi": "ticaret_emri:ithalat_parca",
+                "bolge": "yelken_limani",
+                "marjinal": 442693.5,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 18,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "ak_ova",
+                "marjinal": 495888.4,
+                "pozitif": 1,
+                "aday": 6
+              },
+              {
+                "gun": 19,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "bereket_dizi",
+                "marjinal": 249333.5,
+                "pozitif": 1,
+                "aday": 6
+              },
+              {
+                "gun": 20,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "ak_ova",
+                "marjinal": 228440.2,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 21,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "bereket_dizi",
+                "marjinal": 254395.4,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 22,
+                "enIyi": "ticaret_emri:ithalat_parca",
+                "bolge": "yelken_limani",
+                "marjinal": 81801.5,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 23,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "yelken_limani",
+                "marjinal": 96255,
+                "pozitif": 1,
+                "aday": 6
+              },
+              {
+                "gun": 24,
+                "enIyi": "yontem_degistir:derin_komur",
+                "bolge": "kurt_gecidi",
+                "marjinal": 11634,
+                "pozitif": 1,
+                "aday": 6
+              },
+              {
+                "gun": 25,
+                "enIyi": "yontem_degistir:derin_komur",
+                "bolge": "kurt_gecidi",
+                "marjinal": 21483.7,
+                "pozitif": 1,
+                "aday": 6
+              },
+              {
+                "gun": 26,
+                "enIyi": "yontem_degistir:derin_komur",
+                "bolge": "kurt_gecidi",
+                "marjinal": 29434.2,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 27,
+                "enIyi": "yontem_degistir:derin_komur",
+                "bolge": "kurt_gecidi",
+                "marjinal": 27572.8,
+                "pozitif": 1,
+                "aday": 6
+              },
+              {
+                "gun": 28,
+                "enIyi": "yontem_degistir:derin_komur",
+                "bolge": "tas_kapi",
+                "marjinal": 17841.9,
+                "pozitif": 1,
+                "aday": 6
+              },
+              {
+                "gun": 29,
+                "enIyi": "yontem_degistir:derin_komur",
+                "bolge": "kurt_gecidi",
+                "marjinal": 23451.2,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 30,
+                "enIyi": "yontem_degistir:derin_komur",
+                "bolge": "tas_kapi",
+                "marjinal": 17627.9,
+                "pozitif": 1,
+                "aday": 6
+              }
+            ],
+            "tukenmeSerisi": [
+              6,
+              6,
+              5,
+              7,
+              4,
+              4,
+              4,
+              3,
+              1,
+              1,
+              3,
+              2,
+              2,
+              2,
+              0,
+              2,
+              2,
+              1,
+              1,
+              3,
+              2,
+              2,
+              1,
+              1,
+              1,
+              2,
+              1,
+              1,
+              2,
+              1
+            ]
+          },
+          {
+            "tohum": 2,
+            "gunler": [
+              {
+                "gun": 1,
+                "enIyi": "tesis_insa:elektronik_fabrikasi",
+                "bolge": "kum_burnu",
+                "marjinal": 120447.6,
+                "pozitif": 6,
+                "aday": 8
+              },
+              {
+                "gun": 2,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "inci_limani",
+                "marjinal": 96255,
+                "pozitif": 6,
+                "aday": 8
+              },
+              {
+                "gun": 3,
+                "enIyi": "ticaret_emri:ihracat_celik",
+                "bolge": "inci_limani",
+                "marjinal": 62904.6,
+                "pozitif": 4,
+                "aday": 7
+              },
+              {
+                "gun": 4,
+                "enIyi": "tesis_insa:parca_fabrikasi",
+                "bolge": "kum_gecidi",
+                "marjinal": 245168.9,
+                "pozitif": 4,
+                "aday": 6
+              },
+              {
+                "gun": 5,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "inci_limani",
+                "marjinal": 96255,
+                "pozitif": 4,
+                "aday": 7
+              },
+              {
+                "gun": 6,
+                "enIyi": "vergi_ayarla:artir",
+                "bolge": "",
+                "marjinal": 4054.6,
+                "pozitif": 1,
+                "aday": 4
+              },
+              {
+                "gun": 7,
+                "enIyi": "vergi_ayarla:artir",
+                "bolge": "",
+                "marjinal": 4054.3,
+                "pozitif": 1,
+                "aday": 4
+              },
+              {
+                "gun": 8,
+                "enIyi": "vergi_ayarla:artir",
+                "bolge": "",
+                "marjinal": 4053.8,
+                "pozitif": 1,
+                "aday": 4
+              },
+              {
+                "gun": 9,
+                "enIyi": "vergi_ayarla:artir",
+                "bolge": "",
+                "marjinal": 4053,
+                "pozitif": 1,
+                "aday": 4
+              },
+              {
+                "gun": 10,
+                "enIyi": "vergi_ayarla:artir",
+                "bolge": "",
+                "marjinal": 4052.1,
+                "pozitif": 1,
+                "aday": 4
+              },
+              {
+                "gun": 11,
+                "enIyi": "vergi_ayarla:artir",
+                "bolge": "",
+                "marjinal": 4051.3,
+                "pozitif": 1,
+                "aday": 4
+              },
+              {
+                "gun": 12,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 121828.9,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 13,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 169216.4,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 14,
+                "enIyi": "ticaret_emri:ithalat_parca",
+                "bolge": "inci_limani",
+                "marjinal": 47656.4,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 15,
+                "enIyi": "ticaret_emri:ithalat_parca",
+                "bolge": "inci_limani",
+                "marjinal": 57839.9,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 16,
+                "enIyi": "ticaret_emri:ithalat_parca",
+                "bolge": "inci_limani",
+                "marjinal": 64116.7,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 17,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 135223.1,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 18,
+                "enIyi": "ticaret_emri:ithalat_parca",
+                "bolge": "inci_limani",
+                "marjinal": 65345.4,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 19,
+                "enIyi": "ticaret_emri:ithalat_parca",
+                "bolge": "inci_limani",
+                "marjinal": 65345.4,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 20,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 150867.7,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 21,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 88648.1,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 22,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "inci_limani",
+                "marjinal": 110620.6,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 23,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "inci_limani",
+                "marjinal": 110620.6,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 24,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 135730.7,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 25,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 121468.4,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 26,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 127683,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 27,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "inci_limani",
+                "marjinal": 104219.2,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 28,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 117899,
+                "pozitif": 3,
+                "aday": 6
+              },
+              {
+                "gun": 29,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "inci_limani",
+                "marjinal": 102882.1,
+                "pozitif": 2,
+                "aday": 6
+              },
+              {
+                "gun": 30,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "vaha_kenti",
+                "marjinal": 108332.5,
+                "pozitif": 3,
+                "aday": 6
+              }
+            ],
+            "tukenmeSerisi": [
+              6,
+              6,
+              4,
+              4,
+              4,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              3,
+              2,
+              2,
+              2,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              2,
+              3,
+              2,
+              3
+            ]
+          },
+          {
+            "tohum": 3,
+            "gunler": [
+              {
+                "gun": 1,
+                "enIyi": "tesis_insa:ciftlik",
+                "bolge": "carvan_kenti",
+                "marjinal": 112645.8,
+                "pozitif": 6,
+                "aday": 8
+              },
+              {
+                "gun": 2,
+                "enIyi": "ticaret_emri:ihracat_celik",
+                "bolge": "gumus_limani",
+                "marjinal": 80480.8,
+                "pozitif": 4,
+                "aday": 4
+              },
+              {
+                "gun": 3,
+                "enIyi": "tesis_insa:gida_fabrikasi",
+                "bolge": "demir_dagi",
+                "marjinal": 111621.7,
+                "pozitif": 6,
+                "aday": 7
+              },
+              {
+                "gun": 4,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "gumus_limani",
+                "marjinal": 96255,
+                "pozitif": 5,
+                "aday": 9
+              },
+              {
+                "gun": 5,
+                "enIyi": "tesis_insa:parca_fabrikasi",
+                "bolge": "gumus_limani",
+                "marjinal": 86030.7,
+                "pozitif": 5,
+                "aday": 9
+              },
+              {
+                "gun": 6,
+                "enIyi": "tesis_insa:parca_fabrikasi",
+                "bolge": "carvan_kenti",
+                "marjinal": 378193.3,
+                "pozitif": 5,
+                "aday": 10
+              },
+              {
+                "gun": 7,
+                "enIyi": "ticaret_emri:ithalat_parca",
+                "bolge": "gumus_limani",
+                "marjinal": 90518,
+                "pozitif": 3,
+                "aday": 5
+              },
+              {
+                "gun": 8,
+                "enIyi": "ticaret_emri:ihracat_celik",
+                "bolge": "gumus_limani",
+                "marjinal": 14461.2,
+                "pozitif": 2,
+                "aday": 8
+              },
+              {
+                "gun": 9,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "carvan_kenti",
+                "marjinal": 250686,
+                "pozitif": 4,
+                "aday": 8
+              },
+              {
+                "gun": 10,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "carvan_kenti",
+                "marjinal": 183332.9,
+                "pozitif": 3,
+                "aday": 9
+              },
+              {
+                "gun": 11,
+                "enIyi": "ticaret_emri:ihracat_celik",
+                "bolge": "gumus_limani",
+                "marjinal": 90099.9,
+                "pozitif": 3,
+                "aday": 9
+              },
+              {
+                "gun": 12,
+                "enIyi": "ticaret_emri:ihracat_parca",
+                "bolge": "gumus_limani",
+                "marjinal": 368993.2,
+                "pozitif": 4,
+                "aday": 9
+              },
+              {
+                "gun": 13,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "carvan_kenti",
+                "marjinal": 648561.8,
+                "pozitif": 7,
+                "aday": 9
+              },
+              {
+                "gun": 14,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "carvan_kenti",
+                "marjinal": 245573.3,
+                "pozitif": 6,
+                "aday": 9
+              },
+              {
+                "gun": 15,
+                "enIyi": "ticaret_emri:ihracat_parca",
+                "bolge": "gumus_limani",
+                "marjinal": 107545.4,
+                "pozitif": 4,
+                "aday": 10
+              },
+              {
+                "gun": 16,
+                "enIyi": "ticaret_emri:ihracat_parca",
+                "bolge": "gumus_limani",
+                "marjinal": 248631.9,
+                "pozitif": 5,
+                "aday": 10
+              },
+              {
+                "gun": 17,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "gun_batimi",
+                "marjinal": 67519.1,
+                "pozitif": 4,
+                "aday": 10
+              },
+              {
+                "gun": 18,
+                "enIyi": "ticaret_emri:ihracat_parca",
+                "bolge": "gumus_limani",
+                "marjinal": 237903.5,
+                "pozitif": 6,
+                "aday": 9
+              },
+              {
+                "gun": 19,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "carvan_kenti",
+                "marjinal": 224937.4,
+                "pozitif": 6,
+                "aday": 10
+              },
+              {
+                "gun": 20,
+                "enIyi": "yontem_degistir:mekanize_tarim",
+                "bolge": "gun_batimi",
+                "marjinal": 74532.9,
+                "pozitif": 4,
+                "aday": 9
+              },
+              {
+                "gun": 21,
+                "enIyi": "ticaret_emri:ihracat_parca",
+                "bolge": "gumus_limani",
+                "marjinal": 168748.3,
+                "pozitif": 5,
+                "aday": 9
+              },
+              {
+                "gun": 22,
+                "enIyi": "yontem_degistir:geleneksel_tarim",
+                "bolge": "carvan_kenti",
+                "marjinal": 275921.4,
+                "pozitif": 6,
+                "aday": 10
+              },
+              {
+                "gun": 23,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "gumus_limani",
+                "marjinal": 96255,
+                "pozitif": 5,
+                "aday": 9
+              },
+              {
+                "gun": 24,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "gumus_limani",
+                "marjinal": 96255,
+                "pozitif": 5,
+                "aday": 10
+              },
+              {
+                "gun": 25,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "gumus_limani",
+                "marjinal": 96255,
+                "pozitif": 5,
+                "aday": 9
+              },
+              {
+                "gun": 26,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "gumus_limani",
+                "marjinal": 96255,
+                "pozitif": 5,
+                "aday": 10
+              },
+              {
+                "gun": 27,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "gumus_limani",
+                "marjinal": 96255,
+                "pozitif": 5,
+                "aday": 10
+              },
+              {
+                "gun": 28,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "gumus_limani",
+                "marjinal": 96255,
+                "pozitif": 5,
+                "aday": 10
+              },
+              {
+                "gun": 29,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "gumus_limani",
+                "marjinal": 96255,
+                "pozitif": 6,
+                "aday": 10
+              },
+              {
+                "gun": 30,
+                "enIyi": "ticaret_emri:ihracat_elektronik",
+                "bolge": "gumus_limani",
+                "marjinal": 96255,
+                "pozitif": 6,
+                "aday": 10
+              }
+            ],
+            "tukenmeSerisi": [
+              6,
+              4,
+              6,
+              5,
+              5,
+              5,
+              3,
+              2,
+              4,
+              3,
+              3,
+              4,
+              7,
+              6,
+              4,
+              5,
+              4,
+              6,
+              6,
+              4,
+              5,
+              6,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              6,
+              6
+            ]
+          }
+        ]
+      },
+      "parametreler": {
+        "gun": 30,
+        "adaySayisi": 10,
+        "ufukSaat": 24,
+        "oyuncular": [
+          "sanayici",
+          "tuccar",
+          "lojistikci",
+          "militarist"
+        ],
+        "odak": "o0 (devlet sirasi tohumla doner; ilk devlet, sanayici)",
+        "kararAraligiSaat": 6,
+        "hizli": false
+      },
+      "sureMs": 187938
+    },
+    {
+      "kimlik": "H3",
+      "hipotez": "Askeri üretim ekonomiyi değiştirir: kapasitenin %20'si askeriyeye kayınca en az bir mal fiyatı veya kapsamı %10 değişir",
+      "olcum": {
+        "ad": "En büyük göreli değişim (fiyat veya kapsam)",
+        "deger": 0.4288,
+        "birim": "oran",
+        "aciklama": "Temel ve müdahale koşusu arasında, 14. gün ve 7-14. gün ortalamasında, malların fiyat (taban oranı) ve kapsam karşılanması göreli değişiminin en büyüğü."
+      },
+      "esik": {
+        "aciklama": "Hiçbir mal fiyatı veya kapsam >= %10 değişmezse vazgeç (kaldı); biri değişirse geçti",
+        "deger": 0.1
+      },
+      "verdict": "belirsiz",
+      "tohumBasariOrani": 0.3333333333333333,
+      "tohumBasina": [
+        {
+          "tohum": 1,
+          "olcum": 0.3383,
+          "verdict": "belirsiz",
+          "durumOzeti": "0df4664ca550e5f8",
+          "ozet": {
+            "enBuyukDegisim": 0.3383,
+            "gurultuTabani": 0.2952,
+            "enBuyukMal": "tahil",
+            "temelBirlik": 87,
+            "mudahaleBirlik": 305,
+            "temelSavas": 9,
+            "mudahaleSavas": 9,
+            "mudahaleKomutlari": {
+              "arastir": 13,
+              "tesis_insa": 104,
+              "birlik_uret": 61,
+              "ticaret_emri": 168,
+              "vergi_ayarla": 17,
+              "askeri_rezerv": 4,
+              "savunma_emri": 9,
+              "yontem_degistir": 102,
+              "savas_ilan": 9
+            },
+            "temelKomutlari": {
+              "arastir": 13,
+              "tesis_insa": 92,
+              "birlik_uret": 16,
+              "ticaret_emri": 134,
+              "vergi_ayarla": 17,
+              "askeri_rezerv": 1,
+              "savunma_emri": 10,
+              "yontem_degistir": 91,
+              "savas_ilan": 9
+            },
+            "degisimTablosu": [
+              {
+                "mal": "tahil",
+                "fiyatTemel14": 0.9878,
+                "fiyatMudahale14": 1.322,
+                "fiyatDegisim14": 0.3383,
+                "fiyatDegisimOrt": 0.2096,
+                "kapsamTemel14": 0.82,
+                "kapsamMudahale14": 0.8433,
+                "kapsamDegisim14": 0.0284,
+                "kapsamDegisimOrt": 0.0449,
+                "kapsamMutlakFarkPp14": 2.33,
+                "enBuyuk": 0.3383
+              },
+              {
+                "mal": "gida",
+                "fiyatTemel14": 0.8714,
+                "fiyatMudahale14": 0.8364,
+                "fiyatDegisim14": -0.0402,
+                "fiyatDegisimOrt": -0.0785,
+                "kapsamTemel14": 0.9511,
+                "kapsamMudahale14": 0.9494,
+                "kapsamDegisim14": -0.0017,
+                "kapsamDegisimOrt": -0.0229,
+                "kapsamMutlakFarkPp14": -0.17,
+                "enBuyuk": 0.0785
+              },
+              {
+                "mal": "cevher",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": -0.0492,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0.0492
+              },
+              {
+                "mal": "komur",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0
+              },
+              {
+                "mal": "celik",
+                "fiyatTemel14": 1.0656,
+                "fiyatMudahale14": 1.0862,
+                "fiyatDegisim14": 0.0193,
+                "fiyatDegisimOrt": 0.0529,
+                "kapsamTemel14": 0.9174,
+                "kapsamMudahale14": 0.874,
+                "kapsamDegisim14": -0.0473,
+                "kapsamDegisimOrt": -0.0304,
+                "kapsamMutlakFarkPp14": -4.34,
+                "enBuyuk": 0.0529
+              },
+              {
+                "mal": "bakir",
+                "fiyatTemel14": 1.1272,
+                "fiyatMudahale14": 1.029,
+                "fiyatDegisim14": -0.0871,
+                "fiyatDegisimOrt": 0.0129,
+                "kapsamTemel14": 0.906,
+                "kapsamMudahale14": 0.9321,
+                "kapsamDegisim14": 0.0288,
+                "kapsamDegisimOrt": 0.0371,
+                "kapsamMutlakFarkPp14": 2.61,
+                "enBuyuk": 0.0871
+              },
+              {
+                "mal": "silis",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0.0031,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0.0031
+              },
+              {
+                "mal": "parca",
+                "fiyatTemel14": 1.4565,
+                "fiyatMudahale14": 1.4362,
+                "fiyatDegisim14": -0.0139,
+                "fiyatDegisimOrt": -0.0277,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 0.8323,
+                "kapsamDegisim14": -0.1677,
+                "kapsamDegisimOrt": -0.1724,
+                "kapsamMutlakFarkPp14": -16.77,
+                "enBuyuk": 0.1724
+              },
+              {
+                "mal": "elektronik",
+                "fiyatTemel14": 0.8247,
+                "fiyatMudahale14": 0.7,
+                "fiyatDegisim14": -0.1512,
+                "fiyatDegisimOrt": -0.1001,
+                "kapsamTemel14": 0.901,
+                "kapsamMudahale14": 0.901,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": -0.0125,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0.1512
+              },
+              {
+                "mal": "petrol",
+                "fiyatTemel14": 0.7867,
+                "fiyatMudahale14": 0.7898,
+                "fiyatDegisim14": 0.0039,
+                "fiyatDegisimOrt": -0.0482,
+                "kapsamTemel14": 0.909,
+                "kapsamMudahale14": 0.8963,
+                "kapsamDegisim14": -0.014,
+                "kapsamDegisimOrt": -0.0071,
+                "kapsamMutlakFarkPp14": -1.27,
+                "enBuyuk": 0.0482
+              },
+              {
+                "mal": "yakit",
+                "fiyatTemel14": 0.8399,
+                "fiyatMudahale14": 0.8827,
+                "fiyatDegisim14": 0.051,
+                "fiyatDegisimOrt": -0.0285,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 0.8807,
+                "kapsamDegisim14": -0.1193,
+                "kapsamDegisimOrt": -0.1128,
+                "kapsamMutlakFarkPp14": -11.93,
+                "enBuyuk": 0.1193
+              },
+              {
+                "mal": "muhimmat",
+                "fiyatTemel14": 0.55,
+                "fiyatMudahale14": 0.55,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0
+              }
+            ]
+          }
+        },
+        {
+          "tohum": 2,
+          "olcum": 0.5155,
+          "verdict": "belirsiz",
+          "durumOzeti": "fbab80b20dd2971d",
+          "ozet": {
+            "enBuyukDegisim": 0.5155,
+            "gurultuTabani": 0.2719,
+            "enBuyukMal": "gida",
+            "temelBirlik": 83,
+            "mudahaleBirlik": 242,
+            "temelSavas": 8,
+            "mudahaleSavas": 8,
+            "mudahaleKomutlari": {
+              "tesis_insa": 103,
+              "arastir": 13,
+              "vergi_ayarla": 20,
+              "birlik_uret": 57,
+              "ticaret_emri": 121,
+              "askeri_rezerv": 4,
+              "savunma_emri": 10,
+              "yontem_degistir": 72,
+              "kenar_gelistir": 1,
+              "savas_ilan": 8
+            },
+            "temelKomutlari": {
+              "tesis_insa": 103,
+              "arastir": 13,
+              "vergi_ayarla": 18,
+              "birlik_uret": 22,
+              "ticaret_emri": 151,
+              "askeri_rezerv": 1,
+              "savunma_emri": 10,
+              "yontem_degistir": 75,
+              "savas_ilan": 8
+            },
+            "degisimTablosu": [
+              {
+                "mal": "tahil",
+                "fiyatTemel14": 0.9813,
+                "fiyatMudahale14": 1.0006,
+                "fiyatDegisim14": 0.0196,
+                "fiyatDegisimOrt": -0.0702,
+                "kapsamTemel14": 0.7559,
+                "kapsamMudahale14": 0.755,
+                "kapsamDegisim14": -0.0012,
+                "kapsamDegisimOrt": 0.0046,
+                "kapsamMutlakFarkPp14": -0.09,
+                "enBuyuk": 0.0702
+              },
+              {
+                "mal": "gida",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4914,
+                "fiyatDegisim14": 0.2285,
+                "fiyatDegisimOrt": 0.5155,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 0.9419,
+                "kapsamDegisim14": -0.0581,
+                "kapsamDegisimOrt": -0.0059,
+                "kapsamMutlakFarkPp14": -5.81,
+                "enBuyuk": 0.5155
+              },
+              {
+                "mal": "cevher",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0.0226,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0.0226
+              },
+              {
+                "mal": "komur",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0
+              },
+              {
+                "mal": "celik",
+                "fiyatTemel14": 1.2164,
+                "fiyatMudahale14": 1.0175,
+                "fiyatDegisim14": -0.1635,
+                "fiyatDegisimOrt": -0.0704,
+                "kapsamTemel14": 0.8422,
+                "kapsamMudahale14": 0.8046,
+                "kapsamDegisim14": -0.0446,
+                "kapsamDegisimOrt": -0.0808,
+                "kapsamMutlakFarkPp14": -3.76,
+                "enBuyuk": 0.1635
+              },
+              {
+                "mal": "bakir",
+                "fiyatTemel14": 1.075,
+                "fiyatMudahale14": 0.55,
+                "fiyatDegisim14": -0.4884,
+                "fiyatDegisimOrt": -0.3346,
+                "kapsamTemel14": 0.9679,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0.0331,
+                "kapsamDegisimOrt": 0.0186,
+                "kapsamMutlakFarkPp14": 3.21,
+                "enBuyuk": 0.4884
+              },
+              {
+                "mal": "silis",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0
+              },
+              {
+                "mal": "parca",
+                "fiyatTemel14": 1.4688,
+                "fiyatMudahale14": 1.4653,
+                "fiyatDegisim14": -0.0024,
+                "fiyatDegisimOrt": -0.0199,
+                "kapsamTemel14": 0.8154,
+                "kapsamMudahale14": 0.755,
+                "kapsamDegisim14": -0.0741,
+                "kapsamDegisimOrt": -0.0098,
+                "kapsamMutlakFarkPp14": -6.04,
+                "enBuyuk": 0.0741
+              },
+              {
+                "mal": "elektronik",
+                "fiyatTemel14": 0.7025,
+                "fiyatMudahale14": 0.8894,
+                "fiyatDegisim14": 0.266,
+                "fiyatDegisimOrt": 0.1348,
+                "kapsamTemel14": 0.9206,
+                "kapsamMudahale14": 0.7587,
+                "kapsamDegisim14": -0.176,
+                "kapsamDegisimOrt": -0.1697,
+                "kapsamMutlakFarkPp14": -16.2,
+                "enBuyuk": 0.266
+              },
+              {
+                "mal": "petrol",
+                "fiyatTemel14": 1.093,
+                "fiyatMudahale14": 0.6238,
+                "fiyatDegisim14": -0.4293,
+                "fiyatDegisimOrt": -0.3281,
+                "kapsamTemel14": 0.9637,
+                "kapsamMudahale14": 0.9404,
+                "kapsamDegisim14": -0.0241,
+                "kapsamDegisimOrt": -0.0241,
+                "kapsamMutlakFarkPp14": -2.32,
+                "enBuyuk": 0.4293
+              },
+              {
+                "mal": "yakit",
+                "fiyatTemel14": 0.7327,
+                "fiyatMudahale14": 0.9448,
+                "fiyatDegisim14": 0.2895,
+                "fiyatDegisimOrt": 0.1576,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": -0.0265,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0.2895
+              },
+              {
+                "mal": "muhimmat",
+                "fiyatTemel14": 0.55,
+                "fiyatMudahale14": 0.55,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0
+              }
+            ]
+          }
+        },
+        {
+          "tohum": 3,
+          "olcum": 0.4325,
+          "verdict": "gecti",
+          "durumOzeti": "2d71d77d7daa56f6",
+          "ozet": {
+            "enBuyukDegisim": 0.4325,
+            "gurultuTabani": 0.1503,
+            "enBuyukMal": "petrol",
+            "temelBirlik": 80,
+            "mudahaleBirlik": 300,
+            "temelSavas": 8,
+            "mudahaleSavas": 8,
+            "mudahaleKomutlari": {
+              "arastir": 13,
+              "tesis_insa": 111,
+              "vergi_ayarla": 19,
+              "birlik_uret": 67,
+              "ticaret_emri": 126,
+              "askeri_rezerv": 4,
+              "savunma_emri": 9,
+              "yontem_degistir": 96,
+              "kenar_gelistir": 3,
+              "savas_ilan": 8
+            },
+            "temelKomutlari": {
+              "arastir": 13,
+              "tesis_insa": 97,
+              "vergi_ayarla": 19,
+              "birlik_uret": 18,
+              "ticaret_emri": 110,
+              "askeri_rezerv": 1,
+              "savunma_emri": 10,
+              "yontem_degistir": 67,
+              "savas_ilan": 8
+            },
+            "degisimTablosu": [
+              {
+                "mal": "tahil",
+                "fiyatTemel14": 0.7118,
+                "fiyatMudahale14": 0.6561,
+                "fiyatDegisim14": -0.0783,
+                "fiyatDegisimOrt": -0.1362,
+                "kapsamTemel14": 0.9045,
+                "kapsamMudahale14": 0.8709,
+                "kapsamDegisim14": -0.0371,
+                "kapsamDegisimOrt": 0.0025,
+                "kapsamMutlakFarkPp14": -3.36,
+                "enBuyuk": 0.1362
+              },
+              {
+                "mal": "gida",
+                "fiyatTemel14": 0.7273,
+                "fiyatMudahale14": 0.8733,
+                "fiyatDegisim14": 0.2008,
+                "fiyatDegisimOrt": 0.2321,
+                "kapsamTemel14": 0.9516,
+                "kapsamMudahale14": 0.947,
+                "kapsamDegisim14": -0.0049,
+                "kapsamDegisimOrt": -0.0037,
+                "kapsamMutlakFarkPp14": -0.46,
+                "enBuyuk": 0.2321
+              },
+              {
+                "mal": "cevher",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0.0517,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0.0517
+              },
+              {
+                "mal": "komur",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0.0388,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0.0388
+              },
+              {
+                "mal": "celik",
+                "fiyatTemel14": 0.9867,
+                "fiyatMudahale14": 1.2772,
+                "fiyatDegisim14": 0.2944,
+                "fiyatDegisimOrt": 0.2435,
+                "kapsamTemel14": 0.8945,
+                "kapsamMudahale14": 0.7785,
+                "kapsamDegisim14": -0.1297,
+                "kapsamDegisimOrt": -0.1272,
+                "kapsamMutlakFarkPp14": -11.6,
+                "enBuyuk": 0.2944
+              },
+              {
+                "mal": "bakir",
+                "fiyatTemel14": 0.9847,
+                "fiyatMudahale14": 1.0351,
+                "fiyatDegisim14": 0.0511,
+                "fiyatDegisimOrt": -0.0367,
+                "kapsamTemel14": 0.9025,
+                "kapsamMudahale14": 0.96,
+                "kapsamDegisim14": 0.0637,
+                "kapsamDegisimOrt": 0.0523,
+                "kapsamMutlakFarkPp14": 5.75,
+                "enBuyuk": 0.0637
+              },
+              {
+                "mal": "silis",
+                "fiyatTemel14": 0.4,
+                "fiyatMudahale14": 0.4,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0
+              },
+              {
+                "mal": "parca",
+                "fiyatTemel14": 1.3813,
+                "fiyatMudahale14": 1.3222,
+                "fiyatDegisim14": -0.0428,
+                "fiyatDegisimOrt": -0.0207,
+                "kapsamTemel14": 0.6439,
+                "kapsamMudahale14": 0.7269,
+                "kapsamDegisim14": 0.1289,
+                "kapsamDegisimOrt": 0.0092,
+                "kapsamMutlakFarkPp14": 8.3,
+                "enBuyuk": 0.1289
+              },
+              {
+                "mal": "elektronik",
+                "fiyatTemel14": 1,
+                "fiyatMudahale14": 0.7,
+                "fiyatDegisim14": -0.3,
+                "fiyatDegisimOrt": -0.1241,
+                "kapsamTemel14": 0.94,
+                "kapsamMudahale14": 0.7289,
+                "kapsamDegisim14": -0.2246,
+                "kapsamDegisimOrt": -0.1731,
+                "kapsamMutlakFarkPp14": -21.11,
+                "enBuyuk": 0.3
+              },
+              {
+                "mal": "petrol",
+                "fiyatTemel14": 1.2368,
+                "fiyatMudahale14": 0.7019,
+                "fiyatDegisim14": -0.4325,
+                "fiyatDegisimOrt": -0.305,
+                "kapsamTemel14": 0.8863,
+                "kapsamMudahale14": 0.9022,
+                "kapsamDegisim14": 0.0179,
+                "kapsamDegisimOrt": 0.0177,
+                "kapsamMutlakFarkPp14": 1.59,
+                "enBuyuk": 0.4325
+              },
+              {
+                "mal": "yakit",
+                "fiyatTemel14": 0.8148,
+                "fiyatMudahale14": 1.034,
+                "fiyatDegisim14": 0.269,
+                "fiyatDegisimOrt": 0.1593,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 0.9586,
+                "kapsamDegisim14": -0.0414,
+                "kapsamDegisimOrt": -0.147,
+                "kapsamMutlakFarkPp14": -4.14,
+                "enBuyuk": 0.269
+              },
+              {
+                "mal": "muhimmat",
+                "fiyatTemel14": 0.55,
+                "fiyatMudahale14": 0.55,
+                "fiyatDegisim14": 0,
+                "fiyatDegisimOrt": 0,
+                "kapsamTemel14": 1,
+                "kapsamMudahale14": 1,
+                "kapsamDegisim14": 0,
+                "kapsamDegisimOrt": 0,
+                "kapsamMutlakFarkPp14": 0,
+                "enBuyuk": 0
+              }
+            ]
+          }
+        }
+      ],
+      "ayrinti": {
+        "degisimTablosuIlkTohum": [
+          {
+            "mal": "tahil",
+            "fiyatTemel14": 0.9878,
+            "fiyatMudahale14": 1.322,
+            "fiyatDegisim14": 0.3383,
+            "fiyatDegisimOrt": 0.2096,
+            "kapsamTemel14": 0.82,
+            "kapsamMudahale14": 0.8433,
+            "kapsamDegisim14": 0.0284,
+            "kapsamDegisimOrt": 0.0449,
+            "kapsamMutlakFarkPp14": 2.33,
+            "enBuyuk": 0.33829385165688064
+          },
+          {
+            "mal": "gida",
+            "fiyatTemel14": 0.8714,
+            "fiyatMudahale14": 0.8364,
+            "fiyatDegisim14": -0.0402,
+            "fiyatDegisimOrt": -0.0785,
+            "kapsamTemel14": 0.9511,
+            "kapsamMudahale14": 0.9494,
+            "kapsamDegisim14": -0.0017,
+            "kapsamDegisimOrt": -0.0229,
+            "kapsamMutlakFarkPp14": -0.17,
+            "enBuyuk": 0.07852216190081017
+          },
+          {
+            "mal": "cevher",
+            "fiyatTemel14": 0.4,
+            "fiyatMudahale14": 0.4,
+            "fiyatDegisim14": 0,
+            "fiyatDegisimOrt": -0.0492,
+            "kapsamTemel14": 1,
+            "kapsamMudahale14": 1,
+            "kapsamDegisim14": 0,
+            "kapsamDegisimOrt": 0,
+            "kapsamMutlakFarkPp14": 0,
+            "enBuyuk": 0.04918032786885253
+          },
+          {
+            "mal": "komur",
+            "fiyatTemel14": 0.4,
+            "fiyatMudahale14": 0.4,
+            "fiyatDegisim14": 0,
+            "fiyatDegisimOrt": 0,
+            "kapsamTemel14": 1,
+            "kapsamMudahale14": 1,
+            "kapsamDegisim14": 0,
+            "kapsamDegisimOrt": 0,
+            "kapsamMutlakFarkPp14": 0,
+            "enBuyuk": 0
+          },
+          {
+            "mal": "celik",
+            "fiyatTemel14": 1.0656,
+            "fiyatMudahale14": 1.0862,
+            "fiyatDegisim14": 0.0193,
+            "fiyatDegisimOrt": 0.0529,
+            "kapsamTemel14": 0.9174,
+            "kapsamMudahale14": 0.874,
+            "kapsamDegisim14": -0.0473,
+            "kapsamDegisimOrt": -0.0304,
+            "kapsamMutlakFarkPp14": -4.34,
+            "enBuyuk": 0.05289007462389551
+          },
+          {
+            "mal": "bakir",
+            "fiyatTemel14": 1.1272,
+            "fiyatMudahale14": 1.029,
+            "fiyatDegisim14": -0.0871,
+            "fiyatDegisimOrt": 0.0129,
+            "kapsamTemel14": 0.906,
+            "kapsamMudahale14": 0.9321,
+            "kapsamDegisim14": 0.0288,
+            "kapsamDegisimOrt": 0.0371,
+            "kapsamMutlakFarkPp14": 2.61,
+            "enBuyuk": 0.08711697805219927
+          },
+          {
+            "mal": "silis",
+            "fiyatTemel14": 0.4,
+            "fiyatMudahale14": 0.4,
+            "fiyatDegisim14": 0,
+            "fiyatDegisimOrt": 0.0031,
+            "kapsamTemel14": 1,
+            "kapsamMudahale14": 1,
+            "kapsamDegisim14": 0,
+            "kapsamDegisimOrt": 0,
+            "kapsamMutlakFarkPp14": 0,
+            "enBuyuk": 0.0030634947800787585
+          },
+          {
+            "mal": "parca",
+            "fiyatTemel14": 1.4565,
+            "fiyatMudahale14": 1.4362,
+            "fiyatDegisim14": -0.0139,
+            "fiyatDegisimOrt": -0.0277,
+            "kapsamTemel14": 1,
+            "kapsamMudahale14": 0.8323,
+            "kapsamDegisim14": -0.1677,
+            "kapsamDegisimOrt": -0.1724,
+            "kapsamMutlakFarkPp14": -16.77,
+            "enBuyuk": 0.17243637051293717
+          },
+          {
+            "mal": "elektronik",
+            "fiyatTemel14": 0.8247,
+            "fiyatMudahale14": 0.7,
+            "fiyatDegisim14": -0.1512,
+            "fiyatDegisimOrt": -0.1001,
+            "kapsamTemel14": 0.901,
+            "kapsamMudahale14": 0.901,
+            "kapsamDegisim14": 0,
+            "kapsamDegisimOrt": -0.0125,
+            "kapsamMutlakFarkPp14": 0,
+            "enBuyuk": 0.15119878015138988
+          },
+          {
+            "mal": "petrol",
+            "fiyatTemel14": 0.7867,
+            "fiyatMudahale14": 0.7898,
+            "fiyatDegisim14": 0.0039,
+            "fiyatDegisimOrt": -0.0482,
+            "kapsamTemel14": 0.909,
+            "kapsamMudahale14": 0.8963,
+            "kapsamDegisim14": -0.014,
+            "kapsamDegisimOrt": -0.0071,
+            "kapsamMutlakFarkPp14": -1.27,
+            "enBuyuk": 0.04815211727345167
+          },
+          {
+            "mal": "yakit",
+            "fiyatTemel14": 0.8399,
+            "fiyatMudahale14": 0.8827,
+            "fiyatDegisim14": 0.051,
+            "fiyatDegisimOrt": -0.0285,
+            "kapsamTemel14": 1,
+            "kapsamMudahale14": 0.8807,
+            "kapsamDegisim14": -0.1193,
+            "kapsamDegisimOrt": -0.1128,
+            "kapsamMutlakFarkPp14": -11.93,
+            "enBuyuk": 0.11925780000000008
+          },
+          {
+            "mal": "muhimmat",
+            "fiyatTemel14": 0.55,
+            "fiyatMudahale14": 0.55,
+            "fiyatDegisim14": 0,
+            "fiyatDegisimOrt": 0,
+            "kapsamTemel14": 1,
+            "kapsamMudahale14": 1,
+            "kapsamDegisim14": 0,
+            "kapsamDegisimOrt": 0,
+            "kapsamMutlakFarkPp14": 0,
+            "enBuyuk": 0
+          }
+        ]
+      },
+      "parametreler": {
+        "gun": 14,
+        "mudahaleBaslangicGun": 3,
+        "askeriyeKayanKapasite": 0.2,
+        "oyuncular": [
+          "sanayici",
+          "tuccar",
+          "lojistikci",
+          "militarist"
+        ],
+        "ornekAraligiSaat": 6,
+        "degisimTanimi": "goreli; payda max(|temel|, 0.05)",
+        "gurultuTabani": "ayni dunya tohumu, yalniz bot sapma tohumu +1000 (mudahalesiz); mudahale < 2x gurultu ve gurultu >= %10 ise belirsiz",
+        "hizli": false
+      },
+      "sureMs": 33623
+    },
+    {
+      "kimlik": "H5",
+      "hipotez": "Çevrimdışı kayıp sınırlı: 48 saat çevrimdışı oyuncu tek pencerede %25'ten fazla stok kaybetmez",
+      "olcum": {
+        "ad": "En büyük tek pencere kayıp oranı",
+        "deger": 0.25,
+        "birim": "oran",
+        "aciklama": "B'nin tek savaş penceresinde kaybettiği stok: değer bazlı (kayipOraniPpm) ve mal başına en büyük oran; tüm pencereler ve iki varyant içinde maksimum."
+      },
+      "esik": {
+        "aciklama": "Herhangi bir pencerede herhangi bir kayıp oranı > %25 ise vazgeç (kaldı)",
+        "deger": 0.25
+      },
+      "verdict": "gecti",
+      "tohumBasariOrani": 1,
+      "tohumBasina": [
+        {
+          "tohum": 1,
+          "olcum": 0.25,
+          "verdict": "gecti",
+          "durumOzeti": "7b1734f8f92e2112",
+          "ozet": {
+            "enBuyukTekPencereKayip": 0.25,
+            "varyantlar": [
+              {
+                "varyant": "pasif",
+                "savasSayisi": 6,
+                "pencereSayisi": 6,
+                "saldiranKazanma": 5,
+                "enBuyukDegerKayipOrani": 0.25,
+                "enBuyukMalKayipOrani": 0.25,
+                "kumulatifKayipOrani48s": 0.0741,
+                "saldiranBirlik": 62
+              },
+              {
+                "varyant": "savunma_emri",
+                "savasSayisi": 6,
+                "pencereSayisi": 6,
+                "saldiranKazanma": 5,
+                "enBuyukDegerKayipOrani": 0.25,
+                "enBuyukMalKayipOrani": 0.25,
+                "kumulatifKayipOrani48s": 0.0741,
+                "saldiranBirlik": 62
+              }
+            ]
+          }
+        },
+        {
+          "tohum": 2,
+          "olcum": 0.25,
+          "verdict": "gecti",
+          "durumOzeti": "1fed4059b01244b1",
+          "ozet": {
+            "enBuyukTekPencereKayip": 0.25,
+            "varyantlar": [
+              {
+                "varyant": "pasif",
+                "savasSayisi": 6,
+                "pencereSayisi": 6,
+                "saldiranKazanma": 6,
+                "enBuyukDegerKayipOrani": 0.25,
+                "enBuyukMalKayipOrani": 0.25,
+                "kumulatifKayipOrani48s": 0.1601,
+                "saldiranBirlik": 61
+              },
+              {
+                "varyant": "savunma_emri",
+                "savasSayisi": 6,
+                "pencereSayisi": 6,
+                "saldiranKazanma": 5,
+                "enBuyukDegerKayipOrani": 0.25,
+                "enBuyukMalKayipOrani": 0.25,
+                "kumulatifKayipOrani48s": 0.1569,
+                "saldiranBirlik": 60
+              }
+            ]
+          }
+        },
+        {
+          "tohum": 3,
+          "olcum": 0.25,
+          "verdict": "gecti",
+          "durumOzeti": "2f81b0dd784697a2",
+          "ozet": {
+            "enBuyukTekPencereKayip": 0.25,
+            "varyantlar": [
+              {
+                "varyant": "pasif",
+                "savasSayisi": 1,
+                "pencereSayisi": 1,
+                "saldiranKazanma": 1,
+                "enBuyukDegerKayipOrani": 0.25,
+                "enBuyukMalKayipOrani": 0.25,
+                "kumulatifKayipOrani48s": 0.0871,
+                "saldiranBirlik": 113
+              },
+              {
+                "varyant": "savunma_emri",
+                "savasSayisi": 1,
+                "pencereSayisi": 1,
+                "saldiranKazanma": 1,
+                "enBuyukDegerKayipOrani": 0.25,
+                "enBuyukMalKayipOrani": 0.25,
+                "kumulatifKayipOrani48s": 0.0871,
+                "saldiranBirlik": 113
+              }
+            ]
+          }
+        }
+      ],
+      "ayrinti": {
+        "pencereler": [
+          {
+            "tohum": 1,
+            "varyantlar": [
+              {
+                "varyant": "pasif",
+                "pencereler": [
+                  {
+                    "saldiranBolge": "kum_gecidi",
+                    "hedefBolge": "sanayi_ovasi",
+                    "kazanan": "b",
+                    "saldiranGuc": 223,
+                    "savunanGuc": 303,
+                    "kayipOraniPpm": 0,
+                    "malBazliEnBuyukOranPpm": 0,
+                    "enBuyukMal": "",
+                    "saldiranKazandi": false
+                  },
+                  {
+                    "saldiranBolge": "inci_limani",
+                    "hedefBolge": "celik_limani",
+                    "kazanan": "a",
+                    "saldiranGuc": 256,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249998,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "cevher",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "inci_limani",
+                    "hedefBolge": "hilal_adasi",
+                    "kazanan": "a",
+                    "saldiranGuc": 474,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "cevher",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "yel_burnu",
+                    "hedefBolge": "tas_gecit",
+                    "kazanan": "a",
+                    "saldiranGuc": 223,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "gida",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "orta_col",
+                    "hedefBolge": "ulu_dag",
+                    "kazanan": "a",
+                    "saldiranGuc": 184,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "gida",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "kum_gecidi",
+                    "hedefBolge": "komur_havzasi",
+                    "kazanan": "a",
+                    "saldiranGuc": 206,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "bakir",
+                    "saldiranKazandi": true
+                  }
+                ]
+              },
+              {
+                "varyant": "savunma_emri",
+                "pencereler": [
+                  {
+                    "saldiranBolge": "kum_gecidi",
+                    "hedefBolge": "sanayi_ovasi",
+                    "kazanan": "b",
+                    "saldiranGuc": 223,
+                    "savunanGuc": 394,
+                    "kayipOraniPpm": 0,
+                    "malBazliEnBuyukOranPpm": 0,
+                    "enBuyukMal": "",
+                    "saldiranKazandi": false
+                  },
+                  {
+                    "saldiranBolge": "inci_limani",
+                    "hedefBolge": "celik_limani",
+                    "kazanan": "a",
+                    "saldiranGuc": 256,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249998,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "cevher",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "inci_limani",
+                    "hedefBolge": "hilal_adasi",
+                    "kazanan": "a",
+                    "saldiranGuc": 474,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "cevher",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "yel_burnu",
+                    "hedefBolge": "tas_gecit",
+                    "kazanan": "a",
+                    "saldiranGuc": 223,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "gida",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "orta_col",
+                    "hedefBolge": "ulu_dag",
+                    "kazanan": "a",
+                    "saldiranGuc": 184,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "gida",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "kum_gecidi",
+                    "hedefBolge": "komur_havzasi",
+                    "kazanan": "a",
+                    "saldiranGuc": 206,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "bakir",
+                    "saldiranKazandi": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tohum": 2,
+            "varyantlar": [
+              {
+                "varyant": "pasif",
+                "pencereler": [
+                  {
+                    "saldiranBolge": "kurt_gecidi",
+                    "hedefBolge": "demir_dagi",
+                    "kazanan": "a",
+                    "saldiranGuc": 477,
+                    "savunanGuc": 456,
+                    "kayipOraniPpm": 249996,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "tahil",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "kurt_gecidi",
+                    "hedefBolge": "kor_ocak",
+                    "kazanan": "a",
+                    "saldiranGuc": 542,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "bakir",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "orta_ova",
+                    "hedefBolge": "yalin_zirve",
+                    "kazanan": "a",
+                    "saldiranGuc": 387,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "cevher",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "askan_kenti",
+                    "hedefBolge": "carvan_kenti",
+                    "kazanan": "a",
+                    "saldiranGuc": 483,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "komur",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "yelken_limani",
+                    "hedefBolge": "gumus_limani",
+                    "kazanan": "a",
+                    "saldiranGuc": 463,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "gida",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "kopuk_limani",
+                    "hedefBolge": "sisli_liman",
+                    "kazanan": "a",
+                    "saldiranGuc": 553,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "tahil",
+                    "saldiranKazandi": true
+                  }
+                ]
+              },
+              {
+                "varyant": "savunma_emri",
+                "pencereler": [
+                  {
+                    "saldiranBolge": "kurt_gecidi",
+                    "hedefBolge": "demir_dagi",
+                    "kazanan": "b",
+                    "saldiranGuc": 477,
+                    "savunanGuc": 593,
+                    "kayipOraniPpm": 0,
+                    "malBazliEnBuyukOranPpm": 0,
+                    "enBuyukMal": "",
+                    "saldiranKazandi": false
+                  },
+                  {
+                    "saldiranBolge": "kurt_gecidi",
+                    "hedefBolge": "kor_ocak",
+                    "kazanan": "a",
+                    "saldiranGuc": 433,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "bakir",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "orta_ova",
+                    "hedefBolge": "yalin_zirve",
+                    "kazanan": "a",
+                    "saldiranGuc": 387,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "cevher",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "askan_kenti",
+                    "hedefBolge": "carvan_kenti",
+                    "kazanan": "a",
+                    "saldiranGuc": 483,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "komur",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "yelken_limani",
+                    "hedefBolge": "gumus_limani",
+                    "kazanan": "a",
+                    "saldiranGuc": 463,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "gida",
+                    "saldiranKazandi": true
+                  },
+                  {
+                    "saldiranBolge": "kopuk_limani",
+                    "hedefBolge": "sisli_liman",
+                    "kazanan": "a",
+                    "saldiranGuc": 553,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "tahil",
+                    "saldiranKazandi": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tohum": 3,
+            "varyantlar": [
+              {
+                "varyant": "pasif",
+                "pencereler": [
+                  {
+                    "saldiranBolge": "carvan_kenti",
+                    "hedefBolge": "dorsa_kenti",
+                    "kazanan": "a",
+                    "saldiranGuc": 1661,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "tahil",
+                    "saldiranKazandi": true
+                  }
+                ]
+              },
+              {
+                "varyant": "savunma_emri",
+                "pencereler": [
+                  {
+                    "saldiranBolge": "carvan_kenti",
+                    "hedefBolge": "dorsa_kenti",
+                    "kazanan": "a",
+                    "saldiranGuc": 1661,
+                    "savunanGuc": 0,
+                    "kayipOraniPpm": 249999,
+                    "malBazliEnBuyukOranPpm": 250000,
+                    "enBuyukMal": "tahil",
+                    "saldiranKazandi": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "parametreler": {
+        "devletCiftiSecimi": "sinir kenari sayisina gore ilk 3 cift, tohum k icin (k-1) mod 3; her 3 tohumda roller yer degistirir",
+        "ciftler": [
+          "belora -> dorsa",
+          "askan -> carvan",
+          "carvan -> dorsa"
+        ],
+        "hazirlikGun": 8,
+        "enCokSavas": 6,
+        "varyantlar": [
+          "pasif",
+          "savunma_emri"
+        ],
+        "cevrimdisiSaat": 48,
+        "saldiranBot": "militarist (kendi savas ilani kapali; ilanlari koşucu verir)",
+        "hizli": false
+      },
+      "sureMs": 6832
+    },
+    {
+      "kimlik": "H6",
+      "hipotez": "Geç katılan işe yarar: yeni oyuncu 14 günde yerel ekonominin ilk yarısına ulaşma oranı %50'den az değil",
+      "olcum": {
+        "ad": "Geç katılanın yerel medyana ulaşma oranı",
+        "deger": 0.3333,
+        "birim": "oran",
+        "aciklama": "Katılımdan 14 gün sonra, bölge başına üretim artışı (taban fiyat) aynı devletteki yerleşik bölgelerin medyanına ≥ olan geç katılanların oranı."
+      },
+      "esik": {
+        "aciklama": "Ulaşan oranı < %50 ise vazgeç (kaldı)",
+        "deger": 0.5
+      },
+      "verdict": "kaldi",
+      "tohumBasariOrani": 0,
+      "tohumBasina": [
+        {
+          "tohum": 1,
+          "olcum": 0.25,
+          "verdict": "kaldi",
+          "durumOzeti": "c1c412ac24be837f",
+          "ozet": {
+            "gecKatilanSayisi": 8,
+            "ulasan": 2,
+            "ulasmaOrani": 0.25,
+            "ortalamaOran": 0.6406,
+            "gecKomut": 149,
+            "gecBasarisiz": 0
+          }
+        },
+        {
+          "tohum": 2,
+          "olcum": 0.375,
+          "verdict": "kaldi",
+          "durumOzeti": "30249b27a5ced282",
+          "ozet": {
+            "gecKatilanSayisi": 8,
+            "ulasan": 3,
+            "ulasmaOrani": 0.375,
+            "ortalamaOran": 0.8278,
+            "gecKomut": 184,
+            "gecBasarisiz": 0
+          }
+        },
+        {
+          "tohum": 3,
+          "olcum": 0.375,
+          "verdict": "kaldi",
+          "durumOzeti": "67e8c260b85c0090",
+          "ozet": {
+            "gecKatilanSayisi": 8,
+            "ulasan": 3,
+            "ulasmaOrani": 0.375,
+            "ortalamaOran": 0.8075,
+            "gecKomut": 311,
+            "gecBasarisiz": 0
+          }
+        }
+      ],
+      "ayrinti": {
+        "tohumlar": [
+          {
+            "tohum": 1,
+            "gecKatilanlar": [
+              {
+                "gec": "g0_0",
+                "devlet": "askan",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "ak_ova",
+                  "yelken_limani",
+                  "duman_koyu"
+                ],
+                "gecBolgeBasinaUretim": 5115729.3,
+                "yerlesikMedyan": 4361859.6,
+                "oran": 1.1728,
+                "ulasti": true
+              },
+              {
+                "gec": "g1_0",
+                "devlet": "belora",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "dogu_limani",
+                  "yel_burnu",
+                  "inci_limani"
+                ],
+                "gecBolgeBasinaUretim": 4813908.6,
+                "yerlesikMedyan": 2986487.9,
+                "oran": 1.6119,
+                "ulasti": true
+              },
+              {
+                "gec": "g2_0",
+                "devlet": "carvan",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "kuru_kiyi",
+                  "sisli_liman",
+                  "gumus_limani"
+                ],
+                "gecBolgeBasinaUretim": 325826.7,
+                "yerlesikMedyan": 3169735.8,
+                "oran": 0.1028,
+                "ulasti": false
+              },
+              {
+                "gec": "g3_0",
+                "devlet": "dorsa",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "tuz_golu",
+                  "tas_gecit",
+                  "celik_limani"
+                ],
+                "gecBolgeBasinaUretim": 2664943.4,
+                "yerlesikMedyan": 3858950.7,
+                "oran": 0.6906,
+                "ulasti": false
+              },
+              {
+                "gec": "g0_1",
+                "devlet": "askan",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "kopuk_limani",
+                  "tas_kapi",
+                  "kara_zirve"
+                ],
+                "gecBolgeBasinaUretim": 590702.5,
+                "yerlesikMedyan": 3694551.5,
+                "oran": 0.1599,
+                "ulasti": false
+              },
+              {
+                "gec": "g1_1",
+                "devlet": "belora",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "kum_burnu",
+                  "kizil_kaya",
+                  "kuru_tepe"
+                ],
+                "gecBolgeBasinaUretim": 1513440.9,
+                "yerlesikMedyan": 2446460,
+                "oran": 0.6186,
+                "ulasti": false
+              },
+              {
+                "gec": "g2_1",
+                "devlet": "carvan",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "tuz_koyu",
+                  "demir_dagi",
+                  "yalin_zirve"
+                ],
+                "gecBolgeBasinaUretim": 996455.1,
+                "yerlesikMedyan": 2961530.3,
+                "oran": 0.3365,
+                "ulasti": false
+              },
+              {
+                "gec": "g3_1",
+                "devlet": "dorsa",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "sanayi_ovasi",
+                  "bati_yamaci",
+                  "hilal_adasi"
+                ],
+                "gecBolgeBasinaUretim": 2897608.2,
+                "yerlesikMedyan": 6716444.3,
+                "oran": 0.4314,
+                "ulasti": false
+              }
+            ]
+          },
+          {
+            "tohum": 2,
+            "gecKatilanlar": [
+              {
+                "gec": "g0_0",
+                "devlet": "belora",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "kizil_kaya",
+                  "inci_limani",
+                  "kuru_tepe"
+                ],
+                "gecBolgeBasinaUretim": 3144492.9,
+                "yerlesikMedyan": 2986258.9,
+                "oran": 1.053,
+                "ulasti": true
+              },
+              {
+                "gec": "g1_0",
+                "devlet": "carvan",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "yalin_zirve",
+                  "gumus_limani",
+                  "demir_dagi"
+                ],
+                "gecBolgeBasinaUretim": 890561.6,
+                "yerlesikMedyan": 2216824.5,
+                "oran": 0.4017,
+                "ulasti": false
+              },
+              {
+                "gec": "g2_0",
+                "devlet": "dorsa",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "tuz_golu",
+                  "tas_gecit",
+                  "celik_limani"
+                ],
+                "gecBolgeBasinaUretim": 2660186,
+                "yerlesikMedyan": 2354100.8,
+                "oran": 1.13,
+                "ulasti": true
+              },
+              {
+                "gec": "g3_0",
+                "devlet": "askan",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "tas_kapi",
+                  "kopuk_limani",
+                  "kara_zirve"
+                ],
+                "gecBolgeBasinaUretim": 1193729.8,
+                "yerlesikMedyan": 3189355.3,
+                "oran": 0.3743,
+                "ulasti": false
+              },
+              {
+                "gec": "g0_1",
+                "devlet": "belora",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "dogu_limani",
+                  "yel_burnu",
+                  "kum_burnu"
+                ],
+                "gecBolgeBasinaUretim": 3463575.1,
+                "yerlesikMedyan": 2446598,
+                "oran": 1.4157,
+                "ulasti": true
+              },
+              {
+                "gec": "g1_1",
+                "devlet": "carvan",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "sisli_liman",
+                  "kuru_kiyi",
+                  "tuz_koyu"
+                ],
+                "gecBolgeBasinaUretim": 594104.5,
+                "yerlesikMedyan": 2117812.6,
+                "oran": 0.2805,
+                "ulasti": false
+              },
+              {
+                "gec": "g2_1",
+                "devlet": "dorsa",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "sanayi_ovasi",
+                  "bati_yamaci",
+                  "hilal_adasi"
+                ],
+                "gecBolgeBasinaUretim": 2897646.9,
+                "yerlesikMedyan": 2900815.4,
+                "oran": 0.9989,
+                "ulasti": false
+              },
+              {
+                "gec": "g3_1",
+                "devlet": "askan",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "ak_ova",
+                  "yelken_limani",
+                  "duman_koyu"
+                ],
+                "gecBolgeBasinaUretim": 2901859.1,
+                "yerlesikMedyan": 2995861.7,
+                "oran": 0.9686,
+                "ulasti": false
+              }
+            ]
+          },
+          {
+            "tohum": 3,
+            "gecKatilanlar": [
+              {
+                "gec": "g0_0",
+                "devlet": "carvan",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "tuz_koyu",
+                  "gumus_limani",
+                  "demir_dagi"
+                ],
+                "gecBolgeBasinaUretim": 1589072.5,
+                "yerlesikMedyan": 2217563,
+                "oran": 0.7166,
+                "ulasti": false
+              },
+              {
+                "gec": "g1_0",
+                "devlet": "dorsa",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "bati_yamaci",
+                  "celik_limani",
+                  "sanayi_ovasi"
+                ],
+                "gecBolgeBasinaUretim": 2175759.4,
+                "yerlesikMedyan": 6151623.6,
+                "oran": 0.3537,
+                "ulasti": false
+              },
+              {
+                "gec": "g2_0",
+                "devlet": "askan",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "yelken_limani",
+                  "ak_ova",
+                  "duman_koyu"
+                ],
+                "gecBolgeBasinaUretim": 4941850.5,
+                "yerlesikMedyan": 4354059.2,
+                "oran": 1.135,
+                "ulasti": true
+              },
+              {
+                "gec": "g3_0",
+                "devlet": "belora",
+                "katilmaGun": 10,
+                "bolgeler": [
+                  "kizil_kaya",
+                  "inci_limani",
+                  "kuru_tepe"
+                ],
+                "gecBolgeBasinaUretim": 3144115.4,
+                "yerlesikMedyan": 1945440.1,
+                "oran": 1.6161,
+                "ulasti": true
+              },
+              {
+                "gec": "g0_1",
+                "devlet": "carvan",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "yalin_zirve",
+                  "sisli_liman",
+                  "kuru_kiyi"
+                ],
+                "gecBolgeBasinaUretim": 682964.3,
+                "yerlesikMedyan": 2115539.7,
+                "oran": 0.3228,
+                "ulasti": false
+              },
+              {
+                "gec": "g1_1",
+                "devlet": "dorsa",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "tuz_golu",
+                  "tas_gecit",
+                  "hilal_adasi"
+                ],
+                "gecBolgeBasinaUretim": 1881707.8,
+                "yerlesikMedyan": 5110176.2,
+                "oran": 0.3682,
+                "ulasti": false
+              },
+              {
+                "gec": "g2_1",
+                "devlet": "askan",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "kopuk_limani",
+                  "tas_kapi",
+                  "kara_zirve"
+                ],
+                "gecBolgeBasinaUretim": 590691.5,
+                "yerlesikMedyan": 3692224.5,
+                "oran": 0.16,
+                "ulasti": false
+              },
+              {
+                "gec": "g3_1",
+                "devlet": "belora",
+                "katilmaGun": 20,
+                "bolgeler": [
+                  "kum_burnu",
+                  "dogu_limani",
+                  "yel_burnu"
+                ],
+                "gecBolgeBasinaUretim": 3463577.1,
+                "yerlesikMedyan": 1937638.1,
+                "oran": 1.7875,
+                "ulasti": true
+              }
+            ]
+          }
+        ]
+      },
+      "parametreler": {
+        "katilimGunleri": [
+          10,
+          20
+        ],
+        "olcumGunu": 14,
+        "geceKatilanBolgeSayisi": 3,
+        "yerlesikOyuncular": [
+          "sanayici",
+          "tuccar",
+          "lojistikci",
+          "militarist"
+        ],
+        "gecKatilanBot": "sanayici",
+        "yerlesikBolgeOrani": 0.5,
+        "bolgeDagitimi": "baskentten BFS sirasinda cift indeks yerlesik, tek indeks sahipsiz",
+        "hizli": false
+      },
+      "sureMs": 12055
+    },
+    {
+      "kimlik": "H7",
+      "hipotez": "Ayarla ve unut ne çöker ne eşitlenir: 24/48/72. saatte üretim oranı %50-85 aralığında",
+      "olcum": {
+        "ad": "72. saatte kur_ve_unut / aktif kümülatif üretim değeri oranı",
+        "deger": 0.7526,
+        "birim": "oran",
+        "aciklama": "Odak oyuncunun kümülatif üretim değeri (taban fiyat) oranı; karar noktaları 24/48/72. saat. Ortalama oranlar: 0.979 / 0.865 / 0.753."
+      },
+      "esik": {
+        "aciklama": "Üç noktanın hepsi [%50, %85] içinde olmalı; dışında ise vazgeç (kaldı)",
+        "deger": 0.85
+      },
+      "verdict": "kaldi",
+      "tohumBasariOrani": 0,
+      "tohumBasina": [
+        {
+          "tohum": 1,
+          "olcum": 0.6179,
+          "verdict": "kaldi",
+          "durumOzeti": "0850cefbc48adddd",
+          "ozet": {
+            "neden": "24s %96.6 > %85 (esitlenme: aktif oyun degersiz); 48s %76.1 aralik ici; 72s %61.8 aralik ici",
+            "oranlar": [
+              {
+                "saat": 24,
+                "oran": 0.9656,
+                "karar": true
+              },
+              {
+                "saat": 48,
+                "oran": 0.7614,
+                "karar": true
+              },
+              {
+                "saat": 72,
+                "oran": 0.6179,
+                "karar": true
+              },
+              {
+                "saat": 168,
+                "oran": 0.5363,
+                "karar": false
+              },
+              {
+                "saat": 336,
+                "oran": 0.4954,
+                "karar": false
+              }
+            ],
+            "aktifKomut": 94,
+            "unutKomut": 6,
+            "satirlar": [
+              {
+                "saat": 24,
+                "aktifUretim": 2123524.9,
+                "unutUretim": 2050493.3,
+                "oran": 0.9656,
+                "aktifHazine": 11783.7,
+                "unutHazine": 19481.2,
+                "kararNoktasi": true
+              },
+              {
+                "saat": 48,
+                "aktifUretim": 5534892.9,
+                "unutUretim": 4214098.5,
+                "oran": 0.7614,
+                "aktifHazine": 76692.1,
+                "unutHazine": 38003.8,
+                "kararNoktasi": true
+              },
+              {
+                "saat": 72,
+                "aktifUretim": 10309026.6,
+                "unutUretim": 6370029.8,
+                "oran": 0.6179,
+                "aktifHazine": 145861.1,
+                "unutHazine": 56303.4,
+                "kararNoktasi": true
+              },
+              {
+                "saat": 168,
+                "aktifUretim": 27816833.9,
+                "unutUretim": 14917202.4,
+                "oran": 0.5363,
+                "aktifHazine": 224766.7,
+                "unutHazine": 127823.4,
+                "kararNoktasi": false
+              },
+              {
+                "saat": 336,
+                "aktifUretim": 59715391.1,
+                "unutUretim": 29581117.8,
+                "oran": 0.4954,
+                "aktifHazine": 335486.5,
+                "unutHazine": 253749.4,
+                "kararNoktasi": false
+              }
+            ]
+          }
+        },
+        {
+          "tohum": 2,
+          "olcum": 0.805,
+          "verdict": "kaldi",
+          "durumOzeti": "d8a1dcd7dd16c842",
+          "ozet": {
+            "neden": "24s %99.4 > %85 (esitlenme: aktif oyun degersiz); 48s %91.0 > %85 (esitlenme: aktif oyun degersiz); 72s %80.5 aralik ici",
+            "oranlar": [
+              {
+                "saat": 24,
+                "oran": 0.9945,
+                "karar": true
+              },
+              {
+                "saat": 48,
+                "oran": 0.9095,
+                "karar": true
+              },
+              {
+                "saat": 72,
+                "oran": 0.805,
+                "karar": true
+              },
+              {
+                "saat": 168,
+                "oran": 0.5909,
+                "karar": false
+              },
+              {
+                "saat": 336,
+                "oran": 0.5079,
+                "karar": false
+              }
+            ],
+            "aktifKomut": 74,
+            "unutKomut": 6,
+            "satirlar": [
+              {
+                "saat": 24,
+                "aktifUretim": 2719765.2,
+                "unutUretim": 2704784.4,
+                "oran": 0.9945,
+                "aktifHazine": 2810.1,
+                "unutHazine": 18614.7,
+                "kararNoktasi": true
+              },
+              {
+                "saat": 48,
+                "aktifUretim": 6264742.6,
+                "unutUretim": 5697844.7,
+                "oran": 0.9095,
+                "aktifHazine": 55948.8,
+                "unutHazine": 36336.2,
+                "kararNoktasi": true
+              },
+              {
+                "saat": 72,
+                "aktifUretim": 10785276.2,
+                "unutUretim": 8682232.2,
+                "oran": 0.805,
+                "aktifHazine": 198216.2,
+                "unutHazine": 53666.5,
+                "kararNoktasi": true
+              },
+              {
+                "saat": 168,
+                "aktifUretim": 31918493.4,
+                "unutUretim": 18860619.8,
+                "oran": 0.5909,
+                "aktifHazine": 1098970,
+                "unutHazine": 121315.2,
+                "kararNoktasi": false
+              },
+              {
+                "saat": 336,
+                "aktifUretim": 69374228.8,
+                "unutUretim": 35237088.8,
+                "oran": 0.5079,
+                "aktifHazine": 2283753.8,
+                "unutHazine": 237907,
+                "kararNoktasi": false
+              }
+            ]
+          }
+        },
+        {
+          "tohum": 3,
+          "olcum": 0.835,
+          "verdict": "kaldi",
+          "durumOzeti": "e770baa5f890d9c5",
+          "ozet": {
+            "neden": "24s %97.8 > %85 (esitlenme: aktif oyun degersiz); 48s %92.5 > %85 (esitlenme: aktif oyun degersiz); 72s %83.5 aralik ici",
+            "oranlar": [
+              {
+                "saat": 24,
+                "oran": 0.978,
+                "karar": true
+              },
+              {
+                "saat": 48,
+                "oran": 0.9245,
+                "karar": true
+              },
+              {
+                "saat": 72,
+                "oran": 0.835,
+                "karar": true
+              },
+              {
+                "saat": 168,
+                "oran": 0.5874,
+                "karar": false
+              },
+              {
+                "saat": 336,
+                "oran": 0.5553,
+                "karar": false
+              }
+            ],
+            "aktifKomut": 89,
+            "unutKomut": 6,
+            "satirlar": [
+              {
+                "saat": 24,
+                "aktifUretim": 2151383.8,
+                "unutUretim": 2104150.3,
+                "oran": 0.978,
+                "aktifHazine": 7142.9,
+                "unutHazine": 19829.6,
+                "kararNoktasi": true
+              },
+              {
+                "saat": 48,
+                "aktifUretim": 4667817.6,
+                "unutUretim": 4315470.8,
+                "oran": 0.9245,
+                "aktifHazine": 13961.9,
+                "unutHazine": 38564.1,
+                "kararNoktasi": true
+              },
+              {
+                "saat": 72,
+                "aktifUretim": 7805439.6,
+                "unutUretim": 6517395,
+                "oran": 0.835,
+                "aktifHazine": 65690.5,
+                "unutHazine": 57319.1,
+                "kararNoktasi": true
+              },
+              {
+                "saat": 168,
+                "aktifUretim": 25002416.8,
+                "unutUretim": 14686588.2,
+                "oran": 0.5874,
+                "aktifHazine": 420031.8,
+                "unutHazine": 132380.4,
+                "kararNoktasi": false
+              },
+              {
+                "saat": 336,
+                "aktifUretim": 51081108.4,
+                "unutUretim": 28365313.6,
+                "oran": 0.5553,
+                "aktifHazine": 1178594.3,
+                "unutHazine": 268925.3,
+                "kararNoktasi": false
+              }
+            ]
+          }
+        }
+      ],
+      "ayrinti": {
+        "ortalamaOranlar": {
+          "24s": 0.9794,
+          "48s": 0.8651,
+          "72s": 0.7526
+        }
+      },
+      "parametreler": {
+        "karar": "kur_ve_unut / aktif (sanayici), odak = ilk devlet",
+        "saatler": [
+          24,
+          48,
+          72
+        ],
+        "ekGunler": [
+          7,
+          14
+        ],
+        "diger": [
+          "tuccar",
+          "lojistikci",
+          "militarist"
+        ],
+        "kurVeUnutIlkPlanKomut": "en fazla 10 (sanayici + tuccar ilk plani)",
+        "hizli": false
+      },
+      "sureMs": 19855
+    }
+  ]
+}
