@@ -1,4 +1,5 @@
 /** Markdown raporu: özet tablo, hipotez ayrıntıları, parametreler, çalışma süresi ve determinizm izi. */
+import { TOHUM_NOTU } from "./ortak";
 import type { HipotezSonucu, Verdict } from "./tipler";
 
 /** `--karsilastir` ile okunan önceki ölçüm (JSON'dan; yalnızca özet tablo için gereken alanlar). */
@@ -136,10 +137,27 @@ function h1Ayrinti(h: HipotezSonucu): string {
 function h2Ayrinti(h: HipotezSonucu): string {
   const t = h.tohumBasina.map((x) => {
     const o = kayit(x.ozet);
-    return [x.tohum, yuzde(o["tekrarEndeksi"] as number), yuzde(o["tekrarEndeksiSon10"] as number), yuzde(o["tekrarEndeksiSikiBolgeli"] as number), yuzde(o["tekrarEndeksiEylemGunleri"] as number), sayi(o["jaccardOrtalama"], 2), sayi(o["sifirGunSayisi"], 0), sayi(o["ilkSifirGun"], 0), `${o["odakKomut"]}/${o["odakBasarisiz"]}`];
+    const pg = Array.isArray(o["pencereGunleri"]) ? (o["pencereGunleri"] as number[]).join("-") : "—";
+    return [
+      x.tohum,
+      `**${yuzde(o["tekrarEndeksi"] as number | null)}**`,
+      pg,
+      `${sayi(o["pencereCiftSayisi"], 0)} (${sayi(o["pencereTukenmeGecisSayisi"], 0)} çıkarıldı)`,
+      yuzde(o["tekrarEndeksiTumDonem"] as number | null),
+      yuzde(o["tekrarEndeksiSikiBolgeli"] as number | null),
+      yuzde(o["tekrarEndeksiEylemGunleri"] as number | null),
+      sayi(o["jaccardOrtalama"], 2),
+      `${sayi(o["tukenmeGecisSayisi"], 0)}/${sayi(o["gecisSayisi"], 0)} (${yuzde(o["tukenmeOrani"] as number, 0)})`,
+      sayi(o["sifirGunSayisi"], 0),
+      sayi(o["ilkSifirGun"], 0),
+      `${o["odakKomut"]}/${o["odakBasarisiz"]}`,
+    ];
   });
   const p = [
-    `${tablo(["Tohum", "RI (tüm)", "RI (son 10 gün)", "RI (bölge dahil)", "RI (yalnız eylem günleri)", "Jaccard", "Sıfır-aday günü", "Kalıcı sıfır günü", "Odak komut/başarısız"], t)}`,
+    "**Karar ölçümü** = son 10 günlük pencere (30 günlük koşuda 21-30. günler) tekrar endeksi (RI): (g-1 → g) geçişlerinde en iyi anahtarın aynı olma oranı. " +
+      "\"hicbir_sey\" → \"hicbir_sey\" geçişleri tekrar sayılmaz; ayrı **karar tükenmesi** metriğidir, RI'nin payından ve paydasından çıkarılır (sütunlarda kaç geçiş çıkarıldığı yazılıdır). " +
+      "Tüm dönem (2..N. gün) RI ikincildir.",
+    `${tablo(["Tohum", "RI (karar: son 10 gün)", "Pencere günleri", "Pencere payda", "RI (tüm dönem, ikincil)", "RI (bölge dahil, pencere)", "RI (yalnız eylem günleri)", "Jaccard", "Karar tükenmesi (hicbir_sey→hicbir_sey / geçiş)", "Sıfır-aday günü", "Kalıcı sıfır günü", "Odak komut/başarısız"], t)}`,
   ];
   const tohumlar = dizi(kayit(h.ayrinti)["tohumlar"]);
   const ilk = tohumlar[0];
@@ -177,17 +195,42 @@ function h3Ayrinti(h: HipotezSonucu): string {
 
 function h5Ayrinti(h: HipotezSonucu): string {
   const sat: unknown[][] = [];
+  const red: string[] = [];
   for (const x of h.tohumBasina) {
     for (const v of dizi(kayit(x.ozet)["varyantlar"])) {
-      sat.push([x.tohum, v["varyant"], v["savasSayisi"], v["saldiranKazanma"], yuzde(v["enBuyukDegerKayipOrani"] as number, 2), yuzde(v["enBuyukMalKayipOrani"] as number, 2), yuzde(v["kumulatifKayipOrani48s"] as number, 2), v["saldiranBirlik"]]);
+      sat.push([
+        x.tohum,
+        v["varyant"],
+        `${(v["saldiranlar"] as string[]).join("+")}`,
+        `${v["kabulEdilenIlan"]} / ${v["reddedilenIlan"]}`,
+        v["saldiranKazanma"],
+        v["enCokParalelHedef"],
+        `**${yuzde(v["enBuyukKayan24sDeger"] as number, 2)}**`,
+        `**${yuzde(v["enBuyukKayan24sMal"] as number, 2)}** (${String(v["kayanMal"] || "—")})`,
+        `${yuzde(v["enBuyukKayan24sDegerBaslangicStoku"] as number, 2)} / ${yuzde(v["enBuyukKayan24sMalBaslangicStoku"] as number, 2)}`,
+        `${String(v["kayanBolge"] || "—")} @ ${sayi(v["kayanBaslangicSaat"], 2)} s`,
+        yuzde(v["enBuyukTekPencereDeger"] as number, 2),
+        yuzde(v["enBuyukTekPencereMal"] as number, 2),
+        `${yuzde(v["kumulatifKayipBolge48s"] as number, 2)} / ${yuzde(v["kumulatifKayipToplam48s"] as number, 2)}`,
+        v["saldiranBirlik"],
+      ]);
+      const nedenler = Object.entries(kayit(v["redNedenleri"])).sort((p, q) => (q[1] as number) - (p[1] as number));
+      if (nedenler.length > 0) red.push(`- Tohum ${x.tohum}, ${String(v["varyant"])}: ${nedenler.map(([k, n]) => `${k} ×${String(n)}`).join("; ")}`);
     }
   }
-  const p = [tablo(["Tohum", "Varyant", "Savaş", "Saldıran galip", "Tek pencere değer kaybı (maks)", "Tek pencere mal kaybı (maks)", "48 saat kümülatif değer kaybı", "Saldıran birlik"], sat)];
+  const p = [
+    "**Karar ölçümü**: B'nin herhangi bir bölgesinde herhangi bir 24 saatlik kayan pencerede toplam stok kaybı / pencere içi en yüksek stok (değer ağırlıklı ve mal başına en büyük; pencere başı stoğa oran ikincil); 48 saat boyunca her saat tüm uygun (saldıran bölge → B bölgesi) çiftleri için ilan denenir (paralel ve ardışık, iki saldıran). Çekirdeğin reddettiği ilanlar normaldir ve sayılır.",
+    tablo(
+      ["Tohum", "Varyant", "Saldıran", "İlan kabul / red", "Saldıran galip", "Hedef başına en çok eşzamanlı savaş", "24 sa kayan: değer kaybı (maks)", "24 sa kayan: mal kaybı (maks)", "Başlangıç stokuna oranla (ikincil): değer / mal", "En kötü pencere (bölge @ başlangıç)", "Tek savaş penceresi değer (maks)", "Tek savaş penceresi mal (maks)", "48 sa kümülatif (bölge maks / B toplam)", "Saldıran birlik"],
+      sat,
+    ),
+  ];
+  if (red.length > 0) p.push(`**Reddedilen ilan denemeleri (nedene göre)**\n\n${red.join("\n")}`);
   const t0 = dizi(kayit(h.ayrinti)["pencereler"])[0];
   const v0 = t0 ? dizi(t0["varyantlar"])[0] : undefined;
   if (t0 && v0) {
-    const s = dizi(v0["pencereler"]).map((w) => [w["saldiranBolge"], w["hedefBolge"], w["kazanan"], w["saldiranGuc"], w["savunanGuc"], yuzde((w["kayipOraniPpm"] as number) / 1_000_000, 2), yuzde((w["malBazliEnBuyukOranPpm"] as number) / 1_000_000, 2), String(w["enBuyukMal"] || "—")]);
-    p.push(`**Pencereler (tohum ${String(t0["tohum"])}, varyant ${String(v0["varyant"])})**\n\n${tablo(["Saldıran bölge", "Hedef bölge", "Kazanan", "Saldıran güç", "Savunan güç", "Değer kaybı", "Mal kaybı (maks)", "Mal"], s)}`);
+    const s = dizi(v0["pencereler"]).map((w) => [w["saldiran"], w["saldiranBolge"], w["hedefBolge"], w["kazanan"], w["saldiranGuc"], w["savunanGuc"], yuzde((w["kayipOraniPpm"] as number) / 1_000_000, 2), yuzde((w["malBazliEnBuyukOranPpm"] as number) / 1_000_000, 2), String(w["enBuyukMal"] || "—")]);
+    p.push(`**Savaş pencereleri (tohum ${String(t0["tohum"])}, varyant ${String(v0["varyant"])})**\n\n${tablo(["Saldıran", "Saldıran bölge", "Hedef bölge", "Kazanan", "Saldıran güç", "Savunan güç", "Değer kaybı", "Mal kaybı (maks)", "Mal"], s)}`);
   }
   return p.join("\n\n");
 }
@@ -210,11 +253,23 @@ function h7Ayrinti(h: HipotezSonucu): string {
   const sat: unknown[][] = [];
   for (const x of h.tohumBasina) {
     for (const s of dizi(kayit(x.ozet)["satirlar"])) {
-      sat.push([x.tohum, `${String(s["saat"])} s${s["kararNoktasi"] ? "" : " (ek)"}`, Math.round((s["aktifUretim"] as number) / 1000) + "k", Math.round((s["unutUretim"] as number) / 1000) + "k", yuzde(s["oran"] as number), Math.round(s["aktifHazine"] as number) + " / " + Math.round(s["unutHazine"] as number)]);
+      sat.push([
+        x.tohum,
+        `${String(s["saat"])} s${s["kararNoktasi"] ? "" : " (ek)"}`,
+        Math.round((s["aktifPencereUretim"] as number) / 100) / 10 + "k",
+        Math.round((s["unutPencereUretim"] as number) / 100) / 10 + "k",
+        `**${yuzde(s["oran"] as number)}**`,
+        yuzde(s["oranKumulatif"] as number),
+        Math.round((s["aktifUretim"] as number) / 1000) + "k / " + Math.round((s["unutUretim"] as number) / 1000) + "k",
+        Math.round(s["aktifHazine"] as number) + " / " + Math.round(s["unutHazine"] as number),
+      ]);
     }
   }
   const n = h.tohumBasina.map((x) => `- Tohum ${x.tohum}: ${String(kayit(x.ozet)["neden"])} (aktif komut ${String(kayit(x.ozet)["aktifKomut"])}, kur_ve_unut komut ${String(kayit(x.ozet)["unutKomut"])})`);
-  return `${tablo(["Tohum", "Nokta", "Aktif üretim", "kur_ve_unut üretim", "Oran", "Hazine (aktif / unut)"], sat)}\n\n${n.join("\n")}`;
+  return (
+    `**Karar ölçümü** (PDF: "24/48/72. saatte ÜRETİM"): her karar saatinde, o saate kadarki son ${String(kayit(h.parametreler)["pencereSaat"])} saatlik pencerede odak oyuncunun ürettiği değerin (brüt, taban fiyat) oranı = kur_ve_unut / aktif; kümülatif oran ikincildir. "(ek)" satırları bilgi amaçlıdır, karara girmez.\n\n` +
+    `${tablo(["Tohum", "Nokta", "Aktif pencere üretimi", "kur_ve_unut pencere üretimi", "Oran (karar)", "Oran (kümülatif, ikincil)", "Kümülatif üretim (aktif / unut)", "Hazine (aktif / unut)"], sat)}\n\n${n.join("\n")}`
+  );
 }
 
 const AYRINTI: Record<string, (h: HipotezSonucu) => string> = { H1: h1Ayrinti, H2: h2Ayrinti, H3: h3Ayrinti, H5: h5Ayrinti, H6: h6Ayrinti, H7: h7Ayrinti };
@@ -236,7 +291,7 @@ export function raporUret(sonuclar: readonly HipotezSonucu[], meta: RaporMeta): 
   const degerMetni = (b: string | undefined, d: number | null | undefined): string => (d === null || d === undefined ? "—" : b === "oran" ? yuzde(d) : String(d));
   s.push(
     tablo(
-      ["Hipotez", "Ölçüm", "Eşik", "Sonuç", "Tohum başarı oranı", ...(karsi ? ["Önceki ölçüm", "Önceki sonuç"] : [])],
+      ["Hipotez", "Ölçüm", "Eşik", "Sonuç", "Koşul başarı oranı", ...(karsi ? ["Önceki ölçüm", "Önceki sonuç"] : [])],
       sonuclar.map((h) => {
         const p = onceki.get(h.kimlik);
         const farkliTanim = p?.olcum?.ad !== undefined && p.olcum.ad !== h.olcum.ad;
@@ -251,13 +306,14 @@ export function raporUret(sonuclar: readonly HipotezSonucu[], meta: RaporMeta): 
       }),
     ),
   );
-  s.push("Sonuç sözlüğü: GEÇTİ = vazgeçme ölçütü tetiklenmedi (hipotez ayakta); KALDI = ölçüt tetiklendi; BELİRSİZ = tohumlar çelişiyor veya ölçüm güvenilir değil. \"Tohum başarı oranı\" = GEÇTİ diyen tohumların oranı.");
+  s.push("Sonuç sözlüğü: GEÇTİ = vazgeçme ölçütü tetiklenmedi (hipotez ayakta); KALDI = ölçüt tetiklendi; BELİRSİZ = tohumlar çelişiyor veya ölçüm güvenilir değil. \"Koşul başarı oranı\" = GEÇTİ diyen koşulların (tohumların) oranıdır. Her tohum bağımsız bir örnek değil, bir koşuldur: tohum = devlet sırası rotasyonu (hangi devletin odak/ilk oyuncu olduğu) + savaş rastgeleliği; bu yüzden oran bir güven aralığı değil, koşullar üzerinden sayımdır.");
 
   for (const h of sonuclar) {
     s.push(`## ${h.kimlik} — ${h.hipotez}`);
     s.push(`- **Ölçüm**: ${h.olcum.ad} = ${h.olcum.deger === null ? "—" : h.olcum.birim === "oran" ? yuzde(h.olcum.deger, 2) : h.olcum.deger}. ${h.olcum.aciklama}`);
     s.push(`- **Eşik**: ${h.esik.aciklama}`);
-    s.push(`- **Sonuç**: ${verdictMetni(h.verdict)} (tohum başarı oranı ${yuzde(h.tohumBasariOrani, 0)})`);
+    s.push(`- **Sonuç**: ${verdictMetni(h.verdict)} (koşul başarı oranı ${yuzde(h.tohumBasariOrani, 0)})`);
+    s.push(`> **Tohum notu**: ${TOHUM_NOTU}`);
     const f = AYRINTI[h.kimlik];
     s.push(f ? f(h) : "```json\n" + JSON.stringify(h.ayrinti, null, 1) + "\n```");
   }

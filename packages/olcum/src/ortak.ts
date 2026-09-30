@@ -30,6 +30,14 @@ export function tohumAyristir(metin: string): number[] {
   return [...sonuc].sort((x, y) => x - y);
 }
 
+/**
+ * Dizge karşılaştırıcısı: eşitlikte 0 döner (kararlı, ICU/yerel ayar bağımsız; `localeCompare` kullanılmaz).
+ * Çok anahtarlı sıralamada `a || b` zincirinde tie-break için güvenle kullanılır.
+ */
+export function karsilastir(x: string, y: string): number {
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
 /** Devlet kimliği -> harita sırasındaki bölge kimlikleri. */
 export function devletBolgeleri(harita: HaritaDosyasi): Record<string, string[]> {
   const s: Record<string, string[]> = {};
@@ -75,7 +83,7 @@ export function baskent(harita: HaritaDosyasi, devlet: string): string {
   const bl = harita.bolgeler.filter((b) => b.devlet === devlet);
   const k = bl.find((b) => b.id.endsWith("_kenti"));
   if (k) return k.id;
-  return [...bl].sort((x, y) => y.nufus - x.nufus || (x.id < y.id ? -1 : 1))[0]?.id ?? "";
+  return [...bl].sort((x, y) => y.nufus - x.nufus || karsilastir(x.id, y.id))[0]?.id ?? "";
 }
 
 /** Sıralı durumOzeti listesinden tek bir iz (determinizm kanıtı). */
@@ -120,6 +128,8 @@ export function say(x: number, n = 4): number {
  * Devlet sırasını tohuma göre döndürür: tohum k için ilk devlet (k-1) mod n. Böylece farklı tohumlar farklı
  * devletleri "odak/ilk" yapar ve haritanın asimetrisi tohumlar arası değişkenlik sağlar (simülasyon tohumu yalnızca
  * savaş/rastgele akışlarını etkilediği için tek başına ekonomide çeşitlilik yaratmaz).
+ * DİKKAT (karıştırıcı faktör): tohum = devlet sırası rotasyonu + savaş rastgeleliği. Tohumlar arası fark esas olarak
+ * hangi devletin odak oyuncu olduğundan gelir; tohumlar bağımsız örnek değil, "koşul"dur (bkz. TOHUM_NOTU).
  */
 export function devletSirasi(devletler: readonly string[], tohum: number): string[] {
   const n = devletler.length;
@@ -127,3 +137,10 @@ export function devletSirasi(devletler: readonly string[], tohum: number): strin
   const k = (((tohum - 1) % n) + n) % n;
   return [...devletler.slice(k), ...devletler.slice(0, k)];
 }
+
+/** Raporlarda her hipotez sonucunun altına yazılan tohum notu (tohumun ne olduğu ve ne olmadığı). */
+export const TOHUM_NOTU =
+  "Tohum = devlet sırası rotasyonu + savaş rastgeleliği. Simülasyon tohumu savaş dışında ekonomiyi değiştirmez; " +
+  "tohumlar arası fark esas olarak hangi devletin odak/ilk oyuncu olduğundan (devlet sırası rotasyonu, bkz. devletSirasi) " +
+  "gelir. Bu yüzden tohumlar bağımsız örnek değil, birer koşuldur (haritanın asimetrisi × devlet konumu); " +
+  "\"koşul başarı oranı\" koşullar üzerinden sayım olup istatistiksel güven aralığı vermez.";

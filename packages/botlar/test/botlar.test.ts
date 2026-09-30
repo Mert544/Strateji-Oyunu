@@ -84,6 +84,25 @@ describe("botlar", () => {
     expect(r.komutSayisi["b"]).toBeGreaterThan(0);
   });
 
+  it("koşucu: aynı karar anında bot sırası k mod n kaydırmayla döner (deterministik)", () => {
+    const sira: string[] = [];
+    const izleyici = (id: string): KosuOyuncusu["bot"] => ({
+      oyuncu: id,
+      arketip: "pasif",
+      karar: (sim) => {
+        sira.push(`${Math.floor(sim.dunya.zaman / (6 * SAAT))}:${id}`);
+        return [];
+      },
+    });
+    const oyuncular: KosuOyuncusu[] = [
+      { id: "a", bolgeler: KUZEY, bot: izleyici("a"), katilmaMs: 0 },
+      { id: "b", bolgeler: GUNEY, bot: izleyici("b"), katilmaMs: 0 },
+    ];
+    kos({ veri: miniVeriyiYukle(), tohum: 1, oyuncular, sureMs: 18 * SAAT });
+    // karar anları 0, 6, 12 saat: k=0 a,b; k=1 b,a; k=2 a,b
+    expect(sira).toEqual(["0:a", "0:b", "1:b", "1:a", "2:a", "2:b"]);
+  });
+
   it("koşucu: gözlem geri çağrısı aralıkta ve bitişte çağrılır", () => {
     const an: number[] = [];
     kos({ veri: miniVeriyiYukle(), tohum: 1, oyuncular: ikiOyuncu("pasif", "pasif"), sureMs: GUN, gozlemAraligiMs: 8 * SAAT, gozlem: (_s, t) => an.push(t) });

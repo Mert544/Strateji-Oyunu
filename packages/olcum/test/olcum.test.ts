@@ -19,6 +19,8 @@ import {
   h7Kos,
   hipotezAyristir,
   kapsamOzeti,
+  karsilastir,
+  kayanKayipOlc,
   ortalamaSira,
   raporUret,
   siralamaOzeti,
@@ -134,6 +136,8 @@ describe("metrikler", () => {
       expect(v).toBeLessThanOrEqual(1);
     }
     expect(k.hucreSayisi).toBe(3 * sim.ic.mallar.length);
+    expect(k.talepliHucreSayisi).toBeLessThanOrEqual(k.hucreSayisi);
+    expect(k.talepliHucreSayisi).toBeGreaterThan(0);
   });
 });
 
@@ -189,7 +193,14 @@ describe("yardımcılar", () => {
     expect(ortalamaSira([2, 2, 1])).toEqual([1.5, 1.5, 3]);
   });
 
-  it("H2 metrikleri: tekrar endeksi ve tükenme serisi", () => {
+  it("karşılaştırıcı eşitlikte 0 döner", () => {
+    expect(karsilastir("a", "a")).toBe(0);
+    expect(karsilastir("a", "b")).toBe(-1);
+    expect(karsilastir("b", "a")).toBe(1);
+    expect(["b", "a", "b"].sort(karsilastir)).toEqual(["a", "b", "b"]);
+  });
+
+  it("H2 metrikleri: karar penceresi, tükenme geçişleri paydadan çıkar", () => {
     const g = (gun: number, enIyi: string, poz: number, anahtarlar: string[] = []): Parameters<typeof h2Metrikleri>[0][number] => ({
       gun,
       enIyi,
@@ -201,10 +212,56 @@ describe("yardımcılar", () => {
       tumMarjinaller: [],
     });
     const m = h2Metrikleri([g(1, "a", 2, ["x"]), g(2, "a", 2, ["x"]), g(3, "b", 1, ["y"]), g(4, "hicbir_sey", 0), g(5, "hicbir_sey", 0)]);
-    expect(m.tekrarEndeksi).toBeCloseTo(2 / 4, 6);
+    // geçişler: a>a (aynı), a>b, b>h, h>h (tükenme: çıkarılır) -> 1/3
+    expect(m.tekrarEndeksiTumDonem).toBeCloseTo(1 / 3, 6);
+    expect(m.tekrarEndeksi).toBeCloseTo(1 / 3, 6);
+    expect(m.tukenmeGecisSayisi).toBe(1);
+    expect(m.gecisSayisi).toBe(4);
+    expect(m.pencereCiftSayisi).toBe(3);
     expect(m.tukenmeSerisi).toEqual([2, 2, 1, 0, 0]);
     expect(m.ilkSifirGun).toBe(4);
     expect(m.sifirGunSayisi).toBe(2);
+    // karar penceresi yalnızca son 2 geçiş: b>h (aynı değil), h>h (çıkarılır) -> 0/1
+    const p = h2Metrikleri([g(1, "a", 2), g(2, "a", 2), g(3, "b", 1), g(4, "hicbir_sey", 0), g(5, "hicbir_sey", 0)], 2);
+    expect(p.tekrarEndeksi).toBe(0);
+    expect(p.pencereGunleri).toEqual([4, 5]);
+    expect(p.pencereTukenmeGecisSayisi).toBe(1);
+    expect(p.tekrarEndeksiTumDonem).toBeCloseTo(1 / 3, 6);
+    // pencerede yalnızca tükenme varsa RI tanımsızdır
+    const t = h2Metrikleri([g(1, "a", 2), g(2, "hicbir_sey", 0), g(3, "hicbir_sey", 0), g(4, "hicbir_sey", 0)], 2);
+    expect(t.tekrarEndeksi).toBeNull();
+    expect(t.pencereCiftSayisi).toBe(0);
+  });
+
+  it("kayan 24 saatlik kayıp: paralel savaşların kayıpları toplanır, pencere dışı olmaz", () => {
+    const SAAT_MS = 3_600_000;
+    const mallar = ["x", "y"];
+    const taban = [1, 2];
+    const stok = (x: number, y: number): number[][] => [[x, y]];
+    const anlikler = [0, 12, 24, 36].map((sa) => ({ t: sa * SAAT_MS, stok: stok(100_000, 100_000) }));
+    // iki ayrı savaş, 10 saat arayla: her biri x'in %20'sini alır -> pencerede %40
+    const olaylar = [
+      { t: 2 * SAAT_MS, r: 0, kayip: [20_000, 0] },
+      { t: 12 * SAAT_MS, r: 0, kayip: [20_000, 0] },
+      { t: 40 * SAAT_MS, r: 0, kayip: [90_000, 0] }, // başlangıç 24 saatinden sonra: yalnız 36. saat penceresinde
+    ];
+    const k = kayanKayipOlc(anlikler, olaylar, ["b1"], mallar, taban, 0);
+    expect(k.malPpm).toBe(900_000); // 36. saatte başlayan pencere: 90k/100k
+    expect(k.bolge).toBe("b1");
+    const k2 = kayanKayipOlc(anlikler.slice(0, 3), olaylar.slice(0, 2), ["b1"], mallar, taban, 0);
+    expect(k2.malPpm).toBe(400_000);
+    // değer: 40k x × 1 / (100k×1 + 100k×2) = 40/300
+    expect(k2.degerPpm).toBe(Math.floor((40_000 * 1_000_000) / 300_000));
+    expect(kayanKayipOlc(anlikler, [], ["b1"], mallar, taban, 0).malPpm).toBe(0);
+    // üretim büyümesi: stok 100k -> 200k, tek yağma 50k (= anlık stokun %25'i): karar %25, başlangıç stokuna göre %50
+    const buyuyen = [
+      { t: 0, stok: stok(100_000, 100_000) },
+      { t: 12 * SAAT_MS, stok: stok(150_000, 100_000) },
+      { t: 20 * SAAT_MS - 1, stok: stok(200_000, 100_000) },
+    ];
+    const g = kayanKayipOlc(buyuyen, [{ t: 20 * SAAT_MS, r: 0, kayip: [50_000, 0] }], ["b1"], mallar, taban, 0);
+    expect(g.malPpm).toBe(250_000);
+    expect(g.baslangicMalPpm).toBe(500_000);
   });
 });
 
@@ -250,9 +307,14 @@ describe("hipotez koşucuları (kısa sürüm)", () => {
     sonuclar.push(h);
   });
 
-  it("H5: pencere sonuçları ölçülür ve kayıp tavanı aşılmaz", () => {
+  it("H5: kayan pencere ölçülür, ilanlar paralel denenir ve kayıp tavanı aşılmaz", () => {
     const h = h5Kos({ tohumlar, kisa: true });
     semaDogru(h, "H5", 1);
+    const v = (h.tohumBasina[0]!.ozet["varyantlar"] as Array<{ kabulEdilenIlan: number; reddedilenIlan: number; saldiranlar: string[]; enBuyukKayan24sDeger: number; enBuyukTekPencereDeger: number }>)[0]!;
+    expect(v.kabulEdilenIlan).toBeGreaterThan(0);
+    expect(v.reddedilenIlan).toBeGreaterThanOrEqual(0);
+    expect(v.saldiranlar[0]).toBe("a");
+    expect(v.enBuyukKayan24sDeger).toBeGreaterThanOrEqual(0);
     expect(h.verdict).not.toBe("kaldi");
     expect(kararli(h5Kos({ tohumlar, kisa: true }))).toBe(kararli(h));
     sonuclar.push(h);
@@ -270,9 +332,16 @@ describe("hipotez koşucuları (kısa sürüm)", () => {
   it("H7: aktif ve kur_ve_unut oranı 24/48/72 saatte hesaplanır", () => {
     const h = h7Kos({ tohumlar, kisa: true });
     semaDogru(h, "H7", 1);
-    const satirlar = (h.tohumBasina[0]!.ozet["satirlar"] as Array<{ saat: number; oran: number }>);
+    const satirlar = (h.tohumBasina[0]!.ozet["satirlar"] as Array<{ saat: number; oran: number; oranKumulatif: number; aktifPencereUretim: number; aktifUretim: number }>);
     expect(satirlar.map((s) => s.saat)).toEqual([24, 48, 72]);
-    for (const s of satirlar) expect(s.oran).toBeGreaterThan(0);
+    for (const s of satirlar) {
+      expect(s.oran).toBeGreaterThan(0);
+      expect(s.oranKumulatif).toBeGreaterThan(0);
+      // pencere üretimi kümülatifi aşamaz (24. saatte 24 saatlik pencere = kümülatif)
+      expect(s.aktifPencereUretim).toBeLessThanOrEqual(s.aktifUretim);
+    }
+    expect(h.parametreler["pencereSaat"]).toBe(24);
+    expect(() => h7Kos({ tohumlar, kisa: true, pencereSaat: 0 })).toThrow();
     expect(kararli(h7Kos({ tohumlar, kisa: true }))).toBe(kararli(h));
     sonuclar.push(h);
   });

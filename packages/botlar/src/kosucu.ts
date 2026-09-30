@@ -23,7 +23,10 @@ export interface KosuSecenekleri {
   oyuncular: KosuOyuncusu[];
   /** Mutlak bitiş anı (ms). */
   sureMs: Ms;
-  /** Bot karar aralığı (vars. 6 saat). Kararlar bu aralığın katlarında (ve oyuncunun katılma anında) verilir. */
+  /**
+   * Bot karar aralığı (vars. 6 saat). Kararlar bu aralığın katlarında (ve oyuncunun katılma anında) verilir.
+   * Aynı anda karar veren botların uygulama sırası her karar anında döner (bkz. `kos`).
+   */
   kararAraligiMs?: Ms;
   /** Gözlem aralığı; verilirse `gozlem` bu aralığın katlarında (ve bitişte) çağrılır. */
   gozlemAraligiMs?: Ms;
@@ -86,7 +89,12 @@ export function kos(secenek: KosuSecenekleri): KosuSonucu {
     if (kararAni) {
       // Bekleyen çözüm olaylarını işle: botlar güncel kapsam tablosunu görsün.
       sim.calistirKadar(t);
-      for (const o of oyuncular) {
+      // İlk hamle avantajını dağıtmak için sıra karar anı indeksine göre döndürülür: k. karar anında k mod n kaydırma
+      // (k = ızgara indeksi = ⌊t / aralık⌋; deterministik, duvar saatinden bağımsız, devam eden koşuda da tutarlı).
+      const n = oyuncular.length;
+      const kayma = n > 0 ? Math.floor(t / aralik) % n : 0;
+      const sirali = kayma === 0 ? oyuncular : [...oyuncular.slice(kayma), ...oyuncular.slice(0, kayma)];
+      for (const o of sirali) {
         if (!o.bot || !katildi.has(o.id)) continue;
         const zamani = t % aralik === 0 || yeniKatilan.has(o.id);
         if (!zamani) continue;

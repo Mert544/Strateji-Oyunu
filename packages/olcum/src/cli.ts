@@ -120,7 +120,7 @@ export function ana(argv: readonly string[]): void {
   writeFileSync(join(arg.cikti, `${ad}.md`), raporUret(sonuclar, meta), "utf8");
   console.log("");
   for (const s of sonuclar) {
-    console.log(`${s.kimlik}: ${s.verdict.toUpperCase()}  ${s.olcum.ad} = ${s.olcum.deger}  (tohum basari ${(s.tohumBasariOrani * 100).toFixed(0)}%, ${(s.sureMs / 1000).toFixed(1)} sn)`);
+    console.log(`${s.kimlik}: ${s.verdict.toUpperCase()}  ${s.olcum.ad} = ${s.olcum.deger}  (kosul basari ${(s.tohumBasariOrani * 100).toFixed(0)}%, ${(s.sureMs / 1000).toFixed(1)} sn)`);
   }
   console.log(`\nToplam sure: ${(sureMs / 1000).toFixed(1)} sn`);
   console.log(`Rapor: ${join(arg.cikti, ad)}.json / .md`);

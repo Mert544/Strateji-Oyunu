@@ -46,7 +46,11 @@ export function bolgeUretimDegeri(sim: Simulasyon, bolge: number | string): numb
   return t;
 }
 
-/** Bölgeler kümesinin üretim değeri (para) = Σ uretimToplam[m] × taban fiyat / MILI (sabit taban fiyat). */
+/**
+ * Bölgeler kümesinin üretim değeri (para) = Σ uretimToplam[m] × taban fiyat / MILI (sabit taban fiyat).
+ * DİKKAT: BRÜT değerdir (girdi/bakım tüketimi düşülmez). Yatırım/tüketim dahil net değer için `netDeger`
+ * kullanılır; H1 net değer skorunu kullanır, H2/H7 brüt üretimi ölçer (H7'de PDF tanımı "üretim").
+ */
 export function uretimDegeri(sim: Simulasyon, bolgeler?: BolgeSecici): number {
   let t = 0;
   for (const i of indeksler(sim, bolgeler)) t += bolgeUretimDegeri(sim, i);
@@ -123,19 +127,35 @@ export interface KapsamOzeti {
   ortalama: Record<string, number>;
   /** Mal kimliği -> karşılanması %95'in altında olan hücre oranı [0,1]. */
   acikOran: Record<string, number>;
-  /** Malların ortalaması. */
+  /** Talebi olan malların ortalaması (hiç talep yoksa 1). */
   genelOrtalama: number;
   /** Açıklık nedeni -> hücre sayısı (yalnızca karşılanma < %95). */
   nedenler: Record<string, number>;
+  /** Toplam hücre (bölge × mal). */
   hucreSayisi: number;
+  /** Talebi > 0 olan hücre sayısı (ortalamaların paydası). */
+  talepliHucreSayisi: number;
 }
 
-/** Kapsam özeti: sahipli (ve `oyuncular` verilmişse yalnızca onların) bölgelerdeki karşılanma ortalamaları. */
+/**
+ * Talebi olmayan hücre (vekil): çekirdek talep ≤ 0 hücreyi { "yok", enYakinKaynakMs −1 } olarak yazar
+ * (hesaplanmamış başlangıç hücresi de aynı). Talep genel API'de açık değildir, bu yüzden bu işaret kullanılır.
+ */
+function talepsizHucre(h: { neden: string; enYakinKaynakMs: number } | undefined): boolean {
+  return !h || (h.neden === "yok" && h.enYakinKaynakMs === -1);
+}
+
+/**
+ * Kapsam özeti: sahipli (ve `oyuncular` verilmişse yalnızca onların) bölgelerdeki karşılanma ortalamaları.
+ * Ortalamalar ve açık oranı YALNIZCA talebi > 0 hücreler üzerindendir (talepsiz hücreler %100 sayılıp ortalamayı
+ * şişirmez). Bir malın hiç talepli hücresi yoksa ortalaması 1, açık oranı 0 olur ve `genelOrtalama`ya katılmaz.
+ */
 export function kapsamOzeti(sim: Simulasyon, oyuncular?: readonly OyuncuId[]): KapsamOzeti {
   const d = sim.dunya;
   const nm = sim.ic.mallar.length;
   const topla = new Array<number>(nm).fill(0);
   const acik = new Array<number>(nm).fill(0);
+  const talepli = new Array<number>(nm).fill(0);
   const nedenler: Record<string, number> = {};
   let n = 0;
   for (const b of d.bolgeler) {
@@ -145,9 +165,11 @@ export function kapsamOzeti(sim: Simulasyon, oyuncular?: readonly OyuncuId[]): K
     const satir = d.lojistik.kapsam[b.indeks] ?? [];
     for (let m = 0; m < nm; m++) {
       const h = satir[m];
-      const k = h ? h.karsilanmaPpm / PPM : 1;
+      if (!h || talepsizHucre(h)) continue;
+      const k = h.karsilanmaPpm / PPM;
+      talepli[m] = (talepli[m] as number) + 1;
       topla[m] = (topla[m] as number) + k;
-      if (h && k < 0.95) {
+      if (k < 0.95) {
         acik[m] = (acik[m] as number) + 1;
         nedenler[h.neden] = (nedenler[h.neden] ?? 0) + 1;
       }
@@ -156,13 +178,20 @@ export function kapsamOzeti(sim: Simulasyon, oyuncular?: readonly OyuncuId[]): K
   const ortalama: Record<string, number> = {};
   const acikOran: Record<string, number> = {};
   let toplam = 0;
+  let talepliMal = 0;
+  let talepliToplam = 0;
   sim.ic.mallar.forEach((mal, m) => {
-    const o = n > 0 ? (topla[m] as number) / n : 1;
+    const t = talepli[m] as number;
+    const o = t > 0 ? (topla[m] as number) / t : 1;
     ortalama[mal.id] = o;
-    acikOran[mal.id] = n > 0 ? (acik[m] as number) / n : 0;
-    toplam += o;
+    acikOran[mal.id] = t > 0 ? (acik[m] as number) / t : 0;
+    talepliToplam += t;
+    if (t > 0) {
+      toplam += o;
+      talepliMal++;
+    }
   });
-  return { ortalama, acikOran, genelOrtalama: nm > 0 ? toplam / nm : 1, nedenler, hucreSayisi: n * nm };
+  return { ortalama, acikOran, genelOrtalama: talepliMal > 0 ? toplam / talepliMal : 1, nedenler, hucreSayisi: n * nm, talepliHucreSayisi: talepliToplam };
 }
 
 /** Dizinin ortancası (boşsa 0). */
