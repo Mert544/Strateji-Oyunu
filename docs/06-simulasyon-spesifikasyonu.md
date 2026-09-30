@@ -222,7 +222,7 @@ kabaca %40-60'ı lavabolara gider.
   cevher 360, kömür 450, bakır 200, silis 240, petrol 400 birim/saat), `arzSaat` ise emilimden belirgin düşük tutuldu
   (ithalat için yeterli, doygun ihracatta fiyat tabanın ~%60-75'inde kalır; v0'da %40'a yapışıyordu).
 - Not: v0 botları ihracat emrini `0.4 × emilimSaat` ile sınırlar; 3 bot aynı malı ihraç ederse emilim (1.2×) her zaman dolar.
-  Bu nedenle kömür/cevher için tam çözüm botların fiyata duyarlı ihracatıdır (bot tarafı).
+  Bu nedenle kömür/cevher için tam çözüm botların fiyata duyarlı ihracatıdır (bot tarafı; v0.2.1'de yapıldı, bkz. §10.6).
 
 ### 10.5 v0.2 veri dengesi (işleme zinciri ve işlenmiş mal pazarı)
 
@@ -248,8 +248,30 @@ Kaynak: [07 Ö2 ve Ö3](07-tasarim-onerileri.md). **Yalnızca veri** değişti (
 | elektronik | 50 → 120 | 50 → 100 |
 | yakıt | 150 → 300 | 150 → 260 |
 
-Sonuç: tek fabrikanın ihracatında fiyat/taban elektronikte 0.55 → 0.94, parçada 0.63 → 0.96 (07 Ö3). Bilinen sınır: mühimmat pazarı (emilim 50 < arz 80) taban altında (0.55) kalıyor; mühimmat piyasa değeri ile üretilmez, yalnızca ordu ikmali ve birlik için üretilir.
+Sonuç: tek fabrikanın ihracatında fiyat/taban elektronikte 0.55 → 0.94, parçada 0.63 → 0.96 (07 Ö3). Bilinen sınır (v0.2.1'de giderildi, bkz. §10.6): mühimmat pazarı (emilim 50 < arz 80) taban altında (0.55) kalıyordu; mühimmat piyasa değeri ile üretilmez, yalnızca ordu ikmali ve birlik için üretilir.
 
 Ölçüm özeti (4 botlu 30 günlük koşu, tohum 1-3; eski → yeni): lavabo / (vergi + ihracat − ithalat) 0.48 / 0.37 / 0.51 → 0.30 / 0.33 / 0.38 (hedef 0.3-0.6; alt sınıra yakın, brüt vergi + ihracata göre 0.13 → 0.11); 30. günde çelik üretimi 3 600-5 500 → 5 800-8 600 birim/gün (stok artıyor, israf 0); `elektrik_ark` 2-3 tesiste kullanılıyor (önceden 0); elektronik israfı 15-40 bin → 26-51 bin birim (önceden de vardı, artıyor). H1 (tohum 1): %68.8 ihracatçı (değişmedi).
 
 Test notu: pazar derinliğine bağlı iki test dosyası güncellendi (`ekonomi-pazar.test.ts`: yakıt emilimine bağlı paylaşım sayıları; `duzeltme-hazine-ithalat.test.ts`: çelik pazarı test içinde eski değerlere sabitlendi, çünkü sınanan ithalat-hazine mekanizması fiyat yuvarlamasının içerik dengesinden bağımsız olmasını ister).
+
+### 10.6 v0.2.1 pürüzler
+
+Kaynak: v0.2 veri dengesi sonrası 4 botlu 30 günlük koşuda görülen pürüzler. Çekirdek kuralları ve doğrulayıcı değişmedi; **veri bir parametre çiftiyle, geri kalanı bot tarafıyla** ilgilidir.
+
+**Veri (`parametreler.json`, `pazar`).** Mühimmat pazarı, işlenmiş mallardaki mantıkla (emilim ≈ 1,2 × arz; boş pazar fiyatı ≈ 1,15 × taban) dengelendi. Fiyat formülü `taban × (1 + 0,75 × clamp((T − A) / min(T, A)))` olduğundan emilim < arz fiyatı 0,55 × tabana kilitliyordu (kimse ticaret yapmadığında T = emilim, A = arz).
+
+| Mal | emilim (önce → sonra) | arz (önce → sonra) | Boş pazar fiyatı (önce → sonra) |
+|---|---|---|---|
+| mühimmat | 50 → 120 | 80 → 100 | 0,55 × → 1,15 × |
+
+Tek mühimmat fabrikası (40 birim/saat) ihraç ederse fiyat ≈ 0,875 × tabana iner; yani fiyat 0,9–1,2 × bandında salınır ve mühimmat üretimi piyasa için değil ordu ikmali için anlamlı kalır (bot bu malı yalnızca depo dolmak üzereyse ihraç eder, aşağıya bakın). `icerik.json`'a dokunulmadı (mühimmat yöntemi ve fabrikası aynı). Ölçüm (tohum 1-3, gün 5-30 ortalama fiyat/taban): mühimmat 0,55 → 1,00–1,07 (aralık 0,67–1,15).
+
+**Bot ticareti fiyat ve depo duyarlı** (`packages/botlar/src/planlayici.ts`, `ticaretAdaylari`). Eski sınırlar (ihracat ≤ 0,3–0,4 × emilim, fiyat ne olursa olsun) kaldırıldı; emilim ≈ arz oranı nedeniyle 3 bot aynı malı satınca doygun pazarda fiyat çöküyor, dağınık (toplam oranı düşük) stok ise bölge depolarında israf tavanına çıkıyordu. Kurallar (hepsi deterministik; yalnızca canlı fiyat, stok ve depo doluluğu okunur):
+- **İhracat ölçeği** `ihracatFiyatCarpani(fiyat/taban)`: taban oranı 0,95 ve üstünde 1, 0,55 ve altında 0, arası doğrusal. Hedef oran ve tavan (0,4 × emilim) bununla çarpılır: fiyat düştükçe ihracat azalır, 0,55 altında durur.
+- **Depo acil (`DEPO_ACIL_ORANI` = 0,7):** malın herhangi bir bölgedeki deposu %70'in üstündeyse israf başlamak üzeredir. İhracat fiyat ölçeğine alt sınır (0,35) konarak sürer, tavan 0,6 × emilime çıkar, `%60 üstü stok / 24 saat` hedefi eklenir, toplam stok oranı eşiğin altında kalsa da devreye girer ve mühimmat gibi askeri mallar da ihraç edilebilir (ordu rezervi korunur: yalnızca dolu depo).
+- **İthalat ölçeği** `ithalatFiyatCarpani`: taban oranı 1,0'a kadar 1, 1,5'te 0,3 (zorunlu ihtiyaç tamamen kesilmez); fiyat < 0,85 × tabansa tavan 1,25 × (ucuzken biraz fazla). İthalat limanının deposu %70'in üstündeyse ithalat başlamaz/iptal edilir; herhangi bir depo %70 üstündeyse yarıya iner.
+- **Liman seçimi:** ihracat malı en çok tutan limandan, ithalat en az tutan limandan yapılır (mevcut emrin limanı korunur); ayrıca kendi deposu %70 üstü dolu her limanda kendi fazlası için ihracat emri açılır (eskiden yalnızca indeksi en küçük liman kullanılıyordu).
+Ölçüm (tohum 1-3, 30. gün; eski → yeni): yakıt israfı 84 / 83 / 65 bin → 0 / 0 / 0; elektronik israfı 40 / 27 / 51 → 42 / 20 / 27 bin (kısmen azaldı; bkz. bilinen sınır). Bot ticareti değiştiği için piyasa yolları bütünüyle farklıdır; sayılar aynı tohumun eski ve yeni bot sürümü koşularıdır.
+Bilinen sınır: kalan elektronik israfı limansız üretici bölgelerde (örn. fabrikası olan ama limana bağlantı kapasitesi yetmeyen bölge) birikir ve ihracat emriyle boşaltılamaz (kenar kapasitesi bağlayıcı; ihracat emri yalnızca limanda); ayrıca elektronik pazar derinliği (emilim 120) birkaç fabrikanın çıktısından dar, fiyat 0,7 × civarında kalır. Çözüm adayları: üretici bölgede fabrikayı kısmak (`tesis_durum`), elektronik emilimini derinleştirmek veya bot inşa kararında pazar doygunluğunu görmek (denendi, sonuç gürültü içinde kaldığı için alınmadı).
+
+**Militarist bot: koruma farkındalığı** (`packages/botlar/src/askeri.ts`). Yeni oyuncu koruması 7 gündür (`yeniOyuncuKorumasiGun`; katılım t = 0 ise `korumaBitis` = 7. gün). Davranış: militarist t = 0'dan itibaren mühimmat fabrikası kurar, birlik üretir ve ikmal/rezerv ayarlar (2. günde 70+ birlik, birkaç fabrika), savaş ilanı ise ancak hedef oyuncunun koruması bitince (`korumaBitis ≤ t`) üretilir; ilk ilan korumanın bittiği 7. günde (t = 168 saat) verilir, tohum 1-3'te üçünde de ilk ilan tam 7,0. günde. Yeni `savasIlanEdilebilir` çekirdeğin `savas_ilan` denetimlerini komut üretmeden önce yineler: hedef korumada, hedef bölgede bitmemiş savaş, hedef `pencereSaat` içinde yağmalanmış, iki bölge arasında sürüyor ya da saldıran bölge zaten başka savaşta saldıran ise aday üretilmez. Sonuç: 30 günlük 4 botlu koşuda reddedilen `savas_ilan` komutu 13 / 11 / 18 → 0 / 0 / 0; ilan sayısı 15 / 14 / 15 → 25 / 25 / 26 (reddedilen denemeler yerine geçerli alternatif hedefler seçildiği için). Bilinen sınır: bot kararları 6 saatlik ızgarada verildiğinden, katılımı ızgaraya denk gelmeyen oyuncuların koruma bitişinde en çok 6 saat gecikme olur.

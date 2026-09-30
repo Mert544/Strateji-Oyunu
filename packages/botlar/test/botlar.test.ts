@@ -1,7 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { GUN, SAAT, Simulasyon, durumOzeti } from "@bolge/cekirdek";
 import { miniVeriyiYukle } from "@bolge/veri";
-import { ARKETIPLER, H1_ONAYARLARI, H1_ONAYAR_TANIMLARI, HAM_CIKARIM_TURLERI, ONAYARLAR, PASIF_ONAYAR, botOlustur, kos, onayarBul, onayarYetenekleri } from "../src";
+import {
+  ARKETIPLER,
+  Bakis,
+  H1_ONAYARLARI,
+  H1_ONAYAR_TANIMLARI,
+  HAM_CIKARIM_TURLERI,
+  ONAYARLAR,
+  PASIF_ONAYAR,
+  botOlustur,
+  ihracatFiyatCarpani,
+  ithalatFiyatCarpani,
+  korumaKalan,
+  kos,
+  onayarBul,
+  onayarYetenekleri,
+  savasAdaylari,
+  ticaretAdaylari,
+  toplamGuc,
+} from "../src";
 import type { ArketipAdi, KosuOyuncusu } from "../src";
 
 const KUZEY = ["m_ova", "m_liman", "m_gecit"];
@@ -183,5 +201,153 @@ describe("H1 v0.2 önayar kümesi", () => {
     const sim = Simulasyon.olustur(miniVeriyiYukle(), 1);
     sim.uygula({ t: 0, oyuncu: "sistem", komut: { tur: "oyuncu_katil", oyuncu: "a", bolgeler: ["m_sehir"] } });
     expect(PASIF_ONAYAR.uygula(sim, "a")).toEqual([]);
+  });
+});
+
+/** Mini haritada "a" oyuncusu (kuzey) katılmış; elektronik stokları/fiyatı testten elle kurulabilir. */
+function ticaretKur(): { sim: Simulasyon; mal: number; taban: number; stokAyarla: (bolge: string, birim: number) => void; fiyatAyarla: (oran: number) => void } {
+  const sim = Simulasyon.olustur(miniVeriyiYukle(), 1);
+  sim.uygula({ t: 0, oyuncu: "sistem", komut: { tur: "oyuncu_katil", oyuncu: "a", bolgeler: KUZEY } });
+  sim.calistirKadar(2 * SAAT);
+  const d = sim.dunya;
+  const mal = sim.ic.malIndeks["elektronik"] as number;
+  const taban = (sim.ic.mallar[mal] as { tabanFiyat: number }).tabanFiyat;
+  const stokAyarla = (bolge: string, birim: number): void => {
+    const s = d.bolgeler.find((b) => b.id === bolge)!.stoklar[mal]!;
+    s.miktar = birim * 1000;
+    s.t0 = d.zaman;
+    s.yerelOran = 0;
+    s.gelenOran = 0;
+    s.artik = 0;
+  };
+  for (const b of d.bolgeler) if (b.sahip === "a") stokAyarla(b.id, 0);
+  return { sim, mal, taban, stokAyarla, fiyatAyarla: (oran) => void (d.pazar.fiyat[mal] = Math.round(taban * oran)) };
+}
+
+function emirOrani(sim: Simulasyon, yon: "ihracat" | "ithalat"): number {
+  const c = ticaretAdaylari(new Bakis(sim, "a"), { ihracatEsigi: 0.03 }).find(
+    (a) => a.komut.tur === "ticaret_emri" && a.komut.mal === "elektronik" && a.komut.yon === yon && a.komut.oranSaat > 0,
+  );
+  return c && c.komut.tur === "ticaret_emri" ? c.komut.oranSaat : 0;
+}
+
+describe("fiyat ve depo duyarlı ticaret (v0.2.1)", () => {
+  it("fiyat çarpanları tekdüzedir: ihracat taban altında azalır, ithalat pahalandıkça azalır", () => {
+    expect(ihracatFiyatCarpani(1.2)).toBe(1);
+    expect(ihracatFiyatCarpani(0.5)).toBe(0);
+    expect(ihracatFiyatCarpani(0.75)).toBeGreaterThan(ihracatFiyatCarpani(0.65));
+    expect(ihracatFiyatCarpani(0.85)).toBeGreaterThan(ihracatFiyatCarpani(0.75));
+    expect(ithalatFiyatCarpani(0.8)).toBe(1);
+    expect(ithalatFiyatCarpani(1.3)).toBeLessThan(ithalatFiyatCarpani(1.1));
+    expect(ithalatFiyatCarpani(3)).toBeGreaterThanOrEqual(0.3);
+  });
+
+  it("ihracat oranı fiyat/taban düştükçe azalır ve taban oranı 0.55 altında durur", () => {
+    const k = ticaretKur();
+    k.stokAyarla("m_liman", 6000); // toplam doluluk %20 (acil değil)
+    const oran = (f: number): number => {
+      k.fiyatAyarla(f);
+      return emirOrani(k.sim, "ihracat");
+    };
+    const tam = oran(1.0);
+    const dusuk = oran(0.8);
+    const cokDusuk = oran(0.6);
+    expect(tam).toBeGreaterThan(0);
+    expect(dusuk).toBeLessThan(tam);
+    expect(cokDusuk).toBeLessThan(dusuk);
+    expect(oran(0.5)).toBe(0);
+  });
+
+  it("depo %70 üstüyse ihracat artar ve düşük fiyatta bile sürer; ithalat kesilir", () => {
+    const k = ticaretKur();
+    k.stokAyarla("m_liman", 6000);
+    k.fiyatAyarla(1.0);
+    const normal = emirOrani(k.sim, "ihracat");
+    k.stokAyarla("m_liman", 9000); // depo %90 dolu
+    const acil = emirOrani(k.sim, "ihracat");
+    expect(acil).toBeGreaterThan(normal);
+    k.fiyatAyarla(0.4);
+    expect(emirOrani(k.sim, "ihracat")).toBeGreaterThan(0);
+  });
+
+  it("ithalat pahalandıkça azalır, dolu depolu limanda hiç başlamaz", () => {
+    const k = ticaretKur();
+    const d = k.sim.dunya;
+    d.oyuncular.find((o) => o.id === "a")!.hazine.miktar *= 1000;
+    d.bolgeler.find((b) => b.id === "m_ova")!.stoklar[k.mal]!.yerelOran = -30000; // net açık
+    k.fiyatAyarla(1.0);
+    const normal = emirOrani(k.sim, "ithalat");
+    k.fiyatAyarla(1.6);
+    const pahali = emirOrani(k.sim, "ithalat");
+    expect(normal).toBeGreaterThan(0);
+    expect(pahali).toBeGreaterThan(0);
+    expect(pahali).toBeLessThan(normal);
+    k.fiyatAyarla(1.0);
+    k.stokAyarla("m_liman", 8000); // liman deposu dolu: aynı malı ithal etmenin anlamı yok
+    expect(emirOrani(k.sim, "ithalat")).toBe(0);
+  });
+
+  it("deterministik: aynı durumda aynı ticaret adayları", () => {
+    const k = ticaretKur();
+    k.stokAyarla("m_liman", 6000);
+    k.fiyatAyarla(0.9);
+    const a = JSON.stringify(ticaretAdaylari(new Bakis(k.sim, "a")));
+    const b = JSON.stringify(ticaretAdaylari(new Bakis(k.sim, "a")));
+    expect(a).toBe(b);
+  });
+});
+
+describe("militarist: yeni oyuncu koruması ve erken hazırlık (v0.2.1)", () => {
+  function savasKur(): Simulasyon {
+    const sim = Simulasyon.olustur(miniVeriyiYukle(), 1);
+    sim.uygula({ t: 0, oyuncu: "sistem", komut: { tur: "oyuncu_katil", oyuncu: "a", bolgeler: KUZEY } });
+    sim.uygula({ t: 0, oyuncu: "sistem", komut: { tur: "oyuncu_katil", oyuncu: "b", bolgeler: GUNEY } });
+    sim.calistirKadar(0);
+    return sim;
+  }
+
+  it("koruma süresince savaş ilanı adayı üretilmez, korumanın bittiği anda üretilir ve çekirdek kabul eder", () => {
+    const sim = savasKur();
+    sim.calistirKadar(7 * GUN - 1);
+    const b1 = new Bakis(sim, "a");
+    expect(korumaKalan(b1, "b")).toBeGreaterThan(0);
+    expect(savasAdaylari(b1, 0)).toEqual([]);
+    sim.calistirKadar(7 * GUN);
+    const b2 = new Bakis(sim, "a");
+    expect(korumaKalan(b2, "b")).toBe(0);
+    const adaylar = savasAdaylari(b2, 0);
+    expect(adaylar.length).toBe(1);
+    const r = sim.uygula({ t: 7 * GUN, oyuncu: "a", komut: adaylar[0]!.komut });
+    expect(r.tamam).toBe(true);
+    // Hedefte bitmemiş savaş varken (ve saldıran bölge meşgulken) aynı ilan yeniden önerilmez.
+    expect(savasAdaylari(new Bakis(sim, "a"), 0)).toEqual([]);
+  });
+
+  it("30 günlük koşuda savaş ilanı komutu hiç reddedilmez; ilk ilan korumanın bittiği 7. günden önce gelmez", () => {
+    for (const [a, b] of [
+      ["militarist", "sanayici"],
+      ["militarist", "militarist"],
+    ] as Array<[ArketipAdi, ArketipAdi]>) {
+      const r = kos({ veri: miniVeriyiYukle(), tohum: 1, oyuncular: ikiOyuncu(a, b), sureMs: 30 * GUN });
+      expect(Object.keys(r.basarisizNedenleri).filter((n) => n.startsWith("savas_ilan"))).toEqual([]);
+      const savaslar = r.sim.dunya.savaslar;
+      expect(savaslar.length).toBeGreaterThan(0);
+      const ilk = Math.min(...savaslar.map((s) => s.ilan));
+      expect(ilk).toBeGreaterThanOrEqual(7 * GUN);
+      // Koruma biter bitmez (en geç bir karar aralığı içinde) ilk ilan verilir.
+      expect(ilk).toBeLessThanOrEqual(7 * GUN + 6 * SAAT);
+    }
+  });
+
+  it("koruma bitmeden hazırlık: 7. günden önce mühimmat fabrikası kurulur ve ordu büyür", () => {
+    const r = kos({ veri: miniVeriyiYukle(), tohum: 1, oyuncular: ikiOyuncu("militarist", "pasif"), sureMs: 7 * GUN - SAAT });
+    const sim = r.sim;
+    const fab = sim.ic.tesisTuruIndeks["muhimmat_fabrikasi"] as number;
+    const fabrikaVar =
+      sim.dunya.bolgeler.some((b) => b.sahip === "a" && b.tesisler.some((t) => t.tur === fab)) ||
+      sim.dunya.insaatlar.some((i) => i.sahip === "a" && i.tur === "tesis" && i.hedef === fab);
+    expect(fabrikaVar).toBe(true);
+    expect(toplamGuc(sim, "a")).toBeGreaterThan(300); // başlangıç: 3 piyade tümeni
+    expect(sim.dunya.savaslar.length).toBe(0);
   });
 });

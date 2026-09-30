@@ -139,6 +139,35 @@ export class Bakis {
     return this.kapasiteToplam > 0 ? (this.stokToplam[mal] as number) / this.kapasiteToplam : 0;
   }
 
+  /** Malın sahip olunan bölgelerdeki en dolu deponun doluluğu [0,1] (israf bölge başına depo tavanında başlar). */
+  enDoluDoluluk(mal: number): number {
+    const kap = this.sim.ic.param.ekonomi.depoKapasitesi;
+    if (kap <= 0) return 0;
+    let en = 0;
+    for (const satir of this.stokMat.values()) {
+      const o = (satir[mal] as number) / kap;
+      if (o > en) en = o;
+    }
+    return en;
+  }
+
+  /** Malın depo doluluğunun `oran` üstünde kalan toplam stoku (mili-birim), bölgeler üzerinden. */
+  fazlaStok(mal: number, oran: number): number {
+    const esik = oran * this.sim.ic.param.ekonomi.depoKapasitesi;
+    let t = 0;
+    for (const satir of this.stokMat.values()) {
+      const x = (satir[mal] as number) - esik;
+      if (x > 0) t += x;
+    }
+    return t;
+  }
+
+  /** Canlı fiyatın taban fiyata oranı (1 = taban). */
+  fiyatOrani(mal: number): number {
+    const taban = this.tb.taban[mal] as number;
+    return taban > 0 ? this.fiyat(mal) / taban : 1;
+  }
+
   isgucu(b: BolgeDurumu): number {
     return Math.floor((b.nufus * this.sim.ic.param.nufus.isgucuPpm) / PPM);
   }
@@ -533,17 +562,55 @@ function mevcutEmir(port: BolgeDurumu, mal: number, yon: "ihracat" | "ithalat"):
   return port.ticaretEmirleri.find((e) => e.mal === mal && e.yon === yon)?.oranSaat ?? 0;
 }
 
-/** (b) Limanlarda fazla malı ihraç et, açık malı ithal et (hazine yeterliyse). */
+/** Depo doluluğu bu oranın üstündeyse "acil": israf başlamak üzeredir, ihracat fiyata bakmadan artar, ithalat durur. */
+export const DEPO_ACIL_ORANI = 0.7;
+/** İhracat fiyat ölçeği: fiyat/taban bu değerin altında 0, `IHRACAT_FIYAT_TAM` üstünde 1 (arası doğrusal). */
+export const IHRACAT_FIYAT_ALT = 0.55;
+export const IHRACAT_FIYAT_TAM = 0.95;
+/** İthalat fiyat ölçeği: fiyat/taban `ITHALAT_FIYAT_UCUZ` altında 1, `ITHALAT_FIYAT_PAHALI` üstünde en az 0.3. */
+export const ITHALAT_FIYAT_UCUZ = 1.0;
+export const ITHALAT_FIYAT_PAHALI = 1.5;
+
+/** Fiyat/taban oranından ihracat ölçeği [0,1]: taban altına indikçe azalır. Deterministik, salt fonksiyon. */
+export function ihracatFiyatCarpani(oran: number): number {
+  return sinirla((oran - IHRACAT_FIYAT_ALT) / (IHRACAT_FIYAT_TAM - IHRACAT_FIYAT_ALT), 0, 1);
+}
+
+/** Fiyat/taban oranından ithalat ölçeği [0.3,1]: pahalandıkça azalır (zorunlu ihtiyaç tamamen kesilmez). */
+export function ithalatFiyatCarpani(oran: number): number {
+  return sinirla(1 - (0.7 * (oran - ITHALAT_FIYAT_UCUZ)) / (ITHALAT_FIYAT_PAHALI - ITHALAT_FIYAT_UCUZ), 0.3, 1);
+}
+
+/** Portlardan biri: verilen yönde emri olan ilk liman, yoksa `sec` ölçütüne göre en iyi liman (eşitlikte küçük indeks). */
+function emirPortu(b: Bakis, limanlar: BolgeDurumu[], mal: number, yon: "ihracat" | "ithalat", enCok: boolean): BolgeDurumu {
+  const var_ = limanlar.find((p) => mevcutEmir(p, mal, yon) > 0);
+  if (var_) return var_;
+  let en = limanlar[0] as BolgeDurumu;
+  for (const p of limanlar) {
+    const x = b.stok(p.indeks, mal);
+    const e = b.stok(en.indeks, mal);
+    if (enCok ? x > e : x < e) en = p;
+  }
+  return en;
+}
+
+/**
+ * (b) Limanlarda fazla malı ihraç et, açık malı ithal et (hazine yeterliyse).
+ * Fiyat ve depo duyarlıdır: ihracat fiyat/taban oranı düştükçe azalır (taban oranı 0.55 altında durur), ama deponun
+ * %70'inden fazlası doluysa (israf başlamak üzere) fiyata bakmadan artar; ithalat pahalandıkça azalır, ucuzlayınca
+ * artar ve dolu depoda kısılır. İhracat malın en çok stok tutan limanından, ithalat en az stok tutan limanından yapılır;
+ * dolu depolu diğer limanlarda ayrıca ihracat emri açılır.
+ */
 export function ticaretAdaylari(b: Bakis, sec: TicaretSecenek = {}): Aday[] {
   const cikti: Aday[] = [];
   const limanlar = b.limanlar();
-  const port = limanlar[0];
-  if (!port) return cikti;
+  if (limanlar.length === 0) return cikti;
   const esik = sec.ihracatEsigi ?? 0.25;
   const carpan = sec.carpan ?? 1;
   const p = b.sim.ic.param.pazar;
+  const depo = b.sim.ic.param.ekonomi.depoKapasitesi;
   const tehlike = b.hazineTehlikede();
-  const iptal = (yon: "ihracat" | "ithalat", malId: string, fayda: number): Aday => ({
+  const iptal = (port: BolgeDurumu, yon: "ihracat" | "ithalat", malId: string, fayda: number): Aday => ({
     anahtar: `ticaret_emri:${yon}_iptal_${malId}`,
     komut: { tur: "ticaret_emri", bolge: port.id, mal: malId, yon, oranSaat: 0 },
     tahminiFayda: fayda,
@@ -558,63 +625,97 @@ export function ticaretAdaylari(b: Bakis, sec: TicaretSecenek = {}): Aday[] {
     // Kendi ticaretimizin etkisi çıkarılmış net oran: denetleyicinin kararlı kalması için.
     const net = b.ticaretsizNet(m);
     const stokOran = b.stokOrani(m);
-    const mevcutIhr = mevcutEmir(port, m, "ihracat");
-    const mevcutIth = mevcutEmir(port, m, "ithalat");
     const fiyat = b.fiyat(m);
+    const fOran = b.fiyatOrani(m);
     const askeri = b.tb.askeri[m] === true;
     const stokToplam = b.stokToplam[m] as number;
+    const dolu = b.enDoluDoluluk(m);
+    const acil = dolu > DEPO_ACIL_ORANI;
+    const ihrPort = emirPortu(b, limanlar, m, "ihracat", true);
+    const ithPort = emirPortu(b, limanlar, m, "ithalat", false);
+    const mevcutIth = mevcutEmir(ithPort, m, "ithalat");
 
     // --- İthalat ihtiyacı: net açık var ve stok 4 günden az yetiyorsa ---
     let hedefIth = 0;
     if (sec.ithalat !== false && !askeri && !tehlike && net < 0 && stokToplam < -net * 96) {
-      hedefIth = Math.min(Math.floor(-net * 1.1), Math.floor(arz * 0.4));
+      // Pahalıysa azalt, ucuzsa biraz artır; ithalat limanının deposu doluysa (mal zaten geliyor) kıs.
+      const fi = ithalatFiyatCarpani(fOran);
+      const ucuz = fOran < 0.85 ? 1.25 : 1;
+      const portDolu = b.stok(ithPort.indeks, m) / depo > DEPO_ACIL_ORANI;
+      const dolulukCarpani = portDolu ? 0 : acil ? 0.5 : 1;
+      hedefIth = Math.min(Math.floor(-net * 1.1 * fi), Math.floor(arz * 0.4 * fi * ucuz));
+      hedefIth = Math.floor(hedefIth * dolulukCarpani);
       const harcama72 = (hedefIth / MILI) * fiyat * 1.1 * 72;
       const butce = 0.3 * (b.hazine / MILI);
       if (harcama72 > butce) hedefIth = Math.floor((hedefIth * butce) / harcama72);
       if (hedefIth < 5000) hedefIth = 0;
     }
 
-    // --- İhracat: fazla varsa ve ithalat gerekmiyorsa ---
+    // --- İhracat (ana liman): fazla varsa ve ithalat gerekmiyorsa ---
+    const ihracTemel = (!askeri || sec.askeriIhracat === true || acil) && hedefIth === 0;
+    const ihracEdilebilir = ihracTemel && (b.aciklik[m] as number) < (acil ? 0.25 : 0.08);
+    const fp = ihracatFiyatCarpani(fOran);
+    // Depo dolmak üzereyse israf her fiyattan kötüdür: ölçeğe alt sınır, tavan biraz yüksek.
+    const fpEf = acil ? Math.max(fp, 0.35) : fp;
+    const ihrUst = emilim * (acil ? 0.6 : 0.4) * fpEf;
     let hedefIhr = 0;
-    const ihracEdilebilir = (!askeri || sec.askeriIhracat === true) && hedefIth === 0 && (b.aciklik[m] as number) < 0.08;
     if (ihracEdilebilir && net >= 0 && stokOran > esik) {
       const fazla = stokToplam - 0.12 * b.kapasiteToplam;
       hedefIhr = Math.max(fazla / 48, 0.8 * net);
     } else if (ihracEdilebilir && net > 0 && stokOran > 0.03) {
       hedefIhr = 0.6 * net;
     }
-    hedefIhr = Math.min(Math.floor(hedefIhr), Math.floor(emilim * 0.4));
+    if (ihracEdilebilir && acil) {
+      // Depoların %60 üstünü 24 saatte boşalt; toplam stok oranı eşiğin altında kalsa da (dağınık birikim) devreye girer.
+      hedefIhr = Math.max(hedefIhr, b.fazlaStok(m, 0.6) / 24, 0.8 * Math.max(net, 0));
+    }
+    hedefIhr = Math.min(Math.floor(hedefIhr * fpEf), Math.floor(ihrUst));
     if (hedefIhr < 5000) hedefIhr = 0;
 
     // --- Emir komutları (ters yöndeki emir önce iptal edilir) ---
-    if (hedefIth > 0 && mevcutIhr > 0) cikti.push(iptal("ihracat", malId, 1e4));
-    if (hedefIhr > 0 && mevcutIth > 0) cikti.push(iptal("ithalat", malId, 1e4));
+    for (const port of limanlar) {
+      const mevcutIhr = mevcutEmir(port, m, "ihracat");
+      const mevcutIthP = mevcutEmir(port, m, "ithalat");
+      let hIhr = 0;
+      if (port === ihrPort) hIhr = hedefIhr;
+      else if (ihracTemel && b.stok(port.indeks, m) / depo > DEPO_ACIL_ORANI) {
+        // Diğer limanlar: yalnızca kendi deposu dolmak üzereyse, kendi fazlasını boşalt.
+        const fazlaPort = b.stok(port.indeks, m) - 0.6 * depo;
+        hIhr = Math.min(Math.floor((fazlaPort / 24) * fpEf), Math.floor(emilim * 0.3 * fpEf));
+        if (hIhr < 5000) hIhr = 0;
+      }
+      const hIth = port === ithPort ? hedefIth : 0;
+      if (hIth > 0 && mevcutIhr > 0) cikti.push(iptal(port, "ihracat", malId, 1e4));
+      if (hIhr > 0 && mevcutIthP > 0) cikti.push(iptal(port, "ithalat", malId, 1e4));
 
-    if (hedefIhr === 0 && mevcutIhr > 0 && hedefIth === 0) cikti.push(iptal("ihracat", malId, 50));
-    else if (hedefIhr > 0 && Math.abs(hedefIhr - mevcutIhr) > 0.3 * Math.max(mevcutIhr, 1)) {
-      cikti.push({
-        anahtar: `ticaret_emri:ihracat_${malId}`,
-        komut: { tur: "ticaret_emri", bolge: port.id, mal: malId, yon: "ihracat", oranSaat: hedefIhr },
-        tahminiFayda: (hedefIhr / MILI) * fiyat * 0.9 * 48 * carpan,
-        kategori: "ticaret",
-        bolge: port.id,
-        konu: `ihracat_${malId}`,
-      });
-    }
+      if (hIhr === 0 && mevcutIhr > 0 && hIth === 0) cikti.push(iptal(port, "ihracat", malId, 50));
+      else if (hIhr > 0 && Math.abs(hIhr - mevcutIhr) > 0.3 * Math.max(mevcutIhr, 1)) {
+        cikti.push({
+          anahtar: `ticaret_emri:ihracat_${malId}`,
+          komut: { tur: "ticaret_emri", bolge: port.id, mal: malId, yon: "ihracat", oranSaat: hIhr },
+          tahminiFayda: (hIhr / MILI) * fiyat * 0.9 * 48 * carpan,
+          kategori: "ticaret",
+          bolge: port.id,
+          konu: `ihracat_${malId}`,
+        });
+      }
 
-    if (mevcutIth > 0 && hedefIth === 0) {
-      // İthalat: ihtiyaç bitti veya hazine tehlikede.
-      if (tehlike) cikti.push(iptal("ithalat", malId, 1e4));
-      else if (net >= 0 && stokOran > 0.05) cikti.push(iptal("ithalat", malId, 50));
-    } else if (hedefIth > 0 && Math.abs(hedefIth - mevcutIth) > 0.3 * Math.max(mevcutIth, 1)) {
-      cikti.push({
-        anahtar: `ticaret_emri:ithalat_${malId}`,
-        komut: { tur: "ticaret_emri", bolge: port.id, mal: malId, yon: "ithalat", oranSaat: hedefIth },
-        tahminiFayda: (hedefIth / MILI) * fiyat * 0.5 * 48 * carpan,
-        kategori: "ticaret",
-        bolge: port.id,
-        konu: `ithalat_${malId}`,
-      });
+      const mIth = port === ithPort ? mevcutIth : mevcutIthP;
+      if (mIth > 0 && hIth === 0) {
+        // İthalat: ihtiyaç bitti, hazine tehlikede ya da liman deposu doldu.
+        const portDolu = b.stok(port.indeks, m) / depo > DEPO_ACIL_ORANI;
+        if (tehlike || portDolu) cikti.push(iptal(port, "ithalat", malId, 1e4));
+        else if (net >= 0 && stokOran > 0.05) cikti.push(iptal(port, "ithalat", malId, 50));
+      } else if (hIth > 0 && Math.abs(hIth - mIth) > 0.3 * Math.max(mIth, 1)) {
+        cikti.push({
+          anahtar: `ticaret_emri:ithalat_${malId}`,
+          komut: { tur: "ticaret_emri", bolge: port.id, mal: malId, yon: "ithalat", oranSaat: hIth },
+          tahminiFayda: (hIth / MILI) * fiyat * 0.5 * 48 * carpan,
+          kategori: "ticaret",
+          bolge: port.id,
+          konu: `ithalat_${malId}`,
+        });
+      }
     }
   }
   return cikti;

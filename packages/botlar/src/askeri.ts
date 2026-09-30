@@ -2,7 +2,7 @@
  * Askeri aday üreticileri: mühimmat fabrikası, birlik üretimi, askeri rezerv, savunma duruşu ve savaş ilanı.
  * Militarist bot, tüm botların tepkisel savunması ve H3 müdahalesi (kapasitenin %20'si askeriye) bunları kullanır.
  */
-import { MILI, PPM, anlikMiktar } from "@bolge/cekirdek";
+import { MILI, PPM, SAAT, anlikMiktar } from "@bolge/cekirdek";
 import type { BolgeDurumu, Komut, Simulasyon, OyuncuId } from "@bolge/cekirdek";
 import { Bakis, insaAdaylari } from "./planlayici";
 import type { Aday, AdayMaliyet } from "./planlayici";
@@ -245,7 +245,42 @@ export function askeriAdaylar(b: Bakis, sec: AskeriSecenek): Aday[] {
   return cikti;
 }
 
-/** Güç oranı eşiğini aşan, korumada olmayan komşu düşman bölgesine savaş ilanı (en iyi tek aday). */
+/**
+ * Çekirdeğin `savas_ilan` denetimlerini (savas.ts) komut üretmeden önce yineler: hedef oyuncu yeni oyuncu korumasındaysa,
+ * hedef bölgede bitmemiş savaş varsa, hedef yakın zamanda yağmalandıysa ya da saldıran bölge başka savaşta saldıransa
+ * savaş ilanı başarısız olur. Bot bu adayları hiç üretmez (başarısız komut = bot kalitesi kaybı).
+ */
+export function savasIlanEdilebilir(b: Bakis, saldiranBolge: BolgeDurumu, hedef: BolgeDurumu): boolean {
+  const d = b.d;
+  if (hedef.sahip === null || hedef.sahip === b.oyuncu) return false;
+  const hedefOyuncu = d.oyuncular.find((o) => o.id === hedef.sahip);
+  if (!hedefOyuncu || hedefOyuncu.korumaBitis > b.t) return false;
+  const pencereMs = b.sim.ic.param.askeri.pencereSaat * SAAT;
+  for (const s of d.savaslar) {
+    if (s.evre !== "bitti") {
+      // Bu iki bölge arasında sürüyor, hedefte başka savaş var ya da saldıran bölge zaten saldırıda.
+      if (s.saldiranBolge === saldiranBolge.indeks && s.hedefBolge === hedef.indeks) return false;
+      if (s.saldiranBolge === hedef.indeks && s.hedefBolge === saldiranBolge.indeks) return false;
+      if (s.hedefBolge === hedef.indeks) return false;
+      if (s.saldiranBolge === saldiranBolge.indeks) return false;
+    } else if (s.hedefBolge === hedef.indeks && s.sonuc !== null && s.sonuc.kazanan === s.saldiran) {
+      // Yağma sonrası pencereSaat boyunca yeni ilan yok.
+      if (s.sonuc.stokKaybi.some((k) => k > 0) && b.t < s.pencereBitis + pencereMs) return false;
+    }
+  }
+  return true;
+}
+
+/** Bir oyuncunun yeni oyuncu korumasının bitişine kalan süre (ms); korumada değilse 0. */
+export function korumaKalan(b: Bakis, oyuncu: OyuncuId): number {
+  const o = b.d.oyuncular.find((x) => x.id === oyuncu);
+  return o && o.korumaBitis > b.t ? o.korumaBitis - b.t : 0;
+}
+
+/**
+ * Güç oranı eşiğini aşan, korumada olmayan ve çekirdeğin ilan denetimlerinden geçecek komşu düşman bölgesine savaş ilanı
+ * (en iyi tek aday). Koruma biter bitmez (korumaBitis <= t) hedef uygun sayılır: koruma süresince komut üretilmez.
+ */
 export function savasAdaylari(b: Bakis, esik: number): Aday[] {
   const sim = b.sim;
   const d = b.d;
@@ -256,15 +291,7 @@ export function savasAdaylari(b: Bakis, esik: number): Aday[] {
     const guc = (bolgeGucu(sim, r) * r.ikmalKarsilanmaPpm) / PPM;
     if (guc <= 0) continue;
     for (const h of komsuBolgeler(sim, r)) {
-      if (h.sahip === null || h.sahip === b.oyuncu) continue;
-      const hedefOyuncu = d.oyuncular.find((o) => o.id === h.sahip);
-      if (!hedefOyuncu || hedefOyuncu.korumaBitis > b.t) continue;
-      const suruyor = d.savaslar.some(
-        (s) =>
-          s.evre !== "bitti" &&
-          ((s.saldiranBolge === r.indeks && s.hedefBolge === h.indeks) || (s.saldiranBolge === h.indeks && s.hedefBolge === r.indeks)),
-      );
-      if (suruyor) continue;
+      if (!savasIlanEdilebilir(b, r, h)) continue;
       const sav = savunmaGucuTahmini(sim, h);
       const oran = sav <= 0 ? Number.POSITIVE_INFINITY : guc / sav;
       if (!(oran > esik)) continue;
