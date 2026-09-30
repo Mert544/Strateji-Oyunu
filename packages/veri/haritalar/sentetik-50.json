@@ -1,0 +1,1655 @@
+{
+  "surum": 1,
+  "ad": "Sentetik 50 Bölge",
+  "devletler": [
+    {
+      "id": "askan",
+      "ad": "Askan Cumhuriyeti",
+      "blok": "kuzey_pakti"
+    },
+    {
+      "id": "belora",
+      "ad": "Belora Emirliği",
+      "blok": "kuzey_pakti"
+    },
+    {
+      "id": "carvan",
+      "ad": "Carvan Birliği",
+      "blok": "guney_birligi"
+    },
+    {
+      "id": "dorsa",
+      "ad": "Dorsa Federasyonu",
+      "blok": "guney_birligi"
+    }
+  ],
+  "bolgeler": [
+    {
+      "id": "ak_ova",
+      "ad": "Ak Ova",
+      "devlet": "askan",
+      "etiketler": [
+        "ova",
+        "kiyi"
+      ],
+      "nufus": 119000,
+      "rezervler": {
+        "tahil": 1026000000
+      },
+      "tesisler": [
+        "ciftlik"
+      ],
+      "x": 95,
+      "y": 104
+    },
+    {
+      "id": "bereket_dizi",
+      "ad": "Bereket Dizi",
+      "devlet": "askan",
+      "etiketler": [
+        "ova"
+      ],
+      "nufus": 150000,
+      "rezervler": {
+        "tahil": 1001000000
+      },
+      "tesisler": [
+        "ciftlik",
+        "gida_fabrikasi"
+      ],
+      "x": 210,
+      "y": 100
+    },
+    {
+      "id": "kuzey_burun",
+      "ad": "Kuzey Burun",
+      "devlet": "askan",
+      "etiketler": [
+        "kiyi"
+      ],
+      "nufus": 73000,
+      "rezervler": {
+        "komur": 392000000
+      },
+      "tesisler": [
+        "komur_ocagi"
+      ],
+      "x": 350,
+      "y": 123
+    },
+    {
+      "id": "yelken_limani",
+      "ad": "Yelken Limanı",
+      "devlet": "askan",
+      "etiketler": [
+        "kiyi",
+        "liman"
+      ],
+      "nufus": 200000,
+      "rezervler": {
+        "komur": 282000000
+      },
+      "tesisler": [
+        "komur_ocagi"
+      ],
+      "x": 70,
+      "y": 239
+    },
+    {
+      "id": "askan_kenti",
+      "ad": "Askan Kenti",
+      "devlet": "askan",
+      "etiketler": [
+        "ova"
+      ],
+      "nufus": 478000,
+      "rezervler": {
+        "tahil": 623000000
+      },
+      "tesisler": [
+        "ciftlik",
+        "gida_fabrikasi"
+      ],
+      "x": 161,
+      "y": 236
+    },
+    {
+      "id": "sis_tepeleri",
+      "ad": "Sis Tepeleri",
+      "devlet": "askan",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 91000,
+      "rezervler": {
+        "komur": 520000000,
+        "cevher": 168000000
+      },
+      "tesisler": [
+        "komur_ocagi",
+        "cevher_madeni"
+      ],
+      "x": 286,
+      "y": 224
+    },
+    {
+      "id": "kopuk_limani",
+      "ad": "Köpük Limanı",
+      "devlet": "askan",
+      "etiketler": [
+        "kiyi",
+        "liman"
+      ],
+      "nufus": 219000,
+      "rezervler": {},
+      "tesisler": [
+        "gida_fabrikasi"
+      ],
+      "x": 393,
+      "y": 236
+    },
+    {
+      "id": "duman_koyu",
+      "ad": "Duman Koyu",
+      "devlet": "askan",
+      "etiketler": [
+        "kiyi",
+        "ova"
+      ],
+      "nufus": 97000,
+      "rezervler": {
+        "silis": 223000000
+      },
+      "tesisler": [
+        "silis_ocagi"
+      ],
+      "x": 102,
+      "y": 372
+    },
+    {
+      "id": "orta_ova",
+      "ad": "Orta Ova",
+      "devlet": "askan",
+      "etiketler": [
+        "ova"
+      ],
+      "nufus": 171000,
+      "rezervler": {
+        "tahil": 850000000
+      },
+      "tesisler": [
+        "ciftlik"
+      ],
+      "x": 239,
+      "y": 359
+    },
+    {
+      "id": "tas_kapi",
+      "ad": "Taş Kapı",
+      "devlet": "askan",
+      "etiketler": [
+        "kiyi"
+      ],
+      "nufus": 79000,
+      "rezervler": {
+        "komur": 278000000
+      },
+      "tesisler": [
+        "komur_ocagi"
+      ],
+      "x": 351,
+      "y": 370
+    },
+    {
+      "id": "kurt_gecidi",
+      "ad": "Kurt Geçidi",
+      "devlet": "askan",
+      "etiketler": [
+        "dar_gecit"
+      ],
+      "nufus": 51000,
+      "rezervler": {
+        "komur": 104000000
+      },
+      "tesisler": [
+        "komur_ocagi"
+      ],
+      "x": 147,
+      "y": 486
+    },
+    {
+      "id": "kara_zirve",
+      "ad": "Kara Zirve",
+      "devlet": "askan",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 55000,
+      "rezervler": {
+        "cevher": 162000000
+      },
+      "tesisler": [
+        "cevher_madeni"
+      ],
+      "x": 395,
+      "y": 479
+    },
+    {
+      "id": "demir_dagi",
+      "ad": "Demir Dağı",
+      "devlet": "carvan",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 97000,
+      "rezervler": {
+        "cevher": 791000000
+      },
+      "tesisler": [
+        "cevher_madeni"
+      ],
+      "x": 105,
+      "y": 628
+    },
+    {
+      "id": "kor_ocak",
+      "ad": "Kor Ocak",
+      "devlet": "carvan",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 98000,
+      "rezervler": {
+        "cevher": 882000000,
+        "komur": 345000000
+      },
+      "tesisler": [
+        "cevher_madeni",
+        "komur_ocagi"
+      ],
+      "x": 221,
+      "y": 615
+    },
+    {
+      "id": "cam_vadisi",
+      "ad": "Cam Vadisi",
+      "devlet": "carvan",
+      "etiketler": [],
+      "nufus": 83000,
+      "rezervler": {
+        "silis": 428000000
+      },
+      "tesisler": [
+        "silis_ocagi"
+      ],
+      "x": 326,
+      "y": 629
+    },
+    {
+      "id": "gumus_limani",
+      "ad": "Gümüş Limanı",
+      "devlet": "carvan",
+      "etiketler": [
+        "kiyi",
+        "liman"
+      ],
+      "nufus": 200000,
+      "rezervler": {},
+      "tesisler": [
+        "celikhane"
+      ],
+      "x": 70,
+      "y": 746
+    },
+    {
+      "id": "carvan_kenti",
+      "ad": "Carvan Kenti",
+      "devlet": "carvan",
+      "etiketler": [
+        "ova"
+      ],
+      "nufus": 509000,
+      "rezervler": {
+        "tahil": 291000000
+      },
+      "tesisler": [
+        "ciftlik",
+        "gida_fabrikasi",
+        "celikhane"
+      ],
+      "x": 157,
+      "y": 741
+    },
+    {
+      "id": "cevre_kalesi",
+      "ad": "Çevre Kalesi",
+      "devlet": "carvan",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 124000,
+      "rezervler": {
+        "cevher": 570000000
+      },
+      "tesisler": [
+        "cevher_madeni"
+      ],
+      "x": 283,
+      "y": 744
+    },
+    {
+      "id": "sisli_liman",
+      "ad": "Sisli Liman",
+      "devlet": "carvan",
+      "etiketler": [
+        "kiyi",
+        "liman"
+      ],
+      "nufus": 250000,
+      "rezervler": {},
+      "tesisler": [
+        "parca_fabrikasi"
+      ],
+      "x": 384,
+      "y": 749
+    },
+    {
+      "id": "tuz_koyu",
+      "ad": "Tuz Koyu",
+      "devlet": "carvan",
+      "etiketler": [
+        "kiyi"
+      ],
+      "nufus": 72000,
+      "rezervler": {
+        "komur": 240000000
+      },
+      "tesisler": [
+        "komur_ocagi"
+      ],
+      "x": 117,
+      "y": 879
+    },
+    {
+      "id": "gun_batimi",
+      "ad": "Gün Batımı",
+      "devlet": "carvan",
+      "etiketler": [
+        "ova",
+        "kiyi"
+      ],
+      "nufus": 101000,
+      "rezervler": {
+        "tahil": 168000000
+      },
+      "tesisler": [
+        "ciftlik",
+        "gida_fabrikasi"
+      ],
+      "x": 246,
+      "y": 882
+    },
+    {
+      "id": "kuru_kiyi",
+      "ad": "Kuru Kıyı",
+      "devlet": "carvan",
+      "etiketler": [
+        "kiyi"
+      ],
+      "nufus": 75000,
+      "rezervler": {
+        "komur": 518000000
+      },
+      "tesisler": [
+        "komur_ocagi"
+      ],
+      "x": 360,
+      "y": 855
+    },
+    {
+      "id": "demir_gecit",
+      "ad": "Demir Geçit",
+      "devlet": "carvan",
+      "etiketler": [
+        "dar_gecit"
+      ],
+      "nufus": 48000,
+      "rezervler": {
+        "silis": 131000000
+      },
+      "tesisler": [
+        "silis_ocagi"
+      ],
+      "x": 324,
+      "y": 484
+    },
+    {
+      "id": "yalin_zirve",
+      "ad": "Yalın Zirve",
+      "devlet": "carvan",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 56000,
+      "rezervler": {
+        "cevher": 342000000
+      },
+      "tesisler": [
+        "cevher_madeni"
+      ],
+      "x": 236,
+      "y": 486
+    },
+    {
+      "id": "golge_tepe",
+      "ad": "Gölge Tepe",
+      "devlet": "carvan",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 53000,
+      "rezervler": {
+        "bakir": 131000000
+      },
+      "tesisler": [
+        "bakir_madeni"
+      ],
+      "x": 49,
+      "y": 529
+    },
+    {
+      "id": "kum_burnu",
+      "ad": "Kum Burnu",
+      "devlet": "belora",
+      "etiketler": [
+        "kiyi"
+      ],
+      "nufus": 80000,
+      "rezervler": {
+        "petrol": 550000000
+      },
+      "tesisler": [
+        "petrol_kuyusu"
+      ],
+      "x": 641,
+      "y": 113
+    },
+    {
+      "id": "altin_col",
+      "ad": "Altın Çöl",
+      "devlet": "belora",
+      "etiketler": [],
+      "nufus": 62000,
+      "rezervler": {
+        "bakir": 616000000
+      },
+      "tesisler": [
+        "bakir_madeni"
+      ],
+      "x": 771,
+      "y": 102
+    },
+    {
+      "id": "gunes_kumulu",
+      "ad": "Güneş Kumulu",
+      "devlet": "belora",
+      "etiketler": [
+        "kiyi"
+      ],
+      "nufus": 74000,
+      "rezervler": {
+        "silis": 784000000
+      },
+      "tesisler": [
+        "silis_ocagi"
+      ],
+      "x": 920,
+      "y": 106
+    },
+    {
+      "id": "inci_limani",
+      "ad": "İnci Limanı",
+      "devlet": "belora",
+      "etiketler": [
+        "kiyi",
+        "liman"
+      ],
+      "nufus": 244000,
+      "rezervler": {
+        "petrol": 220000000
+      },
+      "tesisler": [
+        "rafineri"
+      ],
+      "x": 609,
+      "y": 242
+    },
+    {
+      "id": "vaha_kenti",
+      "ad": "Vaha Kenti",
+      "devlet": "belora",
+      "etiketler": [
+        "ova"
+      ],
+      "nufus": 185000,
+      "rezervler": {
+        "tahil": 372000000
+      },
+      "tesisler": [
+        "ciftlik",
+        "gida_fabrikasi"
+      ],
+      "x": 716,
+      "y": 235
+    },
+    {
+      "id": "belora_kenti",
+      "ad": "Belora Kenti",
+      "devlet": "belora",
+      "etiketler": [],
+      "nufus": 480000,
+      "rezervler": {
+        "bakir": 452000000
+      },
+      "tesisler": [
+        "bakir_madeni",
+        "elektronik_fabrikasi"
+      ],
+      "x": 842,
+      "y": 224
+    },
+    {
+      "id": "dogu_limani",
+      "ad": "Doğu Limanı",
+      "devlet": "belora",
+      "etiketler": [
+        "kiyi",
+        "liman"
+      ],
+      "nufus": 225000,
+      "rezervler": {
+        "petrol": 900000000
+      },
+      "tesisler": [
+        "petrol_kuyusu",
+        "rafineri"
+      ],
+      "x": 947,
+      "y": 248
+    },
+    {
+      "id": "kizil_kaya",
+      "ad": "Kızıl Kaya",
+      "devlet": "belora",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 64000,
+      "rezervler": {
+        "bakir": 270000000
+      },
+      "tesisler": [
+        "bakir_madeni"
+      ],
+      "x": 631,
+      "y": 373
+    },
+    {
+      "id": "orta_col",
+      "ad": "Orta Çöl",
+      "devlet": "belora",
+      "etiketler": [],
+      "nufus": 79000,
+      "rezervler": {
+        "petrol": 460000000
+      },
+      "tesisler": [
+        "petrol_kuyusu"
+      ],
+      "x": 769,
+      "y": 353
+    },
+    {
+      "id": "yel_burnu",
+      "ad": "Yel Burnu",
+      "devlet": "belora",
+      "etiketler": [
+        "kiyi"
+      ],
+      "nufus": 88000,
+      "rezervler": {
+        "silis": 450000000
+      },
+      "tesisler": [
+        "silis_ocagi"
+      ],
+      "x": 884,
+      "y": 374
+    },
+    {
+      "id": "kum_gecidi",
+      "ad": "Kum Geçidi",
+      "devlet": "belora",
+      "etiketler": [
+        "dar_gecit"
+      ],
+      "nufus": 53000,
+      "rezervler": {
+        "bakir": 132000000
+      },
+      "tesisler": [
+        "bakir_madeni"
+      ],
+      "x": 705,
+      "y": 493
+    },
+    {
+      "id": "kuru_tepe",
+      "ad": "Kuru Tepe",
+      "devlet": "belora",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 52000,
+      "rezervler": {
+        "silis": 159000000
+      },
+      "tesisler": [
+        "silis_ocagi"
+      ],
+      "x": 612,
+      "y": 477
+    },
+    {
+      "id": "sanayi_ovasi",
+      "ad": "Sanayi Ovası",
+      "devlet": "dorsa",
+      "etiketler": [
+        "ova"
+      ],
+      "nufus": 214000,
+      "rezervler": {
+        "tahil": 618000000
+      },
+      "tesisler": [
+        "ciftlik",
+        "gida_fabrikasi"
+      ],
+      "x": 656,
+      "y": 625
+    },
+    {
+      "id": "komur_havzasi",
+      "ad": "Kömür Havzası",
+      "devlet": "dorsa",
+      "etiketler": [],
+      "nufus": 146000,
+      "rezervler": {
+        "komur": 765000000,
+        "cevher": 280000000
+      },
+      "tesisler": [
+        "komur_ocagi",
+        "cevher_madeni"
+      ],
+      "x": 788,
+      "y": 606
+    },
+    {
+      "id": "tuz_golu",
+      "ad": "Tuz Gölü",
+      "devlet": "dorsa",
+      "etiketler": [
+        "kiyi"
+      ],
+      "nufus": 86000,
+      "rezervler": {
+        "petrol": 228000000
+      },
+      "tesisler": [
+        "petrol_kuyusu"
+      ],
+      "x": 918,
+      "y": 624
+    },
+    {
+      "id": "celik_limani",
+      "ad": "Çelik Limanı",
+      "devlet": "dorsa",
+      "etiketler": [
+        "kiyi",
+        "liman"
+      ],
+      "nufus": 248000,
+      "rezervler": {},
+      "tesisler": [
+        "celikhane"
+      ],
+      "x": 620,
+      "y": 752
+    },
+    {
+      "id": "dorsa_kenti",
+      "ad": "Dorsa Kenti",
+      "devlet": "dorsa",
+      "etiketler": [
+        "ova"
+      ],
+      "nufus": 594000,
+      "rezervler": {
+        "tahil": 392000000
+      },
+      "tesisler": [
+        "ciftlik",
+        "parca_fabrikasi",
+        "muhimmat_fabrikasi"
+      ],
+      "x": 726,
+      "y": 743
+    },
+    {
+      "id": "tas_ova",
+      "ad": "Taş Ova",
+      "devlet": "dorsa",
+      "etiketler": [
+        "ova"
+      ],
+      "nufus": 137000,
+      "rezervler": {
+        "tahil": 616000000
+      },
+      "tesisler": [
+        "ciftlik",
+        "gida_fabrikasi"
+      ],
+      "x": 838,
+      "y": 737
+    },
+    {
+      "id": "gundogumu_limani",
+      "ad": "Gündoğumu Limanı",
+      "devlet": "dorsa",
+      "etiketler": [
+        "kiyi",
+        "liman"
+      ],
+      "nufus": 202000,
+      "rezervler": {},
+      "tesisler": [
+        "rafineri"
+      ],
+      "x": 935,
+      "y": 732
+    },
+    {
+      "id": "bati_yamaci",
+      "ad": "Batı Yamacı",
+      "devlet": "dorsa",
+      "etiketler": [
+        "kiyi"
+      ],
+      "nufus": 94000,
+      "rezervler": {
+        "silis": 186000000
+      },
+      "tesisler": [
+        "silis_ocagi"
+      ],
+      "x": 652,
+      "y": 877
+    },
+    {
+      "id": "yesil_vadi",
+      "ad": "Yeşil Vadi",
+      "devlet": "dorsa",
+      "etiketler": [
+        "ova",
+        "kiyi"
+      ],
+      "nufus": 124000,
+      "rezervler": {
+        "tahil": 550000000
+      },
+      "tesisler": [
+        "ciftlik",
+        "gida_fabrikasi"
+      ],
+      "x": 770,
+      "y": 874
+    },
+    {
+      "id": "tas_gecit",
+      "ad": "Taş Geçit",
+      "devlet": "dorsa",
+      "etiketler": [
+        "dar_gecit"
+      ],
+      "nufus": 53000,
+      "rezervler": {
+        "komur": 91000000
+      },
+      "tesisler": [
+        "komur_ocagi"
+      ],
+      "x": 878,
+      "y": 486
+    },
+    {
+      "id": "ulu_dag",
+      "ad": "Ulu Dağ",
+      "devlet": "dorsa",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 55000,
+      "rezervler": {
+        "cevher": 315000000
+      },
+      "tesisler": [
+        "cevher_madeni"
+      ],
+      "x": 792,
+      "y": 504
+    },
+    {
+      "id": "gri_tepe",
+      "ad": "Gri Tepe",
+      "devlet": "dorsa",
+      "etiketler": [
+        "dag"
+      ],
+      "nufus": 48000,
+      "rezervler": {
+        "komur": 309000000
+      },
+      "tesisler": [
+        "komur_ocagi"
+      ],
+      "x": 954,
+      "y": 511
+    },
+    {
+      "id": "hilal_adasi",
+      "ad": "Hilal Adası",
+      "devlet": "dorsa",
+      "etiketler": [
+        "kiyi",
+        "liman"
+      ],
+      "nufus": 113000,
+      "rezervler": {
+        "petrol": 392000000
+      },
+      "tesisler": [
+        "petrol_kuyusu"
+      ],
+      "x": 501,
+      "y": 510
+    }
+  ],
+  "kenarlar": [
+    {
+      "a": "ak_ova",
+      "b": "bereket_dizi",
+      "tur": "kara",
+      "kapasiteSaat": 610000,
+      "sureSaat": 3
+    },
+    {
+      "a": "bereket_dizi",
+      "b": "kuzey_burun",
+      "tur": "kara",
+      "kapasiteSaat": 660000,
+      "sureSaat": 3
+    },
+    {
+      "a": "yelken_limani",
+      "b": "askan_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 550000,
+      "sureSaat": 2
+    },
+    {
+      "a": "askan_kenti",
+      "b": "sis_tepeleri",
+      "tur": "kara",
+      "kapasiteSaat": 220000,
+      "sureSaat": 7
+    },
+    {
+      "a": "sis_tepeleri",
+      "b": "kopuk_limani",
+      "tur": "kara",
+      "kapasiteSaat": 190000,
+      "sureSaat": 7
+    },
+    {
+      "a": "duman_koyu",
+      "b": "orta_ova",
+      "tur": "kara",
+      "kapasiteSaat": 540000,
+      "sureSaat": 3
+    },
+    {
+      "a": "orta_ova",
+      "b": "tas_kapi",
+      "tur": "kara",
+      "kapasiteSaat": 530000,
+      "sureSaat": 3
+    },
+    {
+      "a": "ak_ova",
+      "b": "yelken_limani",
+      "tur": "kara",
+      "kapasiteSaat": 620000,
+      "sureSaat": 3
+    },
+    {
+      "a": "ak_ova",
+      "b": "askan_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 760000,
+      "sureSaat": 4
+    },
+    {
+      "a": "bereket_dizi",
+      "b": "askan_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 600000,
+      "sureSaat": 3
+    },
+    {
+      "a": "bereket_dizi",
+      "b": "sis_tepeleri",
+      "tur": "kara",
+      "kapasiteSaat": 210000,
+      "sureSaat": 7
+    },
+    {
+      "a": "kuzey_burun",
+      "b": "sis_tepeleri",
+      "tur": "kara",
+      "kapasiteSaat": 180000,
+      "sureSaat": 7
+    },
+    {
+      "a": "kuzey_burun",
+      "b": "kopuk_limani",
+      "tur": "kara",
+      "kapasiteSaat": 570000,
+      "sureSaat": 3
+    },
+    {
+      "a": "yelken_limani",
+      "b": "duman_koyu",
+      "tur": "kara",
+      "kapasiteSaat": 530000,
+      "sureSaat": 3
+    },
+    {
+      "a": "askan_kenti",
+      "b": "duman_koyu",
+      "tur": "kara",
+      "kapasiteSaat": 740000,
+      "sureSaat": 4
+    },
+    {
+      "a": "askan_kenti",
+      "b": "orta_ova",
+      "tur": "kara",
+      "kapasiteSaat": 590000,
+      "sureSaat": 3
+    },
+    {
+      "a": "sis_tepeleri",
+      "b": "orta_ova",
+      "tur": "kara",
+      "kapasiteSaat": 180000,
+      "sureSaat": 7
+    },
+    {
+      "a": "sis_tepeleri",
+      "b": "tas_kapi",
+      "tur": "kara",
+      "kapasiteSaat": 200000,
+      "sureSaat": 8
+    },
+    {
+      "a": "kopuk_limani",
+      "b": "tas_kapi",
+      "tur": "kara",
+      "kapasiteSaat": 650000,
+      "sureSaat": 3
+    },
+    {
+      "a": "kurt_gecidi",
+      "b": "duman_koyu",
+      "tur": "kara",
+      "kapasiteSaat": 330000,
+      "sureSaat": 4
+    },
+    {
+      "a": "kurt_gecidi",
+      "b": "orta_ova",
+      "tur": "kara",
+      "kapasiteSaat": 340000,
+      "sureSaat": 5
+    },
+    {
+      "a": "kurt_gecidi",
+      "b": "demir_dagi",
+      "tur": "kara",
+      "kapasiteSaat": 300000,
+      "sureSaat": 5
+    },
+    {
+      "a": "kurt_gecidi",
+      "b": "kor_ocak",
+      "tur": "kara",
+      "kapasiteSaat": 330000,
+      "sureSaat": 5
+    },
+    {
+      "a": "demir_gecit",
+      "b": "tas_kapi",
+      "tur": "kara",
+      "kapasiteSaat": 290000,
+      "sureSaat": 4
+    },
+    {
+      "a": "demir_gecit",
+      "b": "cam_vadisi",
+      "tur": "kara",
+      "kapasiteSaat": 340000,
+      "sureSaat": 4
+    },
+    {
+      "a": "yalin_zirve",
+      "b": "orta_ova",
+      "tur": "kara",
+      "kapasiteSaat": 190000,
+      "sureSaat": 7
+    },
+    {
+      "a": "yalin_zirve",
+      "b": "kor_ocak",
+      "tur": "kara",
+      "kapasiteSaat": 190000,
+      "sureSaat": 7
+    },
+    {
+      "a": "kara_zirve",
+      "b": "tas_kapi",
+      "tur": "kara",
+      "kapasiteSaat": 150000,
+      "sureSaat": 7
+    },
+    {
+      "a": "golge_tepe",
+      "b": "demir_dagi",
+      "tur": "kara",
+      "kapasiteSaat": 210000,
+      "sureSaat": 7
+    },
+    {
+      "a": "demir_dagi",
+      "b": "kor_ocak",
+      "tur": "kara",
+      "kapasiteSaat": 200000,
+      "sureSaat": 7
+    },
+    {
+      "a": "kor_ocak",
+      "b": "cam_vadisi",
+      "tur": "kara",
+      "kapasiteSaat": 200000,
+      "sureSaat": 7
+    },
+    {
+      "a": "gumus_limani",
+      "b": "carvan_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 630000,
+      "sureSaat": 2
+    },
+    {
+      "a": "carvan_kenti",
+      "b": "cevre_kalesi",
+      "tur": "kara",
+      "kapasiteSaat": 200000,
+      "sureSaat": 7
+    },
+    {
+      "a": "cevre_kalesi",
+      "b": "sisli_liman",
+      "tur": "kara",
+      "kapasiteSaat": 200000,
+      "sureSaat": 5
+    },
+    {
+      "a": "tuz_koyu",
+      "b": "gun_batimi",
+      "tur": "kara",
+      "kapasiteSaat": 650000,
+      "sureSaat": 3
+    },
+    {
+      "a": "gun_batimi",
+      "b": "kuru_kiyi",
+      "tur": "kara",
+      "kapasiteSaat": 590000,
+      "sureSaat": 3
+    },
+    {
+      "a": "demir_dagi",
+      "b": "gumus_limani",
+      "tur": "kara",
+      "kapasiteSaat": 190000,
+      "sureSaat": 7
+    },
+    {
+      "a": "demir_dagi",
+      "b": "carvan_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 150000,
+      "sureSaat": 7
+    },
+    {
+      "a": "kor_ocak",
+      "b": "carvan_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 200000,
+      "sureSaat": 7
+    },
+    {
+      "a": "kor_ocak",
+      "b": "cevre_kalesi",
+      "tur": "kara",
+      "kapasiteSaat": 170000,
+      "sureSaat": 7
+    },
+    {
+      "a": "cam_vadisi",
+      "b": "cevre_kalesi",
+      "tur": "kara",
+      "kapasiteSaat": 200000,
+      "sureSaat": 7
+    },
+    {
+      "a": "cam_vadisi",
+      "b": "sisli_liman",
+      "tur": "kara",
+      "kapasiteSaat": 600000,
+      "sureSaat": 3
+    },
+    {
+      "a": "gumus_limani",
+      "b": "tuz_koyu",
+      "tur": "kara",
+      "kapasiteSaat": 580000,
+      "sureSaat": 3
+    },
+    {
+      "a": "carvan_kenti",
+      "b": "tuz_koyu",
+      "tur": "kara",
+      "kapasiteSaat": 650000,
+      "sureSaat": 3
+    },
+    {
+      "a": "carvan_kenti",
+      "b": "gun_batimi",
+      "tur": "kara",
+      "kapasiteSaat": 640000,
+      "sureSaat": 4
+    },
+    {
+      "a": "cevre_kalesi",
+      "b": "gun_batimi",
+      "tur": "kara",
+      "kapasiteSaat": 190000,
+      "sureSaat": 7
+    },
+    {
+      "a": "cevre_kalesi",
+      "b": "kuru_kiyi",
+      "tur": "kara",
+      "kapasiteSaat": 160000,
+      "sureSaat": 7
+    },
+    {
+      "a": "sisli_liman",
+      "b": "kuru_kiyi",
+      "tur": "kara",
+      "kapasiteSaat": 630000,
+      "sureSaat": 3
+    },
+    {
+      "a": "kum_burnu",
+      "b": "altin_col",
+      "tur": "kara",
+      "kapasiteSaat": 520000,
+      "sureSaat": 3
+    },
+    {
+      "a": "altin_col",
+      "b": "gunes_kumulu",
+      "tur": "kara",
+      "kapasiteSaat": 710000,
+      "sureSaat": 4
+    },
+    {
+      "a": "inci_limani",
+      "b": "vaha_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 520000,
+      "sureSaat": 3
+    },
+    {
+      "a": "vaha_kenti",
+      "b": "belora_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 600000,
+      "sureSaat": 3
+    },
+    {
+      "a": "belora_kenti",
+      "b": "dogu_limani",
+      "tur": "kara",
+      "kapasiteSaat": 760000,
+      "sureSaat": 3
+    },
+    {
+      "a": "kizil_kaya",
+      "b": "orta_col",
+      "tur": "kara",
+      "kapasiteSaat": 170000,
+      "sureSaat": 7
+    },
+    {
+      "a": "orta_col",
+      "b": "yel_burnu",
+      "tur": "kara",
+      "kapasiteSaat": 600000,
+      "sureSaat": 3
+    },
+    {
+      "a": "kum_burnu",
+      "b": "inci_limani",
+      "tur": "kara",
+      "kapasiteSaat": 580000,
+      "sureSaat": 3
+    },
+    {
+      "a": "kum_burnu",
+      "b": "vaha_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 530000,
+      "sureSaat": 3
+    },
+    {
+      "a": "altin_col",
+      "b": "vaha_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 550000,
+      "sureSaat": 3
+    },
+    {
+      "a": "altin_col",
+      "b": "belora_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 720000,
+      "sureSaat": 3
+    },
+    {
+      "a": "gunes_kumulu",
+      "b": "belora_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 540000,
+      "sureSaat": 3
+    },
+    {
+      "a": "gunes_kumulu",
+      "b": "dogu_limani",
+      "tur": "kara",
+      "kapasiteSaat": 720000,
+      "sureSaat": 3
+    },
+    {
+      "a": "inci_limani",
+      "b": "kizil_kaya",
+      "tur": "kara",
+      "kapasiteSaat": 210000,
+      "sureSaat": 7
+    },
+    {
+      "a": "vaha_kenti",
+      "b": "kizil_kaya",
+      "tur": "kara",
+      "kapasiteSaat": 190000,
+      "sureSaat": 8
+    },
+    {
+      "a": "vaha_kenti",
+      "b": "orta_col",
+      "tur": "kara",
+      "kapasiteSaat": 620000,
+      "sureSaat": 3
+    },
+    {
+      "a": "belora_kenti",
+      "b": "orta_col",
+      "tur": "kara",
+      "kapasiteSaat": 600000,
+      "sureSaat": 4
+    },
+    {
+      "a": "belora_kenti",
+      "b": "yel_burnu",
+      "tur": "kara",
+      "kapasiteSaat": 740000,
+      "sureSaat": 4
+    },
+    {
+      "a": "dogu_limani",
+      "b": "yel_burnu",
+      "tur": "kara",
+      "kapasiteSaat": 660000,
+      "sureSaat": 3
+    },
+    {
+      "a": "kum_gecidi",
+      "b": "kizil_kaya",
+      "tur": "kara",
+      "kapasiteSaat": 300000,
+      "sureSaat": 4
+    },
+    {
+      "a": "kum_gecidi",
+      "b": "orta_col",
+      "tur": "kara",
+      "kapasiteSaat": 300000,
+      "sureSaat": 5
+    },
+    {
+      "a": "kum_gecidi",
+      "b": "sanayi_ovasi",
+      "tur": "kara",
+      "kapasiteSaat": 360000,
+      "sureSaat": 4
+    },
+    {
+      "a": "kum_gecidi",
+      "b": "komur_havzasi",
+      "tur": "kara",
+      "kapasiteSaat": 280000,
+      "sureSaat": 4
+    },
+    {
+      "a": "tas_gecit",
+      "b": "yel_burnu",
+      "tur": "kara",
+      "kapasiteSaat": 290000,
+      "sureSaat": 4
+    },
+    {
+      "a": "tas_gecit",
+      "b": "tuz_golu",
+      "tur": "kara",
+      "kapasiteSaat": 310000,
+      "sureSaat": 4
+    },
+    {
+      "a": "ulu_dag",
+      "b": "orta_col",
+      "tur": "kara",
+      "kapasiteSaat": 150000,
+      "sureSaat": 8
+    },
+    {
+      "a": "ulu_dag",
+      "b": "komur_havzasi",
+      "tur": "kara",
+      "kapasiteSaat": 170000,
+      "sureSaat": 5
+    },
+    {
+      "a": "kuru_tepe",
+      "b": "kizil_kaya",
+      "tur": "kara",
+      "kapasiteSaat": 150000,
+      "sureSaat": 7
+    },
+    {
+      "a": "gri_tepe",
+      "b": "tuz_golu",
+      "tur": "kara",
+      "kapasiteSaat": 180000,
+      "sureSaat": 7
+    },
+    {
+      "a": "sanayi_ovasi",
+      "b": "komur_havzasi",
+      "tur": "kara",
+      "kapasiteSaat": 740000,
+      "sureSaat": 3
+    },
+    {
+      "a": "komur_havzasi",
+      "b": "tuz_golu",
+      "tur": "kara",
+      "kapasiteSaat": 650000,
+      "sureSaat": 3
+    },
+    {
+      "a": "celik_limani",
+      "b": "dorsa_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 570000,
+      "sureSaat": 3
+    },
+    {
+      "a": "dorsa_kenti",
+      "b": "tas_ova",
+      "tur": "kara",
+      "kapasiteSaat": 750000,
+      "sureSaat": 3
+    },
+    {
+      "a": "tas_ova",
+      "b": "gundogumu_limani",
+      "tur": "kara",
+      "kapasiteSaat": 620000,
+      "sureSaat": 2
+    },
+    {
+      "a": "bati_yamaci",
+      "b": "yesil_vadi",
+      "tur": "kara",
+      "kapasiteSaat": 710000,
+      "sureSaat": 3
+    },
+    {
+      "a": "sanayi_ovasi",
+      "b": "celik_limani",
+      "tur": "kara",
+      "kapasiteSaat": 750000,
+      "sureSaat": 3
+    },
+    {
+      "a": "sanayi_ovasi",
+      "b": "dorsa_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 620000,
+      "sureSaat": 3
+    },
+    {
+      "a": "komur_havzasi",
+      "b": "dorsa_kenti",
+      "tur": "kara",
+      "kapasiteSaat": 740000,
+      "sureSaat": 4
+    },
+    {
+      "a": "komur_havzasi",
+      "b": "tas_ova",
+      "tur": "kara",
+      "kapasiteSaat": 670000,
+      "sureSaat": 3
+    },
+    {
+      "a": "tuz_golu",
+      "b": "tas_ova",
+      "tur": "kara",
+      "kapasiteSaat": 640000,
+      "sureSaat": 3
+    },
+    {
+      "a": "tuz_golu",
+      "b": "gundogumu_limani",
+      "tur": "kara",
+      "kapasiteSaat": 610000,
+      "sureSaat": 3
+    },
+    {
+      "a": "celik_limani",
+      "b": "bati_yamaci",
+      "tur": "kara",
+      "kapasiteSaat": 560000,
+      "sureSaat": 3
+    },
+    {
+      "a": "dorsa_kenti",
+      "b": "bati_yamaci",
+      "tur": "kara",
+      "kapasiteSaat": 660000,
+      "sureSaat": 4
+    },
+    {
+      "a": "dorsa_kenti",
+      "b": "yesil_vadi",
+      "tur": "kara",
+      "kapasiteSaat": 670000,
+      "sureSaat": 3
+    },
+    {
+      "a": "tas_ova",
+      "b": "yesil_vadi",
+      "tur": "kara",
+      "kapasiteSaat": 610000,
+      "sureSaat": 4
+    },
+    {
+      "a": "kopuk_limani",
+      "b": "inci_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 2200000,
+      "sureSaat": 26
+    },
+    {
+      "a": "sisli_liman",
+      "b": "celik_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 1950000,
+      "sureSaat": 26
+    },
+    {
+      "a": "hilal_adasi",
+      "b": "kopuk_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 2000000,
+      "sureSaat": 24
+    },
+    {
+      "a": "hilal_adasi",
+      "b": "inci_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 1800000,
+      "sureSaat": 24
+    },
+    {
+      "a": "hilal_adasi",
+      "b": "sisli_liman",
+      "tur": "deniz",
+      "kapasiteSaat": 2350000,
+      "sureSaat": 28
+    },
+    {
+      "a": "hilal_adasi",
+      "b": "celik_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 2250000,
+      "sureSaat": 28
+    },
+    {
+      "a": "kopuk_limani",
+      "b": "sisli_liman",
+      "tur": "deniz",
+      "kapasiteSaat": 1900000,
+      "sureSaat": 36
+    },
+    {
+      "a": "inci_limani",
+      "b": "celik_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 1850000,
+      "sureSaat": 36
+    },
+    {
+      "a": "yelken_limani",
+      "b": "gumus_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 2300000,
+      "sureSaat": 48
+    },
+    {
+      "a": "dogu_limani",
+      "b": "gundogumu_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 2300000,
+      "sureSaat": 48
+    },
+    {
+      "a": "yelken_limani",
+      "b": "dogu_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 1700000,
+      "sureSaat": 72
+    },
+    {
+      "a": "gumus_limani",
+      "b": "gundogumu_limani",
+      "tur": "deniz",
+      "kapasiteSaat": 2050000,
+      "sureSaat": 72
+    },
+    {
+      "a": "askan_kenti",
+      "b": "belora_kenti",
+      "tur": "hava",
+      "kapasiteSaat": 40000,
+      "sureSaat": 4
+    },
+    {
+      "a": "carvan_kenti",
+      "b": "dorsa_kenti",
+      "tur": "hava",
+      "kapasiteSaat": 55000,
+      "sureSaat": 4
+    },
+    {
+      "a": "askan_kenti",
+      "b": "carvan_kenti",
+      "tur": "hava",
+      "kapasiteSaat": 30000,
+      "sureSaat": 3
+    },
+    {
+      "a": "belora_kenti",
+      "b": "dorsa_kenti",
+      "tur": "hava",
+      "kapasiteSaat": 55000,
+      "sureSaat": 3
+    }
+  ]
+}

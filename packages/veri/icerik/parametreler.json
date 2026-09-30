@@ -1,0 +1,62 @@
+{
+  "surum": 1,
+  "dunyaHizi": 1,
+  "baslangic": {
+    "stok": {
+      "tahil": 200000, "gida": 2000000, "cevher": 200000, "komur": 200000, "celik": 500000,
+      "bakir": 200000, "silis": 200000, "parca": 300000, "elektronik": 200000,
+      "petrol": 200000, "yakit": 500000, "muhimmat": 200000
+    },
+    "hazine": 50000000,
+    "birlikler": { "piyade_tumeni": 3 }
+  },
+  "nufus": {
+    "isgucuPpm": 500000,
+    "tuketim1000Saat": { "gida": 200, "yakit": 30, "elektronik": 8 },
+    "buyumePpmGun": 1000,
+    "kuculmePpmGun": 3000
+  },
+  "ekonomi": {
+    "depoKapasitesi": 20000000,
+    "vergiTabani1000Saat": 2000,
+    "varsayilanVergiPpm": 200000,
+    "vergiBuyumeEsigiPpm": 350000
+  },
+  "pazar": {
+    "fiyatEsnekligiPpm": 750000,
+    "emilimSaat": {
+      "tahil": 150000, "gida": 200000, "cevher": 150000, "komur": 150000, "celik": 120000,
+      "bakir": 100000, "silis": 100000, "parca": 80000, "elektronik": 50000,
+      "petrol": 200000, "yakit": 150000, "muhimmat": 50000
+    },
+    "arzSaat": {
+      "tahil": 120000, "gida": 160000, "cevher": 120000, "komur": 120000, "celik": 100000,
+      "bakir": 80000, "silis": 80000, "parca": 80000, "elektronik": 50000,
+      "petrol": 150000, "yakit": 150000, "muhimmat": 80000
+    },
+    "ithalatCarpaniPpm": 1100000,
+    "ihracatCarpaniPpm": 900000,
+    "yaptirimIthalatCarpaniPpm": 1300000,
+    "yaptirimIhracatCarpaniPpm": 700000,
+    "anlasmaIthalatCarpaniPpm": 1050000,
+    "anlasmaIhracatCarpaniPpm": 950000
+  },
+  "lojistik": {
+    "enAzCozumAraligiDakika": 10,
+    "tamponSaat": 12,
+    "gelistirmeArtisPpm": 500000,
+    "gelistirmeMaliyeti": { "celik": 400000, "parca": 100000 },
+    "gelistirmeParasi": 20000000,
+    "gelistirmeSuresiSaat": 12
+  },
+  "askeri": {
+    "ilanHazirlikSaatMin": 12,
+    "ilanHazirlikSaatMax": 24,
+    "pencereSaat": 24,
+    "kayipTavaniPpm": 250000,
+    "yagmaOraniPpm": 400000,
+    "yeniOyuncuKorumasiGun": 7,
+    "araziSavunmaPpm": { "kiyi": 1000000, "dag": 1500000, "ova": 1000000, "liman": 1100000, "dar_gecit": 1800000 },
+    "savunmaDurusuCarpaniPpm": 1300000
+  }
+}
