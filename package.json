@@ -1,0 +1,26 @@
+{
+  "name": "bolge-stratejisi",
+  "private": true,
+  "type": "module",
+  "description": "Bölge Stratejisi — gerçek zamanlı web tabanlı strateji oyunu (Aşama 2: arayüzsüz çekirdek simülasyon)",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:izle": "vitest",
+    "tipkontrol": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "kontrol": "pnpm tipkontrol && pnpm lint && pnpm test",
+    "olcum": "tsx packages/olcum/src/cli.ts",
+    "harita:uret": "tsx packages/veri/src/harita-uretici.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "eslint": "^9.39.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^2.1.9"
+  }
+}

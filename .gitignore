@@ -1,0 +1,5 @@
+node_modules/
+raporlar/
+*.log
+.DS_Store
+coverage/
