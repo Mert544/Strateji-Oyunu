@@ -43,6 +43,11 @@ export interface BolgeTanimi {
   /** 2D çizim ve mesafe için koordinat (soyut birim, 0-1000). */
   x: number;
   y: number;
+  /**
+   * Gerçek dünya haritalarında bölge merkezinin coğrafi konumu (mikro derece: derece × 1_000_000, tamsayı).
+   * Sentetik haritalarda yoktur. 3D istemci küre üzerine yerleştirmek için kullanır.
+   */
+  konum?: { enlemMikro: number; boylamMikro: number };
 }
 
 export interface KenarTanimi {
@@ -61,6 +66,13 @@ export interface HaritaDosyasi {
   devletler: DevletTanimi[];
   bolgeler: BolgeTanimi[];
   kenarlar: KenarTanimi[];
+  /**
+   * Gerçek dünya haritalarında bölge sınır çokgenlerinin dosyası (harita dosyasına göre göreli yol,
+   * TopoJSON; nesne adı "bolgeler", her geometrinin `properties.id` = bölge kimliği).
+   */
+  sinirDosyasi?: string;
+  /** Veri kaynakları ve atıf satırları (ör. "Made with Natural Earth"). */
+  atif?: string[];
 }
 
 export type MalKategorisi = "ham" | "ara" | "tuketim" | "askeri";

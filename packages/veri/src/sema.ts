@@ -64,6 +64,13 @@ const bolgeSema = z
     tesisler: z.array(kimlik),
     x: koordinat,
     y: koordinat,
+    konum: z
+      .object({
+        enlemMikro: tamsayi.min(-90_000_000).max(90_000_000),
+        boylamMikro: tamsayi.min(-180_000_000).max(180_000_000),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 
@@ -84,6 +91,8 @@ export const HaritaSema = z
     devletler: z.array(devletSema),
     bolgeler: z.array(bolgeSema),
     kenarlar: z.array(kenarSema),
+    sinirDosyasi: metin.optional(),
+    atif: z.array(metin).optional(),
   })
   .strict();
 
