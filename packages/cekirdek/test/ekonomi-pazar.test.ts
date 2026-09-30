@@ -27,7 +27,7 @@ describe("ihracat ve hazine", () => {
     expect(emir.gerceklesenSaat).toBeLessThanOrEqual(50_000);
     expect(s.dunya.pazar.oyuncuArzi[yakit]).toBe(emir.gerceklesenSaat);
 
-    // Aşırı emir: gerçekleşen, dünya pazarının emilim hacmini (yakıt 150000/saat) aşmaz
+    // Aşırı emir: gerçekleşen, dünya pazarının emilim hacmini (yakıt emilimSaat) aşmaz
     verTamam(s, "a", { tur: "ticaret_emri", bolge: "m_liman", mal: "yakit", yon: "ihracat", oranSaat: 100_000_000 });
     saatKos(s, 2);
     expect(bolge(s, "m_liman").ticaretEmirleri[0]!.gerceklesenSaat).toBe(s.ic.param.pazar.emilimSaat["yakit"]);
@@ -95,8 +95,8 @@ describe("orantili paylasim", () => {
     const ga = bolge(s, "m_liman").ticaretEmirleri[0]!.gerceklesenSaat;
     const gb = bolge(s, "m_sehir").ticaretEmirleri[0]!.gerceklesenSaat;
     expect(ga + gb).toBe(cap);
-    expect(ga).toBe(112_500);
-    expect(gb).toBe(37_500);
+    expect(ga).toBe(cap * 3 / 4); // istek payı 300/400
+    expect(gb).toBe(cap / 4); // istek payı 100/400
     expect(s.dunya.pazar.oyuncuArzi[yakit]).toBe(cap);
   });
 
@@ -109,8 +109,10 @@ describe("orantili paylasim", () => {
     const ga = bolge(s, "m_liman").ticaretEmirleri[0]!.gerceklesenSaat;
     const gb = bolge(s, "m_sehir").ticaretEmirleri[0]!.gerceklesenSaat;
     expect(ga + gb).toBe(cap);
-    expect(ga).toBe(50_001); // floor(100001 × 150000 / 300001) = 50000, artan 1 birim ilk emre
-    expect(gb).toBe(99_999);
+    // cap = 300000 (v0.2 yakıt pazarı): floor(100001 × 300000 / 300001) = 100000, floor(200000 × 300000 / 300001) = 199999;
+    // artan 1 birim ilk emre.
+    expect(ga).toBe(100_001);
+    expect(gb).toBe(199_999);
   });
 });
 

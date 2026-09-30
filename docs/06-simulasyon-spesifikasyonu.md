@@ -1,6 +1,6 @@
 # 06 — Çekirdek Simülasyon Spesifikasyonu (v0.1)
 
-Bu belge Aşama 2 çekirdek simülasyonunun **kurallarını** tanımlar. v0.1 kalibrasyon kuralları §10'dadır. Kod sözleşmesi
+Bu belge Aşama 2 çekirdek simülasyonunun **kurallarını** tanımlar. v0.1 kalibrasyon kuralları ve v0.2 veri dengesi §10'dadır. Kod sözleşmesi
 `packages/veri/src/tipler.ts` ve `packages/cekirdek/src/tipler.ts` dosyalarındadır.
 Sayılar başlangıç varsayımıdır; `packages/veri/icerik/parametreler.json` içinden ayarlanır.
 
@@ -223,3 +223,33 @@ kabaca %40-60'ı lavabolara gider.
   (ithalat için yeterli, doygun ihracatta fiyat tabanın ~%60-75'inde kalır; v0'da %40'a yapışıyordu).
 - Not: v0 botları ihracat emrini `0.4 × emilimSaat` ile sınırlar; 3 bot aynı malı ihraç ederse emilim (1.2×) her zaman dolar.
   Bu nedenle kömür/cevher için tam çözüm botların fiyata duyarlı ihracatıdır (bot tarafı).
+
+### 10.5 v0.2 veri dengesi (işleme zinciri ve işlenmiş mal pazarı)
+
+Kaynak: [07 Ö2 ve Ö3](07-tasarim-onerileri.md). **Yalnızca veri** değişti (`icerik.json`, `parametreler.json`); çekirdek kuralları ve doğrulayıcı aynıdır.
+
+**Yöntemler (işçi başına katma değer).** KD = Σ çıktı × taban − Σ girdi × taban (para/saat); işçi başına KD = KD × 1000 / işçi. Hedef: zincir yöntemleri ham çıkarımla (250-400) yarışsın, ham çıkarım anlamsızlaşmasın.
+
+| Yöntem | Değişen alan | Önce → sonra | KD/işçi (önce → sonra) |
+|---|---|---|---|
+| `yuksek_firin` | işçi; çıktı çelik | 12 000 → 7 000; 50 000 → 60 000 | 83 → 314 |
+| `elektrik_ark` | girdi cevher; girdi yakıt; çıktı çelik; işçi | 80 000 → 60 000; 30 000 → 20 000; 50 000 → 60 000; 9 000 → 10 000 | 22 → 310 |
+| `standart_parca` | işçi | 10 000 → 5 500 | 140 → 255 |
+| `standart_muhimmat` | işçi | 8 000 → 5 000 | 175 → 280 |
+
+`elektrik_ark` artık `yuksek_firin`'a göre gerçek bir takastır: aynı çelik çıktısı (60), ama %40 daha çok işçi, tesis başına daha yüksek KD (3 100 / 2 200), kömürsüz ve %40 daha az cevher; bedeli yakıt akışı (20) ve 3 günlük / 30M araştırmadır. İşgücü kısıtlı bölgede iki yöntem başabaş (≈ 310), girdi kıtlığı olan bölgede (kömürsüz, petrollü) ark ocağı öne geçer. Sabit gider/KD: çelik %15, parça ve mühimmat %17 (hedef ≤ %20). Gıda, rafineri, elektronik ve ham çıkarım yöntemlerine dokunulmadı.
+
+**İşlenmiş mal pazarı (`pazar.emilimSaat` / `pazar.arzSaat`, birim/saat).** Ham maddelere ve mühimmata dokunulmadı.
+
+| Mal | emilim (önce → sonra) | arz (önce → sonra) |
+|---|---|---|
+| çelik | 120 → 300 | 100 → 260 |
+| parça | 80 → 200 | 80 → 170 |
+| elektronik | 50 → 120 | 50 → 100 |
+| yakıt | 150 → 300 | 150 → 260 |
+
+Sonuç: tek fabrikanın ihracatında fiyat/taban elektronikte 0.55 → 0.94, parçada 0.63 → 0.96 (07 Ö3). Bilinen sınır: mühimmat pazarı (emilim 50 < arz 80) taban altında (0.55) kalıyor; mühimmat piyasa değeri ile üretilmez, yalnızca ordu ikmali ve birlik için üretilir.
+
+Ölçüm özeti (4 botlu 30 günlük koşu, tohum 1-3; eski → yeni): lavabo / (vergi + ihracat − ithalat) 0.48 / 0.37 / 0.51 → 0.30 / 0.33 / 0.38 (hedef 0.3-0.6; alt sınıra yakın, brüt vergi + ihracata göre 0.13 → 0.11); 30. günde çelik üretimi 3 600-5 500 → 5 800-8 600 birim/gün (stok artıyor, israf 0); `elektrik_ark` 2-3 tesiste kullanılıyor (önceden 0); elektronik israfı 15-40 bin → 26-51 bin birim (önceden de vardı, artıyor). H1 (tohum 1): %68.8 ihracatçı (değişmedi).
+
+Test notu: pazar derinliğine bağlı iki test dosyası güncellendi (`ekonomi-pazar.test.ts`: yakıt emilimine bağlı paylaşım sayıları; `duzeltme-hazine-ithalat.test.ts`: çelik pazarı test içinde eski değerlere sabitlendi, çünkü sınanan ithalat-hazine mekanizması fiyat yuvarlamasının içerik dengesinden bağımsız olmasını ister).

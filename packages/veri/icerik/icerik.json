@@ -67,17 +67,17 @@
     },
     {
       "id": "yuksek_firin", "ad": "Yüksek Fırın",
-      "girdiler": { "cevher": 100000, "komur": 50000 }, "ciktilar": { "celik": 50000 }, "isci": 12000,
+      "girdiler": { "cevher": 100000, "komur": 50000 }, "ciktilar": { "celik": 60000 }, "isci": 7000,
       "bakim": { "parca": 1500 }
     },
     {
       "id": "elektrik_ark", "ad": "Elektrik Ark Ocağı",
-      "girdiler": { "cevher": 80000, "yakit": 30000 }, "ciktilar": { "celik": 50000 }, "isci": 9000,
+      "girdiler": { "cevher": 60000, "yakit": 20000 }, "ciktilar": { "celik": 60000 }, "isci": 10000,
       "bakim": { "parca": 1500 }, "gerekliTeknoloji": "elektrik_ark_ocagi"
     },
     {
       "id": "standart_parca", "ad": "Standart Parça Hattı",
-      "girdiler": { "celik": 40000, "yakit": 10000 }, "ciktilar": { "parca": 40000 }, "isci": 10000,
+      "girdiler": { "celik": 40000, "yakit": 10000 }, "ciktilar": { "parca": 40000 }, "isci": 5500,
       "bakim": { "parca": 1000 }
     },
     {
@@ -97,7 +97,7 @@
     },
     {
       "id": "standart_muhimmat", "ad": "Standart Mühimmat Hattı",
-      "girdiler": { "celik": 30000, "yakit": 10000 }, "ciktilar": { "muhimmat": 40000 }, "isci": 8000,
+      "girdiler": { "celik": 30000, "yakit": 10000 }, "ciktilar": { "muhimmat": 40000 }, "isci": 5000,
       "bakim": { "parca": 1000 }
     }
   ],

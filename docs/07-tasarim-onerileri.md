@@ -199,7 +199,9 @@ Her öneri için "beklenen etki" bu belgedeki sayılardan çıkarılan **tahmind
 | Risk | Ölçüm tanımı değişir; PDF eşiği (%70) yeni tanımda kalibre edilmeli ([00 §6](00-vizyon-ve-kararlar.md): eşikler başlangıç önerisidir). Küme seçimi bölge türünü bulanıklaştırabilir (odak merkez bölge olarak etiketlenir). Skor "eklenen değer"e dönünce v0.1 ile doğrudan karşılaştırma kopar (v0.1 verileri yeni tanımla yeniden hesaplanmalı) |
 | Maliyet | Düşük (yalnızca ölçüm paketi) |
 
-### Ö2 — İşleme yöntemlerini işçi verimine göre dengele (veri)
+### Ö2 — İşleme yöntemlerini işçi verimine göre dengele (veri) — **uygulandı (v0.2)**
+
+> **Uygulandı (v0.2):** `yuksek_firin` 7 000 işçi / 60 çelik; `elektrik_ark` cevher 60, yakıt 20, çıktı 60 ve işçi **10 000** (öneri 9 000 idi: işçi başına KD 344 yerine 310 olur, böylece yüksek fırına göre gerçek bir takas kalır, baskın olmaz); `standart_parca` işçi **5 500** (öneri 6 000: işçi başına KD 233 yerine 255, en düşük ham çıkarım olan silise eşit); `standart_muhimmat` 5 000 işçi. Ayrıntı ve sonuçlar: [06 §10.5](06-simulasyon-spesifikasyonu.md).
 
 | Alan | İçerik |
 |---|---|
@@ -210,7 +212,9 @@ Her öneri için "beklenen etki" bu belgedeki sayılardan çıkarılan **tahmind
 | Risk | Çelik ve parça bolluğu: inşa ve bakım maliyeti girdisi ucuzlar, yatırım daha hızlı biter (R2: karar tükenmesi 10-15. günde geri gelir mi, 30 günlük H2 ile izlenmeli). `yuksek_firin` çıktı +%20 tek başına depo tavanını erken doldurur |
 | Maliyet | Çok düşük (JSON) |
 
-### Ö3 — İşlenmiş mal pazarı derinliği (veri)
+### Ö3 — İşlenmiş mal pazarı derinliği (veri) — **uygulandı (v0.2)**
+
+> **Uygulandı (v0.2):** önerilen değerlerle aynen (çelik 300/260, parça 200/170, elektronik 120/100, yakıt 300/260; mühimmat ve ham maddeler değişmedi). Ayrıntı ve sonuçlar: [06 §10.5](06-simulasyon-spesifikasyonu.md).
 
 | Alan | İçerik |
 |---|---|

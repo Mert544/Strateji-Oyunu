@@ -13,6 +13,15 @@ import { anlikMiktar } from "../src/stok";
 import { DAKIKA, MILI, PPM, SAAT } from "../src/tipler";
 import type { Simulasyon } from "../src/motor";
 
+/**
+ * Çelik pazarını bu testlerin yazıldığı değerlere sabitler (emilim 120, arz 100 birim/saat). Testler ithalat-hazine
+ * mekanizmasını sınar; fiyat yuvarlaması içerik dengesine (v0.2 işlenmiş mal pazarı derinleştirmesi) bağlı olmasın.
+ */
+function sabitPazar(v: VeriPaketi): void {
+  v.param.pazar.emilimSaat["celik"] = 120_000;
+  v.param.pazar.arzSaat["celik"] = 100_000;
+}
+
 interface Olcum {
   /** İthal edilen malın değeri (mili-para): dakikalık stok artışı × adım başı fiyat × ithalat çarpanı. */
   deger: number;
@@ -35,6 +44,7 @@ function olc(opts: { hazine: number; vergiPpm: number; oranSaat: number; saat: n
   const duzenle = (v: VeriPaketi): void => {
     for (const m of v.icerik.mallar) m.bozulmaPpmGun = 0;
     v.param.ekonomi.vergiBuyumeEsigiPpm = PPM; // nüfus vergiden bağımsız davranır
+    sabitPazar(v);
   };
   const { s } = kur({ oyuncular: { a: ["m_liman"] }, duzenle });
   const b = bolge(s, "m_liman");
@@ -81,7 +91,7 @@ describe("hazine tukenince ithalat durur (tik arasi bedava ithalat yok)", () => 
   });
 
   it("hazine ilk saatte tukenir, sonraki saatlerde stok artmaz", () => {
-    const { s } = kur({ oyuncular: { a: ["m_liman"] }, duzenle: (v) => { for (const m of v.icerik.mallar) m.bozulmaPpmGun = 0; } });
+    const { s } = kur({ oyuncular: { a: ["m_liman"] }, duzenle: (v) => { for (const m of v.icerik.mallar) m.bozulmaPpmGun = 0; sabitPazar(v); } });
     const b = bolge(s, "m_liman");
     b.tesisler = [];
     s.dunya.oyuncular[0]!.hazine.miktar = 1_000_000;
