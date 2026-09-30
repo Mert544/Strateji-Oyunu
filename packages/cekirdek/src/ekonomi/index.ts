@@ -1,16 +1,21 @@
 /**
- * SAPLAMA (stub) — Faz 2'de "ekonomi + lojistik" ajanı uygular.
- * Motor bu fonksiyonları çağırır; imzalar sözleşmedir.
+ * Ekonomi alt sistemi: saatlik tık, komutlar ve inşaat tamamlanması.
+ * Motor bu dosyadaki üç fonksiyonu çağırır; ayrıntılar pazar/nufus/komut/insaat/uretim dosyalarındadır.
  */
-import type { Baglam, Dunya, Komut, KomutSonucu, OyuncuId } from "../tipler";
+import { nufusTik } from "./nufus";
+import { pazarEmirleriniGerceklestir, pazarFiyatlari } from "./pazar";
+import type { Baglam, Dunya } from "../tipler";
 
-/** Saatlik tık: fiyatlar, nüfus, bozulma, rezerv tükenmesi, vergi geliri; sonunda ctx.kirlet(). */
-export function saatlikTik(_d: Dunya, _ctx: Baglam): void {}
+export { ekonomiKomutu } from "./komut";
+export { insaatBitti } from "./insaat";
 
-/** Ekonomi komutları: tesis_insa, yontem_degistir, tesis_durum, ticaret_emri, vergi_ayarla. */
-export function ekonomiKomutu(_d: Dunya, _ctx: Baglam, _oyuncu: OyuncuId, _k: Komut): KomutSonucu {
-  return { tamam: false, hata: "uygulanmadı" };
+/**
+ * Saatlik tık: (1) pazar emirleri gerçekleşir, (2) fiyatlar, (3) nüfus; sonunda ctx.kirlet().
+ * Bozulma, rezerv tükenmesi ve vergi geliri lojistik çözümde (oran olarak) işlenir; çözüm aynı t'de koşar.
+ */
+export function saatlikTik(d: Dunya, ctx: Baglam): void {
+  pazarEmirleriniGerceklestir(d, ctx);
+  pazarFiyatlari(d, ctx);
+  nufusTik(d, ctx);
+  ctx.kirlet(d);
 }
-
-/** Bir inşaat bittiğinde (tesis veya kenar geliştirme). */
-export function insaatBitti(_d: Dunya, _ctx: Baglam, _insaatId: number): void {}

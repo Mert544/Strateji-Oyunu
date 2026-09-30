@@ -1,0 +1,110 @@
+/**
+ * Ekonomi komutları: tesis_insa, yontem_degistir, tesis_durum, ticaret_emri, vergi_ayarla.
+ * Komut kimlikleri: Komut.bolge = bölge kimliği, Komut.tesis = TesisDurumu.id (dünya genelinde benzersiz).
+ * Yetki: komutu veren oyuncu bölgenin sahibi olmalıdır. Başarısız komut dünyayı değiştirmez.
+ */
+import { maliyetYeterliMi, maliyetiDus } from "./maliyet";
+import { icerikTablosu } from "./tablo";
+import { tesisTuruAcikMi, yontemAcikMi } from "../teknoloji";
+import { oyuncuBul } from "../stok";
+import { PPM, SAAT } from "../tipler";
+import type { Baglam, BolgeDurumu, Dunya, Komut, KomutSonucu, OyuncuId, TicaretEmri } from "../tipler";
+
+function hata(mesaj: string): KomutSonucu {
+  return { tamam: false, hata: mesaj };
+}
+
+const TAMAM: KomutSonucu = { tamam: true };
+
+/** Bölgeyi kimliğiyle bulur ve sahipliği doğrular. */
+function sahipliBolge(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, bolgeId: string): BolgeDurumu | string {
+  const bi = ctx.ic.bolgeIndeks[bolgeId];
+  if (bi === undefined) return `bilinmeyen bolge: ${bolgeId}`;
+  const b = d.bolgeler[bi] as BolgeDurumu;
+  if (b.sahip !== oyuncu) return `bolge oyuncunun degil: ${bolgeId}`;
+  return b;
+}
+
+function yonSirasi(y: TicaretEmri["yon"]): number {
+  return y === "ihracat" ? 0 : 1;
+}
+
+export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut): KomutSonucu {
+  const ic = ctx.ic;
+  const tb = icerikTablosu(ic);
+  switch (k.tur) {
+    case "tesis_insa": {
+      const b = sahipliBolge(d, ctx, oyuncu, k.bolge);
+      if (typeof b === "string") return hata(b);
+      const ti = ic.tesisTuruIndeks[k.tesisTuru];
+      if (ti === undefined) return hata(`bilinmeyen tesis turu: ${k.tesisTuru}`);
+      const tanim = ic.tesisTurleri[ti]!;
+      const tur = tb.tur[ti]!;
+      if (!tesisTuruAcikMi(d, ctx, oyuncu, ti)) return hata(`tesis turu acik degil: ${k.tesisTuru}`);
+      if (tanim.gerekliEtiket !== undefined && !b.etiketler.includes(tanim.gerekliEtiket)) {
+        return hata(`bolge etiketi yetersiz: ${tanim.gerekliEtiket}`);
+      }
+      if (tur.gerekliRezerv >= 0 && (b.rezervKalan[tur.gerekliRezerv] as number) <= 0) {
+        return hata(`gerekli rezerv yok: ${tanim.gerekliRezerv}`);
+      }
+      const eksik = maliyetYeterliMi(d, b.indeks, oyuncu, tur.insaMaliyeti, tur.insaParasi);
+      if (eksik !== null) return hata(eksik);
+      if (!maliyetiDus(d, ctx, b.indeks, oyuncu, tur.insaMaliyeti, tur.insaParasi)) return hata("yetersiz hazine");
+      const id = ctx.yeniKimlik(d);
+      const bitis = d.zaman + tur.insaSuresiSaat * SAAT;
+      d.insaatlar.push({ id, tur: "tesis", sahip: oyuncu, bolge: b.indeks, hedef: ti, bitis });
+      ctx.planla(d, bitis, { tur: "insaat_bitti", insaat: id });
+      return TAMAM;
+    }
+    case "yontem_degistir": {
+      const b = sahipliBolge(d, ctx, oyuncu, k.bolge);
+      if (typeof b === "string") return hata(b);
+      const ts = b.tesisler.find((t) => t.id === k.tesis);
+      if (!ts) return hata(`bolgede boyle bir tesis yok: ${k.tesis}`);
+      const yi = ic.yontemIndeks[k.yontem];
+      if (yi === undefined) return hata(`bilinmeyen yontem: ${k.yontem}`);
+      if (!(tb.tur[ts.tur] as { yontemler: number[] }).yontemler.includes(yi)) return hata(`yontem bu tesis turunde yok: ${k.yontem}`);
+      if (!yontemAcikMi(d, ctx, oyuncu, yi)) return hata(`yontem acik degil: ${k.yontem}`);
+      ts.yontem = yi;
+      return TAMAM;
+    }
+    case "tesis_durum": {
+      const b = sahipliBolge(d, ctx, oyuncu, k.bolge);
+      if (typeof b === "string") return hata(b);
+      const ts = b.tesisler.find((t) => t.id === k.tesis);
+      if (!ts) return hata(`bolgede boyle bir tesis yok: ${k.tesis}`);
+      ts.aktif = k.aktif;
+      return TAMAM;
+    }
+    case "ticaret_emri": {
+      const b = sahipliBolge(d, ctx, oyuncu, k.bolge);
+      if (typeof b === "string") return hata(b);
+      if (!b.etiketler.includes("liman")) return hata(`bolge liman degil: ${k.bolge}`);
+      const mi = ic.malIndeks[k.mal];
+      if (mi === undefined) return hata(`bilinmeyen mal: ${k.mal}`);
+      if (k.yon !== "ihracat" && k.yon !== "ithalat") return hata(`gecersiz yon: ${String(k.yon)}`);
+      if (!Number.isInteger(k.oranSaat) || k.oranSaat < 0) return hata(`gecersiz oran: ${k.oranSaat}`);
+      const konum = b.ticaretEmirleri.findIndex((e) => e.mal === mi && e.yon === k.yon);
+      if (k.oranSaat === 0) {
+        if (konum >= 0) b.ticaretEmirleri.splice(konum, 1);
+        return TAMAM;
+      }
+      if (konum >= 0) {
+        (b.ticaretEmirleri[konum] as TicaretEmri).oranSaat = k.oranSaat;
+      } else {
+        b.ticaretEmirleri.push({ mal: mi, yon: k.yon, oranSaat: k.oranSaat, gerceklesenSaat: 0 });
+        b.ticaretEmirleri.sort((x, y) => x.mal - y.mal || yonSirasi(x.yon) - yonSirasi(y.yon));
+      }
+      return TAMAM;
+    }
+    case "vergi_ayarla": {
+      const o = oyuncuBul(d, oyuncu);
+      if (!o) return hata(`bilinmeyen oyuncu: ${oyuncu}`);
+      if (!Number.isInteger(k.oranPpm) || k.oranPpm < 0 || k.oranPpm > PPM) return hata(`gecersiz vergi orani: ${k.oranPpm}`);
+      o.vergiPpm = k.oranPpm;
+      return TAMAM;
+    }
+    default:
+      return hata(`ekonomi komutu degil: ${k.tur}`);
+  }
+}
