@@ -2,7 +2,9 @@
 
 > **Özet.** Plan 4 aşama ve 3 kapıdan oluşur; **kapılar kanıt sırasıdır, takvim taahhüdü değildir:** bir kapı geçilmezse önceki aşama yinelenir. Şu an Aşama 1 (tasarım/araştırma) belgeleri yazılıyor ve Aşama 2 (arayüzsüz çekirdek simülasyon) kod işi altı adıma bölünmüş durumda. Bu belge aşamaları, Aşama 2 iş kırılımını ve kapı kriterini, Aşama 3 önerisini (2D arayüz + H4 insan testi), açık kararları ve sonraki adımları toplar.
 
-İlgili belgeler: [00 — Vizyon](00-vizyon-ve-kararlar.md) · [02 — Tasarım Ar-Ge](02-tasarim-arge.md) · [03 — Teknik Mimari](03-teknik-mimari.md) · [06 — Simülasyon Spesifikasyonu](06-simulasyon-spesifikasyonu.md)
+İlgili belgeler: [00 — Vizyon](00-vizyon-ve-kararlar.md) · [02 — Tasarım Ar-Ge](02-tasarim-arge.md) · [03 — Teknik Mimari](03-teknik-mimari.md) · [06 — Simülasyon Spesifikasyonu](06-simulasyon-spesifikasyonu.md) · [08 — Altı Katman](08-alti-katman.md) · [Araştırma](arastirma/)
+
+> **Güncelleme (30 Eylül gece):** Aşama 3'ün yönü 3D gerçek Dünya + altı katman olarak değişti; bkz. [§8](#8-güncelleme-30-eylül-gece-aşama-3-yönü-3d-gerçek-dünya-ve-altı-katman).
 
 ---
 
@@ -110,3 +112,33 @@ Ayrıntı ve öneriler: [00 §8](00-vizyon-ve-kararlar.md).
 5. **Kapı 2 değerlendirmesi** ve Aşama 3'e geçiş kararı (takım lideri).
 6. **Sınır/isim politikası ve coğrafya dilimi** kararlarını Aşama 3 sonuna kadar netleştir.
 7. Belgeleri, ölçüm sonuçlarına göre güncel tut (06 değişirse 02 ve 03'ü eşle).
+
+## 8. Güncelleme (30 Eylül gece): Aşama 3 yönü 3D gerçek Dünya ve altı katman
+
+Bu bölüm yukarıdaki planı **bozmaz;** yeni kararların ([00 K17–K22](00-vizyon-ve-kararlar.md)) yol haritasına etkisini toplar. §1–§7'deki kapı sırası ve Kapı 2 ölçütleri geçerlidir.
+
+**Yeni yön.**
+- **3D gerçek Dünya (K17):** §4'teki "PixiJS 2D" önerisinin yerine, stilize 3D küre (three.js; yakın plan için MapLibre küre + PMTiles) ana istemci yönüdür. Aşama 3 tablosundaki "kapsam dışı: 3D, gerçek karolar" satırı **Aşama 2 kodu** için geçerli kalır. Mevcut 2D inceleme sayfası (`pnpm izle`) hata ayıklama aracı olarak sürer. H4 (lojistik okunurluğu) insan testi aynen yapılır; arayüz 3D küre üzerinde olacaktır. Aşamalı plan ve bütçeler (tahmin): [arastirma/3d-teknoloji](arastirma/3d-teknoloji.md) §5.
+- **İlk gerçek dilim (K18):** Türkiye + Balkanlar + Karadeniz (30–60 bölge). Aşama 4'teki "gerçek harita diliminin seçimi" bu kararla öne çekildi; bölge listesi, sınır ve isim politikası (A2) ve çevrimdışı veri hattı ([arastirma/acik-kaynak-ve-veri](arastirma/acik-kaynak-ve-veri.md)) açık iş kalemidir.
+- **Altı katman (K19) ve iklim takvimi (K20):** çekirdek simülasyon Tarım, Sanayi, Lojistik, Teknoloji, Pazar ve Devlet olarak genişler; oyun içi iklim takvimi dünyayı sıfırlamaz (K21). Tasarım, sayılar ve uygulama sırası: [08](08-alti-katman.md).
+
+**Sıralama (öneri; kanıt sırası, takvim taahhüdü değil).**
+
+| Adım | İçerik | Kapı / ölçüt |
+|---|---|---|
+| 1 | **Faz B: altı katman çekirdek uygulaması** (B1 Tarım → B2 Sanayi → B3 Pazar → B4 Devlet → B5 Lojistik → B6 Teknoloji; [08 §7](08-alti-katman.md#7-faz-b-uygulama-sırası)). Aşama 2'nin yinelemesi sayılır; her adımda bot ölçümü ve regresyon kalkanı | Kapı 2 ölçütleri (§3); v0.2/v0.3 H1 ve H2 turlarıyla birlikte yürür |
+| 2 | **Gerçek veri hattı ve dilim** (bölge listesi, sınır/isim politikası, tarım/sanayi/liman/nüfus verilerinin bölge başına JSON'a indirgenmesi) | Veri sözleşmesi hazır; K22 lisans ilkesi; gerçek verili harita aynı biçimle yüklenir |
+| 3 | **3D istemci** (MVP küre → gezen kamera → bölge yakın planı) | Kapı 2 geçildikten sonra; H4 insan testi Kapı 3'tür |
+| 4 | Çok oyunculu sunucu ve (v1.5) emir defteri, tedarik sözleşmesi, `ortak_sebeke` | Aşama 4; [08 §5.4](08-alti-katman.md#54-oyuncular-arası-emir-defteri-ne-zaman-v15-kapısı) koşulları |
+
+**Açık kararlar (yeni/güncel).**
+
+| # | Karar | Durum |
+|---|---|---|
+| A1 | Coğrafya dilimi | Kısmen kapandı (K18); bölge listesi açık |
+| A2 | Sınır ve isim politikası | Açık ve **öncelikli:** Balkan ve Karadeniz diliminde ihtilaflı bölgeler ve güncel çatışma alanları vardır; dilim verisinden önce yazılmalı |
+| A11 | Teknoloji düğüm sayısı (PDF 5–8 → ≈ 17) | Öneri; takım lideri onayı ([08 §4](08-alti-katman.md#4-teknoloji)) |
+| A12 | Sayısal değerlerin kalibrasyonu (iklim eğrileri, olay olasılıkları, ceza tabanları) | Her Faz B adımında bot ölçümüyle; ölçümde `gunCarpani = 12` ile 12 ay görülür |
+| A13 | Veri hattı ve hukuki inceleme (ODbL, atıf sayfası) | Yayından önce; [araştırma](arastirma/acik-kaynak-ve-veri.md) §4 |
+
+**Hatırlatma.** Simülasyon dengeyi ölçer, eğlenceyi kanıtlamaz ([00 R5](00-vizyon-ve-kararlar.md)); altı katmanın yinelenen kararları (toprak yorgunluğu, brownout, filo, bütçe, yasa) 20–25. gün sıkılmasına karşı **hipotezdir** ve insan testine kadar kanıtlanmış sayılmaz.

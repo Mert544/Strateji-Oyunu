@@ -4,7 +4,7 @@
 
 **Kaynak kısaltmaları.** **[PDF]** = sahibin "Bölge Stratejisi — Prototip Planı v1" belgesi (30 Eylül 2026, @Mert); **[Oturum]** = takım liderinin bu çalışma oturumunda verdiği kararlar; **[Ar-Ge]** = bu repodaki araştırma/Ar-Ge dokümanlarından türeyen öneri (henüz karar değil).
 
-İlgili belgeler: [01 — Rakip ve Pazar Araştırması](01-rakip-ve-pazar-arastirmasi.md) · [02 — Tasarım Ar-Ge](02-tasarim-arge.md) · [03 — Teknik Mimari](03-teknik-mimari.md) · [04 — Yol Haritası](04-yol-haritasi.md) · [06 — Simülasyon Spesifikasyonu](06-simulasyon-spesifikasyonu.md)
+İlgili belgeler: [01 — Rakip ve Pazar Araştırması](01-rakip-ve-pazar-arastirmasi.md) · [02 — Tasarım Ar-Ge](02-tasarim-arge.md) · [03 — Teknik Mimari](03-teknik-mimari.md) · [04 — Yol Haritası](04-yol-haritasi.md) · [06 — Simülasyon Spesifikasyonu](06-simulasyon-spesifikasyonu.md) · [08 — Altı Katman](08-alti-katman.md) · [Araştırma raporları](arastirma/)
 
 ---
 
@@ -20,11 +20,11 @@
 | # | Konu | Karar | Kaynak |
 |---|---|---|---|
 | K1 | Oyuncu rolü | Doğrudan bölge/devlet yöneticisi | [PDF] |
-| K2 | Harita | Gerçek Dünya; gerçek coğrafya ve ülkeler. Sınır ve isim politikası **açık karar** (§8) | [PDF] |
-| K3 | Yapı | Beş ayrı katman: ekonomi, lojistik, araştırma-teknoloji, politika, askeri; ortak veriyle bağlı | [PDF] |
+| K2 | Harita | Gerçek Dünya; gerçek coğrafya ve ülkeler. Sınır ve isim politikası **açık karar** (§8). İlk gerçek dilim: K18 | [PDF] |
+| K3 | Yapı | Beş ayrı katman: ekonomi, lojistik, araştırma-teknoloji, politika, askeri; ortak veriyle bağlı. **→ Güncellendi: 6 katman, bkz. K19** | [PDF] |
 | K4 | Zaman | Tur yok; gerçek zaman 1x, günlük ritim; dünya hızı ayarlanabilir parametre | [PDF] |
-| K5 | Çağ ve sezon | Kullanılmayacak | [PDF] |
-| K6 | Görsel biçim | 2D harita; üretim ve taşıma akışı görünür | [PDF] |
+| K5 | Çağ ve sezon | Kullanılmayacak. **Kapsam notu (K21):** "sezon yok" kuralı dünya sıfırlaması ve sezonluk sunucu anlamındadır; oyun içi iklim takvimi (K20) bu kuralı çiğnemez | [PDF] |
+| K6 | Görsel biçim | 2D harita; üretim ve taşıma akışı görünür. **→ Güncellendi: 3D gerçek Dünya, bkz. K17** (akışın görünürlüğü ilkesi aynen sürer) | [PDF] |
 | K7 | Ana hedef | 20–25. gün sıkılmasını tasarımla önlemek | [PDF] |
 | K8 | Kapsam | Ar-Ge dokümanları + Aşama 2 kodu (arayüzsüz simülasyon) | [Oturum] |
 | K9 | Teknoloji yığını | TypeScript, pnpm monorepo, Vitest | [Oturum] |
@@ -35,6 +35,12 @@
 | K14 | İçerik üretimi | Şablonlu, veriyle tanımlanan içerik (içerik üretimi pahalı) | [PDF] |
 | K15 | Test haritası | Sentetik (kıyı, dağ, ova, liman, dar geçit taşıyan kurgusal bölge grafiği); gerçek dilim seçilince aynı veri biçimine geçilir | [PDF] |
 | K16 | Plan biçimi | Kapılar kanıt sırasıdır; geçilmeyen kapıda önceki aşama yinelenir | [PDF] |
+| K17 | Görsel biçim (yeni) | **3D gerçek Dünya:** stilize küre (stratejik katman, three.js) + bölge yakın planı (MapLibre globe + PMTiles, isteğe bağlı). Akış çizgileri, tesisler ve iklim durumu 3D'de görünür. Ayrıntı ve bütçeler: [arastirma/3d-teknoloji](arastirma/3d-teknoloji.md) | [Oturum] |
+| K18 | İlk gerçek dilim | **Türkiye + Balkanlar + Karadeniz** (30–60 bölge hedefi; ölçütler §5). Gerçek veri sözleşmesi (`konum`, `sinirDosyasi`, `atif`) veri paketinde hazırdır. Sentetik harita ölçüm ve test için kalır (K15). Dilimin bölge listesi ve sınır/isim politikası (A2) **açık** | [Oturum] |
+| K19 | Altı katman (K3'ün yerine) | **Tarım, Sanayi, Lojistik, Teknoloji, Pazar, Devlet.** Devlet; nüfus/toplum ihtiyaçları + politika/yasa/bütçe + askeri/diplomasi'yi birleştiren karma katmandır ve yasa ve bütçe kollarıyla diğer beş katmanı yönlendirir (tarım sübvansiyonu, sanayi teşviki, tarife, araştırma bütçesi, seferberlik). Derinlik yine lojistiktedir. Tasarım: [08](08-alti-katman.md) | [Oturum] |
+| K20 | İklim takvimi | Gerçek takvim aylarına bağlı iklim döngüsü; **hasat oranını, buzlu limanları ve dağ geçitlerini** etkiler; yayılan iklim olayları deterministiktir (PRNG akışı `olay`). Adı "iklim takvimi"dir | [Oturum] |
+| K21 | "Sezon yok" kuralının kapsamı | K5'teki kural **dünya sıfırlaması ve sezonluk sunucu** anlamında korunur: dünya asla sıfırlanmaz, sezon bitişi, sezon ödülü ve yeniden başlatma yoktur. İklim takvimi bir **sıfırlama değil, sürekli bir zaman eğrisidir**; bu yüzden K5 ile çelişmez. Karışıklığı önlemek için oyunda ve belgelerde "sezon" sözcüğü **kullanılmaz** | [Oturum] |
+| K22 | Açık kaynak ve veri lisans ilkesi | **GPL/AGPL kod kopyalanmaz:** bu projeler (OpenFrontIO, OpenTTD, Symphony of Empires, Mindustry, Widelands, Freeciv-web) yalnızca tasarım referansıdır; algoritmalar yayımlanmış açıklamadan yeniden yazılır. MPL-2.0 (Unciv) dosya düzeyinde sınırlı yükümlülükle kullanılabilir. Veri: CC BY/CC0/kamu malı kaynaklar atıfla kullanılır; **ticari olmayan (NC) kaynaklar kullanılmaz** (FAOSTAT, WorldClim, GADM, UN Comtrade; PortWatch izinsiz değil); OSM türevi veri ayrı ODbL dosyasında tutulur. Ayrıntı: [arastirma/acik-kaynak-ve-veri](arastirma/acik-kaynak-ve-veri.md) | [Oturum] |
 
 ## 3. Zaman modeli
 
@@ -66,6 +72,8 @@ Bu aralıklar PDF'deki tasarım hedefleridir. Kodda kesin değerler `packages/ve
 
 ## 4. Katman derinlikleri
 
+> **Güncelleme (30 Eylül gece, K19).** Oyun artık **altı katmandır** (Tarım, Sanayi, Lojistik, Teknoloji, Pazar, Devlet). Aşağıdaki tablo PDF'in beş katmanlı özetidir ve korunmuştur; eşleme: *Ekonomi* → Tarım + Sanayi + Pazar; *Politika* ve *Askeri* → Devlet; *Lojistik* ve *Teknoloji* değişmez. Altı katmanın mekanikleri, sayıları ve Faz B sırası [08](08-alti-katman.md) içindedir. Teknoloji düğüm sayısı PDF'in 5–8 aralığından ≈ 17'ye çıkarılması **önerilir** (katman başına 2–4 düğüm, derinlik ≤ 4; her düğüm yüzde değil yöntem açar); bu genişleme takım lideri onayına bağlıdır.
+
 Beş katmanın hepsi **sığ ama bağlıdır; derinlik lojistiktedir.**
 
 | Katman | Derinlik | Kural (v0) [PDF] | Spesifikasyon |
@@ -88,6 +96,8 @@ Beş katmanın hepsi **sığ ama bağlıdır; derinlik lojistiktedir.**
 - Arayüzsüz çekirdek simülasyon ve ölçüm koşum takımı (Aşama 2).
 
 **Kapsam dışı [PDF]:** hesap/giriş, ödeme, çok oyunculu eşzamanlı sunucu (ilk aşamada), mobil uygulama, 3D, gerçek harita karoları ve lisans işleri.
+
+> **Güncelleme (K17–K18).** 3D ve gerçek harita/veri hattı artık yönün parçasıdır; ancak **Aşama 2 (arayüzsüz simülasyon) önce gelir**, 3D istemci ve gerçek veri hattı simülasyon kapısından sonra uygulanır. İlk gerçek dilim Türkiye + Balkanlar + Karadeniz'dir. Lisans işleri K22 ilkesiyle yönetilir. Yukarıdaki "kapsam dışı" listesi **Aşama 2 kodunun** kapsamıdır ([04 güncellemesi](04-yol-haritasi.md)).
 
 ## 6. Hipotezler (özet)
 
@@ -119,8 +129,8 @@ Ayrıntı ve kaynaklar [01 §4](01-rakip-ve-pazar-arastirmasi.md) içindedir. Pr
 
 | # | Açık karar | Durum / öneri | Kaynak |
 |---|---|---|---|
-| A1 | **Coğrafya dilimi** | Açık; sentetik haritayla ilerlenir. Seçim ölçütleri §5'te. Gerçek dilimde admin-1 poligonları sadeleştirilip 30–60 bölgeye birleştirmek önerilir ([03 §7](03-teknik-mimari.md)) | [PDF], [Ar-Ge] |
-| A2 | **Sınır ve isim politikası** | Açık. **Öneri:** oyuncu *gerçek bir ülkeyi değil*, gerçek coğrafyadaki bir *bölgeyi* yönetir; ittifaklar oyun içi bloklardır; güncel gerçek çatışmalar senaryo yapılmaz. Gerekçe: eRepublik'te Tayvan'ın 2010'da eklenmesi sınır hassasiyeti örneği olarak anılır (topluluk yorumu, tek kaynak) | [PDF] |
+| A1 | **Coğrafya dilimi** | **Kısmen kapandı (K18): Türkiye + Balkanlar + Karadeniz.** Bölge listesi (30–60 bölge) ve sınırlar açık; sentetik haritayla ilerlenir. Seçim ölçütleri §5'te. Gerçek dilimde admin-1 poligonları sadeleştirilip 30–60 bölgeye birleştirmek önerilir ([03 §7](03-teknik-mimari.md)) | [PDF], [Ar-Ge] |
+| A2 | **Sınır ve isim politikası** | Açık. **Öneri:** oyuncu *gerçek bir ülkeyi değil*, gerçek coğrafyadaki bir *bölgeyi* yönetir; ittifaklar oyun içi bloklardır; güncel gerçek çatışmalar senaryo yapılmaz. Gerekçe: eRepublik'te Tayvan'ın 2010'da eklenmesi sınır hassasiyeti örneği olarak anılır (topluluk yorumu, tek kaynak). **K18 sonrası önem kazandı:** Balkan ve Karadeniz diliminde ihtilaflı bölgeler (örn. Kırım, Kosova, Kıbrıs) ve güncel çatışma bölgeleri vardır; politika dilim verisi üretilmeden önce yazılı olmalıdır (08 §6.5) | [PDF] |
 | A3 | **Sezon seçeneği** | Kalıcı dünya seçildi (K10). Geç katılım çözümü (koruma, puan bandı, yetişme) H6'da başarısız olursa sezonlu/raundlu model yeniden masaya gelir. Açık not olarak kalır | [Oturum] |
 | A4 | **Gelir modeli** | Prototip kapsamı dışında. İlke: kritik kararlarda parayla güç yok; kolaylık ve kozmetik satılabilir, zaman atlama ve kapasite satılmaz ([01](01-rakip-ve-pazar-arastirmasi.md)) | [PDF], [Ar-Ge] |
 | A5 | **H4 vazgeçme ölçütü sıkılığı** | PDF'teki ölçüt (5 kişiden ≥4'ü yanıtlayamazsa vazgeç) gevşektir: 5 kişiden 2'si yanıtlasa bile geçilir. Daha sıkı bir geçme eşiği (ör. ≥4/5 yanıtlar) önerilir; karar takım liderine aittir ([04 §5](04-yol-haritasi.md)) | [Ar-Ge] |
