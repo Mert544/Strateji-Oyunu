@@ -127,6 +127,10 @@ export interface BolgeDurumu {
   israf: Mili[];
   /** mal indeksine göre kümülatif üretim, mili-birim (ölçüm için) */
   uretimToplam: Mili[];
+  /** mal indeksine göre güncel brüt üretim oranı (mili-birim/saat); çözümde ayarlanır */
+  uretimOrani: Mili[];
+  /** uretimToplam'ın en son uretimOrani ile güncellendiği an; oran değişmeden önce biriktirilir */
+  uretimT0: Ms;
   /** mal indeksine göre rezerv (yoksa 0) */
   rezervIlk: Mili[];
   rezervKalan: Mili[];
