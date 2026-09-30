@@ -31,11 +31,16 @@ export function tabanBol(a: number, c: number): number {
 /**
  * floor(a × b / c), tamsayı. c > 0. a ve b negatif olabilir (matematiksel floor).
  * Ara çarpım 2^53'ü aşarsa BigInt yolu kullanılır, sonuç Number olarak döner.
+ * Girdi koruması: a ve b güvenli tamsayı, c pozitif güvenli tamsayı olmalıdır; aksi halde (NaN, Infinity,
+ * ondalık, 2^53 üstü) anlamlı bir RangeError fırlatılır (BigInt'in anlamsız RangeError'ı yerine).
  */
 export function carpBol(a: number, b: number, c: number): number {
-  if (!(c > 0)) throw new RangeError(`carpBol: bolen pozitif olmali (${c})`);
+  if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b)) {
+    throw new RangeError(`carpBol: guvenli tamsayi bekleniyor (a=${a}, b=${b})`);
+  }
+  if (!(c > 0) || !Number.isSafeInteger(c)) throw new RangeError(`carpBol: bolen pozitif guvenli tamsayi olmali (${c})`);
   const p = a * b;
-  if (guvenliMi(p) && guvenliMi(a) && guvenliMi(b)) return tabanBol(p, c);
+  if (guvenliMi(p)) return tabanBol(p, c);
   const x = BigInt(a) * BigInt(b);
   const cc = BigInt(c);
   let q = x / cc; // sıfıra doğru keser
@@ -47,7 +52,7 @@ export function carpBol(a: number, b: number, c: number): number {
  * ceil(a × b / c), tamsayı. c > 0. carpBol'un tavan karşılığı.
  */
 export function carpBolTavan(a: number, b: number, c: number): number {
-  return -carpBol(-a, b, c);
+  return 0 - carpBol(-a, b, c); // "0 -": sonuç -0 olmasın (durum özeti/JSON için)
 }
 
 /** floor(sqrt(n)), tam. n >= 0 güvenli tamsayı olmalıdır. */

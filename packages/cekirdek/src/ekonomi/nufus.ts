@@ -1,6 +1,6 @@
 /**
  * Nüfus (saatlik tık, adım 3): gıda karşılanma >= %95 ve vergi eşiğin altındaysa büyür, < %80 ise küçülür.
- * Sahipsiz bölgelerde vergi koşulu yoktur. Nüfus en az 1000 kişiye kadar küçülür.
+ * Sahipsiz bölgeler uykudadır: nüfus sabit kalır (büyümez, küçülmez). Nüfus en az 1000 kişiye kadar küçülür.
  */
 import { carpBol } from "../sabit";
 import { oyuncuBul } from "../stok";
@@ -14,8 +14,9 @@ const EN_AZ_NUFUS = 1000;
 export function nufusTik(d: Dunya, ctx: Baglam): void {
   const p = ctx.ic.param;
   for (const b of d.bolgeler) {
+    if (b.sahip === null) continue; // uykuda: nüfus sabit
     if (b.gidaKarsilanmaPpm >= BUYUME_ESIGI_PPM) {
-      const sahip = b.sahip === null ? undefined : oyuncuBul(d, b.sahip);
+      const sahip = oyuncuBul(d, b.sahip);
       const vergiTamam = sahip === undefined || sahip.vergiPpm <= p.ekonomi.vergiBuyumeEsigiPpm;
       if (vergiTamam) b.nufus += carpBol(b.nufus, p.nufus.buyumePpmGun, 24 * PPM);
     } else if (b.gidaKarsilanmaPpm < KUCULME_ESIGI_PPM) {

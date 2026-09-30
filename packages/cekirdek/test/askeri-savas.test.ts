@@ -143,11 +143,11 @@ describe("kayiplar ve yagma", () => {
     const r = coz(k);
     expect(r.kazanan).toBe("a");
     expect(r.saldiranBirlikKaybi[piyade(k.s)]).toBe(5);
-    expect(r.saldiranBirlikKaybi[zirhli(k.s)]).toBe(0); // floor(0.7)
-    expect(r.savunanBirlikKaybi[piyade(k.s)]).toBe(2); // floor(2.7)
-    expect(r.savunanBirlikKaybi[zirhli(k.s)]).toBe(0);
+    expect(r.saldiranBirlikKaybi[zirhli(k.s)]).toBe(1); // tavan(0.7)
+    expect(r.savunanBirlikKaybi[piyade(k.s)]).toBe(3); // tavan(2.7)
+    expect(r.savunanBirlikKaybi[zirhli(k.s)]).toBe(1); // tavan(0.3)
     expect(ova.birlikler[piyade(k.s)]).toBe(45);
-    expect(liman.birlikler[piyade(k.s)]).toBe(7);
+    expect(liman.birlikler[piyade(k.s)]).toBe(6);
     for (let m = 0; m < k.s.ic.mallar.length; m++) {
       const tavan = ppmUygula(limanStok[m]!, k.s.ic.param.askeri.kayipTavaniPpm);
       expect(r.stokKaybi[m]).toBe(Math.min(ppmUygula(limanStok[m]!, k.s.ic.param.askeri.yagmaOraniPpm), tavan));

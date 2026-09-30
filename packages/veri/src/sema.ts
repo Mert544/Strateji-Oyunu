@@ -227,7 +227,8 @@ export const ParametreSema = z
     lojistik: z
       .object({
         enAzCozumAraligiDakika: negatifOlmayan,
-        tamponSaat: negatifOlmayan,
+        // >= 1: lojistik çözüm stok fazlasını tamponSaat'e bölerek hesaplar (sıfıra bölme).
+        tamponSaat: pozitif,
         gelistirmeArtisPpm: pozitif,
         gelistirmeMaliyeti: kayit,
         gelistirmeParasi: negatifOlmayan,
@@ -236,7 +237,8 @@ export const ParametreSema = z
       .strict(),
     askeri: z
       .object({
-        ilanHazirlikSaatMin: negatifOlmayan,
+        // >= 1: hazırlık süresi en az 1 saat (pencere ilan anında açılmasın; yukle.ts de denetler).
+        ilanHazirlikSaatMin: pozitif,
         ilanHazirlikSaatMax: negatifOlmayan,
         pencereSaat: pozitif,
         kayipTavaniPpm: ppmSiniri,

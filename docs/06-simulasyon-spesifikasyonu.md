@@ -17,6 +17,8 @@ Sayılar başlangıç varsayımıdır; `packages/veri/icerik/parametreler.json` 
 3. **Tek mal akışı.** Ekonomi, lojistik ve ordu aynı stokları ve aynı kenar kapasitesini paylaşır.
    Teknoloji ve politika bu akışın kurallarını değiştirir.
 4. **Tavanlı bölme.** `a × b / c` işlemleri `carpBol(a, b, c)` ile yapılır (taşmaya karşı BigInt yedekli, aşağı yuvarlar).
+   Girdi koruması: `a`, `b` güvenli tamsayı ve `c` pozitif güvenli tamsayı olmalıdır; `NaN`, `Infinity`, ondalık veya 2^53 üstü
+   girdi anlamlı bir `RangeError` verir (BigInt'in anlamsız hatası yerine). `carpBolTavan` yukarı yuvarlar.
 
 ## 2. Motor
 
@@ -25,6 +27,14 @@ Sayılar başlangıç varsayımıdır; `packages/veri/icerik/parametreler.json` 
 - `uygula(damgaliKomut)`: önce `calistirKadar(komut.t)`, sonra komutu ilgili alt sisteme
   yönlendirir, başarılıysa günlüğe ekler ve `ctx.kirlet(d)` çağırır. Emir değişimi **anında** geçerlidir:
   çözüm aynı `t`'de, `cozum` önceliğiyle çalışır.
+- **Komut doğrulama (v0.1 düzeltmesi):** `t` güvenli tamsayı olmalı ve `dunya.zaman + 400 gün`ü aşmamalıdır (aksi halde hata sonucu;
+  `t = 1e15` milyonlarca tıklık fiilen sonsuz döngü olurdu). `calistirKadar(t)` güvenli tamsayı ister (`RangeError`).
+  Tüm sayısal komut alanları `Number.isSafeInteger` ile denetlenir: `ticaret_emri.oranSaat` ∈ [0, 1_000_000_000]
+  (1e6 birim/saat), `vergi_ayarla.oranPpm` ∈ [0, 1_000_000], `askeri_rezerv.oranPpm` ∈ [0, 500_000], `birlik_uret.adet` ∈ [1, 100],
+  `kenar_gelistir.kenar` geçerli kenar indeksi. `tesis_durum.aktif` ve `yaptirim.aktif` boolean olmalıdır; `anlasma_*`
+  komutlarında `anlasma` yalnızca `"ticaret"` veya `"ortak_altyapi"` olabilir (çalışma zamanında doğrulanır).
+- **Parametre alt sınırları (veri şeması):** sıfıra bölme yaratabilecek `lojistik.tamponSaat`, `askeri.ilanHazirlikSaatMin` ve
+  `askeri.pencereSaat` en az 1 olmalıdır.
 - `saatlik_tik` her tam sim-saatinde (t = k × SAAT) çalışır ve bir sonrakini planlar.
 - `ctx.kirlet(d)`: `lojistik.kirli = true`; kuyrukta çözüm yoksa `max(d.zaman, …)` anına bir `cozum`
   planlar. Komut/tik/inşaat kaynaklı kirletmede çözüm **aynı t**'dedir. Eşik ve oran_delta
@@ -36,7 +46,8 @@ Sayılar başlangıç varsayımıdır; `packages/veri/icerik/parametreler.json` 
 ## 3. Stok (tembel birikim)
 
 `anlik = miktar + floor((oran × (t − t0) + artik) / SAAT)`, `[0, kapasite]` aralığına kelepçelenir.
-Taşan miktar `israf`'a yazılır. Her oran değişiminde: uzlaştır → oranı ayarla → `surum++` →
+Taşan miktar `israf`'a yazılır. **İsraf yalnızca depo taşması ve yağma taşmasıdır (saldıranın deposuna sığmayan yağma);
+bozulma ayrı izlenmez (v0.1).** Her oran değişiminde: uzlaştır → oranı ayarla → `surum++` →
 eşik zamanını hesapla (boşalma: oran < 0 ve miktar > 0; dolma: oran > 0 ve miktar < kapasite) →
 `esik` olayı planla. Hazine de bir `Stok`'tur (kapasite çok büyük, 0'ın altına inmez).
 
@@ -65,6 +76,11 @@ Ham (rezervden çıkarılır): `tahil, cevher, komur, bakir, silis, petrol`.
 - Ham çıkarımda verim ayrıca `sqrt(rezervKalan / rezervIlk)` ile çarpılır (tamsayı karekök, ppm).
   Rezerv her saatlik tıkta üretilen miktar kadar azalır.
 
+**Sahipsiz bölgeler "uykuda" (v0.1 düzeltmesi):** sahibi olmayan bir bölgede üretim, tüketim, bozulma ve rezerv tükenmesi yoktur:
+lojistik çözümde hesapları sıfırdır (tüm stok yerel oranları 0, `uretimOrani` 0, tesis verimi 0, karşılanma %100), saatlik tıkta
+nüfusu sabit kalır. Stok ve rezerv ilk değerinde donar; geç katılan oyuncu tükenmemiş bölgeye başlar. Bölgeyi biri sahiplenince
+(`oyuncu_katil`) ilk çözümde (aynı `t`) normal hesaba geçer ve üretime başlar. Sahipsiz bölgeler zaten lojistiğe katılmaz.
+
 **Nüfus (saatlik tık):** 1000 kişi başına `tuketim1000Saat` (gıda, yakıt, elektronik) tüketir.
 Gıda karşılanma ≥ %95 ve vergi eşiğin altındaysa `buyumePpmGun/24` kadar büyür; gıda < %80 ise küçülür.
 
@@ -72,7 +88,7 @@ Gıda karşılanma ≥ %95 ve vergi eşiğin altındaysa `buyumePpmGun/24` kadar
 (hazine oranı olarak ayarlanır). Yüksek vergi (eşik üstü) büyümeyi keser.
 
 **Bozulma (batma):** her mal için saatlik `miktar × bozulmaPpmGun / 24 / PPM` stok oranından düşülür.
-**Depo:** mal başına `depoKapasitesi`; taşan üretim `israf` olur. Bu iki kural "stok birikmesi"ni önler.
+**Depo:** mal başına `depoKapasitesi`; taşan üretim `israf` olur (bozulma israfa yazılmaz, yalnızca stoktan düşer). Bu iki kural "stok birikmesi"ni önler.
 (v0.1 değerleri §10.4.)
 **Para lavaboları (v0.1):** hazine oranından aktif tesis başına `tesisIsletmeParasiSaat` ve birlik başına `birlikMaasiSaat` düşülür (§10.2).
 
@@ -82,7 +98,8 @@ Gıda karşılanma ≥ %95 ve vergi eşiğin altındaysa `buyumePpmGun/24` kadar
 `A` = pazar arzı (arz + oyuncu ihracatı), `e = fiyatEsnekligiPpm`. Gerçekleşen ihracat en fazla
 `emilimSaat`, ithalat en fazla `arzSaat` (oyuncular arasında istenen oranla orantılı, tamsayı).
 İthalat fiyatı `× ithalatCarpani`, ihracat `× ihracatCarpani` (anlaşma/yaptırım çarpanları yerine geçer).
-Ödemeler hazine oranına yansır. Hazine 0 iken ithalat gerçekleşmez.
+Ödemeler hazine oranına yansır. Hazine 0 iken ithalat gerçekleşmez: saatlik tıkta hazine 0 ise ithalat emri gerçekleşmez; ayrıca
+tıklar arasında hazinenin tükenip mal gelmeye devam etmesini önlemek için lojistik çözümde ithalat hazineye sığdırılır (§10.2).
 
 ## 5. Lojistik (ana yenilik)
 
@@ -98,7 +115,8 @@ Gıda karşılanma ≥ %95 ve vergi eşiğin altındaysa `buyumePpmGun/24` kadar
 - **Çözüm:** oyuncular kimlik sırasıyla, mallar `lojistikSirasi` ile (askeri ikmal ve gıda önce);
   her mal için tamsayı **ardışık en kısa yol min-maliyet akışı** (maliyet = taşıma süresi),
   kaynak = fazla, hedef = açık, kenar kapasitesi = kalan kapasite. `askeriRezervPpm` kadar kapasite
-  önce askeri mallara (`muhimmat`, ordu ikmalindeki mallar) ayrılır; kullanılmayanı sivile açılır.
+  sivil akışa kapalıdır (**sert rezerv**); askeri akış (`muhimmat`, ordu ikmalindeki mallar) tüm kapasiteyi kullanabilir.
+  Kullanılmayan rezerv sivile açılmaz.
 - **Gecikme:** akış `f` kaynakta hemen düşülür; hedefe `t + yol süresi`nde `oran_delta(+f)` ile ulaşır.
   Sonraki çözüm akışı `f'` yaparsa fark `(f' − f)` aynı gecikmeyle planlanır; yoldaki mal korunur.
 - **Kapsam ("nerede açık, neden"):** her bölge × mal için karşılanma oranı, en yakın kaynağa süre
@@ -114,11 +132,21 @@ Gıda karşılanma ≥ %95 ve vergi eşiğin altındaysa `buyumePpmGun/24` kadar
   (`ikmalKarsilanmaPpm`) savaş gücünü çarpar. İkmalsiz ordu güçsüzdür.
 - **Savaş:** `savas_ilan` → saldıran bölge hedefe kenarla komşu olmalı, hedef sahibi korumada olmamalı.
   Hazırlık `U(ilanHazirlikSaatMin, ilanHazirlikSaatMax)` (savas akışı), sonra `pencereSaat` pencere.
-  Pencere kapanınca **otomatik çözüm**:
+  Pencere kapanınca **otomatik çözüm** (ilan kuralları aşağıda):
   `güç = Σ(adet × guc) × ikmalKarsilanma × (savunan için arazi ve duruş çarpanları)`; küçük rastgele
-  sapma (±%10, savas akışı). Kazanan belirlenir; kaybeden birliklerinin bir kısmını kaybeder.
+  sapma (±%10, savas akışı). Kazanan belirlenir; kaybeden %30, kazanan %10 birlik kaybeder. Birlik kaybı **yukarı yuvarlanır**
+  (`carpBolTavan`): adet > 0 ve oran > 0 ise her birlik türünde kayıp en az 1 (küçük ordular kayıpsız kalmaz), en çok adet kadardır.
 - **Kayıp tavanı (H5):** saldıran kazanırsa hedef bölgeden her mal için `yagmaOraniPpm` kadar alınır,
   ama **tek noktada** `min(hesap, kayipTavaniPpm × stok)` ile kelepçelenir. Alınan mal saldıranın bölgesine eklenir.
+- **İlan kuralları (kayıp tavanını korur, v0.1 düzeltmesi):** `savas_ilan` şu durumlarda reddedilir:
+  (a) hedef bölgede bitmemiş (`hazirlik`/`pencere`) herhangi bir savaş varsa (saldıran kim olursa olsun);
+  (b) hedef bölge yağmalandıysa (bir savaşta saldıran kazandı ve toplam stok kaybı > 0) çözüm anından (`pencereBitis`) itibaren
+  `pencereSaat` (24 sa) boyunca; bu `dunya.savaslar` taranarak denetlenir (sözleşmeye alan eklenmez);
+  (c) saldıran bölge zaten bitmemiş bir savaşta saldıran ise (ordu çoklanmaz). Mevcut kural da sürer: aynı iki bölge arasında
+  (her iki yönde) bitmemiş savaş olamaz.
+  **Garanti:** bir bölgede iki yağma arası en az `pencereSaat + hazırlık(≥1) + pencereSaat` olduğundan herhangi `pencereSaat`'lik
+  (24 saat) kayan pencerede en çok bir yağma olur; her mal için pencere kaybı ≤ `kayipTavaniPpm` (%25). Yağma yapılmayan savaşlar
+  (savunan kazandı, sonuçsuz, hedef stoğu boş) beklemeye yol açmaz.
 - **Hazır savunma emirleri:** `savunma` duruşu savunma gücünü artırır ama ordunun ikmal talebini artırmaz;
   `geri_cekil` birlikleri korur (kayıp yok) ama savunma gücü 0'dır. Emirler çevrimdışıyken de geçerlidir.
 - **Yeni oyuncu koruması:** katılımdan itibaren `yeniOyuncuKorumasiGun`; korumadaki oyuncuya savaş ilan edilemez.
@@ -165,7 +193,16 @@ v0.1 değerleri: `baslangicCarpaniPpm = 100000` (%10: 4-12 saatlik inşa 24-72 d
 Hazine net oranı = vergi + ihracat − ithalat − **`aktif tesis × tesisIsletmeParasiSaat`** − **`birlik × birlikMaasiSaat`**
 (pasif tesis, `tesis_durum aktif=false`, gider yazmaz). **Ödeme gücü:** oyuncunun hazinesi 0 ve net oranı negatifse
 (`gider > gelir`) tüm tesislerinin potansiyel verimi `gelir / gider` (ppm) ile çarpılır ("maaş ödenemiyor"); ithalat zaten
-hazine 0 iken gerçekleşmez. Hazine pozitifken giderler hazineden karşılanır ve verim tamdır; hazine pozitif olunca kısıntı kalkar.
+hazine 0 iken gerçekleşmez.
+**İthalat ve hazine (v0.1 düzeltmesi):** hazine yeterliliği saatlik tıkta denetlendiğinden, tıklar arasında hazine 0'a inerse mal bedava
+gelmeye devam ederdi. Lojistik çözümde (hazine oranı ayarlanmadan önce) oyuncunun net oranı negatifse gerçekleşen ithalat, hazine
+bir sonraki saatlik tıka kadar (en çok 1 saat) yetecek şekilde ölçeklenir: izin verilen ithalat gideri/saat ≤ gelir/saat − diğer
+giderler/saat + anlık hazine × `SAAT` / `kalanMs` (`kalanMs` = sonraki tama saate kalan süre, (0, SAAT]); aşılıyorsa tüm
+ithalat emirlerinin gerçekleşen oranı aynı oranla küçülür (tamsayı, aşağı yuvarlama; hazine 0 ise izin verilen ithalat en çok
+`gelir − diğer giderler`). Ödeme gücü, ithalat kısıldıktan sonraki gider üzerinden hesaplanır. Gerçekleşen oran yalnızca düşer
+(aynı saat içinde tekrar çözümlenince ölçekleme kendini tekrarlamaz); saatlik tık emirleri yeniden gerçekleştirir. Sonuç: hazine
+hiçbir zaman ödenmemiş mal getirmez (ithal mal değeri ≤ ödenen para + yuvarlama toleransı). Bilinen sınır: ölçekleme ihracat gelirini
+tahminle (çözüm öncesi gerçekleşen oran) sayar; girdi kıtlığı ihracatı sonradan kısarsa hazine en çok 1 saat içinde erken tükenebilir. Hazine pozitifken giderler hazineden karşılanır ve verim tamdır; hazine pozitif olunca kısıntı kalkar.
 Kısıntı saatlik tıkta (en geç 1 saat içinde) devreye girer. Hazine negatife inmez.
 v0.1 değerleri: `tesisIsletmeParasiSaat = 60000` (60 para/saat), `birlikMaasiSaat = 8000`. Hedef: 4 botlu 30 günlük koşuda brüt gelirin
 kabaca %40-60'ı lavabolara gider.

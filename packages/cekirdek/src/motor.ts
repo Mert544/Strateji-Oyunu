@@ -31,6 +31,12 @@ import type {
 /** Sistem komutlarının (oyuncu_katil) oyuncu kimliği. */
 export const SISTEM_OYUNCUSU = "sistem";
 
+/**
+ * Bir komutun zaman damgası mevcut dünya zamanından en fazla bu kadar ileride olabilir (400 gün).
+ * Aksi halde t = 1e15 gibi bir değer milyonlarca saatlik tık döngüsüne (fiilen sonsuz) yol açar.
+ */
+export const EN_COK_KOMUT_ILERISI: Ms = 400 * GUN;
+
 function hata(mesaj: string): KomutSonucu {
   return { tamam: false, hata: mesaj };
 }
@@ -69,13 +75,16 @@ export class Simulasyon {
 
   /**
    * Önce calistirKadar(k.t); sonra oyuncuyu doğrular, komutu alt sisteme yönlendirir; başarılıysa günlüğe
-   * ekler ve lojistiği kirletir (çözüm aynı t'de). k.t < dunya.zaman ise hata sonucu döner (zaman ilerlemez).
+   * ekler ve lojistiği kirletir (çözüm aynı t'de). k.t güvenli tamsayı değilse, k.t < dunya.zaman ise veya k.t > dunya.zaman + 400 gün ise hata sonucu döner (zaman ilerlemez).
    * Başarısız komut günlüğe girmez (ancak zaman k.t'ye ilerlemiş olur).
    */
   uygula(k: DamgaliKomut): KomutSonucu {
     const d = this.dunya;
-    if (!Number.isInteger(k.t)) return hata(`gecersiz komut zamani: ${k.t}`);
+    if (!Number.isSafeInteger(k.t)) return hata(`gecersiz komut zamani: ${k.t}`);
     if (k.t < d.zaman) return hata(`komut gecmiste: t=${k.t} < zaman=${d.zaman}`);
+    if (k.t > d.zaman + EN_COK_KOMUT_ILERISI) {
+      return hata(`komut zamani cok ileride: t=${k.t} > zaman + 400 gun (${d.zaman + EN_COK_KOMUT_ILERISI})`);
+    }
     this.calistirKadar(k.t);
     const ctx = this.baglam;
     ctx.islenenOlay = null;
@@ -195,9 +204,10 @@ export class Simulasyon {
     return { tamam: true };
   }
 
-  /** t'ye kadar (dahil) tüm olayları işler; dunya.zaman = t. t < dunya.zaman ise hata fırlatır. */
+  /** t'ye kadar (dahil) tüm olayları işler; dunya.zaman = t. t güvenli tamsayı değilse veya t < dunya.zaman ise RangeError fırlatır. */
   calistirKadar(t: Ms): void {
     const d = this.dunya;
+    if (!Number.isSafeInteger(t)) throw new RangeError(`calistirKadar: t guvenli tamsayi olmali (${t})`);
     if (t < d.zaman) throw new RangeError(`calistirKadar: gecmise gidilemez (t=${t} < zaman=${d.zaman})`);
     const ctx = this.baglam;
     try {

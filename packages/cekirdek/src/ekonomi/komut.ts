@@ -17,6 +17,9 @@ function hata(mesaj: string): KomutSonucu {
 
 const TAMAM: KomutSonucu = { tamam: true };
 
+/** Ticaret emri oranı üst sınırı (mili-birim/saat): 1e6 birim/saat. Taşma ve Infinity girdilerine karşı. */
+export const EN_COK_TICARET_ORANI = 1_000_000_000;
+
 /** Bölgeyi kimliğiyle bulur ve sahipliği doğrular. */
 function sahipliBolge(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, bolgeId: string): BolgeDurumu | string {
   const bi = ctx.ic.bolgeIndeks[bolgeId];
@@ -75,6 +78,7 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
       if (typeof b === "string") return hata(b);
       const ts = b.tesisler.find((t) => t.id === k.tesis);
       if (!ts) return hata(`bolgede boyle bir tesis yok: ${k.tesis}`);
+      if (typeof k.aktif !== "boolean") return hata(`gecersiz aktif degeri: ${String(k.aktif)}`);
       ts.aktif = k.aktif;
       return TAMAM;
     }
@@ -85,7 +89,9 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
       const mi = ic.malIndeks[k.mal];
       if (mi === undefined) return hata(`bilinmeyen mal: ${k.mal}`);
       if (k.yon !== "ihracat" && k.yon !== "ithalat") return hata(`gecersiz yon: ${String(k.yon)}`);
-      if (!Number.isInteger(k.oranSaat) || k.oranSaat < 0) return hata(`gecersiz oran: ${k.oranSaat}`);
+      if (!Number.isSafeInteger(k.oranSaat) || k.oranSaat < 0 || k.oranSaat > EN_COK_TICARET_ORANI) {
+        return hata(`gecersiz oran: ${k.oranSaat} (0..${EN_COK_TICARET_ORANI})`);
+      }
       const konum = b.ticaretEmirleri.findIndex((e) => e.mal === mi && e.yon === k.yon);
       if (k.oranSaat === 0) {
         if (konum >= 0) b.ticaretEmirleri.splice(konum, 1);
@@ -102,7 +108,7 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
     case "vergi_ayarla": {
       const o = oyuncuBul(d, oyuncu);
       if (!o) return hata(`bilinmeyen oyuncu: ${oyuncu}`);
-      if (!Number.isInteger(k.oranPpm) || k.oranPpm < 0 || k.oranPpm > PPM) return hata(`gecersiz vergi orani: ${k.oranPpm}`);
+      if (!Number.isSafeInteger(k.oranPpm) || k.oranPpm < 0 || k.oranPpm > PPM) return hata(`gecersiz vergi orani: ${k.oranPpm}`);
       o.vergiPpm = k.oranPpm;
       return TAMAM;
     }

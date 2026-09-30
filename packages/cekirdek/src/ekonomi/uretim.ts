@@ -280,6 +280,39 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
   for (let m = 0; m < nm; m++) h.ihracatGercek[m] = carpBol(h.ihracat[m] as number, h.fr4[m] as number, PPM);
 }
 
+/**
+ * Sahipsiz bölge ("uykuda"): üretim, tüketim, bozulma ve rezerv tükenmesi yok; tüm talep/arz sıfır.
+ * Stok anlık miktarı h.stok'a yazılır (kapsam ve akış hesapları okur). Uyku durumu bolgeUykuUygula ile yazılır.
+ */
+export function bolgeUykuHesapla(d: Dunya, ctx: Baglam, r: number): BolgeHesabi {
+  const tb = icerikTablosu(ctx.ic);
+  const nm = tb.malSayisi;
+  const b = d.bolgeler[r] as BolgeDurumu;
+  const h = hesapAl(ctx.ic, nm, r, b.tesisler.length);
+  h.bolge = b;
+  for (let m = 0; m < nm; m++) h.stok[m] = anlikMiktar(b.stoklar[m] as BolgeDurumu["stoklar"][number], d.zaman);
+  return h;
+}
+
+/**
+ * Uyku durumunu bölgeye yazar: tesis verimi/işçi 0, karşılanma oranları %100 (kıtlık yok), üretim oranı 0 ve
+ * tüm stok yerel oranları 0 (bozulma dahil). Oran zaten 0 ise stokOranAyarla hiçbir şey yapmaz (sürüm artmaz).
+ * Bölge sahiplenince ilk çözüm bolgeHesapla ile normal hesaba geçer.
+ */
+export function bolgeUykuUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi): void {
+  const b = h.bolge;
+  for (const ts of b.tesisler) {
+    ts.isciPpm = 0;
+    ts.verimPpm = 0;
+  }
+  b.gidaKarsilanmaPpm = PPM;
+  b.ikmalKarsilanmaPpm = PPM;
+  for (let m = 0; m < b.stoklar.length; m++) {
+    b.uretimOrani[m] = 0;
+    stokOranAyarla(d, ctx, h.indeks, m, 0);
+  }
+}
+
 /** Bölgeye yazılan karşılanma oranları ve tesis verim alanları. */
 export function bolgeDurumunaYaz(ctx: Baglam, h: BolgeHesabi): void {
   const tb = icerikTablosu(ctx.ic);

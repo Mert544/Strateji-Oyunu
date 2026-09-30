@@ -11,12 +11,19 @@
  *   arazi = hedefin etiketlerindeki araziSavunmaPpm'lerin en büyüğü (etiket yoksa PPM).
  *   Duruş "geri_cekil" ise savunanGuc = 0 ve savunan birlik kaybı 0.
  * - Her iki güce ayrı ayrı %90..%110 rastgele sapma. Saldıran ancak kesin üstünse kazanır (eşitlik savunana).
- * - Kayıplar (aşağıdaki sabitler): kaybeden %30, kazanan %10; her birlik türünde floor.
+ * - Kayıplar (aşağıdaki sabitler): kaybeden %30, kazanan %10; her birlik türünde TAVAN yuvarlama
+ *   (adet > 0 ve oran > 0 ise kayıp en az 1: küçük ordular kayıpsız kalmaz).
  * - Saldıran kazanırsa hedef bölgede her maldan yağma yapılır; tavan TEK yerde (kayipTavaniUygula) uygulanır.
+ * - %25 kayıp tavanının paralel/ardışık savaşlarla aşılmaması için ilan kuralları (savasIlan):
+ *   (a) hedef bölgede bitmemiş (hazırlık/pencere) herhangi bir savaş varsa yeni ilan reddedilir;
+ *   (b) bir bölge yağmalandıktan (saldıran kazandı, stok kaybı > 0) sonra pencereSaat boyunca yeni ilan reddedilir;
+ *   (c) bir saldıran bölge aynı anda yalnızca bir bitmemiş savaşta saldıran olabilir.
+ *   Sonuç: bir bölgede iki yağma arası en az pencereSaat + hazırlık + pencereSaat; herhangi pencereSaat'lik
+ *   kayan pencerede en çok bir yağma olur, yani kayıp <= kayipTavaniPpm.
  * - Pencere sırasında hedef bölgenin sahibi değiştiyse (veya boşaldıysa), ya da saldıran bölge artık
  *   saldıranın değilse, savaş SONUÇSUZ biter: kazanan = savunan (ilandaki), güçler 0, stok/birlik kaybı yok.
  */
-import { carpBol, ppmUygula } from "../sabit";
+import { carpBol, carpBolTavan, ppmUygula } from "../sabit";
 import { oyuncuBul, stokEkle, stokUzlastir } from "../stok";
 import { PPM, SAAT } from "../tipler";
 import type { Baglam, Dunya, Komut, KomutSonucu, Mili, OyuncuId, SavasDurumu, SavasSonucu } from "../tipler";
@@ -53,6 +60,13 @@ function hamGuc(d: Dunya, ctx: Baglam, bolge: number): number {
 function birlikSayisi(d: Dunya, bolge: number): number {
   const b = d.bolgeler[bolge];
   return b ? b.birlikler.reduce((t, a) => t + a, 0) : 0;
+}
+
+/** Savaş bitmiş ve saldıran kazanıp hedeften en az bir maldan stok aldıysa true (yağma yapıldı). */
+function yagmaYapildiMi(s: SavasDurumu): boolean {
+  if (s.evre !== "bitti" || s.sonuc === null || s.sonuc.kazanan !== s.saldiran) return false;
+  for (const k of s.sonuc.stokKaybi) if (k > 0) return true;
+  return false;
 }
 
 /** Komut: savunma_emri. Bölge oyuncunun olmalı; duruş emri çevrimdışıyken de geçerlidir. */
@@ -112,6 +126,19 @@ export function savasIlan(
       ((s.saldiranBolge === sbi && s.hedefBolge === hbi) || (s.saldiranBolge === hbi && s.hedefBolge === sbi)),
   );
   if (suruyor) return hata("bu iki bolge arasinda bitmemis bir savas var");
+  // (a) Hedef bölgede bitmemiş herhangi bir savaş (saldıran kim olursa olsun) varken yeni ilan yok.
+  if (d.savaslar.some((s) => s.evre !== "bitti" && s.hedefBolge === hbi)) {
+    return hata(`hedef bolgede bitmemis bir savas var: ${k.hedefBolge}`);
+  }
+  // (c) Saldıran bölge aynı anda yalnızca bir bitmemiş savaşta saldıran olabilir (ordu çoklanmasın).
+  if (d.savaslar.some((s) => s.evre !== "bitti" && s.saldiranBolge === sbi)) {
+    return hata(`saldiran bolge baska bir bitmemis savasta saldiran: ${k.saldiranBolge}`);
+  }
+  // (b) Yağmalanan bölgeye pencereSaat boyunca yeni savaş ilan edilemez (yağma = çözüm anı pencereBitis).
+  const yagmaKorumaMs = ic.param.askeri.pencereSaat * SAAT;
+  if (d.savaslar.some((s) => s.hedefBolge === hbi && yagmaYapildiMi(s) && d.zaman < s.pencereBitis + yagmaKorumaMs)) {
+    return hata(`hedef bolge yakin zamanda yagmalandi (yagma sonrasi ${ic.param.askeri.pencereSaat} saat savas ilan edilemez): ${k.hedefBolge}`);
+  }
   if (birlikSayisi(d, sbi) < 1) return hata("saldiran bolgede birlik yok");
 
   const a = ic.param.askeri;
@@ -216,7 +243,7 @@ export function savasPencereKapa(d: Dunya, ctx: Baglam, savasId: number): void {
 
   const saldiranKazandi = saldiranGuc > savunanGuc;
 
-  // Birlik kayıpları (aşağı yuvarlanır).
+  // Birlik kayıpları (yukarı yuvarlanır: küçük ordular kayıpsız kalmaz).
   const saldiranOran = saldiranKazandi ? KAZANAN_KAYIP_PPM : KAYBEDEN_KAYIP_PPM;
   const savunanOran = saldiranKazandi ? KAYBEDEN_KAYIP_PPM : KAZANAN_KAYIP_PPM;
   const saldiranBirlikKaybi: number[] = [];
@@ -224,8 +251,9 @@ export function savasPencereKapa(d: Dunya, ctx: Baglam, savasId: number): void {
   for (let i = 0; i < birlikTur; i++) {
     const sa = sb.birlikler[i] ?? 0;
     const ha = hb.birlikler[i] ?? 0;
-    const sk = carpBol(sa, saldiranOran, PPM);
-    const hk = geriCekil ? 0 : carpBol(ha, savunanOran, PPM);
+    // Tavan yuvarlama: adet > 0 ve oran > 0 ise kayıp en az 1 (oran <= PPM olduğundan kayıp <= adet).
+    const sk = sa > 0 ? carpBolTavan(sa, saldiranOran, PPM) : 0;
+    const hk = geriCekil || ha <= 0 ? 0 : carpBolTavan(ha, savunanOran, PPM);
     saldiranBirlikKaybi.push(sk);
     savunanBirlikKaybi.push(hk);
     sb.birlikler[i] = sa - sk;

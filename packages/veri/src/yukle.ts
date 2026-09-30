@@ -393,7 +393,7 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
   if (p.askeri.ilanHazirlikSaatMin > p.askeri.ilanHazirlikSaatMax) {
     hatalar.push("askeri.ilanHazirlikSaatMin: ilanHazirlikSaatMax degerinden buyuk olamaz");
   }
-  if (p.askeri.ilanHazirlikSaatMin < 1) hatalar.push("askeri.ilanHazirlikSaatMin: en az 1 olmali");
+  // ilanHazirlikSaatMin >= 1 ve tamponSaat >= 1 şemada (sema.ts) denetlenir.
   if (p.erkenOyun.bitisSaat < p.erkenOyun.sabitSaat) {
     hatalar.push("erkenOyun.bitisSaat: sabitSaat degerinden kucuk olamaz");
   }

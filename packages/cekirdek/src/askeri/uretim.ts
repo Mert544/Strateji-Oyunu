@@ -33,7 +33,7 @@ export function birlikUret(
   const tanim = birlikIdx === undefined ? undefined : ic.birlikler[birlikIdx];
   if (birlikIdx === undefined || !tanim) return hata(`bilinmeyen birlik: ${k.birlik}`);
   if (!oyuncuBul(d, oyuncu) || !birlikAcikMi(d, ctx, oyuncu, birlikIdx)) return hata(`birlik acik degil: ${k.birlik}`);
-  if (!Number.isInteger(k.adet) || k.adet < 1 || k.adet > EN_COK_PARTI_ADEDI) {
+  if (!Number.isSafeInteger(k.adet) || k.adet < 1 || k.adet > EN_COK_PARTI_ADEDI) {
     return hata(`gecersiz adet: ${k.adet} (1..${EN_COK_PARTI_ADEDI})`);
   }
 

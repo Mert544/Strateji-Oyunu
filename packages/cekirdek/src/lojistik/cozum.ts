@@ -3,8 +3,10 @@
  *
  * lojistikCoz, her çağrıda dünyayı BAŞTAN hesaplar (t = d.zaman):
  *  0. Muhasebe: uretimToplam ve rezerv, eski üretim oranıyla t'ye kadar işlenir; hazineler uzlaştırılır.
- *  1. Bölge bazında istihdam, rezerv verimi, potansiyel, talep ve arz (ekonomi/uretim). Hazinesi 0 ve net oranı
- *     negatif oyuncunun tesis potansiyeli ödeme gücü oranıyla (gelir/gider) çarpılır.
+ *  1. Sahipsiz bölgeler UYKUDA (üretim, tüketim, bozulma ve rezerv tükenmesi yok; yerel oranlar 0). Sahipli bölge
+ *     bazında istihdam, rezerv verimi, potansiyel, talep ve arz (ekonomi/uretim). Hazinesi 0 ve net oranı
+ *     negatif oyuncunun tesis potansiyeli ödeme gücü oranıyla (gelir/gider) çarpılır. Net oranı negatif oyuncunun
+ *     gerçekleşen ithalatı, hazine bir sonraki saatlik tıka yetecek şekilde ölçeklenir (ithalatiHazineyeSigdir).
  *  2. Oyuncu başına askeri ve sivil min-maliyet akışı (lojistik/akis).
  *  3. Gecikme: akış farkları hedefte t + yol süresinde oran_delta olayı olur (yoldaki mal korunur).
  *  4. Tesis verimi ve öncelik katmanlı karşılanma (stok 0 iken), gıda/ikmal karşılanma oranları.
@@ -23,9 +25,17 @@ import { icerikTablosu } from "../ekonomi/tablo";
 import { hizlandirilmisSure } from "../erkenOyun";
 import { maliyetYeterliMi, maliyetiDus } from "../ekonomi/maliyet";
 import type { BolgeHesabi } from "../ekonomi/uretim";
-import { bolgeDurumunaYaz, bolgeHesapla, bolgeOranlariUygula, bolgeVerimCoz, uretimMuhasebesi } from "../ekonomi/uretim";
+import {
+  bolgeDurumunaYaz,
+  bolgeHesapla,
+  bolgeOranlariUygula,
+  bolgeUykuHesapla,
+  bolgeUykuUygula,
+  bolgeVerimCoz,
+  uretimMuhasebesi,
+} from "../ekonomi/uretim";
 import { kenarKullanilabilirMi, pazarCarpanlari } from "../politika";
-import { carpBol, tabanBol } from "../sabit";
+import { carpBol, carpBolTavan, tabanBol } from "../sabit";
 import { hazineOranAyarla, hazineUzlastir, oyuncuBul } from "../stok";
 import { MILI, PPM, SAAT } from "../tipler";
 import type { Baglam, Dunya, Komut, KomutSonucu, Mili, OyuncuDurumu, OyuncuId } from "../tipler";
@@ -44,6 +54,8 @@ interface HazineKalemleri {
   gelir: number;
   /** İthalat gideri + para lavaboları (tesis işletme gideri ve birlik maaşı). */
   gider: number;
+  /** `gider` içindeki ithalat payı (mili-para/saat). */
+  ithalat: number;
 }
 
 /**
@@ -58,6 +70,7 @@ function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: reado
   const carp = pazarCarpanlari(d, ctx, o.id);
   let gelir = 0;
   let gider = 0;
+  let ithalat = 0;
   for (const b of d.bolgeler) {
     if (b.sahip !== o.id) continue;
     gelir += carpBol(carpBol(b.nufus, p.ekonomi.vergiTabani1000Saat, 1000), o.vergiPpm, PPM);
@@ -69,7 +82,9 @@ function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: reado
         const gercek = fr4 === null ? e.gerceklesenSaat : carpBol(e.gerceklesenSaat, fr4[e.mal] as number, PPM);
         gelir += carpBol(carpBol(gercek, fiyat, MILI), carp.ihracatPpm, PPM);
       } else {
-        gider += carpBol(carpBol(e.gerceklesenSaat, fiyat, MILI), carp.ithalatPpm, PPM);
+        const bedel = carpBol(carpBol(e.gerceklesenSaat, fiyat, MILI), carp.ithalatPpm, PPM);
+        gider += bedel;
+        ithalat += bedel;
       }
     }
     let aktifTesis = 0;
@@ -78,7 +93,42 @@ function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: reado
     for (const a of b.birlikler) birlik += a;
     gider += aktifTesis * p.ekonomi.tesisIsletmeParasiSaat + birlik * p.askeri.birlikMaasiSaat;
   }
-  return { gelir, gider };
+  return { gelir, gider, ithalat };
+}
+
+/**
+ * İthalatı hazineye sığdırır (yalnızca saatlik tıkta gerçekleşen ithalat emirleri için, tıklar arası denetim).
+ *
+ * Sorun: hazine yeterliliği saatlik tıkta denetlenir; hazine tıklar arasında 0'a inerse (stok.ts negatif oranda
+ * 0'da kelepçeler) mal gelmeye devam ederdi (ödenmemiş mal). Kural: net oran (gelir − gider) negatifse hazine
+ * bir sonraki saatlik tıka kadar (en çok 1 saat) yetmelidir:
+ *   izin verilen ithalat gideri/saat ≤ gelir/saat − diğer giderler/saat + anlık hazine × SAAT / kalanMs
+ * (kalanMs = sonraki tama saate kalan süre, (0, SAAT]). Aşılıyorsa oyuncunun gerçekleşen ithalat oranlarının hepsi
+ * aynı oranla (tamsayı, aşağı yuvarlanır, sıralı yineleme) küçültülür. Hazine 0 ise izin verilen ithalat
+ * en çok `gelir − diğer giderler`dir (gelirle ödenebilen kadar). Oran yalnızca düşer: aynı saat içinde tekrar
+ * çözümlenince (değişim yoksa) ölçekleme kendini tekrarlamaz; bir sonraki saatlik tık emirleri yeniden gerçekleştirir.
+ * Net oran >= 0 ise bir şey yapılmaz. Ölçeklendiyse true döner.
+ */
+function ithalatiHazineyeSigdir(d: Dunya, o: OyuncuDurumu, k: HazineKalemleri): boolean {
+  const net = k.gelir - k.gider;
+  if (net >= 0 || k.ithalat <= 0) return false;
+  const acik = -net; // mili-para/saat, > 0
+  const kalanMs = SAAT - (d.zaman % SAAT);
+  const hazine = o.hazine.miktar;
+  // Hazine kalanMs boyunca açığı karşılıyor mu? (hazine >= acik × kalanMs / SAAT)
+  if (hazine >= carpBolTavan(acik, kalanMs, SAAT)) return false;
+  // Hazinenin tam kalanMs'de tükeneceği en büyük açık oranı (< acik).
+  const dayanir = carpBol(hazine, SAAT, kalanMs);
+  const izinli = k.gelir - (k.gider - k.ithalat) + dayanir;
+  const hedef = izinli > 0 ? izinli : 0;
+  for (const b of d.bolgeler) {
+    if (b.sahip !== o.id) continue;
+    for (const e of b.ticaretEmirleri) {
+      if (e.yon !== "ithalat" || e.gerceklesenSaat <= 0) continue;
+      e.gerceklesenSaat = hedef <= 0 ? 0 : carpBol(e.gerceklesenSaat, hedef, k.ithalat);
+    }
+  }
+  return true;
 }
 
 /**
@@ -105,8 +155,17 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   // 1. Potansiyel, talep, arz ve fazla
   // Ödeme gücü (para lavaboları): hazinesi 0 ve net oranı negatif olan oyuncunun tesis verimi kısılır.
   const odeme = new Map<OyuncuId, number>();
-  for (const o of d.oyuncular) odeme.set(o.id, odemeGucuPpm(o, hazineKalemleri(d, ctx, o, null)));
-  const hesaplar = d.bolgeler.map((b, r) => bolgeHesapla(d, ctx, r, b.sahip === null ? PPM : (odeme.get(b.sahip) ?? PPM)));
+  for (const o of d.oyuncular) {
+    let k = hazineKalemleri(d, ctx, o, null);
+    // Ödenemeyen ithalat gerçekleşmez (tıklar arası hazine tükenmesi): önce ithalat hazineye sığdırılır,
+    // ödeme gücü (tesis verimi kısıntısı) ithalat kısıldıktan sonraki gider üzerinden hesaplanır.
+    if (ithalatiHazineyeSigdir(d, o, k)) k = hazineKalemleri(d, ctx, o, null);
+    odeme.set(o.id, odemeGucuPpm(o, k));
+  }
+  // Sahipsiz bölgeler "uykuda": hesap sıfır (üretim/tüketim/bozulma/rezerv tükenmesi yok).
+  const hesaplar = d.bolgeler.map((b, r) =>
+    b.sahip === null ? bolgeUykuHesapla(d, ctx, r) : bolgeHesapla(d, ctx, r, odeme.get(b.sahip) ?? PPM),
+  );
   const fazla = sifirMatris(n, nm);
   const askeriTalep = sifirMatris(n, nm);
   for (const h of hesaplar) {
@@ -129,6 +188,10 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
 
   // 4-5. Verim, karşılanma ve stok oranları
   for (const h of hesaplar) {
+    if (h.bolge.sahip === null) {
+      bolgeUykuUygula(d, ctx, h);
+      continue;
+    }
     const giden = ak.giden[h.indeks] as Mili[];
     bolgeVerimCoz(ctx, h, giden);
     bolgeDurumunaYaz(ctx, h);
@@ -162,7 +225,7 @@ export function lojistikKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut
     case "kenar_gelistir": {
       const o = oyuncuBul(d, oyuncu);
       if (!o) return hata(`bilinmeyen oyuncu: ${oyuncu}`);
-      if (!Number.isInteger(k.kenar) || k.kenar < 0 || k.kenar >= d.kenarlar.length) return hata(`bilinmeyen kenar: ${k.kenar}`);
+      if (!Number.isSafeInteger(k.kenar) || k.kenar < 0 || k.kenar >= d.kenarlar.length) return hata(`bilinmeyen kenar: ${k.kenar}`);
       const kenar = d.kenarlar[k.kenar]!;
       if (!kenarKullanilabilirMi(d, ctx, oyuncu, k.kenar)) return hata(`kenar kullanilamaz: ${k.kenar}`);
       if (kenar.tur === "deniz" && !o.kararlar.includes("deniz_kenar_gelistir")) return hata("deniz kenari gelistirme karari acik degil");
@@ -184,7 +247,7 @@ export function lojistikKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut
     case "askeri_rezerv": {
       const o = oyuncuBul(d, oyuncu);
       if (!o) return hata(`bilinmeyen oyuncu: ${oyuncu}`);
-      if (!Number.isInteger(k.oranPpm) || k.oranPpm < 0 || k.oranPpm > 500_000) return hata(`gecersiz askeri rezerv: ${k.oranPpm}`);
+      if (!Number.isSafeInteger(k.oranPpm) || k.oranPpm < 0 || k.oranPpm > 500_000) return hata(`gecersiz askeri rezerv: ${k.oranPpm}`);
       o.askeriRezervPpm = k.oranPpm;
       return { tamam: true };
     }

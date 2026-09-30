@@ -36,10 +36,17 @@ function eklemeKonumu<T>(dizi: T[], yeni: T, sira: (a: T, b: T) => number): numb
   return konum;
 }
 
+/** Çalışma zamanında kabul edilen anlaşma türleri (tipler derleme zamanı garantisi sağlar, komut dışarıdan gelir). */
+function anlasmaTuruGecerliMi(tur: unknown): boolean {
+  return tur === "ticaret" || tur === "ortak_altyapi";
+}
+
 /** Komut: anlasma_teklif, anlasma_feshet, yaptirim. */
 export function politikaKomutu(d: Dunya, _ctx: Baglam, oyuncu: OyuncuId, k: Komut): KomutSonucu {
   switch (k.tur) {
     case "anlasma_teklif": {
+      if (!anlasmaTuruGecerliMi(k.anlasma)) return hata(`gecersiz anlasma turu: ${String(k.anlasma)}`);
+      if (typeof k.karsi !== "string") return hata(`gecersiz oyuncu: ${String(k.karsi)}`);
       if (k.karsi === oyuncu) return hata("kendinizle anlasma yapilamaz");
       if (!oyuncuBul(d, k.karsi)) return hata(`bilinmeyen oyuncu: ${k.karsi}`);
       const taraflar: [OyuncuId, OyuncuId] = oyuncu < k.karsi ? [oyuncu, k.karsi] : [k.karsi, oyuncu];
@@ -58,6 +65,8 @@ export function politikaKomutu(d: Dunya, _ctx: Baglam, oyuncu: OyuncuId, k: Komu
       return { tamam: true };
     }
     case "anlasma_feshet": {
+      if (!anlasmaTuruGecerliMi(k.anlasma)) return hata(`gecersiz anlasma turu: ${String(k.anlasma)}`);
+      if (typeof k.karsi !== "string") return hata(`gecersiz oyuncu: ${String(k.karsi)}`);
       if (k.karsi === oyuncu) return hata("kendinizle anlasma yoktur");
       const t0 = oyuncu < k.karsi ? oyuncu : k.karsi;
       const t1 = oyuncu < k.karsi ? k.karsi : oyuncu;
@@ -67,6 +76,8 @@ export function politikaKomutu(d: Dunya, _ctx: Baglam, oyuncu: OyuncuId, k: Komu
       return { tamam: true };
     }
     case "yaptirim": {
+      if (typeof k.hedef !== "string") return hata(`gecersiz oyuncu: ${String(k.hedef)}`);
+      if (typeof k.aktif !== "boolean") return hata(`gecersiz aktif degeri: ${String(k.aktif)}`);
       if (k.hedef === oyuncu) return hata("kendinize yaptirim uygulanamaz");
       if (!oyuncuBul(d, k.hedef)) return hata(`bilinmeyen oyuncu: ${k.hedef}`);
       const i = d.yaptirimlar.findIndex((y) => y.uygulayan === oyuncu && y.hedef === k.hedef);
