@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "kontrol": "pnpm tipkontrol && pnpm lint && pnpm test",
     "olcum": "tsx packages/olcum/src/cli.ts",
-    "harita:uret": "tsx packages/veri/src/harita-uretici.ts"
+    "harita:uret": "tsx packages/veri/src/harita-uretici.ts",
+    "izle": "tsx packages/izleyici/src/cli.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Simülasyon İzleyici</title>
+<meta name="description" content="Bölge Stratejisi simülasyonunun geliştirici inceleme görünümü: bölgeler, üretim, mal akışları ve darboğazlar.">
+<style>
+/*@@STIL@@*/
+</style>
+</head>
+<body>
+<header class="ust">
+  <div class="ust-ic">
+    <div class="ust-metin">
+      <h1>Bölge Stratejisi — Simülasyon İzleyici</h1>
+      <p class="aciklama">Dört devletin botlarla oynadığı simülasyonun görsel incelemesi: bölgeler, üretim, mal akışları ve darboğazlar. Bu bir geliştirici/inceleme görünümüdür, oyunun arayüzü değildir (Aşama 3 ön izlemesi).</p>
+    </div>
+    <button id="tema" class="dugme" type="button" aria-label="Tema değiştir">Tema: otomatik</button>
+  </div>
+  <p class="meta" id="meta"></p>
+</header>
+
+<main class="ana">
+  <section class="kart harita-karti" aria-label="Harita ve zaman kontrolleri">
+    <div class="arac-cubugu">
+      <button id="oynat" class="dugme birincil" type="button" aria-label="Oynat">&#9654; Oynat</button>
+      <label class="kaydirici-kap"><span class="gizli">Zaman</span>
+        <input id="zaman" type="range" min="0" max="0" value="0" step="1" aria-label="Zaman kaydırıcısı">
+      </label>
+      <output id="zaman-etiketi" class="zaman-etiketi" aria-live="off"></output>
+      <label class="kucuk-secim">Hız
+        <select id="hiz" aria-label="Oynatma hızı">
+          <option value="0.5">0,5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+          <option value="4">4×</option>
+        </select>
+      </label>
+    </div>
+    <div class="secenekler">
+      <label class="onay"><input id="sec-akis" type="checkbox" checked> Akış animasyonu</label>
+      <label class="onay"><input id="sec-etiket" type="checkbox" checked> Bölge adları</label>
+    </div>
+    <div id="mal-secici" class="mal-secici" role="group" aria-label="Mal seçici"></div>
+    <div id="neden" class="neden" role="status" aria-live="polite"></div>
+    <div class="harita-kap">
+      <svg id="harita" role="img" aria-label="Bölgeler, yollar ve mal akışları haritası" preserveAspectRatio="xMidYMid meet"></svg>
+      <div id="ipucu" class="ipucu" hidden></div>
+    </div>
+    <div id="gosterge" class="gosterge"></div>
+  </section>
+
+  <aside class="yan" aria-label="Yan panel">
+    <section class="kart" id="kart-bolge"><h2>Bölge ayrıntısı</h2><div id="bolge-ayrinti"></div></section>
+    <section class="kart"><h2>Oyuncular ve hazineler</h2><div id="oyuncular"></div></section>
+    <section class="kart"><h2>Darboğazlar</h2><div id="darbogaz"></div></section>
+    <section class="kart"><h2>Aktif savaşlar</h2><div id="savaslar"></div></section>
+    <section class="kart"><h2>Dünya fiyatları</h2><div id="fiyatlar"></div></section>
+  </aside>
+</main>
+@@RAPOR_BOLUMU@@
+<footer class="alt">Bu sayfa tek dosyadır: veri, stil ve betik gömülüdür; harici bağımlılık yoktur. Veri, <code>pnpm izle</code> ile yeniden üretilir.</footer>
+
+<script type="application/json" id="veri-json">@@VERI@@</script>
+@@RAPOR_JSON@@
+<script>
+/*@@ISTEMCI@@*/
+</script>
+</body>
+</html>

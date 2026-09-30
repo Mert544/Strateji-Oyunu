@@ -3,4 +3,4 @@ raporlar/
 *.log
 .DS_Store
 coverage/
-izleyici/
+/izleyici/
