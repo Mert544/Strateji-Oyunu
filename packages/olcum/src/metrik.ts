@@ -71,6 +71,35 @@ export function hazinePara(sim: Simulasyon, oyuncu: OyuncuId): number {
   return anlikHazine(sim.dunya, oyuncu) / MILI;
 }
 
+/** Bölgeler kümesinin net değeri (para): oyuncunun hazinesi + verilen bölgelerin stok değeri (taban fiyat). */
+export function netDeger(sim: Simulasyon, oyuncu: OyuncuId, bolgeler?: BolgeSecici): number {
+  return hazinePara(sim, oyuncu) + stokDegeri(sim, bolgeler);
+}
+
+/** Mal -> mili-birim kaydının taban fiyatla değeri (para). */
+export function malKaydiDegeri(sim: Simulasyon, kayit: Readonly<Record<string, number>>): number {
+  let t = 0;
+  for (const [mal, miktar] of Object.entries(kayit)) {
+    const i = sim.ic.malIndeks[mal];
+    if (i === undefined) continue;
+    t += (miktar / MILI) * ((sim.ic.mallar[i]?.tabanFiyat ?? 0) / MILI);
+  }
+  return t;
+}
+
+/** Bir tesis türünün inşa bedeli (para): mal maliyeti (taban fiyat) + para maliyeti. Yatırım sayımı için. */
+export function tesisInsaBedeli(sim: Simulasyon, tesisTuru: string): number {
+  const ti = sim.ic.tesisTuruIndeks[tesisTuru];
+  const tur = ti === undefined ? undefined : sim.ic.tesisTurleri[ti];
+  return tur ? malKaydiDegeri(sim, tur.insaMaliyeti) + tur.insaParasi / MILI : 0;
+}
+
+/** Bir kenar kapasite geliştirmesinin bedeli (para): mal maliyeti (taban fiyat) + para maliyeti. */
+export function kenarGelistirmeBedeli(sim: Simulasyon): number {
+  const l = sim.ic.param.lojistik;
+  return malKaydiDegeri(sim, l.gelistirmeMaliyeti) + l.gelistirmeParasi / MILI;
+}
+
 /** Mal kimliği -> fiyat / taban fiyat oranı. */
 export function fiyatOrani(sim: Simulasyon): Record<string, number> {
   const s: Record<string, number> = {};

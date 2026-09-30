@@ -40,6 +40,10 @@ export interface HipotezSecenek {
   tohumlar: number[];
   /** Hızlı mod: küçültülmüş boyutlar (yalnızca süre için). */
   hizli?: boolean;
+  /** Örnekleme yapan koşucuların (H1) bölge sayısı (devlet başına eşit dağıtılır); `tam` bunu geçersiz kılar. */
+  bolgeSayisi?: number;
+  /** Tam boyut: hipotezin örnekleme yapan koşucuları (H1) tüm birimleri koşturur (yavaş). */
+  tam?: boolean;
   /** Test için ek küçültme (kısa sürüm); hızlı moddan da küçük olabilir. */
   kisa?: boolean;
   /** İlerleme mesajı geri çağrısı (CLI). */

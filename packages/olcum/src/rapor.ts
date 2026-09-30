@@ -1,9 +1,28 @@
 /** Markdown raporu: özet tablo, hipotez ayrıntıları, parametreler, çalışma süresi ve determinizm izi. */
 import type { HipotezSonucu, Verdict } from "./tipler";
 
+/** `--karsilastir` ile okunan önceki ölçüm (JSON'dan; yalnızca özet tablo için gereken alanlar). */
+export interface KarsilastirmaVerisi {
+  /** Dosya yolu (raporda gösterilir). */
+  kaynak: string;
+  /** Önceki ölçümün sürüm/etiketi (varsa). */
+  etiket?: string | undefined;
+  hipotezler: ReadonlyArray<{
+    kimlik: string;
+    verdict: Verdict;
+    olcum?: { ad?: string; deger?: number | null; birim?: string };
+  }>;
+}
+
 export interface RaporMeta {
   tohumlar: number[];
   hizli: boolean;
+  /** Tam boyut koşusu mu. */
+  tam?: boolean;
+  /** Sürüm/etiket (`--ad`). */
+  etiket?: string | undefined;
+  /** Önceki ölçüm (`--karsilastir`): özet tabloda yan yana gösterilir. */
+  karsilastirma?: KarsilastirmaVerisi | undefined;
   /** Toplam duvar saati (ms). */
   sureMs: number;
   /** Çalıştırma komut satırı seçenekleri özeti (tarih yok: rapor deterministik adlandırılır). */
@@ -37,32 +56,79 @@ type Kayit = Record<string, unknown>;
 const kayit = (x: unknown): Kayit => (x ?? {}) as Kayit;
 const dizi = (x: unknown): Kayit[] => (Array.isArray(x) ? (x as Kayit[]) : []);
 
+function dagilimMetni(d: Kayit, adlar: readonly string[]): string {
+  return adlar
+    .map((a) => [a, (d[a] as number) ?? 0] as const)
+    .filter(([, v]) => v > 0)
+    .sort((x, y) => y[1] - x[1])
+    .map(([a, v]) => `${a} ${yuzde(v, 0)}`)
+    .join(", ");
+}
+
 function h1Ayrinti(h: HipotezSonucu): string {
   const a = kayit(h.ayrinti);
   const ort = kayit(a["tohumOrtalamaTop3Orani"]);
+  const ortEski = kayit(a["tohumOrtalamaTop3OraniEskiSkor"]);
+  const ortNetY = kayit(a["tohumOrtalamaTop3OraniYatirimsizNet"]);
   const onayarlar = dizi(a["onayarlar"]);
-  const satir1 = onayarlar.map((o) => [o["ad"], yuzde(ort[String(o["ad"])] as number), String(o["aciklama"])]);
-  const parcalar = [`**İlk-üç bölge oranı (tohum ortalaması)**\n\n${tablo(["Önayar", "İlk üçte olduğu bölge oranı", "Açıklama"], satir1)}`];
+  const adlar = onayarlar.map((o) => String(o["ad"]));
+  const referans = a["referans"] ? kayit(a["referans"]) : null;
+  const prm = kayit(h.parametreler);
+  const parcalar: string[] = [];
+  parcalar.push(
+    `**İşletimsel tanım (v0.1)**\n\n` +
+      `- Dünya: ${String(prm["dunya"])}. Arka plan her önayar koşusunda aynı kurulum ve tohumla başlar (ortak rastgele sayılar).\n` +
+      `- Koşu: ${String(prm["gun"])} gün; odak oyuncu t=0'da ve 24 saatte bir önayarı uygular. Bölge örneği: ${String(prm["bolgeSayisi"])}/${String(prm["tumBolgeSayisi"])} (${String(prm["ornekleme"])}).\n` +
+      `- Sıralamaya giren önayarlar: ${adlar.join(", ")}. Referans (sıralama dışı): ${String(prm["referansOnayar"])}.\n` +
+      `- Birincil skor: ${String(prm["skor"])}.\n` +
+      `- Sıra: ${String(prm["sira"])}. Verdict: en yüksek ilk-üç oranı > %70 ise KALDI.`,
+  );
+  const satir1 = onayarlar.map((o) => {
+    const ad = String(o["ad"]);
+    return [ad, yuzde(ort[ad] as number), yuzde(ortEski[ad] as number), yuzde(ortNetY[ad] as number), String(o["aciklama"])];
+  });
+  parcalar.push(
+    `**İlk-üç bölge oranı (tohum ortalaması; yalnızca sabit önayarlar sıralanır)**\n\nBirincil = net değer skoru (verdict bununla). Eski skor ve yatırımsız net yalnızca karşılaştırma içindir.\n\n${tablo(["Önayar", "Birincil (net)", "Eski skor (brüt üretim)", "Net, yatırımsız", "Açıklama"], satir1)}`,
+  );
   const t = h.tohumBasina.map((x) => {
     const o = kayit(x.ozet);
-    return [x.tohum, String(o["enYuksekOnayar"]), yuzde(x.olcum), sayi(o["entropiBit"], 2), sayi(o["entropiNormalize"], 2), x.verdict === "gecti" ? "geçti" : "kaldı"];
+    return [x.tohum, String(o["enYuksekOnayar"]), yuzde(x.olcum), sayi(o["entropiBit"], 2), sayi(o["entropiNormalize"], 2), o["esitBolge"], yuzde(o["enYuksekEskiSkor"] as number), yuzde(o["enYuksekYatirimsizNet"] as number), x.verdict === "gecti" ? "geçti" : x.verdict === "kaldi" ? "kaldı" : "belirsiz"];
   });
-  parcalar.push(`**Tohum başına** (entropi: en iyi önayarın bölgelere dağılımı, bit; normalize = H / log2(${onayarlar.length}))\n\n${tablo(["Tohum", "En yüksek önayar", "Oran", "Entropi (bit)", "Norm. entropi", "Sonuç"], t)}`);
-  const dh = h.tohumBasina.map((x) => [x.tohum, yuzde(kayit(x.ozet)["enYuksekDengeliHaric"] as number)]);
-  parcalar.push(`**Duyarlılık: bölgeye göre uyarlanan "dengeli" önayar sıralamadan çıkarılırsa en yüksek ilk-üç oranı**\n\n${tablo(["Tohum", "En yüksek oran (dengeli hariç)"], dh)}`);
+  parcalar.push(
+    `**Tohum başına** (entropi: en iyi önayarın bölgelere dağılımı, bit; normalize = H / log2(${onayarlar.length}); "eşit bölge" = tüm sabit önayarların skoru eşit çıkan bölge sayısı)\n\n${tablo(["Tohum", "En yüksek önayar", "Oran", "Entropi (bit)", "Norm. entropi", "Eşit bölge", "En yüksek (eski skor)", "En yüksek (yatırımsız net)", "Sonuç"], t)}`,
+  );
+  if (referans) {
+    const rt = h.tohumBasina.map((x) => {
+      const o = kayit(x.ozet);
+      return [x.tohum, yuzde(o["referansTop3"] as number), yuzde(o["referansEnIyiOrani"] as number)];
+    });
+    parcalar.push(
+      `**Referans: "${String(referans["ad"])}" (sıralama dışı)** — ${String(referans["aciklama"])} Bölgeye uyarlanan genel amaçlı bir politika olduğu için sıralamaya ve verdict'e girmez; yalnızca sabit önayarlarla kıyaslanır.\n\n${tablo(["Tohum", "İlk üç (sabit önayarlarla birlikte sıralanırsa)", "En iyi sabit önayardan daha iyi olduğu bölge oranı"], rt)}`,
+    );
+  }
   const dag = h.tohumBasina.map((x) => {
-    const d = kayit(kayit(x.ozet)["enIyiOnayarDagilimi"]);
-    return [x.tohum, ...onayarlar.map((o) => d[String(o["ad"])] as number)];
+    const d = kayit(kayit(x.ozet)["enIyiOnayarPayi"]);
+    return [x.tohum, ...adlar.map((n) => yuzde(d[n] as number, 0))];
   });
-  parcalar.push(`**Bölge başına en iyi önayar sayımı**\n\n${tablo(["Tohum", ...onayarlar.map((o) => String(o["ad"]))], dag)}`);
+  parcalar.push(`**Bölge başına en iyi önayar payı** (eşitlikte pay bölüşülür)\n\n${tablo(["Tohum", ...adlar], dag)}`);
+  const tur = dizi(a["turTablosu"]);
+  if (tur.length > 0) {
+    const sat = tur.map((x) => [String(x["tur"]), String(x["aciklama"]), sayi(x["bolgeSayisi"], 1), String(x["enIyi"]), yuzde(x["enIyiPay"] as number, 0), dagilimMetni(kayit(x["dagilim"]), adlar)]);
+    parcalar.push(
+      `**Bölge türüne göre en iyi önayar (tohum ortalaması)** — bölgeler gerçekten farklıysa farklı türlerin en iyisi farklı önayarlar olmalıdır.\n\n${tablo(["Tür", "Tanım", "Bölge", "En iyi önayar", "Payı", "Dağılım"], sat)}`,
+    );
+  }
   const bt = dizi(a["bolgeTablosuIlkTohum"]);
   if (bt.length > 0) {
-    const adlar = onayarlar.map((o) => String(o["ad"]));
+    const refAd = referans ? String(referans["ad"]) : null;
     const sat = bt.map((b) => {
       const sk = kayit(b["skorlar"]);
-      return [b["bolge"], String(b["enIyi"]), ...adlar.map((n) => Math.round(((sk[n] as number) ?? 0) / 1000) + "k")];
+      const k = (n: string): string => Math.round(((sk[n] as number) ?? 0) / 1000) + "k";
+      return [b["bolge"], String(b["tur"]), String(b["enIyi"]), ...adlar.map(k), ...(refAd ? [k(refAd)] : [])];
     });
-    parcalar.push(`**Bölge tablosu (ilk tohum; skor, bin para)**\n\n${tablo(["Bölge", "En iyi", ...adlar], sat)}`);
+    parcalar.push(
+      `**Bölge tablosu (ilk tohum; birincil skor, bin para)**${refAd ? ` — son sütun "${refAd}" referanstır, "En iyi" hesabına girmez` : ""}\n\n${tablo(["Bölge", "Tür", "En iyi", ...adlar, ...(refAd ? [`${refAd} (ref.)`] : [])], sat)}`,
+    );
   }
   return parcalar.join("\n\n");
 }
@@ -156,20 +222,33 @@ const AYRINTI: Record<string, (h: HipotezSonucu) => string> = { H1: h1Ayrinti, H
 /** Markdown raporu üretir. */
 export function raporUret(sonuclar: readonly HipotezSonucu[], meta: RaporMeta): string {
   const s: string[] = [];
-  s.push(`# Ölçüm raporu: ${sonuclar.map((x) => x.kimlik).join(", ")} (tohum ${meta.tohumlar.join(", ")})`);
+  s.push(`# Ölçüm raporu: ${sonuclar.map((x) => x.kimlik).join(", ")} (tohum ${meta.tohumlar.join(", ")})${meta.etiket ? ` — ${meta.etiket}` : ""}`);
   s.push(`Bu rapor \`pnpm olcum\` ile üretilmiştir. Simülasyon deterministiktir: aynı tohum ve kod için sonuçlar (duvar saati hariç) birebir aynıdır.${meta.hizli ? " **Hızlı mod: boyutlar küçültülmüştür.**" : ""}`);
 
+  s.push(`**Sürüm/etiket**: ${meta.etiket ?? "(belirtilmedi)"}${meta.tam ? " (tam boyut)" : ""}`);
+  if (meta.karsilastirma) {
+    s.push(`**Karşılaştırma**: önceki ölçüm \`${meta.karsilastirma.kaynak}\`${meta.karsilastirma.etiket ? ` (etiket: ${meta.karsilastirma.etiket})` : ""}. Önceki sütunlar o dosyadaki değerlerdir; ölçüm tanımı değiştiyse ölçüm adı yanında belirtilir.`);
+  }
+
   s.push("## Özet");
+  const onceki = new Map((meta.karsilastirma?.hipotezler ?? []).map((x) => [x.kimlik, x]));
+  const karsi = meta.karsilastirma !== undefined;
+  const degerMetni = (b: string | undefined, d: number | null | undefined): string => (d === null || d === undefined ? "—" : b === "oran" ? yuzde(d) : String(d));
   s.push(
     tablo(
-      ["Hipotez", "Ölçüm", "Eşik", "Sonuç", "Tohum başarı oranı"],
-      sonuclar.map((h) => [
-        `**${h.kimlik}** ${h.hipotez}`,
-        `${h.olcum.ad}: ${h.olcum.deger === null ? "—" : h.olcum.birim === "oran" ? yuzde(h.olcum.deger) : h.olcum.deger}`,
-        h.esik.aciklama,
-        `**${verdictMetni(h.verdict)}**`,
-        `${yuzde(h.tohumBasariOrani, 0)} (${h.tohumBasina.filter((t) => t.verdict === "gecti").length}/${h.tohumBasina.length})`,
-      ]),
+      ["Hipotez", "Ölçüm", "Eşik", "Sonuç", "Tohum başarı oranı", ...(karsi ? ["Önceki ölçüm", "Önceki sonuç"] : [])],
+      sonuclar.map((h) => {
+        const p = onceki.get(h.kimlik);
+        const farkliTanim = p?.olcum?.ad !== undefined && p.olcum.ad !== h.olcum.ad;
+        return [
+          `**${h.kimlik}** ${h.hipotez}`,
+          `${h.olcum.ad}: ${degerMetni(h.olcum.birim, h.olcum.deger)}`,
+          h.esik.aciklama,
+          `**${verdictMetni(h.verdict)}**`,
+          `${yuzde(h.tohumBasariOrani, 0)} (${h.tohumBasina.filter((t) => t.verdict === "gecti").length}/${h.tohumBasina.length})`,
+          ...(karsi ? [p ? `${degerMetni(p.olcum?.birim, p.olcum?.deger)}${farkliTanim ? ` (önceki tanım: ${String(p.olcum?.ad)})` : ""}` : "—", p ? verdictMetni(p.verdict) : "—"] : []),
+        ];
+      }),
     ),
   );
   s.push("Sonuç sözlüğü: GEÇTİ = vazgeçme ölçütü tetiklenmedi (hipotez ayakta); KALDI = ölçüt tetiklendi; BELİRSİZ = tohumlar çelişiyor veya ölçüm güvenilir değil. \"Tohum başarı oranı\" = GEÇTİ diyen tohumların oranı.");
