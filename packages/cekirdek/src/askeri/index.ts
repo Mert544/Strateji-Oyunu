@@ -1,21 +1,25 @@
 /**
- * SAPLAMA (stub) — Faz 2'de "askeri + teknoloji + politika" ajanı uygular.
+ * Askeri alt sistem (spesifikasyon §6). Motor yalnızca bu dosyadaki fonksiyonları çağırır.
+ * - uretim.ts: birlik üretimi, parti bitişi, ikmal talebi
+ * - savas.ts: savunma emri, savaş ilanı, pencere, otomatik çözüm, yağma ve kayıp tavanı
  */
-import type { Baglam, Dunya, Komut, KomutSonucu, Mili, OyuncuId } from "../tipler";
+import type { Baglam, Dunya, Komut, KomutSonucu, OyuncuId } from "../tipler";
+import { savasIlan, savunmaEmri } from "./savas";
+import { birlikUret } from "./uretim";
+
+export { savasPencereAc, savasPencereKapa } from "./savas";
+export { partiBitti, ikmalTalebi } from "./uretim";
 
 /** Askeri komutlar: birlik_uret, savas_ilan, savunma_emri. */
-export function askeriKomutu(_d: Dunya, _ctx: Baglam, _oyuncu: OyuncuId, _k: Komut): KomutSonucu {
-  return { tamam: false, hata: "uygulanmadı" };
-}
-
-export function partiBitti(_d: Dunya, _ctx: Baglam, _partiId: number): void {}
-export function savasPencereAc(_d: Dunya, _ctx: Baglam, _savasId: number): void {}
-export function savasPencereKapa(_d: Dunya, _ctx: Baglam, _savasId: number): void {}
-
-/**
- * Lojistik kancası: bölgedeki birliklerin saatlik ikmal talebi (mal indeksine göre, mili-birim/saat).
- * Uzunluk = mal sayısı.
- */
-export function ikmalTalebi(d: Dunya, _ctx: Baglam, _bolge: number): Mili[] {
-  return new Array<number>(d.pazar.fiyat.length).fill(0);
+export function askeriKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut): KomutSonucu {
+  switch (k.tur) {
+    case "birlik_uret":
+      return birlikUret(d, ctx, oyuncu, k);
+    case "savas_ilan":
+      return savasIlan(d, ctx, oyuncu, k);
+    case "savunma_emri":
+      return savunmaEmri(d, ctx, oyuncu, k);
+    default:
+      return { tamam: false, hata: `askeri alt sistem bu komutu bilmiyor: ${k.tur}` };
+  }
 }
