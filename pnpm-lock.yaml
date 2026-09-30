@@ -42,6 +42,21 @@ importers:
         specifier: workspace:*
         version: link:../veri
 
+  packages/izleyici:
+    dependencies:
+      '@bolge/botlar':
+        specifier: workspace:*
+        version: link:../botlar
+      '@bolge/cekirdek':
+        specifier: workspace:*
+        version: link:../cekirdek
+      '@bolge/olcum':
+        specifier: workspace:*
+        version: link:../olcum
+      '@bolge/veri':
+        specifier: workspace:*
+        version: link:../veri
+
   packages/olcum:
     dependencies:
       '@bolge/botlar':
