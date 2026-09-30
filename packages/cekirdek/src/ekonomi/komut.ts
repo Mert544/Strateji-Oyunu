@@ -5,6 +5,7 @@
  */
 import { maliyetYeterliMi, maliyetiDus } from "./maliyet";
 import { icerikTablosu } from "./tablo";
+import { hizlandirilmisSure } from "../erkenOyun";
 import { tesisTuruAcikMi, yontemAcikMi } from "../teknoloji";
 import { oyuncuBul } from "../stok";
 import { PPM, SAAT } from "../tipler";
@@ -51,7 +52,8 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
       if (eksik !== null) return hata(eksik);
       if (!maliyetiDus(d, ctx, b.indeks, oyuncu, tur.insaMaliyeti, tur.insaParasi)) return hata("yetersiz hazine");
       const id = ctx.yeniKimlik(d);
-      const bitis = d.zaman + tur.insaSuresiSaat * SAAT;
+      // Erken oyun hızlandırması: süre, oyuncunun katılımından geçen zamana göre kısalır.
+      const bitis = d.zaman + hizlandirilmisSure(d, ctx, oyuncu, tur.insaSuresiSaat * SAAT);
       d.insaatlar.push({ id, tur: "tesis", sahip: oyuncu, bolge: b.indeks, hedef: ti, bitis });
       ctx.planla(d, bitis, { tur: "insaat_bitti", insaat: id });
       return TAMAM;

@@ -56,6 +56,8 @@ describe("lojistik cozum performansi (sentetik-50, 4 oyuncu)", () => {
       expect(f).toBeGreaterThanOrEqual(Math.floor(taban / 4));
       expect(f).toBeLessThanOrEqual(Math.floor((taban * 7) / 4));
     });
-    for (const o of s.dunya.oyuncular) expect(anlikHazine(s.dunya, o.id)).toBeGreaterThan(0);
+    // Pasif oyuncular (ticaret emri yok) para lavabolarını (tesis işletme gideri) vergiyle karşılayamayabilir:
+    // hazine 0'a inebilir ama asla negatif olmaz.
+    for (const o of s.dunya.oyuncular) expect(anlikHazine(s.dunya, o.id)).toBeGreaterThanOrEqual(0);
   });
 });

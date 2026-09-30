@@ -10,6 +10,11 @@
     "hazine": 50000000,
     "birlikler": { "piyade_tumeni": 3 }
   },
+  "erkenOyun": {
+    "baslangicCarpaniPpm": 100000,
+    "sabitSaat": 24,
+    "bitisSaat": 168
+  },
   "nufus": {
     "isgucuPpm": 500000,
     "tuketim1000Saat": { "gida": 200, "yakit": 30, "elektronik": 8 },
@@ -17,22 +22,23 @@
     "kuculmePpmGun": 3000
   },
   "ekonomi": {
-    "depoKapasitesi": 20000000,
+    "depoKapasitesi": 10000000,
     "vergiTabani1000Saat": 2000,
     "varsayilanVergiPpm": 200000,
-    "vergiBuyumeEsigiPpm": 350000
+    "vergiBuyumeEsigiPpm": 350000,
+    "tesisIsletmeParasiSaat": 60000
   },
   "pazar": {
     "fiyatEsnekligiPpm": 750000,
     "emilimSaat": {
-      "tahil": 150000, "gida": 200000, "cevher": 150000, "komur": 150000, "celik": 120000,
-      "bakir": 100000, "silis": 100000, "parca": 80000, "elektronik": 50000,
-      "petrol": 200000, "yakit": 150000, "muhimmat": 50000
+      "tahil": 360000, "gida": 300000, "cevher": 360000, "komur": 450000, "celik": 120000,
+      "bakir": 200000, "silis": 240000, "parca": 80000, "elektronik": 50000,
+      "petrol": 400000, "yakit": 150000, "muhimmat": 50000
     },
     "arzSaat": {
-      "tahil": 120000, "gida": 160000, "cevher": 120000, "komur": 120000, "celik": 100000,
-      "bakir": 80000, "silis": 80000, "parca": 80000, "elektronik": 50000,
-      "petrol": 150000, "yakit": 150000, "muhimmat": 80000
+      "tahil": 240000, "gida": 200000, "cevher": 150000, "komur": 150000, "celik": 100000,
+      "bakir": 120000, "silis": 100000, "parca": 80000, "elektronik": 50000,
+      "petrol": 240000, "yakit": 150000, "muhimmat": 80000
     },
     "ithalatCarpaniPpm": 1100000,
     "ihracatCarpaniPpm": 900000,
@@ -57,6 +63,10 @@
     "yagmaOraniPpm": 400000,
     "yeniOyuncuKorumasiGun": 7,
     "araziSavunmaPpm": { "kiyi": 1000000, "dag": 1500000, "ova": 1000000, "liman": 1100000, "dar_gecit": 1800000 },
-    "savunmaDurusuCarpaniPpm": 1300000
+    "savunmaDurusuCarpaniPpm": 1300000,
+    "birlikMaasiSaat": 8000
+  },
+  "teknoloji": {
+    "yayilimIndirimiPpm": 500000
   }
 }

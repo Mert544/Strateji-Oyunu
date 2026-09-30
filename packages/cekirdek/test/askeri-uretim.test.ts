@@ -10,8 +10,9 @@ import { Simulasyon } from "../src/motor";
 import { anlikMiktar } from "../src/stok";
 import { GUN, SAAT } from "../src/tipler";
 import type { Komut } from "../src/tipler";
+import { yenilikleriKapat } from "./yenilikler";
 
-const TEMEL = miniVeriyiYukle();
+const TEMEL = yenilikleriKapat(miniVeriyiYukle());
 
 /** a = m_ova (kuzey), b = m_liman (kuzey, a'ya komşu), c = m_dag (güney, a'ya komşu değil). Korumalar varsayılan (7 gün). */
 function kur(tohum = 1, korumasiz = false): Simulasyon {

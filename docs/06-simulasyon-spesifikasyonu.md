@@ -1,6 +1,6 @@
-# 06 — Çekirdek Simülasyon Spesifikasyonu (v0)
+# 06 — Çekirdek Simülasyon Spesifikasyonu (v0.1)
 
-Bu belge Aşama 2 çekirdek simülasyonunun **kurallarını** tanımlar. Kod sözleşmesi
+Bu belge Aşama 2 çekirdek simülasyonunun **kurallarını** tanımlar. v0.1 kalibrasyon kuralları §10'dadır. Kod sözleşmesi
 `packages/veri/src/tipler.ts` ve `packages/cekirdek/src/tipler.ts` dosyalarındadır.
 Sayılar başlangıç varsayımıdır; `packages/veri/icerik/parametreler.json` içinden ayarlanır.
 
@@ -73,6 +73,8 @@ Gıda karşılanma ≥ %95 ve vergi eşiğin altındaysa `buyumePpmGun/24` kadar
 
 **Bozulma (batma):** her mal için saatlik `miktar × bozulmaPpmGun / 24 / PPM` stok oranından düşülür.
 **Depo:** mal başına `depoKapasitesi`; taşan üretim `israf` olur. Bu iki kural "stok birikmesi"ni önler.
+(v0.1 değerleri §10.4.)
+**Para lavaboları (v0.1):** hazine oranından aktif tesis başına `tesisIsletmeParasiSaat` ve birlik başına `birlikMaasiSaat` düşülür (§10.2).
 
 **Dünya pazarı:** yalnızca `liman` etiketli bölgelerden erişilir. Oyuncu limanda sürekli
 `ticaret_emri` verir (ihracat/ithalat, birim/saat). Saatlik tıkta fiyat:
@@ -102,12 +104,12 @@ Gıda karşılanma ≥ %95 ve vergi eşiğin altındaysa `buyumePpmGun/24` kadar
 - **Kapsam ("nerede açık, neden"):** her bölge × mal için karşılanma oranı, en yakın kaynağa süre
   (çok kaynaklı Dijkstra) ve neden: `kapasite` (yol var ama kenar dolu), `girdi_eksik` (hiçbir yerde fazla yok),
   `mesafe` (kaynak > 72 saat), `erisim_yok` (yol yok), `yok` (karşılanıyor).
-- **Kenar geliştirme** (karar): `gelistirmeMaliyeti` + `gelistirmeParasi`, `gelistirmeSuresiSaat` sonra
+- **Kenar geliştirme** (karar): `gelistirmeMaliyeti` + `gelistirmeParasi`, `gelistirmeSuresiSaat` (erken oyun çarpanıyla kısalır, §10.1) sonra
   kapasite `+gelistirmeArtisPpm`.
 
 ## 6. Askeri
 
-- **Birlik üretimi:** `birlik_uret` maliyeti bölge stoğundan hemen düşer, `partiSuresiSaat` sonra birlik eklenir.
+- **Birlik üretimi:** `birlik_uret` maliyeti bölge stoğundan hemen düşer, `partiSuresiSaat` (erken oyun çarpanıyla kısalır, §10.1) sonra birlik eklenir. Her birlik saatlik `birlikMaasiSaat` para gideri doğurur (§10.2).
 - **İkmal:** her birlik `ikmal` malını saatlik tüketir (lojistik talebi). Karşılanma oranı
   (`ikmalKarsilanmaPpm`) savaş gücünü çarpar. İkmalsiz ordu güçsüzdür.
 - **Savaş:** `savas_ilan` → saldıran bölge hedefe kenarla komşu olmalı, hedef sahibi korumada olmamalı.
@@ -124,7 +126,7 @@ Gıda karşılanma ≥ %95 ve vergi eşiğin altındaysa `buyumePpmGun/24` kadar
 ## 7. Teknoloji (sığ, veri güdümlü)
 
 6 düğüm; her biri **yeni yöntem, tesis türü veya karar** açar, yüzde artış vermez.
-`arastir` maliyeti hazineden düşer; `sureGun` sonra açılır. Aynı anda tek araştırma.
+`arastir` maliyeti hazineden düşer; `sureGun` sonra açılır. Aynı anda tek araştırma. Süre erken oyun çarpanıyla, maliyet ve süre teknoloji yayılımıyla kısalır (§10.1, §10.3).
 
 ## 8. Politika (sığ)
 
@@ -137,3 +139,50 @@ Gıda karşılanma ≥ %95 ve vergi eşiğin altındaysa `buyumePpmGun/24` kadar
 
 `uretimToplam` (bölge × mal kümülatif üretim), `israf`, `pazar.fiyat`, `lojistik.kapsam`,
 `kenarlar[].kullanilanSaat/askeriKullanilanSaat`, `savaslar[].sonuc`. Ölçüm takımı bunlardan H1–H3, H5–H7'yi hesaplar.
+
+## 10. v0.1 kalibrasyon kuralları
+
+Kaynak: ilk ölçüm (v0) bulguları (`docs/olcum/v0-t1-3.md`). Sayılar `parametreler.json` / `icerik.json` içindedir.
+
+### 10.1 Erken oyun hızlandırması (PDF zaman kuralı 2)
+
+Oyuncunun katılımından itibaren geçen süre `gecen = t − katilmaZamani` için **süre çarpanı**:
+
+| `gecen` | çarpan |
+|---|---|
+| `≤ sabitSaat` | `baslangicCarpaniPpm` |
+| `sabitSaat < gecen < bitisSaat` | doğrusal olarak `PPM`'e yükselir |
+| `≥ bitisSaat` | `PPM` (normal süre) |
+
+Kapsam: `tesis_insa`, `kenar_gelistir`, `birlik_uret` (parti), `arastir` süreleri. Çarpan işin başladığı anda bir kez hesaplanır;
+süre `max(1 dakika, özgün × çarpan)` olur (özgün süre bundan kısaysa özgün süre). Savaş hazırlık ve pencere süreleri ETKİLENMEZ
+(çevrimdışı koruma kuralları sabit). Geç katılan oyuncu kendi katılımından sayar ve aynı hızlandırmayı alır (yetişme yardımı, H6).
+Kod: `cekirdek/src/erkenOyun.ts` (`sureCarpaniPpm`, `hizlandirilmisSure`).
+v0.1 değerleri: `baslangicCarpaniPpm = 100000` (%10: 4-12 saatlik inşa 24-72 dakika), `sabitSaat = 24`, `bitisSaat = 168`.
+
+### 10.2 Para lavaboları
+
+Hazine net oranı = vergi + ihracat − ithalat − **`aktif tesis × tesisIsletmeParasiSaat`** − **`birlik × birlikMaasiSaat`**
+(pasif tesis, `tesis_durum aktif=false`, gider yazmaz). **Ödeme gücü:** oyuncunun hazinesi 0 ve net oranı negatifse
+(`gider > gelir`) tüm tesislerinin potansiyel verimi `gelir / gider` (ppm) ile çarpılır ("maaş ödenemiyor"); ithalat zaten
+hazine 0 iken gerçekleşmez. Hazine pozitifken giderler hazineden karşılanır ve verim tamdır; hazine pozitif olunca kısıntı kalkar.
+Kısıntı saatlik tıkta (en geç 1 saat içinde) devreye girer. Hazine negatife inmez.
+v0.1 değerleri: `tesisIsletmeParasiSaat = 60000` (60 para/saat), `birlikMaasiSaat = 8000`. Hedef: 4 botlu 30 günlük koşuda brüt gelirin
+kabaca %40-60'ı lavabolara gider.
+
+### 10.3 Teknoloji yayılımı
+
+`arastir` komutunda, teknolojiyi bilen DİĞER oyuncuların payı `p = bilen / (oyuncuSayisi − 1)` (tek oyuncuda 0). Maliyet ve süre
+`(1 − p × yayilimIndirimiPpm / PPM)` ile çarpılır (erken oyun çarpanı yalnızca süreye ayrıca uygulanır). v0.1: `yayilimIndirimiPpm = 500000`
+(herkes biliyorsa yarı maliyet ve yarı süre). Doğrulayıcı en çok 900000'e izin verir.
+
+### 10.4 Bozulma, depo ve dünya pazarı (v0.1 notu)
+
+- Bozulma (ppm/gün): tahıl 10000, gıda 20000, cevher/çelik/bakır/silis/parça/mühimmat 2000, kömür/elektronik/petrol 3000, yakıt 5000.
+  Depo: `depoKapasitesi = 10000000` (10 000 birim/bölge/mal).
+- Pazar fiyatı `taban × (1 + e × oran)` ve ihracat ≤ `emilimSaat` olduğundan, doymuş (emilim tamamen dolu) ihracatta alt fiyat
+  `taban × (1 − e × arzSaat / emilimSaat)` olur. Ham malların `emilimSaat` değerleri v0'ın 2-3 katına çıkarıldı (tahıl 360, gıda 300,
+  cevher 360, kömür 450, bakır 200, silis 240, petrol 400 birim/saat), `arzSaat` ise emilimden belirgin düşük tutuldu
+  (ithalat için yeterli, doygun ihracatta fiyat tabanın ~%60-75'inde kalır; v0'da %40'a yapışıyordu).
+- Not: v0 botları ihracat emrini `0.4 × emilimSaat` ile sınırlar; 3 bot aynı malı ihraç ederse emilim (1.2×) her zaman dolar.
+  Bu nedenle kömür/cevher için tam çözüm botların fiyata duyarlı ihracatıdır (bot tarafı).

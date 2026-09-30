@@ -167,6 +167,19 @@ export interface Parametreler {
     /** Oyuncu başına başlangıç birlikleri: birlik -> adet (sahip olunan ilk bölgeye). */
     birlikler: Record<string, number>;
   };
+  /**
+   * PDF zaman kuralı 2: "Erken oyun hızlı, sonra yavaşlar." Oyuncunun katılımından itibaren
+   * inşa, kenar geliştirme, birlik partisi ve araştırma süreleri bu çarpanla kısalır.
+   * Geç katılan oyuncu da aynı hızlandırmayı alır (yetişme yardımı, H6).
+   */
+  erkenOyun: {
+    /** Katılım anındaki süre çarpanı (ppm), ör. 100000 = süreler %10. */
+    baslangicCarpaniPpm: number;
+    /** Katılımdan sonra bu kadar saat çarpan sabit kalır. */
+    sabitSaat: number;
+    /** Bu saatte çarpan doğrusal olarak PPM'e (%100) ulaşır. */
+    bitisSaat: number;
+  };
   nufus: {
     /** Nüfusun çalışabilir oranı (ppm). */
     isgucuPpm: number;
@@ -185,6 +198,8 @@ export interface Parametreler {
     varsayilanVergiPpm: number;
     /** Yüksek vergi büyümeyi azaltır: bu eşiğin üstü büyümeyi keser (ppm). */
     vergiBuyumeEsigiPpm: number;
+    /** Para lavabosu: aktif tesis başına işletme gideri (mili-para/saat). */
+    tesisIsletmeParasiSaat: number;
   };
   pazar: {
     /** Vic3 benzeri fiyat esnekliği (ppm, 750000 = 0.75). */
@@ -223,5 +238,14 @@ export interface Parametreler {
     /** Arazi savunma çarpanları (ppm). */
     araziSavunmaPpm: Record<Etiket, number>;
     savunmaDurusuCarpaniPpm: number;
+    /** Para lavabosu: birlik başına maaş (mili-para/saat). */
+    birlikMaasiSaat: number;
+  };
+  teknoloji: {
+    /**
+     * Teknoloji yayılımı (yetişme yardımı): bir teknolojiyi bilen diğer oyuncuların payı p ise
+     * maliyet ve süre p × yayilimIndirimiPpm kadar azalır.
+     */
+    yayilimIndirimiPpm: number;
   };
 }

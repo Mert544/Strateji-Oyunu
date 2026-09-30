@@ -252,6 +252,32 @@ describe("parametreler ve paket capraz kontrolleri", () => {
     expect(r.some((x) => x.includes("pencereSaat") && x.includes("eksik"))).toBe(true);
   });
 
+  it("v0.1 parametreleri: erken oyun, para lavaboları ve teknoloji yayilimi dogrulanir", () => {
+    const v = varsayilanVeriyiYukle();
+    // Varsayılan değerler geçerli ve beklenen alanlar var.
+    expect(v.param.erkenOyun.baslangicCarpaniPpm).toBeGreaterThan(0);
+    expect(v.param.ekonomi.tesisIsletmeParasiSaat).toBeGreaterThan(0);
+    expect(v.param.askeri.birlikMaasiSaat).toBeGreaterThan(0);
+    expect(v.param.teknoloji.yayilimIndirimiPpm).toBeGreaterThan(0);
+
+    const p = kopya(v.param);
+    p.erkenOyun.bitisSaat = p.erkenOyun.sabitSaat - 1;
+    p.teknoloji.yayilimIndirimiPpm = 950_000;
+    const r = hatalar(dogrulaParametreler(p));
+    expect(r.some((x) => x.includes("erkenOyun.bitisSaat"))).toBe(true);
+    expect(r.some((x) => x.includes("yayilimIndirimiPpm"))).toBe(true);
+
+    const q = kopya(v.param);
+    q.erkenOyun.baslangicCarpaniPpm = 0; // en az 1
+    expect(hatalar(dogrulaParametreler(q)).some((x) => x.includes("baslangicCarpaniPpm"))).toBe(true);
+    const e = kopya(v.param) as unknown as { erkenOyun: Record<string, unknown>; teknoloji: Record<string, unknown> };
+    delete e.erkenOyun["sabitSaat"];
+    delete e.teknoloji["yayilimIndirimiPpm"];
+    const r2 = hatalar(dogrulaParametreler(e));
+    expect(r2.some((x) => x.includes("sabitSaat") && x.includes("eksik"))).toBe(true);
+    expect(r2.some((x) => x.includes("yayilimIndirimiPpm") && x.includes("eksik"))).toBe(true);
+  });
+
   it("harita rezerv mali icerikte ham degil / tesis icin rezerv veya etiket yok", () => {
     const v = varsayilanVeriyiYukle();
     const paket = kopya(v);

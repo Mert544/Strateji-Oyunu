@@ -4,6 +4,7 @@
 import { miniVeriyiYukle } from "@bolge/veri";
 import type { VeriPaketi } from "@bolge/veri";
 import { Simulasyon } from "../src/motor";
+import { yenilikleriKapat } from "./yenilikler";
 import { anlikHazine, anlikMiktar } from "../src/stok";
 import { SAAT } from "../src/tipler";
 import type { BolgeDurumu, Komut, KomutSonucu, OyuncuId } from "../src/tipler";
@@ -23,7 +24,8 @@ export const VARSAYILAN_OYUNCULAR: Record<OyuncuId, string[]> = {
 
 /** Mini haritada iki oyuncu katılmış bir simülasyon döndürür. */
 export function kur(sec: KurulumSecenegi = {}): { s: Simulasyon; veri: VeriPaketi } {
-  const veri = miniVeriyiYukle();
+  // Varsayılan: v0.1 yenilikleri kapalı (eski testler özgün süre ve sayılarla çalışır); duzenle ile açılabilir.
+  const veri = yenilikleriKapat(miniVeriyiYukle());
   sec.duzenle?.(veri);
   const s = Simulasyon.olustur(veri, sec.tohum ?? 1);
   const oyuncular = sec.oyuncular ?? VARSAYILAN_OYUNCULAR;

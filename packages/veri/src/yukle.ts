@@ -394,6 +394,13 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
     hatalar.push("askeri.ilanHazirlikSaatMin: ilanHazirlikSaatMax degerinden buyuk olamaz");
   }
   if (p.askeri.ilanHazirlikSaatMin < 1) hatalar.push("askeri.ilanHazirlikSaatMin: en az 1 olmali");
+  if (p.erkenOyun.bitisSaat < p.erkenOyun.sabitSaat) {
+    hatalar.push("erkenOyun.bitisSaat: sabitSaat degerinden kucuk olamaz");
+  }
+  // Yayılım indirimi %100 olursa maliyet ve süre 0'a iner; en çok %90'a izin verilir.
+  if (p.teknoloji.yayilimIndirimiPpm > 900_000) {
+    hatalar.push("teknoloji.yayilimIndirimiPpm: en fazla 900000 olabilir (maliyet ve sure 0'a inmemeli)");
+  }
 
   if (icerik !== undefined) {
     const mallar = new Set(icerik.mallar.map((m) => m.id));

@@ -10,9 +10,10 @@ import { anlikHazine, oyuncuBul } from "../src/stok";
 import { birlikAcikMi, tesisTuruAcikMi, yontemAcikMi } from "../src/teknoloji";
 import { GUN } from "../src/tipler";
 import type { Komut } from "../src/tipler";
+import { yenilikleriKapat } from "./yenilikler";
 
 function kur(tohum = 1): Simulasyon {
-  const s = Simulasyon.olustur(miniVeriyiYukle(), tohum);
+  const s = Simulasyon.olustur(yenilikleriKapat(miniVeriyiYukle()), tohum);
   s.uygula({ t: 0, oyuncu: "sistem", komut: { tur: "oyuncu_katil", oyuncu: "a", bolgeler: ["m_ova"] } });
   s.uygula({ t: 0, oyuncu: "sistem", komut: { tur: "oyuncu_katil", oyuncu: "b", bolgeler: ["m_liman"] } });
   // Bol para: sahte ekonomi hazineyi değiştirmez.

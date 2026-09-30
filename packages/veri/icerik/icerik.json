@@ -1,18 +1,18 @@
 {
   "surum": 1,
   "mallar": [
-    { "id": "tahil", "ad": "Tahıl", "kategori": "ham", "tabanFiyat": 30000, "lojistikOnceligi": 4, "bozulmaPpmGun": 4000 },
-    { "id": "gida", "ad": "Gıda", "kategori": "tuketim", "tabanFiyat": 70000, "lojistikOnceligi": 1, "bozulmaPpmGun": 12000 },
-    { "id": "cevher", "ad": "Demir Cevheri", "kategori": "ham", "tabanFiyat": 35000, "lojistikOnceligi": 6, "bozulmaPpmGun": 0 },
-    { "id": "komur", "ad": "Kömür", "kategori": "ham", "tabanFiyat": 30000, "lojistikOnceligi": 6, "bozulmaPpmGun": 500 },
-    { "id": "celik", "ad": "Çelik", "kategori": "ara", "tabanFiyat": 120000, "lojistikOnceligi": 5, "bozulmaPpmGun": 0 },
-    { "id": "bakir", "ad": "Bakır", "kategori": "ham", "tabanFiyat": 50000, "lojistikOnceligi": 6, "bozulmaPpmGun": 0 },
-    { "id": "silis", "ad": "Silis", "kategori": "ham", "tabanFiyat": 25000, "lojistikOnceligi": 6, "bozulmaPpmGun": 0 },
-    { "id": "parca", "ad": "Makine Parçası", "kategori": "ara", "tabanFiyat": 180000, "lojistikOnceligi": 5, "bozulmaPpmGun": 0 },
-    { "id": "elektronik", "ad": "Elektronik", "kategori": "tuketim", "tabanFiyat": 400000, "lojistikOnceligi": 7, "bozulmaPpmGun": 0 },
-    { "id": "petrol", "ad": "Ham Petrol", "kategori": "ham", "tabanFiyat": 60000, "lojistikOnceligi": 3, "bozulmaPpmGun": 0 },
-    { "id": "yakit", "ad": "Yakıt", "kategori": "ara", "tabanFiyat": 100000, "lojistikOnceligi": 2, "bozulmaPpmGun": 200 },
-    { "id": "muhimmat", "ad": "Mühimmat", "kategori": "askeri", "tabanFiyat": 150000, "lojistikOnceligi": 0, "bozulmaPpmGun": 0 }
+    { "id": "tahil", "ad": "Tahıl", "kategori": "ham", "tabanFiyat": 30000, "lojistikOnceligi": 4, "bozulmaPpmGun": 10000 },
+    { "id": "gida", "ad": "Gıda", "kategori": "tuketim", "tabanFiyat": 70000, "lojistikOnceligi": 1, "bozulmaPpmGun": 20000 },
+    { "id": "cevher", "ad": "Demir Cevheri", "kategori": "ham", "tabanFiyat": 35000, "lojistikOnceligi": 6, "bozulmaPpmGun": 2000 },
+    { "id": "komur", "ad": "Kömür", "kategori": "ham", "tabanFiyat": 30000, "lojistikOnceligi": 6, "bozulmaPpmGun": 3000 },
+    { "id": "celik", "ad": "Çelik", "kategori": "ara", "tabanFiyat": 120000, "lojistikOnceligi": 5, "bozulmaPpmGun": 2000 },
+    { "id": "bakir", "ad": "Bakır", "kategori": "ham", "tabanFiyat": 50000, "lojistikOnceligi": 6, "bozulmaPpmGun": 2000 },
+    { "id": "silis", "ad": "Silis", "kategori": "ham", "tabanFiyat": 25000, "lojistikOnceligi": 6, "bozulmaPpmGun": 2000 },
+    { "id": "parca", "ad": "Makine Parçası", "kategori": "ara", "tabanFiyat": 180000, "lojistikOnceligi": 5, "bozulmaPpmGun": 2000 },
+    { "id": "elektronik", "ad": "Elektronik", "kategori": "tuketim", "tabanFiyat": 400000, "lojistikOnceligi": 7, "bozulmaPpmGun": 3000 },
+    { "id": "petrol", "ad": "Ham Petrol", "kategori": "ham", "tabanFiyat": 60000, "lojistikOnceligi": 3, "bozulmaPpmGun": 3000 },
+    { "id": "yakit", "ad": "Yakıt", "kategori": "ara", "tabanFiyat": 100000, "lojistikOnceligi": 2, "bozulmaPpmGun": 5000 },
+    { "id": "muhimmat", "ad": "Mühimmat", "kategori": "askeri", "tabanFiyat": 150000, "lojistikOnceligi": 0, "bozulmaPpmGun": 2000 }
   ],
   "yontemler": [
     {

@@ -30,3 +30,5 @@ export { prngOlustur, sonraki as prngSonraki, aralik as prngAralik, fnv1a32 } fr
 export { kuyrukEkle, kuyrukCikar, kuyrukBas } from "./kuyruk";
 export { tabanBol, carpBolTavan, tamsayiKarekok, kelepce, ppmUygula } from "./sabit";
 export { kanonikSerilestir, fnv1a64 } from "./ozet";
+export { sureCarpaniPpm, hizlandirilmisSure } from "./erkenOyun";
+export { teknolojiYayilimiPpm } from "./teknoloji";

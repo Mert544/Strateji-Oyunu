@@ -1,6 +1,7 @@
 /**
  * Askeri üretim: birlik üretim partileri ve ordunun ikmal talebi (spesifikasyon §6).
  */
+import { hizlandirilmisSure } from "../erkenOyun";
 import { anlikMiktar, oyuncuBul, stokEkle } from "../stok";
 import { birlikAcikMi } from "../teknoloji";
 import { SAAT } from "../tipler";
@@ -50,7 +51,7 @@ export function birlikUret(
   for (const { mal, miktar } of kalemler) stokEkle(d, ctx, bi, mal, -miktar);
 
   const id = ctx.yeniKimlik(d);
-  const bitis = d.zaman + tanim.partiSuresiSaat * SAAT;
+  const bitis = d.zaman + hizlandirilmisSure(d, ctx, oyuncu, tanim.partiSuresiSaat * SAAT);
   d.partiler.push({ id, sahip: oyuncu, bolge: bi, birlik: birlikIdx, adet: k.adet, bitis });
   ctx.planla(d, bitis, { tur: "parti_bitti", parti: id });
   return { tamam: true };

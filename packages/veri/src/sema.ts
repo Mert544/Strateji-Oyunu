@@ -187,6 +187,13 @@ export const ParametreSema = z
         birlikler: kayit,
       })
       .strict(),
+    erkenOyun: z
+      .object({
+        baslangicCarpaniPpm: pozitif.max(1_000_000, "ppm en fazla 1_000_000 olabilir"),
+        sabitSaat: negatifOlmayan,
+        bitisSaat: negatifOlmayan,
+      })
+      .strict(),
     nufus: z
       .object({
         isgucuPpm: ppmSiniri,
@@ -201,6 +208,7 @@ export const ParametreSema = z
         vergiTabani1000Saat: negatifOlmayan,
         varsayilanVergiPpm: ppmSiniri,
         vergiBuyumeEsigiPpm: ppmSiniri,
+        tesisIsletmeParasiSaat: negatifOlmayan,
       })
       .strict(),
     pazar: z
@@ -244,6 +252,12 @@ export const ParametreSema = z
           })
           .strict(),
         savunmaDurusuCarpaniPpm: pozitif,
+        birlikMaasiSaat: negatifOlmayan,
+      })
+      .strict(),
+    teknoloji: z
+      .object({
+        yayilimIndirimiPpm: ppmSiniri,
       })
       .strict(),
   })

@@ -130,8 +130,8 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
   return h;
 }
 
-/** Adım 1: istihdam, potansiyel, talep ve arz. */
-export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number): BolgeHesabi {
+/** Adım 1: istihdam, potansiyel, talep ve arz. `odemePpm`: sahibin ödeme gücü (para lavaboları), varsayılan %100. */
+export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number = PPM): BolgeHesabi {
   const tb = icerikTablosu(ctx.ic);
   const nm = tb.malSayisi;
   const b = d.bolgeler[r] as BolgeDurumu;
@@ -154,7 +154,8 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number): BolgeHesabi {
       const isciPpm = y.isci > 0 ? carpBol(atanan, PPM, y.isci) : PPM;
       h.isciPpm[i] = isciPpm;
       const rv = y.rezerv >= 0 ? rezervVerimi(b.rezervIlk[y.rezerv] as number, b.rezervKalan[y.rezerv] as number) : PPM;
-      h.potansiyelPpm[i] = carpBol(isciPpm, rv, PPM);
+      // Ödeme gücü (hazine 0 ve net oran negatifken < PPM): tesis verimi "maaş ödenemiyor" oranında kısılır.
+      h.potansiyelPpm[i] = carpBol(carpBol(isciPpm, rv, PPM), odemePpm, PPM);
     }
     // Bakım aktif olsun olmasın tüketilir (batma).
     for (const [m, q] of y.bakim) h.bakim[m] = (h.bakim[m] as number) + q;

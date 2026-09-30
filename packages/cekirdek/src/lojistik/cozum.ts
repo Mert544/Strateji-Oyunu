@@ -3,12 +3,13 @@
  *
  * lojistikCoz, her çağrıda dünyayı BAŞTAN hesaplar (t = d.zaman):
  *  0. Muhasebe: uretimToplam ve rezerv, eski üretim oranıyla t'ye kadar işlenir; hazineler uzlaştırılır.
- *  1. Bölge bazında istihdam, rezerv verimi, potansiyel, talep ve arz (ekonomi/uretim).
+ *  1. Bölge bazında istihdam, rezerv verimi, potansiyel, talep ve arz (ekonomi/uretim). Hazinesi 0 ve net oranı
+ *     negatif oyuncunun tesis potansiyeli ödeme gücü oranıyla (gelir/gider) çarpılır.
  *  2. Oyuncu başına askeri ve sivil min-maliyet akışı (lojistik/akis).
  *  3. Gecikme: akış farkları hedefte t + yol süresinde oran_delta olayı olur (yoldaki mal korunur).
  *  4. Tesis verimi ve öncelik katmanlı karşılanma (stok 0 iken), gıda/ikmal karşılanma oranları.
  *  5. Stok yerel oranları (stokOranAyarla) ve uretimOrani.
- *  6. Oyuncu hazine oranı: vergi + ihracat geliri − ithalat gideri.
+ *  6. Oyuncu hazine oranı: vergi + ihracat geliri − ithalat gideri − para lavaboları (tesis işletme + birlik maaşı).
  *  7. Kenar kullanımı.
  *  8. Kapsam ("nerede açık, neden").
  * Bu fonksiyon ctx.kirlet ÇAĞIRMAZ (çözüm zaten yeni durumu yansıtır).
@@ -19,13 +20,15 @@
  * kelepçelenir, üretim/tüketim sayıları bir sonraki çözümde düzelir.
  */
 import { icerikTablosu } from "../ekonomi/tablo";
+import { hizlandirilmisSure } from "../erkenOyun";
 import { maliyetYeterliMi, maliyetiDus } from "../ekonomi/maliyet";
+import type { BolgeHesabi } from "../ekonomi/uretim";
 import { bolgeDurumunaYaz, bolgeHesapla, bolgeOranlariUygula, bolgeVerimCoz, uretimMuhasebesi } from "../ekonomi/uretim";
 import { kenarKullanilabilirMi, pazarCarpanlari } from "../politika";
 import { carpBol, tabanBol } from "../sabit";
 import { hazineOranAyarla, hazineUzlastir, oyuncuBul } from "../stok";
 import { MILI, PPM, SAAT } from "../tipler";
-import type { Baglam, BolgeDurumu, Dunya, Komut, KomutSonucu, Mili, OyuncuDurumu, OyuncuId } from "../tipler";
+import type { Baglam, Dunya, Komut, KomutSonucu, Mili, OyuncuDurumu, OyuncuId } from "../tipler";
 import { akisCoz, akisGecikmeleriniPlanla } from "./akis";
 import { kapsamiHesapla } from "./kapsamHesap";
 
@@ -35,27 +38,57 @@ function sifirMatris(n: number, m: number): number[][] {
   return a;
 }
 
-/** Adım 6: oyuncunun hazine oranı = vergi + ihracat geliri − ithalat gideri (mili-para/saat). */
-function hazineOraniniHesapla(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: readonly { bolge: BolgeDurumu; fr4: number[] }[]): number {
+/** Bir oyuncunun saatlik para kalemleri (mili-para/saat). */
+interface HazineKalemleri {
+  /** Vergi + ihracat geliri. */
+  gelir: number;
+  /** İthalat gideri + para lavaboları (tesis işletme gideri ve birlik maaşı). */
+  gider: number;
+}
+
+/**
+ * Oyuncunun saatlik gelir ve giderini hesaplar.
+ * - Gelir: vergi + ihracat (gerçekleşen oran × fiyat × ihracat çarpanı).
+ * - Gider: ithalat + PARA LAVABOLARI: aktif tesis başına tesisIsletmeParasiSaat ve birlik başına birlikMaasiSaat.
+ * `hesaplar` verilirse ihracat, çözümün girdi karşılanma oranıyla (fr4) ölçeklenir; verilmezse (verim çözümünden
+ * ÖNCE, ödeme gücü tahmini için) ihracat emirlerinin son gerçekleşen oranı kullanılır.
+ */
+function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: readonly BolgeHesabi[] | null): HazineKalemleri {
   const p = ctx.ic.param;
   const carp = pazarCarpanlari(d, ctx, o.id);
-  let net = 0;
-  for (const h of hesaplar) {
-    const b = h.bolge;
+  let gelir = 0;
+  let gider = 0;
+  for (const b of d.bolgeler) {
     if (b.sahip !== o.id) continue;
-    net += carpBol(carpBol(b.nufus, p.ekonomi.vergiTabani1000Saat, 1000), o.vergiPpm, PPM);
+    gelir += carpBol(carpBol(b.nufus, p.ekonomi.vergiTabani1000Saat, 1000), o.vergiPpm, PPM);
+    const fr4 = hesaplar === null ? null : (hesaplar[b.indeks] as BolgeHesabi).fr4;
     for (const e of b.ticaretEmirleri) {
       if (e.gerceklesenSaat <= 0) continue;
       const fiyat = d.pazar.fiyat[e.mal] as number;
       if (e.yon === "ihracat") {
-        const gercek = carpBol(e.gerceklesenSaat, h.fr4[e.mal] as number, PPM);
-        net += carpBol(carpBol(gercek, fiyat, MILI), carp.ihracatPpm, PPM);
+        const gercek = fr4 === null ? e.gerceklesenSaat : carpBol(e.gerceklesenSaat, fr4[e.mal] as number, PPM);
+        gelir += carpBol(carpBol(gercek, fiyat, MILI), carp.ihracatPpm, PPM);
       } else {
-        net -= carpBol(carpBol(e.gerceklesenSaat, fiyat, MILI), carp.ithalatPpm, PPM);
+        gider += carpBol(carpBol(e.gerceklesenSaat, fiyat, MILI), carp.ithalatPpm, PPM);
       }
     }
+    let aktifTesis = 0;
+    for (const t of b.tesisler) if (t.aktif) aktifTesis++;
+    let birlik = 0;
+    for (const a of b.birlikler) birlik += a;
+    gider += aktifTesis * p.ekonomi.tesisIsletmeParasiSaat + birlik * p.askeri.birlikMaasiSaat;
   }
-  return net;
+  return { gelir, gider };
+}
+
+/**
+ * Ödeme gücü (ppm): hazine 0 iken ve net oran negatifse gelir/gider, aksi halde PPM.
+ * "Maaş ödenemiyor": bu oran oyuncunun tüm tesislerinin verimini çarpar (bolgeHesapla).
+ * Hazine bu çözümde uzlaştırılmıştır (adım 0); hazine > 0 iken tesisler tam verimle çalışır.
+ */
+function odemeGucuPpm(o: OyuncuDurumu, k: HazineKalemleri): number {
+  if (o.hazine.miktar > 0 || k.gider <= k.gelir) return PPM;
+  return k.gelir <= 0 ? 0 : carpBol(k.gelir, PPM, k.gider);
 }
 
 export function lojistikCoz(d: Dunya, ctx: Baglam): void {
@@ -70,7 +103,10 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   for (const o of d.oyuncular) hazineUzlastir(d, o.id);
 
   // 1. Potansiyel, talep, arz ve fazla
-  const hesaplar = d.bolgeler.map((_, r) => bolgeHesapla(d, ctx, r));
+  // Ödeme gücü (para lavaboları): hazinesi 0 ve net oranı negatif olan oyuncunun tesis verimi kısılır.
+  const odeme = new Map<OyuncuId, number>();
+  for (const o of d.oyuncular) odeme.set(o.id, odemeGucuPpm(o, hazineKalemleri(d, ctx, o, null)));
+  const hesaplar = d.bolgeler.map((b, r) => bolgeHesapla(d, ctx, r, b.sahip === null ? PPM : (odeme.get(b.sahip) ?? PPM)));
   const fazla = sifirMatris(n, nm);
   const askeriTalep = sifirMatris(n, nm);
   for (const h of hesaplar) {
@@ -100,7 +136,10 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   }
 
   // 6. Hazine oranları
-  for (const o of d.oyuncular) hazineOranAyarla(d, o.id, hazineOraniniHesapla(d, ctx, o, hesaplar));
+  for (const o of d.oyuncular) {
+    const k = hazineKalemleri(d, ctx, o, hesaplar);
+    hazineOranAyarla(d, o.id, k.gelir - k.gider);
+  }
 
   // 7. Kenar kullanımı
   for (let e = 0; e < d.kenarlar.length; e++) {
@@ -137,7 +176,7 @@ export function lojistikKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut
       if (eksik !== null) return hata(eksik);
       if (!maliyetiDus(d, ctx, uc, oyuncu, tb.gelistirmeMaliyeti, lp.gelistirmeParasi)) return hata("yetersiz hazine");
       const id = ctx.yeniKimlik(d);
-      const bitis = d.zaman + lp.gelistirmeSuresiSaat * SAAT;
+      const bitis = d.zaman + hizlandirilmisSure(d, ctx, oyuncu, lp.gelistirmeSuresiSaat * SAAT);
       d.insaatlar.push({ id, tur: "kenar", sahip: oyuncu, bolge: uc, hedef: k.kenar, bitis });
       ctx.planla(d, bitis, { tur: "insaat_bitti", insaat: id });
       return { tamam: true };

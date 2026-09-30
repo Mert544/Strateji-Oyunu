@@ -7,8 +7,10 @@
  * - `arastir`: ön koşullar açık, oyuncuda yok, devam eden araştırma yok, maliyet hazineden düşer.
  *   Bitişte `arastirma_bitti` olayı planlanır; aynı anda yalnızca tek araştırma olabilir.
  */
+import { carpliSure, sureCarpaniPpm } from "./erkenOyun";
+import { carpBol } from "./sabit";
 import { hazineEkle, oyuncuBul } from "./stok";
-import { GUN } from "./tipler";
+import { GUN, PPM } from "./tipler";
 import type { Baglam, Dunya, Komut, KomutSonucu, OyuncuDurumu, OyuncuId } from "./tipler";
 
 function hata(mesaj: string): KomutSonucu {
@@ -38,6 +40,22 @@ function teknolojiVarMi(ctx: Baglam, o: OyuncuDurumu, teknolojiId: string): bool
 }
 
 /**
+ * Teknoloji yayılımı (yetişme yardımı): teknolojiyi bilen DİĞER oyuncuların payı
+ * p = bilen / (oyuncuSayisi − 1) (tek oyuncuda 0). Maliyet ve süre çarpanı (ppm) =
+ * PPM − p × yayilimIndirimiPpm / PPM. Bilen yoksa PPM (indirim yok).
+ */
+export function teknolojiYayilimiPpm(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, teknoloji: number): number {
+  const digerSayisi = d.oyuncular.length - 1;
+  if (digerSayisi <= 0) return PPM;
+  let bilen = 0;
+  for (const o of d.oyuncular) {
+    if (o.id !== oyuncu && o.teknolojiler.includes(teknoloji)) bilen++;
+  }
+  if (bilen === 0) return PPM;
+  return PPM - carpBol(bilen, ctx.ic.param.teknoloji.yayilimIndirimiPpm, digerSayisi);
+}
+
+/**
  * Komut: arastir. Maliyet hazineden anında düşer; `sureGun` sonra teknoloji açılır.
  * Tüm denetimler geçmeden durum değişmez (hazine en son düşülür).
  */
@@ -53,8 +71,12 @@ export function teknolojiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komu
   for (const onKosul of tek.onKosullar) {
     if (!teknolojiVarMi(ctx, o, onKosul)) return hata(`on kosul eksik: ${onKosul}`);
   }
-  if (!hazineEkle(d, oyuncu, -tek.maliyet)) return hata("hazine yetersiz");
-  const bitis = d.zaman + tek.sureGun * GUN;
+  // Yayılım maliyeti ve süreyi, erken oyun hızlandırması yalnızca süreyi kısaltır.
+  const yayilim = teknolojiYayilimiPpm(d, ctx, oyuncu, ti);
+  const maliyet = carpBol(tek.maliyet, yayilim, PPM);
+  if (!hazineEkle(d, oyuncu, -maliyet)) return hata("hazine yetersiz");
+  const sure = carpliSure(carpBol(tek.sureGun * GUN, yayilim, PPM), sureCarpaniPpm(d, ctx, oyuncu));
+  const bitis = d.zaman + sure;
   o.arastirma = { teknoloji: ti, bitis };
   ctx.planla(d, bitis, { tur: "arastirma_bitti", oyuncu });
   return { tamam: true };

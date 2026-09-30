@@ -60,6 +60,8 @@ export function kucukVeri(): VeriPaketi {
         hazine: 5_000_000,
         birlikler: { piyade: 3, zirhli: 1 },
       },
+      // Fikstürde erken oyun hızlandırması kapalı (çarpan sabit %100); testler gerektiğinde açar.
+      erkenOyun: { baslangicCarpaniPpm: 1_000_000, sabitSaat: 24, bitisSaat: 168 },
       nufus: {
         isgucuPpm: 400_000,
         tuketim1000Saat: { gida: 1_000 },
@@ -71,6 +73,8 @@ export function kucukVeri(): VeriPaketi {
         vergiTabani1000Saat: 5_000,
         varsayilanVergiPpm: 200_000,
         vergiBuyumeEsigiPpm: 400_000,
+        // Fikstürde para lavaboları kapalı; testler gerektiğinde açar.
+        tesisIsletmeParasiSaat: 0,
       },
       pazar: {
         fiyatEsnekligiPpm: 750_000,
@@ -100,7 +104,10 @@ export function kucukVeri(): VeriPaketi {
         yeniOyuncuKorumasiGun: 3,
         araziSavunmaPpm: { kiyi: 1_000_000, dag: 1_500_000, ova: 1_000_000, liman: 1_100_000, dar_gecit: 1_800_000 },
         savunmaDurusuCarpaniPpm: 1_300_000,
+        birlikMaasiSaat: 0,
       },
+      // Fikstürde teknoloji yayılımı kapalı.
+      teknoloji: { yayilimIndirimiPpm: 0 },
     },
   };
 }
