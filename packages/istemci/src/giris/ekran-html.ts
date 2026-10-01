@@ -9,7 +9,7 @@
 import { ikon } from "../tasarim/ikon";
 import { esc, sureMetni } from "../arayuz/bicim";
 import type { GirisDurumu } from "./akis";
-import { AD_MAX, adCanliHatasi, adHataAnahtari, adOnizleme } from "./ad";
+import { AD_MAX, AD_YER, adCanliHatasi, adHataAnahtari, adOnizleme } from "./ad";
 import { destekEpostasi, kvkkAdresi, metin, metinHam, metinVar, rizaMetni } from "./giris-metin";
 
 export interface EkranBaglami {
@@ -99,7 +99,7 @@ function g1(d: GirisDurumu, b: EkranBaglami): string {
     </div>
   </form>
   <p class="gr-kucuk">${esc(metin("giris.G1.kucuk_yazi"))}</p>
-  ${riza !== "" ? `<p class="gr-kucuk" data-kod="riza">${esc(riza)}</p>` : ""}
+  ${riza !== "" ? `<p class="gr-kucuk" data-kod="riza">${esc(metin("giris.G1.riza", { riza_metni: riza }))}</p>` : ""}
   ${kvkk !== "" ? `<a class="gr-baglanti" data-eylem="veri-kullanimi" href="${esc(kvkk)}" target="_blank" rel="noopener noreferrer">${esc(metin("giris.G1.veri_baglanti"))}</a>` : ""}
 </section>`;
 }
@@ -163,10 +163,10 @@ export function adAlaniHtml(deger: string, hata: { anahtar: string; kod: string 
   return `<div class="gr-alan">
       <label class="gr-etiket" for="${id}">${esc(metin("giris.G4.alan"))}</label>
       <input id="${id}" class="gr-girdi" type="text" name="ad" maxlength="${AD_MAX}" autocomplete="nickname" autocapitalize="off" spellcheck="false" value="${esc(deger)}" aria-describedby="${o.onek}ad-ipucu ${o.onek}ad-hata"${goster ? ` aria-invalid="true" data-durum="hata"` : ""}${o.yukleniyor ? ` aria-busy="true"` : ""}>
-      <span class="gr-sayac" data-alan="ad-sayac">${esc(metin("giris.G4.sayac", { n: deger.length }))}</span>
+      <span class="gr-sayac" data-alan="ad-sayac">${esc(metin("giris.G4.sayac", { n: deger.length, ...AD_YER }))}</span>
       <p id="${o.onek}ad-ipucu" class="gr-ipucu">${esc(metin("giris.G4.buyuk_harf"))}</p>
       <p class="gr-onizleme" data-alan="ad-onizleme" aria-live="polite">${onizleme !== null ? esc(metin("giris.G4.onizleme", { ad: onizleme })) : ""}</p>
-      <p id="${o.onek}ad-hata" class="gr-hata" role="alert"${goster ? ` data-kod="${esc(goster.kod)}"` : ""}>${goster ? esc(metin(goster.anahtar)) : ""}</p>
+      <p id="${o.onek}ad-hata" class="gr-hata" role="alert"${goster ? ` data-kod="${esc(goster.kod)}"` : ""}>${goster ? esc(metin(goster.anahtar, AD_YER)) : ""}</p>
     </div>`;
 }
 

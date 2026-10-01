@@ -14,6 +14,9 @@ const HARF = /[A-Za-zÇĞİÖŞÜçğıöşü]/;
 /** Çift tırnak (düz ve kıvrık) ve uzun tire (en/em): kullanıcı çoğu kez bunları yapıştırır; "karakter" yerine daha açık bir ileti. */
 const TIRNAK_TIRE = /["“”„‟″—–]/;
 
+/** Metin yer tutucuları (`{en_az}`, `{en_cok}`): sabit yazılmaz, kuraldan gelir. */
+export const AD_YER = { en_az: AD_MIN, en_cok: AD_MAX } as const;
+
 export type AdHatasi = "uzunluk" | "karakter" | "cift_tirnak_tire" | "bosluk_kenar" | "bosluk_art_arda" | "harf_gerekli";
 
 /** İlk ihlal (çekirdek sırası) ya da null (geçerli). Düzeltme yapılmaz (kırpma yok). */

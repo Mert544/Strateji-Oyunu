@@ -9,7 +9,7 @@
  */
 import type { GirisAkisi, GirisDurumu } from "./akis";
 import { bildir } from "../arayuz/bildirim";
-import { adCanliHatasi, adHataAnahtari, adOnizleme } from "./ad";
+import { AD_YER, adCanliHatasi, adHataAnahtari, adOnizleme } from "./ad";
 import { girisHtml, hesapHtml } from "./ekran-html";
 import { metin } from "./giris-metin";
 
@@ -27,14 +27,14 @@ export interface GirisGorunumuSecenekleri {
  */
 export function adAlaniniGuncelle(kok: ParentNode, deger: string): void {
   const sayac = kok.querySelector<HTMLElement>("[data-alan='ad-sayac']");
-  if (sayac) sayac.textContent = metin("giris.G4.sayac", { n: deger.length });
+  if (sayac) sayac.textContent = metin("giris.G4.sayac", { n: deger.length, ...AD_YER });
   const onizleme = adOnizleme(deger);
   const on = kok.querySelector<HTMLElement>("[data-alan='ad-onizleme']");
   if (on) on.textContent = onizleme !== null ? metin("giris.G4.onizleme", { ad: onizleme }) : "";
   const canli = adCanliHatasi(deger);
   const hata = kok.querySelector<HTMLElement>(".gr-alan .gr-hata");
   if (hata) {
-    hata.textContent = canli !== null ? metin(adHataAnahtari(canli)) : "";
+    hata.textContent = canli !== null ? metin(adHataAnahtari(canli), AD_YER) : "";
     if (canli !== null) hata.setAttribute("data-kod", "ad_gecersiz");
     else hata.removeAttribute("data-kod");
   }

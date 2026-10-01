@@ -551,6 +551,7 @@ describe("D-7 marka formu", () => {
     expect(f({ ad: "a  b" })).toContain("Art arda boşluk olamaz.");
     expect(f({ ad: "a" })).toContain(`role="alert"></p>`);
     expect(f({ ad: "a", gonder: true })).toContain("Marka adı 2 ile 24 karakter arasında olmalı.");
+    expect(f({ ad: "a", gonder: true })).not.toMatch(/\{[a-z_]+\}/);
     expect(f({ ad: "ab ", gonder: true })).toContain("Marka adı boşlukla başlayıp bitemez.");
     expect(f({ ad: "12", gonder: true })).toContain("Marka adında en az bir harf olmalı.");
   });

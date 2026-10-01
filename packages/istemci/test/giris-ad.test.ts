@@ -4,7 +4,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { adKanonik, adSozdizimiHatasi } from "@bolge/cekirdek";
-import { AD_MAX, adCanliHatasi, adHataAnahtari, adHatasi, adKucuk, adOnizleme } from "../src/giris/ad";
+import { AD_MAX, AD_YER, adCanliHatasi, adHataAnahtari, adHatasi, adKucuk, adOnizleme } from "../src/giris/ad";
 import type { GirisDurumu } from "../src/giris/akis";
 import { GIRIS_YOLLARI as PROTOKOL_YOLLARI } from "@bolge/protokol";
 import { GIRIS_YOLLARI, GirisApi } from "../src/giris/api";
@@ -97,6 +97,14 @@ describe("g4 iskeleti (T1 sözleşmesi: öğe, sınıf, öznitelik)", () => {
     expect(girisHtml(durum(), b("IŞIK İz"))).toContain("Dünyada böyle görünürsün: ışık iz");
     const gecersiz = girisHtml(durum(), b("a"));
     expect(gecersiz).toContain(`data-alan="ad-onizleme" aria-live="polite"></p>`);
+  });
+
+  it("ham yer tutucu çıkmaz: sayaç {en_cok}, uzunluk hatası {en_az}/{en_cok} kuraldan doldurulur", () => {
+    expect(girisHtml(durum(), b("a"))).not.toMatch(/\{[a-z_]+\}/);
+    const kisa = girisHtml(durum({ hata: { kod: "ad_gecersiz", anahtar: "giris.G4.uzunluk", eylem: "alanda-kal" } }), b("a"));
+    expect(kisa).toContain("Ad 2 ile 24 karakter arasında olmalı.");
+    expect(kisa).not.toMatch(/\{[a-z_]+\}/);
+    expect(metin("giris.G4.sayac", { n: 5, ...AD_YER })).toBe("5 / 24");
   });
 
   it("canlı hata (izinsiz karakter) ve sunucu hatası alanda: aria-invalid, data-kod, role=alert", () => {

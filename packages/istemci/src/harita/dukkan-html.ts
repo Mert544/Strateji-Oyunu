@@ -8,7 +8,7 @@
  * D-6 kademe ve kampanya, D-7 marka formu, D-8 özet, D-8.1 menü ve kaldırma onayı, Dikkat maddeleri.
  */
 import { esc, fmt, paraIsaretli, paraMili } from "../arayuz/bicim";
-import { adCanliHatasi, adHatasi, adKucuk } from "../giris/ad";
+import { AD_MAX, AD_MIN, adCanliHatasi, adHatasi, adKucuk } from "../giris/ad";
 import { ikon } from "../tasarim/ikon";
 import { MARKA_RENK_SAYISI, MARKA_SIMGELERI, markaRenkBelirteci } from "../tasarim/marka";
 import type { IkonAdi } from "../tasarim/ikon";
@@ -438,7 +438,7 @@ export function markaFormuHtml(g: MarkaFormuGirdisi): string {
     `<span class="dk-sayac" data-alan="marka-sayac">${esc(`${g.ad.length} / 24`)}</span>` +
     `<p id="dk-marka-not" class="dk-ipucu">${enc("dukkan.D7.buyuk_harf_notu")} ${enc("dukkan.D7.kvkk_uyari")}</p>` +
     `<p class="dk-onizleme" data-alan="marka-onizleme" aria-live="polite">${onizleme !== null ? enc("dukkan.D7.onizleme", { kucuk: onizleme }) : ""}</p>` +
-    `<p id="dk-marka-hata" class="dk-hata" role="alert">${hata ? enc(hata) : ""}</p>` +
+    `<p id="dk-marka-hata" class="dk-hata" role="alert">${hata ? enc(hata, { en_az: AD_MIN, en_cok: AD_MAX }) : ""}</p>` +
     `<div class="dk-palet" role="radiogroup" aria-label="${enc("dukkan.D7.simge_grup")}">${simgeler}</div>` +
     `<div class="dk-palet" role="radiogroup" aria-label="${enc("dukkan.D7.renk_grup")}">${renkler}</div>` +
     `<div class="yk-dugmeler"><button type="button" class="birincil" data-eylem="marka-kaydet"${g.gonderiyor ? ` disabled data-durum="yukleniyor"` : ""}>${enc("dukkan.D7.dugme_kaydet")}</button>` +
