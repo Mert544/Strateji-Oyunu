@@ -76,7 +76,7 @@ Postadaki bağlantı varsayılan olarak sunucunun `GET /giris/onay` sayfasına g
 - **Değişiklik sınırı:** günde (00:00 TRT, `turkiyeGeceYarisi`; kampanya ve S-18 ile aynı gün sınırı) en çok BİR değişiklik. Otomatik addan oyuncunun İLK seçtiği ada geçiş sayılmaz (ilk seçimden sonra aynı gün bir değişiklik serbesttir, ikincisi 429 `ad_sinir`); aynı adı yeniden seçmek değişiklik sayılmaz. Olay kayıtlarında oyuncu kimliği sabittir; ekranda o anki ad görünür. Hesap başına ad denemesi ayrıca hız sınırlıdır (10 ani, dakikada 1).
 - **Yasaklı ad listesi:** `packages/veri/icerik/yasakli-adlar.json` (T3; yol `--yasakli-adlar`/`BOLGE_YASAKLI_ADLAR`). Yalnız sunucuda okunur (istemci/çekirdek/protokol kaynağında geçmez, testle). Dosya yok/bozuksa `--uretim`'de açılış DURUR; geliştirmede uyarı verilir ve boş listeyle devam edilir.
 - **Öneri:** `GET /giris/ad-oner` (oturumlu, oturum başına dakikada 10) yeni bir opak ad döner ve KAYDETMEZ (G-6).
-- **Başkalarına gösterim:** kare üzerinden (`IlgiKaresi.adlar?`, ayrı dal: `kare-adlar`).
+- **Başkalarına gösterim:** kare üzerinden: `IlgiKaresi.adlar?: Record<oyuncuId, ad>` (isteğe bağlı nesne alanı; demete öğe eklenmez): karede görünen sahiplerin (bölge sahibi, ilgi alanındaki ilçelerin hücre sahipleri, isteyenin kendisi) adları; adı olmayanın girdisi yoktur; `KareDeltasi.adlar?` yalnız yeni/değişen girdileri taşır (istemci birikimli önbellek tutar). Adlar çekirdek durumuna girmez; sunucuda hesap önbelleğinden (`GirisHizmeti.adCoz` → `sunucuBaslat({ adCozucu })`) eklenir, `durumOzeti` değişmez.
 
 ## 7. Hesap koruma ve kötüye kullanım
 

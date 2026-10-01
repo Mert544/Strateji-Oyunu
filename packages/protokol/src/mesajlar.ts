@@ -310,12 +310,15 @@ const oyuncuKaresiSemasi = z.object({
     })
     .optional(),
 });
+/** Görünen adlar: oyuncu kimliği -> ad (sunucu üretimli ya da oyuncunun seçtiği; 2-24 karakter). */
+const adlarSemasi = z.record(z.string().min(1).max(32), z.string().min(2).max(24));
 export const IlgiKaresiSemasi = z.object({
   t: tam,
   bolgeler: z.array(bolgeKaresiSemasi),
   fiyat: z.array(tam),
   oyuncu: oyuncuKaresiSemasi.optional(),
   ilceler: z.array(ilceKaresiSemasi).optional(),
+  adlar: adlarSemasi.optional(),
 });
 export const KareDeltasiSemasi = z.object({
   t: tam,
@@ -325,6 +328,7 @@ export const KareDeltasiSemasi = z.object({
   oyuncu: oyuncuKaresiSemasi.nullable().optional(),
   ilceler: z.array(ilceKaresiSemasi).optional(),
   cikanIlceler: z.array(z.string()).optional(),
+  adlar: adlarSemasi.optional(),
 });
 const komutSonucuSemasi = z.union([z.object({ tamam: z.literal(true) }), z.object({ tamam: z.literal(false), hata: z.string() })]);
 const dizinSemasi = z.object({

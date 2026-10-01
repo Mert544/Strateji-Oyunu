@@ -47,6 +47,11 @@ export interface KamuGrubuKaresi {
 }
 
 export interface KareSecenekleri {
+  /**
+   * Oyuncu kimliğinden görünen ad (sunucu hesap deposundan verir; ÇEKİRDEK DURUMUNA GİRMEZ, `durumOzeti` etkilenmez). Verilirse karedeki sahiplerin
+   * (bölge sahibi, ilgi alanındaki ilçelerin hücre sahipleri ve isteyenin kendisi) adları `IlgiKaresi.adlar`'a yazılır; adı olmayan oyuncu girdisizdir.
+   */
+  adlar?: (oyuncu: OyuncuId) => string | undefined;
   /** İlçe karelerine kamu arsası gruplarını (`IlceKaresi.kamu`) ekle (varsayılan hayır; büyük olabilir). */
   kamuListesi?: boolean;
   /** İlçe karelerine ayrılmış hücre listesini (`IlceKaresi.ayrilmis`) ekle (varsayılan hayır; büyük). */
@@ -195,6 +200,11 @@ export interface IlgiKaresi {
   oyuncu?: OyuncuKaresi;
   /** Mülk kipinde ilgi alanındaki ilçeler (kimliğe göre sıralı); bölge kipinde yok. */
   ilceler?: IlceKaresi[];
+  /**
+   * Bu karede görünen oyuncuların (bölge sahipleri, ilçe hücre sahipleri, isteyenin kendisi) GÖRÜNEN ADLARI: `oyuncu kimliği -> ad` (küçük harfli, 2-24 karakter;
+   * anahtarlar sıralı). Adı olmayan oyuncunun girdisi yoktur (istemci kimlikten varsayılan gösterir); sunucuda görünen ad özelliği kapalıysa alan yoktur.
+   */
+  adlar?: Record<OyuncuId, string>;
 }
 
 export interface KareDeltasi {
@@ -211,6 +221,11 @@ export interface KareDeltasi {
   ilceler?: IlceKaresi[];
   /** Mülk kipi: ilgi alanından çıkan ilçeler. */
   cikanIlceler?: string[];
+  /**
+   * Yeni ya da DEĞİŞEN görünen adlar (`oyuncu kimliği -> ad`; yalnız değişenler, ad değişince yeni ad gelir). Görünümden çıkan oyuncunun adı bildirilmez: istemci adları
+   * önbellek olarak tutar (`deltaUygula` birikimlidir).
+   */
+  adlar?: Record<OyuncuId, string>;
 }
 
 const DURUS: Record<string, 0 | 1 | 2> = { normal: 0, savunma: 1, geri_cekil: 2 };
@@ -368,6 +383,12 @@ export function ilgiKaresiCikar(
     bolgeler.push(girdi);
   }
   const kare: IlgiKaresi = { t: d.zaman, bolgeler, fiyat: [...d.pazar.fiyat] };
+  // Görünen ad için karede geçen sahipler (yalnız `secenek.adlar` verilmişse toplanır).
+  const sahipler: Set<string> | null = secenek.adlar ? new Set<string>() : null;
+  if (sahipler) {
+    if (oyuncu !== null) sahipler.add(oyuncu);
+    for (const b of bolgeler) if (b.genel.sahip !== null) sahipler.add(b.genel.sahip);
+  }
   if (oyuncu !== null) {
     const o = d.oyuncular.find((x) => x.id === oyuncu);
     if (o) {
@@ -434,6 +455,7 @@ export function ilgiKaresiCikar(
       if (!istenen.has(h.ilce)) continue;
       let liste = hucreler.get(h.ilce);
       if (!liste) hucreler.set(h.ilce, (liste = []));
+      sahipler?.add(h.sahip);
       const girdi: HucreKaresi = [h.id, h.sahip, h.sinif, h.tesis ?? -1, h.insaat ?? -1];
       let tur: string | undefined;
       if (h.tesis !== undefined || h.insaat !== undefined) {
@@ -463,6 +485,14 @@ export function ilgiKaresiCikar(
         }
         return girdi;
       });
+  }
+  if (sahipler && secenek.adlar) {
+    const adlar: Record<OyuncuId, string> = {};
+    for (const id of [...sahipler].sort()) {
+      const ad = secenek.adlar(id);
+      if (ad !== undefined) adlar[id] = ad;
+    }
+    if (Object.keys(adlar).length > 0) kare.adlar = adlar;
   }
   return kare;
 }
@@ -494,6 +524,12 @@ export function kareFarki(eski: IlgiKaresi, yeni: IlgiKaresi): KareDeltasi {
   };
   if (!ayni(eski.fiyat, yeni.fiyat)) delta.fiyat = yeni.fiyat;
   if (!ayni(eski.oyuncu, yeni.oyuncu)) delta.oyuncu = yeni.oyuncu ?? null;
+  // Görünen adlar: yalnız yeni ya da değişen girdiler (sıralı).
+  if (yeni.adlar !== undefined) {
+    const degisen: Record<OyuncuId, string> = {};
+    for (const id of Object.keys(yeni.adlar).sort()) if (eski.adlar?.[id] !== yeni.adlar[id]) degisen[id] = yeni.adlar[id] as string;
+    if (Object.keys(degisen).length > 0) delta.adlar = degisen;
+  }
   if (eski.ilceler !== undefined || yeni.ilceler !== undefined) {
     const eskiIlce = new Map((eski.ilceler ?? []).map((c) => [c.id, c]));
     const yeniIlce = new Set((yeni.ilceler ?? []).map((c) => c.id));
@@ -523,7 +559,8 @@ export function deltaBosMu(delta: KareDeltasi): boolean {
     delta.fiyat === undefined &&
     delta.oyuncu === undefined &&
     delta.ilceler === undefined &&
-    delta.cikanIlceler === undefined
+    delta.cikanIlceler === undefined &&
+    delta.adlar === undefined
   );
 }
 
@@ -539,6 +576,13 @@ export function deltaUygula(kare: IlgiKaresi, delta: KareDeltasi): IlgiKaresi {
   };
   const oyuncu = delta.oyuncu === undefined ? kare.oyuncu : delta.oyuncu;
   if (oyuncu) yeni.oyuncu = oyuncu;
+  // Adlar birikimlidir: önceki adlar + delta'daki yeni/değişenler (anahtarlar sıralı).
+  if (kare.adlar !== undefined || delta.adlar !== undefined) {
+    const birlesik: Record<OyuncuId, string> = { ...kare.adlar, ...delta.adlar };
+    const sirali: Record<OyuncuId, string> = {};
+    for (const id of Object.keys(birlesik).sort()) sirali[id] = birlesik[id] as string;
+    yeni.adlar = sirali;
+  }
   if (kare.ilceler !== undefined || delta.ilceler !== undefined) {
     const ilce = new Map((kare.ilceler ?? []).map((c) => [c.id, c]));
     for (const c of delta.cikanIlceler ?? []) ilce.delete(c);

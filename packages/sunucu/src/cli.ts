@@ -379,6 +379,7 @@ async function ana(): Promise<void> {
   let calisanPort = port;
   let kimlik: KimlikDogrulayici;
   let giris: GirisUclari | undefined;
+  let adCozucu: ((oyuncu: string) => string | undefined) | undefined;
   if (kimlikKipi.kip === "gelistirme") kimlik = new GelistirmeKimligi(sir);
   else {
     if (!depo.hesap) throw new Error("secilen depo hesap deposu sunmuyor (e-posta girisi icin bellek, dosya ya da pg)");
@@ -407,6 +408,7 @@ async function ana(): Promise<void> {
       ...(a["giris-sonrasi"] !== undefined ? { girisSonrasiAdres: a["giris-sonrasi"] } : {}),
     });
     kimlik = hizmet.kimlik;
+    adCozucu = (o) => hizmet.adCoz(o);
     await hizmet.adlariYukle(); // bellek onbellegi (kare yolu) ve eski hesaplarin otomatik adi
   }
   let oturumKaydi: OturumKaydedici | undefined;
@@ -423,6 +425,7 @@ async function ana(): Promise<void> {
     kimlik,
     ...(oturumKaydi ? { oturumKaydi } : {}),
     ...(giris ? { giris } : {}),
+    ...(adCozucu ? { adCozucu } : {}),
     port,
     host: a.host as string,
     hizSiniri: { kapasite: kapasite ?? 20, saniyeBasina: saniyeBasina ?? 5 },

@@ -127,7 +127,8 @@ export async function girisOrtami(s: GirisOrtamiSecenekleri = {}): Promise<Giris
     ...s.hizmet,
   });
   const uclar = new GirisUclari({ hizmet, izinliKokenler: [IZINLI], ...s.uclar });
-  const ts = await testSunucusu({ veri: s.veri ?? mulkVerisi(), sunucu: { kimlik: hizmet.kimlik, giris: uclar } });
+  // Görünen ad açıksa (adKurali) kareye hizmetin ad önbelleği bağlanır (CLI ile aynı bağ: `adCozucu`).
+  const ts = await testSunucusu({ veri: s.veri ?? mulkVerisi(), sunucu: { kimlik: hizmet.kimlik, giris: uclar, ...(hizmet.adAcik ? { adCozucu: (o: string) => hizmet.adCoz(o) } : {}) } });
   taban = `http://127.0.0.1:${ts.sunucu.port}`;
   uclar.kokenEkle(taban);
 

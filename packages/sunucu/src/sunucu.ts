@@ -87,6 +87,11 @@ export interface SunucuSecenekleri {
    */
   giris?: GirisBaglantisi;
   /**
+   * Oyuncu kimliğinden görünen ad (`GirisHizmeti.adCoz`; bellek önbelleği, eşzamanlı). Verilirse karelere `adlar` eklenir (ilgi alanındaki sahiplerin adları);
+   * çekirdek durumunu ve `durumOzeti`'ni ETKİLEMEZ. Verilmezse karede ad alanı yoktur.
+   */
+  adCozucu?: (oyuncu: string) => string | undefined;
+  /**
    * Oyun bağlantısı oturum olayı kaydı (İ2; `BOLGE_OTURUM_KAYDI=1`; varsayılan kapalı): oyuncunun ilk bağlantısı ve son bağlantısı bildirilir. Kayıt hatası
    * oyunu etkilemez. Giriş (kimlik) oturumu değildir.
    */
@@ -321,7 +326,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     const oyuncu = kareOyuncusu(b);
     const ilgi = ilgiAlaniKur(yazar.sim, b.istenen, oyuncu);
     const ilceIlgisi = ilceIlgisiKur(yazar.sim, b.istenenIlceler, oyuncu);
-    const kare = ilgiKaresiCikar(yazar.sim, ilgi, oyuncu, ilceIlgisi, { ayrilmisListesi: b.ayrilmis, kamuListesi: b.kamu });
+    const kare = ilgiKaresiCikar(yazar.sim, ilgi, oyuncu, ilceIlgisi, { ayrilmisListesi: b.ayrilmis, kamuListesi: b.kamu, ...(s.adCozucu ? { adlar: s.adCozucu } : {}) });
     if (tam || b.sonKare === null) {
       b.rev++;
       gonder(b, { tur: "kare", rev: b.rev, seq: yazar.seq, ilgi, ...(yazar.sim.dunya.mulk ? { ilceIlgisi } : {}), kare });
