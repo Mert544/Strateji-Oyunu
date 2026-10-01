@@ -116,7 +116,9 @@ export function bilinenYaniSatiri(kimlik: string): { etiket: string; deger: stri
 /** Nüfus: 1.000 altı tam sayı ("850"), binlerde "415 bin", milyonda "1,2 milyon" (tr-TR); sayı yoksa ya da geçersizse null (satır yok). */
 export function nufusMetni(n: number | null | undefined): string | null {
   if (n === null || n === undefined || !Number.isFinite(n) || n < 0) return null;
-  if (n < 1000) return fmt(Math.round(n));
-  if (n < 1_000_000) return `${fmt(Math.round(n / 1000))} bin`;
-  return `${fmt1(n / 1_000_000)} milyon`;
+  if (n < 999.5) return fmt(Math.round(n));
+  // 999.500 ve üstü milyon dalı: "1.000 bin" çıkmasın.
+  if (n < 999_500) return `${fmt(Math.round(n / 1000))} bin`;
+  const m = fmt1(n / 1_000_000);
+  return `${m.endsWith(",0") ? m.slice(0, -2) : m} milyon`;
 }

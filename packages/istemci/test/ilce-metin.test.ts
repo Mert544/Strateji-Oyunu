@@ -53,6 +53,11 @@ describe("ilçe sözlüğü", () => {
     expect(nufusMetni(415_300)).toBe("415 bin");
     expect(nufusMetni(415_600)).toBe("416 bin");
     expect(nufusMetni(1_234_000)).toBe("1,2 milyon");
+    expect(nufusMetni(999_499)).toBe("999 bin");
+    expect(nufusMetni(999_500)).toBe("1 milyon");
+    expect(nufusMetni(999_600)).toBe("1 milyon");
+    expect(nufusMetni(999.6)).toBe("1 bin");
+    expect(nufusMetni(1_000_000)).toBe("1 milyon");
     expect(nufusMetni(undefined)).toBeNull();
     expect(nufusMetni(null)).toBeNull();
     expect(nufusMetni(Number.NaN)).toBeNull();
