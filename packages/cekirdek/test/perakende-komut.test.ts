@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import { SISTEM_OYUNCUSU, Simulasyon } from "../src/motor";
 import { hucreBul, ilceBul, isletmeBul, mulkOyuncuBul } from "../src/mulk";
 import { aralik, prngOlustur } from "../src/prng";
+import { dunyaCoz, dunyaSerilestir } from "../src/serilestir";
 import { anlikHazine, anlikMiktar } from "../src/stok";
 import { GUN, SAAT } from "../src/tipler";
 import type { Komut } from "../src/tipler";
@@ -205,10 +206,50 @@ describe("dukkan_raf", () => {
     expect(reddedilir(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "ekmek" }, "fiyat degisimi icin 6 saat beklenmeli")).toBe("fiyat degisimi icin 6 saat beklenmeli");
     s.calistirKadar(t0 + 2 * SAAT + 30 * 60_000);
     expect(reddedilir(s, "a", { tur: "dukkan_fiyat", dukkan: id, yuva: 0, fiyat: 1 }, "fiyat degisimi icin 4 saat beklenmeli")).toBe("fiyat degisimi icin 4 saat beklenmeli"); // 3,5 -> 4
-    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: null }); // boşaltma muaf
-    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "ekmek" }); // boş yuvaya ilk doldurma muaf
+    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: null }); // boşaltma muaf (fiyatT SİLİNMEZ)
+    expect(dukkanlar(s)[0]!.e.dukkan!.raf[0]!.fiyatT).toBe(t0);
+    // fiyatT tanımlıyken boş yuvaya doldurma da bir değişimdir: sınır işler (döngü atlatması yok)
+    expect(reddedilir(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "ekmek" }, "fiyat degisimi icin 4 saat beklenmeli")).toBe("fiyat degisimi icin 4 saat beklenmeli");
     s.calistirKadar(s.dunya.zaman + 6 * SAAT);
-    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "un" }); // süre doldu
+    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "ekmek" }); // süre doldu: doldurma geçer ve fiyatT yazılır
+    expect(dukkanlar(s)[0]!.e.dukkan!.raf[0]!.fiyatT).toBe(s.dunya.zaman);
+  });
+
+  it("fiyatT döngüsü (A3/Ar-Ge kararı): yuvanın ilk doldurulması muaf ve fiyatT yazmaz; hemen fiyat serbest; fiyat -> boşalt -> doldur -> fiyat reddedilir; pencere dolunca geçer", () => {
+    const { s, dukkan } = dukkanliDunya(["a"]);
+    const id = dukkan["a"]!.id;
+    const yuva = () => dukkanlar(s)[0]!.e.dukkan!.raf[0]!;
+    const t0 = s.dunya.zaman;
+    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "ekmek" }, t0); // ilk doldurma
+    expect(yuva().fiyatT).toBeUndefined();
+    tamam(s, "a", { tur: "dukkan_fiyat", dukkan: id, yuva: 0, fiyat: 3 }, t0); // ilk kademe seçimi hemen serbest
+    expect(yuva().fiyatT).toBe(t0);
+    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: null }, t0); // boşalt: fiyatT kalır
+    expect(yuva().fiyatT).toBe(t0);
+    expect(reddedilir(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "ekmek" }, "fiyat degisimi icin 6 saat beklenmeli")).toBe("fiyat degisimi icin 6 saat beklenmeli"); // doldur reddedilir: döngü kapalı
+    // negatif kontrol (eski davranış): fiyatT silinseydi döngü sınırsız olurdu; burada pencere dolana kadar doldurma da fiyat değişimi de kapalı
+    expect(yuva().mal).toBeUndefined();
+    s.calistirKadar(t0 + 6 * SAAT);
+    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "ekmek" }); // pencere doldu: geçer, fiyatT yenilenir
+    expect(yuva().fiyatT).toBe(t0 + 6 * SAAT);
+    expect(reddedilir(s, "a", { tur: "dukkan_fiyat", dukkan: id, yuva: 0, fiyat: 1 }, "fiyat degisimi icin 6 saat beklenmeli")).toBe("fiyat degisimi icin 6 saat beklenmeli");
+  });
+
+  it("ilk doldur -> boşalt -> yeniden doldur (fiyatT hiç yazılmamış): muaf kalır, fiyatT tanımsız; boş yuvada kalan fiyatT'li kayıt göçsüz yüklenir ve sınırı sürdürür", () => {
+    const { s, dukkan } = dukkanliDunya(["a"]);
+    const id = dukkan["a"]!.id;
+    const yuva = () => dukkanlar(s)[0]!.e.dukkan!.raf[0]!;
+    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "ekmek" });
+    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: null });
+    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: "un" }); // hâlâ muaf
+    expect(yuva().fiyatT).toBeUndefined();
+    // fiyatT'li boş yuva kaydı (eski kod boşaltmada silerdi; yeni kod bırakır): serileştirme gidiş-dönüşünde aynı, yükleme göçsüz
+    tamam(s, "a", { tur: "dukkan_fiyat", dukkan: id, yuva: 0, fiyat: 3 });
+    s.calistirKadar(s.dunya.zaman + 6 * SAAT);
+    tamam(s, "a", { tur: "dukkan_raf", dukkan: id, yuva: 0, mal: null });
+    expect(yuva().fiyatT).toBeDefined();
+    const metin = dunyaSerilestir(s.dunya);
+    expect(dunyaSerilestir(dunyaCoz(metin))).toBe(metin);
   });
 });
 

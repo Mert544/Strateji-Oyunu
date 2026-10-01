@@ -413,7 +413,7 @@ export interface RafYuvasi {
   mal?: string;
   /** `perakende.fiyatKademeleriPpm` indeksi (tutar DEĞİL). Boş yuvada da varsayılan değerdedir. Kampanya kademesi seçiliyse ETKİN kademe kampanya penceresine göre belirlenir. */
   fiyat: number;
-  /** Son fiyat/mal DEĞİŞİMİ (ms; hız sınırı için). İlk doldurma ve boşaltma yazmaz. */
+  /** Son fiyat/mal DEĞİŞİMİ (ms; hız sınırı için). Yuvanın İLK doldurulması yazmaz (muaf); boşaltma SİLMEZ (fiyat -> boşalt -> doldur döngüsü sınırı atlayamaz); `fiyatT` tanımlıyken boş yuvaya doldurma da bir değişimdir. */
   fiyatT?: Ms;
   /** Kümülatif SATILAN MİKTAR (mili-birim; kayıpsız `ParaSayaci {n, a}`; para DEĞİL). İlk satış birikiminde doğar; mal değişince SIFIRLANMAZ (§7.1b). */
   satis?: ParaSayaci;

@@ -172,8 +172,8 @@ export function perakendeKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Pera
       const y = dk.raf[k.yuva] as RafYuvasi;
       if (k.mal === null) {
         if (y.mal === undefined) return hata("yuva zaten bos");
+        // Boşaltma `fiyatT`'yi SİLMEZ: fiyat değiştir -> boşalt -> doldur -> fiyat değiştir döngüsü hız sınırını atlayamaz (hız sınırı doldurmada denetlenir).
         delete y.mal;
-        delete y.fiyatT;
         y.fiyat = pk.p.varsayilanFiyatKademesi;
         return TAMAM;
       }
@@ -184,15 +184,15 @@ export function perakendeKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Pera
       for (let i = 0; i < dk.raf.length; i++) if (i !== k.yuva && (dk.raf[i] as { mal?: string }).mal === k.mal) return hata(`bu mal baska yuvada: ${k.mal}`);
       if (y.mal === k.mal) return hata(`yuva zaten bu malla dolu: ${k.mal}`);
       const dolu = y.mal !== undefined;
-      if (dolu) {
-        const hs = hizSiniri(d, pk, y.fiyatT);
-        if (hs !== null) return hata(hs);
-      }
-      // Uygula: mal yaz, kademe varsayılana döner; değiştirme `fiyatT` yazar, ilk doldurma yazmaz.
+      // Hız sınırı: `fiyatT` tanımlıysa (yuvada daha önce fiyat/mal DEĞİŞİMİ olmuşsa; boş yuvaya doldurma dahil) denetlenir. Yuvanın İLK doldurulması (`fiyatT` tanımsız) muaftır
+      // ve `fiyatT` tanımsız kalır: oyuncu rafı doldurup kademeyi hemen seçebilir.
+      const hs = hizSiniri(d, pk, y.fiyatT);
+      if (hs !== null) return hata(hs);
+      // Uygula: mal yaz, kademe varsayılana döner; değiştirme (dolu yuva ya da `fiyatT` tanımlı boş yuva) `fiyatT` yazar, yuvanın ilk doldurulması yazmaz.
+      const sayac = dolu || y.fiyatT !== undefined;
       y.mal = k.mal;
       y.fiyat = pk.p.varsayilanFiyatKademesi;
-      if (dolu) y.fiyatT = d.zaman;
-      else delete y.fiyatT;
+      if (sayac) y.fiyatT = d.zaman;
       return TAMAM;
     }
     case "dukkan_fiyat": {
