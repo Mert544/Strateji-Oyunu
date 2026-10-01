@@ -27,6 +27,10 @@ describe("ilk dükkân önerisi CSS (D. Ek)", () => {
     expect(dk).toMatch(/\.dk-stok\[data-durum="eksik"\]/);
     expect(dk).toMatch(/\.dk-oneri\[data-durum="kapali"\] \{ display: none; \}/);
   });
+  it("Defter adım kartı .dk-oneri'nin ikinci durumu (ayrı .dk-defter-kart yok)", () => {
+    expect(dk).toMatch(/\.dk-oneri\[data-tur="defter"\]/);
+    expect(dk).not.toMatch(/\.dk-defter-kart/);
+  });
   it("İşletmem düğmesinde öneri noktası --birincil (yuzey üstünde ≥ 4,5:1, tasarim.test çifti)", () => {
     expect(mp).toMatch(/\.isletme-dugme\[data-oneri="1"\]::after \{[^}]*background: var\(--birincil\)/);
   });

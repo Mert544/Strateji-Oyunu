@@ -106,3 +106,7 @@
 .dk-oneri-kapat { position: absolute; top: var(--s-1); right: var(--s-1); width: 44px; height: 44px; }
 .dk-stok { font-variant-numeric: tabular-nums; }
 .dk-stok[data-durum="eksik"] { color: var(--uyari-ink); }
+/* B7: Defter "sıradaki adım" kartı = .dk-oneri'nin ikinci durumu (data-tur="defter"); aynı bölgede tek kart gösterilir (dükkân önerisi öncelikli) */
+.dk-oneri[data-tur="defter"] { box-shadow: inset 3px 0 0 var(--birincil), var(--golge-2); }
+.dk-oneri-sag { font-size: var(--yazi-sm); color: var(--murekkep-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dk-oneri .mini-dugme { align-self: flex-start; min-height: 44px; }
