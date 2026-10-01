@@ -6,7 +6,7 @@
  * Ölçüm için ek kayıtlar tutar (yalnız okuma; simülasyonu etkilemez): komut günlüğü (kabul edilen ve reddedilen), sermaye harcaması
  * (arsa + yapı bedeli: komuttan önce/sonra hazine farkı) ve katılım kayıtları (ilçe, yurt hücre sayısı).
  */
-import { MILI, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikHazine } from "@bolge/cekirdek";
+import { MILI, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikHazine, yurtPlanla } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi, Komut, Ms, OyuncuId } from "@bolge/cekirdek";
 import type { ParselBotu } from "./parsel";
 
@@ -100,6 +100,15 @@ function sonrakiIzgara(t: Ms, aralik: Ms): Ms {
   return (Math.floor(t / aralik) + 1) * aralik;
 }
 
+/**
+ * Botun ilçe önerisi yoksa katılım ilçesi: çekirdeğin varsayılan yurt seçimi (`yurtPlanla`; eski davranışla birebir aynı ilçe). Hiçbir ilçe yurt
+ * veremiyorsa tanımsız kalır: çekirdek yurt veremeyen bir ilçeyle katılımı reddeder, yurtsuz katılımın katılım ilçesi yoktur (ayrılmış hücre alamaz).
+ */
+function varsayilanKatilimIlcesi(sim: Simulasyon): string | undefined {
+  const plan = yurtPlanla(sim.dunya, sim.ic);
+  return plan !== null && typeof plan !== "string" ? plan.ilce : undefined;
+}
+
 export function parselKos(secenek: ParselKosuSecenekleri): ParselKosuSonucu {
   const basla = Date.now();
   if (secenek.veri.parsel === undefined) throw new Error("parselKos: veri paketinde parsel fiksturu yok (mulk kipi kapali)");
@@ -138,7 +147,9 @@ export function parselKos(secenek: ParselKosuSecenekleri): ParselKosuSonucu {
         katilimlar[o.id] = { t, istenenIlce: undefined, ilceGeriDusuldu: false, reddedildi: `uygun ilce yok: ${karar.neden}`, uygunIlceYok: true, ilceNedeni: karar.neden };
         continue;
       }
-      const ilce = karar !== undefined ? (karar.ilce as string) : o.bot?.katilimIlcesi(sim);
+      // Katılım ilçesi HER ZAMAN açık verilir (ayrılmış hücre yalnız katılım ilçesinde satılır; docs/06 §15.1): ilceSec kararı, botun önerisi, yoksa
+      // çekirdeğin varsayılan seçimi (yurtPlanla); yurtsuz katılımda ilçe yoktur.
+      const ilce = karar !== undefined ? (karar.ilce as string) : (o.bot?.katilimIlcesi(sim) ?? varsayilanKatilimIlcesi(sim));
       let r = sim.uygula({ t, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: o.id, bolgeler: [], ...(ilce !== undefined ? { ilce } : {}) } });
       let geriDustu = false;
       if (!r.tamam && ilce !== undefined && karar === undefined) {

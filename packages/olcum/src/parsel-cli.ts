@@ -168,7 +168,7 @@ export function parselArgumanAyristir(argv: readonly string[]): ParselArguman {
 }
 
 const YARDIM = `Kullanim: pnpm olcum --kip parsel [--tohum 1-3] [--gun 24] [--gec-gun 10] [--olcum-gunu 14] [--bot ciftci=3,sanayici=2,tuccar=2,pasif=1] [--gec ciftci,sanayici,pazar] [--iklim hizli|gercek] [--cikti raporlar] [--ad kosu] [--bulgular dosya.md] [--tarim-yonetimi] [--bakim-yonetimi] [--ilce-sec] [--spekulator-gun 15] [--kalabalik] [--harita mini-6|sentetik-50] [--karsilastir onceki.json] [--agir]
-  Kisa parsel olcumu (mini-6 parsel fikstur; varsayilan 8 yerlesik + 3 gec katilan bot, 24 sim gunu, tohum 1-3): H6 (birincil Y7 + ucuz hucre; ikincil servet), H8, Y olcutleri.
+  Kisa parsel olcumu (mini-6 parsel fikstur; varsayilan 8 yerlesik + 3 gec katilan bot, 24 sim gunu, tohum 1-3): H6 (birincil Y7 + acilis kosulu; ikincil servet), H8, Y olcutleri.
   --tohum        Tohum araligi/listesi (vars. 1-3; --agir ile 1-10)
   --gun          Toplam sim gunu (vars. gec-gun + olcum-gunu = 24; verilirse en az gec-gun + olcum-gunu olmali)
   --gec-gun      Gec katilanlarin katilim gunu (vars. 10; H6 tanimi 60 = agir)
@@ -209,7 +209,7 @@ export function parselAna(argv: readonly string[]): void {
   const basla = Date.now();
   const sonuclar = tohumlar.map((t) => {
     const r = parselTohumKos({ tohumlar, gecGun, olcumGunu, gun: sureGun, yerlesik: yerlesikDagilim, harita: arg.harita, tarimYonetimi: arg.tarimYonetimi, bakimYonetimi: arg.bakimYonetimi, yerlesikIlceSec: arg.yerlesikIlceSec, spekulatorGun, gecAcilislari, iklim: arg.iklim, ilerleme: (m) => console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] ${m}`) }, t);
-    console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] tohum ${t} bitti: H6 (Y7+ucuz) ${r.h6.karar.birincil.verdict}, servet(ikincil) ${r.h6.karar.ikincil.ham.verdict}, H8 ${r.h8.verdict}`);
+    console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] tohum ${t} bitti: H6 (Y7+acilis) ${r.h6.karar.birincil.verdict}, servet(ikincil) ${r.h6.karar.ikincil.ham.verdict}, H8 ${r.h8.verdict}`);
     return r;
   });
   const sureMs = Date.now() - basla;
@@ -233,7 +233,7 @@ export function parselAna(argv: readonly string[]): void {
   const ozet = parselOzetle(sonuclar);
   writeFileSync(join(arg.cikti, `${ad}.json`), JSON.stringify({ surum: 1, kip: "parsel", ...jsonMeta, kalabalik: arg.kalabalik, ozet, tohumBasina: sonuclar }, null, 2) + "\n", "utf8");
   writeFileSync(join(arg.cikti, `${ad}.md`), parselRaporUret(sonuclar, meta), "utf8");
-  console.log(`\nH6 (Y7+ucuz): ${ozet.h6.verdict} | servet (ikincil): ${ozet.h6.servetVerdict} | H8: ${ozet.h8.verdict}`);
+  console.log(`\nH6 (Y7+acilis): ${ozet.h6.verdict} | servet (ikincil): ${ozet.h6.servetVerdict} | H8: ${ozet.h8.verdict}`);
   console.log(`Toplam sure: ${(sureMs / 1000).toFixed(1)} sn`);
   console.log(`Rapor: ${join(arg.cikti, ad)}.json / .md`);
 }

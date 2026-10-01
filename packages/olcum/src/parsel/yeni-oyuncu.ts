@@ -293,6 +293,31 @@ export interface UretimGeliriOlgusu {
   gelir: number;
   /** İlçe emsallerinin gelirleri (HAM liste: üretimsizler dahil); `y7UretimGeliri` yalnız ÜRETENLERİ (gelir > 0) kullanır. */
   ilceGelirleri: readonly number[];
+  /**
+   * YEDEK emsal (il düzeyi): oyuncunun ilçesinin bağlı olduğu ildeki yerleşiklerin gelirleri (HAM liste; ilçe emsalleri de içerir).
+   * Yalnız ilçede ÜRETEN emsal yoksa kullanılır (`y7EmsalDuzeyi`). Verilmezse yedek yoktur (yalnız ilçe düzeyi).
+   */
+  ilGelirleri?: readonly number[];
+}
+
+/** Y7 emsalinin hangi düzeyden alındığı: ilçede üreten emsal varsa "ilce"; yoksa ilde üreten emsal varsa "il"; hiçbiri yoksa null. */
+export type Y7EmsalDuzeyi = "ilce" | "il";
+
+/**
+ * Y7 emsal düzeyi (il yedeği, baş lider kararı): önce İLÇE düzeyi (üreten emsal ≥ 1 ise ilçe); yoksa aynı ildeki üreten yerleşikler
+ * (≥ 1 ise il); ikisi de boşsa null (ölçülemez). Düzeyler karıştırılmaz: seçilen düzeyin emsali tek başına medyan alınır.
+ */
+export function y7EmsalDuzeyi(o: Pick<UretimGeliriOlgusu, "ilceGelirleri" | "ilGelirleri">): Y7EmsalDuzeyi | null {
+  if (uretenEmsal(o.ilceGelirleri).length > 0) return "ilce";
+  if (o.ilGelirleri !== undefined && uretenEmsal(o.ilGelirleri).length > 0) return "il";
+  return null;
+}
+
+/** Seçilen düzeyin ÜRETEN emsal gelirleri (artan sıralı); düzey yoksa boş. */
+export function y7EmsalGelirleri(o: Pick<UretimGeliriOlgusu, "ilceGelirleri" | "ilGelirleri">): number[] {
+  const d = y7EmsalDuzeyi(o);
+  if (d === null) return [];
+  return uretenEmsal(d === "ilce" ? o.ilceGelirleri : (o.ilGelirleri as readonly number[])).sort((a, b) => a - b);
 }
 
 /**
@@ -314,32 +339,40 @@ export interface Y7Sonucu {
   olculebilirOyuncu: number;
   /** Üreten emsal yok (emsal kümesi boş): oran tanımsız (ölçülemez) oyuncu sayısı. */
   olcumDisi: number;
+  /** Ölçülen oyuncuların emsal düzeyi: ilçede üreten emsal bulunanlar / yalnız il yedeğiyle ölçülenler. */
+  ilceDuzeyi: number;
+  ilDuzeyi: number;
   olguSayisi: number;
   hedefGecti: boolean;
 }
 
 /**
  * Y7: oyuncunun geliri, ilçe emsallerinin medyanının ≥ %50'sine ulaştı mı (kesirsiz: 2·gelir·PPM ≥ 2·medyan·pay).
- * Emsal = yalnız ÜRETEN yerleşikler (`uretenEmsal`: gelir > 0). Üreten emsal yoksa o olgu ölçülemez; hiçbiri ölçülemezse sonuç ölçülemez.
+ * Emsal = yalnız ÜRETEN yerleşikler (`uretenEmsal`: gelir > 0); düzey önce ilçe, ilçede üreten yoksa il (`y7EmsalDuzeyi`). İkisi de yoksa o olgu ölçülemez; hiçbiri ölçülemezse sonuç ölçülemez.
  */
 export function y7UretimGeliri(olgular: readonly UretimGeliriOlgusu[]): Y7Sonucu | Olculemez {
   let ulasan = 0;
   let olculen = 0;
   let disi = 0;
+  let ilceD = 0;
+  let ilD = 0;
   for (const o of olgular) {
     tamsayiDenetle(o.gelir, "gelir");
-    const s = uretenEmsal(o.ilceGelirleri).sort((a, b) => a - b);
-    if (s.length === 0) {
+    const duzey = y7EmsalDuzeyi(o);
+    const s = y7EmsalGelirleri(o);
+    if (duzey === null) {
       disi++;
       continue;
     }
+    if (duzey === "ilce") ilceD++;
+    else ilD++;
     const orta = s.length >> 1;
     const m2 = s.length % 2 === 1 ? 2 * (s[orta] as number) : (s[orta - 1] as number) + (s[orta] as number);
     olculen++;
     // gelir >= medyan × pay  <=>  2·gelir·PPM >= m2·pay (m2 = 2·medyan; BigInt)
     if (BigInt(2 * o.gelir) * BigInt(PPM) >= BigInt(m2) * BigInt(Y7_MEDYAN_PAYI_PPM)) ulasan++;
   }
-  if (olculen === 0) return olculemez("uretim yapan (geliri > 0) ilce emsali yok");
+  if (olculen === 0) return olculemez("uretim yapan (geliri > 0) ilce ya da il emsali yok");
   const pay = oranPpm(ulasan, olculen);
-  return { olculebilir: true, oyuncuPayiPpm: pay, ulasan, olculebilirOyuncu: olculen, olcumDisi: disi, olguSayisi: olgular.length, hedefGecti: pay >= Y7_OYUNCU_HEDEF_PPM };
+  return { olculebilir: true, oyuncuPayiPpm: pay, ulasan, olculebilirOyuncu: olculen, olcumDisi: disi, ilceDuzeyi: ilceD, ilDuzeyi: ilD, olguSayisi: olgular.length, hedefGecti: pay >= Y7_OYUNCU_HEDEF_PPM };
 }

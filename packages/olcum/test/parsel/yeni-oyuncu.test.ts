@@ -9,6 +9,8 @@ import {
   y5AcilisCesitliligi,
   y6YonDegistirme,
   uretenEmsal,
+  y7EmsalDuzeyi,
+  y7EmsalGelirleri,
   y7UretimGeliri,
   yapiKatmani,
 } from "../../src/parsel";
@@ -168,7 +170,40 @@ describe("Y7 hibeden bağımsız net üretim geliri", () => {
     expect(y7UretimGeliri([{ gelir: 1, ilceGelirleri: [0, 1] }])).toMatchObject({ olculebilir: true, ulasan: 1 });
     // Gelir 0 olan emsal dışarıda: yalnız 0'lardan oluşan küme boş -> ölçülemez
     const r = y7UretimGeliri([{ gelir: 5, ilceGelirleri: [0] }]);
-    expect(r).toEqual({ olculebilir: false, neden: "uretim yapan (geliri > 0) ilce emsali yok" });
+    expect(r).toEqual({ olculebilir: false, neden: "uretim yapan (geliri > 0) ilce ya da il emsali yok" });
+  });
+
+  it("IL YEDEĞİ: ilçede üreten emsal varsa ilçe; yoksa aynı ildeki üreten emsal; ikisi de yoksa ölçülemez (düzeyler karışmaz)", () => {
+    // ilçede üreten var: il listesi (daha yüksek) kullanılmaz
+    expect(y7EmsalDuzeyi({ ilceGelirleri: [0, 100], ilGelirleri: [0, 100, 1_000] })).toBe("ilce");
+    expect(y7EmsalGelirleri({ ilceGelirleri: [0, 100], ilGelirleri: [0, 100, 1_000] })).toEqual([100]);
+    // ilçede üreten yok (0 ve negatif dışarıda), ilde var: il
+    expect(y7EmsalDuzeyi({ ilceGelirleri: [0, -5], ilGelirleri: [0, 300, 100] })).toBe("il");
+    expect(y7EmsalGelirleri({ ilceGelirleri: [0, -5], ilGelirleri: [0, 300, 100] })).toEqual([100, 300]);
+    expect(y7EmsalDuzeyi({ ilceGelirleri: [], ilGelirleri: [1] })).toBe("il"); // sınır: gelir 1 üretendir
+    expect(y7EmsalDuzeyi({ ilceGelirleri: [], ilGelirleri: [0] })).toBeNull(); // sınır: gelir 0 üretmez
+    expect(y7EmsalDuzeyi({ ilceGelirleri: [0], ilGelirleri: [0, -1] })).toBeNull();
+    // il listesi verilmemişse yedek yok (eski davranış)
+    expect(y7EmsalDuzeyi({ ilceGelirleri: [0, 0] })).toBeNull();
+    expect(y7EmsalDuzeyi({ ilceGelirleri: [5] })).toBe("ilce");
+  });
+
+  it("IL YEDEĞİ Y7: medyan seçilen düzeyin üreten emsalinden alınır; %50 sınırı il emsalinde de aynı; düzey sayaçları", () => {
+    // ilçe boş, il üreten [100, 300] -> medyan 200, eşik 100: gelir 100 ulaşır, 99 ulaşmaz
+    expect(y7UretimGeliri([{ gelir: 100, ilceGelirleri: [0], ilGelirleri: [100, 300] }])).toMatchObject({ olculebilir: true, ulasan: 1, ilDuzeyi: 1, ilceDuzeyi: 0, olcumDisi: 0 });
+    expect(y7UretimGeliri([{ gelir: 99, ilceGelirleri: [0], ilGelirleri: [100, 300] }])).toMatchObject({ ulasan: 0, ilDuzeyi: 1 });
+    // ilçede üreten varsa il listesi yok sayılır: ilçe medyanı 100 -> eşik 50, il medyanı (500) kullanılmaz
+    expect(y7UretimGeliri([{ gelir: 50, ilceGelirleri: [100], ilGelirleri: [100, 900] }])).toMatchObject({ ulasan: 1, ilceDuzeyi: 1, ilDuzeyi: 0 });
+    // karışık: biri ilçe düzeyi, biri il yedeği, biri ölçülemez
+    const k = y7UretimGeliri([
+      { gelir: 60, ilceGelirleri: [100], ilGelirleri: [100] },
+      { gelir: 60, ilceGelirleri: [0], ilGelirleri: [100] },
+      { gelir: 60, ilceGelirleri: [0], ilGelirleri: [0] },
+    ]);
+    expect(k).toMatchObject({ olculebilir: true, ilceDuzeyi: 1, ilDuzeyi: 1, olcumDisi: 1, olculebilirOyuncu: 2, ulasan: 2, olguSayisi: 3 });
+    // il yedeği de yoksa ölçülemez
+    expect(y7UretimGeliri([{ gelir: 5, ilceGelirleri: [0], ilGelirleri: [0, 0] }]).olculebilir).toBe(false);
+    expect(() => y7UretimGeliri([{ gelir: 5, ilceGelirleri: [0], ilGelirleri: [1.5] }])).toThrow(/tamsayi/);
   });
 
   it("tüm emsal üretimsizse sonuç ölçülemez (BELİRSİZ); bir olgu ölçülebilirse diğeri ölçüm dışı sayılır", () => {

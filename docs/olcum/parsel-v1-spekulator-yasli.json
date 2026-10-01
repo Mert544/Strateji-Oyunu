@@ -18,7 +18,7 @@
   "olcumGunu": 10,
   "iklim": "hizli",
   "agir": false,
-  "sureMs": 11468,
+  "sureMs": 16641,
   "duzen": {
     "yerlesik": {
       "ciftci": 3,
@@ -37,13 +37,18 @@
   "kalabalik": false,
   "ozet": {
     "h6": {
-      "verdict": "kaldi",
+      "verdict": "gecti",
       "servetVerdict": "kaldi",
       "servetBasariPpm": 1000000,
       "y7PayiPpm": 1000000,
       "y7Verdict": "gecti",
       "ucuzPayPpm": 161234,
       "genelUcuzPayPpm": 0,
+      "acilisVerdict": "gecti",
+      "tabanYeterPpm": 1000000,
+      "tabanYeterYurtDahilPpm": 1000000,
+      "yapiKurulduPpm": 1000000,
+      "y7IlYedegiPpm": 0,
       "hibePayiPpm": 54212
     },
     "h8": {
@@ -63,7 +68,7 @@
   "tohumBasina": [
     {
       "tohum": 1,
-      "durumOzeti": "5bbf3f56f50030e7",
+      "durumOzeti": "90b3df0138de6cca",
       "sureGun": 30,
       "gecGun": 20,
       "olcumGunu": 10,
@@ -439,6 +444,43 @@
             ],
             "emsalUretenSayisi": 2,
             "emsalGelirMedyan": 451376471,
+            "il": "sn_m_ova",
+            "ilEmsal": [
+              "ciftci_1",
+              "ciftci_2",
+              "pasif_1",
+              "spekulator_yasli_1",
+              "spekulator_yasli_3",
+              "spekulator_yasli_4",
+              "spekulator_yasli_5"
+            ],
+            "ilEmsalGelir": [
+              758436077,
+              758441957,
+              144310986,
+              -233264,
+              -714971,
+              0,
+              0
+            ],
+            "ilEmsalUretenSayisi": 3,
+            "ilEmsalGelirMedyan": 758436077,
+            "emsalDuzeyi": "ilce",
+            "ayrilmisBosKatilim": 7,
+            "ilceNedeni": "yurt verebilen 10, acilisa uygun 4, taban hucre ayak izine yeten 4; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayakIzi": 2,
+            "yurtHucre": 6,
+            "acilisYapiMs": [
+              1728000000,
+              1749600000
+            ],
+            "acilisKosulu": {
+              "tabanYeter": true,
+              "tabanYeterYurtDahil": true,
+              "yapiKuruldu": true,
+              "ilkYapiGecikmeMs": 0,
+              "gecti": true
+            },
             "katilmaGun": 20
           },
           {
@@ -483,6 +525,40 @@
             ],
             "emsalUretenSayisi": 1,
             "emsalGelirMedyan": 820401363,
+            "il": "sn_m_dag",
+            "ilEmsal": [
+              "sanayici_1",
+              "sanayici_2",
+              "spekulator_yasli_3",
+              "spekulator_yasli_4",
+              "spekulator_yasli_5",
+              "spekulator_yasli_6"
+            ],
+            "ilEmsalGelir": [
+              820401363,
+              820403211,
+              -714971,
+              0,
+              0,
+              -617272
+            ],
+            "ilEmsalUretenSayisi": 2,
+            "ilEmsalGelirMedyan": 820402287,
+            "emsalDuzeyi": "ilce",
+            "ayrilmisBosKatilim": 9,
+            "ilceNedeni": "yurt verebilen 10, acilisa uygun 2, taban hucre ayak izine yeten 2; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayakIzi": 3,
+            "yurtHucre": 6,
+            "acilisYapiMs": [
+              1728000000
+            ],
+            "acilisKosulu": {
+              "tabanYeter": true,
+              "tabanYeterYurtDahil": true,
+              "yapiKuruldu": true,
+              "ilkYapiGecikmeMs": 0,
+              "gecti": true
+            },
             "katilmaGun": 20
           },
           {
@@ -527,23 +603,70 @@
             ],
             "emsalUretenSayisi": 2,
             "emsalGelirMedyan": 451376471,
+            "il": "sn_m_ova",
+            "ilEmsal": [
+              "ciftci_1",
+              "ciftci_2",
+              "pasif_1",
+              "spekulator_yasli_1",
+              "spekulator_yasli_3",
+              "spekulator_yasli_4",
+              "spekulator_yasli_5"
+            ],
+            "ilEmsalGelir": [
+              758436077,
+              758441957,
+              144310986,
+              -233264,
+              -714971,
+              0,
+              0
+            ],
+            "ilEmsalUretenSayisi": 3,
+            "ilEmsalGelirMedyan": 758436077,
+            "emsalDuzeyi": "ilce",
+            "ayrilmisBosKatilim": 7,
+            "ilceNedeni": "yurt verebilen 9, acilisa uygun 3, taban hucre ayak izine yeten 3; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayakIzi": 2,
+            "yurtHucre": 6,
+            "acilisYapiMs": [
+              1728000000
+            ],
+            "acilisKosulu": {
+              "tabanYeter": true,
+              "tabanYeterYurtDahil": true,
+              "yapiKuruldu": true,
+              "ilkYapiGecikmeMs": 0,
+              "gecti": true
+            },
             "katilmaGun": 20
           }
         ],
         "karar": {
           "birincil": {
-            "verdict": "kaldi",
-            "kaynak": "y7_gelir+ucuz_hucre",
+            "verdict": "gecti",
+            "kaynak": "y7_gelir+acilis_kosulu",
             "y7": {
               "olculebilir": true,
               "oyuncuPayiPpm": 1000000,
               "ulasan": 3,
               "olculebilirOyuncu": 3,
               "olcumDisi": 0,
+              "ilceDuzeyi": 3,
+              "ilDuzeyi": 0,
               "olguSayisi": 3,
               "hedefGecti": true
             },
-            "ucuzHedef": false
+            "acilis": {
+              "olculebilir": true,
+              "olguSayisi": 3,
+              "gecen": 3,
+              "tabanYeterYurtDahilSayisi": 3,
+              "yapiKurulduSayisi": 3,
+              "yapiOlculenOlgu": 3,
+              "hedefGecti": true
+            },
+            "eskiUcuzHedef": false
           },
           "ikincil": {
             "ham": {
@@ -699,6 +822,8 @@
           "ulasan": 3,
           "olculebilirOyuncu": 3,
           "olcumDisi": 0,
+          "ilceDuzeyi": 3,
+          "ilDuzeyi": 0,
           "olguSayisi": 3,
           "hedefGecti": true
         }
@@ -821,11 +946,11 @@
         "ticaret_emri": 65,
         "parsel_al": 31
       },
-      "sureMs": 5377
+      "sureMs": 5940
     },
     {
       "tohum": 2,
-      "durumOzeti": "f454804fbd41103d",
+      "durumOzeti": "925346720018f482",
       "sureGun": 30,
       "gecGun": 20,
       "olcumGunu": 10,
@@ -1201,6 +1326,43 @@
             ],
             "emsalUretenSayisi": 2,
             "emsalGelirMedyan": 384838840,
+            "il": "sn_m_ova",
+            "ilEmsal": [
+              "ciftci_1",
+              "ciftci_2",
+              "pasif_1",
+              "spekulator_yasli_1",
+              "spekulator_yasli_3",
+              "spekulator_yasli_4",
+              "spekulator_yasli_5"
+            ],
+            "ilEmsalGelir": [
+              656017703,
+              656023583,
+              113654097,
+              -233139,
+              -714846,
+              0,
+              0
+            ],
+            "ilEmsalUretenSayisi": 3,
+            "ilEmsalGelirMedyan": 656017703,
+            "emsalDuzeyi": "ilce",
+            "ayrilmisBosKatilim": 7,
+            "ilceNedeni": "yurt verebilen 10, acilisa uygun 4, taban hucre ayak izine yeten 4; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayakIzi": 2,
+            "yurtHucre": 6,
+            "acilisYapiMs": [
+              1728000000,
+              1749600000
+            ],
+            "acilisKosulu": {
+              "tabanYeter": true,
+              "tabanYeterYurtDahil": true,
+              "yapiKuruldu": true,
+              "ilkYapiGecikmeMs": 0,
+              "gecti": true
+            },
             "katilmaGun": 20
           },
           {
@@ -1245,6 +1407,40 @@
             ],
             "emsalUretenSayisi": 1,
             "emsalGelirMedyan": 820401335,
+            "il": "sn_m_dag",
+            "ilEmsal": [
+              "sanayici_1",
+              "sanayici_2",
+              "spekulator_yasli_3",
+              "spekulator_yasli_4",
+              "spekulator_yasli_5",
+              "spekulator_yasli_6"
+            ],
+            "ilEmsalGelir": [
+              820401335,
+              820403183,
+              -714846,
+              0,
+              0,
+              -617147
+            ],
+            "ilEmsalUretenSayisi": 2,
+            "ilEmsalGelirMedyan": 820402259,
+            "emsalDuzeyi": "ilce",
+            "ayrilmisBosKatilim": 9,
+            "ilceNedeni": "yurt verebilen 10, acilisa uygun 2, taban hucre ayak izine yeten 2; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayakIzi": 3,
+            "yurtHucre": 6,
+            "acilisYapiMs": [
+              1728000000
+            ],
+            "acilisKosulu": {
+              "tabanYeter": true,
+              "tabanYeterYurtDahil": true,
+              "yapiKuruldu": true,
+              "ilkYapiGecikmeMs": 0,
+              "gecti": true
+            },
             "katilmaGun": 20
           },
           {
@@ -1289,23 +1485,70 @@
             ],
             "emsalUretenSayisi": 2,
             "emsalGelirMedyan": 384838840,
+            "il": "sn_m_ova",
+            "ilEmsal": [
+              "ciftci_1",
+              "ciftci_2",
+              "pasif_1",
+              "spekulator_yasli_1",
+              "spekulator_yasli_3",
+              "spekulator_yasli_4",
+              "spekulator_yasli_5"
+            ],
+            "ilEmsalGelir": [
+              656017703,
+              656023583,
+              113654097,
+              -233139,
+              -714846,
+              0,
+              0
+            ],
+            "ilEmsalUretenSayisi": 3,
+            "ilEmsalGelirMedyan": 656017703,
+            "emsalDuzeyi": "ilce",
+            "ayrilmisBosKatilim": 7,
+            "ilceNedeni": "yurt verebilen 9, acilisa uygun 3, taban hucre ayak izine yeten 3; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayakIzi": 2,
+            "yurtHucre": 6,
+            "acilisYapiMs": [
+              1728000000
+            ],
+            "acilisKosulu": {
+              "tabanYeter": true,
+              "tabanYeterYurtDahil": true,
+              "yapiKuruldu": true,
+              "ilkYapiGecikmeMs": 0,
+              "gecti": true
+            },
             "katilmaGun": 20
           }
         ],
         "karar": {
           "birincil": {
-            "verdict": "kaldi",
-            "kaynak": "y7_gelir+ucuz_hucre",
+            "verdict": "gecti",
+            "kaynak": "y7_gelir+acilis_kosulu",
             "y7": {
               "olculebilir": true,
               "oyuncuPayiPpm": 1000000,
               "ulasan": 3,
               "olculebilirOyuncu": 3,
               "olcumDisi": 0,
+              "ilceDuzeyi": 3,
+              "ilDuzeyi": 0,
               "olguSayisi": 3,
               "hedefGecti": true
             },
-            "ucuzHedef": false
+            "acilis": {
+              "olculebilir": true,
+              "olguSayisi": 3,
+              "gecen": 3,
+              "tabanYeterYurtDahilSayisi": 3,
+              "yapiKurulduSayisi": 3,
+              "yapiOlculenOlgu": 3,
+              "hedefGecti": true
+            },
+            "eskiUcuzHedef": false
           },
           "ikincil": {
             "ham": {
@@ -1461,6 +1704,8 @@
           "ulasan": 3,
           "olculebilirOyuncu": 3,
           "olcumDisi": 0,
+          "ilceDuzeyi": 3,
+          "ilDuzeyi": 0,
           "olguSayisi": 3,
           "hedefGecti": true
         }
@@ -1583,11 +1828,11 @@
         "ticaret_emri": 65,
         "parsel_al": 31
       },
-      "sureMs": 3158
+      "sureMs": 5695
     },
     {
       "tohum": 3,
-      "durumOzeti": "52588ca51e947a06",
+      "durumOzeti": "967a57e5db75b965",
       "sureGun": 30,
       "gecGun": 20,
       "olcumGunu": 10,
@@ -1963,6 +2208,43 @@
             ],
             "emsalUretenSayisi": 2,
             "emsalGelirMedyan": 315852586,
+            "il": "sn_m_ova",
+            "ilEmsal": [
+              "ciftci_1",
+              "ciftci_2",
+              "pasif_1",
+              "spekulator_yasli_1",
+              "spekulator_yasli_3",
+              "spekulator_yasli_4",
+              "spekulator_yasli_5"
+            ],
+            "ilEmsalGelir": [
+              541663424,
+              541669304,
+              90035868,
+              -232743,
+              -714450,
+              0,
+              0
+            ],
+            "ilEmsalUretenSayisi": 3,
+            "ilEmsalGelirMedyan": 541663424,
+            "emsalDuzeyi": "ilce",
+            "ayrilmisBosKatilim": 7,
+            "ilceNedeni": "yurt verebilen 10, acilisa uygun 4, taban hucre ayak izine yeten 4; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayakIzi": 2,
+            "yurtHucre": 6,
+            "acilisYapiMs": [
+              1728000000,
+              1749600000
+            ],
+            "acilisKosulu": {
+              "tabanYeter": true,
+              "tabanYeterYurtDahil": true,
+              "yapiKuruldu": true,
+              "ilkYapiGecikmeMs": 0,
+              "gecti": true
+            },
             "katilmaGun": 20
           },
           {
@@ -2007,6 +2289,40 @@
             ],
             "emsalUretenSayisi": 1,
             "emsalGelirMedyan": 820401481,
+            "il": "sn_m_dag",
+            "ilEmsal": [
+              "sanayici_1",
+              "sanayici_2",
+              "spekulator_yasli_3",
+              "spekulator_yasli_4",
+              "spekulator_yasli_5",
+              "spekulator_yasli_6"
+            ],
+            "ilEmsalGelir": [
+              820401481,
+              820403329,
+              -714450,
+              0,
+              0,
+              -616751
+            ],
+            "ilEmsalUretenSayisi": 2,
+            "ilEmsalGelirMedyan": 820402405,
+            "emsalDuzeyi": "ilce",
+            "ayrilmisBosKatilim": 9,
+            "ilceNedeni": "yurt verebilen 10, acilisa uygun 2, taban hucre ayak izine yeten 2; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayakIzi": 3,
+            "yurtHucre": 6,
+            "acilisYapiMs": [
+              1728000000
+            ],
+            "acilisKosulu": {
+              "tabanYeter": true,
+              "tabanYeterYurtDahil": true,
+              "yapiKuruldu": true,
+              "ilkYapiGecikmeMs": 0,
+              "gecti": true
+            },
             "katilmaGun": 20
           },
           {
@@ -2051,23 +2367,70 @@
             ],
             "emsalUretenSayisi": 2,
             "emsalGelirMedyan": 315852586,
+            "il": "sn_m_ova",
+            "ilEmsal": [
+              "ciftci_1",
+              "ciftci_2",
+              "pasif_1",
+              "spekulator_yasli_1",
+              "spekulator_yasli_3",
+              "spekulator_yasli_4",
+              "spekulator_yasli_5"
+            ],
+            "ilEmsalGelir": [
+              541663424,
+              541669304,
+              90035868,
+              -232743,
+              -714450,
+              0,
+              0
+            ],
+            "ilEmsalUretenSayisi": 3,
+            "ilEmsalGelirMedyan": 541663424,
+            "emsalDuzeyi": "ilce",
+            "ayrilmisBosKatilim": 7,
+            "ilceNedeni": "yurt verebilen 9, acilisa uygun 3, taban hucre ayak izine yeten 3; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayakIzi": 2,
+            "yurtHucre": 6,
+            "acilisYapiMs": [
+              1728000000
+            ],
+            "acilisKosulu": {
+              "tabanYeter": true,
+              "tabanYeterYurtDahil": true,
+              "yapiKuruldu": true,
+              "ilkYapiGecikmeMs": 0,
+              "gecti": true
+            },
             "katilmaGun": 20
           }
         ],
         "karar": {
           "birincil": {
-            "verdict": "kaldi",
-            "kaynak": "y7_gelir+ucuz_hucre",
+            "verdict": "gecti",
+            "kaynak": "y7_gelir+acilis_kosulu",
             "y7": {
               "olculebilir": true,
               "oyuncuPayiPpm": 1000000,
               "ulasan": 3,
               "olculebilirOyuncu": 3,
               "olcumDisi": 0,
+              "ilceDuzeyi": 3,
+              "ilDuzeyi": 0,
               "olguSayisi": 3,
               "hedefGecti": true
             },
-            "ucuzHedef": false
+            "acilis": {
+              "olculebilir": true,
+              "olguSayisi": 3,
+              "gecen": 3,
+              "tabanYeterYurtDahilSayisi": 3,
+              "yapiKurulduSayisi": 3,
+              "yapiOlculenOlgu": 3,
+              "hedefGecti": true
+            },
+            "eskiUcuzHedef": false
           },
           "ikincil": {
             "ham": {
@@ -2223,6 +2586,8 @@
           "ulasan": 3,
           "olculebilirOyuncu": 3,
           "olcumDisi": 0,
+          "ilceDuzeyi": 3,
+          "ilDuzeyi": 0,
           "olguSayisi": 3,
           "hedefGecti": true
         }
@@ -2345,7 +2710,7 @@
         "ticaret_emri": 65,
         "parsel_al": 31
       },
-      "sureMs": 2931
+      "sureMs": 5005
     }
   ]
 }

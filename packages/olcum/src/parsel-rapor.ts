@@ -3,7 +3,7 @@
  * Sayılar ppm ya da mili-₺'dir; yüzde/₺ gösterimi yalnız burada yapılır.
  */
 import { Y_OLCUTLERI, y7UretimGeliri } from "./parsel";
-import type { Olculemez } from "./parsel";
+import type { AcilisKosuluSonucu, H6AcilisSonucu, Olculemez } from "./parsel";
 import { genelVerdict } from "./tipler";
 import type { Verdict } from "./tipler";
 import type { ParselTohumSonucu } from "./parsel-kosu";
@@ -63,7 +63,7 @@ export function olguKarsilastirmasi(sonuclar: readonly ParselTohumSonucu[]): Rec
       const k = o.acilis ?? o.gec;
       const e = g.get(k) ?? { gelir: [], servet: [], n: 0 };
       e.n++;
-      const a = ppmOran(o.gelir, o.emsalGelirMedyan);
+      const a = ppmOran(o.gelir, o.emsalDuzeyi === "il" ? o.ilEmsalGelirMedyan : o.emsalGelirMedyan);
       const b = ppmOran(o.servetHam, o.emsalMedyanHam);
       if (a !== null) e.gelir.push(a);
       if (b !== null) e.servet.push(b);
@@ -106,15 +106,22 @@ function degerliOlanlar<T>(xs: readonly (T | null | undefined)[]): T[] {
 
 export interface ParselOzeti {
   h6: {
-    /** HİPOTEZ KARARI (birincil): hibeden bağımsız üretim geliri (Y7) + ucuz hücre. */
+    /** HİPOTEZ KARARI (birincil): hibeden bağımsız üretim geliri (Y7) + açılış koşulu. */
     verdict: Verdict;
     y7PayiPpm: number | null;
     y7Verdict: Verdict;
     /** İKİNCİL (bilgi): servet tabanlı medyana ulaşma, ham (arındırılmış servetle aynı karar). */
     servetVerdict: Verdict;
     servetBasariPpm: number | null;
+    /** ESKİ TANIM (bilgi): ucuz hücre payı (≤ 2× taban) ve eski oyuncuya açık kısmı. */
     ucuzPayPpm: number | null;
     genelUcuzPayPpm: number | null;
+    /** İkinci koşul (açılış koşulu): karar, (i) tutan / yurt dahil (i) tutan / (ii) tutan olgu payı ve Y7'de il yedeğiyle ölçülen olgu payı (ppm; tüm tohumların olguları). */
+    acilisVerdict: Verdict;
+    tabanYeterPpm: number | null;
+    tabanYeterYurtDahilPpm: number | null;
+    yapiKurulduPpm: number | null;
+    y7IlYedegiPpm: number | null;
     /** Paketin (hibe + kit) geç katılan ham servetindeki ortalama payı, ppm. */
     hibePayiPpm: number | null;
   };
@@ -133,6 +140,12 @@ function sayisal<T extends { olculebilir: true }>(x: T | Olculemez, al: (x: T) =
   return x.olculebilir ? al(x) : null;
 }
 
+/** Olguların `f` null olmayan kısmında true payı (ppm); hiç ölçülebilir olgu yoksa null. */
+function olguPayi(sonuclar: readonly ParselTohumSonucu[], f: (o: ParselTohumSonucu["h6"]["olgular"][number]) => boolean | null): number | null {
+  const olgular = sonuclar.flatMap((s) => s.h6.olgular).map(f).filter((x): x is boolean => x !== null);
+  return olgular.length === 0 ? null : Number((BigInt(olgular.filter((x) => x).length) * 1_000_000n) / BigInt(olgular.length));
+}
+
 export function parselOzetle(sonuclar: readonly ParselTohumSonucu[]): ParselOzeti {
   const y7Verdict = (s: ParselTohumSonucu): Verdict => (s.h6.y7.olculebilir ? (s.h6.y7.hedefGecti ? "gecti" : "kaldi") : "belirsiz");
   return {
@@ -144,6 +157,12 @@ export function parselOzetle(sonuclar: readonly ParselTohumSonucu[]): ParselOzet
       y7Verdict: genelVerdict(sonuclar.map(y7Verdict)),
       ucuzPayPpm: ortalama(sonuclar.map((s) => s.h6.ucuz.payPpm)),
       genelUcuzPayPpm: ortalama(sonuclar.map((s) => s.h6.ucuz.genelPayPpm)),
+      // Eski (açılış koşulu öncesi) JSON'larda alanlar yoktur: karşılaştırma için belirsiz / null döner.
+      acilisVerdict: genelVerdict(sonuclar.map((s) => { const a = s.h6.karar.birincil.acilis as H6AcilisSonucu | Olculemez | undefined; return a?.olculebilir === true ? (a.hedefGecti ? "gecti" : "kaldi") : "belirsiz"; })),
+      tabanYeterPpm: olguPayi(sonuclar, (o) => (o.acilisKosulu as AcilisKosuluSonucu | undefined)?.tabanYeter ?? null),
+      tabanYeterYurtDahilPpm: olguPayi(sonuclar, (o) => (o.acilisKosulu as AcilisKosuluSonucu | undefined)?.tabanYeterYurtDahil ?? null),
+      yapiKurulduPpm: olguPayi(sonuclar, (o) => (o.acilisKosulu as AcilisKosuluSonucu | undefined)?.yapiKuruldu ?? null),
+      y7IlYedegiPpm: olguPayi(sonuclar, (o) => (o.emsalDuzeyi === null ? null : o.emsalDuzeyi === "il")),
       hibePayiPpm: ortalama(degerliOlanlar(sonuclar.flatMap((s) => s.h6.karar.ikincil.oranlar.map((o) => o.hibePayiPpm)))),
     },
     h8: {
@@ -208,9 +227,11 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
     tablo(
       ["Ölçüt", "Sonuç", "Eşik (vazgeçme)", "Not"],
       [
-        ["**H6 (birincil: Y7 + ucuz hücre)** — hipotez kararı", `${verdictAd(oz.h6.verdict)} · Y7 ${yuzde(oz.h6.y7PayiPpm)} oyuncu`, "Y7: oyuncuların < %50'si emsal medyanının ≥ %50'sinde ya da ucuz hücre < %20", "hibeden bağımsız üretim geliri (son 7 gün); karar servetten gelmez"],
+        ["**H6 (birincil: Y7 + açılış koşulu)** — hipotez kararı", `${verdictAd(oz.h6.verdict)} · Y7 ${yuzde(oz.h6.y7PayiPpm)} oyuncu`, "Y7: oyuncuların < %50'si emsal medyanının ≥ %50'sinde ya da açılış koşulu tutmuyor", "hibeden bağımsız üretim geliri (son 7 gün; emsal önce ilçe, yoksa il); karar servetten gelmez"],
+        ["H6 ikinci koşul: açılış koşulu (docs/12 §13)", `${verdictAd(oz.h6.acilisVerdict)} · (i) taban hücre ayak izine yeter ${yuzde(oz.h6.tabanYeterPpm)} (yurt dahil: ${yuzde(oz.h6.tabanYeterYurtDahilPpm)}) · (ii, bilgi) 14 günde açılış yapısı ${yuzde(oz.h6.yapiKurulduPpm)} — insan testi gerekli`, "TÜM olgular (i)'yi sağlamalı; (ii) karara girmez", "ayak izi = açılışın ilk yapısının hücre sayısı, yurt hariç (yurt ayrı ve ücretsizdir); yurt dahil sayım bilgidir; (ii) botlar katılım anında kurduğu için bot ölçeğinde bilgisizdir"],
+        ["H6 Y7 emsal düzeyi", `il yedeğiyle ölçülen olgu ${yuzde(oz.h6.y7IlYedegiPpm)}`, "(bilgi)", "önce ilçe emsali; ilçede üreten yoksa aynı ildeki üreten yerleşikler"],
         ["H6 ikincil: servet medyana ulaşma (bilgi)", `${verdictAd(oz.h6.servetVerdict)} · ulaşan ${yuzde(oz.h6.servetBasariPpm)}`, "(karara girmez; eski tanım: ulaşan < %50)", "hibe + kit ham servetin ~" + yuzde(oz.h6.hibePayiPpm) + "'i; hibe/kit arındırması ulaşma kararını değiştirmez"],
-        ["H6 ucuz hücre payı (≤ 2× taban)", `${yuzde(oz.h6.ucuzPayPpm)} (eski oyuncuya açık: ${yuzde(oz.h6.genelUcuzPayPpm)})`, "< %20", "ayrılmış hücreler yalnız yeni oyuncuya"],
+        ["H6 eski tanım (ucuz hücre payı ≥ %20)", `${yuzde(oz.h6.ucuzPayPpm)} (eski oyuncuya açık: ${yuzde(oz.h6.genelUcuzPayPpm)})`, "(karara girmez; eski eşik: < %20)", "yalnız bilgi; ayrılmış hücre uygun hücrelerin ~%19'u olduğundan eşik yapısal olarak tutmuyordu"],
         ["**H8** (Gini · en büyük ilçe payı · yeniden satış)", `${verdictAd(oz.h8.verdict)} · Gini ${yuzde(oz.h8.giniPpm)} · ilçe payı ${yuzde(oz.h8.enBuyukIlcePayiPpm)}`, "Gini > %60 ya da pay > %25 ya da > 10 hf", "yeniden satış yok: koşul 3 ölçülemez"],
       ],
     ),
@@ -227,7 +248,7 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
   k.push("- **İndirimli yapı**: ilk 5 yapıda yapı değeri = ÖDENEN tutar (para + malzeme %70'i), tam bedel değil (koşucu, inşaatın `odenenPara`/`odenenMal` kaydından okur).");
   k.push("- **Ayrılmış hücre**: ilçenin %20'si yalnız katılımın ilk 14 gününde olan oyuncuya satılır. Geç katılan 14. günde ayrılmış hücrelere hâlâ erişir; yerleşikler gün 14'ten sonra erişemez.");
   k.push("");
-  k.push("**Karar kaynağı (lider kararı).** H6'nın BİRİNCİL ölçüsü hibeden bağımsız üretim gelirinin akışıdır (**Y7**: katılımdan 14 gün sonraki son 7 günün net üretim geliri = hazine akışı − sermaye harcaması; hibe/kit akışa girmediği için tanım gereği bağımsız). Hipotez kararı Y7 + ucuz hücre koşulundan gelir. **Servet** tabanlı ulaşma İKİNCİL olarak raporlanır: ham servet ile hibe/kit'ten arındırılmış servet AYNI kararı verir (ortak ofset altında `servet ≥ medyan` değişmez; yalnız servet/medyan oranı değişir).");
+  k.push("**Karar kaynağı (lider kararı).** H6'nın BİRİNCİL ölçüsü hibeden bağımsız üretim gelirinin akışıdır (**Y7**: katılımdan 14 gün sonraki son 7 günün net üretim geliri = hazine akışı − sermaye harcaması; hibe/kit akışa girmediği için tanım gereği bağımsız; emsal önce ilçenin üreten yerleşikleri, ilçede üreten yoksa aynı ilin üreten yerleşikleridir). Hipotez kararı Y7 + açılış koşulundan gelir (açılış koşulu: katılımda katılınan ilçede taban fiyatlı hücre açılışın ayak izine yeter; KARARA YALNIZ (i) girer; (ii) katılımdan sonra 14 günde açılış yapısı kuruldu bilgidir ve insan testi gerektirir; ayak izi yurt hariçtir, çünkü yurt ayrı ve ücretsizdir; eski ucuz hücre payı ölçütü bilgi olarak ayrı satırdadır). **Servet** tabanlı ulaşma İKİNCİL olarak raporlanır: ham servet ile hibe/kit'ten arındırılmış servet AYNI kararı verir (ortak ofset altında `servet ≥ medyan` değişmez; yalnız servet/medyan oranı değişir).");
   k.push("");
   for (const s of sonuclar) {
     k.push(`### Tohum ${s.tohum}`);
@@ -236,11 +257,27 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
     k.push("");
     k.push(
       tablo(
-        ["Geç katılan", "İlçe", "Emsal (üreten / toplam)", "Üretim geliri (7 gün)", "Üreten emsal geliri medyan", "Üreten emsal medyanının ≥ %50'si"],
+        ["Geç katılan", "İlçe", "İl", "İlçe emsali (üreten / toplam)", "İl emsali (üreten / toplam)", "Emsal düzeyi", "Üretim geliri (7 gün)", "Kullanılan emsal geliri medyan", "Üreten emsal medyanının ≥ %50'si"],
         s.h6.olgular.map((o) => {
-          const y = y7UretimGeliri([{ gelir: o.gelir, ilceGelirleri: o.emsalGelir }]);
+          const y = y7UretimGeliri([{ gelir: o.gelir, ilceGelirleri: o.emsalGelir, ilGelirleri: o.ilEmsalGelir }]);
           const ok = !y.olculebilir ? "ölçülemez" : y.ulasan === 1 ? "evet" : "hayır";
-          return [o.gec, o.ilce ?? "—", `${o.emsalUretenSayisi} / ${o.emsal.length}`, tl(o.gelir), tl(o.emsalGelirMedyan), ok];
+          const duzey = o.emsalDuzeyi === "ilce" ? "ilçe" : o.emsalDuzeyi === "il" ? "il (yedek)" : "—";
+          const medyan = o.emsalDuzeyi === "il" ? o.ilEmsalGelirMedyan : o.emsalDuzeyi === "ilce" ? o.emsalGelirMedyan : null;
+          return [o.gec, o.ilce ?? "—", o.il ?? "—", `${o.emsalUretenSayisi} / ${o.emsal.length}`, `${o.ilEmsalUretenSayisi} / ${o.ilEmsal.length}`, duzey, tl(o.gelir), tl(medyan), ok];
+        }),
+      ),
+    );
+    k.push("");
+    k.push("**Birincil — ikinci koşul: açılış koşulu (karar: (i) katılımda taban fiyatlı hücre ayak izine yeter; (ii) 14 günde açılış yapısı yalnız bilgi, İNSAN TESTİ GEREKLİ):**");
+    k.push("");
+    k.push(
+      tablo(
+        ["Geç katılan", "İlçe", "Ayrılmış boş (katılım anı)", "Ayak izi (yurt hariç)", "(i) boş ≥ ayak izi", "Bilgi: yurt dahil (boş + " + String(s.h6.olgular[0]?.yurtHucre ?? "—") + " yurt)", "İlk açılış yapısı (katılımdan sonra)", "(ii) 14 günde yapı (bilgi; insan testi gerekli)", "Olgu (= (i))", "İlçe seçimi (ilceSec)"],
+        s.h6.olgular.map((o) => {
+          const a = o.acilisKosulu;
+          const evetHayir = (u: boolean | null): string => (u === null ? "ölçülemez" : u ? "evet" : "hayır");
+          const gec = a.ilkYapiGecikmeMs === null ? "—" : `${(a.ilkYapiGecikmeMs / 86_400_000).toFixed(2)} gün`;
+          return [o.gec, o.ilce ?? "—", String(o.ayrilmisBosKatilim), String(o.ayakIzi), evetHayir(a.tabanYeter), evetHayir(a.tabanYeterYurtDahil), gec, evetHayir(a.yapiKuruldu), a.gecti ? "geçti" : "kaldı", o.ilceNedeni ?? "—"];
         }),
       ),
     );
@@ -260,8 +297,8 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
     const u = s.h6.ucuz;
     const ay = s.h6.ilceler.reduce((t, c) => t + c.ayrilmisBos, 0);
     k.push(
-      `Ucuz hücre (katılım anında): ${yuzde(u.payPpm)} (${u.ucuzHucre}/${u.uygunHucre}); bunun ${u.ayrilmisUcuz} hücresi ayrılmış (yalnız yeni oyuncu), ${u.genelUcuz} hücresi genel (${yuzde(u.genelPayPpm)}). Satılmamış ayrılmış hücre: ${ay}. ` +
-        `**H6 kararı (Y7 + ucuz): ${verdictAd(s.h6.karar.birincil.verdict)}** · Y7 ${s.h6.y7.olculebilir ? `${yuzde(s.h6.y7.oyuncuPayiPpm)} (${s.h6.y7.ulasan}/${s.h6.y7.olculebilirOyuncu})` : "ölçülemez: " + s.h6.y7.neden}. İkincil servet ulaşma: ${verdictAd(s.h6.karar.ikincil.ham.verdict)}.`,
+      `**Eski tanım (ucuz hücre payı ≥ %20; bilgi, karara girmez):** ${yuzde(u.payPpm)} (${u.ucuzHucre}/${u.uygunHucre}); bunun ${u.ayrilmisUcuz} hücresi ayrılmış (yalnız yeni oyuncu), ${u.genelUcuz} hücresi genel (${yuzde(u.genelPayPpm)}). Satılmamış ayrılmış hücre: ${ay}. ` +
+        `**H6 kararı (Y7 + açılış koşulu): ${verdictAd(s.h6.karar.birincil.verdict)}** · Y7 ${s.h6.y7.olculebilir ? `${yuzde(s.h6.y7.oyuncuPayiPpm)} (${s.h6.y7.ulasan}/${s.h6.y7.olculebilirOyuncu}; emsal düzeyi: ${s.h6.y7.ilceDuzeyi} ilçe, ${s.h6.y7.ilDuzeyi} il yedeği)` : "ölçülemez: " + s.h6.y7.neden} · açılış koşulu ${s.h6.karar.birincil.acilis.olculebilir ? `${s.h6.karar.birincil.acilis.gecen}/${s.h6.karar.birincil.acilis.olguSayisi} olgu (i)'yi sağladı; (ii) bilgi: ${s.h6.karar.birincil.acilis.yapiKurulduSayisi}/${s.h6.karar.birincil.acilis.yapiOlculenOlgu} olguda 14 günde açılış yapısı (insan testi gerekli)` : "ölçülemez: " + s.h6.karar.birincil.acilis.neden}. İkincil servet ulaşma: ${verdictAd(s.h6.karar.ikincil.ham.verdict)}.`,
     );
     k.push("");
   }
@@ -429,6 +466,7 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
         [
           ["Y7 oyuncu payı (≥ %50 emsal medyanı)", yuzde(ozOnce.h6.y7PayiPpm), yuzde(oz.h6.y7PayiPpm)],
           ["Y7 kararı", verdictAd(ozOnce.h6.y7Verdict), verdictAd(oz.h6.y7Verdict)],
+          ["H6 açılış koşulu (ayak izine yeter ve 14 günde yapı)", ozOnce.h6.tabanYeterPpm === null ? "— (önceki koşuda ölçülmedi)" : verdictAd(ozOnce.h6.acilisVerdict), verdictAd(oz.h6.acilisVerdict)],
           ["İkincil servet ulaşma", yuzde(ozOnce.h6.servetBasariPpm), yuzde(oz.h6.servetBasariPpm)],
         ],
       ),

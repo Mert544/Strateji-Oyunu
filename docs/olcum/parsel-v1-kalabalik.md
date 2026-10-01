@@ -22,10 +22,12 @@
 
 | Ölçüt | Sonuç | Eşik (vazgeçme) | Not |
 |---|---|---|---|
-| **H6 (birincil: Y7 + ucuz hücre)** — hipotez kararı | KALDI · Y7 — oyuncu | Y7: oyuncuların < %50'si emsal medyanının ≥ %50'sinde ya da ucuz hücre < %20 | hibeden bağımsız üretim geliri (son 7 gün); karar servetten gelmez |
+| **H6 (birincil: Y7 + açılış koşulu)** — hipotez kararı | BELİRSİZ · Y7 — oyuncu | Y7: oyuncuların < %50'si emsal medyanının ≥ %50'sinde ya da açılış koşulu tutmuyor | hibeden bağımsız üretim geliri (son 7 gün; emsal önce ilçe, yoksa il); karar servetten gelmez |
+| H6 ikinci koşul: açılış koşulu (docs/12 §13) | BELİRSİZ · (i) taban hücre ayak izine yeter — (yurt dahil: —) · (ii, bilgi) 14 günde açılış yapısı — — insan testi gerekli | TÜM olgular (i)'yi sağlamalı; (ii) karara girmez | ayak izi = açılışın ilk yapısının hücre sayısı, yurt hariç (yurt ayrı ve ücretsizdir); yurt dahil sayım bilgidir; (ii) botlar katılım anında kurduğu için bot ölçeğinde bilgisizdir |
+| H6 Y7 emsal düzeyi | il yedeğiyle ölçülen olgu — | (bilgi) | önce ilçe emsali; ilçede üreten yoksa aynı ildeki üreten yerleşikler |
 | H6 ikincil: servet medyana ulaşma (bilgi) | KALDI · ulaşan — | (karara girmez; eski tanım: ulaşan < %50) | hibe + kit ham servetin ~—'i; hibe/kit arındırması ulaşma kararını değiştirmez |
-| H6 ucuz hücre payı (≤ 2× taban) | %0 (eski oyuncuya açık: %0) | < %20 | ayrılmış hücreler yalnız yeni oyuncuya |
-| **H8** (Gini · en büyük ilçe payı · yeniden satış) | BELİRSİZ · Gini %33 · ilçe payı %25 | Gini > %60 ya da pay > %25 ya da > 10 hf | yeniden satış yok: koşul 3 ölçülemez |
+| H6 eski tanım (ucuz hücre payı ≥ %20) | %1,2 (eski oyuncuya açık: %0) | (karara girmez; eski eşik: < %20) | yalnız bilgi; ayrılmış hücre uygun hücrelerin ~%19'u olduğundan eşik yapısal olarak tutmuyordu |
+| **H8** (Gini · en büyük ilçe payı · yeniden satış) | BELİRSİZ · Gini %31,5 · ilçe payı %25 | Gini > %60 ya da pay > %25 ya da > 10 hf | yeniden satış yok: koşul 3 ölçülemez |
 
 ## 2. H6 — geç katılan işe yarar
 
@@ -36,57 +38,72 @@ Paket çekirdeğin gerçek davranışına göre okunur (docs/06 §15.1; botlar `
 - **İndirimli yapı**: ilk 5 yapıda yapı değeri = ÖDENEN tutar (para + malzeme %70'i), tam bedel değil (koşucu, inşaatın `odenenPara`/`odenenMal` kaydından okur).
 - **Ayrılmış hücre**: ilçenin %20'si yalnız katılımın ilk 14 gününde olan oyuncuya satılır. Geç katılan 14. günde ayrılmış hücrelere hâlâ erişir; yerleşikler gün 14'ten sonra erişemez.
 
-**Karar kaynağı (lider kararı).** H6'nın BİRİNCİL ölçüsü hibeden bağımsız üretim gelirinin akışıdır (**Y7**: katılımdan 14 gün sonraki son 7 günün net üretim geliri = hazine akışı − sermaye harcaması; hibe/kit akışa girmediği için tanım gereği bağımsız). Hipotez kararı Y7 + ucuz hücre koşulundan gelir. **Servet** tabanlı ulaşma İKİNCİL olarak raporlanır: ham servet ile hibe/kit'ten arındırılmış servet AYNI kararı verir (ortak ofset altında `servet ≥ medyan` değişmez; yalnız servet/medyan oranı değişir).
+**Karar kaynağı (lider kararı).** H6'nın BİRİNCİL ölçüsü hibeden bağımsız üretim gelirinin akışıdır (**Y7**: katılımdan 14 gün sonraki son 7 günün net üretim geliri = hazine akışı − sermaye harcaması; hibe/kit akışa girmediği için tanım gereği bağımsız; emsal önce ilçenin üreten yerleşikleri, ilçede üreten yoksa aynı ilin üreten yerleşikleridir). Hipotez kararı Y7 + açılış koşulundan gelir (açılış koşulu: katılımda katılınan ilçede taban fiyatlı hücre açılışın ayak izine yeter; KARARA YALNIZ (i) girer; (ii) katılımdan sonra 14 günde açılış yapısı kuruldu bilgidir ve insan testi gerektirir; ayak izi yurt hariçtir, çünkü yurt ayrı ve ücretsizdir; eski ucuz hücre payı ölçütü bilgi olarak ayrı satırdadır). **Servet** tabanlı ulaşma İKİNCİL olarak raporlanır: ham servet ile hibe/kit'ten arındırılmış servet AYNI kararı verir (ortak ofset altında `servet ≥ medyan` değişmez; yalnız servet/medyan oranı değişir).
 
 ### Tohum 1
 
 **Birincil — Y7 (hibeden bağımsız net üretim geliri, son 7 gün):**
 
-| Geç katılan | İlçe | Emsal (üreten / toplam) | Üretim geliri (7 gün) | Üreten emsal geliri medyan | Üreten emsal medyanının ≥ %50'si |
-|---|---|---|---|---|---|
+| Geç katılan | İlçe | İl | İlçe emsali (üreten / toplam) | İl emsali (üreten / toplam) | Emsal düzeyi | Üretim geliri (7 gün) | Kullanılan emsal geliri medyan | Üreten emsal medyanının ≥ %50'si |
+|---|---|---|---|---|---|---|---|---|
+
+**Birincil — ikinci koşul: açılış koşulu (karar: (i) katılımda taban fiyatlı hücre ayak izine yeter; (ii) 14 günde açılış yapısı yalnız bilgi, İNSAN TESTİ GEREKLİ):**
+
+| Geç katılan | İlçe | Ayrılmış boş (katılım anı) | Ayak izi (yurt hariç) | (i) boş ≥ ayak izi | Bilgi: yurt dahil (boş + — yurt) | İlk açılış yapısı (katılımdan sonra) | (ii) 14 günde yapı (bilgi; insan testi gerekli) | Olgu (= (i)) | İlçe seçimi (ilceSec) |
+|---|---|---|---|---|---|---|---|---|---|
 
 **İkincil — servet (bilgi; karara girmez):**
 
 | Geç katılan | Servet (ham) | Emsal medyan (ham) | Servet/medyan (ham) | Servet/medyan (arınd.) | Hibe+kit payı | Medyana ulaştı |
 |---|---|---|---|---|---|---|
 
-Ucuz hücre (katılım anında): %0 (0/583); bunun 0 hücresi ayrılmış (yalnız yeni oyuncu), 0 hücresi genel (%0). Satılmamış ayrılmış hücre: 0. **H6 kararı (Y7 + ucuz): KALDI** · Y7 ölçülemez: uretim yapan (geliri > 0) ilce emsali yok. İkincil servet ulaşma: KALDI.
+**Eski tanım (ucuz hücre payı ≥ %20; bilgi, karara girmez):** %1,2 (7/583); bunun 7 hücresi ayrılmış (yalnız yeni oyuncu), 0 hücresi genel (%0). Satılmamış ayrılmış hücre: 7. **H6 kararı (Y7 + açılış koşulu): BELİRSİZ** · Y7 ölçülemez: uretim yapan (geliri > 0) ilce ya da il emsali yok · açılış koşulu ölçülemez: geç katılan olgusu yok. İkincil servet ulaşma: KALDI.
 
 ### Tohum 2
 
 **Birincil — Y7 (hibeden bağımsız net üretim geliri, son 7 gün):**
 
-| Geç katılan | İlçe | Emsal (üreten / toplam) | Üretim geliri (7 gün) | Üreten emsal geliri medyan | Üreten emsal medyanının ≥ %50'si |
-|---|---|---|---|---|---|
+| Geç katılan | İlçe | İl | İlçe emsali (üreten / toplam) | İl emsali (üreten / toplam) | Emsal düzeyi | Üretim geliri (7 gün) | Kullanılan emsal geliri medyan | Üreten emsal medyanının ≥ %50'si |
+|---|---|---|---|---|---|---|---|---|
+
+**Birincil — ikinci koşul: açılış koşulu (karar: (i) katılımda taban fiyatlı hücre ayak izine yeter; (ii) 14 günde açılış yapısı yalnız bilgi, İNSAN TESTİ GEREKLİ):**
+
+| Geç katılan | İlçe | Ayrılmış boş (katılım anı) | Ayak izi (yurt hariç) | (i) boş ≥ ayak izi | Bilgi: yurt dahil (boş + — yurt) | İlk açılış yapısı (katılımdan sonra) | (ii) 14 günde yapı (bilgi; insan testi gerekli) | Olgu (= (i)) | İlçe seçimi (ilceSec) |
+|---|---|---|---|---|---|---|---|---|---|
 
 **İkincil — servet (bilgi; karara girmez):**
 
 | Geç katılan | Servet (ham) | Emsal medyan (ham) | Servet/medyan (ham) | Servet/medyan (arınd.) | Hibe+kit payı | Medyana ulaştı |
 |---|---|---|---|---|---|---|
 
-Ucuz hücre (katılım anında): %0 (0/583); bunun 0 hücresi ayrılmış (yalnız yeni oyuncu), 0 hücresi genel (%0). Satılmamış ayrılmış hücre: 0. **H6 kararı (Y7 + ucuz): KALDI** · Y7 ölçülemez: uretim yapan (geliri > 0) ilce emsali yok. İkincil servet ulaşma: KALDI.
+**Eski tanım (ucuz hücre payı ≥ %20; bilgi, karara girmez):** %1,2 (7/583); bunun 7 hücresi ayrılmış (yalnız yeni oyuncu), 0 hücresi genel (%0). Satılmamış ayrılmış hücre: 7. **H6 kararı (Y7 + açılış koşulu): BELİRSİZ** · Y7 ölçülemez: uretim yapan (geliri > 0) ilce ya da il emsali yok · açılış koşulu ölçülemez: geç katılan olgusu yok. İkincil servet ulaşma: KALDI.
 
 ### Tohum 3
 
 **Birincil — Y7 (hibeden bağımsız net üretim geliri, son 7 gün):**
 
-| Geç katılan | İlçe | Emsal (üreten / toplam) | Üretim geliri (7 gün) | Üreten emsal geliri medyan | Üreten emsal medyanının ≥ %50'si |
-|---|---|---|---|---|---|
+| Geç katılan | İlçe | İl | İlçe emsali (üreten / toplam) | İl emsali (üreten / toplam) | Emsal düzeyi | Üretim geliri (7 gün) | Kullanılan emsal geliri medyan | Üreten emsal medyanının ≥ %50'si |
+|---|---|---|---|---|---|---|---|---|
+
+**Birincil — ikinci koşul: açılış koşulu (karar: (i) katılımda taban fiyatlı hücre ayak izine yeter; (ii) 14 günde açılış yapısı yalnız bilgi, İNSAN TESTİ GEREKLİ):**
+
+| Geç katılan | İlçe | Ayrılmış boş (katılım anı) | Ayak izi (yurt hariç) | (i) boş ≥ ayak izi | Bilgi: yurt dahil (boş + — yurt) | İlk açılış yapısı (katılımdan sonra) | (ii) 14 günde yapı (bilgi; insan testi gerekli) | Olgu (= (i)) | İlçe seçimi (ilceSec) |
+|---|---|---|---|---|---|---|---|---|---|
 
 **İkincil — servet (bilgi; karara girmez):**
 
 | Geç katılan | Servet (ham) | Emsal medyan (ham) | Servet/medyan (ham) | Servet/medyan (arınd.) | Hibe+kit payı | Medyana ulaştı |
 |---|---|---|---|---|---|---|
 
-Ucuz hücre (katılım anında): %0 (0/583); bunun 0 hücresi ayrılmış (yalnız yeni oyuncu), 0 hücresi genel (%0). Satılmamış ayrılmış hücre: 0. **H6 kararı (Y7 + ucuz): KALDI** · Y7 ölçülemez: uretim yapan (geliri > 0) ilce emsali yok. İkincil servet ulaşma: KALDI.
+**Eski tanım (ucuz hücre payı ≥ %20; bilgi, karara girmez):** %1,2 (7/583); bunun 7 hücresi ayrılmış (yalnız yeni oyuncu), 0 hücresi genel (%0). Satılmamış ayrılmış hücre: 7. **H6 kararı (Y7 + açılış koşulu): BELİRSİZ** · Y7 ölçülemez: uretim yapan (geliri > 0) ilce ya da il emsali yok · açılış koşulu ölçülemez: geç katılan olgusu yok. İkincil servet ulaşma: KALDI.
 
 ## 3. H8 — arazi yoğunlaşması
 
 | Tohum | Karar | Gini (değer) | Gini (hücre) | Gini (yalnız sahipler) | En büyük ilçe payı | Pay > %25 çift | Yeniden satış |
 |---|---|---|---|---|---|---|---|
-| 1 | BELİRSİZ | %33 | %31,5 | %33 | %25 (spekulator_3, 12 hücre) | 0 | yok (ölçülemez) |
-| 2 | BELİRSİZ | %33 | %31,5 | %33 | %25 (spekulator_3, 12 hücre) | 0 | yok (ölçülemez) |
-| 3 | BELİRSİZ | %33 | %31,5 | %33 | %25 (spekulator_3, 12 hücre) | 0 | yok (ölçülemez) |
+| 1 | BELİRSİZ | %31,5 | %30,2 | %31,5 | %25 (spekulator_3, 12 hücre) | 0 | yok (ölçülemez) |
+| 2 | BELİRSİZ | %31,5 | %30,2 | %31,5 | %25 (spekulator_3, 12 hücre) | 0 | yok (ölçülemez) |
+| 3 | BELİRSİZ | %31,5 | %30,2 | %31,5 | %25 (spekulator_3, 12 hücre) | 0 | yok (ölçülemez) |
 
 Not: spekülatör botları (arsa biriktirir, üretmez) koşuda; Gini ve ilçe payı onların tavanlara (72 hücre / ilçenin %25'i) dayanmasıyla ölçülür. En büyük ilçe payı %25'e tam dayanabilir ama aşamaz (tavan çekirdekte); eşik "> %25" olduğundan tam %25 geçer.
 
@@ -98,12 +115,12 @@ Ayrılmış hücreler (ilçenin uygun hücrelerinin %20'si) yalnız katılımın
 
 | Tohum | An | Ayrılmış toplam | Satılan | Boş | Kalan pay | İhlal | Güvence |
 |---|---|---|---|---|---|---|---|
-| 1 | geç katılımdan hemen önce | 110 | 110 | 0 | %0 | 0 | tuttu |
-| 1 | koşu sonu | 110 | 110 | 0 | %0 | 0 | tuttu |
-| 2 | geç katılımdan hemen önce | 110 | 110 | 0 | %0 | 0 | tuttu |
-| 2 | koşu sonu | 110 | 110 | 0 | %0 | 0 | tuttu |
-| 3 | geç katılımdan hemen önce | 110 | 110 | 0 | %0 | 0 | tuttu |
-| 3 | koşu sonu | 110 | 110 | 0 | %0 | 0 | tuttu |
+| 1 | geç katılımdan hemen önce | 110 | 103 | 7 | %6,4 | 0 | tuttu |
+| 1 | koşu sonu | 110 | 103 | 7 | %6,4 | 0 | tuttu |
+| 2 | geç katılımdan hemen önce | 110 | 103 | 7 | %6,4 | 0 | tuttu |
+| 2 | koşu sonu | 110 | 103 | 7 | %6,4 | 0 | tuttu |
+| 3 | geç katılımdan hemen önce | 110 | 103 | 7 | %6,4 | 0 | tuttu |
+| 3 | koşu sonu | 110 | 103 | 7 | %6,4 | 0 | tuttu |
 
 Okuma: İHLAL = 0 ise çekirdek kuralı (eski oyuncuya satmama) tutuyor. Kalan pay düşükse ayrılmış hücreler **önceki yeni oyuncular** (ör. ilk 14 günde alım yapan spekülatörler) tarafından tüketilmiş demektir: kural eski oyuncudan korur, aynı dönemdeki yeni oyuncudan korumaz.
 
@@ -130,31 +147,31 @@ Okuma: İHLAL = 0 ise çekirdek kuralı (eski oyuncuya satmama) tutuyor. Kalan p
 
 | Grup | Oyuncu | Ort. hücre | En çok hücre | Ort. ham servet | Ort. komut | Reddedilen |
 |---|---|---|---|---|---|---|
-| ciftci | 20 | 6 | 8 | 2.455.881 ₺ | 6 | 0 |
-| sanayici | 10 | 6 | 6 | 2.274.143 ₺ | 100 | 0 |
-| tuccar | 10 | 6 | 6 | 580.295 ₺ | 2 | 0 |
+| ciftci | 20 | 6 | 8 | 2.303.002 ₺ | 5 | 0 |
+| sanayici | 10 | 7 | 8 | 3.363.241 ₺ | 10 | 0 |
+| tuccar | 10 | 6 | 6 | 581.869 ₺ | 2 | 0 |
 | pasif | 6 | 6 | 6 | 79.523 ₺ | 0 | 0 |
-| spekulator | 8 | 31 | 37 | 81.826 ₺ | 7 | 0 |
-| spekulator_yasli | 8 | 6 | 6 | 83.727 ₺ | 3 | 0 |
+| spekulator | 8 | 29 | 36 | 82.072 ₺ | 6 | 0 |
+| spekulator_yasli | 8 | 6 | 6 | 83.898 ₺ | 3 | 0 |
 
 | Oyuncu | Katılım (gün) | İlçe | Hücre | Ayrılmış | Yapı | Komut | Reddedilen | Hazine | Stok | Arazi | Yapı bedeli | Ham servet |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| ciftci_1 | 0 | sn_m_ova_merkez | 6 | 0 | 2 | 5 | 0 | 1.628.363 ₺ | 8.174 ₺ | 0 ₺ | 18.830 ₺ | 1.655.368 ₺ |
-| ciftci_2 | 0 | sn_m_ova_tasra | 7 | 3 | 3 | 7 | 0 | 2.693.329 ₺ | 5.654 ₺ | 2.684 ₺ | 26.810 ₺ | 2.728.478 ₺ |
-| ciftci_3 | 0 | sn_m_sehir_merkez | 6 | 3 | 3 | 7 | 0 | 3.234.171 ₺ | 5.654 ₺ | 0 ₺ | 26.810 ₺ | 3.266.636 ₺ |
-| ciftci_4 | 0 | sn_m_sehir_tasra | 6 | 1 | 2 | 5 | 0 | 1.873.455 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.900.460 ₺ |
-| ciftci_5 | 0 | sn_m_ova_tasra | 8 | 2 | 3 | 7 | 0 | 2.692.259 ₺ | 5.654 ₺ | 3.719 ₺ | 26.810 ₺ | 2.728.442 ₺ |
-| ciftci_6 | 0 | sn_m_ova_merkez | 6 | 4 | 3 | 7 | 0 | 2.696.104 ₺ | 5.654 ₺ | 0 ₺ | 26.810 ₺ | 2.728.568 ₺ |
-| ciftci_7 | 0 | sn_m_sehir_merkez | 8 | 2 | 3 | 7 | 0 | 3.228.356 ₺ | 5.654 ₺ | 5.625 ₺ | 26.810 ₺ | 3.266.445 ₺ |
-| ciftci_8 | 0 | sn_m_sehir_tasra | 6 | 2 | 3 | 7 | 0 | 3.234.171 ₺ | 5.654 ₺ | 0 ₺ | 26.810 ₺ | 3.266.636 ₺ |
-| ciftci_9 | 0 | sn_m_ova_tasra | 6 | 0 | 3 | 7 | 0 | 2.696.104 ₺ | 5.654 ₺ | 0 ₺ | 26.810 ₺ | 2.728.568 ₺ |
-| ciftci_10 | 0 | sn_m_ova_merkez | 6 | 0 | 2 | 5 | 0 | 1.628.363 ₺ | 8.174 ₺ | 0 ₺ | 18.830 ₺ | 1.655.368 ₺ |
-| ciftci_11 | 0 | sn_m_sehir_merkez | 6 | 2 | 2 | 5 | 0 | 1.873.455 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.900.460 ₺ |
-| ciftci_12 | 0 | sn_m_ova_tasra | 7 | 2 | 3 | 7 | 0 | 2.693.257 ₺ | 5.654 ₺ | 2.754 ₺ | 26.810 ₺ | 2.728.475 ₺ |
-| ciftci_13 | 0 | sn_m_ova_merkez | 6 | 2 | 2 | 5 | 0 | 1.628.363 ₺ | 8.174 ₺ | 0 ₺ | 18.830 ₺ | 1.655.368 ₺ |
-| ciftci_14 | 0 | sn_m_sehir_merkez | 6 | 1 | 3 | 7 | 0 | 3.234.171 ₺ | 5.654 ₺ | 0 ₺ | 26.810 ₺ | 3.266.636 ₺ |
-| ciftci_15 | 0 | sn_m_sehir_tasra | 6 | 2 | 2 | 5 | 0 | 1.873.455 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.900.460 ₺ |
-| ciftci_16 | 0 | sn_m_ova_tasra | 7 | 2 | 3 | 7 | 0 | 2.693.220 ₺ | 5.654 ₺ | 2.789 ₺ | 26.810 ₺ | 2.728.474 ₺ |
+| ciftci_1 | 0 | sn_m_ova_merkez | 6 | 0 | 2 | 5 | 0 | 1.633.863 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.660.868 ₺ |
+| ciftci_2 | 0 | sn_m_ova_tasra | 8 | 4 | 3 | 7 | 0 | 2.739.444 ₺ | 5.655 ₺ | 3.860 ₺ | 26.810 ₺ | 2.775.768 ₺ |
+| ciftci_3 | 0 | sn_m_sehir_merkez | 6 | 3 | 3 | 7 | 0 | 3.272.905 ₺ | 5.654 ₺ | 0 ₺ | 26.810 ₺ | 3.305.369 ₺ |
+| ciftci_4 | 0 | sn_m_sehir_tasra | 6 | 1 | 2 | 5 | 0 | 1.877.741 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.904.746 ₺ |
+| ciftci_5 | 0 | sn_m_ova_tasra | 8 | 1 | 3 | 7 | 0 | 2.737.412 ₺ | 5.655 ₺ | 5.825 ₺ | 26.810 ₺ | 2.775.701 ₺ |
+| ciftci_6 | 0 | sn_m_ova_merkez | 6 | 4 | 3 | 7 | 0 | 2.743.434 ₺ | 5.655 ₺ | 0 ₺ | 26.810 ₺ | 2.775.898 ₺ |
+| ciftci_7 | 0 | sn_m_sehir_merkez | 6 | 2 | 2 | 5 | 0 | 1.877.741 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.904.746 ₺ |
+| ciftci_8 | 0 | sn_m_sehir_tasra | 6 | 2 | 3 | 7 | 0 | 3.272.905 ₺ | 5.654 ₺ | 0 ₺ | 26.810 ₺ | 3.305.369 ₺ |
+| ciftci_9 | 0 | sn_m_ova_tasra | 6 | 0 | 3 | 7 | 0 | 2.743.434 ₺ | 5.655 ₺ | 0 ₺ | 26.810 ₺ | 2.775.898 ₺ |
+| ciftci_10 | 0 | sn_m_ova_merkez | 8 | 2 | 3 | 7 | 0 | 2.741.366 ₺ | 5.655 ₺ | 2.000 ₺ | 26.810 ₺ | 2.775.831 ₺ |
+| ciftci_11 | 0 | sn_m_sehir_merkez | 6 | 2 | 2 | 5 | 0 | 1.877.741 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.904.746 ₺ |
+| ciftci_12 | 0 | sn_m_ova_tasra | 6 | 2 | 2 | 5 | 0 | 1.633.863 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.660.868 ₺ |
+| ciftci_13 | 0 | sn_m_ova_merkez | 6 | 2 | 2 | 5 | 0 | 1.633.863 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.660.868 ₺ |
+| ciftci_14 | 0 | sn_m_sehir_merkez | 6 | 1 | 3 | 7 | 0 | 3.272.905 ₺ | 5.654 ₺ | 0 ₺ | 26.810 ₺ | 3.305.369 ₺ |
+| ciftci_15 | 0 | sn_m_sehir_tasra | 6 | 2 | 2 | 5 | 0 | 1.877.741 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.904.746 ₺ |
+| ciftci_16 | 0 | sn_m_ova_tasra | 6 | 2 | 2 | 5 | 0 | 1.633.863 ₺ | 8.175 ₺ | 0 ₺ | 18.830 ₺ | 1.660.868 ₺ |
 
 (Yalnız ilk 16 oyuncu gösterilir; toplam 62.)
 Not: tablodaki servet KOŞU SONUDUR (geç katılanlar için ölçüm anı katılım + 14 gündür; koşu bitişiyle aynı).
@@ -173,15 +190,16 @@ Karşılaştırılan koşu: `parsel-v1-kisa-temel.json` (3 tohum). Aynı geç ka
 |---|---|---|
 | Y7 oyuncu payı (≥ %50 emsal medyanı) | %100 | — |
 | Y7 kararı | GEÇTİ | BELİRSİZ |
+| H6 açılış koşulu (ayak izine yeter ve 14 günde yapı) | GEÇTİ | BELİRSİZ |
 | İkincil servet ulaşma | %33,3 | — |
 
 ## 6. Determinizm izi
 
 | Tohum | durumOzeti |
 |---|---|
-| 1 | `e8629daa8ec024b8` |
-| 2 | `d8e7f56181d87f8a` |
-| 3 | `8be1d37dddb7edcc` |
+| 1 | `8fe60bf7798fdd9e` |
+| 2 | `c9acd7899ed18ce0` |
+| 3 | `249978aac3c44992` |
 
 ## 7. Bölge kipi v0.3 temel çizgisiyle karşılaştırma notu
 
@@ -189,8 +207,8 @@ Donmuş temel çizgi: [v0.3-gercek-t1-3.md](v0.3-gercek-t1-3.md) (commit `1a7fe0
 
 | Hipotez | v0.3 (bölge kipi) | Parsel v0 (bu koşu) | Karşılaştırılabilirlik / uyarı |
 |---|---|---|---|
-| H6 | 0,792 GEÇTİ (10./20. gün katılım, devlet içi bölge başına üretim artışı medyanı) | KALDI (birincil Y7 —); ikincil servet KALDI (ulaşan —) | Orta: v0.3 aynı pencerede ÜRETİM ARTIŞINI ölçüyordu; parsel H6'nın birincil ölçüsü Y7 de aynı pencerenin akışıdır. İkincil servet birikimi yerleşiğin baş avantajını taşır. |
-| H8 | — (yeni, temel çizgi yok) | BELİRSİZ · Gini %33 | Temel çizgi yok. |
+| H6 | 0,792 GEÇTİ (10./20. gün katılım, devlet içi bölge başına üretim artışı medyanı) | BELİRSİZ (birincil Y7 —); ikincil servet KALDI (ulaşan —) | Orta: v0.3 aynı pencerede ÜRETİM ARTIŞINI ölçüyordu; parsel H6'nın birincil ölçüsü Y7 de aynı pencerenin akışıdır. İkincil servet birikimi yerleşiğin baş avantajını taşır. |
+| H8 | — (yeni, temel çizgi yok) | BELİRSİZ · Gini %31,5 | Temel çizgi yok. |
 
 **Okuma.** v0.3'te geç katılanın medyana ulaşması bölge başına *üretim artışıyla* (aynı pencerede) ölçülüyordu. Parsel kipinde H6'nın birincil ölçüsü aynı pencerenin hibeden bağımsız gelirini (Y7) karşılaştırır; servet tabanlı ulaşma ikincildir (servet geçmiş birikimi de içerir, yerleşiğin baş avantajını taşır). Geç katılımın H6 tanımındaki gerçek günü (60.) için `--agir` koşusuna bakın.
 

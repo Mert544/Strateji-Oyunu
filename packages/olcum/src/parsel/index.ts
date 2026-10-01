@@ -8,6 +8,7 @@ export * from "./h2";
 export * from "./h3";
 export * from "./h5";
 export * from "./h6";
+export * from "./h6-acilis";
 export * from "./h7";
 export * from "./h8";
 export * from "./h9";

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { GUN, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikHazine, anlikMiktar, kamuHucreMi, mulkOyuncuBul, yurtPlanla } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi } from "@bolge/cekirdek";
 import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
-import { ACILIS_ESLEMESI, GEC_ACILISLARI, PARSEL_ONAYARLARI, ilceSec, parselArsaFiyati, parselBotuOlustur, parselKos } from "../src";
+import { ACILIS_ESLEMESI, GEC_ACILISLARI, PARSEL_ONAYARLARI, acilisAyakIzi, ilceAyrilmisBos, ilceSec, parselArsaFiyati, parselBotuOlustur, parselKos } from "../src";
 import type { ParselBotu, ParselKosuOyuncusu, ParselOnayari } from "../src";
 
 function veri(): CekirdekVeriPaketi {
@@ -458,10 +458,12 @@ describe("P2 uyarlaması: ayrılmış hücre hesap tavanı ve taban fiyat", () =
     s.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "once", bolgeler: [], ilce } });
     const tanim = mk.ilceler.get(ilce)!;
     const bos = (ayr: boolean) => tanim.hucreler.filter((h) => h.uygun && h.sinif === "kirsal" && !kamuHucreMi(s.dunya, ilce, h.id) && !s.dunya.mulk!.hucreler.some((x) => x.id === h.id) && mk.ayrilmis.has(h.id) === ayr).map((h) => h.id);
-    // İkinci oyuncu (aynı ilçeye yurt): 2 ayrılmış + 3 normal al, bedeli çekirdekle karşılaştır
-    s.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "alici", bolgeler: [], ilce: "sn_m_liman_merkez" } });
+    // İkinci oyuncu: katılım ilçesi aynı ilçe (P3b: ayrılmış hücre yalnız katılım ilçesinde satılır); 2 ayrılmış + 3 normal al, bedeli çekirdekle karşılaştır
+    s.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "alici", bolgeler: [], ilce } });
     const durum = () => s.dunya.mulk!.ilceler.find((i) => i.id === "sn_m_gecit_merkez")!;
-    for (const [ayr, norm] of [[2, 3], [0, 4], [3, 0]] as const) {
+    // Toplam hücre ilçe payı tavanını (%25) aşmasın: yurt + 5 + 2 + 1 ≤ tavan; ayrılmış toplamı günlük ilçe tavanının altında
+    const liste = [[2, 3], [0, 2], [1, 0]] as const;
+    for (const [ayr, norm] of liste) {
       const a = bos(true).slice(0, ayr);
       const n = bos(false).slice(0, norm);
       const tahmin = parselArsaFiyati(s, ilce, "kirsal", a.length, n.length);
@@ -470,24 +472,45 @@ describe("P2 uyarlaması: ayrılmış hücre hesap tavanı ve taban fiyat", () =
       expect(r.tamam, JSON.stringify(r)).toBe(true);
       expect(once - anlikHazine(s.dunya, "alici"), `ayrilmis ${ayr} normal ${norm}`).toBe(tahmin);
     }
-    expect(durum().ayrilmisSatilmis).toBe(5);
+    expect(durum().ayrilmisSatilmis).toBe(liste.reduce((t, [a]) => t + a, 0));
     // Ayrılmış hücre taban fiyatı: eğriden bağımsız (satilmis artsa da aynı)
     const taban = mk.p.hucreFiyati["kirsal"];
     expect(parselArsaFiyati(s, ilce, "kirsal", 1, 0)).toBe(taban);
     expect(parselArsaFiyati(s, ilce, "kirsal", 3, 0)).toBe(3 * taban);
   });
 
-  it("spekülatör hesap tavanına KADAR ayrılmış hücre alır (yurt dahil) ve aşmaz; kalanı normal hücreden; reddedilen komut yok", () => {
+  it("spekülatör ayrılmış hücreyi YALNIZ katılım ilçesinde, hesap tavanı ve günlük ilçe tavanı içinde alır; kalanı normal hücreden; reddedilen komut yok", () => {
     const r = parselKos({ veri: veri(), tohum: 1, oyuncular: Array.from({ length: 2 }, (_, i) => ({ id: `s${i + 1}`, bot: parselBotuOlustur("spekulator", `s${i + 1}`), katilmaMs: 0 })), sureMs: 6 * GUN });
+    const yo = r.sim.ic.mulk!.p.yeniOyuncu;
     for (const o of ["s1", "s2"]) {
       const mo = mulkOyuncuBul(r.sim.dunya, o)!;
-      expect(mo.ayrilmisHucre ?? 0, o).toBeLessThanOrEqual(tavan());
-      expect(mo.ayrilmisHucre ?? 0, o).toBe(tavan()); // yeni oyuncu bütçesi yeter: tavana dayanır
-      const sayilan = r.sim.dunya.mulk!.hucreler.filter((h) => h.sahip === o && r.sim.ic.mulk!.ayrilmis.has(h.id)).length;
-      expect(sayilan).toBe(mo.ayrilmisHucre ?? 0);
-      expect(r.sim.dunya.mulk!.hucreler.filter((h) => h.sahip === o).length, o).toBeGreaterThan(tavan()); // kalanı normal
+      const katilim = mo.katilimIlcesi;
+      expect(katilim, o).toBeDefined(); // koşucu katılım ilçesini her zaman verir
+      const ayr = r.sim.dunya.mulk!.hucreler.filter((h) => h.sahip === o && r.sim.ic.mulk!.ayrilmis.has(h.id));
+      expect(ayr.length).toBe(mo.ayrilmisHucre ?? 0);
+      expect(ayr.length, o).toBeGreaterThan(0);
+      expect(ayr.length, o).toBeLessThanOrEqual(yo.ayrilmisHucreHesapTavani!); // hesap tavanı (yurt dahil)
+      expect(ayr.length, o).toBeLessThanOrEqual(r.sim.ic.mulk!.ayrilmisIlceSayisi.get(katilim as string) as number); // ilçenin ayrılmış stoku
+      for (const h of ayr) expect(h.ilce, `${o} ${h.id}`).toBe(katilim); // YALNIZ katılım ilçesi
+      expect(r.sim.dunya.mulk!.hucreler.filter((h) => h.sahip === o).length, o).toBeGreaterThan(ayr.length); // kalanı normal hücreden
+    }
+    // Günlük ilçe tavanı: hiçbir ilçenin sayacı tavanı aşmadı
+    for (const c of r.sim.dunya.mulk!.ilceler) {
+      if (c.ayrilmisGunluk === undefined) continue;
+      const tavan = Math.max(yo.ayrilmisIlceGunlukEnAz ?? 0, Math.floor(((r.sim.ic.mulk!.ayrilmisIlceSayisi.get(c.id) ?? 0) * (yo.ayrilmisIlceGunlukPpm ?? 0)) / 1_000_000));
+      expect(c.ayrilmisGunluk.adet, c.id).toBeLessThanOrEqual(tavan);
     }
     for (const k of r.komutGunlugu) expect(k.tamam, JSON.stringify(k)).toBe(true);
+  });
+
+  it("koşucu oyuncu_katil'e ilçeyi HER ZAMAN verir (ilçe önerisi olmayan yerleşik için çekirdeğin varsayılan yurt ilçesi); katılım ilçesi yurt ilçesidir", () => {
+    const r = parselKos({ veri: veri(), tohum: 1, oyuncular: [{ id: "c", bot: parselBotuOlustur("ciftci", "c"), katilmaMs: 0 }, { id: "p", bot: parselBotuOlustur("pasif", "p"), katilmaMs: 0 }], sureMs: 1 * GUN });
+    for (const id of ["c", "p"]) {
+      const k = r.katilimlar[id];
+      expect(k?.istenenIlce, id).toBeDefined();
+      expect(k?.ilceGeriDusuldu, id).toBe(false);
+      expect(mulkOyuncuBul(r.sim.dunya, id)?.katilimIlcesi, id).toBe(k?.istenenIlce);
+    }
   });
 
   it("yapi_yerlestir bot: ayrılmış kotası dolunca (tavan 0) ayrılmış hücre almaz, reddedilmez", () => {
@@ -497,5 +520,56 @@ describe("P2 uyarlaması: ayrılmış hücre hesap tavanı ve taban fiyat", () =
     const r = parselKos({ veri: v, tohum: 1, oyuncular: [{ id: "c", bot: parselBotuOlustur("ciftci", "c"), katilmaMs: 0 }], sureMs: 2 * GUN, katilimRedDevam: true });
     expect(r.basarisizSayisi["c"] ?? 0).toBe(0);
     for (const h of r.sim.dunya.mulk!.hucreler) expect(r.sim.ic.mulk!.ayrilmis.has(h.id)).toBe(false);
+  });
+});
+
+describe("acilisAyakIzi: açılışın ilk yapısının hücre sayısı (yurt hariç; H6 açılış koşulu)", () => {
+  it("ilk yapı türlerinin en küçük yuvası; tür verisinden okunur, sabit sayı değil", () => {
+    const sim = Simulasyon.olustur(veri(), 1);
+    const mk = sim.ic.mulk!;
+    for (const a of GEC_ACILISLARI) {
+      const yuvalar = ACILIS_ESLEMESI[a].ilkYapiTurleri.map((t) => mk.yuva[sim.ic.tesisTuruIndeks[t] as number] as number);
+      expect(acilisAyakIzi(sim, a), a).toBe(Math.min(...yuvalar));
+      expect(acilisAyakIzi(sim, a)).toBeGreaterThanOrEqual(1);
+      expect(acilisAyakIzi(sim, a)).toBeLessThanOrEqual(3); // yapı 1–3 hücre
+    }
+  });
+});
+
+describe("ilceSec: ayrılmış boş hücresi açılış ayak izine yeten ilçeler ÖNCE (H6 açılış koşulu (i))", () => {
+  const taze = () => Simulasyon.olustur(veri(), 1);
+  /** İlçenin ayrılmış boş sayısını `hedef`e indirir (ayrılmış kümesinden hücre çıkarır; test kancası). */
+  const ayarla = (sim: Simulasyon, ilce: string, hedef: number) => {
+    const mk = sim.ic.mulk!;
+    const bos = mk.ilceler.get(ilce)!.hucreler.filter((h) => h.uygun && mk.ayrilmis.has(h.id)).map((h) => h.id).sort();
+    expect(bos.length).toBeGreaterThanOrEqual(hedef);
+    for (const id of bos.slice(0, bos.length - hedef)) mk.ayrilmis.delete(id);
+    expect(ilceAyrilmisBos(sim, ilce)).toBe(hedef);
+  };
+
+  it("SINIR: ayrılmış boş = ayak izi → tercih edilen ilçe seçilir; bir eksik → ayak izine yeten başka ilçe önce gelir", () => {
+    for (const acilis of GEC_ACILISLARI) {
+      const ayak = acilisAyakIzi(taze(), acilis);
+      const ilk = ilceSec(taze(), acilis).ilce as string; // eski sıralamanın (il tercihi, doluluk, kimlik) tercihi
+      const tam = taze();
+      ayarla(tam, ilk, ayak);
+      expect(ilceSec(tam, acilis).ilce, `${acilis} tam sınır`).toBe(ilk);
+      const eksik = taze();
+      ayarla(eksik, ilk, ayak - 1);
+      const sec = ilceSec(eksik, acilis);
+      expect(sec.ilce, `${acilis} bir eksik`).not.toBe(ilk);
+      expect(ilceAyrilmisBos(eksik, sec.ilce as string)).toBeGreaterThanOrEqual(ayak);
+      expect(sec.neden).toContain("taban hucre ayak izine yeten");
+    }
+  });
+
+  it("hiçbir ilçe ayak izine yetmiyorsa eski sıralama sürer ('uygun ilçe yok' DEĞİL: yedek tercih)", () => {
+    const s = taze();
+    const mk = s.ic.mulk!;
+    const ilk = ilceSec(taze(), "ciftci").ilce;
+    mk.ayrilmis.clear();
+    const r = ilceSec(s, "ciftci");
+    expect(r.ilce).toBe(ilk);
+    expect(r.neden).toContain("taban hucre ayak izine yeten 0");
   });
 });

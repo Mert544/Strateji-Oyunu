@@ -3,6 +3,7 @@ import {
   PARSEL_H6_BASARI_ESIK_PPM,
   gecKatilanIkiBicim,
   h6ParselIkiBicim,
+  acilisKosuluOlgusu,
   hibeArindir,
   servetOrani,
   servetToplami,
@@ -11,6 +12,13 @@ import {
 } from "../../src/parsel";
 
 const HIBE_KIT = 100; // örnek: hibe + kit değeri
+const GUN = 86_400_000;
+/** Açılış koşulu örnekleri: ayak izi 2, ayrılmış boş 2 (tam sınır), yapı katılımdan 1 gün sonra; 20. gün gözlem. */
+const ACILIS_TEMEL = { ayrilmisBos: 2, ayakIzi: 2, yurtHucre: 6, katilmaMs: 0, acilisYapiMs: [GUN], gozlemSonuMs: 20 * GUN };
+const AC_OK = acilisKosuluOlgusu(ACILIS_TEMEL);
+const AC_YETMEZ = acilisKosuluOlgusu({ ...ACILIS_TEMEL, ayrilmisBos: 1 });
+const AC_YAPISIZ = acilisKosuluOlgusu({ ...ACILIS_TEMEL, acilisYapiMs: [] });
+const AC_PENCERE_ACIK = acilisKosuluOlgusu({ ...ACILIS_TEMEL, acilisYapiMs: [], gozlemSonuMs: 10 * GUN }); // (ii) ölçülemez (bilgi)
 
 describe("H6 iki biçim: servet bileşenleri ve arındırma", () => {
   it("servet = hazine + stok + arazi + yapı; tamsayı denetimi", () => {
@@ -113,7 +121,7 @@ describe("H6 iki biçim: servet bileşenleri ve arındırma", () => {
     expect(() => ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 10, ayrilmisSatilmis: -1 }])).toThrow(/tutarsiz/);
   });
 
-  it("karar kaynağı: hipotez kararı Y7 + ucuz hücreden gelir (birincil); servet yalnız ikincil bilgidir", () => {
+  it("karar kaynağı: hipotez kararı Y7 + açılış koşulundan gelir (birincil); servet yalnız ikincil bilgidir; eski ucuz ölçüt bilgidir", () => {
     const olgu = { servet: 150, ilceServetleri: [100, 200], hibeKitDegeri: HIBE_KIT };
     const servetKotu = { ...olgu, servet: 149 }; // servet medyana ulaşmaz
     const ucuz = ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 0 }]);
@@ -121,17 +129,17 @@ describe("H6 iki biçim: servet bileşenleri ve arındırma", () => {
     const kotuGelir = [{ gelir: 1, ilceGelirleri: [100] }];
 
     // Servet iyi + gelir iyi
-    const a = h6ParselIkiBicim([olgu], ucuz, iyiGelir);
+    const a = h6ParselIkiBicim([olgu], ucuz, iyiGelir, [AC_OK]);
     expect(a.birincil.verdict).toBe("gecti");
-    expect(a.birincil.kaynak).toBe("y7_gelir+ucuz_hucre");
-    expect(a.birincil.ucuzHedef).toBe(true);
+    expect(a.birincil.kaynak).toBe("y7_gelir+acilis_kosulu");
+    expect(a.birincil.eskiUcuzHedef).toBe(true);
     expect(a.ikincil.ham.verdict).toBe("gecti");
     // Servet iyi ama gelir kötü: BİRİNCİL KALDI (T12 hibe şişkinliği senaryosu; servet kararı kurtarmaz)
-    const b = h6ParselIkiBicim([olgu], ucuz, kotuGelir);
+    const b = h6ParselIkiBicim([olgu], ucuz, kotuGelir, [AC_OK]);
     expect(b.ikincil.ham.verdict).toBe("gecti");
     expect(b.birincil.verdict).toBe("kaldi");
     // Servet kötü ama gelir iyi: BİRİNCİL GEÇTİ (servet karara girmez)
-    const c = h6ParselIkiBicim([servetKotu], ucuz, iyiGelir);
+    const c = h6ParselIkiBicim([servetKotu], ucuz, iyiGelir, [AC_OK]);
     expect(c.ikincil.ham.verdict).toBe("kaldi");
     expect(c.birincil.verdict).toBe("gecti");
     // Servet biçimleri ikincilde aynı karar
@@ -141,33 +149,40 @@ describe("H6 iki biçim: servet bileşenleri ve arındırma", () => {
   it("birincil karar emsal kuralı: tüm emsal üretimsizse BELİRSİZ (servet iyi olsa da); üreten emsal varsa karar verilir", () => {
     const olgu = { servet: 150, ilceServetleri: [100, 200], hibeKitDegeri: HIBE_KIT };
     const ucuz = ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 0 }]);
-    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 1_000, ilceGelirleri: [0, 0, 0] }]).birincil.verdict).toBe("belirsiz");
-    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 1_000, ilceGelirleri: [0, 0, 1_000] }]).birincil.verdict).toBe("gecti");
-    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 1, ilceGelirleri: [0, 0, 1_000] }]).birincil.verdict).toBe("kaldi");
+    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 1_000, ilceGelirleri: [0, 0, 0] }], [AC_OK]).birincil.verdict).toBe("belirsiz");
+    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 1_000, ilceGelirleri: [0, 0, 1_000] }], [AC_OK]).birincil.verdict).toBe("gecti");
+    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 1, ilceGelirleri: [0, 0, 1_000] }], [AC_OK]).birincil.verdict).toBe("kaldi");
   });
 
-  it("karar: Y7 sınırı (oyuncu payı %50) ve ucuz hücre koşulu birincilde; ölçülemeyen belirsiz", () => {
+  it("karar: Y7 sınırı (oyuncu payı %50) ve açılış koşulu birincilde; ölçülemeyen belirsiz; KALDI baskındır", () => {
     const olgu = { servet: 150, ilceServetleri: [100, 200], hibeKitDegeri: HIBE_KIT };
     const ucuz = ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 0 }]);
     const ok = { gelir: 100, ilceGelirleri: [100] };
     const kotu = { gelir: 49, ilceGelirleri: [100] }; // medyanın %49'u
     const sinir = { gelir: 50, ilceGelirleri: [100] }; // tam %50
-    expect(h6ParselIkiBicim([olgu, olgu], ucuz, [ok, kotu]).birincil.verdict).toBe("gecti"); // 1/2 = %50 tam eşik
-    expect(h6ParselIkiBicim([olgu, olgu, olgu], ucuz, [ok, kotu, kotu]).birincil.verdict).toBe("kaldi"); // %33
-    expect(h6ParselIkiBicim([olgu], ucuz, [sinir]).birincil.verdict).toBe("gecti");
-    expect(h6ParselIkiBicim([olgu], ucuz, [kotu]).birincil.verdict).toBe("kaldi");
-    // Ucuz hücre koşulu birincilde AYNEN: %20 tam eşik geçer, altı KALDI
+    expect(h6ParselIkiBicim([olgu, olgu], ucuz, [ok, kotu], [AC_OK, AC_OK]).birincil.verdict).toBe("gecti"); // 1/2 = %50 tam eşik
+    expect(h6ParselIkiBicim([olgu, olgu, olgu], ucuz, [ok, kotu, kotu], [AC_OK, AC_OK, AC_OK]).birincil.verdict).toBe("kaldi"); // %33
+    expect(h6ParselIkiBicim([olgu], ucuz, [sinir], [AC_OK]).birincil.verdict).toBe("gecti");
+    expect(h6ParselIkiBicim([olgu], ucuz, [kotu], [AC_OK]).birincil.verdict).toBe("kaldi");
+    // Açılış koşulu: KARARA YALNIZ (i) girer: ayak izine yetmeyen taban hücre KALDI yapar (Y7 iyi olsa da)
+    const yetmez = h6ParselIkiBicim([olgu], ucuz, [ok], [AC_YETMEZ]).birincil;
+    expect(yetmez).toMatchObject({ verdict: "kaldi", acilis: { olculebilir: true, hedefGecti: false } });
+    // (ii) bilgidir: 14 günde yapı kurulmasa ya da ölçülemese de karar değişmez (insan testi gerekli)
+    expect(h6ParselIkiBicim([olgu], ucuz, [ok], [AC_YAPISIZ]).birincil.verdict).toBe("gecti");
+    expect(h6ParselIkiBicim([olgu], ucuz, [ok], [AC_PENCERE_ACIK]).birincil.verdict).toBe("gecti");
+    // Eski ucuz ölçüt (%20) artık KARAR DEĞİL: payı %0 olsa da açılış koşulu tutuyorsa GEÇTİ; yalnız bilgi alanı değişir
     const tamEsik = ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 80 }]); // çarpan 2,6: ucuz değil -> %0
-    expect(h6ParselIkiBicim([olgu], tamEsik, [ok]).birincil).toMatchObject({ verdict: "kaldi", ucuzHedef: false });
+    expect(h6ParselIkiBicim([olgu], tamEsik, [ok], [AC_OK]).birincil).toMatchObject({ verdict: "gecti", eskiUcuzHedef: false });
     const yirmi = { payPpm: 200_000, ucuzHucre: 20, uygunHucre: 100 };
-    expect(h6ParselIkiBicim([olgu], yirmi, [ok]).birincil).toMatchObject({ verdict: "gecti", ucuzHedef: true });
-    expect(h6ParselIkiBicim([olgu], { ...yirmi, payPpm: 199_999 }, [ok]).birincil.verdict).toBe("kaldi");
-    // Ölçülemeyen: emsal geliri yok -> belirsiz (servet iyi olsa da); uygun hücre 0 -> belirsiz
-    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 5, ilceGelirleri: [] }]).birincil.verdict).toBe("belirsiz");
-    expect(h6ParselIkiBicim([olgu], { payPpm: 0, ucuzHucre: 0, uygunHucre: 0 }, [ok]).birincil.verdict).toBe("belirsiz");
-    // Y7 KALDI + ucuz koşul ölçülemez: KALDI baskındır (belirsiz değil)
-    expect(h6ParselIkiBicim([olgu], { payPpm: 0, ucuzHucre: 0, uygunHucre: 0 }, [kotu]).birincil.verdict).toBe("kaldi");
-    expect(h6ParselIkiBicim([], ucuz, []).birincil.verdict).toBe("belirsiz");
+    expect(h6ParselIkiBicim([olgu], yirmi, [ok], [AC_OK]).birincil).toMatchObject({ verdict: "gecti", eskiUcuzHedef: true });
+    expect(h6ParselIkiBicim([olgu], { ...yirmi, payPpm: 199_999 }, [ok], [AC_OK]).birincil.eskiUcuzHedef).toBe(false);
+    expect(h6ParselIkiBicim([olgu], { payPpm: 0, ucuzHucre: 0, uygunHucre: 0 }, [ok], [AC_OK]).birincil).toMatchObject({ verdict: "gecti", eskiUcuzHedef: null });
+    // Ölçülemeyen: emsal geliri yok -> belirsiz (servet iyi olsa da); açılış olgusu yok -> belirsiz
+    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 5, ilceGelirleri: [] }], [AC_OK]).birincil.verdict).toBe("belirsiz");
+    expect(h6ParselIkiBicim([olgu], ucuz, [ok], []).birincil.verdict).toBe("belirsiz");
+    // Y7 KALDI + açılış ölçülemez: KALDI baskındır (belirsiz değil)
+    expect(h6ParselIkiBicim([olgu], ucuz, [kotu], []).birincil.verdict).toBe("kaldi");
+    expect(h6ParselIkiBicim([], ucuz, [], []).birincil.verdict).toBe("belirsiz");
     expect(PARSEL_H6_BASARI_ESIK_PPM).toBe(500_000);
   });
 });

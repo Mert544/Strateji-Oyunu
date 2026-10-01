@@ -18,7 +18,7 @@
  *  - gec_katilan: `acilis` ∈ ciftci | sanayici | pazar (tuccar); aynı paket, farklı açılış (Ar-Ge `gec_ciftci/gec_sanayici/gec_pazar`).
  *    Yerleşiklerin bulunduğu (en çok sahipli) ilçeye katılır: ilçe medyanı ile karşılaştırılabilsin.
  */
-import { anlikHazine, anlikMiktar, isletmeBul, kamuHucreMi, mulkOyuncuBul, parselFiyati, ticaretEmirYuvasi, yurtPlanla } from "@bolge/cekirdek";
+import { GUN, anlikHazine, anlikMiktar, isletmeBul, kamuHucreMi, mulkOyuncuBul, parselToplamFiyatiMili, ticaretEmirYuvasi, yurtPlanla } from "@bolge/cekirdek";
 import type { ArsaSinifi, BolgeDurumu, DerlenmisMulk, Dunya, HucreDurumu, IlceDurumu, Komut, OyuncuId, Simulasyon } from "@bolge/cekirdek";
 import { icerikBilgisi } from "./tablo";
 import type { IcerikBilgisi } from "./tablo";
@@ -248,20 +248,32 @@ function ayrilmisKota(g: Gorunum): number {
 }
 
 /**
- * `parsel_al` / `yapi_yerlestir` arsa bedeli tahmini (çekirdek `alimPlani` ile aynı kural; fiyat mantığı çekirdekte dışa aktarılmış tek bir
- * yardımcı olarak yok, `parselFiyati` bileşeniyle yeniden kurulur ve testle çekirdekle eşitliği denetlenir): AYRILMIŞ hücre taban (sınıf)
- * fiyatından satılır ve kıtlık eğrisinden muaftır; normal hücreler artımlıdır ve eğri `satilmisHucre − ayrilmisSatilmis` üzerinden ilerler.
+ * İlçede BU hesabın bugün ayrılmış hücre alabileceği en çok adet (docs/06 §15.1, P3b çok hesap kuralları): (1) ayrılmış hücre yalnız hesabın
+ * KATILIM ilçesinde satılır (`MulkOyuncuDurumu.katilimIlcesi`; kural `ayrilmisYalnizKatilimIlcesi` ile açıksa; katılım ilçesi yoksa 0);
+ * (2) ilçe başına GÜNLÜK ayrılmış satış tavanı: max(`ayrilmisIlceGunlukEnAz`, ilçenin ayrılmış stoku × `ayrilmisIlceGunlukPpm`), sayaç
+ * `IlceDurumu.ayrilmisGunluk {gun, adet}`, gün = floor(zaman / GUN). Kurallar parametrede kapalıysa sınırsız (Infinity).
  */
-function arsaFiyati(g: Gorunum, durum: IlceDurumu, sinif: ArsaSinifi, ayrilmisAdet: number, normalAdet: number): number {
-  const p = g.mk.p;
-  const taban = p.hucreFiyati[sinif];
-  return ayrilmisAdet * taban + (normalAdet > 0 ? parselFiyati(taban, p.satisPayiCarpaniPpm, durum.satilmisHucre - (durum.ayrilmisSatilmis ?? 0), durum.uygunHucre, normalAdet) : 0);
+function ayrilmisIlceKalan(g: Gorunum, durum: IlceDurumu): number {
+  const yo = g.mk.p.yeniOyuncu;
+  if (yo.ayrilmisYalnizKatilimIlcesi === true && mulkOyuncuBul(g.d, g.oyuncu)?.katilimIlcesi !== durum.id) return 0;
+  const ppm = yo.ayrilmisIlceGunlukPpm;
+  if (ppm === undefined) return Infinity;
+  const tavan = Math.max(yo.ayrilmisIlceGunlukEnAz ?? 0, Math.floor(((g.mk.ayrilmisIlceSayisi.get(durum.id) ?? 0) * ppm) / 1_000_000));
+  const bugun = durum.ayrilmisGunluk !== undefined && durum.ayrilmisGunluk.gun === Math.floor(g.d.zaman / GUN) ? durum.ayrilmisGunluk.adet : 0;
+  return Math.max(0, tavan - bugun);
 }
 
 /**
- * Arsa bedeli tahmini (public; testler çekirdekle eşitliği denetler): `ayrilmisAdet` AYRILMIŞ hücre taban fiyattan (kıtlık eğrisinden muaf),
- * `normalAdet` normal hücre artımlı (eğri `satilmisHucre − ayrilmisSatilmis` üzerinden). Çekirdekte dışa aktarılmış tek bir fiyat yardımcısı
- * olmadığından `parselFiyati` bileşeniyle kurulur.
+ * `parsel_al` / `yapi_yerlestir` arsa bedeli tahmini: ÇEKİRDEĞİN dışa aktardığı tek kaynak `parselToplamFiyatiMili` (docs/06 §15.7): AYRILMIŞ hücre
+ * taban (sınıf) fiyatından, kıtlık eğrisinden muaf; normal hücreler artımlı (eğri `satilmisHucre − ayrilmisSatilmis`).
+ */
+function arsaFiyati(g: Gorunum, durum: IlceDurumu, sinif: ArsaSinifi, ayrilmisAdet: number, normalAdet: number): number {
+  return parselToplamFiyatiMili(g.sim.ic, durum, sinif, normalAdet, ayrilmisAdet);
+}
+
+/**
+ * Arsa bedeli tahmini (public; testler komutun gerçek hazine farkıyla eşitliği denetler): `ayrilmisAdet` AYRILMIŞ hücre taban fiyattan,
+ * `normalAdet` normal hücre artımlı; çekirdeğin `parselToplamFiyatiMili` yardımcısına devreder (yerel kopya yok).
  */
 export function parselArsaFiyati(sim: Simulasyon, ilce: string, sinif: ArsaSinifi, ayrilmisAdet: number, normalAdet: number): number {
   const g = gorunumKur(sim, "aday");
@@ -284,7 +296,8 @@ function yerlesimBul(g: Gorunum, ilceId: string, yuva: number, kullanilan: Reado
   const p = g.mk.p;
   const benimSayi = ilceHucreleri(g, ilceId).length + [...kullanilan].filter((id) => !g.sahipli.has(id)).length;
   // Bu turda önceki komutlarla alınacak ayrılmış hücreler de hesap kotasından düşer.
-  const kota = ayrilmisKota(g) - [...kullanilan].filter((id) => !g.sahipli.has(id) && g.mk.ayrilmis.has(id)).length;
+  // Ayrılmış hücre yalnız katılım ilçesinde ve günlük ilçe tavanı içinde alınabilir (`ayrilmisIlceKalan`); gerisi normal hücreden.
+  const kota = Math.min(ayrilmisKota(g), ayrilmisIlceKalan(g, durum)) - [...kullanilan].filter((id) => !g.sahipli.has(id) && g.mk.ayrilmis.has(id)).length;
   const tavan = Math.min(p.ilceHucreTavani, Math.floor((durum.uygunHucre * p.ilcePayTavaniPpm) / 1_000_000));
 
   const tanim = new Map(ilce.hucreler.map((h) => [h.id, h]));
@@ -623,6 +636,8 @@ interface SpekAday {
   normal: string[];
   /** İlçede alınabilecek en çok hücre (72 ve %25 tavanı, ilçe doluluğu). */
   oda: number;
+  /** Bu hesabın bugün bu ilçede alabileceği en çok ayrılmış hücre (katılım ilçesi + günlük tavan). */
+  ayrilmisKalan: number;
   /** Kıtlık eğrisine giren (normal) satılmış hücre: `satilmisHucre − ayrilmisSatilmis`. */
   satilmis: number;
   uygun: number;
@@ -660,6 +675,7 @@ function spekAdaylari(g: Gorunum, yeniOyuncu: boolean): SpekAday[] {
       ayrilmis: yeniOyuncu ? adaylar.filter((id) => g.mk.ayrilmis.has(id)) : [],
       normal: adaylar.filter((id) => !g.mk.ayrilmis.has(id)),
       oda,
+      ayrilmisKalan: ayrilmisIlceKalan(g, durum),
       satilmis: durum.satilmisHucre - (durum.ayrilmisSatilmis ?? 0),
       uygun: durum.uygunHucre,
       durum,
@@ -690,6 +706,39 @@ export const ACILIS_ESLEMESI: Readonly<Record<GecAcilis, { ilkYapiTurleri: reado
   pazar: { ilkYapiTurleri: ["ciftlik", "mera"], ekYapilar: ["ticaret_ofisi"], ilTercihi: "kiyi_ova" },
 };
 
+/**
+ * Açılışın AYAK İZİ: açılışın ilk yapı türlerinin (`ilkYapiTurleri`) en küçük hücre sayısı (tür yuvası; docs/12 §13: ayak izi ölçekle
+ * büyür, çekirdekte S = tür yuvası). YURT HÜCRELERİ HARİÇ: yurt ayrı ve ücretsiz verilir. Ölçüm (H6 açılış koşulu) için saf okuma.
+ */
+export function acilisAyakIzi(sim: Simulasyon, acilis: GecAcilis): number {
+  const mk = sim.ic.mulk;
+  if (mk === undefined) throw new Error("acilisAyakIzi: mulk kipi kapali");
+  let en = Infinity;
+  for (const t of ACILIS_ESLEMESI[acilis].ilkYapiTurleri) {
+    const ti = sim.ic.tesisTuruIndeks[t];
+    const y = ti === undefined ? 0 : (mk.yuva[ti] as number);
+    if (y > 0 && y < en) en = y;
+  }
+  if (!Number.isFinite(en)) throw new Error(`acilisAyakIzi: ${acilis} acilisinin ilk yapi turlerinden hicbiri insa edilebilir degil`);
+  return en;
+}
+
+/**
+ * İlçedeki satılmamış AYRILMIŞ (taban fiyatlı) hücre sayısı: fikstürde uygun, ayrılmış ve sahipsiz hücreler (saf okuma). Ölçüm koşucusu
+ * (katılım anı sayımı) ve `ilceSec` sıralaması AYNI işlevi kullanır.
+ */
+export function ilceAyrilmisBos(sim: Simulasyon, ilce: string): number {
+  const mk = sim.ic.mulk;
+  const m = sim.dunya.mulk;
+  if (mk === undefined || m === undefined) return 0;
+  const tanim = mk.ilceler.get(ilce);
+  if (tanim === undefined) return 0;
+  const sahipli = new Set(m.hucreler.filter((h) => h.ilce === ilce).map((h) => h.id));
+  let n = 0;
+  for (const h of tanim.hucreler) if (h.uygun && mk.ayrilmis.has(h.id) && !sahipli.has(h.id)) n++;
+  return n;
+}
+
 export interface IlceSecimi {
   /** Seçilen ilçe; hiçbiri uygun değilse null ("uygun ilçe yok"). */
   ilce: string | null;
@@ -716,7 +765,7 @@ export interface IlceSecimSecenegi {
  *  a) YURT VEREBİLEN ilçeler: çekirdeğin herkese açık `yurtPlanla(dunya, ic, ilce)` yardımcısı (kamu dışı, uygun, sahipsiz, kenar-bitişik
  *     yeterli hücre; %25 ilçe payı; ayrılmış hücre kuralından muaf) — kendi kopyamız YOKTUR, çekirdekle birebir aynı kural.
  *  b) AÇILIŞA UYGUN ilçeler: `ACILIS_ESLEMESI` (açılışın ilk yapısı ilin etiket ve rezervine uyar; ek yapılar tanımlı).
- *  c) Sıralama: il tercihi (açılışın ova/dağ/kıyı önceliği), (emsal seçeneğinde) çok sahipli, en düşük doluluk, kimlik sırası.
+ *  c) Sıralama: ÖNCE ayrılmış boş hücresi açılış ayak izine yeten ilçeler (`ilceAyrilmisBos ≥ acilisAyakIzi`), sonra il tercihi (açılışın ova/dağ/kıyı önceliği), (emsal seçeneğinde) çok sahipli, en düşük doluluk, kimlik sırası.
  *  d) a ∩ b boşsa `ilce: null` ve nedeni (hangi aşamada elendiği): "uygun ilçe yok".
  */
 export function ilceSec(sim: Simulasyon, acilis: GecAcilis, secenek: IlceSecimSecenegi = {}): IlceSecimi {
@@ -740,10 +789,14 @@ export function ilceSec(sim: Simulasyon, acilis: GecAcilis, secenek: IlceSecimSe
     return { ilce: null, neden, yurtVerebilen: yurtVerebilir.length, acilisaUygun: 0 };
   }
   const emsal = secenek.siralama === "emsal";
+  // 0) ÖNCE: ayrılmış boş hücresi açılış ayak izine yeten ilçeler (gerçek oyuncunun Yerleş ekranı da aynı ölçütle öneri verir; H6 açılış koşulu (i)).
+  const ayakIzi = acilisAyakIzi(sim, acilis);
+  const tabanYeter = (c: string): number => (ilceAyrilmisBos(sim, c) >= ayakIzi ? 0 : 1);
   const sirali = [...uygun].sort(
-    (a, b) => ilOnceligi(g, tanim, ilOf(a)) - ilOnceligi(g, tanim, ilOf(b)) || (emsal ? ureticiSahipSayisi(g, b) - ureticiSahipSayisi(g, a) || sahipSayisi(g, b) - sahipSayisi(g, a) : 0) || dahaBos(g, a, b),
+    (a, b) => tabanYeter(a) - tabanYeter(b) || ilOnceligi(g, tanim, ilOf(a)) - ilOnceligi(g, tanim, ilOf(b)) || (emsal ? ureticiSahipSayisi(g, b) - ureticiSahipSayisi(g, a) || sahipSayisi(g, b) - sahipSayisi(g, a) : 0) || dahaBos(g, a, b),
   );
-  return { ilce: sirali[0] as string, neden: `yurt verebilen ${yurtVerebilir.length}, acilisa uygun ${uygun.length}; ${emsal ? "il tercihi, emsal, doluluk" : "il tercihi, doluluk"} sirasiyla`, yurtVerebilen: yurtVerebilir.length, acilisaUygun: uygun.length };
+  const yeterli = uygun.filter((c) => tabanYeter(c) === 0).length;
+  return { ilce: sirali[0] as string, neden: `yurt verebilen ${yurtVerebilir.length}, acilisa uygun ${uygun.length}, taban hucre ayak izine yeten ${yeterli}; once taban hucre, ${emsal ? "il tercihi, emsal, doluluk" : "il tercihi, doluluk"} sirasiyla`, yurtVerebilen: yurtVerebilir.length, acilisaUygun: uygun.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -828,8 +881,8 @@ class Bot implements ParselBotu {
       let kota = ayrilmisKota(g);
       for (const a of spekAdaylari(g, yeniOyuncu)) {
         if (komut >= 3) break;
-        // Liste: önce ayrılmış hücreler (hesap kotasına kadar), kalanı normal hücreden.
-        const ayrilmisAlinabilir = a.ayrilmis.slice(0, Math.min(a.ayrilmis.length, kota));
+        // Liste: önce ayrılmış hücreler (hesap kotası, katılım ilçesi ve günlük ilçe tavanı içinde), kalanı normal hücreden.
+        const ayrilmisAlinabilir = a.ayrilmis.slice(0, Math.min(a.ayrilmis.length, kota, a.ayrilmisKalan));
         const sira = [...ayrilmisAlinabilir, ...a.normal];
         let n = Math.min(a.oda, sira.length);
         const fiyat = (adet: number): number => {

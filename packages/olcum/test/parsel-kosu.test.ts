@@ -83,7 +83,7 @@ describe("parsel kısa koşu: duman koşusu", () => {
     expect(Object.keys(r.komutTurleri).sort()).toEqual(["ticaret_emri", "yapi_yerlestir"]);
   });
 
-  it("H6: 3 geç katılan olgusu; iki servet biçimi AYNI karar (değişmezlik), arındırılmış karar Y7 + ucuz hücre", () => {
+  it("H6: 3 geç katılan olgusu; iki servet biçimi AYNI karar (değişmezlik), arındırılmış karar Y7 + açılış koşulu", () => {
     expect(r.h6.olgular.map((o) => o.gec)).toEqual(["gec_ciftci", "gec_sanayici", "gec_pazar"]);
     for (const o of r.h6.olgular) {
       expect(o.emsal.length, o.gec).toBeGreaterThan(0);
@@ -100,11 +100,38 @@ describe("parsel kısa koşu: duman koşusu", () => {
     expect(r.h6.karar.ikincil.ham.gecKatilan.olguSayisi).toBe(3);
     expect(r.h6.karar.ikincil.arindirilmisServet.verdict).toBe(r.h6.karar.ikincil.ham.verdict);
     expect(r.h6.karar.birincil.y7.olculebilir).toBe(true);
-    // Karar kaynağı: birincil karar Y7 + ucuz hücreden türer (servetten değil)
+    // Karar kaynağı: birincil karar Y7 + açılış koşulundan türer (servetten ve eski ucuz ölçütten değil)
     const y7 = r.h6.karar.birincil.y7;
-    const beklenen = y7.olculebilir && y7.hedefGecti && r.h6.karar.birincil.ucuzHedef ? "gecti" : "kaldi";
+    const ac = r.h6.karar.birincil.acilis;
+    const beklenen = y7.olculebilir && y7.hedefGecti && ac.olculebilir && ac.hedefGecti ? "gecti" : "kaldi";
     expect(r.h6.karar.birincil.verdict).toBe(beklenen);
-    expect(r.h6.karar.birincil.kaynak).toBe("y7_gelir+ucuz_hucre");
+    expect(r.h6.karar.birincil.kaynak).toBe("y7_gelir+acilis_kosulu");
+  });
+
+  it("Y7 il yedeği ve H6 açılış koşulu olguları: düzey ilçe → il sırasıyla; ayak izi tür yuvasından; ayrılmış boş katılım anı ilçe sayımından", () => {
+    const sim = Simulasyon.olustur({ ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") }, 1);
+    const mk = sim.ic.mulk!;
+    for (const o of r.h6.olgular) {
+      // il emsali ilçe emsalini kapsar; düzey seçimi kurala uyar
+      for (const e of o.emsal) expect(o.ilEmsal, o.gec).toContain(e);
+      expect(o.il, o.gec).toBe(mk.ilceler.get(o.ilce as string)?.il);
+      expect(o.ilEmsalUretenSayisi).toBe(o.ilEmsalGelir.filter((x) => x > 0).length);
+      expect(o.emsalDuzeyi).toBe(o.emsalUretenSayisi > 0 ? "ilce" : o.ilEmsalUretenSayisi > 0 ? "il" : null);
+      // ayak izi: açılışın ilk yapı türlerinin en küçük yuvası (tür verisinden; sabit sayı değil), yurt hariç
+      const yuvalar = (o.acilis === "sanayici" ? ["hidro_santrali"] : ["ciftlik", "mera"]).map((t) => mk.yuva[sim.ic.tesisTuruIndeks[t] as number] as number);
+      expect(o.ayakIzi, o.gec).toBe(Math.min(...yuvalar));
+      expect(o.yurtHucre).toBe(mk.p.yeniOyuncu.yurtHucre);
+      // katılım anı ayrılmış boş = o ilçenin geç katılımdan önceki sayımı
+      expect(o.ayrilmisBosKatilim, o.gec).toBe(r.h6.ilceler.find((c) => c.ilce === o.ilce)?.ayrilmisBos);
+      // olgu kararı kurala uyar: (i) boş ≥ ayak izi; (ii) pencerede yapı
+      expect(o.acilisKosulu.tabanYeter).toBe(o.ayrilmisBosKatilim >= o.ayakIzi);
+      expect(o.acilisKosulu.tabanYeterYurtDahil).toBe(o.ayrilmisBosKatilim + o.yurtHucre >= o.ayakIzi);
+      const pencerede = o.acilisYapiMs.some((t) => t >= o.katilmaGun * GUN && t <= o.katilmaGun * GUN + 14 * GUN);
+      if (pencerede) expect(o.acilisKosulu.yapiKuruldu).toBe(true);
+    }
+    const ac = r.h6.karar.birincil.acilis;
+    expect(ac.olculebilir).toBe(true);
+    if (ac.olculebilir) expect(ac.olguSayisi).toBe(r.h6.olgular.length);
   });
 
   it("ucuz hücre: katılımdan hemen ÖNCE ilçe doluluğu (geç katılanın yurdu hariç); ayrılmış hücreler ayrıdır ve garanti ayrıntısıyla tutarlıdır", () => {

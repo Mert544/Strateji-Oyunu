@@ -2,16 +2,20 @@
  * H6 (parsel dünyası) — Geç katılan işe yarar (docs/11 §7.9, §8.1; bot: geç katılan).
  *
  * KARAR (lider kararı, 1 Ekim): BİRİNCİL ölçü Y7 türü akış (hibeden bağımsız net üretim geliri; yeni-oyuncu.ts `y7UretimGeliri`) +
- * ucuz hücre koşulu. Servet tabanlı ulaşma (aşağıdaki 1.) İKİNCİL olarak raporlanır; `h6ParselIkiBicim` ikisini ayırır.
+ * AÇILIŞ KOŞULU (h6-acilis.ts: karara katılımda taban fiyatlı hücre ≥ ayak izi girer; 14 günde açılış yapısı bilgidir, insan testi gerekli; docs/12 §13). Eski "ucuz hücre
+ * payı ≥ %20" koşulu KALKTI; bilgi olarak raporlanır (`eskiUcuzHedef`). Servet tabanlı ulaşma (aşağıdaki 1.) İKİNCİL olarak raporlanır;
+ * `h6ParselIkiBicim` ikisini ayırır.
  *
  * Servet tanımı (ikincil) ve ucuz hücre:
  *  1. 60. günde katılan oyuncu, katılımdan 14 gün sonra İLÇESİNİN medyan servetine (aynı ilçedeki diğer sahipler; geç
  *     katılan hariç) ulaşır; ulaşan olgu (koşu × geç katılan) oranı ≥ %50.
- *  2. Katılım anında uygun hücrelerin ≥ %20'si ≤ 2× taban fiyatla alınabilir: satılmamış VE ilçe fiyat çarpanı
- *     (1 + 2·satılmış pay) ≤ 2 olan hücreler / tüm uygun hücreler.
+ *  2. (ESKİ TANIM, yalnız bilgi) Katılım anında uygun hücrelerin ≥ %20'si ≤ 2× taban fiyatla alınabilir: satılmamış VE ilçe fiyat
+ *     çarpanı (1 + 2·satılmış pay) ≤ 2 olan hücreler / tüm uygun hücreler.
  */
 import type { Verdict } from "../tipler";
 import { PPM, kosullardanVerdict, medyanIkiKat, oranPpm, tamsayiDenetle } from "./ortak";
+import { h6AcilisKosulu } from "./h6-acilis";
+import type { AcilisKosuluSonucu, H6AcilisSonucu } from "./h6-acilis";
 import { y7UretimGeliri } from "./yeni-oyuncu";
 import type { Olculemez, UretimGeliriOlgusu, Y7Sonucu } from "./yeni-oyuncu";
 
@@ -242,13 +246,15 @@ export function ucuzHucreAyrintisi(ilceler: readonly IlceAyrilmisDolulugu[]): Uc
 }
 
 export interface H6Birincil {
-  /** HİPOTEZ KARARI (Y7 + ucuz hücre): Y7 hedefi ya da ucuz hücre koşulu tutmazsa KALDI; biri ölçülemezse BELİRSİZ. */
+  /** HİPOTEZ KARARI (Y7 + açılış koşulu): biri tutmazsa KALDI; biri ölçülemezse BELİRSİZ. */
   verdict: Verdict;
-  /** Karar kaynağı: hibeden bağımsız üretim geliri (Y7) ve ucuz hücre payı; servet karara GİRMEZ. */
-  kaynak: "y7_gelir+ucuz_hucre";
+  /** Karar kaynağı: hibeden bağımsız üretim geliri (Y7) ve açılış koşulu (docs/12 §13); servet ve ESKİ ucuz hücre ölçütü karara GİRMEZ. */
+  kaynak: "y7_gelir+acilis_kosulu";
   y7: Y7Sonucu | Olculemez;
-  /** Ucuz hücre payı ≥ %20 mi; ölçülemezse null. */
-  ucuzHedef: boolean | null;
+  /** İkinci koşul: katılımda taban fiyatlı hücre ayak izine yeter (karar); 14 günde açılış yapısı bilgidir (h6-acilis.ts). */
+  acilis: H6AcilisSonucu | Olculemez;
+  /** ESKİ TANIM (bilgi; karara girmez): ucuz hücre payı ≥ %20 mi; ölçülemezse null. */
+  eskiUcuzHedef: boolean | null;
 }
 
 export interface H6IkincilServet {
@@ -268,16 +274,29 @@ export interface H6IkiBicimKarari {
 }
 
 /**
- * H6 kararı: BİRİNCİL ölçü Y7 türü akış (hibeden bağımsız net üretim geliri; `y7UretimGeliri`) + ucuz hücre koşulu (aynen);
- * servet tabanlı ulaşma ikincil olarak raporlanır (docs/olcum/h1-h9-parsel-tanimlari.md §4 H6, lider kararı 1 Ekim).
- * `y7Olgulari`: geç katılan başına son 7 günlük net üretim geliri ve emsal gelirleri (`UretimGeliriOlgusu`).
+ * H6 kararı: BİRİNCİL ölçü Y7 türü akış (hibeden bağımsız net üretim geliri; `y7UretimGeliri`) + AÇILIŞ KOŞULU (`h6AcilisKosulu`);
+ * servet tabanlı ulaşma ikincil, eski ucuz hücre ölçütü bilgi olarak raporlanır (docs/olcum/h1-h9-parsel-tanimlari.md §4 H6,
+ * lider kararı 1 Ekim, docs/12 §13). `y7Olgulari`: geç katılan başına son 7 günlük net üretim geliri ve emsal gelirleri;
+ * `acilisOlgulari`: geç katılan başına açılış koşulu sonucu (`acilisKosuluOlgusu`).
  */
-export function h6ParselIkiBicim(olgular: readonly GecKatilanOlgusuIki[], ucuz: UcuzHucreSonucu, y7Olgulari: readonly UretimGeliriOlgusu[]): H6IkiBicimKarari {
+export function h6ParselIkiBicim(
+  olgular: readonly GecKatilanOlgusuIki[],
+  ucuz: UcuzHucreSonucu,
+  y7Olgulari: readonly UretimGeliriOlgusu[],
+  acilisOlgulari: readonly AcilisKosuluSonucu[],
+): H6IkiBicimKarari {
   const iki = gecKatilanIkiBicim(olgular);
   const y7 = y7UretimGeliri(y7Olgulari);
-  const ucuzHedef = ucuz.uygunHucre === 0 ? null : ucuz.payPpm >= PARSEL_H6_UCUZ_HUCRE_ESIK_PPM;
+  const acilis = h6AcilisKosulu(acilisOlgulari);
+  const eskiUcuzHedef = ucuz.uygunHucre === 0 ? null : ucuz.payPpm >= PARSEL_H6_UCUZ_HUCRE_ESIK_PPM;
   return {
-    birincil: { verdict: kosullardanVerdict([y7.olculebilir ? y7.hedefGecti : null, ucuzHedef]), kaynak: "y7_gelir+ucuz_hucre", y7, ucuzHedef },
+    birincil: {
+      verdict: kosullardanVerdict([y7.olculebilir ? y7.hedefGecti : null, acilis.olculebilir ? acilis.hedefGecti : null]),
+      kaynak: "y7_gelir+acilis_kosulu",
+      y7,
+      acilis,
+      eskiUcuzHedef,
+    },
     ikincil: { ham: h6ParselDegerlendir(iki.ham, ucuz), arindirilmisServet: h6ParselDegerlendir(iki.arindirilmis, ucuz), oranlar: iki.oranlar },
   };
 }

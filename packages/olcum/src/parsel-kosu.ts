@@ -12,7 +12,7 @@ import { MILI, GUN, SAAT, anlikHazine, anlikMiktar } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi, OyuncuId, Simulasyon } from "@bolge/cekirdek";
 import { miniVeriyiYukle, parselFiksturuYukle, varsayilanVeriyiYukle } from "@bolge/veri";
 import type { VeriPaketi } from "@bolge/veri";
-import { GEC_ACILISLARI, parselBotuOlustur, parselKos } from "@bolge/botlar";
+import { ACILIS_ESLEMESI, GEC_ACILISLARI, acilisAyakIzi, ilceAyrilmisBos, parselBotuOlustur, parselKos } from "@bolge/botlar";
 import type { GecAcilis, ParselKosuOyuncusu, ParselKosuSonucu, ParselKomutKaydi, ParselOnayari } from "@bolge/botlar";
 import { iklimUygula } from "./ortak";
 import type { IklimModu } from "./tipler";
@@ -27,6 +27,8 @@ import {
   servetToplami,
   tamsayiMedyan,
   uretenEmsal,
+  y7EmsalDuzeyi,
+  acilisKosuluOlgusu,
   ayrilmisGarantisi,
   ucuzHucreAyrintisi,
   y1IlkYapi,
@@ -36,7 +38,7 @@ import {
   y6YonDegistirme,
   yenidenSatisOrani,
 } from "./parsel";
-import type { AcilisKaydi, AyrilmisGarantisi, AyrilmisHucreKaydi, GecKatilanOlgusuIki, H6IkiBicimKarari, H8Sonucu, IlceAyrilmisDolulugu, IlkOlayKaydi, ServetBilesenleri, ServetOrani, UcuzHucreAyrintisi, UretimGeliriOlgusu, Y1Sonucu, Y2Sonucu, Y5Sonucu, Y6Sonucu, Y7Sonucu, Olculemez, SahipliHucre, YonKaydi } from "./parsel";
+import type { AcilisKosuluSonucu, Y7EmsalDuzeyi, AcilisKaydi, AyrilmisGarantisi, AyrilmisHucreKaydi, GecKatilanOlgusuIki, H6IkiBicimKarari, H8Sonucu, IlceAyrilmisDolulugu, IlkOlayKaydi, ServetBilesenleri, ServetOrani, UcuzHucreAyrintisi, UretimGeliriOlgusu, Y1Sonucu, Y2Sonucu, Y5Sonucu, Y6Sonucu, Y7Sonucu, Olculemez, SahipliHucre, YonKaydi } from "./parsel";
 
 export type { Y7Sonucu };
 
@@ -134,6 +136,22 @@ export interface ParselH6Olgusu {
   /** Y7 emsal kuralı: yalnız ÜRETEN (gelir > 0) emsallerin sayısı ve gelir medyanı. */
   emsalUretenSayisi: number;
   emsalGelirMedyan: number | null;
+  /** Y7 il yedeği: ilçenin ili ve aynı ildeki (ilçe emsalleri dahil) yerleşik emsaller; yalnız ilçede üreten emsal yoksa kullanılır. */
+  il: string | null;
+  ilEmsal: OyuncuId[];
+  ilEmsalGelir: number[];
+  ilEmsalUretenSayisi: number;
+  ilEmsalGelirMedyan: number | null;
+  /** Y7'de kullanılan emsal düzeyi: "ilce" (üreten ilçe emsali var), "il" (yalnız il yedeği), null (ölçülemez). */
+  emsalDuzeyi: Y7EmsalDuzeyi | null;
+  /** H6 açılış koşulu: katılım anı ayrılmış boş hücre (katılınan ilçede, yurt öncesi), açılış ayak izi (yurt hariç), yurt hücresi, açılış yapıları (ms) ve sonuç. */
+  ayrilmisBosKatilim: number;
+  /** İlçe seçiminin nedeni (`ilceSec`: yurt verebilen / açılışa uygun / ayak izine yeten ilçe sayıları); kayıt yoksa null. */
+  ilceNedeni: string | null;
+  ayakIzi: number;
+  yurtHucre: number;
+  acilisYapiMs: number[];
+  acilisKosulu: AcilisKosuluSonucu;
   katilmaGun: number;
 }
 
@@ -180,17 +198,7 @@ export interface ParselTohumSonucu {
 const YAPI_KOMUTLARI = new Set(["yapi_yerlestir", "tesis_insa_hucre"]);
 
 /** Fikstürde ilçenin ayrılmış ve henüz satılmamış hücre sayısı. */
-function ayrilmisBos(sim: Simulasyon, ilce: string): number {
-  const mk = sim.ic.mulk;
-  const m = sim.dunya.mulk;
-  if (mk === undefined || m === undefined) return 0;
-  const tanim = mk.ilceler.get(ilce);
-  if (tanim === undefined) return 0;
-  const sahipli = new Set(m.hucreler.filter((h) => h.ilce === ilce).map((h) => h.id));
-  let n = 0;
-  for (const h of tanim.hucreler) if (h.uygun && mk.ayrilmis.has(h.id) && !sahipli.has(h.id)) n++;
-  return n;
-}
+const ayrilmisBos = ilceAyrilmisBos; // tek kaynak: botlar `ilceAyrilmisBos` (ilceSec sıralaması ve katılım anı sayımı aynı)
 
 /** Fikstürdeki tüm ayrılmış hücrelerin durumu (satılmış mı, ne zaman, sahibi ne zaman katıldı). Kamu arsası olmayan, satılabilir hücreler. */
 export function ayrilmisKayitlari(sim: Simulasyon): AyrilmisHucreKaydi[] {
@@ -397,9 +405,14 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
     return h1 - h0 + sermayeToplami(sonuc, o, bas, bit);
   };
 
+  const bitis = sureGun * GUN;
+  const yapiKomutlari = (id: OyuncuId): ParselKomutKaydi[] => sonuc.komutGunlugu.filter((k) => k.oyuncu === id && k.tamam && YAPI_KOMUTLARI.has(k.tur));
+  const yurtHucre = sim.ic.mulk!.p.yeniOyuncu.yurtHucre;
+  const ilceIl = new Map((sim.dunya.mulk?.ilceler ?? []).map((c) => [c.id, c.il] as const));
   // --- H6: geç katılan olguları -------------------------------------------------------------------------------------------
   const olgular: ParselH6Olgusu[] = [];
   const y7Girdi: UretimGeliriOlgusu[] = [];
+  const acilisGirdi: AcilisKosuluSonucu[] = [];
   const hamOlgular: GecKatilanOlgusuIki[] = [];
   for (const g of uyeler.filter((o) => o.onayar === "gec_katilan")) {
     const ilce = sonKullanilanIlce(sim, g.id);
@@ -407,6 +420,11 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
     const emsal = uyeler
       .filter((o) => o.id !== g.id && (katilmaAni.get(o.id) as number) < katilma)
       .filter((o) => ilce !== null && (sim.dunya.mulk?.hucreler ?? []).some((h) => h.sahip === o.id && h.ilce === ilce))
+      .map((o) => o.id);
+    const il = ilce === null ? null : (ilceIl.get(ilce) ?? null);
+    const ilEmsal = uyeler
+      .filter((o) => o.id !== g.id && (katilmaAni.get(o.id) as number) < katilma)
+      .filter((o) => il !== null && (sim.dunya.mulk?.hucreler ?? []).some((h) => h.sahip === o.id && ilceIl.get(h.ilce) === il))
       .map((o) => o.id);
     const servetGec = (id: OyuncuId): ServetBilesenleri => {
       const b = bilesen.get(`${id}@${T}`) as Omit<ServetBilesenleri, "yapi">;
@@ -416,6 +434,13 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
     const emsalHam = emsal.map((e) => servetToplami(servetGec(e)));
     const gelir = gelirAralik(g.id, Tbas, T) ?? 0;
     const emsalGelir = emsal.map((e) => gelirAralik(e, Tbas, T) ?? 0);
+    const ilEmsalGelir = ilEmsal.map((e) => gelirAralik(e, Tbas, T) ?? 0);
+    // H6 açılış koşulu: katılım anı (geç katılımdan hemen önce) katılınan ilçedeki satılmamış ayrılmış hücre; açılışın ilk yapı türlerinden kabul edilen yapılar
+    const ayrilmisBosKatilim = (ilceDoluluk.get(oncekiAn) ?? []).find((c) => c.ilce === ilce)?.ayrilmisBos ?? 0;
+    const acilisTurleri = new Set<string>(g.acilis === undefined ? [] : ACILIS_ESLEMESI[g.acilis as GecAcilis].ilkYapiTurleri);
+    const acilisYapiMs = yapiKomutlari(g.id).filter((k) => acilisTurleri.has(k.tesisTuru as string)).map((k) => k.t);
+    const ayakIzi = acilisAyakIzi(sim, g.acilis as GecAcilis);
+    const acilisKosulu = acilisKosuluOlgusu({ ayrilmisBos: ayrilmisBosKatilim, ayakIzi, yurtHucre, katilmaMs: katilma, acilisYapiMs, gozlemSonuMs: bitis });
     const ham = servetToplami(sg);
     olgular.push({
       gec: g.id,
@@ -438,14 +463,27 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
       emsalGelir,
       emsalUretenSayisi: uretenEmsal(emsalGelir).length,
       emsalGelirMedyan: tamsayiMedyan(uretenEmsal(emsalGelir)),
+      il,
+      ilEmsal,
+      ilEmsalGelir,
+      ilEmsalUretenSayisi: uretenEmsal(ilEmsalGelir).length,
+      ilEmsalGelirMedyan: tamsayiMedyan(uretenEmsal(ilEmsalGelir)),
+      emsalDuzeyi: y7EmsalDuzeyi({ ilceGelirleri: emsalGelir, ilGelirleri: ilEmsalGelir }),
+      ayrilmisBosKatilim,
+      ilceNedeni: sonuc.katilimlar[g.id]?.ilceNedeni ?? null,
+      ayakIzi,
+      yurtHucre,
+      acilisYapiMs,
+      acilisKosulu,
       katilmaGun: g.katilmaGun,
     });
     hamOlgular.push({ servet: ham, ilceServetleri: emsalHam, hibeKitDegeri: pk.toplam });
-    y7Girdi.push({ gelir, ilceGelirleri: emsalGelir });
+    y7Girdi.push({ gelir, ilceGelirleri: emsalGelir, ilGelirleri: ilEmsalGelir });
+    acilisGirdi.push(acilisKosulu);
   }
   const ilceler = ilceDoluluk.get(oncekiAn) ?? [];
   const ucuz = ucuzHucreAyrintisi(ilceler);
-  const karar = h6ParselIkiBicim(hamOlgular, ucuz, y7Girdi);
+  const karar = h6ParselIkiBicim(hamOlgular, ucuz, y7Girdi, acilisGirdi);
   const y7 = karar.birincil.y7;
 
   // --- H8 -----------------------------------------------------------------------------------------------------------------
@@ -459,8 +497,6 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
   );
 
   // --- Y ölçütleri (bot gözlemi) ------------------------------------------------------------------------------------------
-  const bitis = sureGun * GUN;
-  const yapiKomutlari = (id: OyuncuId): ParselKomutKaydi[] => sonuc.komutGunlugu.filter((k) => k.oyuncu === id && k.tamam && YAPI_KOMUTLARI.has(k.tur));
   const ilkYapi: IlkOlayKaydi[] = uyeler.map((o) => ({ katilmaMs: o.katilmaGun * GUN, ilkMs: yapiKomutlari(o.id)[0]?.t ?? null, gozlemSonuMs: bitis }));
   const ilkSatisKayit: IlkOlayKaydi[] = uyeler.map((o) => ({ katilmaMs: o.katilmaGun * GUN, ilkMs: ilkSatis.get(o.id) ?? null, gozlemSonuMs: bitis }));
   const acilis: AcilisKaydi[] = uyeler.map((o) => ({ katilmaMs: o.katilmaGun * GUN, yapilar: yapiKomutlari(o.id).map((k) => ({ tur: k.tesisTuru as string, zamanMs: k.t })) }));
