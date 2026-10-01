@@ -330,6 +330,11 @@ export interface BolgeDurumu {
    * (yalnız `> 0` olanlar; hiç yoksa alan yazılmaz). Kimlik anahtarlıdır: `dunyaYenidenIndeksle` kapsamına girmez.
    */
   sebekeTuketim?: Record<string, Mili>;
+  /**
+   * Mülk kipi yerel pazar (G7-2, sartname §6.3 g): düğümün dükkân satış isteğinin karşılanma oranı = min(frD[m]) (dükkân isteği olan mallar). YALNIZ dükkân isteği varken
+   * ve `< PPM` iken yazılır (`gidaKarsilanmaPpm` örüntüsü); aksi halde alan silinir/oluşmaz. "Neden satmıyor" bilgisini panele taşır.
+   */
+  yerelKarsilanmaPpm?: number;
   /** Kirlilik (B2, 0..PPM): tarım verimini düşürür; B4'te istikrar hedefini düşürecek. Sanayi kapalıysa tanımsızdır. */
   kirlilikPpm?: number;
   /** Kullanılan keşif hakkı (B2), mal indeksine göre. Sanayi kapalıysa tanımsızdır. */
@@ -367,6 +372,60 @@ export interface EkYapiDurumu {
   /** `mulk.ekYapilar` kimliği. */
   tur: string;
   hucreler: HucreId[];
+  /** Yalnız `tur === "dukkan"` iken (G7-2, sartname §7.1). Dükkân olmayan ek yapıda alan YASAKTIR. */
+  dukkan?: DukkanDurumu;
+}
+
+/** Perakende dükkânı durumu (mülk kipi; yalnız kullanılınca yazılır). Tutar taşımaz: fiyat bir KADEME indeksidir (R x kademe çekirdekte türetilir). */
+export interface DukkanDurumu {
+  /** `mulk.perakende.dukkanTurleri[].id` (dize; dizi indeksi DEĞİL). */
+  tur: string;
+  /** 0 = S, 1 = M, 2 = L (Alfa-0'da yalnız 0). */
+  olcek: 0 | 1 | 2;
+  /** `MulkOyuncuDurumu.markalar` indeksi; yoksa markasız. */
+  marka?: number;
+  /** Uzunluk = `perakende.olcekler[olcek].rafYuvasi`; boş yuva `mal` taşımaz. */
+  raf: RafYuvasi[];
+  /** Kampanya sayaçları (§7.5b); yalnız bir kampanya başlatılınca yazılır. */
+  kampanya?: KampanyaDurumu;
+  /** Yapı komutunun verildiği an (`InsaatDurumu.baslangic`'ten kopyalanır). */
+  baslangic: Ms;
+  /** Tamamlanma anı (sim zamanı, ms): `ekYapiTamamla`'da `d.zaman` olarak BİR KEZ yazılır, bir daha değişmez (A2 izleme K2-8). */
+  kurulus: Ms;
+}
+
+/** Kampanya penceresi sayaçları (§7.5b). */
+export interface KampanyaDurumu {
+  /** Sayaçların ait olduğu sim haftası (`floor(gun / 7)`). */
+  hafta: number;
+  /** Bu haftada en az bir kampanya saati olan gün sayısı. */
+  gunSayisi: number;
+  /** En son kampanya kullanılan sim günü ve o gün kullanılan saat. */
+  gun: number;
+  saat: number;
+  /** Etkin kampanyanın bitişi (ms; tam saat sınırı). `bitis > d.zaman` iken kampanya etkindir. */
+  bitis: Ms;
+}
+
+/** Dükkân raf yuvası. */
+export interface RafYuvasi {
+  /** Mal KİMLİĞİ (dize; `dunyaYenidenIndeksle` kapsamına girmez). Tanımsız = boş yuva. */
+  mal?: string;
+  /** `perakende.fiyatKademeleriPpm` indeksi (tutar DEĞİL). Boş yuvada da varsayılan değerdedir. Kampanya kademesi seçiliyse ETKİN kademe kampanya penceresine göre belirlenir. */
+  fiyat: number;
+  /** Son fiyat/mal DEĞİŞİMİ (ms; hız sınırı için). İlk doldurma ve boşaltma yazmaz. */
+  fiyatT?: Ms;
+  /** Kümülatif SATILAN MİKTAR (mili-birim; kayıpsız `ParaSayaci {n, a}`; para DEĞİL). İlk satış birikiminde doğar; mal değişince SIFIRLANMAZ (§7.1b). */
+  satis?: ParaSayaci;
+  /** Son çözümde yazılan gerçekleşen satış ORANI (mili-birim/saat; `satis`'i tembel biriktirmek için). `> 0` iken yazılır, 0 olunca alan silinir. */
+  satisOran?: Mili;
+}
+
+/** Oyuncu markası (adın kanonik küçük harf biçimi saklanır; sartname §7.7). */
+export interface OyuncuMarka {
+  ad: string;
+  simge: number;
+  renk: number;
 }
 
 export interface KenarDurumu {
@@ -567,6 +626,11 @@ export interface InsaatDurumu {
    * yazılır; yoksa tür varsayılanı (`yontemler[0]`) ile kurulur. Tamamlanınca tesis bu yöntemle başlar.
    */
   yontem?: string;
+  /**
+   * Mülk kipi perakende (G7; sartname §7.2): `ekYapi === "dukkan"` inşaatında seçilen dükkân türünün KİMLİĞİ (`mulk.perakende.dukkanTurleri[].id`; dize). Tamamlanınca `DukkanDurumu.tur` olur.
+   * Yalnız dükkân inşaatında yazılır (komut yolu G7-3).
+   */
+  dukkanTuru?: string;
 }
 
 export interface UretimPartisi {
@@ -863,6 +927,12 @@ export interface MulkOyuncuDurumu {
    * ilçe belirlenebildiğinde yazılır (ayrılmış hücre yalnız burada satılır).
    */
   katilimIlcesi?: string;
+  /** Oyuncu markaları (G7; en çok `perakende.marka.hesapBasinaEnFazla`); ilk marka tanımlanınca yazılır. */
+  markalar?: OyuncuMarka[];
+  /** Kümülatif NPC dükkân geliri (mili-₺; kayıpsız sayaç); ilk gelirde yazılır (`musluk.yerelNpc` ile aynı oran ve süre). */
+  dukkanGeliri?: ParaSayaci;
+  /** Yerel satış oranının ilk kez > 0 olduğu an (`paraAkisiYaz`: `akis.yerel > 0` iken `??= d.zaman`); A0-11 "ilk satış" zamanı. */
+  ilkSatisT?: Ms;
 }
 
 /** Dünyanın mülk durumu. Diziler deterministik sıralıdır. */
@@ -911,6 +981,12 @@ export interface ParaSayaci {
 export type MuslukKalemi = "hibe" | "odul" | "iade" | "ihracatNpc" | "nufusGeliri" | "borcSilme" | "diger";
 export const MUSLUK_KALEMLERI: readonly MuslukKalemi[] = ["borcSilme", "diger", "hibe", "ihracatNpc", "iade", "nufusGeliri", "odul"];
 
+/**
+ * İsteğe bağlı musluk kalemi (G7-2; sartname §12.1): NPC hane talebinin (yerel pazar) dükkân gelirleri. Tembel: kalem YALNIZ ilk yerel gelir birikiminde doğar (`paraDurumuKur`
+ * yaratmaz; zorunlu `MUSLUK_KALEMLERI` değişmez, böylece mevcut mülk dünyalarının özeti ve eski görüntüler aynı kalır).
+ */
+export const MUSLUK_ISTEGE_BAGLI: readonly "yerelNpc"[] = ["yerelNpc"];
+
 /** Para LAVABOLARI (yanan para): arsa alımı, yapı/üretim harcaması, araştırma, NPC ithalat tahsilatı (kasa payı hariç), işletme gideri ve birlik maaşı, arazi vergisinin yanan kısmı, kasanın NPC'ye harcaması. */
 export type LavaboKalemi = "arsa" | "harcama" | "arastirma" | "ithalatNpc" | "isletme" | "araziVergisi" | "kamuNpc";
 export const LAVABO_KALEMLERI: readonly LavaboKalemi[] = ["araziVergisi", "arastirma", "arsa", "harcama", "isletme", "ithalatNpc", "kamuNpc"];
@@ -931,7 +1007,7 @@ export type KasaGirisKalemi = KasaGirisZorunluKalemi | "sebeke";
 /** Para defteri: kalem bazında kümülatif sayaçlar (açık defter; kayıt kayıt değil) ve kasalar. */
 export interface ParaDurumu {
   surum: 1;
-  musluk: Record<MuslukKalemi, ParaSayaci>;
+  musluk: Record<MuslukKalemi, ParaSayaci> & { yerelNpc?: ParaSayaci };
   lavabo: Record<LavaboKalemi, ParaSayaci> & { sebeke?: ParaSayaci };
   /** Sahip kimliğine göre sıralı; ilk gelire kadar yazılmaz. */
   kasalar: KasaDurumu[];
@@ -971,6 +1047,8 @@ export interface ParaAkisi {
   vergi: Mili;
   /** Şebeke bedeli (G6; lavabo + kasa payı): YALNIZ `> 0` iken yazılır (alan yoksa şebeke yok). */
   sebeke?: Mili;
+  /** Yerel pazar (dükkân) satış geliri (G7-2; musluk `yerelNpc`): YALNIZ `> 0` iken yazılır (alan yoksa yerel satış yok). */
+  yerel?: Mili;
   /** Kasalara giden paylar (sahip, kalem sırasıyla): ithalat ve vergi içindeki payı; kalanı yanar. */
   kasa: { sahip: string; kalem: KasaGirisKalemi; oran: Mili }[];
 }
