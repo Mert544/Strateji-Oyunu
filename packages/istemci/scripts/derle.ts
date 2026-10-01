@@ -19,6 +19,8 @@ import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { build } from "vite";
 import type { Plugin } from "vite";
+import { haritaVerisiDosyalari } from "./harita-verisi-listesi";
+import type { IzgaraManifesti } from "./harita-verisi-listesi";
 
 const AYRI = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEPO = resolve(AYRI, "..", "..");
@@ -135,7 +137,9 @@ async function main(): Promise<void> {
   else console.warn("  uyarı: gebze-z15.pmtiles yok; yürüyüş karoları için ?yuru-karo=<url> verin");
   // Harita verisi (ODbL; il/ilçe sınırları, arsa ızgarası örneği) sayfanın yanına: harita/veri.ts fetch eder.
   const odbl = join(DEPO, "packages", "veri", "haritalar", "odbl");
-  const haritaDosyalari = ["hiyerarsi.json", "iller.topo.json", "ilceler", "ornek/gebze-seritler.pmtiles", "ornek/gebze-hucreler.bhi.gz", "ornek/LISANS.txt"];
+  // Izgara dosyaları manifestten (sunucu ve istemci aynı kaydı okur): her ilçenin BHI1'i ve şerit katmanı.
+  const izgara = JSON.parse(readFileSync(join(odbl, "izgara", "manifest.json"), "utf8")) as IzgaraManifesti;
+  const haritaDosyalari = haritaVerisiDosyalari(izgara);
   for (const kok of [join(AYRI, "dist", "harita-verisi"), join(hedefKlasor, "harita-verisi")])
     for (const d of haritaDosyalari) cpSync(join(odbl, d), join(kok, d), { recursive: true });
 

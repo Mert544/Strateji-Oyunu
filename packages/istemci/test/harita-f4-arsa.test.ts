@@ -12,6 +12,12 @@ import { arsaSinifi } from "../src/harita/fiyat";
 import { bhiCoz, Bit, durumAl, hucreId, idCoz, satinAlinabilir } from "../src/harita/hucre";
 import type { Izgara } from "../src/harita/hucre";
 
+/** Gebze ızgarasının dosyası: manifestten (el ile "ornek/..." yolu yok). */
+function gebzeBhiYolu(): URL {
+  const m = JSON.parse(readFileSync(new URL("../../veri/haritalar/odbl/izgara/manifest.json", import.meta.url), "utf8")) as { ilceler: Array<{ kimlik: string; bhi: { yol: string } }> };
+  return new URL(`../../veri/haritalar/odbl/${m.ilceler.find((i) => i.kimlik === "tr_41_gebze")!.bhi.yol}`, import.meta.url);
+}
+
 const KIRSAL = Bit.ICERIDE | (1 << 5);
 
 function izgara(g: number, y: number, f: (x: number, y: number) => number = () => KIRSAL, x0 = 1000, y0 = 2000): Izgara {
@@ -142,7 +148,7 @@ describe("arsa türetme: küçük örnekler", () => {
 });
 
 describe("gerçek Gebze ızgarası", () => {
-  const iz = bhiCoz(new Uint8Array(gunzipSync(readFileSync(new URL("../../veri/haritalar/odbl/ornek/gebze-hucreler.bhi.gz", import.meta.url)))));
+  const iz = bhiCoz(new Uint8Array(gunzipSync(readFileSync(gebzeBhiYolu()))));
   const t0 = performance.now();
   const k = arsalariTuret(iz);
   const sure = performance.now() - t0;
@@ -242,7 +248,7 @@ describe("kamu arsaları (sunucudan dikdörtgen bloklar; docs/06 §15.6)", () =>
   });
 
   it("Gebze, sunucusuz örnek küme (ornekKamu): bloklar tamamen satın alınabilir, çakışmasız; arsalar ve öneri kamuyu atlar", () => {
-    const gz = bhiCoz(new Uint8Array(gunzipSync(readFileSync(new URL("../../veri/haritalar/odbl/ornek/gebze-hucreler.bhi.gz", import.meta.url)))));
+    const gz = bhiCoz(new Uint8Array(gunzipSync(readFileSync(gebzeBhiYolu()))));
     const ornek = ornekKamu(gz, "tr_41_gebze");
     expect(ornek.map((g) => g.tur).sort()).toEqual(["hazine", "hizmet", "meydan", "park", "pazar"]);
     const gorulen = new Set<string>();

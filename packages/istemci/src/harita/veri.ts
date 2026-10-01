@@ -9,6 +9,7 @@
 import type { Feature, FeatureCollection, MultiLineString, MultiPolygon, Polygon } from "geojson";
 import { feature, mesh } from "topojson-client";
 import type { AramaKaydi } from "./arama";
+import izgaraManifesti from "../../../veri/haritalar/odbl/izgara/manifest.json";
 import { cerceve, noktadakiOzellik } from "./geometri";
 import { bhiCoz } from "./hucre";
 import type { Izgara, Sinir } from "./hucre";
@@ -60,10 +61,13 @@ export interface SinirKatmani {
   sinir?: SinirCizgileri;
 }
 
-/** Arsa ızgarası olan ilçeler (S6 örneği; ileride il başına `seritler.pmtiles` + ilçe başına BHI1). */
-export const IZGARALI_ILCELER: Readonly<Record<string, { seritler: string; hucreler: string }>> = {
-  tr_41_gebze: { seritler: "ornek/gebze-seritler.pmtiles", hucreler: "ornek/gebze-hucreler.bhi.gz" },
-};
+/**
+ * Arsa ızgarası olan ilçeler: veri hattının ürettiği manifestten (odbl/izgara/manifest.json; sunucu tarafı da aynı dosyayı okur).
+ * Yollar `harita-verisi/` köküne göredir (odbl/ ile aynı dizilim). El ile ilçe tablosu tutulmaz.
+ */
+export const IZGARALI_ILCELER: Readonly<Record<string, { seritler: string; hucreler: string }>> = Object.fromEntries(
+  izgaraManifesti.ilceler.map((i) => [i.kimlik, { seritler: i.seritler.yol, hucreler: i.bhi.yol }]),
+);
 
 export function izgaraVarMi(ilce: string): boolean {
   return ilce in IZGARALI_ILCELER;

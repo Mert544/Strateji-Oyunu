@@ -34,7 +34,10 @@ export const SIR = "f4-sinama-sirri-0123456789";
 export const GEBZE = "tr_41_gebze";
 
 export function gebzeIzgarasi(): Izgara {
-  const yol = join(DEPO, "packages", "veri", "haritalar", "odbl", "ornek", "gebze-hucreler.bhi.gz");
+  // Gebze ızgarasının yolu manifestten (tek kaynak; el ile "ornek/..." yolu tutulmaz)
+  const odbl = join(DEPO, "packages", "veri", "haritalar", "odbl");
+  const manifest = JSON.parse(readFileSync(join(odbl, "izgara", "manifest.json"), "utf8")) as { ilceler: Array<{ kimlik: string; bhi: { yol: string } }> };
+  const yol = join(odbl, manifest.ilceler.find((i) => i.kimlik === GEBZE)!.bhi.yol);
   return bhiCoz(new Uint8Array(gunzipSync(readFileSync(yol))));
 }
 
