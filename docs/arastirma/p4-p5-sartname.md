@@ -845,6 +845,53 @@ Ayrıntı §17. Özet:
 - Protokol: `komut-sema.ts:62-71` iki komuta `yontem: kimlik.optional()`; `komutSemasi.ts:60,62` `yontem: "kimlik"`. Bölge kipi komutu etkilenmez (alan mülk komutlarındadır).
 - Ret iletileri (§9.3 genişler): `YON-01 yontem yalniz tesis turunde verilebilir: <tesisTuru>`; diğerleri mevcut.
 
+### 5.9 Ekmek zinciri ↔ `standart_gida_isleme`: baş lider kararı ve hazır yedek (`mulk.yontemGecersizKilma`)
+
+**Sayılar A2'nin tek kaynağıdır** (§1.3-B2; commit `eab8fcc`); bu belge kopyalamaz, yalnız yönü kaydeder. **Fırın çıktısı A2'nin tek önerisiyle 240'tır** (baş lider kararı; zincir tahıl başına NPC net **+%21,2**, K/U ilkesinin +%10–25 bandının içinde; 250 ekmekle +%33,6 idi; S-17 kapandı). Tesis, işçi ve hücre tabanlarında zincir **geridedir**: A2 §1.3-B2 (fırın 240) tablosu: tesis başına KD 3.322 ↔ 5.097 ₺ (**−%34,8**), işçi başına 511 ↔ 849 ₺ (**−%39,8**), hücre ve sermaye başına −%34,8. A2'nin okuması: erken oyunun bağlayıcı kısıtı tahıl ya da sermaye değil **NPC pazar derinliğidir**; standart ve zincir **tamamlayıcıdır** (iki pazar havuzu: A+ ve B+ birlikte 8.309 ₺/sa [240]; doymuş havuza ikinci standart tesis zarar eder).
+
+**Karar (baş lider, bağlayıcı):** (ii) güçlendirme **gerekmez**, (i) kapatma **yapılmaz**; çarpan **uygulanmaz**. Tesis tabanı da kural sayılırsa **yedek seçenek (G2) parametre olarak hazır durur, varsayılan KAPALI:** mülk kipinde `standart_gida_isleme` çıktısı ×0,75. G6'ya yalnız **şema ve çekirdek yolu** girer (kapalıyken bit-exact no-op); açmak veri değişikliğidir (kural dönemi).
+
+**Şema (K3; `veri/src/{tipler,sema}.ts`; A2 §1.13 adı):** `MulkParametreleri.yontemGecersizKilma?`, isteğe bağlı, yöntem kimliği → geçersiz kılma:
+
+```ts
+export interface MulkYontemGecersizKilmaParametreleri {
+  /** yöntem kimliği -> mülk kipine özel geçersiz kılma. Girdi bölge kipinde ve mülk kipinde AYNI kalır; yalnız çıktı ölçeklenir. */
+  [yontem: string]: {
+    /** ÇIKTI çarpanı (ppm; 0 < değer ≤ 2 000 000). 1 000 000 = kapalı (kimlik; bit-exact no-op). Yedek G2: standart_gida_isleme için 750 000. */
+    ciktiPpm: number;
+  };
+}
+```
+
+Gönderilecek veri (T3 yazar): `"yontemGecersizKilma": { "standart_gida_isleme": { "ciktiPpm": 1000000 } }` (kapalı). **G2'yi açmak** = `ciktiPpm: 750000` (baş lider kararı + O2 ölçümü sonrası, ayrı veri commit'i). Doğrulayıcı (Katman 2, V17): anahtarlar `icerik.yontemler` kimlikleri; `0 < ciktiPpm ≤ 2 000 000`; `mulkKipi` yöntemleri de ayarlanabilir.
+
+**Nerede uygulanır (çekirdek):** `ekonomi/uretim.ts:204-222` `ciktiCarpaniHesapla`, fonksiyonun **sonunda**, `return c`'den önce:
+
+```ts
+const mc = ic.mulk?.yontemCiktiPpm?.[ts.yontem];                     // DerlenmisMulk.yontemCiktiPpm: yöntem indeksi -> ppm; YALNIZ ciktiPpm !== PPM olan yöntemler tablolanır, hiç yoksa alan OLUŞMAZ
+if (mc !== undefined && b.merkez !== undefined) c = carpBol(c, mc, PPM);
+```
+
+- **Çıktıya uygulanır, girdiye değil** (aşınma cezasıyla aynı mekanizma, A2 §2.1): yöntemin katma değeri çarpan oranında düşer; girdi, bakım ve işçi aynı kalır.
+- Çağrı noktaları `:313`, `:325` ve `carpanlariYenile` (`:231`, yalnız tarımsal) fonksiyonu çağırdığından ek yer gerekmez.
+- `derle.ts` `mulkDerle`: tablo yalnız `ciktiPpm !== PPM` satırlarından kurulur; hepsi `PPM` ise `DerlenmisMulk.yontemCiktiPpm` **hiç oluşmaz** (kod yolu atlanır).
+- **Bölge kipi altınları:** `ic.mulk` bölge kipinde tanımsızdır ve işletme düğümü (`b.merkez`) yalnız mülk kipinde vardır: iki koşul da bölge kipinde yanlış; kod yolu **hiç çalışmaz** (K-5, §13). Mülk kipinde kapalıyken (`ciktiPpm: 1 000 000` ya da blok yok) de bayt bayt aynıdır (test: üç veri kopyası aynı `durumOzeti`).
+- Serileştirme: durum alanı **yok** (parametre); `kuralSurumu` değişir (veri). Göç gerekmez.
+
+**Tetik ölçütü (A2 §1.3-B2, bağlayıcı; ölçüm O2 ve A0-11 kapsamı):**
+
+| Öğe | Değer |
+|---|---|
+| Ölçüt | **M = (ilk 7 günde en az 24 saat `degirmen` yönteminde çalışan tesisi olan bot) / (ilk 7 günde en az bir `gida_fabrikasi` kurmuş bot)** |
+| Açılma koşulu (**X = %30, baş lider onaylı**) | A0-11 bot ölçümünde **tohum medyanında M < %30**, **≥ 8/10 tohumda** eşiğin altında **ve** gıda arzının **≥ %85'i** `standart_gida_isleme`'den geliyor (zincirin ekmek havuzu boş) ⇒ G2 (`ciktiPpm: 750000`) açılır (baş lider onayıyla) |
+| Hedef (G2 sonrası) | M ≥ %50 (tekrar ölçüm) |
+| Pencere / örneklem | katılımdan ilk 7 sim-günü (168 sa); tohum 1–10 × tohum başına 100 bot (A0-4 ölçeği) |
+| Bot dağılımı | yalnız yeni oyuncular (gün 0); çiftçi / sanayici / tüccar 1/3'er (`botlar/src/parsel.ts` planları); yerleşik ve geç katılan botlar girmez |
+
+**Ölçümün ön koşulu (kabul koşulu; iş bölümü §18):** mülk botlarında bugün **`degirmen` yöntem seçici ve `yontem_degistir` kullanımı yoktur** (K3 keşfi §1; `botlar/src/parsel.ts`). A2: ölçüm **yalnız yöntem seçen botlarla** (marjinal net kuralı) yapılmalıdır; "varsayılan yöntem" botuyla M ≈ %0 çıkar ve ölçüt bot ayarı hatasını ekonomik hatadan ayıramaz **(doğrulanmadı)**. Bu yüzden O2'nin G6 bot önayarı işi (`g6-onayar`) **marjinal-net yöntem seçiciyi** ve `yontem_degistir`/`yontem` kullanımını içermek zorundadır ve **G6 kabul koşulu**dur (§17 G6-5).
+
+**Dikkat paneli notu (G9 kapsamı; K1/T1):** "pazar doydu → ekmek zinciri" geçişi: `gida` referans fiyatı tabanın altına indiğinde (eşik G9'da) Dikkat paneli "ekmek zinciri ikinci talep havuzudur" önerisini gösterir (kural bildirimi; zorunlu değil; "kilit yok, seçim var"). Çekirdek değişikliği yok; veri kaynağı `IlgiKaresi.fiyat` (mevcut). G4'ün G9'a bıraktığı nottur; bu şartnamede ek iş değildir.
+
 ## 6. G7a: yerel pazar kanalı
 
 ### 6.1 Ne eklenir
