@@ -154,6 +154,7 @@ export const DUKKAN_METIN = {
   "dukkan.D7.marka_siniri": "En çok {n} marka tanımlayabilirsin.",
   "dukkan.D7.marka_yok": "Geçersiz marka. · Önce marka tanımlamalısın.",
   "dukkan.D7.markasiz": "markasız",
+  "dukkan.D7.markasiz_dugme": "Şimdilik markasız",
   "dukkan.D7.onizleme": "Tabelada böyle görünür: {kucuk}",
   "dukkan.D7.renk_ad.cam": "çam",
   "dukkan.D7.renk_ad.eflatun": "eflatun",

@@ -7,6 +7,7 @@ import {
   dukkanMenusuHtml,
   insaatEtiketi,
   kademeHtml,
+  markaFormuHtml,
   kaldirOnayHtml,
   maliyetSatirlariHtml,
   oneriKartiHtml,
@@ -514,5 +515,65 @@ describe("dukkan-duzelt 5-9", () => {
     expect(h).toContain("Boşaltırsan bu yuvaya en erken 6 sa sonra mal koyabilirsin.");
     expect(h).toContain(`data-eylem="yuva-bosalt">Yuvayı boşalt</button>`);
     expect(kademeHtml(yuva(), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0 })).not.toContain("yuva-bosalt");
+
+describe("D-7 marka formu", () => {
+  const f = (k: Partial<Parameters<typeof markaFormuHtml>[0]> = {}): string => markaFormuHtml({ ad: "", simge: 0, renk: 0, ...k });
+
+  it("iskelet: dialog, alan öznitelikleri, sayaç, açıklama ve uyarı, tek birincil Kaydet, ikincil Şimdilik markasız", () => {
+    const h = f({ ad: "Bereket Bakkal" });
+    expect(h).toContain(`<div class="dk-marka" role="dialog" aria-modal="true" aria-labelledby="dk-marka-baslik" data-durum="bos">`);
+    expect(h).toContain(`<input id="dk-marka-ad" class="dk-girdi" type="text" name="marka" maxlength="24" autocapitalize="off"`);
+    expect(h).toContain(`value="Bereket Bakkal"`);
+    expect(h).toContain(`data-alan="marka-sayac">14 / 24`);
+    expect(h).toContain("Marka yalnızca tabeladır; satışı ya da fiyatı etkilemez.");
+    expect(h).toContain("Büyük harf yazabilirsin; ad küçük harfle kaydedilir.");
+    expect(h).toContain("Marka adın dünyadaki herkese görünür ve kalıcıdır.");
+    expect(h).toContain(`aria-live="polite">Tabelada böyle görünür: bereket bakkal</p>`);
+    expect(h.match(/class="birincil"/g)?.length).toBe(1);
+    expect(h).toContain(`data-eylem="marka-kaydet">Kaydet</button>`);
+    expect(h).toContain(`data-eylem="marka-yok">Şimdilik markasız</button>`);
+  });
+
+  it("boş ad: tabela yer tutucusu önizlemede; yazarken hata yok, gönderirken 'Marka adı yazılmalı.'", () => {
+    expect(f()).toContain("Tabelada böyle görünür: adsiz marka");
+    expect(f()).toContain(`<p id="dk-marka-hata" class="dk-hata" role="alert"></p>`);
+    expect(f({ gonder: true })).toContain(`role="alert">Marka adı yazılmalı.</p>`);
+  });
+
+  it("canlı hata (izinsiz karakter, çift tırnak, art arda boşluk) ve gönderirken tüm kural; geçersizde önizleme yok", () => {
+    const k = f({ ad: "ab@" });
+    expect(k).toContain(`aria-invalid="true"`);
+    expect(k).toContain("Marka adında yalnız harf, rakam, boşluk, nokta, kesme işareti, tire ve &amp; kullanılabilir.");
+    expect(k).toContain(`data-alan="marka-onizleme" aria-live="polite"></p>`);
+    expect(f({ ad: 'ab"' })).toContain("Çift tırnak ya da uzun tire yerine");
+    expect(f({ ad: "a  b" })).toContain("Art arda boşluk olamaz.");
+    expect(f({ ad: "a" })).toContain(`role="alert"></p>`);
+    expect(f({ ad: "a", gonder: true })).toContain("Marka adı 2 ile 24 karakter arasında olmalı.");
+    expect(f({ ad: "ab ", gonder: true })).toContain("Marka adı boşlukla başlayıp bitemez.");
+    expect(f({ ad: "12", gonder: true })).toContain("Marka adında en az bir harf olmalı.");
+  });
+
+  it("sunucu reddi (ret anahtarı) ve gönderiyor durumu", () => {
+    expect(f({ ad: "ali", ret: "dukkan.D7.ad_yasakli" })).toContain("Bu ad kullanılamaz; başka bir ad dene.");
+    const g = f({ ad: "ali", gonderiyor: true });
+    expect(g).toContain(`data-durum="gonderiyor"`);
+    expect(g).toContain(`data-eylem="marka-kaydet" disabled data-durum="yukleniyor"`);
+  });
+
+  it("palet: iki radiogroup, 8 simge ve 12 renk; seçili öğe tabindex=0 (roving), diğerleri -1; etiketler metin tablosundan", () => {
+    const h = f({ simge: 2, renk: 11 });
+    expect(h.match(/role="radiogroup"/g)?.length).toBe(2);
+    expect(h).toContain(`aria-label="Simge"`);
+    expect(h).toContain(`aria-label="Renk"`);
+    expect(h.match(/class="dk-simge"/g)?.length).toBe(8);
+    expect(h.match(/class="dk-renk"/g)?.length).toBe(12);
+    expect(h).toContain(`aria-checked="true" tabindex="0" data-simge="2" aria-label="mücevher"`);
+    expect(h).toContain(`aria-checked="true" tabindex="0" data-renk="11" style="--renk:var(--oyuncu-11)" aria-label="nar çiçeği"`);
+    expect(h.match(/tabindex="0"/g)?.length).toBe(2); // grup başına tek Tab durağı
+    expect(h.match(/tabindex="-1"/g)?.length).toBe(18);
+    expect(h).toContain(`data-simge="0" aria-label="yaprak"`);
+    expect(h).toContain(`data-renk="0" style="--renk:var(--oyuncu-0)" aria-label="gül kurusu"`);
+    // sınır dışı indeks modülle döner
+    expect(f({ simge: 9, renk: 13 })).toContain(`aria-checked="true" tabindex="0" data-simge="1"`);
   });
 });

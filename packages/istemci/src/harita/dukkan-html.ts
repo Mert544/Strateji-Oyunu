@@ -5,10 +5,12 @@
  * Kapalı eylem: `aria-disabled="true"` (odak kalır) + neden satırı `p.dk-neden`; ret toast değil `p.dk-hata[role=alert]`. Her yüzeyde tek birincil.
  *
  * Ekranlar: D-0 öneri kartı, B7 Defter kartı, D-1 Dükkânlarım, D-2 tür seçimi, D-3 maliyet satırları, D-4 inşa satırı, D-5 raf ve seçici,
- * D-6 kademe ve kampanya, D-8 özet, D-8.1 menü ve kaldırma onayı, Dikkat maddeleri. D-7 marka formu ayrı iştir (simge ikonları ve ad kuralı bekler).
+ * D-6 kademe ve kampanya, D-7 marka formu, D-8 özet, D-8.1 menü ve kaldırma onayı, Dikkat maddeleri.
  */
 import { esc, fmt, paraIsaretli, paraMili } from "../arayuz/bicim";
+import { adCanliHatasi, adHatasi, adKucuk } from "../giris/ad";
 import { ikon } from "../tasarim/ikon";
+import { MARKA_RENK_SAYISI, MARKA_SIMGELERI, markaRenkBelirteci } from "../tasarim/marka";
 import type { IkonAdi } from "../tasarim/ikon";
 import { DUKKAN_RET_ANAHTARI, dukkanMetni } from "./dukkan-metin";
 import type { DukkanMetinAnahtari } from "./dukkan-metin";
@@ -395,6 +397,53 @@ export function kademeHtml(y: DukkanYuvasi, o: KademeSecenegi): string {
     s += `<p class="dk-not">${enc("dukkan.D5.bosalt_uyari", { sure: saatDakika(o.bosaltBeklemeSaat) })}</p><button type="button" class="eylem" data-eylem="yuva-bosalt"${y.beklemeSaat > 0 || o.gonderiyor ? ` aria-disabled="true"` : ""}>${enc("dukkan.D5.dugme_bosalt")}</button>`;
   if (o.hata) s += `<p class="dk-hata" role="alert">${esc(o.hata)}</p>`;
   return s;
+}
+
+// --- D-7: marka formu --------------------------------------------------------------------------
+
+/** Renk adları: sıra = renk indeksi (`--oyuncu-N`); metin anahtarı `D7.renk_ad.<ad>`. */
+export const MARKA_RENK_ADLARI = ["gul-kurusu", "kestane", "hardal", "fistik", "zeytin", "cam", "zumrut", "kobalt", "gok", "eflatun", "patlican", "nar-cicegi"] as const;
+
+export interface MarkaFormuGirdisi {
+  ad: string;
+  /** Seçili simge ve renk indeksi (0 tabanlı). */
+  simge: number;
+  renk: number;
+  /** Gönderimde yerel denetim hatası gösterilsin mi (yazarken yalnız canlı hata gösterilir). */
+  gonder?: boolean;
+  /** Sunucu reddi: metin anahtarı (`D7.*`, ret kodundan `DUKKAN_RET_ANAHTARI`). */
+  ret?: DukkanMetinAnahtari;
+  gonderiyor?: boolean;
+}
+
+/**
+ * D-7 marka formu: tabela adı (kanonik küçük hâl önizlemesi, sayaç), simge ve renk seçimi (`radiogroup`, roving tabindex: seçili öğe `tabindex=0`, diğerleri -1; ok tuşları
+ * DOM bağlayıcısındadır), "Kaydet" (tek birincil) ve "Şimdilik markasız". Ad kuralı çekirdekle aynıdır (`giris/ad.ts`): canlı hata yalnız izinsiz karakter, art arda boşluk ve
+ * uzunluk aşımı; kısalık ve baş/son boşluk gönderirken. Marka adı herkese görünür ve kalıcıdır (`D7.kvkk_uyari`).
+ */
+export function markaFormuHtml(g: MarkaFormuGirdisi): string {
+  const yerel = g.ad === "" ? (g.gonder ? ("ad_yazilmali" as const) : null) : g.gonder ? adHatasi(g.ad) : adCanliHatasi(g.ad);
+  const hata: DukkanMetinAnahtari | null = g.ret ?? (yerel ? (`dukkan.D7.${yerel}` as DukkanMetinAnahtari) : null);
+  const onizleme = g.ad === "" ? m("dukkan.D7.yer_tutucu") : adHatasi(g.ad) === null ? adKucuk(g.ad) : null;
+  const simge = ((g.simge % MARKA_SIMGELERI.length) + MARKA_SIMGELERI.length) % MARKA_SIMGELERI.length;
+  const renk = ((g.renk % MARKA_RENK_SAYISI) + MARKA_RENK_SAYISI) % MARKA_RENK_SAYISI;
+  const simgeler = MARKA_SIMGELERI.map((ad, i) => `<button type="button" class="dk-simge" role="radio" aria-checked="${i === simge}" tabindex="${i === simge ? 0 : -1}" data-simge="${i}" aria-label="${enc(`dukkan.D7.simge_ad.${ad}` as DukkanMetinAnahtari)}">${ikon(ad, 20)}</button>`).join("");
+  const renkler = MARKA_RENK_ADLARI.map((ad, i) => `<button type="button" class="dk-renk" role="radio" aria-checked="${i === renk}" tabindex="${i === renk ? 0 : -1}" data-renk="${i}" style="--renk:var(${markaRenkBelirteci(i)})" aria-label="${enc(`dukkan.D7.renk_ad.${ad}` as DukkanMetinAnahtari)}"></button>`).join("");
+  return (
+    `<div class="dk-marka" role="dialog" aria-modal="true" aria-labelledby="dk-marka-baslik" data-durum="${g.gonderiyor ? "gonderiyor" : hata ? "hata" : "bos"}">` +
+    `<h4 id="dk-marka-baslik" class="dk-baslik">${enc("dukkan.D7.baslik")}</h4>` +
+    `<p class="dk-ipucu">${enc("dukkan.D7.aciklama")}</p>` +
+    `<label class="gr-etiket" for="dk-marka-ad">${enc("dukkan.D7.alan")}</label>` +
+    `<input id="dk-marka-ad" class="dk-girdi" type="text" name="marka" maxlength="24" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="${enc("dukkan.D7.yer_tutucu")}" value="${esc(g.ad)}" aria-describedby="dk-marka-not dk-marka-hata"${hata ? ` aria-invalid="true"` : ""}>` +
+    `<span class="dk-sayac" data-alan="marka-sayac">${esc(`${g.ad.length} / 24`)}</span>` +
+    `<p id="dk-marka-not" class="dk-ipucu">${enc("dukkan.D7.buyuk_harf_notu")} ${enc("dukkan.D7.kvkk_uyari")}</p>` +
+    `<p class="dk-onizleme" data-alan="marka-onizleme" aria-live="polite">${onizleme !== null ? enc("dukkan.D7.onizleme", { kucuk: onizleme }) : ""}</p>` +
+    `<p id="dk-marka-hata" class="dk-hata" role="alert">${hata ? enc(hata) : ""}</p>` +
+    `<div class="dk-palet" role="radiogroup" aria-label="${enc("dukkan.D7.simge_grup")}">${simgeler}</div>` +
+    `<div class="dk-palet" role="radiogroup" aria-label="${enc("dukkan.D7.renk_grup")}">${renkler}</div>` +
+    `<div class="yk-dugmeler"><button type="button" class="birincil" data-eylem="marka-kaydet"${g.gonderiyor ? ` disabled data-durum="yukleniyor"` : ""}>${enc("dukkan.D7.dugme_kaydet")}</button>` +
+    `<button type="button" class="eylem" data-eylem="marka-yok">${enc("dukkan.D7.markasiz_dugme")}</button></div></div>`
+  );
 }
 
 // --- D-8: satış özeti ------------------------------------------------------------------------------
