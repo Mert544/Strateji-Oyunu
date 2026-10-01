@@ -8,6 +8,7 @@
  * Sınıf adı/stil satırı yazmaz (CSS T1'in `arayuz/giris.css`); durum `data-durum` ile yazılır.
  */
 import type { GirisAkisi, GirisDurumu } from "./akis";
+import { bildir } from "../arayuz/bildirim";
 import { adCanliHatasi, adHataAnahtari, adOnizleme } from "./ad";
 import { girisHtml, hesapHtml } from "./ekran-html";
 import { metin } from "./giris-metin";
@@ -267,6 +268,10 @@ export class HesapBolumu {
   /** Görünen ad düzenleyicisi (Ayarlar) açık mı ve alan değeri. */
   private adDuzenle = false;
   private adGirdi = "";
+  /** Hesabı sil: onay sorusu açık mı, onay bağlantısı gönderildi mi, son hata. */
+  private silOnay = false;
+  private silGonderildi = false;
+  private silHata: { anahtar: string; dakika?: number; kod: string } | null = null;
   private durdur: () => void = () => undefined;
 
   constructor(
@@ -314,6 +319,7 @@ export class HesapBolumu {
         sonuc: d.adSonuc,
         gonderiyor: d.gonderiyor && this.adDuzenle,
       },
+      sil: { onayAcik: this.silOnay, gonderiyor: d.gonderiyor && this.silOnay, gonderildi: this.silGonderildi, hata: this.silHata },
     });
     if (alan) {
       const yeni = this.kap.querySelector<HTMLInputElement>("#gr-hesap-ad");
@@ -348,12 +354,25 @@ export class HesapBolumu {
     if (islem === "cikis") void this.cik(false);
     else if (islem === "cikis-tumu") {
       this.onayAcik = true;
+      this.silOnay = false;
       this.ciz();
       this.kap.querySelector<HTMLElement>("[data-eylem='cikis-tumu-vazgec']")?.focus();
     } else if (islem === "cikis-tumu-vazgec") {
       this.onayAcik = false;
       this.ciz();
     } else if (islem === "cikis-tumu-onayla") void this.cik(true);
+    else if (islem === "hesap-sil") {
+      this.silOnay = true;
+      this.onayAcik = false;
+      this.silGonderildi = false;
+      this.silHata = null;
+      this.ciz();
+      this.kap.querySelector<HTMLElement>("[data-varsayilan-odak]")?.focus();
+    } else if (islem === "hesap-sil-vazgec") {
+      this.silOnay = false;
+      this.ciz();
+      this.kap.querySelector<HTMLElement>("[data-eylem='hesap-sil']")?.focus();
+    } else if (islem === "hesap-sil-onayla") void this.hesapSil();
     else if (islem === "ad-degistir") {
       this.adDuzenle = true;
       this.adGirdi = this.akis.durum.ad ?? "";
@@ -367,6 +386,17 @@ export class HesapBolumu {
       this.kap.querySelector<HTMLElement>("[data-eylem='ad-degistir']")?.focus();
     }
   };
+
+  /** Onay bağlantısını ister; hiçbir şey silinmez. Başarıda sakin bildirim ve kalıcı durum satırı; hatada satır içi. */
+  private async hesapSil(): Promise<void> {
+    const r = await this.akis.hesapSil();
+    this.silOnay = false;
+    const h = this.akis.durum.hata;
+    this.silHata = r === null && h ? { anahtar: h.anahtar, kod: h.kod, ...(h.dakika !== undefined ? { dakika: h.dakika } : {}) } : null;
+    this.silGonderildi = r !== null;
+    if (r !== null) bildir(metin("giris.G8.hesap_sil_bildirim"), "bilgi");
+    this.ciz();
+  }
 
   private async cik(tumu: boolean): Promise<void> {
     this.cikiyor = true;

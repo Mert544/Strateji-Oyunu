@@ -269,7 +269,26 @@ function hesapAdiHtml(a: HesapAdi): string {
   );
 }
 
-export function hesapHtml(o: { eposta: string; onayAcik: boolean; cikiyor: boolean; ad?: HesapAdi }): string {
+/** Ayarlar "Hesabı sil" akışı: onay sorusu, gönderim, sonuç ve hata (silme sunucunun onay sayfasındadır). */
+export interface HesapSilme {
+  onayAcik: boolean;
+  gonderiyor: boolean;
+  /** Onay bağlantısı gönderildi (`hesap_sil_sonuc`). */
+  gonderildi: boolean;
+  hata: { anahtar: string; dakika?: number; kod: string } | null;
+}
+
+function hesapSilHtml(h: HesapSilme): string {
+  const dis = h.gonderiyor ? " disabled" : "";
+  let s = `<button class="eylem" type="button" data-eylem="hesap-sil"${h.gonderiyor ? " disabled" : ""}>${esc(metin("giris.G8.hesap_sil"))}</button>`;
+  if (h.gonderildi) s += `<p class="gr-ipucu" role="status" data-kod="hesap-sil-sonuc">${esc(metin("giris.G8.hesap_sil_sonuc"))}</p>`;
+  if (h.hata) s += `<p class="gr-hata" role="alert" data-kod="${esc(h.hata.kod)}">${esc(metin(h.hata.anahtar, { n: h.hata.dakika ?? 1 }))}</p>`;
+  if (h.onayAcik)
+    s += `<div class="gr-onay" role="alertdialog" aria-modal="true" aria-labelledby="gr-sil-onay" data-giris-onay="hesap-sil"><p id="gr-sil-onay">${esc(metin("giris.G8.hesap_sil_onay"))}</p><button class="tehlike" type="button" data-eylem="hesap-sil-onayla"${dis}>${esc(metin("giris.G8.hesap_sil_gonder"))}</button><button class="eylem" type="button" data-eylem="hesap-sil-vazgec" data-varsayilan-odak="1">${esc(metin("giris.G8.vazgec"))}</button></div>`;
+  return s;
+}
+
+export function hesapHtml(o: { eposta: string; onayAcik: boolean; cikiyor: boolean; ad?: HesapAdi; sil?: HesapSilme }): string {
   const destek = destekEpostasi();
   const dis = o.cikiyor ? " disabled" : "";
   return `<section class="gr-hesap" aria-label="${esc(metin("giris.G8.cikis"))}" data-giris-hesap>
@@ -277,6 +296,7 @@ export function hesapHtml(o: { eposta: string; onayAcik: boolean; cikiyor: boole
   ${o.ad ? hesapAdiHtml(o.ad) : ""}
   <button class="eylem" type="button" data-eylem="cikis"${dis}>${ikon("log-out", 16)} ${esc(metin("giris.G8.cikis"))}</button>
   <button class="eylem" type="button" data-eylem="cikis-tumu"${dis}>${esc(metin("giris.G8.cikis_tumu"))}</button>
+  ${o.sil ? hesapSilHtml(o.sil) : ""}
   ${destek !== "" ? `<p class="gr-ipucu">${yerHtml(metinHam("giris.G8.silme_bilgi"), { destek_eposta: `<a class="gr-baglanti" href="mailto:${esc(destek)}">${esc(destek)}</a>` })}</p>` : ""}
 </section>${
     o.onayAcik

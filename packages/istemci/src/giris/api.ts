@@ -9,7 +9,7 @@
  *   gibi "fırlatan" tüketiciler içindir.
  * - Hesabın var olup olmadığı yanıttan ayrılamaz (K2 sızdırmaz); burada da hiçbir ayrım yapılmaz.
  */
-import type { GirisAdOneriYaniti, GirisAdYaniti, GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
+import type { GirisAdOneriYaniti, GirisAdYaniti, GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisHesapSilIstekYaniti, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
 
 /*
  * ÖNEMLİ (boyut): bu dosya kabuk paketine (dunya.html) girer. `@bolge/protokol` ÇALIŞMA ZAMANINDA içe aktarılmaz (zod ve bütün ws şemaları
@@ -23,6 +23,7 @@ export const GIRIS_YOLLARI = {
   ben: "/giris/ben",
   ad: "/giris/ad",
   adOner: "/giris/ad-oner",
+  hesapSil: "/giris/hesap-sil",
   cikis: "/giris/cikis",
   cikisTumu: "/giris/cikis-tumu",
 } as const;
@@ -151,6 +152,14 @@ export class GirisApi {
   /** `POST /giris/ad {ad}`: görünen adı seçer ya da değiştirir (sunucu kanonik küçük harfe çevirir; günde bir değişiklik). */
   adKaydet(ad: string): Promise<GirisSonucu<GirisAdYaniti>> {
     return this.cagir(GIRIS_YOLLARI.ad, "POST", dogrulaAd, { ad });
+  }
+
+  /**
+   * `POST /giris/hesap-sil` (çerezle, gövdesiz): hesabın e-postasına bir ONAY bağlantısı gönderir; HİÇBİR ŞEY SİLMEZ (silme sunucunun kendi onay sayfasında,
+   * bağlantı açılıp düğmeye basılınca olur). Yanıt `{tamam, gecerlilikSn}`; hata: `oturum_yok`, `hiz_siniri` (`beklemeSn`), `origin`.
+   */
+  hesapSil(): Promise<GirisSonucu<GirisHesapSilIstekYaniti>> {
+    return this.cagir(GIRIS_YOLLARI.hesapSil, "POST", dogrulaIstek);
   }
 
   /** `POST /giris/cikis`: bu oturumu kapatır (idempotan). */

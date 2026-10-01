@@ -6,6 +6,8 @@
  * SAHİP METNİ, KOD DIŞINDA TEK YER: `giris.destek_eposta`, `giris.kvkk_url` ve `giris.riza_metni` (rıza/aydınlatma cümlesi; T1 ve K1 yazmaz,
  * baş lider kararı). Üçü de sahip söyleyene dek BOŞTUR; boşken destek satırları ve veri kullanımı bağlantısı GÖSTERİLMEZ. Sahip söyleyince yalnız bu iki satır değişir.
  *
+ * K1 GEÇİCİ anahtarlar (T1 tablosunda yok; T1 metni onaylayınca ya da değiştirince yalnız bu satırlar güncellenir): `giris.G8.hesap_sil*` (Ayarlar "Hesabı sil").
+ *
  * Sızdırmazlık: hiçbir metinde davetli olup olmama, hesabın varlığı, e-posta sınırı ya da posta sonucu ima edilmez.
  */
 
@@ -84,6 +86,11 @@ export const GIRIS_METIN = {
   "giris.G8.vazgec": "Vazgeç",
   // Sahip metni (boş: ilgili satır gösterilmez)
   "giris.G4.dugme_oner": "Başka öner",
+  "giris.G8.hesap_sil": "Hesabı sil",
+  "giris.G8.hesap_sil_onay": "Hesabını silmek için e-postana bir onay bağlantısı göndereceğiz. Silme kalıcıdır ve bağlantıdaki sayfada onaylanınca yapılır. Devam edilsin mi?",
+  "giris.G8.hesap_sil_gonder": "Onay bağlantısı gönder",
+  "giris.G8.hesap_sil_bildirim": "Onay bağlantısı e-postana gönderildi.",
+  "giris.G8.hesap_sil_sonuc": "Onay bağlantısı e-postana gönderildi. Hesabın silinmedi; silmek için bağlantıdaki sayfada onayla.",
   "giris.riza_metni": "",
   "giris.destek_eposta": "",
   "giris.kvkk_url": "",

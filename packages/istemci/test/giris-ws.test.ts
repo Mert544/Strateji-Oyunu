@@ -350,6 +350,29 @@ describe("görünen ad (G9-c): gerçek sunucu, adKurali açık", () => {
   });
 });
 
+describe("hesabı sil (istek): gerçek sunucu", () => {
+  it("onay bağlantısı e-postaya gider, hiçbir şey silinmez: oturum, ad ve ws yerinde; oturumsuz istek oturum_yok", async () => {
+    ortam = await girisOrtami({ hizmet: { adKurali: adKanonik } });
+    const o = ortam;
+    const c = istemci(o);
+    await girisYap(o, c, "silme@ornek.org");
+    expect(c.akis.durum.ekran).toBe("oyun");
+    const once = await o.postaSayisi();
+    const r = await c.akis.hesapSil();
+    expect(r).toMatchObject({ gecerlilikSn: expect.any(Number) });
+    await o.hizmet.bosta();
+    expect(await o.postaSayisi()).toBe(once + 1);
+    expect((await o.sonPosta()).posta.kime).toBe("silme@ornek.org");
+    expect(c.akis.durum).toMatchObject({ ekran: "oyun", hata: null });
+    expect(await c.api.ben()).toMatchObject({ tamam: true }); // oturum yerinde
+    const ws = await wsAc(o, c.saglayici);
+    expect(ws.durum).toBe("bagli");
+    // oturumsuz tarayıcı: oturum_yok → g7
+    const yabanci = istemci(o);
+    expect(await yabanci.api.hesapSil()).toMatchObject({ tamam: false, kod: "oturum_yok" });
+  });
+});
+
 describe("geliştirme kimliği değişmedi", () => {
   it("sabit token dizgisi `merhaba.token` olarak aynen çalışır (giriş ekranı yok)", async () => {
     ts2 = await testSunucusu({ veri: mulkVerisi() });

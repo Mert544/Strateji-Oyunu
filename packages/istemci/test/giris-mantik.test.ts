@@ -296,7 +296,7 @@ describe("BiletSaglayici", () => {
 
 type Api = ConstructorParameters<typeof GirisAkisi>[0]["api"];
 
-function sahteAkis(o: { istek?: Api["istek"]; onayla?: Api["onayla"]; ben?: Api["ben"]; cikis?: Api["cikis"]; cikisTumu?: Api["cikisTumu"]; adOner?: Api["adOner"]; adKaydet?: Api["adKaydet"]; onceden?: () => Promise<{ tamam: true; bilet: string; bitis: number; oyuncu: string }> } = {}) {
+function sahteAkis(o: { istek?: Api["istek"]; onayla?: Api["onayla"]; ben?: Api["ben"]; cikis?: Api["cikis"]; cikisTumu?: Api["cikisTumu"]; adOner?: Api["adOner"]; adKaydet?: Api["adKaydet"]; hesapSil?: Api["hesapSil"]; onceden?: () => Promise<{ tamam: true; bilet: string; bitis: number; oyuncu: string }> } = {}) {
   const zaman = { t: 5_000_000 };
   const istekler: string[] = [];
   const tamam = <T,>(veri: T): GirisSonucu<T> => ({ tamam: true, veri });
@@ -306,6 +306,7 @@ function sahteAkis(o: { istek?: Api["istek"]; onayla?: Api["onayla"]; ben?: Api[
     ben: o.ben ?? (async () => ({ tamam: false, kod: "oturum_yok", durum: 401 })),
     cikis: o.cikis ?? (async () => tamam({ tamam: true as const })),
     cikisTumu: o.cikisTumu ?? (async () => tamam({ tamam: true as const })),
+    hesapSil: o.hesapSil ?? (async () => tamam({ tamam: true as const, gecerlilikSn: 3600 })),
     adOner: o.adOner ?? (async () => tamam({ tamam: true as const, ad: "sakin degirmenci 321" })),
     adKaydet: o.adKaydet ?? (async (ad: string) => tamam({ tamam: true as const, ad: ad.toLocaleLowerCase("tr"), adSecildi: true as const })),
   };
@@ -584,6 +585,33 @@ describe("GirisAkisi: g3, g4, oyun", () => {
     await bitti.akis.adKaydet("ali");
     expect(bitti.akis.durum).toMatchObject({ ekran: "g7", hata: { kod: "oturum_yok" } });
     expect(bitti.temizlendi()).toBeGreaterThan(0);
+  });
+
+  it("Hesabı sil: onay bağlantısı istenir, hiçbir şey silinmez (oturum ve ekran yerinde); hatalar ve oturum_yok", async () => {
+    const ben: Api["ben"] = async () => ({ tamam: true, veri: { tamam: true, eposta: "a@b.co", oyuncu: "o_9", oturumBitis: 9, oturumMutlakBitis: 9, ad: "ali", adSecildi: true } });
+    let cagri = 0;
+    const a = sahteAkis({ ben, hesapSil: async () => (cagri++, { tamam: true, veri: { tamam: true, gecerlilikSn: 3600 } }) });
+    await a.akis.basla();
+    expect(await a.akis.hesapSil()).toEqual({ gecerlilikSn: 3600 });
+    expect(cagri).toBe(1);
+    expect(a.akis.durum).toMatchObject({ ekran: "oyun", gonderiyor: false, hata: null, ad: "ali" });
+    expect(a.temizlendi()).toBe(0); // oturum kapanmadı
+
+    const hiz = sahteAkis({ ben, hesapSil: async () => ({ tamam: false, kod: "hiz_siniri", durum: 429, beklemeSn: 600 }) });
+    await hiz.akis.basla();
+    expect(await hiz.akis.hesapSil()).toBeNull();
+    expect(hiz.akis.durum).toMatchObject({ ekran: "oyun", hata: { kod: "hiz_siniri", dakika: 10 } });
+
+    const bitti = sahteAkis({ ben, hesapSil: async () => ({ tamam: false, kod: "oturum_yok", durum: 401 }) });
+    await bitti.akis.basla();
+    expect(await bitti.akis.hesapSil()).toBeNull();
+    expect(bitti.akis.durum).toMatchObject({ ekran: "g7", hata: { kod: "oturum_yok" } });
+    expect(bitti.temizlendi()).toBeGreaterThan(0);
+
+    const ag = sahteAkis({ ben, hesapSil: async () => ({ tamam: false, kod: "ag_hatasi" }) });
+    await ag.akis.basla();
+    expect(await ag.akis.hesapSil()).toBeNull();
+    expect(ag.akis.durum.hata).toMatchObject({ kod: "ag_hatasi", anahtar: "giris.G6.ag_hatasi" });
   });
 
   it("Ayarlar: ekran değişmeden ad değişir, sonuç yazılır; hata yazmayı bozmaz", async () => {

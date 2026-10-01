@@ -116,7 +116,7 @@ function ilkDurum(): GirisDurumu {
 }
 
 export interface GirisAkisiSecenekleri {
-  api: Pick<GirisApi, "istek" | "onayla" | "ben" | "cikis" | "cikisTumu" | "adOner" | "adKaydet">;
+  api: Pick<GirisApi, "istek" | "onayla" | "ben" | "cikis" | "cikisTumu" | "adOner" | "adKaydet" | "hesapSil">;
   saglayici: Pick<BiletSaglayici, "onceden" | "temizle" | "oturumYokDinle">;
   /** Yerel saat (ms); sınamada sahte. */
   simdi?: () => number;
@@ -329,6 +329,27 @@ export class GirisAkisi {
       await this.oturumaGec(this.d.oyuncu ?? "", this.d.yeniHesap);
     } else this.ayarla({ adSonuc: r.veri.ad });
     return true;
+  }
+
+  /**
+   * Ayarlar "Hesabı sil" (onaydan sonra): `POST /giris/hesap-sil`; hesabın e-postasına onay bağlantısı gider, HİÇBİR ŞEY SİLİNMEZ (silme sunucunun onay sayfasındadır).
+   * Başarıda `gecerlilikSn` döner; hatada `hata` yazılır (`oturum_yok`: G-7; `hiz_siniri`: geri sayım) ve null döner.
+   */
+  async hesapSil(): Promise<{ gecerlilikSn: number } | null> {
+    if (this.d.gonderiyor) return null;
+    this.ayarla({ gonderiyor: true, hata: null });
+    const r = await this.api.hesapSil();
+    if (!r.tamam) {
+      if (r.kod === "oturum_yok") {
+        this.saglayici.temizle();
+        this.ayarla({ ekran: "g7", gonderiyor: false, hata: this.hataYap({ kod: "oturum_yok" }, "g7") });
+        return null;
+      }
+      this.ayarla({ gonderiyor: false, hata: this.hataYap(r, "g4") });
+      return null;
+    }
+    this.ayarla({ gonderiyor: false, hata: null });
+    return { gecerlilikSn: r.veri.gecerlilikSn };
   }
 
   /** Ayarlar'da hata/sonucu temizler (düzenleyici açılıp kapanırken). */

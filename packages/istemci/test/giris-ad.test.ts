@@ -153,6 +153,27 @@ describe("Ayarlar görünen ad satırı", () => {
   });
 });
 
+describe("Ayarlar Hesabı sil", () => {
+  const sil = (k: Partial<NonNullable<Parameters<typeof hesapHtml>[0]["sil"]>> = {}): string => hesapHtml({ eposta: "ali@ornek.org", onayAcik: false, cikiyor: false, sil: { onayAcik: false, gonderiyor: false, gonderildi: false, hata: null, ...k } });
+
+  it("düğme; onay sorusu alertdialog (Vazgeç varsayılan odak, tehlikeli onay .tehlike); sonuç role=status; hata role=alert", () => {
+    expect(sil()).toContain(`<button class="eylem" type="button" data-eylem="hesap-sil">Hesabı sil</button>`);
+    expect(sil()).not.toContain("alertdialog");
+    const o = sil({ onayAcik: true });
+    expect(o).toContain(`role="alertdialog" aria-modal="true" aria-labelledby="gr-sil-onay" data-giris-onay="hesap-sil"`);
+    expect(o).toContain("Silme kalıcıdır ve bağlantıdaki sayfada onaylanınca yapılır.");
+    expect(o).toContain(`<button class="tehlike" type="button" data-eylem="hesap-sil-onayla">Onay bağlantısı gönder</button>`);
+    expect(o).toContain(`data-eylem="hesap-sil-vazgec" data-varsayilan-odak="1">Vazgeç</button>`);
+    expect(sil({ gonderildi: true })).toContain(`role="status" data-kod="hesap-sil-sonuc">Onay bağlantısı e-postana gönderildi.`);
+    expect(sil({ hata: { anahtar: "giris.G6.hiz_siniri", dakika: 10, kod: "hiz_siniri" } })).toContain(`role="alert" data-kod="hiz_siniri">Çok sık denendi. 10 dakika sonra yeniden dene.`);
+    expect(sil({ onayAcik: true, gonderiyor: true })).toContain(`data-eylem="hesap-sil-onayla" disabled`);
+  });
+
+  it("sil verilmezse düğme yok (eski çağrılar)", () => {
+    expect(hesapHtml({ eposta: "a@b.co", onayAcik: false, cikiyor: false })).not.toContain("hesap-sil");
+  });
+});
+
 describe("rıza sahip metni (G1)", () => {
   it("tabloda boş sabit; boşken satır yok", () => {
     expect(GIRIS_METIN["giris.riza_metni"]).toBe("");
@@ -208,6 +229,16 @@ describe("API: görünen ad uçları", () => {
     for (const [kod, durumKodu] of [["ad_gecersiz", 422], ["ad_yasakli", 422], ["oturum_yok", 401]] as const)
       expect(await api(() => yanit(durumKodu, { tamam: false, kod, mesaj: "x" })).api.adKaydet("ali")).toEqual({ tamam: false, kod, durum: durumKodu });
     expect(await api(() => yanit(429, { tamam: false, kod: "ad_sinir", mesaj: "x", beklemeSn: 3600 })).api.adKaydet("ali")).toEqual({ tamam: false, kod: "ad_sinir", durum: 429, beklemeSn: 3600 });
+  });
+
+  it("hesapSil: POST gövdesiz, 202 {tamam, gecerlilikSn}; yol protokolle aynı; hata kodları", async () => {
+    expect(GIRIS_YOLLARI.hesapSil).toBe(PROTOKOL_YOLLARI.hesapSil);
+    const t = api(() => yanit(202, { tamam: true, gecerlilikSn: 3600 }));
+    expect(await t.api.hesapSil()).toEqual({ tamam: true, veri: { tamam: true, gecerlilikSn: 3600 } });
+    expect(t.cagrilar).toEqual([{ url: "http://x/giris/hesap-sil", yontem: "POST", govde: null }]);
+    expect(await api(() => yanit(401, { tamam: false, kod: "oturum_yok", mesaj: "x" })).api.hesapSil()).toEqual({ tamam: false, kod: "oturum_yok", durum: 401 });
+    expect(await api(() => yanit(429, { tamam: false, kod: "hiz_siniri", mesaj: "x", beklemeSn: 600 })).api.hesapSil()).toEqual({ tamam: false, kod: "hiz_siniri", durum: 429, beklemeSn: 600 });
+    expect(await api(() => yanit(202, { tamam: true })).api.hesapSil()).toMatchObject({ tamam: false, kod: "yanit" });
   });
 
   it("onay ve ben yanıtı ad/adSecildi taşır; ad bozuksa yanıt geçersiz", async () => {
