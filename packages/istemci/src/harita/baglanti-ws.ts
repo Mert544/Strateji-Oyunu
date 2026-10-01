@@ -26,7 +26,12 @@ type Mesaj<T extends SunucuMesaji["tur"]> = Extract<SunucuMesaji, { tur: T }>;
 
 export interface WsSecenekleri {
   url: string;
-  token: string;
+  /**
+   * Geliştirme kimliği için sabit token; e-posta girişinde (G9) her bağlanışta TAZE bir ws bileti veren işlev (`BiletSaglayici.bilet`).
+   * Bilet 60 sn ömürlü ve tek kullanımlıktır: işlev her (yeniden) bağlanmadan hemen önce çağrılır. İşlev `GirisHatasi` ile `oturum_yok`
+   * (401) fırlatırsa bağlantı "reddedildi" olur ve yeniden denenmez; başka hata (ağ) üstel geri çekilmeyle yeniden denenir.
+   */
+  token: string | (() => Promise<string>);
   /** Kurulum/sekme başına kimlik (idempotans kapsamı). Verilmezse rastgele üretilir. */
   istemciKimligi?: string;
   /** Sınama için başka bir WebSocket gerçeklemesi. */
@@ -124,6 +129,8 @@ export class WsBaglanti implements MulkBaglantisi {
   /** Bu oturumda istenen ölçek büyütmelerinin hedefi (tesis kimliği → ölçek): karede hedef ölçek yoktur. */
   private olcekHedefleri = new Map<number, 1 | 2>();
   private kapandi = false;
+  /** Art arda kimlik reddi (4003): sessiz yenileme için ilk ret bir kez yeni biletle yeniden denenir (G9, docs/arastirma/g9 G-7). */
+  private kimlikReddi = 0;
   /** Yetişme (sunucu kapalıyken geçen süreyi işletme): başlangıç, hedef ve son sim zamanı. */
   private yetisme: { bas: number; hedef: number; simdi: number } | null = null;
 
@@ -541,12 +548,48 @@ export class WsBaglanti implements MulkBaglantisi {
 
   private baglan(): void {
     if (this.kapandi) return;
-    const Ctor = this.s.WebSocketCtor ?? WebSocket;
     this.durum = this.ilkAcildi ? "kopuk" : "baglaniyor";
+    const t = this.s.token;
+    if (typeof t === "function") {
+      // Bilet işlevi: her bağlanışta taze bilet (tek kullanımlık, 60 sn)
+      t().then(
+        (bilet) => {
+          this.baglanTokenla(bilet);
+        },
+        (e: unknown) => {
+          if (this.kapandi) return;
+          const ileti = e instanceof Error ? e.message : String(e);
+          if ((e as { kod?: unknown } | null)?.kod === "oturum_yok") {
+            this.durum = "reddedildi";
+            this.sonHata = "Oturum bitti: yeniden giriş yapmalısın.";
+            this.ilkHos.reddet(new Error(this.sonHata));
+            this.bekleyenleriReddet(this.sonHata);
+            this.degisti();
+            return;
+          }
+          // Ağ ya da geçici hata: ilk bağlanışta çağırana, sonrasında geri çekilmeyle yeniden
+          if (!this.ilkAcildi) {
+            this.sonHata = `Bilet alınamadı: ${ileti}`;
+            this.ilkHos.reddet(new Error(this.sonHata));
+            return;
+          }
+          this.durum = "kopuk";
+          this.degisti();
+          this.yenidenPlanla();
+        },
+      );
+      return;
+    }
+    this.baglanTokenla(t);
+  }
+
+  private baglanTokenla(token: string): void {
+    if (this.kapandi) return;
+    const Ctor = this.s.WebSocketCtor ?? WebSocket;
     const ws = new Ctor(this.s.url);
     this.ws = ws;
     ws.addEventListener("open", () => {
-      this.gonder({ tur: "merhaba", protokolSurumu: PROTOKOL_SURUMU, token: this.s.token, istemciKimligi: this.istemciKimligi });
+      this.gonder({ tur: "merhaba", protokolSurumu: PROTOKOL_SURUMU, token, istemciKimligi: this.istemciKimligi });
     });
     ws.addEventListener("message", (e) => {
       if (typeof e.data === "string") this.mesajAl(e.data);
@@ -556,6 +599,11 @@ export class WsBaglanti implements MulkBaglantisi {
       this.ws = null;
       if (this.zamanZamanlayici) clearInterval(this.zamanZamanlayici);
       if (this.kapandi) return;
+      if (e.code === 4003 && typeof this.s.token === "function" && this.kimlikReddi++ === 0) {
+        // Bilet/oturum reddi: bir kez sessizce yeni biletle yeniden dene (oturum geçerliyse sorun kalmaz; değilse bilet işlevi oturum_yok verir)
+        this.yenidenPlanla();
+        return;
+      }
       if (e.code === 4003 || e.code === 4001 || e.code === 4002) {
         this.durum = "reddedildi";
         this.sonHata = kapanisMesaji(e.code);
@@ -697,6 +745,7 @@ export class WsBaglanti implements MulkBaglantisi {
   }
 
   private hosgeldinAl(m: Mesaj<"hosgeldin">): void {
+    this.kimlikReddi = 0;
     this.hos = m;
     if (m.donusOzeti) this.donus = m.donusOzeti;
     this.ben = { id: m.oyuncu, ad: m.oyuncu };
