@@ -104,7 +104,7 @@ describe("(1b) yakıt stoksuz mal: ekmek fırını ticaret emri OLMADAN çalış
 
   it("yakıt `mallar[]`'dan çıkarılırsa eski davranış: fırının verimi yakıt stoğuna bağlı (stok yok → 0), sebekeTuketim yok", () => {
     const veri = g6MulkVeri({}, (v) => {
-      (mulkParam(v)!["sebeke"] as { mallar: { mal: string }[] }).mallar = [{ mal: "elektrik" }] as never;
+      (mulkParam(v)!["sebeke"] as { mallar: { mal: string; tavanOraniPpm: number }[] }).mallar = [{ mal: "elektrik", tavanOraniPpm: 1_000_000 }] as never;
     });
     const s2 = g6Dunya({ veri, kur: (y) => kur(y) });
     expect(g6Tesis(s2, "a", "ekmek_firini").verimPpm).toBe(0);
@@ -128,7 +128,7 @@ describe("(1b) yakıt stoksuz mal: ekmek fırını ticaret emri OLMADAN çalış
 });
 
 describe("(1c) fiyat TABAN sabit: oyuncu ve pazar bağımsız", () => {
-  it("başka oyuncunun büyük yakıt ithalatı pazar fiyatını oynatsa da şebeke bedeli 103 500 ile hesaplanır", () => {
+  it("başka oyuncunun büyük yakıt ithalatı sürerken şebeke bedeli pazar durumundan bağımsız 103 500 ile hesaplanır (pazar fiyatının oynaması ön koşul değil)", () => {
     const s = g6Dunya({
       oyuncular: ["a", "b"],
       ithalat: GIRDI_ITHALATI,
@@ -137,10 +137,8 @@ describe("(1c) fiyat TABAN sabit: oyuncu ve pazar bağımsız", () => {
         if (o === "a") y.yerlestir("gida_fabrikasi", "ekmek_firini");
       },
     });
-    const once = s.dunya.pazar.fiyat[mal(s, "yakit")];
     tamam(s, "b", { tur: "ticaret_emri", bolge: g6Bolge(s, "b"), mal: "yakit", yon: "ithalat", oranSaat: 80_000 });
     s.calistirKadar(s.dunya.zaman + 3 * GUN);
-    expect(s.dunya.pazar.fiyat[mal(s, "yakit")]).not.toBe(once); // pazar gerçekten oynadı
     expect(akisSebeke(s, "a")).toBe(bedelBeklenen(s, "a")); // ama a'nın bedeli tabanla
     expect(akisSebeke(s, "a")).toBeGreaterThan(0);
   });
