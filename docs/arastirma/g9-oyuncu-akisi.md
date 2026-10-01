@@ -53,7 +53,7 @@ Her ekran aynı sekiz satırla anlatılır: **Amaç · Oyuncu kararı (30 sn) ·
 | **Net** (gelir − gider) | gelir aşağı, gider yukarı alınır, fark hesaplanır | dükkân satış görünümü |
 | En yakın | **hiçbir yerde** | |
 
-Tek işlev: `paraMili(mili, "asagi" \| "yukari")` (T1'in tek biçimleyicisi). **Aynı ekranda aynı büyüklük iki farklı yuvarlamayla yazılmaz** (ilk saat incelemesi B4: 10.001 ₺, 39.999 ₺ ve 40.000 ₺ üçlüsü).
+Tek işlev: `paraMili(mili, "asagi" \| "yukari")` (T1'in tek biçimleyicisi). **Şablonlarda para yer tutucusu `₺` ve işaret taşımaz** (`{n}`, `{tutar}`): ikisini biçimleyici ekler; işaretli akışlar (gelir, satış farkı, net) `paraIsaretli()` ("+1.234 ₺"), işaretsiz tutarlar (maliyet, hazine, birim fiyat, gider) `para()`. **Aynı ekranda aynı büyüklük iki farklı yuvarlamayla yazılmaz** (ilk saat incelemesi B4: 10.001 ₺, 39.999 ₺ ve 40.000 ₺ üçlüsü).
 
 ### 0.4 Telefon ve masaüstü ortak ilkeler
 
@@ -386,7 +386,7 @@ Gösterilen **birim fiyat `etkin` kademeden** hesaplanır, saklanan `fiyat`'tan 
 | MRK-14 | `dukkan zaten bu markada` | Aynı marka seçilemez | **Dükkân zaten bu markada.** |
 | SIS-01 | `marka_sifirla yalnizca 'sistem' ile verilebilir` | (oyuncu yolunda yok) | **İstemciye gösterilmez.** |
 | YON-01 | `yontem yalniz tesis turunde verilebilir: <tesisTuru>` | (G6 tesis akışı; dükkân paneli dışı) | **Yöntem yalnız tesis kurarken seçilir.** |
-| mevcut | `yetersiz hazine (gereken <n>)` | Maliyet kartında kırmızı satır | **Hazinede yeterli para yok (gereken {n} ₺, yukarı yuvarlı).** |
+| mevcut | `yetersiz hazine (gereken <n>)` | Maliyet kartında kırmızı satır | **Hazinede yeterli para yok (gereken {n}, yukarı yuvarlı).** |
 | mevcut | `yetersiz stok: <düğüm> (mal indeksi <n>)` | Eksik malı kartta **ad ve adetle** göster (A3 §9.3 K1 notu: bugünkü çeviri "çelik ya da makine parçası" der; **pencere** de eksik olabilir) | **{mal} yetmiyor: {var} / {gereken}. Pazar'dan alabilir ya da üretebilirsin.** |
 | mevcut | `ayni anda en cok <n> insaat` | Kur düğmesi soluk + "bir inşaat bitsin" | **Aynı anda en çok {n} inşaat sürebilir; birinin bitmesini bekle.** |
 | mevcut | `hucre zaten sahipli` / `hucre bos degil` / `ilde isletme yok: <il>` | (yarış) | mevcut `hata-mulk.ts` metinleri |
