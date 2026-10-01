@@ -19,6 +19,7 @@ import { olcekHedefleri, olcekPlani, olcekTesisi, OLCEK_AD } from "./olcek";
 import type { HedefOlcek, OlcekPlani, OlcekTesisi } from "./olcek";
 import type { YapiMalzemesi } from "./yapi";
 import { SINIF_ADI } from "./fiyat";
+import type { AyrilmisHakki } from "./fiyat";
 
 export interface OlcekKipiGirdisi {
   ml: MlHarita;
@@ -44,6 +45,8 @@ export interface OlcekKipiGirdisi {
   altGizle: (gizle: boolean) => void;
   /** Yapı yerleşim kipini kapat (aynı anda yalnız biri açık). */
   yerlesimIptal: () => void;
+  /** Oyuncunun bu ilçedeki ayrılmış hücre hakkı (bilinmiyorsa tanımsız). */
+  ayrilmisHakki?: () => AyrilmisHakki | undefined;
 }
 
 const BOS: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -211,6 +214,7 @@ export class OlcekKipi {
       ben: this.g.baglanti.ben.id,
       ad: this.g.ad,
       kamu: this.g.kamu,
+      ...(this.g.ayrilmisHakki?.() ? { ayrilmisHakki: this.g.ayrilmisHakki() as AyrilmisHakki } : {}),
       hazineMili: oz?.hazineMili ?? null,
       surenInsaat: oz?.surenInsaat ?? 0,
       ...(this.g.ic.param.mulk?.esZamanliInsaat !== undefined ? { esZamanliInsaat: this.g.ic.param.mulk.esZamanliInsaat } : {}),

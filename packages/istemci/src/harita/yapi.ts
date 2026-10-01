@@ -11,7 +11,8 @@ import type { ArsaSinifi, HucreId, OyuncuId } from "@bolge/cekirdek";
 import { fmt, paraMili } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import type { IlceSahipligi, YapiKaydi } from "./baglanti";
-import { arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili, sinirDenetle } from "./fiyat";
+import { alimTuru, arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselToplamFiyatiMili, sinirDenetle } from "./fiyat";
+import type { AyrilmisHakki } from "./fiyat";
 import { durumAl, engelNedeni, hucreId } from "./hucre";
 import type { Izgara } from "./hucre";
 
@@ -169,8 +170,10 @@ export function ayakIzi(yuva: number, donus: number): Array<[number, number]> {
 export interface ParselAdimi {
   sinif: ArsaSinifi;
   hucreler: HucreId[];
-  /** Çekirdekle aynı artımlı fiyatla bu adımın tutarı (mili-₺). */
+  /** Çekirdekle aynı artımlı fiyatla bu adımın tutarı (mili-₺; ayrılmış hücre taban fiyattan). */
   mili: number;
+  /** Adımdaki AYRILMIŞ hücre sayısı (taban fiyat, eğriyi ilerletmez); yoksa 0. */
+  ayrilmis?: number;
 }
 
 export interface YerlesimHucresi {
@@ -213,6 +216,8 @@ export interface YerlesimBaglami {
   esZamanliInsaat?: number;
   /** Hücre kamu arsasındaysa Türkçe ret nedeni (satışa ve yerleşime kapalı), değilse null. */
   kamu?: (id: HucreId) => string | null;
+  /** Oyuncunun bu ilçedeki ayrılmış hücre hakkı (`fiyat.ts` `ayrilmisHakki`); bilinmiyorsa var sayılır. */
+  ayrilmisHakki?: AyrilmisHakki;
 }
 
 /** Yapı çapa hücresine (`cx`, `cy`) ve dönüşe göre yerleştirilirse ne olur? Saf; sunucuya gitmez. */
@@ -234,7 +239,12 @@ export function yerlesimPlani(yapi: YapiTanimi, cx: number, cy: number, donus: n
       else if (sh.tesis !== undefined || sh.insaat !== undefined || yapili.has(id)) neden = "Bu hücrede zaten yapı var";
       else benim = true;
     }
-    if (!neden && !sh) alinacak.push(id);
+    if (!neden && !sh) {
+      // Ayrılmış hücre yalnız hakkı olana satılır (taban fiyat); hakkı yoksa bu oyuncuya kapalıdır (çekirdekle aynı ret)
+      const t = alimTuru(id, b.sahiplik.ayrilmis, b.ayrilmisHakki);
+      if (t.tur === "yasak") neden = t.neden;
+      else alinacak.push(id);
+    }
     hucreler.push({ id, x, y, neden, benim });
   }
   // Satın alma adımları: sınıf başına, artımlı fiyat (önceki adımlar satılmış sayısını artırır)
@@ -247,11 +257,15 @@ export function yerlesimPlani(yapi: YapiTanimi, cx: number, cy: number, donus: n
     l.push(id);
   }
   const parseller: ParselAdimi[] = [];
+  // Her adım sunucuda sırayla uygulanır: satılmış sayısı ve (ayrılmış alındıysa) ayrılmış-satılmış sayacı ilerler
   let satilmis = b.sahiplik.satilmis;
+  let ayrilmisSatilmis = b.sahiplik.ayrilmisSatilmis ?? 0;
   for (const [sinif, liste] of [...gruplar.entries()].sort((p, q) => (["kirsal", "kasaba", "sehir"].indexOf(p[0]) - ["kirsal", "kasaba", "sehir"].indexOf(q[0])))) {
-    const mili = parselFiyatiMili(sinif, satilmis, b.sahiplik.uygun, liste.length);
-    parseller.push({ sinif, hucreler: liste, mili });
+    const ayrilmis = b.sahiplik.ayrilmis ? liste.filter((h) => b.sahiplik.ayrilmis!.has(h)).length : 0;
+    const mili = parselToplamFiyatiMili(sinif, { uygun: b.sahiplik.uygun, satilmis, ayrilmisSatilmis }, liste.length - ayrilmis, ayrilmis);
+    parseller.push({ sinif, hucreler: liste, mili, ...(ayrilmis > 0 ? { ayrilmis } : {}) });
     satilmis += liste.length;
+    ayrilmisSatilmis += ayrilmis;
   }
   const arsaMili = parseller.reduce((t, p) => t + p.mili, 0);
   const toplamMili = arsaMili + yapi.paraMili;

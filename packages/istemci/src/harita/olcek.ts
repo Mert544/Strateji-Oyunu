@@ -15,7 +15,8 @@ import type { ArsaSinifi, HucreId, OyuncuId } from "@bolge/cekirdek";
 import { fmt, paraMili } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import type { IlceSahipligi, IsletmeYapisi, YapiKaydi } from "./baglanti";
-import { arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili, sinirDenetle } from "./fiyat";
+import { alimTuru, arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselToplamFiyatiMili, sinirDenetle } from "./fiyat";
+import type { AyrilmisHakki } from "./fiyat";
 import { durumAl, engelNedeni, hucreId, idCoz } from "./hucre";
 import type { Izgara } from "./hucre";
 import type { YapiMalzemesi } from "./yapi";
@@ -169,6 +170,8 @@ export interface EkHucreGirdisi {
   ad: (sahip: OyuncuId) => string;
   /** Hücre kamu arsasındaysa Türkçe ret nedeni, değilse null. */
   kamu?: (id: HucreId) => string | null;
+  /** Oyuncunun bu ilçedeki ayrılmış hücre hakkı (`fiyat.ts` `ayrilmisHakki`); bilinmiyorsa var sayılır. Hakkı yoksa ayrılmış hücre seçilmez. */
+  ayrilmisHakki?: AyrilmisHakki;
 }
 
 export type EkHucrePlani = { ekHucreler: HucreId[]; sinif?: ArsaSinifi; arsaMili: number } | { neden: string };
@@ -200,6 +203,9 @@ function kontrolEt(b: EkHucreGirdisi, yapili: ReadonlySet<HucreId>, x: number, y
     else return { neden: null, benim: true, sinif: null };
   }
   if (neden) return { neden, benim: false, sinif: null };
+  // Ayrılmış hücre yalnız hakkı olana satılır (taban fiyat); hakkı yoksa bu oyuncuya kapalıdır (çekirdekle aynı ret)
+  const t = alimTuru(id, b.sahiplik.ayrilmis, b.ayrilmisHakki);
+  if (t.tur === "yasak") return { neden: t.neden, benim: false, sinif: null };
   return { neden: null, benim: false, sinif: arsaSinifi(d) };
 }
 
@@ -284,7 +290,9 @@ export function ekHucrePlani(b: EkHucreGirdisi): EkHucrePlani {
     const liste = sec(b, yapili, s);
     if (!liste) continue;
     const alinacak = liste.filter((id) => !b.sahiplik.hucreler.has(id));
-    const arsa = alinacak.length ? parselFiyatiMili(s as ArsaSinifi, b.sahiplik.satilmis, b.sahiplik.uygun, alinacak.length) : 0;
+    // Ayrılmış hücre taban fiyattan ve eğriyi ilerletmeden; normal hücre `satilmis - ayrilmisSatilmis + k` eğrisinden (çekirdek `parselToplamFiyatiMili`)
+    const ayrilmis = b.sahiplik.ayrilmis ? alinacak.filter((id) => b.sahiplik.ayrilmis!.has(id)).length : 0;
+    const arsa = alinacak.length ? parselToplamFiyatiMili(s as ArsaSinifi, { uygun: b.sahiplik.uygun, satilmis: b.sahiplik.satilmis, ayrilmisSatilmis: b.sahiplik.ayrilmisSatilmis ?? 0 }, alinacak.length - ayrilmis, ayrilmis) : 0;
     if (!en || arsa < en.arsa) en = { liste, sinif: alinacak.length ? s : null, arsa };
   }
   if (en) return { ekHucreler: [...en.liste].sort(), ...(en.sinif ? { sinif: en.sinif } : {}), arsaMili: en.arsa };

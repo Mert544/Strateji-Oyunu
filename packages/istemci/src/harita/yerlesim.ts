@@ -12,6 +12,7 @@ import { bildir } from "../arayuz/bildirim";
 import { esc, fmt, para, paraMili, sureMetni } from "../arayuz/bicim";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import { geriSeridiGorunur } from "./gorunurluk";
+import type { AyrilmisHakki } from "./fiyat";
 import { hucreSiniri, noktadanHucre } from "./hucre";
 import type { Izgara } from "./hucre";
 import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yapiRengiCss, yerlesimPlani } from "./yapi";
@@ -45,6 +46,8 @@ export interface YerlesimGirdisi {
   altGizle: (gizle: boolean) => void;
   /** Yapı seçilip yerleşim başlarken (ör. ölçek büyütme kipini kapatmak için). */
   basliyor?: () => void;
+  /** Oyuncunun bu ilçedeki ayrılmış hücre hakkı (bilinmiyorsa tanımsız). */
+  ayrilmisHakki?: () => AyrilmisHakki | undefined;
 }
 
 const BOS: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -304,7 +307,12 @@ export class YerlesimKipi {
     const sh = this.g.sahiplik();
     if (!iz || !sh) return null;
     const oz = this.g.baglanti.ozet?.() ?? null;
-    return { izgara: iz, sahiplik: sh, ben: this.g.baglanti.ben.id, ad: this.g.ad, hazineMili: oz?.hazineMili ?? null, surenInsaat: oz?.surenInsaat ?? 0, kamu: this.g.kamu };
+    return { izgara: iz, sahiplik: sh, ben: this.g.baglanti.ben.id, ad: this.g.ad, hazineMili: oz?.hazineMili ?? null, surenInsaat: oz?.surenInsaat ?? 0, kamu: this.g.kamu, ...this.hakAlani() };
+  }
+
+  private hakAlani(): { ayrilmisHakki?: AyrilmisHakki } {
+    const h = this.g.ayrilmisHakki?.();
+    return h ? { ayrilmisHakki: h } : {};
   }
 
   private planla(x: number, y: number): void {

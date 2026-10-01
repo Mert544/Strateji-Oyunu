@@ -17,7 +17,8 @@
  */
 import type { ArsaSinifi, HucreId } from "@bolge/cekirdek";
 import type { KamuGrubuKaresi } from "@bolge/protokol";
-import { arsaSinifi } from "./fiyat";
+import { alimTuru, arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, ilceTavani, parselToplamFiyatiMili } from "./fiyat";
+import type { AyrilmisHakki, IlceSayilari } from "./fiyat";
 import { durumSinifi, hucreId, satinAlinabilir, xtenBoylam, ytenEnlem } from "./hucre";
 import type { Izgara } from "./hucre";
 
@@ -441,4 +442,60 @@ export function onerilenArsa(
     }
   }
   return enIyi;
+}
+
+
+export interface ArsaAdimi {
+  sinif: ArsaSinifi;
+  hucreler: HucreId[];
+  /** Çekirdekle aynı fiyatla bu adımın tutarı (mili-₺): normal hücreler eğriden, ayrılmışlar taban fiyattan. */
+  mili: number;
+  /** Adımdaki AYRILMIŞ hücre sayısı. */
+  ayrilmis: number;
+}
+
+export interface ArsaFiyatGirdisi {
+  arsa: Arsa;
+  sinifAl: (id: HucreId) => ArsaSinifi;
+  sayi: IlceSayilari;
+  /** İlçenin ayrılmış hücreleri (bilinmiyorsa tanımsız: hepsi normal). */
+  ayrilmis?: ReadonlySet<HucreId>;
+  /** Oyuncunun ayrılmış hücre hakkı (bilinmiyorsa var sayılır). */
+  hak?: AyrilmisHakki;
+  /** Hazine (mili-₺); bilinmiyorsa null (kontrol atlanır). */
+  hazineMili: number | null;
+  /** Hazine metni için biçimleyici (tam ₺). */
+  para: (mili: number) => string;
+}
+
+/**
+ * Hazır arsanın toplam fiyatı ve satın almayı engelleyen neden (saf). Çekirdekle aynı: sınıf başına `parsel_al` adımı; her adım
+ * `satilmis` ve `ayrilmisSatilmis` sayaçlarını ilerletir; AYRILMIŞ hücre taban fiyattandır ve eğriyi ilerletmez; hakkı olmayan
+ * oyuncuya ayrılmış hücre içeren arsa kapalıdır.
+ */
+export function arsaFiyati(g: ArsaFiyatGirdisi): { mili: number; adimlar: ArsaAdimi[]; engel: string | null; benimSonra: number } {
+  const adimlar: ArsaAdimi[] = [];
+  let satilmis = g.sayi.satilmis;
+  let ayrilmisSatilmis = g.sayi.ayrilmisSatilmis ?? 0;
+  let yasak: string | null = null;
+  for (const grup of sinifGruplari(g.arsa, g.sinifAl)) {
+    let ayr = 0;
+    for (const id of grup.hucreler) {
+      const t = alimTuru(id, g.ayrilmis, g.hak);
+      if (t.tur === "yasak") yasak ??= t.neden;
+      else if (t.tur === "ayrilmis") ayr++;
+    }
+    adimlar.push({ sinif: grup.sinif, hucreler: grup.hucreler, mili: parselToplamFiyatiMili(grup.sinif, { uygun: g.sayi.uygun, satilmis, ayrilmisSatilmis }, grup.hucreler.length - ayr, ayr), ayrilmis: ayr });
+    satilmis += grup.hucreler.length;
+    ayrilmisSatilmis += ayr;
+  }
+  const mili = adimlar.reduce((t, x) => t + x.mili, 0);
+  const sd = g.sayi.benim + g.arsa.hucreler.length;
+  const tavan = ilceTavani(g.sayi.uygun);
+  let engel: string | null = null;
+  if (yasak) engel = yasak;
+  else if (sd > ILCE_HUCRE_SINIRI) engel = `İlçede en çok ${ILCE_HUCRE_SINIRI} hücren olabilir`;
+  else if (sd > tavan) engel = `İlçenin en çok %${Math.round(ILCE_PAY_SINIRI * 100)}'i senin olabilir (${tavan} hücre)`;
+  else if (g.hazineMili !== null && mili > g.hazineMili) engel = `Hazinede yeterli para yok (gereken ${g.para(mili)})`;
+  return { mili, adimlar, engel, benimSonra: sd };
 }

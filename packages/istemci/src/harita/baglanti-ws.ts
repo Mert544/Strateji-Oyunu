@@ -20,7 +20,7 @@ import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCo
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
 import type { GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce } from "./hata-mulk";
-import { parselFiyatiMili } from "./fiyat";
+import { parselToplamFiyatiMili } from "./fiyat";
 
 type Mesaj<T extends SunucuMesaji["tur"]> = Extract<SunucuMesaji, { tur: T }>;
 
@@ -200,7 +200,10 @@ export class WsBaglanti implements MulkBaglantisi {
 
   async parselAl(komut: ParselKomutu): Promise<ParselSonucu> {
     const c = this.ilceKaresi(komut.ilce);
-    const tahmin = c ? parselFiyatiMili(komut.sinif, c.satilmisHucre, c.uygunHucre, komut.hucreler.length) : 0;
+    // Önizleme tahmini: ayrılmış hücre taban fiyattan, eğriyi ilerletmez (çekirdek `parselToplamFiyatiMili`)
+    const sh = c ? this.sahiplik(komut.ilce) : null;
+    const ayr = sh?.ayrilmis ? komut.hucreler.filter((h) => sh.ayrilmis!.has(h)).length : 0;
+    const tahmin = c ? parselToplamFiyatiMili(komut.sinif, { uygun: c.uygunHucre, satilmis: c.satilmisHucre, ...(sh?.ayrilmisSatilmis !== undefined ? { ayrilmisSatilmis: sh.ayrilmisSatilmis } : {}) }, komut.hucreler.length - ayr, ayr) : 0;
     try {
       const r = await this.komutGonder(komut);
       if (r.tamam) return { tamam: true, hucreler: [...komut.hucreler], toplamMili: tahmin, t: r.t };
@@ -334,13 +337,22 @@ export class WsBaglanti implements MulkBaglantisi {
     }
   }
 
+  /** Katılım ilçesi: karede varsa o (ileriye uyumlu), yoksa bu oturumda gönderilen `katil`ın ilçesi, yoksa tek yurt ilçesi; yoksa null. */
+  private katilimIlcesi(): string | null {
+    const mk = this.kare?.oyuncu?.mulk;
+    return (mk as { katilimIlcesi?: string } | undefined)?.katilimIlcesi ?? this.sonKatil?.ilce ?? (mk?.ilceHucre.length === 1 ? (mk.ilceHucre[0]?.[0] ?? null) : null);
+  }
+
   ozet(): MulkOzeti | null {
     const k = this.kare;
     if (!k?.oyuncu) return null;
     const t = this.simZamani();
+    const mk = k.oyuncu.mulk;
     return {
       hazineMili: stokAraDeger(k.oyuncu.hazine, t),
       simZamani: t,
+      ayrilmisBitis: mk?.ayrilmisBitis !== undefined && mk.ayrilmisBitis > t ? mk.ayrilmisBitis : null,
+      katilimIlcesi: this.katilimIlcesi(),
       baglanti: this.durum === "bagli" ? "bagli" : "kopuk",
       ilceHucre: (k.oyuncu.mulk?.ilceHucre ?? []).map(([i, n]) => [i, n]),
       // Hücreli inşaatlar: tesis ve ölçek büyütme (çekirdekte yükseltme de eşzamanlı inşaat sınırına girer)
@@ -465,7 +477,7 @@ export class WsBaglanti implements MulkBaglantisi {
       korumaBitis: o.korumaBitis > t ? o.korumaBitis : null,
       ayrilmisBitis: mk?.ayrilmisBitis !== undefined && mk.ayrilmisBitis > t ? mk.ayrilmisBitis : null,
       // Katılım ilçesi: karede varsa o (ileriye uyumlu), yoksa bu oturumda gönderilen `katil`ın ilçesi, yoksa tek yurt ilçesi
-      katilimIlcesi: (mk as { katilimIlcesi?: string } | undefined)?.katilimIlcesi ?? this.sonKatil?.ilce ?? (mk?.ilceHucre.length === 1 ? (mk.ilceHucre[0]?.[0] ?? null) : null),
+      katilimIlcesi: this.katilimIlcesi(),
       indirimliYapiKalan: mk?.indirimliYapiKalan ?? null,
       yapilar,
       mallar: [...stok.entries()].sort((a, b) => a[0] - b[0]).map(([m, x]) => ({ mal: mallar[m] ?? String(m), ...x })),
@@ -603,6 +615,7 @@ export class WsBaglanti implements MulkBaglantisi {
         this.kare = m.kare;
         this.rev = m.rev;
         this.zamanDuzelt(m.kare.t);
+        this.ayrilmisAboneKontrol();
         this.karedeKosulBak();
         return this.degisti();
       case "delta":
@@ -615,6 +628,7 @@ export class WsBaglanti implements MulkBaglantisi {
         this.kare = deltaUygula(this.kare, m.delta);
         this.rev = m.rev;
         this.zamanDuzelt(m.delta.t);
+        this.ayrilmisAboneKontrol();
         this.karedeKosulBak();
         return this.degisti();
       case "komutSonucu": {
@@ -767,10 +781,28 @@ export class WsBaglanti implements MulkBaglantisi {
     });
   }
 
+  /** Ayrılmış hücre listesi istenmiş mi (aboneliğe `ayrilmis: true` eklendi)? */
+  private ayrilmisIstendi = false;
+
+  /**
+   * Ayrılmış hücre listesi (büyük: Gebze ölçeğinde ilçe başına ~200 KB gzip) yalnız oyuncunun ayrılmış hakkı sürerken istenir:
+   * ayrılmış hücre yalnız katılım ilçesinde ve katılımın ilk günlerinde satılır; başka durumda fiyat zaten normal eğridir.
+   */
+  private ayrilmisListesiGerek(): boolean {
+    const bitis = this.kare?.oyuncu?.mulk?.ayrilmisBitis;
+    return bitis !== undefined && bitis > this.simZamani();
+  }
+
   private aboneGonder(): void {
     const ilceler = this.istenenIlceler();
+    this.ayrilmisIstendi = this.ayrilmisListesiGerek();
     // Kamu arsası blokları (değişmez; ilçe ilk girdiğinde bir kez gelir): haritada doku ve hücre kartı için
-    this.gonder({ tur: "abone", kamu: true, ...(ilceler.length ? { ilceler } : {}) });
+    this.gonder({ tur: "abone", kamu: true, ...(this.ayrilmisIstendi ? { ayrilmis: true } : {}), ...(ilceler.length ? { ilceler } : {}) });
+  }
+
+  /** Oyuncu karesi ilk geldikten sonra (hak sürüyorsa) abonelik ayrılmış listesiyle yenilenir (tam kare gelir). */
+  private ayrilmisAboneKontrol(): void {
+    if (!this.ayrilmisIstendi && this.ayrilmisListesiGerek()) this.aboneGonder();
   }
 
   private zamanIste(): void {
@@ -834,6 +866,14 @@ export class WsBaglanti implements MulkBaglantisi {
     this.kareBekleyen = this.kareBekleyen.filter((f) => !f());
   }
 
+  /** Ayrılmış hücre listesi → küme (değişmez dizi başına bir kez; delta aynı diziyi korur). */
+  private ayrilmisOnbellek = new WeakMap<readonly string[], ReadonlySet<string>>();
+  private ayrilmisKumesi(l: readonly string[]): ReadonlySet<string> {
+    let k = this.ayrilmisOnbellek.get(l);
+    if (!k) this.ayrilmisOnbellek.set(l, (k = new Set(l)));
+    return k;
+  }
+
   private sahiplik(ilce: string): IlceSahipligi {
     const c = this.ilceKaresi(ilce)!;
     const k = this.kare!;
@@ -882,11 +922,22 @@ export class WsBaglanti implements MulkBaglantisi {
         if (olcek !== undefined) y.olcek = olcek;
       }
     }
+    // Ayrılmış hücre kümesi (liste istenmişse) ve para ile alınmış ayrılmış sayısı: karede `ayrilmisSatilmis` varsa kesin değer; yoksa
+    // (eski sunucu) satılmış ∩ ayrılmış tahmini; liste de yoksa bilinmiyor (eğri normal sayılır).
+    const ayrilmis = c.ayrilmis ? this.ayrilmisKumesi(c.ayrilmis) : undefined;
+    const kesin = (c as { ayrilmisSatilmis?: number }).ayrilmisSatilmis;
+    let ayrilmisSatilmis: number | undefined = kesin;
+    if (ayrilmisSatilmis === undefined && ayrilmis) {
+      ayrilmisSatilmis = 0;
+      for (const id of hucreler.keys()) if (ayrilmis.has(id)) ayrilmisSatilmis++;
+    }
     return {
       ilce,
       hucreler,
       uygun: c.uygunHucre,
       satilmis: c.satilmisHucre,
+      ...(ayrilmis ? { ayrilmis } : {}),
+      ...(ayrilmisSatilmis !== undefined ? { ayrilmisSatilmis } : {}),
       yapilar: [...gruplar.values()],
       ...(c.kamuAdet !== undefined ? { kamuAdet: c.kamuAdet } : {}),
       ...(c.ayrilmisAdet !== undefined ? { ayrilmisAdet: c.ayrilmisAdet } : {}),

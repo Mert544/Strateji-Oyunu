@@ -122,6 +122,16 @@ export interface IlceSahipligi {
   satilmis: number;
   /** Yeni oyunculara ayrılmış hücre sayısı (sunucunun `ayrilmisAdet`'i; satılmışlar dahil, değişmez). */
   ayrilmisAdet?: number;
+  /**
+   * Ayrılmış hücrelerin kümesi (satılmışlar dahil; sunucunun `ayrilmis` listesi). Yalnız oyuncunun ayrılmış hakkı sürerken istenir (katılım
+   * ilçesi için); bilinmiyorsa tanımsız (hepsi normal sayılır).
+   */
+  ayrilmis?: ReadonlySet<HucreId>;
+  /**
+   * Para ile alınmış ayrılmış hücre sayısı: çekirdek eğrisi `satilmis - ayrilmisSatilmis + k` kullanır (ayrılmışlar eğriyi ilerletmez).
+   * Sunucu bildirdiyse o (kesin), değilse satılmış ∩ ayrılmış tahmini; bilinmiyorsa tanımsız (0).
+   */
+  ayrilmisSatilmis?: number;
   /** Kamu arsası hücre sayısı (sunucu yayınlıyorsa; kamu kuralı kapalıysa tanımsız). */
   kamuAdet?: number;
   /** Kamu arsası grupları (dikdörtgen bloklar, dört uç dahil; dünya kurulurken donar). Satılmaz, yapı kurulmaz. */
@@ -139,6 +149,10 @@ export interface MulkOzeti {
   hazineMili: number | null;
   /** İstemcinin tahmini sim zamanı (ms). */
   simZamani: number;
+  /** Ayrılmış hücre hakkının bitişi (sim ms); hak bittiyse ya da yoksa null; bildirilmediyse tanımsız. */
+  ayrilmisBitis?: number | null;
+  /** Katılım ilçesi (ayrılmış hücre yalnız burada satılır); bilinmiyorsa null; bildirilmediyse tanımsız. */
+  katilimIlcesi?: string | null;
   baglanti: "bagli" | "kopuk";
   /** Oyuncunun hücre sayısı olan ilçeler: `[ilçe, hücre]`. */
   ilceHucre: Array<[string, number]>;

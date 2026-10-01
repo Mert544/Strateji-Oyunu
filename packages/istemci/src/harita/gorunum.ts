@@ -21,14 +21,15 @@ import { bildir } from "../arayuz/bildirim";
 import { esc, fmt, para, paraMili, simSaatMetni, yuzde } from "../arayuz/bicim";
 import { icerikTablosu } from "../komut/tablo";
 import type { Icerik } from "../komut/tablo";
-import { arsaKenarlari, arsalariTuret, arsaSinirlari, arsaSiniflari, hucredenArsa, kamuBilgisi, kamuBloklari, onerilenArsa, sinifGruplari } from "./arsa";
+import { arsaFiyati, arsaKenarlari, arsalariTuret, arsaSinirlari, arsaSiniflari, hucredenArsa, kamuBilgisi, kamuBloklari, onerilenArsa } from "./arsa";
 import type { Arsa, ArsaKumesi, ArsaTercihi } from "./arsa";
 import { SahteBaglanti } from "./baglanti";
 import { DONUS_ORNEGI } from "./donus-ekrani";
 import { KAMU_ACIKLAMA, KAMU_TUR_ADI, kamuGrubuBul, kamuNedeni, kamuSahibiAdi } from "./kamu";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import type { Duzey, HaritaDurumu } from "./denetci";
-import { arsaSinifi, hucreFiyati, ilceTavani, parselFiyatiMili, SINIF_ADI, satinAlmaOzeti } from "./fiyat";
+import { alimTuru, arsaSinifi, ayrilmisHakki, hucreFiyatiMili, ilceTavani, SINIF_ADI, satinAlmaOzeti } from "./fiyat";
+import type { AyrilmisHakki } from "./fiyat";
 import type { IlceSayilari } from "./fiyat";
 import { parselZinciri } from "./zincir";
 import { ASAMA_ADI, yapiAsamasi, yapiKatalogu, yapiKatmani, yapiRengiCss } from "./yapi";
@@ -309,6 +310,7 @@ export class HaritaGorunumu {
         this.altCiz();
       },
       yerlesimIptal: () => this.yerlesim?.iptal(),
+      ayrilmisHakki: () => this.ayrilmisHakki(),
     });
     this.olcek = o;
     void this.yuklendi.then(() => o.kur());
@@ -369,6 +371,7 @@ export class HaritaGorunumu {
         this.altCiz();
       },
       basliyor: () => this.olcek?.iptal(),
+      ayrilmisHakki: () => this.ayrilmisHakki(),
     });
     this.yerlesim = y;
     void this.yuklendi.then(() => y.kur());
@@ -746,15 +749,17 @@ export class HaritaGorunumu {
     if (!s) {
       src.setData(BOS);
       this.yapilariCiz();
+      this.ayrilmisCiz();
       return;
     }
     const ben = this.baglanti.ben.id;
     const f: Feature<Polygon>[] = [];
     for (const [id, h] of s.hucreler) {
       const c = idCoz(id);
-      if (c) f.push(hucreCokgeni(c.x, c.y, { ben: h.sahip === ben ? 1 : 0, sahip: h.sahip, r: this.renkIndeksi(h.sahip) }));
+      if (c) f.push(hucreCokgeni(c.x, c.y, { ben: h.sahip === ben ? 1 : 0, sahip: h.sahip, r: this.renkIndeksi(h.sahip), ...this.ayrilmisOzelligi(id) }));
     }
     src.setData({ type: "FeatureCollection", features: f });
+    this.ayrilmisCiz();
     this.yapilariCiz();
   }
 
@@ -770,7 +775,7 @@ export class HaritaGorunumu {
       const f: Feature<Polygon>[] = [];
       for (const id of this.secim.liste) {
         const c = idCoz(id);
-        if (c) f.push(hucreCokgeni(c.x, c.y));
+        if (c) f.push(hucreCokgeni(c.x, c.y, this.ayrilmisOzelligi(id)));
       }
       src.setData({ type: "FeatureCollection", features: f });
     }
@@ -782,7 +787,61 @@ export class HaritaGorunumu {
     if (!s) return null;
     let benim = 0;
     for (const h of s.hucreler.values()) if (h.sahip === this.baglanti.ben.id) benim++;
-    return { uygun: s.uygun, satilmis: s.satilmis, benim };
+    return { uygun: s.uygun, satilmis: s.satilmis, benim, ...(s.ayrilmisSatilmis !== undefined ? { ayrilmisSatilmis: s.ayrilmisSatilmis } : {}) };
+  }
+
+  /**
+   * Oyuncunun bu ilçedeki ayrılmış hücre hakkı (yeni oyuncu ve katılım ilçesi kuralı; `fiyat.ts`). Bağdaştırıcı hakkı bildirmiyorsa
+   * (sunucusuz kip) tanımsız: ayrılmış hücre bilinmez, hepsi normal sayılır.
+   */
+  private ayrilmisHakki(): AyrilmisHakki | undefined {
+    const oz = this.baglanti.ozet?.() ?? null;
+    const ilce = this.ilceKimlik;
+    if (!oz || !ilce || oz.ayrilmisBitis === undefined) return undefined;
+    const y = this.tablo.param.mulk?.yeniOyuncu;
+    return ayrilmisHakki({ simZamani: oz.simZamani, ayrilmisBitis: oz.ayrilmisBitis, katilimIlcesi: oz.katilimIlcesi ?? null, ilce, yalnizKatilimIlcesi: y?.ayrilmisYalnizKatilimIlcesi === true, gun: y?.ayrilmisGun ?? 14 });
+  }
+
+  /** Hücrenin ayrılmış olup olmadığı (liste biliniyorsa). */
+  private ayrilmisMi(id: HucreId): boolean {
+    return this.sahiplik?.ayrilmis?.has(id) ?? false;
+  }
+
+  /** GeoJSON özelliği: ayrılmış hücrede `ayrilmis: 1` (ayrılmış olmayanda alan hiç yazılmaz; boya `stil.ts`'te). */
+  private ayrilmisOzelligi(id: HucreId): { ayrilmis?: 1 } {
+    return this.ayrilmisMi(id) ? { ayrilmis: 1 } : {};
+  }
+
+  /**
+   * Görünür kutudaki SATILMAMIŞ ayrılmış hücreler (kaynak `ayrilmis`; yalnız veri, boya `stil.ts`'te): her özellikte `ayrilmis: 1`.
+   * Liste yalnız oyuncunun ayrılmış hakkı sürerken (katılım ilçesi) bilinir; bilinmiyorsa kaynak boştur.
+   */
+  private ayrilmisCiz(): void {
+    if (!this.harita.getSource("sahiplik")) return; // stil henüz yüklenmedi
+    if (!this.harita.getSource("ayrilmis")) this.harita.addSource("ayrilmis", { type: "geojson", data: BOS });
+    const src = this.harita.getSource("ayrilmis") as GeoJSONSource;
+    const s = this.sahiplik;
+    if (!s?.ayrilmis || !this.izgara || this.harita.getZoom() < IZGARA_CIZGI_ZOOM) {
+      src.setData(BOS);
+      return;
+    }
+    const b = this.harita.getBounds();
+    const [xa, xb, ya, yb] = [Math.floor(boylamdanX(b.getWest())), Math.ceil(boylamdanX(b.getEast())), Math.floor(enlemdenY(b.getNorth())), Math.ceil(enlemdenY(b.getSouth()))];
+    const f: Feature<Polygon>[] = [];
+    for (const id of s.ayrilmis) {
+      if (s.hucreler.has(id)) continue;
+      const c = idCoz(id);
+      if (!c || c.x < xa || c.x > xb || c.y < ya || c.y > yb) continue;
+      f.push(hucreCokgeni(c.x, c.y, { ayrilmis: 1 }));
+      if (f.length >= 4000) break;
+    }
+    src.setData(f.length ? { type: "FeatureCollection", features: f } : BOS);
+  }
+
+  /** Tek hücrenin görünen fiyatı (tam ₺): ayrılmış hakkı olana taban fiyat, aksi hâlde eğri (çekirdek `hucreFiyatiMili`). */
+  private hucreFiyatiGoster(id: HucreId, sinif: ArsaSinifi, sayi: IlceSayilari): number {
+    const ayr = alimTuru(id, this.sahiplik?.ayrilmis, this.ayrilmisHakki()).tur === "ayrilmis";
+    return Math.round(hucreFiyatiMili(sinif, { uygun: sayi.uygun, satilmis: sayi.satilmis, ...(sayi.ayrilmisSatilmis !== undefined ? { ayrilmisSatilmis: sayi.ayrilmisSatilmis } : {}) }, 0, ayr) / 1000);
   }
 
   private benimKume(): Set<HucreId> {
@@ -917,7 +976,8 @@ export class HaritaGorunumu {
       : neden
         ? "Satılık değil"
         : "Sahipsiz";
-    const deger = sahip ? (sahip.degerMili > 0 ? paraMili(sahip.degerMili, "yakin") : "—") : neden ? "—" : sayi ? para(hucreFiyati(sinif, sayi.satilmis, sayi.uygun)) : "—";
+    const deger = sahip ? (sahip.degerMili > 0 ? paraMili(sahip.degerMili, "yakin") : "—") : neden ? "—" : sayi ? para(this.hucreFiyatiGoster(id, sinif, sayi)) : "—";
+    const ayrilmis = !sahip && !neden && this.ayrilmisMi(id) && this.ayrilmisHakki()?.var !== false;
     const doluluk = this.sahiplik && this.sahiplik.uygun > 0 ? yuzde((100 * this.sahiplik.satilmis) / this.sahiplik.uygun, 2) : "—";
     const ilceAd = this.ilceKimlik ? (this.s.hiyerarsi.ilceler.get(this.ilceKimlik)?.ad ?? "") : "";
     this.kart.hidden = false;
@@ -927,6 +987,7 @@ export class HaritaGorunumu {
         <dt>Sahip</dt><dd data-alan="sahip">${sahipMetni}</dd>
         <dt>Sınıf</dt><dd data-alan="sinif">${neden ? esc(neden) : `${SINIF_ADI[sinif]} · ${ARAZI_ADLARI[durumSinifi(d)] ?? ""}`}</dd>
         <dt>${sahip ? "Değer" : "Fiyat"}</dt><dd data-alan="deger">${deger}</dd>
+        ${ayrilmis ? `<dt>Ayrılmış</dt><dd data-alan="ayrilmis" data-ayrilmis="1">taban fiyat, katılımının ilk ${this.tablo.param.mulk?.yeniOyuncu.ayrilmisGun ?? 14} günü</dd>` : ""}
         <dt>${esc(ilceAd)}</dt><dd>${doluluk} dolu</dd>
       </dl>${this.s.yuruAc ? `<button type="button" class="kart-yuru" data-eylem="yuru" title="Sokak düzeyinde yürü (L4)">${ikon("footprints", 16)}Sokakta yürü</button>` : ""}`;
   }
@@ -984,25 +1045,18 @@ export class HaritaGorunumu {
     return { durum: "kismen", sahipler };
   }
 
-  /** Arsanın toplam fiyatı (çekirdekle aynı artımlı formül; sınıf başına adım) ve satın almayı engelleyen neden. */
+  /** Arsanın toplam fiyatı (çekirdekle aynı artımlı formül; ayrılmış hücre taban fiyattan) ve satın almayı engelleyen neden (`arsa.ts`). */
   private arsaFiyati(a: Arsa, sayi: IlceSayilari): { mili: number; adimlar: Array<{ sinif: ArsaSinifi; hucreler: HucreId[]; mili: number }>; engel: string | null; benimSonra: number } {
-    const adimlar: Array<{ sinif: ArsaSinifi; hucreler: HucreId[]; mili: number }> = [];
-    let satilmis = sayi.satilmis;
-    for (const g of sinifGruplari(a, this.sinifAl)) {
-      adimlar.push({ sinif: g.sinif, hucreler: g.hucreler, mili: parselFiyatiMili(g.sinif, satilmis, sayi.uygun, g.hucreler.length) });
-      satilmis += g.hucreler.length;
-    }
-    const mili = adimlar.reduce((t, x) => t + x.mili, 0);
-    const sd = sayi.benim + a.hucreler.length;
-    const tavan = ilceTavani(sayi.uygun);
-    let engel: string | null = null;
-    if (sd > 72) engel = "İlçede en çok 72 hücren olabilir";
-    else if (sd > tavan) engel = `İlçenin en çok %25'i senin olabilir (${fmt(tavan)} hücre)`;
-    else {
-      const hz = this.baglanti.ozet?.()?.hazineMili ?? null;
-      if (hz !== null && mili > hz) engel = `Hazinede yeterli para yok (gereken ${paraMili(mili, "yukari")})`;
-    }
-    return { mili, adimlar, engel, benimSonra: sd };
+    const hak = this.ayrilmisHakki();
+    return arsaFiyati({
+      arsa: a,
+      sinifAl: this.sinifAl,
+      sayi,
+      ...(this.sahiplik?.ayrilmis ? { ayrilmis: this.sahiplik.ayrilmis } : {}),
+      ...(hak ? { hak } : {}),
+      hazineMili: this.baglanti.ozet?.()?.hazineMili ?? null,
+      para: (mili) => paraMili(mili, "yukari"),
+    });
   }
 
   /** Görünür kutudaki arsa sınırları (z ≥ 14,8). */
@@ -1012,6 +1066,7 @@ export class HaritaGorunumu {
     const k = this.arsaK;
     if (!k || this.harita.getZoom() < L3_ZOOM - 0.2) {
       src.setData(BOS);
+      this.ayrilmisCiz();
       return;
     }
     const b = this.harita.getBounds();
@@ -1024,6 +1079,7 @@ export class HaritaGorunumu {
       const l = kamuBloklari(k, xa, ya, xb, yb);
       kamu.setData(l.length ? { type: "FeatureCollection", features: l.map(({ grup, blok }) => blokCokgeni(blok, { t: grup.tur })) } : BOS);
     }
+    this.ayrilmisCiz();
   }
 
   private arsaVurguCiz(): void {
@@ -1039,9 +1095,9 @@ export class HaritaGorunumu {
       if (!a) return;
       for (const id of a.hucreler) {
         const c = idCoz(id);
-        if (c) f.push(hucreCokgeni(c.x, c.y, { s: secili }));
+        if (c) f.push(hucreCokgeni(c.x, c.y, { s: secili, ...this.ayrilmisOzelligi(id) }));
       }
-      f.push({ type: "Feature", properties: { s: secili }, geometry: { type: "MultiLineString", coordinates: arsaKenarlari(a) } });
+      f.push({ type: "Feature", properties: { s: secili, ...(a.hucreler.some((id) => this.ayrilmisMi(id)) ? { ayrilmis: 1 } : {}) }, geometry: { type: "MultiLineString", coordinates: arsaKenarlari(a) } });
     };
     if (this.arsaUzerinde && this.arsaUzerinde !== this.arsaSecili) ekle(this.arsaUzerinde, 0);
     ekle(this.arsaSecili, 1);
@@ -1281,7 +1337,7 @@ export class HaritaGorunumu {
     this.ipucu.hidden = true;
   }
 
-  private hucreIpucu(x: number, y: number): { html: string; uyari: boolean } | null {
+  private hucreIpucu(x: number, y: number): { html: string; uyari: boolean; ayrilmis?: boolean } | null {
     if (!this.izgara) return null;
     const d = durumAl(this.izgara, x, y);
     const neden = engelNedeni(d);
@@ -1296,12 +1352,13 @@ export class HaritaGorunumu {
     }
     const sayi = this.sayilar();
     const sinif = arsaSinifi(d);
-    const fiyat = sayi ? hucreFiyati(sinif, sayi.satilmis, sayi.uygun) : 0;
-    return { html: `<b>${SINIF_ADI[sinif]}</b> · ${esc(ARAZI_ADLARI[durumSinifi(d)] ?? "")} · ${para(fiyat)}`, uyari: false };
+    const fiyat = sayi ? this.hucreFiyatiGoster(id, sinif, sayi) : 0;
+    const ayrilmis = this.ayrilmisMi(id) && this.ayrilmisHakki()?.var !== false;
+    return { html: `<b>${SINIF_ADI[sinif]}</b> · ${esc(ARAZI_ADLARI[durumSinifi(d)] ?? "")} · ${para(fiyat)}${ayrilmis ? " · ayrılmış hücre: taban fiyat" : ""}`, uyari: false, ayrilmis };
   }
 
   /** Hazır arsa üzerinde ipucu: hücre sayısı, sınıf, fiyat ya da durum. */
-  private arsaIpucu(a: Arsa): { html: string; uyari: boolean } {
+  private arsaIpucu(a: Arsa): { html: string; uyari: boolean; ayrilmis?: boolean } {
     const d = this.arsaDurumu(a);
     const sinif = arsaSiniflari(a).map(([k]) => SINIF_ADI[k]).join(" · ");
     const bas = `<b>Hazır arsa</b> · ${fmt(a.hucreler.length)} hücre · ${esc(sinif)}`;
@@ -1309,7 +1366,8 @@ export class HaritaGorunumu {
     if (d.durum === "baskasi") return { html: `${bas} · sahibi ${esc(d.sahipler.join(", "))}`, uyari: true };
     if (d.durum === "kismen") return { html: `${bas} · kısmen satılmış`, uyari: true };
     const sayi = this.sayilar();
-    return { html: `${bas}${sayi ? ` · ${paraMili(this.arsaFiyati(a, sayi).mili, "yukari")}` : ""}`, uyari: false };
+    const ayrilmis = this.ayrilmisHakki()?.var !== false && a.hucreler.some((id) => this.ayrilmisMi(id));
+    return { html: `${bas}${sayi ? ` · ${paraMili(this.arsaFiyati(a, sayi).mili, "yukari")}` : ""}${ayrilmis ? " · ayrılmış hücre: taban fiyat" : ""}`, uyari: false, ayrilmis };
   }
 
   // --- olaylar --------------------------------------------------------------------------------------

@@ -60,7 +60,62 @@ export function hucreFiyati(sinif: ArsaSinifi, satilmis: number, uygun: number):
   return Math.round(TABAN_FIYAT[sinif] * fiyatCarpani(satilmis, uygun));
 }
 
+// --- ayrılmış hücre (yeni oyunculara ayrılmış; docs/06 §15.7) -----------------------------------------------------------
+//
+// Çekirdek `hucreFiyatiMili`: AYRILMIŞ hücre taban (sınıf) fiyatındadır ve satış payı eğrisini ilerletmez; normal hücrenin eğrisi
+// `satilmisHucre - ayrilmisSatilmis + k` üzerinden gider. Bir ayrılmış hücre yalnız katılımının ilk `ayrilmisGun` gününde olan
+// oyuncuya (ve `ayrilmisYalnizKatilimIlcesi` açıksa yalnız KATILIM ilçesinde) satılır; aksi hâlde satın alma reddedilir.
+
+/** Fiyatı belirleyen ilçe durumu (çekirdek `IlceFiyatDurumu`). */
+export interface IlceFiyatDurumu {
+  /** Satılabilir hücre sayısı (kamu düşülmüş). */
+  uygun: number;
+  /** İlçede satılmış hücre (ayrılmışlar dahil). */
+  satilmis: number;
+  /** Bunların PARA ile alınmış ayrılmış olanı (eğriyi ilerletmez); bilinmiyorsa 0. */
+  ayrilmisSatilmis?: number;
+}
+
+/** Çekirdek `hucreFiyatiMili`: `sinif` sınıfında k. (0'dan) hücrenin fiyatı (mili-₺); ayrılmışsa taban, eğriden muaf. */
+export function hucreFiyatiMili(sinif: ArsaSinifi, ilce: IlceFiyatDurumu, k = 0, ayrilmis = false): number {
+  if (ayrilmis) return TABAN_FIYAT[sinif] * 1000;
+  return parselFiyatiMili(sinif, Math.max(0, ilce.satilmis - (ilce.ayrilmisSatilmis ?? 0)) + k, ilce.uygun, 1);
+}
+
+/** Çekirdek `parselToplamFiyatiMili`: `normalAdet` normal + `ayrilmisAdet` ayrılmış hücrenin (aynı komutta) toplamı (mili-₺). */
+export function parselToplamFiyatiMili(sinif: ArsaSinifi, ilce: IlceFiyatDurumu, normalAdet: number, ayrilmisAdet = 0): number {
+  let t = 0;
+  for (let k = 0; k < normalAdet; k++) t += hucreFiyatiMili(sinif, ilce, k, false);
+  for (let k = 0; k < ayrilmisAdet; k++) t += hucreFiyatiMili(sinif, ilce, k, true);
+  return t;
+}
+
+/** Oyuncunun bir ilçede ayrılmış hücre alma hakkı: var, ya da yok ve nedeni (Türkçe). */
+export type AyrilmisHakki = { var: true } | { var: false; neden: string };
+
+/**
+ * Oyuncunun bu ilçedeki ayrılmış hücre hakkı (çekirdek `alimPlani` koşulları: katılımın ilk `ayrilmisGun` günü ve, kural açıksa, yalnız
+ * KATILIM ilçesi). Hesap başına tavan (`ayrilmisHucreHesapTavani`) ve günlük ilçe tavanı önizlemede bilinmez; sunucu Türkçe reddeder.
+ */
+export function ayrilmisHakki(g: { simZamani: number; ayrilmisBitis: number | null; katilimIlcesi: string | null; ilce: string; yalnizKatilimIlcesi: boolean; gun: number }): AyrilmisHakki {
+  if (g.ayrilmisBitis === null || g.simZamani >= g.ayrilmisBitis) return { var: false, neden: `Bu hücre yeni oyunculara ayrılmış (katılımlarının ilk ${g.gun} günü)` };
+  if (g.yalnizKatilimIlcesi && g.katilimIlcesi !== g.ilce) return { var: false, neden: "Ayrılmış hücre yalnız katılım ilçende satılır" };
+  return { var: true };
+}
+
+/**
+ * Bir hücrenin satın alma türü: normal, ayrılmış (hakkı varsa taban fiyat) ya da bu oyuncuya kapalı (neden). `ayrilmis` ilçenin
+ * ayrılmış hücre kümesidir (bilinmiyorsa tanımsız: hepsi normal sayılır; sunucu yine de reddeder); `hak` bilinmiyorsa var sayılır.
+ */
+export function alimTuru(id: string, ayrilmis: ReadonlySet<string> | undefined, hak: AyrilmisHakki | undefined): { tur: "normal" | "ayrilmis" } | { tur: "yasak"; neden: string } {
+  if (!ayrilmis || !ayrilmis.has(id)) return { tur: "normal" };
+  if (hak && !hak.var) return { tur: "yasak", neden: hak.neden };
+  return { tur: "ayrilmis" };
+}
+
 export interface IlceSayilari {
+  /** Bunların para ile alınmış ayrılmış olanı (eğriyi ilerletmez); bilinmiyorsa tanımsız. */
+  ayrilmisSatilmis?: number;
   /**
    * İlçenin uygun (satın alınabilir; su değil) hücre sayısı: hem fiyat payının hem %25 sınırının paydası
    * (çekirdekteki `IlceDurumu.uygunHucre` ile aynı anlam; karar 1 Ekim).
