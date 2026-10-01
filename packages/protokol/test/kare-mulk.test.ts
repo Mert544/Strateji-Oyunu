@@ -253,3 +253,50 @@ describe("kamu arsasi yayini (dikdortgen blok)", () => {
     expect(deltaUygula(bos, taze)).toEqual(b);
   });
 });
+
+describe("olcek yukseltme insaatinda ek hucrenin tur adi (hedef = TESIS kimligi, tur indeksi degil)", () => {
+  const DAG = "sn_m_dag_merkez";
+
+  function yukseltmeKurulumu(): { sim: Simulasyon; ek: string; govde: string[] } {
+    const v: CekirdekVeriPaketi = { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") };
+    delete v.param.mulk?.kamu;
+    const yo = v.param.mulk?.yeniOyuncu;
+    if (yo) {
+      yo.hibe = 5_000_000_000;
+      yo.yurtHucre = 0;
+      yo.ilkYapiIndirimPpm = 0;
+      yo.indirimliYapiSayisi = 0;
+      yo.ayrilmisHucrePpm = 0;
+      yo.baslangicStok = { celik: 50_000_000, parca: 50_000_000, gida: 200_000 };
+    }
+    const sim = Simulasyon.olustur(v, 7);
+    sim.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "ali", bolgeler: [] } });
+    // Yatayda ardışık 4 uygun kırsal hücre: 3'ü S mera, 4.'sü yükseltmenin ek hücresi.
+    const c = v.parsel?.ilceler.find((x) => x.id === DAG);
+    const uygun = new Set((c?.hucreler ?? []).filter((h) => h.uygun && h.sinif === "kirsal").map((h) => h.id));
+    const g = [...uygun].map((id) => [0, 1, 2, 3].map((i) => `${Number(id.split(":")[0]) + i}:${id.split(":")[1]}`)).find((l) => l.every((id) => uygun.has(id))) as string[];
+    const t = 200 * SAAT;
+    expect(sim.uygula({ t, oyuncu: "ali", komut: { tur: "parsel_al", ilce: DAG, hucreler: g.slice(0, 3), sinif: "kirsal" } }).tamam).toBe(true);
+    expect(sim.uygula({ t, oyuncu: "ali", komut: { tur: "tesis_insa_hucre", ilce: DAG, tesisTuru: "mera", hucreler: g.slice(0, 3), olcek: 0 } }).tamam).toBe(true);
+    sim.calistirKadar(t + 30 * SAAT);
+    const dugum = sim.dunya.bolgeler.find((b) => b.merkez !== undefined && b.tesisler.length > 0);
+    const tesis = dugum?.tesisler[0];
+    expect(tesis).toBeDefined();
+    const r = sim.uygula({ t: sim.dunya.zaman, oyuncu: "ali", komut: { tur: "tesis_olcek_yukselt", bolge: dugum?.id as string, tesis: tesis?.id as number, olcek: 1, ekHucreler: [g[3] as string], sinif: "kirsal" } });
+    expect(r.tamam, JSON.stringify(r)).toBe(true);
+    return { sim, ek: g[3] as string, govde: g.slice(0, 3) };
+  }
+
+  it("suren yukseltmede ek hucre tesisin turuyle gorunur (hem sahibine hem baskasina/izleyiciye); S hucreleri de ayni", () => {
+    const { sim, ek, govde } = yukseltmeKurulumu();
+    expect(sim.dunya.insaatlar.some((i) => i.tur === "olcek" && i.hucreler?.includes(ek))).toBe(true);
+    for (const oyuncu of ["ali", null] as const) {
+      const k = ilgiKaresiCikar(sim, ilgiAlaniKur(sim, [], oyuncu), oyuncu, ilceIlgisiKur(sim, [DAG], oyuncu), {});
+      const hucreler = k.ilceler?.find((c) => c.id === DAG)?.hucreler ?? [];
+      const tur = (id: string): string | undefined => hucreler.find((h) => h[0] === id)?.[5];
+      expect(tur(ek), `ek hucre (${oyuncu})`).toBe("mera");
+      for (const id of govde) expect(tur(id), `tesis hucresi ${id} (${oyuncu})`).toBe("mera");
+      expect(IlgiKaresiSemasi.parse(k)).toEqual(k);
+    }
+  });
+});

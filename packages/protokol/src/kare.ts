@@ -76,8 +76,16 @@ export interface OzelBolgeKaresi {
   stoklar: StokFormulu[];
   /** Mal indeksine göre brüt üretim oranı (mili-birim/saat). */
   uretimOrani: Mili[];
-  /** `[kimlik, tür, yöntem, aktif (0/1), verimPpm, isciPpm]` */
+  /**
+   * `[kimlik, tür, yöntem, aktif (0/1), verimPpm, isciPpm]`. DEMETE ÖĞE EKLENMEZ: istemci her sunucu mesajını zod ile doğrular ve zod 3 `tuple`
+   * fazla öğeyi reddeder (eski istemci kareyi tümden atar). Yeni veri isteğe bağlı nesne alanıyla gelir (`tesisOlcek`).
+   */
   tesisler: Array<[id: number, tur: number, yontem: number, aktif: 0 | 1, verimPpm: number, isciPpm: number]>;
+  /**
+   * Yalnız ekleme (isteğe bağlı): ölçeği S olmayan tesisler `[tesis kimliği, 1 (M) | 2 (L)]`; listede olmayan tesis S'dir. Hiç M/L tesis yoksa alan YAZILMAZ.
+   * Eski istemci (z.object bilinmeyen anahtarı atar) alanı sessizce yok sayar.
+   */
+  tesisOlcek?: Array<[id: number, olcek: 1 | 2]>;
   /** `[mal, yön (0 ihracat, 1 ithalat), istenen oran, gerçekleşen oran]` (mili-birim/saat) */
   emirler: Array<[mal: number, yon: 0 | 1, oranSaat: Mili, gerceklesenSaat: Mili]>;
   /** Birlik indeksine göre adet. */
@@ -349,6 +357,8 @@ export function ilgiKaresiCikar(
         ikmalPpm: b.ikmalKarsilanmaPpm,
         rezervKalan: [...b.rezervKalan],
       };
+      const olcekler = b.tesisler.flatMap((x): Array<[number, 1 | 2]> => (x.olcek === 1 || x.olcek === 2 ? [[x.id, x.olcek]] : []));
+      if (olcekler.length > 0) girdi.ozel.tesisOlcek = olcekler;
     }
     bolgeler.push(girdi);
   }
@@ -410,7 +420,9 @@ export function ilgiKaresiCikar(
       }
       for (const i of d.insaatlar) {
         if (i.hucreler === undefined) continue;
-        insaatTuru.set(i.id, i.ekYapi ?? kaynak.ic.tesisTurleri[i.hedef]?.id ?? "");
+        // `hedef` türe göre değişir: "tesis" inşaatında tesis TÜRÜ indeksi, "olcek" (yerinde yükseltme) inşaatında yükseltilen TESİSİN kimliği
+        // (türü hedef tesisten alınır; ek yapı yükseltiliyorsa onun türü).
+        insaatTuru.set(i.id, i.tur === "olcek" ? (tesisTuru.get(i.hedef) ?? "") : (i.ekYapi ?? kaynak.ic.tesisTurleri[i.hedef]?.id ?? ""));
       }
     };
     for (const h of m.hucreler) {

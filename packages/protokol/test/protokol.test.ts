@@ -1,5 +1,6 @@
 /** Protokol: mesaj şemaları (kabul/ret, alan atma) ve ilgi alanı karesi (süzgeç, özel veri, formül, delta). */
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { MILI, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikMiktar } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
 import { miniVeriyiYukle } from "@bolge/veri";
@@ -210,6 +211,84 @@ describe("ilgi alani karesi", () => {
     const ozel = kare.bolgeler[0]?.ozel;
     if (ozel) ozel.birlikler[0] = 123_456;
     expect(sim.dunya.bolgeler[0]?.birlikler[0]).not.toBe(123_456);
+  });
+
+  it("tesis olcegi isteğe bagli nesne alani (tesisOlcek): M/L listelenir, S listelenmez; alan bos ise hic yazilmaz; demetler 6 ogeli kalir", () => {
+    const sim = kurulum();
+    const ilgi = ilgiAlaniKur(sim, [0, 1, 2], "ali");
+    const once = ilgiKaresiCikar(sim, ilgi, "ali");
+    for (const b of once.bolgeler) {
+      for (const t of b.ozel?.tesisler ?? []) expect(t).toHaveLength(6); // demete öğe EKLENMEZ (zod tuple fazla öğeyi reddeder)
+      expect(b.ozel !== undefined && "tesisOlcek" in b.ozel, `S/yok: alan yazilmaz (bolge ${b.i})`).toBe(false);
+    }
+    // Çekirdekteki kademe (1 = M, 2 = L) listelenir; S (0 ya da tanımsız) listelenmez.
+    const t0 = sim.dunya.bolgeler[0]?.tesisler[0];
+    const t1 = sim.dunya.bolgeler[1]?.tesisler[0];
+    const t2 = sim.dunya.bolgeler[2]?.tesisler[0];
+    expect(t0 && t1 && t2).toBeTruthy();
+    if (!t0 || !t1 || !t2) return;
+    t0.olcek = 2;
+    t1.olcek = 1;
+    t2.olcek = 0; // açık S
+    const sonra = ilgiKaresiCikar(sim, ilgi, "ali");
+    expect(sonra.bolgeler[0]?.ozel?.tesisOlcek).toEqual([[t0.id, 2]]);
+    expect(sonra.bolgeler[1]?.ozel?.tesisOlcek).toEqual([[t1.id, 1]]);
+    expect(sonra.bolgeler[2]?.ozel !== undefined && "tesisOlcek" in (sonra.bolgeler[2]?.ozel ?? {})).toBe(false);
+    for (const b of sonra.bolgeler) for (const t of b.ozel?.tesisler ?? []) expect(t).toHaveLength(6);
+    // Yalnız sahibine: izleyici özel veriyi ve ölçeği görmez.
+    expect(JSON.stringify(ilgiKaresiCikar(sim, ilgiAlaniKur(sim, [0], null), null))).not.toContain("tesisOlcek");
+    expect(IlgiKaresiSemasi.parse(sonra)).toEqual(sonra);
+    // Delta ile taşınır.
+    expect(deltaUygula(once, kareFarki(once, sonra))).toEqual(sonra);
+    // Kademe değeri doğrulanır.
+    const kotu = structuredClone(sonra);
+    (kotu.bolgeler[0]?.ozel?.tesisOlcek as unknown[][])[0]![1] = 3;
+    expect(IlgiKaresiSemasi.safeParse(kotu).success).toBe(false);
+  });
+
+  it("GERIYE UYUM: entegrasyon 8064ded semasi (dondurulmus kopya) yeni sunucunun karesini REDDETMEZ; demete ogeler eklenirse bu test kirilir", () => {
+    // 8064ded `mesajlar.ts` `bolgeKaresiSemasi`: bolge karesinin tamami (z.object bilinmeyen anahtari atar, z.tuple fazla ogeyi REDDEDER).
+    const tam = z.number().int();
+    const eskiStok = z.tuple([tam, tam, tam, tam, tam]);
+    const eskiBolge = z.object({
+      i: tam,
+      id: z.string(),
+      genel: z.object({
+        sahip: z.string().nullable(),
+        nufus: tam,
+        tesisler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)])])),
+        durus: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+      }),
+      ozel: z
+        .object({
+          stoklar: z.array(eskiStok),
+          uretimOrani: z.array(tam),
+          tesisler: z.array(z.tuple([tam, tam, tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
+          emirler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
+          birlikler: z.array(tam),
+          gidaPpm: tam,
+          ikmalPpm: tam,
+          rezervKalan: z.array(tam),
+        })
+        .optional(),
+    });
+    const sim = kurulum();
+    const t = sim.dunya.bolgeler[0]?.tesisler[0];
+    if (t) t.olcek = 2;
+    const kare = ilgiKaresiCikar(sim, ilgiAlaniKur(sim, [0, 1, 2], "ali"), "ali");
+    expect(kare.bolgeler[0]?.ozel?.tesisOlcek).toBeDefined();
+    // JSON'dan geçirilir (ağdaki hâl): eski şema kareyi kabul eder ve yeni alanı sessizce atar.
+    const agdaki = JSON.parse(JSON.stringify(kare)) as { bolgeler: unknown[] };
+    for (const b of agdaki.bolgeler) {
+      const r = eskiBolge.safeParse(b);
+      expect(r.success, JSON.stringify(r)).toBe(true);
+      if (r.success) expect(JSON.stringify(r.data)).not.toContain("tesisOlcek");
+    }
+    // Aynı denetim yeni şemadan da geçer; bir demete öğe eklenirse eski şema reddeder (bu yüzden demetler 6 ogeli kalmalı).
+    expect(sunucuMesajiCoz(JSON.stringify({ tur: "kare", rev: 1, seq: 1, ilgi: [0, 1, 2], kare })).tamam).toBe(true);
+    const ekli = structuredClone(agdaki) as { bolgeler: Array<{ ozel?: { tesisler: unknown[][] } }> };
+    ekli.bolgeler[0]?.ozel?.tesisler[0]?.push(2);
+    expect(eskiBolge.safeParse(ekli.bolgeler[0]).success).toBe(false);
   });
 
   it("stok formulunden ara deger, oran degismedigi surece canli dunyayla bit bit ayni", () => {

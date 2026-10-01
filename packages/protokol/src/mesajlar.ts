@@ -242,6 +242,8 @@ const bolgeKaresiSemasi = z.object({
       stoklar: z.array(stokFormuluSemasi),
       uretimOrani: z.array(tam),
       tesisler: z.array(z.tuple([tam, tam, tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
+      // Yalnız ekleme: S olmayan tesislerin ölçeği (demete öğe eklenmez; zod tuple fazla öğeyi reddeder). Eski istemci bilinmeyen anahtarı atar.
+      tesisOlcek: z.array(z.tuple([tam, z.union([z.literal(1), z.literal(2)])])).optional(),
       emirler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
       birlikler: z.array(tam),
       gidaPpm: tam,
