@@ -9,19 +9,24 @@
  * - Göç yedeği: `yedekle(g, etiket)` görüntü dosyasını `<ad>.goruntu.<etiket>.yedek` olarak kopyalar (geçici dosya, fsync, `rename`,
  *   dizin fsync). `.goruntu` ile bitmediği için `sonuncu()`a girmez ve saklama sınırıyla silinmez. Geri dönüş: sunucuyu durdurup yedeği
  *   `<ad>.goruntu` üzerine kopyalayın (yeni kural sürümüyle komut kabul edilmediyse eski içerikle açılır).
+ * - `profil.jsonl`: oyuncu çapaları ve özet kayıtları (satır başına `{o, c}` çapa güncellemesi ya da `{o, k: [...]}` kayıt ekleme).
+ *   Bellekte tutulur; açılışta okunur (yarım son satır atılır), çok satır birikince atomik yeniden yazılır (sıkıştırma). `esitle`
+ *   fdatasync yapar (anlık görüntüden önce). Kayıtlar günlükten yeniden türetilebildiği için satır başına fsync yoktur.
  * - `yazar.kilit`: tek yazar kilidi (içinde süreç kimliği). Kilit varsa ve sahibi yaşıyorsa açılış reddedilir; sahibi
  *   ölmüşse (kill -9 sonrası) kilit devralınır.
  */
-import { copyFile, mkdir, open, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, open, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { join } from "node:path";
+import { BellekProfilDeposu } from "./bellek";
 import { seqSurekliligiDenetle } from "./tipler";
-import type { AnlikGoruntuKaydi, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi } from "./tipler";
+import type { AnlikGoruntuKaydi, Capa, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, OzetKaydi } from "./tipler";
 
 const TUTULAN_GORUNTU = 3;
 const GUNLUK_DOSYASI = "gunluk.jsonl";
 const GORUNTU_DIZINI = "goruntu";
 const KILIT_DOSYASI = "yazar.kilit";
+const PROFIL_DOSYASI = "profil.jsonl";
 
 async function dizinFsync(dizin: string): Promise<void> {
   const h = await open(dizin, "r");
@@ -217,6 +222,97 @@ export class DosyaGoruntuDeposu implements GoruntuDeposu {
   async kapat(): Promise<void> {}
 }
 
+export class DosyaProfilDeposu extends BellekProfilDeposu {
+  private satir = 0;
+
+  private constructor(
+    private readonly yol: string,
+    private tutamac: FileHandle,
+  ) {
+    super();
+  }
+
+  static async ac(dizin: string): Promise<DosyaProfilDeposu> {
+    const yol = join(dizin, PROFIL_DOSYASI);
+    const metin = await readFile(yol, "utf8").catch((e: NodeJS.ErrnoException) => {
+      if (e.code === "ENOENT") return "";
+      throw e;
+    });
+    const tutamac = await open(yol, "a+");
+    const d = new DosyaProfilDeposu(yol, tutamac);
+    const satirlar = metin.split("\n");
+    // Son satır "\n" ile bitmediyse yarımdır: atılır (kayıtlar günlükten yeniden türetilir).
+    for (const s of satirlar.slice(0, -1)) {
+      if (s === "") continue;
+      let o: { o: string; c?: Capa; k?: OzetKaydi[] };
+      try {
+        o = JSON.parse(s);
+      } catch {
+        continue;
+      }
+      if (o.c) d.capaUygula(o.o, o.c);
+      if (o.k) d.kayitUygula(o.o, o.k, Number.NEGATIVE_INFINITY);
+      d.satir++;
+    }
+    const gerekli = d.capalar.size + [...d.kayitlar.values()].reduce((n, m) => n + m.size, 0);
+    if (d.satir > 2 * gerekli + 100 || (metin !== "" && !metin.endsWith("\n"))) await d.sikistir();
+    return d;
+  }
+
+  private async ekle(satir: object): Promise<void> {
+    await this.tutamac.write(JSON.stringify(satir) + "\n");
+    this.satir++;
+    if (this.satir > 20_000 + 4 * this.gerekliSatir()) await this.sikistir();
+  }
+
+  private gerekliSatir(): number {
+    return this.capalar.size + [...this.kayitlar.values()].reduce((n, m) => n + m.size, 0);
+  }
+
+  /** Bellekteki durumdan atomik yeniden yazım (geçici dosya, fsync, rename). */
+  private async sikistir(): Promise<void> {
+    const satirlar: string[] = [];
+    for (const [o, c] of this.capalar) satirlar.push(JSON.stringify({ o, c }));
+    for (const [o, m] of this.kayitlar) if (m.size > 0) satirlar.push(JSON.stringify({ o, k: [...m.values()] }));
+    const gecici = `${this.yol}.tmp`;
+    const h = await open(gecici, "w");
+    try {
+      await h.write(satirlar.map((s) => s + "\n").join(""));
+      await h.sync();
+    } finally {
+      await h.close();
+    }
+    await this.tutamac.close();
+    await rename(gecici, this.yol);
+    this.tutamac = await open(this.yol, "a+");
+    this.satir = satirlar.length;
+  }
+
+  override async capaYaz(oyuncu: string, kismi: Capa): Promise<void> {
+    this.capaUygula(oyuncu, kismi);
+    await this.ekle({ o: oyuncu, c: kismi });
+  }
+
+  override async kayitEkle(oyuncu: string, kayitlar: readonly OzetKaydi[], simdi: number): Promise<number> {
+    const yeni = this.kayitUygula(oyuncu, kayitlar, simdi);
+    if (yeni.length > 0) await this.ekle({ o: oyuncu, k: yeni });
+    return yeni.length;
+  }
+
+  override async esitle(): Promise<void> {
+    await this.tutamac.datasync();
+  }
+
+  private kapali = false;
+
+  override async kapat(): Promise<void> {
+    if (this.kapali) return;
+    this.kapali = true;
+    await this.tutamac.datasync();
+    await this.tutamac.close();
+  }
+}
+
 /** Dizini hazırlar, tek yazar kilidini alır, günlüğü (yarım kuyruğu keserek) ve görüntü deposunu açar. */
 export async function dosyaDeposu(dizin: string): Promise<Depo> {
   await mkdir(dizin, { recursive: true });
@@ -224,16 +320,26 @@ export async function dosyaDeposu(dizin: string): Promise<Depo> {
   try {
     const gunluk = await DosyaGunlukDeposu.ac(dizin);
     const goruntu = await DosyaGoruntuDeposu.ac(dizin);
+    const profil = await DosyaProfilDeposu.ac(dizin);
     return {
       gunluk: {
         ekle: (t) => gunluk.ekle(t),
         oku: (s) => gunluk.oku(s),
         kapat: async () => {
+          await profil.kapat(); // idempotent: yazar zaten kapatmış olabilir
           await gunluk.kapat();
           await kilidiBirak();
         },
       },
       goruntu,
+      profil,
+      /** Günlük dosyasının ve `goruntu/` dizinindeki dosyaların bayt toplamı. */
+      boyut: async () => {
+        const gunlukBayt = (await stat(join(dizin, GUNLUK_DOSYASI)).catch(() => ({ size: 0 }))).size;
+        let goruntuBayt = 0;
+        for (const ad of await readdir(join(dizin, GORUNTU_DIZINI)).catch(() => [] as string[])) goruntuBayt += (await stat(join(dizin, GORUNTU_DIZINI, ad)).catch(() => ({ size: 0 }))).size;
+        return { gunlukBayt, goruntuBayt };
+      },
     };
   } catch (e) {
     await kilidiBirak();

@@ -15,6 +15,8 @@
 import { z } from "zod";
 import type { Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi } from "./komut-sema";
+import { DonusOzetiSemasi } from "./donus";
+import type { DonusOzeti } from "./donus";
 import type { IlgiKaresi, KareDeltasi } from "./kare";
 
 /** Protokol biçim sürümü; uyuşmazsa sunucu bağlantıyı `KAPANIS.protokol` ile kapatır. */
@@ -98,6 +100,16 @@ export const KatilSemasi = z.object({
   ilce: z.string().min(1).max(64).optional(),
 });
 
+/**
+ * İstemci "Sen yokken" özetini gösterdi/onayladı (`Devam`, ekran açıldı): sunucu `ozetOkunduT`'yi `min(t, şimdi)` yapar ve
+ * `sonGorulen` çapasını o ana çeker (bir sonraki özet buradan başlar; ekran/çökme/yenileme sonrası özet kaybolmaz). Yanıt yoktur.
+ * `t`: istemcinin gördüğü sim zamanı (sunucu şimdiden ilerisini kabul etmez, geriye gideni yok sayar).
+ */
+export const OzetOkunduSemasi = z.object({
+  tur: z.literal("ozetOkundu"),
+  t: z.number().int().nonnegative().safe(),
+});
+
 export const ZamanIsteSemasi = z.object({
   tur: z.literal("zamanIste"),
   /** İstemcinin kendi saati (ör. performance.now()); yanıtta aynen döner. */
@@ -114,6 +126,7 @@ export const IstemciMesajiSemasi = z.discriminatedUnion("tur", [
   AboneSemasi,
   KomutMesajiSemasi,
   KatilSemasi,
+  OzetOkunduSemasi,
   ZamanIsteSemasi,
   OzetIsteSemasi,
   ZamanIlerletSemasi,
@@ -165,6 +178,11 @@ export type SunucuMesaji =
       yetisiyor?: boolean;
       /** Yetişme hedefi (sim ms; duvar saatinin şimdiki sim zamanı). Yalnız yetişirken. */
       hedefZamani?: Ms;
+      /**
+       * "Sen yokken" özeti (yalnız oyuncu kimliği, yetişme bitmiş, yokluk ≥ 1 sa ve oyuncunun başka açık bağlantısı yokken). Yetişme sürüyorsa
+       * yoktur: özet yetişme bitince ayrı `donusOzeti` mesajıyla gelir.
+       */
+      donusOzeti?: DonusOzeti;
       dizin: Dizin;
     }
   /** Tam kare (abonelikten sonra ve gerektiğinde). `rev` bağlantı başına artan kare sürümüdür. */
@@ -184,6 +202,11 @@ export type SunucuMesaji =
    * (`yetisiyor: false`) gönderilir. `simZamani` dünyanın şimdiki zamanı, `hedefZamani` ulaşılacak sim zamanıdır.
    */
   | { tur: "durum"; yetisiyor: boolean; simZamani: Ms; hedefZamani: Ms }
+  /**
+   * Yetişme sürerken bağlanan oyuncuya, yetişme bitince bir kez: "Sen yokken" özeti (bkz. `DonusOzeti`). Yetişme bitmişken bağlananlara
+   * özet `hosgeldin.donusOzeti` ile gelir ve bu mesaj gönderilmez. Bant K0 ise (yokluk < 1 sa) hiç gönderilmez.
+   */
+  | { tur: "donusOzeti"; ozet: DonusOzeti }
   | { tur: "hata"; kod: HataKodu; mesaj: string; anahtar?: string; istek?: number };
 
 // İstemci tarafı doğrulama için sunucu mesajı şemaları (kare içeriği yapısal olarak denetlenir).
@@ -304,6 +327,7 @@ export const SunucuMesajiSemasi = z.discriminatedUnion("tur", [
     hiz: z.number(),
     yetisiyor: z.boolean().optional(),
     hedefZamani: tam.optional(),
+    donusOzeti: DonusOzetiSemasi.optional(),
     dizin: dizinSemasi,
   }),
   z.object({ tur: z.literal("kare"), rev: tam, seq: tam, ilgi: z.array(tam), ilceIlgisi: z.array(z.string()).optional(), kare: IlgiKaresiSemasi }),
@@ -320,6 +344,7 @@ export const SunucuMesajiSemasi = z.discriminatedUnion("tur", [
   z.object({ tur: z.literal("zaman"), istemciGonderim: z.number(), sunucuDuvar: z.number(), simZamani: tam, hiz: z.number(), yayin: z.boolean().optional() }),
   z.object({ tur: z.literal("ozet"), istek: tam.optional(), t: tam, seq: tam, durumOzeti: z.string() }),
   z.object({ tur: z.literal("durum"), yetisiyor: z.boolean(), simZamani: tam, hedefZamani: tam }),
+  z.object({ tur: z.literal("donusOzeti"), ozet: DonusOzetiSemasi }),
   z.object({
     tur: z.literal("hata"),
     kod: z.enum(["gecersiz_mesaj", "protokol_surumu", "kimlik", "kural_surumu", "sira", "yetki", "hiz_siniri", "gecersiz_ilgi", "kapaniyor", "ic_hata", "yetisiyor"]),

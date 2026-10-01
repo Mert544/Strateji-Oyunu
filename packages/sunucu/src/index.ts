@@ -12,8 +12,16 @@ export { DuvarSaati, ElleSaat, TURKIYE_OFSETI_MS, VARSAYILAN_DUNYA_EPOCH_MS, tur
 export type { DuvarSaatiSecenekleri, Saat } from "./saat";
 export { bellekDeposu, BellekGunlukDeposu, BellekGoruntuDeposu } from "./depo/bellek";
 export { dosyaDeposu, DosyaGunlukDeposu, DosyaGoruntuDeposu } from "./depo/dosya";
-export { postgresDeposu, postgresSemasiKur } from "./depo/postgres";
+export { postgresDeposu, postgresSemasiKur, postgresSemaSurumu, SQL_SEMA_SURUMU } from "./depo/postgres";
 export type { PostgresSecenekleri } from "./depo/postgres";
 export { SEMA_SURUMU } from "./depo/tipler";
 export type { AnlikGoruntuKaydi, Depo, GoruntuDeposu, GoruntuEki, GunlukDeposu, GunlukKaydi, IdempotansGirdisi } from "./depo/tipler";
 export { parselDosyasiYukle } from "./parsel-dosya";
+export { donusOzeti, donusBandi, VARSAYILAN_DONUS_ESIKLERI } from "./donus/ozet";
+export type { DonusEsikleri, DonusGirdisi } from "./donus/ozet";
+export { oyuncuAnligi } from "./donus/anlik";
+export { OzetIzleyici } from "./donus/izleyici";
+export { BellekProfilDeposu } from "./depo/bellek";
+export { DosyaProfilDeposu } from "./depo/dosya";
+export { OZET_KAYIT_OMRU_MS, OZET_KAYIT_TAVANI, ozetKaydiAnahtari } from "./depo/tipler";
+export type { Capa, OzetKaydi, ProfilDeposu, SonGorulen } from "./depo/tipler";

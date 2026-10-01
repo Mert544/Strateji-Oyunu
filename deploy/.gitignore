@@ -1,0 +1,4 @@
+# Gercek sirlar: yalniz .env.ornek (yer tutucu) git'e girer.
+.env
+*.dump
+*.dump.sha256

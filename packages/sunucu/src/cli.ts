@@ -50,8 +50,18 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --goruntu-saat N     anlik goruntu araligi, sim-saat (vars. 6)
   --hiz-siniri K/S     oyuncu basina token-kova: kapasite/saniyede jeton (vars. 20/5)
   --botlar A,B         sunucu botlari (arketip; i. bot haritadaki i. devletin bolgeleriyle katilir)
+  --metrik-port N      ayri metrik HTTP portu (/metrik Prometheus metni, /saglik, /hazir); verilmezse metrik ucu kapali.
+                       Varsayilan adres 127.0.0.1; loopback disi --metrik-host icin --metrik-token (>= 16 karakter) zorunlu
+  --metrik-host H      (vars. 127.0.0.1)
+  --metrik-token T     /metrik icin Bearer token ($BOLGE_METRIK_TOKEN)
+  --uretim             uretim kipi ($BOLGE_URETIM=1): gelistirme sirri acikca (>= 16 karakter) verilmeli, --elle-saat yasak
   --gelistirme-sirri S gelistirme token imza sirri (vars. $BOLGE_GELISTIRME_SIRRI)
-  --token OYUNCU       bu oyuncu icin gelistirme token'i yaz ve cik ("sistem" = yonetici)`;
+  --token OYUNCU       bu oyuncu icin gelistirme token'i yaz ve cik ("sistem" = yonetici)
+
+Ortam degiskenleri: her secenek BOLGE_<AD> ile de verilir (bayrak ortamdan ustundur): BOLGE_PORT, BOLGE_HOST, BOLGE_HARITA,
+BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_TOHUM, BOLGE_DEPO, BOLGE_DIZIN, BOLGE_PG_URL, BOLGE_DUNYA, BOLGE_HIZ, BOLGE_ELLE_SAAT (1),
+BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT,
+BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI.`;
 
 function yaz(olay: string, veri: Record<string, unknown> = {}): void {
   process.stdout.write(JSON.stringify({ olay, ...veri }) + "\n");
@@ -82,6 +92,15 @@ function botlarKur(veri: VeriPaketi, liste: string): SunucuBotu[] {
   });
 }
 
+/** Ortam değişkeni `BOLGE_<AD>` (yoksa varsayılan); bayraklar ortamdan üstündür (parseArgs varsayılanı olarak verilir). */
+const ev = (ad: string, d?: string): string | undefined => {
+  const v = process.env[`BOLGE_${ad}`];
+  return v !== undefined && v !== "" ? v : d;
+};
+const evBool = (ad: string): boolean => ["1", "true", "evet"].includes((process.env[`BOLGE_${ad}`] ?? "").toLowerCase());
+/** Tanımsızsa seçeneğe `default` eklenmez (parseArgs dize varsayılanı ister). */
+const varsayilan = (d: string | undefined): { default: string } | Record<string, never> => (d !== undefined ? { default: d } : {});
+
 async function ana(): Promise<void> {
   // `pnpm sunucu -- --port 0` biçiminde gelen baştaki "--" atılır.
   const argv = process.argv.slice(2);
@@ -89,27 +108,31 @@ async function ana(): Promise<void> {
   const { values: a } = parseArgs({
     args: argv,
     options: {
-      port: { type: "string", default: "8787" },
-      host: { type: "string", default: "127.0.0.1" },
-      harita: { type: "string", default: "sentetik" },
-      parsel: { type: "boolean", default: false },
-      "parsel-dosya": { type: "string" },
-      tohum: { type: "string", default: "1" },
-      depo: { type: "string", default: "dosya" },
-      dizin: { type: "string", default: "raporlar/dunya" },
+      port: { type: "string", default: ev("PORT", "8787") as string },
+      host: { type: "string", default: ev("HOST", "127.0.0.1") as string },
+      harita: { type: "string", default: ev("HARITA", "sentetik") as string },
+      parsel: { type: "boolean", default: evBool("PARSEL") },
+      "parsel-dosya": { type: "string", ...varsayilan(ev("PARSEL_DOSYA")) },
+      tohum: { type: "string", default: ev("TOHUM", "1") as string },
+      depo: { type: "string", default: ev("DEPO", "dosya") as string },
+      dizin: { type: "string", default: ev("DIZIN", "raporlar/dunya") as string },
       "pg-url": { type: "string" },
-      dunya: { type: "string", default: "ana" },
-      hiz: { type: "string", default: "1" },
-      "elle-saat": { type: "boolean", default: false },
-      birikimli: { type: "boolean", default: false },
-      goc: { type: "boolean", default: false },
-      "goc-esnek": { type: "boolean", default: false },
-      "goc-eski-tablo": { type: "string" },
-      "dunya-epoch": { type: "string" },
-      "commit-ms": { type: "string", default: "75" },
-      "goruntu-saat": { type: "string", default: "6" },
-      botlar: { type: "string", default: "" },
-      "hiz-siniri": { type: "string", default: "20/5" },
+      dunya: { type: "string", default: ev("DUNYA", "ana") as string },
+      hiz: { type: "string", default: ev("HIZ", "1") as string },
+      "elle-saat": { type: "boolean", default: evBool("ELLE_SAAT") },
+      birikimli: { type: "boolean", default: evBool("BIRIKIMLI") },
+      goc: { type: "boolean", default: evBool("GOC") },
+      "goc-esnek": { type: "boolean", default: evBool("GOC_ESNEK") },
+      "goc-eski-tablo": { type: "string", ...varsayilan(ev("GOC_ESKI_TABLO")) },
+      "dunya-epoch": { type: "string", ...varsayilan(ev("DUNYA_EPOCH")) },
+      "commit-ms": { type: "string", default: ev("COMMIT_MS", "75") as string },
+      "goruntu-saat": { type: "string", default: ev("GORUNTU_SAAT", "6") as string },
+      botlar: { type: "string", default: ev("BOTLAR", "") as string },
+      "hiz-siniri": { type: "string", default: ev("HIZ_SINIRI", "20/5") as string },
+      "metrik-port": { type: "string", ...varsayilan(ev("METRIK_PORT")) },
+      "metrik-host": { type: "string", default: ev("METRIK_HOST", "127.0.0.1") as string },
+      "metrik-token": { type: "string", ...varsayilan(ev("METRIK_TOKEN")) },
+      uretim: { type: "boolean", default: evBool("URETIM") },
       "gelistirme-sirri": { type: "string" },
       token: { type: "string" },
       yardim: { type: "boolean", default: false },
@@ -124,6 +147,13 @@ async function ana(): Promise<void> {
   if (a.token !== undefined) {
     process.stdout.write(gelistirmeTokeni(sir, a.token) + "\n");
     return;
+  }
+  if (a.uretim) {
+    if (process.env.BOLGE_GELISTIRME_SIRRI === undefined && a["gelistirme-sirri"] === undefined) throw new Error("uretim kipi: BOLGE_GELISTIRME_SIRRI (ya da --gelistirme-sirri) acikca verilmeli");
+    if (sir.length < 16 || sir === "gelistirme-sirri-degistir" || sir.startsWith("degistir")) throw new Error("uretim kipi: gelistirme sirri en az 16 karakter olmali ve varsayilan/ornek ('degistir...') deger olmamali");
+    const mt = a["metrik-token"];
+    if (mt !== undefined && mt.startsWith("degistir")) throw new Error("uretim kipi: metrik token'i ornek ('degistir...') deger olmamali");
+    if (a["elle-saat"]) throw new Error("uretim kipi: --elle-saat yasak");
   }
   const sayi = (ad: string, d: string | undefined): number => {
     const n = Number(d);
@@ -185,9 +215,9 @@ async function ana(): Promise<void> {
     port: Math.trunc(sayi("port", a.port)),
     host: a.host as string,
     hizSiniri: { kapasite: kapasite ?? 20, saniyeBasina: saniyeBasina ?? 5 },
+    ...(a["metrik-port"] !== undefined ? { metrik: { port: Math.trunc(sayi("metrik-port", a["metrik-port"])), host: a["metrik-host"] as string, ...(a["metrik-token"] !== undefined ? { token: a["metrik-token"] } : {}) } } : {}),
   });
   yazar.uyari((m) => yaz("uyari", { mesaj: m }));
-  yaz("hazir", { port: sunucu.port, pid: process.pid, kuralSurumu: yazar.kuralSurumu, kurtarma: yazar.kurtarma });
 
   let kapaniyor = false;
   const kapat = (sinyal: string): void => {
@@ -206,6 +236,8 @@ async function ana(): Promise<void> {
   };
   process.on("SIGINT", () => kapat("SIGINT"));
   process.on("SIGTERM", () => kapat("SIGTERM"));
+  // `hazir` sinyal işleyicileri kurulduktan SONRA yazılır: hazir görüldükten hemen sonra gelen SIGTERM düzgün kapanışa gider.
+  yaz("hazir", { port: sunucu.port, metrikPort: sunucu.metrikPort, pid: process.pid, kuralSurumu: yazar.kuralSurumu, kurtarma: yazar.kurtarma });
 }
 
 ana().catch((e: unknown) => {

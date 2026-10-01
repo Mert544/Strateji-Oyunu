@@ -5,3 +5,4 @@
 export { KomutSemasi } from "./komut-sema";
 export * from "./mesajlar";
 export * from "./kare";
+export * from "./donus";

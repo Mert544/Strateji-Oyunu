@@ -1,0 +1,22 @@
+# deploy/Dockerfile icin derleme baglami (depo koku). Gizli dosyalar ve buyuk/gereksiz dizinler imaja girmez.
+**/node_modules
+.git
+.env
+.env.*
+**/*.log
+raporlar
+docs
+istemci
+izleyici
+**/dist
+# Sunucunun gerektirmedigi buyuk paketlerde yalniz package.json (pnpm-lock importer tutarliligi icin) kalir.
+packages/istemci/*
+!packages/istemci/package.json
+packages/veri-hatti/*
+!packages/veri-hatti/package.json
+packages/olcum/*
+!packages/olcum/package.json
+packages/izleyici/*
+!packages/izleyici/package.json
+# Testler ve fikstur uretim betikleri imaja gerekmez.
+packages/*/test

@@ -124,10 +124,15 @@ describe("dosya deposu", () => {
 
 const PG = process.env.BOLGE_PG_URL;
 describe.skipIf(!PG)("postgres deposu (BOLGE_PG_URL)", () => {
-  it("icerik gocu henuz desteklenmiyor: yedekle acik hatayla reddeder (snapshots birincil anahtari ayni seq/zamana izin vermez)", async () => {
-    const depo = await postgresDeposu({ baglanti: PG as string, dunya: `goc-${Date.now()}`, semaKur: true });
+  it("yedekle: kaynak goruntu satiri yoksa firlatir (goc durur); varsa snapshot_yedek etiketini doner", async () => {
+    const dunya = `yedek-${process.pid}-${Date.now()}`;
+    const depo = await postgresDeposu({ baglanti: PG as string, dunya, semaKur: true });
     try {
-      await expect(depo.goruntu.yedekle?.(goruntu(0, 0), "goc-x")).rejects.toThrow(/pg deposunda icerik gocu henuz desteklenmiyor/);
+      await expect(depo.goruntu.yedekle?.(goruntu(0, 0), "goc-x")).rejects.toThrow(/yedeklenecek goruntu satiri yok/);
+      await depo.goruntu.kaydet(goruntu(0, 0));
+      expect(await depo.goruntu.yedekle?.(goruntu(0, 0), "goc-x")).toBe(`pg:snapshot_yedek:${dunya}:goc-x`);
+      await depo.havuz.query("DELETE FROM snapshots WHERE dunya = $1", [dunya]);
+      await depo.havuz.query("DELETE FROM snapshot_yedek WHERE dunya = $1", [dunya]);
     } finally {
       await depo.gunluk.kapat();
     }

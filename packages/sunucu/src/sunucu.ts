@@ -2,6 +2,7 @@
  * WebSocket ağ geçidi (`ws`): el sıkışma, kimlik, ilgi alanı, komut iletimi, hız sınırı ve kare/delta yayını.
  * Dünya durumuna yalnız `DunyaYazari` dokunur; bu katman okur (kare çıkarır) ve komutları yazara iletir.
  */
+import { createServer } from "node:http";
 import { WebSocketServer } from "ws";
 import type { WebSocket } from "ws";
 import type { AddressInfo } from "node:net";
@@ -20,6 +21,8 @@ import {
 } from "@bolge/protokol";
 import type { HataKodu, IlgiKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
 import { HizSiniri, VARSAYILAN_HIZ_SINIRI } from "./hiz-siniri";
+import { metrikMetni, metrikSunucusuBaslat, saglikYaniti } from "./metrik";
+import type { MetrikSecenekleri, MetrikSunucusu, SaglikDurumu } from "./metrik";
 import type { HizSiniriSecenekleri } from "./hiz-siniri";
 import type { Kimlik, KimlikDogrulayici } from "./kimlik";
 import { ElleSaat } from "./saat";
@@ -51,6 +54,11 @@ export interface SunucuSecenekleri {
   zamanYayinAraligiMs?: number;
   /** Yayın aralığının duvar saati kaynağı (ms; testler sahte saat verir). Varsayılan `performance.now`. */
   duvarMs?: () => number;
+  /**
+   * Ayrı metrik HTTP sunucusu (`/metrik` Prometheus metni, `/saglik`, `/hazir`); verilmezse kapalı. Varsayılan adres 127.0.0.1; loopback
+   * dışı adres token ister (bkz. `metrik.ts`). `/saglik` ve `/hazir` ana portta da sunulur (konteyner healthcheck).
+   */
+  metrik?: MetrikSecenekleri;
   /** Gönderim tamponu bu kadarı aşarsa delta atlanır, sonraki yayında tam kare gider. Varsayılan 4 MiB. */
   enCokTampon?: number;
 }
@@ -70,6 +78,10 @@ interface Baglanti {
   ayrilmis: boolean;
   /** Mülk kipi: ilçe karelerine kamu arsası grupları da gelsin (abone mesajındaki `kamu`). */
   kamu: boolean;
+  /** Oyuncunun açık bağlantı sayacına dahil edildi mi (yönetici değil, merhaba tamam). */
+  sayildi: boolean;
+  /** Yetişme sürerken bağlandı: özet yetişme bitince `donusOzeti` mesajıyla gelecek. */
+  ozetBekliyor: boolean;
   sonKare: IlgiKaresi | null;
   rev: number;
   canli: boolean;
@@ -79,6 +91,12 @@ interface Baglanti {
 
 export interface CalisanSunucu {
   port: number;
+  /** Metrik sunucusunun portu (açıksa). */
+  readonly metrikPort: number | null;
+  /** Prometheus metin biçiminde şimdiki metrikler (metrik ucuyla aynı içerik). */
+  metrikMetni(): Promise<string>;
+  /** Sağlık durumu (`/saglik`, `/hazir`). */
+  saglik(): SaglikDurumu;
   readonly baglantiSayisi: number;
   /** Bağlantıları kapatır, yazarı durdurur (kuyruk yazılır, kapanış görüntüsü alınır). */
   kapat(): Promise<void>;
@@ -93,12 +111,82 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   const baglantilar = new Set<Baglanti>();
   let sonYayin = 0;
   let kapaniyor = false;
+  const baslangicOlcu = yazar.olcu();
+  const reddedilen = { hizSiniri: 0, yetisiyor: 0 };
 
-  const wss = new WebSocketServer({ port: s.port ?? 0, host: s.host ?? "127.0.0.1", maxPayload: EN_BUYUK_MESAJ_BAYT });
-  await new Promise<void>((coz, reddet) => {
-    wss.once("listening", coz);
-    wss.once("error", reddet);
+  function saglik(): SaglikDurumu {
+    const durum = yazar.olumculMu ? "olumcul" : kapaniyor ? "kapaniyor" : yazar.yetisiyor ? "yetisiyor" : "ok";
+    return { durum, seq: yazar.seq, simZamaniMs: yazar.sim.dunya.zaman };
+  }
+
+  // WebSocket (ws) ve `/saglik`, `/hazir` aynı HTTP sunucusunda; `/metrik` ana portta YOKTUR (ayrı, varsayılan localhost'a bağlı port).
+  const http = createServer((istek, yanit) => {
+    const yol = (istek.url ?? "/").split("?")[0] as string;
+    if (istek.method === "GET" && (yol === "/saglik" || yol === "/hazir")) {
+      const r = saglikYaniti(saglik(), yol);
+      yanit.writeHead(r.kod, { "content-type": "application/json", "cache-control": "no-store" });
+      yanit.end(r.govde);
+      return;
+    }
+    yanit.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    yanit.end("yok\n");
   });
+  const wss = new WebSocketServer({ server: http, maxPayload: EN_BUYUK_MESAJ_BAYT });
+  await new Promise<void>((coz, reddet) => {
+    http.once("listening", coz);
+    http.once("error", reddet);
+    http.listen(s.port ?? 0, s.host ?? "127.0.0.1");
+  });
+  const cpu0 = process.cpuUsage();
+  let depoOnbellek: { an: number; boyut: { gunlukBayt: number; goruntuBayt: number } | null } | null = null;
+
+  async function metrikMetniUret(): Promise<string> {
+    // Depo boyutu pahalı olabilir (dosya/pg): en çok 10 sn'de bir yenilenir.
+    if (!depoOnbellek || yazar.olcu() - depoOnbellek.an >= 10_000) depoOnbellek = { an: yazar.olcu(), boyut: await yazar.depoBoyutu().catch(() => null) };
+    const m = yazar.metrikler;
+    const d = yazar.yetismeDurumu();
+    const bellek = process.memoryUsage();
+    const cpu = process.cpuUsage(cpu0);
+    let bagliOyuncu = 0;
+    for (const n of canli.values()) bagliOyuncu += n;
+    return metrikMetni({
+      baglanti: baglantilar.size,
+      bagliOyuncu,
+      komutTamam: m.komutTamam,
+      komutBasarisiz: m.komutBasarisiz,
+      reddedilen,
+      tur: m.tur,
+      seq: yazar.seq,
+      simZamaniMs: yazar.sim.dunya.zaman,
+      bekleyenKomut: yazar.bekleyenSayisi,
+      yetisiyor: yazar.yetisiyor,
+      yetismeKalanMs: yazar.yetisiyor ? d.kalanMs : 0,
+      saatGerideMs: yazar.saat.gerideMs,
+      olumcul: yazar.olumculMu,
+      goruntuSayisi: m.goruntu,
+      goruntuHatasi: m.goruntuHatasi,
+      goruntuYasiSimMs: Math.max(0, yazar.sim.dunya.zaman - yazar.sonGoruntuSimZamani),
+      goruntuYasiSaniye: Math.max(0, Math.round(((yazar.olcu() - (m.sonGoruntuOlcu ?? baslangicOlcu)) / 1000) * 1000) / 1000),
+      goruntuBayt: m.sonGoruntuBayt,
+      goruntuSureSonMs: Math.round(m.sonGoruntuSureMs * 10) / 10,
+      goruntuSureEnUzunMs: Math.round(m.enUzunGoruntuSureMs * 10) / 10,
+      depo: depoOnbellek.boyut,
+      commit: m.commit,
+      surec: { rssBayt: bellek.rss, heapBayt: bellek.heapUsed, cpuSaniye: Math.round(((cpu.user + cpu.system) / 1e6) * 1000) / 1000 },
+      calismaSaniye: Math.round(((yazar.olcu() - baslangicOlcu) / 1000) * 1000) / 1000,
+    });
+  }
+
+  let metrikSunucusu: MetrikSunucusu | null = null;
+  if (s.metrik) {
+    try {
+      metrikSunucusu = await metrikSunucusuBaslat(s.metrik, { metin: metrikMetniUret, saglik });
+    } catch (e) {
+      await new Promise<void>((coz) => wss.close(() => coz()));
+      await new Promise<void>((coz) => http.close(() => coz()));
+      throw e;
+    }
+  }
 
   function gonder(b: Baglanti, m: SunucuMesaji): void {
     if (b.ws.readyState === b.ws.OPEN) b.ws.send(JSON.stringify(m));
@@ -155,7 +243,25 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   // Yetişme (sunucu kapalıyken geçen süreyi işletme) durumu: kimliği doğrulanmış her bağlantıya bildirilir.
   yazar.yetismeDinle((d) => {
     for (const b of baglantilar) if (b.kimlik) gonder(b, { tur: "durum", yetisiyor: d.yetisiyor, simZamani: d.simZamani, hedefZamani: d.hedefZamani });
+    // Yetişme sürerken bağlanan oyunculara "Sen yokken" özeti yetişme bitince (durum mesajından sonra) bir kez gelir.
+    if (!d.yetisiyor) void bekleyenOzetleriGonder();
   });
+
+  /** Oyuncu başına açık bağlantı sayısı (yönetici hariç): son bağlantı kapanınca çıkış çapası yazılır. */
+  const canli = new Map<string, number>();
+
+  async function bekleyenOzetleriGonder(): Promise<void> {
+    for (const b of [...baglantilar]) {
+      if (!b.ozetBekliyor || !b.kimlik || b.kimlik.yonetici) continue;
+      b.ozetBekliyor = false;
+      try {
+        const ozet = await yazar.donusOzeti(b.kimlik.oyuncu);
+        if (ozet) gonder(b, { tur: "donusOzeti", ozet });
+      } catch {
+        // özet isteğe bağlıdır: üretilemezse oyun etkilenmez
+      }
+    }
+  }
 
   /** İstemcinin eşitleneceği sim zamanı: yetişirken dünyanın şimdiki zamanı, değilse saatin hedefi. */
   function zamanBilgisi(): number {
@@ -212,9 +318,11 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     const yeniAnahtar = !yazar.anahtarVarMi(oyuncu, istemci, anahtar);
     // Yetişirken yeni komut kuyruklanmaz, reddedilir (hız sınırı jetonu da harcanmaz); işlenmiş anahtarlar ilk sonuçla yanıtlanır.
     if (yeniAnahtar && yazar.yetisiyor) {
+      reddedilen.yetisiyor++;
       return hata(b, "yetisiyor", "sunucu kapaliyken gecen sureyi yetistiriyor; 'durum' mesaji bitisi bildirince ayni anahtarla yeniden deneyin", { anahtar });
     }
     if (yeniAnahtar && !hizSiniri.al(k.oyuncu)) {
+      reddedilen.hizSiniri++;
       return hata(b, "hiz_siniri", "cok fazla komut; biraz bekleyip ayni anahtarla yeniden deneyin", { anahtar });
     }
     yazar.komutGonder(oyuncu, istemci, anahtar, komut).then(
@@ -229,6 +337,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     if (m.komut.tur === "oyuncu_katil" && !k.yonetici) {
       return hata(b, "yetki", "oyuncu_katil yalniz yonetici (oyuncu kendi katilimi icin 'katil' mesajini kullanir)", { anahtar: m.anahtar });
     }
+    if (m.komut.tur === "sistem_odul" && !k.yonetici) return hata(b, "yetki", "sistem_odul yalniz yonetici", { anahtar: m.anahtar });
     yazaraIlet(b, k, oyuncu, b.istemci, m.anahtar, m.komut);
   }
 
@@ -261,6 +370,16 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       }
       b.kimlik = k;
       b.istemci = m.istemciKimligi;
+      // "Sen yokken" özeti: yalnız oyuncu, yetişme bitmiş ve oyuncunun başka açık bağlantısı yokken; yetişiyorsa bitince mesajla.
+      let donusOzeti: Awaited<ReturnType<typeof yazar.donusOzeti>> = null;
+      if (!k.yonetici) {
+        if ((canli.get(k.oyuncu) ?? 0) === 0) {
+          if (yazar.yetisiyor) b.ozetBekliyor = true;
+          else donusOzeti = await yazar.donusOzeti(k.oyuncu).catch(() => null);
+        }
+        canli.set(k.oyuncu, (canli.get(k.oyuncu) ?? 0) + 1);
+        b.sayildi = true;
+      }
       gonder(b, {
         tur: "hosgeldin",
         protokolSurumu: PROTOKOL_SURUMU,
@@ -271,6 +390,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
         seq: yazar.seq,
         hiz: yazar.saat.hiz,
         ...(yazar.yetisiyor ? { yetisiyor: true, hedefZamani: yazar.yetismeDurumu().hedefZamani } : {}),
+        ...(donusOzeti ? { donusOzeti } : {}),
         dizin: yazar.dizin(),
       });
       return;
@@ -288,6 +408,9 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
         return komutAl(b, k, m);
       case "katil":
         return katilAl(b, k, m);
+      case "ozetOkundu":
+        if (!k.yonetici) await yazar.ozetOkundu(k.oyuncu, m.t);
+        return;
       case "zamanIste":
         return gonder(b, { tur: "zaman", istemciGonderim: m.istemciGonderim, sunucuDuvar: Date.now(), simZamani: zamanBilgisi(), hiz: yazar.saat.hiz });
       case "ozetIste": {
@@ -307,7 +430,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   }
 
   wss.on("connection", (ws) => {
-    const b: Baglanti = { ws, kimlik: null, istemci: "", istenen: [], istenenIlceler: [], abone: false, ayrilmis: false, kamu: false, sonKare: null, rev: 0, canli: true, zincir: Promise.resolve() };
+    const b: Baglanti = { ws, kimlik: null, istemci: "", istenen: [], istenenIlceler: [], abone: false, ayrilmis: false, kamu: false, sayildi: false, ozetBekliyor: false, sonKare: null, rev: 0, canli: true, zincir: Promise.resolve() };
     baglantilar.add(b);
     const zamanAsimi = setTimeout(() => {
       if (!b.kimlik) ws.close(KAPANIS.zamanAsimi, "merhaba zaman asimi");
@@ -325,6 +448,17 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     ws.on("close", () => {
       clearTimeout(zamanAsimi);
       baglantilar.delete(b);
+      if (b.sayildi && b.kimlik) {
+        b.sayildi = false;
+        const oyuncu = b.kimlik.oyuncu;
+        const n = (canli.get(oyuncu) ?? 1) - 1;
+        if (n > 0) canli.set(oyuncu, n);
+        else {
+          canli.delete(oyuncu);
+          // Son bağlantı kapandı: çıkış çapası (kapanış sırasında `kapat` zaten yazar).
+          if (!kapaniyor) void yazar.cikis(oyuncu).catch(() => undefined);
+        }
+      }
     });
     ws.on("error", () => ws.terminate());
   });
@@ -346,15 +480,25 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   yazar.baslat();
 
   return {
-    port: (wss.address() as AddressInfo).port,
+    port: (http.address() as AddressInfo).port,
+    get metrikPort() {
+      return metrikSunucusu?.port ?? null;
+    },
+    metrikMetni: metrikMetniUret,
+    saglik,
     get baglantiSayisi() {
       return baglantilar.size;
     },
     async kapat(): Promise<void> {
+      // Bağlı oyuncuların çıkış çapaları (kapanışla gelen kopma olaylarından önce, yazar kapanmadan).
+      for (const oyuncu of [...canli.keys()]) await yazar.cikis(oyuncu).catch(() => undefined);
+      canli.clear();
       kapaniyor = true;
       clearInterval(bakim);
       for (const b of baglantilar) b.ws.close(KAPANIS.kapaniyor, "sunucu kapaniyor");
       await new Promise<void>((coz) => wss.close(() => coz()));
+      await new Promise<void>((coz) => http.close(() => coz()));
+      await metrikSunucusu?.kapat();
       await yazar.kapat();
     },
   };

@@ -12,69 +12,19 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { SAAT, SISTEM_OYUNCUSU, kuralSurumuHesapla } from "@bolge/cekirdek";
-import type { CekirdekVeriPaketi, IcerikKimlikTablosu, Komut } from "@bolge/cekirdek";
+import type { IcerikKimlikTablosu, Komut } from "@bolge/cekirdek";
 import { bellekDeposu } from "../src/depo/bellek";
 import { dosyaDeposu } from "../src/depo/dosya";
-import type { Depo } from "../src/depo/tipler";
 import { ElleSaat } from "../src/saat";
-import { DunyaYazari } from "../src/yazar";
-import type { YazarSecenekleri } from "../src/yazar";
+import { ac, arayaMal, eskiDunya, sonaMal } from "./goc-yardimci";
 import { GUNEY, KUZEY, veri } from "./yardimci";
 
-const TOHUM = 5;
 const KOK = fileURLToPath(new URL("../../../", import.meta.url));
 const CLI = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 
-/** İçeriğe SONA bir mal ekler (yalnız-ekle: yeni kimlik; mevcut indeksler değişmez). */
-function sonaMal(): CekirdekVeriPaketi {
-  const v = veri();
-  v.icerik.mallar.push({ id: "titanyum", ad: "Titanyum", kategori: "ara", tabanFiyat: 45_000, lojistikOnceligi: 9, bozulmaPpmGun: 0 });
-  return v;
-}
-
-/** İçeriğe ARAYA bir mal ekler (indeksler kayar: yalnız-ekle ihlali). */
-function arayaMal(): CekirdekVeriPaketi {
-  const v = veri();
-  v.icerik.mallar.splice(3, 0, { id: "titanyum", ad: "Titanyum", kategori: "ara", tabanFiyat: 45_000, lojistikOnceligi: 9, bozulmaPpmGun: 0 });
-  return v;
-}
-
-function komutlar(adim: number): Array<[string, Komut]> {
-  return [
-    ["ali", { tur: "vergi_ayarla", oranPpm: 80_000 + adim * 1_000 }],
-    ["ali", { tur: "tesis_insa", bolge: KUZEY[adim % 3] as string, tesisTuru: adim % 2 ? "ciftlik" : "gida_fabrikasi" }],
-    ["veli", { tur: "savunma_emri", bolge: GUNEY[adim % 3] as string, durus: adim % 2 ? "savunma" : "normal" }],
-  ];
-}
-
-async function ac(depo: Depo, v: CekirdekVeriPaketi, saat: ElleSaat, ek: Partial<YazarSecenekleri> = {}): Promise<DunyaYazari> {
-  return DunyaYazari.ac({ veri: v, tohum: TOHUM, depo, saat, commitAraligiMs: 15, goruntuAraligiMs: 1e12, ...ek });
-}
-
-/** Eski içerikle dünya kurar, 30 sim-saat koşturur, düzgün kapatır (kapanış görüntüsü; kuyruk boş). */
-async function eskiDunya(depo: ReturnType<typeof bellekDeposu> = bellekDeposu()): Promise<{ depo: ReturnType<typeof bellekDeposu>; t: number; ozet: string; seq: number }> {
-  const saat = new ElleSaat();
-  const y = await ac(depo, veri(), saat);
-  let n = 0;
-  const gonder = async (o: string, k: Komut): Promise<void> => {
-    const p = y.komutGonder(o, "test", `a${n++}`, k);
-    await y.birTur();
-    await p;
-  };
-  await gonder(SISTEM_OYUNCUSU, { tur: "oyuncu_katil", oyuncu: "ali", bolgeler: KUZEY });
-  await gonder(SISTEM_OYUNCUSU, { tur: "oyuncu_katil", oyuncu: "veli", bolgeler: GUNEY });
-  for (let adim = 1; adim <= 10; adim++) {
-    saat.ilerlet(adim * 3 * SAAT);
-    for (const [o, k] of komutlar(adim)) await gonder(o, k);
-  }
-  const ozet = y.ozet();
-  await y.kapat();
-  return { depo, t: ozet.t, ozet: ozet.durumOzeti, seq: ozet.seq };
-}
-
 describe("zarf v1 goruntuden kurtarma (kural ayni)", () => {
   it("v2 goruntunun tablosuz/surum 1 hali (dunya ve ozet bayt bayt ayni) bayraksiz acilir; ozet ayni", async () => {
-    const e = await eskiDunya();
+    const e = await eskiDunya(bellekDeposu());
     const g = await e.depo.goruntu.sonuncu();
     expect(g).not.toBeNull();
     const zarf = JSON.parse((g as NonNullable<typeof g>).metin) as Record<string, unknown>;
@@ -125,7 +75,7 @@ describe("zarf v1 goruntuden kurtarma (kural ayni)", () => {
 
 describe("icerik gocu: --goc / gocIzni", () => {
   it("bayraksiz (varsayilan) kural surumu degismisse hata; veri dokunulmaz", async () => {
-    const e = await eskiDunya();
+    const e = await eskiDunya(bellekDeposu());
     await expect(ac(e.depo, sonaMal(), new ElleSaat())).rejects.toThrow(/kural surumu uyusmuyor/);
     // Eski içerikle açılış hala çalışır.
     const y = await ac(e.depo, veri(), new ElleSaat());
@@ -134,7 +84,7 @@ describe("icerik gocu: --goc / gocIzni", () => {
   });
 
   it("bayrakla sona eklenmis icerik goc eder: rapor, ozet denetimi, hemen yeni goruntu, ikinci acilista goc yok", async () => {
-    const e = await eskiDunya();
+    const e = await eskiDunya(bellekDeposu());
     const eskiKural = kuralSurumuHesapla(veri());
     const yeniKural = kuralSurumuHesapla(sonaMal());
     expect(yeniKural).not.toBe(eskiKural);
@@ -196,7 +146,7 @@ describe("icerik gocu: --goc / gocIzni", () => {
   });
 
   it("yalnizEkleZorunlu varsayilan acik: araya ekleme reddedilir; kapaliyken (gelistirme) rapora yazilir", async () => {
-    const e = await eskiDunya();
+    const e = await eskiDunya(bellekDeposu());
     await expect(ac(e.depo, arayaMal(), new ElleSaat(), { gocIzni: true })).rejects.toThrow(/yalniz-ekle ihlali/);
     const y = await ac(e.depo, arayaMal(), new ElleSaat(), { gocIzni: true, yalnizEkleZorunlu: false });
     expect(y.kurtarma.goc).toMatchObject({ yenidenIndekslendi: true, yalnizEkle: false, eklenenSayisi: 1 });
@@ -205,7 +155,7 @@ describe("icerik gocu: --goc / gocIzni", () => {
   });
 
   it("ust verideki ozet bozuksa goc de reddedilir (eskiDurumOzeti'ne karsi); gocIzni kural ayniyken etkisizdir", async () => {
-    const e = await eskiDunya();
+    const e = await eskiDunya(bellekDeposu());
     const g = (await e.depo.goruntu.sonuncu())!;
     const bozuk = bellekDeposu();
     await bozuk.goruntu.kaydet({ ...g, durumOzeti: "0000000000000000" });
@@ -306,7 +256,7 @@ describe("goc yedegi: dosya deposu", () => {
   });
 
   it("yedekleme basarisizsa goc durur: dunya, goruntu ve gunluk degismez", async () => {
-    const e = await eskiDunya();
+    const e = await eskiDunya(bellekDeposu());
     const g0 = await e.depo.goruntu.sonuncu();
     const sayi0 = e.depo.goruntu.sayi;
     e.depo.goruntu.yedekle = async () => {

@@ -83,6 +83,14 @@ describe("katil mesaji", () => {
     expect(ts.yazar.sim.dunya.oyuncular.map((o) => o.id)).toEqual(["ali"]);
   });
 
+  it("sistem_odul yalniz yonetici: oyuncudan yetki hatasi (tutar tasimaz komut)", async () => {
+    ts = await testSunucusu({ veri: mulkVerisi() });
+    const ali = await ts.baglan("ali");
+    const r = await ali.komut("o1", { tur: "sistem_odul", oyuncu: "ali", kavram: "ilk_hasat" });
+    expect(r.tur === "hata" && r.kod).toBe("yetki");
+    expect((await ts.depo.gunluk.oku(0)).some((k) => k.anahtar === "o1")).toBe(false);
+  });
+
   it("yalniz mulk kipinde gecerli: bolge kipinde gecersiz_mesaj", async () => {
     ts = await testSunucusu();
     const ali = await ts.baglan("ali");

@@ -84,9 +84,84 @@ export interface GoruntuDeposu {
   kapat(): Promise<void>;
 }
 
+/**
+ * Oyuncunun çıkış çapası ("sen yokken" net sonuç kıyası, docs/arastirma/donus-deneyimi.md §5.1): hazine, ticaret defteri kümülatif
+ * toplamları, stok ve üretim kümülatif özeti. Hepsi ham çekirdek birimi tamsayılarıdır (mili-para / mili-birim); mal kimliğine
+ * göre anahtarlıdır (içerik göçünde indeks kaymasından etkilenmez).
+ */
+export interface SonGorulen {
+  /** Çapanın alındığı sim zamanı. */
+  t: Ms;
+  hazine: number;
+  /** Ticaret defteri kümülatif toplamları (şimdilik ihracat, ithalat, komisyon, liman primi). */
+  defter: { brutIhracat: number; brutIthalat: number; komisyon: number; prim: number };
+  /** Mal kimliği -> oyuncunun bölgelerindeki stok toplamı. */
+  stok: Record<string, number>;
+  /** Mal kimliği -> oyuncunun bölgelerindeki kümülatif üretim. */
+  uretim: Record<string, number>;
+}
+
+/** Oyuncu profil çapaları: ikisi de çekirdek dışıdır (çekirdek durumuna, `durumOzeti`ne girmez). */
+export interface Capa {
+  sonGorulen?: SonGorulen;
+  /** Özetin gösterildiği/onaylandığı an (sim ms). */
+  ozetOkunduT?: Ms;
+}
+
+/**
+ * Oyuncu özet kaydı (D3): yalnız OLGU tutar (KVKK: ad ya da metin yok). `t` = olayın sim zamanı (yazılma zamanı değil).
+ * İdempotans anahtarı `(oyuncu, tur, t, sira)`: `sira` varlık sırasıdır (ör. inşaat kimliği); adım taneciğine ve günlük
+ * seq'ine bağlı değildir, bu yüzden canlı koşu, yetişme ve kurtarma yeniden oynatması aynı kaydı aynı anahtarla üretir.
+ */
+export interface OzetKaydi {
+  t: Ms;
+  tur: "insaat_bitti" | "siparis_geldi" | "satis_toplami";
+  /** İlçe (mülk kipi) ya da bölge kimliği; yoksa "". */
+  ilce: string;
+  degerler: (string | number)[];
+  /** Eylemi yapan taraf için gizlenmiş başvuru (şimdilik kullanılmaz; ad ASLA yazılmaz). */
+  aktorRef?: string;
+  sira: number;
+}
+
+/** Oyuncu başına en çok özet kaydı (halka) ve saklama süresi (sim ms): docs/arastirma/donus-deneyimi.md §5.3. */
+export const OZET_KAYIT_TAVANI = 200;
+export const OZET_KAYIT_OMRU_MS = 30 * 24 * 3_600_000;
+
+export function ozetKaydiAnahtari(k: Pick<OzetKaydi, "tur" | "t" | "sira">): string {
+  return `${k.tur}|${k.t}|${k.sira}`;
+}
+
+/**
+ * Oyuncu profili ve özet kayıtları (çekirdek dışı, yan kanal). `kayitEkle` idempotenttir (aynı anahtar bir kez), oyuncu başına
+ * halka `OZET_KAYIT_TAVANI`, ömür `OZET_KAYIT_OMRU_MS` (`simdi`'ye göre; daha eski kayıtlar atılır). Bellek, dosya ve pg depolarında aynı sözleşme (test/profil-sozlesmesi.ts).
+ */
+export interface ProfilDeposu {
+  capaOku(oyuncu: string): Promise<Capa | null>;
+  /** Verilen alanları üzerine yazar (diğerleri korunur). */
+  capaYaz(oyuncu: string, kismi: Capa): Promise<void>;
+  /** Eklenen (yeni) kayıt sayısını döndürür. */
+  kayitEkle(oyuncu: string, kayitlar: readonly OzetKaydi[], simdi: Ms): Promise<number>;
+  /** `t`'ye göre artan, sonra (tur, sira) sıralı. */
+  kayitOku(oyuncu: string): Promise<OzetKaydi[]>;
+  /** Yazılanları kalıcılaştırır (fsync); anlık görüntüden ÖNCE çağrılır. */
+  esitle(): Promise<void>;
+  kapat(): Promise<void>;
+}
+
+/** Depo boyutu (bayt): metrik için; pahalı olabilir, çağıran önbellekler. */
+export interface DepoBoyutu {
+  gunlukBayt: number;
+  goruntuBayt: number;
+}
+
 export interface Depo {
   gunluk: GunlukDeposu;
   goruntu: GoruntuDeposu;
+  /** İsteğe bağlı: depo boyutu (günlük ve görüntü). pg'de günlük boyutu tüm dünyaların `log` tablosudur. */
+  boyut?(): Promise<DepoBoyutu>;
+  /** İsteğe bağlı: yoksa (özel/eski bir depo) "sen yokken" özeti ve özet kayıtları kapalıdır. */
+  profil?: ProfilDeposu;
 }
 
 /** Ekleme öncesi ortak süreklilik denetimi: toplu içinde ve son seq'e göre +1 artış. */

@@ -4,6 +4,8 @@ import { MILI, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikMiktar } from "@bolge/cek
 import type { Komut } from "@bolge/cekirdek";
 import { miniVeriyiYukle } from "@bolge/veri";
 import {
+  DONUS_SABLON,
+  DonusOzetiSemasi,
   IlgiKaresiSemasi,
   KomutSemasi,
   PROTOKOL_SURUMU,
@@ -40,6 +42,7 @@ const HER_KOMUT: Komut[] = [
   { tur: "anlasma_feshet", karsi: "o", anlasma: "ortak_altyapi" },
   { tur: "yaptirim", hedef: "o", aktif: true },
   { tur: "oyuncu_katil", oyuncu: "o", bolgeler: ["a", "b"] },
+  { tur: "sistem_odul", oyuncu: "o", kavram: "ilk_hasat" },
 ];
 
 describe("mesaj semalari", () => {
@@ -89,6 +92,40 @@ describe("mesaj semalari", () => {
     const hos = { tur: "hosgeldin", protokolSurumu: PROTOKOL_SURUMU, kuralSurumu: "k", oyuncu: "o", yonetici: false, simZamani: 0, seq: 0, hiz: 1, dizin: { bolgeler: [], mallar: [], tesisTurleri: [], yontemler: [], birlikler: [], teknolojiler: [] } };
     expect(sunucuMesajiCoz(JSON.stringify(hos)).tamam).toBe(true);
     expect(sunucuMesajiCoz(JSON.stringify({ ...hos, yetisiyor: true, hedefZamani: 99 })).tamam).toBe(true);
+  });
+});
+
+describe("sen yokken (donus ozeti) mesajlari", () => {
+  const ozet = {
+    surum: 1 as const,
+    bant: "K2" as const,
+    aralik: { baslangicT: 3_600_000, bitisT: 36_000_000 },
+    net: { hazineFarki: -500, kalemler: { satis: 100, gider: -50, diger: -550 }, uretim: [{ mal: "tahil", miktar: 7 }] },
+    maddeler: [{ blok: "B2" as const, sablon: DONUS_SABLON.bittiInsaat, tohum: 12345, degerler: ["ciftlik", "ilceA"], git: { bolge: 2 }, onem: 600_000 }],
+    oneri: null,
+  };
+
+  it("DonusOzeti semasi: gecerli ozet kabul; metin yok; sablon anahtarlari sabit; bozuk alanlar reddedilir", () => {
+    expect(DonusOzetiSemasi.parse(ozet)).toEqual(ozet);
+    expect(Object.values(DONUS_SABLON)).toEqual(["donus.bitti.insaat", "donus.bitti.insaat.cok", "donus.gelen.siparis"]);
+    expect(DonusOzetiSemasi.safeParse({ ...ozet, bant: "K0" }).success).toBe(false);
+    expect(DonusOzetiSemasi.safeParse({ ...ozet, surum: 2 }).success).toBe(false);
+    expect(DonusOzetiSemasi.safeParse({ ...ozet, net: { ...ozet.net, hazineFarki: 1.5 } }).success).toBe(false);
+    expect(DonusOzetiSemasi.safeParse({ ...ozet, net: { ...ozet.net, uretim: Array.from({ length: 4 }, () => ({ mal: "x", miktar: 1 })) } }).success).toBe(false);
+    expect(DonusOzetiSemasi.safeParse({ ...ozet, maddeler: [{ ...ozet.maddeler[0], sablon: "serbest metin" }] }).success).toBe(false);
+  });
+
+  it("sunucu mesajlari: hosgeldin.donusOzeti (istege bagli) ve 'donusOzeti' mesaji; istemci 'ozetOkundu'", () => {
+    const hos = { tur: "hosgeldin", protokolSurumu: PROTOKOL_SURUMU, kuralSurumu: "k", oyuncu: "o", yonetici: false, simZamani: 0, seq: 0, hiz: 1, dizin: { bolgeler: [], mallar: [], tesisTurleri: [], yontemler: [], birlikler: [], teknolojiler: [] } };
+    expect(sunucuMesajiCoz(JSON.stringify(hos)).tamam).toBe(true); // eski biçim geçerli
+    expect(sunucuMesajiCoz(JSON.stringify({ ...hos, donusOzeti: ozet })).tamam).toBe(true);
+    expect(sunucuMesajiCoz(JSON.stringify({ ...hos, donusOzeti: { ...ozet, bant: "X" } })).tamam).toBe(false);
+    const m: SunucuMesaji = { tur: "donusOzeti", ozet };
+    expect(sunucuMesajiCoz(JSON.stringify(m))).toEqual({ tamam: true, mesaj: m });
+    expect(istemciMesajiCoz(JSON.stringify({ tur: "ozetOkundu", t: 36_000_000 })).tamam).toBe(true);
+    for (const kotu of [{ tur: "ozetOkundu" }, { tur: "ozetOkundu", t: -1 }, { tur: "ozetOkundu", t: 1.5 }, { tur: "ozetOkundu", t: "5" }]) {
+      expect(istemciMesajiCoz(JSON.stringify(kotu)).tamam).toBe(false);
+    }
   });
 });
 

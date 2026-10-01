@@ -39,7 +39,7 @@
  * yeniden oynatılamaz (`ekim_plani.ekimPpm` gibi komutlar indeks sırasına bağlıdır): bu yüzden göç REDDEDİLİR, günlük
  * oynatılmaz. Kural: kayıtta kural sürümü alanı olmasa da görüntü seq'inden sonra kayıt sayısı > 0 ise ret yeterlidir.
  * Göç yeni görüntüyü eskisiyle AYNI seq/sim zamanında yazar: bu yüzden eski görüntü ÖNCE `depo.goruntu.yedekle` ile ayrı ve kalıcı
- * saklanır (yoksa/alınamazsa göç durur; pg deposu şimdilik göçü açıkça reddeder). `kurtarma.goc.yedek` yedeğin yeridir.
+ * saklanır (yoksa/alınamazsa göç durur; pg: `snapshot_yedek` tablosu). `kurtarma.goc.yedek` yedeğin yeridir.
  * `yalnizEkleZorunlu` varsayılan AÇIK (içeriğe araya ekleme/yeniden sıralama üretimde reddedilir).
  *
  * Kurtarma: son anlık görüntü (`anlikGoruntudenYukle`: kural sürümü + zarf özeti denetimi; ek olarak üst verideki
@@ -51,7 +51,14 @@ import type { CekirdekVeriPaketi, IcerikKimlikTablosu, Komut, KomutSonucu, Ms, O
 import type { Bot } from "@bolge/botlar";
 import type { Dizin } from "@bolge/protokol";
 import { SEMA_SURUMU } from "./depo/tipler";
-import type { AnlikGoruntuKaydi, Depo, GunlukKaydi, IdempotansGirdisi } from "./depo/tipler";
+import type { AnlikGoruntuKaydi, Depo, GunlukKaydi, IdempotansGirdisi, OzetKaydi } from "./depo/tipler";
+import { oyuncuAnligi } from "./donus/anlik";
+import { OzetIzleyici } from "./donus/izleyici";
+import type { OyuncuKaydi } from "./donus/izleyici";
+import { donusOzeti } from "./donus/ozet";
+import type { DonusEsikleri } from "./donus/ozet";
+import type { DonusOzeti } from "@bolge/protokol";
+import { YazarMetrikleri } from "./metrik";
 import { VARSAYILAN_DUNYA_EPOCH_MS, turkiyeGeceYarisiMi } from "./saat";
 import type { Saat } from "./saat";
 
@@ -104,6 +111,13 @@ export interface YazarSecenekleri {
   gocEskiTablo?: IcerikKimlikTablosu;
   /** Göçte içerik yalnız SONA eklenebilir (araya ekleme/taşıma hata). Varsayılan true (üretim); yalnız geliştirmede false. */
   yalnizEkleZorunlu?: boolean;
+  /**
+   * "Sen yokken" özeti ve özet kayıtları (D1–D3): depoda `profil` varsa varsayılan AÇIK; `false` kapatır (test: sunum kapalıyken
+   * `durumOzeti` aynı olmalı). `esikler`: yokluk bant sınırları (parametre).
+   */
+  donus?: false | { esikler?: DonusEsikleri };
+  /** Ölçü saati (ms, monoton; commit gecikmesi ve görüntü yaşı için). Varsayılan `performance.now`; testler sahte saat verir. */
+  olcuSaati?: () => number;
   /** Yetişirken her adımdan sonra çağrılır (test/enstrümantasyon: söz döndürerek yetişmeyi bekletebilir). */
   yetismeAdimKancasi?: (d: YetismeDurumu) => void | Promise<void>;
 }
@@ -179,6 +193,8 @@ export interface KurtarmaRaporu {
    * arsası kuralı bu dünyada kapalıdır. Açılışta `uyari` olarak da bildirilir.
    */
   kamuKapali: boolean;
+  /** "Sen yokken" özeti/özet kayıtları açık mı (depoda `profil` var ve `donus !== false`). */
+  donusAcik: boolean;
   /** Açılışta üretilen uyarılar (aynı iletiler `uyari` dinleyicisine de gider). */
   uyarilar: string[];
   /** Açılışta duvar saatinin gerisinde kalan sim süresi (yetişilecek miktar; mutlak saat değilse 0). */
@@ -196,6 +212,8 @@ export interface TurOlayi {
 }
 
 interface Bekleyen {
+  /** Kuyruğa giriş anı (`olcuSaati`, ms): commit gecikmesi. */
+  gelis: number;
   t: Ms;
   oyuncu: OyuncuId;
   istemci: string;
@@ -238,6 +256,9 @@ export class DunyaYazari {
   private readonly enCokAdimMs: Ms;
   private readonly idempotansTavani: number;
   private readonly botKararAraligiMs: Ms;
+  /** Sağlık/metrik sayaçları (kişisel veri içermez). */
+  readonly metrikler = new YazarMetrikleri();
+  private readonly olcuFn: () => number;
   private readonly yetismeAdimMs: Ms;
   private readonly yetismeEsigiMs: Ms;
   private readonly yetismeGoruntuAraligiMs: Ms;
@@ -250,6 +271,16 @@ export class DunyaYazari {
   private readonly yetismeDinleyicileri: Array<(d: YetismeDurumu) => void> = [];
   private yetismeBekleyenleri: Array<() => void> = [];
   private saatGeride = false;
+  /** "Sen yokken" durumu (kapalıysa null): izleyici, yazılmayı bekleyen kayıtlar ve kirli (komut veren) oyuncular. */
+  private donus: {
+    izleyici: OzetIzleyici;
+    esikler?: DonusEsikleri;
+    bekleyen: OyuncuKaydi[];
+    kirli: Set<string>;
+    botlar: Set<string>;
+  } | null = null;
+  /** Profil deposu yazıları tek sırada (çapa/kayıt yarışmaz). */
+  private profilZinciri: Promise<unknown> = Promise.resolve();
   /** Açılışta üretilen, dinleyici bağlanınca teslim edilecek uyarılar. */
   private readonly acilisUyarilari: string[] = [];
   /** Son uygulanan (= son günlüğe yazılan) seq. */
@@ -284,6 +315,7 @@ export class DunyaYazari {
     this.enCokAdimMs = s.enCokAdimMs ?? 6 * SAAT;
     this.idempotansTavani = s.idempotansTavani ?? 20_000;
     this.botKararAraligiMs = s.botKararAraligiMs ?? 6 * SAAT;
+    this.olcuFn = s.olcuSaati ?? (() => performance.now());
     this.yetismeAdimMs = Math.max(1, Math.min(s.yetismeAdimMs ?? SAAT, this.enCokAdimMs));
     this.yetismeEsigiMs = s.yetismeEsigiMs ?? 60_000;
     this.yetismeGoruntuAraligiMs = s.yetismeGoruntuAraligiMs ?? 24 * SAAT;
@@ -362,6 +394,7 @@ export class DunyaYazari {
       dunyaEpochMs: null,
       goc,
       kamuKapali: false,
+      donusAcik: false,
       uyarilar: [],
       yetisecekMs: 0,
       saatGeriMs: 0,
@@ -370,15 +403,21 @@ export class DunyaYazari {
       y.idempotans.set(idempotansAnahtari(e.oyuncu, e.istemci, e.anahtar), { oyuncu: e.oyuncu, istemci: e.istemci, anahtar: e.anahtar, seq: e.seq, t: e.t, komut: e.komut, sonuc: e.tamam ? { tamam: true } : { tamam: false, hata: e.hata ?? "" }, bekleyenler: [] });
     }
     y.seqDegeri = seq;
+    await y.donusKur();
     for (const k of kalan) {
       if (k.seq !== y.seqDegeri + 1) throw new Error(`gunluk seq boslugu: ${y.seqDegeri} -> ${k.seq}`);
       if (k.kuralSurumu !== kuralSurumu) throw new Error(`gunluk kaydi ${k.seq} farkli kural surumuyle yazilmis: ${k.kuralSurumu}`);
+      y.donusOnce(k.t);
       const r = sim.uygula({ t: k.t, oyuncu: k.oyuncu, komut: k.komut });
+      y.donusKomutSonrasi(k.oyuncu, k.komut, r);
       if (!r.tamam) y.kurtarma.kalanBasarisiz++;
       y.seqDegeri = k.seq;
       y.idempotansYaz(idempotansAnahtari(k.oyuncu, k.istemci, k.anahtar), { oyuncu: k.oyuncu, istemci: k.istemci, anahtar: k.anahtar, seq: k.seq, t: k.t, komut: k.komut, sonuc: r, bekleyenler: [] });
     }
     y.yerlestir();
+    y.donusTara();
+    y.donusSinirIsle();
+    await y.donusYaz(true);
     y.sonDamga = sim.dunya.zaman;
     y.sonGoruntuZamani = g ? g.simZamani : sim.dunya.zaman;
     y.sonGoruntuSeq = g ? g.seq : 0;
@@ -434,6 +473,26 @@ export class DunyaYazari {
 
   get seq(): number {
     return this.seqDegeri;
+  }
+
+  /** Ölçü saati şimdi (ms). */
+  olcu(): number {
+    return this.olcuFn();
+  }
+
+  /** Depo boyutu (yoksa null); metrik için. */
+  async depoBoyutu(): Promise<{ gunlukBayt: number; goruntuBayt: number } | null> {
+    return (await this.s.depo.boyut?.()) ?? null;
+  }
+
+  /** Yazar ölümcül hatayla durdu mu (günlük yazılamadı). */
+  get olumculMu(): boolean {
+    return this.olumcul !== null;
+  }
+
+  /** Son görüntünün sim zamanı (hiç alınmadıysa açılış zamanı). */
+  get sonGoruntuSimZamani(): Ms {
+    return this.sonGoruntuZamani;
   }
 
   get bekleyenSayisi(): number {
@@ -523,7 +582,7 @@ export class DunyaYazari {
     this.sonDamga = t;
     const girdi: IdempotansKaydi = { oyuncu, istemci, anahtar, seq: 0, t, komut: structuredClone(komut), sonuc: null, bekleyenler: [] };
     this.idempotansYaz(ia, girdi);
-    this.bekleyenler.push({ t, oyuncu, istemci, anahtar, komut: girdi.komut, girdi });
+    this.bekleyenler.push({ gelis: this.olcuFn(), t, oyuncu, istemci, anahtar, komut: girdi.komut, girdi });
     return new Promise((coz, reddet) => girdi.bekleyenler.push({ coz, reddet }));
   }
 
@@ -596,6 +655,8 @@ export class DunyaYazari {
       while (this.bekleyenler.length > 0) await this.birTur(false);
       await this.goruntuDene();
     }
+    await this.profilBekle();
+    await this.s.depo.profil?.kapat();
     await this.s.depo.gunluk.kapat();
     await this.s.depo.goruntu.kapat();
   }
@@ -603,6 +664,7 @@ export class DunyaYazari {
   /** Bir grup commit turu (döngü dışında testlerden de çağrılabilir). */
   async birTur(ilerlet = true): Promise<void> {
     if (this.olumcul) return;
+    this.metrikler.tur++;
     const zaman0 = this.sim.dunya.zaman;
     let uygulanan = 0;
     let basarili = 0;
@@ -628,14 +690,19 @@ export class DunyaYazari {
       for (let i = 0; i < toplu.length; i++) {
         const b = toplu[i] as Bekleyen;
         const k = kayitlar[i] as GunlukKaydi;
+        this.donusOnce(k.t);
         const sonuc = this.sim.uygula({ t: k.t, oyuncu: k.oyuncu, komut: k.komut });
+        this.donusKomutSonrasi(k.oyuncu, k.komut, sonuc);
         this.seqDegeri = k.seq;
         uygulanan++;
         if (sonuc.tamam) basarili++;
+        if (sonuc.tamam) this.metrikler.komutTamam++;
+        else this.metrikler.komutBasarisiz++;
         b.girdi.seq = k.seq;
         b.girdi.sonuc = sonuc;
         const yanit: KomutYaniti = { seq: k.seq, t: k.t, komut: k.komut, sonuc, tekrar: false };
         for (const w of b.girdi.bekleyenler.splice(0)) w.coz(yanit);
+        this.metrikler.commit.gozle(this.olcuFn() - b.gelis);
       }
     }
     // 2. Dünyayı ilerlet (bekleyen bir komutun zamanını geçmeden).
@@ -644,14 +711,20 @@ export class DunyaYazari {
       const ilk = this.bekleyenler[0];
       if (ilk) hedef = Math.min(hedef, ilk.t);
       hedef = Math.min(hedef, this.sim.dunya.zaman + (this.yetisiyorDegeri ? this.yetismeAdimMs : this.enCokAdimMs));
+      // Gün sınırlarında dur: özet kayıtları (satış toplamı) kesin sınır t'sinde taranır (`calistirKadar` bölünmesi nötrdür).
+      if (this.donus) hedef = Math.min(hedef, OzetIzleyici.sonrakiSinir(this.sim.dunya.zaman));
       // `>=`: zaman ilerlemese bile aynı t'deki bekleyen olaylar (ör. son komutun planladığı `cozum`) işlenir; tur
       // sonundaki dünya her zaman "t'ye yerleşmiş" durumdur (docs/06 §14: karşılaştırma aynı t'de calistirKadar(t)).
       if (hedef >= this.sim.dunya.zaman) this.sim.calistirKadar(hedef);
     } else {
       this.yerlestir();
     }
+    this.donusTara();
+    this.donusSinirIsle();
     // 3. Sunucu botları.
     this.botTuru();
+    // 3b. Özet kayıtları ve çapalar kalıcılaşır (anlık görüntüden ÖNCE).
+    await this.donusYaz();
     // 4. Anlık görüntü.
     const goruntuAraligi = this.yetisiyorDegeri ? Math.max(this.goruntuAraligiMs, this.yetismeGoruntuAraligiMs) : this.goruntuAraligiMs;
     if (this.sim.dunya.zaman - this.sonGoruntuZamani >= goruntuAraligi || this.seqDegeri - this.sonGoruntuSeq >= this.goruntuKomutAraligi) {
@@ -716,6 +789,171 @@ export class DunyaYazari {
     }
   }
 
+  // --- "Sen yokken": özet kayıtları ve çapalar (D1-D3; docs/arastirma/donus-deneyimi.md §5) -----------------------------------
+
+  /** Profil deposu yazıları tek sırada: çapa/kayıt yazıları yarışmaz. */
+  private profilIs<T>(f: () => Promise<T>): Promise<T> {
+    const p = this.profilZinciri.then(f, f);
+    this.profilZinciri = p.catch(() => undefined);
+    return p;
+  }
+
+  /** Bekleyen profil yazılarının bitmesini bekler (test/kapanış). */
+  async profilBekle(): Promise<void> {
+    await this.profilZinciri;
+  }
+
+  /** "Sen yokken" özeti ve özet kayıtları açık mı. */
+  get donusAcik(): boolean {
+    return this.donus !== null;
+  }
+
+  private async donusKur(): Promise<void> {
+    const profil = this.s.depo.profil;
+    if (this.s.donus === false) return;
+    if (!profil) {
+      const m = "bu depo oyuncu profilini desteklemiyor; 'sen yokken' ozeti ve ozet kayitlari kapali";
+      this.kurtarma.uyarilar.push(m);
+      this.acilisUyarilari.push(m);
+      return;
+    }
+    const izleyici = new OzetIzleyici(this.sim.ic);
+    izleyici.baslat(this.sim.dunya);
+    const botlar = new Set((this.s.botlar ?? []).map((b) => b.bot.oyuncu));
+    // Satış toplamı tabanı: oyuncunun depodaki son kaydının kümülatifleri (kurtarmada önceki sınır kayıtta durur).
+    for (const o of this.sim.dunya.oyuncular) {
+      if (botlar.has(o.id)) continue;
+      const son = (await profil.kayitOku(o.id)).filter((k) => k.tur === "satis_toplami").at(-1);
+      if (son) izleyici.satisTabani(o.id, Number(son.degerler[2]), Number(son.degerler[3]));
+    }
+    this.donus = { izleyici, ...(this.s.donus && this.s.donus.esikler ? { esikler: this.s.donus.esikler } : {}), bekleyen: [], kirli: new Set(), botlar };
+    this.kurtarma.donusAcik = true;
+  }
+
+  private donusKaydet(l: OyuncuKaydi[]): void {
+    const d = this.donus;
+    if (!d) return;
+    for (const x of l) if (!d.botlar.has(x.oyuncu)) d.bekleyen.push(x);
+  }
+
+  /** Süren inşaatları durumla eşler (bitenler kayıt üretir; kayıt zamanı inşaatın kesin bitiş t'sidir). */
+  private donusTara(iptal?: number): void {
+    if (this.donus) this.donusKaydet(this.donus.izleyici.tara(this.sim.dunya, iptal));
+  }
+
+  /** Dünya bir gün sınırındaysa satış toplamı kayıtlarını üretir. */
+  private donusSinirIsle(): void {
+    if (this.donus) this.donusKaydet(this.donus.izleyici.gunSiniri(this.sim.dunya));
+  }
+
+  /** `calistirKadar(t)` öncesi: arada kalan gün sınırlarında durup tarar (komut `uygula`'sı sınırları atlamasın; bölünme nötrdür). */
+  private donusOnce(t: Ms): void {
+    if (!this.donus) return;
+    for (;;) {
+      const b = OzetIzleyici.sonrakiSinir(this.sim.dunya.zaman);
+      if (b >= t) return;
+      this.sim.calistirKadar(b);
+      this.donusTara();
+      this.donusSinirIsle();
+    }
+  }
+
+  /** Başarılı komuttan hemen sonra: yeni/iptal edilen inşaatlar, gün sınırı; komut veren insan oyuncu "kirli" (çıkış yedeği çapası). */
+  private donusKomutSonrasi(oyuncu: OyuncuId, komut: Komut, sonuc: KomutSonucu): void {
+    const d = this.donus;
+    if (!d) return;
+    this.donusTara(komut.tur === "insaat_iptal" && sonuc.tamam ? komut.insaat : undefined);
+    this.donusSinirIsle();
+    if (sonuc.tamam && oyuncu !== SISTEM_OYUNCUSU && !d.botlar.has(oyuncu)) d.kirli.add(oyuncu);
+  }
+
+  /**
+   * Bekleyen özet kayıtlarını ve kirli (komut veren) oyuncuların yedek çapasını kalıcılaştırır. Kirli çıkış yedeği: son kabul edilen
+   * komuttan sonraki durum `sonGorulen` olur (normal çıkış `cikis` ile daha yenisini yazar); sunucu çökerse çapa en kötü bu olur ve
+   * hata AŞIRI KAPSAMA yönündedir (kayıp yok). Hata olursa yazı atılmaz, bir sonraki turda yeniden denenir.
+   */
+  private donusYaz(esitle = false): Promise<void> {
+    const d = this.donus;
+    const profil = this.s.depo.profil;
+    if (!d || !profil) return Promise.resolve();
+    return this.profilIs(async () => {
+      const kay = d.bekleyen.splice(0);
+      const kirli = [...d.kirli];
+      d.kirli.clear();
+      try {
+        const grup = new Map<string, OzetKaydi[]>();
+        for (const x of kay) {
+          let l = grup.get(x.oyuncu);
+          if (!l) grup.set(x.oyuncu, (l = []));
+          l.push(x.kayit);
+        }
+        for (const [o, l] of grup) await profil.kayitEkle(o, l, this.sim.dunya.zaman);
+        for (const o of kirli) {
+          const a = oyuncuAnligi(this.sim, o);
+          if (!a) continue;
+          const c = await profil.capaOku(o);
+          if (!c?.sonGorulen || c.sonGorulen.t <= a.t) await profil.capaYaz(o, { sonGorulen: a });
+        }
+        if (esitle) await profil.esitle();
+      } catch (e) {
+        d.bekleyen.unshift(...kay);
+        for (const o of kirli) d.kirli.add(o);
+        this.uyariDinleyici?.(`ozet profili yazilamadi: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    });
+  }
+
+  /** Dünyayı şimdiye yerleştirir ve süren taramaları günceller (özet/çapa okumasından önce). */
+  private donusYerlestir(): void {
+    this.yerlestir();
+    this.donusTara();
+    this.donusSinirIsle();
+  }
+
+  /**
+   * Oyuncunun "sen yokken" özeti: yetişme bitmiş, profil açık, oyuncu insan ve çapası var, yokluk ≥ 1 sa ise; aksi halde null.
+   * Çekirdek durumunu yalnız okur (`durumOzeti`ne girmez). Aynı (çapa, kayıtlar, an) aynı özeti verir.
+   */
+  async donusOzeti(oyuncu: OyuncuId): Promise<DonusOzeti | null> {
+    const d = this.donus;
+    const profil = this.s.depo.profil;
+    if (!d || !profil || this.yetisiyorDegeri || d.botlar.has(oyuncu)) return null;
+    this.donusYerlestir();
+    const anlik = oyuncuAnligi(this.sim, oyuncu);
+    if (!anlik) return null;
+    await this.donusYaz();
+    const [capa, kayitlar] = await Promise.all([profil.capaOku(oyuncu), profil.kayitOku(oyuncu)]);
+    return donusOzeti({ oyuncu, simdi: anlik.t, anlik, capa, kayitlar, ...(d.esikler ? { esikler: d.esikler } : {}) });
+  }
+
+  /** Oyuncu çıktı (son bağlantısı kapandı): çıkış çapası `sonGorulen` = çıkış anındaki durum. */
+  cikis(oyuncu: OyuncuId): Promise<void> {
+    const d = this.donus;
+    const profil = this.s.depo.profil;
+    if (!d || !profil || d.botlar.has(oyuncu)) return Promise.resolve();
+    this.donusYerlestir();
+    const a = oyuncuAnligi(this.sim, oyuncu);
+    if (!a) return Promise.resolve();
+    return this.profilIs(() => profil.capaYaz(oyuncu, { sonGorulen: a }));
+  }
+
+  /**
+   * İstemci özeti gösterdi (`ozetOkundu {t}`): `ozetOkunduT = max(önceki, min(t, şimdi))` ve `sonGorulen` o anın durumuna çekilir
+   * (özet ekran/çökme/yenileme sonrası kaybolmasın; bir sonraki özet buradan başlar).
+   */
+  ozetOkundu(oyuncu: OyuncuId, t: Ms): Promise<void> {
+    const d = this.donus;
+    const profil = this.s.depo.profil;
+    if (!d || !profil || d.botlar.has(oyuncu)) return Promise.resolve();
+    this.donusYerlestir();
+    const a = oyuncuAnligi(this.sim, oyuncu);
+    if (!a) return Promise.resolve();
+    return this.profilIs(async () => {
+      const c = await profil.capaOku(oyuncu);
+      await profil.capaYaz(oyuncu, { ozetOkunduT: Math.max(c?.ozetOkunduT ?? 0, Math.min(t, a.t)), sonGorulen: a });
+    });
+  }
+
   private botTuru(): void {
     const z = this.sim.dunya.zaman;
     const izgara = Math.floor(z / this.botKararAraligiMs);
@@ -752,6 +990,7 @@ export class DunyaYazari {
       await this.goruntuAl();
       this.sonGoruntuHatasi = null;
     } catch (e) {
+      this.metrikler.goruntuHatasi++;
       this.sonGoruntuHatasi = e instanceof Error ? e.message : String(e);
       this.sonGoruntuZamani = this.sim.dunya.zaman;
       this.sonGoruntuSeq = this.seqDegeri;
@@ -761,7 +1000,10 @@ export class DunyaYazari {
 
   /** Anlık görüntü alır ve kaydeder (bekleyen, henüz günlüğe yazılmamış komut görüntüye girmez; hepsi uygulanmamıştır). */
   async goruntuAl(): Promise<AnlikGoruntuKaydi> {
+    const goruntuBasi = this.olcuFn();
     this.yerlestir();
+    // Görüntüden ÖNCE kayıtlar/çapalar kalıcı olmalı: görüntü sonrasındaki yeniden oynatma görüntüden önceki olayları türetmez.
+    await this.donusYaz(true);
     const metin = anlikGoruntuOlustur(this.sim, this.kuralSurumu);
     // Zarf kanonik JSON'dur ve `durumOzeti` dünyadan SONRA gelir: son geçiş zarfınkidir (dünyayı ikinci kez özetlemeyiz).
     const ozetIndeksi = metin.lastIndexOf('"durumOzeti":"');
@@ -785,6 +1027,11 @@ export class DunyaYazari {
     await this.s.depo.goruntu.kaydet(g);
     this.sonGoruntuZamani = g.simZamani;
     this.sonGoruntuSeq = g.seq;
+    this.metrikler.goruntu++;
+    this.metrikler.sonGoruntuOlcu = this.olcuFn();
+    this.metrikler.sonGoruntuBayt = metin.length;
+    this.metrikler.sonGoruntuSureMs = this.olcuFn() - goruntuBasi;
+    this.metrikler.enUzunGoruntuSureMs = Math.max(this.metrikler.enUzunGoruntuSureMs, this.metrikler.sonGoruntuSureMs);
     return g;
   }
 
