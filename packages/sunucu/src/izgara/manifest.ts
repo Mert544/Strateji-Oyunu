@@ -9,12 +9,15 @@
  *   5. içerideki ve uygun hücre sayıları `hucre.icerde` / `hucre.uygun` ile aynı mı (ikinci denetim).
  *
  * Uyuşmazlıkta ya da dosya eksikse açılış okunur bir `IzgaraHatasi` ile durur (sessizce eksik dünya kurulmaz). Kod çözücü bir arayüzün
- * arkasındadır: bu modül `@bolge/veri`'ye çalışma zamanında bağlı değildir ve çözücüden bağımsız test edilir.
+ * arkasındadır (`IzgaraBagimliliklari`; varsayılanı `@bolge/veri` `bhiCoz` + `izgaraSay`): yükleme denetimleri çözücüden bağımsız test edilebilir.
  */
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
+import { bhiCoz, izgaraSay, parselIzgaraHatalari } from "@bolge/veri";
+import type { ParselIzgaraGirdisi } from "@bolge/veri";
+import type { CekirdekVeriPaketi } from "@bolge/cekirdek";
 
 /** Manifest ya da ızgara dosyası geçersiz: açılış durur (iletiler Türkçe, ASCII). */
 export class IzgaraHatasi extends Error {
@@ -69,6 +72,11 @@ export interface YuklenenIlce {
 
 const SHA256 = /^[0-9a-f]{64}$/;
 const KIMLIK = /^[a-z][a-z0-9_]*$/;
+/** Manifestteki yol `odbl/` köküne GÖRELİdir ve kökten kaçamaz: mutlak yol, sürücü harfi ve `..` parçası reddedilir (istemcideki `derle.ts` ile aynı kural). */
+export function yolGuvenliMi(yol: string): boolean {
+  if (isAbsolute(yol) || /^[A-Za-z]:/.test(yol) || yol.startsWith("/") || yol.startsWith("\\")) return false;
+  return !yol.split(/[\\/]/).some((p) => p === "..");
+}
 const poz = (n: unknown): n is number => typeof n === "number" && Number.isSafeInteger(n) && n > 0;
 const tam = (n: unknown): n is number => typeof n === "number" && Number.isSafeInteger(n);
 const nesne = (x: unknown): x is Record<string, unknown> => typeof x === "object" && x !== null && !Array.isArray(x);
@@ -95,6 +103,7 @@ export function izgaraManifestiCoz(ham: unknown, kaynak = "manifest"): IzgaraMan
       if (typeof c.kimlik !== "string" || !KIMLIK.test(c.kimlik)) hatalar.push(`${yer}: kimlik gecersiz`);
       if (typeof c.ad !== "string" || c.ad === "") hatalar.push(`${yer}: ad gecersiz`);
       if (typeof c.il !== "string" || c.il === "") hatalar.push(`${yer}: il gecersiz`);
+      if (nesne(bhi) && typeof bhi.yol === "string" && bhi.yol !== "" && !yolGuvenliMi(bhi.yol)) hatalar.push(`${yer}: bhi.yol kok disina cikamaz (mutlak yol ya da ".." yok): ${c.kimlik as string}`);
       if (!nesne(bhi) || typeof bhi.yol !== "string" || bhi.yol === "" || !poz(bhi.bayt) || typeof bhi.sha256 !== "string" || !SHA256.test(bhi.sha256) || !poz(bhi.hamBayt)) hatalar.push(`${yer}: bhi {yol, bayt, sha256, hamBayt} gecersiz`);
       if (!nesne(cer) || !tam(cer.x0) || !tam(cer.y0) || !poz(cer.genislik) || !poz(cer.yukseklik)) hatalar.push(`${yer}: cerceve {x0, y0, genislik, yukseklik} gecersiz`);
       if (!nesne(huc) || !poz(huc.icerde) || !tam(huc.uygun) || (huc.uygun as number) < 0) hatalar.push(`${yer}: hucre {icerde, uygun} gecersiz`);
@@ -150,6 +159,9 @@ export function izgaralariYukle(m: IzgaraManifesti, kok: string, bag: () => Izga
   let bagimlilik: IzgaraBagimliliklari | null = null;
   for (const c of m.ilceler) {
     const yol = resolve(kok, c.bhi.yol);
+    const goreli = relative(resolve(kok), yol);
+    // İkinci denetim (manifest elle kurulmuş olsa da): çözülen yol kökün içinde kalmalı.
+    if (!yolGuvenliMi(c.bhi.yol) || goreli === "" || goreli.startsWith("..") || isAbsolute(goreli)) throw new IzgaraHatasi(`izgara dosya yolu kok disina cikiyor: ${c.kimlik} (${c.bhi.yol})`);
     let gz: Buffer;
     try {
       gz = readFileSync(yol);
@@ -186,14 +198,8 @@ export function izgaralariYukle(m: IzgaraManifesti, kok: string, bag: () => Izga
   return sonuc;
 }
 
-/** Çekirdek girdisi (`@bolge/veri` `ParselIzgaraGirdisi` ile aynı yapı; bağlanınca o tip kullanılır). */
-export interface IzgaraGirdisi {
-  ad: string;
-  harita: string;
-  tohum: number;
-  iller: { id: string; ad: string; bolge: string }[];
-  ilceler: { id: string; ad: string; il: string; bolge: string; izgara: CozulmusIzgara }[];
-}
+/** Çekirdek girdisi: `@bolge/veri` `ParselIzgaraGirdisi` (K3 hücre dizini; `CekirdekVeriPaketi.parselIzgara`). */
+export type IzgaraGirdisi = ParselIzgaraGirdisi;
 
 /** Izgara dünyasının tohumu: sabit (hücre dizini ve kamu türetmesi için; JSON fikstüründeki `tohum` alanının karşılığı). */
 export const IZGARA_TOHUMU = 1;
@@ -250,16 +256,19 @@ export function izgaraGirdisiKur(yuklenen: readonly YuklenenIlce[], s: { ad: str
     else if (iller.get(h.il)?.bolge !== h.bolge) throw new IzgaraHatasi(`il birden cok bolgede: ${h.il}`);
     ilceler.push({ id: ilce.kimlik, ad: h.ilceAd, il: h.il, bolge: h.bolge, izgara });
   }
-  return { ad: s.ad, harita: s.harita, tohum: s.tohum ?? IZGARA_TOHUMU, iller: [...iller.values()], ilceler };
+  const girdi: IzgaraGirdisi = { ad: s.ad, harita: s.harita, tohum: s.tohum ?? IZGARA_TOHUMU, iller: [...iller.values()], ilceler };
+  // Çekirdeğin kendi yapısal denetimi (yinelenen kimlik, il/bölge uyumu, çerçeve z20 aralığı): açılışta okunur hata.
+  const hatalar = parselIzgaraHatalari(girdi);
+  if (hatalar.length > 0) throw new IzgaraHatasi(`izgara girdisi gecersiz:\n - ${hatalar.slice(0, 10).join("\n - ")}`);
+  return girdi;
 }
 
-/** Çekirdek veri paketine bağlar (`CekirdekVeriPaketi.parselIzgara`; K3 hücre dizini dalıyla gelir). */
-export function izgarayiVeriyeBagla(veri: object, girdi: IzgaraGirdisi): void {
-  (veri as { parselIzgara?: IzgaraGirdisi }).parselIzgara = girdi;
+/** Çekirdek veri paketine bağlar (`CekirdekVeriPaketi.parselIzgara`; `parsel` ile birlikte verilemez). */
+export function izgarayiVeriyeBagla(veri: CekirdekVeriPaketi, girdi: IzgaraGirdisi): void {
+  veri.parselIzgara = girdi;
 }
 
-/** Varsayılan bağımlılıklar: `@bolge/veri` `bhiCoz` + `izgaraSay` (K3 hücre dizini dalı girene kadar yoksa açık hata verir). */
+/** Varsayılan bağımlılıklar: `@bolge/veri` `bhiCoz` + `izgaraSay`. */
 export function varsayilanIzgaraBagimliliklari(): IzgaraBagimliliklari {
-  // TODO(G3b bağlama): K3 dalı girince `import { bhiCoz, izgaraSay } from "@bolge/veri"` ile statik bağlanır.
-  throw new IzgaraHatasi("BHI1 kod cozucusu bagli degil (@bolge/veri bhiCoz/izgaraSay henuz yok)");
+  return { coz: bhiCoz, say: izgaraSay };
 }

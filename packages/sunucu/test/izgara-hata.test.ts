@@ -1,10 +1,10 @@
 /**
  * Komut sınırında `HucreDiziniBuyukHatasi` (G3b): çekirdek, sınırı aşan ilçede tembel hücre dizisi açılmak istenince bu hatayı fırlatır. Üretimde
  * süreç çökmez, yazar durmaz, komut reddedilir ve yan etkisiz kalır, Türkçe günlük satırı yazılır; günlükteki kayıt yeniden oynatmada aynı sonucu verir.
- * Çekirdek sınıfı dışa açılana kadar aynı adlı yerel alt sınıf kullanılır (`name` denetimi); bağlanınca gerçek sınıfa geçilir.
+ * Gerçek çekirdek sınıfı (`@bolge/cekirdek` `HucreDiziniBuyukHatasi`) `instanceof` ile tanınır; aynı adlı yabancı sınıf TANINMAZ (ad denetimi kalktı).
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SISTEM_OYUNCUSU, Simulasyon } from "@bolge/cekirdek";
+import { HucreDiziniBuyukHatasi, SISTEM_OYUNCUSU, Simulasyon, TEMBEL_HUCRE_SINIRI } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
 import { bellekDeposu } from "../src/depo/bellek";
 import { ElleSaat } from "../src/saat";
@@ -12,13 +12,11 @@ import { DunyaYazari, hucreDiziniBuyukMu } from "../src/yazar";
 import { KUZEY, testSunucusu, veri } from "./yardimci";
 import type { TestSunucusu } from "./yardimci";
 
-/** Çekirdeğin `HucreDiziniBuyukHatasi`'ının biçimi: ad, ilçe, hücre sayısı. */
-class HucreDiziniBuyukHatasi extends Error {
-  readonly ilce: string;
-  constructor(ilce: string) {
-    super(`ilce ${ilce} 400000 hucre tasiyor (tembel hucre dizisi siniri 50000); hucre dizisi acilamaz: ilceHucreleri() ya da hucreDurum() kullan`);
+/** Aynı adlı ama çekirdeğe ait OLMAYAN sınıf: tanınmamalı (ad denetimi değil `instanceof`). */
+class SahteHucreDiziniBuyukHatasi extends Error {
+  constructor() {
+    super("sahte");
     this.name = "HucreDiziniBuyukHatasi";
-    this.ilce = ilce;
   }
 }
 
@@ -29,7 +27,7 @@ const kotuMu = (k: Komut): boolean => k.tur === "vergi_ayarla" && k.oranPpm === 
 function hatayiKur(): void {
   const gercek = Simulasyon.prototype.uygula;
   vi.spyOn(Simulasyon.prototype, "uygula").mockImplementation(function (this: Simulasyon, ...a: Parameters<Simulasyon["uygula"]>) {
-    if (kotuMu(a[0].komut)) throw new HucreDiziniBuyukHatasi("tr_41_gebze");
+    if (kotuMu(a[0].komut)) throw new HucreDiziniBuyukHatasi("tr_41_gebze", 400_000);
     return gercek.apply(this, a);
   });
 }
@@ -58,8 +56,9 @@ async function gonder(y: DunyaYazari, oyuncu: string, anahtar: string, komut: Ko
 }
 
 describe("HucreDiziniBuyukHatasi komut sınırında", () => {
-  it("ad denetimi: yalnız bu adlı hata tanınır (gerçek sınıf bağlanınca instanceof ile değişir)", () => {
-    expect(hucreDiziniBuyukMu(new HucreDiziniBuyukHatasi("x"))).toBe(true);
+  it("yalnız çekirdeğin sınıfı tanınır (instanceof); aynı adlı yabancı sınıf, düz Error ve dize tanınmaz", () => {
+    expect(hucreDiziniBuyukMu(new HucreDiziniBuyukHatasi("x", TEMBEL_HUCRE_SINIRI + 1))).toBe(true);
+    expect(hucreDiziniBuyukMu(new SahteHucreDiziniBuyukHatasi())).toBe(false);
     expect(hucreDiziniBuyukMu(new Error("baska"))).toBe(false);
     expect(hucreDiziniBuyukMu("HucreDiziniBuyukHatasi")).toBe(false);
   });

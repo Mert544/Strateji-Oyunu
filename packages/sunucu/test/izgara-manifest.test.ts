@@ -55,6 +55,23 @@ describe("manifest biçimi", () => {
     expect(hata({ ...ham, ilceler: [c0, c0] })).toMatch(/yinelenen kimlik/);
   });
 
+  it("dosya yolu odbl köküne göredir ve kökten kaçamaz: mutlak yol, sürücü harfi, '..' parçası reddedilir (biçim aşamasında ve yüklemede)", async () => {
+    d = await izgaraDizini();
+    for (const kotu of ["../disarida.bhi.gz", "izgara/../../disarida.bhi.gz", "/etc/passwd", "C:\\x\\y.bhi.gz", "\\\\sunucu\\paylasim\\x.bhi.gz", "izgara\\..\\..\\x.bhi.gz"]) {
+      const ham = structuredClone(d.ham);
+      (ham.ilceler[0] as { bhi: { yol: string } }).bhi.yol = kotu;
+      expect(() => izgaraManifestiCoz(ham), kotu).toThrow(/kok disina cikamaz/);
+    }
+    // Yükleme aşaması: manifest nesnesi doğrulamadan geçirilmeden elle kurulursa çözülen yol yine kök dışına çıkamaz.
+    const elle = structuredClone(d.manifest);
+    (elle.ilceler[0] as { bhi: { yol: string } }).bhi.yol = "../disarida.bhi.gz";
+    expect(() => izgaralariYukle(elle, d?.kok ?? "", bag)).toThrow(/kok disina cikiyor/);
+    // Köke göre iç içe alt dizin serbesttir (gerçek manifest: izgara/..., ornek/...).
+    const iyi = structuredClone(d.ham);
+    (iyi.ilceler[0] as { bhi: { yol: string } }).bhi.yol = "ornek/x-hucreler.bhi.gz";
+    expect(izgaraManifestiCoz(iyi).ilceler[0]?.bhi.yol).toBe("ornek/x-hucreler.bhi.gz");
+  });
+
   it("dosya yok ya da JSON değil: okunur hata", async () => {
     d = await izgaraDizini();
     expect(() => izgaraManifestiOku(join(d?.kok ?? "", "yok.json"))).toThrow(/izgara manifesti okunamadi/);

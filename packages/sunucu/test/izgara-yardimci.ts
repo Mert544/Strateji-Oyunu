@@ -66,6 +66,39 @@ export const testCozucusu: IzgaraBagimliliklari = {
   },
 };
 
+/**
+ * Zengin deterministik durum düzlemi (dünya eşdeğerliği testi): yol çizgileri, doğu kenarında su şeridi, askeri blok, merkezde konut/yapılı, çevresinde
+ * sanayi, kalanı tarla/orman/diğer + bina bitleri ve köşelerde ilçe dışı çentikler (sınır dikdörtgen değil). Arazi sınıfı bit5-7, bina bit4.
+ */
+export function zenginDurum(N: number, M: number, tohum: number): Uint8Array {
+  const karma = (a: number, b: number, c: number): number => {
+    let h = (Math.imul(a, 73856093) ^ Math.imul(b, 19349663) ^ Math.imul(c, 83492791)) >>> 0;
+    h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0;
+    return (h ^ (h >>> 12)) >>> 0;
+  };
+  const d = new Uint8Array(N * M);
+  const su = Math.max(3, Math.floor(N / 20));
+  for (let j = 0; j < M; j++) {
+    for (let i = 0; i < N; i++) {
+      if (i + j < Math.floor(N / 10) || N - 1 - i + (M - 1 - j) < Math.floor(N / 12)) continue;
+      let b = ICERIDE;
+      if (i >= N - su) b |= SU;
+      if (i % 17 === 16 || j % 19 === 18) b |= YOL;
+      if (i >= Math.floor(N / 2) && i < Math.floor(N / 2) + 5 && j >= Math.floor(M / 4) && j < Math.floor(M / 4) + 5) b |= ASKERI;
+      const dist = Math.max(Math.abs(i - N / 2), Math.abs(j - M / 2));
+      const h = karma(i, j, tohum);
+      let sinif: number;
+      if (dist <= N / 8) sinif = h % 7 === 0 ? 5 : 3;
+      else if (dist <= N / 4) sinif = 2;
+      else sinif = h % 5 === 0 ? 4 : h % 3 === 0 ? 0 : 1;
+      b |= sinif << 5;
+      if (h % 11 === 0) b |= 16;
+      d[j * N + i] = b;
+    }
+  }
+  return d;
+}
+
 export interface TestIlcesi {
   kimlik: string;
   ad: string;
@@ -93,13 +126,13 @@ export interface IzgaraDizini {
 }
 
 /** `<gecici>/odbl/izgara/` altında manifest + gzip'li BHI1 dosyaları kurar (yollar `odbl/` köküne göredir: `izgara/<kimlik>.bhi.gz`). */
-export async function izgaraDizini(ilceler: TestIlcesi[] = ILCELER): Promise<IzgaraDizini> {
+export async function izgaraDizini(ilceler: TestIlcesi[] = ILCELER, durumUret: (c: TestIlcesi) => Uint8Array = (c) => sentetikDurum(c.genislik, c.yukseklik, c.tohum)): Promise<IzgaraDizini> {
   const kok = await mkdtemp(join(tmpdir(), "bolge-izgara-"));
   await mkdir(join(kok, "izgara"), { recursive: true });
   const ham: IzgaraDizini["ham"] = { surum: 1, hucreZ: 20, ilceler: [] };
   const dosyalar = new Map<string, Buffer>();
   for (const c of ilceler) {
-    const durum = sentetikDurum(c.genislik, c.yukseklik, c.tohum);
+    const durum = durumUret(c);
     const raw = bhiBaytlari(c.x0, c.y0, c.genislik, c.yukseklik, durum);
     const gz = gzipSync(raw);
     const yol = `izgara/${c.kimlik}.bhi.gz`;

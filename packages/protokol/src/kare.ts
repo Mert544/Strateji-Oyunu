@@ -297,19 +297,11 @@ function kamuKompakt(d: Dunya, ilce: string): { adet: number; gruplar: KamuGrubu
 }
 
 /**
- * Sıcak yol arayüzü: ilçenin ayrılmış hücreleri, kimliğe göre (JS dize sırası) sıralı. Kompakt hücre dizinli dünyada (`mk.dizin`, BHI1 ızgarası;
- * ilçe başına yüz binlerce hücre) `dizin.ayrilmisListe(ilce)` çağrılır (önbellekli; ilçe tanımının `hucreler` dizisi açılmaz). Dizinsiz (JSON fikstürü)
- * dünyada bugünkü hesap aynen sürer: `hucreler.filter(ayrilmis).sort()`. İki yol aynı listeyi verir (protokol testi).
+ * Sıcak yol: ilçenin ayrılmış hücreleri, kimliğe göre (JS dize sırası) sıralı. Kompakt hücre dizininden (`mk.dizin.ayrilmisListe`, önbellekli) okunur: büyük
+ * BHI1 ilçesinde ilçe tanımının `hucreler` dizisi AÇILMAZ (`HucreDiziniBuyukHatasi`). JSON fikstürü ve BHI1 aynı listeyi verir (K3 eşdeğerlik testleri).
  */
-export interface AyrilmisListeKaynagi {
-  ayrilmisListe(ilce: string): readonly string[];
-}
-
 function ayrilmisListeHesapla(mk: DerlenmisMulk, ilce: string): string[] {
-  const dizin = (mk as unknown as { dizin?: AyrilmisListeKaynagi }).dizin;
-  if (dizin !== undefined) return [...dizin.ayrilmisListe(ilce)];
-  const t = mk.ilceler.get(ilce);
-  return t ? t.hucreler.filter((h) => mk.ayrilmis.has(h.id)).map((h) => h.id).sort() : [];
+  return [...mk.dizin.ayrilmisListe(ilce)];
 }
 
 /** İlçe başına ayrılmış hücre listesi (türetilmiş; çekirdek derlemesi başına bir kez hesaplanır, referans sabittir). */

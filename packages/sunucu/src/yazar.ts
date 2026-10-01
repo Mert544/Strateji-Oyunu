@@ -46,7 +46,7 @@
  * özet karşılaştırılır) + görüntüden sonraki günlük kayıtları. Kurtarılan dünyanın zamanı, son kaydın `t`'si ile
  * görüntü zamanının büyüğüdür; canlı dünyayla karşılaştırma AYNI t'de yapılmalıdır (`calistirKadar(t)`, docs/06 §14).
  */
-import { SAAT, SISTEM_OYUNCUSU, Simulasyon, alinanOdulDegeri, anlikGoruntuOlustur, icerikKimlikTablosuOlustur, kamuHucreleri, kuralSurumuHesapla, odulDegeri } from "@bolge/cekirdek";
+import { HucreDiziniBuyukHatasi, SAAT, SISTEM_OYUNCUSU, Simulasyon, alinanOdulDegeri, anlikGoruntuOlustur, icerikKimlikTablosuOlustur, kamuHucreleri, kuralSurumuHesapla, odulDegeri } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi, Dunya, IcerikKimlikTablosu, Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
 import type { Bot } from "@bolge/botlar";
 import type { Dizin } from "@bolge/protokol";
@@ -272,9 +272,9 @@ function uyku(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/** Çekirdeğin `HucreDiziniBuyukHatasi`'ı (sınıf bağlanana kadar ad denetimiyle; `@bolge/cekirdek` dışa açınca `instanceof` ile değişir). */
+/** Çekirdeğin `HucreDiziniBuyukHatasi`'ı (büyük BHI1 ilçesinde hücre dizisini açan çağrı): komut sınırında yakalanır, komut reddedilir. */
 export function hucreDiziniBuyukMu(e: unknown): boolean {
-  return e instanceof Error && e.name === "HucreDiziniBuyukHatasi";
+  return e instanceof HucreDiziniBuyukHatasi;
 }
 
 export class DunyaYazari {

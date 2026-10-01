@@ -379,13 +379,16 @@ describe("ilce karesi ayrilmisSatilmis (yalniz ekleme, istege bagli nesne alani)
   });
 });
 
-describe("ayrilmis liste sicak yol arayuzu (dizin.ayrilmisListe)", () => {
-  it("dizinsiz (JSON) dunyada bugunku hesap; dizinli dunyada dizin.ayrilmisListe cagrilir ve ilce hucre dizisi ACILMAZ; iki yol ayni listeyi verir; onbellekli", () => {
+describe("ayrilmis liste sicak yol (dizin.ayrilmisListe)", () => {
+  it("kare listeyi dizin.ayrilmisListe'den okur ve ilce hucre dizisi ACILMAZ; liste eski hesapla (hucreler.filter(ayrilmis).sort) AYNI; onbellekli (ilce basina bir kez)", () => {
     const { sim: a } = kurulum();
     const oyuncu = "ali";
     const l1 = kare(a, oyuncu).ilceler?.find((c) => c.id === ILCE)?.ayrilmis;
     expect(l1?.length).toBeGreaterThan(0);
     expect(l1).toEqual([...(l1 ?? [])].sort());
+    // Eski hesap (JSON fikstürü, küçük ilçe): hücre dizisinden süz ve sırala.
+    const eski = (a.ic.mulk as unknown as { ilceler: Map<string, { hucreler: Array<{ id: string }> }>; ayrilmis: ReadonlySet<string> });
+    expect(l1).toEqual(eski.ilceler.get(ILCE)?.hucreler.filter((h) => eski.ayrilmis.has(h.id)).map((h) => h.id).sort());
 
     const { sim: b } = kurulum();
     const mk = b.ic.mulk as unknown as { ilceler: Map<string, { hucreler: unknown }>; dizin?: { ayrilmisListe(i: string): readonly string[] } };
