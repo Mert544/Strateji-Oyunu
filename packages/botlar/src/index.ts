@@ -5,3 +5,4 @@ export * from "./onayarlar";
 export * from "./kosucu";
 export * from "./parsel";
 export * from "./parsel-kosucu";
+export * from "./parsel-yontem";

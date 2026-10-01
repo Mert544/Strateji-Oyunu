@@ -53,6 +53,8 @@ export interface ParselKomutKaydi {
   tur: Komut["tur"];
   /** `yapi_yerlestir` ve `tesis_insa_hucre` için yapı türü. */
   tesisTuru?: string;
+  /** `yontem_degistir` için seçilen yöntem kimliği (G6). */
+  yontem?: string;
   tamam: boolean;
   /** Reddedildiyse (sayılar "#" ile normalleştirilmiş) hata iletisi. */
   hata?: string;
@@ -193,6 +195,7 @@ export function parselKos(secenek: ParselKosuSecenekleri): ParselKosuSonucu {
           izleSonra?.(r.tamam);
           const kayit: ParselKomutKaydi = { t, oyuncu: o.id, tur: komut.tur, tamam: r.tamam };
           if ("tesisTuru" in komut) kayit.tesisTuru = komut.tesisTuru;
+          if (komut.tur === "yontem_degistir") kayit.yontem = komut.yontem;
           if (r.tamam) {
             komutSayisi[o.id] = (komutSayisi[o.id] ?? 0) + 1;
             komutTurleri[komut.tur] = (komutTurleri[komut.tur] ?? 0) + 1;

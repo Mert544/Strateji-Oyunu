@@ -13,18 +13,27 @@
  *  - tuccar:     kıyı/ova ilinde üretim (Çiftlik/Mera) + Ticaret ofisi; ihracat emri yuvalarını (4 + ofis) doldurur.
  *  - pasif:      kur-unut: ilk kurulumu bir kez yapar (tek yapı + emirler), sonra hiçbir komut vermez.
  *  - ciftci_tarim: çiftçi + tarım yönetimi (`ekim_plani`, `gubre_dozu`); `tarimYonetimi` / `bakimYonetimi` seçenekleri her önayara eklenebilir.
+ *  - zincir (G6; docs/arastirma/bot-kurallari-g6-g8.md §1-§2, §5): ova ilinde Çiftlik → gıda fabrikası ×n_f → (ekmek üretilip 24 saatlik çıktı birikince) Ahır; bakım yönetimi
+ *    açık, malzeme açığı ithalatla kapanır, yakıt/elektrik şebekeden gelir (emir yok). Fabrika yöntemleri tesis TAMAMLANINCA `yontem_degistir` ile bir kez verilir:
+ *    REHBERLİ (vars.): n_f = 2, sırayla `degirmen`, `ekmek_firini` (gerçek oyuncunun Defter yolu); SEÇİCİ (`yontemSecici`): n_f (vars. 2; seçenek ya da tohum karması
+ *    1/2/3 = %25/%50/%25) için marjinal-net atama (`parsel-yontem.ts`: standart × k + zincir çifti × j). İhracat emirleri hedef yöntemin net çıktısından türer
+ *    (yanlış yöntemin çıktısı ihraç edilmez). G6 yöntemleri içerikte yoksa (G6 verisi öncesi) yöntem komutu verilmez ve tür varsayılanı çalışır.
  *  - spekulator: arsa biriktirir, üretmez; kit stoğunu satıp nakde çevirir, en ucuz sınıf ve en boş ilçelerden tavana (72 / ilçenin %25'i)
  *    dayanana kadar `parsel_al`; kamu arsasını almaz; yeni oyuncuyken ayrılmış hücreleri önce tüketir; `baslangicGun` ile yaşlanınca başlar.
  *  - gec_katilan: `acilis` ∈ ciftci | sanayici | pazar (tuccar); aynı paket, farklı açılış (Ar-Ge `gec_ciftci/gec_sanayici/gec_pazar`).
  *    Yerleşiklerin bulunduğu (en çok sahipli) ilçeye katılır: ilçe medyanı ile karşılaştırılabilsin.
  */
-import { GUN, anlikHazine, anlikMiktar, isletmeBul, kamuHucreMi, mulkOyuncuBul, parselToplamFiyatiMili, ticaretEmirYuvasi, yurtPlanla } from "@bolge/cekirdek";
+import { GUN, SAAT, anlikHazine, anlikMiktar, isletmeBul, kamuHucreMi, mulkOyuncuBul, npcHacimleri, parselToplamFiyatiMili, ticaretEmirYuvasi, yurtPlanla } from "@bolge/cekirdek";
 import type { ArsaSinifi, BolgeDurumu, DerlenmisMulk, Dunya, HucreDurumu, IlceDurumu, Komut, OyuncuId, Simulasyon } from "@bolge/cekirdek";
+import { fabrikaAta } from "./parsel-yontem";
 import { icerikBilgisi } from "./tablo";
 import type { IcerikBilgisi } from "./tablo";
 
-export type ParselOnayari = "ciftci" | "sanayici" | "tuccar" | "gec_katilan" | "pasif" | "ciftci_tarim" | "spekulator";
+export type ParselOnayari = "ciftci" | "sanayici" | "tuccar" | "gec_katilan" | "pasif" | "ciftci_tarim" | "spekulator" | "zincir";
+/** Varsayılan önayar listesi (yuk testi ve bench bu listeyi döner). `zincir` (G6; içerikte `degirmen` ve `ekmek_firini` yöntemleri gerekir) BİLEREK dışarıdadır. */
 export const PARSEL_ONAYARLARI: readonly ParselOnayari[] = ["ciftci", "sanayici", "tuccar", "gec_katilan", "pasif", "ciftci_tarim", "spekulator"];
+/** G6 önayarları (ayrı liste: varsayılan dağılımlara karışmaz). */
+export const PARSEL_G6_ONAYARLARI: readonly ParselOnayari[] = ["zincir"];
 
 /** Geç katılanın açılışı: çiftçi, sanayici ya da pazar (tüccar) planı. */
 export type GecAcilis = "ciftci" | "sanayici" | "pazar";
@@ -80,6 +89,16 @@ export interface ParselBotSecenegi {
    */
   ayrilmisOnceligi?: boolean;
   /**
+   * `zincir` önayarında MARJİNAL-NET yöntem seçici (A2 bot kuralları §5; G6 kabul koşulu): fabrika yöntemleri sabit sıra yerine `parsel-yontem.ts` ile seçilir. M ölçütü
+   * yalnız bu botlardan hesaplanır. Vars. kapalı (rehberli). Diğer önayarlarda etkisizdir.
+   */
+  yontemSecici?: boolean;
+  /**
+   * `zincir` önayarında kurulacak gıda fabrikası sayısı n_f (1..4). Rehberli botta yalnız 2 olabilir (vars. 2). Seçici botta vars.: `tohum` verilmişse tohum karması
+   * (1/2/3 = %25/%50/%25), verilmemişse 2.
+   */
+  gidaFabrikasi?: number;
+  /**
    * Bot tohumu (varyans kaynağı, ayrıştırma koşuları): verilirse YALNIZ tam eşit adaylar arasındaki seçimler (ilçe eşitlikleri, ilk yapı hücresi grubu,
    * spekülatör ilçe sırası) kimlik sırası yerine (tohum, bot, aday) karmasıyla bozulur. Vars. tanımsız: davranış değişmez.
    */
@@ -112,6 +131,7 @@ const CIFTCI: Tanim = { acilisTurleri: ["ciftlik", "mera"], plan: ["ciftlik", "m
 const SANAYICI: Tanim = { acilisTurleri: ["hidro_santrali"], plan: ["hidro_santrali", "cevher_madeni", "cevher_madeni", "ambar"], ilSirasi: "dag", birKez: false, ithalat: true, yerlesikIlce: false };
 const TUCCAR: Tanim = { acilisTurleri: ["ciftlik", "mera"], plan: ["ciftlik", "mera", "ticaret_ofisi", "ahir"], ilSirasi: "kiyi_ova", birKez: false, ithalat: false, yerlesikIlce: false };
 const SPEKULATOR: Tanim = { acilisTurleri: [], plan: [], ilSirasi: "ova", birKez: false, ithalat: false, yerlesikIlce: false };
+const ZINCIR: Tanim = { acilisTurleri: ["ciftlik"], plan: ["ciftlik", "gida_fabrikasi", "gida_fabrikasi", "ahir"], ilSirasi: "ova", birKez: false, ithalat: true, yerlesikIlce: false };
 const PASIF: Tanim = { acilisTurleri: ["ciftlik", "mera"], plan: ["ciftlik", "mera"], ilSirasi: "ova", birKez: true, ithalat: false, yerlesikIlce: false };
 
 function tanimSec(onayar: ParselOnayari, acilis: GecAcilis): Tanim {
@@ -127,6 +147,8 @@ function tanimSec(onayar: ParselOnayari, acilis: GecAcilis): Tanim {
       return TUCCAR;
     case "pasif":
       return PASIF;
+    case "zincir":
+      return ZINCIR;
     case "gec_katilan": {
       const t = acilis === "sanayici" ? SANAYICI : acilis === "pazar" ? TUCCAR : CIFTCI;
       return { ...t, acilisTurleri: ACILIS_ESLEMESI[acilis].ilkYapiTurleri, ilSirasi: ACILIS_ESLEMESI[acilis].ilTercihi, yerlesikIlce: true };
@@ -421,22 +443,47 @@ function stok(g: Gorunum, b: BolgeDurumu, mal: number): number {
 // Ticaret emirleri
 // ---------------------------------------------------------------------------
 
-/** Tesis listesinden (biten + planlanan) mal başına net saatlik çıktı (mili-birim/saat; çıktı − girdi, tam kadro). */
-function netCikti(g: Gorunum, ekTurler: readonly string[], gubreAyir = 0): Map<number, number> {
+/**
+ * Yöntem hedefi (G6 `zincir` önayarı): bir tesis türünün k. kopyası (tesis kimliği sırasıyla; biten, sonra süren inşaat, sonra bu turda verilen) `liste[k]` yöntemiyle
+ * ÇALIŞACAKTIR. Henüz o yöntemde olmayan (varsayılandaki) tesis de hedef yöntemin net çıktısıyla sayılır: ihracat emri yanlış yöntemin çıktısına göre verilmez.
+ */
+interface YontemHedefi {
+  /** `tesisTurleri` indeksi. */
+  tur: number;
+  /** Tür varsayılanı (`yontemler[0]`): yalnız bu yöntemdeki tesis değiştirilir. */
+  varsayilan: number;
+  /** k. kopyanın hedef yöntem indeksi. */
+  liste: readonly number[];
+}
+
+/** Tesis listesinden (biten + planlanan) mal başına net saatlik çıktı (mili-birim/saat; çıktı − girdi, tam kadro). `hedefler` yalnız `zincir` önayarında dolu. */
+function netCikti(g: Gorunum, ekTurler: readonly string[], gubreAyir = 0, hedefler: readonly YontemHedefi[] = []): Map<number, number> {
   const net = new Map<number, number>();
   const ekle = (yontem: number): void => {
     const y = g.bilgi.yontem[yontem]!;
     for (const [m, q] of y.cikti) net.set(m, (net.get(m) ?? 0) + q);
     for (const [m, q] of y.girdi) net.set(m, (net.get(m) ?? 0) - q);
   };
-  for (const b of dugumleri(g)) for (const t of b.tesisler) ekle(t.yontem);
+  const sayac = new Map<number, number>();
+  /** Hedefi olan türün sıradaki kopyasının yöntemi; hedefi olmayan türde `mevcut` (yoksa tür varsayılanı). */
+  const yontemi = (tur: number, mevcut: number | undefined): number => {
+    const h = hedefler.find((x) => x.tur === tur);
+    if (h === undefined) return mevcut ?? ((g.bilgi.tur[tur] as { yontemler: number[] }).yontemler[0] as number);
+    const k = sayac.get(tur) ?? 0;
+    sayac.set(tur, k + 1);
+    const hedef = h.liste[k];
+    return hedef !== undefined && (mevcut === undefined || mevcut === h.varsayilan || mevcut === hedef) ? hedef : (mevcut ?? h.varsayilan);
+  };
+  const biten = dugumleri(g).flatMap((b) => b.tesisler);
+  if (hedefler.length > 0) biten.sort((a, b) => a.id - b.id);
+  for (const t of biten) ekle(yontemi(t.tur, t.yontem));
   for (const i of g.d.insaatlar) {
     if (i.sahip !== g.oyuncu || i.tur !== "tesis" || i.hucreler === undefined || i.hedef < 0) continue;
-    ekle((g.bilgi.tur[i.hedef] as { yontemler: number[] }).yontemler[0] as number);
+    ekle(yontemi(i.hedef, undefined));
   }
   for (const tur of ekTurler) {
     const ti = g.sim.ic.tesisTuruIndeks[tur];
-    if (ti !== undefined) ekle((g.bilgi.tur[ti] as { yontemler: number[] }).yontemler[0] as number);
+    if (ti !== undefined) ekle(yontemi(ti, undefined));
   }
   // Tarım yönetimi: gübre ihraç edilmez, çiftlikte kalır (stok birikir, doz stoğa göre ayarlanır). Sınırsız ayırma = tümü.
   if (gubreAyir !== 0 && g.bilgi.gubre >= 0) net.set(g.bilgi.gubre, 0); // 0 ⇒ var olan gübre ihracat emri silinir
@@ -447,8 +494,8 @@ function netCikti(g: Gorunum, ekTurler: readonly string[], gubreAyir = 0): Map<n
  * İhracat emirleri: net çıktısı pozitif, depolanabilir her mal için net oranda ihracat (iç tüketim payı düşülür; böylece emir
  * kendi girdisini boşaltmaz). Yuva doluysa yeni mal eklenmez; net ≤ 0 olan eski emir silinir. Var olan emir aynıysa komut verilmez.
  */
-function ihracatEmirleri(g: Gorunum, dugum: BolgeDurumu, ekTurler: readonly string[], gubreAyir = 0): Komut[] {
-  const net = netCikti(g, ekTurler, gubreAyir);
+function ihracatEmirleri(g: Gorunum, dugum: BolgeDurumu, ekTurler: readonly string[], gubreAyir = 0, hedefler: readonly YontemHedefi[] = []): Komut[] {
+  const net = netCikti(g, ekTurler, gubreAyir, hedefler);
   const yuva = ticaretEmirYuvasi(g.sim.ic, dugum);
   const emirler = dugum.ticaretEmirleri.filter((e) => e.yon === "ihracat");
   const bolge = dugum.id;
@@ -848,6 +895,113 @@ export function ilceSec(sim: Simulasyon, acilis: GecAcilis, secenek: IlceSecimSe
 }
 
 // ---------------------------------------------------------------------------
+// Zincir önayarı: yöntem hedefleri ve komutları (G6; A2 bot kuralları §2, §5)
+// ---------------------------------------------------------------------------
+
+const FABRIKA_TURU = "gida_fabrikasi";
+const AHIR_TURU = "ahir";
+const DEGIRMEN = "degirmen";
+const EKMEK_FIRINI = "ekmek_firini";
+const KEPEK_GUBRESI = "kepek_gubresi";
+/** İlk ekmekten sonra ahırın kurulması için beklenen saat sayısı (A2 §2); ekmek çıktısı bu kadar saatlik birikince ahır kurulur. */
+const AHIR_BEKLEME_SAAT = 24;
+
+/** `zincir` seçici botunun fabrika sayısı n_f: tohum karması 1/2/3 = %25/%50/%25 (A2 bot kuralları §5). Deterministik; ölçüm raporu n_f dağılımını bununla yazar. */
+export function tohumluFabrikaSayisi(tohum: number, oyuncu: OyuncuId): 1 | 2 | 3 {
+  const h = fnv1a(`${tohum}|${oyuncu}|n_f`) % 100;
+  return h < 25 ? 1 : h < 75 ? 2 : 3;
+}
+
+/** Türün verilen yöntem kimliği türün listesinde ve teknoloji şartsızsa (baştan açık; bot teknoloji araştırmaz) indeksi, değilse undefined. */
+function acikYontem(g: Gorunum, turIndeks: number, kimlik: string): number | undefined {
+  const yi = g.sim.ic.yontemIndeks[kimlik];
+  if (yi === undefined) return undefined;
+  if (!(g.bilgi.tur[turIndeks] as { yontemler: number[] }).yontemler.includes(yi)) return undefined;
+  return g.bilgi.yontem[yi]?.gerekliTeknoloji === undefined ? yi : undefined;
+}
+
+/**
+ * `zincir` botunun yöntem hedefleri: (1) gıda fabrikası kopyaları: REHBERLİ `[degirmen, ekmek_firini]`; SEÇİCİ marjinal-net atama (`fabrikaAta`; bloklar: tür varsayılanı tek
+ * başına, `degirmen + ekmek_firini` çifti; sabit portföy planlanan çiftliklerdir; fiyat TABAN fiyattır: karar zaman içinde oynamasın, bir kez verilsin); (2) ahır:
+ * `kepek_gubresi`. İçerikte G6 yöntemleri yoksa/açık değilse ilgili hedef YOKTUR (tür varsayılanı çalışır).
+ */
+function yontemHedefleri(g: Gorunum, plan: readonly string[], secici: boolean, fabrikaSayisi: number): YontemHedefi[] {
+  const hedefler: YontemHedefi[] = [];
+  const fi = g.sim.ic.tesisTuruIndeks[FABRIKA_TURU];
+  if (fi !== undefined) {
+    const varsayilan = (g.bilgi.tur[fi] as { yontemler: number[] }).yontemler[0] as number;
+    const d = acikYontem(g, fi, DEGIRMEN);
+    const f = acikYontem(g, fi, EKMEK_FIRINI);
+    if (d !== undefined && f !== undefined) {
+      if (!secici) {
+        hedefler.push({ tur: fi, varsayilan, liste: [d, f] });
+      } else {
+        const hacim = npcHacimleri(g.d, g.sim.baglam);
+        const oyuncuSayisi = Math.max(1, g.d.oyuncular.length);
+        const sabit: number[] = [];
+        for (const tur of plan) {
+          const ti = g.sim.ic.tesisTuruIndeks[tur];
+          if (ti === undefined || tur === FABRIKA_TURU || tur === AHIR_TURU || g.mk.ekYapiIndeks.has(tur)) continue;
+          sabit.push((g.bilgi.tur[ti] as { yontemler: number[] }).yontemler[0] as number);
+        }
+        const pz = g.sim.ic.param.pazar;
+        const atama = fabrikaAta({
+          bilgi: g.bilgi,
+          fiyat: g.bilgi.taban,
+          dilim: hacim.emilim.map((x) => x / oyuncuSayisi),
+          ihracatPpm: pz.ihracatCarpaniPpm,
+          ithalatPpm: pz.ithalatCarpaniPpm,
+          sabit,
+          bloklar: [[varsayilan], [d, f]],
+          fabrikaSayisi,
+        });
+        if (atama !== null) hedefler.push({ tur: fi, varsayilan, liste: atama.yontemler });
+      }
+    }
+  }
+  const ai = g.sim.ic.tesisTuruIndeks[AHIR_TURU];
+  if (ai !== undefined) {
+    const k = acikYontem(g, ai, KEPEK_GUBRESI);
+    if (k !== undefined) hedefler.push({ tur: ai, varsayilan: (g.bilgi.tur[ai] as { yontemler: number[] }).yontemler[0] as number, liste: [k] });
+  }
+  return hedefler;
+}
+
+/**
+ * Tamamlanmış tesisler için `yontem_degistir` komutları: hedefi olan türün k. kopyası (tesis kimliği sırası) varsayılan yöntemdeyse ve hedef farklıysa hedefe çevrilir.
+ * Bedelsiz ve anlıktır; başka yöntemde olan tesise dokunulmaz (karar tesis başına BİR kez).
+ */
+function yontemKomutlari(g: Gorunum, hedefler: readonly YontemHedefi[]): Komut[] {
+  const komutlar: Komut[] = [];
+  for (const h of hedefler) {
+    const l: Array<{ bolge: string; tesis: number; yontem: number }> = [];
+    for (const b of dugumleri(g)) for (const t of b.tesisler) if (t.tur === h.tur) l.push({ bolge: b.id, tesis: t.id, yontem: t.yontem });
+    l.sort((a, b) => a.tesis - b.tesis);
+    l.forEach((x, i) => {
+      const hedef = h.liste[i];
+      if (hedef === undefined || hedef === x.yontem || x.yontem !== h.varsayilan) return;
+      komutlar.push({ tur: "yontem_degistir", bolge: x.bolge, tesis: x.tesis, yontem: (g.bilgi.yontem[hedef] as { id: string }).id });
+    });
+  }
+  return komutlar;
+}
+
+/** Ekmek çıktısı `saat` saatlik fırın çıktısı kadar birikti mi (tembel kümülatif üretim: `uretimToplam + uretimOrani × (t − uretimT0)`; `zincir` ahır kapısı). */
+function ekmekBirikti(g: Gorunum, saat: number): boolean {
+  const e = g.sim.ic.malIndeks["ekmek"];
+  const fi = g.sim.ic.yontemIndeks[EKMEK_FIRINI];
+  if (e === undefined || fi === undefined) return false;
+  const saatlik = ((g.bilgi.yontem[fi] as { cikti: Array<[number, number]> }).cikti.find(([m]) => m === e) ?? [e, 0])[1];
+  if (saatlik <= 0) return false;
+  let toplam = 0;
+  for (const b of dugumleri(g)) {
+    const dt = g.d.zaman - b.uretimT0;
+    toplam += (b.uretimToplam[e] ?? 0) + (dt > 0 ? Math.floor(((b.uretimOrani[e] ?? 0) * dt) / SAAT) : 0);
+  }
+  return toplam >= saat * saatlik;
+}
+
+// ---------------------------------------------------------------------------
 // Bot
 // ---------------------------------------------------------------------------
 
@@ -858,6 +1012,12 @@ class Bot implements ParselBotu {
   private readonly bakim: boolean;
   /** Tam bakım yönetimi (süregiden parça ithalatı dahil); yalnız onarım yönetiminde false. */
   private readonly bakimIthalati: boolean;
+  /** `zincir` önayarı (G6). */
+  private readonly zincir: boolean;
+  private readonly secici: boolean;
+  /** Önayar planı (`zincir`'de fabrika sayısı n_f ile kurulur). */
+  private readonly plan: readonly string[];
+  private readonly fabrikaSayisi: number;
   private readonly baslangicMs: number;
   /** Açık ilçe kararı (`ilceSec`) kullanılıyor mu. */
   private readonly ilceSecAcik: boolean;
@@ -873,14 +1033,25 @@ class Bot implements ParselBotu {
     this.acilis = onayar === "gec_katilan" ? acilis : undefined;
     this.tohum = secenek.tohum;
     this.tanim = tanimSec(onayar, acilis);
+    this.zincir = onayar === "zincir";
+    if (!this.zincir && (secenek.yontemSecici !== undefined || secenek.gidaFabrikasi !== undefined)) throw new Error(`parsel bot: yontemSecici ve gidaFabrikasi yalniz "zincir" onayarinda: ${onayar}`);
+    this.secici = this.zincir && secenek.yontemSecici === true;
+    this.fabrikaSayisi = secenek.gidaFabrikasi ?? (this.secici && secenek.tohum !== undefined ? tohumluFabrikaSayisi(secenek.tohum, oyuncu) : 2);
+    if (this.zincir) {
+      if (!Number.isSafeInteger(this.fabrikaSayisi) || this.fabrikaSayisi < 1 || this.fabrikaSayisi > 4) throw new Error(`parsel bot: gidaFabrikasi 1..4 tamsayi olmali: ${String(secenek.gidaFabrikasi)}`);
+      if (!this.secici && this.fabrikaSayisi !== 2) throw new Error("parsel bot: rehberli zincir botunda gidaFabrikasi 2 olmali (yontemSecici icin 1..4)");
+    }
+    this.plan = this.zincir ? ["ciftlik", ...Array.from({ length: this.fabrikaSayisi }, () => FABRIKA_TURU), AHIR_TURU] : this.tanim.plan;
     this.tarim = onayar === "ciftci_tarim" || (secenek.tarimYonetimi === true && onayar !== "pasif" && onayar !== "spekulator");
     this.ilceSecAcik = secenek.ilceSec ?? onayar === "gec_katilan";
     if (this.ilceSecAcik && onayar !== "spekulator") {
       const acilisAnahtari: GecAcilis = onayar === "gec_katilan" ? acilis : onayar === "sanayici" ? "sanayici" : onayar === "tuccar" ? "pazar" : "ciftci";
       this.ilceKarari = (sim: Simulasyon): IlceSecimi => ilceSec(sim, acilisAnahtari, { oyuncu, siralama: onayar === "gec_katilan" ? "emsal" : "doluluk", ayrilmisOnceligi: secenek.ayrilmisOnceligi !== false, ...(secenek.tohum !== undefined ? { tohum: secenek.tohum } : {}) });
     }
-    this.bakim = (secenek.bakimYonetimi === true || secenek.onarimYonetimi === true) && onayar !== "pasif" && onayar !== "spekulator";
-    this.bakimIthalati = secenek.bakimYonetimi === true;
+    // `zincir`'de bakım yönetimi vars. AÇIK (A2 bot kuralları §1); diğer önayarlarda vars. kapalı.
+    const bakimAcik = secenek.bakimYonetimi ?? onayar === "zincir";
+    this.bakim = (bakimAcik || secenek.onarimYonetimi === true) && onayar !== "pasif" && onayar !== "spekulator";
+    this.bakimIthalati = bakimAcik;
     const gun = secenek.baslangicGun ?? 0;
     if (!Number.isSafeInteger(gun) || gun < 0) throw new Error(`parsel bot: baslangicGun negatif olmayan tamsayi olmali: ${String(secenek.baslangicGun)}`);
     this.baslangicMs = gun * 86_400_000;
@@ -983,10 +1154,11 @@ class Bot implements ParselBotu {
       const gorulen = new Map<string, number>();
       let bosYuva = g.mk.p.esZamanliInsaat - surenInsaat(g);
       let verilen = 0;
-      for (const tur of this.tanim.plan) {
+      for (const tur of this.plan) {
         const sira = (gorulen.get(tur) ?? 0) + 1;
         gorulen.set(tur, sira);
         if ((sayilar.get(tur) ?? 0) >= sira) continue;
+        if (this.zincir && tur === AHIR_TURU && !ekmekBirikti(g, AHIR_BEKLEME_SAAT)) continue; // ahır: ilk ekmekten ~24 saat sonra (A2 §2)
         if (!ilIcinUygunMu(g, il, tur)) continue;
         const ei = g.mk.ekYapiIndeks.get(tur);
         if (ei !== undefined && (sayilar.get(tur) ?? 0) >= (g.mk.ekYapilar[ei] as { enFazlaIlBasina: number }).enFazlaIlBasina) continue;
@@ -1018,7 +1190,9 @@ class Bot implements ParselBotu {
       komutlar.push(...tarim.komutlar);
       const bakim = this.bakim ? bakimKomutlari(g, dugum, this.bakimIthalati) : { komutlar: [] as Komut[], acik: new Map<number, number>() };
       komutlar.push(...bakim.komutlar);
-      komutlar.push(...ihracatEmirleri(g, dugum, ekTurler, tarim.gubreAyir));
+      const hedefler = this.zincir ? yontemHedefleri(g, this.plan, this.secici, this.fabrikaSayisi) : [];
+      komutlar.push(...yontemKomutlari(g, hedefler));
+      komutlar.push(...ihracatEmirleri(g, dugum, ekTurler, tarim.gubreAyir, hedefler));
       if (this.tanim.ithalat || this.bakim) {
         // Yapı malzemesi açığı ile bakım açığı birleştirilir (aynı mal için büyük olan).
         const birlesik = new Map(acik);
