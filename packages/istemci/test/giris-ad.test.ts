@@ -235,6 +235,7 @@ describe("API: görünen ad uçları", () => {
 
   it("hesapSil: POST gövdesiz, 202 {tamam, gecerlilikSn}; yol protokolle aynı; hata kodları", async () => {
     expect(GIRIS_YOLLARI.hesapSil).toBe(PROTOKOL_YOLLARI.hesapSil);
+    kimlikler.length = 0;
     const t = api(() => yanit(202, { tamam: true, gecerlilikSn: 3600 }));
     expect(await t.api.hesapSil()).toEqual({ tamam: true, veri: { tamam: true, gecerlilikSn: 3600 } });
     expect(t.cagrilar).toEqual([{ url: "http://x/giris/hesap-sil", yontem: "POST", govde: null }]);
