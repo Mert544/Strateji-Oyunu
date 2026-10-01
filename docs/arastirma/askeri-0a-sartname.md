@@ -219,7 +219,7 @@ export interface AskeriEskiyaParametreleri {
 }
 ```
 
-**Değerler A2 kalibrasyonundan** (`takim/a2/eskiya-kalibrasyon` `79ea178`, baş lider onaylı; **değerler 0b verisine girer, 0a'da `etkin: false` kalır**): `servetAdimiMili` 500 000 ₺, `gunlukOlasilikPpm` 250 000, `yagmaOraniPpm` ve `yapiDevreDisiPpm` 250 000 (E-4: oran %25, yalnız 0b verisi). **`beklemeGun` notu:** A2'nin `5`i bekleme sayacını **planlamadan** saydı (ortalama aralık 8 gün, ilçe başına haftada 0,88 baskın). Sayaç **baskın gününden** tanımlandığı için (yukarıdaki alan açıklaması) ve baskın planlamadan `planlamaOncesiGun = 2` gün sonra olduğundan eşdeğer değer **3**'tür (`D2 − P1 ≥ 5` ⇔ `D2 − B1 ≥ 3`; ortalama aralık `2 + 3 + 4 − 1 = 8` gün). Örnekte 3 yazılıdır; 5 yazılırsa ortalama aralık 10 gün olur (A2 tablosu geçerli kalmaz). **Karar için Ar-Ge lideri/baş lider onayı: S-10.**
+**Değerler A2 kalibrasyonundan** (`takim/a2/eskiya-kalibrasyon` `79ea178`, baş lider onaylı; **değerler 0b verisine girer, 0a'da `etkin: false` kalır**): `servetAdimiMili` 500 000 ₺, `gunlukOlasilikPpm` 250 000, `yagmaOraniPpm` ve `yapiDevreDisiPpm` 250 000 (E-4: oran %25, yalnız 0b verisi). **`beklemeGun` notu:** A2'nin `5`i bekleme sayacını **planlamadan** saydı (ortalama aralık 8 gün, ilçe başına haftada 0,88 baskın). Sayaç **baskın gününden** tanımlandığı için (yukarıdaki alan açıklaması) ve baskın planlamadan `planlamaOncesiGun = 2` gün sonra olduğundan eşdeğer değer **3**'tür (`D2 − P1 ≥ 5` ⇔ `D2 − B1 ≥ 3`; ortalama aralık `2 + 3 + 4 − 1 = 8` gün). Örnekte 3 yazılıdır; 5 yazılırsa ortalama aralık 10 gün olur (A2 tablosu geçerli kalmaz). **Karar: S-10 kapandı (Ar-Ge lideri): 3.**
 
 **Doğrulayıcı (Katman 1: `veri/src/sema.ts` zod `.strict()` + `veri/src/dogrula.ts` `dogrulaParametreler` yanına; Node-only değildir, çekirdek paketine girmez):**
 
@@ -632,7 +632,7 @@ Kural: testler **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedef
 | S-7 | ~~Yağma penceresi sabit mi kayan mı~~ **KAPANDI (baş lider):** sabit (ilk yağmada açılır; §9.1) | sabit | kapandı |
 | S-8 | ~~PvP yağma iletimi %60 ve `yagmaIletimPpm` adı~~ **KAPANDI (baş lider):** şemada alan 0a'da YOK, yalnız ad rezerve; uygulama Alfa-1 | rezerv | kapandı |
 | S-9 | ~~AK'den sapmalar~~ **KAPANDI (baş lider):** (1) ek yapıda `nobetciGucu`/`duyuruEkiSaat` yok (tek kaynak `eskiya.*`), (2) `ganimet` mal-kimlikli `Record`, (3) arsa matrisi yok | kabul | kapandı |
-| S-10 | Bekleme sayacı baskın gününden sayılıyor (A2 E-2): A2'nin `beklemeGun: 5`i planlamadan sayılan değerdir; eşdeğeri baskın gününden **3**'tür (§4.1). Örnek 3 yazıldı; 5 istenirse ortalama aralık 8 → 10 gün | `beklemeGun: 3` | Ar-Ge lideri, baş lider |
+| S-10 | ~~Bekleme sayacı değeri~~ **KAPANDI (Ar-Ge lideri): `beklemeGun` 3.** Sayaç baskın gününden sayılır; A2'nin planlamadan sayılan 5'inin eşdeğeridir (ortalama aralık 8 gün, haftada 0,88 baskın korunur; §4.1) | `beklemeGun: 3` | kapandı |
 
 ### 16b. 0b açık soruları (0a'yı bloke etmez; 0b tasarımında karara bağlanır)
 
