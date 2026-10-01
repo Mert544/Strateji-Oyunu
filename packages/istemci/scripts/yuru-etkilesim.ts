@@ -99,6 +99,9 @@ async function haritaHazir(sayfa: Page, kosul: string, zaman = 60000): Promise<v
   await sayfa.waitForTimeout(250);
 }
 
+/** Hazırlık beklemeleri (karo, yürüyüş) için geniş üst sınır (yüklü makinede yavaş); denetim eşiği değildir. */
+const HAZIR_MS = 240_000;
+
 const yuruDurum = (sayfa: Page) => sayfa.evaluate(() => window.__yuru?.durum() ?? null);
 
 async function yuruHazir(sayfa: Page, zaman = 90000): Promise<void> {
@@ -377,12 +380,17 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   // Karo akışı: 1,5 km doğuya geç → yeni 3×3 pencere yüklenir, kayan orijin kayar
   const orijin0 = d.orijin;
   await sayfa.evaluate(() => window.__yuru?.isinla(1500, -400));
-  await sayfa.waitForTimeout(300);
-  await yuruHazir(sayfa);
-  // Orijin kaydı kare döngüsünde olur: yüklü makinede (2–5 fps) birkaç saniye sürebilir
+  // Sıra önemli: orijin kaydı ve yeni karo penceresi kare döngüsünde AYNI adımda kurulur (sahne.ts adim: orijinKaydir ->
+  // karoPenceresi). Önce orijin değişimini bekle (= yeni pencere istendi), SONRA 3×3 pencerenin gelmesini bekle. Eski sıra
+  // (300 ms + yuruHazir, sonra orijin) yüklü makinede (≤ 10 fps) kare 300 ms içinde çalışmayınca ESKİ pencereye bakıp hemen
+  // dönüyordu ve denetim yeni karolar yüklenirken (hazır 2, bekleyen 7) yapılıyordu. Eşik değişmez; üst sınırlar geniştir.
   await sayfa
-    .waitForFunction((o) => { const x = window.__yuru?.durum().orijin; return !!x && (x[0] !== o[0] || x[1] !== o[1]); }, orijin0, { timeout: 10000 })
+    .waitForFunction((o) => { const x = window.__yuru?.durum().orijin; return !!x && (x[0] !== o[0] || x[1] !== o[1]); }, orijin0, { timeout: HAZIR_MS })
     .catch(() => undefined);
+  await sayfa
+    .waitForFunction(() => { const k = window.__yuru?.durum().karo; return !!k && k.hazir === 9 && k.bekleyen === 0; }, null, { timeout: HAZIR_MS })
+    .catch(() => undefined);
+  await yuruHazir(sayfa);
   d = (await yuruDurum(sayfa))!;
   kontrol(`${e} karo akışı: uzak noktada 3×3 pencere hazır, orijin kaydı`, d.karo.hazir === 9 && (d.orijin[0] !== orijin0[0] || d.orijin[1] !== orijin0[1]), `orijin ${orijin0.map((v) => v.toFixed(0))} → ${d.orijin.map((v) => v.toFixed(0))}, ${JSON.stringify(d.karo)}`);
   await ekran("6-akis");
