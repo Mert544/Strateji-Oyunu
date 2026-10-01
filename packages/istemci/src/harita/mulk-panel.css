@@ -47,17 +47,11 @@ body.mulk-paneli #harita-hazine .hz-saat { padding-left: 0; border-left: 0; }
   body.harita-acik.mulk-paneli.isletme-acik #panel { display: flex; height: 62vh; max-height: none; }
   body.harita-acik.isletme-acik :is(#harita-alt, #yapi-kart, #parsel-kart) { visibility: hidden; }
 }
-/* Esnaf Defteri (İşletmem'in sonunda): ödül çubuğu, sıradaki adımlar, defterine işlenenler (damga) */
-.defter-odul { display: flex; flex-direction: column; gap: 6px; margin: 0 0 var(--s-2); }
-.defter-odul-satir { display: flex; justify-content: space-between; gap: var(--s-2); font-size: var(--yazi-sm); color: var(--murekkep-2); }
-.defter-odul-satir b { color: var(--murekkep); font-variant-numeric: tabular-nums; font-weight: 600; }
-.defter-cubuk { display: block; height: 6px; border-radius: var(--r-hap); background: var(--yuzey-3); overflow: hidden; }
-.defter-cubuk i { display: block; height: 100%; background: var(--birincil); border-radius: var(--r-hap); }
+/* Esnaf Defteri (İşletmem'in sonunda): sıradaki adımlar (sağda "ödül: 5 çelik"), defterine işlenenler (damga). Ödül toplamı ve çubuğu yok (ZK-1). */
 .defter-baslik { margin: var(--s-3) 0 0; font-size: var(--yazi-xs); font-weight: 600; color: var(--murekkep-3); }
-/* Sağ sütun: tutar HİÇ kırılmaz (nowrap); uzun ödül iki satır: ne (5 makine parçası), altında değeri (≈ 900 ₺ değerinde). Kırılan, soldaki açıklamadır. */
+/* Sağ sütun: ödül HİÇ kırılmaz (nowrap); para ve mal birlikteyse iki satır. Kırılan, soldaki açıklamadır. */
 .defter-liste .defter-tutar { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-size: var(--yazi-sm); line-height: 1.3; color: var(--murekkep-2); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .defter-tutar .dt-deger { font-size: var(--yazi-xs); }
-.defter-odul-satir b { white-space: nowrap; }
 .defter-damga { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--birincil-tint); color: var(--birincil-ink); }
 /* Mülk bakımı (G7-4; sözleşme F. Ek): tesis satırında ve tesis kartında. Durum renk dışında sözcük (kalın), simge şekli ve kritikte sol şeritle de belli olur. */
 .bk-satir { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s-1); row-gap: 2px; margin: 2px 0 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
