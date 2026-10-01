@@ -32,7 +32,12 @@
 .dk-raf { display: flex; flex-direction: column; gap: var(--s-2); }
 .dk-yuva { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; min-height: 64px; padding: var(--s-2) var(--s-3); text-align: left; border: 1px solid var(--cizgi); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); font-size: var(--yazi-sm); }
 .dk-yuva[data-durum="bos"] { border-style: dashed; background: transparent; color: var(--murekkep-2); }
-.dk-yuva[data-durum="stoksuz"] { border-color: var(--uyari-cizgi); border-width: 2px; }
+/* Yuva durumları (A1 g9-dukkan-durum §2): renk tek başına anlam taşımaz; her biri yanında neden satırı (`dk-neden`) ya da şekil (çerçeve/şerit) taşır */
+.dk-yuva[data-durum="dolu-stoksuz"], .dk-yuva[data-durum="stoksuz"] { border-color: var(--uyari-cizgi); border-width: 2px; }
+.dk-yuva[data-durum="dolu-karsilanmiyor"] { box-shadow: inset 3px 0 0 var(--uyari); }
+.dk-yuva[data-durum="dolu-kasa-dolu"] { box-shadow: inset 3px 0 0 var(--bilgi); }
+.dk-yuva[data-durum="dolu-kampanya-bitti"] { box-shadow: inset 3px 0 0 var(--ikincil); }
+.dk-yuva[data-durum="gonderiliyor"], .dk-yuva[data-durum="yukleniyor"] { border-style: dotted; color: var(--murekkep-3); cursor: progress; }
 .dk-yuva b { font-weight: 600; }
 .dk-yuva-stok, .dk-yuva-fiyat { font-size: var(--yazi-xs); color: var(--murekkep-2); font-variant-numeric: tabular-nums; }
 .dk-secici { display: flex; flex-direction: column; padding: var(--s-2); background: var(--yuzey); border-radius: var(--r-lg); box-shadow: var(--golge-2); }
@@ -43,6 +48,13 @@
 .dk-panel .segment { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
 .dk-panel .segment[data-sutun="2"] { grid-template-columns: repeat(2, 1fr); }
 .dk-panel .segment button { min-height: 44px; }
+/* Fiyat durumları: bekleme ve boş yuvada kontrol soluk (odak kalır), seçili kademe okunur kalır */
+.dk-panel .segment[data-durum="bekleme"] button:not([aria-pressed="true"]), .dk-panel .segment[data-durum="kapali-bos"] button, .dk-panel .segment[data-durum="gonderiliyor"] button { color: var(--murekkep-3); cursor: not-allowed; }
+.dk-kampanya[data-durum="kampanya-suruyor"] { padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--ikincil-tint); color: var(--ikincil-ink); }
+.dk-kampanya[data-durum="kampanya-bitti"], .dk-kampanya[data-durum^="kampanya-hak-yok"] { color: var(--murekkep-2); }
+/* Maliyet kartı durumları: birincil soluk (aria-disabled) ve gönderiliyor */
+#yapi-kart [aria-disabled="true"].birincil, #yapi-kart [aria-disabled="true"].eylem { background: var(--yuzey-2); border-color: var(--yuzey-2); color: var(--murekkep-4); cursor: not-allowed; }
+#yapi-kart[data-durum="gonderiliyor"] .birincil { cursor: progress; }
 /* D-7 marka */
 .dk-marka { display: flex; flex-direction: column; gap: var(--s-3); }
 .dk-girdi { width: 100%; min-height: 44px; padding: 0 var(--s-3); border: 1px solid var(--cizgi-guclu); border-radius: var(--r-md); background: var(--yuzey-2); color: var(--murekkep); font-size: var(--yazi-md); scroll-margin-block: 96px; }
