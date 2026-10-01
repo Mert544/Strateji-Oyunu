@@ -12,6 +12,7 @@ import type { Scene, ShaderMaterial } from "three";
 import type { IlceSahipligi } from "../harita/baglanti";
 import { idCoz } from "../harita/hucre";
 import { S } from "./karo-geometri";
+import { MARKA_RENK_SAYISI } from "../tasarim/marka";
 import { hucreDunya } from "./koordinat";
 import type { Cerceve, Orijin } from "./koordinat";
 import type { Rgb, YuruPaleti } from "./palet";
@@ -23,6 +24,11 @@ export const ASAMA_ADI: Record<Asama, string> = { 0: "Temel", 1: "İskele", 2: "
 export interface InsaatBilgisi {
   hucre: string;
   asama: Asama;
+  /**
+   * Bitmiş (Tamam) dükkân ise: tür (`dukkanTurleri[].id`) ve marka renk indeksi (oyuncu paleti; yoksa markasız). Gövde yerine
+   * dükkân görünümü (tabela, tente şeridi, raf) çizilir. Kaynak: sunucunun `DukkanDurumu` / `OyuncuMarka` verisi (G7).
+   */
+  dukkan?: { tur: string; markaRenk?: number };
   /** Sahte bağdaştırıcıda inşaat yoksa üretilen örnek (kartta belirtilir). */
   ornek?: boolean;
 }
@@ -35,6 +41,9 @@ export interface InsaatKaynagi {
 export function insaatKaynagiMi(b: unknown): b is InsaatKaynagi {
   return !!b && typeof (b as Partial<InsaatKaynagi>).insaatlarAl === "function";
 }
+
+/** Örnek dükkân türleri (sahte veri; gerçek tür sunucudan gelir). */
+const ORNEK_DUKKANLAR = ["bakkal", "firin", "sarkuteri", "sekerci"] as const;
 
 /**
  * Bağdaştırıcıda inşaat yoksa yer tutucu (örnek veri): her komşu (bot) parselinde bir yapı; ilk parselde dört
@@ -54,8 +63,10 @@ export function ornekInsaatlar(s: IlceSahipligi | null, ben: string): InsaatBilg
   sirali.forEach((sahip, i) => {
     const h = sahipler.get(sahip)!.sort();
     // 3×3 parselin köşeleri (kimlik sırasında 0, 2, 6, 8): dört aşama, ortası boş kalır
-    if (i === 0) [0, 2, 6, 8].forEach((j, a) => h[j] && l.push({ hucre: h[j], asama: a as Asama, ornek: true }));
-    else if (h[0]) l.push({ hucre: h[0], asama: ((i - 1) % 4) as Asama, ornek: true });
+    // Örnek (sahte) dükkân: bitmiş (Tamam) örneklerin hepsi dükkân; tür ve marka rengi sırayla (deterministik)
+    const dukkan = (n: number): { tur: string; markaRenk: number } => ({ tur: ORNEK_DUKKANLAR[n % ORNEK_DUKKANLAR.length]!, markaRenk: (n * 5 + 2) % MARKA_RENK_SAYISI });
+    if (i === 0) [0, 2, 6, 8].forEach((j, a) => h[j] && l.push({ hucre: h[j], asama: a as Asama, ornek: true, ...(a === 3 ? { dukkan: dukkan(i) } : {}) }));
+    else if (h[0]) l.push({ hucre: h[0], asama: ((i - 1) % 4) as Asama, ornek: true, ...((i - 1) % 4 === 3 ? { dukkan: dukkan(i) } : {}) });
   });
   return l;
 }
@@ -125,6 +136,32 @@ export function asamaKutulari(asama: Asama, c: number): [number, number, number,
     return k;
   }
   k.push([m + 0.6, 0.45, m + 0.6, w - 1.2, 9.5, w - 1.2, 3], [m + 0.3, 9.95, m + 0.3, w - 0.6, 0.45, w - 0.6, 4]);
+  return k;
+}
+
+/**
+ * Bitmiş dükkân (tek katlı) kutu parçaları, `asamaKutulari` ile aynı ayak izi ve biçim ([x, y, z, sx, sy, sz, renkNo]):
+ * renkNo 3 gövde, 4 çatı, 5 marka rengi (tente şeridi), 6 marka açığı (tabela plakası), 7 raf. Cephe +z (güney) yüzündedir:
+ * tente şeridi cepheden 1,8 m öne çıkar, üstünde tabela plakası, altında üç raf. Hepsi örneklenmiş kutu çiziminde (ek çağrı yok).
+ */
+export function dukkanKutulari(c: number): [number, number, number, number, number, number, number][] {
+  const m = c * 0.15;
+  const w = c * 0.7;
+  const x0 = m + 0.6;
+  const z0 = m + 0.6;
+  const gen = w - 1.2;
+  const zOn = z0 + gen;
+  const bw = gen * 0.7;
+  const bx = x0 + gen * 0.15;
+  const k: [number, number, number, number, number, number, number][] = [
+    [m, 0, m, w, 0.45, w, 0], // temel döşemesi
+    [x0, 0.45, z0, gen, 4.4, gen, 3], // gövde
+    [m + 0.3, 4.85, m + 0.3, w - 0.6, 0.35, w - 0.6, 4], // çatı
+    [bx, 3.1, zOn, bw, 0.22, 1.8, 5], // tente şeridi (marka rengi)
+    [bx, 3.55, zOn, bw, 1.0, 0.22, 6], // tabela plakası
+    [bx, 4.55, zOn, bw, 0.14, 0.26, 5], // tabela üst şeridi
+  ];
+  for (let i = 0; i < 3; i++) k.push([bx + 0.6 + (i * bw) / 3, 0.45, zOn + 0.35, bw / 3 - 0.9, 1.1, 0.8, 7]); // raflar
   return k;
 }
 
@@ -361,9 +398,22 @@ export class ArsaKatmani {
       const bx = (c.x - this.cerceve.X0) * k;
       const bz = (c.y - this.cerceve.Y0) * k;
       const sahip = this.sahiplik?.hucreler.get(ins.hucre)?.sahip;
-      for (const [x, y, z, sx, sy, sz, r] of asamaKutulari(ins.asama, k)) {
-        let renk: Rgb = r === 4 ? [this.palet.sinif[S.BINA_CATI * 3]!, this.palet.sinif[S.BINA_CATI * 3 + 1]!, this.palet.sinif[S.BINA_CATI * 3 + 2]!] : this.palet.insaat[r as 0 | 1 | 2 | 3];
-        if ((r === 2 || r === 3) && sahip === this.ben) renk = karis(renk, this.palet.ben, 0.45);
+      // Bitmiş dükkân: gövde yerine dükkân görünümü; marka rengi oyuncu paletinden (markasız: nötr)
+      const dukkan = ins.asama === 3 ? ins.dukkan : undefined;
+      const mr = dukkan?.markaRenk;
+      const marka: Rgb = mr === undefined ? this.palet.insaat[2] : this.markaRengi(mr);
+      for (const [x, y, z, sx, sy, sz, r] of dukkan ? dukkanKutulari(k) : asamaKutulari(ins.asama, k)) {
+        let renk: Rgb =
+          r === 4
+            ? [this.palet.sinif[S.BINA_CATI * 3]!, this.palet.sinif[S.BINA_CATI * 3 + 1]!, this.palet.sinif[S.BINA_CATI * 3 + 2]!]
+            : r === 5
+              ? marka
+              : r === 6
+                ? karis(marka, [1, 1, 1], 0.7)
+                : r === 7
+                  ? this.palet.insaat[1]
+                  : this.palet.insaat[r as 0 | 1 | 2 | 3];
+        if (!dukkan && (r === 2 || r === 3) && sahip === this.ben) renk = karis(renk, this.palet.ben, 0.45);
         kutu(bx + x, y, bz + z, sx, sy, sz, renk);
       }
     }
@@ -422,6 +472,13 @@ export class ArsaKatmani {
     return l;
   }
 
+  /** Marka rengi indeksi -> palet rengi (dükkân tabelası ve tente şeridi). */
+  private markaRengi(i: number): Rgb {
+    const j = ((Math.trunc(i) % MARKA_RENK_SAYISI) + MARKA_RENK_SAYISI) % MARKA_RENK_SAYISI;
+    const m = this.palet.marka;
+    return [m[3 * j]!, m[3 * j + 1]!, m[3 * j + 2]!];
+  }
+
   /** Hücredeki inşaat (kart için). */
   insaatBul(id: string): InsaatBilgisi | undefined {
     return this.insaatlar.find((i) => i.hucre === id);
@@ -438,7 +495,7 @@ export class ArsaKatmani {
       const [bx, bz] = hucreDunya(this.cerceve, c.x, c.y);
       const m = k * 0.15 + 0.6;
       const w = k * 0.7 - 1.2;
-      l.push({ halka: [bx + m, bz + m, bx + m + w, bz + m, bx + m + w, bz + m + w, bx + m, bz + m + w], ust: ins.asama === 3 ? 10.3 : 6 });
+      l.push({ halka: [bx + m, bz + m, bx + m + w, bz + m, bx + m + w, bz + m + w, bx + m, bz + m + w], ust: ins.asama === 3 ? (ins.dukkan ? 5.3 : 10.3) : 6 });
     }
     return l;
   }

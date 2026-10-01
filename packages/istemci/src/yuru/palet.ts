@@ -3,6 +3,7 @@
  * sahne ve harita aynı kaynaktan beslenir (L3 → L4 geçişinde zemin rengi sıçramaz). Doygun renk yalnız oyuncunun
  * mülkü ve karakter vurgusu içindir (`--sen`). Sınıf sırası karo-geometri.ts `S`.
  */
+import { MARKA_RENK_SAYISI, markaRenkBelirteci } from "../tasarim/marka";
 import { S, SINIF_SAYISI } from "./karo-geometri";
 
 export type Rgb = [number, number, number];
@@ -70,6 +71,8 @@ export interface YuruPaleti {
   giysiAlt: Rgb;
   ten: Rgb;
   insaat: [Rgb, Rgb, Rgb, Rgb];
+  /** Marka renkleri (oyuncu paleti, MARKA_RENK_SAYISI × 3; dükkân tabelası ve şeridi). */
+  marka: Float32Array;
   golge: Rgb;
 }
 
@@ -108,6 +111,7 @@ export function paletOku(): YuruPaleti {
     giysiAlt: tok("--yuru-giysi-alt"),
     ten: tok("--yuru-ten"),
     insaat: [tok("--yuru-insaat-0"), tok("--yuru-insaat-1"), tok("--yuru-insaat-2"), tok("--yuru-insaat-3")],
+    marka: Float32Array.from({ length: MARKA_RENK_SAYISI * 3 }, (_, i) => tok(markaRenkBelirteci(Math.floor(i / 3)))[i % 3]!),
     golge: tok("--yuru-golge"),
   };
 }
