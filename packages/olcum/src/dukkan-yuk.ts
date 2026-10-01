@@ -44,7 +44,7 @@ export interface DukkanYukSecenegi {
 }
 
 /**
- * Henüz hedef sayıda dükkânı olmayan her işletmeye dükkân ekler (oyuncu sırası `dunya.mulk.oyuncular` sırasıdır) ve çözümü kirletir. Döner: eklenen dükkân sayısı. Aynı çağrı tekrarında yeni
+ * Henüz hedef sayıda dükkânı olmayan her OYUNCUYA dükkân ekler (oyuncu sırası `dunya.mulk.oyuncular` sırasıdır; oyuncunun ilk işletme düğümüne) ve çözümü kirletir. Döner: eklenen dükkân sayısı. Aynı çağrı tekrarında yeni
  * katılanlara ekler; mevcut dükkânlar korunur.
  */
 export function dukkanlariEkle(sim: Simulasyon, secenek: DukkanYukSecenegi = {}): number {
@@ -57,13 +57,16 @@ export function dukkanlariEkle(sim: Simulasyon, secenek: DukkanYukSecenegi = {})
   const mallar = secenek.rafMallari ?? ["gida", "ekmek", "un", "sut"];
   let eklenen = 0;
   const sira = new Map(d.mulk.oyuncular.map((o, i) => [o.id, i] as const));
-  for (const isl of d.mulk.isletmeler) {
-    const dugum = d.bolgeler[isl.bolgeIndeksi];
+  // Dükkân sayısı OYUNCU başınadır (bir oyuncunun birden çok işletme düğümü olabilir): hedef oyuncunun tüm düğümlerindeki toplamdır; yeni dükkân oyuncunun ilk düğümüne eklenir.
+  const dugumleri = new Map<string, number[]>();
+  for (const isl of d.mulk.isletmeler) dugumleri.set(isl.oyuncu, [...(dugumleri.get(isl.oyuncu) ?? []), isl.bolgeIndeksi]);
+  for (const [oyuncu, indeksler] of dugumleri) {
+    const dugum = d.bolgeler[indeksler[0] as number];
     if (dugum === undefined) continue;
-    const hucreler = d.mulk.hucreler.filter((h) => h.sahip === isl.oyuncu);
+    const hucreler = d.mulk.hucreler.filter((h) => h.sahip === oyuncu);
     if (hucreler.length === 0) continue;
-    const hedef = oyuncuDukkanSayisi(sira.get(isl.oyuncu) ?? 0);
-    const mevcut = (dugum.ekYapilar ?? []).filter((e) => e.dukkan !== undefined).length;
+    const hedef = oyuncuDukkanSayisi(sira.get(oyuncu) ?? 0);
+    const mevcut = indeksler.reduce((t, i) => t + (d.bolgeler[i]?.ekYapilar ?? []).filter((e) => e.dukkan !== undefined).length, 0);
     for (let j = mevcut; j < hedef; j++) {
       const raf = Array.from({ length: yuva }, (_, i) => {
         const mal = mallar[i];
@@ -77,8 +80,8 @@ export function dukkanlariEkle(sim: Simulasyon, secenek: DukkanYukSecenegi = {})
     if (secenek.bolStok !== false) {
       for (const m of mallar) {
         const mi = sim.ic.malIndeks[m];
-        const s = mi === undefined ? undefined : dugum.stoklar[mi];
-        if (s !== undefined) s.miktar = Math.max(s.miktar, 1_000_000);
+        const st = mi === undefined ? undefined : dugum.stoklar[mi];
+        if (st !== undefined) st.miktar = Math.max(st.miktar, 1_000_000);
       }
     }
   }
