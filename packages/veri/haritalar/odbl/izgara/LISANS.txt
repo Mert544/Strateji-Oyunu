@@ -1,0 +1,12 @@
+Bu klasördeki dosyalar OpenStreetMap verisinden türetilmiştir.
+© OpenStreetMap katkıcıları — Open Database License (ODbL) 1.0: https://opendatacommons.org/licenses/odbl/1-0/
+Karo kaynağı: Protomaps Basemap v4 (build.protomaps.com, 20260930 yapısı; OSM 2026-09-30T04:00Z).
+İdari sınır: OSM ilişkileri (odbl/hiyerarsi.json'daki `osm` kimlikleri), kilitli Overpass indirmesi (OSM 2026-10-01T06:29:34Z).
+
+Dosyalar (docs/olcum/izgara-boyut-g3.md):
+  manifest.json                  üretilmiş kayıt: ilçe, dosya yolu, bayt, sha256, hücre sayıları, kural, kaynak sürümleri
+  <ilçe>.bhi.gz                  z20 hücre ızgarası, BHI1 ikili biçim (gzip): durum baytı + bina yüzdesi (sunucu ve istemci okur)
+  <ilçe>-seritler.pmtiles        aynı ızgara, istemci için "serit" vektör katmanı (tippecanoe, z15)
+Gebze dosyaları (Sprint 1) odbl/ornek/ altında kalır; yolları manifestte yazılıdır.
+
+Yeniden üretim: tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --ilce tr_16_gemlik --ilce tr_41_korfez [--dogrula]

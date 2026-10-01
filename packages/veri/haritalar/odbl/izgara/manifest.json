@@ -1,0 +1,154 @@
+{
+  "surum": 1,
+  "lisans": "ODbL-1.0",
+  "atif": "© OpenStreetMap katkıcıları",
+  "aciklama": "Alfa-0 ilceleri z20 arsa izgarasi (BHI1). Istemci ve sunucu ilce listesini ve dosyalari buradan okur; yollar odbl/ dizinine goredir.",
+  "hucreZ": 20,
+  "kural": {
+    "ornek": 8,
+    "yolEsik": 32,
+    "suEsik": 32,
+    "askeriEsik": 1
+  },
+  "kaynak": {
+    "karo": {
+      "yapi": "20260930",
+      "url": "https://build.protomaps.com/20260930.pmtiles",
+      "semaSurumu": "4.15.2",
+      "osmZamani": "2026-09-30T04:00:00Z"
+    },
+    "sinir": {
+      "dosya": "idari-tr.json",
+      "osmZamani": "2026-10-01T06:29:34Z",
+      "sha256": "700c5babdc7d97c6043f38c714c730ad7b7a9592046e13c3141711d81b144e26"
+    }
+  },
+  "ilceler": [
+    {
+      "kimlik": "tr_16_gemlik",
+      "ad": "Gemlik",
+      "il": "tr_16",
+      "osmIliski": 1273958,
+      "bhi": {
+        "yol": "izgara/tr_16_gemlik.bhi.gz",
+        "bayt": 37023,
+        "sha256": "bc3675b3189037acc753ee6fe044d68bb33ebf447331853458da13711f01609c",
+        "hamBayt": 2450112
+      },
+      "seritler": {
+        "yol": "izgara/tr_16_gemlik-seritler.pmtiles",
+        "bayt": 228185,
+        "sha256": "2518c7200c50bbbdb2373ea1dc766626f690e0623c1d0ba3b26e8ca750b243c6"
+      },
+      "cerceve": {
+        "x0": 608713,
+        "y0": 394755,
+        "genislik": 1194,
+        "yukseklik": 1026
+      },
+      "hucre": {
+        "icerde": 493375,
+        "su": 368,
+        "kara": 493007,
+        "uygun": 478646,
+        "engelYol": 11178,
+        "engelAskeri": 3279
+      },
+      "karo": {
+        "yapi": "20260930",
+        "bbox": [
+          28.9850943,
+          40.3118262,
+          29.3948925,
+          40.5797473
+        ],
+        "bayt": 3892816,
+        "sha256": "52d7e7f98775eadab8d2357e356a125a30a793455716d16ceee3c998c756a916"
+      }
+    },
+    {
+      "kimlik": "tr_41_gebze",
+      "ad": "Gebze",
+      "il": "tr_41",
+      "osmIliski": 1211496,
+      "bhi": {
+        "yol": "ornek/gebze-hucreler.bhi.gz",
+        "bayt": 85234,
+        "sha256": "60b5603fdd112a261f3edae5382ffc9673a8fc4a1824213884ae18508b37aebd",
+        "hamBayt": 2599902
+      },
+      "seritler": {
+        "yol": "ornek/gebze-seritler.pmtiles",
+        "bayt": 416436,
+        "sha256": "082e782d773d6836e0a5ab6bd5b13c7be2d5938b03c8d4f1f01e646ec7523e61"
+      },
+      "cerceve": {
+        "x0": 609744,
+        "y0": 392968,
+        "genislik": 1207,
+        "yukseklik": 1077
+      },
+      "hucre": {
+        "icerde": 508634,
+        "su": 1589,
+        "kara": 507045,
+        "uygun": 485856,
+        "engelYol": 21159,
+        "engelAskeri": 33
+      },
+      "karo": {
+        "yapi": "20260930",
+        "bbox": [
+          29.3391181,
+          40.7649281,
+          29.7531295,
+          41.0440465
+        ],
+        "bayt": 9424408,
+        "sha256": "12c2658e608b086ae094972865104730d05b19acaff659addd6b93f684e920bc"
+      }
+    },
+    {
+      "kimlik": "tr_41_korfez",
+      "ad": "Körfez",
+      "il": "tr_41",
+      "osmIliski": 1211492,
+      "bhi": {
+        "yol": "izgara/tr_41_korfez.bhi.gz",
+        "bayt": 47931,
+        "sha256": "4af996951f7813b861b7876f304a96166e43134ad192ec2d9bf982a34ab0a8c3",
+        "hamBayt": 1689684
+      },
+      "seritler": {
+        "yol": "izgara/tr_41_korfez-seritler.pmtiles",
+        "bayt": 249167,
+        "sha256": "b3ac6db26a60a577436e78caf7c3785357f60c9a4ce3963922fdfe1a78c1754c"
+      },
+      "cerceve": {
+        "x0": 610491,
+        "y0": 393004,
+        "genislik": 745,
+        "yukseklik": 1134
+      },
+      "hucre": {
+        "icerde": 366367,
+        "su": 729,
+        "kara": 365638,
+        "uygun": 351383,
+        "engelYol": 14160,
+        "engelAskeri": 109
+      },
+      "karo": {
+        "yapi": "20260930",
+        "bbox": [
+          29.5954942,
+          40.7407204,
+          29.8510764,
+          41.0347657
+        ],
+        "bayt": 4667678,
+        "sha256": "25dec5e3d1454513569d1f0f09322c613663582dde33c59e9252730dab79e2ab"
+      }
+    }
+  ]
+}

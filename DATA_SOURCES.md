@@ -345,3 +345,16 @@ pnpm harita:osm uret tr       # yalnız verilen ülkeler (kimlik/çıktı yalnı
 pnpm harita:osm kilitle       # önbellek özetlerini bilerek yeniden kilitler (OSM verisi güncellendiyse)
 pnpm test                     # osm-*.test.ts: sayılar, eşleme, boyut, bayt bayt determinizm (önbellek varsa)
 ```
+
+## 9. Alfa-0 arsa ızgarası (ODbL)
+
+`packages/veri-hatti/src/osm/izgara-ilce*.ts`; çıktılar `packages/veri/haritalar/odbl/izgara/` (Gebze: `odbl/ornek/`) ve tek kayıt `izgara/manifest.json`. Boyut ve determinizm: `docs/olcum/izgara-boyut-g3.md`.
+
+| Kaynak | Sürüm | Lisans | Hatta kullanımı | Bütünlük |
+|---|---|---|---|---|
+| **Protomaps Basemap** (OSM türevi karolar) | `20260930` yapısı, şema 4.15.2, OSM 2026-09-30T04:00Z | **ODbL 1.0** (© OpenStreetMap katkıcıları) | Yol, su, askeri alan, bina ve arazi kullanımı; z15 karosundan z20 hücre uygunluğu | `pmtiles extract` ile ilçe bbox'ı, `--maxzoom=15`; özüt `.onbellek/karolar` (repoya girmez), sha256 manifestte. Protomaps yapıları doğrudan bağlantıyla kullanılmaz, özüt alınır |
+| OSM idari sınır (bölüm 8) | `idari-tr.json`, OSM 2026-10-01T06:29:34Z | ODbL 1.0 | Hücrenin ilçesi (merkez çift-tek kuralı) | Bölüm 8 kilidi; uyuşmazsa hat durur |
+
+- Her ilçe için iki dosya: `<ilçe>.bhi.gz` (BHI1, sunucu ve istemci okur) ve `<ilçe>-seritler.pmtiles` (istemci katmanı). Manifest ilçe, yol, bayt, sha256, hücre sayıları, kural ve kaynak sürümlerini tutar; yollar `odbl/` dizinine göredir.
+- Engel kuralı: yol ve su hücrenin ≥ %50'si, askeri alan her kesişim; su hücreleri kota dışı. Kamu kuralı çekirdektedir.
+- ODbL klasör politikası (bölüm 8) aynen geçerlidir: ODbL dışı veri bu klasöre, ODbL verisi bu klasör dışına yazılmaz. Sahiplik ve oyun durumu ızgara dosyalarına yazılmaz.

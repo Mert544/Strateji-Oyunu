@@ -8,11 +8,11 @@
  * Ara/büyük çıktılar .onbellek/izgara/<ad>/ altına; --ornek verilirse ölçüm JSON'u ve 2 MB'tan küçük
  * örnek çıktılar packages/veri/haritalar/odbl/ornek/ altına yazılır. tippecanoe yoksa (a) adımı atlanır.
  */
-import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { brotliCompressSync, constants as zc } from "node:zlib";
 import { HARITA_DIZINI, ONBELLEK } from "../yollar";
+import { tippecanoe } from "./izgara-arac";
 import { geojsonSeqYaz, ikiliKodla, onizlemePng, sikistir } from "./izgara-cikti";
 import { hucreKenariMetre } from "./izgara-geometri";
 import { KARO_BUTCESI_BAYT, duzeyOlcumleri, katmanOlcumleri } from "./izgara-olcum";
@@ -22,27 +22,11 @@ import { esikDuyarliligi, izgaraIstatistigi, izgaraUret } from "./izgara-uret";
 import { VARSAYILAN_SECENEKLER, KATMAN_SAYISI } from "./izgara-uygunluk";
 
 export const ORNEK_DIZINI = resolve(HARITA_DIZINI, "odbl/ornek");
-const TIPPECANOE = resolve(ONBELLEK, "araclar/tippecanoe");
 const ORNEK_SINIRI = 2 * 1024 * 1024;
 
 function arg(ad: string): string | undefined {
   const i = process.argv.indexOf(`--${ad}`);
   return i >= 0 ? process.argv[i + 1] : undefined;
-}
-
-function tippecanoe(girdi: string, cikti: string, katman: string): boolean {
-  if (!existsSync(TIPPECANOE)) return false;
-  rmSync(cikti, { force: true });
-  execFileSync(
-    "nice",
-    [
-      "-n", "10", TIPPECANOE, "-q", "--force", "-o", cikti, "-l", katman,
-      "-Z15", "-z15", "--no-feature-limit", "--no-tile-size-limit", "--no-tiny-polygon-reduction",
-      "--no-line-simplification", girdi,
-    ],
-    { stdio: "inherit" },
-  );
-  return true;
 }
 
 async function main(): Promise<void> {
