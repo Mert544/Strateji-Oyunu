@@ -627,7 +627,7 @@ Kural: ölçek tavanı S/M, otomasyon çıktı çarpmaz, menşe şartı (§5.3);
 
 | Kademe | Başta görünür | Nasıl açılır |
 |---|---|---|
-| **Tier 1** | Köy: 12 mal | İlçe gelişim seviyesi Kasaba (+10) ve Merkez (+7) olunca; ayrıca ilk zincir kurulduğunda ilgili ara mal |
+| **Tier 1** | Köy: 12 mal | İlçe gelişim seviyesi Kasaba (+10) ve Merkez (+7) olunca; ayrıca ilk zincir kurulduğunda ilgili ara mal *(güncellendi: docs/12 §13, tasarım belgesi Y-33: ilçe seviyesi bireysel kilit değildir; görünürlük keşfe bağlanır)* |
 | **Tier 2** | **Kendi ilinin** 2–4 imzası | Komşu il imzası: pazarda ilk alım/satım veya NPC ihracatçı talebi; uzak il imzası: **fuar vitrini**, ticaret anlaşması, ihale/sözleşme teklifi, ithal ürün; il turu (Alfa-1 yürüyüş); Atlas'ta "ipucu" kartı |
 | **Tier 3a** | Hayır | İmza ilçede ilgili Tier 2 girdisi ilk kez işlenince; NPC "Lüks koleksiyoncu" ilk siparişi; fuar |
 | **Tier 3b** | Kendi ilindeki kayıtlar Atlas'ta **silüet** | İlk üretim veya ilk satış ("ilk Geyve ayvası") ile adı ve primi açılır |

@@ -103,3 +103,4 @@ Sahip "genel kararları baş lider versin" dedi; aşağıdakiler sentezin öneri
 - **PvP yağma ve ikmal (Y-36):** yağmanın %60'ı saldırana geçer, %40'ı yok olur; mülk kipinde ikmal ×0,25. Savaş toprak değil denetim kazandırır; parsel asla el değiştirmez.
 - **Alfa-0 kapsamı (Y-37):** `kepek` 24. mal; yerel pazar kanalı ve "sen yokken" ekranının en küçük dilimi Alfa-0 P0'a girer; çekim uzayı, arsa fiyat paydası, ayrılmış hücre kuralı ve talep modeli Alfa-0 öncesine çekilir.
 - **Mahalle paketi (T-54 kapanışı):** paketin içeriği (~20 hücre: meydan, muhtarlık, park vb.) ile sıklığı (~7 000 uygun hücre başına bir paket) ayrı parametrelerdir; çelişki yoktur.
+- **Yönetişim adları (K-4, Y-39):** Muhtar = mahalle, İlçe Başkanı = ilçe, Vali = il. "NPC Kaymakam" (ilde "NPC Vali") yalnız makamın yöneticisiz hâlidir; kalıcı denetçi ve pasiflik sonrası devralma "kayyum" adını taşır. Kademe adları ülke paketinde veridir. Alfa-0'da mahalle pasiftir (NPC).

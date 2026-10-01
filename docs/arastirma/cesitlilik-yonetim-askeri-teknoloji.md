@@ -339,7 +339,7 @@ PvE, askeri ayağı Alfa-0'da canlandırır ve ordugâh için **gerçek talep** 
 | Kural | Değer (öneri) |
 |---|---|
 | Sıklık | İlçe başına ortalama 5–9 günde bir (PRNG olay akışı, deterministik) |
-| Ön duyuru | ≥6 sa (Gözetleme Kulesi ile 12 sa); Dikkat panelinde "yaklaşan baskın" |
+| Ön duyuru | ≥6 sa (Gözetleme Kulesi ile 12 sa); Dikkat panelinde "yaklaşan baskın" *(güncellendi: askeri-katman-v1 K11, tasarım belgesi T-50: ön duyuru 24 sa, Gözetleme Kulesi ile 36 sa)* |
 | Zaman | İlçe yoğun saat bandı içinde; il seçer (§5.4) |
 | Kayıp tavanı | PvE + PvP yağması **ortak** kayan pencere tavanı: pencere başına stokun ≤%25'i |
 | Kalkan | Yeni oyuncu kalkanı süresince o oyuncunun yapıları hedef alınmaz (14 gün) |

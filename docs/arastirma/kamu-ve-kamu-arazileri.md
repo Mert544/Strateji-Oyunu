@@ -292,6 +292,8 @@ Karar çerçevesi yine **bant içidir**: meclis kuralı değil **parametreyi** o
 
 ### 2.6 Oyuncu tarafında ajan
 
+> **Güncellendi (docs/12 §10, tasarım belgesi Y-29):** sahip kararıyla **oyuncunun kendi ajanı, BYOK ve oyun API'si yoktur**. Bu bölüm tarihsel bağlam için korunur; içindeki "v1.5" ve "izinli" ifadeleri geçersizdir.
+
 Sahibin "bilgisayarda ya da oyuna sunacağımız API anahtarıyla" ifadesi **üç okumaya** açıktır; hangisinin kastedildiği **bilinmiyor** (Q8):
 
 | Okuma | Tanım | Kaynak |
@@ -613,7 +615,7 @@ Alfa-0'da **yok:** kira/üst hakkı (Z8 ile uyumlu), ihale, ajan, meclis kartı,
 
 ### 7.3 v1.5 ve sonrası
 
-KÖİ (hal, depo, rıhtım), sanayi tahsisi (OSB esinli), müteahhit rolü ([11 §7.6](../11-urun-donusu.md)), **oyuncu ajanı ve API anahtarı**, kamu alım programı, il/ülke düzeyi ihale, Balkan genişlemesinde kademe etiketleri (K-15). Sonra: kamu yatırım fonu, ortak proje ihale zincirleri.
+KÖİ (hal, depo, rıhtım), sanayi tahsisi (OSB esinli), müteahhit rolü ([11 §7.6](../11-urun-donusu.md)), **oyuncu ajanı ve API anahtarı** *(güncellendi: docs/12 §10, Y-29: yok)*, kamu alım programı, il/ülke düzeyi ihale, Balkan genişlemesinde kademe etiketleri (K-15). Sonra: kamu yatırım fonu, ortak proje ihale zincirleri.
 
 **Etkilenen dosyalar (öneri, yazılmadı):** `packages/cekirdek/src/tipler.ts` (`sinif:"kamu"`, `hak?`), `mulk/` (kamu hücre kuralları, hak makinesi), `pazar/` (`NpcAlici` kamu), `serilestir.ts`/`prng.ts` (`kamu` akışı), `packages/veri/` ve veri hattı (kamu arsası üretimi), `packages/sunucu/` (ihale olayları, ajan çağrı kuyruğu, yetki tablosu `adina`), `istemci/` (kamu katmanı, ihale panosu, Sözleşme Kartı), `docs/` (11 §7.2 satın alınamaz hücre listesi, §7.6 Muhtarlık).
 

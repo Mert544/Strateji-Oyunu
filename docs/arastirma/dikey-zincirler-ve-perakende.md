@@ -279,7 +279,7 @@ Otomatik sıra (varsayılan; oyuncu `Genel Talimat` ile değiştirir): **(1) ken
 
 | Konu | Kural (öneri) |
 |---|---|
-| Hücre / yuva | 1 hücre (S/M/L aynı ayak izi: [arsa-ve-insa §3.1](arsa-ve-insa-derinlestirme.md#31-üç-eksen-yöntem--ölçek--modül) "yükseltme aynı ayak izinde"); ilçe başına ≤2 dükkân, il başına ≤6 (Ticaret ofisi ≤2 limiti dükkân ağını boğmasın) |
+| Hücre / yuva | 1 hücre (S/M/L aynı ayak izi: [arsa-ve-insa §3.1](arsa-ve-insa-derinlestirme.md#31-üç-eksen-yöntem--ölçek--modül) "yükseltme aynı ayak izinde"); ilçe başına ≤2 dükkân, il başına ≤6 (Ticaret ofisi ≤2 limiti dükkân ağını boğmasın) *(güncellendi: docs/12 §13, tasarım belgesi Y-34; perakende-kademeleri §3.2: bakkal 1, market 2, süpermarket 3 hücre)* |
 | Maliyet (S) | ₺6.000 + 20 çelik + 8 parça + **4 pencere** (Zincir B/D'ye bağ); 4 sa (ilk gün ×%10 → 24 dk); ilk 5 yapıda %30 indirim; M ×2,5, L ×4,5 ([06 §12](../06-simulasyon-spesifikasyonu.md)). **Pencere zinciri kurulmadan da inşa edilir:** `pencere` NPC pazarında ilk günden ithal alınır (`arzSaat` 60 birim/sa); 4 birim ≈ 4 × 1,10 × 1,01 × ₺360 ≈ **₺1.600** (indirimli yapıda ≈ ₺1.120) |
 | Arsa türü ([arsa-ve-insa §2.2](arsa-ve-insa-derinlestirme.md#22-arsa-türleri-ve-izin-matrisi) matrisine ek satır) | **Ticari ✓** (tüm türler), **Konut ○** (yalnız `firin`, `bakkal`, S, "alt kat dükkân"), **Sanayi ○** (yalnız `yapi_market`, ana yol cephesi), Tarla/Bahçe/Orman/Kıyı ✗ (Kıyı: `sekerci`/`bakkal` ○, liman turizmi sonra) |
 | Cadde cephesi, merkez mesafesi | Arsa bayrakları (A5): cadde cephesi `+%10` konum çarpanı; merkez mesafe kovası ≤300 m 1,15 / ≤1,5 km 1,00 / ≤5 km 0,90 / >5 km 0,80 (§5.7); fiyat KD'si buna uyar (**ticari hücre ≈ 1,3–1,6 × taban**; Kasaba ₺2.500 → ₺3.250–4.000) |
@@ -288,6 +288,8 @@ Otomatik sıra (varsayılan; oyuncu `Genel Talimat` ile değiştirir): **(1) ken
 | Açılış Tezgâhı | [oyun-kimligi-harman §5](oyun-kimligi-harman.md) "Açılış Tezgâhı" `dukkan` türü `tezgah` özel durumu olabilir (anında, parasız, bir kez); sonra gerçek dükkân |
 
 ### 5.3 Altı dükkân türü
+
+> **Güncellendi (perakende-kademeleri §5 ve §5.2; tasarım belgesi §3B):** tür kataloğu ve raf mal listeleri için perakende raporu esastır (13 tür ya da modül; `cam`, `un`, `sut`, `findik_urunu` rafa eklendi). Tür kataloğunda ilçe seviyesi şartı yoktur (docs/12 §13). Aşağıdaki tablo tarihsel bağlam için korunur.
 
 Her tür **veri kaydıdır** (`mulk.perakende.dukkanTurleri[]`), ayrı kod yolu yok. `tamCesit` = çeşitlilik paydası; `cesitYuvasi` ölçeğe göre.
 

@@ -336,12 +336,14 @@ Günde bir-iki kısa ziyaret yeterlidir. Günlük giriş ödülü yoktur (K13). 
 | Aşama hesabı | Sunucu zamanından türetilir: `(şimdi − başlangıç) / süre`. Sunucu ayrıca tik atmaz |
 | Kuyruk | Aynı anda **2** inşaat |
 | İptal | Malzemenin **%50**'si iade edilir. Tam iade, kaynakların bitmemiş inşaatta saklanmasına yol açar ([Supercell forumu](https://forum.supercell.com/showthread.php/1681335-Cancel-upgrade-100-refund-in-BH)) |
-| Yükseltme | Aynı akış; S → M → L öncesi/sonrası karşılaştırması. Ölçek kilidi ilçe gelişim seviyesine bağlı (§7.4) |
+| Yükseltme | Aynı akış; S → M → L öncesi/sonrası karşılaştırması. Ölçek kilidi ilçe gelişim seviyesine bağlı (§7.4) *(güncellendi: docs/12 §12–§13, tasarım belgesi Y-31, Y-33, Y-34: ölçek seçimdir, ilçe seviyesi kilidi yoktur; ayak izi ölçekle büyür, yerinde yükseltme ek bitişik hücre ister; doğrudan büyük kurulum serbest)* |
 | Taslak modu | Parasız hayalet yerleştirme; sonra gerçeğe çevrilir (Anno Blueprint) |
 | Onboarding hızlandırması | İlk inşaat kısaltılmış süreyle (~24 dk) |
 | Maliyet | Malzemeler işletmenin stoğundan düşer; maliyet kartı "gereken / var" gösterir |
 
 ### 7.4 İlçe gelişim seviyesi
+
+> **Güncellendi (docs/12 §13; tasarım belgesi Y-32, Y-33):** ilçe gelişim seviyesi **yalnız kolektif dünya durumudur** (NPC talebi, kamu altyapısı, ruhsat kotası). Aşağıdaki "Açtıkları" sütunundaki S/M/L ölçek, yapı türü ve `otomasyon` kilitleri **geçersizdir**; tablo tarihsel bağlam için korunur.
 
 **Köy → Kasaba → Merkez → Şehir.** Seviye; ilçe nüfusu, hizmet yapıları ve sahip sayısıyla yükselir. Seviyeler ilçedeki **herkes için** S/M/L ölçeğin ve yeni yapı türlerinin kilidini açar (Anno modeli; [wiki](https://anno1800.fandom.com/wiki/Population)).
 
@@ -376,7 +378,7 @@ Günde bir-iki kısa ziyaret yeterlidir. Günlük giriş ödülü yoktur (K13). 
 | Sanayici | Sanayi yapıları |
 | Tüccar | Ambar + Ticaret ofisi, pazar sözleşmeleri |
 | Müteahhit | İnşa kapasitesi satar (v1.5) |
-| Muhtar | Seçilmiş ilçe başkanı |
+| Muhtar | Seçilmiş ilçe başkanı *(güncellendi: docs/12 §13, tasarım belgesi Y-39: Muhtar mahalle düzeyi, ilçe düzeyi İlçe Başkanı)* |
 | Vali | Seçilmiş il yöneticisi |
 | Komutan | Ordugâh sahibi |
 

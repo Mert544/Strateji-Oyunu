@@ -425,7 +425,7 @@ Kaynak kodları: **Ü** üretim (K-), **P** perakende, **D** dönüş (DK-), **A
    - istemci takvimini gerçek tarihe geçirmek;
    - `olcekKademeleri[2].gerekliTeknoloji` kilidini mülk kipinde kaldırmak (D4-2);
    - `tesis_olcek_yukselt` için mülk kipi testi.
-2. **Veri (acil):** `il-imza.json` kilit kararlarıyla uyumlu commit'lendi (9f79e18). **`kepek` ve üretim ağının 21 yeni kimliği birleşik listeye eklenmeden içerik dizisine (`icerik.json`) girmemeli** (G-K1).
+2. **Veri (acil):** `il-imza.json` kilit kararlarıyla uyumlu commit'lendi (9f79e18). **`kepek` ve üretim ağının 21 yeni kimliği birleşik listeye eklenmeden içerik dizisine (`icerik.json`) girmemeli** (G-K1). Birleşik liste: [kimlik-listesi-v1.md](kimlik-listesi-v1.md).
 3. **Belge güncellemeleri** (karar sonrası):
    - docs/11 §7.3–7.4 (ilçe seviyesi, aynı akış);
    - arsa-ve-insa Z4;

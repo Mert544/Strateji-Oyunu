@@ -338,7 +338,7 @@ Esnaf tek tek ajan değil, **tür başına kapasite ve görünüm sayısıdır**
 
 - **Esnaf çekilmez ama küçülür:** esnaf payı `max(%25, hedef − oyuncu payı)`; "mahalle bakkalı hiç kapanmaz" hem kültürel hem de mekanik tabandır ([11 §7.10](../11-urun-donusu.md) ilkesinin esnafa uyarlaması).
 - **Fiyat tavanı:** esnaf fiyatı referans +%12; oyuncu altından satarak pay alır (rekabet).
-- **İstismar:** pompala-boşalt ile esnaf payını sıfırlamak; önlem: 14 günlük kayan pencere (EVE'nin dinamik ödül çarpanı da günler-haftalarda hareket eder [7]), taban %25, yerel fiyat bandı, tek oyuncunun ilçede >%60 pay alması halinde esnaf **indirim kampanyası** (otomatik).
+- **İstismar:** pompala-boşalt ile esnaf payını sıfırlamak; önlem: 14 günlük kayan pencere (EVE'nin dinamik ödül çarpanı da günler-haftalarda hareket eder [7]), taban %25, yerel fiyat bandı, tek oyuncunun ilçede >%60 pay alması halinde esnaf **indirim kampanyası** (otomatik). *(güncellendi: perakende-kademeleri §9.3: >%60 eşiği kademeli pay tavanıyla birlikte %75 önerisi)*
 - Kalabalık sınırı: görünür esnaf ≤ 30 sprite/ilgi alanı ([Capital Rift Ç3](capital-rift-mekanikleri.md)).
 
 ### 4.3 NPC tüccar tipleri
@@ -378,7 +378,7 @@ Gerçekte kamu ihalesi 4734 sayılı Kanun'a bağlıdır: açık ihalede ilan s�
 
 | Konu | Kural (öneri) |
 |---|---|
-| Tür | **İlçe ihalesi:** belediye (NPC Muhtar), mal + miktar + teslim vadesi (3–10 gün) + teminat + fiyat tavanı (referans +%15); örnek: yol onarımı (`celik`, `parca`), kış yakıtı, okul açılışı ihtiyacı |
+| Tür | **İlçe ihalesi:** belediye (NPC Muhtar), mal + miktar + teslim vadesi (3–10 gün) + teminat + fiyat tavanı (referans +%15); örnek: yol onarımı (`celik`, `parca`), kış yakıtı, okul açılışı ihtiyacı *(güncellendi: docs/12 §10: kazanan kuralı tek ihale motoru, profil M; fiyat tavanı ithalat paritesi 1,10 R. Not: "NPC Muhtar" adı K-4 kararına göre (docs/12 §13, Y-39) ilçe düzeyinde İlçe Başkanlığı)* |
 | İlan | 3–7 gün (gerçek 28–40 gün oyun için ölçeklenir); aynı anda ilçe başına ≤ 3 açık; ilanlar **deterministik** (ilçe bütçesi + ihtiyaç + takvim) |
 | Teklif | `ihale_teklif {fiyat, teslimGunu}`; kazanan: en düşük fiyat, eşitlikte ilk teklif; hesap başına ≤ 2 açık teklif |
 | Ödeme | Teslimde; teminat kaybı yalnız teslim etmemekte |
@@ -460,7 +460,7 @@ Takvim paketi **sürümlü ve günlüğe komutla yazılan** bir veridir (`takvim
 | E11 | **Liman yoğunluğu** | ekonomi | Liman | 24 sa / 3 gün | Liman primi +%x (tavan sınırı) | İhracat kaydır, kuyruğa karşı Garaj | Düşük | A1 |
 | E12 | **İhale dalgası** | kamu | İlçe | 3–7 gün | İhale ilanı sayısı ↑ | Teklif ver | Düşük | A1 |
 | E13 | **Hasat şenliği** | sosyal | İlçe imza | 72 sa / 2 gün | Satış +%10; K4 + | Fuar standı | Düşük | A1 |
-| E14 | **Esnaf kampanyası** | ekonomi | İlçe | 24 sa / 7 gün | Tek oyuncu >%60 pay → esnaf indirimi | Çeşitlendir/fiyat kır | Düşük | A1 |
+| E14 | **Esnaf kampanyası** | ekonomi | İlçe | 24 sa / 7 gün | Tek oyuncu >%60 pay → esnaf indirimi | Çeşitlendir/fiyat kır | Düşük | A1 *(güncellendi: perakende-kademeleri §9.3, sentez-2 Ö4-9: kademeli pay tavanıyla birlikte eşik %75 önerisi)* |
 | E15 | **Konut sıkışması** | zincir | İlçe | — / süren | Doluluk > %97 → çekicilik −; konut talebi | Konut yapısı, imece | Düşük | A1 |
 | E16 | **Hayat pahalılığı** | zincir | İlçe | — / süren | K1 karşılanma < %80 7 gün → `memnuniyet` düşer, göç çıkışı | İhale, ithalat, esnaf desteği | Orta | A1 |
 | E17 | **Sessiz gün** | takvim | Dünya | — / 1 gün | Şenlik/fuar/promosyon açılmaz | — | **Yüksek** | A0 |
