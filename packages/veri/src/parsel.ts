@@ -78,6 +78,9 @@ export interface ParselMahalleTanimi {
   hucreler: ParselHucreId[];
 }
 
+/** İlçe nüfusunun üst sınırı (V9b; Türkiye'nin en büyük ilçesinin kat kat üstü: yalnız saçma değer yakalar). */
+export const ILCE_NUFUS_ENCOK = 20_000_000;
+
 export interface ParselIlceTanimi {
   id: string;
   ad: string;
@@ -100,6 +103,11 @@ export interface ParselIlceTanimi {
    * ile kümelere böler. Hücre bir mahalleye bağlı değilse mahalle paketi o hücreden çıkmaz.
    */
   mahalleler?: ParselMahalleTanimi[];
+  /**
+   * İlçe nüfusu (isteğe bağlı; yerel pazar talebi için; sartname §6.5, V9b): tamsayı, 1..`ILCE_NUFUS_ENCOK`. Yoksa talep, ilçenin `sinif` alanına bağlı
+   * `perakende.talep.ilceSinifiNufus[sinif]` yedek sabitiyle hesaplanır (hücre sınıfı hesaplanmaz). Alan yokken davranış bugünküyle aynıdır.
+   */
+  nufus?: number;
 }
 
 export interface ParselFiksturu {
@@ -177,6 +185,7 @@ const ilceSema = z
     uygunHucre: tamsayi.nonnegative(),
     hucreler: z.array(hucreSema).min(1, "ilcede en az 1 hucre olmali"),
     mahalleler: z.array(mahalleSema).optional(),
+    nufus: tamsayi.min(1, "nufus en az 1 olmali").max(ILCE_NUFUS_ENCOK, `nufus en fazla ${ILCE_NUFUS_ENCOK} olabilir`).optional(),
   })
   .strict();
 
