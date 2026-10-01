@@ -114,6 +114,10 @@ export interface YapiKaydi {
    * hücrelerdir (ek hücre gerekmiyorsa boş). Hedef ölçek karede yoktur: bu oturumda istenmişse bağdaştırıcı bilir.
    */
   yukseltme?: { tesis: number; olcek?: 1 | 2 };
+  /** İnşaatta SEÇİLEN yöntemin kimliği (`kare.oyuncu.insaatYontem`; yalnız sahibinin yöntemli inşaatı; yoksa tanımsız = tür varsayılanı). */
+  yontem?: string;
+  /** Tesisin aşınması (ppm, > 0; `ozel.tesisAsinma`; yalnız sahibine). Ölçek büyütme inşaatında büyüyen tesisin aşınması. Aşınmasızsa tanımsız. */
+  asinmaPpm?: number;
 }
 
 export interface IlceSahipligi {
@@ -192,6 +196,10 @@ export interface IsletmeYapisi {
   olcek?: 0 | 1 | 2;
   /** Ölçek büyütme inşaatı (`durum: "insaat"`): büyüyen tesisin kimliği ve (biliniyorsa) hedef ölçek. */
   yukseltme?: { tesis: number; olcek?: 1 | 2 };
+  /** İnşaatta SEÇİLEN yöntemin kimliği (`kare.oyuncu.insaatYontem`); yoksa tanımsız (tür varsayılanı). */
+  yontem?: string;
+  /** Tesisin aşınması (ppm, > 0; `ozel.tesisAsinma`); ölçek büyütme inşaatında büyüyen tesisin aşınması. Aşınmasızsa tanımsız. */
+  asinmaPpm?: number;
 }
 
 /** Oyuncunun işletme özeti (mülk kipi kabuğu): hazine, kalkan, arsalar, yapılar, stok ve satış. Yalnız okunur. */
@@ -225,8 +233,10 @@ export type DukkanKomutSonucu = { tamam: true; t: number } | { tamam: false; mes
 export interface MulkBaglantisi {
   /** Bu istemcinin oyuncusu. */
   readonly ben: Oyuncu;
-  /** Oyuncu kimliğinden görünen ad. */
+  /** Oyuncu kimliğinden görünen ad (bilinmiyorsa kimliğin kendisi). */
   oyuncuAdi(id: OyuncuId): string;
+  /** Oyuncunun görünen adı (`kare.adlar` birikimli önbelleği); bilinmiyorsa tanımsız (çağıran kimlikten varsayılan gösterir). */
+  ad?(oyuncu: OyuncuId): string | undefined;
   parselAl(komut: ParselKomutu): Promise<ParselSonucu>;
   sahiplikAl(ilce: string): Promise<IlceSahipligi | null>;
   /** Hücreli yapı kurar (`tesis_insa_hucre`). */

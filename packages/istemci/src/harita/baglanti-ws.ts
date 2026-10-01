@@ -66,6 +66,24 @@ export function tesisOlcegi(oz: object, tesisId: number): 0 | 1 | 2 | undefined 
   return o === 1 || o === 2 ? o : 0;
 }
 
+/**
+ * Tesisin aşınması (ppm, > 0) `ozel.tesisAsinma`'dan (K2 `kare-asinma`; yalnız aşınması > 0 olan tesisler listelenir). Alan yoksa ya da tesis listede değilse tanımsız.
+ * Protokol tipine yapısal okunur: alan eklenmemiş sunucuda davranış birebir aynıdır.
+ */
+export function tesisAsinmasi(oz: object, tesisId: number): number | undefined {
+  const l = (oz as { tesisAsinma?: ReadonlyArray<readonly [number, number]> }).tesisAsinma;
+  if (!l) return undefined;
+  const a = l.find((x) => x[0] === tesisId)?.[1];
+  return a !== undefined && a > 0 ? a : undefined;
+}
+
+/** İnşaatta seçilen yöntemin kimliği (`oyuncu.insaatYontem`: `[inşaat kimliği, yöntem kimliği]`); alan yoksa ya da inşaat listede değilse tanımsız. */
+export function insaatYontemi(oyuncu: object, insaatId: number): string | undefined {
+  const l = (oyuncu as { insaatYontem?: ReadonlyArray<readonly [number, string]> }).insaatYontem;
+  if (!l) return undefined;
+  return l.find((x) => x[0] === insaatId)?.[1];
+}
+
 interface Bekleyen {
   anahtar: string;
   komut: Komut;
@@ -126,6 +144,11 @@ export class WsBaglanti implements MulkBaglantisi {
   private ilkHazir: Promise<void>;
   private ilkAcildi = false;
   private insaBaslangic = new Map<HucreId, number>();
+  /**
+   * Görünen ad önbelleği (`IlgiKaresi.adlar` / `KareDeltasi.adlar`): BİRİKİMLİ; adı görünümden çıkan oyuncunun girdisi de kalır, zincir kopup tam kare gelince birleşir
+   * (silinmez). Sunucuda görünen ad özelliği kapalıysa alan gelmez ve önbellek boştur.
+   */
+  private adOnbellek = new Map<OyuncuId, string>();
   /** Bu oturumda istenen ölçek büyütmelerinin hedefi (tesis kimliği → ölçek): karede hedef ölçek yoktur. */
   private olcekHedefleri = new Map<number, 1 | 2>();
   private kapandi = false;
@@ -165,7 +188,12 @@ export class WsBaglanti implements MulkBaglantisi {
   // --- MulkBaglantisi ----------------------------------------------------------------------------
 
   oyuncuAdi(id: OyuncuId): string {
-    return id;
+    return this.adOnbellek.get(id) ?? id;
+  }
+
+  /** Görünen ad (`kare.adlar` birikimli önbelleği); bilinmiyorsa tanımsız. */
+  ad(oyuncu: OyuncuId): string | undefined {
+    return this.adOnbellek.get(oyuncu);
   }
 
   ilgi(kaynak: string, ilceler: readonly string[]): void {
@@ -458,10 +486,12 @@ export class WsBaglanti implements MulkBaglantisi {
         // Ek hücre gerekmediyse inşaatın hücresi yoktur: ilçe, büyüyen tesisin hücrelerinden bilinir
         const yer_ = yer.get(anahtar) ?? yer.get(`t${hedef}`);
         const hedefOlcek = this.olcekHedefleri.get(hedef);
-        yapilar.push({ anahtar, durum: "insaat", tur: tesisTuru(hedef), ...(il ? { il } : {}), ...(yer_ ? { ilce: yer_.ilce } : {}), ...(yer.get(anahtar) ? { hucre: yer.get(anahtar)!.hucre } : {}), ...baslangic, bitis, yukseltme: { tesis: hedef, ...(hedefOlcek ? { olcek: hedefOlcek } : {}) } });
+        const asinma = this.tesisAsinmasiBul(hedef);
+        yapilar.push({ anahtar, durum: "insaat", tur: tesisTuru(hedef), ...(il ? { il } : {}), ...(yer_ ? { ilce: yer_.ilce } : {}), ...(yer.get(anahtar) ? { hucre: yer.get(anahtar)!.hucre } : {}), ...baslangic, bitis, yukseltme: { tesis: hedef, ...(hedefOlcek ? { olcek: hedefOlcek } : {}) }, ...(asinma !== undefined ? { asinmaPpm: asinma } : {}) });
         continue;
       }
-      yapilar.push({ anahtar, durum: "insaat", tur: ek ?? turler[hedef] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), ...baslangic, bitis });
+      const yontem = insaatYontemi(o, id);
+      yapilar.push({ anahtar, durum: "insaat", tur: ek ?? turler[hedef] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), ...baslangic, bitis, ...(yontem !== undefined ? { yontem } : {}) });
     }
     const stok = new Map<number, { stokMili: number; uretimMili: number; satisMili: number; alisMili: number }>();
     const mal = (m: number): { stokMili: number; uretimMili: number; satisMili: number; alisMili: number } => {
@@ -477,7 +507,8 @@ export class WsBaglanti implements MulkBaglantisi {
         const [id, tur, , aktif, verim] = demet;
         const anahtar = `t${id}`;
         const olcek = tesisOlcegi(oz, id);
-        yapilar.push({ anahtar, durum: "tesis", tur: turler[tur] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), aktif: aktif === 1, verimPpm: verim, ...(olcek !== undefined ? { olcek } : {}) });
+        const asinma = tesisAsinmasi(oz, id);
+        yapilar.push({ anahtar, durum: "tesis", tur: turler[tur] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), aktif: aktif === 1, verimPpm: verim, ...(olcek !== undefined ? { olcek } : {}), ...(asinma !== undefined ? { asinmaPpm: asinma } : {}) });
       }
       oz.stoklar.forEach((f, m) => {
         const v = stokAraDeger(f, t);
@@ -679,6 +710,7 @@ export class WsBaglanti implements MulkBaglantisi {
         return this.hosgeldinAl(m);
       case "kare":
         this.kare = m.kare;
+        this.adlariBirlestir(m.kare.adlar);
         this.rev = m.rev;
         this.zamanDuzelt(m.kare.t);
         this.ayrilmisAboneKontrol();
@@ -692,6 +724,7 @@ export class WsBaglanti implements MulkBaglantisi {
           return this.aboneGonder();
         }
         this.kare = deltaUygula(this.kare, m.delta);
+        this.adlariBirlestir(m.delta.adlar);
         this.rev = m.rev;
         this.zamanDuzelt(m.delta.t);
         this.ayrilmisAboneKontrol();
@@ -929,6 +962,20 @@ export class WsBaglanti implements MulkBaglantisi {
     });
   }
 
+  /** Bir tesisin aşınması: tesisin bulunduğu (kendi) işletme düğümünün özel verisinden. */
+  private tesisAsinmasiBul(tesisId: number): number | undefined {
+    for (const b of this.kare?.bolgeler ?? []) {
+      if (!b.ozel) continue;
+      if (b.ozel.tesisler.some((x) => x[0] === tesisId)) return tesisAsinmasi(b.ozel, tesisId);
+    }
+    return undefined;
+  }
+
+  private adlariBirlestir(adlar: Readonly<Record<OyuncuId, string>> | undefined): void {
+    if (adlar === undefined) return;
+    for (const [id, ad] of Object.entries(adlar)) this.adOnbellek.set(id, ad);
+  }
+
   private karedeKosulBak(): void {
     this.kareBekleyen = this.kareBekleyen.filter((f) => !f());
   }
@@ -973,9 +1020,13 @@ export class WsBaglanti implements MulkBaglantisi {
             if (tur) y.tur = tur;
             const hedefOlcek = this.olcekHedefleri.get(ins[3]);
             y.yukseltme = { tesis: ins[3], ...(hedefOlcek ? { olcek: hedefOlcek } : {}) };
+            const asinma = kendi?.ozel ? tesisAsinmasi(kendi.ozel, ins[3]) : undefined;
+            if (asinma !== undefined) y.asinmaPpm = asinma;
           } else {
             const tur = turler[ins[3]];
             if (tur) y.tur = tur;
+            const yontem = k.oyuncu ? insaatYontemi(k.oyuncu, ins[0]) : undefined;
+            if (yontem !== undefined) y.yontem = yontem;
           }
           y.bitis = ins[4];
           const bas = this.insaBaslangic.get(y.hucreler[0]!);
@@ -987,6 +1038,8 @@ export class WsBaglanti implements MulkBaglantisi {
         if (tur) y.tur = tur;
         const olcek = t && kendi?.ozel ? tesisOlcegi(kendi.ozel, t[0]) : undefined;
         if (olcek !== undefined) y.olcek = olcek;
+        const asinma = t && kendi?.ozel ? tesisAsinmasi(kendi.ozel, t[0]) : undefined;
+        if (asinma !== undefined) y.asinmaPpm = asinma;
       }
     }
     // Ayrılmış hücre kümesi (liste istenmişse) ve para ile alınmış ayrılmış sayısı: karede `ayrilmisSatilmis` varsa kesin değer; yoksa
