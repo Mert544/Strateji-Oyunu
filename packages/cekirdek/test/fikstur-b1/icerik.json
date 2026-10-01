@@ -13,128 +13,112 @@
     { "id": "petrol", "ad": "Ham Petrol", "kategori": "ham", "tabanFiyat": 60000, "lojistikOnceligi": 3, "bozulmaPpmGun": 3000 },
     { "id": "yakit", "ad": "Yakıt", "kategori": "ara", "tabanFiyat": 100000, "lojistikOnceligi": 2, "bozulmaPpmGun": 5000 },
     { "id": "muhimmat", "ad": "Mühimmat", "kategori": "askeri", "tabanFiyat": 150000, "lojistikOnceligi": 0, "bozulmaPpmGun": 2000 },
-    { "id": "gubre", "ad": "Gübre", "kategori": "ara", "tabanFiyat": 140000, "lojistikOnceligi": 4, "bozulmaPpmGun": 1000 },
-    { "id": "elektrik", "ad": "Elektrik", "kategori": "enerji", "tabanFiyat": 10000, "lojistikOnceligi": 8, "bozulmaPpmGun": 0, "depolanabilir": false }
+    { "id": "gubre", "ad": "Gübre", "kategori": "ara", "tabanFiyat": 140000, "lojistikOnceligi": 4, "bozulmaPpmGun": 1000 }
   ],
   "yontemler": [
     {
       "id": "geleneksel_tarim", "ad": "Geleneksel Tarım",
       "girdiler": {}, "ciktilar": { "tahil": 200000 }, "isci": 15000,
-      "bakim": { "parca": 500 }, "rezerv": "tahil", "tarimsal": true, "kirlilikPpmSaat": 10
+      "bakim": { "parca": 500 }, "rezerv": "tahil", "tarimsal": true
     },
     {
       "id": "mekanize_tarim", "ad": "Mekanize Tarım",
-      "girdiler": { "yakit": 20000, "parca": 4000, "elektrik": 8000 }, "ciktilar": { "tahil": 320000 }, "isci": 8000,
-      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "mekanize_tarim", "rezerv": "tahil", "tarimsal": true, "kirlilikPpmSaat": 10
+      "girdiler": { "yakit": 20000, "parca": 4000 }, "ciktilar": { "tahil": 320000 }, "isci": 8000,
+      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "mekanize_tarim", "rezerv": "tahil", "tarimsal": true
     },
     {
       "id": "standart_gida_isleme", "ad": "Standart Gıda İşleme",
-      "girdiler": { "tahil": 200000, "elektrik": 10000 }, "ciktilar": { "gida": 160000 }, "isci": 6000,
-      "bakim": { "parca": 800 }, "kirlilikPpmSaat": 20
+      "girdiler": { "tahil": 200000 }, "ciktilar": { "gida": 160000 }, "isci": 6000,
+      "bakim": { "parca": 800 }
     },
     {
       "id": "yuzey_cevher", "ad": "Yüzey Cevher Ocağı",
-      "girdiler": { "elektrik": 5000 }, "ciktilar": { "cevher": 100000 }, "isci": 10000,
-      "bakim": { "parca": 1000 }, "rezerv": "cevher", "kirlilikPpmSaat": 10
+      "girdiler": {}, "ciktilar": { "cevher": 100000 }, "isci": 10000,
+      "bakim": { "parca": 1000 }, "rezerv": "cevher"
     },
     {
       "id": "derin_cevher", "ad": "Derin Cevher Madenciliği",
-      "girdiler": { "yakit": 12000, "elektrik": 15000 }, "ciktilar": { "cevher": 190000 }, "isci": 14000,
-      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "derin_madencilik", "rezerv": "cevher", "kirlilikPpmSaat": 40
+      "girdiler": { "yakit": 12000 }, "ciktilar": { "cevher": 190000 }, "isci": 14000,
+      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "derin_madencilik", "rezerv": "cevher"
     },
     {
       "id": "yuzey_komur", "ad": "Açık Ocak Kömür",
-      "girdiler": { "elektrik": 5000 }, "ciktilar": { "komur": 90000 }, "isci": 9000,
-      "bakim": { "parca": 1000 }, "rezerv": "komur", "kirlilikPpmSaat": 10
+      "girdiler": {}, "ciktilar": { "komur": 90000 }, "isci": 9000,
+      "bakim": { "parca": 1000 }, "rezerv": "komur"
     },
     {
       "id": "derin_komur", "ad": "Derin Kömür Madenciliği",
-      "girdiler": { "yakit": 10000, "elektrik": 12000 }, "ciktilar": { "komur": 170000 }, "isci": 12000,
-      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "derin_madencilik", "rezerv": "komur", "kirlilikPpmSaat": 40
+      "girdiler": { "yakit": 10000 }, "ciktilar": { "komur": 170000 }, "isci": 12000,
+      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "derin_madencilik", "rezerv": "komur"
     },
     {
       "id": "bakir_cikarim", "ad": "Bakır Çıkarımı",
-      "girdiler": { "elektrik": 6000 }, "ciktilar": { "bakir": 60000 }, "isci": 8000,
-      "bakim": { "parca": 800 }, "rezerv": "bakir", "kirlilikPpmSaat": 10
+      "girdiler": {}, "ciktilar": { "bakir": 60000 }, "isci": 8000,
+      "bakim": { "parca": 800 }, "rezerv": "bakir"
     },
     {
       "id": "silis_cikarim", "ad": "Silis Çıkarımı",
-      "girdiler": { "elektrik": 5000 }, "ciktilar": { "silis": 60000 }, "isci": 6000,
-      "bakim": { "parca": 600 }, "rezerv": "silis", "kirlilikPpmSaat": 10
+      "girdiler": {}, "ciktilar": { "silis": 60000 }, "isci": 6000,
+      "bakim": { "parca": 600 }, "rezerv": "silis"
     },
     {
       "id": "petrol_cikarim", "ad": "Petrol Çıkarımı",
-      "girdiler": { "elektrik": 6000 }, "ciktilar": { "petrol": 150000 }, "isci": 5000,
-      "bakim": { "parca": 1000 }, "rezerv": "petrol", "kirlilikPpmSaat": 10
+      "girdiler": {}, "ciktilar": { "petrol": 150000 }, "isci": 5000,
+      "bakim": { "parca": 1000 }, "rezerv": "petrol"
     },
     {
       "id": "yuksek_firin", "ad": "Yüksek Fırın",
-      "girdiler": { "cevher": 100000, "komur": 50000, "elektrik": 25000 }, "ciktilar": { "celik": 60000 }, "isci": 7000,
-      "bakim": { "parca": 1500 }, "kirlilikPpmSaat": 100
+      "girdiler": { "cevher": 100000, "komur": 50000 }, "ciktilar": { "celik": 60000 }, "isci": 7000,
+      "bakim": { "parca": 1500 }
     },
     {
       "id": "elektrik_ark", "ad": "Elektrik Ark Ocağı",
-      "girdiler": { "cevher": 60000, "yakit": 20000, "elektrik": 50000 }, "ciktilar": { "celik": 63000 }, "isci": 10000,
-      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "elektrik_ark_ocagi", "kirlilikPpmSaat": 60
+      "girdiler": { "cevher": 60000, "yakit": 20000 }, "ciktilar": { "celik": 60000 }, "isci": 10000,
+      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "elektrik_ark_ocagi"
     },
     {
       "id": "standart_parca", "ad": "Standart Parça Hattı",
-      "girdiler": { "celik": 40000, "yakit": 10000, "elektrik": 12000 }, "ciktilar": { "parca": 40000 }, "isci": 5500,
-      "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 20
+      "girdiler": { "celik": 40000, "yakit": 10000 }, "ciktilar": { "parca": 40000 }, "isci": 5500,
+      "bakim": { "parca": 1000 }
     },
     {
       "id": "otomatik_hat", "ad": "Otomatik Üretim Hattı",
-      "girdiler": { "celik": 40000, "yakit": 10000, "elektronik": 3000, "elektrik": 20000 }, "ciktilar": { "parca": 50000 }, "isci": 3000,
-      "bakim": { "parca": 1000 }, "gerekliTeknoloji": "otomasyon", "kirlilikPpmSaat": 20
+      "girdiler": { "celik": 40000, "yakit": 10000, "elektronik": 3000 }, "ciktilar": { "parca": 50000 }, "isci": 3000,
+      "bakim": { "parca": 1000 }, "gerekliTeknoloji": "otomasyon"
     },
     {
       "id": "standart_elektronik", "ad": "Standart Elektronik Hattı",
-      "girdiler": { "bakir": 40000, "silis": 40000, "parca": 10000, "elektrik": 30000 }, "ciktilar": { "elektronik": 30000 }, "isci": 8000,
-      "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 20
+      "girdiler": { "bakir": 40000, "silis": 40000, "parca": 10000 }, "ciktilar": { "elektronik": 30000 }, "isci": 8000,
+      "bakim": { "parca": 1000 }
     },
     {
       "id": "standart_rafineri", "ad": "Standart Rafineri",
-      "girdiler": { "petrol": 150000, "elektrik": 25000 }, "ciktilar": { "yakit": 120000 }, "isci": 7000,
-      "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 80
+      "girdiler": { "petrol": 150000 }, "ciktilar": { "yakit": 120000 }, "isci": 7000,
+      "bakim": { "parca": 1000 }
     },
     {
       "id": "standart_muhimmat", "ad": "Standart Mühimmat Hattı",
-      "girdiler": { "celik": 30000, "yakit": 10000, "elektrik": 15000 }, "ciktilar": { "muhimmat": 40000 }, "isci": 5000,
-      "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 20
+      "girdiler": { "celik": 30000, "yakit": 10000 }, "ciktilar": { "muhimmat": 40000 }, "isci": 5000,
+      "bakim": { "parca": 1000 }
     },
     {
       "id": "ahir_besi", "ad": "Ahır Besiciliği",
       "girdiler": { "tahil": 120000 }, "ciktilar": { "gida": 70000, "gubre": 12000 }, "isci": 5000,
-      "bakim": { "parca": 500 }, "kirlilikPpmSaat": 10
+      "bakim": { "parca": 500 }
     },
     {
       "id": "mera_hayvancilik", "ad": "Mera Hayvancılığı",
       "girdiler": {}, "ciktilar": { "gida": 70000, "gubre": 6000 }, "isci": 9000,
-      "bakim": { "parca": 500 }, "tarimsal": true, "kirlilikPpmSaat": 10
+      "bakim": { "parca": 500 }, "tarimsal": true
     },
     {
       "id": "azotlu_gubre", "ad": "Azotlu Gübre Üretimi",
-      "girdiler": { "petrol": 50000, "elektrik": 15000 }, "ciktilar": { "gubre": 40000 }, "isci": 6000,
-      "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 20
-    },
-    {
-      "id": "komur_santrali", "ad": "Kömür Santrali",
-      "girdiler": { "komur": 60000 }, "ciktilar": { "elektrik": 240000 }, "isci": 4000,
-      "bakim": { "parca": 1200 }, "kirlilikPpmSaat": 120
-    },
-    {
-      "id": "yakit_jeneratoru", "ad": "Yakıt Jeneratörü",
-      "girdiler": { "yakit": 40000 }, "ciktilar": { "elektrik": 160000 }, "isci": 2000,
-      "bakim": { "parca": 800 }, "kirlilikPpmSaat": 60
-    },
-    {
-      "id": "hidro_santrali", "ad": "Hidroelektrik Santrali",
-      "girdiler": {}, "ciktilar": { "elektrik": 300000 }, "isci": 2500,
-      "bakim": { "parca": 2000 }, "hidro": true
+      "girdiler": { "petrol": 50000 }, "ciktilar": { "gubre": 40000 }, "isci": 6000,
+      "bakim": { "parca": 1000 }
     },
     {
       "id": "sulama_pompasi", "ad": "Sulama Pompası",
-      "girdiler": { "elektrik": 8000 }, "ciktilar": {}, "isci": 3000,
+      "girdiler": { "yakit": 8000 }, "ciktilar": {}, "isci": 3000,
       "bakim": { "parca": 500 }, "sulama": true
     }
   ],
@@ -216,16 +200,6 @@
       "yontemler": ["azotlu_gubre"]
     },
     {
-      "id": "santral", "ad": "Santral",
-      "insaMaliyeti": { "celik": 70000, "parca": 30000 }, "insaParasi": 12000000, "insaSuresiSaat": 8,
-      "yontemler": ["komur_santrali", "yakit_jeneratoru"]
-    },
-    {
-      "id": "hidro_santrali", "ad": "Hidroelektrik Santrali",
-      "insaMaliyeti": { "celik": 120000, "parca": 30000 }, "insaParasi": 12000000, "insaSuresiSaat": 12,
-      "yontemler": ["hidro_santrali"], "gerekliEtiket": "dag"
-    },
-    {
       "id": "sulama_kanali", "ad": "Sulama Kanalı",
       "insaMaliyeti": { "celik": 50000, "parca": 20000 }, "insaParasi": 8000000, "insaSuresiSaat": 8,
       "yontemler": ["sulama_pompasi"], "gerekliTeknoloji": "sulama_sistemi"
@@ -240,7 +214,7 @@
     },
     {
       "id": "sulama_sistemi", "ad": "Sulama Sistemi",
-      "aciklama": "Sulama kanalı tesisini açar: hasat oranının diplerini yumuşatır ve kuraklık şiddetini azaltır; elektrik tüketir.",
+      "aciklama": "Sulama kanalı tesisini açar: hasat oranının diplerini yumuşatır ve kuraklık şiddetini azaltır; yakıt tüketir.",
       "maliyet": 20000000, "sureGun": 2, "onKosullar": [],
       "acar": { "tesisTurleri": ["sulama_kanali"] }
     },

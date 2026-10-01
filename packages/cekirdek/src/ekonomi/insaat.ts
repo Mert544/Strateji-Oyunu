@@ -26,8 +26,21 @@ export function insaatBitti(d: Dunya, ctx: Baglam, insaatId: number): void {
         verimPpm: 0,
         isciPpm: 0,
       };
+      // Sanayi (B2): yeni tesis S ölçekte ve aşınmasız başlar; kapalıyken alanlar yazılmaz (özet değişmez).
+      if (ctx.ic.param.sanayi !== undefined) {
+        tesis.olcek = 0;
+        tesis.asinmaPpm = 0;
+      }
       bolge.tesisler.push(tesis);
     }
+  } else if (insaat.tur === "olcek") {
+    // Ölçek yükseltmesi biter: tesis hâlâ varsa kademe yükselir (yükseltme sırasında tesis çalışmaya devam etmiştir).
+    const ts = d.bolgeler[insaat.bolge]?.tesisler.find((x) => x.id === insaat.hedef);
+    if (ts && insaat.olcek !== undefined && (ts.olcek ?? 0) < insaat.olcek) ts.olcek = insaat.olcek;
+  } else if (insaat.tur === "onarim") {
+    // Genel onarım durması biter: süresi dolan tesisler çalışmaya döner.
+    const b = d.bolgeler[insaat.bolge];
+    if (b) for (const ts of b.tesisler) if (ts.onarimBitis !== undefined && ts.onarimBitis <= d.zaman) delete ts.onarimBitis;
   } else {
     const kenar = d.kenarlar[insaat.hedef] as KenarDurumu | undefined;
     if (kenar) kenar.kapasiteSaat += ppmUygula(kenar.kapasiteSaat, ctx.ic.param.lojistik.gelistirmeArtisPpm);

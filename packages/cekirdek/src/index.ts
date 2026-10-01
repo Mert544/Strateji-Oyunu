@@ -36,3 +36,21 @@ export { teknolojiYayilimiPpm } from "./teknoloji";
 // --- Tarım katmanı (B1) ---
 export { iklimGunluk, takvimGunu, takvimAyi, mutlakTakvimGunu, hasatEnterpole, hasatGunlukNormallestir, tarimTablosu, tarimCiktiCarpani } from "./tarim";
 export type { TarimTablosu } from "./tarim";
+
+// --- Sanayi katmanı (B2) ---
+export {
+  sanayiKomutu,
+  sondajBitti,
+  sanayiSaatlik,
+  sanayiGunluk,
+  elektrikDagit,
+  sanayiTablosu,
+  akarsuCarpani,
+  cezaCarpani,
+  kirlilikTarimCarpani,
+  kirlilikIstikrarCezasi,
+  olcekKademesi,
+  bakimCarpani,
+} from "./sanayi";
+export type { SanayiTablosu, ElektrikSonucu } from "./sanayi";
+export { rezervVerimi } from "./ekonomi/uretim";

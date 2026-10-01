@@ -40,6 +40,8 @@ export interface IcerikTablosu {
   gidaMal: number;
   /** Mal kategorisi "ham" mı (rezervden çıkarılır). */
   ham: boolean[];
+  /** Mal depolanamaz mı (elektrik, B2): stok, lojistik ve pazara girmez; girdi/çıktı çiftlerinden çıkarılır. */
+  depolanamaz: boolean[];
   /** Mal kategorisi "askeri" mi. */
   askeri: boolean[];
   /** Pazar emilim/arz (mal indeksine göre, eksik = 0). */
@@ -52,6 +54,8 @@ function cift(ic: DerlenmisIcerik, kayit: Record<string, number>): Array<[number
   for (const malId of Object.keys(kayit)) {
     const mi = ic.malIndeks[malId];
     if (mi === undefined) throw new Error(`ekonomi tablosu: bilinmeyen mal: ${malId}`);
+    // Depolanamaz mal (elektrik, B2) stok/lojistik çiftlerine girmez; sanayi/elektrik.ts ayrı hesaplar.
+    if ((ic.mallar[mi] as { depolanabilir?: boolean }).depolanabilir === false) continue;
     const miktar = kayit[malId] as number;
     if (miktar !== 0) sonuc.push([mi, miktar]);
   }
@@ -96,6 +100,7 @@ export function icerikTablosu(ic: DerlenmisIcerik): IcerikTablosu {
     gelistirmeMaliyeti: cift(ic, ic.param.lojistik.gelistirmeMaliyeti),
     gidaMal: ic.malIndeks["gida"] ?? -1,
     ham: ic.mallar.map((m) => m.kategori === "ham"),
+    depolanamaz: ic.mallar.map((m) => m.depolanabilir === false),
     askeri: ic.mallar.map((m) => m.kategori === "askeri"),
     emilimSaat: malDizisi(ic, ic.param.pazar.emilimSaat),
     arzSaat: malDizisi(ic, ic.param.pazar.arzSaat),

@@ -8,30 +8,30 @@
   "bolgeler": [
     {
       "id": "m_ova", "ad": "Mini Ova", "devlet": "kuzey", "etiketler": ["ova"], "nufus": 120000,
-      "rezervler": { "tahil": 400000000 }, "tesisler": ["ciftlik", "gida_fabrikasi", "santral"], "x": 200, "y": 150,
+      "rezervler": { "tahil": 400000000 }, "tesisler": ["ciftlik", "gida_fabrikasi"], "x": 200, "y": 150,
       "tarim": { "toprakTabanPpm": 1000000, "iklimTipi": "karasal", "tarimTesisTavani": 3, "sulanabilirPpm": 600000 }
     },
     {
       "id": "m_liman", "ad": "Mini Liman", "devlet": "kuzey", "etiketler": ["kiyi", "liman"], "nufus": 150000,
-      "rezervler": { "petrol": 300000000 }, "tesisler": ["petrol_kuyusu", "rafineri", "santral"], "x": 450, "y": 120,
+      "rezervler": { "petrol": 300000000 }, "tesisler": ["petrol_kuyusu", "rafineri"], "x": 450, "y": 120,
       "tarim": { "toprakTabanPpm": 800000, "iklimTipi": "karadeniz", "tarimTesisTavani": 2, "sulanabilirPpm": 400000 }
     },
     {
       "id": "m_gecit", "ad": "Mini Geçit", "devlet": "kuzey", "etiketler": ["dar_gecit"], "nufus": 60000,
-      "rezervler": { "komur": 250000000 }, "tesisler": ["komur_ocagi", "santral"], "x": 250, "y": 450
+      "rezervler": { "komur": 250000000 }, "tesisler": ["komur_ocagi"], "x": 250, "y": 450
     },
     {
       "id": "m_dag", "ad": "Mini Dağ", "devlet": "guney", "etiketler": ["dag"], "nufus": 90000,
-      "rezervler": { "cevher": 400000000 }, "tesisler": ["cevher_madeni", "celikhane", "hidro_santrali"], "x": 150, "y": 700,
+      "rezervler": { "cevher": 400000000 }, "tesisler": ["cevher_madeni", "celikhane"], "x": 150, "y": 700,
       "tarim": { "toprakTabanPpm": 400000, "iklimTipi": "dag_yayla", "tarimTesisTavani": 2, "sulanabilirPpm": 100000 }
     },
     {
       "id": "m_col", "ad": "Mini Çöl", "devlet": "guney", "etiketler": [], "nufus": 80000,
-      "rezervler": { "bakir": 200000000, "silis": 200000000 }, "tesisler": ["bakir_madeni", "silis_ocagi", "santral"], "x": 350, "y": 850
+      "rezervler": { "bakir": 200000000, "silis": 200000000 }, "tesisler": ["bakir_madeni", "silis_ocagi"], "x": 350, "y": 850
     },
     {
       "id": "m_sehir", "ad": "Mini Şehir", "devlet": "guney", "etiketler": ["kiyi", "ova"], "nufus": 250000,
-      "rezervler": { "tahil": 200000000 }, "tesisler": ["ciftlik", "parca_fabrikasi", "elektronik_fabrikasi", "muhimmat_fabrikasi", "santral"], "x": 600, "y": 650,
+      "rezervler": { "tahil": 200000000 }, "tesisler": ["ciftlik", "parca_fabrikasi", "elektronik_fabrikasi", "muhimmat_fabrikasi"], "x": 600, "y": 650,
       "tarim": { "toprakTabanPpm": 1000000, "iklimTipi": "akdeniz", "tarimTesisTavani": 3, "sulanabilirPpm": 600000 }
     }
   ],

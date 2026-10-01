@@ -17,6 +17,11 @@
  * ova 1 000 000 / kıyı 800 000 / dağ 400 000 toprak tabanı (devlet verimlilik çarpanıyla), iklim tipi devletin iklim
  * kuşağından (dağ etiketi her zaman dag_yayla), tarım tesisi tavanı ova 3 / kıyı, dağ 2, sulanabilir alan 600 000 / 400 000 / 100 000.
  *
+ * Sanayi (B2): maden rezervleri (tahıl hariç) docs/07 Ö7 gereği `MADEN_REZERV_OLCEGI_PPM` ile küçültülür (medyan ~392 bin birim
+ * -> ~157 bin); PRNG çekim sırası değişmez (ölçek çekimden sonra uygulanır). Elektrik sanayi tesisi olan her bölgeye başlangıç
+ * santrali eklenir: dağ bölgesine hidro santrali, diğerlerine santral (varsayılan yöntem kömür; yakıt/kömür erişimi olmayan
+ * bölgelerde bot yöntemi değiştirir). Tarım tesisleri (ciftlik, ahir, mera) elektrik istemez ve santral gerektirmez.
+ *
  * Rastgelelik yalnızca küçük sapmalar içindir (koordinat, nüfus, rezerv, kapasite) ve kendi tohumlu
  * PRNG'sinden gelir; Math.random kullanılmaz. Aynı tohum -> bayt bayt aynı çıktı.
  */
@@ -26,6 +31,18 @@ import { fileURLToPath } from "node:url";
 import type { BolgeTanimi, BolgeTarimTanimi, DevletTanimi, Etiket, HaritaDosyasi, IklimTipi, KenarTanimi } from "./tipler";
 
 export const VARSAYILAN_TOHUM = 20260930;
+
+/** Maden rezervi ölçeği (ppm; tahıl hariç): docs/07 Ö7 "damar ölçeği küçülür" (x0,4). */
+export const MADEN_REZERV_OLCEGI_PPM = 400_000;
+
+/** Elektrik istemeyen (tarım) tesis türleri: yalnız bunlara sahip bölge başlangıç santrali almaz. */
+const ELEKTRIKSIZ_TESISLER: readonly string[] = ["ciftlik", "ahir", "mera"];
+
+/** Bölgenin başlangıç santrali: elektrik tüketen tesisi varsa dağda hidro, aksi halde santral; yoksa undefined. */
+function baslangicSantrali(tk: { etiketler: Etiket[]; tesisler: string[] }): string | undefined {
+  if (!tk.tesisler.some((x) => !ELEKTRIKSIZ_TESISLER.includes(x))) return undefined;
+  return tk.etiketler.includes("dag") ? "hidro_santrali" : "santral";
+}
 
 // ---------------------------------------------------------------------------
 // Küçük tohumlu PRNG (mulberry32), tamsayı çıktı
@@ -281,8 +298,11 @@ export function uretSentetikHarita(tohum: number = VARSAYILAN_TOHUM): HaritaDosy
     for (const mal of Object.keys(tk.rezervBin)) {
       const bin = tk.rezervBin[mal] as number;
       // bin birim -> mili-birim (x1_000_000); 1000 birimlik adımlara yuvarlanır
-      rezervler[mal] = yuvarla(bin * rng.aralik(85, 115) * 10_000, 1_000_000);
+      const ham = bin * rng.aralik(85, 115) * 10_000;
+      // Tahıl rezervi tarımda tükenmez (B1) ve ölçeklenmez; maden rezervleri küçültülür (B2, Ö7).
+      rezervler[mal] = mal === "tahil" ? yuvarla(ham, 1_000_000) : Math.max(1_000_000, yuvarla((ham * MADEN_REZERV_OLCEGI_PPM) / 1_000_000, 1_000_000));
     }
+    const santral = baslangicSantrali(tk);
     const bolge: BolgeTanimi = {
       id: tk.id,
       ad: tk.ad,
@@ -290,7 +310,7 @@ export function uretSentetikHarita(tohum: number = VARSAYILAN_TOHUM): HaritaDosy
       etiketler: [...tk.etiketler],
       nufus,
       rezervler,
-      tesisler: [...tk.tesisler],
+      tesisler: santral === undefined ? [...tk.tesisler] : [...tk.tesisler, santral],
       x,
       y,
     };

@@ -13,6 +13,11 @@ import { ikmalTalebi } from "../askeri";
 import { icerikTablosu } from "./tablo";
 import type { IcerikTablosu } from "./tablo";
 import { carpBol, tamsayiKarekok } from "../sabit";
+import { bakimCarpani, bakimDuzeyiIndeksi, cezaCarpani, kirlilikTarimCarpani, olcekKademesi } from "../sanayi/carpan";
+import { elektrikDagit } from "../sanayi/elektrik";
+import type { ElektrikSonucu } from "../sanayi/elektrik";
+import { akarsuCarpani, sanayiTablosu } from "../sanayi/tablo";
+import type { SanayiTablosu } from "../sanayi/tablo";
 import { anlikMiktar, stokOranAyarla } from "../stok";
 import { tarimCiktiCarpani } from "../tarim/carpan";
 import { tarimTablosu } from "../tarim/tablo";
@@ -59,10 +64,25 @@ export interface BolgeHesabi {
   gubreIstek: number[];
   /** Tarım (B1): gübre girdisinin bu çözümdeki karşılanma oranı (ppm); talep yoksa PPM. */
   gubreKarsilanma: number;
+  /** Sanayi (B2): tesis başına ölçek çarpanı (ppm; çıktı, girdi ve elektrik); sanayi kapalıyken PPM. */
+  olcekPpm: number[];
+  /** Sanayi (B2): tesis başına tam verimde elektrik talebi (mili-birim/saat; ölçekli); tüketici değilse 0. */
+  elektrikGirdi: Mili[];
+  /** Sanayi (B2): tesis başına tam verimde brüt santral elektriği (ölçek, akarsu, aşınma dahil); santral değilse 0. */
+  elektrikKap: Mili[];
+  /** Sanayi (B2): tesis başına elektrik uygulanmadan önceki verim (min(potansiyel, girdi yeterliliği)). */
+  verimOn: number[];
+  /** Sanayi (B2): hane elektrik talebi (mili-birim/saat). */
+  haneElektrik: Mili;
+  /** Sanayi (B2): bu çözümün elektrik dağıtımı; sanayi kapalıysa null. */
+  elektrik: ElektrikSonucu | null;
 }
 
 /** Stok bu kadar saatlik açığı karşılayabiliyorsa tüketim kısılmaz; altında stok bu ufka yayılarak tüketilir. */
 const STOK_UFKU_SAAT = 4;
+
+/** Santral yük planı basamağı (ppm). */
+const PLAN_BASAMAGI = 250_000;
 
 /** stokOranAyarla için mutlak taban tolerans (mili-birim/saat). */
 const ORAN_TOLERANSI_TABAN = 4;
@@ -71,12 +91,18 @@ function sifirlar(n: number): number[] {
   return new Array<number>(n).fill(0);
 }
 
-/** Rezerv verimi (ppm) = sqrt(kalan / ilk); ilk veya kalan 0 ise 0. */
-export function rezervVerimi(ilk: number, kalan: number): number {
-  if (ilk <= 0 || kalan <= 0) return 0;
+/**
+ * Rezerv verimi (ppm) = sqrt(kalan / ilk); ilk veya kalan 0 ise 0.
+ * Sanayi (B2): `taban` > 0 ise damar tükenince verim sıfıra değil bu orana iner (ilk > 0 olduğu sürece); kalan = 0 iken de
+ * `taban` döner. Taban 0 (sanayi kapalı) özgün davranıştır.
+ */
+export function rezervVerimi(ilk: number, kalan: number, taban = 0): number {
+  if (ilk <= 0) return 0;
+  if (kalan <= 0) return taban;
   if (kalan >= ilk) return PPM;
   // sqrt(kalan/ilk) × PPM = sqrt(kalan × PPM² / ilk): ara bölmede ppm hassasiyeti kaybolmasın diye tek adımda.
-  return tamsayiKarekok(carpBol(kalan, PPM * PPM, ilk));
+  const v = tamsayiKarekok(carpBol(kalan, PPM * PPM, ilk));
+  return v < taban ? taban : v;
 }
 
 
@@ -119,6 +145,12 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
       ciktiCarpan: new Array<number>(tesisSayisi).fill(PPM),
       gubreIstek: sifirlar(tesisSayisi),
       gubreKarsilanma: PPM,
+      olcekPpm: new Array<number>(tesisSayisi).fill(PPM),
+      elektrikGirdi: sifirlar(tesisSayisi),
+      elektrikKap: sifirlar(tesisSayisi),
+      verimOn: sifirlar(tesisSayisi),
+      haneElektrik: 0,
+      elektrik: null,
     };
     havuz[r] = h;
     return h;
@@ -145,6 +177,12 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
   h.ciktiCarpan.fill(PPM);
   h.gubreIstek.fill(0);
   h.gubreKarsilanma = PPM;
+  h.olcekPpm.fill(PPM);
+  h.elektrikGirdi.fill(0);
+  h.elektrikKap.fill(0);
+  h.verimOn.fill(0);
+  h.haneElektrik = 0;
+  h.elektrik = null;
   return h;
 }
 
@@ -157,13 +195,34 @@ function ciktiOlcekle(q: number, v: number, carpan: number): number {
   return carpan === PPM ? x : carpBol(x, carpan, PPM);
 }
 
-/** Tarımsal tesislerin çıktı çarpanlarını verilen gübre karşılanma oranıyla yeniler (yalnız tarım açık ve bölge tarımlıysa). */
+/**
+ * Bir tesisin çıktı çarpanı (ppm): [ölçek] x [tarım: toprak x iklim x olay x ürün x gübre x kirlilik] x [aşınma cezası].
+ * Sanayi ve tarım kapalıyken (veya tarımsal olmayan tesiste) PPM döner: çıktıya hiç uygulanmaz (özgün davranış).
+ */
+function ciktiCarpaniHesapla(tt: TarimTablosu | null, sn: SanayiTablosu | null, ic: Baglam["ic"], b: BolgeDurumu, ts: BolgeDurumu["tesisler"][number], tarimsal: boolean, gubreKarsilanma: number): number {
+  let c = PPM;
+  if (tarimsal && tt !== null) c = tarimCiktiCarpani(tt, ic, b, tt.yontemEkili[ts.yontem] as boolean, gubreKarsilanma);
+  if (sn !== null) {
+    const ol = olcekKademesi(sn, ts).ciktiPpm;
+    if (ol !== PPM) c = carpBol(c, ol, PPM);
+    const ceza = cezaCarpani(sn, ts);
+    if (ceza !== PPM) c = carpBol(c, ceza, PPM);
+    if (tarimsal) {
+      const k = kirlilikTarimCarpani(sn, b);
+      if (k !== PPM) c = carpBol(c, k, PPM);
+    }
+  }
+  return c;
+}
+
+/** Tesislerin çıktı çarpanlarını verilen gübre karşılanma oranıyla yeniler (yalnız tarımsal tesisler: gübre etkisi değişir). */
 function carpanlariYenile(tt: TarimTablosu, ctx: Baglam, h: BolgeHesabi, gubreKarsilanma: number): void {
   const b = h.bolge;
+  const sn = sanayiTablosu(ctx.ic);
   for (let i = 0; i < b.tesisler.length; i++) {
     const ts = b.tesisler[i] as BolgeDurumu["tesisler"][number];
     if (!ts.aktif || !(tt.yontemTarimsal[ts.yontem] as boolean)) continue;
-    h.ciktiCarpan[i] = tarimCiktiCarpani(tt, ctx.ic, b, tt.yontemEkili[ts.yontem] as boolean, gubreKarsilanma);
+    h.ciktiCarpan[i] = ciktiCarpaniHesapla(tt, sn, ctx.ic, b, ts, true, gubreKarsilanma);
   }
 }
 
@@ -180,36 +239,97 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
   // Tarım (B1): tarım açıksa ve bölge tarım alanına sahipse tarımsal tesislere çıktı çarpanı ve gübre talebi uygulanır.
   const tt = tarimTablosu(ctx.ic);
   const tarimli = tt !== null && b.tarim !== undefined;
+  // Sanayi (B2): ölçek, elektrik, aşınma, bakım düzeyi ve rezerv verimi tabanı; kapalıysa null (özgün davranış).
+  const sn = sanayiTablosu(ctx.ic);
+  const rezervTaban = sn === null ? 0 : sn.p.damar.rezervVerimTabaniPpm;
+  const duzey = sn === null ? 1 : bakimDuzeyiIndeksi(d, b);
+  const akarsu = sn === null ? PPM : akarsuCarpani(sn, ctx.ic, t);
+  // Santral yük planı: önceki çözümdeki yük + marj (yakıt talebi gerçek yükü izler; yük bilinmiyorsa tam yük).
+  // Yük 250 000 ppm basamaklarına yukarı yuvarlanır: yakıt talebi yük dalgalanmasıyla her çözümde değişip akış/olay çalkantısı
+  // (çözüm sayısı) yaratmasın.
+  const planYuk =
+    sn === null || b.elektrik === undefined ? PPM : Math.min(PPM, Math.ceil((b.elektrik.yukPpm + sn.p.yukPlanMarjiPpm) / PLAN_BASAMAGI) * PLAN_BASAMAGI);
 
   for (let m = 0; m < nm; m++) h.stok[m] = anlikMiktar((b.stoklar[m] as BolgeDurumu["stoklar"][number]), t);
 
   // İşgücü: aktif tesislere tesis sırasıyla (id sırası) dağıtılır.
   let kalanIsci = carpBol(b.nufus, ctx.ic.param.nufus.isgucuPpm, PPM);
+  // Sanayi (B2): santraller işgücünde ÖNCELİKLİDİR (şebeke altyapısı; sıra sonunda kalan santral tüm bölgeyi karartmasın);
+  // kalan işgücü diğer tesislere id sırasıyla dağıtılır. Kapalıyken özgün sıralı dağıtım.
+  let atananDizi: number[] | null = null;
+  if (sn !== null) {
+    atananDizi = new Array<number>(tesisSayisi).fill(0);
+    let kalan = kalanIsci;
+    for (const santralTuru of [true, false]) {
+      for (let i = 0; i < tesisSayisi; i++) {
+        const ts = b.tesisler[i] as BolgeDurumu["tesisler"][number];
+        if (((sn.yontemElektrikCikti[ts.yontem] as number) > 0) !== santralTuru) continue;
+        if (!(ts.aktif && !(ts.onarimBitis !== undefined && ts.onarimBitis > t))) continue;
+        const y = tb.yontem[ts.yontem] as IcerikTablosu["yontem"][number];
+        const k = olcekKademesi(sn, ts);
+        const gerek = k.isciPpm === PPM ? y.isci : carpBol(y.isci, k.isciPpm, PPM);
+        const a = kalan < gerek ? kalan : gerek;
+        kalan -= a;
+        atananDizi[i] = a;
+      }
+    }
+  }
   for (let i = 0; i < tesisSayisi; i++) {
     const ts = b.tesisler[i] as BolgeDurumu["tesisler"][number];
     const y = tb.yontem[ts.yontem] as IcerikTablosu["yontem"][number];
-    if (ts.aktif) {
-      const atanan = kalanIsci < y.isci ? kalanIsci : y.isci;
-      kalanIsci -= atanan;
-      const isciPpm = y.isci > 0 ? carpBol(atanan, PPM, y.isci) : PPM;
+    // Sanayi: genel onarım sırasındaki tesis çalışmaz (bakım girdisi yine tüketilir).
+    const calisir = ts.aktif && !(ts.onarimBitis !== undefined && ts.onarimBitis > t);
+    const kademe = sn === null ? null : olcekKademesi(sn, ts);
+    const olcekCikti = kademe === null ? PPM : kademe.ciktiPpm;
+    if (kademe !== null) h.olcekPpm[i] = olcekCikti;
+    let planPot = 0;
+    if (calisir) {
+      const isciGerek = kademe === null || kademe.isciPpm === PPM ? y.isci : carpBol(y.isci, kademe.isciPpm, PPM);
+      let atanan: number;
+      if (atananDizi !== null) atanan = atananDizi[i] as number;
+      else {
+        atanan = kalanIsci < isciGerek ? kalanIsci : isciGerek;
+        kalanIsci -= atanan;
+      }
+      const isciPpm = isciGerek > 0 ? carpBol(atanan, PPM, isciGerek) : PPM;
       h.isciPpm[i] = isciPpm;
       const tarimsal = tarimli && (tt as TarimTablosu).yontemTarimsal[ts.yontem] === true;
       // Tarımsal yöntemde rezerv verimi yerine toprak x iklim x olay x gübre çarpanı (çıktıya) uygulanır.
-      const rv = y.rezerv >= 0 && !tarimsal ? rezervVerimi(b.rezervIlk[y.rezerv] as number, b.rezervKalan[y.rezerv] as number) : PPM;
+      const rv = y.rezerv >= 0 && !tarimsal ? rezervVerimi(b.rezervIlk[y.rezerv] as number, b.rezervKalan[y.rezerv] as number, rezervTaban) : PPM;
       // Ödeme gücü (hazine 0 ve net oran negatifken < PPM): tesis verimi "maaş ödenemiyor" oranında kısılır.
       h.potansiyelPpm[i] = carpBol(carpBol(isciPpm, rv, PPM), odemePpm, PPM);
-      if (tarimsal) {
+      planPot = h.potansiyelPpm[i] as number;
+      if (sn !== null) {
+        // Çıktı çarpanı: ölçek x aşınma cezası (x tarım x kirlilik tarımsalda).
+        h.ciktiCarpan[i] = ciktiCarpaniHesapla(tt, sn, ctx.ic, b, ts, tarimsal, PPM);
+        const eg = sn.yontemElektrikGirdi[ts.yontem] as number;
+        if (eg > 0) h.elektrikGirdi[i] = carpBol(eg, olcekCikti, PPM);
+        const ec = sn.yontemElektrikCikti[ts.yontem] as number;
+        if (ec > 0) {
+          const hidroCarpan = sn.yontemHidro[ts.yontem] ? akarsu : PPM;
+          h.elektrikKap[i] = carpBol(carpBol(ec, olcekCikti, PPM), carpBol(hidroCarpan, cezaCarpani(sn, ts), PPM), PPM);
+          // Santralin yakıt talebi gerçek yükünü izler (tam yük planlamak, kullanılmayan yakıtı depoya yığardı).
+          planPot = carpBol(planPot, planYuk, PPM);
+        }
+      } else if (tarimsal) {
         const tb2 = tt as TarimTablosu;
         h.ciktiCarpan[i] = tarimCiktiCarpani(tb2, ctx.ic, b, tb2.yontemEkili[ts.yontem] as boolean, PPM);
+      }
+      if (tarimsal) {
+        const tb2 = tt as TarimTablosu;
         const ta = b.tarim as NonNullable<BolgeDurumu["tarim"]>;
-        if (ta.gubreDozu > 0) h.gubreIstek[i] = ta.gubreDozu * tb2.tarim.gubreTuketimiSaat;
+        if (ta.gubreDozu > 0) h.gubreIstek[i] = carpBol(ta.gubreDozu * tb2.tarim.gubreTuketimiSaat, olcekCikti, PPM);
       }
     }
-    // Bakım aktif olsun olmasın tüketilir (batma).
-    for (const [m, q] of y.bakim) h.bakim[m] = (h.bakim[m] as number) + q;
+    // Bakım aktif olsun olmasın tüketilir (batma); sanayide ölçek ve bakım düzeyi çarpanıyla.
+    const bakimC = sn === null ? PPM : bakimCarpani(sn, ts, duzey);
+    for (const [m, q] of y.bakim) h.bakim[m] = (h.bakim[m] as number) + (bakimC === PPM ? q : carpBol(q, bakimC, PPM));
     const pot = h.potansiyelPpm[i] as number;
     if (pot > 0) {
-      for (const [m, q] of y.girdi) h.girdiPot[m] = (h.girdiPot[m] as number) + carpBol(q, pot, PPM);
+      for (const [m, q] of y.girdi) {
+        const qo = olcekCikti === PPM ? q : carpBol(q, olcekCikti, PPM);
+        h.girdiPot[m] = (h.girdiPot[m] as number) + carpBol(qo, planPot, PPM);
+      }
       const carpan = h.ciktiCarpan[i] as number;
       for (const [m, q] of y.cikti) h.ciktiPot[m] = (h.ciktiPot[m] as number) + ciktiOlcekle(q, pot, carpan);
       const gi = h.gubreIstek[i] as number;
@@ -219,6 +339,7 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
       }
     }
   }
+  if (sn !== null) h.haneElektrik = carpBol(b.nufus, sn.haneElektrik, 1000);
 
   for (const [m, q] of tb.nufusTuketim) h.nufusTuketim[m] = carpBol(b.nufus, q, 1000);
   const ik = ikmalTalebi(d, ctx, r);
@@ -244,6 +365,44 @@ function oranPpm(a: number, bolen: number): number {
 }
 
 /**
+ * Sanayi (B2): `verimOn` (girdi/işgücü sınırlı verim) üzerine elektrik dağıtımını uygular ve `verimPpm`'i yazar.
+ * Santraller yüklerine, elektrik girdili tüketici tesisler karşılanma oranına göre ölçeklenir. Sanayi kapalıysa
+ * `verimPpm = verimOn` (özgün davranış).
+ */
+function elektrikUygula(sn: SanayiTablosu | null, h: BolgeHesabi, tesisSayisi: number): boolean {
+  if (sn === null) {
+    for (let i = 0; i < tesisSayisi; i++) h.verimPpm[i] = h.verimOn[i] as number;
+    return false;
+  }
+  let kapasite = 0;
+  let talepTesis = 0;
+  for (let i = 0; i < tesisSayisi; i++) {
+    const v = h.verimOn[i] as number;
+    if (v <= 0) continue;
+    const kap = h.elektrikKap[i] as number;
+    if (kap > 0) kapasite += carpBol(kap, v, PPM);
+    const eg = h.elektrikGirdi[i] as number;
+    if (eg > 0) talepTesis += carpBol(eg, v, PPM);
+  }
+  const e = elektrikDagit(kapasite, talepTesis, h.haneElektrik, sn.p.iletimKaybiPpm, sn.p.haneOnceligi);
+  h.elektrik = e;
+  let degisti = false;
+  for (let i = 0; i < tesisSayisi; i++) {
+    const v = h.verimOn[i] as number;
+    let yeni = v;
+    if (v > 0) {
+      if ((h.elektrikKap[i] as number) > 0) yeni = carpBol(v, e.yukPpm, PPM);
+      else if ((h.elektrikGirdi[i] as number) > 0) yeni = carpBol(v, e.tesisKarsilanmaPpm, PPM);
+    }
+    if (yeni !== h.verimPpm[i]) {
+      h.verimPpm[i] = yeni;
+      degisti = true;
+    }
+  }
+  return degisti;
+}
+
+/**
  * Adım 4: tesis verimi ve öncelik katmanı karşılanma oranları.
  * `giden`: bu çözümün akışlarıyla bölgeden çıkan oran (mal bazında).
  * Stok açığı (talep − kullanılabilir akış) en az STOK_UFKU_SAAT saat karşılıyorsa her katman %100; aksi halde kullanılabilir
@@ -260,8 +419,12 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
   let gubreTalep = false;
   for (let i = 0; i < tesisSayisi; i++) if ((h.gubreIstek[i] as number) > 0 && (h.potansiyelPpm[i] as number) > 0) gubreTalep = true;
 
-  // Başlangıç: verim = potansiyel.
-  for (let i = 0; i < tesisSayisi; i++) h.verimPpm[i] = h.potansiyelPpm[i] as number;
+  // Sanayi (B2): elektrik dengesi verimleri etkiler (brownout); kapalıysa null ve verim özgün davranıştadır.
+  const sn = sanayiTablosu(ctx.ic);
+
+  // Başlangıç: verim = potansiyel (sanayi açıksa elektrik dağıtımıyla ölçeklenmiş).
+  for (let i = 0; i < tesisSayisi; i++) h.verimOn[i] = h.potansiyelPpm[i] as number;
+  elektrikUygula(sn, h, tesisSayisi);
 
   for (let tur = 0; tur < 4; tur++) {
     // Mevcut verimle brüt çıktı
@@ -330,10 +493,19 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
         const f = h.fr3[m] as number;
         if (f < v) v = f;
       }
-      if (v !== h.verimPpm[i]) {
-        h.verimPpm[i] = v;
-        degisti = true;
+      h.verimOn[i] = v;
+    }
+    if (sn === null) {
+      for (let i = 0; i < tesisSayisi; i++) {
+        const v = h.verimOn[i] as number;
+        if ((h.potansiyelPpm[i] as number) > 0 && v !== h.verimPpm[i]) {
+          h.verimPpm[i] = v;
+          degisti = true;
+        }
       }
+    } else {
+      // Elektrik: girdi yeterliliğinden sonra brownout/yük uygulanır; verim değişirse tur tekrarlanır.
+      if (elektrikUygula(sn, h, tesisSayisi)) degisti = true;
     }
     if (!degisti) break;
   }
@@ -376,6 +548,11 @@ export function bolgeUykuUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi): void {
   }
   b.gidaKarsilanmaPpm = PPM;
   b.ikmalKarsilanmaPpm = PPM;
+  // Sanayi (B2): uykuda elektrik talebi/arzı yok, kıtlık yok; kirlilik ve keşif hakları donar.
+  if (b.elektrik !== undefined) {
+    b.elektrik = { uretimMili: 0, talepMili: 0, karsilanmaPpm: PPM, haneKarsilanmaPpm: PPM, yukPpm: 0 };
+    b.bakimKarsilanmaPpm = PPM;
+  }
   for (let m = 0; m < b.stoklar.length; m++) {
     b.uretimOrani[m] = 0;
     stokOranAyarla(d, ctx, h.indeks, m, 0);
@@ -395,6 +572,24 @@ export function bolgeDurumunaYaz(ctx: Baglam, h: BolgeHesabi): void {
   const tt = tarimTablosu(ctx.ic);
   if (tt !== null && b.tarim !== undefined) {
     b.tarim.gubreKarsilanmaPpm = (h.girdiPot[tt.gubreMal] as number) > 0 && b.tarim.gubreDozu > 0 ? h.gubreKarsilanma : 0;
+  }
+  // Sanayi (B2): elektrik dengesi ve bakım girdisi karşılanma oranı (aşınmayı hızlandırır).
+  if (h.elektrik !== null && b.elektrik !== undefined) {
+    b.elektrik = {
+      uretimMili: h.elektrik.uretim,
+      talepMili: h.elektrik.talepTesis + h.elektrik.talepHane,
+      karsilanmaPpm: h.elektrik.tesisKarsilanmaPpm,
+      haneKarsilanmaPpm: h.elektrik.haneKarsilanmaPpm,
+      yukPpm: h.elektrik.yukPpm,
+    };
+    let bakimOran = PPM;
+    for (let m = 0; m < tb.malSayisi; m++) {
+      if ((h.bakim[m] as number) > 0) {
+        const f = h.fr2[m] as number;
+        if (f < bakimOran) bakimOran = f;
+      }
+    }
+    b.bakimKarsilanmaPpm = bakimOran;
   }
   b.gidaKarsilanmaPpm = tb.gidaMal >= 0 ? (h.fr1[tb.gidaMal] as number) : PPM;
   let ikmalOran = PPM;
@@ -421,7 +616,11 @@ export function bolgeOranlariUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi, giden
     const v = h.verimPpm[i] as number;
     if (v <= 0) continue;
     const y = tb.yontem[(b.tesisler[i] as BolgeDurumu["tesisler"][number]).yontem] as IcerikTablosu["yontem"][number];
-    for (const [m, q] of y.girdi) girdiGercek[m] = (girdiGercek[m] as number) + carpBol(q, v, PPM);
+    const olcek = h.olcekPpm[i] as number;
+    for (const [m, q] of y.girdi) {
+      const qo = olcek === PPM ? q : carpBol(q, olcek, PPM);
+      girdiGercek[m] = (girdiGercek[m] as number) + carpBol(qo, v, PPM);
+    }
     // Tarım (B1): gerçek gübre tüketimi = doz x tüketim x verim x karşılanma.
     const gi = h.gubreIstek[i] as number;
     if (gi > 0) {

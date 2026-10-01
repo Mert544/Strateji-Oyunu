@@ -92,57 +92,57 @@ alınmayan adaylar `hat-raporu.json` → `mrdsAdaylari` içinde listelenir.
 |---|---|---|---|
 | `budjak` | tahil 1000 | — | Güney Ukrayna bozkırı: tahıl ve ayçiçeği kuşağı (genel bilgi; MRDS'te metal kaydı yok) |
 | `tuna_deltasi` | tahil 300 | — | Delta çevresi tarım (genel bilgi) |
-| `dobruca` | tahil 800, petrol 450 | — | Dobruca tahıl ovası; Romanya Karadeniz şelfi petrol/gaz ve Năvodari rafinerisi (genel bilgi) |
-| `siret` | tahil 900, petrol 250 | — | Moldova ovası tahılı; Bacău/Vrancea petrol sahaları; Galați çelik tesisi (genel bilgi) |
-| `prahova` | petrol 700, tahil 400, silis 300 | — | Prahova vadisi petrolü (Ploiești, dünyanın ilk rafinerilerinden); Buzău kuvars kumu (genel bilgi) |
+| `dobruca` | tahil 800, petrol 180 | — | Dobruca tahıl ovası; Romanya Karadeniz şelfi petrol/gaz ve Năvodari rafinerisi (genel bilgi) |
+| `siret` | tahil 900, petrol 100 | — | Moldova ovası tahılı; Bacău/Vrancea petrol sahaları; Galați çelik tesisi (genel bilgi) |
+| `prahova` | tahil 400, petrol 280, silis 120 | — | Prahova vadisi petrolü (Ploiești, dünyanın ilk rafinerilerinden); Buzău kuvars kumu (genel bilgi) |
 | `eflak` | tahil 1100 | — | Güney Romanya ovası (Bărăgan) tahılı (genel bilgi) |
-| `guney_karpatlar` | komur 900 | — | Gorj linyiti ve Jiu Vadisi taşkömürü (genel bilgi; MRDS'te Hunedoara yalnız çelik tesisi kaydı var, cevher iddiası alınmadı) |
-| `tuna_ovasi` | tahil 900, komur 200 | — | Kuzey Bulgaristan Tuna ovası tahılı; Batı Tuna linyit (genel bilgi) |
-| `tuna_platosu` | tahil 800, silis 350 | — | Ludogorie tahılı; Senovo-Vetovo kuvars-kaolin kumları (genel bilgi) |
-| `varna` | tahil 900, petrol 120 | — | Dobruca tahılı; Tülenovo kıyı petrolü (genel bilgi) |
+| `guney_karpatlar` | komur 360 | — | Gorj linyiti ve Jiu Vadisi taşkömürü (genel bilgi; MRDS'te Hunedoara yalnız çelik tesisi kaydı var, cevher iddiası alınmadı) |
+| `tuna_ovasi` | tahil 900, komur 80 | — | Kuzey Bulgaristan Tuna ovası tahılı; Batı Tuna linyit (genel bilgi) |
+| `tuna_platosu` | tahil 800, silis 140 | — | Ludogorie tahılı; Senovo-Vetovo kuvars-kaolin kumları (genel bilgi) |
+| `varna` | tahil 900, petrol 50 | — | Dobruca tahılı; Tülenovo kıyı petrolü (genel bilgi) |
 | `sipka` | yok | — | Balkan Dağları orta geçitleri (Şipka, Troyan); Gabrovo makine sanayii (genel bilgi) |
-| `pannon` | tahil 1100, petrol 200 | — | Voyvodina ve Banat tahıl ovası; Banat petrol sahaları (genel bilgi) |
-| `morava` | komur 800, bakir 650 | bakir: içeride 14, yakın 9 (Besna Kobila Mtn. Deposits; Kisnica Mine; Majdanpek) | Kolubara ve Kostolac linyiti; Bor-Majdanpek bakır kuşağı (genel bilgi + MRDS bakır kayıtları) |
-| `adriyatik` | petrol 450, bakir 250, cevher 200 | cevher: içeride 23, yakın 0 (Bushtrica Mine; Guri Kuq Including: See Alt Names; Guri Kuq Mine)<br>bakir: içeride 17, yakın 3 (Fushe-Arrez; Golaj; Kurbnesh-Perlat) | Patos-Marinza petrolü; Kukës/Rubik bakırı; Pogradec nikelli demir cevheri (genel bilgi + MRDS) |
-| `vardar` | komur 400, tahil 350, bakir 300 | bakir: içeride 3, yakın 0 (Bucim) | Bučim/Radoviš bakırı; Bitola-Oslomej linyiti; Pelagonya ovası (genel bilgi + MRDS) |
-| `sofya` | cevher 400, bakir 350, komur 300 | cevher: MUAF (MRDS'te kayıt yok/kaba konumlu; gerekçe sağda)<br>bakir: MUAF (MRDS'te kayıt yok/kaba konumlu; gerekçe sağda) | Kremikovtsi demir cevheri ve çelik kombinası; Elatsite-Chelopech bakırı; Pernik/Bobov Dol linyiti (genel bilgi; Elatsite MRDS'te var ama konumu kaba, çokgenin 35 km dışında; Kremikovtsi MRDS'te yok -> mrdsMuaf) |
-| `meric` | komur 1000, tahil 700, bakir 300 | bakir: içeride 33, yakın 0 (Assarel; Chelopech; Elatzite) | Maritsa-Iztok linyit havzası (Güneydoğu Avrupa'nın en büyüğü); Trakya ovası; Panagyurishte bakırı (genel bilgi + MRDS) |
+| `pannon` | tahil 1100, petrol 80 | — | Voyvodina ve Banat tahıl ovası; Banat petrol sahaları (genel bilgi) |
+| `morava` | komur 320, bakir 260 | bakir: içeride 14, yakın 9 (Besna Kobila Mtn. Deposits; Kisnica Mine; Majdanpek) | Kolubara ve Kostolac linyiti; Bor-Majdanpek bakır kuşağı (genel bilgi + MRDS bakır kayıtları) |
+| `adriyatik` | petrol 180, bakir 100, cevher 80 | cevher: içeride 23, yakın 0 (Bushtrica Mine; Guri Kuq Including: See Alt Names; Guri Kuq Mine)<br>bakir: içeride 17, yakın 3 (Fushe-Arrez; Golaj; Kurbnesh-Perlat) | Patos-Marinza petrolü; Kukës/Rubik bakırı; Pogradec nikelli demir cevheri (genel bilgi + MRDS) |
+| `vardar` | tahil 350, komur 160, bakir 120 | bakir: içeride 3, yakın 0 (Bucim) | Bučim/Radoviš bakırı; Bitola-Oslomej linyiti; Pelagonya ovası (genel bilgi + MRDS) |
+| `sofya` | cevher 160, bakir 140, komur 120 | cevher: MUAF (MRDS'te kayıt yok/kaba konumlu; gerekçe sağda)<br>bakir: MUAF (MRDS'te kayıt yok/kaba konumlu; gerekçe sağda) | Kremikovtsi demir cevheri ve çelik kombinası; Elatsite-Chelopech bakırı; Pernik/Bobov Dol linyiti (genel bilgi; Elatsite MRDS'te var ama konumu kaba, çokgenin 35 km dışında; Kremikovtsi MRDS'te yok -> mrdsMuaf) |
+| `meric` | tahil 700, komur 400, bakir 120 | bakir: içeride 33, yakın 0 (Assarel; Chelopech; Elatzite) | Maritsa-Iztok linyit havzası (Güneydoğu Avrupa'nın en büyüğü); Trakya ovası; Panagyurishte bakırı (genel bilgi + MRDS) |
 | `burgaz` | tahil 400 | — | Burgaz-Yambol ovası tahılı; Neftochim Burgas rafinerisi (genel bilgi; MRDS'te bölgede bakır/demir yatak kaydı yok, iddia alınmadı) |
-| `pindus` | komur 850, tahil 800 | — | Ptolemaida-Amyntaio linyiti; Teselya tahıl ovası (genel bilgi) |
-| `selanik` | tahil 500, bakir 250 | bakir: içeride 1, yakın 0 (Trilofon) | Kasandra/Skouries bakır-altın; Aksios-Serres ovası; Selanik rafinerisi (genel bilgi + MRDS) |
-| `rodop_kiyisi` | tahil 500, petrol 200 | — | Prinos (Taşos) kıyı petrolü; Trakya ovası (genel bilgi) |
-| `attika` | cevher 250 | cevher: içeride 9, yakın 0 (Euboia; Hagios Ioannis Larymna; Larymna Mine and Euboea Island Deposit) | Larymna nikelli demir cevheri; Eleusis/Aspropyrgos rafineri kuşağı (genel bilgi + MRDS) |
-| `mora` | komur 500 | — | Megalopoli linyiti (genel bilgi) |
+| `pindus` | tahil 800, komur 340 | — | Ptolemaida-Amyntaio linyiti; Teselya tahıl ovası (genel bilgi) |
+| `selanik` | tahil 500, bakir 100 | bakir: içeride 1, yakın 0 (Trilofon) | Kasandra/Skouries bakır-altın; Aksios-Serres ovası; Selanik rafinerisi (genel bilgi + MRDS) |
+| `rodop_kiyisi` | tahil 500, petrol 80 | — | Prinos (Taşos) kıyı petrolü; Trakya ovası (genel bilgi) |
+| `attika` | cevher 100 | cevher: içeride 9, yakın 0 (Euboia; Hagios Ioannis Larymna; Larymna Mine and Euboea Island Deposit) | Larymna nikelli demir cevheri; Eleusis/Aspropyrgos rafineri kuşağı (genel bilgi + MRDS) |
+| `mora` | komur 200 | — | Megalopoli linyiti (genel bilgi) |
 | `girit` | tahil 250 | — | Mesara ovası ve zeytin/sebze tarımı (genel bilgi) |
 | `ege_adalari` | yok | — | Adalar: turizm/tarım ekonomisi; belirgin ham rezerv tablosuna alınmadı (genel bilgi) |
-| `trakya` | tahil 1000, silis 350, petrol 100 | — | Trakya buğday/ayçiçeği; Kırklareli kuvars kumu; Trakya gaz/petrol sahaları (genel bilgi) |
-| `istanbul` | silis 300 | — | Şile kuvars kumu (genel bilgi) |
-| `canakkale` | komur 300 | — | Çan linyiti (genel bilgi) |
-| `izmit` | tahil 400, silis 200 | — | Sakarya kuvars kumu; Adapazarı ovası; İzmit rafinerisi (genel bilgi) |
-| `guney_marmara` | tahil 600, komur 200 | — | Bursa/Susurluk ovaları; Keles/Dursunbey linyiti; Bursa otomotiv sanayii (genel bilgi) |
-| `ege` | komur 700, tahil 500 | — | Soma linyiti; Gediz ovası (genel bilgi) |
-| `menderes` | komur 450, tahil 400 | — | Yatağan/Milas linyiti; Büyük Menderes ovası (genel bilgi) |
-| `frigya` | komur 700, tahil 500, silis 400 | — | Tunçbilek/Seyitömer linyiti; Eskişehir-Kütahya kuvars ve feldispat; plato tahılı (genel bilgi) |
+| `trakya` | tahil 1000, silis 140, petrol 50 | — | Trakya buğday/ayçiçeği; Kırklareli kuvars kumu; Trakya gaz/petrol sahaları (genel bilgi) |
+| `istanbul` | silis 120 | — | Şile kuvars kumu (genel bilgi) |
+| `canakkale` | komur 120 | — | Çan linyiti (genel bilgi) |
+| `izmit` | tahil 400, silis 80 | — | Sakarya kuvars kumu; Adapazarı ovası; İzmit rafinerisi (genel bilgi) |
+| `guney_marmara` | tahil 600, komur 80 | — | Bursa/Susurluk ovaları; Keles/Dursunbey linyiti; Bursa otomotiv sanayii (genel bilgi) |
+| `ege` | tahil 500, komur 280 | — | Soma linyiti; Gediz ovası (genel bilgi) |
+| `menderes` | tahil 400, komur 180 | — | Yatağan/Milas linyiti; Büyük Menderes ovası (genel bilgi) |
+| `frigya` | tahil 500, komur 280, silis 160 | — | Tunçbilek/Seyitömer linyiti; Eskişehir-Kütahya kuvars ve feldispat; plato tahılı (genel bilgi) |
 | `antalya` | tahil 250 | — | Antalya ovası ve seralar (genel bilgi) |
-| `cukurova` | tahil 1000, cevher 250 | cevher: içeride 2, yakın 0 (Icel, Adana, and Kahramanmaras; Karatas) | Çukurova tahıl ovası; Hatay demir cevheri (genel bilgi + MRDS) |
+| `cukurova` | tahil 1000, cevher 100 | cevher: içeride 2, yakın 0 (Icel, Adana, and Kahramanmaras; Karatas) | Çukurova tahıl ovası; Hatay demir cevheri (genel bilgi + MRDS) |
 | `konya` | tahil 1200 | — | Türkiye'nin en büyük tahıl ovası (genel bilgi) |
-| `ankara` | tahil 600, komur 200 | — | İç Anadolu tahılı; Beypazarı/Çayırhan linyiti; Kırıkkale savunma sanayii (genel bilgi) |
-| `bati_karadeniz` | komur 900 | — | Zonguldak taşkömürü havzası (Türkiye'nin tek taşkömürü); Ereğli/Karabük çelik (genel bilgi) |
-| `kastamonu` | bakir 350 | bakir: içeride 6, yakın 0 (Asikoy Mine; Bakibaba Mine) | Küre bakır-piriti (genel bilgi + MRDS bakır) |
+| `ankara` | tahil 600, komur 80 | — | İç Anadolu tahılı; Beypazarı/Çayırhan linyiti; Kırıkkale savunma sanayii (genel bilgi) |
+| `bati_karadeniz` | komur 360 | — | Zonguldak taşkömürü havzası (Türkiye'nin tek taşkömürü); Ereğli/Karabük çelik (genel bilgi) |
+| `kastamonu` | bakir 140 | bakir: içeride 6, yakın 0 (Asikoy Mine; Bakibaba Mine) | Küre bakır-piriti (genel bilgi + MRDS bakır) |
 | `kapadokya` | tahil 700 | — | Aksaray-Niğde ovası tahılı; Kayseri sanayii (genel bilgi; MRDS'te bölgede demir yatak kaydı yok, iddia alınmadı) |
-| `sivas` | cevher 900, komur 250 | cevher: içeride 14, yakın 0 (Cetinkaya Mine; Divrigi; Divrigi Iron Ore Deposit) | Divriği demir cevheri; Kangal linyiti (genel bilgi + MRDS) |
+| `sivas` | cevher 360, komur 100 | cevher: içeride 14, yakın 0 (Cetinkaya Mine; Divrigi; Divrigi Iron Ore Deposit) | Divriği demir cevheri; Kangal linyiti (genel bilgi + MRDS) |
 | `orta_karadeniz` | tahil 1000 | — | Bafra/Çarşamba ovaları ve Çorum-Amasya tahılı (genel bilgi) |
-| `firat` | tahil 1100, komur 650, petrol 500 | — | Harran ovası; Adıyaman petrol sahaları; Afşin-Elbistan linyiti (genel bilgi) |
-| `dicle` | petrol 900, tahil 400, bakir 250 | bakir: içeride 3, yakın 0 (Cambasi; Ergani Bakir Isletmesi; Siirt) | Batman-Raman ve Şırnak petrolü (ülke üretiminin çoğu); Ergani bakırı; Batman rafinerisi (genel bilgi + MRDS) |
-| `yukari_firat` | cevher 700, bakir 350 | cevher: içeride 25, yakın 0 (Attepe Mine; Deveci Mine; Ergani)<br>bakir: içeride 7, yakın 0 (Ergani; Ergani - Maden; Karabork) | Hekimhan demir cevheri; Maden/Ergani bakır kuşağı (genel bilgi + MRDS) |
-| `erzurum` | komur 120 | — | Aşkale linyiti (küçük); hayvancılık yaylası (genel bilgi) |
+| `firat` | tahil 1100, komur 260, petrol 200 | — | Harran ovası; Adıyaman petrol sahaları; Afşin-Elbistan linyiti (genel bilgi) |
+| `dicle` | tahil 400, petrol 360, bakir 100 | bakir: içeride 3, yakın 0 (Cambasi; Ergani Bakir Isletmesi; Siirt) | Batman-Raman ve Şırnak petrolü (ülke üretiminin çoğu); Ergani bakırı; Batman rafinerisi (genel bilgi + MRDS) |
+| `yukari_firat` | cevher 280, bakir 140 | cevher: içeride 25, yakın 0 (Attepe Mine; Deveci Mine; Ergani)<br>bakir: içeride 7, yakın 0 (Ergani; Ergani - Maden; Karabork) | Hekimhan demir cevheri; Maden/Ergani bakır kuşağı (genel bilgi + MRDS) |
+| `erzurum` | komur 50 | — | Aşkale linyiti (küçük); hayvancılık yaylası (genel bilgi) |
 | `van` | yok | — | Belirgin ham rezerv yok (genel bilgi) |
 | `kars` | yok | — | Belirgin ham rezerv yok; hayvancılık platosu (genel bilgi) |
-| `dogu_karadeniz` | bakir 350 | bakir: içeride 15, yakın 3 (Guzelyayla; Kankoy Yomra; Kutlular Surmene) | Giresun/Gümüşhane/Trabzon bakır-çinko kuşağı (genel bilgi + MRDS) |
-| `coruh` | bakir 500 | bakir: içeride 15, yakın 0 (Cakmakkaya Mine; Damar Mine; Murgul) | Murgul ve Çayeli bakır madenleri (genel bilgi + MRDS) |
-| `kolhis` | tahil 300, komur 200 | — | Kolheti ovası; Tkvarçeli taşkömürü (genel bilgi) |
-| `kafkas_gecidi` | komur 300 | — | Tkibuli-Şaori taşkömürü; Likhi/Surami ve Darial geçitleri (genel bilgi) |
-| `kur_vadisi` | tahil 600, bakir 250, petrol 120 | bakir: içeride 3, yakın 3 (Alaverdi; Madneuli Mine) | Kakheti/Kartli ovaları; Bolnisi bakır-altın; Samgori petrolü (genel bilgi + MRDS) |
+| `dogu_karadeniz` | bakir 140 | bakir: içeride 15, yakın 3 (Guzelyayla; Kankoy Yomra; Kutlular Surmene) | Giresun/Gümüşhane/Trabzon bakır-çinko kuşağı (genel bilgi + MRDS) |
+| `coruh` | bakir 200 | bakir: içeride 15, yakın 0 (Cakmakkaya Mine; Damar Mine; Murgul) | Murgul ve Çayeli bakır madenleri (genel bilgi + MRDS) |
+| `kolhis` | tahil 300, komur 80 | — | Kolheti ovası; Tkvarçeli taşkömürü (genel bilgi) |
+| `kafkas_gecidi` | komur 120 | — | Tkibuli-Şaori taşkömürü; Likhi/Surami ve Darial geçitleri (genel bilgi) |
+| `kur_vadisi` | tahil 600, bakir 100, petrol 50 | bakir: içeride 3, yakın 3 (Alaverdi; Madneuli Mine) | Kakheti/Kartli ovaları; Bolnisi bakır-altın; Samgori petrolü (genel bilgi + MRDS) |
 <!-- REZERV-TABLOSU-BITIS -->
 
 ## 5. Nüfus: ölçekleme kuralı

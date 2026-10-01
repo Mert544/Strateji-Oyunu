@@ -98,6 +98,7 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
       if (!b.etiketler.includes("liman")) return hata(`bolge liman degil: ${k.bolge}`);
       const mi = ic.malIndeks[k.mal];
       if (mi === undefined) return hata(`bilinmeyen mal: ${k.mal}`);
+      if (tb.depolanamaz[mi] === true) return hata(`depolanamaz mal ticarete konu olamaz: ${k.mal}`);
       if (k.yon !== "ihracat" && k.yon !== "ithalat") return hata(`gecersiz yon: ${String(k.yon)}`);
       if (!Number.isSafeInteger(k.oranSaat) || k.oranSaat < 0 || k.oranSaat > EN_COK_TICARET_ORANI) {
         return hata(`gecersiz oran: ${k.oranSaat} (0..${EN_COK_TICARET_ORANI})`);

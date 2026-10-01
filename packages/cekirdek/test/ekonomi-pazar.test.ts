@@ -142,7 +142,8 @@ describe("fiyat", () => {
 
   it("7 gunluk rastgele emirlerle her mal fiyati her saat araliktadir", () => {
     const { s } = kur(IKI_LIMAN);
-    const mallar = s.ic.mallar.map((m) => m.id);
+    // Depolanamaz mal (elektrik, B2) pazara girmez: ticaret emri reddedilir.
+    const mallar = s.ic.mallar.filter((m) => m.depolanabilir !== false).map((m) => m.id);
     mallar.forEach((mal, i) => {
       verTamam(s, i % 2 === 0 ? "a" : "b", {
         tur: "ticaret_emri",

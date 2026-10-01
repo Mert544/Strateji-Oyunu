@@ -121,10 +121,11 @@ const malSema = z
   .object({
     id: kimlik,
     ad: metin,
-    kategori: z.enum(["ham", "ara", "tuketim", "askeri"]),
+    kategori: z.enum(["ham", "ara", "tuketim", "askeri", "enerji"]),
     tabanFiyat: pozitif,
     lojistikOnceligi: negatifOlmayan,
     bozulmaPpmGun: ppmSiniri,
+    depolanabilir: z.boolean().optional(),
   })
   .strict();
 
@@ -140,6 +141,8 @@ const yontemSema = z
     rezerv: kimlik.optional(),
     tarimsal: z.boolean().optional(),
     sulama: z.boolean().optional(),
+    kirlilikPpmSaat: negatifOlmayan.max(1_000_000, "kirlilikPpmSaat en fazla 1000000 olabilir").optional(),
+    hidro: z.boolean().optional(),
   })
   .strict();
 
@@ -270,6 +273,68 @@ const tarimParamSema = z
   })
   .strict();
 
+const olcekKademeSema = z
+  .object({
+    ciktiPpm: pozitif.max(10_000_000, "ciktiPpm en fazla 10000000 olabilir"),
+    isciPpm: pozitif.max(10_000_000, "isciPpm en fazla 10000000 olabilir"),
+    bakimPpm: pozitif.max(10_000_000, "bakimPpm en fazla 10000000 olabilir"),
+    insaPpm: pozitif.max(20_000_000, "insaPpm en fazla 20000000 olabilir"),
+    gerekliTeknoloji: kimlik.nullable(),
+  })
+  .strict();
+
+const bakimDuzeyiSema = z
+  .object({
+    id: z.enum(["asgari", "normal", "yuksek"]),
+    girdiPpm: negatifOlmayan.max(10_000_000, "girdiPpm en fazla 10000000 olabilir"),
+    asinmaPpmGun: isaretliTamsayi.min(-1_000_000).max(1_000_000),
+  })
+  .strict();
+
+const sanayiSema = z
+  .object({
+    iletimKaybiPpm: ppmSiniri,
+    uretimTabaniPpm: ppmSiniri,
+    haneOnceligi: z.boolean(),
+    yukPlanMarjiPpm: ppmSiniri,
+    santralIsletmePpm: negatifOlmayan.max(10_000_000, "en fazla 10000000 olabilir"),
+    olcekKademeleri: z.array(olcekKademeSema),
+    olcekYukseltmeSureCarpaniPpm: pozitif.max(10_000_000, "en fazla 10000000 olabilir"),
+    hidro: z.object({ akarsuEgrisiPpm: onIkiAy }).strict(),
+    bakim: z
+      .object({
+        duzeyler: z.array(bakimDuzeyiSema),
+        asinmaVerimKaybiTavaniPpm: ppmSiniri,
+        genelOnarimMaliyetPpm: negatifOlmayan.max(10_000_000, "en fazla 10000000 olabilir"),
+        genelOnarimDurusSaat: negatifOlmayan,
+        kitlikEsigiPpm: ppmSiniri,
+        kitlikAsinmaPpmGun: negatifOlmayan.max(1_000_000, "en fazla 1000000 olabilir"),
+      })
+      .strict(),
+    kirlilik: z
+      .object({
+        azalmaPpmGun: ppmSiniri,
+        komsuYayilimPpmGun: ppmSiniri,
+        tarimKatsayiPpm: ppmSiniri,
+        istikrarKatsayiPpm: ppmSiniri,
+      })
+      .strict(),
+    damar: z
+      .object({
+        rezervOlcegiPpm: pozitif.max(10_000_000, "en fazla 10000000 olabilir"),
+        rezervVerimTabaniPpm: ppmSiniri,
+        kesifMaliyetPara: negatifOlmayan,
+        kesifMaliyetMal: kayit,
+        kesifSureSaat: pozitif,
+        kesifOlasilikPpm: ppmSiniri,
+        kesifEkiMinPpm: ppmSiniri,
+        kesifEkiMaxPpm: negatifOlmayan.max(10_000_000, "en fazla 10000000 olabilir"),
+        kesifHakkiBolgeMal: negatifOlmayan.max(100, "en fazla 100 olabilir"),
+      })
+      .strict(),
+  })
+  .strict();
+
 export const ParametreSema = z
   .object({
     surum: z.literal(1),
@@ -358,6 +423,7 @@ export const ParametreSema = z
       .strict(),
     iklim: iklimSema.optional(),
     tarim: tarimParamSema.optional(),
+    sanayi: sanayiSema.optional(),
   })
   .strict();
 

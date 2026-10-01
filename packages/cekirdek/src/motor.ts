@@ -12,6 +12,7 @@ import { dunyaKur } from "./kurulum";
 import { lojistikCoz, lojistikKomutu } from "./lojistik/cozum";
 import { durumOzeti } from "./ozet";
 import { politikaKomutu } from "./politika";
+import { sanayiKomutu, sondajBitti } from "./sanayi";
 import { iklimGunluk, tarimKomutu } from "./tarim";
 import { oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
 import { arastirmaBitti, teknolojiKomutu } from "./teknoloji";
@@ -122,6 +123,11 @@ export class Simulasyon {
       case "ekim_plani":
       case "gubre_dozu":
         return tarimKomutu(d, ctx, oyuncu, komut);
+      case "tesis_olcek_yukselt":
+      case "genel_onarim":
+      case "bakim_duzeyi":
+      case "arama_sondaji":
+        return sanayiKomutu(d, ctx, oyuncu, komut);
       case "kenar_gelistir":
       case "askeri_rezerv":
         return lojistikKomutu(d, ctx, oyuncu, komut);
@@ -195,6 +201,8 @@ export class Simulasyon {
         korumaBitis: d.zaman + ic.param.askeri.yeniOyuncuKorumasiGun * GUN,
         kararlar: [],
       };
+      // Sanayi (B2): bakım düzeyi yalnız sanayi açıkken tutulur (normal = 1); kapalıyken alan yazılmaz (özet değişmez).
+      if (ic.param.sanayi !== undefined) yeniOyuncu.bakimDuzeyi = 1;
       let konum = d.oyuncular.findIndex((o) => o.id > id);
       if (konum < 0) konum = d.oyuncular.length;
       d.oyuncular.splice(konum, 0, yeniOyuncu);
@@ -273,6 +281,9 @@ export class Simulasyon {
       }
       case "iklim_gunluk":
         iklimGunluk(d, ctx);
+        break;
+      case "sondaj_bitti":
+        sondajBitti(d, ctx, v.bolge, v.mal);
         break;
       case "cozum": {
         const l = d.lojistik;

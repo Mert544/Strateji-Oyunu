@@ -39,7 +39,8 @@
       },
       "tesisler": [
         "ciftlik",
-        "gida_fabrikasi"
+        "gida_fabrikasi",
+        "santral"
       ],
       "x": 431,
       "y": 216,
@@ -83,7 +84,7 @@
       "nufus": 136000,
       "rezervler": {
         "tahil": 800000000,
-        "petrol": 450000000
+        "petrol": 180000000
       },
       "tesisler": [
         "ciftlik",
@@ -107,7 +108,7 @@
       "nufus": 275000,
       "rezervler": {
         "tahil": 900000000,
-        "petrol": 250000000
+        "petrol": 100000000
       },
       "tesisler": [
         "ciftlik",
@@ -130,13 +131,13 @@
       ],
       "nufus": 195000,
       "rezervler": {
-        "petrol": 700000000,
         "tahil": 400000000,
-        "silis": 300000000
+        "petrol": 280000000,
+        "silis": 120000000
       },
       "tesisler": [
-        "petrol_kuyusu",
         "ciftlik",
+        "petrol_kuyusu",
         "rafineri"
       ],
       "x": 253,
@@ -159,7 +160,8 @@
       },
       "tesisler": [
         "ciftlik",
-        "gida_fabrikasi"
+        "gida_fabrikasi",
+        "santral"
       ],
       "x": 259,
       "y": 336,
@@ -177,10 +179,11 @@
       ],
       "nufus": 205000,
       "rezervler": {
-        "komur": 900000000
+        "komur": 360000000
       },
       "tesisler": [
-        "komur_ocagi"
+        "komur_ocagi",
+        "hidro_santrali"
       ],
       "x": 164,
       "y": 305,
@@ -199,11 +202,12 @@
       "nufus": 133000,
       "rezervler": {
         "tahil": 900000000,
-        "komur": 200000000
+        "komur": 80000000
       },
       "tesisler": [
         "ciftlik",
-        "komur_ocagi"
+        "komur_ocagi",
+        "santral"
       ],
       "x": 191,
       "y": 378,
@@ -222,11 +226,12 @@
       "nufus": 137000,
       "rezervler": {
         "tahil": 800000000,
-        "silis": 350000000
+        "silis": 140000000
       },
       "tesisler": [
         "ciftlik",
-        "silis_ocagi"
+        "silis_ocagi",
+        "santral"
       ],
       "x": 284,
       "y": 373,
@@ -247,11 +252,12 @@
       "nufus": 158000,
       "rezervler": {
         "tahil": 900000000,
-        "petrol": 120000000
+        "petrol": 50000000
       },
       "tesisler": [
         "ciftlik",
-        "petrol_kuyusu"
+        "petrol_kuyusu",
+        "santral"
       ],
       "x": 327,
       "y": 379,
@@ -270,7 +276,8 @@
       "nufus": 50000,
       "rezervler": {},
       "tesisler": [
-        "parca_fabrikasi"
+        "parca_fabrikasi",
+        "santral"
       ],
       "x": 216,
       "y": 401,
@@ -289,7 +296,7 @@
       "nufus": 243000,
       "rezervler": {
         "tahil": 1100000000,
-        "petrol": 200000000
+        "petrol": 80000000
       },
       "tesisler": [
         "ciftlik",
@@ -312,8 +319,8 @@
       ],
       "nufus": 324000,
       "rezervler": {
-        "komur": 800000000,
-        "bakir": 650000000
+        "komur": 320000000,
+        "bakir": 260000000
       },
       "tesisler": [
         "komur_ocagi",
@@ -338,13 +345,14 @@
       ],
       "nufus": 347000,
       "rezervler": {
-        "petrol": 450000000,
-        "bakir": 250000000,
-        "cevher": 200000000
+        "petrol": 180000000,
+        "bakir": 100000000,
+        "cevher": 80000000
       },
       "tesisler": [
         "petrol_kuyusu",
-        "bakir_madeni"
+        "bakir_madeni",
+        "hidro_santrali"
       ],
       "x": 40,
       "y": 492,
@@ -362,13 +370,14 @@
       ],
       "nufus": 207000,
       "rezervler": {
-        "komur": 400000000,
         "tahil": 350000000,
-        "bakir": 300000000
+        "komur": 160000000,
+        "bakir": 120000000
       },
       "tesisler": [
+        "ciftlik",
         "komur_ocagi",
-        "ciftlik"
+        "santral"
       ],
       "x": 101,
       "y": 470,
@@ -386,9 +395,9 @@
       ],
       "nufus": 286000,
       "rezervler": {
-        "cevher": 400000000,
-        "bakir": 350000000,
-        "komur": 300000000
+        "cevher": 160000000,
+        "bakir": 140000000,
+        "komur": 120000000
       },
       "tesisler": [
         "cevher_madeni",
@@ -411,13 +420,13 @@
       ],
       "nufus": 186000,
       "rezervler": {
-        "komur": 1000000000,
         "tahil": 700000000,
-        "bakir": 300000000
+        "komur": 400000000,
+        "bakir": 120000000
       },
       "tesisler": [
-        "komur_ocagi",
         "ciftlik",
+        "komur_ocagi",
         "gida_fabrikasi"
       ],
       "x": 227,
@@ -442,7 +451,8 @@
       },
       "tesisler": [
         "ciftlik",
-        "rafineri"
+        "rafineri",
+        "santral"
       ],
       "x": 293,
       "y": 427,
@@ -462,12 +472,13 @@
       ],
       "nufus": 141000,
       "rezervler": {
-        "komur": 850000000,
-        "tahil": 800000000
+        "tahil": 800000000,
+        "komur": 340000000
       },
       "tesisler": [
+        "ciftlik",
         "komur_ocagi",
-        "ciftlik"
+        "santral"
       ],
       "x": 97,
       "y": 559,
@@ -488,7 +499,7 @@
       "nufus": 241000,
       "rezervler": {
         "tahil": 500000000,
-        "bakir": 250000000
+        "bakir": 100000000
       },
       "tesisler": [
         "ciftlik",
@@ -514,11 +525,12 @@
       "nufus": 112000,
       "rezervler": {
         "tahil": 500000000,
-        "petrol": 200000000
+        "petrol": 80000000
       },
       "tesisler": [
         "ciftlik",
-        "petrol_kuyusu"
+        "petrol_kuyusu",
+        "santral"
       ],
       "x": 229,
       "y": 491,
@@ -538,11 +550,12 @@
       ],
       "nufus": 490000,
       "rezervler": {
-        "cevher": 250000000
+        "cevher": 100000000
       },
       "tesisler": [
         "cevher_madeni",
-        "rafineri"
+        "rafineri",
+        "hidro_santrali"
       ],
       "x": 149,
       "y": 623,
@@ -562,10 +575,11 @@
       ],
       "nufus": 159000,
       "rezervler": {
-        "komur": 500000000
+        "komur": 200000000
       },
       "tesisler": [
-        "komur_ocagi"
+        "komur_ocagi",
+        "hidro_santrali"
       ],
       "x": 111,
       "y": 657,
@@ -589,7 +603,8 @@
       },
       "tesisler": [
         "ciftlik",
-        "gida_fabrikasi"
+        "gida_fabrikasi",
+        "santral"
       ],
       "x": 218,
       "y": 784,
@@ -609,7 +624,8 @@
       "nufus": 93000,
       "rezervler": {},
       "tesisler": [
-        "gida_fabrikasi"
+        "gida_fabrikasi",
+        "santral"
       ],
       "x": 270,
       "y": 666,
@@ -630,12 +646,13 @@
       "nufus": 156000,
       "rezervler": {
         "tahil": 1000000000,
-        "silis": 350000000,
-        "petrol": 100000000
+        "silis": 140000000,
+        "petrol": 50000000
       },
       "tesisler": [
         "ciftlik",
-        "silis_ocagi"
+        "silis_ocagi",
+        "santral"
       ],
       "x": 305,
       "y": 482,
@@ -655,11 +672,12 @@
       ],
       "nufus": 800000,
       "rezervler": {
-        "silis": 300000000
+        "silis": 120000000
       },
       "tesisler": [
         "silis_ocagi",
-        "elektronik_fabrikasi"
+        "elektronik_fabrikasi",
+        "santral"
       ],
       "x": 369,
       "y": 492,
@@ -679,10 +697,11 @@
       ],
       "nufus": 72000,
       "rezervler": {
-        "komur": 300000000
+        "komur": 120000000
       },
       "tesisler": [
-        "komur_ocagi"
+        "komur_ocagi",
+        "santral"
       ],
       "x": 289,
       "y": 547,
@@ -703,7 +722,7 @@
       "nufus": 250000,
       "rezervler": {
         "tahil": 400000000,
-        "silis": 200000000
+        "silis": 80000000
       },
       "tesisler": [
         "ciftlik",
@@ -729,7 +748,7 @@
       "nufus": 334000,
       "rezervler": {
         "tahil": 600000000,
-        "komur": 200000000
+        "komur": 80000000
       },
       "tesisler": [
         "ciftlik",
@@ -754,12 +773,12 @@
       ],
       "nufus": 421000,
       "rezervler": {
-        "komur": 700000000,
-        "tahil": 500000000
+        "tahil": 500000000,
+        "komur": 280000000
       },
       "tesisler": [
-        "komur_ocagi",
         "ciftlik",
+        "komur_ocagi",
         "gida_fabrikasi"
       ],
       "x": 326,
@@ -779,12 +798,13 @@
       ],
       "nufus": 207000,
       "rezervler": {
-        "komur": 450000000,
-        "tahil": 400000000
+        "tahil": 400000000,
+        "komur": 180000000
       },
       "tesisler": [
+        "ciftlik",
         "komur_ocagi",
-        "ciftlik"
+        "santral"
       ],
       "x": 359,
       "y": 674,
@@ -802,13 +822,14 @@
       ],
       "nufus": 250000,
       "rezervler": {
-        "komur": 700000000,
         "tahil": 500000000,
-        "silis": 400000000
+        "komur": 280000000,
+        "silis": 160000000
       },
       "tesisler": [
+        "ciftlik",
         "komur_ocagi",
-        "ciftlik"
+        "santral"
       ],
       "x": 424,
       "y": 594,
@@ -832,7 +853,8 @@
       },
       "tesisler": [
         "ciftlik",
-        "gida_fabrikasi"
+        "gida_fabrikasi",
+        "santral"
       ],
       "x": 439,
       "y": 687,
@@ -853,7 +875,7 @@
       "nufus": 458000,
       "rezervler": {
         "tahil": 1000000000,
-        "cevher": 250000000
+        "cevher": 100000000
       },
       "tesisler": [
         "ciftlik",
@@ -898,7 +920,7 @@
       "nufus": 513000,
       "rezervler": {
         "tahil": 600000000,
-        "komur": 200000000
+        "komur": 80000000
       },
       "tesisler": [
         "ciftlik",
@@ -923,11 +945,12 @@
       ],
       "nufus": 153000,
       "rezervler": {
-        "komur": 900000000
+        "komur": 360000000
       },
       "tesisler": [
         "komur_ocagi",
-        "celikhane"
+        "celikhane",
+        "hidro_santrali"
       ],
       "x": 481,
       "y": 501,
@@ -947,10 +970,11 @@
       ],
       "nufus": 79000,
       "rezervler": {
-        "bakir": 350000000
+        "bakir": 140000000
       },
       "tesisler": [
-        "bakir_madeni"
+        "bakir_madeni",
+        "hidro_santrali"
       ],
       "x": 561,
       "y": 473,
@@ -972,7 +996,8 @@
       },
       "tesisler": [
         "ciftlik",
-        "parca_fabrikasi"
+        "parca_fabrikasi",
+        "santral"
       ],
       "x": 599,
       "y": 623,
@@ -990,12 +1015,13 @@
       ],
       "nufus": 172000,
       "rezervler": {
-        "cevher": 900000000,
-        "komur": 250000000
+        "cevher": 360000000,
+        "komur": 100000000
       },
       "tesisler": [
         "cevher_madeni",
-        "komur_ocagi"
+        "komur_ocagi",
+        "hidro_santrali"
       ],
       "x": 658,
       "y": 561,
@@ -1019,7 +1045,8 @@
       },
       "tesisler": [
         "ciftlik",
-        "gida_fabrikasi"
+        "gida_fabrikasi",
+        "santral"
       ],
       "x": 609,
       "y": 509,
@@ -1038,8 +1065,8 @@
       "nufus": 368000,
       "rezervler": {
         "tahil": 1100000000,
-        "komur": 650000000,
-        "petrol": 500000000
+        "komur": 260000000,
+        "petrol": 200000000
       },
       "tesisler": [
         "ciftlik",
@@ -1062,13 +1089,13 @@
       ],
       "nufus": 282000,
       "rezervler": {
-        "petrol": 900000000,
         "tahil": 400000000,
-        "bakir": 250000000
+        "petrol": 360000000,
+        "bakir": 100000000
       },
       "tesisler": [
-        "petrol_kuyusu",
         "ciftlik",
+        "petrol_kuyusu",
         "rafineri"
       ],
       "x": 828,
@@ -1087,12 +1114,13 @@
       ],
       "nufus": 228000,
       "rezervler": {
-        "cevher": 700000000,
-        "bakir": 350000000
+        "cevher": 280000000,
+        "bakir": 140000000
       },
       "tesisler": [
         "cevher_madeni",
-        "bakir_madeni"
+        "bakir_madeni",
+        "hidro_santrali"
       ],
       "x": 757,
       "y": 607,
@@ -1110,11 +1138,12 @@
       ],
       "nufus": 210000,
       "rezervler": {
-        "komur": 120000000
+        "komur": 50000000
       },
       "tesisler": [
         "komur_ocagi",
-        "gida_fabrikasi"
+        "gida_fabrikasi",
+        "hidro_santrali"
       ],
       "x": 833,
       "y": 560,
@@ -1133,7 +1162,8 @@
       "nufus": 189000,
       "rezervler": {},
       "tesisler": [
-        "gida_fabrikasi"
+        "gida_fabrikasi",
+        "hidro_santrali"
       ],
       "x": 908,
       "y": 632,
@@ -1152,7 +1182,8 @@
       "nufus": 68000,
       "rezervler": {},
       "tesisler": [
-        "gida_fabrikasi"
+        "gida_fabrikasi",
+        "hidro_santrali"
       ],
       "x": 901,
       "y": 524,
@@ -1172,10 +1203,11 @@
       ],
       "nufus": 255000,
       "rezervler": {
-        "bakir": 350000000
+        "bakir": 140000000
       },
       "tesisler": [
-        "bakir_madeni"
+        "bakir_madeni",
+        "hidro_santrali"
       ],
       "x": 738,
       "y": 518,
@@ -1195,10 +1227,11 @@
       ],
       "nufus": 138000,
       "rezervler": {
-        "bakir": 500000000
+        "bakir": 200000000
       },
       "tesisler": [
-        "bakir_madeni"
+        "bakir_madeni",
+        "hidro_santrali"
       ],
       "x": 838,
       "y": 497,
@@ -1219,11 +1252,12 @@
       "nufus": 131000,
       "rezervler": {
         "tahil": 300000000,
-        "komur": 200000000
+        "komur": 80000000
       },
       "tesisler": [
         "ciftlik",
-        "komur_ocagi"
+        "komur_ocagi",
+        "santral"
       ],
       "x": 849,
       "y": 418,
@@ -1241,10 +1275,11 @@
       ],
       "nufus": 116000,
       "rezervler": {
-        "komur": 300000000
+        "komur": 120000000
       },
       "tesisler": [
-        "komur_ocagi"
+        "komur_ocagi",
+        "santral"
       ],
       "x": 923,
       "y": 436,
@@ -1263,12 +1298,13 @@
       "nufus": 279000,
       "rezervler": {
         "tahil": 600000000,
-        "bakir": 250000000,
-        "petrol": 120000000
+        "bakir": 100000000,
+        "petrol": 50000000
       },
       "tesisler": [
         "ciftlik",
-        "bakir_madeni"
+        "bakir_madeni",
+        "santral"
       ],
       "x": 960,
       "y": 468,

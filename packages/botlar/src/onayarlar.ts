@@ -11,12 +11,13 @@ import {
   arastirmaAdaylari,
   insaAdaylari,
   kenarAdaylari,
+  sanayiAdaylari,
   tarimAdaylari,
   ticaretAdaylari,
   vergiAdaylari,
   yontemAdaylari,
 } from "./planlayici";
-import type { Aday } from "./planlayici";
+import type { Aday, SanayiSecenek } from "./planlayici";
 
 export interface Onayar {
   readonly ad: string;
@@ -50,10 +51,18 @@ export interface OnayarTanimi {
   n?: number;
   /** Tarım (B1) adayları: ekim planı (+ gübre dozu). Tarım kapalıysa etkisizdir. */
   tarim?: { gubre?: boolean };
+  /** Sanayi (B2) adayları: santral (elektrik açığı), ölçek, bakım düzeyi/onarım, sondaj. Sanayi kapalıysa etkisizdir. */
+  sanayi?: SanayiSecenek;
 }
 
 /** Ham çıkarım tesis türleri (ortak yerel-ham tabanı; rezerv türü başına bir tür). */
 export const HAM_CIKARIM_TURLERI: readonly string[] = ["ciftlik", "cevher_madeni", "komur_ocagi", "bakir_madeni", "silis_ocagi", "petrol_kuyusu"];
+
+/**
+ * Sanayi (B2): her önayar elektrik açığında santral kurar ve bakım düzeyini duruma göre ayarlar (ortak yetenek: hiçbir önayarı
+ * diğerinin üst kümesi yapmaz). Ölçek yükseltme, onarım ve sondaj önayarlara değil arketip botlara aittir. Sanayi kapalıysa etkisiz.
+ */
+const ORTAK_SANAYI: SanayiSecenek = { santral: true, bakim: "dengeli" };
 
 function onayarOlustur(t: OnayarTanimi): Onayar {
   return {
@@ -77,6 +86,7 @@ function onayarOlustur(t: OnayarTanimi): Onayar {
           ...ticaretAdaylari(b, {}),
           ...vergiAdaylari(b),
           ...tarimAdaylari(b, { ekim: true }),
+          ...sanayiAdaylari(b, { santral: true, bakim: "dengeli" }),
         ];
       } else {
         adaylar.push(...insaAdaylari(b, { filtre: (x) => turler.has(x.id) }));
@@ -91,6 +101,7 @@ function onayarOlustur(t: OnayarTanimi): Onayar {
         }
         if (t.vergi) adaylar.push(...vergiAdaylari(b));
         if (t.tarim) adaylar.push(...tarimAdaylari(b, { ekim: true, gubre: t.tarim.gubre === true }));
+        if (t.sanayi) adaylar.push(...sanayiAdaylari(b, t.sanayi));
         if (t.kenar) adaylar.push(...kenarAdaylari(b));
         if (t.askeri) {
           const hedefGuc = Math.max(600, hedefGucKapasiteden(sim, b, t.askeri.oran));
@@ -108,6 +119,7 @@ function onayarOlustur(t: OnayarTanimi): Onayar {
 export const ONAYARLAR: readonly Onayar[] = [
   onayarOlustur({
     ad: "gida_odakli",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Tahıl-gıda zinciri, mekanize tarım, gıda ihracatı, vergi ayarı.",
     turler: ["ciftlik", "gida_fabrikasi"],
     yontemler: ["mekanize_tarim"],
@@ -118,6 +130,7 @@ export const ONAYARLAR: readonly Onayar[] = [
   }),
   onayarOlustur({
     ad: "agir_sanayi",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Cevher-kömür-çelik-parça zinciri, derin madencilik, çelik/cevher ihracatı.",
     turler: ["cevher_madeni", "komur_ocagi", "celikhane", "parca_fabrikasi"],
     yontemler: ["derin_cevher", "derin_komur", "elektrik_ark"],
@@ -126,6 +139,7 @@ export const ONAYARLAR: readonly Onayar[] = [
   }),
   onayarOlustur({
     ad: "elektronik",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Bakır-silis-parça-elektronik zinciri, otomasyon, elektronik ihracatı.",
     turler: ["bakir_madeni", "silis_ocagi", "parca_fabrikasi", "elektronik_fabrikasi", "celikhane"],
     yontemler: ["otomatik_hat"],
@@ -134,6 +148,7 @@ export const ONAYARLAR: readonly Onayar[] = [
   }),
   onayarOlustur({
     ad: "enerji",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Petrol-rafineri-yakıt, kömür; derin madencilik; yakıt/petrol ihracatı.",
     turler: ["petrol_kuyusu", "rafineri", "komur_ocagi"],
     yontemler: ["derin_komur"],
@@ -142,6 +157,7 @@ export const ONAYARLAR: readonly Onayar[] = [
   }),
   onayarOlustur({
     ad: "ihracatci",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Ham madde çıkarımı ağırlıklı; limandan düşük eşikle her fazlayı ihraç et.",
     turler: ["ciftlik", "cevher_madeni", "komur_ocagi", "bakir_madeni", "silis_ocagi", "petrol_kuyusu"],
     ticaretMal: ["tahil", "gida", "cevher", "komur", "celik", "bakir", "silis", "parca", "elektronik", "petrol", "yakit"],
@@ -150,6 +166,7 @@ export const ONAYARLAR: readonly Onayar[] = [
   }),
   onayarOlustur({
     ad: "lojistik_yatirimi",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Kenar kapasite geliştirme, parça fabrikası, otomasyon ve konteyner limanı araştırması.",
     turler: ["parca_fabrikasi"],
     yontemler: ["otomatik_hat", "mekanize_tarim"],
@@ -158,6 +175,7 @@ export const ONAYARLAR: readonly Onayar[] = [
   }),
   onayarOlustur({
     ad: "askeri_hazirlik",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Mühimmat fabrikası, çelik/rafineri desteği, birlik üretimi, askeri rezerv, savunma duruşu.",
     turler: ["celikhane", "rafineri", "komur_ocagi", "cevher_madeni"],
     teknolojiler: ["derin_madencilik", "elektrik_ark_ocagi"],
@@ -197,6 +215,7 @@ const TUM_TICARET_MALLARI = ["tahil", "gida", "cevher", "komur", "celik", "bakir
 export const H1_ONAYAR_TANIMLARI: readonly OnayarTanimi[] = [
   {
     ad: "gida_odakli",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Ortak ham tabanı + gıda fabrikası, mekanize tarım, tahıl/gıda ihracatı, vergi ayarı.",
     taban: true,
     turler: ["gida_fabrikasi"],
@@ -209,6 +228,7 @@ export const H1_ONAYAR_TANIMLARI: readonly OnayarTanimi[] = [
   },
   {
     ad: "agir_sanayi",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Ortak ham tabanı + çelik/parça zinciri, derin madencilik, elektrik ark, çelik/cevher ihracatı.",
     taban: true,
     turler: ["celikhane", "parca_fabrikasi"],
@@ -219,6 +239,7 @@ export const H1_ONAYAR_TANIMLARI: readonly OnayarTanimi[] = [
   },
   {
     ad: "elektronik",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Ortak ham tabanı + parça/elektronik zinciri, çelikhane, otomasyon, elektronik ihracatı.",
     taban: true,
     turler: ["parca_fabrikasi", "elektronik_fabrikasi", "celikhane"],
@@ -229,6 +250,7 @@ export const H1_ONAYAR_TANIMLARI: readonly OnayarTanimi[] = [
   },
   {
     ad: "enerji",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Ortak ham tabanı + rafineri (petrol-yakıt), derin kömür, yakıt/petrol ihracatı.",
     taban: true,
     turler: ["rafineri"],
@@ -239,6 +261,7 @@ export const H1_ONAYAR_TANIMLARI: readonly OnayarTanimi[] = [
   },
   {
     ad: "ihracatci",
+    sanayi: ORTAK_SANAYI,
     aciklama: "TİCARET TEMASI: ortak ham tabanı + limandan düşük eşikle her malı ihraç et, vergi ayarı (işleme/yöntem/araştırma/kenar/askeri yok).",
     taban: true,
     ticaretMal: TUM_TICARET_MALLARI,
@@ -248,6 +271,7 @@ export const H1_ONAYAR_TANIMLARI: readonly OnayarTanimi[] = [
   },
   {
     ad: "lojistik_yatirimi",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Ortak ham tabanı + kenar kapasite geliştirme, parça fabrikası, otomasyon ve konteyner limanı araştırması.",
     taban: true,
     turler: ["parca_fabrikasi"],
@@ -258,6 +282,7 @@ export const H1_ONAYAR_TANIMLARI: readonly OnayarTanimi[] = [
   },
   {
     ad: "askeri_hazirlik",
+    sanayi: ORTAK_SANAYI,
     aciklama: "Ortak ham tabanı + çelik/rafineri desteği, mühimmat ve birlik üretimi, askeri rezerv, savunma duruşu.",
     taban: true,
     turler: ["celikhane", "rafineri"],
@@ -288,6 +313,14 @@ export function onayarYetenekleri(t: OnayarTanimi): Set<string> {
   for (const x of t.ticaretMal ?? []) k.add(`ihracat:${x}`);
   for (const f of ["vergi", "kenar", "hepsi"] as const) if (t[f]) k.add(`bayrak:${f}`);
   if (t.tarim) k.add("bayrak:tarim");
+  if (t.sanayi) {
+    if (t.sanayi.santral !== false) k.add("bayrak:santral");
+    if (t.sanayi.proaktif) k.add("bayrak:enerji_proaktif");
+    if (t.sanayi.olcek) k.add("bayrak:olcek");
+    if (t.sanayi.sondaj) k.add("bayrak:sondaj");
+    if (t.sanayi.bakim === "tasarruf") k.add("bayrak:bakim_tasarruf");
+    else if (t.sanayi.bakim !== false) k.add("bayrak:bakim");
+  }
   if (t.askeri) k.add("bayrak:askeri");
   return k;
 }

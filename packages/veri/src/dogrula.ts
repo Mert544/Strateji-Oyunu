@@ -250,6 +250,21 @@ export function dogrulaIcerik(ham: unknown): DogrulamaSonucu {
       if (!mallar.has(m)) hatalar.push(`${yol}: bilinmeyen mal "${m}"`);
     }
   };
+  // Depolanamaz mal (elektrik; B2): yalnız yöntem girdi/çıktısında bulunabilir; stok, taşıma, bakım, maliyet ve rezerv yok.
+  const depolanamaz = new Set(c.mallar.filter((m) => m.depolanabilir === false).map((m) => m.id));
+  const depoluMalKontrol = (yol: string, kayit: Record<string, number>): void => {
+    for (const m of Object.keys(kayit)) {
+      if (depolanamaz.has(m)) hatalar.push(`${yol}: "${m}" depolanamaz mal; burada kullanilamaz`);
+    }
+  };
+  for (const [i, m] of c.mallar.entries()) {
+    if (m.depolanabilir === false && m.kategori !== "enerji") {
+      hatalar.push(`mallar[${i}] ("${m.id}").depolanabilir: depolanamaz mal "enerji" kategorisinde olmali`);
+    }
+    if (m.kategori === "enerji" && m.depolanabilir !== false) {
+      hatalar.push(`mallar[${i}] ("${m.id}").kategori: "enerji" kategorisi depolanabilir: false gerektirir`);
+    }
+  }
   const teknolojiKontrol = (yol: string, t: string | undefined): void => {
     if (t !== undefined && !teknolojiler.has(t)) hatalar.push(`${yol}: bilinmeyen teknoloji "${t}"`);
   };
@@ -265,6 +280,11 @@ export function dogrulaIcerik(ham: unknown): DogrulamaSonucu {
     malKontrol(`${yol}.girdiler`, y.girdiler);
     malKontrol(`${yol}.ciktilar`, y.ciktilar);
     malKontrol(`${yol}.bakim`, y.bakim);
+    depoluMalKontrol(`${yol}.bakim`, y.bakim);
+    if (y.hidro === true && !Object.keys(y.ciktilar).some((m) => depolanamaz.has(m))) {
+      hatalar.push(`${yol}.hidro: hidro yontemi depolanamaz bir mal (elektrik) uretmeli`);
+    }
+    if (y.hidro === true && Object.keys(y.girdiler).length > 0) hatalar.push(`${yol}.hidro: hidro yontemi girdi tuketemez`);
     if (Object.keys(y.ciktilar).length === 0 && y.sulama !== true) hatalar.push(`${yol}.ciktilar: en az bir cikti gerekli`);
     if (y.sulama === true && y.rezerv !== undefined) hatalar.push(`${yol}.sulama: sulama yontemi rezerv tuketemez`);
     for (const [m, v] of Object.entries(y.ciktilar)) {
@@ -291,6 +311,7 @@ export function dogrulaIcerik(ham: unknown): DogrulamaSonucu {
   for (const [i, t] of c.tesisTurleri.entries()) {
     const yol = `tesisTurleri[${i}] ("${t.id}")`;
     malKontrol(`${yol}.insaMaliyeti`, t.insaMaliyeti);
+    depoluMalKontrol(`${yol}.insaMaliyeti`, t.insaMaliyeti);
     if (t.yontemler.length === 0) hatalar.push(`${yol}.yontemler: en az bir yontem gerekli`);
     benzersizlikKontrolu(hatalar, `${yol}.yontemler`, t.yontemler);
     for (const [j, yId] of t.yontemler.entries()) {
@@ -371,6 +392,8 @@ export function dogrulaIcerik(ham: unknown): DogrulamaSonucu {
     const yol = `birlikler[${i}] ("${b.id}")`;
     malKontrol(`${yol}.maliyet`, b.maliyet);
     malKontrol(`${yol}.ikmal`, b.ikmal);
+    depoluMalKontrol(`${yol}.maliyet`, b.maliyet);
+    depoluMalKontrol(`${yol}.ikmal`, b.ikmal);
     teknolojiKontrol(`${yol}.gerekliTeknoloji`, b.gerekliTeknoloji);
   }
 
@@ -410,6 +433,32 @@ function iklimKontrolu(hatalar: string[], k: NonNullable<Parametreler["iklim"]>)
   }
 }
 
+/** Sanayi parametrelerinin anlamsal kontrolleri (şema yapıyı denetler). */
+function sanayiKontrolu(hatalar: string[], k: NonNullable<Parametreler["sanayi"]>): void {
+  if (k.olcekKademeleri.length !== 3) {
+    hatalar.push(`sanayi.olcekKademeleri: tam 3 kademe (S, M, L) olmali (bulunan ${k.olcekKademeleri.length})`);
+  } else {
+    const s = k.olcekKademeleri[0] as (typeof k.olcekKademeleri)[number];
+    if (s.ciktiPpm !== 1_000_000 || s.isciPpm !== 1_000_000 || s.bakimPpm !== 1_000_000 || s.insaPpm !== 1_000_000 || s.gerekliTeknoloji !== null) {
+      hatalar.push("sanayi.olcekKademeleri[0]: S kademesi tum carpanlari 1000000 ve gerekliTeknoloji null olmali (referans)");
+    }
+    for (let i = 1; i < 3; i++) {
+      const a = k.olcekKademeleri[i - 1] as (typeof k.olcekKademeleri)[number];
+      const b = k.olcekKademeleri[i] as (typeof k.olcekKademeleri)[number];
+      for (const alan of ["ciktiPpm", "isciPpm", "bakimPpm", "insaPpm"] as const) {
+        if (b[alan] < a[alan]) hatalar.push(`sanayi.olcekKademeleri[${i}].${alan}: onceki kademeden kucuk olamaz`);
+      }
+    }
+  }
+  const ids = k.bakim.duzeyler.map((d) => d.id).join(",");
+  if (ids !== "asgari,normal,yuksek") hatalar.push(`sanayi.bakim.duzeyler: sirayla asgari, normal, yuksek olmali (bulunan ${ids})`);
+  const toplamAkarsu = k.hidro.akarsuEgrisiPpm.reduce((t, x) => t + x, 0);
+  if (toplamAkarsu !== 12_000_000) {
+    hatalar.push(`sanayi.hidro.akarsuEgrisiPpm: 12 ayin toplami tam 12000000 olmali (yillik ortalama 1000000; bulunan ${toplamAkarsu})`);
+  }
+  if (k.damar.kesifEkiMinPpm > k.damar.kesifEkiMaxPpm) hatalar.push("sanayi.damar.kesifEkiMinPpm: kesifEkiMaxPpm degerinden buyuk olamaz");
+}
+
 /** Şema + (içerik verilirse) mal ve birlik kimliklerinin geçerliliği. */
 export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): DogrulamaSonucu {
   const s = semaCalistir(ParametreSema, ham);
@@ -434,10 +483,25 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
     hatalar.push("iklim ve tarim birlikte verilmeli (yalniz biri tanimli; ikisi de yoksa tarim kapali)");
   }
   if (p.iklim !== undefined) iklimKontrolu(hatalar, p.iklim);
+  if (p.sanayi !== undefined) sanayiKontrolu(hatalar, p.sanayi);
 
   if (icerik !== undefined) {
     const mallar = new Set(icerik.mallar.map((m) => m.id));
     const birlikler = new Set(icerik.birlikler.map((b) => b.id));
+    const depolanamaz = new Set(icerik.mallar.filter((m) => m.depolanabilir === false).map((m) => m.id));
+    if (p.sanayi !== undefined) {
+      if (!depolanamaz.has("elektrik")) hatalar.push('sanayi: icerikte depolanabilir: false "elektrik" mali gerekli');
+      const teknolojiler = new Set(icerik.teknolojiler.map((t) => t.id));
+      for (const [i, o] of p.sanayi.olcekKademeleri.entries()) {
+        if (o.gerekliTeknoloji !== null && !teknolojiler.has(o.gerekliTeknoloji)) {
+          hatalar.push(`sanayi.olcekKademeleri[${i}].gerekliTeknoloji: bilinmeyen teknoloji "${o.gerekliTeknoloji}"`);
+        }
+      }
+      for (const m of Object.keys(p.sanayi.damar.kesifMaliyetMal)) {
+        if (!mallar.has(m)) hatalar.push(`sanayi.damar.kesifMaliyetMal: bilinmeyen mal "${m}"`);
+        else if (depolanamaz.has(m)) hatalar.push(`sanayi.damar.kesifMaliyetMal: "${m}" depolanamaz mal`);
+      }
+    }
     if (p.tarim !== undefined) {
       if ((icerik.tarimUrunleri ?? []).length === 0) hatalar.push("tarim: icerik.tarimUrunleri (en az 1 urun) gerekli");
       if (!mallar.has("gubre")) hatalar.push('tarim: icerikte "gubre" mali gerekli');
@@ -447,11 +511,22 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
         if (!mallar.has(m)) hatalar.push(`${yol}: bilinmeyen mal "${m}"`);
       }
       if (tamOlmali) {
+        // Depolanamaz mal (elektrik) pazara girmez: değer verilmesine gerek yoktur.
         for (const m of mallar) {
-          if (!(m in kayit)) hatalar.push(`${yol}: "${m}" mali icin deger eksik`);
+          if (!(m in kayit) && !depolanamaz.has(m)) hatalar.push(`${yol}: "${m}" mali icin deger eksik`);
         }
       }
     };
+    for (const [yol, kayit] of [
+      ["baslangic.stok", p.baslangic.stok],
+      ["pazar.emilimSaat", p.pazar.emilimSaat],
+      ["pazar.arzSaat", p.pazar.arzSaat],
+      ["lojistik.gelistirmeMaliyeti", p.lojistik.gelistirmeMaliyeti],
+    ] as const) {
+      for (const m of Object.keys(kayit)) {
+        if (depolanamaz.has(m)) hatalar.push(`${yol}: "${m}" depolanamaz mal; burada kullanilamaz`);
+      }
+    }
     malKontrol("baslangic.stok", p.baslangic.stok);
     malKontrol("nufus.tuketim1000Saat", p.nufus.tuketim1000Saat);
     malKontrol("pazar.emilimSaat", p.pazar.emilimSaat, true);

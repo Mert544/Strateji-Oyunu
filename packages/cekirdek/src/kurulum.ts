@@ -3,8 +3,9 @@
  * Sonuç düz veridir (Map/Set/sınıf yok); structuredClone ile kopyalanabilir.
  * Olay kuyruğu boştur; ilk saatlik tık ve çözümü Simulasyon.olustur planlar.
  */
-import { kelepce } from "./sabit";
+import { carpBol, kelepce } from "./sabit";
 import { prngOlustur } from "./prng";
+import { sanayiTablosu } from "./sanayi/tablo";
 import { tarimTablosu } from "./tarim/tablo";
 import { PPM, SAAT } from "./tipler";
 import type {
@@ -33,6 +34,8 @@ function sifirlar(n: number): number[] {
  * - gidaKarsilanmaPpm ve ikmalKarsilanmaPpm başlangıçta PPM (ilk çözüme kadar sıfır kıtlık varsayılır).
  * - lojistik.sonCozum = 0, cozumSayisi = 0; kapsam hücreleri { 0, -1, "yok" }.
  * - rng: "ekonomi" | "pazar" | "savas" | "olay" akışları (tohum, akış adı)ndan türetilir.
+ * - Sanayi (B2, yalnız param.sanayi tanımlıysa): bölgeye elektrik/kirlilik/keşif/bakım durumu, tesislere ölçek (S) ve
+ *   aşınma (0) yazılır; kapalıysa bu alanlar HİÇ yazılmaz (özet Tarım v1 ile aynı).
  * - Tarım (B1, yalnız param.iklim + param.tarim tanımlıysa): tarım alanı olan bölgelere `tarim` durumu (toprak PPM,
  *   ekim %100 ilk ürün, gübre 0) ve dünyaya `iklim` durumu yazılır. Kapalıysa bu alanlar HİÇ yazılmaz (özet v0.2 ile aynı).
  */
@@ -52,6 +55,7 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
   }
 
   const tarimTb = tarimTablosu(ic);
+  const sanayiTb = sanayiTablosu(ic);
 
   const bolgeler: BolgeDurumu[] = ic.harita.bolgeler.map((bt, indeks) => {
     const rezervIlk = sifirlar(malSayisi);
@@ -59,6 +63,10 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
       const mi = ic.malIndeks[malId];
       if (mi === undefined) throw new Error(`dunyaKur: bolge ${bt.id} rezervi bilinmeyen mal: ${malId}`);
       rezervIlk[mi] = bt.rezervler[malId] as number;
+      // Sanayi (B2): çekirdek kurulumda ek damar ölçeği uygular (harita zaten ölçekliyse 1 000 000 = etkisiz).
+      if (sanayiTb !== null && sanayiTb.p.damar.rezervOlcegiPpm !== PPM) {
+        rezervIlk[mi] = carpBol(rezervIlk[mi] as number, sanayiTb.p.damar.rezervOlcegiPpm, PPM);
+      }
     }
     const stoklar: Stok[] = baslangicStok.map((m) => ({
       miktar: kelepce(m, 0, kapasite),
@@ -75,7 +83,12 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
       const ilkYontem = (ic.tesisTurleri[tur] as { yontemler: string[] }).yontemler[0];
       const yontem = ilkYontem === undefined ? undefined : ic.yontemIndeks[ilkYontem];
       if (yontem === undefined) throw new Error(`dunyaKur: tesis turu ${turId} gecerli yonteme sahip degil`);
-      return { id: kimlik++, tur, yontem, aktif: true, verimPpm: 0, isciPpm: 0 };
+      const tesis: TesisDurumu = { id: kimlik++, tur, yontem, aktif: true, verimPpm: 0, isciPpm: 0 };
+      if (sanayiTb !== null) {
+        tesis.olcek = 0;
+        tesis.asinmaPpm = 0;
+      }
+      return tesis;
     });
     let tarim: BolgeTarimDurumu | undefined;
     if (tarimTb !== null && bt.tarim !== undefined) {
@@ -110,6 +123,12 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
       ikmalKarsilanmaPpm: 1_000_000,
     };
     if (tarim !== undefined) bolge.tarim = tarim;
+    if (sanayiTb !== null) {
+      bolge.elektrik = { uretimMili: 0, talepMili: 0, karsilanmaPpm: PPM, haneKarsilanmaPpm: PPM, yukPpm: PPM };
+      bolge.kirlilikPpm = 0;
+      bolge.kesifSayisi = sifirlar(malSayisi);
+      bolge.bakimKarsilanmaPpm = PPM;
+    }
     return bolge;
   });
 

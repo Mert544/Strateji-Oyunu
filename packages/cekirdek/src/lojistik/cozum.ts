@@ -35,6 +35,8 @@ import {
   uretimMuhasebesi,
 } from "../ekonomi/uretim";
 import { kenarKullanilabilirMi, pazarCarpanlari } from "../politika";
+import { bakimCarpani, bakimDuzeyiIndeksi } from "../sanayi/carpan";
+import { sanayiTablosu } from "../sanayi/tablo";
 import { carpBol, carpBolTavan, tabanBol } from "../sabit";
 import { hazineOranAyarla, hazineUzlastir, oyuncuBul } from "../stok";
 import { MILI, PPM, SAAT } from "../tipler";
@@ -68,6 +70,7 @@ interface HazineKalemleri {
 function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: readonly BolgeHesabi[] | null): HazineKalemleri {
   const p = ctx.ic.param;
   const carp = pazarCarpanlari(d, ctx, o.id);
+  const sn = sanayiTablosu(ctx.ic);
   let gelir = 0;
   let gider = 0;
   let ithalat = 0;
@@ -92,6 +95,17 @@ function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: reado
     let birlik = 0;
     for (const a of b.birlikler) birlik += a;
     gider += aktifTesis * p.ekonomi.tesisIsletmeParasiSaat + birlik * p.askeri.birlikMaasiSaat;
+    // Sanayi (B2): işletme gideri ölçek ve bakım düzeyi çarpanıyla değişir (normal düzey, S ölçek = özgün gider).
+    if (sn !== null && p.ekonomi.tesisIsletmeParasiSaat > 0) {
+      const duzey = bakimDuzeyiIndeksi(d, b);
+      for (const t of b.tesisler) {
+        if (!t.aktif) continue;
+        let c = bakimCarpani(sn, t, duzey);
+        // Santral (elektrik üreten tesis): işletme gideri santralIsletmePpm ile çarpılır (yakıt ve parça zaten ayrı maliyet).
+        if ((sn.yontemElektrikCikti[t.yontem] as number) > 0) c = carpBol(c, sn.p.santralIsletmePpm, PPM);
+        if (c !== PPM) gider += carpBol(p.ekonomi.tesisIsletmeParasiSaat, c, PPM) - p.ekonomi.tesisIsletmeParasiSaat;
+      }
+    }
   }
   return { gelir, gider, ithalat };
 }

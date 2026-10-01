@@ -13,12 +13,13 @@ import {
   arastirmaAdaylari,
   insaAdaylari,
   kenarAdaylari,
+  sanayiAdaylari,
   tarimAdaylari,
   ticaretAdaylari,
   vergiAdaylari,
   yontemAdaylari,
 } from "./planlayici";
-import type { Aday, AdayKategori, InsaSecenek, SecimSecenek, TarimSecenek, TicaretSecenek } from "./planlayici";
+import type { Aday, AdayKategori, InsaSecenek, SanayiSecenek, SecimSecenek, TarimSecenek, TicaretSecenek } from "./planlayici";
 
 interface Profil {
   agirlik: Partial<Record<AdayKategori, number>>;
@@ -36,6 +37,8 @@ interface Profil {
   tepkiSavunma: boolean;
   /** Tarım (B1) kararları: ekim planı (ve gübre dozu); undefined = tarım adayı yok. */
   tarim?: TarimSecenek;
+  /** Sanayi (B2) kararları: santral, ölçek, bakım düzeyi/onarım, keşif sondajı; undefined = sanayi adayı yok. */
+  sanayi?: SanayiSecenek;
 }
 
 const BEKLEME: Partial<Record<AdayKategori, Ms>> = {
@@ -48,6 +51,11 @@ const BEKLEME: Partial<Record<AdayKategori, Ms>> = {
   yontem: 96 * SAAT,
   // Ekim planı ve gübre dozu: toprak günlük değişir; bölge başına 2 günde bir karar yeter (git-gel salınımını önler).
   tarim: 48 * SAAT,
+  // Sanayi (B2): santral kararı (elektrik açığı) 12 saatte bir; ölçek, bakım ve sondaj yatırımları daha seyrek.
+  enerji: 12 * SAAT,
+  olcek: 48 * SAAT,
+  bakim: 72 * SAAT,
+  sondaj: 72 * SAAT,
 };
 
 const PROFILLER: Record<"sanayici" | "tuccar" | "lojistikci" | "militarist", Profil> = {
@@ -58,6 +66,7 @@ const PROFILLER: Record<"sanayici" | "tuccar" | "lojistikci" | "militarist", Pro
     bekleme: BEKLEME,
     tepkiSavunma: true,
     tarim: { ekim: true },
+    sanayi: { santral: true, olcek: true, bakim: "dengeli", sondaj: true },
   },
   tuccar: {
     agirlik: { insa: 0.7, yontem: 0.6, arastir: 0.4, kenar: 0.4, ticaret: 3, vergi: 1 },
@@ -67,6 +76,7 @@ const PROFILLER: Record<"sanayici" | "tuccar" | "lojistikci" | "militarist", Pro
     bekleme: BEKLEME,
     tepkiSavunma: true,
     tarim: { ekim: true, gubre: true },
+    sanayi: { santral: true, bakim: "dengeli" },
   },
   lojistikci: {
     agirlik: { insa: 0.9, yontem: 0.7, arastir: 0.6, kenar: 4, ticaret: 0.4, vergi: 1 },
@@ -77,6 +87,7 @@ const PROFILLER: Record<"sanayici" | "tuccar" | "lojistikci" | "militarist", Pro
     kategoriSiniri: { kenar: 2 },
     bekleme: BEKLEME,
     tepkiSavunma: true,
+    sanayi: { santral: true, bakim: "dengeli" },
   },
   militarist: {
     agirlik: { insa: 0.8, yontem: 0.6, arastir: 0.6, kenar: 0.3, ticaret: 0.5, vergi: 1 },
@@ -93,6 +104,7 @@ const PROFILLER: Record<"sanayici" | "tuccar" | "lojistikci" | "militarist", Pro
     kategoriSiniri: { birlik: 2, savunma: 2 },
     bekleme: BEKLEME,
     tepkiSavunma: true,
+    sanayi: { santral: true, bakim: "dengeli", sondaj: true },
   },
 };
 
@@ -114,6 +126,12 @@ function adaylariUret(b: Bakis, p: Profil): Aday[] {
     }
   }
   if (p.tarim) adaylar.push(...tarimAdaylari(b, p.tarim));
+  if (p.sanayi) {
+    // Şebeke altyapısı (santral, yakıt yöntemi) askeri adaylarla aynı öncelik sınıfındadır: militaristin askeri çarpanı
+    // (sıralama) enerji kararlarını dört komutluk bütçeden dışlamasın.
+    const c = p.askeriCarpan ?? 1;
+    adaylar.push(...sanayiAdaylari(b, p.sanayi).map((a) => (a.kategori === "enerji" && c !== 1 ? { ...a, tahminiFayda: a.tahminiFayda * c } : a)));
+  }
   if (p.tepkiSavunma) adaylar.push(...savunmaTepkiAdaylari(b));
   return adaylar;
 }
@@ -214,7 +232,13 @@ class KurVeUnutBotu extends KuralBotu {
     );
     // Ayarla-unut: toprağı koruyan sabit ekim nöbeti bir kez verilir (gübre bağımlılığı yok).
     adaylar.push(...tarimAdaylari(b, { ekim: true, nobet: true }));
-    return this.sec(b, adaylar, 10, { ticaret: 4, arastir: 1, vergi: 1, tarim: 5 }).map((a) => a.komut);
+    // Sanayi (B2): şebeke açığı kapatılır (santral/yakıt yöntemi) ve makul bakım düzeyi (normal) bir kez ayarlanır;
+    // ölçek, onarım ve sondaj gibi yinelenen kararlar ayarla-unut oyuncusunda yoktur.
+    if (b.sanayiAcik) {
+      adaylar.push(...sanayiAdaylari(b, { santral: true, bakim: false }));
+      adaylar.push({ anahtar: "bakim_duzeyi:1", komut: { tur: "bakim_duzeyi", duzey: 1 }, tahminiFayda: 1e6, kategori: "bakim", konu: "duzey1" });
+    }
+    return this.sec(b, adaylar, 10, { ticaret: 4, arastir: 1, vergi: 1, tarim: 5, enerji: 4, bakim: 1 }).map((a) => a.komut);
   }
 }
 

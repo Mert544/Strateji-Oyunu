@@ -26,6 +26,14 @@ export interface YontemBilgisi {
   brutDeger: number;
   /** Çıktı − girdi − bakım değeri (para/saat, taban fiyat). */
   netDeger: number;
+  /** Tam verimde S ölçekte elektrik girdisi (mili-birim/saat; sanayi B2), yoksa 0. */
+  elektrikGirdi: number;
+  /** Tam verimde S ölçekte elektrik çıktısı (santral), yoksa 0. */
+  elektrikCikti: number;
+  /** Hidro santral yöntemi. */
+  hidro: boolean;
+  /** Santral yöntemi için yakıt malı indeksi (kömür/yakıt; hidro ve santral dışı: -1). */
+  yakitMal: number;
 }
 
 export interface TurBilgisi {
@@ -45,6 +53,8 @@ export interface TurBilgisi {
   maliyetDegeri: number;
   /** Tarım tesisi (çiftlik, ahır, mera): bölgenin tarımTesisTavani sayımına girer (B1). */
   tarimTesisi: boolean;
+  /** Santral türü (varsayılan yöntemi elektrik üretir; sanayi B2). */
+  santral: boolean;
 }
 
 export interface BirlikBilgisi {
@@ -75,6 +85,10 @@ export interface IcerikBilgisi {
   parca: number;
   /** gubre malı (yoksa -1). */
   gubre: number;
+  /** elektrik malı (yoksa -1). */
+  elektrik: number;
+  /** Mal depolanamaz mı (elektrik): bot ticaret, stok ve açıklık hesaplarında yok sayılır. */
+  depolanamaz: boolean[];
   /** Mal -> o malı çıktılayan tesis türü indeksleri (herhangi bir yöntemle). */
   ureticiTurler: number[][];
 }
@@ -97,6 +111,7 @@ export function icerikBilgisi(ic: DerlenmisIcerik): IcerikBilgisi {
   const var_ = onbellek.get(ic);
   if (var_) return var_;
   const taban = ic.mallar.map((m) => m.tabanFiyat / MILI);
+  const elektrikMal = ic.malIndeks["elektrik"] ?? -1;
   const deger = (l: MalMiktar): number => l.reduce((t, [m, q]) => t + (q / MILI) * (taban[m] as number), 0);
 
   const yontem: YontemBilgisi[] = ic.yontemler.map((y, indeks) => {
@@ -104,6 +119,10 @@ export function icerikBilgisi(ic: DerlenmisIcerik): IcerikBilgisi {
     const cikti = cift(ic, y.ciktilar);
     const bakim = cift(ic, y.bakim);
     const brut = deger(cikti);
+    const elektrikGirdi = y.girdiler["elektrik"] ?? 0;
+    const elektrikCikti = y.ciktilar["elektrik"] ?? 0;
+    // Santralin yakıtı: tek girdi (kömür/yakıt); hidroda yok.
+    const yakitMal = elektrikCikti > 0 && girdi.length > 0 ? (girdi[0] as [number, number])[0] : -1;
     return {
       indeks,
       id: y.id,
@@ -115,6 +134,10 @@ export function icerikBilgisi(ic: DerlenmisIcerik): IcerikBilgisi {
       rezerv: y.rezerv === undefined ? -1 : (ic.malIndeks[y.rezerv] ?? -1),
       brutDeger: brut,
       netDeger: brut - deger(girdi) - deger(bakim),
+      elektrikGirdi,
+      elektrikCikti,
+      hidro: y.hidro === true,
+      yakitMal,
     };
   });
   const askeri = ic.mallar.map((m) => m.kategori === "askeri");
@@ -135,6 +158,7 @@ export function icerikBilgisi(ic: DerlenmisIcerik): IcerikBilgisi {
       askeri: y0.cikti.some(([m]) => askeri[m] === true),
       maliyetDegeri: deger(maliyet) + t.insaParasi / MILI,
       tarimTesisi: t.tarimTesisi === true,
+      santral: y0.elektrikCikti > 0,
     };
   });
   const birlik: BirlikBilgisi[] = ic.birlikler.map((b, indeks) => {
@@ -176,6 +200,8 @@ export function icerikBilgisi(ic: DerlenmisIcerik): IcerikBilgisi {
     celik: ic.malIndeks["celik"] ?? -1,
     parca: ic.malIndeks["parca"] ?? -1,
     gubre: ic.malIndeks["gubre"] ?? -1,
+    elektrik: elektrikMal,
+    depolanamaz: ic.mallar.map((m) => m.depolanabilir === false),
     ureticiTurler,
   };
   onbellek.set(ic, bilgi);

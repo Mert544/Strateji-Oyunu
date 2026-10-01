@@ -1,6 +1,6 @@
 /**
- * v0.1 yeniliklerini (erken oyun hızlandırması, para lavaboları, teknoloji yayılımı) ve tarım katmanını (B1:
- * iklim takvimi, toprak, olaylar, gübre) kapatan test yardımcısı.
+ * v0.1 yeniliklerini (erken oyun hızlandırması, para lavaboları, teknoloji yayılımı), tarım katmanını (B1:
+ * iklim takvimi, toprak, olaylar, gübre) ve sanayi katmanını (B2: elektrik, ölçek, aşınma, kirlilik, damar) kapatan test yardımcısı.
  * Eski testler çekirdek mekaniklerini özgün (hızlandırılmamış, gidersiz) süre ve sayılarla doğrular;
  * yeniliklerin kendi testleri yenilikler.test.ts içindedir.
  */
@@ -16,6 +16,10 @@ export function yenilikleriKapat(veri: VeriPaketi): VeriPaketi {
   // Tarım kapalı: parametreler yoksa çekirdek v0.2 davranışını birebir verir (harita/içerik alanları etkisiz kalır).
   delete veri.param.iklim;
   delete veri.param.tarim;
+  // Sanayi kapalı: parametre yoksa çekirdek Tarım v1 davranışını birebir verir (elektrik girdileri ve santral çıktısı yok sayılır).
+  delete veri.param.sanayi;
+  // Başlangıç santralleri (mini-6, varsayılan oyun sanayili) kapalı modda anlamsızdır: eski tesis listeleri korunur.
+  for (const b of veri.harita.bolgeler) b.tesisler = b.tesisler.filter((t) => t !== "santral" && t !== "hidro_santrali");
   return veri;
 }
 
@@ -39,5 +43,15 @@ export function olaylariSiklastir(veri: VeriPaketi, carpanPpm = 50_000_000): Ver
     const satir = iklim.tipOlasilikCarpaniPpm[tur];
     for (const tip of Object.keys(satir) as Array<keyof typeof satir>) satir[tip] = carpanPpm;
   }
+  return veri;
+}
+
+/**
+ * Sanayi katmanını (B2) açar: varsayılan parametrelerdeki `sanayi` bloğunu pakete kopyalar (`yenilikleriKapat` siler).
+ * Harita mini-6 ve içerik varsayılan içeriktir. Paketi yerinde değiştirir ve döndürür.
+ */
+export function sanayiAc(veri: VeriPaketi): VeriPaketi {
+  const varsayilan = varsayilanVeriyiYukle().param;
+  veri.param.sanayi = structuredClone(varsayilan.sanayi);
   return veri;
 }

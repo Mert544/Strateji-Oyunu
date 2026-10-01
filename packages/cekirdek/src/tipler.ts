@@ -95,6 +95,12 @@ export interface TesisDurumu {
   verimPpm: number;
   /** İstihdam oranı (ppm). */
   isciPpm: number;
+  /** Sanayi (B2): ölçek kademesi 0 = S, 1 = M, 2 = L. Sanayi kapalıysa TANIMSIZDIR (özet değişmez). */
+  olcek?: 0 | 1 | 2;
+  /** Sanayi (B2): aşınma (0..PPM); verim kaybı = aşınma x asinmaVerimKaybiTavaniPpm. Sanayi kapalıysa tanımsızdır. */
+  asinmaPpm?: number;
+  /** Sanayi (B2): genel onarım durması bitişi (ms); bu ana kadar tesis çalışmaz. Onarım yoksa tanımsızdır. */
+  onarimBitis?: Ms;
 }
 
 export type TicaretYonu = "ihracat" | "ithalat";
@@ -137,6 +143,23 @@ export interface BolgeTarimDurumu {
   gubreKarsilanmaPpm: number;
 }
 
+/**
+ * Bölgenin elektrik dengesi (B2): depolanamaz, taşınamaz, anlık denge. Her lojistik çözümde yeniden yazılır.
+ * Sanayi kapalıysa `BolgeDurumu.elektrik` tanımsızdır.
+ */
+export interface BolgeElektrikDurumu {
+  /** Son çözümde santrallerin teslim ettiği elektrik (mili-birim/saat, iletim kaybı öncesi brüt çıktı). */
+  uretimMili: Mili;
+  /** Toplam talep: tesisler + hane (mili-birim/saat). */
+  talepMili: Mili;
+  /** Tesislerin karşılanma oranı (ppm); elektrik girdili tesislerin verimi bununla çarpılır. */
+  karsilanmaPpm: number;
+  /** Hanenin karşılanma oranı (ppm). */
+  haneKarsilanmaPpm: number;
+  /** Santrallerin yükü (ppm): talebi izler; yakıt tüketimi ve kirlilik bununla ölçeklenir. */
+  yukPpm: number;
+}
+
 export interface BolgeDurumu {
   indeks: number;
   id: string;
@@ -168,6 +191,14 @@ export interface BolgeDurumu {
   ikmalKarsilanmaPpm: number;
   /** Tarım durumu (B1). Tarım kapalıysa veya bölge tarım dışıysa TANIMSIZDIR (özet v0.2 ile birebir kalır). */
   tarim?: BolgeTarimDurumu;
+  /** Elektrik dengesi (B2). Sanayi kapalıysa TANIMSIZDIR. */
+  elektrik?: BolgeElektrikDurumu;
+  /** Kirlilik (B2, 0..PPM): tarım verimini düşürür; B4'te istikrar hedefini düşürecek. Sanayi kapalıysa tanımsızdır. */
+  kirlilikPpm?: number;
+  /** Kullanılan keşif hakkı (B2), mal indeksine göre. Sanayi kapalıysa tanımsızdır. */
+  kesifSayisi?: number[];
+  /** Son çözümde bakım girdisinin karşılanma oranı (ppm, B2): düşükse aşınma hızlanır. Sanayi kapalıysa tanımsızdır. */
+  bakimKarsilanmaPpm?: number;
 }
 
 export interface KenarDurumu {
@@ -202,6 +233,8 @@ export interface OyuncuDurumu {
   korumaBitis: Ms;
   /** Açılmış karar kimlikleri (teknolojilerden), sıralı */
   kararlar: string[];
+  /** Bakım düzeyi (B2): 0 asgari, 1 normal, 2 yüksek. Sanayi kapalıysa TANIMSIZDIR. */
+  bakimDuzeyi?: 0 | 1 | 2;
 }
 
 /** Yayılan bir iklim olayı (B1): yaratılırken bir kez hesaplanır, deterministik. */
@@ -278,16 +311,19 @@ export interface YaptirimDurumu {
   hedef: OyuncuId;
 }
 
-export type InsaatTuru = "tesis" | "kenar";
+/** "olcek": tesis ölçek yükseltmesi, "onarim": genel onarım durması (B2; yalnız sanayi açıkken). */
+export type InsaatTuru = "tesis" | "kenar" | "olcek" | "onarim";
 
 export interface InsaatDurumu {
   id: number;
   tur: InsaatTuru;
   sahip: OyuncuId;
   bolge: number;
-  /** tesis türü indeksi veya kenar indeksi */
+  /** tesis türü indeksi (tesis), kenar indeksi (kenar), tesis kimliği (olcek) veya -1 (onarim, bölge düzeyinde) */
   hedef: number;
   bitis: Ms;
+  /** Ölçek yükseltmesinde hedef kademe (1 = M, 2 = L); diğer türlerde tanımsız. */
+  olcek?: 1 | 2;
 }
 
 export interface UretimPartisi {
@@ -359,6 +395,7 @@ export const OLAY_ONCELIGI = {
   savas_pencere_kapa: 4,
   saatlik_tik: 5,
   iklim_gunluk: 5,
+  sondaj_bitti: 3,
   cozum: 9,
 } as const;
 
@@ -372,6 +409,7 @@ export type OlayVerisi =
   | { tur: "savas_pencere_kapa"; savas: number }
   | { tur: "saatlik_tik" }
   | { tur: "iklim_gunluk" }
+  | { tur: "sondaj_bitti"; bolge: number; mal: number }
   | { tur: "cozum" };
 
 export type OlayTuru = OlayVerisi["tur"];
@@ -429,6 +467,11 @@ export type Komut =
   // Tarım (B1)
   | { tur: "ekim_plani"; bolge: string; ekimPpm: number[] }
   | { tur: "gubre_dozu"; bolge: string; doz: number }
+  // Sanayi (B2)
+  | { tur: "tesis_olcek_yukselt"; bolge: string; tesis: number; olcek: 1 | 2 }
+  | { tur: "genel_onarim"; bolge: string }
+  | { tur: "bakim_duzeyi"; duzey: 0 | 1 | 2 }
+  | { tur: "arama_sondaji"; bolge: string; mal: string }
   // Lojistik
   | { tur: "kenar_gelistir"; kenar: number }
   | { tur: "askeri_rezerv"; oranPpm: number }

@@ -102,7 +102,7 @@ export interface HaritaDosyasi {
   atif?: string[];
 }
 
-export type MalKategorisi = "ham" | "ara" | "tuketim" | "askeri";
+export type MalKategorisi = "ham" | "ara" | "tuketim" | "askeri" | "enerji";
 
 export interface MalTanimi {
   id: MalId;
@@ -114,6 +114,11 @@ export interface MalTanimi {
   lojistikOnceligi: number;
   /** Depoda doğal bozulma: ppm / gün. */
   bozulmaPpmGun: number;
+  /**
+   * Sanayi (B2): false ise mal depolanamaz ve taşınamaz (elektrik): bölge içi anlık denge; stok tutulmaz, lojistikten ve
+   * pazardan geçmez, ticaret emrine konu olamaz. Varsayılan true.
+   */
+  depolanabilir?: boolean;
 }
 
 /** Bir tesisin çalışma biçimi (Victoria 3 "üretim yöntemi" benzeri). */
@@ -139,6 +144,13 @@ export interface YontemTanimi {
   tarimsal?: boolean;
   /** Sulama yöntemi (B1): bölgede çalışırken hasat dipleri yumuşar ve kuraklık şiddeti azalır; çıktısı olmayabilir. */
   sulama?: boolean;
+  /**
+   * Sanayi (B2): bölge kirliliğine saatlik emisyon (ppm, tam verim ve S ölçekte); verim ve ölçek çıktısıyla çarpılır.
+   * Elektrik girdisi `girdiler["elektrik"]`, santral çıktısı `ciktilar["elektrik"]` olarak yazılır (depolanamaz mal).
+   */
+  kirlilikPpmSaat?: number;
+  /** Sanayi (B2): hidro santral yöntemi; elektrik çıktısı `sanayi.hidro.akarsuEgrisiPpm` (12 ay, iklim takvimi) ile çarpılır. */
+  hidro?: boolean;
 }
 
 export interface TesisTuruTanimi {
@@ -261,6 +273,93 @@ export interface TarimParametreleri {
   azamiGubreDozu: number;
 }
 
+/** Tesis ölçek kademesi (S, M, L; docs/08 §2.3 S2). Çıktı, girdi ve elektrik `ciktiPpm` ile ölçeklenir. */
+export interface OlcekKademesiTanimi {
+  ciktiPpm: number;
+  isciPpm: number;
+  /** Bakım girdisi ve işletme gideri çarpanı. */
+  bakimPpm: number;
+  /** İnşa maliyeti çarpanı (para + mal); yükseltme maliyeti = hedef kademe - mevcut kademe. */
+  insaPpm: number;
+  /** Bu kademeye yükseltmek için gereken teknoloji (yoksa null). */
+  gerekliTeknoloji: string | null;
+}
+
+/** Bakım düzeyi (oyuncu düzeyinde; docs/08 §2.3 S3). Sıra: asgari, normal, yuksek. */
+export interface BakimDuzeyiTanimi {
+  id: "asgari" | "normal" | "yuksek";
+  /** Bakım girdisi ve işletme gideri çarpanı (ppm). */
+  girdiPpm: number;
+  /** Günlük aşınma değişimi (ppm/gün; negatif = iyileşir). */
+  asinmaPpmGun: number;
+}
+
+/**
+ * Sanayi katmanı parametreleri (B2, opsiyonel). Tanımlıysa elektrik/brownout, ölçek, bakım ve aşınma, kirlilik, damar
+ * tükenmesi ve keşif sondajı açılır; yoksa çekirdek v0.2 + Tarım v1 davranışını birebir verir.
+ */
+export interface SanayiParametreleri {
+  /** Elektrik iletim kaybı (ppm): arz x (PPM - kayıp) dağıtılır. */
+  iletimKaybiPpm: number;
+  /** Aşınma x istikrar x kıtlık cezalarının birleşik tabanı (ppm). */
+  uretimTabaniPpm: number;
+  /** true: elektrik açığında önce hane karşılanır (D4 enerji önceliği yasasının B2 karşılığı), kalan sanayiye dağılır. */
+  haneOnceligi: boolean;
+  /** Santrallerin planlanan yükü (yakıt talebi): önceki çözümdeki yük + bu marj (ppm), en çok PPM. */
+  yukPlanMarjiPpm: number;
+  /**
+   * Santral (elektrik üreten tesis) işletme gideri çarpanı (ppm): `ekonomi.tesisIsletmeParasiSaat` bu oranla ödenir.
+   * Her bölgede zorunlu santral, para lavabosunu iki katına çıkarıp ayarla-unut oyuncusunu (H7) boğmasın diye < PPM.
+   */
+  santralIsletmePpm: number;
+  /** [S, M, L] */
+  olcekKademeleri: OlcekKademesiTanimi[];
+  /** Ölçek yükseltme süresi = tür inşa süresi x bu oran. */
+  olcekYukseltmeSureCarpaniPpm: number;
+  hidro: { akarsuEgrisiPpm: number[] };
+  bakim: {
+    /** [asgari, normal, yuksek] */
+    duzeyler: BakimDuzeyiTanimi[];
+    /** Aşınmanın en çok neden olduğu verim kaybı (ppm). */
+    asinmaVerimKaybiTavaniPpm: number;
+    /** Genel onarım maliyeti: inşa maliyetinin bu oranı (para + mal). */
+    genelOnarimMaliyetPpm: number;
+    genelOnarimDurusSaat: number;
+    /**
+     * Bakım girdisi karşılanma oranı bu eşiğin altındaysa günlük aşınma en az `kitlikAsinmaPpmGun` x (1 - karşılanma) olur
+     * (tam kıtlıkta kitlikAsinmaPpmGun, eşik üstünde ek aşınma yok).
+     */
+    kitlikEsigiPpm: number;
+    kitlikAsinmaPpmGun: number;
+  };
+  kirlilik: {
+    /** Günlük doğal azalma: mevcut kirliliğin bu oranı (ppm). */
+    azalmaPpmGun: number;
+    /** Günlük kara komşularına geçen oran (ppm). */
+    komsuYayilimPpmGun: number;
+    /** Tarımsal çıktı kaybı katsayısı: çıktı x (PPM - kirlilik x katsayı). */
+    tarimKatsayiPpm: number;
+    /** Devlet istikrar hedefi cezası katsayısı (B4 için hazır; B2'de okunmaz). */
+    istikrarKatsayiPpm: number;
+  };
+  damar: {
+    /** Çekirdeğin kurulumda rezervlere uyguladığı ek ölçek (ppm; harita zaten ölçekliyse 1_000_000). */
+    rezervOlcegiPpm: number;
+    /** Rezerv verimi tabanı: damar tükenince verim sıfıra değil bu orana iner. */
+    rezervVerimTabaniPpm: number;
+    kesifMaliyetPara: number;
+    kesifMaliyetMal: Record<MalId, number>;
+    kesifSureSaat: number;
+    /** Keşfin başarı olasılığı (ppm). */
+    kesifOlasilikPpm: number;
+    /** Yeni damar boyutu: rezervIlk x U(min, max) (ppm). */
+    kesifEkiMinPpm: number;
+    kesifEkiMaxPpm: number;
+    /** Bölge x mal başına en çok keşif sayısı. */
+    kesifHakkiBolgeMal: number;
+  };
+}
+
 /**
  * Ayarlanabilir parametreler. PDF'deki süre aralıkları başlangıç varsayımıdır;
  * simülasyonda bu dosyadan okunur.
@@ -364,4 +463,9 @@ export interface Parametreler {
    */
   iklim?: IklimParametreleri;
   tarim?: TarimParametreleri;
+  /**
+   * Sanayi katmanı (B2). Tanımlıysa sanayi mekanikleri açılır (elektrik, ölçek, bakım/aşınma, kirlilik, damar/keşif);
+   * yoksa kapalıdır ve çekirdek davranışı Tarım v1 ile birebir aynıdır. Elektrik için `nufus.tuketim1000Saat["elektrik"]` kullanılır.
+   */
+  sanayi?: SanayiParametreleri;
 }

@@ -17,7 +17,7 @@
   },
   "nufus": {
     "isgucuPpm": 500000,
-    "tuketim1000Saat": { "gida": 200, "yakit": 30, "elektronik": 8, "elektrik": 150 },
+    "tuketim1000Saat": { "gida": 200, "yakit": 30, "elektronik": 8 },
     "buyumePpmGun": 1000,
     "kuculmePpmGun": 3000
   },
@@ -115,48 +115,5 @@
     "gubreToprakPpmGun": 3000,
     "gubreCiktiEkiPpm": 60000,
     "azamiGubreDozu": 3
-  },
-  "sanayi": {
-    "iletimKaybiPpm": 50000,
-    "uretimTabaniPpm": 400000,
-    "haneOnceligi": false,
-    "yukPlanMarjiPpm": 150000,
-    "santralIsletmePpm": 0,
-    "olcekKademeleri": [
-      { "ciktiPpm": 1000000, "isciPpm": 1000000, "bakimPpm": 1000000, "insaPpm": 1000000, "gerekliTeknoloji": null },
-      { "ciktiPpm": 2200000, "isciPpm": 1800000, "bakimPpm": 2000000, "insaPpm": 2500000, "gerekliTeknoloji": null },
-      { "ciktiPpm": 3600000, "isciPpm": 2600000, "bakimPpm": 3200000, "insaPpm": 4500000, "gerekliTeknoloji": "otomasyon" }
-    ],
-    "olcekYukseltmeSureCarpaniPpm": 500000,
-    "hidro": { "akarsuEgrisiPpm": [400000, 500000, 800000, 1700000, 2400000, 2000000, 1000000, 600000, 500000, 600000, 600000, 900000] },
-    "bakim": {
-      "duzeyler": [
-        { "id": "asgari", "girdiPpm": 500000, "asinmaPpmGun": 20000 },
-        { "id": "normal", "girdiPpm": 1000000, "asinmaPpmGun": 0 },
-        { "id": "yuksek", "girdiPpm": 1500000, "asinmaPpmGun": -15000 }
-      ],
-      "asinmaVerimKaybiTavaniPpm": 400000,
-      "genelOnarimMaliyetPpm": 200000,
-      "genelOnarimDurusSaat": 6,
-      "kitlikEsigiPpm": 950000,
-      "kitlikAsinmaPpmGun": 20000
-    },
-    "kirlilik": {
-      "azalmaPpmGun": 30000,
-      "komsuYayilimPpmGun": 100000,
-      "tarimKatsayiPpm": 250000,
-      "istikrarKatsayiPpm": 400000
-    },
-    "damar": {
-      "rezervOlcegiPpm": 1000000,
-      "rezervVerimTabaniPpm": 250000,
-      "kesifMaliyetPara": 8000000,
-      "kesifMaliyetMal": { "parca": 20000 },
-      "kesifSureSaat": 24,
-      "kesifOlasilikPpm": 400000,
-      "kesifEkiMinPpm": 300000,
-      "kesifEkiMaxPpm": 600000,
-      "kesifHakkiBolgeMal": 2
-    }
   }
 }

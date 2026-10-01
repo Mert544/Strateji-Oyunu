@@ -694,7 +694,7 @@
           "Kisnica Mine",
           "Majdanpek"
         ],
-        "iddiaBinBirim": 650,
+        "iddiaBinBirim": 260,
         "muaf": false
       }
     },
@@ -707,7 +707,7 @@
           "Guri Kuq Including: See Alt Names",
           "Guri Kuq Mine"
         ],
-        "iddiaBinBirim": 200,
+        "iddiaBinBirim": 80,
         "muaf": false
       },
       "bakir": {
@@ -718,7 +718,7 @@
           "Golaj",
           "Kurbnesh-Perlat"
         ],
-        "iddiaBinBirim": 250,
+        "iddiaBinBirim": 100,
         "muaf": false
       }
     },
@@ -729,7 +729,7 @@
         "ornekler": [
           "Bucim"
         ],
-        "iddiaBinBirim": 300,
+        "iddiaBinBirim": 120,
         "muaf": false
       }
     },
@@ -738,14 +738,14 @@
         "icerde": 0,
         "yakin": 0,
         "ornekler": [],
-        "iddiaBinBirim": 400,
+        "iddiaBinBirim": 160,
         "muaf": true
       },
       "bakir": {
         "icerde": 0,
         "yakin": 0,
         "ornekler": [],
-        "iddiaBinBirim": 350,
+        "iddiaBinBirim": 140,
         "muaf": true
       }
     },
@@ -758,7 +758,7 @@
           "Chelopech",
           "Elatzite"
         ],
-        "iddiaBinBirim": 300,
+        "iddiaBinBirim": 120,
         "muaf": false
       }
     },
@@ -769,7 +769,7 @@
         "ornekler": [
           "Trilofon"
         ],
-        "iddiaBinBirim": 250,
+        "iddiaBinBirim": 100,
         "muaf": false
       }
     },
@@ -782,7 +782,7 @@
           "Hagios Ioannis Larymna",
           "Larymna Mine and Euboea Island Deposit"
         ],
-        "iddiaBinBirim": 250,
+        "iddiaBinBirim": 100,
         "muaf": false
       }
     },
@@ -794,7 +794,7 @@
           "Icel, Adana, and Kahramanmaras",
           "Karatas"
         ],
-        "iddiaBinBirim": 250,
+        "iddiaBinBirim": 100,
         "muaf": false
       }
     },
@@ -806,7 +806,7 @@
           "Asikoy Mine",
           "Bakibaba Mine"
         ],
-        "iddiaBinBirim": 350,
+        "iddiaBinBirim": 140,
         "muaf": false
       }
     },
@@ -819,7 +819,7 @@
           "Divrigi",
           "Divrigi Iron Ore Deposit"
         ],
-        "iddiaBinBirim": 900,
+        "iddiaBinBirim": 360,
         "muaf": false
       }
     },
@@ -832,7 +832,7 @@
           "Ergani Bakir Isletmesi",
           "Siirt"
         ],
-        "iddiaBinBirim": 250,
+        "iddiaBinBirim": 100,
         "muaf": false
       }
     },
@@ -845,7 +845,7 @@
           "Deveci Mine",
           "Ergani"
         ],
-        "iddiaBinBirim": 700,
+        "iddiaBinBirim": 280,
         "muaf": false
       },
       "bakir": {
@@ -856,7 +856,7 @@
           "Ergani - Maden",
           "Karabork"
         ],
-        "iddiaBinBirim": 350,
+        "iddiaBinBirim": 140,
         "muaf": false
       }
     },
@@ -869,7 +869,7 @@
           "Kankoy Yomra",
           "Kutlular Surmene"
         ],
-        "iddiaBinBirim": 350,
+        "iddiaBinBirim": 140,
         "muaf": false
       }
     },
@@ -882,7 +882,7 @@
           "Damar Mine",
           "Murgul"
         ],
-        "iddiaBinBirim": 500,
+        "iddiaBinBirim": 200,
         "muaf": false
       }
     },
@@ -894,7 +894,7 @@
           "Alaverdi",
           "Madneuli Mine"
         ],
-        "iddiaBinBirim": 250,
+        "iddiaBinBirim": 100,
         "muaf": false
       }
     }

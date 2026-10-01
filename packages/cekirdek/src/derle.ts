@@ -29,8 +29,10 @@ export function icerikDerle(veri: VeriPaketi): DerlenmisIcerik {
   const birlikIndeks = indeksle("birlik", icerik.birlikler.map((b) => b.id));
   const bolgeIndeks = indeksle("bolge", harita.bolgeler.map((b) => b.id));
 
+  // Depolanamaz mal (elektrik, B2) lojistikten geçmez: akış çözümü bu sıradan çıkarılır.
   const lojistikSirasi = icerik.mallar
-    .map((m, i) => ({ i, o: m.lojistikOnceligi }))
+    .map((m, i) => ({ i, o: m.lojistikOnceligi, depolanabilir: m.depolanabilir !== false }))
+    .filter((x) => x.depolanabilir)
     .sort((x, y) => x.o - y.o || x.i - y.i)
     .map((x) => x.i);
 

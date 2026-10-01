@@ -204,10 +204,11 @@ describe("sentetik-50 harita metrikleri", () => {
     expect(Math.max(...rezervler) / Math.min(...rezervler)).toBeGreaterThanOrEqual(5);
   });
 
-  it("her bolgenin 1-3 baslangic tesisi var", () => {
+  it("her bolgenin 1-4 baslangic tesisi var (en cok 3 uretim tesisi + 1 baslangic santrali, B2)", () => {
     for (const b of h.bolgeler) {
       expect(b.tesisler.length).toBeGreaterThanOrEqual(1);
-      expect(b.tesisler.length).toBeLessThanOrEqual(3);
+      expect(b.tesisler.length).toBeLessThanOrEqual(4);
+      expect(b.tesisler.filter((t) => t !== "santral" && t !== "hidro_santrali").length).toBeLessThanOrEqual(3);
     }
   });
 });
