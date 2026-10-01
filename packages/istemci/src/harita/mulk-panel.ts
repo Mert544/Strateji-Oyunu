@@ -24,10 +24,15 @@ import type { Hiyerarsi } from "./veri";
 import { ASAMA_ADI, yapiAsamasi } from "./yapi";
 import { OLCEK_AD, olcekBuyutulebilir } from "./olcek";
 import { mulkMetni } from "./mulk-metin";
-import { defterBirlesikMetni, defterHtml, kazanimBildirimleri, yeniKazanilanlar } from "./defter";
+import { defterBirlesikMetni, defterHtml, defterUstKarti, kazanimBildirimleri, yeniKazanilanlar } from "./defter";
+import { dukkanBolumuHtml, dukkanDikkatMaddeleri, ustKartHtml } from "./dukkan-html";
+import { dukkanMetni } from "./dukkan-metin";
+import { DEFTER_ATLA_ANAHTARI, IlkSatisIzleyici, ONERI_KAPALI_ANAHTARI, oneriDurumu, rafaKonabilirStok, tarayiciDeposu } from "./dukkan-veri";
+import type { DukkanKaynagi } from "./dukkan-veri";
 import type { Defter } from "@bolge/protokol";
 import { bildir } from "../arayuz/bildirim";
 import mulkCss from "./mulk-panel.css?inline";
+import dukkanCss from "./dukkan-panel.css?inline";
 
 const SAAT = 3_600_000;
 /** Biten inşaat Dikkat'te bu kadar sim saati kalır. */
@@ -75,7 +80,12 @@ export interface MulkAdlari {
 const sure = (ms: number): string => sureMetni(Math.max(0, ms) / SAAT);
 
 /** Dikkat maddeleri (saf): yalnız oyuncunun kendi yapılarından. `bitenler`: bu oturumda biten inşaatlar (anahtar → bitiş). */
-export function mulkDikkatMaddeleri(d: IsletmeDurumu, ad: MulkAdlari, bitenler: ReadonlyMap<string, { tur: string; ilce?: string; bitis: number; yukseltme?: boolean }>): MulkDikkatMaddesi[] {
+export function mulkDikkatMaddeleri(
+  d: IsletmeDurumu,
+  ad: MulkAdlari,
+  bitenler: ReadonlyMap<string, { tur: string; ilce?: string; bitis: number; yukseltme?: boolean }>,
+  dukkan: readonly MulkDikkatMaddesi[] = [],
+): MulkDikkatMaddesi[] {
   const l: MulkDikkatMaddesi[] = [];
   const t = d.simZamani;
   for (const y of d.yapilar) {
@@ -92,6 +102,7 @@ export function mulkDikkatMaddeleri(d: IsletmeDurumu, ad: MulkAdlari, bitenler: 
     const yer = b.ilce ? `${ad.ilce(b.ilce)}: ` : "";
     l.push({ tur: "bitti", baslik: `${yer}${ad.yapi(b.tur)} ${b.yukseltme ? "büyütmesi" : "inşaatı"} bitti`, ayrinti: t - b.bitis >= SAAT ? `${sure(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis });
   }
+  l.push(...dukkan);
   return l.sort((a, b) => TUR_SIRA[a.tur] - TUR_SIRA[b.tur] || a.sira - b.sira);
 }
 
@@ -147,11 +158,18 @@ function yapiDurumu(y: IsletmeYapisi, t: number): string {
   return "Tamam";
 }
 
-export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: MulkAdlari, defterBolumu?: string): string {
+/** İşletmem'e eklenen dükkân parçaları: `ust` kimlik satırının hemen altı (öneri ya da Defter kartı), `dukkan` Yapılar'ın altı (Dükkânlarım). */
+export interface IsletmeEki {
+  ust?: string;
+  dukkan?: string;
+}
+
+export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: MulkAdlari, defterBolumu?: string, ek: IsletmeEki = {}): string {
   if (!d) return `<p class="ipucu-metin">İşletme bilgisi yükleniyor…</p>`;
   const toplam = d.ilceHucre.reduce((s, [, n]) => s + n, 0);
   const ilk = [...ben.ad.trim()][0] ?? "?";
   let s = `<div class="mulk-kimlik"><span class="mulk-amblem" aria-hidden="true">${esc(ilk)}</span><div><b>${esc(ben.ad)}</b><span class="soluk">${toplam ? `${fmt(d.ilceHucre.length)} ilçede ${fmt(toplam)} hücre` : "Henüz arsan yok"}</span></div></div>`;
+  s += ek.ust ?? "";
   s += korumaSatirlari(d, ad.ilce, ad.ayrilmisGun ?? 14, ad.indirimYuzde ? { indirimYuzde: ad.indirimYuzde } : {});
   s += `<h3>Arsalarım</h3>`;
   if (!d.ilceHucre.length) s += `<div class="bos-durum">${ikon("map-pin", 28)}<p class="ipucu-metin">Henüz arsan yok. Bir ilçe seç, hazır arsalardan birini al.</p></div>`;
@@ -175,6 +193,7 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
     }
     s += `</ul>`;
   }
+  s += ek.dukkan ?? "";
   s += defterBolumu ?? `<h3>Rehber</h3><div class="bos-durum">${ikon("compass", 28)}<p class="ipucu-metin">Rehber görevler yakında.</p></div>`;
   return s;
 }
@@ -260,6 +279,10 @@ export interface MulkPaneliSecenekleri {
   hiyerarsi: Hiyerarsi;
   /** İlçeyi haritada açar; harita ilçeye varınca çözülür ("Büyüt" bundan sonra başlar). */
   ilceAc: (ilce: string) => void | Promise<void>;
+  /** Dükkân verisi (G7 köprüsü); yoksa dükkân yüzeyleri hiç çıkmaz (Defter kartı yine çalışır). */
+  dukkan?: DukkanKaynagi;
+  /** "Dükkân kur" (D0 kartı): yapı kurma akışını dükkân türü seçimiyle açar; yoksa düğme etkisiz. */
+  dukkanKur?: () => void;
 }
 
 /** Kabuğa verilen sağlayıcı. */
@@ -267,7 +290,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   if (!document.getElementById("mulk-panel-stil")) {
     const st = document.createElement("style");
     st.id = "mulk-panel-stil";
-    st.textContent = mulkCss;
+    st.textContent = mulkCss + dukkanCss;
     document.head.append(st);
   }
   isletmeDugmesiKur();
@@ -315,6 +338,40 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       defterOkunuyor = false;
     }
   };
+  // Dükkân yüzeyleri (G9): üstte tek kart (D0 öneri ya da B7 Defter kartı), Dükkânlarım bölümü, Dikkat maddeleri, ilk satış bildirimi.
+  // Kapatma/atlama tercihi yerel (localStorage; erişilemezse oturum içi). Dükkân kaynağı yoksa yalnız Defter kartı çalışır.
+  const depo = tarayiciDeposu();
+  const ilkSatis = new IlkSatisIzleyici(depo);
+  let yenile: (() => void) | null = null;
+  const ekYapiMi = (tur: string): boolean => katalog.find((k) => k.id === tur)?.ek === true;
+  const ustDurum = (d: IsletmeDurumu | null): "dukkan" | "defter" | null => {
+    if (!d) return null;
+    const g = s.dukkan?.gorunum() ?? null;
+    return oneriDurumu({
+      yapilar: d.yapilar,
+      ekYapiMi,
+      dukkan: g,
+      stokVar: g ? rafaKonabilirStok(d.mallar, g.satilabilirMallar) : false,
+      oneriKapatildi: depo.oku(ONERI_KAPALI_ANAHTARI) === "1",
+      defterAtlandi: depo.oku(DEFTER_ATLA_ANAHTARI) === "1",
+      defterSiradaki: defterUstKarti(defter, ad.mal) !== null,
+    });
+  };
+  /** Telefonda alt sayfa kapalıyken İşletmem düğmesindeki öneri noktası ve erişilebilir adı (yalnız dükkân önerisinde; Defter kartı nokta çıkarmaz). */
+  const oneriIsareti = (durum: "dukkan" | "defter" | null): void => {
+    const dugme = document.getElementById("isletme-dugme");
+    if (!dugme) return;
+    if (durum === "dukkan") {
+      dugme.setAttribute("data-oneri", "1");
+      dugme.setAttribute("aria-label", dukkanMetni("dukkan.D0.oneri_isaret_etiket"));
+    } else {
+      dugme.removeAttribute("data-oneri");
+      dugme.removeAttribute("aria-label");
+    }
+  };
+  const dukkanGorunumu = () => s.dukkan?.gorunum() ?? null;
+  const dukkanDikkat = (): MulkDikkatMaddesi[] =>
+    dukkanDikkatMaddeleri(dukkanGorunumu(), ad.mal, (mal) => (son?.mallar.find((x) => x.mal === mal)?.stokMili ?? 0) > 0).map((x, i) => ({ tur: x.tur, baslik: x.baslik, ayrinti: "", ...(x.ilce ? { ilce: x.ilce } : {}), sira: i }));
   const epoch = (): number => b.dunyaEpochMs?.() ?? DUNYA_EPOCH_MS;
   const oku = (): IsletmeDurumu | null => {
     const d = b.isletme?.() ?? null;
@@ -340,14 +397,19 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     icerik(sekme, g) {
       const d = oku();
       switch (sekme) {
-        case "isletme":
-          return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch()) : undefined);
+        case "isletme": {
+          const durum = ustDurum(d);
+          oneriIsareti(durum);
+          const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal));
+          const dukkan = dukkanBolumuHtml(dukkanGorunumu(), { ilceAdi: ad.ilce, simdi: d?.simZamani ?? 0 });
+          return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch()) : undefined, { ust, dukkan });
+        }
         case "hazine":
           return mulkHazinePaneli(d);
         case "mal":
           return mulkMalPaneli(d, ad);
         case "dikkat":
-          return mulkDikkatPaneli(d ? mulkDikkatMaddeleri(d, ad, bitenler) : []);
+          return mulkDikkatPaneli(d ? mulkDikkatMaddeleri(d, ad, bitenler, dukkanDikkat()) : []);
         case "olaylar":
           return mulkOlayPaneli((d?.simZamani ?? b.ozet?.()?.simZamani ?? 0) / SAAT, g, epoch());
       }
@@ -355,7 +417,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     },
     sayac(sekme) {
       const d = son;
-      return sekme === "dikkat" && d ? Math.min(5, mulkDikkatMaddeleri(d, ad, bitenler).length) : 0;
+      return sekme === "dikkat" && d ? Math.min(5, mulkDikkatMaddeleri(d, ad, bitenler, dukkanDikkat()).length) : 0;
     },
     cubuk() {
       const oz = b.ozet?.() ?? null;
@@ -372,6 +434,18 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     },
     epochMs: epoch,
     tikla(t) {
+      // Üst kart eylemleri: öneriyi kapat, "Dükkân kur", Defter kartını atla (tercih yerel; kart yeniden çizilir)
+      const eylem = t.closest<HTMLElement>("[data-eylem]")?.dataset["eylem"];
+      if (eylem === "oneri-kapat" || eylem === "defter-atla") {
+        depo.yaz(eylem === "oneri-kapat" ? ONERI_KAPALI_ANAHTARI : DEFTER_ATLA_ANAHTARI, "1");
+        yenile?.();
+        return true;
+      }
+      if (eylem === "dukkan-kur") {
+        isletmeSayfasi(false);
+        s.dukkanKur?.();
+        return true;
+      }
       const bd = t.closest("[data-mulk-buyut]") as HTMLElement | null;
       if (bd) {
         // "Büyüt": telefonda alt sayfa kapanır, harita tesisin ilçesine gider, ek hücre planı ve maliyet kartı açılır
@@ -389,6 +463,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     dinle(f) {
       // Bağdaştırıcı değişince (kare, delta) ve inşaat aşamaları için iki saniyede bir; defter yapı/hücre değişince ya da 20 sn'de bir
       const birak = b.dinle?.(f);
+      yenile = f;
       void defterOku(f);
       const z = window.setInterval(() => {
         const d = oku();
@@ -397,9 +472,12 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
           defterImza = imza;
           void defterOku(f);
         }
+        const g = dukkanGorunumu();
+        if (g && ilkSatis.kontrol(g.ilkSatisT)) bildir(dukkanMetni("dukkan.D8.ilk_satis"), "bilgi");
         f();
       }, 2000);
       return () => {
+        yenile = null;
         birak?.();
         window.clearInterval(z);
       };

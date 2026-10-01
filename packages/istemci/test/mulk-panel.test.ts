@@ -108,3 +108,22 @@ describe("mülk kipi paneli", () => {
     expect(dikkat[0]?.baslik).toBe("Gebze: Çiftlik büyütmesi bitti");
   });
 });
+
+describe("İşletmem dükkân yüzeyleri (G9 iskeleti)", () => {
+  it("üst kart kimlik satırının hemen altında, hak özetinden ve Arsalarım'dan önce; Dükkânlarım Yapılar'dan sonra, Defter'den önce", () => {
+    const h = isletmePaneli(durum(), { ad: "Ali" }, ad, `<h3>Defter</h3>`, { ust: `<div class="dk-oneri" data-tur="dukkan"></div>`, dukkan: `<section class="dk-bolum"></section>` });
+    const sira = [h.indexOf("mulk-kimlik"), h.indexOf("dk-oneri"), h.indexOf("mk-ozet"), h.indexOf("<h3>Arsalarım"), h.indexOf("<h3>Yapılar"), h.indexOf("dk-bolum"), h.indexOf("<h3>Defter")];
+    expect(sira.every((x) => x >= 0)).toBe(true);
+    expect([...sira].sort((a, b) => a - b)).toEqual(sira);
+  });
+
+  it("ek yoksa yazılan HTML değişmez (dükkân kaynağı yokken panel eskisi gibi)", () => {
+    expect(isletmePaneli(durum(), { ad: "Ali" }, ad, undefined, {})).toBe(isletmePaneli(durum(), { ad: "Ali" }, ad));
+  });
+
+  it("Dikkat: dükkân maddeleri oyuncunun yapı maddelerine eklenir ve türüne göre sıralanır", () => {
+    const l = mulkDikkatMaddeleri(durum(), ad, new Map(), [{ tur: "eksik", baslik: "Gıda stoğun bitti; rafta satılmıyor", ayrinti: "", sira: 0 }]);
+    expect(l.some((m) => m.baslik.includes("rafta satılmıyor"))).toBe(true);
+    expect(l.length).toBe(mulkDikkatMaddeleri(durum(), ad, new Map()).length + 1);
+  });
+});

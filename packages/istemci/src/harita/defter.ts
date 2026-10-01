@@ -25,7 +25,7 @@ export const DEFTER_METINLERI: Readonly<Record<string, DefterMetni>> = {
   "defter.kavram.ilk_satis": { kazanildi: "İlk satışın yapıldı; bereketli olsun.", siradaki: "Çiftliğinin tahılını sat." },
   "defter.kavram.ilk_isleme": { kazanildi: "Ham malı işledin; ilk işlenmiş ürünün hayırlı olsun.", siradaki: "Ham malı işle (ör. tahılı gıdaya çevir)" },
   "defter.kavram.zincir_kapandi": { kazanildi: "Zincir kapandı: bir yapının çıktısı öbürünün girdisi oldu.", siradaki: "Zinciri kapat: bir yapının çıktısını öbürüne girdi yap" },
-  "defter.kavram.ilk_dukkan": { kazanildi: "İlk dükkânın açıldı; siftahın bereketli olsun.", siradaki: "İlk dükkânını aç" },
+  "defter.kavram.ilk_dukkan": { kazanildi: "İlk satışını dükkânından yaptın.", siradaki: "Kendi tezgâhın: bir dükkân kur ve oradan ilk satışını yap." },
   "defter.kavram.ilk_sozlesme": { kazanildi: "İlk sözleşmen imzalandı; hayırlı olsun.", siradaki: "İlk sözleşmeni yap" },
   "defter.kavram.ikinci_ilce": { kazanildi: "Komşu ilçeye selam: ikinci ilçende de yerin var.", siradaki: "Komşu bir ilçede yer edin" },
   "defter.kavram.ilk_arastirma": { kazanildi: "İlk araştırman tamamlandı.", siradaki: "İlk araştırmanı yap" },
@@ -110,6 +110,12 @@ export function kazanimBildirimleri(yeni: readonly DefterKazanilan[], malAdi: (m
 /** Birleşik Defter bildirimi: "Defterine 2 satır işlendi · ≈ 600 ₺ değerinde" (değer yoksa tutarsız biçim; tutar aşağı yuvarlı). */
 export function defterBirlesikMetni(n: number, degerMili: number): string {
   return degerMili > 0 ? cerceve("defter.bildirim.birlesik", { n: fmt(n), tutar: paraMili(degerMili, "asagi") }) : cerceve("defter.bildirim.birlesik_tutarsiz", { n: fmt(n) });
+}
+
+/** B7 "sıradaki adım" kartı için ilk etkin sıradaki adım (metin ve ödül sütunu); yoksa null. */
+export function defterUstKarti(d: Defter | null, malAdi: (m: string) => string): { metin: string; odulHtml: string } | null {
+  const x = d?.siradaki.find((y) => y.etkin);
+  return x ? { metin: defterMetni(x.sablon, x.kavram).siradaki, odulHtml: odulSutunu(x.odul, malAdi) } : null;
 }
 
 /** "Defter" bölümü (İşletmem'de). `epochMs`: tarihleri gerçek takvime çevirmek için. */
