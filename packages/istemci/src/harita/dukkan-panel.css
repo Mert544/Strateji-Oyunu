@@ -58,6 +58,7 @@
 /* D-8 satış görünümü */
 .dk-ozet { display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-3); border-radius: var(--r-md); background: var(--yuzey-2); }
 .dk-ozet-satir { margin: 0; font-size: var(--yazi-sm); color: var(--murekkep); font-variant-numeric: tabular-nums; }
+.dk-ozet-toplam { margin: var(--s-1) 0 0; padding-top: var(--s-2); border-top: 1px solid var(--cizgi-ince); font-size: var(--yazi-sm); font-weight: 600; color: var(--murekkep); font-variant-numeric: tabular-nums; }
 .dk-kasa { margin: 0; font-size: var(--yazi-sm); color: var(--uyari-ink); }
 .dk-menu { min-width: 44px; min-height: 44px; }
 /* D-4 iptal ve D-8.1 kaldırma onayı: masaüstünde panel içinde kart, telefonda alt sayfa */
