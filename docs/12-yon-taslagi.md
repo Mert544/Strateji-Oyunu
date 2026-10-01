@@ -93,3 +93,8 @@ Sahip "genel kararları baş lider versin" dedi; aşağıdakiler sentezin öneri
 - Oyuncuya özgü marka ve tabela kimliği desteklenir.
 - Aynı "kilit yok, seçim var" ilkesi fabrika ölçekleri, askeri yapılar ve diğer sistemler için de geçerlidir.
 - Takım düzeni sürer: geri kalan Ar-Ge çalışmaları liderler ve ajanlarla birlikte yürütülür.
+
+## 13. Baş lider kararları (1 Ekim, Ar-Ge dalgası 4 sürerken)
+- **Teknoloji kilidi yok:** mülk kipinde büyük ölçeğin "otomasyon" teknolojisi ön koşulu kalkar; teknoloji verim/maliyet avantajıdır. (Bölge kipi değişmez.)
+- **İlçe seviyesi kilit değildir:** ilçe gelişim seviyesi yalnız kolektif dünya durumudur (NPC talebi, kamu altyapısı, ruhsat kotası); hiçbir yapı ya da ölçek açılışını bireysel olarak kilitlemez. docs/11 §7.4'teki kilit tanımı geçersizdir.
+- **Ayak izi ölçekle büyür:** ölçek başına hücre sayısı tür verisinde parametredir (öneri S 1, M 2, L 3). Doğrudan büyük kurulum o ayak izini baştan alır; yerinde yükseltme ek bitişik hücre gerektirir (fiziksel koşul, kilit değil). Arsa raporundaki Z4 "aynı ayak izi" kuralı bu kararla güncellenir.
