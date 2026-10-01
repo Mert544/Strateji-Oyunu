@@ -25,4 +25,4 @@ Yönetim kapalı ve açık yedi koşu (gec60 x4 tohum 1–10, kisa x3 tohum 1–
 Yok.
 
 ## Açık sorular
-- Genel onarım yolu bu koşularda hiç çalışmadığından onarım maliyet ölçümü doğrulanmadı. "Parça ithalatı kapalı + onarım açık" ayrı koşusu A2 ve Ar-Ge liderinin yanıtını bekliyor; yanıta kadar koşulmayacak.
+- Genel onarım yolu bu koşularda hiç çalışmadığından onarım maliyet ölçümü doğrulanmadı. "Parça ithalatı kapalı + onarım açık" koşusu: **kapandı (Ar-Ge kararı; ayrı koşu gerekmiyor)**. R8'in yalnız-onarım kolu ([bakim-asinma-c.md](../olcum/bakim-asinma-c.md) §4) aynı soruyu yanıtlıyor.
