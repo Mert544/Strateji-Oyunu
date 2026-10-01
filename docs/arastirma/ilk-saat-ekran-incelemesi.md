@@ -22,8 +22,8 @@
 |---|---|---|---|
 | BK-1 | İl düzeyinde yapı etiketi ilçe adına biniyor | **K1 setinde kapandı; birleşik durumda doğrulanmadı** | Önce `SP/takim/ekran/k1/once/mobil-2-il-duzeyi.png` ("Çiftlik · Temel" etiketi Gebze'nin üstünde), sonra `.../sonra/mobil-2-il-duzeyi.png` (etiket yok). **Ama** T1 sonra seti `SP/takim/tasarim/ekran/t1/sonra/02-il-kocaeli-acik-telefon.png` etiketin **hâlâ** "Gebze" üstüne bindiğini gösteriyor: T1 görüntüsü K1 değişikliği olmadan alınmış |
 | BK-2 | Mülk kipinde küre hâlâ bölge renkleri | **Kaldı** | `SP/takim/ekran/k1/sonra/masaustu-4-kure.png` ve `.../t1/sonra/01-kure-genel-acik-telefon.png`: bölge renkleri, ▲ ve ✓ rozetleri; telefonda üst üste binmiş rozet yığını. T2 işi bu setlerde yok |
-| BK-3 | Defter bildirimi maliyet kartını örtüyor | **Kapandı, yeni sorun doğdu** | Önce `docs/toplanti/2/05b-maliyet-karti-acik-masaustu.png` (toast kartın "Sermaye" satırında); sonra `.../t1/sonra/05b-maliyet-karti-acik-telefon.png` (toast kartın **üstünde**). Yeni sorun: bkz. madde 4 |
-| BK-4 | Telefonda hazine iki yerde | **Kapandı (T1 setinde)** | `.../t1/sonra/05b-maliyet-karti-acik-telefon.png`: hazine yalnız üst çipte. K1 setinde hâlâ iki yerde (`k1/sonra/mobil-6-ilceye-donus-L3.png`). Yeni tutarsızlık: bkz. madde 3 |
+| BK-3 | Defter bildirimi maliyet kartını örtüyor | **Kapandı, yeni sorun doğdu** | Önce `docs/toplanti/2/05b-maliyet-karti-acik-masaustu.png` (toast kartın "Sermaye" satırında); sonra `.../t1/sonra/05b-maliyet-karti-acik-telefon.png` (toast kartın **üstünde**). Yeni sorun: bkz. B5 |
+| BK-4 | Telefonda hazine iki yerde | **Kapandı (T1 setinde)** | `.../t1/sonra/05b-maliyet-karti-acik-telefon.png`: hazine yalnız üst çipte. K1 setinde hâlâ iki yerde (`k1/sonra/mobil-6-ilceye-donus-L3.png`). Yeni tutarsızlık: bkz. B4 |
 | BK-5 | Uzun ödül tutarı satır kırıyor | **Kapandı** | `.../t1/sonra/07b-defter-acik-telefon.png`: "5 makine parçası / ≈ 900 ₺ değerinde" iki satır ama tutar bölünmüyor |
 | BK-6 | Geri al şeridi küre düzeyinde de kalıyor | **Kapandı (K1 setinde)** | `k1/once/mobil-2-il-duzeyi.png` (şerit var) → `k1/sonra/mobil-2-il-duzeyi.png` (yok). İlçeye dönünce şerit geri geliyor (`k1/sonra/mobil-6-ilceye-donus-L3.png`: "4:43 içinde geri alabilirsin") |
 | BK-7 | Yakın planda arsa dolgusu baskın | **Kaldı (görüntü yok)** | `09a-sokak-yakin-acik-masaustu.png` önce = sonra (aynı bayt). T2 işi |
@@ -52,27 +52,39 @@ Sıra: önce test akışını engelleyenler, sonra Y1, Y2 ve Y10'u bozanlar. "Pr
 - **Düzeltme:** G3 bitene kadar iki kartı **gizle** ya da "yakında" etiketli ve seçilemez göster; "Doluluk bilinmiyor" yerine veri gelene kadar satırı kaldır. **Sahip:** O3 (veri), T1 (kart durumu)
 - **Geri dönüş:** kolay (gizleme); vaadin kırılması ZK-3
 
-### B2. "Hazır arsa" için ayrı "Satın al" adımı ve iki "Yapı kur"
+### B2. Birincil düğme gereksiz arsa aldırıyor: yurt zaten yeter
 - **Adım:** S1.3 → S1.4
-- **Görüntü:** `t1/sonra/05a-arsa-secimi-acik-telefon.png`
-- **Sorun:** Taze hesapta hazine 50.000 ₺; alt kartta "Hazır arsa · 10 hücre · Kırsal · Fiyat **10.001 ₺** · Gebze payın 16 / 72" ve **birincil** düğme "Satın al"; ikincil "Yapı kur". Üstte ayrıca büyük bir "Yapı kur" düğmesi var. Oyuncu, arsayı almadan yapı kurup kuramayacağını, 10.001 ₺'nin neye gittiğini ve yurdun (6 hücre, ücretsiz) hangisi olduğunu bilemez. [GDD §2.3](oyun-tasarim-belgesi-v1.md) "arsa + yapı tek kart" der; yapı komutu zaten atomik. Hangi yolun zorunlu olduğu **(doğrulanmadı)**.
-- **Profil:** K2, K3 (telefon), K5 ("paramın ne olduğu")
+- **Görüntü:** `t1/sonra/05a-arsa-secimi-acik-telefon.png` (taze hesap, 50.000 ₺); `docs/toplanti/2/05b-maliyet-karti-acik-masaustu.png` ("Arsa: Kendi arsan · 0 ₺")
+- **Kod bulgusu (A2 kapandı):** "Satın al" **zorunlu değil.** `yapi_yerlestir` oyuncunun **kendi** boş hücrelerini kabul eder (`h.sahip === oyuncu`) ve yalnız sahipsiz hücreleri satın alır (`packages/cekirdek/src/mulk/komut.ts:536–566`; `alim` yalnız `yeni.length > 0` ise). Ücretsiz yurt 6 hücredir (`packages/cekirdek/src/mulk/yurt.ts:1`; `parametreler.json` `yurtHucre: 6`); Çiftlik 2 hücre ister: yurda sığar, arsa bedeli 0 ₺.
+- **Sorun:** İstemci Yerleş varışında yurdun **dışında** bir hazır arsayı otomatik seçiyor (`packages/istemci/src/harita/gorunum.ts:1161–1175` `yerlesVarisi`; bütçe tavanı hazinenin %40'ı) ve alt kartta birincil düğme "Satın al" (`gorunum.ts:781`). Taze oyuncu hibenin yaklaşık **%20'sini** (10.001 ₺ / 50.000 ₺) ilk yapıdan **önce** harcar; kart yurdun yeteceğini söylemez. Defter'in ilk bildirimi "İlk arsan; hayırlı olsun" bu satın almayı bir **adım** gibi pekiştirir. Üstte ayrıca büyük bir "Yapı kur" düğmesi var: iki yol aynı anda birincil görünür.
+- **Profil:** K3, K5 (paranın ne için gittiği), K2
 - **Ciddiyet:** **S2**
-- **Etkilediği ölçüt:** Y1, YA2, YA3
-- **Düzeltme:** tek akış: yapıyı yerleştirince arsa ve yapı **tek maliyet kartında** ("Arsa 10.001 ₺ + yapı 6.000 ₺"); "Satın al" ve ikinci "Yapı kur" kalksın. **Sahip:** K1 (akış), T1 (kart)
+- **Etkilediği ölçüt:** Y1, YA2, YA3; ilk satış sonrası bakiye (S1.6)
+- **Düzeltme:** Varışta önce **yurt** seçili gelsin, "Satın al" ikincil olsun; kart "Yurdun ücretsiz, Çiftlik yurda sığar" desin; ek arsa "Genişlet" olarak yapı kurulduktan sonra önerilsin. **Sahip:** K1 (varış ve seçim), T1 (kart metni)
 - **Geri dönüş:** kolay (arayüz; komut zaten atomik)
 
-### B3. Hazine ve fiyat tutarsız: 39.999 ₺ ↔ 40.000 ₺, 10.001 ₺
+### B3. Ayrılmış hücre hakkı oyuncunun gördüğü arsada ve fiyatta yok
+- **Adım:** S1.2 → S1.3
+- **Görüntü:** `docs/toplanti/2/04-yerles-acik-masaustu.png` ("92.600 hücre yeni oyunculara ayrılmış · ilk Parça Fabrikası için yeter"); `t1/sonra/07a-isletmem-acik-telefon.png` ("Ayrılmış hücre hakkı · taban fiyattan alabilirsin"); `t1/sonra/05a-arsa-secimi-acik-telefon.png`
+- **Kod bulgusu (A3 kapandı):** Sunucu ayrılmış hücreyi **tam taban fiyattan** satar (`komut.ts:116–121` `hucreFiyatiParametreyle`; `alimPlani` `komut.ts:206–208`), normal hücreyi artımlı eğriden. Hangi hücrelerin ayrılmış olduğu ilçenin yaklaşık %20'sinde **hücre karmasıyla dağınık** seçilir (`packages/cekirdek/src/derle.ts:191` `ayrilmisHucreler`). İstemci ise **ayrılmış kavramını hiç bilmez**: hazır arsa bileşenleri ızgaradan türetilir (`packages/istemci/src/harita/arsa.ts`), fiyat tahmini her hücreyi eğriden hesaplar (`gorunum.ts:911–929` `arsaFiyati`, `packages/istemci/src/harita/fiyat.ts` `parselFiyatiMili`; arama: `ayrilmis` yalnız `yerles.ts`'te). Sonuç: 10 hücrelik tipik arsada ≈2 hücre ayrılmış, ≈8 normal; hangisinin ucuz olduğu görünmez.
+- **Sorun:** Oyuncu "ayrılmış hücre hakkı" kutusunu okuyup hakkı **kullandığını** ya da **ne kazandığını** göremez (YA3). Gebze gibi boş bir ilçede fark kuruş düzeyinde (aşağıda B4), ama doluluk yükseldikçe eğri çarpanı büyür (`1 + 2 · satılmış payı`, 2×'e kadar) ve **istemci tahmini sunucunun gerçek bedelinden yüksek** çıkar. H6 (i) ("katılımda taban fiyatlı hücre ayak izine yeter") **sayı olarak** karşılanıyor (92.600) ama kullanıcının gördüğü hazır arsa bu hücreleri hedeflemiyor: vaat deneyimde görünmüyor.
+- **Profil:** K1 (kuralları okur), K5
+- **Ciddiyet:** **S2**
+- **Etkilediği ölçüt:** H6 (i), YA3, Y1 (güven)
+- **Düzeltme:** Hazır arsa seçimi ve fiyat kartı ayrılmış hücreleri **ayrı satırla** göstersin ("2 hücre ayrılmış, taban fiyatlı: 2.000 ₺; 8 hücre: 8.000 ₺") ya da yeni oyuncuya hazır arsa **önce ayrılmış hücrelerden** türetilsin; istemci fiyatı `hucreFiyatiMili` (`komut.ts:129`) ile aynı kaynaktan hesaplasın. **Sahip:** K1 (fiyat ve seçim), K3 (hangi hücre ayrılmış bilgisinin yayını, protokolde zaten `ayrilmis` listesi var: sunucu README), T1 (kart)
+- **Geri dönüş:** kolay (arayüz); hazır arsanın **ne olduğu** (ayrılmış hücre kuralı) zor (bkz. ZK-2)
+
+### B4. Üç ayrı yuvarlama: 10.001 ₺, 39.999 ₺, 40.000 ₺
 - **Adım:** S1.3 → S1.4
-- **Görüntü:** `t1/sonra/05b-maliyet-karti-acik-masaustu.png` (çip "39.999 ₺", kart "Hazine 40.000 ₺"); `t1/sonra/05a-arsa-secimi-acik-telefon.png` (50.000 − 10.001)
-- **Sorun:** Aynı ekranda iki farklı hazine. "10.001 ₺" yuvarlak değil ve neden olduğu açıklanmıyor. Tasarım liderinin notlarında bu tutarsızlık için T1'den "aşağı yuvarla" düzeltmesi istenmiş (`SP/takim/tasarim-lider-notlar.md` §7J); **sonra görüntüsünde hâlâ var** (kart yukarı, çip aşağı). Görüntü düzeltmeden önce alınmış olabilir **(doğrulanmadı)**.
+- **Görüntü:** `t1/sonra/05a-arsa-secimi-acik-telefon.png` (fiyat "10.001 ₺", çip "50.000 ₺"); `t1/sonra/05b-maliyet-karti-acik-masaustu.png` (çip "39.999 ₺", kart "Hazine 40.000 ₺")
+- **Kod bulgusu (A3 kapandı; hesapla doğrulandı):** Gebze `uygun` = 485.856 hücre ([sunucu README](../../packages/sunucu/README.md)). `parselFiyati` formülüyle 10 hücre = **10.000,427 ₺**; istemci bunu `Math.ceil(mili / 1000)` ile **10.001 ₺** gösterir (`gorunum.ts:779`). Hazine 50.000 − 10.000,427 = **39.999,819 ₺**: üst çip **aşağı** yuvarlar (39.999), maliyet kartı **yakın** yuvarlar (40.000). Yani 10.001 ₺ ayrılmış hakkın kullanılmadığının kanıtı **değildir**; boş ilçede eğri çarpanı ihmal edilebilir olduğundan ayrılmış ve normal hücre arasındaki fark ≈0,4 ₺'dir. Asıl sorun üç farklı yuvarlama kuralıdır.
 - **Profil:** K5 (ticaret geçmişi: kuruş kayması güveni bozar), K1
 - **Ciddiyet:** **S2**
-- **Etkilediği ölçüt:** YA2, güven; S1.6 sonrası bakiye denetimi
-- **Düzeltme:** tek yuvarlama kuralı hem çipte hem kartta; fiyat 10.001 ₺ neden bu değerde, kıtlık eğrisi mi, ayrılmış hücre bedeli mi, kartta bir satırla söylensin. **Sahip:** T1 (biçim), K3 (fiyat kaynağı: **(doğrulanmadı)**)
-- **Geri dönüş:** kolay (biçim); fiyat formülü zor (bkz. ZK-2)
+- **Etkilediği ölçüt:** YA2, güven
+- **Düzeltme:** tek yuvarlama kuralı (çip, kart, fiyat aynı); tam sayıya inen fiyatlar. Tasarım lideri T1'e "aşağı yuvarla" düzeltmesini istemiş (`SP/takim/tasarim-lider-notlar.md` §7J); sonra görüntüsünde hâlâ var, görüntü düzeltmeden önce alınmış olabilir **(doğrulanmadı)**. **Sahip:** T1
+- **Geri dönüş:** kolay
 
-### B4. Telefonda ilk yapı anında 4–5 katman üst üste
+### B5. Telefonda ilk yapı anında 4–5 katman üst üste
 - **Adım:** S1.4 → S1.5
 - **Görüntü:** `SP/takim/ekran/k1/sonra/mobil-6-ilceye-donus-L3.png`; `t1/sonra/05b-maliyet-karti-acik-telefon.png`
 - **Sorun:** Geri al şeridi, "Çiftlik kuruluyor: yapı 6.000 ₺" bildirimi, "Defterine 2 yeni satır işlendi" bildirimi, seçim kartı ve ortada duran "İşletmem" düğmesi aynı 390 × 844 ekranda. T1 maliyet kartı örtmesini kapattı ama bildirim **kuyruğu** yok; kritik karar anında Defter bildirimi dikkat çalar (**K2** için "ilk makine 30 sn" beklentisi; **K3** için okuma yükü). T1 sonrası görüntüde yalnız tek toast var, **K1 ve T1 birleşince ne olur doğrulanmadı**.
@@ -82,7 +94,7 @@ Sıra: önce test akışını engelleyenler, sonra Y1, Y2 ve Y10'u bozanlar. "Pr
 - **Düzeltme:** aynı anda **en çok 1 bildirim**; Defter bildirimi, açık bir maliyet kartı ya da geri al şeridi varken **sırada bekler**; bildirim kendi kendine ≤4 sn'de söner. **Sahip:** T1 (kuyruk), K1 (geri al)
 - **Geri dönüş:** kolay
 
-### B5. İnşa süresi haritada görünmüyor
+### B6. İnşa süresi haritada görünmüyor
 - **Adım:** S1.5
 - **Görüntü:** `t1/sonra/06-insaat-asamasi-acik-telefon.png`; masaüstü `docs/toplanti/2/03-ilce-gebze-kamu-acik-masaustu.png` (panelde "İskele · 7 dk kaldı")
 - **Sorun:** Haritada yapı etiketi "Çiftlik · İskele"dir; **kalan süre yok**. Telefonda ekrandaki tek sayaç, **geri al penceresinin** "4:51"idir; inşa süresi (12 dk) yalnız maliyet kartında ve masaüstü panelinde. 12 dakika boyunca "ne bitecek, ne zaman" belirsizdir; oyuncu geri al sayacını inşa sayacı sanabilir.
@@ -92,7 +104,7 @@ Sıra: önce test akışını engelleyenler, sonra Y1, Y2 ve Y10'u bozanlar. "Pr
 - **Düzeltme:** harita etiketi "Çiftlik · İskele · 7 dk" (telefonda da); geri al sayacı ayrı etiketle ("geri alma: 4:51"). **Sahip:** K1 (etiket), T1 (metin)
 - **Geri dönüş:** kolay
 
-### B6. Defter telefonda görünmüyor, Atla/Kapat yok
+### B7. Defter telefonda görünmüyor, Atla/Kapat yok
 - **Adım:** S1.7
 - **Görüntü:** `t1/sonra/07a-isletmem-acik-telefon.png`; `t1/sonra/07b-defter-acik-telefon.png`
 - **Sorun:** İşletmem panelinde Defter, kalkan kutusu, Arsalarım ve Yapılar'ın **altındadır**; açılışta ilk ekranda yok. `07b`'de "Defter" başlığı sekme çubuğunun altında yarı kesik. **K2/K3 Defter'i hiç görmeyebilir**; "İlk satışını yap" kartı Y2'nin tek yönlendiricisi. Atla/Kapat yok (BK-10), [rehber Gİ-7](rehber-gorevler.md) ile çelişir.
@@ -102,7 +114,7 @@ Sıra: önce test akışını engelleyenler, sonra Y1, Y2 ve Y10'u bozanlar. "Pr
 - **Düzeltme:** Defter'in en üstteki **tek** kartı ("İlk satışını yap") panelin başında; Defter ayrı sekme ya da ilk kart sabit; Atla/Kapat hesaba yazılan düğme. **Sahip:** T1, K1 (kalıcılık: sunucu **(doğrulanmadı)**)
 - **Geri dönüş:** kolay
 
-### B7. Defter ödül çubuğu "600 ₺ / 8.000 ₺" (yüzde ve sayı kuralı)
+### B8. Defter ödül çubuğu "600 ₺ / 8.000 ₺" (yüzde ve sayı kuralı)
 - **Adım:** S1.7
 - **Görüntü:** `t1/sonra/07b-defter-acik-telefon.png`; `docs/toplanti/2/07b-defter-acik-masaustu.png`
 - **Sorun:** İlerleme çubuğu ve "600 ₺ / 8.000 ₺" Defter'i bir **hedef sayacına** çeviriyor. [donus DK-5](donus-deneyimi.md) "damga, yüzdesiz, sayısız, boş yuvasız" der ve [rehber Gİ-8](rehber-gorevler.md) "tamamlama yüzdesi yok" der. Sağ sütundaki "500 ₺", "700 ₺", "250 ₺" bedel mi ödül mü belirsiz (YA6); "çelik ≈ 600 ₺" ödülün **mal** olduğu söylenmiyor. K5 gerçek para sanabilir, K1 "kasmak" ister.
@@ -112,17 +124,18 @@ Sıra: önce test akışını engelleyenler, sonra Y1, Y2 ve Y10'u bozanlar. "Pr
 - **Düzeltme:** çubuk ve tavan gösterimi kalksın; kartta "ödül: 5 çelik" gibi **ne** verildiği yazılsın; kazanılanlar damga satırı olarak kalsın. **Sahip:** T1 + Ar-Ge (kural), K1
 - **Geri dönüş:** **zor** (bir kez "x / 8.000" gösterilirse koleksiyon ve karşılaştırma beklentisi kalıcı olur; DK-5)
 
-### B8. "Sen yokken": ilk satır belirsiz ve fixture izi
+### B9. "Sen yokken": ilk satır belirsiz; görüntü örnek veri
 - **Adım:** S2.2
 - **Görüntü:** `t1/sonra/08-sen-yokken-acik-masaustu.png`; `t1/sonra/08-sen-yokken-acik-telefon.png`
-- **Sorun:** "**+1.960 ₺ satış** +2.140 ₺, giderler −180 ₺": ilk sayı net, ama "satış" sözcüğü onun yanında ve sonraki "satış +2.140 ₺" ile çakışıyor; K3 ve K5 "satışım 1.960 mı, 2.140 mı" diye okur (YA8). Satır "Ahır tamamlandı" der, oysa S1'de yalnız Çiftlik kurulur: görüntü bir **hazırlanmış örnek** olabilir **(doğrulanmadı)**. Öneri satırı yok (Ö7). Telefonda arkadaki küre, rozet yığınıyla ekranın yarısını işgal eder.
+- **Kod bulgusu (A4 kapandı):** Görüntüler gerçek bir 20–30 saatlik dönüşten **değil**, `?donus=ornek` ile açılan örnek veriden gelir: `packages/istemci/src/harita/donus-ekrani.ts:162–173` `DONUS_ORNEGI` (net 1.960 ₺, satış 2.140 ₺, gider −180 ₺, "tahıl 220 · gıda 60", `ahir` ve `tr_41_gebze`, 2 çiftlik Gebze + Kandıra, 14 sa; `oneri: null`; kullanım `gorunum.ts:197`). Sayılar ve "Ahır tamamlandı" satırı **uydurmadır**; ekranın **düzeni ve cümle şablonu** gerçektir.
+- **Sorun (şablon):** "**+1.960 ₺ satış** +2.140 ₺, giderler −180 ₺": ilk sayı net, ama yanındaki "satış" sözcüğü ikinci satışla çakışıyor; K3 ve K5 "satışım 1.960 mı, 2.140 mı" diye okur (YA8). Öneri satırı yok (Ö7). Telefonda arkadaki küre, rozet yığınıyla ekranın yarısını işgal eder.
 - **Profil:** K3, K5
 - **Ciddiyet:** **S2**
 - **Etkilediği ölçüt:** A0-13 (Dö2 ≈12 sn, Dö3), YA8
-- **Düzeltme:** "Net +1.960 ₺ (satış 2.140 ₺, gider 180 ₺)"; arka küre dönüş ekranında sönük/sakin. **Sahip:** T1 (şablon), T2 (arka plan)
+- **Düzeltme:** "Net +1.960 ₺ (satış 2.140 ₺, gider 180 ₺)"; arka küre dönüş ekranında sönük ve sakin. Gerçek dönüşle yeniden çekim pilotta. **Sahip:** T1 (şablon), T2 (arka plan)
 - **Geri dönüş:** kolay (şablon metni; [donus §8](donus-deneyimi.md) "kolay geri dönülür")
 
-### B9. Açılış önerisi ile ilk yapı çelişiyor
+### B10. Açılış önerisi ile ilk yapı çelişiyor
 - **Adım:** S1.2 → S1.4
 - **Görüntü:** `docs/toplanti/2/04-yerles-acik-masaustu.png` ("Açılış önerisi: **Sanayi**; ilk Parça Fabrikası için yeter") ↔ `docs/toplanti/2/05b-maliyet-karti-acik-masaustu.png` ("**Çiftlik**, Tarım")
 - **Sorun:** Gebze kartı Sanayi önerir ve "Parça Fabrikası" der, ama yakalanan akış Çiftlik kurar; bot ölçümünde sanayici açılışı `hidro_santrali`dir (`packages/botlar/src/parsel.ts:737–741`). Oyuncu "Sanayi seçtim ama Çiftlik mi veriyor?" (YA1) diyebilir. Yakalanan oturumun bilinçli seçim olup olmadığı **(doğrulanmadı)**.
@@ -132,25 +145,15 @@ Sıra: önce test akışını engelleyenler, sonra Y1, Y2 ve Y10'u bozanlar. "Pr
 - **Düzeltme:** paletteki ön seçili yapı, kartın açılış önerisiyle aynı olsun; öneri metni ile bot eşlemesi (`ACILIS_ESLEMESI`) hizalansın. **Sahip:** T1 (palet), K1 / K3 (eşleme)
 - **Geri dönüş:** kolay
 
-### B10. Küre ve il düzeyi: "Sen" yok, rozet yığını
-- **Adım:** S1.3 (yönelim), S1.5 (bekleme)
-- **Görüntü:** `t1/sonra/01-kure-genel-acik-telefon.png`; `SP/takim/ekran/k1/sonra/masaustu-4-kure.png`
-- **Sorun:** Mülk kipi oyuncusu kürede bölge renkleri ve rozet yığını görüyor (BK-2); **kendi yeri** ayırt edilmiyor (K1 görsel denetimi de L1'de "Sen"in görünmediğini not etmişti). K4 "mahallem nerede?" diye arar; bekleme sırasında (S1.5) kürenin kendisi dikkati çekmeye çalışır. İl düzeyinde etiket çakışması T1 setinde sürüyor (BK-1, madde yukarıda).
-- **Profil:** K4, K3
-- **Ciddiyet:** **S1**
-- **Etkilediği ölçüt:** Y10 (boşta), YA7, "mahallende başla" duygusu
-- **Düzeltme:** T2'nin mülk kipi küresi (bölge renkleri yok, yalnız "Sen" işareti) + L1'de sakin "Sen" işareti. **Sahip:** T2
-- **Geri dönüş:** kolay
-
 ---
 
 ## 3. Bulguların kılavuz tuzaklarıyla ilişkisi
 
 | Kılavuz tuzağı | Görüntülerde |
 |---|---|
-| 12 dk inşa bekleme ve Y10 ([§6.3](insan-testi-kilavuzu.md)) | B5: bekleme sırasında tek sayaç geri al sayacı; boşta kalma riski artar |
+| 12 dk inşa bekleme ve Y10 ([§6.3](insan-testi-kilavuzu.md)) | B6: bekleme sırasında tek sayaç geri al sayacı; boşta kalma riski artar |
 | Randevulu D1 ([§6.4](insan-testi-kilavuzu.md)) | Görüntülerde etki yok |
-| Gözlemli oturumda H6 (ii) iyimser ([§7.5](insan-testi-kilavuzu.md)) | B2 ve B9: ilk yapıya giden yolda iki ayrı karışıklık; gözlemsiz oyuncuda (ii) bunlardan düşebilir |
+| Gözlemli oturumda H6 (ii) iyimser ([§7.5](insan-testi-kilavuzu.md)) | B2 ve B10: ilk yapıya giden yolda iki ayrı karışıklık; gözlemsiz oyuncuda (ii) bunlardan düşebilir |
 
 **Olumlu bulgular** (korunmalı): "Yeni oyuncu kalkanı · 14 gün kaldı" ve "Ayrılmış hücre hakkı" kutuları açık ve sade (`t1/sonra/07a-isletmem-acik-telefon.png`); maliyet kartında "2 sa (yeni oyuncuya ilk gün ≈ 12 dk)" süreyi dürüstçe söylüyor; kamu arsası "satışa kapalı" nedeniyle açıklanıyor (`t1/sonra/03-ilce-gebze-kamu-acik-telefon.png`); "Gün N" kalktı.
 
@@ -160,21 +163,21 @@ Sıra: önce test akışını engelleyenler, sonra Y1, Y2 ve Y10'u bozanlar. "Pr
 
 | # | Karar | Neden zor | Öneri |
 |---|---|---|---|
-| **ZK-1** | Defter'de **ödül ilerleme çubuğu ve toplam tavan gösterimi** (B7) | İlk gösterimde oluşan koleksiyon ve "kasma" beklentisi kalıcıdır ([donus DK-5](donus-deneyimi.md)) | Alfa-0'dan **önce** kaldır; damga listesine geç |
-| **ZK-2** | **Hazır arsa fiyatının ve ayrılmış hücre bedelinin** oyuncuya gösterilme biçimi (B2, B3) | Yayımlanmış fiyat sözü kalıcıdır ([GDD AÖ-2](oyun-tasarim-belgesi-v1.md)); "ilk görüntüde 50.000 ₺, hemen 10.001 ₺ düştü" beklentisi sonradan değişmez | Tek kartta "arsa + yapı" göster; fiyatın nedenini yaz; rakamı sahibi (K3, A2) netleştirsin |
+| **ZK-1** | Defter'de **ödül ilerleme çubuğu ve toplam tavan gösterimi** (B8) | İlk gösterimde oluşan koleksiyon ve "kasma" beklentisi kalıcıdır ([donus DK-5](donus-deneyimi.md)) | Alfa-0'dan **önce** kaldır; damga listesine geç |
+| **ZK-2** | **Hazır arsa fiyatının ve ayrılmış hücre bedelinin** oyuncuya gösterilme biçimi (B2, B3, B4) | Yayımlanmış fiyat sözü kalıcıdır ([GDD AÖ-2](oyun-tasarim-belgesi-v1.md)); "ilk görüntüde 50.000 ₺, hemen 10.001 ₺ düştü" beklentisi sonradan değişmez | Tek kartta "arsa + yapı" göster; fiyatın nedenini yaz; rakamı sahibi (K3, A2) netleştirsin |
 | **ZK-3** | **Yerleş'te oynanamayan ilçeyi göstermek** (B1) | İlçe kartı vaadi ("mahallende başla") bir kez kırılırsa ilk izlenim kalıcıdır | G3 bitene kadar gizle; ilk gerçek davetli gelmeden kapat |
 
-Bulguların geri kalanı (B2'nin akışı, B3'ün biçimi, B4, B5, B6, B8, B9, B10) **kolay geri dönülür** (arayüz ve metin).
+Bulguların geri kalanı (B2'nin akışı, B3'ün arayüzü, B4, B5, B6, B7, B9, B10) **kolay geri dönülür** (arayüz ve metin).
 
 ## 5. Açık sorular
 
 | # | Soru | Önerilen varsayılan |
 |---|---|---|
 | A1 | Birleşik (K1 + T1 + T2) görüntü seti ne zaman? Ö1 kapanışı buna bağlı | Üç dal kapıdan geçince, aynı senaryo, taze hesap, açık tema |
-| A2 | "Satın al" hazır arsa için **zorunlu mu** (yurtla yapı kurulabilir mi)? | Zorunlu değil olmalı; K3 / K1'e sorulur **(doğrulanmadı)** |
-| A3 | "10.001 ₺" kıtlık eğrisinden mi, ayrılmış hücre bedelinden mi? | K3 / A2 yanıtlar |
-| A4 | "Sen yokken" görüntüsü hazırlanmış örnek mi, gerçek durum mu? | Pilotta gerçek 20–30 saatlik dönüşle yeniden çekilir |
-| A5 | Atla/Kapat G9 kapsamında mı? | G9'a eklenmesi önerilir (B6); sahibi lider kararı |
+| A2 | ~~"Satın al" zorunlu mu~~ | **Kapandı:** zorunlu değil, yurt yeter (B2) |
+| A3 | ~~10.001 ₺ kaynağı~~ | **Kapandı:** ceil yuvarlama + eğri tahmini (B4); ayrılmış hak istemcide görünmüyor (B3) |
+| A4 | ~~"Sen yokken" fixture mi~~ | **Kapandı:** `DONUS_ORNEGI` (B9) |
+| A5 | Atla/Kapat G9 kapsamında mı? | G9'a eklenmesi önerilir (B7); sahibi lider kararı |
 | A6 | Telefonda İşletmem paneli açılışta kaydırılmış mı (07b/01 görüntülerinde "Defter" başlığı kesik)? | Çekim artefaktı olabilir **(doğrulanmadı)**; birleşik çekimde kontrol |
 
 ## 6. Doğrulanmayanlar ve sınırlar
