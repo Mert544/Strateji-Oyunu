@@ -411,6 +411,7 @@ export function dunyaDogrula(deger: unknown): Dunya {
     if (s.ekYapi !== undefined) dize(s.ekYapi, `$.insaatlar[${i}].ekYapi`);
     if (s.indirimli !== undefined && s.indirimli !== true) hata(`$.insaatlar[${i}].indirimli`, "true ya da tanimsiz olmali");
     if (s.yontem !== undefined) dize(s.yontem, `$.insaatlar[${i}].yontem`);
+    if (s.dukkanTuru !== undefined) dize(s.dukkanTuru, `$.insaatlar[${i}].dukkanTuru`); // dükkân inşaatı türü (G7-3; sartname §7.2, §11.1)
   });
   dizi(d.partiler, "$.partiler").forEach((v, i) => {
     const s = nesne(v, `$.partiler[${i}]`);
@@ -809,6 +810,16 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     const tur = ic.tesisTurleri[ins.hedef];
     if (tur === undefined || !tur.yontemler.includes(ins.yontem)) hata(y, `yontem tesis turunde yok: ${ins.yontem}`);
   });
+  // Dükkân inşaatı (G7-3; sartname §7.2, §11.2): `dukkanTuru` yalnız `ekYapi === "dukkan"` hücreli inşaatında olabilir ve perakendede tanımlı türdür; ölçek perakendenin ölçeğidir.
+  d.insaatlar.forEach((ins, i) => {
+    const y = `$.insaatlar[${i}]`;
+    if (ins.dukkanTuru !== undefined) {
+      if (ins.ekYapi !== "dukkan") hata(`${y}.dukkanTuru`, "dukkanTuru yalniz dukkan yapisi insaatinda olabilir");
+      const pk = ic.mulk?.perakende;
+      if (pk === undefined) hata(`${y}.dukkanTuru`, "dukkan insaati var ama perakende (mulk.perakende) tanimli degil");
+      if (!pk.turler.has(ins.dukkanTuru)) hata(`${y}.dukkanTuru`, `icerikte olmayan dukkan turu: ${ins.dukkanTuru}`);
+    }
+  });
   d.oyuncular.forEach((o, i) => {
     o.teknolojiler.forEach((t, j) => indeks(t, `$.oyuncular[${i}].teknolojiler[${j}]`, ic.teknolojiler.length));
     if (o.arastirma !== null) indeks(o.arastirma.teknoloji, `$.oyuncular[${i}].arastirma.teknoloji`, ic.teknolojiler.length);
@@ -817,6 +828,19 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     const mk = ic.mulk;
     if (d.mulk.ilceler.length !== mk.ilceler.size) hata("$.mulk.ilceler", `ilce sayisi ${d.mulk.ilceler.length}, fiksturde ${mk.ilceler.size}`);
     if (d.mulk.para !== undefined && mk.p.kasa === undefined) hata("$.mulk.para", "para defteri var ama kasa parametresi (mulk.kasa) tanimli degil");
+    // Marka sınırları (G7-3; sartname §11.1-11.2): perakende tanımlıyken sayı <= `marka.hesapBasinaEnFazla`, simge < `simgeSayisi`, renk < `renkSayisi`; perakende yokken marka olamaz.
+    d.mulk.oyuncular.forEach((o, i) => {
+      if (o.markalar === undefined) return;
+      const y = `$.mulk.oyuncular[${i}].markalar`;
+      const pk = mk.perakende;
+      if (pk === undefined) hata(y, "marka var ama perakende (mulk.perakende) tanimli degil");
+      const en = pk.p.marka;
+      if (o.markalar.length > en.hesapBasinaEnFazla) hata(y, `marka sayisi ${o.markalar.length}, hesap basina en cok ${en.hesapBasinaEnFazla}`);
+      o.markalar.forEach((m, j) => {
+        if (m.simge >= en.simgeSayisi) hata(`${y}[${j}].simge`, `simge ${m.simge}, simge sayisi ${en.simgeSayisi}`);
+        if (m.renk >= en.renkSayisi) hata(`${y}[${j}].renk`, `renk ${m.renk}, renk sayisi ${en.renkSayisi}`);
+      });
+    });
     const kamuKaydi = new Map((d.mulk.kamu ?? []).map((k) => [k.ilce, k]));
     if (d.mulk.kamu !== undefined && mk.p.kamu === undefined) hata("$.mulk.kamu", "kamu durumu var ama kamu parametresi (mulk.kamu) tanimli degil");
     d.mulk.ilceler.forEach((c, i) => {

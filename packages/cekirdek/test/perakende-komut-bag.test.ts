@@ -89,15 +89,22 @@ describe("komutlar: perakende yokken DUK-00; yetkisiz marka_sifirla; bölge kipi
     expect(s.durumOzeti()).toBe(once);
   });
 
-  it("blok var ama komut yolu G7-3'te: `perakende komutlari henuz uygulanmadi` (sessizce yok sayılmaz); durum değişmez", () => {
+  it("blok var, dükkân yok (komut yolu G7-3'te etkin): dükkân komutları `dukkan bulunamadi`; durum DEĞİŞMEZ; marka_tanimla başarılı olur (ayrıntı: perakende-komut, marka-sozdizimi)", () => {
     const s = mulkSim(["a"], veri(true));
     s.calistirKadar(s.dunya.zaman);
     const once = s.durumOzeti();
-    for (const k of YENI_OYUNCU_KOMUTLARI) expect(ver(s, "a", k), k.tur).toEqual({ tamam: false, hata: "perakende komutlari henuz uygulanmadi" });
+    for (const k of YENI_OYUNCU_KOMUTLARI) {
+      if (k.tur === "marka_tanimla") continue;
+      const r = ver(s, "a", k);
+      expect(r.tamam, k.tur).toBe(false);
+      expect((r as { hata: string }).hata, k.tur).toBe("dukkan bulunamadi: 1");
+    }
     expect(s.durumOzeti()).toBe(once);
+    expect(ver(s, "a", YENI_OYUNCU_KOMUTLARI.find((k) => k.tur === "marka_tanimla") as Komut)).toEqual({ tamam: true });
+    expect(s.durumOzeti()).not.toBe(once);
   });
 
-  it("marka_sifirla: oyuncu yolundan SIS-01; sistem yolundan (G7-3'e kadar) perakende kapali; durum değişmez", () => {
+  it("marka_sifirla: oyuncu yolundan SIS-01; sistem yolundan perakende kapali (blok yok); durum değişmez", () => {
     const s = mulkSim(["a"], veri(false));
     s.calistirKadar(s.dunya.zaman);
     const once = s.durumOzeti();

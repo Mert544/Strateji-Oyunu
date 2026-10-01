@@ -20,6 +20,7 @@ import { iklimGunluk, tarimKomutu } from "./tarim";
 import { odulVer } from "./odul";
 import { hibeKaydet } from "./paraSayac";
 import { kamuSahibiMi, mulkKomutu, mulkOyuncuAl, mulkOyuncuBul } from "./mulk";
+import { markaSifirla } from "./mulk/dukkanKomut";
 import { yurtPlanla, yurtUygula } from "./mulk/yurt";
 import type { YurtPlani } from "./mulk/yurt";
 import { eskimisEsikleriBuda, oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
@@ -183,8 +184,8 @@ export class Simulasyon {
       // Para güvenliği (docs/06 §15.7): tutar taşımaz; yalnız sistem yolu (komutSemasi).
       sonuc = k.oyuncu === SISTEM_OYUNCUSU ? odulVer(d, ctx, komut.oyuncu, komut.kavram) : hata("sistem_odul yalnizca 'sistem' ile verilebilir");
     } else if (komut.tur === "marka_sifirla") {
-      // Moderasyon (G7; sartname §9.1): yalnız sistem yolu, tutar taşımaz. Çekirdek yolu G7-3'tedir (şimdilik perakende kapalıdır: DUK-00).
-      sonuc = k.oyuncu === SISTEM_OYUNCUSU ? hata("perakende kapali") : hata("marka_sifirla yalnizca 'sistem' ile verilebilir");
+      // Moderasyon (G7; sartname §9.1): yalnız sistem yolu, tutar taşımaz; adı yer tutucuya çevirir (`mulk/dukkanKomut.ts`). Perakende kapalıysa DUK-00.
+      sonuc = k.oyuncu === SISTEM_OYUNCUSU ? markaSifirla(d, ctx, komut.oyuncu, komut.marka) : hata("marka_sifirla yalnizca 'sistem' ile verilebilir");
     } else if (k.oyuncu === SISTEM_OYUNCUSU || !oyuncuBul(d, k.oyuncu)) {
       sonuc = hata(`bilinmeyen oyuncu: ${k.oyuncu}`);
     } else {

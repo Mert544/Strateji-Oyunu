@@ -26,6 +26,9 @@
  *   İsteğe bağlı `siniflar` (hücrelerle aynı uzunluk; `siniflar[i]`, `hucreler[i]`'nin sınıfı): verilirse her sahipsiz hücre KENDİ
  *   sınıfında denetlenir ve fiyatlanır (iki sınıfa düşen yapı tek komutta atomik alınır); `sinif` yalnız geçerli bir değer olmalıdır, kullanılmaz.
  *   Sahip olunan hücrelerin sınıfı denetlenmez (bugünkü `sinif` davranışı gibi). Verilmezse `sinif` davranışı birebir aynıdır.
+ * - Dükkân (G7; sartname §7, §9; `mulk/dukkanKomut.ts`): `tesis_insa_hucre` ve `yapi_yerlestir`'e `dukkanTuru` (tesisTuru `dukkan` iken zorunlu, değilken yasak; DUK-01…DUK-06), ilçe sınırı
+ *   `perakende.ilceBasinaEnFazla` (biten + süren); inşaat `InsaatDurumu.dukkanTuru` taşır, `ekYapiTamamla` dükkân durumunu kurar. `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`,
+ *   `dukkan_marka`, `dukkan_yik` (iade YOK; arsa oyuncuda kalır) `perakendeKomutu`'na devredilir; `perakende` bloğu yokken hepsi `perakende kapali` (DUK-00).
  * - parsel_birak {ilce, hucreler}: oyuncunun, üzerinde yapı ya da inşaat olmayan hücreleri; hücre bedelinin
  *   `parselBirakIadePpm`'i (%70) hazineye iade edilir, hücreler sahipsiz olur; arazi değeri, ilçe hücre sayacı ve ilçenin
  *   `satilmisHucre`'si düşer (fiyat çarpanı geri iner). Yurt hücrelerinin bedeli 0'dır (iade 0). İşletme düğümü kalır.
@@ -75,6 +78,7 @@ import {
   mulkOyuncuAl,
   mulkOyuncuBul,
 } from "./durum";
+import { dukkanKurulumDenetimi, ilcedeDukkanSayisi, perakendeKomutu } from "./dukkanKomut";
 import { isletmeAl } from "./isletme";
 import { kamuBilgisi } from "./kamu";
 import { ekYapiSayisi } from "./yapi";
@@ -261,8 +265,10 @@ interface YapiTuru {
   ek: DerlenmisEkYapi | undefined;
   /** Bu ÖLÇEKTE kaplanan hücre sayısı (`mulk.olcekHucre[tür][olcek]`; S'de `yapiYuva`). */
   yuva: number;
-  /** Doğrudan kurulum ölçeği: 0 = S, 1 = M, 2 = L (ek yapılar yalnız S). */
+  /** Doğrudan kurulum ölçeği: 0 = S, 1 = M, 2 = L (ek yapılar yalnız S; yalnız `dukkan` ek yapısı `olcekHucre` ile M/L olabilir, G7). */
   olcek: 0 | 1 | 2;
+  /** Dükkân türü kimliği (yalnız `dukkan` ek yapısında; komutun `dukkanTuru` alanı, `dukkanKurulumDenetimi` denetler). */
+  dukkanTuru?: string;
 }
 
 const OLCEK_ADLARI = ["S", "M", "L"] as const;
@@ -285,10 +291,12 @@ function yapiTuruCoz(ctx: Baglam, mk: DerlenmisMulk, tesisTuru: unknown, olcek: 
   let yuva = ek !== undefined ? ek.yuva : (mk.yuva[ti as number] as number);
   if (yuva <= 0) return `tesis turu mulk kipinde insa edilemez: ${String(tesisTuru)}`;
   if (olcek > 0) {
-    // M/L (docs/06 §15.10): yalnız tesis türlerinde ve sanayi katmanı (ölçek çarpanları) açıkken; ek yapılar ölçeklenmez. KİLİT YOK: teknoloji, ilçe seviyesi, sıra aranmaz.
-    if (ek !== undefined) return `ek yapi olceklenemez: ${ek.id} (yalniz S)`;
+    // M/L (docs/06 §15.10): yalnız tesis türlerinde ve sanayi katmanı (ölçek çarpanları) açıkken; ek yapılar ölçeklenmez (tek istisna: `dukkan`, ayak izi `ekYapilar.dukkan.olcekHucre`;
+    // hangi ölçeklerin AÇIK olduğunu `perakende.acikOlcekler` söyler ve komutta DUK-04 olarak önceden denetlenir). KİLİT YOK: teknoloji, ilçe seviyesi, sıra aranmaz.
+    const dukkanAyakIzi = ek?.id === "dukkan" ? ctx.ic.param.mulk?.ekYapilar?.["dukkan"]?.olcekHucre : undefined;
+    if (ek !== undefined && dukkanAyakIzi === undefined) return `ek yapi olceklenemez: ${ek.id} (yalniz S)`;
     if (sanayiTablosu(ctx.ic) === null) return "olcek icin sanayi katmani gerekli";
-    yuva = (mk.olcekHucre[ti as number] as number[])[olcek] as number;
+    yuva = dukkanAyakIzi !== undefined ? (dukkanAyakIzi[olcek] as number) : ((mk.olcekHucre[ti as number] as number[])[olcek] as number);
   }
   return { ad: tesisTuru as string, ti, ek, yuva, olcek };
 }
@@ -360,6 +368,10 @@ function yapiPlani(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, i
   let tabanMal: readonly (readonly [number, Mili])[];
   let tabanPara: Mili;
   if (tur.ek !== undefined) {
+    // Dükkân ilçe sınırı (DUK-06; sartname §7.6): oyuncu başına ilçede en çok `ilceBasinaEnFazla` (biten + süren); il sınırından (DUK-07) ÖNCE.
+    if (tur.ek.id === "dukkan" && mk.perakende !== undefined && ilcedeDukkanSayisi(d, oyuncu, ilce.id) >= mk.perakende.p.ilceBasinaEnFazla) {
+      return `ilcede en cok ${mk.perakende.p.ilceBasinaEnFazla} dukkan (biten + suren)`;
+    }
     let mevcutAdet = dugum === undefined ? 0 : ekYapiSayisi(dugum, tur.ek.id);
     if (dugum !== undefined) for (const i of d.insaatlar) if (i.ekYapi === tur.ek.id && i.bolge === dugum.indeks) mevcutAdet++;
     if (mevcutAdet >= tur.ek.enFazlaIlBasina) return `ilde en cok ${tur.ek.enFazlaIlBasina} ${tur.ek.ad} (biten + suren)`;
@@ -368,6 +380,14 @@ function yapiPlani(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, i
     saat = tur.ek.insaSaati;
     tabanMal = mal;
     tabanPara = para;
+    if (tur.olcek > 0) {
+      // Dükkân M/L (G7): bedel tesis dalıyla AYNI ölçek çarpanı tablosundan (`olcekKademeleri[olcek].insaPpm`); süre aşağıda ortak.
+      const st = sanayiTablosu(ctx.ic);
+      if (st === null) return "olcek icin sanayi katmani gerekli";
+      const insaPpm = st.p.olcekKademeleri[tur.olcek]!.insaPpm;
+      mal = tabanMal.map(([mi, q]) => [mi, carpBol(q, insaPpm, PPM)] as [number, Mili]);
+      para = carpBol(tabanPara, insaPpm, PPM);
+    }
   } else {
     const ti = tur.ti as number;
     const tanim = ctx.ic.tesisTurleri[ti]!;
@@ -512,6 +532,7 @@ function yapiUygula(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, plan: YapiPlani, b:
   };
   if (plan.tur.ek !== undefined) ins.ekYapi = plan.tur.ek.id;
   if (plan.tur.olcek > 0) ins.olcek = plan.tur.olcek as 1 | 2;
+  if (plan.tur.dukkanTuru !== undefined) ins.dukkanTuru = plan.tur.dukkanTuru;
   if (yontem !== undefined) ins.yontem = yontem;
   if (plan.indirimli) {
     ins.indirimli = true;
@@ -546,8 +567,11 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       if (ilce === undefined) return hata(`bilinmeyen ilce: ${String(k.ilce)}`);
       const olcek = olcekCoz(k.olcek);
       if (typeof olcek === "string") return hata(olcek);
+      const dk = dukkanKurulumDenetimi(mk, k.tesisTuru, k.dukkanTuru, olcek);
+      if (typeof dk === "string") return hata(dk);
       const tur = yapiTuruCoz(ctx, mk, k.tesisTuru, olcek);
       if (typeof tur === "string") return hata(tur);
+      if (dk !== undefined) tur.dukkanTuru = dk.dukkanTuru;
       const yontem = yontemCoz(d, ctx, oyuncu, tur, k.yontem);
       if (typeof yontem === "string") return hata(yontem);
       const liste = yapiHucreleri(tur, k.hucreler);
@@ -573,8 +597,11 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       if (!SINIFLAR.includes(k.sinif)) return hata(`gecersiz arsa sinifi: ${String(k.sinif)}`);
       const olcek = olcekCoz(k.olcek);
       if (typeof olcek === "string") return hata(olcek);
+      const dk = dukkanKurulumDenetimi(mk, k.tesisTuru, k.dukkanTuru, olcek);
+      if (typeof dk === "string") return hata(dk);
       const tur = yapiTuruCoz(ctx, mk, k.tesisTuru, olcek);
       if (typeof tur === "string") return hata(tur);
+      if (dk !== undefined) tur.dukkanTuru = dk.dukkanTuru;
       const yontem = yontemCoz(d, ctx, oyuncu, tur, k.yontem);
       if (typeof yontem === "string") return hata(yontem);
       const liste = yapiHucreleri(tur, k.hucreler);
@@ -682,8 +709,8 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
     case "marka_tanimla":
     case "dukkan_marka":
     case "dukkan_yik":
-      // Perakende komutları (G7; sartname §9.1-9.2): DUK-00 `mulk.perakende` yokken. Etkin yol G7-3'tedir (şimdilik blok tanımlı olsa da komutlar uygulanmaz).
-      return hata(mk.perakende === undefined ? "perakende kapali" : "perakende komutlari henuz uygulanmadi");
+      // Perakende komutları (G7; sartname §9.1-9.2): DUK-00 `mulk.perakende` yokken; etkin yol `mulk/dukkanKomut.ts`.
+      return perakendeKomutu(d, ctx, oyuncu, k);
     default: {
       const _tamamlik: never = k;
       return hata(`bilinmeyen mulk komutu: ${JSON.stringify(_tamamlik)}`);

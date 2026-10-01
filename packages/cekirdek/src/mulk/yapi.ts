@@ -15,7 +15,8 @@ import { icerikTablosu } from "../ekonomi/tablo";
 import { carpBol } from "../sabit";
 import { stokEsikPlanla, stokUzlastir } from "../stok";
 import { PPM } from "../tipler";
-import type { Baglam, BolgeDurumu, DerlenmisEkYapi, DerlenmisIcerik, Dunya, InsaatDurumu } from "../tipler";
+import type { Baglam, BolgeDurumu, DerlenmisEkYapi, DerlenmisIcerik, Dunya, EkYapiDurumu, InsaatDurumu } from "../tipler";
+import { dukkanVarsayilani } from "./dukkanKomut";
 import { hucreBul } from "./durum";
 
 /** Düğümde biten ek yapı sayısı (türe göre). */
@@ -61,7 +62,13 @@ export function ekYapiTamamla(d: Dunya, ctx: Baglam, insaat: InsaatDurumu): void
   if (i === undefined) return;
   const tanim = mk.ekYapilar[i] as DerlenmisEkYapi;
   const id = ctx.yeniKimlik(d);
-  (b.ekYapilar ??= []).push({ id, tur, hucreler: [...hucreler] });
+  const yeniYapi: EkYapiDurumu = { id, tur, hucreler: [...hucreler] };
+  if (tur === "dukkan") {
+    // Dükkân (G7; sartname §7.1, §7.2): boş raf, markasız; `baslangic` = yapı komutunun anı, `kurulus` = tamamlanma anı (bir kez yazılır).
+    const dk = dukkanVarsayilani(mk, insaat.dukkanTuru, insaat.olcek ?? 0, insaat.baslangic ?? d.zaman, d.zaman);
+    if (dk !== undefined) yeniYapi.dukkan = dk;
+  }
+  (b.ekYapilar ??= []).push(yeniYapi);
   for (const hid of hucreler) {
     const h = hucreBul(d, hid);
     if (h === undefined) continue;

@@ -118,6 +118,7 @@ export {
 } from "./mulk/kasa";
 // Perakende (G7-2, sartname §6.8): saf okuma API'si (durumu değiştirmez; arayüz, ölçüm ve kare alanları için)
 export { dukkanSatisMili, yerelPazarGorunumu } from "./mulk/perakende";
+export { ADSIZ_MARKA, ilcedeDukkanSayisi } from "./mulk/dukkanKomut";
 export type { DukkanGorunumu, YerelYuvaGorunumu } from "./mulk/perakende";
 // Kalıcı kimlik ve içerik göçü (G8, docs/06 §14): kimlik tablosu, yalnız-ekle denetimi
 export {
