@@ -112,3 +112,5 @@
 .dk-oneri[data-tur="defter"] { box-shadow: inset 3px 0 0 var(--birincil), var(--golge-2); }
 .dk-oneri-sag { font-size: var(--yazi-sm); color: var(--murekkep-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .dk-oneri .mini-dugme { align-self: flex-start; min-height: 44px; }
+/* D0 kartında Defter adımı: tek soluk satır (A1 akış okuması 3; metin `dukkan.D0.defter_adim`) */
+.dk-oneri-defter-satir { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); }
