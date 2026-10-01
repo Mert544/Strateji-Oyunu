@@ -18,6 +18,8 @@ import { ayristirmaRaporuUret, parselOzetle, parselRaporUret } from "./parsel-ra
 import { PARSEL_HARITALARI, VARSAYILAN_SPEKULATOR_GUN, VARSAYILAN_YERLESIK, parselDuzeni, parselTohumKos } from "./parsel-kosu";
 import type { ParselHaritasi, ParselYerlesikDagilimi } from "./parsel-kosu";
 import type { ParselKarsilastirma } from "./parsel-rapor";
+import { bakimOzetiUret } from "./parsel-bakim-rapor";
+import type { BakimOzetKosusu } from "./parsel-bakim-rapor";
 
 export interface ParselArguman {
   tohum: string;
@@ -34,6 +36,10 @@ export interface ParselArguman {
   harita: ParselHaritasi;
   tarimYonetimi: boolean;
   bakimYonetimi: boolean;
+  /** Bakım ve aşınma ölçümü (yalnız okuma; parsel-bakim.ts). */
+  bakimOlc: boolean;
+  /** Koşu yapmaz: virgülle ayrılmış parsel JSON'larından bakım/aşınma özet tablosu üretir. */
+  bakimOzet: string[] | undefined;
   yerlesikIlceSec: boolean;
   /** Ayrıştırma: ilceSec ayrılmış önceliği (vars. true) ve P3b kapatma (vars. false). */
   ayrilmisOnceligi: boolean;
@@ -86,7 +92,7 @@ function gecAyristir(v: string): GecAcilis[] {
 }
 
 export function parselArgumanAyristir(argv: readonly string[]): ParselArguman {
-  const a: ParselArguman = { tohum: PARSEL_VARSAYILAN_TOHUM, cikti: "raporlar", ad: undefined, bulgular: undefined, gun: undefined, gecGun: undefined, olcumGunu: undefined, bot: {}, gec: undefined, iklim: "hizli", agir: false, harita: "mini-6", tarimYonetimi: false, bakimYonetimi: false, yerlesikIlceSec: false, ayrilmisOnceligi: true, p3bKapali: false, yurtKapali: false, botTohum: undefined, ayristirma: undefined, spekulatorGun: undefined, kalabalik: false, karsilastir: undefined, yardim: false };
+  const a: ParselArguman = { tohum: PARSEL_VARSAYILAN_TOHUM, cikti: "raporlar", ad: undefined, bulgular: undefined, gun: undefined, gecGun: undefined, olcumGunu: undefined, bot: {}, gec: undefined, iklim: "hizli", agir: false, harita: "mini-6", tarimYonetimi: false, bakimYonetimi: false, bakimOlc: false, bakimOzet: undefined, yerlesikIlceSec: false, ayrilmisOnceligi: true, p3bKapali: false, yurtKapali: false, botTohum: undefined, ayristirma: undefined, spekulatorGun: undefined, kalabalik: false, karsilastir: undefined, yardim: false };
   let tohumVerildi = false;
   for (let i = 0; i < argv.length; i++) {
     const x = argv[i] as string;
@@ -172,6 +178,15 @@ export function parselArgumanAyristir(argv: readonly string[]): ParselArguman {
       case "--bakim-yonetimi":
         a.bakimYonetimi = true;
         break;
+      case "--bakim-olc":
+        a.bakimOlc = true;
+        break;
+      case "--bakim-ozet": {
+        const dosyalar = deger().split(",").map((x) => x.trim()).filter((x) => x !== "");
+        if (dosyalar.length < 1) throw new Error("--bakim-ozet en az bir JSON dosyasi ister (virgulle ayrilmis)");
+        a.bakimOzet = dosyalar;
+        break;
+      }
       case "--spekulator-gun":
         a.spekulatorGun = tamsayi(deger(), "--spekulator-gun", 0);
         break;
@@ -212,6 +227,8 @@ const YARDIM = `Kullanim: pnpm olcum --kip parsel [--tohum 1-3] [--gun 24] [--ge
   --kalabalik    Kalabalik/yuksek doluluk: mini-6'da 62 yerlesik bot (spekulator dahil); --harita sentetik-50 ile 310. Katilamayan oyuncular raporlanir
   --harita       mini-6 (vars.) | sentetik-50 (10.000 hucre; uzun surer)
   --tarim-yonetimi  Botlar ekim_plani + gubre_dozu ile toprak yonetir (pasif/spekulator haric)
+  --bakim-olc    Bakim ve asinma olcumu (yalniz okuma): JSON'a 'bakim' alani eklenir (tesis asinmasi, verim, para akisi kalemleri, parca piyasasi); vars. kapali
+  --bakim-ozet   Kosu yapmaz: --bakim-olc ile uretilmis parsel JSON'larindan (virgulle ayrilmis) bakim/asinma ozet tablosu uretir (parsel-<ad>.md)
   --bakim-yonetimi  Botlar bakim parcasi ithal eder ve asinma esiginde genel_onarim yapar (pasif/spekulator haric)
   --ilce-sec     Yerlesik botlar da ilceyi ilceSec ile secsin (yurt verebilen + acilisa uygun; uygun yoksa katilmaz). Gec katilanlar HER ZAMAN ilceSec kullanir
   --oncelik-kapali  AYRISTIRMA: ilceSec ayrilmis bos hucre onceligini KAPAT (vars. acik: ayak izine yeten ilce once)
@@ -227,6 +244,18 @@ export function parselAna(argv: readonly string[]): void {
   const arg = parselArgumanAyristir(argv);
   if (arg.yardim) {
     console.log(YARDIM);
+    return;
+  }
+  if (arg.bakimOzet !== undefined) {
+    const adB = `parsel-${arg.ad ?? "bakim-ozet"}`;
+    const girdiler = arg.bakimOzet.map((d) => {
+      const j = JSON.parse(readFileSync(d, "utf8")) as BakimOzetKosusu["json"];
+      if (j.kip !== "parsel" || !Array.isArray(j.tohumBasina) || !j.tohumBasina.some((x) => x.bakim !== undefined)) throw new Error(`--bakim-ozet: '--bakim-olc' ile uretilmis bir parsel olcum JSON'u degil: ${d}`);
+      return { dosya: basename(d), json: j };
+    });
+    mkdirSync(arg.cikti, { recursive: true });
+    writeFileSync(join(arg.cikti, `${adB}.md`), bakimOzetiUret(girdiler, { etiket: arg.ad, bulgular: arg.bulgular ?? `${adB}-bulgular.md` }), "utf8");
+    console.log(`Rapor: ${join(arg.cikti, adB)}.md`);
     return;
   }
   if (arg.ayristirma !== undefined) {
@@ -255,7 +284,7 @@ export function parselAna(argv: readonly string[]): void {
   console.log(`Parsel olcumu | tohum ${tohumlar.join(",")} | ${toplamBot} bot | gec-gun ${gecGun} + olcum ${olcumGunu} -> ${sureGun} gun | iklim ${arg.iklim} | harita ${arg.harita}${arg.tarimYonetimi ? " | TARIM-YONETIMI" : ""}${arg.bakimYonetimi ? " | BAKIM-YONETIMI" : ""}${arg.kalabalik ? " | KALABALIK" : ""}${arg.agir ? " | AGIR" : ""}${arg.ad ? ` | etiket ${arg.ad}` : ""}`);
   const basla = Date.now();
   const sonuclar = tohumlar.map((t) => {
-    const r = parselTohumKos({ tohumlar, gecGun, olcumGunu, gun: sureGun, yerlesik: yerlesikDagilim, harita: arg.harita, tarimYonetimi: arg.tarimYonetimi, bakimYonetimi: arg.bakimYonetimi, yerlesikIlceSec: arg.yerlesikIlceSec, ayrilmisOnceligi: arg.ayrilmisOnceligi, p3bKapali: arg.p3bKapali, yurtKapali: arg.yurtKapali, ...(arg.botTohum !== undefined ? { botTohum: arg.botTohum } : {}), spekulatorGun, gecAcilislari, iklim: arg.iklim, ilerleme: (m) => console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] ${m}`) }, t);
+    const r = parselTohumKos({ tohumlar, gecGun, olcumGunu, gun: sureGun, yerlesik: yerlesikDagilim, harita: arg.harita, tarimYonetimi: arg.tarimYonetimi, bakimYonetimi: arg.bakimYonetimi, ...(arg.bakimOlc ? { bakimOlc: true } : {}), yerlesikIlceSec: arg.yerlesikIlceSec, ayrilmisOnceligi: arg.ayrilmisOnceligi, p3bKapali: arg.p3bKapali, yurtKapali: arg.yurtKapali, ...(arg.botTohum !== undefined ? { botTohum: arg.botTohum } : {}), spekulatorGun, gecAcilislari, iklim: arg.iklim, ilerleme: (m) => console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] ${m}`) }, t);
     console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] tohum ${t} bitti: H6 (Y7+acilis) ${r.h6.karar.birincil.verdict}, servet(ikincil) ${r.h6.karar.ikincil.ham.verdict}, H8 ${r.h8.verdict}`);
     return r;
   });
@@ -272,6 +301,7 @@ export function parselAna(argv: readonly string[]): void {
     harita: arg.harita,
     tarimYonetimi: arg.tarimYonetimi,
     bakimYonetimi: arg.bakimYonetimi,
+    ...(arg.bakimOlc ? { bakimOlc: true } : {}),
     yerlesikIlceSec: arg.yerlesikIlceSec,
     ayrilmisOnceligi: arg.ayrilmisOnceligi,
     p3bKapali: arg.p3bKapali,

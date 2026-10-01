@@ -39,6 +39,11 @@ export interface ParselKosuSecenekleri {
    * koşuyu sürdür (vars. false: hata fırlatır).
    */
   katilimRedDevam?: boolean;
+  /**
+   * Ölçüm kancası (YALNIZ OKUMA; simülasyonu değiştirmemeli): her bot komutundan ÖNCE çağrılır; bir işlev döndürürse komut uygulanınca
+   * sonuçla (`tamam`) çağrılır. Sonucu etkilemez; yalnız ölçüm içindir (ör. bakım harcaması: komut öncesi/sonrası hazine ve stok).
+   */
+  komutIzle?: (sim: Simulasyon, t: Ms, oyuncu: OyuncuId, komut: Komut) => ((tamam: boolean) => void) | undefined;
 }
 
 /** Bot (ya da sistem) komutunun günlük kaydı. */
@@ -183,7 +188,9 @@ export function parselKos(secenek: ParselKosuSecenekleri): ParselKosuSonucu {
         if (!zamani) continue;
         for (const komut of o.bot.karar(sim)) {
           const once = SERMAYE_KOMUTLARI.has(komut.tur) ? anlikHazine(sim.dunya, o.id) : 0;
+          const izleSonra = secenek.komutIzle?.(sim, t, o.id, komut);
           const r = sim.uygula({ t, oyuncu: o.id, komut });
+          izleSonra?.(r.tamam);
           const kayit: ParselKomutKaydi = { t, oyuncu: o.id, tur: komut.tur, tamam: r.tamam };
           if ("tesisTuru" in komut) kayit.tesisTuru = komut.tesisTuru;
           if (r.tamam) {

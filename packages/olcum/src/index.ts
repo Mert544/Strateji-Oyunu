@@ -19,3 +19,7 @@ export { parselRaporUret, ayristirmaRaporuUret, parselOzetle, olguKarsilastirmas
 export type { AyristirmaGirdisi, ParselOzeti, ParselRaporMeta, ParselKarsilastirma, OlguKarsilastirma } from "./parsel-rapor";
 export { parselAna, parselArgumanAyristir, PARSEL_VARSAYILAN_TOHUM, PARSEL_AGIR_TOHUM, PARSEL_AGIR_GEC_GUN, KALABALIK_DAGILIM } from "./parsel-cli";
 export type { ParselArguman } from "./parsel-cli";
+export { BakimIzleyici, BAKIM_OLCUM_GUNLERI } from "./parsel-bakim";
+export type { ParselBakimOlcumu, ParselBakimOyuncu, BakimDonemi } from "./parsel-bakim";
+export { bakimOzetiUret, yuzdelik } from "./parsel-bakim-rapor";
+export type { BakimOzetKosusu } from "./parsel-bakim-rapor";

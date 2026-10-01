@@ -9,12 +9,14 @@
  * Bu dosya çekirdeği YALNIZ okur (sim durumunu değiştirmez); metrik hesapları `parsel/` altındaki saf işlevlerdedir.
  */
 import { MILI, GUN, SAAT, anlikHazine, anlikMiktar } from "@bolge/cekirdek";
-import type { CekirdekVeriPaketi, OyuncuId, Simulasyon } from "@bolge/cekirdek";
+import type { CekirdekVeriPaketi, Komut, OyuncuId, Simulasyon } from "@bolge/cekirdek";
 import { miniVeriyiYukle, parselFiksturuYukle, varsayilanVeriyiYukle } from "@bolge/veri";
 import type { VeriPaketi } from "@bolge/veri";
 import { ACILIS_ESLEMESI, GEC_ACILISLARI, acilisAyakIzi, ilceAyrilmisBos, parselBotuOlustur, parselKos } from "@bolge/botlar";
 import type { GecAcilis, ParselKosuOyuncusu, ParselKosuSonucu, ParselKomutKaydi, ParselOnayari } from "@bolge/botlar";
 import { iklimUygula } from "./ortak";
+import { BakimIzleyici } from "./parsel-bakim";
+import type { ParselBakimOlcumu } from "./parsel-bakim";
 import type { IklimModu } from "./tipler";
 import {
   araziGini,
@@ -99,6 +101,11 @@ export interface ParselKosuSecenek {
    * tohumlu sırayla bozulur. Vars. tanımsız: sıra ve kararlar bugünkü gibi (mevcut raporlar bayt bayt aynı). Çekirdek tohumundan bağımsızdır.
    */
   botTohum?: number;
+  /**
+   * Bakım ve aşınma ölçümü (YALNIZ OKUMA; koşu sonucunu değiştirmez): sonuçta `bakim` alanı dolar (parsel-bakim.ts). Vars. kapalı:
+   * kapalıyken sonuç ve JSON eskisiyle bayt bayt aynıdır.
+   */
+  bakimOlc?: boolean;
   /** Hazır veri paketi (test); verilmezse harita seçeneğine göre. */
   veri?: CekirdekVeriPaketi;
   ilerleme?: (mesaj: string) => void;
@@ -207,6 +214,8 @@ export interface ParselTohumSonucu {
   /** Bot komut başarısızlıkları (neden -> adet). */
   basarisizNedenleri: Record<string, number>;
   komutTurleri: Record<string, number>;
+  /** Bakım ve aşınma ölçümü (`bakimOlc` açıkken; yoksa tanımsız). */
+  bakim?: ParselBakimOlcumu;
   sureMs: number;
 }
 
@@ -418,7 +427,9 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
   ekGozlem.push(oncekiAn);
 
   const ilerleme = secenek.ilerleme ?? (() => {});
+  const bakimIzleyici = secenek.bakimOlc === true ? new BakimIzleyici({ oyuncular: duzen.oyuncular.map((o) => ({ id: o.id, onayar: o.onayar, acilis: o.acilis, katilmaGun: o.katilmaGun })), olcumMs: (gecGun + olcumGunu) * GUN, pencereMs: pencereGun * GUN }) : undefined;
   const sonuc = parselKos({
+    ...(bakimIzleyici !== undefined ? { komutIzle: (sim: Simulasyon, t: number, oyuncu: OyuncuId, komut: Komut) => bakimIzleyici.komutIzle(sim, t, oyuncu, komut) } : {}),
     katilimRedDevam: true,
     veri,
     tohum,
@@ -450,6 +461,7 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
           d.mulk!.ilceler.map((c) => ({ ilce: c.id, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, ayrilmisSatilmis: c.ayrilmisSatilmis ?? 0, ayrilmisBos: ayrilmisBos(sim, c.id) })),
         );
       }
+      if (bakimIzleyici !== undefined) bakimIzleyici.saatlik(sim, t);
       if (t % (8 * GUN) === 0 && t > 0) ilerleme(`parsel tohum ${tohum}: gun ${t / GUN}/${sureGun}`);
     },
   });
@@ -617,6 +629,7 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
     },
     basarisizNedenleri: sonuc.basarisizNedenleri,
     komutTurleri: sonuc.komutTurleri,
+    ...(bakimIzleyici !== undefined ? { bakim: bakimIzleyici.sonuc(olcumGunu + gecGun) } : {}),
     sureMs: Date.now() - basla,
   };
 }
