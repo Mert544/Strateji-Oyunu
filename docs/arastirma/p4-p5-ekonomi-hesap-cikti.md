@@ -585,6 +585,19 @@ Yani tahıl tabanında zincir +%42,1 (KD) / +%33,6 (NPC net) önde; tesis, işç
 
 Okuma: tek ürünle (A+ 5.124 ↔ B+ 3.342) standart yol 53% önde kalır (gıda ₺70 ve oran 1,84'ün sonucu); ama oyuncu dilimi tek mal havuzunu doldurur ve **ikinci tesis marjinal olarak değersizdir (D)**: oyuncunun asıl kararı "ikinci standart mı, zincir mi" ise zincir 3.342 ₺/sa kazandırır, ikinci standart eksiye düşer. Standart ve zincir ikame değil **tamamlayıcıdır** (C = 8.465 ₺/sa). Tesis tabanındaki −%28 kayıp bu yüzden erken oyunda ve n ≥ 4 her dünyada bağlayıcı değildir.
 
+**Fırın çıktısı duyarlılığı (165 un + 20 yakıt + 15 elektrik → x ekmek): zincirin standarda göre üstünlüğü ve strateji kararı.**
+
+| Fırın çıktısı (ekmek/sa) | Fırın oranı | Fırın KD ₺/sa (şebeke) | Zincir net, tahıl tabanı ₺/sa | Zincir / standart | Fırın uzmanı net ₺/sa | B+ (pazar dilimi) ₺/sa | C = A+ ve B+ ₺/sa | B+ − D (ikinci tesis karar farkı) |
+|---|---|---|---|---|---|---|---|---|
+| 250 | 1,442 | 4.525 | 5.759 | +33,6% | 1.754 | 3.342 | 8.465 | 6.516 |
+| 245 | 1,413 | 4.225 | 5.492 | +27,4% | 1.487 | 3.265 | 8.389 | 6.440 |
+| 243 | 1,402 | 4.105 | 5.385 | +24,9% | 1.380 | 3.233 | 8.357 | 6.408 |
+| 240 | 1,385 | 3.925 | 5.224 | +21,2% | 1.219 | 3.185 | 8.309 | 6.360 |
+| 235 | 1,356 | 3.625 | 4.957 | +15,0% | 952 | 3.101 | 8.225 | 6.276 |
+| 230 | 1,327 | 3.325 | 4.690 | +8,8% | 685 | 3.014 | 8.138 | 6.189 |
+
+Okuma: pazar dilimi bağlayıcıyken (n ≥ 4) fırın tesisinin yükü %50 dolayındadır (sattığı birim sayısı 131/sa < çıktı), bu yüzden çıktıyı 250 → 240'a indirmek B+ ve C'yi çok az etkiler (yük ve girdi payı hafif artar); karar farkı (B+ − D: ikinci tesisi zincire çevirmek) 6.200–6.500 ₺/sa kalır (230–250 arası). Çıktı düşüşü yalnız tahıl tabanında (tam yük) zincirin üstünlüğünü +%33,6'dan indirir.
+
 **Yine de tesis tabanını garanti etmek istenirse (seçenekler; bandı aşmadan):**
 
 | Seçenek | Değişiklik | Standart tesis KD | Değirmen KD | Fırın KD | Kademe başına > standart? | İşçi başına | Yan etki |
@@ -880,21 +893,21 @@ Bakım maliyeti = bakım parçası × 180 × 1,111 + işletme 60 ₺; aşınma c
 
 ### 10.1b Bakımın net getirisi (60 gün ortalaması; yönetimsiz ↔ yönetimli) ve KD ≥ 0 için en yüksek tavan
 
-| Yöntem | Bakım parçası ₺/sa | KD≥0 en yüksek tavan (1−1/oran) | Net getiri ₺/sa: mevcut: çıktıya (20000; %40) | Net getiri ₺/sa: A: çıktıya (11000; %30) | Net getiri ₺/sa: A, parça fiyatı ×1,33 (kıtlık) | Net getiri ₺/sa: A + verime (11000; %30) |
-|---|---|---|---|---|---|---|
-| standart_gida_isleme | 160 | %46 | 2.453 | 949 | 896 | 345 |
-| yuksek_firin | 300 | %27 | 1.380 | 413 | 314 | -107 |
-| standart_parca | 200 | %18 | 1.480 | 513 | 447 | -73 |
-| standart_elektronik | 200 | %57 | 2.600 | 988 | 922 | 483 |
-| ahir_besi | 100 | %45 | 1.435 | 551 | 518 | 195 |
-| azotlu_gubre | 200 | %44 | 1.107 | 354 | 288 | 43 |
-| geleneksel_tarim | 100 | yok | 1.300 | 494 | 461 | 494 |
-| degirmen | 160 | %31 | 1.904 | 716 | 663 | 110 |
-| ekmek_firini | 160 | %31 | 3.340 | 1.325 | 1.272 | 295 |
-| cam_firini | 200 | %31 | 908 | 270 | 204 | -54 |
-| celik_dograma | 200 | %31 | 2.152 | 798 | 732 | 108 |
-| kepek_gubresi | 100 | %27 | 488 | 149 | 116 | -34 |
-| sut_kepekli | 100 | %32 | 796 | 280 | 247 | 20 |
+| Yöntem | Bakım parçası ₺/sa | KD≥0 en yüksek tavan (1−1/oran) | Net getiri ₺/sa: mevcut: çıktıya (20000; %40) | Net getiri ₺/sa: A: çıktıya (11000; %30) | Net getiri ₺/sa: A, parça fiyatı ×1,33 (kıtlık) | Net getiri ₺/sa: A + verime (11000; %30) | Net getiri ₺/sa: C: çıktıya (10000; %25) | Net getiri ₺/sa: E: çıktıya (8000; %25) |
+|---|---|---|---|---|---|---|---|---|
+| standart_gida_isleme | 160 | %46 | 2.453 | 949 | 896 | 345 | 680 | 512 |
+| yuksek_firin | 300 | %27 | 1.380 | 413 | 314 | -107 | 240 | 132 |
+| standart_parca | 200 | %18 | 1.480 | 513 | 447 | -73 | 340 | 232 |
+| standart_elektronik | 200 | %57 | 2.600 | 988 | 922 | 483 | 700 | 520 |
+| ahir_besi | 100 | %45 | 1.435 | 551 | 518 | 195 | 394 | 295 |
+| azotlu_gubre | 200 | %44 | 1.107 | 354 | 288 | 43 | 220 | 136 |
+| geleneksel_tarim | 100 | yok | 1.300 | 494 | 461 | 494 | 350 | 260 |
+| degirmen | 160 | %31 | 1.904 | 716 | 663 | 110 | 503 | 371 |
+| ekmek_firini | 160 | %31 | 3.340 | 1.325 | 1.272 | 295 | 965 | 740 |
+| cam_firini | 200 | %31 | 908 | 270 | 204 | -54 | 156 | 85 |
+| celik_dograma | 200 | %31 | 2.152 | 798 | 732 | 108 | 556 | 405 |
+| kepek_gubresi | 100 | %27 | 488 | 149 | 116 | -34 | 89 | 51 |
+| sut_kepekli | 100 | %32 | 796 | 280 | 247 | 20 | 188 | 130 |
 
 Net getiri = (yönetimsizin 60 günlük ortalama kaybı) − bakım parçası maliyeti. Çıktıya uygulamada kayıp = çıktı × (1 − ort. çarpan); verime uygulamada kayıp = KD × (1 − ort. çarpan). Hepsi pozitifse bakım her tesis türü için yapmamaktan iyidir; negatifse bakım yapmak kaybettirir (O2 ölçümünde sanayicide görülen yön).
 
@@ -906,8 +919,45 @@ Net getiri = (yönetimsizin 60 günlük ortalama kaybı) − bakım parçası ma
 | A: 11000; %30 | %-2,3 | %-4,6 | %-9,9 | %-14,8 | %-19,8 | %-9,9 | 91 | 1,110 | 1,429 |
 | B: 15000; %30 | %-3,1 | %-6,3 | %-13,5 | %-20,3 | %-27,0 | %-13,5 | 67 | 1,156 | 1,429 |
 | C: 10000; %25 | %-1,7 | %-3,5 | %-7,5 | %-11,3 | %-15,0 | %-7,5 | 100 | 1,081 | 1,333 |
+| E: 8000; %25 | %-1,4 | %-2,8 | %-6,0 | %-9,0 | %-12,0 | %-6,0 | 125 | 1,064 | 1,333 |
 
 Çıktı değişimi (çıktı × çarpan − 1). Tarla gibi girdisiz yöntemde bu KD kaybıdır; işleme yöntemlerinde KD kaybı = çıktı kaybı × kaldıraç (§10.1).
+
+### 10.2b Zincir derinliği ve bileşik aşınma (O2 ölçümüyle doğrulanan mekanizma): k aşamalı zincirin çıktı kaybı = 1 − çarpan^k
+
+Aşınma çarpanı hem tahıl çıktısını hem de o tahılla beslenen sonraki tesisin girdisini kısar: Tarla → ahır (k = 2) çıktısı çarpan², Tarla → değirmen → fırın (k = 3) çarpan³ olur. O2 ölçümü (gec60, çiftçi): ahır `verimPpm` yönetimsiz %59,5 ↔ yönetimli %99,2 (oran 0,60 = çarpan), net gelir ×2,79, brüt çıktı ×2,63; 1/0,6² = ×2,78.
+
+| Parametre (kıtlık aşınma ppm/gün; tavan) | k | gün 14 kayıp | gün 45 kayıp | gün 70 kayıp (Y7 penceresi) | tavan kaybı | bakımlı/bakımsız gün 70 | bakımlı/bakımsız 60 gün ort. | bakımlı/bakımsız tavan |
+|---|---|---|---|---|---|---|---|---|
+| mevcut (20000; %40) | 1 | %11,2 | %36,0 | %40,0 | %40,0 | 1,67 | 1,30 | 1,67 |
+| mevcut (20000; %40) | 2 | %21,1 | %59,0 | %64,0 | %64,0 | 2,78 | 1,65 | 2,78 |
+| mevcut (20000; %40) | 3 | %30,0 | %73,8 | %78,4 | %78,4 | 4,63 | 2,04 | 4,63 |
+| A: 11000; %30 | 1 | %4,6 | %14,8 | %23,1 | %30,0 | 1,30 | 1,11 | 1,43 |
+| A: 11000; %30 | 2 | %9,0 | %27,5 | %40,9 | %51,0 | 1,69 | 1,23 | 2,04 |
+| A: 11000; %30 | 3 | %13,2 | %38,3 | %54,5 | %65,7 | 2,20 | 1,35 | 2,92 |
+| B: 15000; %30 | 1 | %6,3 | %20,3 | %30,0 | %30,0 | 1,43 | 1,16 | 1,43 |
+| B: 15000; %30 | 2 | %12,2 | %36,4 | %51,0 | %51,0 | 2,04 | 1,33 | 2,04 |
+| B: 15000; %30 | 3 | %17,7 | %49,3 | %65,7 | %65,7 | 2,92 | 1,51 | 2,92 |
+| C: 10000; %25 | 1 | %3,5 | %11,3 | %17,5 | %25,0 | 1,21 | 1,08 | 1,33 |
+| C: 10000; %25 | 2 | %6,9 | %21,2 | %31,9 | %43,8 | 1,47 | 1,17 | 1,78 |
+| C: 10000; %25 | 3 | %10,1 | %30,1 | %43,8 | %57,8 | 1,78 | 1,26 | 2,37 |
+| E: 8000; %25 | 1 | %2,8 | %9,0 | %14,0 | %25,0 | 1,16 | 1,06 | 1,33 |
+| E: 8000; %25 | 2 | %5,5 | %17,2 | %26,0 | %43,8 | 1,35 | 1,13 | 1,78 |
+| E: 8000; %25 | 3 | %8,2 | %24,6 | %36,4 | %57,8 | 1,57 | 1,20 | 2,37 |
+
+Okuma: bugünkü parametrelerle k = 2 için gün 70 oranı 2,78 (O2: ×2,79 net); yani ×2,2…×2,79 sıçrama **zincir bileşik etkisidir**, ödeme gücü sarmalı (H2) gerekmez. k = 3 (ekmek zinciri) bugünkü parametrelerle tavanda ×4,63'tür.
+
+### 10.2c Bakımın parça maliyeti çıktı değerine göre ne zaman karşılığını verir (tek aşama; tavanda)
+
+Bakım, yönetimsizin tavandaki kaybı parça maliyetinden büyükse getirir: çıktı × T/(1−T) ≥ parça maliyeti, yani çıktı/parça maliyeti ≥ (1−T)/T. O2 yerleşik sanayici (7 gün): brüt çıktı 424.063 ₺, parça ithalatı 291.839 ₺ (oran 1,45).
+
+| Tavan T | Eşik oranı (1−T)/T | Sanayici oranı 1,45 ≥ eşik mi | Tavanda yönetimsiz kaybı ₺/7 gün (424.063 × T/(1−T)) |
+|---|---|---|---|
+| %40 | 1,50 | **hayır** | 282.709 |
+| %30 | 2,33 | **hayır** | 181.741 |
+| %25 | 3,00 | **hayır** | 141.354 |
+
+Okuma: sanayici arketipinde (maden + santral) bakım bugün başabaştır (eşik 1,50; ölçülen 1,45; yönetimli net gelir yönetimsizden düşük); tavan %25–30'a inerse bakım bu arketipte **net negatif** olur. Çıktı değerine göre parça girdisi pahalı tesislerde (maden, santral) parça girdisi ya da tavan ayrı ele alınmalı; bu hesap O2'nin kalem dökümünü (tesis türüne göre parça tüketimi) bekler.
 
 ### 10.3 Kaldıraçlı KD kaybı: işleme yöntemlerinde gün 30 ve gün 45 (aşınma çıktıya uygulanırsa ↔ verime uygulanırsa)
 

@@ -13,7 +13,7 @@
 ## 0. Bir sayfalık özet
 
 1. **Enerji şebekeden; santral ekonomik zorunluluk değil, vaat de tutmuyor.** Şebeke fiyatı kamu tavan kuralından (1,035 R) türediği için elektrik 10,35 ₺, yakıt 103,5 ₺'dir; KD'ye etkisi çoğu yöntemde %2'nin altında (en çok cam fırını −%4,2). Kömür santrali ithal kömürle tam yükte birim maliyeti 9,7–9,8 ₺'dir: şebekeye göre ancak **%5–6** avantaj; başabaş yük %59–67 (küçük oyuncunun yükü %10–25), yakıt jeneratörü hiçbir yükte kazanmaz (28 ₺/birim), yalnız hidro (dağ etiketi) %12–14 yükte kazanır. "Santral kur, ucuz elektrik al" vaadi kömür ve jeneratörde tutmaz; seçenekler §1.3-B1'de (şebeke satış çarpanı 1,25–1,50 R, kömür girdisi ×0,75, ya da vaadi "bağımsızlık ve büyük ölçek" olarak düzeltmek). Karar baş liderindir.
-2. **Ekmek zinciri `standart_gida_isleme`'yi yalnız tahıl tabanında yener.** Tahıl başına net: zincir (öneri tarifleri) +%33,6 (rapor tarifleriyle −%3,3); tesis, işçi ve hücre tabanlarında zincir %29–34 **geridedir** ve tek başına hiçbir kademe standardı geçmez. Erken oyunun bağlayıcı kısıtı tahıl ya da sermaye değil **NPC pazar derinliğidir** (kişi başı gıda dilimi 75 birim/sa, ekmek 62,5); tek ürünle standart yol %53 önde kalır, ama ikinci havuz olarak zincir tamamlayıcıdır (A+ ve B+ birlikte 8.465 ₺/sa, ikinci standart tesis −3.175). Öneri: **güçlendirme zorunlu değil, kapatma gereksiz**; tesis tabanı da kural yapılırsa en az yan etkili yol G2 (mülk kipinde `standart_gida_isleme` ×0,75) (§1.3-B2).
+2. **Ekmek zinciri `standart_gida_isleme`'yi yalnız tahıl tabanında yener.** Tahıl başına net: zincir (öneri tarifleri) +%33,6 (rapor tarifleriyle −%3,3); tesis, işçi ve hücre tabanlarında zincir %29–34 **geridedir** ve tek başına hiçbir kademe standardı geçmez. Erken oyunun bağlayıcı kısıtı tahıl ya da sermaye değil **NPC pazar derinliğidir** (kişi başı gıda dilimi 75 birim/sa, ekmek 62,5); tek ürünle standart yol %53 önde kalır, ama ikinci havuz olarak zincir tamamlayıcıdır (A+ ve B+ birlikte 8.465 ₺/sa, ikinci standart tesis −3.175). Öneri: **güçlendirme zorunlu değil, kapatma gereksiz**; tesis tabanı da kural yapılırsa en az yan etkili yol G2 (mülk kipinde `standart_gida_isleme` ×0,75), tetik M < %30. **Tek tarif önerisi: fırın 240 ekmek** (zincir +%21,2 = K/U ilkesinin içinde; fırın oranı 1,385; M beklentisi ≥ %50 değişmez çünkü ikinci tesis kararı B+ − D ≈ 6.360 ₺/sa'te kalır) (§1.3-B2).
 3. **NPC pazar derinliği zincir sayısını sınırlar.** NPC emilimi oyuncuyla büyür (`max(4, n)/4`); 200 oyuncuda `ekmek` emilimi 12.500 birim/sa (kişi başı 62,5). Bir S fırın 250/sa üretir. Dünya yerel kanalla birlikte 21.278 birim/sa emer: **oyuncuların ancak %43'ü (≈85 fırın) ekmek zinciri kurarsa fiyat düşmez**; hepsi kurarsa arz/emilim 2,35 (§1.3-B3).
 4. **Kamu fiyat tavanı kodda 1,035 R'dir** (`mulk/kasa.ts:415-424`, `mulk/kamuFiyat.ts:18-22`, `derle.ts:193`); GDD'deki 1,10 R üst sınırdır. İthalat maliyeti 1,100–1,111 R: NPC'den alıp kamuya satmak marj bırakmaz, para korunumu ile çelişki yok. **Kamu siparişi v0 önerisi:** ekmek, gıda, pencere, çelik, parça; fiyat 1,03 R; boyutlar 100/50/10/30/20 birim; ilçe başına haftada ≤ 5 sipariş (§1.9).
 5. **Dükkân S.** Taban fiyatla 11.280 ₺ (GDD'nin 11.440 ₺'si pencereyi ithal fiyatıyla sayar). Kırsal ilçede tek dükkânın neti ≈ gideri karşılar (32 ₺/sa); kasabada 17–21 sa, şehirde 12–15 sa'de geri öder; kasabada 3 dükkânla 56 sa'e uzar (hedef ≤ 48). Fiyat `secim` kademesi önerisi: **4 kademe** (0,85 kampanya, 0,95, **1,05 varsayılan**, 1,15); 0,85 R'de dört senaryonun hepsinde net eksidir (fiyat savaşı kendini cezalandırır) (§1.9).
@@ -22,7 +22,7 @@
 8. **Zincir kurulum süresi (santralsiz).** Erken oyun çarpanı ve ≤2 eşzamanlı inşaatla ekmek zinciri **1,0 sa**; cam → pencere 1,2 sa; 7. günden sonra 10,0 / 12,0 sa. İsteğe bağlı santral her zincire +0,4 sa ve ≈ +35.000 ₺ ekler (§1.8).
 9. **Kepek.** P0'da iki tüketici: NPC pazar kaydı (kepek 16,0 ₺) ve **`kepek_gubresi`** (kepeğe 21,9 ₺ öder, NPC'nin %37 üstü). `sut_kepekli` P1'e kalır. İsteğe bağlı güvence alıcı bütçesi ≈ 1,06 M ₺/hafta (Alfa-0, 50 değirmen) ve musluk kalemi yeni değil (§1.6).
 10. **Cam/doğrama tarifleri dikeyden sapar.** Üst bant tarifleri dikey raporu aşar (cam 16 yakıt + 18 elektrik, doğrama 5 parça → 28 pencere; rapor 18/20 ve 6 parça → 27). Rapor değerleriyle de KD > 0'dır; sapmanın gerekçesi uzman marjı ve bant ilkesidir (§1.4). Ev sahibi `parca_fabrikasi`: cam fırını mevcut `standart_parca`'yı +%13 geçer, `otomatik_hat`'ın (teknoloji kilidi arkasında) %20 altında kalır (§1.12). T3 §7.2 tablosuyla sapmalar §1.14'te.
-11. **Bakım ve aşınma.** Aşınma cezası **çıktıya** uygulanır, girdiye değil (`ekonomi/uretim.ts:212,446`); ince marjlı işleme yöntemlerinde bu KD kaybını çıktı kaybının 3–6 katına çıkarır ve bugünkü parametrelerle değirmen, fırın, doğrama KD'si **35–40. günde negatife** döner. Öneri (mülk kipine özel, bölge altınına dokunmaz): **aşınma hızı ×0,55, tavan %30** (§2). Doğrulanmadı.
+11. **Bakım ve aşınma.** Aşınma cezası **çıktıya** uygulanır, girdiye değil (`ekonomi/uretim.ts:212,446`); ince marjlı işleme yöntemlerinde bu KD kaybını çıktı kaybının 3–6 katına çıkarır ve bugünkü parametrelerle değirmen, fırın, doğrama KD'si **35–40. günde negatife** döner. O2 ölçümü bunu zincir bileşik etkisiyle açıkladı (çiftçi zinciri Tarla → ahır: çarpan² → ×2,78; ölçülen ×2,79); sanayici arketipinde bakım bugün bile başabaş altı (1,45 < 1,50). Öneri (mülk kipine özel, bölge altınına dokunmaz): **aşınma hızı ×0,50 (kıtlık 10.000 ppm/gün), tavan %25**; zincirde gün 14 %10, gün 45 %30 (§2). Parametre değerleri R3/R4 koşusuna kadar doğrulanmadı.
 
 ## 1. G4'ün sayısal tarafı
 
@@ -121,7 +121,18 @@ Mevcut yöntem tek tesiste 200 tahıl → 160 gıda (₺70) verir: oran **1,84**
 | hücre başına KD (her tesis 2 hücre) | 2.548 ₺ | 1.811 ₺ | −28,9% | tesis tabanıyla aynı |
 | sermaye başına KD/sa (S taban değer 20.800 ₺/tesis) | 245 ‰ | 174 ‰ | −28,9% | saatlik getiri binde |
 
-Rapor tarifleri (150/225) bandın alt yarısındadır ve kapalı zinciri standardın %3,3 altına iter; öneri tarifleri (165/33; 250) +%33,6 verir. K/U ilkesi (uretim §2.2: +%10–25) aşılmış olur; fırın çıktısı 243 ekmeğe indirilirse +%25'e oturur (her 5 ekmek ≈ 267 ₺/sa). Seçim A3'ündür; 250 tarifi üst uçtadır ve A0-11 "bot zinciri tamamlar" ölçütünü güvenceye alır.
+Rapor tarifleri (150/225) bandın alt yarısındadır ve kapalı zinciri standardın %3,3 altına iter; öneri tarifleri (165/33; 250) +%33,6 verir. K/U ilkesi (uretim §2.2: +%10–25) bunun üstündedir. **Fırın çıktısı duyarlılığı** (165 un + 20 yakıt + 15 elektrik → x ekmek):
+
+| Fırın çıktısı (ekmek/sa) | Fırın oranı | Fırın KD ₺/sa (şebeke) | Zincir net, tahıl tabanı ₺/sa | Zincir / standart | Fırın uzmanı net ₺/sa | B+ (pazar dilimi) ₺/sa | C = A+ ve B+ ₺/sa | B+ − D ₺/sa |
+|---|---|---|---|---|---|---|---|---|
+| 250 | 1,442 | 4.525 | 5.759 | +33,6% | 1.754 | 3.342 | 8.465 | 6.516 |
+| 245 | 1,413 | 4.225 | 5.492 | +27,4% | 1.487 | 3.265 | 8.389 | 6.440 |
+| 243 | 1,402 | 4.105 | 5.385 | +24,9% | 1.380 | 3.233 | 8.357 | 6.408 |
+| **240 (öneri)** | **1,385** | 3.925 | **5.224** | **+21,2%** | 1.219 | 3.185 | 8.309 | 6.360 |
+| 235 | 1,356 | 3.625 | 4.957 | +15,0% | 952 | 3.101 | 8.225 | 6.276 |
+| 230 | 1,327 | 3.325 | 4.690 | +8,8% | 685 | 3.014 | 8.138 | 6.189 |
+
+**Tek öneri: fırın 240 ekmek** (K/U ilkesinin ortası, +%21,2; fırın oranı 1,385 bandın içinde; fırın uzmanı ithalatla başlasa da +1.219 ₺/sa kazanır). **G2 tetiğiyle birlikte:** pazar dilimi bağlayıcıyken fırın tesisi yaklaşık %50 yükle çalıştığı için çıktıyı 250 → 240'a indirmek stratejiyi pek etkilemez: ikinci tesisi zincire çevirmenin getirisi B+ − D = 6.516 → 6.360 ₺/sa (−%2,4), C 8.465 → 8.309; yani **M beklentisi (≥ %50) ve X = %30 eşiği değişmez**. Çıktı düşüşü yalnız tahıl tabanında (tam yük) zincirin üstünlüğünü azaltır; o tabanda zincir yine standarttan +%21 öndedir. Bu bölümün diğer tabloları (§1.4–§1.12) 250 ile hesaplıdır; 240'ta farklar: tahıl tabanı zincir net −535 ₺/sa, ilk dükkân zincirinde (S1, santralsiz) gün 3 net 285.229 → 272.269 ₺ (−%4,5), gün 7 gün sonu hazine 1.999.456 → 1.909.600 ₺, betikte `ekmek: 250000` → `240000` ile yeniden üretilir.
 
 **Erken oyunda (0–7 gün) bağlayıcı kısıt: tahıl değil, tesis sermayesi değil; NPC pazar derinliği.**
 
@@ -187,7 +198,7 @@ Fiyat formülü (Vic3 türevi, e = 0,75; docs/06 §13) arz emilimin 2 katını a
 
 ### 1.4 Yeni yöntemlerin tam satırları (S ölçek)
 
-A2 önerisi, kod birimi (mili). Barındıran tesis, bakım ve kirlilik dahil. Çevrim 1 sa (sürekli). Hepsi `mulkKipi: true`. Elektrik ve yakıt kamu şebekesinden gelir (§1.3-B1); tarifte kalırlar.
+A2 önerisi, kod birimi (mili). Barındıran tesis, bakım ve kirlilik dahil. Çevrim 1 sa (sürekli). Hepsi `mulkKipi: true`. Elektrik ve yakıt kamu şebekesinden gelir (§1.3-B1); tarifte kalırlar. **Fırın çıktısı için son öneri 240.000 mili** (§1.3-B2); aşağıdaki tablolar 250.000 ile hesaplıdır.
 
 | Yöntem | Tesis | Girdiler (mili/sa) | Çıktılar (mili/sa) | İşçi (mili) | Bakım (parça, mili/sa) | Kirlilik (ppm/sa) |
 |---|---|---|---|---|---|---|
@@ -455,6 +466,8 @@ Yapı ve yakıt grupları bayramdan etkilenmez; dükkân açık/kapalı kuralı 
 | parca | 5 | yedek parça ve tamirci; yapı takvimi |
 | cam | 4 | pencere camı, tamir; yapı takvimi; pencere 8'in yarısı |
 
+**Kapsam (gıda 120 → 90):** `mulk.perakende.talep1000Saat` **yalnız yeni yerel pazar kanalının** (dükkân hane talebi, `Q = taban × takvim × bayram`) girdisidir. Mevcut mülk kipi NPC gıda talebi (`pazar` emilim kayıtları, `npcHacimleri`) bu bloktan okunmaz; bölge kipinin `nufus.tuketim1000Saat` (gıda 200, yakıt 30, elektronik 8, elektrik 150) yalnız nüfusu olan düğümlerde tüketimdir (`ekonomi/tablo.ts:99`) ve mülk işletme düğümünde nüfus 0'dır; o blok değişmez. Sonuç: bugünkü botların 7 günlük geliri ve ölçüm temel çizgisi **değişmez** (çiftçi 296.727 → 829.041 ₺ ve tüccar 129.359 → 395.139 ₺ [yönetimsiz → yönetimli], O2 gec60: önce ve sonra aynı; çekirdekte yerel pazar kanalı henüz yoktur ve `botlar/src/parsel.ts` dükkân kurmaz: yerel kanala hiç satış yok). Etki yalnız dükkân kuran oyuncuda doğar. 90 değerinin nedeni, gıda sepetini (gıda + ekmek + un + süt + süt ürünü) bölge kipinin `tuketim1000Saat.gida = 200` toplamına eşit tutmaktır; T3'ün 120'si ekmek, un, süt ve süt ürününü ayrı mal olarak eklemeden önceki sepetti. **(doğrulanmadı: çekirdek koşulmadı; kod okuması.)**
+
 Mal başına kalibrasyon yoktur: `yerelOlcek` 50 gibi bu sayılar **parametre, öneri değer**'dir; ZP8 payı (%45, sınır %50) ve çıkmaz-mal denetimi ile izlenir; ilçe nüfusu verisi geldiğinde yeniden kalibre edilir (§4).
 
 ### 1.10 `yerelNpc` para musluğu ve para arzı
@@ -582,14 +595,14 @@ Yöntemler (`yontemler[]` sonuna; hepsi `mulkKipi: true`; elektrik/yakıt şebek
 
 ```json
 { "id": "degirmen", "ad": "Değirmen", "girdiler": { "tahil": 200000, "elektrik": 12000 }, "ciktilar": { "un": 165000, "kepek": 33000 }, "isci": 5000, "bakim": { "parca": 800 }, "kirlilikPpmSaat": 20, "mulkKipi": true },
-{ "id": "ekmek_firini", "ad": "Ekmek Fırını", "girdiler": { "un": 165000, "yakit": 20000, "elektrik": 15000 }, "ciktilar": { "ekmek": 250000 }, "isci": 8000, "bakim": { "parca": 800 }, "kirlilikPpmSaat": 20, "mulkKipi": true },
+{ "id": "ekmek_firini", "ad": "Ekmek Fırını", "girdiler": { "un": 165000, "yakit": 20000, "elektrik": 15000 }, "ciktilar": { "ekmek": 240000 }, "isci": 8000, "bakim": { "parca": 800 }, "kirlilikPpmSaat": 20, "mulkKipi": true },
 { "id": "kepek_gubresi", "ad": "Kepekten Gübre", "girdiler": { "kepek": 100000, "elektrik": 5000 }, "ciktilar": { "gubre": 18000 }, "isci": 3000, "bakim": { "parca": 500 }, "kirlilikPpmSaat": 10, "mulkKipi": true },
 { "id": "sut_kepekli", "ad": "Kepekli Süt Besisi", "girdiler": { "tahil": 50000, "kepek": 60000, "elektrik": 5000 }, "ciktilar": { "sut": 82000, "gubre": 4000 }, "isci": 5000, "bakim": { "parca": 500 }, "kirlilikPpmSaat": 10, "mulkKipi": true },
 { "id": "cam_firini", "ad": "Cam Fırını", "girdiler": { "silis": 60000, "yakit": 16000, "elektrik": 18000 }, "ciktilar": { "cam": 50000 }, "isci": 5000, "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 60, "mulkKipi": true },
 { "id": "celik_dograma", "ad": "Çelik Doğrama", "girdiler": { "celik": 24000, "cam": 32000, "parca": 5000, "elektrik": 15000 }, "ciktilar": { "pencere": 28000 }, "isci": 7000, "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 20, "mulkKipi": true }
 ```
 
-Tesis türü `yontemler[]` sonları: `gida_fabrikasi += [degirmen, ekmek_firini]`, `ahir += [kepek_gubresi, sut_kepekli]`, `parca_fabrikasi += [celik_dograma, cam_firini]` (A3 seçimi). Dikeyden sapan satırlar (cam, doğrama; üst bant) §1.4'te işaretlidir; rapor (dikey) değerleri alternatif olarak geçerlidir (cam `yakit 18000, elektrik 20000`; doğrama `parca 6000 → pencere 27000`).
+(`ekmek_firini` çıktısı 240.000: tek tarif önerisi, §1.3-B2; betik tabloları 250.000 ile.) Tesis türü `yontemler[]` sonları: `gida_fabrikasi += [degirmen, ekmek_firini]`, `ahir += [kepek_gubresi, sut_kepekli]`, `parca_fabrikasi += [celik_dograma, cam_firini]` (A3 seçimi). Dikeyden sapan satırlar (cam, doğrama; üst bant) §1.4'te işaretlidir; rapor (dikey) değerleri alternatif olarak geçerlidir (cam `yakit 18000, elektrik 20000`; doğrama `parca 6000 → pencere 27000`).
 
 `mulk.ekYapilar.dukkan`: `{ ad, yuva: 1, insaSaati: 4, insaParasi: 6000000 (P-İthal) | 7440000 (P-Yok), insaMaliyeti: { celik: 20000, parca: 8000, pencere: 4000 (P-İthal) }, enFazlaIlBasina: 6, enFazlaIlcedeBasina: 2 }`; `mulk.olcekHucre.dukkan = [1, 2, 3]`.
 
@@ -624,7 +637,8 @@ T3'ün `p4-p5-icerik-taslagi.md` §7.2 tablosu A2'nin **ön** önerisini yansıt
 
 | Konu | T3 §7.2 yazıyor | A2 son değer | Sapma / not |
 |---|---|---|---|
-| `degirmen`, `ekmek_firini`, `kepek_gubresi` | A2 ön önerisi | aynı (165/33; 165 + 20 yakıt + 15 elektrik → 250; 100 kepek → 18 gübre) | yok |
+| `degirmen`, `kepek_gubresi` | A2 ön önerisi | aynı (165/33; 100 kepek → 18 gübre) | yok |
+| **`ekmek_firini`** | A2 ön önerisi: 165 un + 20 yakıt + 15 elektrik → **250** | → **240** ekmek (zincir +%33,6 → +%21,2; K/U ilkesi) | **sapma** (A2'nin kendi önerisi güncellendi; §1.3-B2) |
 | `sut_kepekli` | rapor = A2 | aynı | yok |
 | **`cam_firini`** | "rapor = A2": 60 silis + **18 yakıt + 20 elektrik** → 50 | 60 silis + **16 yakıt + 18 elektrik** → 50 | **sapma** (üst bant; dikeyden sapma işaretli, §1.4) |
 | **`celik_dograma`** | "rapor = A2": 24 çelik + 32 cam + **6 parça** + 15 elektrik → **27** | 24 çelik + 32 cam + **5 parça** + 15 elektrik → **28** | **sapma** (üst bant; §1.4) |
@@ -636,7 +650,9 @@ T3'ün `p4-p5-icerik-taslagi.md` §7.2 tablosu A2'nin **ön** önerisini yansıt
 | `yerelOlcek`, fiyat bandı, esnaf tabanı | 50; [0,7; 1,4]; %25; 1,12 R | aynı | yok |
 | Tesis tabanı | zincir tek tesisten üstün (K/U ilkesi) | zincir yalnız tahıl tabanında üstün; tesis/işçi/hücre tabanında geride (§1.3-B2) | **not eklenmeli** (T3 §3.2 madde 2 yalnız tahıl tabanını söylüyor) |
 
-## 2. Bakım ve aşınma kalibrasyonu önerisi (doğrulanmadı; O2 bekleniyor)
+## 2. Bakım ve aşınma kalibrasyonu önerisi (O2 ölçümüyle güncellendi; parametre değerleri hâlâ doğrulanmadı)
+
+> **Durum.** O2'nin ham ölçümü geldi (`takim/o2/olcum-temel` 0ab6957, `docs/olcum/bakim-asinma-temel.md`): gec60 (tohum 1–10) ve kisa (tohum 1–3), yönetim kapalı/açık. Bu bölüm o veriyle yeniden yazıldı. **İki sonuç önceki taslağı değiştirdi:** (i) Y7'nin ×2,2…×2,79 sıçraması **zincir bileşik etkisidir** (aşınma çarpanı tesis zincirinde üslenir); ödeme gücü sarmalı (H2) gerekmez. (ii) Hedef aralıklar tek tesis yerine **zincir düzeyinde** tanımlanmalı; önceki öneri (A: 11.000 ppm/gün, %30) zincirde fazla sert kalıyor, yeni öneri **C: 10.000 ppm/gün, %25**. Öneri parametreleri kâğıt modeldir: R3/R4 koşusuyla doğrulanana kadar **(doğrulanmadı)**.
 
 ### 2.1 Mekanizma (koddan; dosya:satır)
 
@@ -648,28 +664,41 @@ T3'ün `p4-p5-icerik-taslagi.md` §7.2 tablosu A2'nin **ön** önerisini yansıt
 
 Bu bloklar **mülk ve bölge kipinde ortaktır** (`parametreler.sanayi.bakim`). Bölge kipi altınları aşınma/bakım parametrelerine bağlıdır: değer değişirse altın özet değişir. Bu yüzden önerinin tamamı **mülk kipine özel yeni bir `parametreler.mulk.bakim` bloğu** olarak yazılır ve yalnız `d.mulk` varken okunur; bölge kipi değişmez.
 
-### 2.2 Y7 iyimserliğinin kaynağı
+**O2 doğrulaması (gec60, yönetimsiz).** Kıtlık aşınması +%2/gün ölçüldü: aşınma %50'ye 26. günde, %100'e 51. günde varıyor (üç arketipte aynı); bakım karşılanma medyanı her gün %0. Mülk kipi botları `bakim_duzeyi` komutu vermiyor (oyuncu `bakimDuzeyi = 1` ile açılır); başlangıç kitindeki 40 parça yapı inşaatında harcanıyor, 2. günün sonunda stok 0 (O2 §7).
 
-parsel-v1-bulgular §3a'ya göre bakım yönetimi yerleşik çiftçinin 7 günlük net üretim gelir medyanını 191 bin → 417 bin ₺ (×2,2), yerleşik tüccarınkini 213 bin → 612 bin ₺ çıkarıyor; geç çiftçi/emsal %385 → %163, geç pazar/emsal %171 → %60. Kod bu yönü açıklar ama büyüklüğü açıklamaz:
+### 2.2 Y7 iyimserliğinin kaynağı (O2 ölçümüyle)
 
-1. **Kodun saf aşınma kanalı en çok ×1,667 verir** (çıktı ×0,6). Ölçülen ×2,2, kalan ×1,3'ü başka bir mekanizmadan alır **(doğrulanmadı)**.
-2. **Kaldıraç.** Ceza çıktıyı çarpar, girdiyi değil: işleme yöntemlerinde KD kaybı = çıktı kaybı × (çıktı değeri/KD). Çıktı/KD: `degirmen` 3,2, `ekmek_firini` 3,3, `celik_dograma` 3,8, `yuksek_firin` 3,7, `standart_parca` 5,6, `cam_firini` 3,8 (girdisiz Tarla 1,0). **Bugünkü parametrelerle tavanda (%40) bütün bu yöntemlerin KD'si negatiftir**: KD = 0 olduğu aşınma `(1 − 1/oran)/0,4` kadardır: değirmen %77, fırın %77, doğrama %66, cam %66, `yuksek_firin` %68, `standart_parca` %44. Yönetimsiz bir zincirin KD'si gün 30'da değirmen 601 ₺/sa (normal 2.724), fırın 1.000 (4.600); **gün 45'te negatif** (değirmen −460, fırın −800, doğrama −519, cam −240) olur. Bu, parça ithal etmeyen bir yerleşiğin 36–40. günde zararına çalışması demektir.
-3. **Hipotez H2 (ödeme gücü sarmalı, doğrulanmadı).** Net oran negatif ve hazine 0 iken tesis verimi `odemePpm` ile kısılır (`ekonomi/uretim.ts:301-303`); negatif KD'li yönetimsiz tesis hazineyi tüketir, verim ikinci kez düşer. ×2,2 > ×1,67 için olası ikinci kaynaktır.
-4. **Y7 ölçüsü hazine akışıdır** ("satış − girdi − bakım − arazi vergisi", `olcum/parsel/h8.ts:129`, `yeni-oyuncu.ts:285-324`): yönetimli koşuda bakım parça ithalatı **gider** olarak girer, yönetimsizde girmez; yönetimsizin geliri bakımsızlığın kaybını yansıtırken parça bedelini yansıtmaz.
-5. **Çiftçi arketipi** (`CIFTCI`: ciftlik, mera, ahir, ciftlik, mera, `parsel.ts:102`) kısmen kaldıraçlıdır: `ahir_besi` oran 1,83 (çıktı/KD 2,2), Tarla ve Mera girdisizdir. Bu karışımın tahmini bakım kazancı ×1,6–1,8'dir (modelden, doğrulanmadı); ×2,2 için H2 ve zaman penceresi (iklim "hizli", 7 günlük pencere ≈ 84 iklim günü) etkisi gerekir.
+O2 ham sayıları (gec60, tohum 1–10; Y7 payı her koşuda %100):
 
-Sonuç: Y7'nin "geç katılan emsalini geçer" sonucunun büyük kısmı yerleşik botların bakım yapmamasından gelir (O2 temel ölçümüyle birlikte dört koşuda aynı), ve **bu mekanik yönetimsiz yerleşiği gerçek bir oyuncuya göre abartılı biçimde cezalandırıyor**. İki yönlü etki: (i) Y7 emsal medyanı yapay olarak düşük kalıp geç katılan oranı şişiyor; (ii) ayarla-unut oyuncusu 35–40. günde zincirini zararla çalıştırıyor.
+| Ölçü | temel (yönetimsiz) | bakım AÇIK | Oran |
+|---|---|---|---|
+| Geç çiftçi / emsal | %385 | %163 | - |
+| Geç sanayici / emsal | %218 | %358 | - |
+| Geç pazar / emsal | %171 | %60 | - |
+| Yerleşik çiftçi, 7 günlük net ₺ | 296.727 | 829.041 | **×2,79** |
+| Yerleşik çiftçi, brüt çıktı ₺ | 325.833 | 857.561 | ×2,63 |
+| Yerleşik sanayici, 7 günlük net ₺ | 403.974 | 267.344 | **×0,66** |
+| Yerleşik tüccar, 7 günlük net ₺ | 129.359 | 395.139 | ×3,05 |
+| Ahır `verimPpm` (çiftçi), 74. gün | %59,5 | %99,2 | 0,60 |
 
-### 2.3 Hedef aralıklar
+**Mekanizma (zincir bileşik etkisi).** Aşınma cezası çıktıyı `1 − aşınma × tavan` ile çarpar. Çiftçinin zinciri Tarla (çiftlik) → ahırdır: çiftliğin tahıl çıktısı çarpanla kısılır, ahır o tahılla beslendiği için `verimPpm` de çarpana iner (O2: 59,5/99,2 = 0,60 = çıktı çarpanı) ve ahırın kendi çıktısı bir kez daha çarpanla kısılır: ahır çıktısı çarpan² = 0,36, yani 1/0,36 = **×2,78**; ölçülen net ×2,79, brüt ×2,63 (çiftliğin doğrudan satılan tahılı yalnız ×1,67). Tek tesis çarpanı yalnız ×1,667 (1/0,6) verirdi; önceki taslaktaki "×2,2 − ×1,67 = açıklanamayan fark" bu yüzden **zincir derinliğidir**. Üç aşamalı ekmek zinciri (Tarla → değirmen → fırın) bugünkü parametrelerle tavanda ×4,63'e (çıktı kaybı %78) varır (§2.4 tablosu). Ödeme gücü sarmalı (H2) ölçümde gerekmedi; kaldırıldı.
+
+**Ters yön: sanayici.** Bakım açık sanayicide brüt çıktı 424.063 → 596.600 ₺ artarken parça ithalatı 291.839 ₺/7 gün eklenir; net 403.974 → 267.344. Bakımın karşılığını verme koşulu (tavanda): `çıktı/parça maliyeti ≥ (1 − T)/T` (T = tavan). Sanayici oranı 424.063/291.839 = 1,45; eşik bugün 1,50 (T %40): **bakım sanayici arketipinde bugün bile başabaş altında**; T %30'da eşik 2,33, %25'te 3,00 (betik §10.2c). Yani tavanı düşürmek zincirli çiftçiyi rahatlatır, ama maden ve santral gibi çıktı değeri parça girdisine göre düşük tesislerde bakımı net negatif yapar. Bu tesisler için çözüm tavan değil bakım parçası miktarıdır (açık soru, §4).
+
+**Y7 ölçüsünün sınırı.** Y7 geliri satış − girdi − işletme − vergi akışıdır; parça gideri yalnız ithalat anında düşer. O2'de bakım açık çiftçi ve tüccarda son 7 günde parça ithalatı **0**, ama katılımdan 74 güne toplam 918.473 / 515.545 ₺: ithalat stoklu ve kümelidir; 7 günlük penceredeki yönetimli net bu yüzden bakım giderini görmez (bakım parçası tüketimi çiftçide ≈ 1,5 parça/sa × 200 ₺ × 168 ≈ 50.400 ₺ = netin %6'sı). **(doğrulanmadı):** ithalat zamanlaması ölçülmedi; Y7 yönetimli temelinde parça tüketimi tüketim anında yazılmalıdır.
+
+**Sonuç.** Y7 "geç katılan emsalini geçer" sonucunun büyük kısmı yerleşik botların bakım yapmamasından ve zincir derinliğinin aşınmayı üslemesinden gelir; mekanik yönetimsiz yerleşiği gerçek bir oyuncuya göre abartılı cezalandırır. İki yönlü etki: (i) Y7 emsal medyanı yapay olarak düşük kalır, geç katılan oranı şişer (%385); (ii) ayarla-unut oyuncusunun zinciri 40. günde çıktısının %60–80'ini kaybeder.
+
+### 2.3 Hedef aralıklar (zincir düzeyi)
 
 | # | Hedef | Aralık |
 |---|---|---|
-| H-B1 | Yönetimsiz (parça hiç yok) çıktı kaybı, yokluk bantlarına göre (docs arastirma GDD §3C.1a: K5 14–45 gün uyku, K6 45–90 gün çürüme) | gün 14 ≤ %5; gün 45 ≤ %15; tavana (≈ K6 sonu) 90 günde ulaşır; tavan ≤ %30 |
-| H-B2 | Yönetimsizin KD'si negatife dönmez en az 45. güne kadar, bütün yeni ve mevcut işleme yöntemlerinde | KD ≥ 0 ⇔ tavan ≤ `1 − 1/oran`: en kısıtlı yöntem `standart_parca` (%18) tavanda eksiye gider ama ancak 54. günde; hedef tutar |
-| H-B3 | Bakım yapan her tesis türü yapmayandan anlamlı iyi (60 gün ortalaması, parça ithal fiyatıyla) | önlenen kayıp / bakım maliyeti ≥ 2,0 her yöntemde; net getiri > 0 |
-| H-B4 | Bakımlı/bakımsız gelir oranı | 60 gün: 1,10–1,35; tavanda ≤ 1,45 (bugün 1,30 → 1,67; ölçülen çiftçide 2,2) |
-| H-B5 | Yeni oyuncu ilk 14 gün | çıktı kaybı ≤ %5 (parça kiti inşaata bile yetmediği için ilk gün stok yok, §2.4) |
-| H-B6 | Y7 oyuncu payı | bakım yönetimli ve yönetimsiz her iki yerleşik temelde GEÇTİ; eşik tamponu ≥ 1,2× |
+| H-B1 | Yönetimsiz (parça hiç yok) zincir çıktı kaybı; k = tesis zinciri uzunluğu (Tarla → ahır k = 2; ekmek zinciri k = 3); yokluk bantları K5 14–45 gün uyku, K6 45–90 gün çürüme (GDD §3C.1a) | k = 3: gün 14 ≤ %10, gün 45 ≤ %30, tavan ≤ %60; k = 1: gün 14 ≤ %4, gün 45 ≤ %12 |
+| H-B2 | Tek aşamalı yöntemlerde KD ≥ 0 (T ≤ 1 − 1/oran); bugün değirmen, fırın, doğrama 35.–40. günde negatif | T ≤ %25 (yeni yöntemlerin sınırı %27–31; mevcut `standart_parca` %18 tavanda negatif kalır) |
+| H-B3 | Bakımın net getirisi (60 gün ort., parça ithal fiyatıyla): kayıp/maliyet; sanayici arketipi için başabaş eşiği | tek aşama ≥ 1,5; sanayici: oran ≥ (1 − T)/T tutmuyorsa parça miktarı ayrı ele alınır (§4) |
+| H-B4 | Bakımlı/bakımsız gelir oranı (Y7 penceresi, gün 70; bugün k = 2 için 2,78) | k = 2: 1,3–1,6; k = 3 ≤ 2,0; k = 1 ≤ 1,3 |
+| H-B5 | Yeni oyuncu ilk 14 gün | zincir çıktı kaybı ≤ %10 |
+| H-B6 | Y7 oyuncu payı | bakım yönetimli ve yönetimsiz her iki temelde GEÇTİ; eşik tamponu ≥ 1,2× (geç çiftçi/emsal tahmini %385 → ≈ %240; geç pazar %171 → ≈ %107) |
 
 ### 2.4 Parametre önerisi (mülk kipine özel; doğrulanmadı)
 
@@ -677,41 +706,48 @@ Sonuç: Y7'nin "geç katılan emsalini geçer" sonucunun büyük kısmı yerleş
 
 | Parametre | Bugün (`sanayi.bakim`) | Öneri (mülk) | Gerekçe |
 |---|---|---|---|
-| `asinmaHizCarpaniPpm` (düzey `asinmaPpmGun` ve `kitlikAsinmaPpmGun`'a çarpan) | 1.000.000 (yok) | **550.000** | Kıtlık aşınması 20.000 → 11.000 ppm/gün (%1,1/gün): tavana 91 günde ulaşır (K6 sonu). asgari 11.000, yüksek −8.250 (tüm hız ×0,55) |
-| `asinmaVerimKaybiTavaniPpm` | 400.000 | **300.000** | Çıktı en çok ×0,70; bakımlı/bakımsız tavan oranı 1,43 (bugün 1,67); chain yöntemleri (oran 1,36–1,45) tavanda KD ≥ 0'a yakın (+45…+100 ₺/sa) |
-| `genelOnarimMaliyetPpm` | 200.000 | 200.000 (aynı) | Onarım 6 sa duruş (≈ 4,6 saatlik KD) + %20 inşa bedeli; mevcut oran makul. Onar kararı K6'da ana kart (GDD §3C.1a) |
-| `genelOnarimDurusSaat` | 6 | 6 (aynı) | - |
-| Yeni oyuncu muafiyeti | yok | **gerekmez** | A parametreleriyle gün 14 kaybı −%4,6 (H-B5 tutar) |
+| `asinmaHizCarpaniPpm` (düzey `asinmaPpmGun` ve `kitlikAsinmaPpmGun`'a çarpan) | 1.000.000 (yok) | **500.000** | Kıtlık aşınması 20.000 → 10.000 ppm/gün (%1/gün): zincirde gün 14 %10, gün 45 %30 (H-B1); tavana 100 günde ulaşır. Düzeyler: asgari +10.000, normal 0, yüksek −7.500 |
+| `asinmaVerimKaybiTavaniPpm` | 400.000 | **250.000** | Tek aşama tavan kaybı %25 (bakımlı/bakımsız 1,33), k = 2 için 1,78, k = 3 için 2,37; yeni yöntemlerde KD ≥ 0 |
+| `genelOnarimMaliyetPpm`, `genelOnarimDurusSaat` | 200.000; 6 | aynı | Onarım yolu hiç koşulmadı (O2): maliyet etkinliği ölçülmeli (R8) |
+| Yeni oyuncu muafiyeti | yok | **gerekmez** | C ile gün 14 zincir kaybı %10,1 (k = 3), %6,9 (k = 2), %3,5 (k = 1): H-B5 sınırında |
 
-**Yönetimsiz yörünge (çıktı değişimi; 60 günlük ortalama ve oran):**
+**Zincir derinliğine göre yönetimsiz yörünge (çıktı kaybı) ve bakımlı/bakımsız oranı** (betik §10.2b; sütun "gün 70" Y7 penceresi):
 
-| Parametre | Gün 7 | 14 | 30 | 45 | 60 | 60 g ort. | Tavana varış | Bakımlı/bakımsız (60 g) | (tavan) |
-|---|---|---|---|---|---|---|---|---|---|
-| mevcut (20.000; %40) | −%5,6 | −%11,2 | −%24,0 | −%36,0 | −%40,0 | −%23,3 | 50 g | 1,304 | 1,667 |
-| **A: 11.000; %30** | **−%2,3** | **−%4,6** | **−%9,9** | **−%14,8** | **−%19,8** | −%9,9 | 91 g | 1,110 | 1,429 |
-| B: 15.000; %30 | −%3,1 | −%6,3 | −%13,5 | −%20,3 | −%27,0 | −%13,5 | 67 g | 1,156 | 1,429 |
-| C: 10.000; %25 | −%1,7 | −%3,5 | −%7,5 | −%11,3 | −%15,0 | −%7,5 | 100 g | 1,081 | 1,333 |
+| Parametre | k | gün 14 | gün 45 | gün 70 | tavan | oran gün 70 | oran 60 g ort. | oran tavan |
+|---|---|---|---|---|---|---|---|---|
+| mevcut (20.000; %40) | 1 | %11,2 | %36,0 | %40,0 | %40,0 | 1,67 | 1,30 | 1,67 |
+| mevcut (20.000; %40) | 2 | %21,1 | %59,0 | %64,0 | %64,0 | **2,78** | 1,65 | 2,78 |
+| mevcut (20.000; %40) | 3 | %30,0 | %73,8 | %78,4 | %78,4 | 4,63 | 2,04 | 4,63 |
+| A (11.000; %30) | 2 | %9,0 | %27,5 | %40,9 | %51,0 | 1,69 | 1,23 | 2,04 |
+| A (11.000; %30) | 3 | %13,2 | %38,3 | %54,5 | %65,7 | 2,20 | 1,35 | 2,92 |
+| **C (10.000; %25), öneri** | 1 | %3,5 | %11,3 | %17,5 | %25,0 | 1,21 | 1,08 | 1,33 |
+| **C (10.000; %25), öneri** | 2 | %6,9 | %21,2 | %31,9 | %43,8 | **1,47** | 1,17 | 1,78 |
+| **C (10.000; %25), öneri** | 3 | %10,1 | %30,1 | %43,8 | %57,8 | 1,78 | 1,26 | 2,37 |
+| E (8.000; %25), daha yumuşak | 2 | %5,5 | %17,2 | %26,0 | %43,8 | 1,35 | 1,13 | 1,78 |
+| E (8.000; %25), daha yumuşak | 3 | %8,2 | %24,6 | %36,4 | %57,8 | 1,57 | 1,20 | 2,37 |
 
-A hedefleri H-B1'i karşılar (gün 14 −%4,6, gün 45 −%14,8, tavan gün 91). B gün 45'te %20'yi aşar ve K6'dan önce tavana varır; C bakımlı/bakımsız oranını 1,08'e indirir (bakım değeri küçük).
+C, H-B1 (k = 3: %10 / %30 / %58), H-B4 (k = 2 için 1,47) ve H-B5'i karşılar; A bileşik etki yüzünden k = 3'te gün 45'te %38 ile hedefi aşar. E bir hedefi daha rahat tutar (k = 3 gün 45 %24,6) ama bakımın değerini azaltır (k = 1 oranı 1,16). **Yedek düğme:** O2 R3 koşusunda ekmek zinciri gün 45 kaybı %30'u aşarsa C'den E'ye inilir.
 
-**Bakımın net getirisi (₺/sa; 60 gün ortalaması − bakım parçası maliyeti):**
+**Tek aşamalı yöntemlerde bakımın net getirisi (60 gün ortalaması; ₺/sa; parça fiyatı ithal; bileşik etki hariç, yani alt sınır):**
 
-| Yöntem | Bakım parçası ₺/sa | KD ≥ 0 en yüksek tavan | Bugün (çıktıya) | **A (çıktıya)** | A, parça ×1,33 | A + verime uygula |
-|---|---|---|---|---|---|---|
-| geleneksel_tarim | 100 | yok | 1.300 | 494 | 461 | 494 |
-| standart_gida_isleme | 160 | %46 | 2.453 | 949 | 896 | 345 |
-| ahir_besi | 100 | %45 | 1.435 | 551 | 518 | 195 |
-| yuksek_firin | 300 | %27 | 1.380 | 413 | 314 | **−107** |
-| standart_parca | 200 | %18 | 1.480 | 513 | 447 | **−73** |
-| degirmen | 160 | %31 | 1.904 | 716 | 663 | 110 |
-| ekmek_firini | 160 | %31 | 3.340 | 1.325 | 1.272 | 295 |
-| cam_firini | 200 | %31 | 908 | 270 | 204 | **−54** |
-| celik_dograma | 200 | %31 | 2.152 | 798 | 732 | 108 |
-| kepek_gubresi | 100 | %27 | 488 | 149 | 116 | **−34** |
+| Yöntem | Bakım parçası ₺/sa | KD ≥ 0 en yüksek tavan | Bugün (çıktıya) | **C (çıktıya)** | E |
+|---|---|---|---|---|---|
+| geleneksel_tarim | 100 | yok | 1.300 | 350 | 260 |
+| standart_gida_isleme | 160 | %46 | 2.453 | 680 | 512 |
+| ahir_besi | 100 | %45 | 1.435 | 394 | 295 |
+| yuksek_firin | 300 | %27 | 1.380 | 240 | 132 |
+| standart_parca | 200 | %18 | 1.480 | 340 | 232 |
+| degirmen | 160 | %31 | 1.904 | 503 | 371 |
+| ekmek_firini | 160 | %31 | 3.340 | 965 | 740 |
+| cam_firini | 200 | %31 | 908 | 156 | 85 |
+| celik_dograma | 200 | %31 | 2.152 | 556 | 405 |
+| kepek_gubresi | 100 | %27 | 488 | 89 | 51 |
 
-A (çıktıya uygulama korunur) bütün yöntemlerde net getiriyi pozitif tutar (≥ 149 ₺/sa; kayıp/maliyet ≥ 2,3; en düşük cam fırını 270 + 200 = 470 ↔ 200). **Alternatif B2 "aşınmayı verime uygula (girdi de kısılır)" önerilmez:** KD hiç negatife inmez ama bakım ince marjlı yöntemlerde (`yuksek_firin`, `standart_parca`, `cam_firini`, `kepek_gubresi`) **net negatif** olur; bu H-B3'ü bozar ve O2'nin sanayicide gördüğü yönü (bakım net geliri düşürüyor) kalıcılaştırır. Önerim: çıktıya uygulamayı koru, hızı ve tavanı düşür.
+C altında hepsi pozitif (kayıp/maliyet ≥ 1,8: cam fırını 356/200, kepek gübresi 189/100); zincirli kullanımda bileşik etki bu getiriyi katlar. Alternatif "aşınmayı verime uygula (girdi de kısılır)" önerilmez: KD negatife inmez ama ince marjlı yöntemlerde bakım net negatif olur (betik §10.1b); çıktıya uygulama korunur.
 
-**Diğer öneriler.** (1) **Başlangıç kiti parçası:** dört P4 yapısı indirimli bile ≈ 40,6 parça ister, kit 40; bakıma kalan yok (+5 parça `ilk_isleme` ödülü ≈ 2 sa). Parça kiti ya da ödülün artırılması kod/para etkisi küçüktür ama gün-1 bakım kartı (Esnaf Defteri) gereklidir; bu bir parametre önerisidir (kit 40 → 60 parça, yeni oyuncu kit değeri +3.600 ₺ taban). (2) **Bakım otomatiği (özellik, kod):** `bakim_duzeyi` komutuna `otomatikParca: bayrak` alanı (para taşımaz); açıkken bakım parçası açığı NPC'den otomatik ithal edilir ve bir emir yuvası harcamaz. Parametre önerisinden bağımsızdır ve Y7 temel çizgisini "yönetimli" yapar; K3 işidir, yalnız öneridir. (3) **Ölçüt kaydı (geri dönüşü zor):** Y7 emsali "yönetimli yerleşik" olarak da raporlanmalı; iki temel (yönetimsiz ve yönetimli) paralel sürmeli.
+**Beklenen Y7 etkisi (kâğıt tahmin; R3/R4 ile doğrulanacak).** Yönetimsiz çiftçi (k = 2, gün 70) çıktı çarpanı 0,36 → 0,68; yerleşik emsal geliri ×1,89 (191.425 → ≈ 362.000 ₺); geç çiftçi (gün 14, k = 2) 0,79 → 0,93 (×1,18); geç çiftçi/emsal %385 → ≈ %240; yönetimli bakım koşusu aynı kalır (%163); fark ×2,36 → ×1,5. Geç pazar/emsal %171 → ≈ %107 (bakım koşusu %60). Y7 payı hâlâ %100 olmalı.
+
+**Diğer öneriler.** (1) **Başlangıç kiti parçası:** O2 doğruladı: 40 parça inşaatta harcanıyor, 2. günün sonunda stok 0 (çiftçi 0,08 parça 1. gün sonu); dört P4 yapısı indirimli bile ≈ 40,6 parça ister. Kit 40 → 60 parça (taban değer +3.600 ₺) ve gün-1 bakım kartı (Esnaf Defteri) önerilir. (2) **Bakım otomatiği (özellik, kod):** `bakim_duzeyi` komutuna `otomatikParca: bayrak` (para taşımaz); açıkken bakım parçası açığı NPC'den otomatik ithal edilir ve bir emir yuvası harcamaz; mülk botları şu an `bakim_duzeyi` vermiyor (O2 §7), Y7 temelini "yönetimli" yapar. K3 işidir, yalnız öneridir. (3) **Ölçüt kaydı (geri dönüşü zor):** Y7 emsali "yönetimli yerleşik" olarak da raporlanmalı; yönetimsiz ve yönetimli iki temel paralel sürmeli. (4) **Y7 parça gideri:** yönetimli temelde parça tüketimi tüketim anında yazılmalı (ithalat zamanından bağımsız).
 
 ### 2.5 Mülk kipi mi, bölge kipi altınları mı
 
@@ -722,26 +758,27 @@ A (çıktıya uygulama korunur) bütün yöntemlerde net getiriyi pozitif tutar 
 | `mulk.perakende.*`, `yerelNpc`, dükkân | Yalnız mülk kipi. |
 | `bakim_duzeyi.otomatikParca` | Komut alanı eklemesi; protokolde yalnız ekleme, bölge kipinde yok sayılır. |
 
-### 2.6 O2 koşu listesi ve beklenen yön (Operasyon liderine iletilecek)
+### 2.6 O2 koşu listesi: sonuçlar ve sıradaki koşular
 
-Durum: istek Ar-Ge lideri → Operasyon liderine iletildi; 1, 2, 3 ve 5. maddeler O2'nin gec60 bakım temel ölçümüyle gelecek, 4. madde kuyruk boşalınca. **Sonuçlar gelene kadar §2.2–§2.4 (doğrulanmadı).**
-
-| # | Koşu | Bayraklar / veri kopyası | Tohum | Beklenen yön |
-|---|---|---|---|---|
-| R1 | Aşınma yörüngesi ve gelir ayrışması | var olan gec60-temel ve gec60-bakim JSON'larından; yeni koşu gerekmez | 1–10 | Tesis türü başına aşınma gün 5/10/20/30/50/74: tavana ≈ 50. günde varır; 7 günlük net gelir brüt çıktı / aşınma kaybı / işletme / parça ithalatı / onarım ayrışır; ×2,2'nin ×1,67 üstü kısmı H2 (ödeme gücü) ile açıklanır mı? |
-| R2 | Parça piyasası | aynı koşular | 1–10 | Bot parça ithalat talebi / NPC arzı (170/sa × ölçek) ≪ 1 ise sorun parça kıtlığı değil bakım yönetimsizliğidir; parça fiyatı/taban medyanı 1,25–1,33 civarı |
-| R3 | **A parametreleri, bakım yönetimi kapalı** | `--kip parsel --agir --ad v2-bakimA-temel`, veri kopyası: `sanayi.bakim.kitlikAsinmaPpmGun=11000`, düzeyler `asinmaPpmGun` ×0,55 (asgari 11000, yüksek −8250), `asinmaVerimKaybiTavaniPpm=300000` | 1–10 (bot tohumu 7) | Yerleşik çiftçi 7 günlük gelir medyanı 191 bin → ≈ 220–240 bin (+%15–25); geç çiftçi/emsal %385 → ≈ %310–330; Y7 GEÇTİ; yerleşik sanayicide daha büyük artış (kaldıraç) |
-| R4 | A parametreleri, bakım yönetimi açık | aynı + `--bakim-yonetimi` | 1–10 | Yerleşik gelir ≈ 417 bin (değişmez; aşınma yok); bakımlı/bakımsız oranı 2,2 → ≈ 1,6–1,9 (yalnız aşınma kanalı 1,30 → 1,11'e inerse); H2 varsa daha çok düşer |
-| R5 | Kısa vade | `--kisa` (24 gün) temel ve bakım | 1–3 | Fark ≤ %10 (aşınma henüz küçük); H-B5 |
-| R6 | Tek değişken tarama (isteğe bağlı) | (kitlik, tavan) ∈ {(20000; 400000) taban, (11000; 300000), (15000; 300000), (10000; 250000)} | 1–3 | §2.4 tablosundaki sıra: bakımlı/bakımsız oranı 1,67 → 1,43 → 1,43 → 1,33; Y7 tamponu 1,2× altına inmemeli |
-| R7 | Mülk kipi bot davranışı | yalnız kod okuma / rapor | - | Botlar mülk kipinde `bakim_duzeyi` komutu veriyor mu, yoksa varsayılan 1 ile mi koşuyor? Kit 40 parça Tarla bakımına (0,5/sa) 80 saat yeter; üç yapıda 19 saat, P4 zincirinde 0 saat (inşaata gidiyor) |
+| # | Koşu | Durum | Sonuç / beklenen yön |
+|---|---|---|---|
+| R1 | Aşınma yörüngesi ve gelir ayrışması (gec60 temel/bakım) | **Geldi** | %50 gün 26, %100 gün 51; ×2,79 net / ×2,63 brüt; ahır verimi 59,5 ↔ 99,2: zincir bileşik etkisi (§2.2) |
+| R2 | Parça piyasası | **Geldi** | talep olan gün payı %30,8; en yüksek günlük istenen NPC arzının %37'si; fiyat/taban medyan %113, en çok %134: sorun parça kıtlığı değil yönetimsizliktir |
+| R3 | **C parametreleri, yönetim kapalı** (`--kip parsel --agir --bakim-olc`; veri kopyası: kıtlık 10.000, düzeyler ×0,5, tavan 250.000) | Bekliyor | Yerleşik çiftçi emsal ≈ 362.000 ₺; geç çiftçi/emsal ≈ %240; geç pazar ≈ %107; ahır verimi 74. günde ≈ %68; Y7 GEÇTİ. Zincir gün 45 kaybı (k = 3) ≤ %30 değilse E (8.000; %25) |
+| R4 | C, yönetim açık | Bekliyor | Yerleşik çiftçi ≈ 829 bin ₺ (aşınma yok, değişmez); bakımlı/bakımsız ×2,79 → ≈ ×1,5 |
+| R5 | Kısa vade (24 gün) | **Geldi** | geç çiftçi/emsal %189 → %158 (bakım), geç sanayici %118 → %108, geç pazar %84 → %66: temel ↔ bakım farkı ≈ %20 (beklenen ≤ %10'un üstünde; çiftçi zinciri k = 2, bugün gün 14 kaybı %21) |
+| R6 | Duyarlılık taraması (O2'nin 4. maddesi) | Sırada | Izgara: kıtlık ∈ {8.000, 10.000, 15.000, 20.000} × tavan ∈ {200.000, 250.000, 300.000, 400.000}, gec60, tohum 1–3, **çiftçi / sanayici / tüccar ayrı satır** (zincir derinliği ve sanayici ters yönü ayrışsın); beklenen sıra §2.4 tablosu |
+| R7 | Mülk kipi bot davranışı | **Geldi** | botlar `bakim_duzeyi` vermiyor; kit 40 parça 2. günde bitiyor |
+| **R8 (yeni)** | **Genel onarım maliyet etkinliği**: parça ithalatı kapalı + onarım açık (O2'nin sorusuna evet) | İstenir | Onarım yolu hiç çalışmadı. Beklenen: aşınma %100 iken onarım (%20 inşa bedeli + 6 sa duruş) 40–60 günlük kaybı kapatır; oyuncunun tek "geri dönüş" yolu mu, bakım sürekliliğinden pahalı mı? Tohum 1–3, gec60 |
+| **R9 (yeni)** | Sanayici arketipinde tesis türüne göre parça tüketimi ve çıktı değeri dökümü | İstenir | 7 günde parça ithalatı 291.839 ₺ (çıktı 424.063 ₺): hangi tesis (maden, santral) ne kadar parça tüketiyor? Başabaş eşiği (1 − T)/T için tesis başına çıktı/parça maliyeti |
+| **R10 (yeni)** | Y7 yönetimli temelinde parça giderinin tüketim anında yazılması | İstenir | Çiftçi/tüccar bakım koşusunda son 7 gün ithalat 0, toplam 918.473 / 515.545 ₺: ithalat zamanlaması ve Y7'ye etkisi (≈ netin %6'sı) |
 
 ## 3. Geri dönüşü zor kararlar (A2)
 
 | # | Karar | Neden geri dönüşü zor | Öneri |
 |---|---|---|---|
 | ZA-1 | **Enerji şebekeden** ve fiyat kuralı (kamu tavanı çarpanı) | Yöntem tarifleri elektrik/yakıt girdisini şebekeyle dengeledi; şebeke fiyat kuralı sonradan değişirse bütün KD ve oran bandı kayar; lavabo kalem adı (`sebeke`) ve `kasaPayiPpm` anlamı para defteri şemasına girer | Kural `kamuFiyatTavani` ile aynı kalsın; santral vaadi O5 (bağımsızlık/büyük ölçek) ya da O3 (kömür ×0,75); fiyat çarpanı parametre |
-| ZA-2 | **Tarif sayıları** (değirmen 165/33, fırın 250, cam 50, doğrama 28; cam/doğrama dikeyden sapma) | Yayımlandıktan sonra sayı değişimi canlı ekonomiyi ve bot dengesini kırar; kimlik kilidi yalnız id'yi korur; yöntem yalnız eklenir | Üst-bant tarifler (§1.4); A0-11 ölçümünden önce; cam/doğrama için rapor değerleri geçerli alternatif |
+| ZA-2 | **Tarif sayıları** (değirmen 165/33, fırın 240, cam 50, doğrama 28; cam/doğrama dikeyden sapma) | Yayımlandıktan sonra sayı değişimi canlı ekonomiyi ve bot dengesini kırar; kimlik kilidi yalnız id'yi korur; yöntem yalnız eklenir | Üst-bant tarifler (§1.4); A0-11 ölçümünden önce; cam/doğrama için rapor değerleri geçerli alternatif |
 | ZA-3 | **Cam fırınının ev sahibi** (`parca_fabrikasi`, A3 seçti) | Tesis türü `yontemler[]` taşınamaz (uretim K-8); canlı tesisler `tur`/`yontem` ile bağlı | Sayısal olarak doğru (−9.666 ₺, −1 hücre, `standart_parca`'yı geçer) |
 | ZA-4 | **`yerelNpc` musluk kalemi, `lavabo.sebeke` ve para defteri sürümü** | Para arzı bir kez yanlış yazılırsa geri sarılamaz; doğrulayıcı şeması | Kalemler yalnız blok açıkken; ZP8 sayacı; tamsayı kasa/lavabo bölme kuralı |
 | ZA-5 | **Yerel talep modeli kimliği** (ilçe sınıfı tanımı, `yerelOlcek`, takvim grupları, bayram biçimi, sepet 200 sabit) | Arsa fiyat beklentileri ve dükkân kararları buna dayanır (canlı dünya k10, AÖ-2) | Sayılar parametre, grup adları ve formül biçimi kalıcı; `ilceSinifi` hücre sınıfından türetilir |
@@ -755,16 +792,17 @@ Durum: istek Ar-Ge lideri → Operasyon liderine iletildi; 1, 2, 3 ve 5. maddele
 ## 4. Açık sorular
 
 1. **(Baş lider)** Santral vaadi: O5 (düzelt) mi, O3 (kömür girdisi ×0,75, mülk veri geçersiz kılma) mı, O1/O2 (şebeke satış çarpanı 1,25–1,50 R; G4 metninden sapar) mı? Sayısal öneri O5 + gerekirse O3 (§1.3-B1).
-2. **(Baş lider/A3)** Ekmek zinciri +%33,6 K/U ilkesinin (+%10–25) üstündedir; fırın çıktısı 243 ekmekle +%25'e oturur. 250 (A0-11 güvencesi) ile 243 (ilkeye uyum) arasında tercih.
+2. **(Baş lider/A3)** Fırın çıktısı: tek öneri 240 ekmek (zincir +%21,2; K/U ilkesinin içinde; M beklentisi değişmez). Kabul mü, yoksa 250 (+%33,6, ilkenin üstü) mü?
 3. **(Baş lider)** `standart_gida_isleme` yedek düğmesi (G2) tetik eşiği X = %30 ve ölçüm koşulu (§1.3-B2) kabul mü? Mülk botlarına yöntem seçici (marjinal net) eklenecek mi (K3)? Bu olmadan M ölçülemez.
 4. **(A3/T3)** Cam/doğrama tarifleri dikeyden sapıyor (§1.4): üst bant mı rapor değerleri mi? Dükkân bedeli P-İthal (T3 ana) mı P-Yok (A2 sayıca) mı?
 5. **(Baş lider)** `kasaPayiPpm = %12` ve kamu siparişi v0 listesi/fiyatı (1,03 R; 100/50/10/30/20 birim; ≤ 5 sipariş/ilçe/hafta) kabul mü? Şebeke kasa payı yalnız elektrik mi, elektrik + yakıt mı?
 6. **(K3)** Şebeke fiyatı canlı referans (`d.pazar.fiyat`) mı yoksa taban mı çarpılacak? Elektrik için `pazar.fiyat` dinamiği çekirdekte koşuldu mu (doğrulanmadı).
 7. **(Baş lider/Operasyon)** `yerelOlcek` 50 ve yedi malın `talep1000Saat` değerleri kalibre değil; ilçe nüfusu verisi geldiğinde yeniden kalibre edilmeli. ZP8 payı %45'te: eşik %50 doğru mu?
 8. **(Baş lider)** Fiyat kademelerinde üst sınır 1,15 R ve "kampanya" kademesi (yalnız pencerede) kabul mü, yoksa üç kademe mi? Kamu tavan metninde GDD'deki "1,10 R" 1,035 ile düzeltilsin mi?
-9. **(O2)** §2.6 R1–R7 sonuçları işlendi (bkz. §2.7); açık kalan: 4. madde duyarlılık taraması, genel onarım koşusu (O2'nin sorusu).
+9. **(O2)** §2.6: R1, R2, R5, R7 işlendi. Sırada R3/R4 (C parametreleriyle), R6 (duyarlılık, arketip ayrı), R8 (genel onarım: evet, istenir), R9 (sanayici parça dökümü), R10 (Y7 parça gideri zamanlaması).
 10. **(K3)** `bakim_duzeyi.otomatikParca` ve `mulk.bakim` bloğu çekirdek işi G6–G8'e girer mi yoksa sonraki sprinte mi?
-11. **(Operasyon/A1)** İlk dükkân zamanı ölçütü (≤ 36 sa) nakit değil emir yuvası ve inşaat sırası tarafından belirleniyor; insan testinde bu adımlar ayrı ölçülsün.
+11. **(Baş lider)** Sanayici arketipinde (maden, santral) bakım bugün başabaşın altında (çıktı/parça maliyeti 1,45 < 1,50) ve tavan %25'e inerse net negatif olur: bu tesislerde mülk kipinde bakım parçası miktarı (`bakim.parca`) ayrı mı ele alınsın (R9 dökümüne göre)?
+12. **(Operasyon/A1)** İlk dükkân zamanı ölçütü (≤ 36 sa) nakit değil emir yuvası ve inşaat sırası tarafından belirleniyor; insan testinde bu adımlar ayrı ölçülsün.
 
 ## Ek A. Betik ve çıktı
 

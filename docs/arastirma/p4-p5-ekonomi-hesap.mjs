@@ -875,6 +875,36 @@ yaz();
   yaz();
   yaz(`Okuma: tek ürünle (A+ ${tam(A2.net)} ↔ B+ ${tam(B2.net)}) standart yol ${ond((A2.net / B2.net - 1) * 100, 0)}% önde kalır (gıda ₺70 ve oran 1,84'ün sonucu); ama oyuncu dilimi tek mal havuzunu doldurur ve **ikinci tesis marjinal olarak değersizdir (D)**: oyuncunun asıl kararı "ikinci standart mı, zincir mi" ise zincir ${tam(B2.net)} ₺/sa kazandırır, ikinci standart eksiye düşer. Standart ve zincir ikame değil **tamamlayıcıdır** (C = ${tam(A2.net + B2.net)} ₺/sa). Tesis tabanındaki −%28 kayıp bu yüzden erken oyunda ve n ≥ 4 her dünyada bağlayıcı değildir.`);
   yaz();
+  // Fırın çıktısı duyarlılığı (K/U ilkesi +%10–25 ↔ M beklentisi)
+  yaz("**Fırın çıktısı duyarlılığı (165 un + 20 yakıt + 15 elektrik → x ekmek): zincirin standarda göre üstünlüğü ve strateji kararı.**");
+  yaz();
+  const girFir = deger(fr.girdiler);
+  const zinO = (cikti, satisNpc, satisYerel, yerelFiyat) => {
+    const birim = satisNpc + satisYerel;
+    const yuk = Math.min(1, birim / cikti);
+    const gelir = satisNpc * ihrac("ekmek", kor1) + satisYerel * P("ekmek") * yerelFiyat + yuk * 33 * ihrac("kepek", kor1);
+    const gider = yuk * 200 * hasatTahil + yuk * 27 * SEB_EL + yuk * 20 * SEB_YK + 2 * sabitStd + (satisYerel > 0 ? GIDER_S : 0);
+    return { yuk, net: gelir - gider };
+  };
+  yaz(baslik("Fırın çıktısı (ekmek/sa)", "Fırın oranı", "Fırın KD ₺/sa (şebeke)", "Zincir net, tahıl tabanı ₺/sa", "Zincir / standart", "Fırın uzmanı net ₺/sa", "B+ (pazar dilimi) ₺/sa", "C = A+ ve B+ ₺/sa", "B+ − D (ikinci tesis karar farkı)"));
+  const dNet = 160 * ihrac("gida", kor1) * 0.25 - 200 * hasatTahil - 10 * SEB_EL - sabitStd;
+  const uzman0 = (() => {
+    const sat = 250 * ihrac("ekmek", false);
+    return sat;
+  })();
+  void uzman0;
+  for (const out of [250, 245, 243, 240, 235, 230]) {
+    const dlt = (250 - out) * ihrac("ekmek", false);
+    const zincirNet = zk[2].net - dlt;
+    const bp = zinO(out, dilimEkmek, firinEkmek, 1.05);
+    // fırın uzmanı: satış çıktı kadar, girdiler ithal/şebeke (§2.4 ile aynı kalemler)
+    const kFirOut = kFir - (250 - out) * P("ekmek");
+    const uzman = out * ihrac("ekmek", false) - (fr.girdiler.un / 1000) * ithal("un", false) - (fr.girdiler.yakit / 1000) * SEB_YK - (fr.girdiler.elektrik / 1000) * SEB_EL - ((fr.bakim.parca / 1000) * ithal("parca", false) + PR.ekonomi.tesisIsletmeParasiSaat / 1000);
+    yaz(satir(String(out), ond((out * P("ekmek")) / girFir, 3), tam(kFirOut), tam(zincirNet), `+${ond((zincirNet / zk[0].net - 1) * 100, 1)}%`, tam(uzman), tam(bp.net), tam(A2.net + bp.net), tam(bp.net - dNet)));
+  }
+  yaz();
+  yaz("Okuma: pazar dilimi bağlayıcıyken (n ≥ 4) fırın tesisinin yükü %50 dolayındadır (sattığı birim sayısı 131/sa < çıktı), bu yüzden çıktıyı 250 → 240'a indirmek B+ ve C'yi çok az etkiler (yük ve girdi payı hafif artar); karar farkı (B+ − D: ikinci tesisi zincire çevirmek) 6.200–6.500 ₺/sa kalır (230–250 arası). Çıktı düşüşü yalnız tahıl tabanında (tam yük) zincirin üstünlüğünü +%33,6'dan indirir.");
+  yaz();
   // Seçenekler
   yaz("**Yine de tesis tabanını garanti etmek istenirse (seçenekler; bandı aşmadan):**");
   yaz();
@@ -1488,6 +1518,8 @@ yaz();
     ["A: çıktıya (11000; %30)", 11000, 300000, false, 1],
     ["A, parça fiyatı ×1,33 (kıtlık)", 11000, 300000, false, 1.33],
     ["A + verime (11000; %30)", 11000, 300000, true, 1],
+    ["C: çıktıya (10000; %25)", 10000, 250000, false, 1],
+    ["E: çıktıya (8000; %25)", 8000, 250000, false, 1],
   ];
   yaz(baslik("Yöntem", "Bakım parçası ₺/sa", "KD≥0 en yüksek tavan (1−1/oran)", ...PAR.map(([a]) => `Net getiri ₺/sa: ${a}`)));
   for (const y of liste.filter((x, i, a) => a.findIndex((z) => z.id === x.id) === i)) {
@@ -1523,6 +1555,7 @@ const SENARYO = [
   ["A: 11000; %30", 11000, 300000],
   ["B: 15000; %30", 15000, 300000],
   ["C: 10000; %25", 10000, 250000],
+  ["E: 8000; %25", 8000, 250000],
 ];
 yaz(baslik("Parametre (kıtlık aşınma ppm/gün; tavan)", "gün 7", "gün 14", "gün 30", "gün 45", "gün 60", "60 gün ortalama", "tavana varış (gün)", "bakımlı/bakımsız (60 gün ort.)", "bakımlı/bakımsız (tavan)"));
 for (const [ad, k, t] of SENARYO) {
@@ -1530,6 +1563,29 @@ for (const [ad, k, t] of SENARYO) {
 }
 yaz();
 yaz("Çıktı değişimi (çıktı × çarpan − 1). Tarla gibi girdisiz yöntemde bu KD kaybıdır; işleme yöntemlerinde KD kaybı = çıktı kaybı × kaldıraç (§10.1).");
+yaz();
+yaz("### 10.2b Zincir derinliği ve bileşik aşınma (O2 ölçümüyle doğrulanan mekanizma): k aşamalı zincirin çıktı kaybı = 1 − çarpan^k");
+yaz();
+yaz("Aşınma çarpanı hem tahıl çıktısını hem de o tahılla beslenen sonraki tesisin girdisini kısar: Tarla → ahır (k = 2) çıktısı çarpan², Tarla → değirmen → fırın (k = 3) çarpan³ olur. O2 ölçümü (gec60, çiftçi): ahır `verimPpm` yönetimsiz %59,5 ↔ yönetimli %99,2 (oran 0,60 = çarpan), net gelir ×2,79, brüt çıktı ×2,63; 1/0,6² = ×2,78.");
+yaz();
+yaz(baslik("Parametre (kıtlık aşınma ppm/gün; tavan)", "k", "gün 14 kayıp", "gün 45 kayıp", "gün 70 kayıp (Y7 penceresi)", "tavan kaybı", "bakımlı/bakımsız gün 70", "bakımlı/bakımsız 60 gün ort.", "bakımlı/bakımsız tavan"));
+for (const [ad, kk, tt] of SENARYO) {
+  for (const k of [1, 2, 3]) {
+    const L = (g) => 1 - yorunge(kk, tt, g) ** k;
+    yaz(satir(ad, String(k), yuzde(L(14), 1), yuzde(L(45), 1), yuzde(L(70), 1), yuzde(1 - (1 - tt / PPM) ** k, 1), ond(1 / yorunge(kk, tt, 70) ** k, 2), ond(60 / Array.from({ length: 60 }, (_, g) => yorunge(kk, tt, g + 0.5) ** k).reduce((a, b) => a + b, 0), 2), ond(1 / (1 - tt / PPM) ** k, 2)));
+  }
+}
+yaz();
+yaz("Okuma: bugünkü parametrelerle k = 2 için gün 70 oranı 2,78 (O2: ×2,79 net); yani ×2,2…×2,79 sıçrama **zincir bileşik etkisidir**, ödeme gücü sarmalı (H2) gerekmez. k = 3 (ekmek zinciri) bugünkü parametrelerle tavanda ×4,63'tür.");
+yaz();
+yaz("### 10.2c Bakımın parça maliyeti çıktı değerine göre ne zaman karşılığını verir (tek aşama; tavanda)");
+yaz();
+yaz("Bakım, yönetimsizin tavandaki kaybı parça maliyetinden büyükse getirir: çıktı × T/(1−T) ≥ parça maliyeti, yani çıktı/parça maliyeti ≥ (1−T)/T. O2 yerleşik sanayici (7 gün): brüt çıktı 424.063 ₺, parça ithalatı 291.839 ₺ (oran 1,45).");
+yaz();
+yaz(baslik("Tavan T", "Eşik oranı (1−T)/T", "Sanayici oranı 1,45 ≥ eşik mi", "Tavanda yönetimsiz kaybı ₺/7 gün (424.063 × T/(1−T))"));
+for (const T of [0.4, 0.3, 0.25]) yaz(satir(yuzde(T, 0), ond((1 - T) / T, 2), 1.45 >= (1 - T) / T ? "evet" : "**hayır**", tam(424063 * (T / (1 - T)))));
+yaz();
+yaz("Okuma: sanayici arketipinde (maden + santral) bakım bugün başabaştır (eşik 1,50; ölçülen 1,45; yönetimli net gelir yönetimsizden düşük); tavan %25–30'a inerse bakım bu arketipte **net negatif** olur. Çıktı değerine göre parça girdisi pahalı tesislerde (maden, santral) parça girdisi ya da tavan ayrı ele alınmalı; bu hesap O2'nin kalem dökümünü (tesis türüne göre parça tüketimi) bekler.");
 yaz();
 yaz("### 10.3 Kaldıraçlı KD kaybı: işleme yöntemlerinde gün 30 ve gün 45 (aşınma çıktıya uygulanırsa ↔ verime uygulanırsa)");
 yaz();
