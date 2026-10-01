@@ -57,7 +57,7 @@ Liderler Opus, çalışanlar Sonnet. Orkestra bulut ortamında çalışıyor; sa
 4. **Değişmezler.**
    - Çekirdek deterministiktir: Math.random, Date ve kayan nokta transandantal yok.
    - Bölge kipi altınları birebir korunur.
-   - Protokole yalnız ekleme yapılır.
+   - Protokole yalnız ekleme yapılır. Demetlere öğe eklenmez; yeni veri isteğe bağlı nesne alanı olarak gelir ve geriye uyumu dondurulmuş eski şemayla bir testte gösterilir.
    - Tutar taşıyan sistem ya da ajan komutu yoktur.
    - Test atlanmaz ve devre dışı bırakılmaz.
    - Arayüzde büyük harf yoktur.
@@ -65,11 +65,10 @@ Liderler Opus, çalışanlar Sonnet. Orkestra bulut ortamında çalışıyor; sa
    - Çekirdek ya da protokol değiştiğinde istemci komut testi koşulur ve `pnpm dunya` önce ve sonra raporlanır.
 5. **Commit.**
    - Dosyalar açık yollarla eklenir; `git add -A` kullanılmaz.
-   - Mesajın sonunda şu iki satır yer alır:
-     ```
-     Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-     Claude-Session: https://claude.ai/code/session_01YQaN9Xy6JqWQSadMfNhyVn
-     ```
+   - Mesajın sonunda iki satır yer alır:
+     - `Co-Authored-By: Claude <model> <noreply@anthropic.com>`: ajan kendi modelini yazar (liderler Opus, çalışanlar Sonnet);
+     - `Claude-Session: https://claude.ai/code/session_01YQaN9Xy6JqWQSadMfNhyVn`: birebir ve zorunlu.
+   - Kapı yalnız Claude-Session satırını ve Co-Authored-By adresini denetler; model adını denetlemez.
 6. **Rapor biçimi.** Raporda şunlar bulunur:
    - dal ve taban;
    - değişen dosyalar;
