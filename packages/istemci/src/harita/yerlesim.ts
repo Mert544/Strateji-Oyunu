@@ -628,7 +628,7 @@ export class YerlesimKipi {
     if (sayac && this.geri.dataset["islem"] === String(s.bitis)) sayac.textContent = sure;
     else {
       this.geri.dataset["islem"] = String(s.bitis);
-      this.geri.innerHTML = `<span>${esc(s.ad)} kuruluyor · <b data-yg="sure">${sure}</b> içinde geri alabilirsin</span><button type="button" data-yg="geri-al">${ikon("undo-2", 15)} Geri al</button><button type="button" data-yg="kapat" aria-label="Kapat">${ikon("x", 15)}</button>`;
+      this.geri.innerHTML = `<span>${esc(s.ad)} kuruluyor · geri alma: <b data-yg="sure">${sure}</b></span><button type="button" data-yg="geri-al">${ikon("undo-2", 15)} Geri al</button><button type="button" data-yg="kapat" aria-label="Kapat">${ikon("x", 15)}</button>`;
     }
     this.geri.hidden = !gorunur;
   }
