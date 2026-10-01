@@ -11,10 +11,10 @@ import { anlikGoruntuOlustur, kuralSurumuHesapla } from "../src/serilestir";
 import { GUN, SAAT } from "../src/tipler";
 import { kimlikliGorunum } from "./goc-yardimci";
 import { G6Yerlestirici, g6Dugum, g6MulkVeri, g6Tesis } from "./g6-yardimci";
-import { G8_YONTEMLER, g8Veri } from "./g8-yardimci";
+import { G8_YONTEMLER, g6Icerigi, g8Veri } from "./g8-yardimci";
 import { mulkSim } from "./mulk-yardimci";
 
-const g6 = () => g6MulkVeri({}, (v) => Object.assign(v.param.mulk!.yeniOyuncu.baslangicStok, { silis: 10_000_000 }));
+const g6 = () => g6Icerigi(g6MulkVeri({}, (v) => Object.assign(v.param.mulk!.yeniOyuncu.baslangicStok, { silis: 10_000_000 })));
 const g8 = () => g8Veri(g6());
 
 describe("G6 görüntüsü -> G8 içeriği (yöntem sona ekleme göçü)", () => {

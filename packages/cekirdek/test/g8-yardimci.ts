@@ -23,11 +23,25 @@ export function g8Veri<V extends VeriPaketi>(v: V, sec: G6Secenek = {}): V {
   const tur = c.icerik.tesisTurleri.find((t) => t.id === "parca_fabrikasi");
   if (tur === undefined) throw new Error("parca_fabrikasi yok");
   for (const y of SENTETIK_G8) {
-    if (c.icerik.yontemler.some((x) => x.id === y.id)) continue;
+    const var_ = c.icerik.yontemler.find((x) => x.id === y.id);
+    if (var_ !== undefined) {
+      // Gerçek G8-1 içeriği ZATEN taşır: `bayrak === false` bayrağı yine de siler (karşıt kanıt).
+      if (sec.bayrak === false) delete (var_ as { mulkKipi?: true }).mulkKipi;
+      continue;
+    }
     const { mulkKipi, ...govde } = y;
     c.icerik.yontemler.push((sec.bayrak === false ? { ...govde } : { ...govde, mulkKipi }) as never);
     if (!tur.yontemler.includes(y.id)) tur.yontemler.push(y.id);
   }
+  return c;
+}
+
+/** G6 dönemi içerik: G8 yöntemleri (ve tür listelerindeki kimlikleri) çıkarılır; gerçek G8-1 paketi üzerinde "yalnız G6 yöntemleri" içeriği (göç provası, karşıt kanıt). */
+export function g6Icerigi<V extends VeriPaketi>(v: V): V {
+  const c = structuredClone(v);
+  const g8 = G8_YONTEMLER as readonly string[];
+  c.icerik.yontemler = c.icerik.yontemler.filter((y) => !g8.includes(y.id));
+  for (const t of c.icerik.tesisTurleri) t.yontemler = t.yontemler.filter((id) => !g8.includes(id));
   return c;
 }
 
