@@ -3,6 +3,7 @@
  * blok yok = no-op, bölge kipi etkisizliği (K-6). Her kanıtın negatif kontrolü aynı dosyadadır. `parametreler.json` DEĞİŞMEZ; bloklar bellekte kurulur.
  */
 import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
+import type { MulkBakimParametreleri } from "@bolge/veri";
 import { describe, expect, it } from "vitest";
 import { icerikDerle } from "../src/derle";
 import { bolgeHesapla } from "../src/ekonomi/uretim";
@@ -59,7 +60,8 @@ function noktalar(s: Simulasyon, gun: number, adet: number): string[] {
 describe("(a) derleme: yalnız etkin satırlar", () => {
   it("blok yok, {} ve kimlik değerleri (çarpan 1 000 000, tavan = sanayi değeri, parça çarpanı 1 000 000 / boş): ic.mulk.bakim OLUŞMAZ", () => {
     expect(icerikDerle(kur(undefined, false).dunya && mulkVeriTam()).mulk!.bakim).toBeUndefined();
-    for (const b of [{}, { asinmaHizCarpaniPpm: PPM }, { asinmaVerimKaybiTavaniPpm: 400_000 }, { yontemParcaPpm: {} }, { yontemParcaPpm: { yuzey_cevher: PPM } }, { asinmaHizCarpaniPpm: PPM, asinmaVerimKaybiTavaniPpm: 400_000, yontemParcaPpm: { yuzey_cevher: PPM } }]) {
+    const kimlikler: MulkBakimParametreleri[] = [{}, { asinmaHizCarpaniPpm: PPM }, { asinmaVerimKaybiTavaniPpm: 400_000 }, { yontemParcaPpm: {} }, { yontemParcaPpm: { yuzey_cevher: PPM } }, { asinmaHizCarpaniPpm: PPM, asinmaVerimKaybiTavaniPpm: 400_000, yontemParcaPpm: { yuzey_cevher: PPM } }];
+    for (const b of kimlikler) {
       expect(icerikDerle(mulkVeriTam(bakimli(b))).mulk!.bakim, JSON.stringify(b)).toBeUndefined();
     }
   });
