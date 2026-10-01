@@ -199,6 +199,19 @@ export interface BolgeDurumu {
   kesifSayisi?: number[];
   /** Son çözümde bakım girdisinin karşılanma oranı (ppm, B2): düşükse aşınma hızlanır. Sanayi kapalıysa tanımsızdır. */
   bakimKarsilanmaPpm?: number;
+  /**
+   * Kıtlık kademesi (B3, docs/08 §5.3 P4): 0 = yok, 1..3 = üretim çarpanı cezası kademesi (en çok %30). Saatlik tıkta
+   * `temelKarsilanmaPpm`'e göre güncellenir (kötüleşme anında, iyileşme `toparlanmaSaat`'te bir kademe). Pazar v1 kapalıysa
+   * TANIMSIZDIR (özet değişmez).
+   */
+  kitlikKademesi?: 0 | 1 | 2 | 3;
+  /** Son kademe değişiminin anı (B3, toparlanma ataleti için). Pazar v1 kapalıysa tanımsızdır. */
+  kitlikT?: Ms;
+  /**
+   * Temel ihtiyaç karşılanması (ppm, B3): min(gıda, yakıt, hane elektriği); son çözümden. Hane elektriği yalnız bölgede aktif
+   * santral varsa sayılır (şebekesiz bölge elektrik kıtlığı yaşamaz). Pazar v1 kapalıysa tanımsızdır.
+   */
+  temelKarsilanmaPpm?: number;
 }
 
 export interface KenarDurumu {
@@ -219,6 +232,45 @@ export interface ArastirmaDurumu {
   bitis: Ms;
 }
 
+/**
+ * Oyuncunun ticaret rejimi (B3, docs/08 §5.3 P3): oyuncu düzeyinde ithalat tarifesi ve ihracat vergisi. Komutu B4 Devlet'te
+ * gelir (`tarife_ayarla`); B3'te varsayılan 0'dır. Yeni oyuncu koruması süresince etkisizdir (komisyon ile birlikte).
+ */
+export interface TicaretRejimi {
+  ithalatTarifePpm: number;
+  ihracatVergisiPpm: number;
+}
+
+/** Ticaret değer kalemleri (mili-para veya mili-para/saat). Hepsi ref. fiyat değeri ve ondan ayrışan kesintilerdir. */
+export interface TicaretKalemleri {
+  /** İhracatın dünya referans fiyatıyla değeri. */
+  brutIhracat: Mili;
+  /** İthalatın dünya referans fiyatıyla değeri. */
+  brutIthalat: Mili;
+  /** NPC piyasa yapıcının makas geliri (alış-satış farkı; iki yön). */
+  makas: Mili;
+  /** Liman primi (taşıma bedeli; iki yön). */
+  prim: Mili;
+  /** İşlem komisyonu (sisteme giden para lavabosu; iki yön). */
+  komisyon: Mili;
+  /** İthalat tarifesi (devlet geliri). */
+  ithalatTarifesi: Mili;
+  /** İhracat vergisi (devlet geliri). */
+  ihracatVergisi: Mili;
+}
+
+/**
+ * Oyuncunun ticaret defteri (B3): `toplam` kümülatif (mili-para), `oran` son çözümdeki saatlik kalemler, `t0` oranın başlangıcı.
+ * Muhasebe, oran değişmeden önce `oran x (t - t0)` kadar toplama işler (uretimMuhasebesi gibi). Hazine korunumu:
+ * hazineye etki = ihracat - ithalat + (tarife ve ihracat vergisi hazineye geri yazılır, net 0): B3'te tek hazine vardır;
+ * B4 devlet bütçesi özel kesimden ayrılınca bu kalemler gerçek bir gelir/bedel olur.
+ */
+export interface TicaretDefteri {
+  toplam: TicaretKalemleri;
+  oran: TicaretKalemleri;
+  t0: Ms;
+}
+
 export interface OyuncuDurumu {
   id: OyuncuId;
   /** Hazine: para için tembel birikimli stok (mili-para). kapasite çok büyük. */
@@ -235,6 +287,10 @@ export interface OyuncuDurumu {
   kararlar: string[];
   /** Bakım düzeyi (B2): 0 asgari, 1 normal, 2 yüksek. Sanayi kapalıysa TANIMSIZDIR. */
   bakimDuzeyi?: 0 | 1 | 2;
+  /** Ticaret rejimi (B3): tarife ve ihracat vergisi. Pazar v1 kapalıysa TANIMSIZDIR. */
+  ticaretRejimi?: TicaretRejimi;
+  /** Ticaret defteri (B3): komisyon, makas, prim, tarife muhasebesi. Pazar v1 kapalıysa TANIMSIZDIR. */
+  ticaretDefteri?: TicaretDefteri;
 }
 
 /** Yayılan bir iklim olayı (B1): yaratılırken bir kez hesaplanır, deterministik. */
@@ -263,7 +319,12 @@ export interface IklimDurumu {
 }
 
 export interface PazarDurumu {
-  /** mal indeksine göre güncel fiyat (mili-para/birim) */
+  /**
+   * Fiyatı kimin belirlediği (B3, docs/08 §5.3 P2): "npc" = Dünya Piyasa Yapıcısı (NPC; formülle çalışır, kâr peşinde değil).
+   * Arayüz etiketi "Dünya Piyasa Yapıcısı (NPC)". Pazar v1 kapalıysa TANIMSIZDIR (özet değişmez).
+   */
+  kaynak?: "npc";
+  /** mal indeksine göre güncel fiyat (mili-para/birim): dünya referans fiyatı (makas ve liman primi öncesi) */
   fiyat: number[];
   /** Son saatlik oyuncu talebi (ithalat) ve arzı (ihracat), mili-birim/saat */
   oyuncuTalebi: Mili[];

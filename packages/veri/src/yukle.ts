@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import {
   MINI_HARITA_SECENEKLERI,
   dogrulaVeriPaketi,
+  limanlariTamamla,
   tarimAlanlariniTamamla,
   type HaritaSecenekleri,
   type VeriPaketi,
@@ -43,6 +44,8 @@ function paketYukle(haritaDosyasi: string, secenek: HaritaSecenekleri): VeriPake
   }
   // Tarım açıksa ve harita tarım alanı taşımıyorsa (ör. gerçek harita) etiket/konumdan varsayılan türet.
   tarimAlanlariniTamamla(paket);
+  // Pazar v1 açıksa liman tanımı olmayan liman bölgelerine (ör. gerçek harita) dünya kapısı ve mesafe türet.
+  limanlariTamamla(paket);
   return paket;
 }
 

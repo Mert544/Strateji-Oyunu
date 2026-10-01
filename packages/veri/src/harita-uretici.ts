@@ -22,12 +22,17 @@
  * santrali eklenir: dağ bölgesine hidro santrali, diğerlerine santral (varsayılan yöntem kömür; yakıt/kömür erişimi olmayan
  * bölgelerde bot yöntemi değiştirir). Tarım tesisleri (ciftlik, ahir, mera) elektrik istemez ve santral gerektirmez.
  *
+ * Pazar (B3): her "liman" bölgesine `liman` tanımı (dünya kapısı, kapıya deniz mesafesi saat, kapasite sınıfı) yazılır;
+ * `limanTanimlariTuret` ile deniz kenarlarından türetilir (dogrula.ts): en çok bağlı 3 liman kapı, kapısı olmayan deniz bileşeni kendi
+ * en çok bağlı limanını kapı yapar. PRNG kullanılmaz.
+ *
  * Rastgelelik yalnızca küçük sapmalar içindir (koordinat, nüfus, rezerv, kapasite) ve kendi tohumlu
  * PRNG'sinden gelir; Math.random kullanılmaz. Aynı tohum -> bayt bayt aynı çıktı.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { limanTanimlariTuret } from "./dogrula";
 import type { BolgeTanimi, BolgeTarimTanimi, DevletTanimi, Etiket, HaritaDosyasi, IklimTipi, KenarTanimi } from "./tipler";
 
 export const VARSAYILAN_TOHUM = 20260930;
@@ -372,13 +377,16 @@ export function uretSentetikHarita(tohum: number = VARSAYILAN_TOHUM): HaritaDosy
     });
   }
 
-  return {
+  const harita: HaritaDosyasi = {
     surum: 1,
     ad: "Sentetik 50 Bölge",
     devletler: DEVLETLER.map((d) => ({ ...d })),
     bolgeler,
     kenarlar,
   };
+  // Pazar (B3): liman tanımları deniz kenarları grafından türetilir (dünya kapıları + kapıya saat); rastgelelik yok.
+  for (const [id, liman] of limanTanimlariTuret(harita)) bul(id).liman = liman;
+  return harita;
 }
 
 /** Haritanın diske yazılan kanonik JSON metni (2 boşluk girinti, sonda satır sonu). */

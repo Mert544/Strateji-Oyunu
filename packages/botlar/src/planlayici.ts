@@ -7,7 +7,7 @@
  * Fayda birimi: "para" (= mili-para / MILI), kabaca "bir haftalık net getiri − maliyet" tahminidir.
  * Amaç mutlak doğruluk değil, adaylar arasında makul bir sıralamadır.
  */
-import { GUN, MILI, PPM, SAAT, anlikHazine, anlikMiktar } from "@bolge/cekirdek";
+import { GUN, MILI, PPM, SAAT, anlikHazine, anlikMiktar, npcLikiditeOlcekPpm, pazarCarpanlari, pazarTablosu, ticaretNakitCarpanlari } from "@bolge/cekirdek";
 import type { BolgeDurumu, Dunya, Komut, Ms, OyuncuDurumu, OyuncuId, Simulasyon } from "@bolge/cekirdek";
 import { icerikBilgisi } from "./tablo";
 import type { IcerikBilgisi, MalMiktar, TurBilgisi, YontemBilgisi } from "./tablo";
@@ -302,6 +302,73 @@ export class Bakis {
 
   limanlar(): BolgeDurumu[] {
     return this.bolgeler.filter((b) => b.etiketler.includes("liman")).sort((x, y) => x.indeks - y.indeks);
+  }
+
+  // -------------------------------------------------------------------------
+  // Pazar (B3): makas, liman primi, komisyon, NPC likiditesi ve kıtlık cezası. Pazar v1 kapalıysa hepsi etkisizdir
+  // (ölçekler 1, kıtlık yok): botlar B3 öncesiyle birebir aynı karar verir.
+  // -------------------------------------------------------------------------
+
+  /** Pazar v1 (B3) açık mı: `param.pazar` B3 ek alanlarını taşıyor. */
+  get pazarAcik(): boolean {
+    return pazarTablosu(this.sim.ic) !== null;
+  }
+
+  /**
+   * Bu limanın birim nakit çarpanının oyuncunun makas-yalnız çarpanına oranı (liman primi ve komisyon etkisi):
+   * ihracatta <= 1 ((1 - prim) x (1 - komisyon)), ithalatta >= 1. Pazar kapalıysa 1. Deterministik, salt fonksiyon.
+   */
+  limanOlcegi(liman: BolgeDurumu, yon: "ihracat" | "ithalat"): number {
+    if (!this.pazarAcik) return 1;
+    const n = ticaretNakitCarpanlari(this.d, this.sim.baglam, this.o, liman.indeks);
+    const m = pazarCarpanlari(this.d, this.sim.baglam, this.oyuncu);
+    return yon === "ihracat" ? n.ihracatPpm / m.ihracatPpm : n.ithalatPpm / m.ithalatPpm;
+  }
+
+  /** Oyuncunun bu limandaki birim nakit çarpanı (ppm; makas, prim ve komisyon dahil). Pazar kapalıysa eski makas çarpanı. */
+  nakitCarpani(liman: BolgeDurumu, yon: "ihracat" | "ithalat"): number {
+    const n = ticaretNakitCarpanlari(this.d, this.sim.baglam, this.o, liman.indeks);
+    return (yon === "ihracat" ? n.ihracatPpm : n.ithalatPpm) / PPM;
+  }
+
+  /** NPC likidite ölçeği (1 = taban; oyuncu sayısı tabanın üstündeyse büyür). Pazar kapalıysa 1. */
+  npcOlcegi(): number {
+    return npcLikiditeOlcekPpm(pazarTablosu(this.sim.ic), this.d.oyuncular.length) / PPM;
+  }
+
+  /**
+   * Kıtlık cezası altındaki (kademe >= 1) bölgelerin malı için saatlik açığı (mili-birim/saat): nüfus tüketimi x (1 - karşılanma).
+   * Yalnız nüfusun tükettiği mallar (gıda, yakıt); pazar kapalıysa 0. Karşılanma kapsam tablosundan (plan) değil çekirdeğin
+   * gerçek karşılanmasından okunur: gıda `gidaKarsilanmaPpm`; yakıt, bölgenin temel ihtiyaç karşılanması (min(gıda, yakıt, hane
+   * elektriği)) gıda ve elektrikten düşükse onunla aynıdır (yakıt sınırlayıcıdır), değilse sınırlayıcı değildir (açık yok).
+   */
+  kitlikAcigi(mal: number): number {
+    if (!this.pazarAcik) return 0;
+    const malId = this.tb.malId[mal] as string;
+    const tuketim = this.sim.ic.param.nufus.tuketim1000Saat[malId] ?? 0;
+    if (tuketim <= 0 || (malId !== "gida" && malId !== "yakit")) return 0;
+    const sn = this.sim.ic.param.sanayi;
+    let acik = 0;
+    for (const b of this.bolgeler) {
+      if ((b.kitlikKademesi ?? 0) < 1) continue;
+      let karsilanma = PPM;
+      if (malId === "gida") karsilanma = b.gidaKarsilanmaPpm;
+      else {
+        const temel = b.temelKarsilanmaPpm ?? PPM;
+        const santrali = sn !== undefined && b.tesisler.some((ts) => ts.aktif && (this.tb.yontem[ts.yontem]?.elektrikCikti ?? 0) > 0);
+        const diger = Math.min(b.gidaKarsilanmaPpm, santrali && b.elektrik !== undefined ? b.elektrik.haneKarsilanmaPpm : PPM);
+        if (temel < diger) karsilanma = temel;
+      }
+      acik += Math.floor(((b.nufus * tuketim) / 1000) * (1 - karsilanma / PPM));
+    }
+    return acik;
+  }
+
+  /** Sahip olunan bölgelerdeki en yüksek kıtlık kademesi (0..3); pazar kapalıysa 0. */
+  enYuksekKitlik(): number {
+    let en = 0;
+    for (const b of this.bolgeler) if ((b.kitlikKademesi ?? 0) > en) en = b.kitlikKademesi ?? 0;
+    return en;
   }
 }
 
@@ -616,6 +683,12 @@ export interface TicaretSecenek {
   askeriIhracat?: boolean;
   /** Fayda çarpanı (vars. 1). */
   carpan?: number;
+  /**
+   * Liman primi duyarlılığı (pazar v1, B3; vars. 0.5): liman seçiminde stok yanında prim farkı da hesaba katılır. 0 = yalnız stok
+   * (B3 öncesi seçim); tüccar 1 (prim farkını kullanır). Risksiz arbitraj olmadığından fark yalnız hangi limandan ihraç/ithal edileceğini
+   * belirler, yeni bir kâr kaynağı değildir. Pazar kapalıysa etkisizdir.
+   */
+  primDuyarliligi?: number;
 }
 
 function mevcutEmir(port: BolgeDurumu, mal: number, yon: "ihracat" | "ithalat"): number {
@@ -641,16 +714,40 @@ export function ithalatFiyatCarpani(oran: number): number {
   return sinirla(1 - (0.7 * (oran - ITHALAT_FIYAT_UCUZ)) / (ITHALAT_FIYAT_PAHALI - ITHALAT_FIYAT_UCUZ), 0.3, 1);
 }
 
-/** Portlardan biri: verilen yönde emri olan ilk liman, yoksa `sec` ölçütüne göre en iyi liman (eşitlikte küçük indeks). */
-function emirPortu(b: Bakis, limanlar: BolgeDurumu[], mal: number, yon: "ihracat" | "ithalat", enCok: boolean): BolgeDurumu {
+/**
+ * Portlardan biri: verilen yönde emri olan ilk liman, yoksa `enCok` ölçütüne göre en iyi liman (eşitlikte küçük indeks).
+ * Pazar v1 (B3) açık ve `primDuy` > 0 ise liman primi ve komisyon da hesaba katılır (aşağıdaki skor); aksi halde B3 öncesi seçim.
+ * Skor (büyük iyi): ihracatta doluluk - 2 x duyarlılık x (1 - ihracat ölçeği), ithalatta -doluluk - 2 x duyarlılık x (ithalat ölçeği - 1);
+ * mevcut emrin limanı, daha iyi limandan skor olarak en çok 0,1 geriyse korunur (git-gel salınımı olmasın).
+ */
+function emirPortu(b: Bakis, limanlar: BolgeDurumu[], mal: number, yon: "ihracat" | "ithalat", enCok: boolean, primDuy = 0): BolgeDurumu {
   const var_ = limanlar.find((p) => mevcutEmir(p, mal, yon) > 0);
-  if (var_) return var_;
-  let en = limanlar[0] as BolgeDurumu;
-  for (const p of limanlar) {
-    const x = b.stok(p.indeks, mal);
-    const e = b.stok(en.indeks, mal);
-    if (enCok ? x > e : x < e) en = p;
+  if (primDuy <= 0 || !b.pazarAcik) {
+    if (var_) return var_;
+    let en = limanlar[0] as BolgeDurumu;
+    for (const p of limanlar) {
+      const x = b.stok(p.indeks, mal);
+      const e = b.stok(en.indeks, mal);
+      if (enCok ? x > e : x < e) en = p;
+    }
+    return en;
   }
+  const depo = b.sim.ic.param.ekonomi.depoKapasitesi;
+  const skor = (p: BolgeDurumu): number => {
+    const doluluk = depo > 0 ? b.stok(p.indeks, mal) / depo : 0;
+    const ol = b.limanOlcegi(p, yon);
+    return yon === "ihracat" ? doluluk - 2 * primDuy * (1 - ol) : -doluluk - 2 * primDuy * (ol - 1);
+  };
+  let en = limanlar[0] as BolgeDurumu;
+  let enSkor = skor(en);
+  for (const p of limanlar) {
+    const x = skor(p);
+    if (x > enSkor) {
+      en = p;
+      enSkor = x;
+    }
+  }
+  if (var_ && enSkor - skor(var_) <= 0.1) return var_;
   return en;
 }
 
@@ -670,6 +767,10 @@ export function ticaretAdaylari(b: Bakis, sec: TicaretSecenek = {}): Aday[] {
   const p = b.sim.ic.param.pazar;
   const depo = b.sim.ic.param.ekonomi.depoKapasitesi;
   const tehlike = b.hazineTehlikede();
+  // Pazar v1 (B3): NPC likidite ölçeği, liman primi duyarlılığı. Kapalıyken ölçek 1 ve B3 öncesi sabitler (1,1 / 0,9).
+  const pazarAcik = b.pazarAcik;
+  const npcOlcek = b.npcOlcegi();
+  const primDuy = sec.primDuyarliligi ?? 0.5;
   const iptal = (port: BolgeDurumu, yon: "ihracat" | "ithalat", malId: string, fayda: number): Aday => ({
     anahtar: `ticaret_emri:${yon}_iptal_${malId}`,
     komut: { tur: "ticaret_emri", bolge: port.id, mal: malId, yon, oranSaat: 0 },
@@ -681,8 +782,8 @@ export function ticaretAdaylari(b: Bakis, sec: TicaretSecenek = {}): Aday[] {
   for (let m = 0; m < b.tb.malSayisi; m++) {
     if (b.tb.depolanamaz[m]) continue; // elektrik (B2): ticaret, stok ve doluluk kararı yok
     const malId = b.tb.malId[m] as string;
-    const emilim = p.emilimSaat[malId] ?? 0;
-    const arz = p.arzSaat[malId] ?? 0;
+    const emilim = (p.emilimSaat[malId] ?? 0) * npcOlcek;
+    const arz = (p.arzSaat[malId] ?? 0) * npcOlcek;
     // Kendi ticaretimizin etkisi çıkarılmış net oran: denetleyicinin kararlı kalması için.
     const net = b.ticaretsizNet(m);
     const stokOran = b.stokOrani(m);
@@ -692,22 +793,32 @@ export function ticaretAdaylari(b: Bakis, sec: TicaretSecenek = {}): Aday[] {
     const stokToplam = b.stokToplam[m] as number;
     const dolu = b.enDoluDoluluk(m);
     const acil = dolu > DEPO_ACIL_ORANI;
-    const ihrPort = emirPortu(b, limanlar, m, "ihracat", true);
-    const ithPort = emirPortu(b, limanlar, m, "ithalat", false);
+    const ihrPort = emirPortu(b, limanlar, m, "ihracat", true, primDuy);
+    const ithPort = emirPortu(b, limanlar, m, "ithalat", false, primDuy);
     const mevcutIth = mevcutEmir(ithPort, m, "ithalat");
+    // Liman primi ve komisyon dahil etkin fiyat/taban oranları (kapalıyken fOran ile aynı) ve birim nakit çarpanları.
+    const fOranIth = pazarAcik ? fOran * b.limanOlcegi(ithPort, "ithalat") : fOran;
+    const fOranIhr = pazarAcik ? fOran * b.limanOlcegi(ihrPort, "ihracat") : fOran;
+    const ithCarpan = pazarAcik ? b.nakitCarpani(ithPort, "ithalat") : 1.1;
 
-    // --- İthalat ihtiyacı: net açık var ve stok 4 günden az yetiyorsa ---
+    // --- İthalat ihtiyacı: net açık var ve stok 4 günden az yetiyorsa; ya da kıtlık cezası altındaki bölge açığı (B3) ---
     let hedefIth = 0;
-    if (sec.ithalat !== false && !askeri && !tehlike && net < 0 && stokToplam < -net * 96) {
+    const ithalatMumkun = sec.ithalat !== false && !askeri && !tehlike;
+    const kitlik = ithalatMumkun ? b.kitlikAcigi(m) : 0;
+    if (ithalatMumkun && ((net < 0 && stokToplam < -net * 96) || kitlik > 0)) {
       // Pahalıysa azalt, ucuzsa biraz artır; ithalat limanının deposu doluysa (mal zaten geliyor) kıs.
-      const fi = ithalatFiyatCarpani(fOran);
-      const ucuz = fOran < 0.85 ? 1.25 : 1;
+      const fi = ithalatFiyatCarpani(fOranIth);
+      const ucuz = fOranIth < 0.85 ? 1.25 : 1;
       const portDolu = b.stok(ithPort.indeks, m) / depo > DEPO_ACIL_ORANI;
       const dolulukCarpani = portDolu ? 0 : acil ? 0.5 : 1;
-      hedefIth = Math.min(Math.floor(-net * 1.1 * fi), Math.floor(arz * 0.4 * fi * ucuz));
-      hedefIth = Math.floor(hedefIth * dolulukCarpani);
-      const harcama72 = (hedefIth / MILI) * fiyat * 1.1 * 72;
-      const butce = 0.3 * (b.hazine / MILI);
+      let hedef = 0;
+      if (net < 0 && stokToplam < -net * 96) hedef = Math.min(Math.floor(-net * 1.1 * fi), Math.floor(arz * 0.4 * fi * ucuz));
+      // Kıtlık cezası (üretimi %30'a kadar düşürür): ithalat bağımlılığı gerçek risktir; açığı kapatan ithalat zorunlu ihtiyaçtır:
+      // fiyat duyarlılığı düşük (en az 0,8), stok ufkundan bağımsız ve bütçe payı yüksektir.
+      if (kitlik > 0) hedef = Math.max(hedef, Math.min(Math.floor(kitlik * 1.2 * Math.max(fi, 0.8)), Math.floor(arz * 0.5)));
+      hedefIth = Math.floor(hedef * dolulukCarpani);
+      const harcama72 = (hedefIth / MILI) * fiyat * ithCarpan * 72;
+      const butce = (kitlik > 0 ? 0.6 : 0.3) * (b.hazine / MILI);
       if (harcama72 > butce) hedefIth = Math.floor((hedefIth * butce) / harcama72);
       if (hedefIth < 5000) hedefIth = 0;
     }
@@ -715,7 +826,7 @@ export function ticaretAdaylari(b: Bakis, sec: TicaretSecenek = {}): Aday[] {
     // --- İhracat (ana liman): fazla varsa ve ithalat gerekmiyorsa ---
     const ihracTemel = (!askeri || sec.askeriIhracat === true || acil) && hedefIth === 0;
     const ihracEdilebilir = ihracTemel && (b.aciklik[m] as number) < (acil ? 0.25 : 0.08);
-    const fp = ihracatFiyatCarpani(fOran);
+    const fp = ihracatFiyatCarpani(fOranIhr);
     // Depo dolmak üzereyse israf her fiyattan kötüdür: ölçeğe alt sınır, tavan biraz yüksek.
     const fpEf = acil ? Math.max(fp, 0.35) : fp;
     const ihrUst = emilim * (acil ? 0.6 : 0.4) * fpEf;
@@ -754,7 +865,7 @@ export function ticaretAdaylari(b: Bakis, sec: TicaretSecenek = {}): Aday[] {
         cikti.push({
           anahtar: `ticaret_emri:ihracat_${malId}`,
           komut: { tur: "ticaret_emri", bolge: port.id, mal: malId, yon: "ihracat", oranSaat: hIhr },
-          tahminiFayda: (hIhr / MILI) * fiyat * 0.9 * 48 * carpan,
+          tahminiFayda: (hIhr / MILI) * fiyat * (pazarAcik ? b.nakitCarpani(port, "ihracat") : 0.9) * 48 * carpan,
           kategori: "ticaret",
           bolge: port.id,
           konu: `ihracat_${malId}`,
@@ -771,7 +882,7 @@ export function ticaretAdaylari(b: Bakis, sec: TicaretSecenek = {}): Aday[] {
         cikti.push({
           anahtar: `ticaret_emri:ithalat_${malId}`,
           komut: { tur: "ticaret_emri", bolge: port.id, mal: malId, yon: "ithalat", oranSaat: hIth },
-          tahminiFayda: (hIth / MILI) * fiyat * 0.5 * 48 * carpan,
+          tahminiFayda: (hIth / MILI) * fiyat * 0.5 * 48 * carpan * (kitlik > 0 ? 4 : 1),
           kategori: "ticaret",
           bolge: port.id,
           konu: `ithalat_${malId}`,

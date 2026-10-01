@@ -70,7 +70,9 @@ const PROFILLER: Record<"sanayici" | "tuccar" | "lojistikci" | "militarist", Pro
   },
   tuccar: {
     agirlik: { insa: 0.7, yontem: 0.6, arastir: 0.4, kenar: 0.4, ticaret: 3, vergi: 1 },
-    ticaret: { ihracatEsigi: 0.05, ithalat: true, carpan: 1 },
+    // Tüccar liman primi farkını kullanır (pazar v1): ihracat/ithalat için daha ucuz limanı seçer; risksiz arbitraj olmadığından
+    // fark yalnız liman seçimidir (primDuyarliligi 1; diğer arketiplerde 0,5).
+    ticaret: { ihracatEsigi: 0.05, ithalat: true, carpan: 1, primDuyarliligi: 1 },
     maxKomut: 4,
     kategoriSiniri: { ticaret: 3 },
     bekleme: BEKLEME,

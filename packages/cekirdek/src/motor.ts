@@ -11,6 +11,8 @@ import { kuyrukBas, kuyrukCikar } from "./kuyruk";
 import { dunyaKur } from "./kurulum";
 import { lojistikCoz, lojistikKomutu } from "./lojistik/cozum";
 import { durumOzeti } from "./ozet";
+import { pazarTablosu } from "./pazar/tablo";
+import { ticaretDefteriBaslat } from "./pazar";
 import { politikaKomutu } from "./politika";
 import { sanayiKomutu, sondajBitti } from "./sanayi";
 import { iklimGunluk, tarimKomutu } from "./tarim";
@@ -203,6 +205,12 @@ export class Simulasyon {
       };
       // Sanayi (B2): bakım düzeyi yalnız sanayi açıkken tutulur (normal = 1); kapalıyken alan yazılmaz (özet değişmez).
       if (ic.param.sanayi !== undefined) yeniOyuncu.bakimDuzeyi = 1;
+      // Pazar v1 (B3): ticaret rejimi (varsayılan kademe 0: tarife ve ihracat vergisi 0; komutu B4'te) ve ticaret defteri.
+      const pz = pazarTablosu(ic);
+      if (pz !== null) {
+        yeniOyuncu.ticaretRejimi = { ithalatTarifePpm: pz.p.tarife.ithalatPpm[0] as number, ihracatVergisiPpm: pz.p.tarife.ihracatVergisiPpm[0] as number };
+        yeniOyuncu.ticaretDefteri = ticaretDefteriBaslat(d.zaman);
+      }
       let konum = d.oyuncular.findIndex((o) => o.id > id);
       if (konum < 0) konum = d.oyuncular.length;
       d.oyuncular.splice(konum, 0, yeniOyuncu);

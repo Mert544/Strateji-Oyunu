@@ -4,6 +4,7 @@
  * Olay kuyruğu boştur; ilk saatlik tık ve çözümü Simulasyon.olustur planlar.
  */
 import { carpBol, kelepce } from "./sabit";
+import { pazarTablosu } from "./pazar/tablo";
 import { prngOlustur } from "./prng";
 import { sanayiTablosu } from "./sanayi/tablo";
 import { tarimTablosu } from "./tarim/tablo";
@@ -36,6 +37,8 @@ function sifirlar(n: number): number[] {
  * - rng: "ekonomi" | "pazar" | "savas" | "olay" akışları (tohum, akış adı)ndan türetilir.
  * - Sanayi (B2, yalnız param.sanayi tanımlıysa): bölgeye elektrik/kirlilik/keşif/bakım durumu, tesislere ölçek (S) ve
  *   aşınma (0) yazılır; kapalıysa bu alanlar HİÇ yazılmaz (özet Tarım v1 ile aynı).
+ * - Pazar (B3, yalnız param.pazar B3 ek alanlarını taşıyorsa): `pazar.kaynak = "npc"` ve bölgelere `kitlikKademesi` (0), `kitlikT`,
+ *   `temelKarsilanmaPpm`; kapalıysa bu alanlar HİÇ yazılmaz (özet Sanayi v1 ile aynı).
  * - Tarım (B1, yalnız param.iklim + param.tarim tanımlıysa): tarım alanı olan bölgelere `tarim` durumu (toprak PPM,
  *   ekim %100 ilk ürün, gübre 0) ve dünyaya `iklim` durumu yazılır. Kapalıysa bu alanlar HİÇ yazılmaz (özet v0.2 ile aynı).
  */
@@ -56,6 +59,7 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
 
   const tarimTb = tarimTablosu(ic);
   const sanayiTb = sanayiTablosu(ic);
+  const pazarTb = pazarTablosu(ic);
 
   const bolgeler: BolgeDurumu[] = ic.harita.bolgeler.map((bt, indeks) => {
     const rezervIlk = sifirlar(malSayisi);
@@ -129,6 +133,12 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
       bolge.kesifSayisi = sifirlar(malSayisi);
       bolge.bakimKarsilanmaPpm = PPM;
     }
+    // Pazar v1 (B3): kıtlık kademesi (0), son değişim anı ve temel ihtiyaç karşılanması; kapalıyken HİÇ yazılmaz.
+    if (pazarTb !== null) {
+      bolge.kitlikKademesi = 0;
+      bolge.kitlikT = 0;
+      bolge.temelKarsilanmaPpm = PPM;
+    }
     return bolge;
   });
 
@@ -176,6 +186,8 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
     sayac: { olay: 0, kimlik },
     kuyruk: [],
   };
+  // Pazar v1 (B3): fiyatı belirleyen "npc" (Dünya Piyasa Yapıcısı) açıkça işaretlenir; kapalıyken alan yazılmaz.
+  if (pazarTb !== null) dunya.pazar.kaynak = "npc";
   // İklim durumu yalnız tarım açıkken yazılır. İlk günlük tık (t = 0) Simulasyon.olustur tarafından planlanır.
   if (tarimTb !== null) dunya.iklim = { olaylar: [], sonGun: tarimTb.iklim.baslangicGunu - 1 };
   return dunya;

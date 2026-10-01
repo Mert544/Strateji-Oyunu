@@ -12,7 +12,7 @@
 import type { ZodError, ZodErrorMap, ZodTypeAny } from "zod";
 import { HaritaSema, IcerikSema, ParametreSema } from "./sema";
 import { IKLIM_OLAY_TURLERI, IKLIM_TIPLERI } from "./tipler";
-import type { BolgeTanimi, BolgeTarimTanimi, HaritaDosyasi, IcerikDosyasi, IklimTipi, Parametreler } from "./tipler";
+import type { BolgeTanimi, BolgeTarimTanimi, HaritaDosyasi, IcerikDosyasi, IklimTipi, LimanTanimi, Parametreler } from "./tipler";
 
 export interface VeriPaketi {
   harita: HaritaDosyasi;
@@ -149,6 +149,13 @@ export function dogrulaHarita(ham: unknown, secenek: HaritaSecenekleri = {}): Do
       hatalar.push(`bolgeler[${i}].etiketler: "liman" bolgesi "kiyi" etiketli de olmali (bolge "${b.id}")`);
     }
     kiyiMi.set(b.id, b.etiketler.includes("kiyi"));
+    // Liman tanımı (B3): yalnız "liman" etiketli bölgede; kapıda mesafe 0, kapı değilse en az 1 saat.
+    if (b.liman !== undefined) {
+      const yolL = `bolgeler[${i}].liman (bolge "${b.id}")`;
+      if (!b.etiketler.includes("liman")) hatalar.push(`${yolL}: liman tanimi yalnizca "liman" etiketli bolgede olabilir`);
+      if (b.liman.dunyaKapisi && b.liman.dunyaMesafeSaat !== 0) hatalar.push(`${yolL}.dunyaMesafeSaat: dunya kapisinda 0 olmali`);
+      if (!b.liman.dunyaKapisi && b.liman.dunyaMesafeSaat < 1) hatalar.push(`${yolL}.dunyaMesafeSaat: dunya kapisi olmayan limanda en az 1 saat olmali`);
+    }
   }
   for (const d of h.devletler) {
     if ((devletBolgeSayisi.get(d.id) ?? 0) === 0) hatalar.push(`devletler: "${d.id}" devletinin hic bolgesi yok`);
@@ -459,6 +466,67 @@ function sanayiKontrolu(hatalar: string[], k: NonNullable<Parametreler["sanayi"]
   if (k.damar.kesifEkiMinPpm > k.damar.kesifEkiMaxPpm) hatalar.push("sanayi.damar.kesifEkiMinPpm: kesifEkiMaxPpm degerinden buyuk olamaz");
 }
 
+/** Pazar v1 (B3) alan adları: ya hiçbiri ya hepsi verilir. */
+const PAZAR_EK_ALANLARI = [
+  "makasPpm",
+  "anlasmaMakasPpm",
+  "yaptirimMakasPpm",
+  "limanPrimPpmSaat",
+  "limanPrimTavaniPpm",
+  "islemKomisyonuPpm",
+  "npcLikiditeTabanOyuncu",
+  "kitlik",
+  "tarife",
+] as const;
+
+/** Pazar parametrelerinin anlamsal kontrolleri (şema yapıyı denetler): ya hiçbiri ya hepsi, makas-çarpan tutarlılığı, kıtlık sırası. */
+function pazarKontrolu(hatalar: string[], p: Parametreler["pazar"]): void {
+  const verilen = PAZAR_EK_ALANLARI.filter((a) => p[a] !== undefined);
+  if (verilen.length === 0) return; // pazar v1 kapalı
+  if (verilen.length !== PAZAR_EK_ALANLARI.length) {
+    const eksik = PAZAR_EK_ALANLARI.filter((a) => p[a] === undefined);
+    hatalar.push(`pazar: B3 alanlari ya hic ya hepsi verilmeli (eksik: ${eksik.join(", ")})`);
+    return;
+  }
+  const makas = p.makasPpm as number;
+  const anlasma = p.anlasmaMakasPpm as number;
+  const yaptirim = p.yaptirimMakasPpm as number;
+  for (const [ad, v] of [["makasPpm", makas], ["anlasmaMakasPpm", anlasma], ["yaptirimMakasPpm", yaptirim]] as const) {
+    if (v % 2 !== 0) hatalar.push(`pazar.${ad}: cift sayi olmali (ithalat +makas/2, ihracat -makas/2)`);
+    if (v >= 2_000_000) hatalar.push(`pazar.${ad}: 2000000'dan kucuk olmali`);
+  }
+  if (anlasma > makas) hatalar.push("pazar.anlasmaMakasPpm: makasPpm degerinden buyuk olamaz (anlasma makasi daraltir)");
+  if (yaptirim < makas) hatalar.push("pazar.yaptirimMakasPpm: makasPpm degerinden kucuk olamaz (yaptirim makasi genisletir)");
+  // Eski çarpan alanları makasla tutarlı olmalı (geri uyumlu geçiş: çarpanlar makastan türetilir).
+  const tutarli: Array<[string, number, number]> = [
+    ["ithalatCarpaniPpm", p.ithalatCarpaniPpm, 1_000_000 + makas / 2],
+    ["ihracatCarpaniPpm", p.ihracatCarpaniPpm, 1_000_000 - makas / 2],
+    ["anlasmaIthalatCarpaniPpm", p.anlasmaIthalatCarpaniPpm, 1_000_000 + anlasma / 2],
+    ["anlasmaIhracatCarpaniPpm", p.anlasmaIhracatCarpaniPpm, 1_000_000 - anlasma / 2],
+    ["yaptirimIthalatCarpaniPpm", p.yaptirimIthalatCarpaniPpm, 1_000_000 + yaptirim / 2],
+    ["yaptirimIhracatCarpaniPpm", p.yaptirimIhracatCarpaniPpm, 1_000_000 - yaptirim / 2],
+  ];
+  for (const [ad, deger, beklenen] of tutarli) {
+    if (deger !== beklenen) hatalar.push(`pazar.${ad}: makasla tutarsiz (beklenen ${beklenen}, bulunan ${deger}); pazar v1 acikken carpanlar makastan turetilir`);
+  }
+  if ((p.limanPrimTavaniPpm as number) > 500_000) hatalar.push("pazar.limanPrimTavaniPpm: en fazla 500000 olabilir");
+  if ((p.islemKomisyonuPpm as number) > 200_000) hatalar.push("pazar.islemKomisyonuPpm: en fazla 200000 olabilir");
+  const k = p.kitlik as NonNullable<Parametreler["pazar"]["kitlik"]>;
+  for (let i = 1; i < 3; i++) {
+    if ((k.esikPpm[i] as number) >= (k.esikPpm[i - 1] as number)) hatalar.push(`pazar.kitlik.esikPpm[${i}]: onceki esikten kucuk olmali (azalan siralama)`);
+    if ((k.cezaPpm[i] as number) < (k.cezaPpm[i - 1] as number)) hatalar.push(`pazar.kitlik.cezaPpm[${i}]: onceki cezadan kucuk olamaz (artan siralama)`);
+  }
+  for (let i = 0; i < 3; i++) {
+    if ((k.cezaPpm[i] as number) > 300_000) hatalar.push(`pazar.kitlik.cezaPpm[${i}]: en fazla 300000 olabilir (%30 tavan, ceza sarmali onlemi)`);
+  }
+  const t = p.tarife as NonNullable<Parametreler["pazar"]["tarife"]>;
+  if (t.ithalatPpm[0] !== 0) hatalar.push("pazar.tarife.ithalatPpm[0]: varsayilan kademe 0 olmali");
+  if (t.ihracatVergisiPpm[0] !== 0) hatalar.push("pazar.tarife.ihracatVergisiPpm[0]: varsayilan kademe 0 olmali");
+  for (const [ad, dizi] of [["ithalatPpm", t.ithalatPpm], ["ihracatVergisiPpm", t.ihracatVergisiPpm]] as const) {
+    if (dizi.some((x) => x > 500_000)) hatalar.push(`pazar.tarife.${ad}: kademeler en fazla 500000 olabilir`);
+  }
+}
+
 /** Şema + (içerik verilirse) mal ve birlik kimliklerinin geçerliliği. */
 export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): DogrulamaSonucu {
   const s = semaCalistir(ParametreSema, ham);
@@ -484,6 +552,7 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
   }
   if (p.iklim !== undefined) iklimKontrolu(hatalar, p.iklim);
   if (p.sanayi !== undefined) sanayiKontrolu(hatalar, p.sanayi);
+  pazarKontrolu(hatalar, p.pazar);
 
   if (icerik !== undefined) {
     const mallar = new Set(icerik.mallar.map((m) => m.id));
@@ -678,3 +747,131 @@ export function tarimAlanlariniTamamla(paket: VeriPaketi): number {
   return sayi;
 }
 
+
+// ---------------------------------------------------------------------------
+// Liman türetme (B3 Pazar): dünya kapıları ve kapıya deniz mesafesi, deniz kenarları grafından
+// ---------------------------------------------------------------------------
+
+/** Deniz yoluyla hiçbir dünya kapısına ulaşamayan (kenarsız) limanın varsayılan uzaklığı (saat): kapsamdaki "mesafe" eşiğiyle aynı. */
+export const ULASILAMAYAN_LIMAN_MESAFESI_SAAT = 72;
+
+/** Dünya kapısı sayısı: limanların üçte biri, en az 1 ve en çok 4 (9 limanda 3, 27 limanda 4; kapısı olmayan deniz bileşenleri ayrıca ekler). */
+function dunyaKapisiSayisi(limanSayisi: number): number {
+  return Math.min(4, Math.max(1, Math.floor(limanSayisi / 3)));
+}
+
+/**
+ * Liman bölgeleri için `LimanTanimi` türetir (yalnız `liman` alanı eksik olanlar için; saf, deterministik, tamsayı).
+ * - Dünya kapıları: haritada açıkça `dunyaKapisi: true` işaretli liman varsa onlar; yoksa deniz kenarı sayısı en çok olan
+ *   limanlar (sayı = limanların üçte biri, en az 1, en çok 4), eşitlikte kimliği (harf sırası) küçük olan. Her deniz bileşeninde (deniz kenarlarıyla
+ *   bağlı bölgeler kümesi) en az bir kapı olur: kapısı olmayan bileşenin en çok bağlı limanı da kapı sayılır.
+ * - `dunyaMesafeSaat`: deniz kenarları üzerinde (kenar `sureSaat`) en yakın kapıya en kısa yol (Dijkstra); kapıda 0.
+ *   Deniz kenarı olmayan (yalıtılmış) liman `ULASILAMAYAN_LIMAN_MESAFESI_SAAT` alır (kapı değildir).
+ * - `kapasiteSinifi`: 1 + (deniz kenarı sayısı - 1) / 2, 1..4 (NGA sınıfının yerine geçen türetme; v1.5 elleçleme için).
+ * Dönüş: bölge kimliği -> tanım (yalnız türetilenler).
+ */
+export function limanTanimlariTuret(harita: HaritaDosyasi): Map<string, LimanTanimi> {
+  const bolgeler = harita.bolgeler;
+  const n = bolgeler.length;
+  const indeks = new Map<string, number>();
+  bolgeler.forEach((b, i) => indeks.set(b.id, i));
+  const komsu: Array<Array<[number, number]>> = bolgeler.map(() => []);
+  for (const k of harita.kenarlar) {
+    if (k.tur !== "deniz") continue;
+    const a = indeks.get(k.a);
+    const b = indeks.get(k.b);
+    if (a === undefined || b === undefined || a === b) continue;
+    (komsu[a] as Array<[number, number]>).push([b, k.sureSaat]);
+    (komsu[b] as Array<[number, number]>).push([a, k.sureSaat]);
+  }
+  const limanlar: number[] = [];
+  for (let i = 0; i < n; i++) if ((bolgeler[i] as BolgeTanimi).etiketler.includes("liman")) limanlar.push(i);
+  const derece = (i: number): number => (komsu[i] as Array<[number, number]>).length;
+  const kimlikSirasi = (a: number, b: number): number => {
+    const x = (bolgeler[a] as BolgeTanimi).id;
+    const y = (bolgeler[b] as BolgeTanimi).id;
+    return x < y ? -1 : x > y ? 1 : 0;
+  };
+  // En çok bağlı, eşitlikte kimlik sırası.
+  const sirali = [...limanlar].sort((a, b) => derece(b) - derece(a) || kimlikSirasi(a, b));
+
+  // Deniz bileşenleri (BFS; bileşen numarası ilk görülen bölge sırasıyla).
+  const bilesen = new Array<number>(n).fill(-1);
+  let bilesenSayisi = 0;
+  for (let i = 0; i < n; i++) {
+    if (bilesen[i] !== -1) continue;
+    const kuyruk = [i];
+    bilesen[i] = bilesenSayisi;
+    for (let h = 0; h < kuyruk.length; h++) {
+      for (const [j] of komsu[kuyruk[h] as number] as Array<[number, number]>) {
+        if (bilesen[j] === -1) {
+          bilesen[j] = bilesenSayisi;
+          kuyruk.push(j);
+        }
+      }
+    }
+    bilesenSayisi++;
+  }
+
+  // Kapılar
+  const kapi = new Set<number>();
+  for (const i of limanlar) if ((bolgeler[i] as BolgeTanimi).liman?.dunyaKapisi === true) kapi.add(i);
+  if (kapi.size === 0) for (const i of sirali.slice(0, dunyaKapisiSayisi(limanlar.length))) kapi.add(i);
+  const kapiliBilesen = new Set<number>();
+  for (const i of kapi) kapiliBilesen.add(bilesen[i] as number);
+  for (const i of sirali) {
+    const b = bilesen[i] as number;
+    if (kapiliBilesen.has(b) || derece(i) === 0) continue; // yalıtılmış liman kapı sayılmaz
+    kapi.add(i);
+    kapiliBilesen.add(b);
+  }
+
+  // Çok kaynaklı Dijkstra (düğüm sayısı küçük: dizi tabanlı O(V^2), eşitlikte küçük indeks).
+  const SONSUZ = Number.MAX_SAFE_INTEGER;
+  const mesafe = new Array<number>(n).fill(SONSUZ);
+  const bitti = new Array<boolean>(n).fill(false);
+  for (const i of kapi) mesafe[i] = 0;
+  for (;;) {
+    let u = -1;
+    for (let i = 0; i < n; i++) if (!bitti[i] && (mesafe[i] as number) < SONSUZ && (u === -1 || (mesafe[i] as number) < (mesafe[u] as number))) u = i;
+    if (u === -1) break;
+    bitti[u] = true;
+    for (const [v, sure] of komsu[u] as Array<[number, number]>) {
+      const yeni = (mesafe[u] as number) + sure;
+      if (yeni < (mesafe[v] as number)) mesafe[v] = yeni;
+    }
+  }
+
+  const sonuc = new Map<string, LimanTanimi>();
+  for (const i of limanlar) {
+    const b = bolgeler[i] as BolgeTanimi;
+    if (b.liman !== undefined) continue;
+    const d = mesafe[i] as number;
+    const kapiMi = kapi.has(i);
+    sonuc.set(b.id, {
+      dunyaKapisi: kapiMi,
+      dunyaMesafeSaat: kapiMi ? 0 : d >= SONSUZ ? ULASILAMAYAN_LIMAN_MESAFESI_SAAT : Math.min(d, 10_000),
+      kapasiteSinifi: Math.min(4, 1 + Math.floor(Math.max(0, derece(i) - 1) / 2)),
+    });
+  }
+  return sonuc;
+}
+
+/**
+ * Pazar v1 açıksa (`param.pazar.makasPpm` tanımlı) `liman` tanımı eksik liman bölgelerine `limanTanimlariTuret` ile tanım yazar
+ * (yerinde; dönen değer doldurulan bölge sayısı). Pazar kapalıysa hiçbir şey yapmaz. Sentetik haritalarda tanım dosyadadır
+ * (`pnpm harita:uret`); gerçek haritada (boru hattı liman alanı üretmez) çalışma zamanında bu türetme kullanılır.
+ */
+export function limanlariTamamla(paket: VeriPaketi): number {
+  if (paket.param.pazar.makasPpm === undefined) return 0;
+  const turetilen = limanTanimlariTuret(paket.harita);
+  let sayi = 0;
+  for (const b of paket.harita.bolgeler) {
+    const t = turetilen.get(b.id);
+    if (t !== undefined && b.liman === undefined) {
+      b.liman = t;
+      sayi++;
+    }
+  }
+  return sayi;
+}

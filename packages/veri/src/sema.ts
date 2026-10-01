@@ -63,6 +63,15 @@ const bolgeTarimSema = z
   })
   .strict();
 
+/** Liman tanımı (B3, opsiyonel). */
+const limanSema = z
+  .object({
+    dunyaKapisi: z.boolean(),
+    dunyaMesafeSaat: negatifOlmayan.max(10_000, "en fazla 10000 saat olabilir"),
+    kapasiteSinifi: tamsayi.min(1, "1..4 olmali").max(4, "1..4 olmali"),
+  })
+  .strict();
+
 const devletSema = z
   .object({ id: kimlik, ad: metin, blok: kimlik })
   .strict();
@@ -86,6 +95,7 @@ const bolgeSema = z
       .strict()
       .optional(),
     tarim: bolgeTarimSema.optional(),
+    liman: limanSema.optional(),
   })
   .strict();
 
@@ -273,6 +283,22 @@ const tarimParamSema = z
   })
   .strict();
 
+/** Pazar v1 ek alanları (B3, hepsi opsiyonel; "ya hiçbiri ya hepsi" kuralı dogrula.ts'dedir). */
+const kitlikSema = z
+  .object({
+    esikPpm: z.tuple([ppmSiniri, ppmSiniri, ppmSiniri]),
+    cezaPpm: z.tuple([ppmSiniri, ppmSiniri, ppmSiniri]),
+    toparlanmaSaat: pozitif,
+  })
+  .strict();
+
+const tarifeSema = z
+  .object({
+    ithalatPpm: z.array(ppmSiniri).min(1, "en az 1 kademe olmali"),
+    ihracatVergisiPpm: z.array(ppmSiniri).min(1, "en az 1 kademe olmali"),
+  })
+  .strict();
+
 const olcekKademeSema = z
   .object({
     ciktiPpm: pozitif.max(10_000_000, "ciktiPpm en fazla 10000000 olabilir"),
@@ -381,6 +407,16 @@ export const ParametreSema = z
         yaptirimIhracatCarpaniPpm: pozitif,
         anlasmaIthalatCarpaniPpm: pozitif,
         anlasmaIhracatCarpaniPpm: pozitif,
+        // Pazar v1 (B3, opsiyonel; ya hiçbiri ya hepsi)
+        makasPpm: ppmSiniri.optional(),
+        anlasmaMakasPpm: ppmSiniri.optional(),
+        yaptirimMakasPpm: ppmSiniri.optional(),
+        limanPrimPpmSaat: negatifOlmayan.max(1_000_000, "en fazla 1000000 olabilir").optional(),
+        limanPrimTavaniPpm: ppmSiniri.optional(),
+        islemKomisyonuPpm: ppmSiniri.optional(),
+        npcLikiditeTabanOyuncu: pozitif.max(1000, "en fazla 1000 olabilir").optional(),
+        kitlik: kitlikSema.optional(),
+        tarife: tarifeSema.optional(),
       })
       .strict(),
     lojistik: z

@@ -34,13 +34,15 @@ import {
   bolgeVerimCoz,
   uretimMuhasebesi,
 } from "../ekonomi/uretim";
-import { kenarKullanilabilirMi, pazarCarpanlari } from "../politika";
+import { defterOranYaz, pazarMuhasebesi, sifirKalemler, ticaretCarpanlari, ihracatKirilimi, ithalatKirilimi } from "../pazar";
+import { pazarTablosu } from "../pazar/tablo";
+import { kenarKullanilabilirMi } from "../politika";
 import { bakimCarpani, bakimDuzeyiIndeksi } from "../sanayi/carpan";
 import { sanayiTablosu } from "../sanayi/tablo";
 import { carpBol, carpBolTavan, tabanBol } from "../sabit";
 import { hazineOranAyarla, hazineUzlastir, oyuncuBul } from "../stok";
 import { MILI, PPM, SAAT } from "../tipler";
-import type { Baglam, Dunya, Komut, KomutSonucu, Mili, OyuncuDurumu, OyuncuId } from "../tipler";
+import type { Baglam, Dunya, Komut, KomutSonucu, Mili, OyuncuDurumu, OyuncuId, TicaretKalemleri } from "../tipler";
 import { akisCoz, akisGecikmeleriniPlanla } from "./akis";
 import { kapsamiHesapla } from "./kapsamHesap";
 
@@ -58,19 +60,23 @@ interface HazineKalemleri {
   gider: number;
   /** `gider` içindeki ithalat payı (mili-para/saat). */
   ithalat: number;
+  /** Pazar v1 (B3): ticaret kalemleri (defter için); yalnız `hesaplar` verilen çağrıda ve defter açıkken dolu, aksi halde null. */
+  ticaret: TicaretKalemleri | null;
 }
 
 /**
  * Oyuncunun saatlik gelir ve giderini hesaplar.
- * - Gelir: vergi + ihracat (gerçekleşen oran × fiyat × ihracat çarpanı).
- * - Gider: ithalat + PARA LAVABOLARI: aktif tesis başına tesisIsletmeParasiSaat ve birlik başına birlikMaasiSaat.
+ * - Gelir: vergi + ihracat (gerçekleşen oran × referans fiyat, makas / liman primi / komisyon kırılımıyla: pazar/fiyat.ts).
+ * - Gider: ithalat (aynı kırılımla) + PARA LAVABOLARI: aktif tesis başına tesisIsletmeParasiSaat ve birlik başına birlikMaasiSaat.
+ * Tarife ve ihracat vergisi hazineye geri yazılır (net 0; B3'te tek hazine), defterde ayrı kalemdir.
  * `hesaplar` verilirse ihracat, çözümün girdi karşılanma oranıyla (fr4) ölçeklenir; verilmezse (verim çözümünden
  * ÖNCE, ödeme gücü tahmini için) ihracat emirlerinin son gerçekleşen oranı kullanılır.
  */
 function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: readonly BolgeHesabi[] | null): HazineKalemleri {
   const p = ctx.ic.param;
-  const carp = pazarCarpanlari(d, ctx, o.id);
   const sn = sanayiTablosu(ctx.ic);
+  const pazarAcik = pazarTablosu(ctx.ic) !== null;
+  const defter = hesaplar !== null && pazarAcik && o.ticaretDefteri !== undefined ? sifirKalemler() : null;
   let gelir = 0;
   let gider = 0;
   let ithalat = 0;
@@ -78,16 +84,36 @@ function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: reado
     if (b.sahip !== o.id) continue;
     gelir += carpBol(carpBol(b.nufus, p.ekonomi.vergiTabani1000Saat, 1000), o.vergiPpm, PPM);
     const fr4 = hesaplar === null ? null : (hesaplar[b.indeks] as BolgeHesabi).fr4;
+    // Ticaret çarpanları (makas, liman primi, komisyon, tarife) bölge başına bir kez; emirsiz bölgede hesaplanmaz.
+    let carp = null as ReturnType<typeof ticaretCarpanlari> | null;
     for (const e of b.ticaretEmirleri) {
       if (e.gerceklesenSaat <= 0) continue;
+      carp ??= ticaretCarpanlari(d, ctx, o, b.indeks);
       const fiyat = d.pazar.fiyat[e.mal] as number;
       if (e.yon === "ihracat") {
         const gercek = fr4 === null ? e.gerceklesenSaat : carpBol(e.gerceklesenSaat, fr4[e.mal] as number, PPM);
-        gelir += carpBol(carpBol(gercek, fiyat, MILI), carp.ihracatPpm, PPM);
+        const brut = carpBol(gercek, fiyat, MILI);
+        const kr = ihracatKirilimi(brut, carp);
+        gelir += kr.nakit;
+        if (defter !== null) {
+          defter.brutIhracat += brut;
+          defter.makas += kr.makas;
+          defter.prim += kr.prim;
+          defter.komisyon += kr.komisyon;
+          defter.ihracatVergisi += kr.vergi;
+        }
       } else {
-        const bedel = carpBol(carpBol(e.gerceklesenSaat, fiyat, MILI), carp.ithalatPpm, PPM);
-        gider += bedel;
-        ithalat += bedel;
+        const brut = carpBol(e.gerceklesenSaat, fiyat, MILI);
+        const kr = ithalatKirilimi(brut, carp);
+        gider += kr.nakit;
+        ithalat += kr.nakit;
+        if (defter !== null) {
+          defter.brutIthalat += brut;
+          defter.makas += kr.makas;
+          defter.prim += kr.prim;
+          defter.komisyon += kr.komisyon;
+          defter.ithalatTarifesi += kr.vergi;
+        }
       }
     }
     let aktifTesis = 0;
@@ -107,7 +133,7 @@ function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: reado
       }
     }
   }
-  return { gelir, gider, ithalat };
+  return { gelir, gider, ithalat, ticaret: defter };
 }
 
 /**
@@ -164,6 +190,7 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
 
   // 0. Muhasebe
   uretimMuhasebesi(d, ctx);
+  pazarMuhasebesi(d, ctx); // pazar v1 kapalıyken defter yoktur: hiçbir şey yapmaz
   for (const o of d.oyuncular) hazineUzlastir(d, o.id);
 
   // 1. Potansiyel, talep, arz ve fazla
@@ -216,6 +243,7 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   for (const o of d.oyuncular) {
     const k = hazineKalemleri(d, ctx, o, hesaplar);
     hazineOranAyarla(d, o.id, k.gelir - k.gider);
+    if (k.ticaret !== null) defterOranYaz(d, o, k.ticaret);
   }
 
   // 7. Kenar kullanımı

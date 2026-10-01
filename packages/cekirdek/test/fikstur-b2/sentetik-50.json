@@ -120,11 +120,6 @@
         "iklimTipi": "karadeniz",
         "tarimTesisTavani": 2,
         "sulanabilirPpm": 400000
-      },
-      "liman": {
-        "dunyaKapisi": false,
-        "dunyaMesafeSaat": 72,
-        "kapasiteSinifi": 1
       }
     },
     {
@@ -199,11 +194,6 @@
         "iklimTipi": "karadeniz",
         "tarimTesisTavani": 2,
         "sulanabilirPpm": 400000
-      },
-      "liman": {
-        "dunyaKapisi": false,
-        "dunyaMesafeSaat": 24,
-        "kapasiteSinifi": 2
       }
     },
     {
@@ -407,11 +397,6 @@
         "iklimTipi": "akdeniz",
         "tarimTesisTavani": 2,
         "sulanabilirPpm": 400000
-      },
-      "liman": {
-        "dunyaKapisi": false,
-        "dunyaMesafeSaat": 120,
-        "kapasiteSinifi": 1
       }
     },
     {
@@ -485,11 +470,6 @@
         "iklimTipi": "akdeniz",
         "tarimTesisTavani": 2,
         "sulanabilirPpm": 400000
-      },
-      "liman": {
-        "dunyaKapisi": false,
-        "dunyaMesafeSaat": 26,
-        "kapasiteSinifi": 2
       }
     },
     {
@@ -719,11 +699,6 @@
         "iklimTipi": "kurak",
         "tarimTesisTavani": 2,
         "sulanabilirPpm": 400000
-      },
-      "liman": {
-        "dunyaKapisi": true,
-        "dunyaMesafeSaat": 0,
-        "kapasiteSinifi": 2
       }
     },
     {
@@ -792,11 +767,6 @@
         "iklimTipi": "kurak",
         "tarimTesisTavani": 2,
         "sulanabilirPpm": 400000
-      },
-      "liman": {
-        "dunyaKapisi": true,
-        "dunyaMesafeSaat": 0,
-        "kapasiteSinifi": 1
       }
     },
     {
@@ -993,11 +963,6 @@
         "iklimTipi": "akdeniz",
         "tarimTesisTavani": 2,
         "sulanabilirPpm": 400000
-      },
-      "liman": {
-        "dunyaKapisi": true,
-        "dunyaMesafeSaat": 0,
-        "kapasiteSinifi": 2
       }
     },
     {
@@ -1072,11 +1037,6 @@
         "iklimTipi": "akdeniz",
         "tarimTesisTavani": 2,
         "sulanabilirPpm": 400000
-      },
-      "liman": {
-        "dunyaKapisi": false,
-        "dunyaMesafeSaat": 48,
-        "kapasiteSinifi": 1
       }
     },
     {
@@ -1218,11 +1178,6 @@
         "iklimTipi": "akdeniz",
         "tarimTesisTavani": 2,
         "sulanabilirPpm": 400000
-      },
-      "liman": {
-        "dunyaKapisi": true,
-        "dunyaMesafeSaat": 0,
-        "kapasiteSinifi": 2
       }
     }
   ],

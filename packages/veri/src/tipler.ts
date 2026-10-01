@@ -47,6 +47,19 @@ export interface BolgeTarimTanimi {
   sulanabilirPpm: number;
 }
 
+/**
+ * Bölgenin liman tanımı (B3 Pazar, opsiyonel; yalnızca "liman" etiketli bölgelerde). Yoksa yükleyici
+ * (`limanlariTamamla`) deniz kenarları grafından türetebilir; türetilmemişse (ör. özel test haritası) prim 0 sayılır.
+ */
+export interface LimanTanimi {
+  /** Dünya kapısı ise liman primi 0 (haritada 2-4 liman). */
+  dunyaKapisi: boolean;
+  /** En yakın dünya kapısına deniz yolu ile saat (deniz kenarları üzerinde Dijkstra). Kapıda 0. */
+  dunyaMesafeSaat: number;
+  /** Liman büyüklük sınıfı 1..4 (v1.5 elleçleme kapasitesi için; v1'de okunmaz). */
+  kapasiteSinifi: number;
+}
+
 export interface DevletTanimi {
   id: DevletId;
   ad: string;
@@ -75,6 +88,8 @@ export interface BolgeTanimi {
   konum?: { enlemMikro: number; boylamMikro: number };
   /** Tarım alanı (B1, opsiyonel). Yoksa bölge tarım dışıdır. */
   tarim?: BolgeTarimTanimi;
+  /** Liman tanımı (B3, opsiyonel; yalnız "liman" etiketli bölgelerde): dünya kapısı ve mesafe. */
+  liman?: LimanTanimi;
 }
 
 export interface KenarTanimi {
@@ -360,6 +375,61 @@ export interface SanayiParametreleri {
   };
 }
 
+/** Kıtlık cezası (B3, docs/08 §5.3 P4): temel ihtiyaç karşılanması düştükçe kademeli üretim cezası. */
+export interface KitlikParametreleri {
+  /** Kademe 1, 2, 3 için üst eşikler (ppm; karşılanma >= esik[0] ise kademe 0); azalan sırada. */
+  esikPpm: [number, number, number];
+  /** Kademe 1, 2, 3 üretim çarpanı cezası (ppm; en çok 300 000 = %30); azalmayan sırada. */
+  cezaPpm: [number, number, number];
+  /** Kademe iyileşirken her bu kadar saatte bir kademe düşer (toparlanma ataleti). */
+  toparlanmaSaat: number;
+}
+
+/**
+ * Pazar v1 ek alanları (B3, docs/08 §5.5). Hepsi birlikte verilirse (ya hiçbiri ya hepsi) pazar yenilikleri açılır:
+ * liman primi (P1), açık NPC makası (P2), komisyon ve tarife alanları (P3), kıtlık cezası (P4) ve NPC likidite ölçeği.
+ * Yoksa çekirdek Sanayi v1 davranışını birebir verir. Açıkken eski ithalat/ihracat, anlaşma ve yaptırım çarpan alanları
+ * (`ithalatCarpaniPpm` vb.) makasla TUTARLI olmalıdır (doğrulayıcı denetler): ithalat = PPM + makas/2, ihracat = PPM - makas/2.
+ */
+export interface PazarEkAlanlari {
+  /** Dünya piyasa yapıcısının toplam alış-satış farkı (ppm); ithalat +makas/2, ihracat -makas/2 (200 000 = ±%10). */
+  makasPpm: number;
+  /** Aktif ticaret anlaşmasında makas (100 000 = ±%5). */
+  anlasmaMakasPpm: number;
+  /** Yaptırım altında makas (600 000 = ±%30). */
+  yaptirimMakasPpm: number;
+  /** Dünya kapısına uzaklığın saat başına primi (ppm/saat). */
+  limanPrimPpmSaat: number;
+  /** Liman priminin tavanı (ppm). */
+  limanPrimTavaniPpm: number;
+  /** Her işlem değeri üzerinden sisteme giden komisyon (ppm; para lavabosu). */
+  islemKomisyonuPpm: number;
+  /** NPC likiditesi bu oyuncu sayısının üstünde orantılı büyür (emilim/arz x max(taban, oyuncu) / taban). */
+  npcLikiditeTabanOyuncu: number;
+  kitlik: KitlikParametreleri;
+  /** Oyuncu düzeyinde seçilebilecek tarife kademeleri (B4 Devlet komutu; B3'te kademe 0 varsayılandır). */
+  tarife: { ithalatPpm: number[]; ihracatVergisiPpm: number[] };
+}
+
+/** `Parametreler.pazar` içindeki özgün (B3 öncesi) alanlar. */
+export interface PazarTemelParametreleri {
+  /** Vic3 benzeri fiyat esnekliği (ppm, 750000 = 0.75). */
+  fiyatEsnekligiPpm: number;
+  /** Dünya pazarının saatlik emebileceği hacim: mal -> mili-birim/saat. */
+  emilimSaat: Record<MalId, number>;
+  /** Dünya pazarının saatlik sağlayabileceği hacim: mal -> mili-birim/saat. */
+  arzSaat: Record<MalId, number>;
+  ithalatCarpaniPpm: number;
+  ihracatCarpaniPpm: number;
+  yaptirimIthalatCarpaniPpm: number;
+  yaptirimIhracatCarpaniPpm: number;
+  anlasmaIthalatCarpaniPpm: number;
+  anlasmaIhracatCarpaniPpm: number;
+}
+
+/** Pazar parametreleri: özgün alanlar + (opsiyonel) B3 ek alanları. */
+export type PazarParametreleri = PazarTemelParametreleri & Partial<PazarEkAlanlari>;
+
 /**
  * Ayarlanabilir parametreler. PDF'deki süre aralıkları başlangıç varsayımıdır;
  * simülasyonda bu dosyadan okunur.
@@ -410,20 +480,7 @@ export interface Parametreler {
     /** Para lavabosu: aktif tesis başına işletme gideri (mili-para/saat). */
     tesisIsletmeParasiSaat: number;
   };
-  pazar: {
-    /** Vic3 benzeri fiyat esnekliği (ppm, 750000 = 0.75). */
-    fiyatEsnekligiPpm: number;
-    /** Dünya pazarının saatlik emebileceği hacim: mal -> mili-birim/saat. */
-    emilimSaat: Record<MalId, number>;
-    /** Dünya pazarının saatlik sağlayabileceği hacim: mal -> mili-birim/saat. */
-    arzSaat: Record<MalId, number>;
-    ithalatCarpaniPpm: number;
-    ihracatCarpaniPpm: number;
-    yaptirimIthalatCarpaniPpm: number;
-    yaptirimIhracatCarpaniPpm: number;
-    anlasmaIthalatCarpaniPpm: number;
-    anlasmaIhracatCarpaniPpm: number;
-  };
+  pazar: PazarParametreleri;
   lojistik: {
     /** Eşik tetikli yeniden çözümler arasında en az süre (dakika). */
     enAzCozumAraligiDakika: number;

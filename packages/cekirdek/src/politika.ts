@@ -5,7 +5,9 @@
  * (uygulayan, hedef) anahtarlarına göre sıralı tutulur; ekleme sırasından bağımsızdır.
  * Anlaşma listeleri küçüktür; kenarKullanilabilirMi/pazarCarpanlari doğrudan tarama yapar.
  */
+import { pazarTablosu } from "./pazar/tablo";
 import { oyuncuBul } from "./stok";
+import { PPM } from "./tipler";
 import type { AnlasmaDurumu, Baglam, Dunya, Komut, KomutSonucu, OyuncuId, YaptirimDurumu } from "./tipler";
 
 function hata(mesaj: string): KomutSonucu {
@@ -119,8 +121,23 @@ export function kenarKullanilabilirMi(d: Dunya, _ctx: Baglam, oyuncu: OyuncuId, 
 }
 
 /**
+ * Oyuncunun makas türü: "yaptirim" (oyuncuya en az bir yaptırım uygulanıyor), "anlasma" (aktif ticaret anlaşması) veya
+ * "varsayilan". Öncelik: yaptırım > anlaşma > varsayılan.
+ */
+function makasTuru(d: Dunya, oyuncu: OyuncuId): "yaptirim" | "anlasma" | "varsayilan" {
+  for (const y of d.yaptirimlar) if (y.hedef === oyuncu) return "yaptirim";
+  for (const an of d.anlasmalar) {
+    if (an.tur === "ticaret" && an.aktif && (an.taraflar[0] === oyuncu || an.taraflar[1] === oyuncu)) return "anlasma";
+  }
+  return "varsayilan";
+}
+
+/**
  * Oyuncunun dünya pazarı fiyat çarpanları (ppm). Öncelik: yaptırım (oyuncuya en az bir yaptırım
  * uygulanıyorsa) > aktif "ticaret" anlaşması > varsayılan.
+ * Pazar v1 (B3) açıkken çarpanlar makastan türetilir (açık NPC makası, docs/08 §5.3 P2): ithalat PPM + makas/2,
+ * ihracat PPM - makas/2; makas yaptırımda `yaptirimMakasPpm`, anlaşmada `anlasmaMakasPpm`, aksi halde `makasPpm`
+ * (doğrulayıcı eski çarpan alanlarının makasla tutarlı olduğunu denetler: sonuç aynıdır). Kapalıyken eski alanlar.
  */
 export function pazarCarpanlari(
   d: Dunya,
@@ -128,15 +145,19 @@ export function pazarCarpanlari(
   oyuncu: OyuncuId,
 ): { ithalatPpm: number; ihracatPpm: number } {
   const p = ctx.ic.param.pazar;
-  for (const y of d.yaptirimlar) {
-    if (y.hedef === oyuncu) {
-      return { ithalatPpm: p.yaptirimIthalatCarpaniPpm, ihracatPpm: p.yaptirimIhracatCarpaniPpm };
-    }
+  const tur = makasTuru(d, oyuncu);
+  const pz = pazarTablosu(ctx.ic);
+  if (pz !== null) {
+    const makas = tur === "yaptirim" ? pz.p.yaptirimMakasPpm : tur === "anlasma" ? pz.p.anlasmaMakasPpm : pz.p.makasPpm;
+    return { ithalatPpm: PPM + makas / 2, ihracatPpm: PPM - makas / 2 };
   }
-  for (const an of d.anlasmalar) {
-    if (an.tur === "ticaret" && an.aktif && (an.taraflar[0] === oyuncu || an.taraflar[1] === oyuncu)) {
-      return { ithalatPpm: p.anlasmaIthalatCarpaniPpm, ihracatPpm: p.anlasmaIhracatCarpaniPpm };
-    }
-  }
+  if (tur === "yaptirim") return { ithalatPpm: p.yaptirimIthalatCarpaniPpm, ihracatPpm: p.yaptirimIhracatCarpaniPpm };
+  if (tur === "anlasma") return { ithalatPpm: p.anlasmaIthalatCarpaniPpm, ihracatPpm: p.anlasmaIhracatCarpaniPpm };
   return { ithalatPpm: p.ithalatCarpaniPpm, ihracatPpm: p.ihracatCarpaniPpm };
+}
+
+/** Oyuncunun geçerli makası (ppm; toplam alış-satış farkı): pazar v1 açıkken makas alanlarından, kapalıyken eski çarpanlardan. */
+export function oyuncuMakasPpm(d: Dunya, ctx: Baglam, oyuncu: OyuncuId): number {
+  const c = pazarCarpanlari(d, ctx, oyuncu);
+  return c.ithalatPpm - c.ihracatPpm;
 }

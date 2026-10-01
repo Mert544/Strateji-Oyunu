@@ -12,6 +12,8 @@
 import { ikmalTalebi } from "../askeri";
 import { icerikTablosu } from "./tablo";
 import type { IcerikTablosu } from "./tablo";
+import { kitlikCarpani, temelKarsilanmaHesapla } from "../pazar";
+import { pazarTablosu } from "../pazar/tablo";
 import { carpBol, tamsayiKarekok } from "../sabit";
 import { bakimCarpani, bakimDuzeyiIndeksi, cezaCarpani, kirlilikTarimCarpani, olcekKademesi } from "../sanayi/carpan";
 import { elektrikDagit } from "../sanayi/elektrik";
@@ -202,15 +204,19 @@ function ciktiOlcekle(q: number, v: number, carpan: number): number {
 function ciktiCarpaniHesapla(tt: TarimTablosu | null, sn: SanayiTablosu | null, ic: Baglam["ic"], b: BolgeDurumu, ts: BolgeDurumu["tesisler"][number], tarimsal: boolean, gubreKarsilanma: number): number {
   let c = PPM;
   if (tarimsal && tt !== null) c = tarimCiktiCarpani(tt, ic, b, tt.yontemEkili[ts.yontem] as boolean, gubreKarsilanma);
+  // Pazar v1 (B3): kıtlık cezası çarpanı (kapalıyken veya kademe 0'da PPM).
+  const kitlik = kitlikCarpani(ic, b);
   if (sn !== null) {
     const ol = olcekKademesi(sn, ts).ciktiPpm;
     if (ol !== PPM) c = carpBol(c, ol, PPM);
-    const ceza = cezaCarpani(sn, ts);
+    const ceza = cezaCarpani(sn, ts, kitlik);
     if (ceza !== PPM) c = carpBol(c, ceza, PPM);
     if (tarimsal) {
       const k = kirlilikTarimCarpani(sn, b);
       if (k !== PPM) c = carpBol(c, k, PPM);
     }
+  } else if (kitlik !== PPM) {
+    c = carpBol(c, kitlik, PPM);
   }
   return c;
 }
@@ -244,6 +250,8 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
   const rezervTaban = sn === null ? 0 : sn.p.damar.rezervVerimTabaniPpm;
   const duzey = sn === null ? 1 : bakimDuzeyiIndeksi(d, b);
   const akarsu = sn === null ? PPM : akarsuCarpani(sn, ctx.ic, t);
+  // Pazar v1 (B3): bölgede kıtlık cezası varsa sanayi kapalıyken de çıktı çarpanı hesaplanır.
+  const kitlikAktif = pazarTablosu(ctx.ic) !== null && (b.kitlikKademesi ?? 0) > 0;
   // Santral yük planı: önceki çözümdeki yük + marj (yakıt talebi gerçek yükü izler; yük bilinmiyorsa tam yük).
   // Yük 250 000 ppm basamaklarına yukarı yuvarlanır: yakıt talebi yük dalgalanmasıyla her çözümde değişip akış/olay çalkantısı
   // (çözüm sayısı) yaratmasın.
@@ -311,9 +319,9 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
           // Santralin yakıt talebi gerçek yükünü izler (tam yük planlamak, kullanılmayan yakıtı depoya yığardı).
           planPot = carpBol(planPot, planYuk, PPM);
         }
-      } else if (tarimsal) {
-        const tb2 = tt as TarimTablosu;
-        h.ciktiCarpan[i] = tarimCiktiCarpani(tb2, ctx.ic, b, tb2.yontemEkili[ts.yontem] as boolean, PPM);
+      } else if (tarimsal || kitlikAktif) {
+        // Sanayi kapalı: tarım çıktı çarpanı (varsa) ve pazar v1 kıtlık cezası.
+        h.ciktiCarpan[i] = ciktiCarpaniHesapla(tt, null, ctx.ic, b, ts, tarimsal, PPM);
       }
       if (tarimsal) {
         const tb2 = tt as TarimTablosu;
@@ -553,10 +561,20 @@ export function bolgeUykuUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi): void {
     b.elektrik = { uretimMili: 0, talepMili: 0, karsilanmaPpm: PPM, haneKarsilanmaPpm: PPM, yukPpm: 0 };
     b.bakimKarsilanmaPpm = PPM;
   }
+  // Pazar v1 (B3): uykuda kıtlık yok (kademe donar), temel ihtiyaç tam karşılanır.
+  if (b.temelKarsilanmaPpm !== undefined) b.temelKarsilanmaPpm = PPM;
   for (let m = 0; m < b.stoklar.length; m++) {
     b.uretimOrani[m] = 0;
     stokOranAyarla(d, ctx, h.indeks, m, 0);
   }
+}
+
+/** Bölgede aktif bir santral (elektrik üreten tesis) var mı: şebekesiz bölgede hane elektriği kıtlık sayılmaz (B3). */
+function santraliVarMi(ctx: Baglam, b: BolgeDurumu): boolean {
+  const sn = sanayiTablosu(ctx.ic);
+  if (sn === null) return false;
+  for (const ts of b.tesisler) if (ts.aktif && (sn.yontemElektrikCikti[ts.yontem] as number) > 0) return true;
+  return false;
 }
 
 /** Bölgeye yazılan karşılanma oranları ve tesis verim alanları. */
@@ -592,6 +610,12 @@ export function bolgeDurumunaYaz(ctx: Baglam, h: BolgeHesabi): void {
     b.bakimKarsilanmaPpm = bakimOran;
   }
   b.gidaKarsilanmaPpm = tb.gidaMal >= 0 ? (h.fr1[tb.gidaMal] as number) : PPM;
+  // Pazar v1 (B3): temel ihtiyaç karşılanması (kıtlık kademesinin girdisi): min(gıda, yakıt, hane elektriği).
+  const pz = pazarTablosu(ctx.ic);
+  if (pz !== null && b.kitlikKademesi !== undefined) {
+    const yakit = pz.yakitMal >= 0 && (h.nufusTuketim[pz.yakitMal] as number) + (h.ikmal[pz.yakitMal] as number) > 0 ? (h.fr1[pz.yakitMal] as number) : null;
+    b.temelKarsilanmaPpm = temelKarsilanmaHesapla(b.gidaKarsilanmaPpm, yakit, santraliVarMi(ctx, b) && h.elektrik !== null ? h.elektrik.haneKarsilanmaPpm : null);
+  }
   let ikmalOran = PPM;
   for (let m = 0; m < tb.malSayisi; m++) {
     if ((h.ikmal[m] as number) > 0) {

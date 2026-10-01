@@ -54,3 +54,27 @@ export {
 } from "./sanayi";
 export type { SanayiTablosu, ElektrikSonucu } from "./sanayi";
 export { rezervVerimi } from "./ekonomi/uretim";
+
+// --- Pazar katmanı (B3) ---
+export {
+  pazarEmirleriniGerceklestir,
+  pazarFiyatlari,
+  npcHacimleri,
+  pazarTablosu,
+  npcLikiditeOlcekPpm,
+  ticaretCarpanlari,
+  ihracatKirilimi,
+  ithalatKirilimi,
+  ticaretNakitCarpanlari,
+  ticaretKorumasindaMi,
+  sifirKalemler,
+  kitlikHedefKademesi,
+  kitlikCezasiPpm,
+  kitlikCarpani,
+  kitlikTik,
+  temelKarsilanmaHesapla,
+  enYuksekKitlikKademesi,
+  ticaretDefteriBaslat,
+} from "./pazar";
+export type { PazarTablosu, TicaretCarpanlari, TicaretKirilimi } from "./pazar";
+export { pazarCarpanlari, oyuncuMakasPpm } from "./politika";

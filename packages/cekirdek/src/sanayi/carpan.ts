@@ -14,12 +14,14 @@ export function olcekKademesi(sn: SanayiTablosu, ts: TesisDurumu): SanayiTablosu
 }
 
 /**
- * Üretim ceza çarpanı (ppm): max(uretimTabani, aşınma x istikrar x kıtlık). Istikrar ve kıtlık B3/B4'te bağlanır
- * (şimdilik PPM); yalnız aşınma cezası uygular. Doğal değişkenlik (iklim, toprak, tükenme) taban dışındadır.
+ * Üretim ceza çarpanı (ppm): max(uretimTabani, aşınma x istikrar x kıtlık). `kitlik` (pazar v1, B3; varsayılan PPM = ceza yok)
+ * kıtlık çarpanıdır; istikrar B4'te bağlanır (şimdilik PPM). Doğal değişkenlik (iklim, toprak, tükenme) taban dışındadır.
+ * Santral elektrik kapasitesi yalnız aşınma cezasını kullanır (`kitlik` verilmez): elektrik kıtlığın girdisidir.
  */
-export function cezaCarpani(sn: SanayiTablosu, ts: TesisDurumu): number {
+export function cezaCarpani(sn: SanayiTablosu, ts: TesisDurumu, kitlik: number = PPM): number {
   const asinma = ts.asinmaPpm ?? 0;
-  const c = asinma <= 0 ? PPM : PPM - carpBol(asinma, sn.p.bakim.asinmaVerimKaybiTavaniPpm, PPM);
+  let c = asinma <= 0 ? PPM : PPM - carpBol(asinma, sn.p.bakim.asinmaVerimKaybiTavaniPpm, PPM);
+  if (kitlik !== PPM) c = carpBol(c, kitlik, PPM);
   return c < sn.p.uretimTabaniPpm ? sn.p.uretimTabaniPpm : c;
 }
 

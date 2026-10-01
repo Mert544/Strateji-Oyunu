@@ -45,20 +45,7 @@
     "yaptirimIthalatCarpaniPpm": 1300000,
     "yaptirimIhracatCarpaniPpm": 700000,
     "anlasmaIthalatCarpaniPpm": 1050000,
-    "anlasmaIhracatCarpaniPpm": 950000,
-    "makasPpm": 200000,
-    "anlasmaMakasPpm": 100000,
-    "yaptirimMakasPpm": 600000,
-    "limanPrimPpmSaat": 2500,
-    "limanPrimTavaniPpm": 150000,
-    "islemKomisyonuPpm": 10000,
-    "npcLikiditeTabanOyuncu": 4,
-    "kitlik": {
-      "esikPpm": [900000, 700000, 500000],
-      "cezaPpm": [50000, 150000, 300000],
-      "toparlanmaSaat": 24
-    },
-    "tarife": { "ithalatPpm": [0, 100000, 200000], "ihracatVergisiPpm": [0, 50000, 100000] }
+    "anlasmaIhracatCarpaniPpm": 950000
   },
   "lojistik": {
     "enAzCozumAraligiDakika": 10,

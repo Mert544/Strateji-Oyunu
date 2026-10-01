@@ -3,7 +3,7 @@
  * Motor bu dosyadaki üç fonksiyonu çağırır; ayrıntılar pazar/nufus/komut/insaat/uretim dosyalarındadır.
  */
 import { nufusTik } from "./nufus";
-import { pazarEmirleriniGerceklestir, pazarFiyatlari } from "./pazar";
+import { kitlikTik, pazarEmirleriniGerceklestir, pazarFiyatlari } from "../pazar";
 import { sanayiGunluk, sanayiSaatlik } from "../sanayi";
 import { GUN } from "../tipler";
 import type { Baglam, Dunya } from "../tipler";
@@ -19,6 +19,8 @@ export function saatlikTik(d: Dunya, ctx: Baglam): void {
   pazarEmirleriniGerceklestir(d, ctx);
   pazarFiyatlari(d, ctx);
   nufusTik(d, ctx);
+  // Pazar v1 (B3; kapalıyken hiçbir şey yapmaz): kıtlık kademesi son çözümdeki temel ihtiyaç karşılanmasına göre güncellenir.
+  kitlikTik(d, ctx);
   // Sanayi (B2; kapalıyken hiçbir şey yapmaz): saatlik emisyon, her sim-günü başında aşınma ve kirlilik yayılımı/sönümü.
   if (ctx.ic.param.sanayi !== undefined) {
     sanayiSaatlik(d, ctx);
