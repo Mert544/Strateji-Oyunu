@@ -34,6 +34,7 @@ import { durumIlceNo, durumUygunMu } from "./mulk/hucreDizini";
 import { KAMU_ALGORITMA_SURUMU, kamuIndeksiAra, kamuIndeksiKur } from "./mulk/kamu";
 import { fnv1a64 } from "./ozet";
 import { adKanonik } from "./ad";
+import { MULKSUZ_PAKET } from "./mulksuz";
 import { KASA_GIRIS_ISTEGE_BAGLI, KASA_GIRIS_KALEMLERI, LAVABO_ISTEGE_BAGLI, LAVABO_KALEMLERI, MUSLUK_ISTEGE_BAGLI, MUSLUK_KALEMLERI, OLAY_ONCELIGI, PPM, SAAT } from "./tipler";
 import type { DerlenmisIcerik, Dunya, Ms } from "./tipler";
 
@@ -315,7 +316,7 @@ export function dunyaDogrula(deger: unknown): Dunya {
       for (const k of Object.keys(st)) tamsayi(st[k], `${y}.sebekeTuketim.${k}`, 1);
     }
     // Mülk kipi yerel pazar (G7-2; sartname §11.1): dükkân isteği karşılanma oranı, yalnız < PPM iken yazılır; yalnız işletme düğümünde.
-    if (b.yerelKarsilanmaPpm !== undefined) {
+    if (!MULKSUZ_PAKET && b.yerelKarsilanmaPpm !== undefined) {
       tamsayi(b.yerelKarsilanmaPpm, `${y}.yerelKarsilanmaPpm`, 0, PPM - 1);
       if (b.merkez === undefined) hata(`${y}.yerelKarsilanmaPpm`, "yerel karsilanma yalniz isletme dugumunde olabilir");
     }
@@ -346,7 +347,7 @@ export function dunyaDogrula(deger: unknown): Dunya {
         dize(ek.tur, `${ey}.tur`);
         dizi(ek.hucreler, `${ey}.hucreler`).forEach((h, k) => dize(h, `${ey}.hucreler[${k}]`));
         // Dükkân (G7-2; sartname §7.1, §11.1): yalnız `tur === "dukkan"` ek yapıda; içerik uyumu (tür, mal, kademe, raf uzunluğu) `dunyaIcerikUyumu`'nda.
-        if (ek.dukkan !== undefined) {
+        if (!MULKSUZ_PAKET && ek.dukkan !== undefined) {
           if (ek.tur !== "dukkan") hata(`${ey}.dukkan`, "dukkan alani yalniz tur 'dukkan' olan ek yapida olabilir");
           dukkanDogrula(ek.dukkan, `${ey}.dukkan`);
         }
@@ -615,9 +616,9 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
     if (o.ayrilmisHucre !== undefined) tamsayi(o.ayrilmisHucre, `${y}.ayrilmisHucre`, 1);
     if (o.katilimIlcesi !== undefined) dize(o.katilimIlcesi, `${y}.katilimIlcesi`);
     // Perakende (G7-2; sartname §11.1): isteğe bağlı, yalnız kullanılınca yazılır.
-    if (o.dukkanGeliri !== undefined) sayacDogrula(o.dukkanGeliri, `${y}.dukkanGeliri`);
-    if (o.ilkSatisT !== undefined) tamsayi(o.ilkSatisT, `${y}.ilkSatisT`, 0);
-    if (o.markalar !== undefined) {
+    if (!MULKSUZ_PAKET && o.dukkanGeliri !== undefined) sayacDogrula(o.dukkanGeliri, `${y}.dukkanGeliri`);
+    if (!MULKSUZ_PAKET && o.ilkSatisT !== undefined) tamsayi(o.ilkSatisT, `${y}.ilkSatisT`, 0);
+    if (!MULKSUZ_PAKET && o.markalar !== undefined) {
       dizi(o.markalar, `${y}.markalar`).forEach((mv, j) => {
         const my = `${y}.markalar[${j}]`;
         const mr = nesne(mv, my);
@@ -636,7 +637,7 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
       tamsayi(pa.t0, `${y}.paraAkisi.t0`, 0);
       for (const k of ["ihracat", "nufus", "ithalat", "isletme", "vergi"] as const) tamsayi(pa[k], `${y}.paraAkisi.${k}`);
       if (pa.sebeke !== undefined) tamsayi(pa.sebeke, `${y}.paraAkisi.sebeke`, 1); // isteğe bağlı (şebeke > 0 iken yazılır)
-      if (pa.yerel !== undefined) tamsayi(pa.yerel, `${y}.paraAkisi.yerel`, 1); // isteğe bağlı (yerel satış geliri > 0 iken yazılır; G7-2)
+      if (!MULKSUZ_PAKET && pa.yerel !== undefined) tamsayi(pa.yerel, `${y}.paraAkisi.yerel`, 1); // isteğe bağlı (yerel satış geliri > 0 iken yazılır; G7-2)
       let oncekiKasa: string | null = null;
       dizi(pa.kasa, `${y}.paraAkisi.kasa`).forEach((e, j) => {
         const ey = `${y}.paraAkisi.kasa[${j}]`;
@@ -765,7 +766,7 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     if (b.birlikler.length !== ic.birlikler.length) hata(`${y}.birlikler`, `birlik sayisi ${b.birlikler.length}, icerikte ${ic.birlikler.length}`);
     for (const [j, e] of (b.ekYapilar ?? []).entries()) {
       if (ic.mulk?.ekYapiIndeks.has(e.tur) !== true) hata(`${y}.ekYapilar[${j}].tur`, `icerikte olmayan ek yapi: ${e.tur}`);
-      if (e.dukkan !== undefined) {
+      if (!MULKSUZ_PAKET && e.dukkan !== undefined) {
         // Dükkân içerik uyumu (G7-2; sartname §11.2): perakende tanımlı, tür türler içinde, raf malları türün mal kümesinde, kademe aralıkta, raf uzunluğu ölçekle aynı, marka var, kampanya yalnız açıkken.
         const dy = `${y}.ekYapilar[${j}].dukkan`;
         const pk = ic.mulk?.perakende;

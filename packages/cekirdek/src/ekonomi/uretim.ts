@@ -23,6 +23,7 @@ import type { SanayiTablosu } from "../sanayi/tablo";
 import { anlikMiktar, stokOranAyarla } from "../stok";
 import { tarimCiktiCarpani } from "../tarim/carpan";
 import type { YerelCozum } from "../mulk/perakende";
+import { MULKSUZ_PAKET } from "../mulksuz";
 import { tarimTablosu } from "../tarim/tablo";
 import type { TarimTablosu } from "../tarim/tablo";
 import { PPM, SAAT } from "../tipler";
@@ -215,13 +216,13 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
  * düğüm harita bölgesiyse `null` döner ve hiçbir kod yolu değişmez (bölge kipi altınları bayt bayt aynı).
  */
 function sebekeElektrikYolu(ctx: Baglam, b: BolgeDurumu): DerlenmisSebeke | null {
-  const sb = ctx.ic.mulk?.sebeke;
+  const sb = MULKSUZ_PAKET ? undefined : ctx.ic.mulk?.sebeke;
   return sb !== undefined && sb.elektrik !== undefined && b.merkez !== undefined ? sb : null;
 }
 
 /** Stoksuz mal tablosu (mal indeksi -> kayıt indeksi ya da -1); şebeke yoksa/listede stoksuz mal yoksa null. */
 function sebekeStoksuzTablo(ctx: Baglam, b: BolgeDurumu): readonly number[] | null {
-  const sb = ctx.ic.mulk?.sebeke;
+  const sb = MULKSUZ_PAKET ? undefined : ctx.ic.mulk?.sebeke;
   return sb !== undefined && sb.stoksuz.length > 0 && b.merkez !== undefined ? sb.stoksuzIndeks : null;
 }
 
@@ -727,14 +728,14 @@ export function bolgeDurumunaYaz(ctx: Baglam, h: BolgeHesabi): void {
   b.ikmalKarsilanmaPpm = ikmalOran;
   // Yerel pazar (G7-2): dükkân isteği olan malların en düşük karşılanma oranı; yalnız < PPM iken yazılır (aksi halde alan silinir/oluşmaz).
   let yerelOran = PPM;
-  for (let m = 0; m < tb.malSayisi; m++) {
+  for (let m = 0; !MULKSUZ_PAKET && m < tb.malSayisi; m++) {
     if ((h.dukkan[m] as number) > 0) {
       const f = h.frD[m] as number;
       if (f < yerelOran) yerelOran = f;
     }
   }
   if (yerelOran < PPM) b.yerelKarsilanmaPpm = yerelOran;
-  else if (b.yerelKarsilanmaPpm !== undefined) delete b.yerelKarsilanmaPpm;
+  else if (!MULKSUZ_PAKET && b.yerelKarsilanmaPpm !== undefined) delete b.yerelKarsilanmaPpm;
 }
 
 /**

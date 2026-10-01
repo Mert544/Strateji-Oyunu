@@ -24,6 +24,7 @@ import { GUN, KASA_GIRIS_KALEMLERI, PPM } from "../tipler";
 import type { DerlenmisIcerik, Dunya, KasaDurumu, KasaGirisKalemi, KasaGunu, KomutSonucu, Mili, NpcAlici, ParaAkisi, ParaDurumu, RafYuvasi } from "../tipler";
 import type { MulkKasaParametreleri } from "@bolge/veri";
 import { sayacOranEkle, sayacSifir } from "../paraSayac";
+import { MULKSUZ_PAKET } from "../mulksuz";
 import { sirali, mulkOyuncuBul } from "./durum";
 import { oyuncuDukkanYuvalari } from "./perakende";
 import { kamuIlKimligi, kamuIlceKimligi, kamuMahalleKimligi } from "./kamu";
@@ -103,7 +104,7 @@ export function paraMuhasebesi(d: Dunya, ic: DerlenmisIcerik): void {
   const gun = Math.floor(t / GUN);
   // Yuva satış sayaçları (G7-2, §7.1b) için oyuncu -> yuvalar; yalnız perakende verisi varken ve ilk gerekte (dükkânsız dünyada hiç kurulmaz).
   let yuvaHaritasi: Map<string, RafYuvasi[]> | undefined;
-  const perakendeVar = ic.mulk?.perakende !== undefined;
+  const perakendeVar = !MULKSUZ_PAKET && ic.mulk?.perakende !== undefined;
   for (const mo of m.oyuncular) {
     const a = mo.paraAkisi;
     if (a === undefined) continue;
@@ -130,7 +131,7 @@ export function paraMuhasebesi(d: Dunya, ic: DerlenmisIcerik): void {
       // Şebeke bedeli (G6): oyuncunun hazinesinden DÜŞEN para; kasa payı kasaya, kalanı lavabo.sebeke'ye (yeni musluk yok). Tembel kalem.
       if (a.sebeke !== undefined && a.sebeke > 0) sayacOranEkle((para.lavabo.sebeke ??= sayacSifir()), a.sebeke - sebekeKasa, dt);
       // Yerel pazar (G7-2, §12.1): dükkân satış geliri NPC hane talebidir (yeni para): musluk `yerelNpc` (tembel) ve oyuncu `dukkanGeliri` AYNI oran ve süreyle artar (kasaya pay yok).
-      if (a.yerel !== undefined && a.yerel > 0) {
+      if (!MULKSUZ_PAKET && a.yerel !== undefined && a.yerel > 0) {
         sayacOranEkle((para.musluk.yerelNpc ??= sayacSifir()), a.yerel, dt);
         sayacOranEkle((mo.dukkanGeliri ??= sayacSifir()), a.yerel, dt);
       }
@@ -157,7 +158,7 @@ export function paraAkisiYaz(d: Dunya, oyuncu: string, akis: Omit<ParaAkisi, "t0
   if (mo === undefined) return;
   const kasa = akis.kasa.filter((e) => e.oran > 0);
   const sebeke = akis.sebeke ?? 0;
-  const yerel = akis.yerel ?? 0;
+  const yerel = MULKSUZ_PAKET ? 0 : (akis.yerel ?? 0);
   if (mo.paraAkisi === undefined && akis.ihracat === 0 && akis.nufus === 0 && akis.ithalat === 0 && akis.isletme === 0 && akis.vergi === 0 && sebeke === 0 && yerel === 0 && kasa.length === 0) return;
   // İlk satış anı (A0-11, §7.1): yerel satış oranı ilk kez > 0 olduğunda bir kez yazılır (muhasebe adım 0 ile işlenmiş; `d.zaman` = bu çözümün anı).
   if (yerel > 0) mo.ilkSatisT ??= d.zaman;

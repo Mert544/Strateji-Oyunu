@@ -8,6 +8,8 @@
  * Düzen: sentetik-50 mülk fixture, `BOT` parsel botu (`@bolge/botlar`), kademeli katılım (tur başına 5 bot), tur = 6 sim-saat; her turda önce
  * `calistirKadar(t)` (bekleyen çözümler boşalır), sonra botların komutları AYNI t'de sırayla `Simulasyon.uygula`'ya verilir. Süreç içi, ağsız.
  * Ölçüt: iş parçacığının CPU süresi (`process.threadCpuUsage`; duvar saati değil: paylaşımlı makinede yük ortalaması sonucu bozmaz).
+ * DUKKAN=1 (G7-2; sartname §6.9): veri paketine bellekte `mulk.perakende` bloğu ve `ekYapilar.dukkan` eklenir (JSON değişmez) ve ana koşunun SONUNDA aynı durumda üç çözüm mikro ölçümü
+ * yan yana basılır: (a) blok YOK (`ic.mulk.perakende` geçici silinir), (b) blok var, dükkân yok, (c) her işletme düğümünde bir dükkân. Oranlar aynı süreç ve aynı durumda hesaplanır (yük gürültüsü oranı bozmaz).
  * Çıktı: komut türüne göre `uygula` süresi (kabul/red), lojistik çözüm başına CPU (olay işleyicisi sarılarak), toplamlar, yük ortalaması ve
  * DURUM ÖZETİ (önce/sonra karşılaştırmasında aynı olmalıdır: bot kararları deterministiktir; optimizasyon özeti değiştirmemelidir).
  */
@@ -16,6 +18,7 @@ import { PARSEL_ONAYARLARI, parselBotuOlustur } from "../../botlar/src";
 import { parselFiksturuYukle, varsayilanVeriyiYukle } from "@bolge/veri";
 import { SISTEM_OYUNCUSU, Simulasyon } from "../src/motor";
 import { lojistikCoz } from "../src/lojistik/cozum";
+import { perakendeBlogu } from "../../veri/test/perakende-g7-yardimci";
 import { SAAT } from "../src/tipler";
 import type { Olay } from "../src/tipler";
 
@@ -48,7 +51,13 @@ function kaydet(tur: string, ms: number, tamam: boolean): void {
   }
 }
 
+const DUKKAN = process.env["DUKKAN"] === "1";
 const v = { ...varsayilanVeriyiYukle(), parsel: parselFiksturuYukle("sentetik-50") };
+if (DUKKAN) {
+  const mulk = v.param.mulk!;
+  mulk.ekYapilar = { ...(mulk.ekYapilar ?? {}), dukkan: { ad: "Dukkan", yuva: 1, insaSaati: 4, insaParasi: 6_000_000, insaMaliyeti: { celik: 20_000, parca: 8_000 }, enFazlaIlBasina: 6, olcekHucre: [1, 2, 3] } };
+  mulk.perakende = perakendeBlogu();
+}
 const sim = Simulasyon.olustur(v, 7);
 
 // Lojistik çözüm başına CPU: olay işleyicisi sarılır (yalnız bu betikte).
@@ -128,4 +137,40 @@ console.log(`OZET ${sim.durumOzeti()}`); // mikro ölçümden ÖNCE (mikro ölç
   const stokluMal = new Set<number>();
   for (const b of d.bolgeler) b.stoklar.forEach((s, m) => { if (s.miktar !== 0 || s.yerelOran !== 0 || s.gelenOran !== 0) stokluMal.add(m); });
   console.log(`bolge ${d.bolgeler.length}, sahipli ${sahipli.length}, tesisli ${tesisli.length}, isletme dugumu ${mulkDugum.length}, akis ${d.lojistik.akislar.length}, hareketli mal ${stokluMal.size}/${d.pazar.fiyat.length}, kenar ${d.kenarlar.length}`);
+}
+
+if (DUKKAN) {
+  const mikro = (): { en: number; ort: number } => {
+    const kumeler: number[] = [];
+    for (let k = 0; k < 20; k++) {
+      const g0 = cpu();
+      for (let i = 0; i < 10; i++) lojistikCoz(sim.dunya, sim.baglam);
+      kumeler.push((cpu() - g0) / 10);
+    }
+    kumeler.sort((a, b) => a - b);
+    return { en: kumeler[0]!, ort: kumeler[10]! };
+  };
+  const mk = sim.ic.mulk!;
+  const perakende = mk.perakende;
+  delete (mk as { perakende?: unknown }).perakende;
+  const a = mikro(); // blok YOK
+  (mk as { perakende?: unknown }).perakende = perakende;
+  const b = mikro(); // blok var, dükkân yok
+  // Her işletme düğümüne bir dükkân (sahibin ilk hücresiyle ilçesi bulunur; altı mal, ağda bol stok)
+  const mallar = ["gida", "ekmek", "un", "sut", "sut_urunu", "sekerleme"];
+  let eklenen = 0;
+  for (const isl of sim.dunya.mulk!.isletmeler) {
+    const hucre = sim.dunya.mulk!.hucreler.find((h) => h.sahip === isl.oyuncu);
+    if (hucre === undefined) continue;
+    const dugum = sim.dunya.bolgeler[isl.bolgeIndeksi]!;
+    for (const m of mallar) {
+      const mi = sim.ic.malIndeks[m];
+      if (mi !== undefined) dugum.stoklar[mi]!.miktar = Math.max(dugum.stoklar[mi]!.miktar, 1_000_000);
+    }
+    (dugum.ekYapilar ??= []).push({ id: 9_000_000 + eklenen++, tur: "dukkan", hucreler: [hucre.id], dukkan: { tur: "bakkal", olcek: 0, raf: mallar.map((mal) => ({ mal, fiyat: 2 })), baslangic: sim.dunya.zaman, kurulus: sim.dunya.zaman } });
+  }
+  sim.baglam.kirlet(sim.dunya);
+  const c = mikro(); // dükkânlı
+  console.log(`DUKKAN cozum mikro (CPU ms/cozum, en kucuk | ortanca): blok yok ${a.en.toFixed(2)} | ${a.ort.toFixed(2)}; blok var dukkan yok ${b.en.toFixed(2)} | ${b.ort.toFixed(2)}; dukkanli (${eklenen} dugum) ${c.en.toFixed(2)} | ${c.ort.toFixed(2)}`);
+  console.log(`DUKKAN oran: blok var/yok ${(b.ort / a.ort).toFixed(3)} (en kucuk ${(b.en / a.en).toFixed(3)}); dukkanli/blok yok ${(c.ort / a.ort).toFixed(3)} (en kucuk ${(c.en / a.en).toFixed(3)}); yuk ortalamasi ${(loadavg()[0] ?? 0).toFixed(1)}`);
 }

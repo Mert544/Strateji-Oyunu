@@ -38,6 +38,7 @@ import { defterOranYaz, pazarMuhasebesi, sifirKalemler, ticaretCarpanlari, ihrac
 import { pazarTablosu } from "../pazar/tablo";
 import { BOS_DUGUMLER, oyuncuDugumleri } from "../dugum";
 import { dugumIlcesi, kasaOranlari, paraAkisiYaz, paraMuhasebesi } from "../mulk/kasa";
+import { MULKSUZ_PAKET } from "../mulksuz";
 import { yerelPazarCoz, yerelSatisYaz } from "../mulk/perakende";
 import type { YerelCozum } from "../mulk/perakende";
 import { yerelSatisGeliri } from "../perakende/yerelPazar";
@@ -119,7 +120,7 @@ function hazineKalemleri(
   let sebekeGider = 0;
   let yerelGelir = 0;
   const sebekeIlce = new Map<string, Mili>();
-  const sb = ctx.ic.mulk?.sebeke;
+  const sb = MULKSUZ_PAKET ? undefined : ctx.ic.mulk?.sebeke;
   for (const r of dugumler) {
     const b = d.bolgeler[r] as BolgeDurumu;
     const nv = carpBol(carpBol(b.nufus, p.ekonomi.vergiTabani1000Saat, 1000), o.vergiPpm, PPM);
@@ -189,7 +190,7 @@ function hazineKalemleri(
       }
     }
     // Yerel pazar (G7-2, §6.4 Adım 7): dükkân satış geliri `R x kademe` ile; `hesaplar === null` iken (ödeme gücü tahmini) gercek = istek. Dükkân işletme gideri `isletme` lavabosuna girer.
-    if (yerel !== null) {
+    if (!MULKSUZ_PAKET && yerel !== null) {
       const sl = yerel.satirlar.get(r);
       if (sl !== undefined) {
         const hs = hesaplar === null ? null : (hesaplar[b.indeks] as BolgeHesabi);
@@ -290,7 +291,7 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   // Oyuncu -> düğümleri (artan): oyuncu başına tüm düğümleri taramamak için bir kez (mülk kipinde düğümler çoktur).
   const sahipli = oyuncuDugumleri(d);
   // Yerel pazar (G7-2): ilçe x mal talebinin dükkânlar ve esnaf arasında paylaşımı; `null` = dükkân yok / perakende kapalı (eski yol AYNEN).
-  const yerel = yerelPazarCoz(d, ctx, sahipli);
+  const yerel = MULKSUZ_PAKET ? null : yerelPazarCoz(d, ctx, sahipli); // istemci paketlemesinde mülk kipi yok: çağrı ve `mulk/perakende`, `perakende/yerelPazar` pakete girmez
   for (const o of d.oyuncular) {
     const dl = sahipli.get(o.id) ?? BOS_DUGUMLER;
     let k = hazineKalemleri(d, ctx, o, null, dl, yerel);
@@ -358,7 +359,7 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   }
 
   // 6b. Yuva başına gerçekleşen satış oranı (§7.1b): `paraMuhasebesi` kümülatif `satis` sayacını bu orandan tembel biriktirir.
-  if (yerel !== null) yerelSatisYaz(yerel, (dugum, mal) => (hesaplar[dugum] as BolgeHesabi).frD[mal] as number);
+  if (!MULKSUZ_PAKET && yerel !== null) yerelSatisYaz(yerel, (dugum, mal) => (hesaplar[dugum] as BolgeHesabi).frD[mal] as number);
 
   // 7. Kenar kullanımı
   for (let e = 0; e < d.kenarlar.length; e++) {

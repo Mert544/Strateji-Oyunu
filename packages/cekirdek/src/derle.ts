@@ -8,12 +8,10 @@ import { GUN, PPM } from "./tipler";
 import { HucreDizini } from "./mulk/hucreDizini";
 import { kamuKumeleriHesapla } from "./mulk/kamu";
 import { kamuIthalatCarpaniHesapla } from "./mulk/kamuFiyat";
+import { MULKSUZ_PAKET } from "./mulksuz";
 import { perakendeDerle } from "./perakende/derle";
 import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, DerlenmisMulkBakim, DerlenmisSebeke } from "./tipler";
 
-/** Derleme zamanı anahtarı: bkz. `mulkDerle`. */
-declare const __BOLGE_MULKSUZ__: boolean | undefined;
-const MULKSUZ_PAKET: boolean = typeof __BOLGE_MULKSUZ__ !== "undefined" && __BOLGE_MULKSUZ__ === true;
 
 /** Kimlik listesinden kimlik -> indeks eşlemesi; tekrarlanan kimlikte hata. Prototipsiz nesne (örn. "constructor" güvenli). */
 function indeksle(tur: string, kimlikler: readonly string[]): Record<string, number> {
