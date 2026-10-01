@@ -121,6 +121,12 @@ export interface OzelBolgeKaresi {
    * bağlamı yoksa alan YAZILMAZ. `fiyatT` raf demetindedir (DUK-18 geri sayımı istemcide `fiyatDegisimEnAzSaat`'ten hesaplanır).
    */
   dukkanlar?: SahipDukkan[];
+  /**
+   * Yalnız ekleme (isteğe bağlı): aşınması SIFIRDAN BÜYÜK tesisler `[tesis kimliği, asinmaPpm (1..1_000_000)]` (çekirdek `TesisDurumu.asinmaPpm`; verim kaybı =
+   * aşınma x bakım tavanı, `verimPpm` bunu İÇERMEZ: oyuncu mülk bakımında aşınmayı buradan görür). Aşınmasız tesis listelenmez; hiç yoksa (ya da sanayi kapalıysa) alan YAZILMAZ.
+   * Demete öğe eklenmez; eski istemci (z.object bilinmeyen anahtarı atar) alanı sessizce yok sayar.
+   */
+  tesisAsinma?: Array<[id: number, asinmaPpm: number]>;
   /** `[mal, yön (0 ihracat, 1 ithalat), istenen oran, gerçekleşen oran]` (mili-birim/saat) */
   emirler: Array<[mal: number, yon: 0 | 1, oranSaat: Mili, gerceklesenSaat: Mili]>;
   /** Birlik indeksine göre adet. */
@@ -485,6 +491,8 @@ export function ilgiKaresiCikar(
         }
         if (liste.length > 0) girdi.ozel.dukkanlar = liste;
       }
+      const asinmalar = b.tesisler.flatMap((x): Array<[number, number]> => ((x.asinmaPpm ?? 0) > 0 ? [[x.id, x.asinmaPpm as number]] : []));
+      if (asinmalar.length > 0) girdi.ozel.tesisAsinma = asinmalar;
     }
     bolgeler.push(girdi);
   }

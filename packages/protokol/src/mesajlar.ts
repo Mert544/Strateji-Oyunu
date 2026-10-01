@@ -261,6 +261,8 @@ const bolgeKaresiSemasi = z.object({
           ]),
         )
         .optional(),
+      // Yalnız ekleme: aşınması > 0 olan tesislerin aşınması (ppm). Demete öğe eklenmez; eski istemci bilinmeyen anahtarı atar.
+      tesisAsinma: z.array(z.tuple([tam, tam])).optional(),
       emirler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
       birlikler: z.array(tam),
       gidaPpm: tam,
