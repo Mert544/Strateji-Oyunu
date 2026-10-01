@@ -50,7 +50,7 @@ Yapının dört taşı:
 
 1. **Yöntemler, bayrak ve yöntem kimlik listesi (G6, G8).** Altı yeni yöntem (`yontemler[24..29]`: `degirmen`, `ekmek_firini`, `kepek_gubresi`, `sut_kepekli`, `cam_firini`, `celik_dograma`), hepsi `mulkKipi: true`. Bayrak, bölge kipinde bu yöntemleri tür listelerinden süzer; indeksler sabit kalır; etkisizlik **yöntem izdüşümü** kanıtıyla gösterilir (P3 mal izdüşümü kalıbı). Yöntem kimlikleri ilk kez **makine-denetimli, yalnız-ekle** bir listeye girer (§3.5): mevcut 24 yöntem ilk kayıtlar, 6 yeni sona eklenir.
 2. **Şebeke enerjisi (G6).** Alfa-0'da **elektrik ve yakıt**, mülk kipinde işletme düğümüne kamu şebekesinden **otomatik** tedarik edilir; yeni komut yoktur. Elektrik: önce düğümdeki kendi santral, kalan açık şebekeden; yakıt: tüketim anında stoksuz. Fiyat mevcut kamu fiyat tavanı mantığıdır (`kamuIthalatCarpaniPpm` × referans; elektrik 10,35 ₺, yakıt 103,5 ₺ [taban referansı]); bedel saatlik türetilmiş gider, %12'si ilçe kamu kasasına (`kasaPayiPpm`, A2), kalanı lavaboda yanar; defterde ayrı satırlar. Bölge kipi koduna dokunulmaz (§5.2).
-3. **Yerel pazar kanalı (G7a).** Mülk kipinin ilk NPC **hane talebi**. Talep ilçe sınıfı × taban × iklim takvimi × bayram (nüfus yok). Çekim formülü tamsayı/PPM, su-doldurma; satış, ihracattan **önce** gelen yeni bir öncelik katmanında (4a) düğüm stoğundan çekilir; NPC dünya fiyatını **etkilemez**; geliri yeni, isteğe bağlı, tembel yazılan musluk `yerelNpc`'dir.
+3. **Yerel pazar kanalı (G7a).** Mülk kipinin ilk NPC **hane talebi**. Talep ilçe nüfus eşdeğeri (ilçede isteğe bağlı `nufus`, yoksa sınıf sabiti) × taban × iklim takvimi × bayram. Çekim formülü tamsayı/PPM, su-doldurma; satış, ihracattan **önce** gelen yeni bir öncelik katmanında (4a) düğüm stoğundan çekilir; NPC dünya fiyatını **etkilemez**; geliri yeni, isteğe bağlı, tembel yazılan musluk `yerelNpc`'dir.
 4. **Dükkân (G7b).** `EkYapiDurumu.dukkan?` ile durum; raf yuvası (mal dize kimlik), **fiyat kademesi** (`secim`, tutar yok), marka (sınırlı serbest metin), 5 yeni oyuncu komutu (raf, fiyat, marka tanımı, markayı bağlama, yıkım) ve 1 sistem komutu (marka sıfırlama), kampanya penceresi (varsayılan kapalı). Ölçek ayak izi `[1, 2, 3]` (süpermarket 3 hücre, sahip kararı S4-4) tür verisindedir; Alfa-0'da yalnız beş S türü vardır, market ve süpermarket kaydı **yoktur**.
 
 ### 0.2 Bu çalışmanın yedi kritik bulgusu (K3 ve baş lider bilmeli)
@@ -113,7 +113,7 @@ Yapının dört taşı:
 3. Dükkân fiyat komutu tutar taşımaz; fiyat `secim` kademesidir; `hedefStokGun` yok. Kademe sayısı ve R çarpanları A2 §1.9.
 4. Marka adı serbest ama **sınırlı** metindir (§7.7).
 5. Para defterine `yerelNpc` musluğu **isteğe bağlı**, tembel yazılır; `fikstur-goc/mulk-v1.json` yüklenmeye devam eder.
-6. Yerel talep Q = ilçe sınıfı × taban × iklim takvimi × bayram; bayram dalgası ayrı parametre; sayılar A2 §1.9.
+6. Yerel talep Q = ilçe nüfus eşdeğeri (`ilceNufusEsdegeri`) × taban × iklim takvimi × bayram; bayram dalgası ayrı parametre; sayılar A2 §1.9.
 7. Yapı market satışı yalnız NPC'ye; oyuncu-alıcı kapsam dışı.
 8. Bayat ekmek → kepek G6'da yok; kepeğin P0'da iki tüketicisi olmalı.
 9. İş bölümü: O2 `parsel.ts` zincir önayarı; K2 protokol/`kare.ts`/dedektör; K1 `gizli.ts`/`komut.test.ts`/hata çevirileri; veri sınırı: önce K3 şemayı isteğe bağlı/no-op indirir, sonra T3 değer yazar; bundle payı 31 KB (G7 +3–5 KB); Node-only doğrulayıcı `saf`a girmez.
@@ -428,9 +428,9 @@ export interface DukkanTuruTanimi {
 }
 
 export interface YerelTalepParametreleri {
-  /** Nüfus-başı talebi ilçe büyüklüğüne çeviren ölçek (kalibre DEĞİL; A2 §1.9: 50; A2 §4 soru 4). */
+  /** Nüfus-başı talebi ilçe büyüklüğüne çeviren ölçek. A2 yerel talep kalibrasyonu (`241f1b9`, baş lider onaylı): **40**. */
   yerelOlcek: number;
-  /** İlçe sınıfı (kirsal | kasaba | sehir) başına nüfus EŞDEĞERİ. A2 §1.13. Sınıf = ilçenin BASKIN hücre sınıfıdır (§6.5; fikstürdeki `ParselIlceTanimi.sinif` "en yüksek sınıf" olduğu için KULLANILMAZ). Gerçek ilçe nüfusu YOKTUR (§6.5). */
+  /** YEDEK nüfus eşdeğeri: ilçede `ParselIlceTanimi.nufus` YOKSA kullanılır; ilçe sınıfı (kirsal | kasaba | sehir) = fikstürdeki `ParselIlceTanimi.sinif` (§6.5; hücre sınıfından HESAPLANMAZ). A2 (`241f1b9`): 10 000 / 40 000 / 120 000. */
   ilceSinifiNufus: { kirsal: number; kasaba: number; sehir: number };
   /** Mal -> talep, mili-birim / 1000 nüfus / saat. Rafa girebilen HER mal için satır zorunlu (çıkmaz raf yok). A2 §1.9 tablosu: gida, ekmek, un, sut, sut_urunu, sekerleme, findik_urunu, yakit, pencere, cam, celik, parca (cimento A0'da mal değildir: satırı YAZILMAZ). */
   talep1000Saat: Record<string, number>;
@@ -450,6 +450,7 @@ Kurallar:
 - `olcekler[o].rafYuvasi ≥ 1`, `kasaMiliSaat > 0`, `giderMiliSaat ≥ 0`, `cekimCarpaniPpm > 0`.
 - Dükkân inşa bedeli ve süresi **ölçek için ayrı alan taşımaz**: M/L bedeli `ekYapilar.dukkan` S bedeli × `sanayi.olcekKademeleri[olcek].insaPpm` (1 / 2,5 / 4,5), süresi `mulk.olcekInsaSureCarpaniPpm` (1 / 1,5 / 2) ile çarpılır; tesis ölçeğiyle sapma yoktur. Bu, dükkânın sanayi katmanına bağımlı olduğu anlamına gelir (`sanayiTablosu(ic) === null` iken M/L reddi mevcut davranıştır, `mulk/komut.ts:273`).
 - **Şemada bulunmayacak alanlar (A0-17 kilitsizlik testi):** `ilceSeviyesi`, `gerekliTeknoloji`, `oncekiTur`, `yukseltmeSarti` ve benzeri. `.strict()` bunu otomatik sağlar; test şema anahtar kümesini sabitler (§16).
+- **İlçe nüfusu (baş lider onaylı, A2 `241f1b9`):** parsel fikstüründe `ParselIlceTanimi.nufus?: number` **isteğe bağlı** alandır (yalnız ekleme; §6.5, §17.2 G7-1). Fikstür sahibi O3'tür; T3 `ilceSinifiNufus` ve `yerelOlcek` (40) değerlerini yazar.
 - **A2'nin `ilceSinifiNufus`, `talep1000Saat`, takvim ve bayram satırları aynen T3 tarafından işlenir** (A2 §1.9 ve §1.13); K3 bu sayılara dokunmaz ve çekirdekte sabit değer bulunmaz.
 - **Mevcut mülk kipi davranışını ve ölçüm temel çizgisini DEĞİŞTİRMEZ (Ar-Ge lideri sorusu; doğrulandı: kod okuma).** A2'nin `talep1000Saat.gida = 90` (T3'ün 120'si değil; gıda 90 + ekmek 60 + un 10 + süt 20 + süt ürünü 20 = 200 sepeti sabit) **yalnız yeni `perakende.talep` bloğunda** yaşar. Bölge kipinin hane tüketimi ayrı bir bloktur (`param.nufus.tuketim1000Saat`; sepet toplamı aynı sayıdır ama iki blok **bağlı değildir**, biri değişince öteki değişmez). Mülk kipinde NPC hane gıda talebi **bugün yoktur**: işletme düğümünün `nufus = 0`'dır ve `bolgeHesapla` `h.nufusTuketim[m] = carpBol(b.nufus, q, 1000)` (`ekonomi/uretim.ts:353`) 0 verir. Yani `perakende` bloğu yokken ya da dükkân yokken mevcut mülk kipi NPC gıda talebi ve botların ölçüm temel çizgisi **aynıdır**; yerel talep yalnız bir `dukkan` kurulunca ve yalnız o dükkânın çekimine girer (§6). Bu bir baş lider kararı gerektirmez, ama A2'nin 120 → 90 düzeltmesi bilgi olarak kayıtlıdır (T3 §7.2 sapma tablosu, A2 §1.14).
 
@@ -484,7 +485,8 @@ Biçim (`veri/src/tipler.ts:140`): tüm miktarlar **mili-birim/saat**, tam kadro
 | V6 | `fiyatKademeleriPpm` kesin artan, hepsi `fiyatBandiPpm` içinde, uzunluk ≥ 3; `varsayilanFiyatKademesi < uzunluk`; `kampanyaKademesi` varsa `= 0`; `kampanyaGunlukEnFazlaSaat ∈ [0, 24]`, `kampanyaHaftalikEnFazlaGun ∈ [0, 7]` (ikisi de yoksa kampanya kapalı) | `perakende.fiyatKademeleriPpm: ...` |
 | V7 | `esnaf.tabanPayPpm ∈ [0, 1 000 000)`, `esnaf.fiyatPpm` bant içinde | `perakende.esnaf: ...` |
 | V8 | `olcekAraligi ⊂ {0,1,2}` ve `acikOlcekler`'le tutarlı; `tamCesit ≥ 1` ve `tamCesit ≤ mallar.length`; mal listesi tekrarsız | `perakende.dukkanTurleri.<id>: ...` |
-| V9 | `talep`: `ilceSinifiNufus` üç anahtar > 0; `yerelOlcek ≥ 1`; her grubun `takvimPpm` uzunluğu 12, değerler > 0 ve **toplamı tam 12 000 000**; `gruplar` kapsaması: her `talep1000Saat` malı tam bir grupta; `bayram` varsa `oncesiGun × (oncesiPpm − 1 000 000) + sonrasiGun × (sonrasiPpm − 1 000 000) = 0` (toplam sabit; A2 §1.9) ve ppm değerleri > 0; `bayramGunleri` kesin artan, komşu fark ≥ en büyük `oncesiGun + sonrasiGun` | `perakende.talep: ...` |
+| V9 | `talep`: `ilceSinifiNufus` (yedek eşdeğer) üç anahtar > 0; `yerelOlcek ≥ 1`; her grubun `takvimPpm` uzunluğu 12, değerler > 0 ve **toplamı tam 12 000 000**; `gruplar` kapsaması: her `talep1000Saat` malı tam bir grupta; `bayram` varsa `oncesiGun × (oncesiPpm − 1 000 000) + sonrasiGun × (sonrasiPpm − 1 000 000) = 0` (toplam sabit; A2 §1.9) ve ppm değerleri > 0; `bayramGunleri` kesin artan, komşu fark ≥ en büyük `oncesiGun + sonrasiGun` | `perakende.talep: ...` |
+| V9b | **Fikstür** (`veri/src/parsel.ts` zod `ilceSema` + `parselFiksturuDogrula`, Katman 1): `ParselIlceTanimi.nufus` varsa tamsayı, `1 ≤ nufus ≤ 20 000 000`; yoksa kural yok (alan **isteğe bağlı**, bozuk fikstür hatası: `ilceler[i] (<id>): nufus tamsayi ve 1..20000000 olmali`) | `ilceler[i]: ...` |
 | V10 | Marka: `hesapBasinaEnFazla ∈ [1, 3]`, `simgeSayisi`, `renkSayisi ≥ 1` (ad uzunluğu ve izinli küme parametre değil, çekirdek sabiti `AD_KURALI`) | `perakende.marka: ...` |
 | V11 | Kilitsizlik taraması: `perakende` ve `ekYapilar.dukkan` alt ağacında seviye/teknoloji/önkoşul anahtarı yok (A0-17) | `perakende: kilit alani yasak: <anahtar>` |
 | V12 | `ekYapilar.dukkan.insaMaliyeti` malları içerikte | mevcut genel doğrulama |
@@ -505,16 +507,16 @@ export interface DerlenmisPerakende {
   p: MulkPerakendeParametreleri;
   /** tür kimliği -> tür (mal indeksleri çevrilmiş, sıralı). */
   turler: Map<string, { ad: string; mallar: number[]; malKumesi: Set<number>; tamCesit: number; olcekAraligi: (0|1|2)[] }>;
-  /** ilçe sınıfı (0 kirsal, 1 kasaba, 2 sehir) -> mal indeksi -> taban talep (mili-birim/saat) = carpBol(talep1000Saat[m] × yerelOlcek, ilceSinifiNufus[sınıf], 1000); satırı yoksa 0. */
-  talepTaban: number[][];
+  /** ilçe kimliği -> mal indeksi -> taban talep (mili-birim/saat) = carpBol(talep1000Saat[m] × yerelOlcek, ilceNufusEsdegeri(ilce), 1000); satırı yoksa 0. Derlemede bir kez (her ilçe için 12 mal). */
+  talepTaban: Map<string, number[]>;
   /** mal indeksi -> grup indeksi (-1: grupsuz) ve grup başına 12 aylık çarpan (ppm). */
   malGrubu: number[];
   grupTakvim: number[][];
   /** grup başına bayram dalgası (yoksa null); bayram günleri artan sırayla. */
   grupBayram: ({ oncesiGun: number; oncesiPpm: number; sonrasiGun: number; sonrasiPpm: number } | null)[];
   bayramGunleri: number[];
-  /** ilçe kimliği -> sınıf (0..2); fikstürden. */
-  ilceSinifi: Map<string, 0 | 1 | 2>;
+  /** ilçe kimliği -> nüfus eşdeğeri = `ilceNufusEsdegeri` sonucu (fikstürden; §6.5). */
+  ilceNufus: Map<string, number>;
   /** `ekYapilar.dukkan` indeksi (`DerlenmisMulk.ekYapiIndeks.get("dukkan")`). */
   dukkanEkYapi: number;
 }
@@ -903,7 +905,7 @@ Mülk kipine **NPC hane talebi**: ilçedeki dükkânlar (ve görünmez esnaf) ar
 | Konu | Karar | Gerekçe |
 |---|---|---|
 | **R tanımı** (GZ-5) | `R[m] = d.pazar.fiyat[m]` (dünya referans fiyatı, saatlik tıkta güncellenir; `pazar/piyasa.ts:123-135`); dükkân geliri `R × kademe`. **Şebeke fiyatı R'yi KULLANMAZ** (taban; §5.2.4) | docs/06 §15.7 kamu tavanı, 0,891 R çıpası, band [0,7; 1,4] R hep bu R'ye göre yazıldı; tek referans |
-| **Q kimliği** (GZ-4) | `Q[ilçe, mal, t] = talep1000Saat[mal] × ilceSinifiNufus[sınıf] × yerelOlcek / 1000 × takvim[grup][ay] × bayram[grup](gün)` (A2 §1.9); **nüfus verisi yok**, **ilçe seviyesi yok** | Baş lider kararı 6; mülk kipinde nüfus yok (`isletme.ts` düğüm `nufus = 0`), fikstürde ilçe nüfusu yok (`veri/src/parsel.ts:81-104`); seviye kilit olamaz (Y-33). Sınıf tanımı §6.5 |
+| **Q kimliği** (GZ-4) | `Q[ilçe, mal, t] = talep1000Saat[mal] × ilceNufusEsdegeri(ilçe) × yerelOlcek / 1000 × takvim[grup][ay] × bayram[grup](gün)`; `ilceNufusEsdegeri` = isteğe bağlı fikstür `nufus`, yoksa `ilceSinifiNufus[sinif]` | Baş lider onaylı (A2 `241f1b9`); mülk kipinde düğüm `nufus = 0` (`isletme.ts`), bu yüzden nüfus fikstürün ilçe kaydından gelir (`veri/src/parsel.ts:81-104`; alan isteğe bağlı); seviye kilit olamaz (Y-33). Hücre sınıfı kullanılmaz (§6.5) |
 | **NPC dünya fiyatına etkisi** | **Etkilemez.** Yerel satış `d.pazar.oyuncuArzi/oyuncuTalebi` (`pazar/piyasa.ts:117-118`) ve dolayısıyla `pazarFiyatlari`'na girmez | Geri besleme döngüsü (dükkân satışı → R → dükkân gelirine çarpan) ve oyuncu sayısıyla ölçeklenen NPC emilimine çift sayım yok; test §16 |
 | **Öncelik katmanı** (GZ-6) | **Yeni katman 4a: ihracattan ÖNCE, tesis girdisinden SONRA.** Sıra: 1 nüfus+ordu, 2 bakım, 3 tesis girdisi, **4a yerel (dükkân) satış**, 4 ihracat | Dikey §4.3 taşma sırası: önce kendi dükkânı, sonra NPC pazar (taşma). Aynı `fr4`'ü paylaşmak, stok kıtken ihracatın dükkândan pay almasına yol açardı |
 | **Çekim uzayı** | İlçe düzeyi tek havuz (halka havuzu Alfa-1); konum çarpanı yok (PPM) | Dikey §5.7, karar 7 |
@@ -987,7 +989,7 @@ wE     = kare(esnaf.fiyatPpm)                      // esnaf: aynı ters/kare, ç
 ```
 a) m artan sırada, Q[m] > 0 olan her mal için:
      L  = donmamış dükkânların, mal = m, mevcut, w > 0 olan yuvaları; sıra (oyuncu kimliği, EkYapiDurumu.id, yuva indeksi)
-     Qr = Q[m] − sabit[m];                    L boşsa ya da Qr ≤ 0 ise bu mal bu turda atlanır
+     Qr = Q[m] − sabit[m];                    L boşsa bu mal bu turda atlanır; Qr ≤ 0 ise L'deki HER yuvanın s'i 0 yapılır (SIFIRLA; eski turun payı taşınmaz) ve mal atlanır
      Σw       = Σ w(L)
      esnafPay = max(esnaf.tabanPayPpm, carpBol(wE, PPM, Σw + wE))        // ppm
      esnaf    = carpBol(Qr, esnafPay, PPM)
@@ -999,6 +1001,8 @@ c) yeni dolan yoksa DUR. Varsa (dükkân sırasıyla): her yuva için s = carpBo
 ```
 
 `32` tur dolduğunda hâlâ kasayı aşan dükkân varsa son bir kez `s = carpBol(s, kasa_j, top_j)` ile orantılı kısılır. (Kasa kırpması **su-doldurmadır**: kasası dolan dükkânın taşan talebi `Qr` üzerinden **diğer açık dükkânlara ve esnafa** yeniden dağıtılır; K3 keşfinin "su-doldurma" isteği; A2 §1.9 ile aynı.)
+
+**`Qr ≤ 0` kuralı (açık kural; baş lider "siz karar verin", Kod lideri kabul):** `Qr ≤ 0` ise donmamış yuvaların `s` değeri **0'a sıfırlanır** (korunmaz). Gerekçe: donmuş dükkânlar `Q[m]`'nin tamamını almışsa donmamışlara talep kalmamıştır; önceki turdan kalan `s` o turun (daha büyük `Qr`) payıdır ve `Σ s ≤ Q − esnaf` değişmezini yalnız Adım 5'in kısmasına bırakırdı. Esnafın o turdaki payı yoktur (esnaf payı saklanmaz; esnaf, `Q[m]`'nin oyuncu `s` toplamı dışında kalanıdır). **Durum ulaşılabilir değildir** (kanıt: bir turda yeni donan dükkânların `s` toplamı, kasa kırpması her `s > 0` yuvayı kesin küçülttüğü için o turun `P ≤ Qr` havuzundan **kesin küçüktür**; dolayısıyla `Qr` her turda `≥ 1` kalır; ayrıca 300 000 rastgele küçük-`Q` denemesinde 0 isabet, Ek B): kural savunmadır, ama **belirlenimcidir** ve Ek B V5 tur adımı vektörü ve K3 değişmez testiyle (her turda `Qr ≥ 1`) bağlanır.
 
 **Adım 5: oyuncu havuzu üst sınırı (ilçe × mal).** `limit_m = Q[m] − carpBol(Q[m], esnaf.tabanPayPpm, PPM)`; o maldaki **tüm** yuvaların (donmuşlar dahil) toplamı `limit_m`'yi aşarsa her yuva `s = carpBol(s, limit_m, toplam_m)` ile orantılı kısılır (donmuş dükkânlar yeniden dağıtımla biraz fazla alabildiği için gerekir; sonuçta kasa aşılmaz: kısma yalnız küçültür).
 
@@ -1019,11 +1023,12 @@ gelir  = carpBol(brut, fiyatPpm, PPM)                                // dükkân
 ### 6.5 Talep Q: formül ve takvim (A2 §1.9)
 
 ```
-ilceSinifi(ilce) = baskın hücre sınıfı: ilçenin UYGUN hücrelerinin sınıf sayımı; en çok olan sınıf; eşitlikte BÜYÜK sınıf (sehir > kasaba > kirsal); uygun hücre yoksa tüm hücreler
-                   // derlemede bir kez (DerlenmisPerakende.ilceSinifi); A2'nin tanımı. Fikstürdeki ParselIlceTanimi.sinif "ilçedeki EN YÜKSEK sınıf"tır (veri/src/parsel.ts:89): KULLANILMAZ.
-taban[sınıf][m]  = carpBol(talep1000Saat[m] × yerelOlcek, ilceSinifiNufus[sınıf], 1000)         // mili-birim/saat; derlemede (DerlenmisPerakende.talepTaban)
+ilceNufusEsdegeri(ilce) = ilce.nufus ?? ilceSinifiNufus[ilce.sinif]            // SAF işlev (K4: `ilceNufusEsdegeri`); tamsayı kişi
+                   // nufus: ParselIlceTanimi.nufus? (isteğe bağlı, §4.3); yoksa YEDEK: sınıf sabiti. Sınıf = ParselIlceTanimi.sinif (fikstürün kendi ilçe sınıfı; veri/src/parsel.ts:89).
+                   // HÜCRE SINIFI KULLANILMAZ: hücrelerden "baskın sınıf" HESAPLANMAZ (A2 241f1b9: üç ızgaralı ilçede de kırsal çıkıyor, %93–97; talep 12–41 kat eksik sayılıyordu).
+taban[ilce][m]   = carpBol(talep1000Saat[m] × yerelOlcek, ilceNufusEsdegeri(ilce), 1000)        // mili-birim/saat; derlemede (DerlenmisPerakende.talepTaban: ilçe -> mal)
 yerelTalep(m, ilce, t):
-  taban = talepTaban[sinif(ilce)][m]; 0 ise 0 dön
+  taban = talepTaban.get(ilce)[m]; 0 ise 0 dön
   g     = malGrubu[m]
   ay    = takvimAyi(ic, t)                                           // tarim/iklim.ts:44; tarım kapalıysa null
   q     = ay === null ? taban : carpBol(taban, grupTakvim[g][ay], PPM)
@@ -1039,7 +1044,10 @@ bayramCarpani(g, gun):
   return PPM
 ```
 
-- **Nüfus verisi ve ilçe seviyesi yoktur** (Y-33 kilitsizlik); A2: `yerelOlcek` kalibre değildir, gerçek ilçe nüfusu geldiğinde yeniden kalibre edilir (S-6). Taban ilçe büyüklüğüne (`uygunHucre`) bağlanmaz.
+- **İlçe nüfusu (baş lider onaylı; A2 `241f1b9`, S-6 kapandı):** `ParselIlceTanimi.nufus?: number` isteğe bağlı fikstür alanıdır; **yalnız ekleme** (eski fikstürler değişmeden geçerli). **Alan yoksa** nüfus eşdeğeri `ilceSinifiNufus[ParselIlceTanimi.sinif]`'tir (10 000 / 40 000 / 120 000). `yerelOlcek` = **40**. **İlçe seviyesi yoktur** (Y-33 kilitsizlik); taban `uygunHucre`'ye bağlanmaz.
+- **Neden fikstür alanı (param tablosu değil):** nüfus coğrafi bir olgudur, ilçenin diğer verisiyle (hücreler, sınıf) aynı yerde ve aynı üretim hattında (O3) yaşar; `param.mulk.perakende.talep` altında 900'ü aşkın ilçe için kimlik anahtarlı tablo T3'ü ve fikstür sahibini iki kaynağa ve kimlik kaymasına mahkûm ederdi. Alan fikstür şemasında isteğe bağlı olduğundan eski fikstürler (`mini-6`, sentetik) aynen geçerlidir.
+- **Neden yedek sınıf `ParselIlceTanimi.sinif` (tek varsayılan değil):** veri sahibinin kendi ilçe sınıfıdır, deterministiktir ve hücre taraması gerektirmez; test fikstürlerindeki ilçe çeşitliliğini korur (tek varsayılan tüm ilçeleri eşitlerdi). Bilinen yan etki: `sinif` "en yüksek hücre sınıfı" olduğundan yedek yolda talebi **fazla** sayabilir; yedek yalnız `nufus` olmayan fikstürlerde (test/sentetik) çalışır, gerçek veride `nufus` bunu değiştirir. Bölge kipi etkilenmez (`perakende` ve fikstür yalnız mülk kipindedir).
+- **Derleme:** `mulkDerle` her ilçe için `ilceNufus` (`ilceNufusEsdegeri`) ve `talepTaban` satırını bir kez kurar; çözümde yalnız arama yapılır.
 - **Değerler (T3; A2 §1.9, §1.13'ten):** `talep1000Saat` (12 mal), `ilceSinifiNufus`, 4 takvim grubu (her satır toplamı tam 12.000.000), 2 bayram grubu (toplam sabit: `Do·(Wo − 1e6) + Ds·(Ws − 1e6) = 0`), `bayramGunleri`. Çekirdekte sabit değer yoktur.
 - **Bayram sınırı:** `oncesi` penceresi `[B − Do, B − 1]`, `sonrasi` penceresi `[B, B + Ds − 1]` (bayram günü sonrasında; A2 bu tanımı açıkça yazmamıştır: A2'ye teyit, S-8). Pencereler çakışmaz (V9: komşu bayram farkı ≥ `Do + Ds`). Resmî bayram tarihleri (sim günü indeksi, 1 Ekim 2026 = gün 0; TRT gece yarısına hizalı) **T3 verisidir** ve (doğrulanmadı: tarihler); boş liste geçerlidir (bayram yok).
 - Takvim ve bayram çarpanları **veri**dir; takvim hesabı (hicri tarih vb.) çekirdekte yoktur. Kış fırtınası olayı (cam/pencere ×1,5; canlı-dünya §5) takvimden bağımsızdır ve **bu şartnamede yoktur**.
@@ -1715,8 +1723,8 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | Test (dosya) | Sahip | Ne sınar |
 |---|---|---|
 | `veri/test/perakende-veri.test.ts` (yeni) | K3 | V1-V12 ret testleri (bozuk kademe, bant dışı, tamCesit > mal sayısı, takvim satır toplamı ≠ 12.000.000, bayram toplam sapma ≠ 0, çakışan bayram, raf malının talebi yok, pazar kaydı olmayan raf malı, kampanya parametre aralığı, marka sınırları); kilitsizlik taraması (V11: seviye/teknoloji/önkoşul anahtarı yok; `.strict()`); `dukkan` `olcekHucre` kuralı; beş S türü geçerli, `market`/`supermarket` kaydı yok |
-| `cekirdek/test/perakende-cekim.test.ts` (yeni) | K3 | **Ek B vektörleri V1-V4 birebir**; sıra bağımsızlığı (aynı girdi, dükkân girişi permütasyonu aynı sonuç); `Σ s ≤ Q − floor(Q × tabanPay)`; `top_j ≤ kasa_j`; su-doldurma yakınsaması (≤ 32 tur); BigInt/`carpBol` taşma sınırı (Q ≈ 1e9 × w ≈ 1,1e6); mevcut olmayan (stoksuz) yuva çekime girmez ve payı diğerlerine kalır |
-| `cekirdek/test/perakende-talep.test.ts` (yeni) | K3 | Q: sınıf × takvim × bayram; `bayramCarpani` sınırları (`[B − Do, B − 1]`, `[B, B + Ds − 1]`); toplam-sabit (bir bayram döngüsünde Σ sapma = 0); tarım kapalıyken takvim yok; ilçe sınıfı = baskın hücre sınıfı (eşitlikte büyük); `talep1000Saat` mevcut mülk/bölge davranışını değiştirmez (dükkânsız dünya aynı `durumOzeti`) |
+| `cekirdek/test/perakende-cekim.test.ts` (yeni) | K3 | **Ek B vektörleri V1-V5 birebir** (V5: `Qr ≤ 0` tur adımı → hepsi 0); sıra bağımsızlığı (aynı girdi, dükkân girişi permütasyonu aynı sonuç); `Σ s ≤ Q − floor(Q × tabanPay)`; `top_j ≤ kasa_j`; su-doldurma yakınsaması (≤ 32 tur); **her turda `Qr ≥ 1`** (kanıt §6.4; `Qr ≤ 0` ulaşılamaz); BigInt/`carpBol` taşma sınırı (Q ≈ 1e9 × w ≈ 1,1e6); mevcut olmayan (stoksuz) yuva çekime girmez ve payı diğerlerine kalır |
+| `cekirdek/test/perakende-talep.test.ts` (yeni) | K3 | Q: nüfus eşdeğeri × takvim × bayram; **iki yol:** (a) `nufus` alanlı ilçe: `Q ∝ nufus` (nufus ikiye katlanınca Q ikiye katlanır, ±1 yuvarlama), (b) alansız ilçe: eşdeğer = `ilceSinifiNufus[sinif]` ve `nufus = ilceSinifiNufus[sinif]` verilen kopyayla **birebir aynı** Q (tutarlılık); hücre sınıfı karışımı (kırsal ağırlıklı ilçede `sinif = sehir`) Q'yu **değiştirmez**; `bayramCarpani` sınırları (`[B − Do, B − 1]`, `[B, B + Ds − 1]`); toplam-sabit (bir bayram döngüsünde Σ sapma = 0); tarım kapalıyken takvim yok; fikstür `nufus` doğrulaması (V9b: 0, −1, 1,5, 20 000 001 reddi; alanın yokluğu geçerli); `talep1000Saat` mevcut mülk/bölge davranışını değiştirmez (dükkânsız dünya aynı `durumOzeti`) |
 | `cekirdek/test/perakende-komut.test.ts` (yeni) | K3 | **kur-yık döngüsü (baş lider):** oyuncu dükkânı indirimli kurar, tamamlar, `dukkan_yik` ile yıkar, yeniden kurar: ikinci kurulumda `indirimliYapi` sayacı **ilerlemiş**, indirim hakkı **geri gelmemiş** (ikinci kurulum indirimsiz bedel), yıkımda para hareketi 0, korunum tam; DUK-00…DUK-23 ve MRK-01…MRK-14 reddi; **reddedilen komut durumu değiştirmez**; `dukkan_raf`/`dukkan_fiyat`/`dukkan_marka` başarı yolları; hız sınırı (DUK-18); `dukkanTuru` alanı; **`dukkan_yik`** (§7.9 test listesi: iade yok, para korunumu, indirim sayacı geri verilmez, `insaat_iptal` dükkân %50 iadesi); G7'de ölçek 1/2 reddi (DUK-04) |
 | `cekirdek/test/perakende-kampanya.test.ts` (yeni) | K3 | §7.5b (a)-(h): kapalıyken DUK-20; 6 saat sınırı ve tam saat sayımı; gün sonu kesmesi; haftalık gün sınırı DUK-21 ve hafta sıfırlaması; bitişte etkin kademe varsayılana döner (durum değişmez); tek sıçrama = parçalı sıçrama |
 | `cekirdek/test/perakende-para.test.ts` (yeni) | K3 | I1-I6 (§12.4): korunum 3 tohum × rastgele koşu; `Σ dukkanGeliri == musluk.yerelNpc`; hane bütçesi üst sınırı (`≤ Σ Q × R × 1,15 × (1 − taban)`); kasa girişleri yerel satıştan etkilenmez; `d.pazar.fiyat/oyuncuArzi/oyuncuTalebi` değişmez; nötrlük (sık/seyrek `paraUzlastir`) |
@@ -1754,7 +1762,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 
 | Adım | İş | Sahip | Bağımlılık | Kabul (hedefli test) |
 |---|---|---|---|---|
-| G7-1 | **Şema (isteğe bağlı/no-op):** `mulk.perakende` (kampanya parametreleri dahil), `MulkEkYapiTanimi.olcekHucre?`, `dukkanTurleri` kilit bağlantısı, V1-V12 (`perakende-dogrula.ts`), `DerlenmisPerakende`; komut tipleri (5 + 1) **K2 zod satırlarıyla aynı birleştirmede**; `AlanTuru += "metin"` | K3 (+K2) | G6 teslim kapısı yeşil | `perakende-veri`; `pnpm -r typecheck`; **hiçbir JSON değişmedi**, altınlar aynı |
+| G7-1 | **Şema (isteğe bağlı/no-op):** `mulk.perakende` (kampanya parametreleri dahil), **`ParselIlceTanimi.nufus?` (fikstür şeması, V9b)**, `MulkEkYapiTanimi.olcekHucre?`, `dukkanTurleri` kilit bağlantısı, V1-V12 (`perakende-dogrula.ts`), `DerlenmisPerakende`; komut tipleri (5 + 1) **K2 zod satırlarıyla aynı birleştirmede**; `AlanTuru += "metin"` | K3 (+K2) | G6 teslim kapısı yeşil | `perakende-veri`; `pnpm -r typecheck`; **hiçbir JSON değişmedi**, altınlar aynı |
 | G7-2 | **Çekirdek (blok yokken no-op):** `yerelPazarHesapla`, katman 4a, `BolgeHesabi.dukkan*`, `hazineKalemleri`/`paraAkisiYaz`/`paraMuhasebesi` yerel kolları, `musluk.yerelNpc` (lazy), `ilkSatisT`, `yerelKarsilanmaPpm` | K3 | G7-1 | `perakende-cekim`, `perakende-talep`, `perakende-para`, `perakende-yetisme`; mevcut tüm çekirdek testler değişiksiz yeşil |
 | G7-3 | **Dükkân:** durum, `ekYapiTamamla`, `yapi_yerlestir`/`tesis_insa_hucre` `dukkanTuru`, 5 komut + `marka_sifirla`, kampanya, marka, `dukkan_yik`, serileştirme/doğrulayıcılar | K3 | G7-2 | `perakende-komut`, `perakende-kampanya`, `marka-sozdizimi`, `perakende-serilestir`, `perakende-arbitraj`, `perakende-determinizm` |
 | G7-4 | **Veri (tek commit; `kuralSurumu` ARTAR):** T3: `ekYapilar.dukkan` (P-İthal bedeli), `mulk.perakende` (A2 §1.9/§1.13; 4 dükkân türü), `kimlik-listesi.json` (dükkân türleri zaten listede) | T3 | G7-3 | `dogrulaVeriPaketi`, `dogrulaPerakende` (V1-V16); `icerikDerle`; **mülk altınları tek commit'te** (eski/yeni raporlu); bölge altınları BİREBİR |
@@ -1786,7 +1794,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | **A2** | (SHA: son teslim); **şebeke fiyatı TABAN kararı:** yeniden hesap gerekmez (S-16 kapandı); bayram sınır günü tanımı (§4.3, S-8); zincir +%33,6 ↔ K/U bandı (S-17); `kamuSiparisi` şeması gerekirse (S-11) | G6, G7 |
 | **O1** | G6 teslim kapısı + K-2 `git diff --exit-code` listesi; `dunya.html` boyut ölçümü | G6 |
 | **T1/T2** | `kullanici` metinleri (Türkçe, büyük harf yok): şebeke elektriği açıklaması ve fatura satırı; santral kartı gerçek sayılarla; yöntem adları (`degirmen` Değirmen Atölyesi → …, T3 §3.3) | G9 |
-| **O3** | Bu şartname için istek yok (ilçe nüfusu verisi **gerekmez**: nüfus eşdeğeri sınıf başına parametredir; §4.3) | - |
+| **O3** | Fikstür sahibi: `ParselIlceTanimi.nufus?` **isteğe bağlı** alanı (G7-1'de K3 şemayı indirir; O3 gerçek veri hattından yazar; kaynak ve lisans A2 `241f1b9` açık sorusu). Alan eklenmese de G7 çalışır (yedek: sınıf sabiti) | G7 (isteğe bağlı) |
 
 ## 19. K3 keşif notunun 12 sorusu ve baş liderin T3 karar maddeleri
 
@@ -1819,11 +1827,11 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 - Dosya:satır: `pazar/piyasa.ts:106` (`hazineVar`), `ekonomi/komut.ts:99-130`, `veri/src/parsel.ts:58-71` (`sinif`, `uygun`, `engel`, `kamu`; kullanım türü yok).
 
 **6. Yerel talep Q: `seviye × uygunHucre` parametresi mi, fikstüre nüfus alanı mı?**
-- **Karar: ikisi de değil.** `Q = talep1000Saat × ilceSinifiNufus[sınıf] × yerelOlcek / 1000 × takvim × bayram` (A2 §1.9); sınıf = `ParselIlceTanimi.sinif`; **nüfus verisi ve ilçe seviyesi yok** (kilitsizlik, Y-33). A2'nin `yerelOlcek` kalibre değildir; gerçek ilçe nüfusu geldiğinde yeniden kalibre (A2 §4 soru 4; S-6). O3'ten istek yok.
-- Dosya:satır: `veri/src/parsel.ts:81-104` (ilçe: nüfus yok), `:89` (`sinif`), `tarim/iklim.ts:44` (`takvimAyi`), `mulk/isletme.ts` (düğüm `nufus = 0`). Ayrıntı §4.3, §6.5.
+- **Karar (güncel; baş lider onaylı, A2 `241f1b9`):** `Q = talep1000Saat × ilceNufusEsdegeri × yerelOlcek / 1000 × takvim × bayram`; `ilceNufusEsdegeri` = fikstürde isteğe bağlı `ParselIlceTanimi.nufus`, yoksa `ilceSinifiNufus[ParselIlceTanimi.sinif]`; `yerelOlcek` 40; **hücre sınıfı kullanılmaz**; ilçe seviyesi yok (kilitsizlik, Y-33). S-6 kapandı.
+- Dosya:satır: `veri/src/parsel.ts:81-104` (ilçe: nüfus alanı yok; isteğe bağlı `nufus` eklenir), `:89` (`sinif`), `tarim/iklim.ts:44` (`takvimAyi`), `mulk/isletme.ts` (düğüm `nufus = 0`). Ayrıntı §4.3, §6.5.
 
 **7. Çekim, su-doldurma ve kasa formülü tamsayı/PPM adımlarıyla ve sıralama kuralıyla.**
-- **Karar:** §6.4: A2'nin formülü (`ters`, `kare`, `agirlik`, esnaf ağırlığı, esnaf taban payı, **su-doldurma en çok 32 tur**, tek oyuncu toplamı `Q − floor(Q × tabanPay)` üst sınırı) birebir; kalan birimler sıralı; Ek B test vektörleri (betikle üretildi; çekirdek dışı).
+- **Karar:** §6.4: A2'nin formülü (`ters`, `kare`, `agirlik`, esnaf ağırlığı, esnaf taban payı, **su-doldurma en çok 32 tur**, tek oyuncu toplamı `Q − floor(Q × tabanPay)` üst sınırı) birebir; kalan birimler sıralı; Ek B test vektörleri V1-V5 (betikle üretildi; çekirdek dışı).
 - Dosya:satır: `sabit.ts:42` (`carpBol`, BigInt yedekli), `lojistik/cozum.ts:127` (birim kalıbı).
 
 **8. Yerel satış hangi öncelik katmanında? NPC dünya fiyatını etkilesin mi?**
@@ -1868,7 +1876,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | GZ-1 | **Yöntem, tesis türü değil;** ev sahipleri (`cam_firini` → `parca_fabrikasi`); yöntem sırası `[24..29]` | canlı tesis `tesis.tur` ve `tesis.yontem` **indeksi** taşır; ev sahibi taşınamaz; kimlik listesi kilitler (§3.5) | önerilen, baş lider kararı 1 ve 11 |
 | GZ-2 | **Şebeke enerjisi (elektrik + yakıt):** otomatik tedarik, fiyat = **taban × `kamuIthalatCarpaniPpm` × mal başına `tavanOraniPpm` (sabit tamsayı; canlı referans yok)**, bayrak = `mulk.sebeke` bloğu ve mal listesi (genişletilebilir), ledger kalemleri (`lavabo.sebeke`, `kasa.giris.sebeke`), `kasaPayiPpm` 120 000 | para arzı ve sanayi dengesi (santralin rolü, yatırım sırası); defter kalem adları kalıcıdır; yakıtın stoksuz alınması oyuncu stok davranışını değiştirir | baş lider kararı (yakıt kapsamı S-10; referans S-16) |
 | GZ-3 | **Fiyat kademesi sayısı ve indeks anlamı** (4 kademe; kampanya indeks 0) | kayıtlı dükkân fiyatları indeksle saklanır; araya kademe eklemek anlamı kaydırır (A2 ZA-6) | baş lider onaylı (0,85 / 0,95 / 1,05 varsayılan / 1,15) |
-| GZ-4 | **Yerel talep kimliği:** ilçe sınıfı × `talep1000Saat` × nüfus eşdeğeri × takvim grubu × bayram (nüfus yok) | arsa fiyat beklentileri ve dükkân kararları buna dayanır (A2 ZA-5); grup adları ve formül biçimi kalıcı | önerilen |
+| GZ-4 | **Yerel talep kimliği:** `talep1000Saat` × `ilceNufusEsdegeri` (isteğe bağlı fikstür `nufus`, yoksa sınıf sabiti) × `yerelOlcek` × takvim grubu × bayram; **ParselIlceTanimi.nufus? fikstür alanının şemaya girmesi** (yalnız ekleme) | arsa fiyat beklentileri ve dükkân kararları buna dayanır (A2 ZA-5); fikstür şeması ve grup adları, formül biçimi kalıcı | baş lider onaylı (A2 `241f1b9`) |
 | GZ-5 | **R tanımı:** `d.pazar.fiyat[m]` (R0 ≠ taban) | bütün oran/bant/tavan R'ye göre yazıldı | önerilen |
 | GZ-6 | **Öncelik katmanı 4a** (ihracattan önce) | stok kıtken kimin payı kaybettiği oyun dengesidir | önerilen |
 | GZ-7 | **Defterde isteğe bağlı/tembel kalemler** (`yerelNpc`, `lavabo.sebeke`, `kasa.giris.sebeke`) | para defteri şeması; bir kez yanlışsa eski görüntüler yüklenemez | önerilen |
@@ -1897,7 +1905,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | S-3 | **Açılış Tezgâhı** (`tezgah`) P1 mi A1 mi | G7'de yok (parametre/tür kaydı eklenmez); **sahip listesinde, G7'yi bekletmez** | sahip (T-39) |
 | S-4 | ~~`kasaPayiPpm` değeri~~ **KAPANDI:** A2 §1.3-B1 = 120 000 (%12); kasa = floor(ödeme × pay / 1e6), lavabo = ödeme − kasa | 120 000 | kapandı |
 | S-5 | ~~Şebeke kapasite sınırı~~ **KAPANDI (baş lider):** sınır yok | sınır yok | kapandı |
-| S-6 | Talep ilçe büyüklüğüne (`uygunHucre`) bağlansın mı; gerçek ilçe nüfusu ne zaman | hayır; sınıf başına sabit (A2 §4 soru 4); `yerelOlcek` parametredir; **sahip listesinde, G7'yi bekletmez** | A2, sahip |
+| S-6 | ~~Talep ilçe büyüklüğüne bağlansın mı~~ **KAPANDI (baş lider, A2 `241f1b9`):** isteğe bağlı fikstür `nufus` alanı, `yerelOlcek` 40, alan yoksa sınıf sabiti (`ParselIlceTanimi.sinif`); hücre sınıfı kullanılmaz. **Açık kalan (sahip/O3):** gerçek nüfus kaynağı ve lisansı (TÜİK ADNKS; hukuki görüş) | alanlı ve alansız iki yol | kapandı (kaynak: O3, sahip) |
 | S-7 | ~~M erken açılış (`acikOlcekler`, T-43)~~ **KAPANDI (baş lider):** `[0]`. **`acikOlcekler` yalnız dükkân ölçeği içindir ve bir özellik açılış zamanlamasıdır; e1080dd'deki fabrika/tesis ölçek serbestliğini (doğrudan M/L kurulum) etkilemez.** | `[0]` | kapandı |
 | S-8 | **Bayram sınır günü ve tarihler:** `oncesi` penceresi `[B − Do, B − 1]`, `sonrasi` penceresi `[B, B + Ds − 1]` (bayram günü sonrasında); resmî bayram tarihleri (doğrulanmadı) | bayram listesi **boş geçerlidir** (parametre; V9 boş listeyi kabul eder); tarih listesi T3'te sonradan eklenir; **sahip listesinde, G7'yi bekletmez** | A2 (sınır), T3 (tarih) |
 | S-9 | ~~Bakım ve aşınma kalibrasyonu~~ **KAPANDI (baş lider):** bu sprintte karar yok; G4 dışı; şema rezervi gerekmez (A2 eab8fcc §2: öneri C, ×0,50 ve tavan %25, O2 ölçümü sonrası) | - | kapandı |
@@ -1927,7 +1935,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | 9 | `tamCesit` A0 değerleri | mal sayısına çekilir (sarkuteri 3, sekerci 2, yapi_market 4; bakkal 6, firin 2); V8 `tamCesit ≤ mallar.length` | parametre (varsayılan bu) |
 | 10 | Raf–talep eşleşmesi | yedi malın hepsi hane talebine girer (A2 §1.9); oyuncu-alıcı yok | karar |
 | 11 | Kamu siparişi v0 listesi | `ekmek`, `gida`, `pencere`, `celik`, `parca` | parametre (varsayılan bu; S-11) |
-| 12 | İlçe nüfusu kaynağı | nüfus verisi **yok**; sınıf başına nüfus eşdeğeri parametresi (A2) | karar; gerçek nüfus: sahip (S-6) |
+| 12 | İlçe nüfusu kaynağı | isteğe bağlı fikstür `ParselIlceTanimi.nufus`; yoksa sınıf başına nüfus eşdeğeri (A2 `241f1b9`) | karar (S-6 kapandı); gerçek nüfus kaynağı: O3, sahip |
 | 13 | Yapı market oyuncu-alıcı | **yok** (baş lider 7) | karar |
 | 14 | Süpermarket A0 verisinde | **hayır** (beş S türü) | karar |
 | 15 | Çıkmaz mal (P4/P5 dışı): uyarı mı hata mı | **uyarı** (A0); `CIKMAZ_MAL_HATA = false`, P1 teslim kapısı `true` yapar; yan ürün (kepek, gübre) kuralı **hata** (V13) | karar |
@@ -2008,7 +2016,8 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `tipler.ts:842-896` | `MUSLUK_ISTEGE_BAGLI = ["yerelNpc"]`; `ParaDurumu.musluk` `& { yerelNpc?: ParaSayaci }`; `ParaAkisi.yerel?: Mili` |
 | `tipler.ts:638-674`, `:966-975` `Komut`, `MulkKomutu` | `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`, `dukkan_yik`, `marka_sifirla`; `dukkanTuru?` |
 | `komutSemasi.ts:14,17,27-64` | `AlanTuru += "metin"` (`SISTEM_ALAN_TURLERI`'ne eklenmez); altı giriş |
-| `derle.ts:114-198` `mulkDerle` | `DerlenmisPerakende` (§4.6), `ilceSinifi` (baskın hücre sınıfı) |
+| `derle.ts:114-198` `mulkDerle` | `DerlenmisPerakende` (§4.6), `ilceNufus`, `talepTaban` (ilçe → mal; `ilceNufusEsdegeri`) |
+| `veri/src/parsel.ts:~89` `ParselIlceTanimi`, `ilceSema` (`:~191` yanı), `parselFiksturuDogrula` (`:~242`) | `nufus?: number` isteğe bağlı (V9b) |
 | `ekonomi/uretim.ts:31-88`, `:117-187`, `:236`, `:362`, `:421-483`, `:531`, `:660-668` | `BolgeHesabi.dukkan/dukkanGercek/frD`; `bolgeHesapla(…, yerel)`; katman 4a; `bolgeOranlariUygula` `dukkanGercek`; `bolgeDurumunaYaz` `yerelKarsilanmaPpm` |
 | `lojistik/cozum.ts:228-308`, `:73-81`, `:91-181` | `yerelPazarHesapla` çağrısı; `ParaBilesenleri.yerel`; `hazineKalemleri` gelir ve dükkân gideri |
 | `mulk/perakende.ts` (YENİ) | `yerelPazarHesapla`, `yerelPazarGorunumu`, `dukkanGeliri`, `dukkanlar`, `etkinKademe`, kampanya, `ilcedeDukkanSayisi`, `perakendeKomutu` (5 komut) |
@@ -2043,10 +2052,27 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | **V2** (tek dükkân, kasa kırpması) | `Q[ekmek] = 300 000`; A: `p = 1 050 000`, `tamCesit 1`; `kasa = 90 000` | `w = 1 133 783`; **`s_A = 90 000`** |
 | **V3** (kasası dolan dükkânın payı diğerine kayar: su-doldurma) | `Q[ekmek] = 300 000`; A: `kasa = 50 000`; B: `kasa = 90 000`; ikisi `p = 1 050 000` | **`s_A = 50 000`**, **`s_B = 90 000`** (B'nin payı A'nın taşan talebiyle büyür; kasada kırpılır) |
 | **V4** (çok mal, dükkân başına toplam kasa) | `Q[ekmek] = 300 000`, `Q[gida] = 540 000`; A: `ekmek` ve `gida` (`p = 1 050 000`), `tamCesit 2`; B: `ekmek` (`p = 950 000`), `tamCesit 2`; `kasa = 90 000` (ikisi) | A: `ekmek 22 715` + `gida 67 284` (toplam 89 999 ≤ 90 000); B: `ekmek 90 000` |
+| **V5** (`Qr ≤ 0` tur adımı birim vektörü; tam algoritma bu duruma ulaşamaz, kural savunmadır) | `turPayi(Qr, [w_A, w_B], w_esnaf, tabanPayPpm)`: `w_A = 1 125 000`, `w_B = 964 504`, `w_esnaf = 797 193`, `tabanPayPpm = 250 000`; `Qr ∈ {0, −7, 300 000}` | `Qr = 0` → **`[0, 0]`**; `Qr = −7` → **`[0, 0]`** (eski tur payı taşınmaz); `Qr = 300 000` → `[116 916, 100 236]` (V1 ile aynı) |
 
-**Referans uygulama (çekirdek dışı; algoritma §6.4'ün birebir karşılığı):**
+**`Qr` ulaşılamazlık taraması (doğrulandı: yöntem, betik):** `Qr ≤ 0` dalı 300 000 rastgele küçük girdiyle (`Q` 1–400 mili, 1–2 mal, 1–4 dükkân, 1–2 yuva, kasa 0–60, fiyat 700 000–1 400 000, esnaf 0,9–1,4 R, taban pay %25–%65) koşuldu: **0 isabet**; V1–V4 sonuçları kural değişikliğinden ÖNCEKİ betikle **birebir aynıdır** (değişen vektör yok). K3 değişmez testi (§16.2 `perakende-cekim`): her turda `Qr ≥ 1`; V5 yalnız tur adımının `Qr ≤ 0` dalını sabitler.
+
+**Referans uygulama (çekirdek dışı; algoritma §6.4'ün birebir karşılığı; `Qr ≤ 0` kuralı `turPayi` içindedir):**
 
 ```js
+const PPM = 1_000_000n;
+const cb = (a, b, c) => (a * b) / c;          // floor(a·b/c), BigInt (negatif girdi yok)
+// Tek (ilçe, mal) turunun oyuncu payı: Qr <= 0 ise HERKES SIFIR (eski tur payı taşınmaz); aksi halde esnaf tabanlı oyuncu havuzu ağırlıkla bölünür, kalan birimler sıralı +1.
+function turPayi(Qr, ws, wE, tabanPayPpm) {
+  if (Qr <= 0n) return ws.map(() => 0n);
+  const sw = ws.reduce((a, w) => a + w, 0n);
+  const pay0 = cb(wE, PPM, sw + wE);
+  const esnafPay = pay0 > tabanPayPpm ? pay0 : tabanPayPpm;
+  const P = Qr - cb(Qr, esnafPay, PPM);
+  const s = ws.map((w) => cb(P, w, sw));
+  let kalan = P - s.reduce((a, x) => a + x, 0n);
+  for (let i = 0; kalan > 0n; i++, kalan--) s[i] += 1n;
+  return s;
+}
 function cekim({ Q, dukkanlar, esnaf, cesitKatsayiPpm, tabanPayPpm, enCokTur = 32 }) {
   // Q: {mal: BigInt}; dukkanlar: [{ad, kasa, olcekCarpanPpm, tamCesit, yuvalar:[{mal, p}]}]
   const ters = (p) => cb(PPM, PPM, p);
@@ -2069,15 +2095,9 @@ function cekim({ Q, dukkanlar, esnaf, cesitKatsayiPpm, tabanPayPpm, enCokTur = 3
       const L = [];
       for (const d of dukkanlar) if (!d.donuk) for (const y of d.yuvalar) if (y.mal === m && y.w > 0n) L.push(y);
       const Qr = Q[m] - sabit[m];
-      if (L.length === 0 || Qr <= 0n) continue;
-      const sw = L.reduce((a, y) => a + y.w, 0n);
-      const pay0 = cb(wE, PPM, sw + wE);
-      const esnafPay = pay0 > tabanPayPpm ? pay0 : tabanPayPpm;
-      const P = Qr - cb(Qr, esnafPay, PPM);
-      let top = 0n;
-      for (const y of L) { y.s = cb(P, y.w, sw); top += y.s; }
-      let kalan = P - top;
-      for (let i = 0; kalan > 0n; i++, kalan--) L[i].s += 1n;
+      if (L.length === 0) continue;
+      const pay = turPayi(Qr, L.map((y) => y.w), wE, tabanPayPpm);
+      L.forEach((y, i) => { y.s = pay[i]; });
     }
     const yeni = [];
     for (const d of dukkanlar) {
