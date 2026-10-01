@@ -153,6 +153,8 @@ export interface MulkOzeti {
   ayrilmisBitis?: number | null;
   /** Katılım ilçesi (ayrılmış hücre yalnız burada satılır); bilinmiyorsa null; bildirilmediyse tanımsız. */
   katilimIlcesi?: string | null;
+  /** Kalan ilk-yapı indirimi hakkı (kaç yapı daha); bilinmiyorsa null; bildirilmediyse tanımsız (indirim uygulanmaz). */
+  indirimliYapiKalan?: number | null;
   baglanti: "bagli" | "kopuk";
   /** Oyuncunun hücre sayısı olan ilçeler: `[ilçe, hücre]`. */
   ilceHucre: Array<[string, number]>;

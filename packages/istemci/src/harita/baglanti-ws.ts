@@ -353,6 +353,7 @@ export class WsBaglanti implements MulkBaglantisi {
       simZamani: t,
       ayrilmisBitis: mk?.ayrilmisBitis !== undefined && mk.ayrilmisBitis > t ? mk.ayrilmisBitis : null,
       katilimIlcesi: this.katilimIlcesi(),
+      indirimliYapiKalan: mk?.indirimliYapiKalan ?? null,
       baglanti: this.durum === "bagli" ? "bagli" : "kopuk",
       ilceHucre: (k.oyuncu.mulk?.ilceHucre ?? []).map(([i, n]) => [i, n]),
       // Hücreli inşaatlar: tesis ve ölçek büyütme (çekirdekte yükseltme de eşzamanlı inşaat sınırına girer)

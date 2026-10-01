@@ -8,8 +8,10 @@
  *     onay; sonra yapı önce yerleşim: boş hücreler + yapı tek işlemde (Ahır).
  *   - VELİ (masaüstü): önceden katılmış (bedava yurt): doğrudan haritada; Ali'nin sahipliğini ve inşaatını canlı (delta) görür;
  *     sim saati ilerleyince inşaat aşamaları (Temel → İskele → Gövde → Tamam).
- *   - CAN (masaüstü): ölçek büyütme (G2): İşletmem → Büyüt → ek hücre hayaleti, maliyet kartı (arsa + büyütme tek toplam) → onay →
- *     sunucu kabul eder, hazine düşüşü önizlemeyle birebir; inşaat bitince M ayak izi; M → L kartı.
+ *   - CAN (masaüstü): yeni oyuncu: Yerleş → varışta "Yurdun hazır" → "Yurdunda kur" (ücretsiz yurt, ilk yapı indirimli 4.200 ₺) →
+ *     "Genişlet" önerisi; sonra ölçek büyütme (G2): İşletmem → Büyüt → ek hücre hayaleti, maliyet kartı (arsa + büyütme tek toplam) →
+ *     onay → sunucu kabul eder, hazine düşüşü önizlemeyle birebir; inşaat bitince M ayak izi; M → L kartı.
+ *     (ALİ ve AYŞE varışta "Arsa satın al" ikincil düğmesiyle arsa yolunu dener.)
  *   - AYŞE (mobil 390×844, dokunma): Yerleş → arsa → Yapı kur → hayalet → kur.
  * Ekran görüntüleri: scratchpad/f4/ (ya da ilk argüman / F4_EKRAN). Hata olursa süreç kodu 1 ile çıkar.
  *
@@ -150,10 +152,16 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await ekran("1-yerles");
 
   await sayfa.locator("[data-yr='basla']").click();
-  await sayfa.waitForFunction(() => window.__harita?.gorunum()?.seciliArsa() != null && window.__harita?.durum().duzey === 3, null, { timeout: 120000 });
+  // Yurt önce: varışta "Yurdun hazır" kartı (hazır arsa otomatik seçilmez); ali önce arsa yolunu dener ("Arsa satın al" ikincil düğmesi)
+  await sayfa.waitForFunction(() => window.__harita?.gorunum()?.varisKartiAcik === true && window.__harita?.durum().duzey === 3, null, { timeout: 120000 });
   await haritaHazir(sayfa);
   await sayfa.waitForTimeout(800);
-  kontrol(`${e} Yerleş kapandı, harita Gebze L3'te önerilen hazır arsada`, (await sayfa.locator("#yerles").count()) === 0);
+  kontrol(`${e} varışta "Yurdun hazır" kartı; hazır arsa otomatik seçilmedi`, /Yurdun hazır/.test(await alt(sayfa)) && (await sayfa.evaluate(() => window.__harita?.gorunum()?.seciliArsa() ?? null)) === null, await alt(sayfa));
+  await tikla(sayfa, false, "[data-eylem='varis-arsa']");
+  await sayfa.waitForFunction(() => window.__harita?.gorunum()?.seciliArsa() != null, null, { timeout: 60000 });
+  await haritaHazir(sayfa);
+  await sayfa.waitForTimeout(500);
+  kontrol(`${e} Yerleş kapandı, harita Gebze L3'te; "Arsa satın al" ile önerilen hazır arsa seçildi`, (await sayfa.locator("#yerles").count()) === 0);
   const oz = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.() ?? null);
   const katilim = await sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { sonKatil?: { ilce: string } | null }).sonKatil ?? null);
   kontrol(`${e} katılım protokolün "katil" mesajıyla, seçilen ilçe gönderildi; çekirdekte katılım ilçesi Gebze`, katilim?.ilce === GEBZE && mulkOyuncuBul(ts.yazar.sim.dunya, "ali")?.katilimIlcesi === GEBZE, `${JSON.stringify(katilim)} / ${mulkOyuncuBul(ts.yazar.sim.dunya, "ali")?.katilimIlcesi}`);
@@ -347,14 +355,14 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.mouse.click(p0.x, p0.y);
   await sayfa.waitForTimeout(300);
   const k1 = await kart(sayfa);
-  kontrol(`${e} maliyet kartı: arsa + yapı bedeli + süre + toplam`, /Arsa/.test(k1) && /Yapı/.test(k1) && /Süre/.test(k1) && /Toplam/.test(k1) && /6\.000\s₺/.test(k1) && /Kendi arsan/.test(k1), k1);
+  kontrol(`${e} maliyet kartı: arsa + yapı bedeli + süre + toplam`, /Arsa/.test(k1) && /Yapı/.test(k1) && /Süre/.test(k1) && /Toplam/.test(k1) && /4\.200\s₺/.test(k1) && /Kendi arsan/.test(k1), k1);
   await ekran("8-maliyet-karti");
   const insaOnce = ts.yazar.sim.dunya.insaatlar.length;
   const sunucuKomut = ts.yazar.seq;
   await tikla(sayfa, false, "#yapi-kart [data-yk='onayla']");
   await sayfa.waitForSelector("#bildirimler .bildirim.tamam >> text=Çiftlik kuruluyor", { timeout: 20000 });
   const t2 = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} onay: Çiftlik kuruluyor (arsa zaten senin: tek komut)`, /Çiftlik kuruluyor: yapı 6\.000\s₺\./.test(t2), t2);
+  kontrol(`${e} onay: Çiftlik kuruluyor (arsa zaten senin: tek komut; ilk yapı indirimli 4.200\s₺)`, /Çiftlik kuruluyor: yapı 4\.200\s₺\./.test(t2), t2);
   kontrol(`${e} sunucuda inşaat başladı (hücreli)`, ts.yazar.sim.dunya.insaatlar.length === insaOnce + 1 && (ts.yazar.sim.dunya.insaatlar.at(-1)?.hucreler?.length ?? 0) === 2, `${ts.yazar.sim.dunya.insaatlar.length} inşaat; yeni komut ${ts.yazar.seq - sunucuKomut}`);
   const insaatHucreler = [...(ts.yazar.sim.dunya.insaatlar.at(-1)?.hucreler ?? [])];
   await sayfa.waitForTimeout(700);
@@ -416,7 +424,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
         return p ? { gecerli: p.gecerli, neden: p.neden, alinacak: p.alinacak.length, toplam: p.toplamMili } : null;
       });
       if (ilk) {
-        kontrol(`${e} yapı önce yerleşim: kartta "2 hücre alınacak" + Ahır bedeli`, /2 hücre alınacak/.test(k2) && /8\.000\s₺/.test(k2) && !!planB && planB.gecerli, k2);
+        kontrol(`${e} yapı önce yerleşim: kartta "2 hücre alınacak" + Ahır bedeli`, /2 hücre alınacak/.test(k2) && /5\.600\s₺/.test(k2) && !!planB && planB.gecerli, k2);
         await ekran("10-yapi-once-yerlesim");
       }
       const seqOnce = ts.yazar.seq;
@@ -424,7 +432,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
       await sayfa.waitForSelector("#bildirimler .bildirim >> text=Ahır kuruluyor", { timeout: 20000 });
       const t3 = (await sayfa.locator("#bildirimler .bildirim").last().innerText()).replace(/\s+/g, " ");
       if (ilk) {
-        kontrol(`${e} Ahır: arsa + yapı tek işlemde, bildirim Türkçe`, /Ahır kuruluyor: arsa 2 hücre, [\d.]+\s₺ \+ yapı 8\.000\s₺\./.test(t3), t3);
+        kontrol(`${e} Ahır: arsa + yapı tek işlemde, bildirim Türkçe`, /Ahır kuruluyor: arsa 2 hücre, [\d.]+\s₺ \+ yapı 5\.600\s₺\./.test(t3), t3);
         const kmt = ts.yazar.seq - seqOnce;
         kontrol(`${e} komut yolu: ${atomik ? "tek atomik yapi_yerlestir" : "zincir (parsel_al + tesis_insa_hucre)"}`, kmt === (atomik ? 1 : 2), `sunucuya ${kmt} komut`);
       }
@@ -570,36 +578,50 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
 }
 
 /**
- * Ölçek büyütme (G2): İşletmem → "Büyüt" → harita tesisin ilçesine gider, ek hücre hayaleti ve maliyet kartı (arsa + büyütme tek toplam)
+ * Yurt önce + ölçek büyütme (G2): CAN yeni oyuncudur: Yerleş → varışta "Yurdun hazır" → "Yurdunda kur" (ücretsiz, indirimli 4.200 ₺) →
+ * "Genişlet" önerisi. Sonra İşletmem → "Büyüt" → harita tesisin ilçesine gider, ek hücre hayaleti ve maliyet kartı (arsa + büyütme tek toplam)
  * → onay → sunucu kabul eder → hazine düşüşü önizlemeyle birebir → inşaat bitince M ayak izi. M → L kartı yalnız L sunar.
- * CAN: önceden katılmış (yurt Gebze'de); çiftliği doğrudan komutla kurulur (malzeme stoğu ali'nin akışından ayrı).
  */
 async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: string[]): Promise<void> {
   const e = "[can/masaüstü]";
   const baglam = await tarayici.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, colorScheme: "light" });
   const sayfa = await sayfaAc(baglam, adres, ts, "can", konsol);
   const ekran = (ad: string): Promise<Buffer> => sayfa.screenshot({ path: join(EKRAN, `f4-masaustu-buyut-${ad}.png`) });
-  await sayfa.waitForFunction(() => window.__harita?.durum().ilce === "tr_41_gebze", null, { timeout: 120000 });
-  await haritaHazir(sayfa);
+  // Yerleş (yeni oyuncu): varışta "Yurdun hazır" kartı → "Yurdunda kur" (ücretsiz yurt; ilk yapı indirimli)
+  await sayfa.waitForFunction(() => window.__harita?.yerles() != null, null, { timeout: 120000 });
   await sayfa.evaluate(() => window.__olcum?.duraklat(true));
+  await sayfa.locator(".yr-kart[data-ilce='tr_41_gebze']").click();
+  await sayfa.locator("[data-acilis='tarim']").click();
+  await sayfa.locator("[data-yr='basla']").click();
+  await sayfa.waitForFunction(() => window.__harita?.gorunum()?.varisKartiAcik === true && window.__harita?.durum().duzey === 3, null, { timeout: 120000 });
+  await haritaHazir(sayfa);
+  await sayfa.waitForTimeout(800);
   const SA = 3_600_000;
   const esitle = (): Promise<void> => sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { zamanEsitle?: () => Promise<void> }).zamanEsitle?.());
-  // S çiftlik: yurdun iki bitişik hücresi (doğrudan komut; kurulum bu adımın konusu değil)
-  const cift = await sayfa.evaluate(async (): Promise<string[] | null> => {
-    const b = window.__harita?.baglanti();
-    const sh = await b?.sahiplikAl("tr_41_gebze");
-    if (!b || !sh) return null;
-    for (const [id, h] of sh.hucreler) {
-      if (h.sahip !== b.ben.id || h.tesis !== undefined || h.insaat !== undefined) continue;
-      const [x, y] = id.split(":").map(Number) as [number, number];
-      const sag = `${x + 1}:${y}`;
-      if (sh.hucreler.get(sag)?.sahip === b.ben.id) return [id, sag];
-    }
-    return null;
-  });
-  if (!cift) throw new Error("can: bitişik iki yurt hücresi yok");
-  const kur = await sayfa.evaluate((c) => window.__harita?.baglanti()?.tesisInsa?.({ tur: "tesis_insa_hucre", ilce: "tr_41_gebze", tesisTuru: "ciftlik", hucreler: c }), cift);
-  kontrol(`${e} S çiftlik kuruldu (yurtta)`, kur?.tamam === true, JSON.stringify(kur));
+  const ustBirincil = (): Promise<boolean | null> => sayfa.evaluate(() => document.getElementById("yapi-menu-dugme")?.classList.contains("birincil") ?? null);
+  const v1 = (await alt(sayfa)).replace(/\s+/g, " ");
+  kontrol(`${e} varışta "Yurdun hazır": yurt 6 hücre ve ücretsiz; birincil "Yurdunda kur · ücretsiz", ikincil "Arsa satın al"`, /Yurdun hazır/.test(v1) && /Yurdun 6 hücre ve ücretsiz\. İlk yapın buraya sığar\./.test(v1) && /Yurdunda kur\s*ücretsiz/.test(v1) && /Arsa satın al/.test(v1), v1);
+  const birincilSinif = (await sayfa.locator("[data-eylem='yurt-kur']").getAttribute("class")) ?? "";
+  const ikincilSinif = (await sayfa.locator("[data-eylem='varis-arsa']").getAttribute("class")) ?? "";
+  kontrol(`${e} tek birincil: kart düğmesi "birincil", ikincil sınıfsız, üstteki "Yapı kur" birincil değil`, /\bbirincil\b/.test(birincilSinif) && ikincilSinif.trim() === "" && (await ustBirincil()) === false, `kart="${birincilSinif}" ikincil="${ikincilSinif}" üst=${await ustBirincil()}`);
+  kontrol(`${e} hazır arsa otomatik seçilmedi`, (await sayfa.evaluate(() => window.__harita?.gorunum()?.seciliArsa() ?? null)) === null);
+  await ekran("0-yurt-karti");
+  const hazine0 = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
+  const insaat0 = ts.yazar.sim.dunya.insaatlar.length;
+  await tikla(sayfa, false, "[data-eylem='yurt-kur']");
+  await sayfa.waitForSelector("#bildirimler .bildirim.tamam >> text=Çiftlik kuruluyor", { timeout: 30000 });
+  const tYurt = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
+  kontrol(`${e} tek tıkla Çiftlik yurtta: arsa yok, indirimli yapı 4.200 ₺`, /Çiftlik kuruluyor: yapı 4\.200\s₺\./.test(tYurt) && ts.yazar.sim.dunya.insaatlar.length === insaat0 + 1, tYurt);
+  await sayfa.waitForFunction(() => (window.__harita?.baglanti()?.ozet?.()?.surenInsaat ?? 0) >= 1, null, { timeout: 15000 });
+  const hazine1 = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
+  kontrol(`${e} hazineden yalnız yapı düştü (arsa parası yok): 4.200 ₺ birebir`, hazine0 - hazine1 === 4_200_000, `${hazine0} - ${hazine1}`);
+  const gen = (await alt(sayfa)).replace(/\s+/g, " ");
+  const geri = (await sayfa.locator("#yapi-geri").innerText().catch(() => "")).replace(/\s+/g, " ");
+  kontrol(`${e} ilk yapıdan sonra kartta "Genişlet: yanındaki arsayı al"; geri al şeridi açık; üst düğme hâlâ birincil değil`, /Genişlet: yanındaki arsayı al/.test(gen) && /Çiftlik kuruluyor/.test(geri) && (await ustBirincil()) === false, `${gen} | ${geri}`);
+  await ekran("0b-yurtta-kuruldu");
+  await tikla(sayfa, false, "[data-eylem='varis-arsa']");
+  await sayfa.waitForFunction(() => window.__harita?.gorunum()?.seciliArsa() != null && window.__harita?.gorunum()?.varisKartiAcik === false, null, { timeout: 60000 });
+  kontrol(`${e} Genişlet: yanındaki arsa seçildi, varış kartı kapandı, üstteki "Yapı kur" yeniden birincil`, (await ustBirincil()) === true);
   await ts.yonetici.zamanIlerlet(ts.yazar.sim.dunya.zaman + 24 * SA);
   await esitle();
   // İşletmem: tesis satırında "Büyüt"
@@ -619,9 +641,9 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     return p ? { gecerli: p.gecerli, neden: p.neden, ek: p.ekHucreler, alinacak: p.alinacak.length, arsaMili: p.arsaMili, yapiMili: p.yapiMili, toplamMili: p.toplamMili, hedef: p.hedef.ad } : null;
   });
   const k1 = (await kart(sayfa)).replace(/\s+/g, " ");
-  const tl = (mili: number): string => `${new Intl.NumberFormat("tr-TR").format(Math.ceil(mili / 1000))} ₺`;
+  const tl = (mili: number): string => `${new Intl.NumberFormat("tr-TR").format(Math.ceil(mili / 1000))}\u00a0₺`;
   kontrol(`${e} Büyüt: harita Gebze'de, kart: ek hücre, arsa, büyütme, süre, tek toplam`, !!plan && plan.gecerli && plan.ek.length === 1 && plan.hedef === "M" && /Çiftlik büyüt/.test(k1) && /S ölçek/.test(k1) && /M ölçek · 3 hücre/.test(k1) && /L ölçek · 4 hücre/.test(k1) && /Arsa/.test(k1) && /Büyütme/.test(k1) && /Süre/.test(k1) && /Toplam/.test(k1), `${JSON.stringify(plan)} | ${k1}`);
-  kontrol(`${e} kartta büyütme ${plan ? tl(plan.yapiMili) : "?"} (S → M ×1,5 çekirdek bedeli) ve toplam ${plan ? tl(plan.toplamMili) : "?"} (arsa + büyütme)`, !!plan && plan.yapiMili === 9_000_000 && k1.includes("9.000 ₺") && k1.includes(`Toplam ${tl(plan.toplamMili)}`) && plan.toplamMili === plan.arsaMili + plan.yapiMili, k1);
+  kontrol(`${e} kartta büyütme ${plan ? tl(plan.yapiMili) : "?"} (S → M ×1,5 çekirdek bedeli) ve toplam ${plan ? tl(plan.toplamMili) : "?"} (arsa + büyütme)`, !!plan && plan.yapiMili === 9_000_000 && k1.includes("9.000\u00a0₺") && k1.includes(`Toplam ${tl(plan.toplamMili)}`) && plan.toplamMili === plan.arsaMili + plan.yapiMili, k1);
   const hayalet = await sayfa.evaluate(() => window.__harita?.gorunum()?.ml.queryRenderedFeatures({ layers: ["olcek-hayalet-dolgu"] }).length ?? 0);
   kontrol(`${e} hayalet haritada: büyüyen tesis + ek hücre`, hayalet >= 3, `${hayalet} özellik`);
   const kamuMetin = await alt(sayfa).catch(() => "");
@@ -632,7 +654,7 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await tikla(sayfa, false, "#yapi-kart [data-ok='onayla']");
   await sayfa.waitForSelector("#bildirimler .bildirim.tamam >> text=ölçeğe büyütülüyor", { timeout: 20000 });
   const t1 = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} onay: sunucu kabul etti, bildirim Türkçe`, /Çiftlik M ölçeğe büyütülüyor: .*büyütme 9\.000 ₺\./.test(t1), t1);
+  kontrol(`${e} onay: sunucu kabul etti, bildirim Türkçe`, /Çiftlik M ölçeğe büyütülüyor: .*büyütme 9\.000\s₺\./.test(t1), t1);
   kontrol(`${e} sunucuda ölçek inşaatı başladı (tek komut, hedef M)`, ts.yazar.sim.dunya.insaatlar.length === insaOnce + 1 && ts.yazar.sim.dunya.insaatlar.some((i) => i.tur === "olcek" && i.hedef === tesisId && i.olcek === 1), `${ts.yazar.sim.dunya.insaatlar.length} inşaat`);
   await sayfa.waitForFunction(() => (window.__harita?.baglanti()?.ozet?.()?.surenInsaat ?? 0) >= 1, null, { timeout: 15000 });
   const hazineSonra = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
@@ -682,9 +704,15 @@ async function ayse(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: stri
   await sayfa.locator("[data-acilis='tarim']").tap();
   await ekran("1-yerles");
   await sayfa.locator("[data-yr='basla']").tap();
-  await sayfa.waitForFunction(() => window.__harita?.gorunum()?.seciliArsa() != null && window.__harita?.durum().duzey === 3, null, { timeout: 120000 });
+  await sayfa.waitForFunction(() => window.__harita?.gorunum()?.varisKartiAcik === true && window.__harita?.durum().duzey === 3, null, { timeout: 120000 });
   await haritaHazir(sayfa);
   await sayfa.waitForTimeout(800);
+  kontrol(`${e} varışta "Yurdun hazır" kartı (telefon): birincil "Yurdunda kur", ikincil "Arsa satın al"; taşma yok`, /Yurdun hazır/.test(await alt(sayfa)) && (await sayfa.locator("[data-eylem='yurt-kur']").isVisible()) && (await sayfa.locator("[data-eylem='varis-arsa']").isVisible()) && !(await sayfa.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)), await alt(sayfa));
+  await ekran("1b-yurt-karti");
+  await sayfa.locator("[data-eylem='varis-arsa']").tap();
+  await sayfa.waitForFunction(() => window.__harita?.gorunum()?.seciliArsa() != null, null, { timeout: 60000 });
+  await haritaHazir(sayfa);
+  await sayfa.waitForTimeout(500);
   const altM = await alt(sayfa);
   kontrol(`${e} hazır arsa seçili, alt çubuk görünür`, /Hazır arsa/.test(altM) && (await sayfa.locator("#harita-alt").isVisible()), altM);
   await ekran("2-hazir-arsa");
@@ -829,7 +857,6 @@ async function main(): Promise<void> {
   console.log(`sunucu hazır (${Date.now() - t0} ms): ${ts.url}`);
   // Veli önceden katılmış: bedava yurt Gebze'de
   await ts.katil("veli", GEBZE);
-  await ts.katil("can", GEBZE);
   const { sunucu, adres } = await statikSunucu();
   const tarayici = await chromium.launch({
     executablePath: chromeBul(),

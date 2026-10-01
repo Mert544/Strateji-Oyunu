@@ -234,7 +234,7 @@ describe("WsBaglanti: gerçek sunucu", () => {
       arsaMili: 2_000_000,
       yapiMili: 6_000_000,
       toplamMili: 8_000_000,
-      hazineYetmez: false,
+      malzeme: [], indirimli: false, hazineYetmez: false,
     });
     let insaCagri = 0;
     const sarmal: MulkBaglantisi = {

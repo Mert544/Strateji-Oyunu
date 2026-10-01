@@ -39,6 +39,7 @@ import type { YapiTanimi } from "./yapi";
 import { YerlesimKipi } from "./yerlesim";
 import { yapiCizimi } from "./gorunurluk";
 import { OlcekKipi } from "./olcek-kipi";
+import { YURT_METIN, yurtBosHucreler } from "./yurt";
 import { olcekAyakIzi, olcekHedefi, mevcutOlcek } from "./olcek";
 import { cerceveBirlestir } from "./geometri";
 import {
@@ -176,6 +177,9 @@ export class HaritaGorunumu {
   readonly tablo: Icerik;
   private yerlesim: YerlesimKipi | null = null;
   private olcek: OlcekKipi | null = null;
+  /** Yurt önce varış kartı (Yerleş sonrası): "Yurdunda kur" birincil, "Arsa satın al" ikincil. Kapanınca null. */
+  private varis: { acilis: ArsaTercihi; oneriYapi: string; merkez: [number, number]; genislet: boolean } | null = null;
+  private yurtKuruluyor = false;
   private yapiEtiketleri: maplibregl.Marker[] = [];
   private canliBirak: (() => void) | null = null;
   private canliBekliyor = false;
@@ -367,11 +371,13 @@ export class HaritaGorunumu {
       },
       altGizle: (g) => {
         this.altGizli = g;
+        if (g && !this.yurtKuruluyor) this.varisAyarla(null); // yerleşim kipi başladı: varış kartı biter
         this.arsaVurguCiz();
         this.altCiz();
       },
       basliyor: () => this.olcek?.iptal(),
       ayrilmisHakki: () => this.ayrilmisHakki(),
+      indirim: () => this.ilkYapiIndirimi(),
     });
     this.yerlesim = y;
     void this.yuklendi.then(() => y.kur());
@@ -579,6 +585,7 @@ export class HaritaGorunumu {
   uyut(): void {
     this.yerlesim?.iptal();
     this.olcek?.iptal();
+    this.varisAyarla(null);
     this.yerlesim?.menuAc(false);
     // Küre düzeyi: "Geri al" şeridi gizlenir (sayaç sürer; ilçeye dönülünce yeniden görünür)
     this.yerlesim?.gorunurluk(0);
@@ -613,6 +620,7 @@ export class HaritaGorunumu {
       this.kamuSecili = null;
       this.yerlesim?.iptal();
       this.olcek?.iptal();
+      this.varisAyarla(null);
       h.setFilter("ilce-secili", ["==", ["get", "kimlik"], hedef.ilce ?? ""]);
       h.setFilter("ortu-ilce", hedef.ilce ? ["!=", ["get", "kimlik"], hedef.ilce] : ["==", ["get", "kimlik"], "__yok__"]);
       if (hedef.ilce && this.izgaraVar(hedef.ilce)) {
@@ -802,6 +810,13 @@ export class HaritaGorunumu {
     return ayrilmisHakki({ simZamani: oz.simZamani, ayrilmisBitis: oz.ayrilmisBitis, katilimIlcesi: oz.katilimIlcesi ?? null, ilce, yalnizKatilimIlcesi: y?.ayrilmisYalnizKatilimIlcesi === true, gun: y?.ayrilmisGun ?? 14 });
   }
 
+  /** İlk-yapı indirimi (çekirdek `yapiPlani`): oran ve kalan hak; bağdaştırıcı bilmiyorsa tanımsız (indirim uygulanmaz). */
+  private ilkYapiIndirimi(): { ppm: number; kalan: number } | undefined {
+    const kalan = this.baglanti.ozet?.()?.indirimliYapiKalan;
+    const ppm = this.tablo.param.mulk?.yeniOyuncu.ilkYapiIndirimPpm;
+    return kalan != null && ppm ? { ppm, kalan } : undefined;
+  }
+
   /** Hücrenin ayrılmış olup olmadığı (liste biliniyorsa). */
   private ayrilmisMi(id: HucreId): boolean {
     return this.sahiplik?.ayrilmis?.has(id) ?? false;
@@ -881,6 +896,7 @@ export class HaritaGorunumu {
       return;
     }
     this.alt.hidden = false;
+    if (this.varis) return this.varisCiz(sayi);
     const ilceAd = this.s.hiyerarsi.ilceler.get(this.ilceKimlik)?.ad ?? "";
     const coklu = `<button type="button" class="yalniz-dokunma" data-eylem="coklu" aria-pressed="${this.cokluSecim}">Çoklu seç</button>`;
     const aracDugme = `<button type="button" class="yalniz-dokunma" data-eylem="hucre-araci" aria-pressed="${this.hucreAraci}" title="Hücre hücre seçim (ileri düzey)">Hücre aracı</button>`;
@@ -1122,6 +1138,8 @@ export class HaritaGorunumu {
   /** Hazır arsayı seçer (alt çubuk satın alma/yapı kurma için); null seçimi kaldırır. */
   arsaSec(a: Arsa | null): void {
     this.arsaSecili = a;
+    if (a) this.varis = null; // oyuncu bir arsa seçti: varış kartı biter (düğme birincilliği aşağıda `varisAyarla`dan)
+    if (a) this.yerlesim?.birincilAyarla(true);
     if (a) this.kamuSecili = null;
     if (a) {
       this.secim.temizle();
@@ -1290,22 +1308,102 @@ export class HaritaGorunumu {
   }
 
   /**
-   * Yerleş ekranı varışı: ilçe açıkken önerilen hazır arsaya (açılış önerisine uyan, boş, merkeze yakın) uç ve seç; yapı
-   * menüsünde açılış önerisinin yapısına "Önerilen" rozeti koy. Arsa bulunamazsa null.
+   * Yerleş ekranı varışı. Oyuncunun yurdu (kendi boş hücreleri) varsa harita yurda yaklaşır ve "Yurdun hazır" kartı açılır: birincil eylem
+   * "Yurdunda kur" (ücretsiz), ikincil "Arsa satın al"; hazır arsa OTOMATİK SEÇİLMEZ. Yurdu yoksa önerilen hazır arsaya uçar ve seçer
+   * (arsa almaktan başka yol yok). Yapı menüsünde açılış önerisinin yapısına "Önerilen" rozeti koyar. Varış ele alındıysa true.
    */
-  async yerlesVarisi(acilis: ArsaTercihi, oneriYapi: string, merkez: [number, number]): Promise<Arsa | null> {
+  async yerlesVarisi(acilis: ArsaTercihi, oneriYapi: string, merkez: [number, number]): Promise<boolean> {
     this.oneriYapi(oneriYapi);
     const k = await this.arsalarHazir();
-    if (!k || !this.ilceKimlik) return null;
+    if (!k || !this.ilceKimlik) return false;
     const sh = await this.baglanti.sahiplikAl(this.ilceKimlik);
+    const bos = yurtBosHucreler(sh, this.baglanti.ben.id);
+    if (bos.length > 0) {
+      this.varisAyarla({ acilis, oneriYapi, merkez, genislet: false });
+      this.hucrelereYakinlas(bos);
+      return true;
+    }
     const c = noktadanHucre(merkez[0], merkez[1]);
-    // Bütçe: hazinenin %40'ı (kalanı ilk yapıya); hazine bilinmiyorsa sınır yok. Arsa fiyatı çekirdek formülüyle.
+    return (await this.onerilenArsayaGit(acilis, c.x, c.y, sh)) !== null;
+  }
+
+  /** Önerilen hazır arsaya (açılış önerisine uyan, boş, (cx, cy)'ye yakın) uçar ve seçer. Bütçe: hazinenin %40'ı (kalanı ilk yapıya). */
+  private async onerilenArsayaGit(acilis: ArsaTercihi, cx: number, cy: number, sh: IlceSahipligi | null): Promise<Arsa | null> {
+    const k = await this.arsalarHazir();
+    if (!k) return null;
     const hazine = this.baglanti.ozet?.()?.hazineMili ?? null;
     const sayi = this.sayilar();
     const butce = hazine !== null && sayi ? { fiyat: (x: Arsa) => this.arsaFiyati(x, sayi).mili, tavanMili: hazine * 0.4 } : undefined;
-    const a = onerilenArsa(k, (id) => sh?.hucreler.has(id) ?? false, c.x, c.y, acilis, butce);
+    const a = onerilenArsa(k, (id) => sh?.hucreler.has(id) ?? false, cx, cy, acilis, butce);
     if (a) await this.arsayaUc(a);
     return a;
+  }
+
+  /** Varış kartını aç/kapat (tek birincil kuralı: açıkken üstteki "Yapı kur" düğmesi birincil olmaz). */
+  private varisAyarla(v: typeof this.varis): void {
+    this.varis = v;
+    this.yerlesim?.birincilAyarla(v === null);
+    this.altCiz();
+  }
+
+  /** Sınama kancası: varış kartı açık mı. */
+  get varisKartiAcik(): boolean {
+    return this.varis !== null;
+  }
+
+  private varisCiz(sayi: IlceSayilari): void {
+    const v = this.varis;
+    if (!v) return;
+    if (v.genislet) {
+      this.alt.innerHTML = `<div class="alt-dugmeler"><button type="button" data-eylem="varis-arsa">${esc(YURT_METIN.genislet)}</button></div>`;
+      return;
+    }
+    const y = this.katalog.find((k) => k.id === v.oneriYapi);
+    const yp = y ? this.yerlesim?.yurtDurumu(y) : undefined;
+    const sigar = yp?.plan?.gecerli === true;
+    const aciklama = sigar ? YURT_METIN.aciklama(sayi.benim) : (yp?.plan?.neden ?? yp?.neden ?? YURT_METIN.yerYok);
+    this.alt.innerHTML = `
+      <span class="alt-sayi"><small>${esc(YURT_METIN.baslik)}</small><b data-alan="yurt-hucre">${fmt(sayi.benim)} hücre</b></span>
+      <span class="alt-ipucu" data-alan="yurt-aciklama">${esc(aciklama)}</span>
+      <div class="alt-dugmeler"><button type="button" data-eylem="varis-arsa">${esc(YURT_METIN.ikincil)}</button><button type="button" class="birincil" data-eylem="yurt-kur" ${sigar && !this.yurtKuruluyor ? "" : "disabled"}>${esc(YURT_METIN.birincil)} <small>${esc(YURT_METIN.birincilNot)}</small></button></div>`;
+  }
+
+  /** "Yurdunda kur": önerilen yapı yurda yerleşir ve tek işlemde kurulur (arsa parası yok); sonra "Genişlet" önerisi. */
+  private async yurtaKur(): Promise<void> {
+    const v = this.varis;
+    if (!v || v.genislet || this.yurtKuruluyor || !this.yerlesim) return;
+    this.yurtKuruluyor = true;
+    this.altCiz();
+    try {
+      const r = await this.yerlesim.yurdaKur(v.oneriYapi);
+      if (r.tamam) this.varisAyarla({ ...v, genislet: true });
+      else if (r.neden) bildir(r.neden, "hata");
+    } finally {
+      this.yurtKuruluyor = false;
+      this.altCiz();
+    }
+  }
+
+  /** "Arsa satın al" / "Genişlet": varış kartı biter; yurdun yanındaki (yoksa ilçe merkezindeki) önerilen hazır arsa seçilir. */
+  private async varistaArsa(): Promise<void> {
+    const v = this.varis;
+    if (!v) return;
+    const ben = this.baglanti.ben.id;
+    let sx = 0;
+    let sy = 0;
+    let n = 0;
+    for (const [id, h] of this.sahiplik?.hucreler ?? []) {
+      const c = h.sahip === ben ? idCoz(id) : null;
+      if (c) {
+        sx += c.x;
+        sy += c.y;
+        n++;
+      }
+    }
+    const m = n > 0 ? { x: Math.round(sx / n), y: Math.round(sy / n) } : noktadanHucre(v.merkez[0], v.merkez[1]);
+    this.varisAyarla(null);
+    const a = await this.onerilenArsayaGit(v.acilis, m.x, m.y, this.sahiplik);
+    if (!a) bildir("Bu ilçede boş hazır arsa kalmadı.", "bilgi");
   }
 
   /** Sınama kancası: bir hücrenin harita kabı içindeki ekran konumu. */
@@ -1458,7 +1556,9 @@ export class HaritaGorunumu {
         this.hucreAraci = !this.hucreAraci;
         if (!this.hucreAraci) this.cokluSecim = false;
         this.arsaSec(null);
-      } else if (ey === "yapi-menu") this.yerlesim?.menuAc(true);
+      } else if (ey === "yurt-kur") void this.yurtaKur();
+      else if (ey === "varis-arsa") void this.varistaArsa();
+      else if (ey === "yapi-menu") this.yerlesim?.menuAc(true);
       else if (ey === "arsa-al") void this.arsaAl();
       else if (ey === "satin-al") void this.satinAl();
     });

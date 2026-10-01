@@ -19,6 +19,8 @@ import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yapiRengiCss, yerlesimPlani } fr
 import { ikon } from "../tasarim/ikon";
 import type { YapiTanimi, YerlesimPlani } from "./yapi";
 import { yerlesimiUygula } from "./zincir";
+import { yurtPlani } from "./yurt";
+import type { YurtPlani } from "./yurt";
 
 export interface YerlesimGirdisi {
   ml: MlHarita;
@@ -48,6 +50,8 @@ export interface YerlesimGirdisi {
   basliyor?: () => void;
   /** Oyuncunun bu ilçedeki ayrılmış hücre hakkı (bilinmiyorsa tanımsız). */
   ayrilmisHakki?: () => AyrilmisHakki | undefined;
+  /** İlk-yapı indirimi: oran (ppm) ve kalan hak; bilinmiyorsa tanımsız (indirim uygulanmaz). */
+  indirim?: () => { ppm: number; kalan: number } | undefined;
 }
 
 const BOS: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -90,7 +94,7 @@ export class YerlesimKipi {
     this.dugme = document.createElement("button");
     this.dugme.type = "button";
     this.dugme.id = "yapi-menu-dugme";
-    this.dugme.className = "yapi-dugme";
+    this.dugme.className = "yapi-dugme birincil";
     this.dugme.hidden = true;
     this.dugme.setAttribute("aria-haspopup", "true");
     this.dugme.setAttribute("aria-expanded", "false");
@@ -147,6 +151,47 @@ export class YerlesimKipi {
 
   get seciliYapi(): string | null {
     return this.yapi?.id ?? null;
+  }
+
+  /**
+   * Tek birincil kuralı: varış kartı ("Yurdunda kur") açıkken üstteki "Yapı kur" düğmesi birincil olmaz; kart kapanınca geri gelir.
+   */
+  birincilAyarla(birincil: boolean): void {
+    this.dugme.classList.toggle("birincil", birincil);
+  }
+
+  /**
+   * Yurt önce: yapıyı oyuncunun KENDİ boş hücrelerine (yurt) yerleştirir ve tek işlemde kurar (arsa parası ödenmez; geri al şeridi
+   * açılır). Sığmıyorsa ya da plan geçersizse kurmaz ve nedeni söyler. Başarılıysa true.
+   */
+  async yurdaKur(yapiId: string): Promise<{ tamam: boolean; neden?: string }> {
+    if (this.uygulaniyor) return { tamam: false };
+    if (!this.sec(yapiId)) return { tamam: false, neden: "Bu ilçede yapı kurulamıyor." };
+    const y = this.yapi as YapiTanimi;
+    const b = this.baglam();
+    const yp = b ? yurtPlani(y, b) : null;
+    if (!yp?.plan || yp.cx === undefined || yp.cy === undefined) {
+      this.iptal();
+      return { tamam: false, neden: yp?.neden ?? "Bu ilçede yapı kurulamıyor." };
+    }
+    if (!yp.plan.gecerli) {
+      const neden = yp.plan.neden ?? "Bu yapı yurdunda kurulamıyor.";
+      this.iptal();
+      return { tamam: false, neden };
+    }
+    this.donus = yp.donus ?? 0;
+    this.sabit = { x: yp.cx, y: yp.cy };
+    this.plan = yp.plan;
+    this.hayaletCiz(yp.plan);
+    this.kartiYaz();
+    const tamam = await this.onayla();
+    return { tamam };
+  }
+
+  /** Yurt önce varış kartı için: yapının yurda yerleşim durumu (plan, boş hücre sayısı, neden). Bağlam yoksa tanımsız. */
+  yurtDurumu(y: YapiTanimi): YurtPlani | undefined {
+    const b = this.baglam();
+    return b ? yurtPlani(y, b) : undefined;
   }
 
   /** Sınama kancası: şu anki plan. */
@@ -307,7 +352,12 @@ export class YerlesimKipi {
     const sh = this.g.sahiplik();
     if (!iz || !sh) return null;
     const oz = this.g.baglanti.ozet?.() ?? null;
-    return { izgara: iz, sahiplik: sh, ben: this.g.baglanti.ben.id, ad: this.g.ad, hazineMili: oz?.hazineMili ?? null, surenInsaat: oz?.surenInsaat ?? 0, kamu: this.g.kamu, ...this.hakAlani() };
+    return { izgara: iz, sahiplik: sh, ben: this.g.baglanti.ben.id, ad: this.g.ad, hazineMili: oz?.hazineMili ?? null, surenInsaat: oz?.surenInsaat ?? 0, kamu: this.g.kamu, ...this.hakAlani(), ...this.indirimAlani() };
+  }
+
+  private indirimAlani(): { indirim?: { ppm: number; kalan: number } } {
+    const i = this.g.indirim?.();
+    return i ? { indirim: i } : {};
   }
 
   private hakAlani(): { ayrilmisHakki?: AyrilmisHakki } {
@@ -401,10 +451,10 @@ export class YerlesimKipi {
     } else {
       const arsa = p.alinacak.length > 0 ? `${fmt(p.alinacak.length)} hücre alınacak · <b>${paraMili(p.arsaMili, "yukari")}</b>` : `Kendi arsan · <b>${para(0)}</b>`;
       const sure = `${sureMetni(y.sureSaat)}${y.ilkGunSureSaat < y.sureSaat ? ` <small>(yeni oyuncuya ilk gün ≈ ${sureMetni(y.ilkGunSureSaat)})</small>` : ""}`;
-      const malzeme = malzemeMetni(y);
+      const malzeme = malzemeMetni({ malzeme: p.malzeme });
       govde = `<dl class="yk-satirlar">
         <dt>Arsa</dt><dd data-yk-alan="arsa">${arsa}</dd>
-        <dt>Yapı</dt><dd data-yk-alan="yapi"><b>${paraMili(p.yapiMili, "yukari")}</b>${malzeme ? ` <small>+ ${esc(malzeme)}</small>` : ""}</dd>
+        <dt>Yapı</dt><dd data-yk-alan="yapi"><b>${paraMili(p.yapiMili, "yukari")}</b>${malzeme ? ` <small>+ ${esc(malzeme)}</small>` : ""}${p.indirimli ? " <small>ilk yapı indirimli</small>" : ""}</dd>
         <dt>Süre</dt><dd data-yk-alan="sure">${sure}</dd>
         <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${paraMili(p.toplamMili, "yukari")}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili, "asagi")}</small>` : ""}</dd>
       </dl>
@@ -415,10 +465,10 @@ export class YerlesimKipi {
     this.kart.hidden = false;
   }
 
-  private async onayla(): Promise<void> {
+  private async onayla(): Promise<boolean> {
     const p = this.plan;
     const ilce = this.g.ilce();
-    if (!p || !p.gecerli || !this.sabit || !ilce || this.uygulaniyor) return;
+    if (!p || !p.gecerli || !this.sabit || !ilce || this.uygulaniyor) return false;
     this.uygulaniyor = true;
     this.kartiYaz();
     try {
@@ -428,12 +478,14 @@ export class YerlesimKipi {
       if (r.tamam) {
         this.geriGoster(ilce, p, r.alinan);
         this.iptal();
-        return;
+        return true;
       }
       // Başarısız: kip açık kalır (arsa alındıysa plan artık "kendi arsan" diye yeniden hesaplanır).
       this.sabit = { ...this.sabit };
+      return false;
     } catch (e) {
       bildir(`Olmadı: ${e instanceof Error ? e.message : String(e)}`, "hata");
+      return false;
     } finally {
       this.uygulaniyor = false;
       this.tazele();

@@ -404,8 +404,8 @@ export class HaritaDenetci {
       return;
     }
     // L3'e in ve hazır arsayı seç (ızgara ve sahiplik yüklenmiş olmalı)
-    const a = await g.yerlesVarisi(acilis, oneriYapi, merkez);
-    if (!a) bildir("Bu ilçede boş hazır arsa kalmadı: başka bir ilçe dene.", "bilgi");
+    const tamam = await g.yerlesVarisi(acilis, oneriYapi, merkez);
+    if (!tamam) bildir("Bu ilçede boş hazır arsa kalmadı: başka bir ilçe dene.", "bilgi");
   }
 
   private hiyerarsiAl(): Promise<Hiyerarsi> {

@@ -13,6 +13,7 @@ import type { Icerik } from "../komut/tablo";
 import type { IlceSahipligi, YapiKaydi } from "./baglanti";
 import { alimTuru, arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselToplamFiyatiMili, sinirDenetle } from "./fiyat";
 import type { AyrilmisHakki } from "./fiyat";
+import { carpBol } from "./olcek";
 import { durumAl, engelNedeni, hucreId } from "./hucre";
 import type { Izgara } from "./hucre";
 
@@ -197,7 +198,12 @@ export interface YerlesimPlani {
   /** `parsel_al` adımları (sınıf başına bir komut), sırasıyla. */
   parseller: ParselAdimi[];
   arsaMili: number;
+  /** Yapı parası (mili-₺); ilk-yapı indirimi uygulanmışsa indirimli. */
   yapiMili: number;
+  /** Yapı malzemesi (mili-birim); ilk-yapı indirimi uygulanmışsa indirimli. */
+  malzeme: YapiMalzemesi[];
+  /** İlk-yapı indirimi bu yapıya uygulanıyor mu (çekirdekle aynı: yeni oyuncunun ilk `indirimliYapiSayisi` yapısı). */
+  indirimli: boolean;
   toplamMili: number;
   /** Hazine biliniyor ve toplamı karşılamıyor. */
   hazineYetmez: boolean;
@@ -218,6 +224,19 @@ export interface YerlesimBaglami {
   kamu?: (id: HucreId) => string | null;
   /** Oyuncunun bu ilçedeki ayrılmış hücre hakkı (`fiyat.ts` `ayrilmisHakki`); bilinmiyorsa var sayılır. */
   ayrilmisHakki?: AyrilmisHakki;
+  /**
+   * İlk-yapı indirimi (docs/06 §15.10): `ppm` = `mulk.yeniOyuncu.ilkYapiIndirimPpm`, `kalan` = oyuncunun kalan indirimli yapı hakkı
+   * (`indirimliYapiKalan`). Bilinmiyorsa (tanımsız) indirim uygulanmaz. Ölçek büyütme indirimsizdir.
+   */
+  indirim?: { ppm: number; kalan: number };
+}
+
+/**
+ * Çekirdeğin ilk-yapı indirimi: indirim tutarı S tabanından hesaplanır (`q - (q0 - ⌊q0·(1-ppm)⌋)`; S'de `⌊q·(1-ppm)⌋`), para ve malzemeye.
+ * Yalnız yapı kurulumunda; ölçek yükseltmesinde indirim yoktur.
+ */
+export function indirimliTutar(q: number, ppm: number): number {
+  return q - (q - carpBol(q, 1_000_000 - ppm, 1_000_000));
 }
 
 /** Yapı çapa hücresine (`cx`, `cy`) ve dönüşe göre yerleştirilirse ne olur? Saf; sunucuya gitmez. */
@@ -268,7 +287,10 @@ export function yerlesimPlani(yapi: YapiTanimi, cx: number, cy: number, donus: n
     ayrilmisSatilmis += ayrilmis;
   }
   const arsaMili = parseller.reduce((t, p) => t + p.mili, 0);
-  const toplamMili = arsaMili + yapi.paraMili;
+  const indirimli = b.indirim !== undefined && b.indirim.ppm > 0 && b.indirim.kalan > 0;
+  const yapiMili = indirimli ? indirimliTutar(yapi.paraMili, b.indirim!.ppm) : yapi.paraMili;
+  const malzeme = indirimli ? yapi.malzeme.map((m) => ({ ...m, miktar: indirimliTutar(m.miktar, b.indirim!.ppm) })) : yapi.malzeme;
+  const toplamMili = arsaMili + yapiMili;
   let neden = hucreler.find((h) => h.neden)?.neden ?? null;
   if (!neden && alinacak.length > 0) {
     let benimSayi = 0;
@@ -281,11 +303,11 @@ export function yerlesimPlani(yapi: YapiTanimi, cx: number, cy: number, donus: n
   if (!neden && b.surenInsaat >= esz) neden = `Aynı anda en çok ${esz} inşaat sürebilir`;
   const hazineYetmez = b.hazineMili !== null && toplamMili > b.hazineMili;
   if (!neden && hazineYetmez) neden = `Hazinede yeterli para yok (gereken ${paraMili(toplamMili, "yukari")})`;
-  return { yapi, hucreler, gecerli: neden === null, neden, alinacak, parseller, arsaMili, yapiMili: yapi.paraMili, toplamMili, hazineYetmez };
+  return { yapi, hucreler, gecerli: neden === null, neden, alinacak, parseller, arsaMili, yapiMili, malzeme, indirimli, toplamMili, hazineYetmez };
 }
 
 /** Yapı kartındaki malzeme satırı: "Çelik 30 · Makine Parçası 10" (mili-birim → birim). */
-export function malzemeMetni(y: YapiTanimi): string {
+export function malzemeMetni(y: Pick<YapiTanimi, "malzeme">): string {
   return y.malzeme.map((m) => `${m.ad} ${fmt(m.miktar / 1000)}`).join(" · ");
 }
 
