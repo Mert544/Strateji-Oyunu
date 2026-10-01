@@ -229,14 +229,8 @@ function baslat(): void {
       s.askida = a;
     },
     mulkPaneli: (p) => {
-      panel.mulkKipiKur(p);
-      // Mülk kipinde küre güneşi mutlak saatte (epoch + t, sunucunun zamanı); çevrimdışı demo eski varsayımla kalır
-      if (sahne)
-        sahne.mutlakZamanKaynagi = () => {
-          const h = p.simSaat();
-          return h === null ? null : p.epochMs() + h * 3_600_000;
-        };
-      // Küredeki mülk işaretleri: oyuncunun hücresi olan ilçelerin merkezleri; veri değişince yenilenir (hiyerarşi bellekte)
+      // Küredeki mülk işaretleri: oyuncunun hücresi olan ilçelerin merkezleri (hiyerarşi bellekte). Panelin tek aboneliğine
+      // bağlanır (ek yoklama ya da ağ okuması yok): panel veri değişimini her bildirdiğinde işaretler de yenilenir.
       const isaretle = (): void => {
         const oz = document.hidden ? null : haritaDenetci?.mulkBaglantisi()?.ozet?.();
         if (!oz) return;
@@ -244,8 +238,14 @@ function baslat(): void {
           hiyerarsiYukle().then((h) => s.mulkIsaretleriAyarla(oz.ilceHucre.flatMap(([k, n]) => (n > 0 && h.ilceler.get(k) ? [h.ilceler.get(k)!.merkez] : [])))),
         );
       };
+      panel.mulkKipiKur({ ...p, dinle: (f) => p.dinle(() => { f(); isaretle(); }) });
+      // Mülk kipinde küre güneşi mutlak saatte (epoch + t, sunucunun zamanı); çevrimdışı demo eski varsayımla kalır
+      if (sahne)
+        sahne.mutlakZamanKaynagi = () => {
+          const h = p.simSaat();
+          return h === null ? null : p.epochMs() + h * 3_600_000;
+        };
       isaretle();
-      p.dinle(isaretle);
     },
   });
 
