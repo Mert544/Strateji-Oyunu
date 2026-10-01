@@ -50,3 +50,17 @@ describe("para biçimi (T-1: 1.234 ₺)", () => {
     expect(paraMili(-12_500)).toBe(`−12${NB}₺`); // işaretten bağımsız aşağı = mutlak değerde aşağı
   });
 });
+
+describe("kalan süre metni (B6: harita etiketi 'Çiftlik · İskele · 7 dk')", () => {
+  it("dakikaya yukarı yuvarlı; saatte sureMetni; bitmek üzereyken 1 dk", async () => {
+    const { kalanSureMetni } = await import("../src/arayuz/bicim");
+    expect(kalanSureMetni(61_000)).toBe("2 dk");
+    expect(kalanSureMetni(60_000)).toBe("1 dk");
+    expect(kalanSureMetni(7 * 60_000 - 1)).toBe("7 dk");
+    expect(kalanSureMetni(0)).toBe("1 dk");
+    expect(kalanSureMetni(-5)).toBe("1 dk");
+    expect(kalanSureMetni(59 * 60_000 + 1000)).toBe("1 sa"); // 60 dk -> sureMetni(1)
+    expect(kalanSureMetni(90 * 60_000)).toBe("1,5 sa");
+    expect(kalanSureMetni(26 * 3_600_000)).toBe("1 gün 2 sa");
+  });
+});

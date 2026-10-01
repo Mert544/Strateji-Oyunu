@@ -181,6 +181,12 @@ export function sureMetni(saat: number): string {
   return k === 0 ? `${g} gün` : `${g} gün ${k} sa`;
 }
 
+/** Kalan süre (ms), DAKİKAYA YUKARI yuvarlı: 61 sn -> "2 dk", 59 dk 10 sn -> "60 dk" yerine "1 sa", 1,5 saat -> "1,5 sa"; ≤ 0 -> "1 dk" (bitmek üzere). */
+export function kalanSureMetni(ms: number): string {
+  const dk = Math.max(1, Math.ceil(ms / 60_000));
+  return dk < 60 ? `${dk} dk` : sureMetni(dk / 60);
+}
+
 /** "Geçen: N gün SS sa". */
 export function gecenMetni(saat: number): string {
   return `${Math.floor(saat / 24)} gün ${saat % 24} sa`;

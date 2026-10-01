@@ -18,7 +18,7 @@ import type { DefterOdulu, KamuGrubuKaresi } from "@bolge/protokol";
 import icerikHam from "../../../veri/icerik/icerik.json";
 import parametreHam from "../../../veri/icerik/parametreler.json";
 import { bildir } from "../arayuz/bildirim";
-import { esc, fmt, para, paraMili, simSaatMetni, yuzde } from "../arayuz/bicim";
+import { esc, fmt, kalanSureMetni, para, paraMili, simSaatMetni, yuzde } from "../arayuz/bicim";
 import { icerikTablosu } from "../komut/tablo";
 import type { Icerik } from "../komut/tablo";
 import { arsaFiyati, arsaKenarlari, arsalariTuret, arsaSinirlari, arsaSiniflari, hucredenArsa, kamuBilgisi, kamuBloklari, onerilenArsa } from "./arsa";
@@ -1248,7 +1248,7 @@ export class HaritaGorunumu {
     const ben = this.baglanti.ben.id;
     const sure = (y: (typeof yapilar)[number]): number => (this.katalog.find((k) => k.id === y.tur)?.ilkGunSureSaat ?? 1) * 3_600_000;
     // Aşama ancak birkaç saatte bir değişir: iki saniyelik tazelemede aynıysa kaynak yeniden yüklenmez (harita boşta kalsın)
-    const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${y.bitis === undefined ? 0 : 1}`).join(";")}`;
+    const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${y.bitis === undefined ? 0 : 1}${cizim.etiket && y.bitis !== undefined && y.bitis > simdi ? `:${Math.ceil((y.bitis - simdi) / 60_000)}` : ""}`).join(";")}`; // etiketteki kalan süre dakikada bir tazelenir (B6)
     if (!zorla && imza === this.yapiImzasi) return;
     this.yapiImzasi = imza;
     for (const m of this.yapiEtiketleri) m.remove();
@@ -1280,7 +1280,8 @@ export class HaritaGorunumu {
       e.dataset["yapi"] = y.anahtar;
       e.setAttribute("aria-hidden", "true");
       const ad = y.tur ? (this.katalog.find((k) => k.id === y.tur)?.ad ?? y.tur) : "Yapı";
-      e.textContent = y.yukseltme ? `${ad} · Büyütme` : a === 3 ? ad : `${ad} · ${y.bitis === undefined ? "İnşaat" : ASAMA_ADI[a]}`;
+      const kalan = y.bitis !== undefined && y.bitis > simdi ? ` · ${kalanSureMetni(y.bitis - simdi)}` : ""; // B6: "Çiftlik · İskele · 7 dk"
+      e.textContent = y.yukseltme ? `${ad} · Büyütme${kalan}` : a === 3 ? ad : `${ad} · ${y.bitis === undefined ? "İnşaat" : ASAMA_ADI[a]}${kalan}`;
       this.yapiEtiketleri.push(new maplibregl.Marker({ element: e, anchor: "center" }).setLngLat([xtenBoylam(sx / y.hucreler.length), ytenEnlem(sy / y.hucreler.length)]).addTo(this.harita));
     }
     src.setData({ type: "FeatureCollection", features: f });
