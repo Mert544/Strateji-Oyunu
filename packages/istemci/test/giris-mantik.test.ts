@@ -3,7 +3,8 @@
  * ekran durumu makinesi. Gerçek sunucu ve çerez kavanozu `giris-ws.test.ts`'tedir.
  */
 import { describe, expect, it } from "vitest";
-import { GirisApi, GirisHatasi, httpTabani } from "../src/giris/api";
+import { GIRIS_YOLLARI as PROTOKOL_YOLLARI, GirisBenYanitiSemasi, GirisBiletYanitiSemasi, GirisHatasiSemasi, GirisIstekYanitiSemasi, GirisOnayYanitiSemasi } from "@bolge/protokol";
+import { GIRIS_HATA_KODLARI, GIRIS_YOLLARI, GirisApi, GirisHatasi, httpTabani } from "../src/giris/api";
 import type { GirisSonucu } from "../src/giris/api";
 import { GirisAkisi, TEKRAR_SINIRI_ESIGI, YENIDEN_GONDER_MS } from "../src/giris/akis";
 import { epostaAnahtari, epostaKontrol, epostaTemizle } from "../src/giris/eposta";
@@ -119,6 +120,46 @@ function sahteFetch(f: (c: Cagri) => Response | Promise<Response>): { fetch: typ
   }) as typeof fetch;
   return { fetch: fn, cagrilar };
 }
+
+describe("protokol kopyaları (kabuk protokolü içe aktarmaz; eşitlik burada korunur)", () => {
+  it("yollar ve hata kodları protokolle aynı", () => {
+    // Kabuğun kopyası protokolün altkümesidir (görünen ad uçları `ad`, `adOner` ve `ad_*` kodları G9-c'de eklenir)
+    for (const [k, v] of Object.entries(GIRIS_YOLLARI)) expect(PROTOKOL_YOLLARI[k as keyof typeof PROTOKOL_YOLLARI], k).toBe(v);
+    const protokolKodlari: readonly string[] = GirisHatasiSemasi.shape.kod.options;
+    for (const k of GIRIS_HATA_KODLARI) expect(protokolKodlari, k).toContain(k);
+  });
+
+  it("elle yazılmış doğrulayıcılar protokol şemalarıyla aynı kararı verir (geçerli ve bozuk örnekler)", async () => {
+    const ornekler: Array<{ yol: "istek" | "onay" | "bilet" | "ben"; sema: { safeParse(v: unknown): { success: boolean } }; gecerli: object[]; bozuk: unknown[] }> = [
+      { yol: "istek", sema: GirisIstekYanitiSemasi, gecerli: [{ tamam: true, gecerlilikSn: 600 }], bozuk: [{ tamam: true }, { tamam: true, gecerlilikSn: 0 }, { tamam: true, gecerlilikSn: 1.5 }, { tamam: false, gecerlilikSn: 5 }, [], null, "x"] },
+      { yol: "onay", sema: GirisOnayYanitiSemasi, gecerli: [{ tamam: true, yeniHesap: false, oyuncu: "o_1" }], bozuk: [{ tamam: true, yeniHesap: "evet", oyuncu: "o_1" }, { tamam: true, yeniHesap: true, oyuncu: "" }, { tamam: true, yeniHesap: true, oyuncu: "x".repeat(33) }, { yeniHesap: true, oyuncu: "o" }] },
+      { yol: "bilet", sema: GirisBiletYanitiSemasi, gecerli: [{ tamam: true, bilet: "bil1.x", bitis: 5, oyuncu: "o_1" }], bozuk: [{ tamam: true, bilet: "", bitis: 5, oyuncu: "o" }, { tamam: true, bilet: "b", bitis: 0, oyuncu: "o" }, { tamam: true, bilet: "b", bitis: 5 }, { tamam: true, bilet: "x".repeat(4097), bitis: 5, oyuncu: "o" }] },
+      { yol: "ben", sema: GirisBenYanitiSemasi, gecerli: [{ tamam: true, eposta: "a@b.co", oyuncu: "o_1", oturumBitis: 5, oturumMutlakBitis: 6 }], bozuk: [{ tamam: true, eposta: 1, oyuncu: "o", oturumBitis: 5, oturumMutlakBitis: 6 }, { tamam: true, eposta: "a", oyuncu: "o", oturumBitis: 0, oturumMutlakBitis: 6 }] },
+    ];
+    for (const o of ornekler) {
+      for (const g of o.gecerli) {
+        expect(o.sema.safeParse(g).success, `${o.yol} protokol`).toBe(true);
+        const r = await (new GirisApi({ taban: "", fetch: sahteFetch(() => yanit(200, g)).fetch })[o.yol === "istek" ? "istek" : o.yol === "onay" ? "onayla" : o.yol === "bilet" ? "bilet" : "ben"] as (a?: string) => Promise<GirisSonucu<unknown>>)("x");
+        expect(r.tamam, `${o.yol} elle`).toBe(true);
+      }
+      for (const bz of o.bozuk) {
+        expect(o.sema.safeParse(bz).success, `${o.yol} protokol bozuk ${JSON.stringify(bz)}`).toBe(false);
+        const r = await (new GirisApi({ taban: "", fetch: sahteFetch(() => yanit(200, JSON.stringify(bz))).fetch })[o.yol === "istek" ? "istek" : o.yol === "onay" ? "onayla" : o.yol === "bilet" ? "bilet" : "ben"] as (a?: string) => Promise<GirisSonucu<unknown>>)("x");
+        expect(r, `${o.yol} elle bozuk ${JSON.stringify(bz)}`).toMatchObject({ tamam: false, kod: "yanit" });
+      }
+    }
+    // hata gövdesi: geçerli kodlar kabul, bilinmeyen kod ve eksik mesaj reddedilir (yanit)
+    for (const kod of GIRIS_HATA_KODLARI) {
+      const g = { tamam: false, kod, mesaj: "m", ...(kod === "hiz_siniri" ? { beklemeSn: 3 } : {}) };
+      expect(GirisHatasiSemasi.safeParse(g).success).toBe(true);
+      expect(await new GirisApi({ taban: "", fetch: sahteFetch(() => yanit(400, g)).fetch }).ben()).toMatchObject({ tamam: false, kod });
+    }
+    for (const bz of [{ tamam: false, kod: "bilinmeyen", mesaj: "m" }, { tamam: false, kod: "origin" }, { tamam: false, kod: "hiz_siniri", mesaj: "m", beklemeSn: -1 }]) {
+      expect(GirisHatasiSemasi.safeParse(bz).success).toBe(false);
+      expect(await new GirisApi({ taban: "", fetch: sahteFetch(() => yanit(400, bz)).fetch }).ben()).toMatchObject({ tamam: false, kod: "yanit" });
+    }
+  });
+});
 
 describe("GirisApi", () => {
   it("istek: URL, yöntem, JSON gövde, credentials include; şema doğrulanmış yanıt", async () => {

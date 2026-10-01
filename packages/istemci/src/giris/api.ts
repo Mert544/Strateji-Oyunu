@@ -1,20 +1,60 @@
 /**
- * Giriş HTTP istemcisi (G9-a; saf mantık, DOM yok): `@bolge/protokol` `giris.ts` sözleşmesinin ince sarmalayıcısı.
+ * Giriş HTTP istemcisi (G9-a; saf mantık, DOM yok): `@bolge/protokol` `giris.ts` sözleşmesinin ince sarmalayıcısı (çalışma zamanında protokol içe aktarılmaz: aşağıdaki boyut notu).
  *
  * - Çerez (httpOnly oturum çerezi) tarayıcıdadır: istekler `credentials: "include"` ile gider, kod çerezi OKUYAMAZ ve token'ı
  *   `localStorage`'a YAZMAZ. Sunucu ile AYNI SİTEDE olunmalıdır (SameSite=Lax); `Origin` başlığını tarayıcı koyar.
- * - Her yanıt sunucu şemasıyla doğrulanır; bozuk yanıt `yanit` hatasıdır. Hata gövdesi `{tamam:false, kod, mesaj, beklemeSn?}`;
+ * - Her yanıt sunucu şemasına karşılık gelen küçük bir işlevle doğrulanır; bozuk yanıt `yanit` hatasıdır. Hata gövdesi `{tamam:false, kod, mesaj, beklemeSn?}`;
  *   `mesaj` KULLANILMAZ (kod → metin tablosu istemcidedir: `hata.ts`).
  * - Ağ hatası `ag_hatasi`, zaman aşımı `zaman_asimi` kodudur; hiçbir yöntem fırlatmaz (sonuç nesnesi döner), `GirisHatasi` yalnız `BiletSaglayici`
  *   gibi "fırlatan" tüketiciler içindir.
  * - Hesabın var olup olmadığı yanıttan ayrılamaz (K2 sızdırmaz); burada da hiçbir ayrım yapılmaz.
  */
-import { GIRIS_YOLLARI, GirisBenYanitiSemasi, GirisBiletYanitiSemasi, GirisHatasiSemasi, GirisIstekYanitiSemasi, GirisOnayYanitiSemasi, GirisTamamSemasi } from "@bolge/protokol";
 import type { GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
 
-/** Protokol şemalarının kullandığımız yüzü (istemci paketi `zod`a doğrudan bağlı değildir). */
-interface Sema<T> {
-  safeParse(v: unknown): { success: true; data: T } | { success: false };
+/*
+ * ÖNEMLİ (boyut): bu dosya kabuk paketine (dunya.html) girer. `@bolge/protokol` ÇALIŞMA ZAMANINDA içe aktarılmaz (zod ve bütün ws şemaları
+ * kabuğa +25 KB gzip ekler; protokol yalnız harita.js'tedir): yollar ve kodlar burada küçük sabitlerdir, yanıt denetimi elle yazılmış
+ * küçük işlevlerdir. `test/giris-mantik.test.ts` bu kopyaların protokol şemalarıyla AYNI olduğunu sınar (yol, kod listesi, örnek yanıtlar).
+ */
+export const GIRIS_YOLLARI = {
+  istek: "/giris/istek",
+  onay: "/giris/onay",
+  bilet: "/giris/bilet",
+  ben: "/giris/ben",
+  cikis: "/giris/cikis",
+  cikisTumu: "/giris/cikis-tumu",
+} as const;
+
+/** `GirisHataKodu` (protokol `giris.ts`) değerlerinin kopyası; sınama eşitliği korur. */
+export const GIRIS_HATA_KODLARI: readonly GirisHataKodu[] = ["gecersiz_istek", "gecersiz_eposta", "gecici_eposta", "hiz_siniri", "baglanti_gecersiz", "tarayici_uyumsuz", "oturum_yok", "origin", "yontem", "bulunamadi", "ic_hata"];
+
+type Nesne = Record<string, unknown>;
+const nesneMi = (v: unknown): v is Nesne => typeof v === "object" && v !== null && !Array.isArray(v);
+const tamsayi = (v: unknown, enAz: number): v is number => typeof v === "number" && Number.isInteger(v) && v >= enAz;
+const dizge = (v: unknown, enAz: number, enCok: number): v is string => typeof v === "string" && v.length >= enAz && v.length <= enCok;
+
+/** Yanıt doğrulayıcı: geçerliyse (tipli) değeri, değilse null döndürür. */
+type Dogrula<T> = (v: unknown) => T | null;
+
+const dogrulaIstek: Dogrula<GirisIstekYaniti> = (v) => (nesneMi(v) && v["tamam"] === true && tamsayi(v["gecerlilikSn"], 1) ? { tamam: true, gecerlilikSn: v["gecerlilikSn"] } : null);
+const dogrulaOnay: Dogrula<GirisOnayYaniti> = (v) =>
+  nesneMi(v) && v["tamam"] === true && typeof v["yeniHesap"] === "boolean" && dizge(v["oyuncu"], 1, 32) ? { tamam: true, yeniHesap: v["yeniHesap"], oyuncu: v["oyuncu"] } : null;
+const dogrulaBilet: Dogrula<GirisBiletYaniti> = (v) =>
+  nesneMi(v) && v["tamam"] === true && dizge(v["bilet"], 1, 4096) && tamsayi(v["bitis"], 1) && dizge(v["oyuncu"], 1, 32) ? { tamam: true, bilet: v["bilet"], bitis: v["bitis"], oyuncu: v["oyuncu"] } : null;
+const dogrulaBen: Dogrula<GirisBenYaniti> = (v) =>
+  nesneMi(v) && v["tamam"] === true && typeof v["eposta"] === "string" && dizge(v["oyuncu"], 1, 32) && tamsayi(v["oturumBitis"], 1) && tamsayi(v["oturumMutlakBitis"], 1)
+    ? { tamam: true, eposta: v["eposta"], oyuncu: v["oyuncu"], oturumBitis: v["oturumBitis"], oturumMutlakBitis: v["oturumMutlakBitis"] }
+    : null;
+const dogrulaTamam: Dogrula<{ tamam: true }> = (v) => (nesneMi(v) && v["tamam"] === true ? { tamam: true } : null);
+
+/** Hata gövdesi `{tamam:false, kod, mesaj, beklemeSn?}`; `mesaj` okunmaz ama biçim denetlenir. */
+function hataGovdesi(v: unknown): { kod: GirisHataKodu; beklemeSn?: number } | null {
+  if (!nesneMi(v) || v["tamam"] !== false || typeof v["mesaj"] !== "string") return null;
+  const kod = v["kod"];
+  if (typeof kod !== "string" || !(GIRIS_HATA_KODLARI as readonly string[]).includes(kod)) return null;
+  const bekleme = v["beklemeSn"];
+  if (bekleme !== undefined && !tamsayi(bekleme, 0)) return null;
+  return { kod: kod as GirisHataKodu, ...(bekleme !== undefined ? { beklemeSn: bekleme } : {}) };
 }
 
 /**
@@ -78,36 +118,36 @@ export class GirisApi {
 
   /** `POST /giris/istek`: her geçerli adres için aynı 202 (hesap varlığı, sınır ve posta sonucu sızmaz). */
   istek(eposta: string): Promise<GirisSonucu<GirisIstekYaniti>> {
-    return this.cagir(GIRIS_YOLLARI.istek, "POST", GirisIstekYanitiSemasi, { eposta });
+    return this.cagir(GIRIS_YOLLARI.istek, "POST", dogrulaIstek, { eposta });
   }
 
   /** `POST /giris/onay {j}`: jetonu oturuma çevirir (çerez tarayıcıya yazılır). */
   onayla(jeton: string): Promise<GirisSonucu<GirisOnayYaniti>> {
-    return this.cagir(GIRIS_YOLLARI.onay, "POST", GirisOnayYanitiSemasi, { j: jeton });
+    return this.cagir(GIRIS_YOLLARI.onay, "POST", dogrulaOnay, { j: jeton });
   }
 
   /** `POST /giris/bilet` (çerezle): 60 sn ömürlü, tek kullanımlık ws bileti. */
   bilet(): Promise<GirisSonucu<GirisBiletYaniti>> {
-    return this.cagir(GIRIS_YOLLARI.bilet, "POST", GirisBiletYanitiSemasi);
+    return this.cagir(GIRIS_YOLLARI.bilet, "POST", dogrulaBilet);
   }
 
   /** `GET /giris/ben`: oturum var mı (yoksa `oturum_yok`). */
   ben(): Promise<GirisSonucu<GirisBenYaniti>> {
-    return this.cagir(GIRIS_YOLLARI.ben, "GET", GirisBenYanitiSemasi);
+    return this.cagir(GIRIS_YOLLARI.ben, "GET", dogrulaBen);
   }
 
   /** `POST /giris/cikis`: bu oturumu kapatır (idempotan). */
   cikis(): Promise<GirisSonucu<{ tamam: true }>> {
-    return this.cagir(GIRIS_YOLLARI.cikis, "POST", GirisTamamSemasi);
+    return this.cagir(GIRIS_YOLLARI.cikis, "POST", dogrulaTamam);
   }
 
   /** `POST /giris/cikis-tumu`: hesabın bütün oturumlarını kapatır. */
   cikisTumu(): Promise<GirisSonucu<{ tamam: true }>> {
-    return this.cagir(GIRIS_YOLLARI.cikisTumu, "POST", GirisTamamSemasi);
+    return this.cagir(GIRIS_YOLLARI.cikisTumu, "POST", dogrulaTamam);
   }
 
   /** Ortak çağrı: asla fırlatmaz. */
-  private async cagir<T>(yol: string, yontem: "GET" | "POST", sema: Sema<T>, govde?: object): Promise<GirisSonucu<T>> {
+  private async cagir<T>(yol: string, yontem: "GET" | "POST", dogrula: Dogrula<T>, govde?: object): Promise<GirisSonucu<T>> {
     const kontrol = new AbortController();
     const zamanlayici = setTimeout(() => kontrol.abort(), this.zamanAsimiMs);
     try {
@@ -130,15 +170,15 @@ export class GirisApi {
         json = null;
       }
       if (r.ok) {
-        const d = sema.safeParse(json);
-        return d.success ? { tamam: true, veri: d.data } : { tamam: false, kod: "yanit", durum: r.status };
+        const d = dogrula(json);
+        return d !== null ? { tamam: true, veri: d } : { tamam: false, kod: "yanit", durum: r.status };
       }
-      const h = GirisHatasiSemasi.safeParse(json);
+      const h = hataGovdesi(json);
       const retry = Number(r.headers.get("retry-after"));
       const retrySn = Number.isFinite(retry) && retry > 0 ? Math.ceil(retry) : undefined;
-      if (h.success) {
-        const bekleme = h.data.beklemeSn ?? (h.data.kod === "hiz_siniri" ? retrySn : undefined);
-        return { tamam: false, kod: h.data.kod, durum: r.status, ...(bekleme !== undefined ? { beklemeSn: bekleme } : {}) };
+      if (h !== null) {
+        const bekleme = h.beklemeSn ?? (h.kod === "hiz_siniri" ? retrySn : undefined);
+        return { tamam: false, kod: h.kod, durum: r.status, ...(bekleme !== undefined ? { beklemeSn: bekleme } : {}) };
       }
       // Sunucu dışı bir yanıt (ters vekil hatası vb.): durumdan en yakın kod; yoksa `yanit`
       if (r.status === 429) return { tamam: false, kod: "hiz_siniri", durum: 429, ...(retrySn !== undefined ? { beklemeSn: retrySn } : {}) };

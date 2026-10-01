@@ -5,6 +5,7 @@
 import "./tasarim/tema.css";
 import "./tasarim/temel.css";
 import "./arayuz/stil.css";
+import "./arayuz/giris.css";
 import { ikonlariKur } from "./tasarim/ikon-veri";
 import { ikon } from "./tasarim/ikon";
 import SimIsci from "./isci/sim.worker?worker&inline";
@@ -14,6 +15,8 @@ import param from "../../veri/icerik/parametreler.json";
 import dunyaTopo from "./veri/dunya-ulkeler-kure.topo.json";
 import type { HaritaDosyasi, IcerikDosyasi, Parametreler } from "@bolge/veri";
 import { bildir } from "./arayuz/bildirim";
+import { girisBaslat } from "./giris/baslat";
+import { girisKipi } from "./giris/kip";
 import { devletKartlari, devletSecimiHtml, secimBelirteci, secimCoz } from "./arayuz/devlet-sec";
 import { Etiketler } from "./arayuz/etiketler";
 import { Panel } from "./arayuz/panel";
@@ -426,8 +429,21 @@ function baslat(): void {
 
 window.addEventListener("error", (e) => hataGoster("Hata: " + e.message));
 window.addEventListener("unhandledrejection", (e) => hataGoster("Hata: " + String(e.reason)));
+/**
+ * Açılış: `?sunucu=ws://...` var ve `?token=` yoksa e-posta girişi (G9): giriş ekranı gösterilir, uygulama `oyun` ekranına gelinene dek
+ * BAŞLAMAZ. Geliştirme token'ı (`?token=`) ve sahte bağdaştırıcı (`?sunucu` yok) giriş ekranı olmadan aynen açılır.
+ */
+function acilis(): void {
+  const kip = girisKipi(location.search);
+  if (kip.kip !== "eposta") return baslat();
+  girisBaslat(kip).oyunHazir.then(
+    () => baslat(),
+    (e: unknown) => hataGoster("Giriş başlatılamadı: " + String(e)),
+  );
+}
+
 try {
-  baslat();
+  acilis();
 } catch (e) {
   hataGoster("Başlatma hatası: " + (e instanceof Error ? e.message + "\n" + (e.stack ?? "") : String(e)));
 }
