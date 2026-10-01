@@ -35,6 +35,12 @@ describe.skipIf(!existsSync(MANIFEST))("gerçek izgara manifesti (Alfa-0 ilçele
     expect(girdi.ilceler.map((c) => c.id)).toEqual(manifest.ilceler.map((c) => c.kimlik));
     expect(girdi.iller.length).toBeGreaterThanOrEqual(1);
     for (const il of girdi.iller) expect(il.bolge).toMatch(/\S/);
+    // Manifestte ilçe nüfusu varsa (O3 G7) aynen ParselIzgaraIlce.nufus'a geçer; yoksa alan yok.
+    for (const c of manifest.ilceler) {
+      const gi = girdi.ilceler.find((x) => x.id === c.kimlik);
+      if (c.nufus !== undefined) expect(gi?.nufus, c.kimlik).toBe(c.nufus);
+      else expect("nufus" in (gi as object), c.kimlik).toBe(false);
+    }
     izgarayiVeriyeBagla(veri, girdi);
     const sim = Simulasyon.olustur(veri, 3);
     expect(sim.durumOzeti()).toMatch(/^[0-9a-f]{16}$/);

@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ILCE_NUFUS_ENCOK, parselIzgaraHatalari } from "@bolge/veri";
 import { IzgaraHatasi, hiyerarsiCoz, hiyerarsiOku, izgaraGirdisiKur, izgaraManifestiCoz, izgaraManifestiOku, izgaralariYukle, varsayilanIzgaraKoku } from "../src/izgara/manifest";
 import { ILCELER, bhiBaytlari, izgaraDizini, sentetikDurum, testCozucusu } from "./izgara-yardimci";
 import type { IzgaraDizini } from "./izgara-yardimci";
@@ -212,6 +213,31 @@ describe("çekirdek girdisi: il, bölge ve adlar hiyerarşiden", () => {
     const yanlisIl = { bolgeler: [{ kimlik: "kuzey", iller: [{ kimlik: "tr_99", ad: "X", ilceler: [{ kimlik: "tr_16_gemlik", ad: "G" }, { kimlik: "tr_41_korfez", ad: "K" }] }] }] };
     expect(() => kur(yanlisIl, ["kuzey"])).toThrow(/ilinin hiyerarsiyle uyusmuyor: tr_16_gemlik manifest tr_16, hiyerarsi tr_99/);
     expect(() => kur(HIYERARSI, [])).toThrow(IzgaraHatasi);
+  });
+
+  it("ilçe nüfusu: manifestte VARSA ParselIzgaraIlce.nufus'a aynen geçer; yoksa alan YAZILMAZ; çekirdeğin girdi denetimi geçer", async () => {
+    d = await izgaraDizini([{ ...ILCELER[0] as (typeof ILCELER)[number], nufus: 124_400 }, ILCELER[1] as (typeof ILCELER)[number]]);
+    const manifest = izgaraManifestiOku(d.manifestYolu);
+    expect(manifest.ilceler.map((c) => c.nufus)).toEqual([124_400, undefined]);
+    expect("nufus" in (manifest.ilceler[1] as object)).toBe(false);
+    const y = izgaralariYukle(manifest, d.kok, bag);
+    const g = izgaraGirdisiKur(y, { ad: "izgara-manifest", harita: "mini-6", hiyerarsi: hiyerarsiCoz(HIYERARSI), haritaBolgeleri: new Set(["kuzey", "guney"]) });
+    expect(g.ilceler[0]?.nufus).toBe(124_400);
+    expect("nufus" in (g.ilceler[1] as object)).toBe(false); // yok: alan yazılmaz
+    expect(parselIzgaraHatalari(g)).toEqual([]);
+  });
+
+  it("gecersiz nufus (0, negatif, ondalik, metin, mantiksal, ust sinir asimi) manifest asamasinda reddedilir", async () => {
+    d = await izgaraDizini();
+    for (const kotu of [0, -5, 1.5, "100", true, null, ILCE_NUFUS_ENCOK + 1, Number.MAX_SAFE_INTEGER]) {
+      const ham = structuredClone(d.ham);
+      (ham.ilceler[0] as { nufus?: unknown }).nufus = kotu;
+      expect(() => izgaraManifestiCoz(ham), String(kotu)).toThrow(/nufus 1 ile 20000000 arasinda tamsayi olmali/);
+    }
+    const sinir = structuredClone(d.ham);
+    (sinir.ilceler[0] as { nufus?: unknown }).nufus = ILCE_NUFUS_ENCOK;
+    (sinir.ilceler[1] as { nufus?: unknown }).nufus = 1;
+    expect(izgaraManifestiCoz(sinir).ilceler.map((c) => c.nufus)).toEqual([ILCE_NUFUS_ENCOK, 1]);
   });
 
   it("hiyerarşi biçimi ve dosya okuma: bozuk yapı, eksik dosya, geçerli dosya", async () => {

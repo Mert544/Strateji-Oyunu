@@ -15,7 +15,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
-import { bhiCoz, izgaraSay, parselIzgaraHatalari } from "@bolge/veri";
+import { ILCE_NUFUS_ENCOK, bhiCoz, izgaraSay, parselIzgaraHatalari } from "@bolge/veri";
 import type { ParselIzgaraGirdisi } from "@bolge/veri";
 import type { CekirdekVeriPaketi } from "@bolge/cekirdek";
 
@@ -39,6 +39,11 @@ export interface IzgaraManifestIlcesi {
   ad: string;
   /** İl kimliği (`tr_16`); bölge eşlemesi manifestte YOKTUR (`IlBolgeEslemesi`). */
   il: string;
+  /**
+   * İlçe nüfusu (isteğe bağlı; O3 veri hattı, TÜİK ADNKS): tamsayı, 1..`ILCE_NUFUS_ENCOK`. VARSA `ParselIzgaraIlce.nufus`'a (çekirdek girdisi; yerel pazar talebi, G7)
+   * aynen geçirilir; yoksa alan YAZILMAZ (davranış bugünküyle aynı).
+   */
+  nufus?: number;
   bhi: IzgaraDosyasi;
   cerceve: { x0: number; y0: number; genislik: number; yukseklik: number };
   hucre: { icerde: number; uygun: number };
@@ -104,6 +109,7 @@ export function izgaraManifestiCoz(ham: unknown, kaynak = "manifest"): IzgaraMan
       if (typeof c.ad !== "string" || c.ad === "") hatalar.push(`${yer}: ad gecersiz`);
       if (typeof c.il !== "string" || c.il === "") hatalar.push(`${yer}: il gecersiz`);
       if (nesne(bhi) && typeof bhi.yol === "string" && bhi.yol !== "" && !yolGuvenliMi(bhi.yol)) hatalar.push(`${yer}: bhi.yol kok disina cikamaz (mutlak yol ya da ".." yok): ${c.kimlik as string}`);
+      if (c.nufus !== undefined && (!Number.isSafeInteger(c.nufus) || (c.nufus as number) < 1 || (c.nufus as number) > ILCE_NUFUS_ENCOK)) hatalar.push(`${yer}: nufus 1 ile ${ILCE_NUFUS_ENCOK} arasinda tamsayi olmali: ${String(c.kimlik)}`);
       if (!nesne(bhi) || typeof bhi.yol !== "string" || bhi.yol === "" || !poz(bhi.bayt) || typeof bhi.sha256 !== "string" || !SHA256.test(bhi.sha256) || !poz(bhi.hamBayt)) hatalar.push(`${yer}: bhi {yol, bayt, sha256, hamBayt} gecersiz`);
       if (!nesne(cer) || !tam(cer.x0) || !tam(cer.y0) || !poz(cer.genislik) || !poz(cer.yukseklik)) hatalar.push(`${yer}: cerceve {x0, y0, genislik, yukseklik} gecersiz`);
       if (!nesne(huc) || !poz(huc.icerde) || !tam(huc.uygun) || (huc.uygun as number) < 0) hatalar.push(`${yer}: hucre {icerde, uygun} gecersiz`);
@@ -115,6 +121,7 @@ export function izgaraManifestiCoz(ham: unknown, kaynak = "manifest"): IzgaraMan
           kimlik: c.kimlik as string,
           ad: c.ad as string,
           il: c.il as string,
+          ...(c.nufus !== undefined ? { nufus: c.nufus as number } : {}),
           bhi: { yol: b.yol as string, bayt: b.bayt as number, sha256: b.sha256 as string, hamBayt: b.hamBayt as number },
           cerceve: { x0: k.x0 as number, y0: k.y0 as number, genislik: k.genislik as number, yukseklik: k.yukseklik as number },
           hucre: { icerde: h.icerde as number, uygun: h.uygun as number },
@@ -254,7 +261,7 @@ export function izgaraGirdisiKur(yuklenen: readonly YuklenenIlce[], s: { ad: str
     if (!s.haritaBolgeleri.has(h.bolge)) throw new IzgaraHatasi(`ilcenin bolgesi haritada yok: ${ilce.kimlik} -> bolge ${h.bolge} (harita ${s.harita})`);
     if (!iller.has(h.il)) iller.set(h.il, { id: h.il, ad: h.ilAd, bolge: h.bolge });
     else if (iller.get(h.il)?.bolge !== h.bolge) throw new IzgaraHatasi(`il birden cok bolgede: ${h.il}`);
-    ilceler.push({ id: ilce.kimlik, ad: h.ilceAd, il: h.il, bolge: h.bolge, izgara });
+    ilceler.push({ id: ilce.kimlik, ad: h.ilceAd, il: h.il, bolge: h.bolge, izgara, ...(ilce.nufus !== undefined ? { nufus: ilce.nufus } : {}) });
   }
   const girdi: IzgaraGirdisi = { ad: s.ad, harita: s.harita, tohum: s.tohum ?? IZGARA_TOHUMU, iller: [...iller.values()], ilceler };
   // Çekirdeğin kendi yapısal denetimi (yinelenen kimlik, il/bölge uyumu, çerçeve z20 aralığı): açılışta okunur hata.

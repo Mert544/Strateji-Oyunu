@@ -16,7 +16,7 @@ import { mulkVerisi } from "./yardimci";
 
 const ILCELER: TestIlcesi[] = [
   // Manifest ilçeleri kimliğe göre sıralıdır.
-  { kimlik: "sn_m_liman_merkez", ad: "Liman Merkez", il: "sn_m_liman", x0: 90, y0: 95, genislik: 68, yukseklik: 60, tohum: 2 },
+  { kimlik: "sn_m_liman_merkez", ad: "Liman Merkez", il: "sn_m_liman", x0: 90, y0: 95, genislik: 68, yukseklik: 60, tohum: 2, nufus: 183_077 },
   { kimlik: "sn_m_ova_merkez", ad: "Ova Merkez", il: "sn_m_ova", x0: 900_000, y0: 905_000, genislik: 60, yukseklik: 56, tohum: 1 },
 ];
 const HIYERARSI = {
@@ -27,7 +27,7 @@ const HIYERARSI = {
 };
 
 /** Izgaradan JSON fikstür ilçesi (satır öncelikli; engel su > askeri > yol; K3 test yardımcısıyla aynı eşleme). */
-function izgaradanIlce(id: string, ad: string, il: string, bolge: string, ig: Izgara): ParselIlceTanimi {
+function izgaradanIlce(id: string, ad: string, il: string, bolge: string, ig: Izgara, nufus?: number): ParselIlceTanimi {
   const hucreler: ParselHucreTanimi[] = [];
   let uygun = 0;
   for (let dy = 0; dy < ig.yukseklik; dy++) {
@@ -44,7 +44,7 @@ function izgaradanIlce(id: string, ad: string, il: string, bolge: string, ig: Iz
     }
   }
   const sinif = ilceSinifiTuret(ig);
-  return { id, ad, il, bolge, sinif, seviye: ilceSeviyesiTuret(sinif), hucreSayisi: hucreler.length, uygunHucre: uygun, hucreler };
+  return { id, ad, il, bolge, sinif, seviye: ilceSeviyesiTuret(sinif), hucreSayisi: hucreler.length, uygunHucre: uygun, hucreler, ...(nufus !== undefined ? { nufus } : {}) };
 }
 
 let d: IzgaraDizini | null = null;
@@ -70,7 +70,7 @@ async function iki(): Promise<{ izgara: CekirdekVeriPaketi; json: CekirdekVeriPa
     tohum: girdi.tohum,
     zoom: 20,
     iller: girdi.iller.map((il) => ({ ...il })),
-    ilceler: girdi.ilceler.map((c) => izgaradanIlce(c.id, c.ad, c.il, c.bolge, c.izgara)),
+    ilceler: girdi.ilceler.map((c) => izgaradanIlce(c.id, c.ad, c.il, c.bolge, c.izgara, c.nufus)),
   };
   json.parsel = fikstur;
   return { izgara, json, ilceSayisi: girdi.ilceler.length };

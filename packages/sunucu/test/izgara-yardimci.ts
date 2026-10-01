@@ -108,6 +108,8 @@ export interface TestIlcesi {
   genislik: number;
   yukseklik: number;
   tohum: number;
+  /** İlçe nüfusu (manifestte `nufus`; yoksa alan yazılmaz). */
+  nufus?: number;
 }
 
 export const ILCELER: TestIlcesi[] = [
@@ -142,6 +144,7 @@ export async function izgaraDizini(ilceler: TestIlcesi[] = ILCELER, durumUret: (
       kimlik: c.kimlik,
       ad: c.ad,
       il: c.il,
+      ...(c.nufus !== undefined ? { nufus: c.nufus } : {}),
       bhi: { yol, bayt: gz.length, sha256: createHash("sha256").update(gz).digest("hex"), hamBayt: raw.length },
       cerceve: { x0: c.x0, y0: c.y0, genislik: c.genislik, yukseklik: c.yukseklik },
       hucre: { icerde: say.hucre, uygun: say.uygun },
