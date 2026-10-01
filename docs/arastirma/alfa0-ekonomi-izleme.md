@@ -13,6 +13,7 @@ Okuma yolları: **[S]** = bugünkü `/metrik` ucu (`packages/sunucu/src/metrik.t
 | E1 | **R** = lavabo / (ihracat − ithalat), 7 gün kayan | [O] ya da [K2] (fark) | ≥ 0,30 ve ≤ 0,60 | 0,22–0,30 ya da 0,60–0,70 | < 0,22 ya da > 0,70 | Önce **lavabo kalemleri** (yön: R < için ↑), `yerelOlcek` **en son** (40 → 35 en çok) |
 | E2 | **r** = yatırım / net kâr, oyuncu medyanı, 7 gün | [O] (+ K2 yatırım sayacı) | %10–%40 | %5–%10 ya da %40–%50 | < %5 ya da > %50 | Yatırım sürtünmesi (M/L ve hücre bedeli ↓, Defter yatırım kartı); R için E1'e |
 | E3 | **ZP8** = yerelNpc / (yerelNpc + ihracatNpc) | [K2] ya da [O] | ≤ %45 | %45–%50 | > %50 iki ardışık hafta | `yerelOlcek` 40 → 35 (tek adım) |
+| E3b | **ZP11** = ithal alıp dükkânda satılan payı; **ZP8 ithal-satış düzeltmeli** | [O] (K2'de karşılığı yok) | ZP11 ≤ %15 | %15 değil: tek eşik | ZP11 > %15 ⇒ baş lider kararı | Açılış gününde ayar yok; önerilen en küçük düzeltme: ithal-etiketli rafta kademe tavanı 1,05 R (veri + kod, dönem sınırında) |
 | E4 | **İlk dükkân süresi** (kuruluş − katılım), kuranların medyanı | [O] (`dukkan`, `kurulus`) | ≤ 36 sa | 36–48 sa | > 48 sa ya da 48 sa sonra kuran payı < %30 | Dükkân para bedeli ↓, kit pencere ↑, Defter `ilk_dukkan` kartı |
 | E5 | **Dükkân geri ödemesi** (bedel / ek net), medyan | [O] (+ K2 satış miktarı) | ≤ 48 sa | 48–150 sa | > 150 sa | `giderMiliSaat`, bedel; `yerelOlcek` ↑ yalnız son |
 | E6 | **M** = ≥ 24 sa `degirmen` tesisi olan / ≥ 1 `gida_fabrikasi` kuran | [O] ya da [K2] (yöntem dağılımı) | ≥ %50 | %30–%50 | < %30 | Önce neden ayrımı (§6); ekonomik ise G2 `yontemGecersizKilma` 750.000 |
@@ -72,6 +73,15 @@ Okuma yolları: **[S]** = bugünkü `/metrik` ucu (`packages/sunucu/src/metrik.t
 - **Beklenen (b) + `yerelOlcek` 40:** %44 (U yerleşim) / %52 (N yerleşim); GDD alarmı %50 (ZP8 ≤ %50). Yani **nüfusla orantılı yerleşimde ilk haftalarda sarı-kırmızı sınırı beklenir**: kırmızı ancak **iki ardışık 7 günlük pencere > %50** ise.
 - **Eşik:** yeşil ≤ %45; sarı %45–%50 (tek pencere > %50 dahil); kırmızı > %50 iki pencere.
 - **Kırmızıda:** tek doğrudan kaldıraç `yerelOlcek` **40 → 35** (ZP8 −3 puan: %44/%52 → %41/%49; geri ödeme 37/22 → 46/27 sa; R ↑ da yardım eder). Ölçek 35'in altı yok (E5 sınırı). Ek yardımcılar: şehir/kasaba talep sabitleri (`ilceSinifiNufus`) değiştirilmez (sınıf kuralı kararı geri döndürülmez). ZP8 kırmızı ama E5 sarı/kırmızı ise **üçgen çatışması** (§7): baş lider kararı gerekir.
+
+
+### E3b ZP11 (ithal alıp satma) ve ZP8 ithal-satış düzeltmeli
+
+- **Gerekçe (A2 `SP/takim/a2/ithal-dukkan-marji.md`).** Üretmeyen dükkân NPC'den ithal edip dükkânda satabilir (GDD G12, "meşru ticaret, ZP11 ile izlenir"). En iyi durumda (anlaşma + 2 Ticaret ofisi + 1,15 kademe, çarpan 1,045) marj %10 R: Gebze'de yapı market ≈ 2.600 ₺/sa (normal ekmek zincirinin %58'i), iki dükkân ≈ 4.100 (%91); brütün ≈ %9'u **sıfır üretimli yeni para**. Dünya R'sine etkisi küçük (oyuncuların %10'u yapsa 0,260 → 0,249), ama **brüt `yerelNpc`'yi şişirir**: oyuncuların yalnız %5'i yapsa ZP8 %50'yi aşar (%10: %58). Bu para sızıntısı değil ölçüm bozulmasıdır.
+- **ZP11 tanımı:** ithal edilip dükkânda satılan malın yerel satış gelirindeki payı = `Σ (ithal kaynaklı yerel satış) / Σ yerel satış` (A3 §12.3 ZP11: ithal alıp perakende satış payı ≤ %15; kaynak `ticaretDefteri`, `mulk.para.musluk.yerelNpc`). **ZP8 ithal-satış düzeltmeli** = `(yerelNpc − ithal kaynaklı yerelNpc) / (yerelNpc − ithal kaynaklı yerelNpc + ihracatNpc)`; ZP8'in kendisi (E3) brüt kalır, düzeltmeli okuma yanına yazılır.
+- **Okuma:** [O] (O2 günlük oynatması): satış kaynağı (ithalatla gelen akış ↔ üretim/stok) çekirdekte dükkân satırında ayrışmaz (ithal mal stok olur, A3 B2 aynı kanıda); ayrışma `ticaretDefteri` ithalat miktarı ile dükkân satış miktarının eşlenmesiyle yaklaşıkla yapılır. **K2'de karşılığı yok** (ad K2'de kesinleşmedi; gauge listesine K2-10 adayı: ithal etiketli satış). Gauge'dan yalnız dolaylı işaret: `bolge_para_lavabo_mili{kalem="ithalatNpc"}` (E1 paydası) ile `bolge_para_musluk_mili{kalem="yerelNpc"}` birlikte artıyor mu.
+- **Eşik:** ZP11 ≤ %15 (A3 şartnamesi); > %15 ⇒ **baş lider kararı**. Erken işaret: ZP8 hızlı artışı ve E11'de 1,15 payı yüksekken ZP11 yüksek (marj yalnız 1,15'te doğar).
+- **Kırmızıda (ZP11 > %15):** açılış gününde ayar yok. Önerilen en küçük düzeltme: **ithal-etiketli rafta kademe tavanı 1,05 R** (GDD G12 "raf fiyat tavanı"; ZP11 "ithal" etiketi mevcut; veri alanı + kod, kural dönemi sınırında). 1,045 çarpanında marj %0,5 R'ye iner, ithalatsız üretici etkilenmez. Reddedilenler: `mevcut` koşulundan ithal akışını çıkarmak (uygulanamaz), kademe 1,15 → 1,10 (baş lider kararıyla kapalı), ofis makas indirimini kaldırmak.
 
 ### E4 İlk dükkân süresi
 
@@ -184,7 +194,7 @@ Bugün (7553b55) `/metrik` hiçbir ekonomi alanı sunmaz. **Seçenek 1 (önerile
 |---|---|---|
 | Gün 1 (ilk 24 sa) | E10, E4 (kısmi), E8 | Para güvenliği ve ilk dükkân tıkanması; ayar yok |
 | Gün 3 | E4, E6, E8 | Zincir ve dükkân tıkanması; kit/bedel ayarı olabilir |
-| Gün 7 | E1, E2, E3, E5, E7, E9, E11 | İlk ekonomi ayarı kararı (tek parametre, §2) |
+| Gün 7 | E1, E2, E3, E3b, E5, E7, E9, E11 | İlk ekonomi ayarı kararı (tek parametre, §2) |
 | Gün 14 | E9 (ilk aşınma çeyreği), E1 yeniden | Bakım C ve R doğrulaması; gerekirse E varyantı |
 | Haftalık | tümü | Ardışık iki pencere kuralı (E3), ayar sonrası 7 gün gözlem |
 
