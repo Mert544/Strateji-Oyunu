@@ -9,7 +9,7 @@
 | Karar | Ne demek oyuncu için |
 |---|---|
 | **Yurt önce** | Yeni oyuncuya ücretsiz yurt arsası (6 hücre) verilir; arsa satın almak zorunda değildir. **P5'te kodda**: yurt çekirdekte verilir ve varışta "Yurdun hazır, yurdunda kur" diye öne çıkar (`k1/yurt-once`, vitest geçti; ekran P5 setinde **doğrulanacak**). P4 görüntü setinde ilk akış hâlâ ücretli "hazır arsa" göstermişti |
-| **Başlangıç kitinde 3 pencere** | İlk dükkân için pencere beklemek gerekmez; ilk dükkân ilk saatte kurulabilir (≈49. dakikada hazır; **hesap**, doğrulanmadı) |
+| **Başlangıç kitinde 3 pencere** | İlk dükkân için pencere beklemek gerekmez; ilk dükkân ilk saatte **kurulabilir** (≈49. dakikada hazır; **hesap**, doğrulanmadı). **İlk satış** ise rafa koyacak malın olmasına bağlıdır (aşağıda "stok riski") |
 | **Ekmek zinciri** | Buğday → un (değirmen) → ekmek (fırın) zinciri; elektrik ve yakıt **şebekeden otomatik** gelir, santral kurmak gerekmez |
 | **Dükkân ve yerel pazar** | Kendi dükkânın ilçenin hane halkına satış yapar; raf, fiyat ve marka oyuncuda |
 | **Defter ödülleri** | İlk ekmek: 5 ekmek · ilk pencere: 8 makine parçası · ilk dükkân: **ilk satışta** 10 çelik |
@@ -29,8 +29,9 @@
 | **≈25–50 dk** | İkinci karar: **ekmek zinciri** ve/ya da **dükkân** | Gıda fabrikasında "değirmen" ve "fırın" seçimi; maliyet kartında eksik malzeme | Zinciri uzatmak mı, dükkân mı, ikisi mi (ikisi de zorunlu değil) | **Geliyor** (P4/P5) |
 | ↳ dükkân | Dükkân türünü (bakkal, fırın, şarküteri, şekerci) ve bir hücreyi seçer | Bedel **6.000 ₺ + 20 çelik + 8 makine parçası + 4 pencere** (ilk 5 yapıda indirimli); pencereler başlangıç kitinden karşılanır; inşa ≈24 dk | Tür ve yer | **Geliyor** (G7, G9) |
 | ↳ ekmek zinciri | Gıda fabrikası kurar, değirmen ve fırın seçer | Elektrik şebekeden gelir (ayrı bir şey kurmaz); tesisler ≈36 dk'da biter; ilk ekmek | Kaç fabrika, hangi yöntem | **Geliyor** (G6) |
-| **≈49. dk** | Dükkân hazır; rafına mal koyar | "Dükkânın hazır; hayırlı olsun"; **boş rafta satış olmaz** uyarısı | Hangi mallar (4 yuva) | **Geliyor**; ≈49. dk bir **hesap** |
-| **≈50–60 dk** | İlk dükkân satışını görür | Defter: "ilk satışını dükkânından yaptın", **10 çelik**; ilk satış zamanı **(doğrulanmadı: ilk çözüm anı)** | Fiyat kademesine bakmak (normal varsayılan) | **Geliyor** |
+| **≈49. dk** | Dükkân hazır; rafına mal koyar | "Dükkânın hazır; hayırlı olsun"; **boş rafta satış olmaz** uyarısı | Hangi mallar (4 yuva); **rafa koyacak malı var mı** | **Geliyor**; ≈49. dk bir **hesap** |
+| **≈50–60 dk** (yalnız **başlangıç gıdasını saklayan** oyuncuda) | İlk dükkân satışını görür | Defter: "ilk satışını dükkânından yaptın", **10 çelik**; ilk satış zamanı **(doğrulanmadı: ilk çözüm anı)** | Fiyat kademesine bakmak (normal varsayılan) | **Geliyor** |
+| **≈1–1,5 sa** (başlangıç gıdasını **satan** oyuncuda) | Ekmek zinciri (değirmen + fırın) kurulunca rafa ekmek koyar; ilk dükkân satışı o zaman olur | Rafta "stoğun yok" görünür, zincir ekmek üretince satış başlar | Zinciri kurmak mı, gıda üretmek mi | **Geliyor** (P4/P5); süre A2'nin kâğıt modeli |
 | **60. dk** | Çıkar | "Çıkabilirsin, dönünce özet gösteririz" | Çıkmak | **Bugün kodda** |
 
 ## 2. İlk gün (ilk 24 saat)
@@ -56,6 +57,12 @@
 | **Yön değiştirme** | Arsayı bırakır, yeni ilçeye geçer | Arsa bırakınca %70 iade; ikinci ilçe ödülü | Yönünü değiştirmek | **Bugün kodda** |
 | **Sessiz günler** | Girmeyebilir | Giriş ödülü yok, geri çağırma yok; döndüğünde yargısız özet | Ne zaman döneceği (tamamen kendi tercihi) | **Bugün kodda** (hafta özeti tasarımı **geliyor**; **doğrulanmadı**) |
 | **Hafta sonu** | Durumuna bakar | Defter, işlenen damgalar; dünya haberleri | Devam etmek | Defter **bugün kodda**; haberler **geliyor** (**doğrulanmadı**) |
+
+## Stok riski (ilk dükkân anı incelemesi)
+
+- **Dükkânlara konabilen mallar arasında tahıl yok.** Çiftlik tahıl üretir; bakkal, fırın, şarküteri ve şekerci tahılı satmaz (T3 mal listeleri). Dükkânın tek başlangıç malı kitteki **200 gıda**.
+- **Defter'in ilk adımı "İlk satışını yap" (ihracat) bu gıdayı satmaya yönlendirir.** Gıdayı satan oyuncu dükkânı kurar ama rafı boş kalır; ilk dükkân satışı ancak ekmek ya da gıda zinciri kurulunca olur (**≈1–1,5 sa**, A2 kâğıt modeli). Gıdayı saklayan oyuncuda ilk satış ≈50–60. dakikadadır.
+- **Karar baş liderde** (önerilen: Defter metni; kit değişmez) ve arayüzde iki küçük düzeltme: ilk dükkân önerisi rafa konabilir stok yoksa "malzemen hazır" dememeli; raf seçicisi stoksuzken "gıda ya da ekmek üret" yolunu göstermeli. Ayrıntı: `ilk-dukkan-ani.md` (A1 notu).
 
 ## Açık sorular (sahip ve baş lider için)
 
