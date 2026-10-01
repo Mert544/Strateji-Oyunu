@@ -1145,7 +1145,7 @@ yerelKarsilanmaPpm?: number;
 
 **Varsayılan kapalıdır:** `kampanyaKademesi`, `kampanyaGunlukEnFazlaSaat` ve `kampanyaHaftalikEnFazlaGun` üçü de tanımlı **ve** sınırlar > 0 değilse kampanya kademesi seçilemez: `dukkan_fiyat` kademe `kampanyaKademesi` ile **DUK-20** `kampanya kademesi acik degil` döner. Açmak veri değişikliğidir (kural dönemi). A2/baş lider değerleri: `kampanyaGunlukEnFazlaSaat = 6`, `kampanyaHaftalikEnFazlaGun = 2`.
 
-**Zaman tanımları (sim zamanı; gerçek saat yok; hepsi tamsayı):** `gun = floor(t / GUN)` (epoch 1 Ekim 2026 00:00 TRT = gün 0), `hafta = floor(gun / 7)` (takvim haftası **değil**, sim-günü bloğu; S-18), saat sınırı `SAAT`. Kampanya **tam saat sınırlarında** işler: başlangıç anının içinde bulunduğu saat tam saat sayılır; bitiş her zaman bir tam saattir (böylece bitiş saatlik tıka denk gelir ve **yeni olay gerekmez**: her saatlik tık `lojistikCoz` çalıştırır).
+**Zaman tanımları (sim zamanı; gerçek saat yok; hepsi tamsayı):** `gun = floor(t / GUN)` (epoch 1 Ekim 2026 00:00 TRT = gün 0), `hafta = floor(gun / 7)` (takvim haftası **değil**, sim-günü bloğu; S-18), saat sınırı `SAAT`. **Kabul (baş lider, S-18):** hafta sim haftasıdır (`floor(gun / 7)`), gün sınırı 00:00 TRT; oyuncuya yalnız **"bu hafta kalan gün"** (`kalanGun`, §10.2) gösterilir, hafta numarası ve hafta başlangıcı gösterilmez (sim haftaları 1 Ekim 2026 perşembe başlar; takvim haftasıyla çakışmaz). Kampanya **tam saat sınırlarında** işler: başlangıç anının içinde bulunduğu saat tam saat sayılır; bitiş her zaman bir tam saattir (böylece bitiş saatlik tıka denk gelir ve **yeni olay gerekmez**: her saatlik tık `lojistikCoz` çalıştırır).
 
 **Durum (`DukkanDurumu.kampanya?`, §7.1):** `{ hafta, gunSayisi, gun, saat, bitis }`. Yalnız ilk kampanya başlatılınca yazılır.
 
@@ -1172,16 +1172,44 @@ Oyuncu başına ilçede ≤ `ilceBasinaEnFazla` (A2 §1.13: 2) dükkân (biten +
 
 | Parça | Yer | Not |
 |---|---|---|
-| **Sözdizimi doğrulayıcı** `adSozdizimiHatasi(ad): string \| null` ve sabit `AD_KURALI = { min: 2, max: 24, izinli: /^[A-Za-zÇĞİÖŞÜçğıöşü0-9 .'&-]+$/ }` | **`packages/cekirdek/src/ad.ts`** (saf, yeni; `@bolge/cekirdek` `index.ts`'ten dışa açılır; marka komutu `mulk/marka.ts` bunu çağırır) | Sunucu zaten `@bolge/cekirdek`'e bağlıdır (`sunucu/src/yazar.ts:49`): görünen ad ucu **aynı işlevi** çağırır; istemci de gönderim öncesi UX denetimi için çağırabilir. **Neden çekirdekte, `veri/saf` ya da `protokol`'de değil:** (a) çekirdek `@bolge/veri` çalışma zamanı importu yapamaz (`mal-kimlik-kilidi-paket.test.ts` güvencesi; ters yön serbest); (b) `protokol` yalnız biçim denetler (zod) ve çekirdeğe bağımlı olmamalıdır; (c) marka komutu çekirdekte doğrulanır ve kuralın günlükte "kural dönemi dışında değişmez" olması gerekir |
+| **Sözdizimi doğrulayıcı** `adSozdizimiHatasi(ad): string \| null`, **kanonik biçim** `adKanonik(ad)` (aşağıda) ve sabit `AD_KURALI = { min: 2, max: 24, izinli: /^[A-Za-zÇĞİÖŞÜçğıöşü0-9 .'&-]+$/, kucukHarf: true }` | **`packages/cekirdek/src/ad.ts`** (saf, yeni; `@bolge/cekirdek` `index.ts`'ten dışa açılır; marka komutu `mulk/marka.ts` bunu çağırır) | Sunucu zaten `@bolge/cekirdek`'e bağlıdır (`sunucu/src/yazar.ts:49`): görünen ad ucu **aynı işlevi** çağırır; istemci de gönderim öncesi UX denetimi için çağırabilir. **Neden çekirdekte, `veri/saf` ya da `protokol`'de değil:** (a) çekirdek `@bolge/veri` çalışma zamanı importu yapamaz (`mal-kimlik-kilidi-paket.test.ts` güvencesi; ters yön serbest); (b) `protokol` yalnız biçim denetler (zod) ve çekirdeğe bağımlı olmamalıdır; (c) marka komutu çekirdekte doğrulanır ve kuralın günlükte "kural dönemi dışında değişmez" olması gerekir |
 | **Yasaklı ad listesi** | **`packages/veri/icerik/yasakli-adlar.json`** (T3 + hukuk/hassasiyet incelemesi) | İki ad için **aynı** dosya |
 | **Yasaklı ad süzgeci** `adYasakliMi(ad)` | **`packages/sunucu/src/ad-suzgec.ts`** (K2; önceki adı `marka-suzgec.ts`) | İki yolda da çağrılır: (1) `marka_tanimla` komut kabulünde günlüğe yazmadan ÖNCE, (2) görünen ad profil ucunda. Çekirdekte yok (liste güncellenir; replay güvenli) |
 | **Protokol sınırı** | `komut-sema.ts` `marka_tanimla.ad: z.string().min(2).max(24)`; profil ucu aynı `min(2).max(24)` | Test: protokol sınırları `AD_KURALI.min/max`'a eşit (§16.2 `ad-kurali`) |
 
-**Bundle etkisi:** `adSozdizimiHatasi` ≈ 0,2–0,3 KB gzip ve **zaten marka komutu için çekirdek paketindedir** (§6.9: G7 +3–5 KB payının içinde); görünen ad ucu **ek bundle maliyeti getirmez** (aynı işlev; sunucu tarafı bundle dışı). Yasaklı liste istemci paketine **girmez** (yalnız sunucu). **Büyük harf (S-12), iki ad için aynı çözülür:** büyük harf **serbesttir** (izinli küme `A-Z`/`ÇĞİÖŞÜ` içerir); "arayüzde büyük harf yok" kuralı **sabit arayüz metinleri** içindir, kullanıcı verisi (özel adlar) için değil; sahip teyidi S-12. **Görünen ad KVKK:** profilde saklanır (sunucu); çekirdek günlüğüne ve dünya durumuna girmez; sıfırlama sunucu yönetici yoludur (marka için `marka_sifirla`).
+**Bundle etkisi:** `adSozdizimiHatasi` ≈ 0,2–0,3 KB gzip ve **zaten marka komutu için çekirdek paketindedir** (§6.9: G7 +3–5 KB payının içinde); görünen ad ucu **ek bundle maliyeti getirmez** (aynı işlev; sunucu tarafı bundle dışı). Yasaklı liste istemci paketine **girmez** (yalnız sunucu). **Büyük harf (S-12; baş lider varsayılanı, sahip kararı bekler):** girişte büyük harf **izinlidir** (izinli küme `A-Z`/`ÇĞİÖŞÜ` içerir), ama marka adı ve görünen ad **küçük harfe çevrilerek saklanır** (Türkçe kural: `İ→i`, `I→ı`); çeviri **tek yerde**, `ad.ts` `adKanonik`'te yapılır. "Arayüzde büyük harf yok" kuralı böylece sunucudan gelen kullanıcı adlarına da uyar. Sahip "serbest" derse yalnız `AD_KURALI.kucukHarf` `true → false` olur (bkz. aşağıdaki kanonik biçim bölümü); sahip teyidi S-12. **Görünen ad KVKK:** profilde saklanır (sunucu); çekirdek günlüğüne ve dünya durumuna girmez; sıfırlama sunucu yönetici yoludur (marka için `marka_sifirla`).
+
+**Kanonik biçim `adKanonik(ad)` (S-12 varsayılanı; `packages/cekirdek/src/ad.ts`, saf):**
+
+```ts
+// Sabit eşleme tablosu; yerel ayar ve toLowerCase/toLocaleLowerCase YOK.
+const KUCUK_HARF: Readonly<Record<string, string>> = {
+  A: "a", B: "b", C: "c", D: "d", E: "e", F: "f", G: "g", H: "h", I: "ı", J: "j",
+  K: "k", L: "l", M: "m", N: "n", O: "o", P: "p", Q: "q", R: "r", S: "s", T: "t",
+  U: "u", V: "v", W: "w", X: "x", Y: "y", Z: "z",
+  "İ": "i", "Ç": "ç", "Ğ": "ğ", "Ö": "ö", "Ş": "ş", "Ü": "ü",
+};
+export function adKanonik(ad: string): { tamam: true; ad: string } | { tamam: false; hata: string } {
+  const hata = adSozdizimiHatasi(ad);            // 1) önce sözdizimi (büyük harf girişte izinli)
+  if (hata !== null) return { tamam: false, hata };
+  if (!AD_KURALI.kucukHarf) return { tamam: true, ad };
+  let c = "";
+  for (let i = 0; i < ad.length; i++) c += KUCUK_HARF[ad[i]] ?? ad[i];   // 2) sabit tablo, uzunluk korunur
+  return { tamam: true, ad: c };
+}
+```
+
+- **`toLowerCase`/`toLocaleLowerCase` KULLANILMAZ:** sonuç çalışma ortamına (yerel ayar, Node/ICU sürümü, Windows/Linux) bağlıdır; `"I".toLowerCase()` = `"i"` (Türkçede `ı` olmalı) ve çekirdeğin determinizm kuralını bozar. Tablo tek doğruluk kaynağıdır; tabloda olmayan karakter (küçük harf, rakam, boşluk, `.'&-`) olduğu gibi geçer. K3 testi: `ad.ts` kaynağında bu iki işlevin adı geçmez (kaynak taraması; `Math.pow/sqrt yok` lint kalıbı).
+- **Tek çağrı yeri iki yol için:** `marka_tanimla` (`mulk/marka.ts`: `const r = adKanonik(ad); if (!r.tamam) return { tamam: false, hata: r.hata };` sonra durumda `r.ad` saklanır ve MRK-11 karşılaştırması da `r.ad` ile yapılır) ve sunucudaki görünen ad ucu (profilde `r.ad` saklanır; yasaklı ad süzgeci `r.ad` üzerinde koşar). İstemci isterse gönderim öncesi aynı işlevle küçültebilir (UX); **sunucu ve çekirdek istemciye güvenmez**, yeniden çevirir. Çeviri **idempotent**tir: `adKanonik(adKanonik(x).ad)` aynı sonucu verir.
+- **Uzunluk ve izinli küme çeviriden önce denetlenir; çeviri uzunluğu korur** (bire bir BMP eşleme; MRK-04/05 ileti ve kuralları değişmez). Büyük harf ret nedeni **değildir**; yeni MRK kodu yoktur.
+- **Madde 3 ("reddet, düzeltme yapma; günlükteki metin = durumdaki metin") ile ilişki:** düzeltme yasağı **boşluk ve karakter kümesi** için aynen sürer (baş/son boşluk, ardışık boşluk, geçersiz karakter reddedilir, kırpılmaz). **Tek istisna sabit tablolu büyük→küçük harf çevirisidir:** günlükte **girilen metin** kalır (`marka_tanimla.ad` olduğu gibi, `"İSTANBUL Fırını"`), durumda **kanonik biçim** (`"istanbul fırını"`) tutulur. Yeniden oynatma güvenlidir, çünkü çeviri (a) saf ve (b) sabit tablolu ve (c) aynı kod sürümünde her zaman aynı çıktıyı verir; günlük + kod = durum kuralı sürer (dönüşüm girdinin saf işlevidir). **Tablo değişirse yeniden oynatma sonucu değişir:** bu yüzden tablo ve `AD_KURALI.kucukHarf` kural dönemi (kuralSurumu) kararıdır, serbestçe değiştirilmez.
+- **Durum doğrulayıcı:** `mulkDogrula` `markalar[i].ad` için `adSozdizimiHatasi(ad) === null` **ve** (`kucukHarf` iken) `adKanonik(ad).ad === ad` (durumda büyük harf kalamaz) arar; ihlal `SerilestirmeHatasi`. Kısıtlıdan serbeste geçiş (`true → false`) eski görüntüleri **bozmaz**, tersi bozar: bu yüzden varsayılan küçük harftir (kısıtlı başlanır, sonra gevşetilir; yer tutucu `"adsiz marka"` zaten kanoniktir).
+- **Sahip "serbest" derse:** yalnız `AD_KURALI.kucukHarf = false` (ve bu cümlenin `mulkDogrula` kanonik denetimi devre dışı kalır); başka satır değişmez.
+- **Testler** (§16.2 `ad-kurali`, `marka-sozdizimi`): `"İSTANBUL Fırını"` → `"istanbul fırını"`; `"IŞIK"` → `"ışık"`; `"ISIK"` → `"ısık"`; aynı girdi iki kez aynı çıktı; idempotans; **özet etkisi:** `"IŞIK"` ve `"ışık"` ile tanımlanan marka aynı `durumOzeti`'ni verir (günlük farklıdır, durum aynıdır); günlükten yeniden oynatma = canlı dünya; `kucukHarf = false` veri kopyasında büyük harf aynen kalır; durum doğrulayıcı büyük harfli ad içeren görüntüyü reddeder; sunucu görünen ad ucu ve `marka_tanimla` aynı çıktıyı verir.
 
 **Yer: çekirdek durumunda** (`MulkOyuncuDurumu.markalar`), gerekçe ve karşı seçenek §20 GZ-8'de. Komutlar: `marka_tanimla`, `dukkan_marka`, sistem yolunda `marka_sifirla` (moderasyon).
 
-**Akıllı tırnak (A1 G9 notu; baş lider kararı) — İSTEMCİ NOTU:** iOS/Android klavyelerinin `’` (U+2019) ve `‘` (U+2018) karakterleri **istemcide** `'` (U+0027) işaretine çevrilir (K1/T1; §10.4); çift akıllı tırnak (`“ ”`) çevrilmez. **Çekirdek izinli kümesi DEĞİŞMEZ** ve sunucu/çekirdek yalnız izinli karakterleri kabul etmeye devam eder; böylece günlükteki metin = durumdaki metindir ve kural değişmez.
+**Akıllı tırnak (A1 G9 notu; baş lider kararı) — İSTEMCİ NOTU:** iOS/Android klavyelerinin `’` (U+2019) ve `‘` (U+2018) karakterleri **istemcide** `'` (U+0027) işaretine çevrilir (K1/T1; §10.4); çift akıllı tırnak (`“ ”`) çevrilmez. **Çekirdek izinli kümesi DEĞİŞMEZ** ve sunucu/çekirdek yalnız izinli karakterleri kabul etmeye devam eder; böylece (büyük/küçük harf çevirisi `adKanonik` dışında) günlükteki metin = durumdaki metindir ve kural değişmez.
 
 **Marka çekimi, fiyatı, satışı, çeşidi etkilemez** (canlı §4.1 kuralı; perakende §3.1). Test: aynı dünya markalı ve markasız, `istek` ve gelir birebir aynı.
 
@@ -1191,7 +1219,7 @@ Oyuncu başına ilçede ≤ `ilceBasinaEnFazla` (A2 §1.13: 2) dükkân (biten +
 |---|---|
 | 1. Uzunluk | `ad.length` (UTF-16 kod birimi) `AD_KURALI.min` (2) ile `AD_KURALI.max` (24) arasında (**sabit; parametre değil**: iki ad için tek kaynak). İzinli kümede yalnız BMP, ön bileşik karakterler bulunduğundan **bir karakter = bir kod birimi**; Türkçe harfler (ç ğ ı i ö ş ü, İ) tek karakterdir. Protokol de `min(2).max(24)` |
 | 2. İzinli küme | Yalnız: `A-Z a-z Ç Ğ İ Ö Ş Ü ç ğ ı ö ş ü`, `0-9`, boşluk (U+0020), `.`, `'`, `-`, `&`. Düzenli ifade (çekirdekte sabit): `^[A-Za-zÇĞİÖŞÜçğıöşü0-9 .'&-]+$`. Birleşen işaretler, emoji, kontrol karakterleri, eğik/Unicode kesme işaretleri **reddedilir** (normalleştirme gerekmez) |
-| 3. Düzenleme | **Reddet, düzeltme yapma:** baştaki/sondaki boşluk (`ad !== ad.trim()` değil; yalnız U+0020 denetlenir), ardışık boşluk (`"  "`), **en az bir harf** (`[A-Za-zÇĞİÖŞÜçğıöşü]`). İstemci göndermeden önce kırpar (K1). Böylece günlükteki metin = durumdaki metin (yeniden oynatmada dönüşüm yok) |
+| 3. Düzenleme | **Reddet, düzeltme yapma:** baştaki/sondaki boşluk (`ad !== ad.trim()` değil; yalnız U+0020 denetlenir), ardışık boşluk (`"  "`), **en az bir harf** (`[A-Za-zÇĞİÖŞÜçğıöşü]`). İstemci göndermeden önce kırpar (K1). Boşluk ve karakter için günlükteki metin = durumdaki metin; **tek istisna** sabit tablolu büyük→küçük harf çevirisidir (`adKanonik`, yukarıda; S-12) |
 | 4. Yasaklı adlar | **Çekirdekte yok.** Liste **veri dosyasıdır** (`packages/veri/icerik/yasakli-adlar.json`, T3 + hukuk/hassasiyet incelemesi) ve **sunucunun komut kabul süzgecinde** (günlüğe yazmadan ÖNCE) uygulanır: `sunucu/src/ad-suzgec.ts` (K2; marka ve görünen ad için ortak). Gerekçe: liste moderasyon için güncellenir; çekirdekte olsaydı (a) her güncelleme kural sürümünü değiştirirdi (dönem sınırı), (b) günlükte kabul edilmiş eski bir ad, yeni listeyle **yeniden oynatmada reddedilir** ve "başarılılar günlüğü = canlı dünya" değişmezi bozulurdu. Çekirdek yalnız sözdizimini denetler (değişmez kural) |
 | 4a. Karşılaştırma | Büyük/küçük harf ve aksan **duyarsız**; çekirdek-dışı sabit katlama tablosu (yerel ayar yok): `A-Z → a-z`; `İ I ı i → i`; `Ç ç → c`; `Ğ ğ → g`; `Ö ö → o`; `Ş ş → s`; `Ü ü → u`; ayırıcılar (`boşluk . ' - &`) kaldırılır. İki liste: `yasakliKelimeler` (katlanmış **kelime** eşitliği; kısa adlar: "bim", "a101", "sok"), `yasakliIcerik` (katlanmış, ayırıcısız adın **alt dizgisi**; uzun adlar ≥ 5 karakter: "migros", "carrefour"...). Liste içeriği K34 (gerçek zincir adları) + küfür/hassas içerik; kapsamı **(doğrulanmadı)**; hukuki/marka taraması ayrı iştir. Süzgeç bot/ajan yoluna uygulanmaz (bot `marka_tanimla` vermez) |
 | 5. Reddin kaynağı | Sözdizimi ret iletileri çekirdekten (MRK-01…MRK-10, §9.3); liste reddi sunucudan (`marka adi kullanilamaz`, MRK-12) |
@@ -1303,7 +1331,7 @@ yapi_yerlestir:   { ..., dukkanTuru: "kimlik", yontem: "kimlik" },   // :62
 
 **`dukkan_yik`:** (1) DUK-00; (2) `dukkan` tamsayı değilse DUK-10; oyuncunun tamamlanmış `dukkan` yapısı bulunamazsa: kimlik oyuncunun süren dükkân inşaatıysa DUK-23, değilse DUK-10; (3) uygula (§7.9 tablosu): yapı ve hücre `tesis` işareti silinir; **para, stok, kasa, marka tanımı değişmez**.
 
-**`marka_tanimla`:** (1) DUK-00; (2) `marka` tamsayı, `0 ≤ marka ≤ markalar.length` (MRK-01) ve `marka < hesapBasinaEnFazla` (MRK-02); (3) `ad` sözdizimi (MRK-03…MRK-08, §7.7); (4) `simge`/`renk` aralık (MRK-09, MRK-10); (5) mevcut markayla birebir aynıysa MRK-11; (6) uygula: `marka === length` ise ekle, değilse üzerine yaz.
+**`marka_tanimla`:** (1) DUK-00; (2) `marka` tamsayı, `0 ≤ marka ≤ markalar.length` (MRK-01) ve `marka < hesapBasinaEnFazla` (MRK-02); (3) `ad` sözdizimi ve kanonik biçim: `adKanonik(ad)` (MRK-03…MRK-08, §7.7); (4) `simge`/`renk` aralık (MRK-09, MRK-10); (5) mevcut markayla (kanonik `ad`, `simge`, `renk`) birebir aynıysa MRK-11; (6) uygula: `marka === length` ise ekle, değilse üzerine yaz.
 
 **`dukkan_marka`:** DUK-00; dükkân (DUK-10); `marka` tamsayı ve `< markalar.length` (MRK-13); zaten bu markadaysa MRK-14; `dukkan.marka = marka`.
 
@@ -1395,7 +1423,7 @@ Protokol yalnız **biçim** denetler (docs: `komut-sema.ts` başlığı); sözdi
 | Konu | Dosya | Değişiklik |
 |---|---|---|
 | `ilk_dukkan` dedektörü | `sunucu/src/odul/dedektor.ts:14,27-29,158-175` | §7.8 |
-| Ad süzgeci (marka ve görünen ad; günlüğe yazmadan önce) | `sunucu/src/yazar.ts` komut kabul yolu (**doğrulanmadı: tam konum**) + yeni `ad-suzgec.ts` | `marka_tanimla.ad` ve profil ucundaki görünen ad **aynı** süzgeçten geçer: katlanıp `yasakli-adlar.json` ile karşılaştırılır; ret `marka adi kullanilamaz` (marka) / profil ucu iletisi (görünen ad); sözdizimi `adSozdizimiHatasi` (`@bolge/cekirdek`); süzgeç dosyası sıcak güncellenebilir (kural sürümü değişmez) |
+| Ad süzgeci (marka ve görünen ad; günlüğe yazmadan önce) | `sunucu/src/yazar.ts` komut kabul yolu (**doğrulanmadı: tam konum**) + yeni `ad-suzgec.ts` | `marka_tanimla.ad` ve profil ucundaki görünen ad **aynı** süzgeçten geçer: katlanıp `yasakli-adlar.json` ile karşılaştırılır; ret `marka adi kullanilamaz` (marka) / profil ucu iletisi (görünen ad); sözdizimi ve kanonik küçük harf biçimi `adKanonik` (`@bolge/cekirdek`; profilde kanonik biçim saklanır, süzgeç kanonik adı karşılaştırır); süzgeç dosyası sıcak güncellenebilir (kural sürümü değişmez) |
 | "Sen yokken" net sonucu: satış kalemi | `sunucu/src/donus/anlik.ts:27-29`, `donus/ozet.ts:76`, `donus/izleyici.ts:95-104` | anlık görüntüye `dukkanGeliri` (çekirdek `dukkanGeliri(d, oyuncu, t)`); `satis = ihracat farkı + dukkan geliri farkı`; `satis + gider + diger = hazineFarki` birebirliği korunur. Yeni şablon gerekmez (`donus.bitti.insaat` ek yapı kimliği `dukkan`'ı zaten taşır, `donus.ts` `DONUS_SABLON`) |
 | Para arzı panosu satırları | `sunucu/src/metrik.ts` (**doğrulanmadı**: pano bugün yok, `mulk.para` sayaçları var) | §12.3 |
 | Kural sürümü göçü | `sunucu/src/yazar.ts:363,385,1318` | her G6/G7/G8 veri değişimi `kuralSurumu`'nu değiştirir; dönem sınırında `gocIzni` (docs/06 §14.2 sunucu notu) |
@@ -1443,7 +1471,7 @@ Eklenenler: (a) `perakende` tanımsızken herhangi bir `DukkanDurumu` varsa hata
 - **`fikstur-goc/mulk-v1.json` yüklenmeye devam eder:** yeni alanların hepsi isteğe bağlı ve yalnız kullanılınca yazılır; `paraDogrula` zorunlu listesi değişmez. Test §16.
 - **Göçsüz eski dünya (G6/G7 öncesi dünya yeni kodla):** `mulk.perakende` yok = dükkân kapalı; eski dünya olduğu gibi çalışır.
 - **Yeni görüntü eski kodla:** yüklenemez (bilinmeyen alan/komut); geriye dönüş yok; kural dönemi geçişi yapılmadan sürüm geri alınmaz.
-- **Komut günlüğü:** yeni komut türleri günlükte dize kimlikli; eski günlük yeni çekirdekle aynı sonucu verir (yeni komut içermez). **Dikkat:** marka adı günlükte açık metin kalır (§7.7 KVKK).
+- **Komut günlüğü:** yeni komut türleri günlükte dize kimlikli; eski günlük yeni çekirdekle aynı sonucu verir (yeni komut içermez). **Dikkat:** marka adı günlükte açık metin (girilen biçimiyle) kalır, durumda kanonik küçük harf (§7.7 KVKK, S-12).
 - **Dönem sınırı:** G6, G7 ve G8 verisi her biri `kuralSurumu`'nu değiştirir. Alfa-0 açılmadığından canlı dünya yoktur; yine de her dilimin kabulünde `anlikGoruntudenYukle(..., { gocIzni: true, yalnizEkleZorunlu: true })` provası yapılır (§16).
 - **Boyut:** dükkân başına ≈ 0,3 KB (4 yuva), marka ≈ 0,06 KB; 1.000 oyuncu × 2 dükkân ≈ 0,6 MB ham görüntü (docs/06 §14 ölçekleriyle uyumlu; **doğrulanmadı**: ölçülmedi, K3 ölçer).
 
@@ -1640,7 +1668,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `cekirdek/test/bolge-kipi-etkisiz.test.ts` (K-3 genişler) | K3 | `perakende` ve `yontemGecersizKilma` veride var, dükkân yok ⇒ aynı `durumOzeti`; katman 4a `d4a = 0` aritmetiği |
 | `cekirdek/test/mulk-yapilar.test.ts:50`, `mal-izdusumu-kanit` | K3 | ek yapı listesi 6 → 7 (`dukkan`), göç beklentileri |
 | `sunucu/test/ad-suzgec.test.ts` (yeni) | K2 | yasaklı ad katlama (büyük/küçük harf, aksan, ayırıcı); yasaklı kelime ↔ içerik; **marka komutu ve görünen ad ucu AYNI süzgeci kullanır**; bot/ajan yoluna uygulanmaz; günlüğe yazmadan önce ret (MRK-12) |
-| `cekirdek/test/ad-kurali.test.ts` (yeni) | K3 | `adSozdizimiHatasi` tek kaynak: marka komutu ve (sunucu testinde) görünen ad aynı sonucu verir; protokol zod sınırı `min/max` = `AD_KURALI.min/max` |
+| `cekirdek/test/ad-kurali.test.ts` (yeni) | K3 | `adSozdizimiHatasi` ve `adKanonik` tek kaynak (§7.7 kanonik biçim testleri: `"İSTANBUL Fırını"` → `"istanbul fırını"`, `"IŞIK"` → `"ışık"`, idempotans, kaynakta `toLowerCase` yok): marka komutu ve (sunucu testinde) görünen ad aynı sonucu verir; protokol zod sınırı `min/max` = `AD_KURALI.min/max` |
 | `sunucu/test/odul.test.ts` | K2 | `ilk_dukkan` = ilk satış (yapı bitişiyle tetiklenmez); `ilk_dukkan` yıkımdan sonra tekrar verilmez |
 | `protokol` kare/komut delta testleri | K2 | `dukkanlar`, `sebeke`, `markalar` kare alanları isteğe bağlı; `PROTOKOL_SURUMU` aynı; yeni komut zod satırları; eski istemci/sunucu alan yok sayar |
 | `istemci/test/komut.test.ts:92-117` | K1 | `GIZLI_KOMUTLAR` (+ `marka_sifirla`), `HARITA_KOMUTLARI` (+ 5 komut) `toEqual` |
@@ -1784,7 +1812,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | GZ-5 | **R tanımı:** `d.pazar.fiyat[m]` (R0 ≠ taban) | bütün oran/bant/tavan R'ye göre yazıldı | önerilen |
 | GZ-6 | **Öncelik katmanı 4a** (ihracattan önce) | stok kıtken kimin payı kaybettiği oyun dengesidir | önerilen |
 | GZ-7 | **Defterde isteğe bağlı/tembel kalemler** (`yerelNpc`, `lavabo.sebeke`, `kasa.giris.sebeke`) | para defteri şeması; bir kez yanlışsa eski görüntüler yüklenemez | önerilen |
-| GZ-8 | **Marka çekirdek durumunda** (serbest metin) + yasaklı liste sunucuda | günlükte açık metin kalır (KVKK); replay determinismi | baş lider kararı 4; KVKK görüşü S-12 |
+| GZ-8 | **Marka çekirdek durumunda** (sınırlı serbest metin; durumda kanonik küçük harf, `adKanonik`) + yasaklı liste sunucuda | günlükte girilen metin açık kalır (KVKK); replay determinismi sabit tablo ile; tablo/`kucukHarf` kural dönemi kararı | baş lider kararı 4 ve S-12 varsayılanı; KVKK görüşü ve sahip kararı S-12 |
 | GZ-9 | **`AlanTuru += "metin"`** (`SISTEM_ALAN_TURLERI`'ne girmez) | komut sözdizimi kalıcı; sistem/ajan yoluna metin ASLA | önerilen |
 | GZ-10 | PRNG akışı ve `ilce_gunluk` olayı **yok**; çözüm tek geçiş | sonradan eklemek özeti ve PRNG kuyruğunu değiştirir | önerilen |
 | GZ-11 | Alfa-0 sadeleştirmeleri (çeşit anlık, esnaf payı anlık, η yok) | kural sürümü dönemi; geri alınabilir ama bot/ölçüm altınları yeni kurala dayanır | önerilen |
@@ -1806,22 +1834,22 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 |---|---|---|---|
 | S-1 | ~~G2 tetiği~~ **KAPANDI (baş lider):** X = %30 (A2'nin M ölçütü); tesis tabanı kural DEĞİL; G2 yalnız yedek (varsayılan kapalı) | çarpan kapalı | kapandı |
 | S-2 | ~~Santral ekonomisi~~ **KAPANDI** (baş lider kararı: santral isteğe bağlı, yalnız hidroda ve yüksek yükte kârlı, "daha ucuz" vaadi yok, fiyat/maliyet değişmez) | - | kapandı |
-| S-3 | **Açılış Tezgâhı** (`tezgah`) P1 mi A1 mi | G7'de yok | sahip (T-39) |
+| S-3 | **Açılış Tezgâhı** (`tezgah`) P1 mi A1 mi | G7'de yok (parametre/tür kaydı eklenmez); **sahip listesinde, G7'yi bekletmez** | sahip (T-39) |
 | S-4 | ~~`kasaPayiPpm` değeri~~ **KAPANDI:** A2 §1.3-B1 = 120 000 (%12); kasa = floor(ödeme × pay / 1e6), lavabo = ödeme − kasa | 120 000 | kapandı |
 | S-5 | ~~Şebeke kapasite sınırı~~ **KAPANDI (baş lider):** sınır yok | sınır yok | kapandı |
-| S-6 | Talep ilçe büyüklüğüne (`uygunHucre`) bağlansın mı; gerçek ilçe nüfusu ne zaman | hayır; sınıf başına sabit (A2 §4 soru 4) | A2, sahip |
+| S-6 | Talep ilçe büyüklüğüne (`uygunHucre`) bağlansın mı; gerçek ilçe nüfusu ne zaman | hayır; sınıf başına sabit (A2 §4 soru 4); `yerelOlcek` parametredir; **sahip listesinde, G7'yi bekletmez** | A2, sahip |
 | S-7 | ~~M erken açılış (`acikOlcekler`, T-43)~~ **KAPANDI (baş lider):** `[0]`. **`acikOlcekler` yalnız dükkân ölçeği içindir ve bir özellik açılış zamanlamasıdır; e1080dd'deki fabrika/tesis ölçek serbestliğini (doğrudan M/L kurulum) etkilemez.** | `[0]` | kapandı |
-| S-8 | **Bayram sınır günü ve tarihler:** `oncesi` penceresi `[B − Do, B − 1]`, `sonrasi` penceresi `[B, B + Ds − 1]` (bayram günü sonrasında); resmî bayram tarihleri (doğrulanmadı) | Alfa-0 listesi T3'te, boş olabilir | A2 (sınır), T3 (tarih) |
+| S-8 | **Bayram sınır günü ve tarihler:** `oncesi` penceresi `[B − Do, B − 1]`, `sonrasi` penceresi `[B, B + Ds − 1]` (bayram günü sonrasında); resmî bayram tarihleri (doğrulanmadı) | bayram listesi **boş geçerlidir** (parametre; V9 boş listeyi kabul eder); tarih listesi T3'te sonradan eklenir; **sahip listesinde, G7'yi bekletmez** | A2 (sınır), T3 (tarih) |
 | S-9 | ~~Bakım ve aşınma kalibrasyonu~~ **KAPANDI (baş lider):** bu sprintte karar yok; G4 dışı; şema rezervi gerekmez (A2 eab8fcc §2: öneri C, ×0,50 ve tavan %25, O2 ölçümü sonrası) | - | kapandı |
 | S-10 | ~~Yakıt şebekeden otomatik~~ **KAPANDI (baş lider):** elektrik ve yakıt şebekeden (§5.2.2b; mal listesi `mallar[]`) | kapsamda | kapandı |
 | S-11 | **Kamu siparişi v0** değerleri **onaylı** (A2 §1.9, §1.13 `kamuSiparisi`): mallar `ekmek`, `gida`, `pencere`, `celik`, `parca`; fiyat 1,03 R; boyutlar 100/50/10/30/20; ilçede haftada ≤ 5; vade 3 gün; `kasaPayiPpm` %12. **Sipariş kodu ve şeması sonraki sprintte** (bu şartnamenin dışı); değerler durur | veri taslağı A2'de | kapandı (kod: sonraki sprint) |
-| S-12 | **Büyük harf** (marka ve görünen ad için AYNI çözüm: serbest; "arayüzde büyük harf yok" kuralı sabit arayüz metinleri içindir) ve **KVKK** hukuki görüşü | büyük harf serbest | sahip, hukuk |
+| S-12 | **Büyük harf** (marka ve görünen ad için AYNI çözüm) ve **KVKK** hukuki görüşü | **varsayılan: küçük harf (baş lider); sahip kararı bekler:** girişte büyük harf izinli, küçük harfe sabit tabloyla çevrilip saklanır (`adKanonik`, §7.7; `toLowerCase` yok). Sahip "serbest" derse yalnız `AD_KURALI.kucukHarf = false` | sahip, hukuk |
 | S-13 | ~~G8'de dükkân bedeline pencere~~ **KAPANDI (baş lider kuralı):** NPC pencere arzı var ⇒ G7'de ithal pencereli bedel (P-İthal); G8'de değişiklik yok | P-İthal | kapandı |
 | S-14 | ~~`yontem?` inşa alanı~~ **KAPANDI (baş lider):** kabul; protokolde yalnız ekleme (nesne alanı), geriye uyum testi (§16.1); protokol kısmı K2, sırayı Kod lideri belirler | alınır | kapandı |
 | S-15 | ~~A2 commit SHA'sına atıf bağlama~~ **KAPANDI:** `eab8fcc` (A2 §2 bakım sonraki commit'te) | - | kapandı |
 | S-16 | ~~Şebeke fiyat referansı~~ **KAPANDI (baş lider):** TABAN (yakıt 103,5 ₺); `canli` yolu kodda yok; `fiyatReferansi` alanı şemada yok | taban | kapandı |
 | S-17 | ~~Zincir +%33,6 K/U bandının üstünde~~ **KAPANDI (baş lider):** fırın çıktısı 240 (+%21,2) | 240 | kapandı |
-| S-18 | **Kampanya sim haftası** (`floor(gun/7)`; takvim haftası değil) ve gün sınırı (sim günü = 24 sa, 00:00 TRT) kabul mü | evet | A2, baş lider |
+| S-18 | ~~Kampanya sim haftası~~ **KAPANDI (baş lider):** hafta = sim haftası (`floor(gun/7)`), gün sınırı 00:00 TRT; oyuncuya yalnız "bu hafta kalan gün" gösterilir (§7.5b) | kabul | kapandı |
 | S-19 | ~~Dükkân yıkımı~~ **KAPANDI (baş lider):** `insaat_iptal` (%50) inşa sürerken; tamamlanmış dükkân `dukkan_yik` ile yıkılır, **iade yok**, arsa oyuncuda; yalnız `dukkan` (diğer yapılar sonraki sprint) | `dukkan_yik` (§7.9) | kapandı |
 
 ### 21.B T3 §11'in 16 sorusu (tek tek)
@@ -1924,7 +1952,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `ekonomi/uretim.ts:31-88`, `:117-187`, `:236`, `:362`, `:421-483`, `:531`, `:660-668` | `BolgeHesabi.dukkan/dukkanGercek/frD`; `bolgeHesapla(…, yerel)`; katman 4a; `bolgeOranlariUygula` `dukkanGercek`; `bolgeDurumunaYaz` `yerelKarsilanmaPpm` |
 | `lojistik/cozum.ts:228-308`, `:73-81`, `:91-181` | `yerelPazarHesapla` çağrısı; `ParaBilesenleri.yerel`; `hazineKalemleri` gelir ve dükkân gideri |
 | `mulk/perakende.ts` (YENİ) | `yerelPazarHesapla`, `yerelPazarGorunumu`, `dukkanGeliri`, `dukkanlar`, `etkinKademe`, kampanya, `ilcedeDukkanSayisi`, `perakendeKomutu` (5 komut) |
-| `mulk/marka.ts` (YENİ), `ad.ts` (YENİ; `cekirdek/src/ad.ts`) | marka komutları; `adSozdizimiHatasi`, `AD_KURALI` (§7.7) |
+| `mulk/marka.ts` (YENİ), `ad.ts` (YENİ; `cekirdek/src/ad.ts`) | marka komutları; `adSozdizimiHatasi`, `adKanonik` (sabit küçük harf tablosu), `AD_KURALI` (§7.7) |
 | `mulk/komut.ts:262-279`, `:321-382`, `:468-495`, `:497`, `:514`, `:582` | `yapiTuruCoz` (`olcekHucre`, `dukkanTuru`), `yapiPlani` (ek yapı ölçek çarpanı, ilçe sınırı), `yapiUygula` (`ins.dukkanTuru`), `mulkKomutu` switch |
 | `mulk/yapi.ts:54-83` `ekYapiTamamla` | `dukkanVarsayilani` (`baslangic`, `kurulus`) |
 | `mulk/kasa.ts:94-159` | `paraMuhasebesi`: `a.yerel` ⇒ `musluk.yerelNpc` + `dukkanGeliri`; `paraAkisiYaz`: `yerel`, `ilkSatisT` |
