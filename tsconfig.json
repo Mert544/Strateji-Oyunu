@@ -17,6 +17,6 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["packages/*/src/**/*.ts", "packages/*/test/**/*.ts", "vitest.config.ts"],
+  "include": ["scripts/*.ts", "packages/*/src/**/*.ts", "packages/*/test/**/*.ts", "vitest.config.ts"],
   "exclude": ["packages/istemci/**", "node_modules", "istemci"]
 }

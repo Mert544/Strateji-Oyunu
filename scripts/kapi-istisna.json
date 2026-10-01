@@ -1,0 +1,12 @@
+{
+  "aciklama": "Kapı istisna listesi. Yalnız baş lider onayıyla (operasyon lideri aracılığıyla) eklenir; dal sahibi ya da O1 kendiliğinden eklemez. Kapıyı koşturan ağacın kopyası okunur, dalın kendi kopyası değil.",
+  "buyuk_dosya": [
+    {
+      "dal": "takim/o3/g3-izgara",
+      "onay": "baş lider",
+      "gerekce": "Gemlik ve Körfez şerit dosyaları ile Gebze üst verisi depo politikasına istisna olarak onaylandı (1 Ekim 2026)."
+    }
+  ],
+  "kararsiz_playwright": [],
+  "aciklama_kararsiz_playwright": "Boş: 'ilerleyiş önce' kararıyla (P4'ten itibaren) yuru-etkilesim kodda yalnız rapor olarak koşar (scripts/kapi.ts, PLAYWRIGHT listesinde yalnizRapor). Eski desen kuralı gerekirse buraya {betik, desenler, en_cok_hata} girdisi eklenir."
+}

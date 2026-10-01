@@ -1,0 +1,10 @@
+{
+  "aciklama": {
+    "amac": "Yasaklı ad listesi yalnız sunucu süzgecinde (sunucu/src/ad-suzgec.ts) kullanılmalıdır. Derlenmiş istemci çıktısında (dunya.html, harita.js, yuru.js ve diğer .js/.css/.html parçaları) aşağıdaki dizgelerden biri geçerse kapı KIRIK olur (kirik=istemci-sizinti). Eşleşme büyük/küçük harfe duyarsızdır.",
+    "yapilandirma": "Kapıyı koşturan ağaçtan okunur, denenen dalın kopyası sayılmaz. Listeye yalnız operasyon lideri (baş lider onayıyla) ekletir.",
+    "yasakliKelimeler": "Sunucu süzgecinin kelime listesinin değişken adı.",
+    "yasakliIcerik": "Sunucu süzgecinin içerik listesinin değişken adı.",
+    "macrocenter": "T3'ün yasakli-adlar.json listesinden sabit örnek (Kod lideri verdi)."
+  },
+  "dizgeler": ["yasakliKelimeler", "yasakliIcerik", "macrocenter"]
+}

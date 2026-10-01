@@ -1,0 +1,21 @@
+{
+  "aciklama": "K-2 dondurulmuş altın denetimi (şartname §13.1; baş lider ve Kod lideri kararı). Bu yollardaki dosyalar bir paketin hiçbir dalında değişemez; değişirse dal paketten çıkarılır (kirik=dondurulmus-altin, sorumlu=<dal>). Gerçekten değişmesi gerekiyorsa istisnayı yalnız baş lider verir. Listeye ve istisnaya yalnız operasyon lideri (baş lider onayıyla) ekler; kapıyı koşturan ağaçtan okunur, denenen dalın kopyası sayılmaz. Yollar git glob sözdizimindedir (** altındaki her şey). ilk_giris_serbest: bu yollar da dondurulmuştur ama ilk girişleri (ekleme) serbesttir; dosyayı getiren paket kırmaz, ondan sonra her değişiklik KIRIK olur (örnek: mulk-v2-g6oncesi.json, takim/k4/g6-oncesi-fikstur ile gelecek). Eklenen dosya 1 MB'ı aşarsa büyük dosya kuralı ayrıca devreye girer.",
+  "yollar": [
+    "packages/cekirdek/test/fikstur-b1/**",
+    "packages/cekirdek/test/fikstur-b2/**",
+    "packages/cekirdek/test/fikstur-kanit/**",
+    "packages/cekirdek/test/fikstur-goc/bolge-v1*.json",
+    "packages/cekirdek/test/fikstur-goc/mulk-v1*.json",
+    "packages/cekirdek/test/fikstur-goc/icerik-kimlik-kilidi.json",
+    "packages/cekirdek/test/sanayi-regresyon.test.ts",
+    "packages/cekirdek/test/pazar-regresyon.test.ts",
+    "packages/cekirdek/test/regresyon-senaryo.ts",
+    "packages/cekirdek/test/regresyon-pazar-senaryo.ts",
+    "packages/botlar/test/pazar-regresyon.test.ts"
+  ],
+  "istisna": [],
+  "ilk_giris_serbest": [
+    "packages/cekirdek/test/fikstur-goc/mulk-v2-g6oncesi.json",
+    "packages/cekirdek/test/fikstur-goc/mulk-v2-g6oncesi.ust.json"
+  ]
+}
