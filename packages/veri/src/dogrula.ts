@@ -76,8 +76,8 @@ function sonuc(hatalar: string[]): DogrulamaSonucu {
   return hatalar.length === 0 ? { gecerli: true } : { gecerli: false, hatalar };
 }
 
-/** Şemayı çalıştırır; hata varsa Türkçe hata listesi, yoksa ayrıştırılmış veri döndürür. */
-function semaCalistir<T extends ZodTypeAny>(
+/** Şemayı çalıştırır; hata varsa Türkçe hata listesi, yoksa ayrıştırılmış veri döndürür (parsel.ts de kullanır). */
+export function semaCalistir<T extends ZodTypeAny>(
   sema: T,
   ham: unknown,
 ): { tamam: true; veri: T["_output"] } | { tamam: false; hatalar: string[] } {

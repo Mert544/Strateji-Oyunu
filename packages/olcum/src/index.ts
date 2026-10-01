@@ -12,3 +12,4 @@ export { h3Kos, H3_ESIK } from "./h3";
 export { h5Kos, sinirCifti, ikinciSaldiranDevleti, kayanKayipOlc, H5_ESIK_PPM } from "./h5";
 export { h6Kos, H6_ESIK } from "./h6";
 export { h7Kos, H7_ALT, H7_UST } from "./h7";
+export * as parsel from "./parsel/index";

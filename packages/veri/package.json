@@ -7,6 +7,9 @@
     ".": "./src/index.ts",
     "./saf": "./src/saf.ts"
   },
+  "scripts": {
+    "parsel:uret": "tsx src/uretici/parsel-fikstur.ts"
+  },
   "dependencies": {
     "zod": "^3.23.8"
   }
