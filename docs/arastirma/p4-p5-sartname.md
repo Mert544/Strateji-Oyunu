@@ -519,6 +519,8 @@ export interface DerlenmisPerakende {
   ilceNufus: Map<string, number>;
   /** `ekYapilar.dukkan` indeksi (`DerlenmisMulk.ekYapiIndeks.get("dukkan")`). */
   dukkanEkYapi: number;
+  /** Kampanya etkin mi (K4 G7-1b ekledi; §7.5b ile aynı koşul): `kampanyaKademesi` tanımlı ve `kampanyaGunlukEnFazlaSaat > 0` ve `kampanyaHaftalikEnFazlaGun > 0`; aksi halde kampanya kademesi seçilemez (DUK-20). */
+  kampanyaAcik: boolean;
 }
 
 export interface DerlenmisSebeke {
@@ -532,7 +534,9 @@ export interface DerlenmisSebeke {
 }
 ```
 
-`DerlenmisMulk.perakende?: DerlenmisPerakende` ve `DerlenmisMulk.sebeke?: DerlenmisSebeke` eklenir. Hatalar `Error` ile (derleme sırasında; `mulkDerle` `derle.ts:114-198`): bilinmeyen mal/tür, `acikOlcekler` boş, `dukkan` ek yapısı yok, `sebeke.mallar[].mal` içerikte yok. Node-only ek semantik kurallar (V3–V5, V13, V15) çekirdekte **yok** (çekirdek `@bolge/veri`'den yalnız tip alır; `mal-kimlik-kilidi-paket.test.ts` güvencesi).
+`DerlenmisMulk.perakende?: DerlenmisPerakende` ve `DerlenmisMulk.sebeke?: DerlenmisSebeke` eklenir. Hatalar `Error` ile (derleme sırasında; `mulkDerle` `derle.ts:114-198`): bilinmeyen mal/tür, `acikOlcekler` boş, `dukkan` ek yapısı yok, `sebeke.mallar[].mal` içerikte yok. **Uygulanan ek `Error`'lar (K3 G6-2b `derle.ts:226-246`; K4 G7-1b `perakende/derle.ts`):** `sebeke`: tekrarlanan mal, `tavanOraniPpm ∉ (0, 1 000 000]`, `kasaPayiPpm ∉ [0, 1 000 000]`; `perakende`: tekrarlanan dükkân türü, tekrarlanan ilçe, bir mal birden çok talep grubunda, `parsel` ile `parselIzgara` birlikte verilmiş.
+
+**`perakende` derlemesinin yeri (K4 G7-1b `0b5c54d`):** `DerlenmisPerakende` ve `DerlenmisDukkanTuru` tipleri ve `perakendeDerle(veri: CekirdekVeriPaketi, ic: Pick<DerlenmisIcerik, "malIndeks" | "mallar">): DerlenmisPerakende | undefined` işlevi `cekirdek/src/perakende/derle.ts` dosyasındadır (`tipler.ts` değil); K3 G7-1b `mulkDerle`'de `sonuc.perakende = perakendeDerle(veri, ic)` ile **bağlar** ve `DerlenmisMulk.perakende?` tipini oradan içe aktarır. `undefined` döner: `param.mulk` yok, `perakende` bloğu yok ya da parsel dünyası (`veri.parsel` / `veri.parselIzgara`) yok. `dukkanEkYapi` = `Object.keys(mulk.ekYapilar).sort()` içindeki `dukkan` sırası = `mulkDerle`'nin `ekYapiIndeks`'i (`derle.ts:177-188` aynı sıralama; testle çapraz doğrulanır). Izgara ilçesinde `sinif` yoksa en yüksek hücre sınıfı türetilir (V9b; `veri/src/izgara.ts:80`, `mulk/hucreDizini.ts:56` ile aynı tanım; K4'ün `perakende/derle.ts` kopyası üçüncüdür). Node-only ek semantik kurallar (V3–V5, V13, V15) çekirdekte **yok** (çekirdek `@bolge/veri`'den yalnız tip alır; `mal-kimlik-kilidi-paket.test.ts` güvencesi).
 
 ### 4.7 `param.mulk.sebeke` (yeni isteğe bağlı blok; şebekeden otomatik tedarik edilen mallar)
 
@@ -624,10 +628,11 @@ h.elektrik = e;
 - **Sıra: önce kendi santral, sonra şebeke.** `elektrikDagit` santral yükünü talebi izleyecek biçimde zaten ayarlar (`sanayi/elektrik.ts:50-65`); talep arzı aşınca yük `PPM` olur: yani kendi santral **tam yükte** çalışır, açık şebekeden gelir. Santral yoksa `kapasite = 0`, `arz = 0`, `acik = toplam`.
 - Şebekeden alınan elektrik **iletim kaybına uğramaz** (teslim edilen miktar kadar ödenir): `acik` zaten teslim miktarıdır.
 - Şebeke **kapasite sınırı yoktur** (Alfa-0; S-5).
+- **Sanayi kapalıysa elektrik şebekesi yoktur** (K3 G6-2b, uygunluk incelemesi; K3 ucu `uretim.ts:475`): `elektrikUygula` `sn === null` iken erken döner (özgün davranış), bu yüzden `bolgeVerimCoz` elektrik yolunu `sn === null ? null : sebekeElektrikYolu(ctx, b)` ile kurar. **Stoksuz yol (`stoksuz`, §5.2.2b) sanayiden bağımsızdır** (`sebekeStoksuzTablo`, `:476`): sanayisiz mülk dünyasında yakıt şebekeden alınır, elektrik hiç modellenmez. Mülk dünyası fiilen sanayi açıktır; fark yalnız sentetik testlerde görünür.
 - `elektrikUygula` iki kez çağrıldığı için (`:436`, `:517` yinelemeli döngü) şebeke her çağrıda yeniden hesaplanır; son çağrının `h.sebekeMili` değeri geçerlidir (idempotent: `acik` yalnız `verimOn`'un fonksiyonudur).
 - `BolgeHesabi` (`:31`) `sebekeMili: Mili` (geçici; `hesapAl` `:117` her çözümde `0`'a sıfırlar, `:183-187` `h.elektrikGirdi.fill(0)` kalıbı).
 
-**Kalıcı durum:** `BolgeElektrikDurumu` (`tipler.ts:222-237`) `sebekeMili?: Mili`. `bolgeDurumunaYaz` (`:596-603`) `b.elektrik` nesnesini kurduktan sonra: `h.sebekeMili > 0` ise `b.elektrik.sebekeMili = h.sebekeMili`, değilse alan **yazılmaz** (nesne her seferinde baştan kurulduğu için ayrıca silmek gerekmez). `bolgeUykuUygula` (`:562-563`) değişmez. Alan yalnız şebeke etkinken ve gerçekten alım varken görünür: bölge kipi ve eski mülk görüntüleri bayt bayt aynıdır. `serilestir.ts` `b.elektrik`'i doğrulamadığı için doğrulayıcı değişikliği gerekmez (doğrulandı: arama); yine de K3 `sebekeMili` için `tamsayi ≥ 0` denetimini ekler (§11.1).
+**Kalıcı durum:** `BolgeElektrikDurumu` (`tipler.ts:222-237`) `sebekeMili?: Mili`. `bolgeDurumunaYaz` (`:596-603`) `b.elektrik` nesnesini kurduktan sonra: `h.sebekeMili > 0` ise `b.elektrik.sebekeMili = h.sebekeMili`, değilse alan **yazılmaz** (nesne her seferinde baştan kurulduğu için ayrıca silmek gerekmez). `bolgeUykuUygula` (`:562-563`; K3 ucu `:612`) `b.elektrik`'i baştan kurduğu için `sebekeMili` uykuda silinir; **`b.sebekeTuketim` uykuda silinmez** (K3 G6-2b, uygunluk incelemesi): zararsızdır, çünkü uykuya yalnız sahipsiz düğüm girer, sahipsiz düğüm `oyuncuDugumleri`'nde yer almadığından `hazineKalemleri` onu taramaz (bedel yazılmaz) ve kurulum dışında işletme düğümü sahipsiz kalmaz. Alan yalnız şebeke etkinken ve gerçekten alım varken görünür: bölge kipi ve eski mülk görüntüleri bayt bayt aynıdır. `serilestir.ts` `b.elektrik`'i doğrulamadığı için doğrulayıcı değişikliği gerekmez (doğrulandı: arama); yine de K3 `sebekeMili` için `tamsayi ≥ 1` denetimini ekler (yalnız `> 0` iken yazıldığından; §11.1; K3 ucu `serilestir.ts:311`).
 
 #### 5.2.2b Stoksuz tedarik: listedeki depolanabilir mallar (Alfa-0: yakıt)
 
@@ -1667,8 +1672,9 @@ Protokol yalnız **biçim** denetler (docs: `komut-sema.ts` başlığı); sözdi
 | `ParaDurumu.musluk.yerelNpc?` | `tipler.ts:854-860` | ilk yerel gelirde (tembel; G7) | `paraDogrula` (`:478-505`): izinli anahtarlar = `MUSLUK_KALEMLERI` ∪ `MUSLUK_ISTEGE_BAGLI = ["yerelNpc"]`; **zorunlu** liste değişmez; varsa `sayacDogrula` |
 | `ParaDurumu.lavabo.sebeke?` | `tipler.ts:854-860` | ilk şebeke bedeli birikiminde (tembel; G6) | `paraDogrula`: izinli lavabo anahtarları = `LAVABO_KALEMLERI` ∪ `LAVABO_ISTEGE_BAGLI = ["sebeke"]`; zorunlu liste değişmez |
 | `KasaDurumu.giris.sebeke?` | `tipler.ts:863-865` | ilk kasa payı birikiminde (tembel; G6) | `paraDogrula` (`serilestir.ts:493-494`): izinli = `KASA_GIRIS_KALEMLERI` ∪ `KASA_GIRIS_ISTEGE_BAGLI = ["sebeke"]`; zorunlu `sayacDogrula` döngüsü yalnız zorunlu kalemleri dolaşır, `sebeke` varsa ayrıca |
-| `ParaAkisi.sebeke?` | `tipler.ts:884-896` | `sebeke > 0` iken (G6) | `paraAkisi` (`serilestir.ts:570-572`): `alanlar(pa, …, [... , "sebeke"])` izinli listesine **isteğe bağlı** eklenir; `tamsayi ≥ 0`; `paraAkisi.kasa[].kalem` kontrolü (`:581`) `KASA_GIRIS_ISTEGE_BAGLI`'yı da kabul eder |
-| `BolgeElektrikDurumu.sebekeMili?` | `tipler.ts:222-237` | `sebekeMili > 0` iken (G6) | `serilestir.ts` bu nesneyi doğrulamıyor (doğrulandı: arama); K3 `tamsayi ≥ 0` denetimi ekler |
+| `ParaAkisi.sebeke?` | `tipler.ts:884-896` | `sebeke > 0` iken (G6) | `paraAkisi` (`serilestir.ts:570-572`): `alanlar(pa, …, [... , "sebeke"])` izinli listesine **isteğe bağlı** eklenir; `tamsayi ≥ 1` (yalnız `> 0` iken yazılır; K3 ucu `serilestir.ts:583`); `paraAkisi.kasa[].kalem` kontrolü (`:581`) `KASA_GIRIS_ISTEGE_BAGLI`'yı da kabul eder |
+| `BolgeElektrikDurumu.sebekeMili?` | `tipler.ts:222-237` | `sebekeMili > 0` iken (G6) | `serilestir.ts` bu nesneyi doğrulamıyor (doğrulandı: arama); K3 `tamsayi ≥ 1` denetimi ekler (`serilestir.ts:311`, K3 ucu) |
+| `BolgeDurumu.sebekeTuketim?` (G6, §5.2.2b) | `tipler.ts:238` (K3 ucu `:312`) | şebekeli stoksuz mal tüketimi `> 0` iken; yoksa alan silinir | `dunyaDogrula` (K3 ucu `serilestir.ts:312-314`): nesne, her değer `tamsayi ≥ 1`; anahtarlar **mal kimliği**; `dunyaIcerikUyumu` (`:714`): anahtar `ic.malIndeks`'te olmalı |
 | `InsaatDurumu.yontem?` | `tipler.ts:476-503` | `yontem` verilen tesis inşaatında (G6) | `$.insaatlar[i]` (`:392`): `dize`; `dunyaIcerikUyumu`: yöntem içerikte ve türün listesinde; **ek kural (K3 G6-2a, `serilestir.ts:717`):** `yontem` yalnız `tur === "tesis"` ve `ekYapi === undefined` inşaatında olabilir (bozuk görüntü reddi) |
 
 `Dunya` üst düzeyine alan **eklenmez** (`DUNYA_ISTEGE_BAGLI`, `serilestir.ts:244`, değişmez). `paraDurumuKur` (`paraSayac.ts:54-60`) **yeni kalemi yaratmaz** (yoksa tüm mülk dünyalarının özeti değişirdi; K3 keşif tuzağı).
@@ -1677,7 +1683,7 @@ Protokol yalnız **biçim** denetler (docs: `komut-sema.ts` başlığı); sözdi
 
 ### 11.2 İçerik uyumu (`dunyaIcerikUyumu`, `serilestir.ts:681-`)
 
-Eklenenler: (a) `perakende` tanımsızken herhangi bir `DukkanDurumu` varsa hata; (b) `DukkanDurumu.tur` ∈ `perakende.dukkanTurleri`; (c) her yuvanın `mal` kimliği `ic.malIndeks`'te ve türün mal kümesinde (**yeni içerik eski dükkânın malını kaldırırsa** hata değil uyarı değildir: yalnız-ekle ilkesi mal/tür çıkarmayı yasaklar); (d) `fiyat < fiyatKademeleriPpm.length`; (e) `raf.length === olcekler[olcek].rafYuvasi`; (f) `marka < markalar.length`.
+Eklenenler: (a) `perakende` tanımsızken herhangi bir `DukkanDurumu` varsa hata; (b) `DukkanDurumu.tur` ∈ `perakende.dukkanTurleri`; (c) her yuvanın `mal` kimliği `ic.malIndeks`'te ve türün mal kümesinde (**yeni içerik eski dükkânın malını kaldırırsa** hata değil uyarı değildir: yalnız-ekle ilkesi mal/tür çıkarmayı yasaklar); (d) `fiyat < fiyatKademeleriPpm.length`; (e) `raf.length === olcekler[olcek].rafYuvasi`; (f) `marka < markalar.length`; (g) **(G6, K3 ucu `serilestir.ts:714`)** `BolgeDurumu.sebekeTuketim` anahtarları `ic.malIndeks`'te olmalı.
 
 ### 11.3 Göç ve eski görüntü
 
@@ -2154,7 +2160,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `lojistik/cozum.ts:293-308` | `paraAkisiYaz({ …, sebeke, kasa: kasaOranlari(…, sebekeIlce) })` |
 | `mulk/kasa.ts:94-125` `paraMuhasebesi` | `sebeke` kolu, lazy kalemler (§5.2.5) |
 | `mulk/kasa.ts:133-159` `paraAkisiYaz` | `sebeke` alanı ve eşitlik dalı |
-| `mulk/kasa.ts:205` `kasaOranlari` ve `kasaOranlariHesapla`, `KasaOnbellegi` | `sebekeIlce` girdisi ve önbellek anahtarı |
+| `mulk/kasa.ts:205` `kasaOranlari` ve `kasaOranlariHesapla`, `KasaOnbellegi` | `sebekeIlce` girdisi ve önbellek anahtarı (K3 ucu: `kasaOranlari`'nda 7. parametre **varsayılanlı** `BOS_ILCE_TUTARLARI`, eski 6 argümanlı çağrı aynen geçer; `kasaOranlariHesapla`'da zorunlu) |
 | `mulk/kasa.ts:47`, `:56` (`kasaAl`, `kasaToplam`) | `giris.sebeke` toplama (kurma **değil**) |
 | `derle.ts:114-198` `mulkDerle` (şebeke) | `DerlenmisSebeke.*.birimFiyatMili = taban × kamuIthalatCarpaniPpm × tavanOraniPpm` (derleme zamanı; ayrı fiyat işlevi yok) |
 | `mulk/komut.ts:262-279` `yapiTuruCoz`, `:468-495` `yapiUygula`, `:514` | `yontem` alanı denetimi ve `ins.yontem` yazımı |
@@ -2189,6 +2195,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `tipler.ts:638-674`, `:966-975` `Komut`, `MulkKomutu` | `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`, `dukkan_yik`, `marka_sifirla`; `dukkanTuru?` |
 | `komutSemasi.ts:14,17,27-64` | `AlanTuru += "metin"` (`SISTEM_ALAN_TURLERI`'ne eklenmez); altı giriş |
 | `derle.ts:114-198` `mulkDerle` | `DerlenmisPerakende` (§4.6), `ilceNufus`, `talepTaban` (ilçe → mal; `ilceNufusEsdegeri`) |
+| `perakende/derle.ts` (YENİ; K4 G7-1b `0b5c54d`) | `perakendeDerle(veri, ic)`, `DerlenmisPerakende` (+ `kampanyaAcik`), `DerlenmisDukkanTuru`; `mulkDerle`'den bağlama K3'ün (G7-1b) |
 | `veri/src/parsel.ts:~89` `ParselIlceTanimi`, `ilceSema` (`:~191` yanı), `parselFiksturuDogrula` (`:~242`) | `nufus?: number` isteğe bağlı (V9b) |
 | `ekonomi/uretim.ts:31-88`, `:117-187`, `:236`, `:362`, `:421-483`, `:531`, `:660-668` | `BolgeHesabi.dukkan/dukkanGercek/frD`; `bolgeHesapla(…, yerel)`; katman 4a; `bolgeOranlariUygula` `dukkanGercek`; `bolgeDurumunaYaz` `yerelKarsilanmaPpm` |
 | `lojistik/cozum.ts:228-308`, `:73-81`, `:91-181` | `yerelPazarHesapla` çağrısı; `ParaBilesenleri.yerel`; `hazineKalemleri` gelir ve dükkân gideri |
