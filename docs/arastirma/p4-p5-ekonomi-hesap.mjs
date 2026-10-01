@@ -230,7 +230,7 @@ yaz("### 2.4 İthalatla ortadan başlamak ↔ kapalı zincir (kademe başına uz
 yaz();
 {
   const elekB = SEB_EL;
-  const kademe = (ad, y, ozel = {}) => {
+  const kademe = (ad, y) => {
     const sat = Object.entries(y.ciktilar).reduce((t, [m, q]) => t + (q / 1000) * ihrac(m, false), 0);
     const gir = Object.entries(y.girdiler).reduce((t, [m, q]) => t + (q / 1000) * (m === "elektrik" ? elekB : m === "yakit" ? SEB_YK : ithal(m, false)), 0);
     const bk = (y.bakim.parca / 1000) * ithal("parca", false) + PR.ekonomi.tesisIsletmeParasiSaat / 1000;
@@ -336,7 +336,6 @@ yaz();
 yaz("### 3.1 Dükkân bedelindeki pencere: iki seçenek (A3 seçecek)");
 yaz();
 const dk = bedel("dukkan", 0);
-const bPencereli = { para: 6000, celik: 20, parca: 8, pencere: 4 };
 const penNPC = ithal("pencere", false);
 const penKor = ithal("pencere", true);
 yaz(baslik("Seçenek", "Veri (kod birimi)", "Taban değer", "İlk dükkân (indirimsiz) nakit", "İlk 5 yapıda %30 ile nakit", "Ek koşul"));
@@ -600,8 +599,6 @@ yaz();
 const YEREL_OLCEK = 50; // dikey §5.6 ilk tahmin (kalibre edilmedi)
 const TALEP = { gida: 120, ekmek: 60, sut_urunu: 20, sekerleme: 6, pencere: 8, cimento: 6 }; // mili-birim/1000 kişi/sa (dikey §5.6)
 const Qm = (N, m) => ((N / 1000) * TALEP[m] * YEREL_OLCEK) / 1000; // birim/sa
-const ESNAF_W = (1 / 1.12) ** 2;
-const ESNAF_TABAN = 0.25;
 // Çekim ağırlığı: w = (ref/fiyat)² · (1+0,25·çeşit)  (canlı-dünya §4.1). TAMSAYI/PPM: Math.pow/sqrt yok; kare iki bölmeyle alınır.
 // Girdi/çıktı mili-birim ve ppm; kasa su-doldurma; esnaf tabanı %25.
 const ters = (pPpm) => Math.floor((PPM * PPM) / pPpm); // 1/p (ppm)
@@ -1032,8 +1029,7 @@ yaz("Para defteri: yeni musluk kalemi `yerelNpc` (NPC hane alımı). `Dunya.mulk
 yaz();
 // ---------------------------------------------------------------------------------------------------------------- 7 simülasyon
 // Saatlik nakit modeli. Para ₺, miktar birim (kayan nokta; kâğıt model). Kâr/zarar kalemleri defter kalemleri olarak ayrıştırılır.
-function simule({ varyant, plan, saat, nufus = 50000, dukkanFiyat = 1.05, hasat = 1.0, ilkSatis = true, ozet = [] }) {
-  const E = varyant === "E";
+function simule({ plan, saat, nufus = 50000, dukkanFiyat = 1.05, hasat = 1.0, ilkSatis = true, ozet = [] }) {
   const st = { hazine: MULK.yeniOyuncu.hibe / 1000, stok: { celik: 120, parca: 40, gida: 200 }, yapiSayisi: 0, hucre: 6, insaat: [], tesis: [], defter: {}, odul: 0, ilkSatisYapildi: false, zincirKapandi: false, ilkDukkan: false };
   const log = [];
   const ekle = (k, v) => {
@@ -1044,11 +1040,7 @@ function simule({ varyant, plan, saat, nufus = 50000, dukkanFiyat = 1.05, hasat 
   const iy = (m, t) => ithal(m, kor(t));
   const bekleyen = [...plan];
   const elekBirim = (t) => (0.25 / 0.95) * iy("komur", t);
-  const aktif = () => st.tesis.filter((x) => x.bitis <= t_ && x.bitis !== Infinity);
-  let t_ = 0;
   for (let t = 0; t < saat; t++) {
-    t_ = t;
-    const gunluk = (k, v) => ekle(k, v);
     // 1) inşaat başlat (eşzamanlı ≤2)
     const surenInsaat = () => st.insaat.filter((x) => x.bitis > t).length;
     for (let i = 0; i < bekleyen.length; ) {
@@ -1291,7 +1283,7 @@ yaz();
 yaz("Varsayımlar: ilçe nüfusu 50 bin (ilçede tek oyuncu), hasat çarpanı 1,0 (Ekim; karadeniz 1,05), dükkân fiyatı 1,05 R, yalnız ekmek rafı (çeşit 0,5), NPC satış korumada (komisyonsuz, ihracat ×0,90), ithalat ×1,10. Kit gıdası t=0'da satılır. Yapı sırası: esZamanliInsaat=2; gün 2'de ahır (kepek → gübre). Ödüller çekirdek tablosundan (`ilk_satis` 500 ₺, `zincir_kapandi` 700 ₺; mal ödülleri stoğa). Hücre: 6 yurt, gerisi kasaba 2.500 ₺ (dükkân ×1,45). Hasat, toprak ve NPC fiyat dinamiği yok.");
 yaz();
 for (const v of ["S", "E"]) {
-  const { st, log } = simule({ varyant: v, plan: planS1(v), saat: 168, ozet: SAATLER });
+  const { log } = simule({ varyant: v, plan: planS1(v), saat: 168, ozet: SAATLER });
   yaz(`### 7.${v === "S" ? 1 : 2} Varyant ${v}: ${v === "S" ? "santralsiz, kamu şebekesi (elektrik 10,35 ₺, yakıt 103,5 ₺)" : "isteğe bağlı santral yatırımı (kendi elektriği; yakıt kamu)"}`);
   yaz();
   yaz("Olaylar: " + log.filter((x) => x.olay).map((x) => `t=${ond(x.t, 2)} sa ${x.olay}`).join("; ") + ".");
@@ -1310,7 +1302,7 @@ for (const v of ["S", "E"]) {
   yaz();
   const gunler = [[1, 0, 24], [3, 48, 72], [7, 144, 168]];
   const kalemler = new Set();
-  for (const [, a, b] of gunler) for (const k of Object.keys(snap[b].defter)) kalemler.add(k);
+  for (const [, , b] of gunler) for (const k of Object.keys(snap[b].defter)) kalemler.add(k);
   yaz(baslik("Kalem", ...gunler.map(([g]) => `Gün ${g}`)));
   for (const k of [...kalemler]) {
     const vals = gunler.map(([, a, b]) => (snap[b].defter[k] ?? 0) - (a === 0 ? 0 : snap[a].defter[k] ?? 0));
@@ -1333,7 +1325,7 @@ yaz();
 yaz("Hat: silis (ithal) + yakıt + elektrik → cam fırını; çelik (ithal) + cam + parça (ithal) + elektrik → doğrama; pencere NPC'ye satılır, cam fazlası NPC'ye. S1-S planına gün 3'te iki yapı eklenir (altıncı ve yedinci yapı: indirim yok).");
 yaz();
 {
-  const { st, log } = simule({ varyant: "S", plan: planS2(), saat: 168, ozet: [72, 96, 120, 144, 168] });
+  const { log } = simule({ varyant: "S", plan: planS2(), saat: 168, ozet: [72, 96, 120, 144, 168] });
   yaz("Olaylar: " + log.filter((x) => x.olay && x.t >= 72).map((x) => `t=${ond(x.t, 2)} ${x.olay}`).join("; ") + ".");
   yaz();
   const snap = {};
