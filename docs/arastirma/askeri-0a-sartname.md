@@ -163,6 +163,7 @@ export interface AskeriEskiyaParametreleri {
   boyGucu: number;
   // --- planlama ---
   gunlukOlasilikPpm: number;
+  /** Bekleme sayacı (A2 E-2; Ar-Ge lideri): ilçenin SON BASKIN GÜNÜNDEN (baskının gerçekleştiği sim günü) sayılır, planlama gününden DEĞİL. Planlama günü D'de ilçe uygundur ⇔ D − sonBaskınGünü ≥ beklemeGun (hiç baskın görmemişse sınır yok). Ortalama baskın aralığı = planlamaOncesiGun + beklemeGun + 1/gunlukOlasilik − 1 (gün). */
   beklemeGun: number;
   /** Baskın bandı: günün `bantBaslangicSaat` saatinden başlayan `dilimSayisi` ardışık `dilimSaat` saatlik dilim (TRT; sim günü 00:00 TRT, S-18). */
   bantBaslangicSaat: number;
@@ -203,20 +204,22 @@ export interface AskeriEskiyaParametreleri {
 // "ikmalCarpaniPpm": 0a verisinde YOK (S-1; 0b: bayrakla birlikte 250000)
 "eskiya": {
   "etkin": false,
-  "servetEsigiMili": 250000000, "servetAdimiMili": 250000000, "enCokBoy": 8, "boyGucu": 100,
-  "gunlukOlasilikPpm": 333333, "beklemeGun": 4,
+  "servetEsigiMili": 250000000, "servetAdimiMili": 500000000, "enCokBoy": 8, "boyGucu": 100,
+  "gunlukOlasilikPpm": 250000, "beklemeGun": 3,
   "bantBaslangicSaat": 19, "dilimSayisi": 4, "dilimSaat": 1, "planlamaOncesiGun": 2,
   "duyuruSaat": 24, "kuleEkiSaat": 12,
   "tahminAltPpm": 750000, "tahminUstPpm": 1250000, "kuleTahminAltPpm": 900000, "kuleTahminUstPpm": 1100000,
   "nobetEviGuc": 100, "karakolGuc": [100, 50],
-  "yagmaOraniPpm": 100000, "yagmaPenceresiSaat": 24,
-  "yapiDevreDisiPpm": 100000, "yapiDevreDisiSaat": 24,
+  "yagmaOraniPpm": 250000, "yagmaPenceresiSaat": 24,
+  "yapiDevreDisiPpm": 250000, "yapiDevreDisiSaat": 24,
   "yenilgiKayipPpm": 150000, "galibiyetKayipPpm": 0, "reviriGeriPpm": 400000, "reviriGeriSaat": 24,
   "kalkanSonrasiYagmaPpm": 50000, "ganimetKatkiAltPpm": 100000,
   "ganimet": { "muhimmat": 3000, "yakit": 2000 },
   "ilceHaftalikGanimetTavaniMili": 6500000
 }
 ```
+
+**Değerler A2 kalibrasyonundan** (`takim/a2/eskiya-kalibrasyon` `79ea178`, baş lider onaylı; **değerler 0b verisine girer, 0a'da `etkin: false` kalır**): `servetAdimiMili` 500 000 ₺, `gunlukOlasilikPpm` 250 000, `yagmaOraniPpm` ve `yapiDevreDisiPpm` 250 000 (E-4: oran %25, yalnız 0b verisi). **`beklemeGun` notu:** A2'nin `5`i bekleme sayacını **planlamadan** saydı (ortalama aralık 8 gün, ilçe başına haftada 0,88 baskın). Sayaç **baskın gününden** tanımlandığı için (yukarıdaki alan açıklaması) ve baskın planlamadan `planlamaOncesiGun = 2` gün sonra olduğundan eşdeğer değer **3**'tür (`D2 − P1 ≥ 5` ⇔ `D2 − B1 ≥ 3`; ortalama aralık `2 + 3 + 4 − 1 = 8` gün). Örnekte 3 yazılıdır; 5 yazılırsa ortalama aralık 10 gün olur (A2 tablosu geçerli kalmaz). **Karar için Ar-Ge lideri/baş lider onayı: S-10.**
 
 **Doğrulayıcı (Katman 1: `veri/src/sema.ts` zod `.strict()` + `veri/src/dogrula.ts` `dogrulaParametreler` yanına; Node-only değildir, çekirdek paketine girmez):**
 
@@ -581,6 +584,8 @@ Kural: testler **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedef
 
 ## 14. Sıra, rollere istek ve bot/ölçüm
 
+**Not (baş lider):** askeri 0a **bu sprintte koda dönüşmez**; depoya yalnız belge olarak girer. K3 ve T3'e **bu sprintte istek yoktur**; aşağıdaki sıra ve rol tablosu 0a kodlanacağı sprint içindir.
+
 **Sıra (Ar-Ge lideri: "bir sonraki sprintte P5'ten sonra"; K3 tek yazar):** P4/P5 (G6–G8) kapısı yeşil → **0a-1** şema (K3: `veri/src/{tipler,sema,dogrula}.ts`, `MulkEkYapiTanimi`, `askeri.eskiya`; **hiçbir JSON değişmez**; altınlar aynı) → **0a-2** çekirdek (`askeri/{kimlik,nobet,yagma}.ts`, `birlikUret`/`savunmaEmri`/`savasIlan` kapı + düğüm, Ordugâh şartı, `ikmalTalebi`, `ekYapiToplami`, `yapiTuruCoz` kapısı, `serilestir.ts` doğrulayıcı, `derle.ts` iki alan; blok yokken no-op) → **0a-3** veri (T3 tek commit: `askeri.eskiya` `etkin: false`, üç ek yapı kaydı, `nobet_evi` aşaması; `kuralSurumu` ARTAR; mülk altınları gerekiyorsa TEK commit'te eski/yeni raporlu; bölge altınları BİREBİR) → **0a-4** kanıtlar ve test uyarlamaları. **Birleştirme çatışması:** `sema.ts`, `tipler.ts`, `derle.ts`, `serilestir.ts`, `parametreler.json` P4/P5 ile aynı dosyalardır; K3 sırayla yazar, 0a önceki dilimin kapısı yeşilken başlar.
 
 | Rol | İstek |
@@ -621,12 +626,21 @@ Kural: testler **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedef
 | S-1 | ~~İkmal ×0,25 verisi 0a'da mı~~ **KAPANDI (Ar-Ge lideri):** değer 0b'de bayrakla gelir; 0a'da veri yok, yalnız şema ve çekirdek yolu | alan verisi yok | kapandı |
 | S-2 | ~~`nobet_evi` aşaması~~ **KAPANDI:** `A0-ops` | `A0-ops` | kapandı |
 | S-3 | ~~`savas_ilan` da mülk kapısından geçsin mi~~ **KAPANDI:** evet, aynı `askeri kapali` | evet | kapandı |
-| S-4 | AK §2.2 arsa türü/komşuluk matrisi parsel fikstüründe karşılıksız (kullanım türü yok); 0a'da uygulanmaz. O3 ileride hücre kullanım türü eklerse ayrı iş | uygulanmaz | baş lider, O3 |
+| S-4 | ~~AK §2.2 arsa türü/komşuluk matrisi~~ **KAPANDI (baş lider):** fikstürde karşılıksız, 0a'da uygulanmaz (O3 ileride kullanım türü eklerse ayrı iş) | uygulanmaz | kapandı |
 | S-5 | ~~Bayrak açılış tohumu~~ **KAPANDI (0b):** ilk `eskiya_gunluk` olayını kimin planladığı 0b tasarımıdır | 0a'da olay planlanmaz | kapandı (0b) |
-| S-6 | `Dunya.baskinlar` şeması 0a'ya mı 0b'ye mi | **0b** (0a'da yalnız ad ve şekil rezervi; dead alan eklenmez) | baş lider |
-| S-7 | Yağma penceresi **sabit** (ilk yağmada açılır) mi kayan mı (AK "24 sa kayan") | sabit (§9.1; H5 payda tanımıyla uyumu gösterildi) | baş lider |
-| S-8 | PvP yağma iletimi %60 (Y-36) ve `param.askeri.yagmaIletimPpm`: şemada alan 0a'da YOK, yalnız ad rezerve; uygulama Alfa-1 | rezerv | baş lider |
-| S-9 | AK'den sapmalar onayı: (1) ek yapıda `nobetciGucu`/`duyuruEkiSaat` yok (tek kaynak `eskiya.*`), (2) `ganimet` mal-kimlikli `Record`, (3) arsa matrisi yok (S-4) | sapmalar kabul | baş lider |
+| S-6 | ~~`Dunya.baskinlar` şeması 0a'ya mı 0b'ye mi~~ **KAPANDI (baş lider):** 0b (0a'da yalnız ad ve şekil rezervi) | 0b | kapandı |
+| S-7 | ~~Yağma penceresi sabit mi kayan mı~~ **KAPANDI (baş lider):** sabit (ilk yağmada açılır; §9.1) | sabit | kapandı |
+| S-8 | ~~PvP yağma iletimi %60 ve `yagmaIletimPpm` adı~~ **KAPANDI (baş lider):** şemada alan 0a'da YOK, yalnız ad rezerve; uygulama Alfa-1 | rezerv | kapandı |
+| S-9 | ~~AK'den sapmalar~~ **KAPANDI (baş lider):** (1) ek yapıda `nobetciGucu`/`duyuruEkiSaat` yok (tek kaynak `eskiya.*`), (2) `ganimet` mal-kimlikli `Record`, (3) arsa matrisi yok | kabul | kapandı |
+| S-10 | Bekleme sayacı baskın gününden sayılıyor (A2 E-2): A2'nin `beklemeGun: 5`i planlamadan sayılan değerdir; eşdeğeri baskın gününden **3**'tür (§4.1). Örnek 3 yazıldı; 5 istenirse ortalama aralık 8 → 10 gün | `beklemeGun: 3` | Ar-Ge lideri, baş lider |
+
+### 16b. 0b açık soruları (0a'yı bloke etmez; 0b tasarımında karara bağlanır)
+
+| # | Soru | Not | Kime |
+|---|---|---|---|
+| 0b-1 | **Bedava binici:** Karakol ve Nöbet Evi kamu malıdır (ilçedeki herkesin savunmasına katkı); yalnız kuranlar öder | Baş lider önerisi: **ilçe kamu kasasından katkı**, mevcut kasa düzenine bağlansın (kasa yalnız yanan paradan beslenir; ödenek/kamu NPC alıcısı kalıbı); **yeni musluk açılmaz** (L6, para korunumu) | 0b tasarımı (A2 + A3) |
+| 0b-2 | **Büyük boyda savunma ödemiyor (boy ≥ 6, A2 kalibrasyonu):** savunma maliyeti beklenen yağma kaybını aşıyor | Ya **boya göre yağma oranı** (`yagmaOraniPpm` ölçeğe bağlı) ya da **savunma bedeli kademesi** gerekir; seçim A2 ölçümüyle (AH3) | A2, baş lider |
+| 0b-3 | E-4: yağma ve yapı devre dışı oranı %25 (yalnız 0b verisi, 0a'da `etkin: false`) | **KAPANDI (baş lider)**: onaylandı | kapandı |
 
 ## Ek A. Değişen dosya ve fonksiyonlar (Parça 1; `dosya:satır`, taban `7553b55`)
 
