@@ -32,7 +32,7 @@ body {
 }
 button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
 button { cursor: pointer; }
-button:disabled { cursor: not-allowed; }
+button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 :focus-visible { outline: 2px solid var(--odak); outline-offset: 2px; }
 input:focus-visible, select:focus-visible { outline-offset: 0; }
 b, strong { font-weight: 600; }
@@ -61,17 +61,17 @@ a { color: var(--birincil-ink); }
   font-size: var(--yazi-md); font-weight: 500; line-height: 1.2; white-space: nowrap; text-decoration: none;
   transition: background-color var(--sure-hizli) var(--ease-standart), border-color var(--sure-hizli) var(--ease-standart), color var(--sure-hizli) var(--ease-standart), transform var(--sure-anlik) var(--ease-standart);
 }
-.dugme:hover:not(:disabled), .eylem:hover:not(:disabled), .mini-dugme:hover:not(:disabled) { background: var(--yuzey-3); }
-.dugme:active:not(:disabled), .eylem:active:not(:disabled), .komut-gonder:active:not(:disabled), .mini-dugme:active:not(:disabled) { transform: scale(0.98); }
+.dugme:hover:not(:is(:disabled, [aria-disabled="true"])), .eylem:hover:not(:is(:disabled, [aria-disabled="true"])), .mini-dugme:hover:not(:is(:disabled, [aria-disabled="true"])) { background: var(--yuzey-3); }
+.dugme:active:not(:is(:disabled, [aria-disabled="true"])), .eylem:active:not(:is(:disabled, [aria-disabled="true"])), .komut-gonder:active:not(:is(:disabled, [aria-disabled="true"])), .mini-dugme:active:not(:is(:disabled, [aria-disabled="true"])) { transform: scale(0.98); }
 .birincil, .eylem.birincil, .komut-gonder, .dugme.birincil {
   background: var(--birincil); border-color: var(--birincil); color: var(--birincil-ustu); font-weight: 600;
 }
-.birincil:hover:not(:disabled), .eylem.birincil:hover:not(:disabled), .komut-gonder:hover:not(:disabled) { background: var(--birincil-hover); border-color: var(--birincil-hover); }
-.birincil:disabled, .komut-gonder:disabled, .dugme:disabled, .eylem:disabled {
+.birincil:hover:not(:is(:disabled, [aria-disabled="true"])), .eylem.birincil:hover:not(:is(:disabled, [aria-disabled="true"])), .komut-gonder:hover:not(:is(:disabled, [aria-disabled="true"])) { background: var(--birincil-hover); border-color: var(--birincil-hover); }
+:is(.birincil, .komut-gonder, .dugme, .eylem):is(:disabled, [aria-disabled="true"]) {
   background: var(--yuzey-2); border-color: var(--yuzey-2); color: var(--murekkep-4);
 }
 .ton, .eylem.ton, .dugme.ton { background: var(--birincil-tint); border-color: transparent; color: var(--birincil-ink); font-weight: 600; }
-.ton:hover:not(:disabled), .eylem.ton:hover:not(:disabled) { background: var(--birincil-cizgi); }
+.ton:hover:not(:is(:disabled, [aria-disabled="true"])), .eylem.ton:hover:not(:is(:disabled, [aria-disabled="true"])) { background: var(--birincil-cizgi); }
 .hayalet, .dugme.hayalet { border-color: transparent; background: transparent; }
 .tehlike, .dugme.tehlike { background: var(--hata); border-color: var(--hata); color: var(--birincil-ustu); }
 .mini-dugme { min-height: 30px; padding: 0 var(--s-3); font-size: var(--yazi-sm); border-radius: var(--r-sm); }

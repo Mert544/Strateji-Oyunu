@@ -32,7 +32,7 @@
 /* Düğme tek başına da çalışır (`.birincil.gr-dugme`): çerçeve ve hizalama burada; zemin ve renk temel.css'te (.birincil, .eylem) */
 .gr-dugme { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); width: 100%; min-height: 48px; border: 1px solid var(--cizgi); border-radius: var(--r-md); font-size: var(--yazi-md); font-weight: 500; cursor: pointer; }
 .gr-dugme.birincil { font-weight: 600; }
-.gr-dugme.birincil:not(:disabled) { border-color: var(--birincil); }
+.gr-dugme.birincil:not(:is(:disabled, [aria-disabled="true"])) { border-color: var(--birincil); }
 .gr-dugme:disabled { cursor: not-allowed; }
 .gr-dugme[data-durum="yukleniyor"] { cursor: progress; }
 .gr-yardim summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-size: var(--yazi-sm); font-weight: 600; color: var(--birincil-ink); }
