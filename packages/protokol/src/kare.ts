@@ -296,6 +296,22 @@ function kamuKompakt(d: Dunya, ilce: string): { adet: number; gruplar: KamuGrubu
   return k ?? undefined;
 }
 
+/**
+ * Sıcak yol arayüzü: ilçenin ayrılmış hücreleri, kimliğe göre (JS dize sırası) sıralı. Kompakt hücre dizinli dünyada (`mk.dizin`, BHI1 ızgarası;
+ * ilçe başına yüz binlerce hücre) `dizin.ayrilmisListe(ilce)` çağrılır (önbellekli; ilçe tanımının `hucreler` dizisi açılmaz). Dizinsiz (JSON fikstürü)
+ * dünyada bugünkü hesap aynen sürer: `hucreler.filter(ayrilmis).sort()`. İki yol aynı listeyi verir (protokol testi).
+ */
+export interface AyrilmisListeKaynagi {
+  ayrilmisListe(ilce: string): readonly string[];
+}
+
+function ayrilmisListeHesapla(mk: DerlenmisMulk, ilce: string): string[] {
+  const dizin = (mk as unknown as { dizin?: AyrilmisListeKaynagi }).dizin;
+  if (dizin !== undefined) return [...dizin.ayrilmisListe(ilce)];
+  const t = mk.ilceler.get(ilce);
+  return t ? t.hucreler.filter((h) => mk.ayrilmis.has(h.id)).map((h) => h.id).sort() : [];
+}
+
 /** İlçe başına ayrılmış hücre listesi (türetilmiş; çekirdek derlemesi başına bir kez hesaplanır, referans sabittir). */
 const ayrilmisOnbellek = new WeakMap<DerlenmisMulk, Map<string, string[] | null>>();
 function ayrilmisHucreler(mk: DerlenmisMulk, ilce: string): string[] | undefined {
@@ -303,8 +319,7 @@ function ayrilmisHucreler(mk: DerlenmisMulk, ilce: string): string[] | undefined
   if (!m) ayrilmisOnbellek.set(mk, (m = new Map()));
   let l = m.get(ilce);
   if (l === undefined) {
-    const t = mk.ilceler.get(ilce);
-    const liste = t ? t.hucreler.filter((h) => mk.ayrilmis.has(h.id)).map((h) => h.id).sort() : [];
+    const liste = ayrilmisListeHesapla(mk, ilce);
     m.set(ilce, (l = liste.length > 0 ? liste : null));
   }
   return l ?? undefined;

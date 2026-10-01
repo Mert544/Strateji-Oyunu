@@ -378,3 +378,32 @@ describe("ilce karesi ayrilmisSatilmis (yalniz ekleme, istege bagli nesne alani)
     expect((k.ilceler[0] as { ayrilmisSatilmis?: number }).ayrilmisSatilmis).toBe(1);
   });
 });
+
+describe("ayrilmis liste sicak yol arayuzu (dizin.ayrilmisListe)", () => {
+  it("dizinsiz (JSON) dunyada bugunku hesap; dizinli dunyada dizin.ayrilmisListe cagrilir ve ilce hucre dizisi ACILMAZ; iki yol ayni listeyi verir; onbellekli", () => {
+    const { sim: a } = kurulum();
+    const oyuncu = "ali";
+    const l1 = kare(a, oyuncu).ilceler?.find((c) => c.id === ILCE)?.ayrilmis;
+    expect(l1?.length).toBeGreaterThan(0);
+    expect(l1).toEqual([...(l1 ?? [])].sort());
+
+    const { sim: b } = kurulum();
+    const mk = b.ic.mulk as unknown as { ilceler: Map<string, { hucreler: unknown }>; dizin?: { ayrilmisListe(i: string): readonly string[] } };
+    let cagri = 0;
+    mk.dizin = {
+      ayrilmisListe(i: string): readonly string[] {
+        cagri++;
+        return i === ILCE ? (l1 as string[]) : [];
+      },
+    };
+    // İlçe tanımının hücre dizisi açılırsa (büyük ilçede HucreDiziniBuyukHatasi) test kırılır.
+    const tanim = mk.ilceler.get(ILCE) as { hucreler: unknown };
+    Object.defineProperty(tanim, "hucreler", { get: () => { throw new Error("hucre dizisi acilmamali"); } });
+    const k1 = kare(b, oyuncu);
+    expect(k1.ilceler?.find((c) => c.id === ILCE)?.ayrilmis).toEqual(l1);
+    expect(k1.ilceler?.find((c) => c.id === ILCE)?.ayrilmisAdet).toBe(l1?.length);
+    kare(b, oyuncu);
+    expect(cagri).toBe(1); // ilçe başına bir kez (referans sabit önbellek)
+    expect(IlgiKaresiSemasi.parse(k1)).toEqual(k1);
+  });
+});

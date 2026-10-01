@@ -272,6 +272,11 @@ function uyku(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Çekirdeğin `HucreDiziniBuyukHatasi`'ı (sınıf bağlanana kadar ad denetimiyle; `@bolge/cekirdek` dışa açınca `instanceof` ile değişir). */
+export function hucreDiziniBuyukMu(e: unknown): boolean {
+  return e instanceof Error && e.name === "HucreDiziniBuyukHatasi";
+}
+
 export class DunyaYazari {
   readonly kuralSurumu: string;
   readonly commitAraligiMs: number;
@@ -470,7 +475,7 @@ export class DunyaYazari {
       if (k.kuralSurumu !== kuralSurumu) throw new Error(`gunluk kaydi ${k.seq} farkli kural surumuyle yazilmis: ${k.kuralSurumu}`);
       y.donusOnce(k.t);
       const onceki = y.odulAcik ? sonEtkinlik(sim.dunya, k.oyuncu) : null;
-      const r = sim.uygula({ t: k.t, oyuncu: k.oyuncu, komut: k.komut });
+      const r = y.simUygula(k, true);
       y.donusKomutSonrasi(k.oyuncu, k.komut, r);
       y.odulKomutSonrasi(k, r, onceki); // yeniden oynatma: yalnız damga; yeni ödül KOMUTU üretmez (günlükteki ödüller zaten oynatılır)
       if (!r.tamam) y.kurtarma.kalanBasarisiz++;
@@ -1092,11 +1097,29 @@ export class DunyaYazari {
     return `odul:${oyuncu}:${kavram}`;
   }
 
+  /**
+   * Komutu çekirdeğe uygular (canlı ve yeniden oynatma AYNI yol). Komut sınırı: çekirdeğin hücre dizini sınırı aşan ilçede tembel hücre dizisi açılmasına
+   * izin vermez (`HucreDiziniBuyukHatasi`). Süreç çökmez, yazar durmaz: komut REDDEDİLİR (başarısız sonuç; günlükte yerinde, yeniden oynatmada aynı
+   * sonuç), dünya değişmez, Türkçe günlük satırı yazılır (canlıda `uyari`, açılış oynatmasında `kurtarma.uyarilar`). Başka hata gizlenmez.
+   */
+  private simUygula(k: GunlukKaydi, yeniden: boolean): KomutSonucu {
+    try {
+      return this.sim.uygula({ t: k.t, oyuncu: k.oyuncu, komut: k.komut });
+    } catch (e) {
+      if (!hucreDiziniBuyukMu(e)) throw e;
+      const ilce = (e as { ilce?: unknown }).ilce;
+      const m = `komut reddedildi (hucre dizini cok buyuk${typeof ilce === "string" ? `: ilce ${ilce}` : ""}); seq ${k.seq}, oyuncu ${k.oyuncu}, komut ${k.komut.tur}`;
+      if (yeniden) this.kurtarma.uyarilar.push(m);
+      else this.uyariDinleyici?.(m);
+      return { tamam: false, hata: `hucre dizini siniri: komut reddedildi (${(e as Error).message})` };
+    }
+  }
+
   /** Günlük kaydını (zaten yazıldı) dünyaya uygular: kanca sırası, seq ve sayaçlar; canlı koşuda komut adayları toplanır. */
   private kaydiUygula(k: GunlukKaydi): KomutSonucu {
     this.donusOnce(k.t);
     const onceki = this.odulAcik ? sonEtkinlik(this.sim.dunya, k.oyuncu) : null;
-    const sonuc = this.sim.uygula({ t: k.t, oyuncu: k.oyuncu, komut: k.komut });
+    const sonuc = this.simUygula(k, false);
     this.donusKomutSonrasi(k.oyuncu, k.komut, sonuc);
     this.odulKomutSonrasi(k, sonuc, onceki);
     this.seqDegeri = k.seq;
