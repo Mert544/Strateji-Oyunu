@@ -380,7 +380,7 @@ Günde bir-iki kısa ziyaret yeterlidir. Günlük giriş ödülü yoktur (K13). 
 | Vali | Seçilmiş il yöneticisi |
 | Komutan | Ordugâh sahibi |
 
-**Uzmanlaşma (öneri, Eco esinli).** Bir katmanın ustalık yolu, ilerletilmiş diğer her yol için ×1,5 pahalanır.
+**Uzmanlaşma (kaldırıldı, 1 Ekim sahip düzeltmesi).** Karakter düzeyinde ustalık ve uzmanlaşma çarpanı yoktur; uzmanlık oyuncunun stratejik portföyünde (yapılar, ilçe seviyesi, teknoloji yöntemleri, sözleşmeler) görünür. Bkz. sondaki "strateji çekirdeği" ek kararı.
 
 | Düzey | Kim | Seçim | Yetki |
 |---|---|---|---|
@@ -622,7 +622,7 @@ Eski riskler ([00 §9](00-vizyon-ve-kararlar.md#9-riskler), [10 §6](10-gorev-li
 | Ü5 | `rafineri` ve `hidro_santrali` 18 yapıda ayrı tür değil | Yöntem olarak Petrol kuyusu ve Santral'e bağlanır; gerekirse 19. yapı | Çekirdek ajanı önerir, lider onaylar |
 | Ü6 | Merkez ve Şehir gelişim eşikleri | Kasaba ×3 nüfus ve ×2 sahip (öneri, kalibre edilmedi) | Ölçüm (S9 sonrası) |
 | Ü7 | Ortak proje kataloğu ve süreleri (köprü, liman, baraj, demiryolu) | Alfa-1'de il başına 1 proje | Lider |
-| Ü8 | Uzmanlaşma çarpanı (×1,5) Alfa-0'da açık mı? | Kapalı; Alfa-1'de ölçümle | Lider |
+| Ü8 | Uzmanlaşma çarpanı (×1,5) | **Kaldırıldı** (karakter ilerlemesi yok; sahip, 1 Ekim) | Sahip |
 | Ü9 | Alfa-1 eşzamanlı oyuncu hedefi ve altyapı ölçeği | Sahip belirler | Sahip |
 | Ü10 | Kişisel veri, gizlilik metni ve kullanım koşulları | Alfa-0'da davetli koşulları; açık alfadan önce hukuki görüş | Sahip |
 | Ü11 | Apple ile giriş (ücretli Apple geliştirici hesabı; fiyat doğrulanmadı) | Alfa-1 sonrası | Sahip |
