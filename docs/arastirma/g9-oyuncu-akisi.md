@@ -209,7 +209,7 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Amaç** | Oyuncu dükkânı **kendi kendine bulabilsin** (yönlendirmesiz ölçüt: A0-11, kılavuz G2–G14) |
 | **Oyuncu kararı** | "Dükkân kurmak istiyorum" (hangi yoldan olursa olsun) |
 | **Gösterilen sayılar** | Kartta: bedel (D-3 ile aynı), tahmini kendini ödeme (D-3) |
-| **Metin** | Yapı paletinde kart: **Dükkân** · alt: **Ürettiğini ilçenin hane halkına sat. Raf, fiyat ve marka sende.** · Defter kartı: **Kendi tezgâhın: bir dükkân kur ve ilk satışını yap.** (ödül: ayrı satır, **ödül: 10 çelik**; çubuk ve tavan yok: ilk saat incelemesi B8) · İşletmem'de "Dükkânlarım" bölümü (boşken **Henüz dükkânın yok. Yapı kur → Dükkân**) |
+| **Metin** | Yapı paletinde kart: **Dükkân** · alt: **Ürettiğini ilçenin hane halkına sat. Raf, fiyat ve marka sende.** · Defter kartı: **Kendi tezgâhın: bir dükkân kur ve oradan ilk satışını yap.** ("ilk satışını yap" `ilk_satis` ihracat kartıyla çakışmasın diye "oradan"; Defter şeması `defter.kavram.ilk_dukkan.siradaki`) (ödül: ayrı satır, **ödül: 10 çelik**; çubuk ve tavan yok: ilk saat incelemesi B8) · İşletmem'de "Dükkânlarım" bölümü (boşken **Henüz dükkânın yok. Yapı kur → Dükkân**) |
 | **Telefon / masaüstü** | Telefon: Defter kartı panelin **üstünde** (ilk saat incelemesi B7), palet kartı tam genişlik. Masaüstü: sağ panelde aynı sıra |
 | **Ölçüt** | **A0-11** (ilk dükkân ≤36 sa: bu kart **tek** keşif yolu), **A0-14** (kart atlama ≤1/5), Gö2 |
 | **Sahip** | T1 (kart, metin), K1 (`ilk_dukkan` `etkin` bayrağı: `harita/baglanti.ts:376` listesi) |
