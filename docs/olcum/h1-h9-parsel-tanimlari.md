@@ -1,6 +1,6 @@
 # H1–H9: parsel dünyası ölçüm tanımları (S9)
 
-> **Durum:** Taslak tanım (Sprint 1, S9 / E12-G11). Metrik işlevleri yazıldı ve birim testli; koşucular çekirdek mülk modeli (S3) ve parsel botları (E20-G10) gelince bağlanır. Eşikler [docs/11 §8.1](../11-urun-donusu.md#81-hipotezlerin-yeni-ifadeleri) başlangıç önerileridir. Her eşik değişikliği gerekçesiyle kayda geçer ve takım lideri onaylar.
+> **Durum:** Taslak tanım (Sprint 1, S9 / E12-G11). Metrik işlevleri yazıldı ve birim testli; koşucular çekirdek mülk modeli (S3) ve parsel botları (E20-G10) gelince bağlanır. **Güncelleme:** mülk kipi ve yeni oyuncu paketi çekirdekte; parsel botları (`packages/botlar/src/parsel.ts`) ve kısa ölçüm komutu (`pnpm olcum --kip parsel`) var, H6/H8/Y ölçütleri mini-6'da koşuldu: [parsel-v0.md](parsel-v0.md), bulgular [parsel-v0-bulgular.md](parsel-v0-bulgular.md) (§7). Eşikler [docs/11 §8.1](../11-urun-donusu.md#81-hipotezlerin-yeni-ifadeleri) başlangıç önerileridir. Her eşik değişikliği gerekçesiyle kayda geçer ve takım lideri onaylar.
 
 | Alan | Değer |
 |---|---|
@@ -154,13 +154,16 @@ Her bölümdeki **İşlevler** satırı `packages/olcum/src/parsel/hN.ts` dosyas
 
 | | |
 |---|---|
-| Parsel ifadesi | 60. günde katılan oyuncu, 14 gün içinde ilçe medyan servetine koşuların ≥ %50'sinde ulaşır; hücrelerin ≥ %20'si ≤ 2× taban fiyatla alınabilir. |
-| Metrik 1 | Olgu = (koşu, geç katılan). Katılımdan 14 gün sonra servet ≥ ilçedeki diğer sahiplerin servet medyanı mı? Karşılaştırma tamsayıdır: 2·servet ≥ 2·medyan. Servet = hazine + depo (taban fiyat) + arazi taban değeri + yapı inşa bedeli. **Karar:** ulaşan olgu oranı (`gecKatilanBasarisi`). |
-| Metrik 2 | Katılım anında satılmamış ve ilçe fiyat çarpanı (1 + 2·satılmış/uygun) ≤ 2 olan hücreler / tüm uygun hücreler (`ucuzHucrePayi`, `hucreFiyatCarpaniPpm`). |
-| Eşik | Ulaşan oran **< %50** ise KALDI. Ucuz hücre payı **< %20** ise KALDI. |
-| Bot | **Geç katılan**: 60. günde gelir ve yeni oyuncu paketini kullanır (₺50.000 hibe, 6 bedava hücre, ilk 5 yapıda %30 indirim, 14 gün kalkan). |
-| İşlevler | `h6ParselDegerlendir`, `gecKatilanBasarisi`, `medyanaUlastiMi`, `ucuzHucrePayi` |
-| v0.3 | 0,792 GEÇTİ (10./20. gün katılım, devlet içi bölge medyanı) |
+| Parsel ifadesi | 60. günde katılan oyuncunun, katılımdan 14 gün sonraki **hibeden bağımsız üretim geliri** (Y7) ilçe emsallerine göre yeterlidir; hücrelerin ≥ %20'si ≤ 2× taban fiyatla alınabilir. |
+| **Karar metriği (BİRİNCİL)** | **Y7:** her geç katılan için katılımdan 14 gün sonraki **son 7 günün net üretim geliri** (= hazine akışı − sermaye harcaması: satış − girdi/ithalat − bakım − işçilik − arazi vergisi; arsa ve yapı parası hariç) ilçe emsallerinin (geç katılandan önce katılmış, ilçede hücresi olan diğer sahipler) gelir medyanının **≥ %50'sinde** mi? Karar: bu olguların oranı (`y7UretimGeliri`). Hibe ve başlangıç kiti sermaye/stok olduğundan akışa girmez: tanım gereği hibeden bağımsızdır (T12 hibe şişkinliğinden korunur). |
+| Metrik 2 (aynen) | Katılım anında satılmamış ve ilçe fiyat çarpanı (1 + 2·satılmış/uygun) ≤ 2 olan hücreler / tüm uygun hücreler (`ucuzHucrePayi`, `hucreFiyatCarpaniPpm`). Ayrıntı: ayrılmış ve genel ucuz hücre ayrı sayılır (`ucuzHucreAyrintisi`). |
+| Eşik | Y7: ölçülebilir geç katılanların **< %50**'si emsal medyanının ≥ %50'sine ulaşıyorsa KALDI. Ucuz hücre payı **< %20** ise KALDI. Biri ölçülemezse (emsal yok, emsal gelir medyanı ≤ 0, uygun hücre yok) BELİRSİZ; KALDI baskındır. |
+| **İkincil (bilgi, karara girmez)** | **Servet tabanlı ulaşma:** katılımdan 14 gün sonra servet ≥ ilçedeki diğer sahiplerin servet medyanı (2·servet ≥ 2·medyan; `gecKatilanBasarisi`, `medyanaUlastiMi`). Servet = hazine + depo (taban fiyat) + arazi taban değeri (`degerMili`) + yapı. Çekirdeğin gerçek davranışı: hibe ve kit servete anında girer; **yurt hücresinin `degerMili`'si 0'dır, servete girmez**; ilk 5 yapıda yapı değeri = **ÖDENEN** indirimli tutar; ayrılmış hücre (ilçenin %20'si, ilk 14 gün) yalnız yeni oyuncuya satılır, geç katılan 14. günde erişir ama önceki yeni oyuncular tüketmiş olabilir. |
+| İki biçim (servet) | **Ham** servet ve **arındırılmış** servet (− hibe − kit değeri). Ortak ofset altında `servet ≥ medyan` karşılaştırması DEĞİŞMEZ ⇒ iki biçim aynı kararı verir; yalnız servet/medyan oranı ve hibe+kit payı farklıdır (`servetOrani`). Hibeden bağımsız okuma Y7'dedir. |
+| Neden Y7 birincil | Servet geçmiş birikimi taşır: 60. günde katılan, 74 günlük birikimi 14 günde yakalayamaz (yapısal KALDI); aynı pencerenin akışı (Y7) yeni oyuncunun "işe yarayıp yaramadığını" daha doğru ölçer. Ayrıntı: [parsel-v0-bulgular.md](parsel-v0-bulgular.md). |
+| Bot | **Geç katılan** (3 açılış: `gec_ciftci`, `gec_sanayici`, `gec_pazar`): yerleşiklerin bulunduğu ilçeye katılır ve yeni oyuncu paketini kullanır (₺50.000 hibe, 6 bedava hücre, ilk 5 yapıda %30 indirim, 14 gün kalkan, `yapi_yerlestir`). |
+| İşlevler | Birincil: `h6ParselIkiBicim` (karar = `birincil`: Y7 + ucuz hücre; `ikincil`: servet), `y7UretimGeliri`, `ucuzHucrePayi`, `ucuzHucreAyrintisi`. İkincil servet: `servetToplami`, `hibeArindir`, `servetOrani`, `gecKatilanIkiBicim`, `h6ParselDegerlendir`, `gecKatilanBasarisi`, `medyanaUlastiMi`. |
+| v0.3 | 0,792 GEÇTİ (10./20. gün katılım, devlet içi bölge başına aynı pencerede üretim artışı medyanı; en yakın parsel karşılığı Y7) |
 
 ### H7 — Ayarla-unut ne çöker ne eşitlenir
 
@@ -208,7 +211,7 @@ Her bölümdeki **İşlevler** satırı `packages/olcum/src/parsel/hN.ts` dosyas
 | H3 | Ordugâh ≥ %20 iken en büyük fiyat/arz değişimi | < %10 | komutan/akıncı | Alfa-1 (ordugâh) |
 | H4 | 60 sn'de doğru yanıt | < 4/5 | insan | A1-5 |
 | H5 | Parsel kaybı · en büyük depo kaybı | > 0 · > %25 | akıncı, pasif | A0-8, Alfa-1 |
-| H6 | Medyana ulaşan oran · ucuz hücre payı | < %50 · < %20 | geç katılan | A0-8 |
+| H6 | Y7 (hibeden bağımsız 14. gün geliri; oyuncu payı) · ucuz hücre payı | < %50 · < %20 | geç katılan | A0-8 |
 | H7 | 24/48/72 sa kur-unut/aktif | [%50, %85] dışı | kur-unut | A0-8 |
 | H8 | Gini · ilçe payı · yeniden satış | > 0,6 · > %25 · > 10 hafta | spekülatör | A0-8 |
 | H9 | 1 sa dolum · oy katılımı | < %80 · < %30 | tüccar, yönetici | dolum A0, oy A1-3 |
@@ -228,7 +231,7 @@ S3, `parametreler.mulk` bayrağı arkasında hücre, işletme düğümü ve `par
    - kabul edilen komut günlüğü → `KararKaydi { gun, tur }` (H2)
    - pazar emir defteri ve dolum olayları → `EmirKaydi` (H9)
    - yağma olayları ve depo serisi → `DepoPenceresi` (H5)
-3. **Koşucular.** Yeni `parsel/hNKos` dosyaları eklenir. Mevcut `h1..h7.ts` dosyaları bölge kipi olarak **değişmeden** kalır. CLI'ye `--kip parsel|bolge` gelir (vars. parsel). `--kip bolge` yalnız regresyon içindir ve v0.3 temel çizgisini yeniden üretmeye çalışmaz; o temel çizgi `1a7fe08`'de donmuştur.
+3. **Koşucular.** Yeni `parsel/hNKos` dosyaları eklenir. Mevcut `h1..h7.ts` dosyaları bölge kipi olarak **değişmeden** kalır. CLI'ye `--kip parsel|bolge` gelir (varsayılan: bolge). **Uygulama notu (baş lider kararı):** `--kip bolge` VARSAYILAN KALIR (mevcut H1–H7 koşucuları ve testleri değişmesin); `--kip parsel` şimdilik yalnız kısa koşuyu (H6, H8, Y) çalıştırır; parsel H1/H2/H3/H5/H7/H9 koşucuları sonraki iş. `--kip bolge` yalnız regresyon içindir ve v0.3 temel çizgisini yeniden üretmeye çalışmaz; o temel çizgi `1a7fe08`'de donmuştur.
 4. **Botlar** (E20-G10, Sprint 2): §8.2'deki 8 arketip parsel komutlarıyla yazılır. H1'in pasif referansı ve H7'nin kur-unut eşi, bölge kipindeki ortak rastgele sayı düzeniyle kurulur.
 5. **Ölçek.** Önce mini-6 ile duman testi yapılır (1.200 hücre). Sonra sentetik-50 (10.000 hücre, 1k bot) gelir; 10k bot için hücre sayısı yetmeyebilir (açık soru 3).
 
@@ -242,6 +245,25 @@ S3, `parametreler.mulk` bayrağı arkasında hücre, işletme düğümü ve `par
 4. **Başlangıç ilçe seviyesi.** Şehir sınıfı hücreli ilçe 3 (Şehir) olarak başlatıldı. Ü6 (Merkez ve Şehir eşikleri) kararı bunu değiştirebilir.
 5. **H1 sınıf skoru.** Sınıftaki ilçelerin medyanı mı, toplamı mı kullanılacak? Medyan öneriliyor. sentetik-50'de bazı sınıflar tek ilçelidir (`sehir_diger`, `kasaba_dag`); bu sınıflar gürültülüdür ve en az 2 ilçe şartı düşünülebilir.
 6. **H9 "1k oyuncuda"** koşulu: sentetik-50 bölge pazarında NPC derinlik hedefi parametresi henüz yok (S3 / Pazar v1.5).
+
+## 7. Yeni oyuncu ölçütleri (Y1–Y10), parsel botları ve kısa koşu
+
+Kaynak: [baslangic-ve-ustalik.md](../arastirma/baslangic-ve-ustalik.md) §8. Saf işlevler `packages/olcum/src/parsel/yeni-oyuncu.ts` (`parsel.*`); tamsayı, ppm, BigInt; her eşik için sınır değer testi (`yeni-oyuncu.test.ts`). **Botlar eğlenceyi ölçmez**: Y1–Y4, Y6, Y8–Y10 **insan testi** olarak işaretlidir (`Y_OLCUTLERI`); bot sayıları yalnız gözlemdir.
+
+| # | İşlev | Çekirdek durumundan türetilebilir mi | Not |
+|---|---|---|---|
+| Y1 | `y1IlkYapi` (`ilkOlayOrani`) | evet (komut günlüğü) | ≤ 10 dk, hedef ≥ %75; bot katılımda anında kurar: anlamsız (insan) |
+| Y2 | `y2IlkSatis` | evet (emir gerçekleşmesi, ızgara + 10/60 dk ek gözlem) | ≤ 60 dk ≥ %70, ≤ 10 dk ≥ %50 (insan) |
+| Y3 | `y3IlkSozlesme(null)` | **hayır: ölçülemez** | çekirdekte sözleşme/sipariş komutu yok (A6) |
+| Y4 | — | **hayır: ölçülemez** | oturum telemetrisi (D1/D7) |
+| Y5 | `y5AcilisCesitliligi`, `yapiKatmani` | evet | ilk 24 sa'te 2. yapının katmanı ≤ %60, hibrit oranı; bot + insan |
+| Y6 | `y6YonDegistirme` | kısmen (oran; D7 farkı ölçülemez) | `parsel_birak`/`insaat_iptal` ilk 7 gün ≥ %10 (insan) |
+| Y7 | `y7UretimGeliri` | evet | hibeden bağımsız net üretim geliri; bot + insan |
+| Y8, Y9, Y10 | — | **hayır: ölçülemez** | Defter telemetrisi / Rehberlik yok / bekleme anları |
+
+**Parsel botları** (`packages/botlar/src/parsel.ts`, `parsel-kosucu.ts`): `ciftci`, `sanayici`, `tuccar`, `gec_katilan` (`acilis`: ciftci | sanayici | pazar), `pasif` (kur-unut). Komutlar yalnız `oyuncu_katil {ilce}` + `yapi_yerlestir` + `ticaret_emri`. Deterministik (rastgelelik yok), durumsuz, salt okunur karar; mini-6'da 0 reddedilen komut. `parselKos` koşucusu komut günlüğü, sermaye harcaması (arsa + yapı, ödenen indirimli tutarla) ve katılım kaydı tutar. Bilinen sınır: botlar tarım yönetimi (`ekim_plani`, `gubre_dozu`), yeniden satış, yön değiştirme ve saldırı yapmaz.
+
+**Kısa koşu:** `pnpm olcum --kip parsel [--tohum 1-3] [--gec-gun 10] [--olcum-gunu 14] [--bot ciftci=3,sanayici=2,tuccar=2,pasif=1] [--gec ciftci,sanayici,pazar] [--iklim hizli|gercek] [--cikti dizin] [--ad etiket] [--bulgular dosya.md] [--agir]` (varsayılan: mini-6 parsel fikstürü, 8 yerleşik + 3 geç katılan, 24 sim günü, tohum 1–3; ~1 sn/tohum). `--agir`: H6 tanımındaki 60. gün katılımı (74 gün), tohum 1–10. Çıktı: `parsel-<ad>.json` ve `.md` (md duvar saati içermez: aynı girdiyle bayt bayt aynı üretilir; elle yazılmış `parsel-<ad>-bulgular.md` ezilmez, rapor yalnız bağlantı verir). `--kip` verilmezse bölge kipi koşucuları aynen çalışır (v0.3 temel çizgisi donmuştur).
 
 ## Takım lideri kararları (1 Ekim, 06:55)
 1. **H2 yeni karar türü eşiği:** oyuncuların ≥%50'si; önerildiği gibi kabul.

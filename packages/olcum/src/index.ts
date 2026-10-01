@@ -13,3 +13,9 @@ export { h5Kos, sinirCifti, ikinciSaldiranDevleti, kayanKayipOlc, H5_ESIK_PPM } 
 export { h6Kos, H6_ESIK } from "./h6";
 export { h7Kos, H7_ALT, H7_UST } from "./h7";
 export * as parsel from "./parsel/index";
+export { parselTohumKos, parselDuzeni, hibeKitDegeri, stokDegeriMili, araziDegeriMili, VARSAYILAN_YERLESIK } from "./parsel-kosu";
+export type { ParselKosuSecenek, ParselTohumSonucu, ParselOyuncuOzeti, ParselH6Olgusu, ParselYerlesikDagilimi, ParselDuzen } from "./parsel-kosu";
+export { parselRaporUret, parselOzetle, yuzde, tl, verdictAd } from "./parsel-rapor";
+export type { ParselOzeti, ParselRaporMeta } from "./parsel-rapor";
+export { parselAna, parselArgumanAyristir, PARSEL_VARSAYILAN_TOHUM, PARSEL_AGIR_TOHUM, PARSEL_AGIR_GEC_GUN } from "./parsel-cli";
+export type { ParselArguman } from "./parsel-cli";
