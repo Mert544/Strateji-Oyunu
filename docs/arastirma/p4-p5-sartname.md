@@ -18,7 +18,7 @@
 2. Mevcut kod durumu (`d28447d`) ve bu çalışmada doğrulanan bulgular
 3. Kimlikler (3.5: yöntem kimlik listesi)
 4. Veri şeması ve doğrulayıcı
-5. G6: ekmek zinciri ve şebeke enerjisi (5.2: şebeke enerjisi)
+5. G6: ekmek zinciri ve şebeke enerjisi (5.2: şebeke enerjisi; 5.10: mülk bakımı C)
 6. G7a: yerel pazar kanalı
 7. G7b: `dukkan` S
 8. G8: cam → pencere ve yapı market
@@ -263,7 +263,7 @@ Görünen ad notu: "Un İmalathanesi", "Un Fabrikası" gibi ölçeğe göre adla
 
 ### 3.4 Parametre adları (özet)
 
-`mulk.ekYapilar.dukkan` (+ `olcekHucre?`), `mulk.perakende.{acikOlcekler, ilceBasinaEnFazla, fiyatBandiPpm, fiyatKademeleriPpm, varsayilanFiyatKademesi, kampanyaKademesi, kampanyaGunlukEnFazlaSaat, kampanyaHaftalikEnFazlaGun, fiyatDegisimEnAzSaat, cesitKatsayiPpm, esnaf, olcekler, dukkanTurleri, talep, marka}` (§4.3), `mulk.sebeke` (§4.7, §5.2), `mulk.yontemGecersizKilma` (§4.8, §5.9). Yeni üst düzey parametre bloğu yoktur; hepsi `param.mulk` altındadır (mülk kipi kapalıyken okunmaz: bölge kipi etkilenmez).
+`mulk.ekYapilar.dukkan` (+ `olcekHucre?`), `mulk.perakende.{acikOlcekler, ilceBasinaEnFazla, fiyatBandiPpm, fiyatKademeleriPpm, varsayilanFiyatKademesi, kampanyaKademesi, kampanyaGunlukEnFazlaSaat, kampanyaHaftalikEnFazlaGun, fiyatDegisimEnAzSaat, cesitKatsayiPpm, esnaf, olcekler, dukkanTurleri, talep, marka}` (§4.3), `mulk.sebeke` (§4.7, §5.2), `mulk.yontemGecersizKilma` (§4.8, §5.9), `mulk.bakim` (§5.10). Yeni üst düzey parametre bloğu yoktur; hepsi `param.mulk` altındadır (mülk kipi kapalıyken okunmaz: bölge kipi etkilenmez).
 
 ### 3.5 Yöntem kimlik listesi (makine-denetimli, yalnız-ekle)
 
@@ -582,6 +582,7 @@ Değerler (T3 yazar): `mallar: [{ mal: "elektrik", tavanOraniPpm: 1000000 }, { m
    Başka çekirdek kodu **yok**: çok çıktılı yöntem, `yontem_degistir`, ödül dedektörü zaten çalışıyor (§2.1).
 4. **Testler (K3, K2, O2):** §16 G6 satırları.
 5. **Bot önayarı (O2):** §15.
+6. **Mülk bakımı C (§5.10; ayrı K4 dalı `takim/k4/bakim-c`, G6-3'ten sonra):** `mulk.bakim` isteğe bağlı bloğu (aşınma hızı çarpanı, çıktı kaybı tavanı, yöntem bakım parçası çarpanı); mekanizma blok yokken no-op; değerler G7-4 veri commit'inde.
 
 ### 5.2 Şebeke elektriği (SE): mülk kipinde elektriğin otomatik tedariki
 
@@ -893,6 +894,163 @@ if (mc !== undefined && b.merkez !== undefined) c = carpBol(c, mc, PPM);
 **Ölçümün ön koşulu (kabul koşulu; iş bölümü §18):** mülk botlarında bugün **`degirmen` yöntem seçici ve `yontem_degistir` kullanımı yoktur** (K3 keşfi §1; `botlar/src/parsel.ts`). A2: ölçüm **yalnız yöntem seçen botlarla** (marjinal net kuralı) yapılmalıdır; "varsayılan yöntem" botuyla M ≈ %0 çıkar ve ölçüt bot ayarı hatasını ekonomik hatadan ayıramaz **(doğrulanmadı)**. Bu yüzden O2'nin G6 bot önayarı işi (`g6-onayar`) **marjinal-net yöntem seçiciyi** ve `yontem_degistir`/`yontem` kullanımını içermek zorundadır ve **G6 kabul koşulu**dur (§17 G6-5).
 
 **Dikkat paneli notu (G9 kapsamı; K1/T1):** "pazar doydu → ekmek zinciri" geçişi: `gida` referans fiyatı tabanın altına indiğinde (eşik G9'da) Dikkat paneli "ekmek zinciri ikinci talep havuzudur" önerisini gösterir (kural bildirimi; zorunlu değil; "kilit yok, seçim var"). Çekirdek değişikliği yok; veri kaynağı `IlgiKaresi.fiyat` (mevcut). G4'ün G9'a bıraktığı nottur; bu şartnamede ek iş değildir.
+
+### 5.10 Mülk bakımı C (ZA-13): `param.mulk.bakim` (isteğe bağlı blok; yalnız mülk kipi)
+
+**Karar ve kaynaklar.** Baş lider bakım C'yi ve ZA-13'ü G7-4 mülk verisi için onayladı. Sayılar A2'nin tek kaynağıdır (`takim/a2/p4-p5-ekonomi` `86e854e`, `docs/arastirma/p4-p5-ekonomi.md`: parametre önerisi `:705-716`; sanayici parça miktarı `:817-822`; ZA-13 `:839`); bu belge sayıları kopyalamaz, yalnız çekirdek ve veri yolunu yazar. **O2 ölçümü global `sanayi.bakim`'i değiştirerek yapıldı** (`takim/o2/bakim-c` `77efe55`, `docs/olcum/bakim-asinma-c.md:10`: `--param-ayar "sanayi.bakim.kitlikAsinmaPpmGun=10000,sanayi.bakim.duzeyler.0.asinmaPpmGun=10000,sanayi.bakim.duzeyler.2.asinmaPpmGun=-7500,sanayi.bakim.asinmaVerimKaybiTavaniPpm=250000"`). **Bu yol canlıya taşınamaz:** `sanayi.bakim` bölge kipi altınlarının parçasıdır (A2 §2.1, ZA-8); değişirse bölge altınları kırılır. Çözüm: aynı etkiyi **yalnız mülk kipinde** veren yeni blok. Ölçülen etki (A2 §2.4/§2.7, **doğrulanmadı** yeniden: değerler A2/O2'nindir): kıtlık aşınması +%2/gün → +%1/gün, ceza tavanı %40 → %25; sanayicide parça çarpanı 0,2 ve 0,4 ile bakımın net negatife düşmesi önlenir.
+
+Bu bölüm **iki ayrı mekanizma** ister ve ikisi de §5.9'daki `yontemGecersizKilma` kalıbını izler (derle tablosu yalnız etkin satırlardan; blok yokken alan **oluşmaz**; çekirdekte `ic.mulk` ve `b.merkez` koruması):
+
+| # | Mekanizma | Etkilediği | Veri (G7-4, T3) |
+|---|---|---|---|
+| M1 | `asinmaHizCarpaniPpm` | düzey `asinmaPpmGun` (üç düzey) ve `kitlikAsinmaPpmGun` | 500 000 |
+| M2 | `asinmaVerimKaybiTavaniPpm` | `cezaCarpani` içindeki tavan (aşınma → çıktı kaybı) | 250 000 |
+| M3 | `yontemParcaPpm` | yöntemin `bakim` girdisi (bakım parçası miktarı) | `yuzey_cevher` 200 000; `hidro_santrali` 400 000 |
+
+`kitlikEsigiPpm`, `genelOnarimMaliyetPpm`, `genelOnarimDurusSaat`, düzey `girdiPpm` ve ölçek `bakimPpm` **değişmez** (A2: aynı kalsın; ZA-12).
+
+#### 5.10.1 Şema (K4, `takim/k4/bakim-c`; `veri/src/{tipler,sema,dogrula}.ts`)
+
+```ts
+/** Mülk kipine özel bakım ayarı (sartname §5.10). Her alan bağımsız ve isteğe bağlıdır; yoksa `sanayi.bakim` aynen geçerlidir. */
+export interface MulkBakimParametreleri {
+  /** Düzey `asinmaPpmGun` ve `kitlikAsinmaPpmGun` çarpanı (ppm; 0 < değer ≤ 2 000 000). 1 000 000 = kimlik (bit-exact no-op). Öneri: 500 000. */
+  asinmaHizCarpaniPpm?: number;
+  /** Aşınmanın çıktı kaybı tavanı (ppm; 0 ≤ değer ≤ 1 000 000); `sanayi.bakim.asinmaVerimKaybiTavaniPpm` yerine geçer. Aynı değer = kimlik. Öneri: 250 000. */
+  asinmaVerimKaybiTavaniPpm?: number;
+  /** Yöntem kimliği -> bakım parçası (`YontemTanimi.bakim`) çarpanı (ppm; 0 < değer ≤ 2 000 000). 1 000 000 = kimlik. Yalnız bakım girdisini ölçekler; girdi, çıktı, işçi ve işletme gideri aynı kalır. */
+  yontemParcaPpm?: Record<string, number>;
+}
+```
+
+- `veri/src/tipler.ts:627` `MulkParametreleri`: `bakim?: MulkBakimParametreleri` (tip yeri K3 tipinde `yontemGecersizKilma?`'nın hemen altı: tip `:756`).
+- `veri/src/sema.ts:415` `mulkSema` (`.strict()`; K3 tipinde `yontemGecersizKilma` satırı `:454`): `bakim: z.object({ asinmaHizCarpaniPpm: pozitif.max(2_000_000).optional(), asinmaVerimKaybiTavaniPpm: ppmSiniri.optional(), yontemParcaPpm: z.record(kimlik, pozitif.max(2_000_000)).optional() }).strict().optional()` (`pozitif`: `sema.ts:29`, `ppmSiniri`: `:128`, `kimlik`: `:33`). Boş blok `{}` geçerlidir ve no-op'tur.
+- **Gönderilecek veri (T3; G7-4 tek veri commit'i, `kuralSurumu` zaten orada artar):** `parametreler.json` `mulk.bakim`: `{ "asinmaHizCarpaniPpm": 500000, "asinmaVerimKaybiTavaniPpm": 250000, "yontemParcaPpm": { "yuzey_cevher": 200000, "hidro_santrali": 400000 } }`. **Mekanizma commit'i (K4) `parametreler.json`'a dokunmaz** (blok yok ⇒ `kuralSurumu` aynı; `kuralSurumuHesapla` yalnız içerik + parametre JSON özetidir: `serilestir.ts:15`).
+- Yöntem kimlikleri: `yuzey_cevher` (`icerik.json` `yontemler[3]`, `bakim: { parca: 1000 }` = 1,0 parça/sa) ve `hidro_santrali` (`yontemler[22]`, `bakim: { parca: 2000 }` = 2,0 parça/sa) **(doğrulandı: `packages/veri/icerik/icerik.json`)**; A2 tablosundaki "tür" adları `cevher_madeni` ve `hidro_santrali`dır, ama bakım miktarı **yöntemdedir**, bu yüzden anahtar yöntem kimliğidir (`derin_cevher` 1,5 parça/sa değişmez: A2 yalnız ölçülen iki türü ayarlar).
+
+**Neden `yontemGecersizKilma` içine `bakimPpm` alanı değil:** o şemada `ciktiPpm` zorunludur (K3'ün G6-2 kodu `{ ciktiPpm }` okur); alanı isteğe bağlı yapmak K3'ün şemasını ve V17'yi değiştirirdi. Ayrı blok iki mekanizmayı (aşınma ve parça) tek yerde toplar ve G6 koduna dokunmaz. Seçim bir **veri düzenidir** (kural dönemi); alan adı kalıcılığı GZ-21.
+
+#### 5.10.2 Doğrulayıcı
+
+| V | Katman | Kural | İleti |
+|---|---|---|---|
+| V18 | 1 (`dogrula.ts:558` `dogrulaParametreler`, mülk kuralları K3 ucunda `:580` yanı) | `asinmaHizCarpaniPpm ∈ (0, 2 000 000]`; `asinmaVerimKaybiTavaniPpm ∈ [0, 1 000 000]`; `yontemParcaPpm` değerleri `(0, 2 000 000]` (şema alt sınırı, burada üst sınır). **Türev sınır** (`p.sanayi` ve `p.mulk.bakim` birlikte): `asinmaHizCarpaniPpm` varsa her düzey için `carpBol(duzeyler[i].asinmaPpmGun, h, PPM)` ve `carpBol(kitlikAsinmaPpmGun, h, PPM)` `[−1 000 000, 1 000 000]` içinde olmalı (sanayi şemasının sınırı çarpanla aşılmasın) | `mulk.bakim.<alan>: ...` |
+| V19 | 2 (`perakende-dogrula.ts`, V17'nin yanı: K3 ucunda `:116`) | `yontemParcaPpm` anahtarları `icerik.yontemler` kimlikleridir; yöntemin `bakim` girdisi **boş olamaz** (ölü ayar); her `bakim` miktarı `q` için `floor(q × değer / 1 000 000) ≥ 1` (miktar sessizce 0'a inmesin: `1000 × 0,2 = 200`, `2000 × 0,4 = 800` geçer). `param.sanayi` yoksa `asinmaHizCarpaniPpm` / `asinmaVerimKaybiTavaniPpm` **uyarı** (ölü ayar; aşınma yalnız sanayi açıkken çalışır) | `mulk.bakim.yontemParcaPpm: bilinmeyen yontem / bakim bos / miktar 0'a iner: <id>` |
+
+`icerikDerle` aynı koşulları `Error` ile tekrar eder (§5.9'daki savunma kalıbı).
+
+#### 5.10.3 `derle.ts`: tablo yalnız etkin satırlardan
+
+`DerlenmisMulk` (`cekirdek/src/tipler.ts:131`, K3 tipinde `yontemCiktiPpm?`'nın altı) alanı:
+
+```ts
+export interface DerlenmisMulkBakim {
+  /** Düzey (0 asgari, 1 normal, 2 yüksek) -> günlük aşınma değişimi (ppm); `asinmaHizCarpaniPpm` uygulanmış. Yalnız çarpan !== PPM iken. */
+  duzeyAsinmaPpmGun?: readonly [number, number, number];
+  /** `kitlikAsinmaPpmGun` x çarpan. `duzeyAsinmaPpmGun` ile birlikte oluşur. */
+  kitlikAsinmaPpmGun?: number;
+  /** Etkin çıktı kaybı tavanı; yalnız `sanayi.bakim` değerinden FARKLIYSA. */
+  tavanPpm?: number;
+  /** Yöntem indeksi -> bakım parçası çarpanı (ppm); YALNIZ !== PPM olan yöntemler. */
+  yontemParcaPpm?: Record<number, number>;
+}
+// DerlenmisMulk.bakim?: DerlenmisMulkBakim   // HİÇ etkin satır yoksa ya da blok yoksa alan OLUŞMAZ
+```
+
+`derle.ts` `mulkDerle` (`:114-198`; K3 ucunda `:133-243`), `yontemCiktiPpm` bloğundan sonra, `return sonuc`'tan önce (K3 ucunda `:240`):
+
+```ts
+const mb = p.bakim;
+if (mb !== undefined) {
+  const o: DerlenmisMulkBakim = {};
+  const sp = ic.param.sanayi;                       // sanayi kapalıysa aşınma alanları okunmaz (V19 uyarısı)
+  const h = mb.asinmaHizCarpaniPpm;
+  if (sp !== undefined && h !== undefined && h !== PPM) {
+    o.duzeyAsinmaPpmGun = [0, 1, 2].map((i) => carpBol(sp.bakim.duzeyler[i].asinmaPpmGun, h, PPM)) as [number, number, number];
+    o.kitlikAsinmaPpmGun = carpBol(sp.bakim.kitlikAsinmaPpmGun, h, PPM);
+  }
+  const t = mb.asinmaVerimKaybiTavaniPpm;
+  if (sp !== undefined && t !== undefined && t !== sp.bakim.asinmaVerimKaybiTavaniPpm) o.tavanPpm = t;
+  if (mb.yontemParcaPpm !== undefined) {
+    const tablo: Record<number, number> = {};
+    for (const yid of Object.keys(mb.yontemParcaPpm).sort()) {
+      const yi = ic.yontemIndeks[yid];
+      if (yi === undefined) throw new Error(`icerikDerle: mulk.bakim.yontemParcaPpm bilinmeyen yontem: ${yid}`);
+      const ppm = mb.yontemParcaPpm[yid] as number;
+      // aralik ve "miktar 0'a iner" denetimi V19 ile aynı (Error)
+      if (ppm !== PPM) tablo[yi] = ppm;
+    }
+    if (Object.keys(tablo).length > 0) o.yontemParcaPpm = tablo;
+  }
+  if (Object.keys(o).length > 0) sonuc.bakim = o;
+}
+```
+
+`carpBol` negatif girdide aşağı yuvarlar (`floor`); önerilen çarpan (500 000) ve bugünkü üç düzey değeri (+20 000, 0, −15 000) ile sonuç **tam** bölünür (10 000, 0, −7 500), yuvarlama olmaz. Başka çarpanlarda yuvarlama derlemede **bir kez** yapılır (günlük çarpma yok: tablo sabittir).
+
+#### 5.10.4 Çağrı noktaları
+
+Satırlar taban `d28447d` (`wt/a3`); parantezde K3 ucu (`takim/k3/g6-2b-sebeke`). **Tek koruma kalıbı** (§5.9 ile aynı iki koşul): `sanayi/carpan.ts` içinde yeni yardımcı
+
+```ts
+/** Mülk kipi bakım ayarı: yalnız mülk dünyasında (`ic.mulk`) ve işletme düğümünde (`b.merkez`); aksi halde undefined. */
+export function mulkBakim(ic: DerlenmisIcerik, b: BolgeDurumu): DerlenmisMulkBakim | undefined {
+  return b.merkez !== undefined ? ic.mulk?.bakim : undefined;
+}
+```
+
+| # | Yer | Değişiklik |
+|---|---|---|
+| C1 | `sanayi/carpan.ts:21-26` `cezaCarpani(sn, ts, kitlik = PPM)` | 4. isteğe bağlı parametre `tavanPpm?: number`; `:23` `sn.p.bakim.asinmaVerimKaybiTavaniPpm` yerine `tavanPpm ?? sn.p.bakim.asinmaVerimKaybiTavaniPpm`. **Varsayılan davranış aynı.** Yeni `mulkBakim` bu dosyada; `index.ts:50-54` yanına dışa aktarım (bot yardımcısı için, C6) |
+| C2 | `ekonomi/uretim.ts:212` `ciktiCarpaniHesapla` (`ic` ve `b` kapsamda) | `cezaCarpani(sn, ts, kitlik, mulkBakim(ic, b)?.tavanPpm)` |
+| C3 | `ekonomi/uretim.ts:319` (K3 ucu `:323`) santral elektrik kapasitesi | `cezaCarpani(sn, ts, PPM, mb?.tavanPpm)` (hidro/santral kapasitesini aşınma kısar: tavan burada da aynı olmalı; `mb` C4'ten) |
+| C4 | `ekonomi/uretim.ts:334-335` (K3 ucu `:338-339`) `bolgeHesapla`, bakım talebi | `bolgeHesapla` başında (`:249-251` yanı, `sn`/`duzey` ile birlikte) `const mb = mulkBakim(ctx.ic, b);` bir kez. Döngü: `const pp = mb?.yontemParcaPpm?.[ts.yontem]; for (const [m, q0] of y.bakim) { const q = pp === undefined ? q0 : carpBol(q0, pp, PPM); h.bakim[m] = (h.bakim[m] as number) + (bakimC === PPM ? q : carpBol(q, bakimC, PPM)); }`. `bakimCarpani` çağrısı (`:334`) **değişmez** (ölçek x düzey `girdiPpm`); önce parça çarpanı, sonra ölçek/düzey çarpanı (iki aşağı yuvarlama; önerilen değerlerde tam: 1000 → 200 → S 200, M 400, L 640; düzey asgari ×0,5 ⇒ 100) |
+| C5 | `sanayi/gunluk.ts:43` ve `:48` `sanayiGunluk` (aşınma döngüsü, `b` kapsamda) | döngüde `const mb = mulkBakim(ctx.ic, b);` `let delta = mb?.duzeyAsinmaPpmGun?.[duzey] ?? (bk.duzeyler[duzey] as { asinmaPpmGun: number }).asinmaPpmGun;` ve `const kitlikAsinma = mb?.kitlikAsinmaPpmGun ?? bk.kitlikAsinmaPpmGun;` `:48` `carpBolTavan(kitlikAsinma, PPM - karsilanma, PPM)`. `kitlikEsigiPpm` (`:47`) aynı |
+| C6 | `botlar/src/parsel.ts:627` (`bakimKomutlari`; ham `g.bilgi.yontem[].bakim`) | **O2 işi (G7-4 sonrası):** mülk botu parça açığını etkin miktarla hesaplamalı (`carpBol(q, mb?.yontemParcaPpm?.[yontem] ?? PPM, PPM)`); aksi halde `yuzey_cevher` için 5 kat, `hidro_santrali` için 2,5 kat fazla ithal eder (doğruluk bozulmaz; R9/R10 ithalat ölçümü bozulur) |
+
+**Dokunulmayanlar (kasıtlı):** `lojistik/cozum.ts:168` `bakimCarpani(sn, t, duzey)` (işletme gideri = `tesisIsletmeParasiSaat` x ölçek x düzey: parça miktarından bağımsız; A2 yalnız parça girdisini ayarlar), `sanayi/komut.ts:125,133` (genel onarım maliyeti ve duruşu), `ekonomi/tablo.ts:81` (`icerikTablosu` ham; mülk ve bölge ortak, ölçeklenmez), `planlayici.ts:1249` (bölge botu `sp.bakim` tavanını okur: bölge kipi, değişmez), `istemci` (`kayit.ts:668` yalnız `girdiPpm` gösterir; aşınma hızı arayüze girmez: **doğrulandı: `grep asinmaPpmGun packages/istemci/src` boş**).
+
+#### 5.10.5 Bölge kipi etkisizliği ve blok yokken no-op
+
+- **Bölge kipi:** `ic.mulk` tanımsız ve `b.merkez` tanımsızdır (§5.9, §13 K-4/K-5). `mulkBakim` her çağrıda `undefined` döner; C1 `tavanPpm ?? <eski ifade>` eski değeri verir; C4 `pp === undefined` ⇒ `q = q0`; C5 `undefined ?? <eski ifade>`. Üç koşul da kod yolunu eskisiyle aynı aritmetiğe indirger: **bölge kipi altınları BİREBİR** (`sanayi.bakim` hiçbir yerde yazılmaz, yalnız okunur).
+- **Mülk kipi, blok yok / `{}` / yalnız kimlik değerleri** (`asinmaHizCarpaniPpm: 1 000 000`, `asinmaVerimKaybiTavaniPpm` = `sanayi` değeri, `yontemParcaPpm` boş ya da hepsi `1 000 000`): `derle` `DerlenmisMulk.bakim` alanını **oluşturmaz**; `mulkBakim` `undefined` döner; durum metni bayt bayt aynıdır.
+- **Durum yok:** yeni durum alanı, olay türü, protokol alanı ya da PRNG tüketimi yoktur. Serileştirme ve göç gerekmez (§11). `kuralSurumu` yalnız **blok verisi eklenince** (G7-4) değişir; canlı mülk dünyasında birikmiş `asinmaPpm` değerleri korunur, yeni hızlar gelecek günlere uygulanır (kural dönemi, GZ-19 ile aynı kapı).
+
+#### 5.10.6 O2'nin düzey 0/2 ayarıyla eşdeğerlik
+
+O2 `<C>` ayarı ile `mulk.bakim { asinmaHizCarpaniPpm: 500000, asinmaVerimKaybiTavaniPpm: 250000 }` **aynı etkin değerleri** üretir (`carpBol(x, 500000, 1000000)`; hepsi tam bölünür):
+
+| Etkin değer | Taban (`parametreler.json` sanayi.bakim) | O2 `<C>` (global yazma) | `mulk.bakim` (türetilen) |
+|---|---|---|---|
+| `duzeyler[0]` asgari `asinmaPpmGun` | 20 000 | 10 000 | `carpBol(20000, 500000, PPM)` = **10 000** |
+| `duzeyler[1]` normal `asinmaPpmGun` | 0 | (dokunulmadı) 0 | 0 x 0,5 = **0** |
+| `duzeyler[2]` yüksek `asinmaPpmGun` | −15 000 | −7 500 | `carpBol(-15000, 500000, PPM)` = **−7 500** |
+| `kitlikAsinmaPpmGun` | 20 000 | 10 000 | **10 000** |
+| `asinmaVerimKaybiTavaniPpm` | 400 000 | 250 000 | **250 000** (C2, C3) |
+| `kitlikEsigiPpm`, `genelOnarim*`, düzey `girdiPpm` | 950 000 / 200 000, 6 / 500 000, 1 000 000, 1 500 000 | aynı | aynı |
+
+Fark yalnız **kapsamdır**: O2 değeri bölge kipini de değiştirirdi; blok yalnız mülk kipini. (A2'nin "düzey 0/2" ifadesi budur: normal düzey 0 olduğundan çarpandan etkilenmez.) Parça çarpanları (M3) O2 ölçümünde **yoktu**; A2, O2'nin R9/R10 ölçümünden (sanayicide parça ithalatı 291 839 ₺/7 gün) başabaş çarpanı f = 0,19 türetti ve 0,2 / 0,4 önerdi (A2 `:817-822`); M3 bunun veri hâlidir.
+
+#### 5.10.7 Hedefli testler (K4; kısa liste; her kanıtın negatif kontrolüyle, §13.1)
+
+| Test (dosya) | Ne sınar | Negatif kontrol |
+|---|---|---|
+| `veri/test/dogrulama.test.ts` (genişler) | V18 (aralıklar, türev aşınma sınırı, `.strict()`), V19 (bilinmeyen yöntem, `bakim` boş yöntem, `0'a iner`, `sanayi` yok uyarısı); `{}` geçerli | her ret için bir geçerli karşıt değer |
+| `cekirdek/test/mulk-bakim.test.ts` (yeni) **(a) derle** | kimlik değerleri ve `{}` ⇒ `ic.mulk.bakim` **yok**; `500000` ⇒ `[10000, 0, -7500]`, kıtlık `10000`; tavan = `sanayi` değeri ⇒ yok; `yontemParcaPpm` yalnız `!== PPM` satırları, indeks anahtarlı | çarpan 600 000 ⇒ başka değerler |
+| (aynı) **(b) O2 eşdeğerliği (ana kanıt)** | mülk dünyası (K4 fikstürü + bakımsız çiftçi/sanayici botu, ≥ 20 gün, 12 noktada `esitNoktalar`): koşu A = `sanayi.bakim` O2 `<C>` global; koşu B = `mulk.bakim { 500000, 250000 }` ve `sanayi.bakim` taban; **tam `durumOzeti` aynı**; koşuda aşınma > 0 ve en az bir tesiste `verimPpm` < 1 000 000 (kanıt boş geçmesin) | koşu C (blok yok) özetten FARKLI; koşu D (`asinmaVerimKaybiTavaniPpm` 400 000, yalnız hız) FARKLI |
+| (aynı) **(c) parça birimi** | tek `yuzey_cevher` tesisi: saatlik `h.bakim.parca` düzey 1 S = 200, düzey 0 = 100, M ölçek = 400; `hidro_santrali` = 800; `derin_cevher` 1500 (listede yok) aynı; girdi ve çıktı aynı | blok yok = 1000; bölge kipi (`b.merkez` yok) = 1000 |
+| (aynı) **(d) kıtlık davranışı** | 24 saatlik 0,2 parça/sa'ya yetecek stokla (4 800 mili) blokluda `bakimKarsilanmaPpm = PPM`, aşınma artmaz; | blok yokta aynı stokla karşılanma < `kitlikEsigiPpm`, aşınma günde `kitlikAsinmaPpmGun` x (1 − karşılanma) artar |
+| (aynı) **(e) blok yok no-op ve korunum** | blok yok ↔ `{}` ↔ kimlik değerleri: 12 noktada aynı `durumOzeti`, aynı `kuralSurumu` (mekanizma commit'inde `parametreler.json` değişmez); blokluda mülk koşusunda `para-guvenligi` korunum yardımcısı (I1-I6) yeşil | `kuralSurumu` blok verisi eklenince FARKLI |
+| `cekirdek/test/bolge-kipi-etkisiz.test.ts` (K-3 genişler; **K-6**, §13.1) | bölge kipi veri kopyasına tam `mulk.bakim` (üç mekanizma) eklenince 12 noktada AYNI `durumOzeti` | aynı değerler global `sanayi.bakim`'e yazılınca özet FARKLI (kanıtın duyarlılığı) |
+
+Mevcut testler **değişiksiz** yeşil kalmalıdır (`sanayi-regresyon`, `fikstur-b1/b2` altınları, `mulk-*` testleri: blok yok = no-op). Tam kapı O1'indir.
+
+#### 5.10.8 Sıra ve sahiplik
+
+1. **K4 (`takim/k4/bakim-c`):** şema, doğrulayıcı, `derle`, C1-C5, testler (5.10.7). **G6-3'ten sonra**; `tipler.ts` ve `derle.ts` dosyalarına girmeden önce Kod lideriyle sıra alınır (K3 G6-2b aynı dosyalara dokunabilir). `parametreler.json` ve altınlar **değişmez**.
+2. **T3 (G7-4 tek veri commit'i, §17.2):** `mulk.bakim` değerleri (5.10.1); `kuralSurumu` G7'de zaten bir kez artar.
+3. **O2:** G7-4 sonrası ölçüm temel çizgisi yeniden alınır (GZ-19 ile aynı); mülk botunun parça tahmini etkin miktarı kullanır (C6); Y7 hem yönetimsiz hem yönetimli temelde raporlanır (A2 ZA-8). Mülk altınları G7-4 commit'inde **eski ve yeni değerler raporlanarak** güncellenir; bölge altınları BİREBİR.
+4. **A2:** C parametreleri ve parça çarpanları kendi tablolarıdır; bu bölümün adlandırması (`mulk.bakim.*`) A2 §2.4'ün adıyla aynıdır (`parametreler.mulk.bakim`). Kapsam dışı (A2 §2.4 "diğer öneriler", K3 sorusu 10): `bakim_duzeyi.otomatikParca` komut alanı ve başlangıç kiti 40 → 60 parça; bu bölümde **yok** (S-20).
 
 ## 6. G7a: yerel pazar kanalı
 
@@ -1599,6 +1757,7 @@ NPC'den ithal edip rafa koymak **meşru ticaret yönüdür** (G12; ZP11 izler). 
 | K-3 | şebeke bloğu eklenince mülk kipi özeti BİLEREK değişir (santralsiz elektrik girdili tesis verim 0 → > 0): K-3 koşusunun farkı yakalayabildiği; K-3(a) şebekesiz koşar |
 | K-4 | aynı santralsiz tesis mülk kipinde (şebeke açık) verim kazanır, bölge kipinde 0 kalır: şebeke yolu mülk kipinde gözlenebilir, bölge kipinde gerçekten okunmaz |
 | K-5 | mülk kipinde `ciktiPpm = 750 000` çıktıyı ×0,75 yapar (birim test): kilma yolu etkili; bölge kipinde ve `1 000 000`'da özet eşitliğinin anlamı budur |
+| K-6 | `mulk.bakim` değerleri global `sanayi.bakim`'e yazılınca bölge kipi özeti FARKLI; mülk kipinde blok O2 `<C>` global ayarıyla aynı özeti verir, blok yokta FARKLI (§5.10.7) |
 
 
 **K-1: yöntem izdüşümü (bölge kipi).** P3 mal izdüşümü kalıbı (`mal-izdusumu-kanit.test.ts`, `esik-budama-kanit.ts` `kanitKaydi`/`esitNoktalar`): iki içerik, aynı koşu.
@@ -1616,6 +1775,8 @@ NPC'den ithal edip rafa koymak **meşru ticaret yönüdür** (G12; ZP11 izler). 
 **K-4: şebeke etkisizlik kanıtı (bölge kipi).** `mulk.sebeke` bölge kipinde okunmaz: `ic.mulk` bölge kipinde tanımsızdır (`derle.ts:78`) ve `elektrikUygula`'ya `sebeke = null` geçer (`h.bolge.merkez` yalnız mülk düğümünde tanımlıdır). Kanıt (iki katman): (a) **yöntem izdüşümü testi (K-1)** şebekeyle birlikte koşar (güncel içerikte `mulk.sebeke` var, `p4Oncesi`'nde yok): bölge kipi 12 kontrol noktasında tam `durumOzeti` aynı; (b) birim test: bölge kipinde elektrik girdili tesis santralsiz **verim 0** kalır (`elektrik.karsilanmaPpm = 0`, bugünkü davranış) ve `BolgeElektrikDurumu.sebekeMili` hiç yazılmaz.
 
 **K-5: `yontemGecersizKilma` etkisizlik kanıtı.** `ciktiPpm = 1 000 000` ve blok yok: mülk kipi tohumlu koşu 12 noktada aynı `durumOzeti` (K-3 ile aynı koşu, iki veri kopyası); bölge kipinde `ciktiPpm = 750 000` bile `durumOzeti`'ni değiştirmez (`ic.mulk` tanımsız); mülk kipinde `ciktiPpm = 750 000` `standart_gida_isleme` tesisinin `ciktiGercek`'ini ×0,75 yapar, girdi aynı (birim test).
+
+**K-6: `mulk.bakim` etkisizlik kanıtı (bölge kipi) ve eşdeğerlik (mülk kipi).** `ic.mulk` ve `b.merkez` bölge kipinde tanımsızdır (§5.10.5): bölge kipi veri kopyasına üç mekanizmanın tam değerleri (`asinmaHizCarpaniPpm 500000`, `asinmaVerimKaybiTavaniPpm 250000`, `yontemParcaPpm`) eklenince 12 noktada tam `durumOzeti` AYNI; negatif kontrol: aynı değerler global `sanayi.bakim`'e yazılınca özet FARKLI (kanıt aşınma yolunu gerçekten görüyor). Mülk kipinde blok yok / `{}` / kimlik değerleri: aynı `durumOzeti`; O2 `<C>` global ayarı ile `mulk.bakim { 500000, 250000 }`: aynı `durumOzeti` (bakımsız, ≥ 20 gün; §5.10.6).
 
 ### 13.2 Aritmetik kanıt (belge)
 
@@ -1654,7 +1815,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | Arayüzde büyük harf yok; `1.234 ₺`; Türkçe | — | ret iletileri küçük harf | — | §9.3 | K1 çeviri testi |
 | Oyuncu serbest metni sistem/ajan yoluna girmez | — | `metin` ∉ `SISTEM_ALAN_TURLERI` | — | §9.1 | `para-guvenligi` sistem alan türleri testi |
 | Para korunumu (şebeke) | `mulk.sebeke` ile (G6) | - | - | `lavabo.sebeke` + `kasa.giris.sebeke` = hazineden düşen bedel; yeni musluk yok; `ithKasa` kolu ayrı | `sebeke-elektrik` I1 |
-| Blok yokken no-op (sebeke, yontemGecersizKilma, perakende) | evet | evet | evet | `ic.mulk.<blok> === undefined` ⇒ hiçbir kod yolu; durum alanları yalnız kullanılınca yazılır | K-3, K-4, K-5 |
+| Blok yokken no-op (sebeke, yontemGecersizKilma, perakende, bakim) | evet | evet | evet | `ic.mulk.<blok> === undefined` ⇒ hiçbir kod yolu; durum alanları yalnız kullanılınca yazılır | K-3, K-4, K-5, K-6 |
 | Şebeke fiyatı oyuncudan ve pazardan bağımsız | evet (taban sabit) | - | - | derleme zamanı tamsayı; `d.pazar` okunmaz | `sebeke-elektrik` (8) |
 | Etkin kademe saf | - | evet | - | `etkinKademe(durum, t)`; çözümde durum yazılmaz | `perakende-kampanya` |
 
@@ -1734,6 +1895,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `cekirdek/test/perakende-determinizm.test.ts` (yeni) | K3 | aynı tohum + günlük = aynı özet; komut sırası; `Map` sıralı gezilir (permütasyon testi) |
 | `cekirdek/test/marka-sozdizimi.test.ts` (yeni) | K3 | MRK-03…MRK-08 (uzunluk, izinli küme, baş/son boşluk, art arda boşluk, harf şartı); Türkçe harfler tek karakter; emoji/birleşen işaret/akıllı tırnak reddi; durum özeti: marka tanımlamamış oyuncu ve eski dünya aynı |
 | `cekirdek/test/bolge-kipi-etkisiz.test.ts` (K-3 genişler) | K3 | `perakende` ve `yontemGecersizKilma` veride var, dükkân yok ⇒ aynı `durumOzeti`; katman 4a `d4a = 0` aritmetiği |
+| `veri/test/dogrulama.test.ts`, `cekirdek/test/mulk-bakim.test.ts` (yeni), `bolge-kipi-etkisiz.test.ts` (K-6) | K4 | §5.10.7 (V18/V19; derle; O2 eşdeğerliği; parça birimi; kıtlık; blok yok no-op; K-6), her kanıt negatif kontrollü |
 | `cekirdek/test/mulk-yapilar.test.ts:50`, `mal-izdusumu-kanit` | K3 | ek yapı listesi 6 → 7 (`dukkan`), göç beklentileri |
 | `sunucu/test/ad-suzgec.test.ts` (yeni) | K2 | yasaklı ad katlama (büyük/küçük harf, aksan, ayırıcı); yasaklı kelime ↔ içerik; **marka komutu ve görünen ad ucu AYNI süzgeci kullanır**; bot/ajan yoluna uygulanmaz; günlüğe yazmadan önce ret (MRK-12) |
 | `cekirdek/test/ad-kurali.test.ts` (yeni) | K3 | `adSozdizimiHatasi` ve `adKanonik` tek kaynak (§7.7 kanonik biçim testleri: `"İSTANBUL Fırını"` → `"istanbul fırını"`, `"IŞIK"` → `"ışık"`, idempotans, kaynakta `toLowerCase` yok): marka komutu ve (sunucu testinde) görünen ad aynı sonucu verir; protokol zod sınırı `min/max` = `AD_KURALI.min/max` |
@@ -1754,6 +1916,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | G6-2 | **Çekirdek (blok yokken no-op):** `icerikDerle` süzgeci; `elektrikUygula` şebeke yolu + `BolgeHesabi.sebekeMili`; `hazineKalemleri`/`paraAkisiYaz`/`paraMuhasebesi`/`kasaOranlari` şebeke kolları; `ParaAkisi.sebeke`, `lavabo.sebeke`, `giris.sebeke`, `BolgeElektrikDurumu.sebekeMili`, `InsaatDurumu.yontem` + doğrulayıcılar; `yontem` komut alanı; `yontemGecersizKilma` yolu | K3 | G6-1 | `sebeke-elektrik`, `yontem-komut`, `yontem-carpani` (sentetik veriyle: testler kendi veri kopyasında bloğu ekler), `serilestir-goc`, `para-guvenligi`; mevcut tüm çekirdek testler **değişiksiz** yeşil (blok yok = no-op kanıtı) |
 | G6-3 | **Veri (tek commit; `kuralSurumu` ARTAR):** T3: `icerik.json` 4 yöntem + tür listeleri; `parametreler.json` `mulk.sebeke`, `mulk.yontemGecersizKilma` (kapalı); `kimlik-listesi.json` `yontemler` (28 kayıt) | T3 | G6-2 | `dogrulaVeriPaketi`, `dogrulaKimlikKilidi`, `dogrulaPerakende` (V13–V17) geçer; `icerikDerle` tamam. **Bu bir mülk kipi kural değişikliğidir** (`mulk.sebeke`: santralsiz tesis artık üretir): `kuralSurumu` artar; **mülk kipi altınları (mülk fikstürlü altın/ölçüm sabitleri) TEK commit'te, eski ve yeni değerler raporlanarak güncellenir**; bölge kipi altınları **BİREBİR** kalır (K-1…K-5). **G6-3 sonrası O2 ölçüm temel çizgisini (parsel-v1, bakım) yeniden alır;** önceki raporlarla birebir karşılaştırılmaz |
 | G6-4 | **Kanıtlar, test uyarlama ve mülk altınlarının tek commit'te güncellenmesi:** `yontem-izdusumu-kanit` (K-1), `mal-izdusumu-kanit` uyarlama (B4), `mulk-*` ve `botlar` uyarlama (§5.2.10), K-2 CI denetimi | K3, O2 | G6-3 | §16.1 tablosu; `git diff --exit-code` K-2 listesi (**bölge** altınları); mülk altınları güncellemesi **tek commit'te** ve commit gövdesinde eski/yeni değer raporu |
+| G6-6 | **Mülk bakımı C mekanizması (blok yokken no-op; `parametreler.json` DEĞİŞMEZ, `kuralSurumu` aynı):** `mulk.bakim` şeması + V18/V19, `derle` tablosu, C1-C5 (`cezaCarpani` 4. parametre, `mulkBakim`, `bolgeHesapla` parça, `sanayiGunluk`), testler §5.10.7, K-6 | K4 | G6-3 | `pnpm --filter @bolge/veri exec vitest run dogrulama`; `pnpm --filter @bolge/cekirdek exec vitest run mulk-bakim bolge-kipi-etkisiz sanayi`; mevcut çekirdek testleri değişiksiz yeşil |
 | G6-5 | **Dedektör doğrulaması, bot önayarı, ölçüm:** `odul.test.ts` (K2); bot ekmek zinciri (O2); §15.2 raporları | K2, O2 | G6-4 | `sunucu` odul testi; bot 7 günde `ekmek` |
 
 **G6 teslim kapısı (O1):** tam kapı yeşil (`pnpm typecheck`, tam vitest, `dunya.html` gzip ≤ 400 KB; G6 payı < 0,5 KB beklenir, K3 ölçer: **doğrulanmadı**); bölge kipi altınları **birebir** (K-1: 12 noktada tam özet; K-2: dondurulmuş dosyalarda boş diff); eski mülk görüntüsü yüklenir.
@@ -1765,7 +1928,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | G7-1 | **Şema (isteğe bağlı/no-op):** `mulk.perakende` (kampanya parametreleri dahil), **`ParselIlceTanimi.nufus?` (fikstür şeması, V9b)**, `MulkEkYapiTanimi.olcekHucre?`, `dukkanTurleri` kilit bağlantısı, V1-V12 (`perakende-dogrula.ts`), `DerlenmisPerakende`; komut tipleri (5 + 1) **K2 zod satırlarıyla aynı birleştirmede**; `AlanTuru += "metin"` | K3 (+K2) | G6 teslim kapısı yeşil | `perakende-veri`; `pnpm -r typecheck`; **hiçbir JSON değişmedi**, altınlar aynı |
 | G7-2 | **Çekirdek (blok yokken no-op):** `yerelPazarHesapla`, katman 4a, `BolgeHesabi.dukkan*`, `hazineKalemleri`/`paraAkisiYaz`/`paraMuhasebesi` yerel kolları, `musluk.yerelNpc` (lazy), `ilkSatisT`, `yerelKarsilanmaPpm` | K3 | G7-1 | `perakende-cekim`, `perakende-talep`, `perakende-para`, `perakende-yetisme`; mevcut tüm çekirdek testler değişiksiz yeşil |
 | G7-3 | **Dükkân:** durum, `ekYapiTamamla`, `yapi_yerlestir`/`tesis_insa_hucre` `dukkanTuru`, 5 komut + `marka_sifirla`, kampanya, marka, `dukkan_yik`, serileştirme/doğrulayıcılar | K3 | G7-2 | `perakende-komut`, `perakende-kampanya`, `marka-sozdizimi`, `perakende-serilestir`, `perakende-arbitraj`, `perakende-determinizm` |
-| G7-4 | **Veri (tek commit; `kuralSurumu` ARTAR):** T3: `ekYapilar.dukkan` (P-İthal bedeli), `mulk.perakende` (A2 §1.9/§1.13; 4 dükkân türü), `kimlik-listesi.json` (dükkân türleri zaten listede) | T3 | G7-3 | `dogrulaVeriPaketi`, `dogrulaPerakende` (V1-V16); `icerikDerle`; **mülk altınları tek commit'te** (eski/yeni raporlu); bölge altınları BİREBİR |
+| G7-4 | **Veri (tek commit; `kuralSurumu` ARTAR):** T3: `ekYapilar.dukkan` (P-İthal bedeli), `mulk.perakende` (A2 §1.9/§1.13; 4 dükkân türü), `kimlik-listesi.json` (dükkân türleri zaten listede); **`mulk.bakim`** (§5.10.1: `asinmaHizCarpaniPpm 500000`, `asinmaVerimKaybiTavaniPpm 250000`, `yontemParcaPpm {yuzey_cevher 200000, hidro_santrali 400000}`; G6-6 mekanizması iniş yapmış olmalı) | T3 | G7-3, G6-6 | `dogrulaVeriPaketi`, `dogrulaPerakende` (V1-V16); `icerikDerle`; **mülk altınları tek commit'te** (eski/yeni raporlu); bölge altınları BİREBİR |
 | G7-5 | **K2/K1 kancaları ve kanıtlar:** `kare.ts` alanları, `ilk_dukkan` dedektörü, marka süzgeci, sunucu göçü; K1 `gizli.ts`/`komut.test.ts`/çeviriler; K-3 testi; ölçüm temel çizgisi | K2, K1, O2 | G7-4 | §16.2 K2/K1 satırları; `bolge-kipi-etkisiz` |
 
 **G7 teslim kapısı (O1):** tam kapı yeşil; `dunya.html` gzip ≤ 400 KB (G7 payı +3–5 KB: çekirdek 2–3, zod/doğrulayıcı 1–2; **K3 ölçer**); bölge kipi altınları birebir (K-1…K-5); eski mülk görüntüsü yüklenir; bot ilk dükkânı kurar ve satar (A0-11 zaman alanları durumdan).
@@ -1787,6 +1950,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | Rol | İstek | Dilim |
 |---|---|---|
 | **K3** | §5, §3.5, §4, §11, §13 ve Ek A'daki değişiklikler; **blok yokken no-op** her yerde; testler §16.1; K3 `p3Oncesi`/`p4Oncesi` yardımcılarını yazar; `veri-importu` kuralı (çekirdek `@bolge/veri` çalışma zamanı importu yok) korunur; Node-only doğrulayıcılar `saf`a girmez; bundle ölçümü | G6 |
+| **K4** | **G6-6 (`takim/k4/bakim-c`):** §5.10 mekanizması (şema, V18/V19, `derle`, C1-C5, testler); `tipler.ts`/`derle.ts`'e girmeden Kod lideriyle sıra; `parametreler.json` ve altınlar dokunulmaz. (T3: G7-4'te `mulk.bakim` değerleri; O2: parça tahmini etkin miktarla, ölçüm temel çizgisi G7-4 sonrası yeniden) | G6-6, G7 |
 | **T3** | **G6-3 tek commit:** (a) `icerik.json`: `yontemler[]` sonuna 4 yöntem (A2 §1.4/§1.13 değerleri; `mulkKipi: true`); `gida_fabrikasi` ve `ahir` listeleri sonlarına ekleme; **`celikhane` listesi DEĞİŞMEZ** (T3 §8.2 `cam_firini` satırı geçersiz; G8'de `parca_fabrikasi`'ne); (b) `parametreler.json`: `mulk.sebeke` (`mallar: [{ mal: "elektrik", tavanOraniPpm: 1000000 }, { mal: "yakit", tavanOraniPpm: 1000000 }]`, `kasaPayiPpm` **120 000** (A2 §1.3-B1)), `mulk.yontemGecersizKilma` (`standart_gida_isleme: { ciktiPpm: 1000000 }`, kapalı; G2 açılırsa 750 000); (c) `kimlik-listesi.json` `yontemler`: §3.5'teki 28 kayıt, sırayla. **K3'ün G6-1 dalı birleşmeden önce yazma.** Her yeni kimlik önce listeye. | G6 |
 | **K2** | `komut-sema.ts:62-71` iki komuta `yontem: kimlik.optional()` (K3 ile aynı birleştirme); (G7) `dukkan_yik` ve diğer yeni komut satırları, `kare.ts` alanları (§10.2); `sunucu/src/odul/dedektor.ts` `ilk_isleme`/`zincir_kapandi` doğrulama testi (kod değişmez); sunucu `kuralSurumu` göçü (`yazar.ts:363,385,1318`) G6-3 sonrası `gocIzni` | G6 |
 | **K1** | G6'da komut **tür** değişikliği yoktur (`gizli.ts`, `komut.test.ts` listeleri değişmez); **G7:** `HARITA_KOMUTLARI`'na `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`, `dukkan_yik`, `GIZLI_KOMUTLAR`'a `marka_sifirla` (`gizli.ts:11,19`; `komut.test.ts:92-117` `toEqual` listeleri); DUK/MRK/YON çevirileri (§9.3); marka adı girişinde `’` → `'` çevirisi ve kırpma (§7.7, §10.4); kampanya kalan hak ve "mevcut" bayrağı gösterimi (§10.2); `harita/hata-mulk.ts` çevirileri: `bilinmeyen yontem`, `yontem bu tesis turunde yok`, `yontem acik degil`, `yontem yalniz tesis turunde verilebilir` (§9.3 ekleri); **oyun içi metinde santral için "daha ucuz" vaadi yoktur**, gerçek sayılar gösterilir (§5.2.1); Dikkat paneli notu "pazar doydu → ekmek zinciri" (G9; §5.9) | G6, G9 |
@@ -1893,6 +2057,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | GZ-18 | **`mulkKipi` bayrağı** ve `mulk.yontemGecersizKilma` şeması (`ciktiPpm`) | `YontemTanimi`/`MulkParametreleri` alan kalıcı; çarpan çıktıya uygulanır (girdiye değil) | baş lider kararı 2 ve 13 |
 | GZ-19 | **G6-3 sonrası ölçüm temel çizgisi yeniden alınır** (`mulk.sebeke` ile mülk kipi kuralı değişir: santralsiz tesis üretir) | `kuralSurumu` artar; mülk altınları tek commit'te yeni değerle; parsel-v1 ve bakım ölçümleri önceki raporlarla birebir karşılaştırılmaz; **bölge kipi altınları birebir** | baş lider (kabul) |
 | GZ-20 | **`dukkan_yik` komutu** (iade yok; arsa oyuncuda; yalnız dükkân) | komut sözleşmesi; "yıkımda iade yok" kuralı para dengesini sabitler; diğer yapılara genelleme sonraki sprint | baş lider kararı |
+| GZ-21 | **`mulk.bakim` blok adı ve alanları** (`asinmaHizCarpaniPpm`, `asinmaVerimKaybiTavaniPpm`, `yontemParcaPpm`; parça çarpanı ayrı blokta, `yontemGecersizKilma` içinde değil) | `MulkParametreleri` alan adı kalıcı (kayıtlı veri paketleri); değerler kolay geri dönüşlü (kural dönemi, `kuralSurumu`) | baş lider (bakım C ve ZA-13 onayı) |
 
 ## 21. Açık sorular
 
@@ -1908,7 +2073,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | S-6 | ~~Talep ilçe büyüklüğüne bağlansın mı~~ **KAPANDI (baş lider, A2 `241f1b9`):** isteğe bağlı fikstür `nufus` alanı, `yerelOlcek` 40, alan yoksa sınıf sabiti (`ParselIlceTanimi.sinif`); hücre sınıfı kullanılmaz. **Açık kalan (sahip/O3):** gerçek nüfus kaynağı ve lisansı (TÜİK ADNKS; hukuki görüş) | alanlı ve alansız iki yol | kapandı (kaynak: O3, sahip) |
 | S-7 | ~~M erken açılış (`acikOlcekler`, T-43)~~ **KAPANDI (baş lider):** `[0]`. **`acikOlcekler` yalnız dükkân ölçeği içindir ve bir özellik açılış zamanlamasıdır; e1080dd'deki fabrika/tesis ölçek serbestliğini (doğrudan M/L kurulum) etkilemez.** | `[0]` | kapandı |
 | S-8 | **Bayram sınır günü ve tarihler:** `oncesi` penceresi `[B − Do, B − 1]`, `sonrasi` penceresi `[B, B + Ds − 1]` (bayram günü sonrasında); resmî bayram tarihleri (doğrulanmadı) | bayram listesi **boş geçerlidir** (parametre; V9 boş listeyi kabul eder); tarih listesi T3'te sonradan eklenir; **sahip listesinde, G7'yi bekletmez** | A2 (sınır), T3 (tarih) |
-| S-9 | ~~Bakım ve aşınma kalibrasyonu~~ **KAPANDI (baş lider):** bu sprintte karar yok; G4 dışı; şema rezervi gerekmez (A2 eab8fcc §2: öneri C, ×0,50 ve tavan %25, O2 ölçümü sonrası) | - | kapandı |
+| S-9 | ~~Bakım ve aşınma kalibrasyonu~~ **KAPANDI (baş lider; sonradan GÜNCELLENDİ):** önce "bu sprintte karar yok"; **baş lider bakım C'yi ve ZA-13'ü G7-4 mülk verisi için onayladı** (A2 `86e854e`): mekanizma §5.10 (`mulk.bakim`, G6-6), değerler G7-4 | - | kapandı |
 | S-10 | ~~Yakıt şebekeden otomatik~~ **KAPANDI (baş lider):** elektrik ve yakıt şebekeden (§5.2.2b; mal listesi `mallar[]`) | kapsamda | kapandı |
 | S-11 | **Kamu siparişi v0** değerleri **onaylı** (A2 §1.9, §1.13 `kamuSiparisi`): mallar `ekmek`, `gida`, `pencere`, `celik`, `parca`; fiyat 1,03 R; boyutlar 100/50/10/30/20; ilçede haftada ≤ 5; vade 3 gün; `kasaPayiPpm` %12. **Sipariş kodu ve şeması sonraki sprintte** (bu şartnamenin dışı); değerler durur | veri taslağı A2'de | kapandı (kod: sonraki sprint) |
 | S-12 | **Büyük harf** (marka ve görünen ad için AYNI çözüm) ve **KVKK** hukuki görüşü | **varsayılan: küçük harf (baş lider); sahip kararı bekler:** girişte büyük harf izinli, küçük harfe sabit tabloyla çevrilip saklanır (`adKanonik`, §7.7; `toLowerCase` yok). Sahip "serbest" derse yalnız `AD_KURALI.kucukHarf = false` | sahip, hukuk |
@@ -1919,6 +2084,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | S-17 | ~~Zincir +%33,6 K/U bandının üstünde~~ **KAPANDI (baş lider):** fırın çıktısı 240 (+%21,2) | 240 | kapandı |
 | S-18 | ~~Kampanya sim haftası~~ **KAPANDI (baş lider):** hafta = sim haftası (`floor(gun/7)`), gün sınırı 00:00 TRT; oyuncuya yalnız "bu hafta kalan gün" gösterilir (§7.5b) | kabul | kapandı |
 | S-19 | ~~Dükkân yıkımı~~ **KAPANDI (baş lider):** `insaat_iptal` (%50) inşa sürerken; tamamlanmış dükkân `dukkan_yik` ile yıkılır, **iade yok**, arsa oyuncuda; yalnız `dukkan` (diğer yapılar sonraki sprint) | `dukkan_yik` (§7.9) | kapandı |
+| S-20 | **`bakim_duzeyi.otomatikParca` komut alanı ve başlangıç kiti 40 → 60 parça** (A2 §2.4 "diğer öneriler"; K3 sorusu 10) | §5.10 kapsamı DIŞI; karar gelene kadar yok | baş lider (A2 önerisi) |
 
 ### 21.B T3 §11'in 16 sorusu (tek tek)
 
@@ -1955,6 +2121,8 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `veri/src/dogrula.ts:245` `dogrulaIcerik` (`:358` kullanılmayan yöntem kuralı yanında) | `mulkKipi` kuralları (§4.1); `dogrulaParametreler` (`:558`) `sebeke` ve `yontemGecersizKilma` aralıkları |
 | `veri/src/kimlik-listesi.ts` (`:157` `dogrulaKimlikKilidi`; `KimlikListesiSema`; `kimlikListesiHatalari`; `kimlikKilidiHatalari`) | `yontemler` bölümü, Y1–Y8, `KimlikKilidiGirdisi.yontemler`, `dukkanTurleri` geçişi |
 | `veri/src/perakende-dogrula.ts` (YENİ; Node-only; `yukle.ts:48` çağırır) | V13 (çıkmaz mal; G6'da `kepek`/`gubre` yan ürün kuralı), V14 (`sebeke`), V15 (oran bandı uyarısı), V16, V17 (`yontemGecersizKilma`); `perakende` kuralları G7'de |
+| `veri/src/perakende-dogrula.ts` (G6-6, K4) | V19 (`mulk.bakim.yontemParcaPpm`: bilinmeyen yöntem, boş `bakim`, miktar 0'a iner; `sanayi` yoksa uyarı) |
+| `veri/src/{tipler.ts:627,sema.ts:415,dogrula.ts:558}` (G6-6, K4) | `MulkParametreleri.bakim?: MulkBakimParametreleri`; `mulkSema.bakim` (`.strict()`); V18 aralıklar ve türev aşınma sınırı (§5.10.1, §5.10.2) |
 | `veri/src/yukle.ts:48` | `dogrulaPerakende` çağrısı (uyarılar yazdırılır, hata paketi reddeder) |
 | `veri/icerik/{icerik,parametreler,kimlik-listesi}.json` | **T3** (G6-3) |
 | testler | §16.1 |
@@ -1978,6 +2146,10 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `ekonomi/uretim.ts:421` `bolgeVerimCoz` | `sebeke` bağlamını kurar |
 | `ekonomi/uretim.ts:596-603` `bolgeDurumunaYaz` | `b.elektrik.sebekeMili` |
 | `ekonomi/uretim.ts:204-222` `ciktiCarpaniHesapla` | `yontemCiktiPpm` (§5.9) |
+| `sanayi/carpan.ts:21-26` `cezaCarpani`, yeni `mulkBakim` (G6-6, K4) | 4. isteğe bağlı parametre `tavanPpm`; `mulkBakim(ic, b)` (`ic.mulk` ve `b.merkez` koruması); `index.ts:50-54` dışa aktarım (§5.10.4 C1) |
+| `ekonomi/uretim.ts:212`, `:319`, `:334-335`, `:249-251` (G6-6, K4) | `cezaCarpani(..., mb?.tavanPpm)` iki çağrıda; bakım talebinde `q = carpBol(q0, yontemParcaPpm, PPM)` (önce parça çarpanı, sonra `bakimC`); `bolgeHesapla` başında `mb` (C2-C4) |
+| `sanayi/gunluk.ts:43`, `:48` `sanayiGunluk` (G6-6, K4) | `mb?.duzeyAsinmaPpmGun?.[duzey] ?? …`, `mb?.kitlikAsinmaPpmGun ?? …` (C5) |
+| `derle.ts:114-198` `mulkDerle`, `tipler.ts:131` (G6-6, K4) | `DerlenmisMulkBakim`; `DerlenmisMulk.bakim?` yalnız etkin satır varsa (§5.10.3) |
 | `lojistik/cozum.ts:73-81` `ParaBilesenleri`, `:91-181` `hazineKalemleri` (`:127`, `:176`, `:180`) | `sebeke`, `sebekeIlce`; `isletmeGideri = gider − ithalat − sebeke`; bedel döngüsü |
 | `lojistik/cozum.ts:293-308` | `paraAkisiYaz({ …, sebeke, kasa: kasaOranlari(…, sebekeIlce) })` |
 | `mulk/kasa.ts:94-125` `paraMuhasebesi` | `sebeke` kolu, lazy kalemler (§5.2.5) |
