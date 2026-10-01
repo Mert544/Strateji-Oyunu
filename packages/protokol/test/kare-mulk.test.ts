@@ -4,6 +4,7 @@
  * özel erken oyun formülü / indirimli yapı hakkı / ayrılmış bitişi. Şema doğrulaması ve `deltaUygula(a, kareFarki(a, b)) ≡ b`.
  */
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { GUN, SAAT, SISTEM_OYUNCUSU, Simulasyon, kamuBilgisi, kamuBloklari, kamuHucreleri, sureCarpaniPpm } from "@bolge/cekirdek";
 import type { Baglam, CekirdekVeriPaketi } from "@bolge/cekirdek";
 import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
@@ -298,5 +299,82 @@ describe("olcek yukseltme insaatinda ek hucrenin tur adi (hedef = TESIS kimligi,
       for (const id of govde) expect(tur(id), `tesis hucresi ${id} (${oyuncu})`).toBe("mera");
       expect(IlgiKaresiSemasi.parse(k)).toEqual(k);
     }
+  });
+});
+
+describe("ilce karesi ayrilmisSatilmis (yalniz ekleme, istege bagli nesne alani)", () => {
+  function dunya(yurtHucre: number): Simulasyon {
+    const v: CekirdekVeriPaketi = { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") };
+    delete v.param.mulk?.kamu;
+    const yo = v.param.mulk?.yeniOyuncu;
+    if (yo) {
+      yo.hibe = 5_000_000_000;
+      yo.yurtHucre = yurtHucre;
+    }
+    return Simulasyon.olustur(v, 3);
+  }
+  const ayrilmisKimlikler = (sim: Simulasyon): string[] => [...(sim.ic.mulk?.ilceler.get(ILCE)?.hucreler ?? [])].filter((h) => h.uygun && sim.ic.mulk?.ayrilmis.has(h.id)).map((h) => h.id);
+  const alan = (sim: Simulasyon): number | undefined => kare(sim, "yeni").ilceler?.find((c) => c.id === ILCE)?.ayrilmisSatilmis;
+
+  it("PARA ile alinan ayrilmis hucre alani arttirir (cekirdek IlceDurumu.ayrilmisSatilmis ile ayni); normal hucre arttirmaz; 0 iken alan YAZILMAZ; delta tasir; sema gecerli", () => {
+    const sim = dunya(0);
+    const ayr = ayrilmisKimlikler(sim);
+    expect(ayr.length, "fikstürde ayrilmis hucre olmali").toBeGreaterThan(2);
+    sim.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "yeni", bolgeler: [], ilce: ILCE } });
+    const bos = kare(sim, "yeni");
+    expect("ayrilmisSatilmis" in (bos.ilceler?.find((c) => c.id === ILCE) ?? {})).toBe(false); // 0: alan yok
+    // Ayrılmış hücre (para ile): sayaç artar.
+    const r1 = sim.uygula({ t: SAAT, oyuncu: "yeni", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [ayr[0] as string], sinif: "kirsal" } });
+    expect(r1.tamam, JSON.stringify(r1)).toBe(true);
+    const bir = kare(sim, "yeni");
+    expect(alan(sim)).toBe(1);
+    expect(sim.dunya.mulk?.ilceler.find((c) => c.id === ILCE)?.ayrilmisSatilmis).toBe(1);
+    expect(bir.ilceler?.find((c) => c.id === ILCE)?.satilmisHucre).toBe(1);
+    expect(IlgiKaresiSemasi.parse(bir)).toEqual(bir);
+    expect(deltaUygula(bos, kareFarki(bos, bir))).toEqual(bir);
+    // Normal (ayrılmamış) hücre: ayrilmisSatilmis aynı kalır, satilmisHucre artar.
+    const uygun = (sim.ic.mulk?.ilceler.get(ILCE)?.hucreler ?? []).filter((h) => h.uygun && h.sinif === "kirsal" && !sim.ic.mulk?.ayrilmis.has(h.id)).map((h) => h.id);
+    expect(sim.uygula({ t: SAAT, oyuncu: "yeni", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [uygun[0] as string], sinif: "kirsal" } }).tamam).toBe(true);
+    const iki = kare(sim, "yeni");
+    expect(iki.ilceler?.find((c) => c.id === ILCE)?.ayrilmisSatilmis).toBe(1);
+    expect(iki.ilceler?.find((c) => c.id === ILCE)?.satilmisHucre).toBe(2);
+    expect(deltaUygula(bir, kareFarki(bir, iki))).toEqual(iki);
+    // Fiyat eğrisi sayacı: çekirdeğin `satilmisHucre − ayrilmisSatilmis` sayısı karedeki iki alandan türer.
+    const c = iki.ilceler?.find((x) => x.id === ILCE);
+    expect((c?.satilmisHucre ?? 0) - (c?.ayrilmisSatilmis ?? 0)).toBe(1);
+  });
+
+  it("yurdun BEDELSIZ verdigi hucreler sayilmaz: satilmisHucre artar, ayrilmisSatilmis alani yazilmaz", () => {
+    const sim = dunya(4);
+    sim.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "yeni", bolgeler: [], ilce: ILCE } });
+    const c = kare(sim, "yeni").ilceler?.find((x) => x.id === ILCE);
+    expect(c?.satilmisHucre).toBe(4);
+    expect(c !== undefined && "ayrilmisSatilmis" in c).toBe(false);
+    expect(sim.dunya.mulk?.ilceler.find((x) => x.id === ILCE)?.ayrilmisSatilmis).toBeUndefined();
+  });
+
+  it("GERIYE UYUM: entegrasyon 8064ded ilce karesi semasi (dondurulmus kopya) yeni kareyi reddetmez; alan sessizce atilir; ayrilmisAdet/ayrilmis aynen", () => {
+    const tam = z.number().int();
+    const eskiIlce = z.object({
+      id: z.string(),
+      il: z.string(),
+      seviye: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+      uygunHucre: tam,
+      satilmisHucre: tam,
+      hucreler: z.array(z.array(z.union([z.string(), tam]))),
+      ayrilmisAdet: tam.optional(),
+      ayrilmis: z.array(z.string()).optional(),
+    });
+    const sim = dunya(0);
+    const ayr = ayrilmisKimlikler(sim);
+    sim.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "yeni", bolgeler: [], ilce: ILCE } });
+    sim.uygula({ t: SAAT, oyuncu: "yeni", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [ayr[0] as string], sinif: "kirsal" } });
+    const k = JSON.parse(JSON.stringify(kare(sim, "yeni"))) as { ilceler: unknown[] };
+    for (const c of k.ilceler) {
+      const r = eskiIlce.safeParse(c);
+      expect(r.success, JSON.stringify(r)).toBe(true);
+      if (r.success) expect(JSON.stringify(r.data)).not.toContain("ayrilmisSatilmis");
+    }
+    expect((k.ilceler[0] as { ayrilmisSatilmis?: number }).ayrilmisSatilmis).toBe(1);
   });
 });

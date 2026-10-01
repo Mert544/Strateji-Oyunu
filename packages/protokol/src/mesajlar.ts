@@ -274,6 +274,8 @@ const ilceKaresiSemasi = z.object({
   satilmisHucre: tam,
   hucreler: z.array(hucreKaresiSemasi),
   ayrilmisAdet: tam.optional(),
+  // Yalnız ekleme: para ile satılmış ayrılmış hücre sayısı (fiyat eğrisi sayacı); 0 ise yazılmaz.
+  ayrilmisSatilmis: tam.optional(),
   ayrilmis: z.array(z.string()).optional(),
   kamuAdet: tam.optional(),
   kamu: z

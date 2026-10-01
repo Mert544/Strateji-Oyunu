@@ -130,6 +130,11 @@ export interface IlceKaresi {
   /** Yeni oyunculara ayrılmış hücre sayısı (türetilmiş, değişmez; yoksa alan yok). */
   ayrilmisAdet?: number;
   /**
+   * Yalnız ekleme (isteğe bağlı): `satilmisHucre`nin PARA ile satılmış AYRILMIŞ hücre kısmı (çekirdek `IlceDurumu.ayrilmisSatilmis`; yurdun bedelsiz verdiği
+   * hücreler sayılmaz). Parsel fiyat eğrisi `satilmisHucre − ayrilmisSatilmis + k` üzerinden ilerler (ayrılmış alımlar eğriyi ilerletmez). 0 ise alan YAZILMAZ.
+   */
+  ayrilmisSatilmis?: number;
+  /**
    * Ayrılmış hücrelerin LİSTESİ (kimliğe göre sıralı; satılmış olanlar da listededir): yalnız `abone {ayrilmis: true}`
    * isteyen bağlantıya (`KareSecenekleri.ayrilmisListesi`); büyük olabilir. Değişmezdir: delta yalnız ilçe ilk girdiğinde
    * taşır, `deltaUygula` önceki girdiden korur.
@@ -445,6 +450,7 @@ export function ilgiKaresiCikar(
       .filter((c) => istenen.has(c.id))
       .map((c) => {
         const girdi: IlceKaresi = { id: c.id, il: c.il, seviye: c.seviye, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, hucreler: hucreler.get(c.id) ?? [] };
+        if ((c.ayrilmisSatilmis ?? 0) > 0) girdi.ayrilmisSatilmis = c.ayrilmisSatilmis as number;
         const ayrilmis = mk ? ayrilmisHucreler(mk, c.id) : undefined;
         if (ayrilmis) {
           girdi.ayrilmisAdet = ayrilmis.length;
