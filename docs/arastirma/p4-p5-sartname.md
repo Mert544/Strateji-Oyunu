@@ -1636,6 +1636,35 @@ Mevcut kodun yeni durumlarda da döndüreceği iletiler (K1 çevirisi var): `bil
 
 ---
 
+### 9.4 Arsa fiyatı tam liraya YUKARI yuvarlanır (P4 denetimi madde 1; baş lider/Kod lideri kararı)
+
+**Sorun:** çekirdek arsa fiyatı mili-₺ hassasiyetindedir ve her adımda **aşağı** yuvarlanır (`parselFiyati`: `carpBol`); oyuncu aynı sınıfta art arda 10.001 ₺, 10.000 ₺, 39.999 ₺ gibi **birbirine yakın ama farklı** sayılar görür (kırsal 1.000 ₺ taban, `satisPayiCarpaniPpm` 2 000 000, ilçe payına göre mili kesirleri). **Karar:** her hücrenin fiyatı **1 000 mili'nin (= 1 ₺) bir sonraki katına YUKARI** (`ceil`) yuvarlanır. Tek kural, tek yer; ayrılmış (yeni oyuncu) hücre taban fiyatı da aynı işlevden geçer (bugünkü taban değerleri 1 000 000 / 2 500 000 / 6 500 000 zaten 1 000'in katıdır: veride etkisiz, parametre güvenliği için kural tekdüze).
+
+```ts
+// cekirdek/src/mulk/komut.ts (taban d28447d: :104-107 `parselFiyati` döngüsü; K3 ucu aynı yer)
+const MILI_TAM_LIRA = 1000;                                   // 1 ₺ = 1 000 mili-₺ (cozum.ts MILI ile aynı)
+export function arsaTamLiraYukari(mili: Mili): Mili { return Math.floor((mili + MILI_TAM_LIRA - 1) / MILI_TAM_LIRA) * MILI_TAM_LIRA; }   // tamsayı, kayan nokta yok; mili ≥ 0
+// parselFiyati içinde, HER hücre için (toplam değil): toplam += arsaTamLiraYukari(carpBol(taban, PPM + pay, PPM));
+// hucreFiyatiParametreyle ayrılmış dalı: return arsaTamLiraYukari(taban);
+```
+
+**Neden hücre başına:** hücre fiyatı `HucreDurumu.degerMili` olarak saklanır (`alimUygula` `:223`) ve toplam (`alimPlani` `:207-208`, `parselToplamFiyatiMili` `:136`) **bu aynı hücre fiyatlarının toplamıdır**; toplamı yuvarlamak komut bedeli ile saklanan değerler arasında fark yaratırdı (`mo.araziDegeriMili` = Σ `degerMili`). Hücre başına `ceil` ile her hücre, toplam ve saklanan değer **1 000'in katıdır** ve birbirine **tam eşittir**.
+
+**Etki zinciri (hepsi tek kaynak `parselFiyati`/`hucreFiyatiMili`'den akar):**
+
+| Yer | Etki |
+|---|---|
+| `mulk/komut.ts:104-107` `parselFiyati`, `:116-121` `hucreFiyatiParametreyle` (tek kaynak), `:124-132` `hucreFiyatiMili`, `:136-` `parselToplamFiyatiMili` | kural burada; hepsi hücre fiyatı yoluyla yuvarlanmış değer verir |
+| `mulk/komut.ts:207-208` `alimPlani` (`fiyat`), `:223` `alimUygula` (`degerMili`, `araziDegeriMili`) | komut bedeli = Σ hücre; hazineden düşen = saklanan değerlerin toplamı |
+| **`mulk/komut.ts:585` `parsel_birak` iadesi** | `iade = carpBol(Σ degerMili, parselBirakIadePpm ?? 700 000, PPM)`: **girdi artık 1 000'in katıdır** (bu tamsayıdan hesaplanır; formül değişmez). Sonuç **700 mili'nin katıdır**, tam lira olmayabilir (ör. 10.001 ₺ hücre: iade 7.000,7 ₺ = 7 000 700 mili); iade **kendisi yuvarlanmaz** (S-22) |
+| `mulk/vergi.ts` `araziVergisiSaat` (`mo.araziDegeriMili` tabanı) | vergi tabanı tam liralı değerlerin toplamı olur; vergi oranı aynı (altın değişir, rastgelelik yok) |
+| botlar `parsel.ts:299-308` (`parselToplamFiyatiMili`), ölçüm, `istemci` | çekirdek tek kaynağı kullananlar kendiliğinden uyar |
+| **`istemci/src/harita/fiyat.ts:48-57` `parselFiyatiMili` (çekirdeğin bilinçli kopyası; çekirdek istemci paketine girmez), `:59-61` `hucreFiyati`** | kopya **aynı kuralı** uygular: her adımda `toplam += ceil1000(floor(taban × (PPM + pay) / PPM))`; `hucreFiyati` (tam ₺, bugün `Math.round`) `parselFiyatiMili(sinif, satilmis, uygun, 1) / 1000` olur (tek formül; `Math.round` yuvarlama farkı kalkar). Çekirdek ↔ istemci kopya testi (`istemci/test/harita-mulk.test.ts`) yeni değerlerle güncellenir |
+
+**Sıra ve sürüm:** değişiklik **kural değişikliğidir** (mülk fiyatı): `kuralSurumuHesapla` yalnız içerik + parametre JSON'unu özetlediğinden (`serilestir.ts:15`) bu **kod** değişikliği `kuralSurumu`'nu **kendi başına değiştirmez**; `kuralSurumu` G7-4 veri commit'inde zaten **bir kez** artar (Ar-Ge lideri kararı: ceil G7-4'ün tek artışına biner, ikinci artış yoktur). **Mülk altınları** (fiyat içeren test sabitleri) değişir: K4'ün ceil commit'i, etkilenen test sabitlerini **eski ve yeni değerler raporlanarak** aynı commit'te günceller; G7-4'te mülk altınları (veri etkisiyle) bir kez daha güncellenir ve rapor ikisini ayrı gösterir. **Bölge kipi altınları BİREBİR** (arsa yalnız mülk kipindedir; `parselFiyati`/`hucreFiyatiMili` bölge kipinde çağrılmaz: doğrulandı: `grep` yalnız `mulk/komut.ts`, `botlar/src/parsel.ts` (mülk botu, `parselToplamFiyatiMili`) ve istemci kopyasını verir). **Eski görüntü:** `HucreDurumu.degerMili` veridir, yüklemede yeniden hesaplanmaz; eski görüntüdeki 1 000'in katı olmayan değerler olduğu gibi kalır (iade ve vergi onlardan hesaplanır); yeni alımlar tam liradır. Alfa-0'da canlı dünya olmadığından ek göç yoktur; `serilestir.ts` `degerMili` için "1 000'in katı" kuralı **koymaz** (eski görüntü bozulmasın).
+
+**Testler (K4):** `mulk-ozellik.test.ts:64-81` `parselFiyati` birim sabitleri (her sonuç 1 000'in katı; `ceil` sınırları: tam katı değişmez `1 000 000 → 1 000 000`, `1 000 001 → 1 001 000`; çok hücreli toplam = Σ tek hücre; **karşıt kanıt:** floor sürümü aynı girdide 1 000'in katı olmayan değer verir); `mulk-yerlestir`, `mulk-olcek-kilitsiz`, `para-guvenligi` fiyat sabitleri (güncel; para korunumu tam eşitlik DEĞİŞMEZ: yalnız tutarlar değişir); **yeni:** `parsel_al` ardından `parsel_birak` aynı hücreler: iade = `carpBol(Σ ceil'li değer, 700 000, PPM)` ve hazine farkı = −(alım) + iade; saklanan `degerMili` her biri 1 000'in katı ve komut bedeline tam eşit; ayrılmış hücre taban; `istemci` kopyası çekirdekle birebir (her `satilmis/uygun` ızgarasında `parselFiyatiMili` = çekirdek `parselToplamFiyatiMili`); bölge kipi altınları değişmez.
+
 ## 10. Protokol alanları (yalnız ekleme)
 
 `PROTOKOL_SURUMU` (`mesajlar.ts:~28`) **değişmez**; tüm yeni alanlar isteğe bağlıdır, eski istemci yok sayar, eski sunucu göndermez. K3'ün tür eklemesi ile K2'nin zod satırları **aynı kapıda** birleşmelidir (B5): `komut-sema.ts:80-82` `_KomutDenetimi` ve `Esit` kontrolü K3 tek başına landed olursa `@bolge/protokol` derlenmez.
@@ -1933,6 +1962,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `cekirdek/test/perakende-determinizm.test.ts` (yeni) | K3 | aynı tohum + günlük = aynı özet; komut sırası; `Map` sıralı gezilir (permütasyon testi) |
 | `cekirdek/test/marka-sozdizimi.test.ts` (yeni) | K3 | MRK-03…MRK-08 (uzunluk, izinli küme, baş/son boşluk, art arda boşluk, harf şartı); Türkçe harfler tek karakter; emoji/birleşen işaret/akıllı tırnak reddi; durum özeti: marka tanımlamamış oyuncu ve eski dünya aynı |
 | `cekirdek/test/bolge-kipi-etkisiz.test.ts` (K-3 genişler) | K3 | `perakende` ve `yontemGecersizKilma` veride var, dükkân yok ⇒ aynı `durumOzeti`; katman 4a `d4a = 0` aritmetiği |
+| `cekirdek/test/mulk-ozellik.test.ts`, `mulk-yerlestir`, `mulk-olcek-kilitsiz`, `para-guvenligi`, `istemci/test/harita-mulk.test.ts`, `harita-f4-yapi.test.ts` (güncel) | K4 | **§9.4:** arsa fiyatı `ceil` birim ve komut testleri (alım ↔ iade, saklanan `degerMili` = bedel), istemci kopyası ↔ çekirdek, bölge altınları değişmez |
 | `veri/test/dogrulama.test.ts`, `cekirdek/test/mulk-bakim.test.ts` (yeni), `bolge-kipi-etkisiz.test.ts` (K-6) | K4 | §5.10.7 (V18/V19; derle; O2 eşdeğerliği; parça birimi; kıtlık; blok yok no-op; K-6), her kanıt negatif kontrollü |
 | `cekirdek/test/mulk-yapilar.test.ts:50`, `mal-izdusumu-kanit` | K3 | ek yapı listesi 6 → 7 (`dukkan`), göç beklentileri |
 | `sunucu/test/ad-suzgec.test.ts` (yeni) | K2 | yasaklı ad katlama (büyük/küçük harf, aksan, ayırıcı); yasaklı kelime ↔ içerik; **marka komutu ve görünen ad ucu AYNI süzgeci kullanır**; bot/ajan yoluna uygulanmaz; günlüğe yazmadan önce ret (MRK-12) |
@@ -1966,7 +1996,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | G7-1 | **Şema (isteğe bağlı/no-op):** `mulk.perakende` (kampanya parametreleri dahil), **`ParselIlceTanimi.nufus?` (fikstür şeması, V9b)**, `MulkEkYapiTanimi.olcekHucre?`, `dukkanTurleri` kilit bağlantısı, V1-V12 (`perakende-dogrula.ts`), `DerlenmisPerakende`; komut tipleri (5 + 1) **K2 zod satırlarıyla aynı birleştirmede**; `AlanTuru += "metin"` | K3 (+K2) | G6 teslim kapısı yeşil | `perakende-veri`; `pnpm -r typecheck`; **hiçbir JSON değişmedi**, altınlar aynı |
 | G7-2 | **Çekirdek (blok yokken no-op):** `yerelPazarHesapla`, katman 4a, `BolgeHesabi.dukkan*`, `hazineKalemleri`/`paraAkisiYaz`/`paraMuhasebesi` yerel kolları, `musluk.yerelNpc` (lazy), `ilkSatisT`, `yerelKarsilanmaPpm` | K3 | G7-1 | `perakende-cekim`, `perakende-talep`, `perakende-para`, `perakende-yetisme`; mevcut tüm çekirdek testler değişiksiz yeşil |
 | G7-3 | **Dükkân:** durum, `ekYapiTamamla`, `yapi_yerlestir`/`tesis_insa_hucre` `dukkanTuru`, 5 komut + `marka_sifirla`, kampanya, marka, `dukkan_yik`, serileştirme/doğrulayıcılar | K3 | G7-2 | `perakende-komut`, `perakende-kampanya`, `marka-sozdizimi`, `perakende-serilestir`, `perakende-arbitraj`, `perakende-determinizm` |
-| G7-4 | **Veri (tek commit; `kuralSurumu` ARTAR):** T3: `ekYapilar.dukkan` (P-İthal bedeli), `mulk.perakende` (A2 §1.9/§1.13; 4 dükkân türü), `kimlik-listesi.json` (dükkân türleri zaten listede); **`mulk.bakim`** (§5.10.1: `asinmaHizCarpaniPpm 500000`, `asinmaVerimKaybiTavaniPpm 250000`, `yontemParcaPpm {yuzey_cevher 200000, hidro_santrali 200000}`; G6-6 mekanizması iniş yapmış olmalı) | T3 | G7-3, G6-6 | `dogrulaVeriPaketi`, `dogrulaPerakende` (V1-V16); `icerikDerle`; **mülk altınları tek commit'te** (eski/yeni raporlu); bölge altınları BİREBİR |
+| G7-4 | **Veri (tek commit; `kuralSurumu` ARTAR):** T3: `ekYapilar.dukkan` (P-İthal bedeli), `mulk.perakende` (A2 §1.9/§1.13; 4 dükkân türü), `kimlik-listesi.json` (dükkân türleri zaten listede); **arsa fiyatı `ceil` (§9.4; K4 kodu bu kapıdan önce, mülk altınları ayrı raporlu)**; **`mulk.bakim`** (§5.10.1: `asinmaHizCarpaniPpm 500000`, `asinmaVerimKaybiTavaniPpm 250000`, `yontemParcaPpm {yuzey_cevher 200000, hidro_santrali 200000}`; G6-6 mekanizması iniş yapmış olmalı) | T3 | G7-3, G6-6 | `dogrulaVeriPaketi`, `dogrulaPerakende` (V1-V16); `icerikDerle`; **mülk altınları tek commit'te** (eski/yeni raporlu); bölge altınları BİREBİR |
 | G7-5 | **K2/K1 kancaları ve kanıtlar:** `kare.ts` alanları, `ilk_dukkan` dedektörü, marka süzgeci, sunucu göçü; K1 `gizli.ts`/`komut.test.ts`/çeviriler; K-3 testi; ölçüm temel çizgisi | K2, K1, O2 | G7-4 | §16.2 K2/K1 satırları; `bolge-kipi-etkisiz` |
 
 **G7 teslim kapısı (O1):** tam kapı yeşil; `dunya.html` gzip ≤ 400 KB (G7 payı +3–5 KB: çekirdek 2–3, zod/doğrulayıcı 1–2; **K3 ölçer**); bölge kipi altınları birebir (K-1…K-5); eski mülk görüntüsü yüklenir; bot ilk dükkânı kurar ve satar (A0-11 zaman alanları durumdan).
@@ -2097,6 +2127,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | GZ-20 | **`dukkan_yik` komutu** (iade yok; arsa oyuncuda; yalnız dükkân) | komut sözleşmesi; "yıkımda iade yok" kuralı para dengesini sabitler; diğer yapılara genelleme sonraki sprint | baş lider kararı |
 | GZ-21 | **`mulk.bakim` blok adı ve alanları** (`asinmaHizCarpaniPpm`, `asinmaVerimKaybiTavaniPpm`, `yontemParcaPpm`; parça çarpanı ayrı blokta, `yontemGecersizKilma` içinde değil) | `MulkParametreleri` alan adı kalıcı (kayıtlı veri paketleri); değerler kolay geri dönüşlü (kural dönemi, `kuralSurumu`) | baş lider (bakım C ve ZA-13 onayı) |
 | GZ-22 | **Yuva satış sayacı:** `RafYuvasi.satis` (`ParaSayaci`, miktar) + `satisOran`; **mal değişince sıfırlanmaz** (yuva ömür boyu hacmi; karma mal) | durum alanı kalıcı (kayıtlı dünyalar); sıfırlama kuralı sonradan değişirse toplam geriye gider; mal kırılımı ayrı alan (S-21) | Kod lideri isteği (A2 K2-8); baş lider bilgisi |
+| GZ-23 | **Arsa fiyatı hücre başına 1 000 mili'nin katına YUKARI (`ceil`)** (§9.4); iade kendisi yuvarlanmaz | fiyat kuralı oyuncu güveni ve ekonomi sabiti; sonradan `floor`'a dönmek `degerMili`/iade/vergi tutarlarını kaydırır; `degerMili` eski görüntüde yeniden hesaplanmaz | Ar-Ge lideri + Kod lideri (P4 denetimi madde 1) |
 
 ## 21. Açık sorular
 
@@ -2125,6 +2156,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | S-19 | ~~Dükkân yıkımı~~ **KAPANDI (baş lider):** `insaat_iptal` (%50) inşa sürerken; tamamlanmış dükkân `dukkan_yik` ile yıkılır, **iade yok**, arsa oyuncuda; yalnız `dukkan` (diğer yapılar sonraki sprint) | `dukkan_yik` (§7.9) | kapandı |
 | S-20 | **`bakim_duzeyi.otomatikParca` komut alanı ve başlangıç kiti 40 → 60 parça** (A2 §2.4 "diğer öneriler"; K3 sorusu 10) | §5.10 kapsamı DIŞI; karar gelene kadar yok | baş lider (A2 önerisi) |
 | S-21 | **Yuva satış sayacında mal bazında kırılım** (`dukkan.satisMal?`) ve K2 `kare` alanı (§10.2) | §7.1b kapsamı DIŞI; A2 izleme yalnız yuva ve dükkân toplamı ister | Kod lideri / A2 (ihtiyaç doğarsa) |
+| S-22 | **`parsel_birak` iadesi (%70) tam liraya yuvarlansın mı** (girdi tam lira, sonuç 700 mili katı: 7.000,7 ₺ gibi) | §9.4: **yuvarlanmaz** (formül aynı; brief "bu tamsayıdan hesaplanır"); arayüz tam lira gösterir. Yuvarlanacaksa öneri: iade aşağı 1 000 mili'ye (oyuncu aleyhine ≤ 999 mili; korunum etkilenmez, iade musluğundan düşer) | Kod lideri / Ar-Ge lideri |
 
 ### 21.B T3 §11'in 16 sorusu (tek tek)
 
@@ -2237,6 +2269,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `mulk/marka.ts` (YENİ), `ad.ts` (YENİ; `cekirdek/src/ad.ts`) | marka komutları; `adSozdizimiHatasi`, `adKanonik` (sabit küçük harf tablosu), `AD_KURALI` (§7.7) |
 | `mulk/komut.ts:262-279`, `:321-382`, `:468-495`, `:497`, `:514`, `:582` | `yapiTuruCoz` (`olcekHucre`, `dukkanTuru`), `yapiPlani` (ek yapı ölçek çarpanı, ilçe sınırı), `yapiUygula` (`ins.dukkanTuru`), `mulkKomutu` switch |
 | `mulk/yapi.ts:54-83` `ekYapiTamamla` | `dukkanVarsayilani` (`baslangic`, `kurulus`) |
+| `mulk/komut.ts:104-136`, `:207-208`, `:223`, `:585`; `istemci/src/harita/fiyat.ts:48-61` | **(§9.4, K4)** `arsaTamLiraYukari`; `parselFiyati` hücre başına `ceil`; `hucreFiyatiParametreyle` ayrılmış dalı; iade formülü aynı (girdi tam lira); istemci kopyası aynı kural |
 | `mulk/kasa.ts:94-159` | `paraMuhasebesi`: `a.yerel` ⇒ `musluk.yerelNpc` + `dukkanGeliri`; `paraAkisiYaz`: `yerel`, `ilkSatisT`; **(§7.1b)** yuva `satis` tembel birikim (aynı `dt`) |
 | `tipler.ts:303-308` `EkYapiDurumu` / `RafYuvasi`; `serilestir.ts:327-336` | `RafYuvasi.satis?`, `.satisOran?`; açık doğrulayıcı (`sayacDogrula`, `satisOran` tamsayı ≥ 1) (§7.1b) |
 | `lojistik/cozum.ts:293-308` | `yerelSatisYaz` (yuva başına `satisOran`; §7.1b) |
