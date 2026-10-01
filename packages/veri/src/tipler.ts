@@ -683,6 +683,12 @@ export interface MulkParametreleri {
     ayrilmisIlceGunlukPpm?: number;
     /** `ayrilmisIlceGunlukPpm` açıkken günlük tavanın alt sınırı (hücre). Yoksa 0. */
     ayrilmisIlceGunlukEnAz?: number;
+    /**
+     * Bedava yurt önce AYRILMIŞ DIŞINDAN seçilir (ayrılmış havuz geç gelenler içindir): true ise yurt kümesi önce ayrılmış olmayan uygun hücrelerden kurulur
+     * (merkeze en yakın, kenar-bitişik, `yurtHucre` kadar); bağlı küme başka türlü kurulamıyorsa ayrılmış hücreler YEDEK olarak dahil edilir. Kamu hücreleri
+     * her durumda dışarıdadır. Yoksa/false: eski davranış (ayrılmış hücreler de verilebilir).
+     */
+    yurtAyrilmisSonra?: boolean;
     /** Yeni oyuncu kalkanı (gün): mülk kipinde `korumaBitis` bu değerden okunur (bölge kipi `askeri.yeniOyuncuKorumasiGun`). */
     kalkanGun: number;
   };

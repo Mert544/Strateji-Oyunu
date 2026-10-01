@@ -13,6 +13,7 @@
  *   bağlı küme (yapı yerleşimiyle aynı kenar-bitişiklik kuralı); tohum yetersiz bir bileşendeyse sıradaki en yakın hücre
  *   denenir. Hücre tanımında isteğe bağlı `kullanim: "orman"` alanı varsa (fikstür şemasında henüz yoktur) orman hücreleri yeterli
  *   başka hücre varken seçilmez. Ayrılmış hücreler de verilebilir.
+ * - Ayrılmış hücreler (P3d, `mulk.yeniOyuncu.yurtAyrilmisSonra`): açıksa kümeler önce ayrılmış OLMAYAN hücrelerden kurulur; bağlı küme kurulamıyorsa ayrılmış hücreler yedek olarak dahil edilir.
  * - Değer: yurt hücresinin `degerMili`'si 0'dır (arazi vergisi tabanına girmez); ilçenin `satilmisHucre` sayısına ve oyuncunun
  *   ilçe hücre sayısına (%25 / 72 sınırları) girer; ilk işletme düğümü (başlangıç kitiyle) açılır.
  */
@@ -56,6 +57,15 @@ function ilcePlani(d: Dunya, mk: DerlenmisMulk, ilce: IlceDurumu, n: number): Yu
   if (bos.length < n) return `ilcede yeterli bos hucre yok: ${ilce.id} (${bos.length} < ${n})`;
   // Orman hücreleri yalnız yetmezse kullanılır.
   const ormansiz = bos.filter((c) => !c.orman);
+  // Yurt önce AYRILMIŞ DIŞINDAN (P3d, `yurtAyrilmisSonra`): ayrılmış havuz geç gelenler içindir. Küme önce ayrılmamış hücrelerden kurulur; ancak bağlı küme
+  // başka türlü kurulamıyorsa ayrılmış hücreler YEDEK olarak dahil edilir (aday kümesi tüm uygun serbest hücreler; kural aynı: merkeze en yakın, kenar-bitişik).
+  if (p.yeniOyuncu.yurtAyrilmisSonra === true) {
+    const ayrilmamis = bos.filter((c) => !mk.ayrilmis.has(c.id));
+    const ayrilmamisOrmansiz = ayrilmamis.filter((c) => !c.orman);
+    const ilk = ayrilmamisOrmansiz.length >= n ? kumeSec(ayrilmamisOrmansiz, n, cx, cy) : null;
+    const ikinci = ilk ?? (ayrilmamis.length >= n ? kumeSec(ayrilmamis, n, cx, cy) : null);
+    if (ikinci !== null) return { ilce: ilce.id, hucreler: ikinci.sort(dizge) };
+  }
   const plan = ormansiz.length >= n ? kumeSec(ormansiz, n, cx, cy) : null;
   const sonuc = plan ?? kumeSec(bos, n, cx, cy);
   if (sonuc === null) return `ilcede ${n} hucrelik bitisik bos alan yok: ${ilce.id}`;

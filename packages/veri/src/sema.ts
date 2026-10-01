@@ -437,6 +437,7 @@ const mulkSema = z
         ayrilmisYalnizKatilimIlcesi: z.boolean().optional(),
         ayrilmisIlceGunlukPpm: ppmSiniri.optional(),
         ayrilmisIlceGunlukEnAz: negatifOlmayan.optional(),
+        yurtAyrilmisSonra: z.boolean().optional(),
         kalkanGun: negatifOlmayan,
       })
       .strict(),

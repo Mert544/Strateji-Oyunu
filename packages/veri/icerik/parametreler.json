@@ -219,6 +219,7 @@
       "ayrilmisYalnizKatilimIlcesi": true,
       "ayrilmisIlceGunlukPpm": 100000,
       "ayrilmisIlceGunlukEnAz": 6,
+      "yurtAyrilmisSonra": true,
       "kalkanGun": 14
     },
     "temelEmirYuvasi": 4,
