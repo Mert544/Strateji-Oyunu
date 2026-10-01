@@ -1,6 +1,6 @@
 # G6 bot önayarı (zincir): O2 teslim raporu, Parça 1
 
-- Dal: `takim/o2/g6-onayar` (taban: `takim/k3/g6-2a-cekirdek` acbbedb; G6-2a'dan SONRA girer). Kod commit'i `2ee4d44`, bu rapor ayrı commit.
+- Dal: `takim/o2/g6-onayar` (taban: P6a paket ucu 1983801; G6-1, G6-2a/2b ve G6-3 verisi içinde). Kod commit'i ve rapor ayrı commit; ilk sürüm acbbedb üstündeydi, yeniden tabanlandı.
 - Kaynaklar: A2 bot kuralları `takim/a2/bot-kurallari` 71fd122 (`docs/arastirma/bot-kurallari-g6-g8.md` §2, §5), şartname §15.1 B-1/B-3, §13.
 
 ## Ne yapıldı (Parça 1: çatı, rehberli yol, seçici, `netCikti` düzeltmesi)
@@ -30,3 +30,10 @@ Yok (önayar adı `zincir` A2 önerisidir; plan sırası A2 B-1 uyarınca kilitl
 ## Açık sorular
 - Seçici değerde TABAN fiyat kullanıldı (A2 `d.pazar.fiyat` der): karar zaman içinde oynamasın ve "bir kez" durumsuz kalsın diye; canlı fiyat ekmek doyumunda (arz/emilim 2,26) seçimi sürekli kaydırırdı.
 - `yontemAcikMi` çekirdek dışa aktarımında yok; bot teknoloji şartlı yöntemleri (`gerekliTeknoloji`) hiç seçmez.
+
+## Güncelleme: yeniden tabanlama (1983801) ve gerçek G6 verisi
+- Çakışma yalnız `parsel.ts` Bot alanları ve kurucusunda (bakim-c `bakimIthalati`/`onarimYonetimi` ile): ikisi birleştirildi; `zincir` bakım yönetimini vars. açık alır (`bakimAcik`), ithalatla birlikte.
+- Test verisi artık GERÇEK G6 içeriği ve şebekeyi kullanır (`g6-yardimci`: gerçekte varsa A2 tarifleri eklenmez; `g6: false` G6 öncesi dünyayı kurar; `sebekesiz`, `enerjisiz` seçenekleri karşıt kanıt içindir). Uçtan uca zincir (un, kepek, ekmek, ahır `kepek_gubresi`, `zincir_kapandi`, `ilk_isleme`) gerçek tarifle koşuyor.
+- Kapsam: `packages/botlar/test` tamamı 119 test, tek işçiyle geçti (botlar regresyon altınları dahil).
+- Küçük dünya notu: seçici oyuncu dilimini `NPC emilimi / oyuncu sayısı` ile hesaplar (A2: N ≥ 4); tek oyuncuda dilim 4 kat büyük olduğundan ikinci standart tesis de satılır ve seçici standartta kalır. Seçici testinde dünya N = 4 yapıldı; K-1 (100 bot) bu durumdan etkilenmez.
+- Hâlâ yok: kabul koşusu (3 tohum, ekmek ihracatı, `musluk.ihracatNpc`, kepek israfı < %15, zincir ≤ 3 gün) ve M ölçümü ayrı parça; G7 dükkân önayarı G7-3 sonrası.

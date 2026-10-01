@@ -11,8 +11,8 @@ import { kavramSaglandi } from "../../sunucu/src/odul/dedektor";
 import { icerikBilgisi } from "../src/tablo";
 import { g6TestVerisi } from "./g6-yardimci";
 
-/** Bot koşuları: yeni tariflerde elektrik/yakıt yok (şebeke enerjisi çekirdeğe G6-2b ile girer; o zamana kadar enerjisiz zincir üretir ve nakit akar). */
-const ENERJISIZ = { enerjisiz: true } as const;
+/** Bot koşuları: gerçek G6 verisi ve şebeke enerjisi (G6-2b/G6-3 çekirdekte; elektrik ve yakıt şebekeden gelir). Veri yoksa `g6-yardimci` A2 tariflerini ekler. */
+const ENERJISIZ = {} as const;
 
 function zincir(id = "z1", secenek: Parameters<typeof parselBotuOlustur>[2] = {}): ParselKosuOyuncusu {
   return { id, bot: parselBotuOlustur("zincir", id, secenek), katilmaMs: 0 };
@@ -127,13 +127,13 @@ describe("parsel zincir önayarı: rehberli (G6 B-1)", () => {
     expect(ihracat).not.toContain("gida");
   });
 
-  it("gerçek tarifle ve şebeke enerjisi çekirdekte yokken (elektrik/yakıt sağlanamaz) fırın üretmez: ekmek birikmez ve ahır kurulmaz (ahır kapısı)", () => {
-    const r = parselKos({ veri: g6TestVerisi(true), tohum: 1, oyuncular: [zincir()], sureMs: 3 * GUN });
+  it("şebeke bloğu yokken (elektrik/yakıt sağlanamaz) fırın üretmez: ekmek birikmez ve ahır kurulmaz (ahır kapısı)", () => {
+    const r = parselKos({ veri: g6TestVerisi(true, { sebekesiz: true }), tohum: 1, oyuncular: [zincir()], sureMs: 3 * GUN });
     expect(r.komutGunlugu.some((k) => k.tur === "yapi_yerlestir" && k.tesisTuru === "ahir")).toBe(false);
   });
 
-  it("uçtan uca (enerjisiz test tarifi): un, kepek ve ekmek üretilir; ahır ~24 saat sonra kurulur ve `kepek_gubresi` olur; `zincir_kapandi` ve `ilk_isleme` sağlanır", () => {
-    const r = parselKos({ veri: g6TestVerisi(true, { enerjisiz: true }), tohum: 1, oyuncular: [zincir()], sureMs: 3 * GUN });
+  it("uçtan uca (gerçek tarif ve şebeke): un, kepek ve ekmek üretilir; ahır ~24 saat sonra kurulur ve `kepek_gubresi` olur; `zincir_kapandi` ve `ilk_isleme` sağlanır", () => {
+    const r = parselKos({ veri: g6TestVerisi(true), tohum: 1, oyuncular: [zincir()], sureMs: 3 * GUN });
     expect(r.basarisizSayisi["z1"]).toBe(0);
     const d = r.sim.dunya;
     const dugum = d.bolgeler[d.mulk!.isletmeler.find((i) => i.oyuncu === "z1")!.bolgeIndeksi]!;
@@ -186,7 +186,9 @@ describe("parsel zincir önayarı: seçici (G6 B-3; M yalnız seçici botlardan)
   });
 
   it("n_f = 2: seçici zinciri seçer (rehberli ile aynı yöntemler); tohumlu karma deterministik", () => {
-    const r = parselKos({ veri: g6TestVerisi(true, ENERJISIZ), tohum: 1, oyuncular: [zincir("s2", { yontemSecici: true, gidaFabrikasi: 2 })], sureMs: 2 * GUN });
+    // Oyuncu dilimi = NPC emilimi / oyuncu sayısı (A2: N ≥ 4 dünya): kalabalık dünya için üç pasif oyuncu eklenir (N = 4); tek oyuncuda dilim 4× büyük ve ikinci standart tesis de satılır.
+    const dolgu: ParselKosuOyuncusu[] = ["d1", "d2", "d3"].map((id) => ({ id, bot: parselBotuOlustur("pasif", id), katilmaMs: 0 }));
+    const r = parselKos({ veri: g6TestVerisi(true, ENERJISIZ), tohum: 1, oyuncular: [zincir("s2", { yontemSecici: true, gidaFabrikasi: 2 }), ...dolgu], sureMs: 2 * GUN });
     const degisim = r.komutGunlugu.filter((k) => k.tur === "yontem_degistir").map((k) => k.yontem);
     expect(degisim.slice(0, 2)).toEqual(["degirmen", "ekmek_firini"]);
     const a = parselBotuOlustur("zincir", "q", { yontemSecici: true, tohum: 5 });

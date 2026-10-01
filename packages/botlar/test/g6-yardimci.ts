@@ -33,28 +33,40 @@ const TUR_EKLEMELERI: Readonly<Record<string, readonly string[]>> = {
 
 /**
  * Mini içerik + mini-6 parsel fikstürü; `g6: true` ise G6 yöntemleri kopyaya eklenir (gerçek içerikte zaten varsa dokunulmaz).
- * `enerjisiz: true`: yeni yöntemlerin (ve `standart_gida_isleme`nin) elektrik ve yakıt girdileri çıkarılır: şebeke enerjisi (G6-2b) çekirdeğe girene kadar zincir uçtan uca (ekmek, kepek, ahır, ödül)
- * çalışabilsin diye TEST kopyasına özgü sadeleştirme; gerçek tarifli sınama G6-3 sonrasındadır.
+ * G6-3 verisi gerçek içerikte VARSA gerçeği kullanır (A2 tarifleri yalnız yoksa eklenir); `g6: false` G6 yöntemlerini, şebekeyi ve yedek düğmesini çıkarır (G6 öncesi dünya).
+ * `enerjisiz: true`: yeni yöntemlerin (ve `standart_gida_isleme`nin) elektrik/yakıt girdileri çıkarılır; `sebekesiz: true`: `mulk.sebeke` bloğu çıkarılır (santralsiz dünya karşıt kanıtı).
  */
-export function g6TestVerisi(g6: boolean, secenek: { enerjisiz?: boolean } = {}): CekirdekVeriPaketi {
+export function g6TestVerisi(g6: boolean, secenek: { enerjisiz?: boolean; sebekesiz?: boolean } = {}): CekirdekVeriPaketi {
   const v = miniVeriyiYukle();
   const veri: CekirdekVeriPaketi = { ...v, parsel: parselFiksturuYukle("mini-6") };
-  if (!g6) return veri;
   const icerik = structuredClone(veri.icerik);
-  if (icerik.yontemler.some((y) => y.id === "degirmen")) return veri;
-  for (const y of G6_YONTEMLERI) {
-    const k = structuredClone(y);
-    if (secenek.enerjisiz === true) {
-      delete k.girdiler["elektrik"];
-      delete k.girdiler["yakit"];
+  const param = structuredClone(veri.param);
+  const gercekG6 = icerik.yontemler.some((y) => y.id === "degirmen");
+  const yeniIdler = new Set(G6_YONTEMLERI.map((y) => y.id));
+  if (!g6) {
+    // G6 öncesi dünya: G6 yöntemleri, şebeke ve yedek düğmesi çıkarılır (G6-3 verisi gerçek içerikte olduğundan çıkarma gerekir).
+    if (gercekG6) {
+      icerik.yontemler = icerik.yontemler.filter((y) => !yeniIdler.has(y.id));
+      for (const t of icerik.tesisTurleri) t.yontemler = t.yontemler.filter((id) => !yeniIdler.has(id));
     }
-    icerik.yontemler.push(k);
+    if (param.mulk !== undefined) {
+      delete (param.mulk as { sebeke?: unknown }).sebeke;
+      delete (param.mulk as { yontemGecersizKilma?: unknown }).yontemGecersizKilma;
+    }
+    return { ...veri, icerik, param };
+  }
+  if (!gercekG6) {
+    for (const y of G6_YONTEMLERI) icerik.yontemler.push(structuredClone(y));
+    for (const t of icerik.tesisTurleri) for (const id of TUR_EKLEMELERI[t.id] ?? []) t.yontemler.push(id);
   }
   if (secenek.enerjisiz === true) {
-    // Karşılaştırma yöntemi `standart_gida_isleme` de enerjisiz olur (aksi halde santralsiz bot gelir elde edemez ve nakdi biter).
-    const std = icerik.yontemler.find((y) => y.id === "standart_gida_isleme");
-    if (std !== undefined) delete std.girdiler["elektrik"];
+    // Yeni yöntemlerin ve karşılaştırma yöntemi `standart_gida_isleme`nin elektrik/yakıt girdisi çıkarılır (şebekesiz dünyada zincirin uçtan uca koşması için).
+    for (const y of icerik.yontemler) {
+      if (!yeniIdler.has(y.id) && y.id !== "standart_gida_isleme") continue;
+      delete y.girdiler["elektrik"];
+      delete y.girdiler["yakit"];
+    }
   }
-  for (const t of icerik.tesisTurleri) for (const id of TUR_EKLEMELERI[t.id] ?? []) t.yontemler.push(id);
-  return { ...veri, icerik };
+  if (secenek.sebekesiz === true && param.mulk !== undefined) delete (param.mulk as { sebeke?: unknown }).sebeke;
+  return { ...veri, icerik, param };
 }
