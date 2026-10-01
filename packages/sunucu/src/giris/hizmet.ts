@@ -18,10 +18,10 @@ import type { HesapDeposu, HesapKaydi, OturumKaydi } from "../depo/tipler";
 import { AuthKimligi } from "./auth-kimligi";
 import { epostaCoz, epostaMaskele, geciciAlanMi } from "./eposta";
 import type { EpostaBicimi } from "./eposta";
-import { Imzalayici, baglantiJetonuCoz, baglantiJetonuUret, biletUret, oturumBelirteciCoz, oturumBelirteciUret, ozet, rastgele, sabitEsit } from "./jeton";
+import { Imzalayici, baglantiJetonuCoz, baglantiJetonuUret, biletUret, oturumBelirteciCoz, oturumBelirteciUret, ozet, rastgele, sabitEsit, silmeJetonuCoz, silmeJetonuUret } from "./jeton";
 import { AdUretici, adIletisi, adKelimeleriniYukle } from "./gorunen-ad";
 import type { AdKurali } from "./gorunen-ad";
-import { girisPostasi } from "./posta";
+import { girisPostasi, hesapSilmePostasi } from "./posta";
 import type { PostaGonderici } from "./posta";
 import type { Davetliler } from "./davet";
 import { GirisSayaclari } from "./sayac";
@@ -41,6 +41,8 @@ export interface GirisSureleri {
   oturumUzatmaAraligiMs: number;
   /** ws bileti ömrü. Varsayılan 60 sn. */
   biletOmruMs: number;
+  /** Hesap silme onay bağlantısı ömrü. Varsayılan 30 dk. */
+  hesapSilBaglantiOmruMs: number;
 }
 
 export const VARSAYILAN_GIRIS_SURELERI: GirisSureleri = {
@@ -49,6 +51,7 @@ export const VARSAYILAN_GIRIS_SURELERI: GirisSureleri = {
   oturumMutlakMs: 90 * GUN_MS,
   oturumUzatmaAraligiMs: GUN_MS,
   biletOmruMs: 60_000,
+  hesapSilBaglantiOmruMs: 30 * 60_000,
 };
 
 export interface GirisSinirlari {
@@ -66,6 +69,8 @@ export interface GirisSinirlari {
   adHesapBasina: HizSiniriSecenekleri;
   /** Oturum başına ad önerisi (`GET /giris/ad-oner`). Varsayılan 10 ani, dakikada 10. Aşımda 429. */
   adOneriOturumBasina: HizSiniriSecenekleri;
+  /** Hesap başına silme onayı isteği (posta). Varsayılan 3/saat. Aşımda 429. */
+  hesapSilIstekHesapBasina: HizSiniriSecenekleri;
 }
 
 const saatlik = (n: number, kapasite = n): HizSiniriSecenekleri => ({ kapasite, saniyeBasina: n / 3600 });
@@ -78,6 +83,7 @@ export const VARSAYILAN_GIRIS_SINIRLARI: GirisSinirlari = {
   biletOturumBasina: { kapasite: 30, saniyeBasina: 0.5 },
   adHesapBasina: { kapasite: 10, saniyeBasina: 1 / 60 },
   adOneriOturumBasina: { kapasite: 10, saniyeBasina: 10 / 60 },
+  hesapSilIstekHesapBasina: saatlik(3),
 };
 
 export interface GirisHizmetiSecenekleri {
@@ -87,6 +93,11 @@ export interface GirisHizmetiSecenekleri {
   sirlar: readonly string[];
   /** Postadaki bağlantının tabanı; `?j=<jeton>` eklenir (varsayılan: sunucunun `/giris/onay` sayfası). */
   baglantiTabani: string | (() => string);
+  /**
+   * Hesap silme onay bağlantısının tabanı (sunucunun KENDİ onay sayfası: `<genel>/giris/hesap-sil-onay`; istemci sayfası değil). Verilmezse `baglantiTabani`'nın sonundaki
+   * `/giris/onay` bu yolla değiştirilir.
+   */
+  silmeBaglantiTabani?: string | (() => string);
   /** Geçici e-posta alanları (`geciciAlanlariYukle`); verilmezse engel yoktur. */
   geciciAlanlar?: ReadonlySet<string>;
   /**
@@ -132,6 +143,9 @@ export type AdSonucu =
   | { tamam: true; ad: string; degisti: boolean }
   | { tamam: false; kod: "oturum_yok" | "ad_gecersiz" | "ad_yasakli" | "ad_sinir" | "hiz_siniri"; mesaj?: string; beklemeSn?: number };
 
+export type HesapSilIstekSonucu = { tamam: true; gecerlilikSn: number } | { tamam: false; kod: "oturum_yok" | "hiz_siniri"; beklemeSn?: number };
+export type HesapSilOnaySonucu = { tamam: true } | { tamam: false; kod: "baglanti_gecersiz" | "hiz_siniri"; beklemeSn?: number };
+
 export type AdOneriSonucu = { tamam: true; ad: string } | { tamam: false; kod: "oturum_yok" | "hiz_siniri"; beklemeSn?: number };
 
 export interface IptalOlayi {
@@ -166,6 +180,7 @@ export class GirisHizmeti {
   private readonly posta: PostaGonderici;
   private readonly imz: Imzalayici;
   private readonly baglantiTabani: () => string;
+  private readonly silmeBaglantiTabani: () => string;
   private readonly geciciAlanlar: ReadonlySet<string>;
   private readonly davetliler: Davetliler | null;
   private readonly tarayiciBagli: boolean;
@@ -179,6 +194,7 @@ export class GirisHizmeti {
   private readonly biletSiniri: HizSiniri;
   private readonly adSiniri: HizSiniri;
   private readonly adOneriSiniri: HizSiniri;
+  private readonly hesapSilSiniri: HizSiniri;
   private readonly adKurali: AdKurali | null;
   private readonly adSuzgeci: AdSuzgeci | null;
   private readonly adUretici: AdUretici | null;
@@ -195,6 +211,8 @@ export class GirisHizmeti {
     this.imz = new Imzalayici(s.sirlar);
     const taban = s.baglantiTabani;
     this.baglantiTabani = typeof taban === "string" ? () => taban : taban;
+    const silme = s.silmeBaglantiTabani;
+    this.silmeBaglantiTabani = silme !== undefined ? (typeof silme === "string" ? () => silme : silme) : () => this.baglantiTabani().replace(/\/giris\/onay(?:\?.*)?$/, "/giris/hesap-sil-onay");
     this.geciciAlanlar = s.geciciAlanlar ?? new Set();
     this.davetliler = s.davetliler ?? null;
     this.tarayiciBagli = s.tarayiciBagli ?? false;
@@ -210,6 +228,7 @@ export class GirisHizmeti {
     this.biletSiniri = new HizSiniri(sinirlar.biletOturumBasina, this.simdi);
     this.adSiniri = new HizSiniri(sinirlar.adHesapBasina, this.simdi);
     this.adOneriSiniri = new HizSiniri(sinirlar.adOneriOturumBasina, this.simdi);
+    this.hesapSilSiniri = new HizSiniri(sinirlar.hesapSilIstekHesapBasina, this.simdi);
     this.adKurali = s.adKurali ?? null;
     this.adSuzgeci = s.adSuzgeci ?? null;
     this.adUretici = this.adKurali === null ? null : (s.adUretici ?? new AdUretici(adKelimeleriniYukle(undefined, this.adKurali)));
@@ -443,6 +462,62 @@ export class GirisHizmeti {
     return true;
   }
 
+  // --- 3a. hesap silme: e-posta onayıyla (KVKK) -----------------------------------------------------------------------------------
+
+  /**
+   * Silme talebi (oturumlu): hesabın e-postasına bir ONAY bağlantısı gönderir; bu çağrıda HİÇBİR ŞEY SİLİNMEZ. Hesap başına saatte 3 istek. Yanıt posta sonucundan
+   * bağımsızdır (posta arka planda gider; hata günlüğe/sayaca yazılır, adres yazılmaz).
+   */
+  async hesapSilIste(belirtec: string | undefined): Promise<HesapSilIstekSonucu> {
+    const r = await this.oturumBul(belirtec);
+    if (!r) return { tamam: false, kod: "oturum_yok" };
+    if (!this.hesapSilSiniri.al(r.hesap.id)) {
+      this.sayaclar.artir("hesap_sil.hiz_siniri");
+      return { tamam: false, kod: "hiz_siniri", beklemeSn: 600 };
+    }
+    this.sayaclar.artir("hesap_sil.istek");
+    const bitis = this.simdi() + this.sureler.hesapSilBaglantiOmruMs;
+    const jeton = silmeJetonuUret(this.imz, r.hesap.id, bitis);
+    const taban = this.silmeBaglantiTabani();
+    const adres = `${taban}${taban.includes("?") ? "&" : "?"}j=${encodeURIComponent(jeton)}`;
+    const is = (async (): Promise<void> => {
+      try {
+        await zamanAsimli(this.posta.gonder(hesapSilmePostasi(r.hesap.eposta, adres, Math.round(this.sureler.hesapSilBaglantiOmruMs / 60_000))), this.postaZamanAsimiMs);
+        this.sayaclar.artir("hesap_sil.posta_gonderildi");
+      } catch {
+        this.sayaclar.artir("hesap_sil.posta_hata"); // hata iletisi yazılmaz (adres/bağlantı içerebilir)
+      }
+    })();
+    this.isler.add(is);
+    void is.then(() => this.isler.delete(is));
+    return { tamam: true, gecerlilikSn: Math.round(this.sureler.hesapSilBaglantiOmruMs / 1000) };
+  }
+
+  /** Onay sayfasının yan etkisiz denetimi: jeton biçim, imza ve süre bakımından geçerli mi (depoya gitmez). */
+  hesapSilBaglantiGecerliMi(jeton: string): boolean {
+    return silmeJetonuCoz(this.imz, jeton, this.simdi()) !== null;
+  }
+
+  /** Onay (POST): jeton geçerliyse ve hesap hâlâ varsa hesap SİLİNİR (oturumlar, biletler, açık ws bağlantıları, ad dahil). Aksi `baglanti_gecersiz`. */
+  async hesapSilOnayla(jeton: string, ip: string): Promise<HesapSilOnaySonucu> {
+    if (!this.onaySiniri.al(ip)) {
+      this.sayaclar.artir("hesap_sil.onay_hiz_siniri");
+      return { tamam: false, kod: "hiz_siniri", beklemeSn: 60 };
+    }
+    const j = silmeJetonuCoz(this.imz, jeton, this.simdi());
+    if (!j || !(await this.depo.hesapBulId(j.hesap))) {
+      this.sayaclar.artir("hesap_sil.baglanti_gecersiz");
+      return { tamam: false, kod: "baglanti_gecersiz" };
+    }
+    if (!(await this.hesapSil(j.hesap))) {
+      this.sayaclar.artir("hesap_sil.baglanti_gecersiz");
+      return { tamam: false, kod: "baglanti_gecersiz" };
+    }
+    this.sayaclar.artir("hesap_sil.onay");
+    this.gunluk("giris_hesap_silindi", {});
+    return { tamam: true };
+  }
+
   /** KVKK silme talebi (yönetim işi, HTTP ucu YOK): hesap, e-posta bağı ve oturumlar silinir; oyuncu anonim kalır. */
   async hesapSil(hesapId: string): Promise<boolean> {
     const hesap = await this.depo.hesapBulId(hesapId);
@@ -593,5 +668,6 @@ export class GirisHizmeti {
     this.biletSiniri.temizle();
     this.adSiniri.temizle();
     this.adOneriSiniri.temizle();
+    this.hesapSilSiniri.temizle();
   }
 }

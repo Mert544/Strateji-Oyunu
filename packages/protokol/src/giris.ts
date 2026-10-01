@@ -21,6 +21,8 @@ export const GIRIS_YOLLARI = {
   ben: "/giris/ben",
   ad: "/giris/ad",
   adOner: "/giris/ad-oner",
+  hesapSil: "/giris/hesap-sil",
+  hesapSilOnay: "/giris/hesap-sil-onay",
   cikis: "/giris/cikis",
   cikisTumu: "/giris/cikis-tumu",
 } as const;
@@ -133,3 +135,15 @@ export type GirisAdOneriYaniti = z.infer<typeof GirisAdOneriYanitiSemasi>;
 
 /** `POST /giris/cikis` ve `/giris/cikis-tumu` yanıtı. */
 export const GirisTamamSemasi = z.object({ tamam: z.literal(true) });
+
+/**
+ * Hesap silme (KVKK; G5 bağlantı altyapısıyla): 1) `POST /giris/hesap-sil` (oturum çerezi + izinli Origin, gövdesiz): hesabın e-postasına bir ONAY bağlantısı gider
+ * (202 `{ tamam, gecerlilikSn }`; hiçbir şey SİLİNMEZ). 2) Bağlantıyı açmak `GET /giris/hesap-sil-onay?j=` YALNIZ onay sayfasını gösterir (yan etkisiz). 3) Sayfadaki düğme
+ * `POST /giris/hesap-sil-onay {j}` yapar: hesap, e-posta bağı, bütün oturumlar ve biletler (ve açık ws bağlantıları) silinir; oyuncu günlükte ANONİM kalır, mülk devredilmez.
+ * Bağlantı süreli ve imzalıdır; kullanılınca hesap kalmadığı için tekrar kullanılamaz. Hata kodları: istek: `oturum_yok` 401, `hiz_siniri` 429, `origin` 403; onay:
+ * `baglanti_gecersiz` 400, `hiz_siniri` 429, `origin` 403.
+ */
+export const GirisHesapSilIstekYanitiSemasi = z.object({ tamam: z.literal(true), gecerlilikSn: z.number().int().positive() });
+export type GirisHesapSilIstekYaniti = z.infer<typeof GirisHesapSilIstekYanitiSemasi>;
+export const GirisHesapSilOnayiSemasi = z.object({ j: z.string().min(1).max(512) });
+export type GirisHesapSilOnayi = z.infer<typeof GirisHesapSilOnayiSemasi>;

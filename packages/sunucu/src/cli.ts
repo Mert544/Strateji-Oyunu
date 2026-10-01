@@ -394,6 +394,8 @@ async function ana(): Promise<void> {
       posta: kimlikKipi.posta === "konsol" ? new KonsolPostaGondericisi() : new DosyaPostaGondericisi(resolve(a["posta-dizin"] as string)),
       sirlar: kimlikKipi.sirlar,
       baglantiTabani: () => a["giris-baglanti"] ?? `${genelUrl ?? yerelUrl()}/giris/onay`,
+      // Hesap silme onayi HER ZAMAN sunucunun kendi sayfasina gider (--giris-baglanti istemci sayfasi giris icindir).
+      silmeBaglantiTabani: () => `${genelUrl ?? yerelUrl()}/giris/hesap-sil-onay`,
       geciciAlanlar: gecici,
       ...(davetli ? { davetliler: davetli } : {}),
       tarayiciBagli: ["1", "evet", "true"].includes((a["tarayici-bagli"] as string).toLowerCase()),

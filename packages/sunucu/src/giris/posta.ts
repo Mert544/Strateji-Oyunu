@@ -81,3 +81,18 @@ export function girisPostasi(kime: string, baglanti: string, gecerlilikDk: numbe
   ];
   return { kime, konu: "Bölge Stratejisi giriş bağlantınız", metin: satirlar.join("\n") + "\n", baglanti };
 }
+
+/** Hesap silme onay postası (Türkçe düz metin): silme KALICIDIR; bağlantı onay sayfasına gider (silme orada düğmeyle yapılır). */
+export function hesapSilmePostasi(kime: string, baglanti: string, gecerlilikDk: number): Posta {
+  const satirlar = [
+    "Merhaba,",
+    "",
+    `Bölge Stratejisi hesabınızı SİLMEK için bir istek yapıldı. Silmeyi onaylamak için aşağıdaki bağlantıyı açın ve sayfadaki düğmeye basın. Bağlantı ${gecerlilikDk} dakika geçerlidir.`,
+    "",
+    baglanti,
+    "",
+    "Silme kalıcıdır: e-posta adresiniz ve oturumlarınız silinir, oyundan çıkarılırsınız. Oyuncu kimliğiniz oyun kayıtlarında anonim kalır; mülkleriniz başkasına devredilmez ve geri alınamaz.",
+    "Bu isteği siz yapmadıysanız bu e-postayı yok sayın; hesabınızda hiçbir şey değişmez.",
+  ];
+  return { kime, konu: "Bölge Stratejisi hesap silme onayı", metin: satirlar.join("\n") + "\n", baglanti };
+}

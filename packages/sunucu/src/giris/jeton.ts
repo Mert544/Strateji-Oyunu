@@ -81,6 +81,27 @@ export function baglantiJetonuCoz(imz: Imzalayici, jeton: string, simdi: number)
   return { ozet: ozet(jeton), bitis };
 }
 
+// --- hesap silme onay jetonu: `sil1.<hesap>.<nonce>.<bitis>.<imza>` (durumsuz; AMAÇ "hesap-sil": giriş bağlantısı imzası burada geçmez) ------------------------
+
+/** İmzalı, süreli silme onay jetonu. Durumsuzdur: tek kullanımlık oluşu hesabın silinmesindendir (silinen hesap bir daha bulunmaz). */
+export function silmeJetonuUret(imz: Imzalayici, hesap: string, bitis: number): string {
+  const govde = `sil1.${hesap}.${rastgele(8)}.${bitis}`;
+  return `${govde}.${imz.imzala("hesap-sil", govde)}`;
+}
+
+/** Biçim, imza ve süre geçerliyse hesap kimliğini döndürür; aksi null. */
+export function silmeJetonuCoz(imz: Imzalayici, jeton: string, simdi: number): { hesap: string; bitis: number } | null {
+  if (jeton.length > 200) return null;
+  const p = jeton.split(".");
+  if (p.length !== 5 || p[0] !== "sil1") return null;
+  const [, hesap, nonce, bitisMetni, imza] = p as [string, string, string, string, string];
+  if (!BASE64URL.test(hesap) || hesap.length > 64 || !BASE64URL.test(nonce) || !/^\d{1,15}$/.test(bitisMetni) || !BASE64URL.test(imza)) return null;
+  if (!imz.dogrula("hesap-sil", `sil1.${hesap}.${nonce}.${bitisMetni}`, imza)) return null;
+  const bitis = Number(bitisMetni);
+  if (bitis <= simdi) return null;
+  return { hesap, bitis };
+}
+
 // --- oturum belirteci (çerez): `ot1.<id>.<gizli>` ---------------------------------------------------------------------------------
 
 export interface UretilenOturum {

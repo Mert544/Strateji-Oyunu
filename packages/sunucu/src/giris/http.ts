@@ -12,8 +12,8 @@
  * - Günlük/metrik: belirteç, tam adres ve IP yazılmaz.
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { GIRIS_TARAYICI_CEREZI, GIRIS_YOLLARI, GirisIstegiSemasi, GirisOnayiSemasi, OTURUM_CEREZI } from "@bolge/protokol";
-import type { GirisAdOneriYaniti, GirisAdYaniti, GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisHatasi, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
+import { GIRIS_TARAYICI_CEREZI, GIRIS_YOLLARI, GirisHesapSilOnayiSemasi, GirisIstegiSemasi, GirisOnayiSemasi, OTURUM_CEREZI } from "@bolge/protokol";
+import type { GirisHesapSilIstekYaniti, GirisAdOneriYaniti, GirisAdYaniti, GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisHatasi, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
 import type { GirisHizmeti, IptalOlayi } from "./hizmet";
 import type { GirisSayaclari } from "./sayac";
 
@@ -276,6 +276,13 @@ export class GirisUclari implements GirisBaglantisi {
       case GIRIS_YOLLARI.ben:
         if (izin("GET")) await this.ben(istek, yanit);
         return;
+      case GIRIS_YOLLARI.hesapSil:
+        if (izin("POST")) await this.hesapSilIste(istek, yanit);
+        return;
+      case GIRIS_YOLLARI.hesapSilOnay:
+        if (yontem === "GET") return this.hesapSilSayfasi(istek, yanit, url);
+        if (izin("POST")) await this.hesapSilOnay(istek, yanit);
+        return;
       case GIRIS_YOLLARI.adOner:
         if (!this.hizmet.adAcik) return this.hata(istek, yanit, "bulunamadi");
         if (izin("GET")) await this.adOner(istek, yanit);
@@ -383,6 +390,54 @@ export class GirisUclari implements GirisBaglantisi {
       ...(r.hesap.ad !== undefined ? { ad: r.hesap.ad, adSecildi: r.hesap.adSecildi === true } : {}),
     };
     this.json(istek, yanit, 200, govde, this.yenile(belirtec, r));
+  }
+
+  /** `POST /giris/hesap-sil` (oturumlu, gövdesiz): onay bağlantısını e-postaya gönderir; SİLMEZ. */
+  private async hesapSilIste(istek: IncomingMessage, yanit: ServerResponse): Promise<void> {
+    if (!this.postOnKosulu(istek, yanit)) return;
+    const r = await this.hizmet.hesapSilIste(cerezOku(istek, OTURUM_CEREZI));
+    if (!r.tamam) return this.hata(istek, yanit, r.kod, r.beklemeSn !== undefined ? { beklemeSn: r.beklemeSn } : {});
+    const govde: GirisHesapSilIstekYaniti = { tamam: true, gecerlilikSn: r.gecerlilikSn };
+    this.json(istek, yanit, 202, govde);
+  }
+
+  /** `GET /giris/hesap-sil-onay?j=`: yan etkisiz onay sayfası (silme KALICIDIR uyarısı + düğme). */
+  private hesapSilSayfasi(_istek: IncomingMessage, yanit: ServerResponse, url: URL): void {
+    const j = url.searchParams.get("j") ?? "";
+    if (!this.hizmet.hesapSilBaglantiGecerliMi(j)) {
+      yanit.writeHead(400, SAYFA_BASLIKLARI);
+      return void yanit.end(sayfa("silme bağlantısı geçersiz", `<p>${esc(SAYFA_METNI.baglanti_gecersiz as string)}</p>`));
+    }
+    yanit.writeHead(200, SAYFA_BASLIKLARI);
+    yanit.end(
+      sayfa(
+        "hesabı sil",
+        `<p>hesabınızı <strong>kalıcı olarak</strong> silmek üzeresiniz: e-posta adresiniz ve oturumlarınız silinir, oyundan çıkarılırsınız. oyuncu kimliğiniz oyun kayıtlarında anonim kalır; mülkleriniz başkasına devredilmez ve geri alınamaz.</p>\n<form method="post" action="${GIRIS_YOLLARI.hesapSilOnay}"><input type="hidden" name="j" value="${esc(j)}"><button type="submit">hesabımı kalıcı olarak sil</button></form>`,
+      ),
+    );
+  }
+
+  /** `POST /giris/hesap-sil-onay {j}` (JSON ya da sayfanın formu): hesabı SİLER. */
+  private async hesapSilOnay(istek: IncomingMessage, yanit: ServerResponse): Promise<void> {
+    if (!this.postOnKosulu(istek, yanit, true)) return;
+    const form = (istek.headers["content-type"] ?? "").toLowerCase().startsWith("application/x-www-form-urlencoded");
+    let j: string | undefined;
+    if (form) {
+      const metin = await govdeOku(istek);
+      j = metin === null ? undefined : (new URLSearchParams(metin).get("j") ?? undefined);
+    } else {
+      const g = GirisHesapSilOnayiSemasi.safeParse(await this.jsonGovde(istek));
+      j = g.success ? g.data.j : undefined;
+    }
+    if (j === undefined || j === "" || j.length > 512) return this.onayHatasi(istek, yanit, form, "gecersiz_istek");
+    const r = await this.hizmet.hesapSilOnayla(j, this.ip(istek));
+    if (!r.tamam) return this.onayHatasi(istek, yanit, form, r.kod, r.beklemeSn);
+    const temizle = { "set-cookie": [this.cerezSil(OTURUM_CEREZI)] };
+    if (form) {
+      yanit.writeHead(200, { ...SAYFA_BASLIKLARI, ...temizle });
+      return void yanit.end(sayfa("hesap silindi", "<p>hesabınız silindi. oturumlarınız kapatıldı.</p>"));
+    }
+    this.json(istek, yanit, 200, { tamam: true }, temizle);
   }
 
   /** `GET /giris/ad-oner`: yeni bir opak ad önerisi (kaydetmez). */

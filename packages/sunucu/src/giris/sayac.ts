@@ -34,6 +34,13 @@ export const BILINEN_GIRIS_OLAYLARI = [
   "ad.hiz_siniri",
   "ad.oner",
   "ad.oner_hiz_siniri",
+  "hesap_sil.istek",
+  "hesap_sil.hiz_siniri",
+  "hesap_sil.posta_gonderildi",
+  "hesap_sil.posta_hata",
+  "hesap_sil.onay",
+  "hesap_sil.baglanti_gecersiz",
+  "hesap_sil.onay_hiz_siniri",
 ] as const;
 
 export class GirisSayaclari {
