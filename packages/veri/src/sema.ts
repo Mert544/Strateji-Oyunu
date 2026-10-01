@@ -153,6 +153,7 @@ const yontemSema = z
     sulama: z.boolean().optional(),
     kirlilikPpmSaat: negatifOlmayan.max(1_000_000, "kirlilikPpmSaat en fazla 1000000 olabilir").optional(),
     hidro: z.boolean().optional(),
+    mulkKipi: z.literal(true).optional(),
   })
   .strict();
 
@@ -373,6 +374,7 @@ const mulkEkYapiSema = z
     komisyonIndirimPpm: ppmSiniri.optional(),
     makasIndirimPpm: ppmSiniri.optional(),
     emirYuvasi: negatifOlmayan.optional(),
+    olcekHucre: z.tuple([pozitif, pozitif, pozitif]).optional(),
   })
   .strict();
 
@@ -445,6 +447,11 @@ const mulkSema = z
       .strict(),
     ekYapilar: z.record(kimlik, mulkEkYapiSema).optional(),
     temelEmirYuvasi: negatifOlmayan.optional(),
+    sebeke: z
+      .object({ surum: z.literal(1), mallar: z.array(z.object({ mal: kimlik, tavanOraniPpm: pozitif }).strict()).min(1, "sebeke.mallar bos olamaz"), kasaPayiPpm: ppmSiniri })
+      .strict()
+      .optional(),
+    yontemGecersizKilma: z.record(kimlik, z.object({ ciktiPpm: pozitif }).strict()).optional(),
     kamu: mulkKamuSema.optional(),
     kasa: mulkKasaSema.optional(),
     hareketsizlik: z

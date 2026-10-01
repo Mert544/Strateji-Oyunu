@@ -57,9 +57,9 @@ export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   sistem_odul: { yol: "sistem", alanlar: { oyuncu: "kimlik", kavram: "kimlik" } },
   // Mülk kipi
   parsel_al: { yol: "oyuncu", alanlar: { ilce: "kimlik", hucreler: "kimlik", sinif: "secim" } },
-  tesis_insa_hucre: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", olcek: "secim" } },
+  tesis_insa_hucre: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", olcek: "secim", yontem: "kimlik" } },
   insaat_iptal: { yol: "oyuncu", alanlar: { insaat: "kimlik" } },
-  yapi_yerlestir: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", sinif: "secim", olcek: "secim" } },
+  yapi_yerlestir: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", sinif: "secim", olcek: "secim", yontem: "kimlik" } },
   parsel_birak: { yol: "oyuncu", alanlar: { ilce: "kimlik", hucreler: "kimlik" } },
 };
 

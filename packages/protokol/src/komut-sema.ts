@@ -59,7 +59,7 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
   z.object({ tur: z.literal("yaptirim"), hedef: kimlik, aktif: z.boolean() }),
   // Mülk kipi (S3). Hücre kimliği "x:y" (z20 karo). Coğrafi geçerliliği çekirdek fikstürle denetler.
   z.object({ tur: z.literal("parsel_al"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN), sinif: z.enum(["kirsal", "kasaba", "sehir"]) }),
-  z.object({ tur: z.literal("tesis_insa_hucre"), ilce: kimlik, tesisTuru: kimlik, hucreler: z.array(kimlik).max(5), olcek: olcekSecimi.optional() }),
+  z.object({ tur: z.literal("tesis_insa_hucre"), ilce: kimlik, tesisTuru: kimlik, hucreler: z.array(kimlik).max(5), olcek: olcekSecimi.optional(), yontem: kimlik.optional() }),
   z.object({ tur: z.literal("insaat_iptal"), insaat: tamsayi }),
   z.object({
     tur: z.literal("yapi_yerlestir"),
@@ -68,6 +68,7 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
     hucreler: z.array(kimlik).max(5),
     sinif: z.enum(["kirsal", "kasaba", "sehir"]),
     olcek: olcekSecimi.optional(),
+    yontem: kimlik.optional(),
   }),
   z.object({ tur: z.literal("parsel_birak"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN) }),
   // Sistem (yalnız yönetici kimliğiyle; sunucu "sistem" oyuncusu olarak damgalar; mülk kipinde bolgeler boş; isteğe bağlı `ilce`: bedava yurdun ilçesi)

@@ -338,6 +338,9 @@ export function dogrulaIcerik(ham: unknown): DogrulamaSonucu {
       if (j === 0 && y.gerekliTeknoloji !== undefined) {
         hatalar.push(`${yol}.yontemler[0]: varsayilan yontem ("${yId}") teknoloji gerektiremez`);
       }
+      if (j === 0 && y.mulkKipi === true) {
+        hatalar.push(`yontemler: "${yId}" mulkKipi yontemi tur varsayilani olamaz (${t.id})`);
+      }
       if (t.gerekliRezerv !== undefined && y.rezerv !== t.gerekliRezerv) {
         hatalar.push(`${yol}.yontemler[${j}]: "${yId}" yonteminin rezerv alani "${t.gerekliRezerv}" olmali (tesis gerekliRezerv)`);
       }
@@ -356,6 +359,8 @@ export function dogrulaIcerik(ham: unknown): DogrulamaSonucu {
   }
   for (const y of c.yontemler) {
     if (!kullanilanYontemler.has(y.id)) hatalar.push(`yontemler: "${y.id}" hicbir tesis turunde kullanilmiyor`);
+    // mulkKipi yontemi kilitsizdir (A0-17; sartname §4.1): teknoloji sarti tasiyamaz.
+    if (y.mulkKipi === true && y.gerekliTeknoloji !== undefined) hatalar.push(`yontemler: "${y.id}" mulkKipi yontemi teknoloji sarti tasiyamaz`);
   }
 
   // Teknolojiler
@@ -534,6 +539,9 @@ function pazarKontrolu(hatalar: string[], p: Parametreler["pazar"]): void {
   }
 }
 
+/** Mülk yapılarında ölçek ayak izinin üst sınırı (`cekirdek/src/mulk/komut.ts ENCOK_AYAK_IZI` ile aynı; çekirdek veri paketini içe aktarmaz, kopya testle bağlıdır). */
+export const MULK_ENCOK_AYAK_IZI = 5;
+
 /** Mülk ölçek tablosu (docs/06 §15.10): her `yapiYuva` türü için `olcekHucre` = [S, M, L]; S = yuva, M >= S, L >= M; süre çarpanları azalmaz. */
 function mulkKontrolu(hatalar: string[], k: NonNullable<Parametreler["mulk"]>): void {
   for (const [tur, yuva] of Object.entries(k.yapiYuva)) {
@@ -552,6 +560,26 @@ function mulkKontrolu(hatalar: string[], k: NonNullable<Parametreler["mulk"]>): 
   const c = k.olcekInsaSureCarpaniPpm;
   if (c[0] !== 1_000_000) hatalar.push("mulk.olcekInsaSureCarpaniPpm[0]: S carpani 1000000 olmali (referans)");
   if (c[1] < c[0] || c[2] < c[1]) hatalar.push("mulk.olcekInsaSureCarpaniPpm: kademeler azalamaz (S <= M <= L)");
+  // Ek yapi olcek ayak izi (sartname §4.2; yalniz `dukkan` kullanir): tesis tablosuyla ayni kurallar, en cok ENCOK_AYAK_IZI hucre.
+  for (const [ad, e] of Object.entries(k.ekYapilar ?? {})) {
+    const o = e.olcekHucre;
+    if (o === undefined) continue;
+    if (o[0] !== e.yuva) hatalar.push(`mulk.ekYapilar.${ad}.olcekHucre[0]: S ayak izi yuva degerine (${e.yuva}) esit olmali (bulunan ${o[0]})`);
+    if (o[1] < o[0]) hatalar.push(`mulk.ekYapilar.${ad}.olcekHucre[1]: M ayak izi S'den kucuk olamaz`);
+    if (o[2] < o[1]) hatalar.push(`mulk.ekYapilar.${ad}.olcekHucre[2]: L ayak izi M'den kucuk olamaz`);
+    for (const [i, v] of o.entries()) if (v > MULK_ENCOK_AYAK_IZI) hatalar.push(`mulk.ekYapilar.${ad}.olcekHucre[${i}]: en cok ${MULK_ENCOK_AYAK_IZI} hucre olabilir`);
+  }
+  // Sebeke (sartname §4.7): mallar tekil, tavan orani (0, 1 000 000] (sema pozitif ister; ust sinir burada). Icerik capraz kurallari (V14) Node dogrulayicisindadir.
+  if (k.sebeke !== undefined) {
+    benzersizlikKontrolu(hatalar, "mulk.sebeke.mallar", k.sebeke.mallar.map((m) => m.mal));
+    for (const [i, m] of k.sebeke.mallar.entries()) {
+      if (m.tavanOraniPpm > 1_000_000) hatalar.push(`mulk.sebeke.mallar[${i}] ("${m.mal}").tavanOraniPpm: en fazla 1000000 olabilir (sebeke kamu tavaninin ustunde satamaz)`);
+    }
+  }
+  // Yontem gecersiz kilma (sartname §4.8): ciktiPpm (0, 2 000 000]. Yontem kimligi icerikte olmali kurali Node dogrulayicisindadir (V17).
+  for (const [id, v] of Object.entries(k.yontemGecersizKilma ?? {})) {
+    if (v.ciktiPpm > 2_000_000) hatalar.push(`mulk.yontemGecersizKilma.${id}.ciktiPpm: en fazla 2000000 olabilir`);
+  }
 }
 
 /** Şema + (içerik verilirse) mal ve birlik kimliklerinin geçerliliği. */

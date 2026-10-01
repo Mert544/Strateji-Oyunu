@@ -124,6 +124,11 @@ export interface DerlenmisMulk {
    * indirimi dahil); derleme zamanında içerik ve parametrelerden bir kez hesaplanır, oyuncu durumuna bakmaz (docs/06 §15.7).
    */
   kamuIthalatCarpaniPpm: number;
+  /**
+   * Yöntem indeksi -> çıktı çarpanı (ppm; `mulk.yontemGecersizKilma`, sartname §5.9). YALNIZ `ciktiPpm !== PPM` olan yöntemler tablolanır; hiç yoksa ya da blok yoksa alan
+   * OLUŞMAZ (çıktı yolu atlanır). Yalnız mülk kipinde ve işletme düğümünde (`b.merkez`) uygulanır; çıktıya uygulanır, girdiye değil (G6-2).
+   */
+  yontemCiktiPpm?: Record<number, number>;
 }
 
 /** Türetilmiş (derleme zamanı) ilçe kamu kümesi: kompakt gruplar ve toplam hücre sayısı. */
@@ -979,10 +984,12 @@ export interface TesisMulkAlanlari {
 export type MulkKomutu =
   | { tur: "parsel_al"; ilce: string; hucreler: HucreId[]; sinif: ArsaSinifi }
   // `olcek` (0 = S, 1 = M, 2 = L; yoksa S): `hucreler` o ölçeğin ayak izidir (`mulk.olcekHucre`), en çok 5 hücre (docs/06 §15.10).
-  | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[]; olcek?: 0 | 1 | 2 }
+  // `yontem` (isteğe bağlı yöntem kimliği; sartname §5.8): yalnız TESİS türü inşasında; inşa bitince tesis o yöntemle başlar. Çekirdek yolu G6-2'dedir; G6-1'de alan yalnız tip ve
+  // şemadır (protokol ve `KOMUT_SEMASI` ile aynı birleştirme) ve çekirdek tarafından işlenmez.
+  | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[]; olcek?: 0 | 1 | 2; yontem?: string }
   | { tur: "insaat_iptal"; insaat: number }
   // Atomik "yapı önce yerleşim": `hucreler` yapının TÜM hücreleri (kenar-bitişik, yuva sayısınca); oyuncunun olmayan (sahipsiz) hücreler
   // `sinif` sınıfında satın alınır ve inşaat başlar; herhangi bir denetim başarısızsa hiçbir şey değişmez.
-  | { tur: "yapi_yerlestir"; ilce: string; tesisTuru: string; hucreler: HucreId[]; sinif: ArsaSinifi; olcek?: 0 | 1 | 2 }
+  | { tur: "yapi_yerlestir"; ilce: string; tesisTuru: string; hucreler: HucreId[]; sinif: ArsaSinifi; olcek?: 0 | 1 | 2; yontem?: string }
   // Üzerinde yapı/inşaat olmayan kendi hücrelerini bırakır; hücre bedelinin `parselBirakIadePpm`'i (%70) iade edilir.
   | { tur: "parsel_birak"; ilce: string; hucreler: HucreId[] };

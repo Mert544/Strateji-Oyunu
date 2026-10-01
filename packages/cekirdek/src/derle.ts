@@ -206,6 +206,24 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
   const ayrilmisSureMs = (p.yeniOyuncu.ayrilmisGun ?? AYRILMIS_GUN_VARSAYILAN) * GUN;
   const sonuc: DerlenmisMulk = { p, fikstur: f, dizin: hucreDizini, ilMerkezi, ilceler, hucreler: hucreDizini.hucreler, yuva, olcekHucre, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis: hucreDizini.ayrilmis, ayrilmisIlceSayisi, ayrilmisSureMs, kamuIthalatCarpaniPpm: kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar) };
   if (kamu !== undefined) sonuc.kamu = kamu;
+  // Yöntem çıktısı yedek geçersiz kılma (sartname §5.9; varsayılan KAPALI): tablo YALNIZ `ciktiPpm !== PPM` satırlarından kurulur; hepsi PPM ise ya da blok yoksa alan
+  // HİÇ OLUŞMAZ (çekirdeğin kod yolu atlanır, bit-exact no-op). Çekirdek yolu (`ciktiCarpaniHesapla`) G6-2'dedir.
+  const gecersiz = p.yontemGecersizKilma;
+  if (gecersiz !== undefined) {
+    const tablo: Record<number, number> = {};
+    let etkin = false;
+    for (const yid of Object.keys(gecersiz).sort()) {
+      const yi = ic.yontemIndeks[yid];
+      if (yi === undefined) throw new Error(`icerikDerle: mulk.yontemGecersizKilma bilinmeyen yontem: ${yid}`);
+      const ppm = (gecersiz[yid] as { ciktiPpm: number }).ciktiPpm;
+      if (!Number.isSafeInteger(ppm) || ppm <= 0 || ppm > 2 * PPM) throw new Error(`icerikDerle: mulk.yontemGecersizKilma.${yid}.ciktiPpm (0, ${2 * PPM}] araliginda tamsayi olmali`);
+      if (ppm !== PPM) {
+        tablo[yi] = ppm;
+        etkin = true;
+      }
+    }
+    if (etkin) sonuc.yontemCiktiPpm = tablo;
+  }
   return sonuc;
 }
 

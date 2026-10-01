@@ -6,6 +6,7 @@ import {
   dogrulaVeriPaketi,
   miniVeriyiYukle,
   MINI_HARITA_SECENEKLERI,
+  MULK_ENCOK_AYAK_IZI,
   varsayilanVeriyiYukle,
   type DogrulamaSonucu,
 } from "../src/index";
@@ -303,5 +304,133 @@ describe("parametreler ve paket capraz kontrolleri", () => {
     paket.icerik.tesisTurleri.find((t) => t.id === "celikhane")!.gerekliTeknoloji = "otomasyon";
     paket.icerik.teknolojiler.find((t) => t.id === "otomasyon")!.acar.tesisTurleri = ["celikhane"];
     expect(hatalar(dogrulaVeriPaketi(paket)).some((x) => x.includes("baslangic tesisi teknoloji"))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// G6-1 şeması (sartname §4.1, §4.2, §4.7, §4.8): hepsi isteğe bağlı ve etkisiz; her alan için ret testi
+// ---------------------------------------------------------------------------
+
+describe("mulkKipi (YontemTanimi): kurallar", () => {
+  /** Tür varsayılanı OLMAYAN, teknoloji şartı olmayan bir yöntem ve onu barındıran tür. */
+  function aday(v: ReturnType<typeof varsayilanVeriyiYukle>): { yontem: string; tur: string } {
+    for (const t of v.icerik.tesisTurleri) {
+      for (const yId of t.yontemler.slice(1)) {
+        const y = v.icerik.yontemler.find((k) => k.id === yId)!;
+        if (y.gerekliTeknoloji === undefined) return { yontem: yId, tur: t.id };
+      }
+    }
+    throw new Error("aday yontem yok");
+  }
+
+  it("varsayılan olmayan ve teknoloji şartsız yöntemde geçerli; alan yokken bugünkü içerik aynen geçerli", () => {
+    const v = kopya(varsayilanVeriyiYukle());
+    expect(v.icerik.yontemler.some((y) => y.mulkKipi !== undefined)).toBe(false);
+    expect(dogrulaIcerik(v.icerik)).toEqual({ gecerli: true });
+    const { yontem } = aday(v);
+    v.icerik.yontemler.find((y) => y.id === yontem)!.mulkKipi = true;
+    expect(dogrulaIcerik(v.icerik)).toEqual({ gecerli: true });
+  });
+
+  it("tür varsayılanı (yontemler[0]) olamaz", () => {
+    const v = kopya(varsayilanVeriyiYukle());
+    const t = v.icerik.tesisTurleri[0]!;
+    v.icerik.yontemler.find((y) => y.id === t.yontemler[0])!.mulkKipi = true;
+    expect(hatalar(dogrulaIcerik(v.icerik)).join("\n")).toContain(`yontemler: "${t.yontemler[0]}" mulkKipi yontemi tur varsayilani olamaz (${t.id})`);
+  });
+
+  it("teknoloji şartı taşıyamaz (kilitsizlik)", () => {
+    const v = kopya(varsayilanVeriyiYukle());
+    const kilitli = v.icerik.yontemler.find((y) => y.gerekliTeknoloji !== undefined)!;
+    kilitli.mulkKipi = true;
+    expect(hatalar(dogrulaIcerik(v.icerik)).join("\n")).toContain(`yontemler: "${kilitli.id}" mulkKipi yontemi teknoloji sarti tasiyamaz`);
+  });
+
+  it("yalnız literal true: false, dize ve sayı reddedilir (şema)", () => {
+    const v = kopya(varsayilanVeriyiYukle());
+    const y = v.icerik.yontemler.find((k) => k.id === aday(v).yontem) as unknown as Record<string, unknown>;
+    for (const kotu of [false, "true", 1, null]) {
+      y["mulkKipi"] = kotu;
+      expect(dogrulaIcerik(v.icerik).gecerli, JSON.stringify(kotu)).toBe(false);
+    }
+  });
+});
+
+describe("mulk.sebeke ve mulk.yontemGecersizKilma (şema ve aralık)", () => {
+  const sebeke = () => ({ surum: 1 as const, mallar: [{ mal: "elektrik", tavanOraniPpm: 1_000_000 }, { mal: "yakit", tavanOraniPpm: 1_000_000 }], kasaPayiPpm: 120_000 });
+  const mulkParam = () => {
+    const v = miniVeriyiYukle();
+    return { v, p: kopya(v.param) };
+  };
+
+  it("alanlar yokken bugünkü parametreler geçerli; sebeke ve gecersizKilma eklenince geçerli", () => {
+    const { v, p } = mulkParam();
+    expect(p.mulk?.sebeke).toBeUndefined();
+    expect(p.mulk?.yontemGecersizKilma).toBeUndefined();
+    expect(dogrulaParametreler(p, v.icerik)).toEqual({ gecerli: true });
+    p.mulk!.sebeke = sebeke();
+    p.mulk!.yontemGecersizKilma = { standart_gida_isleme: { ciktiPpm: 1_000_000 } };
+    expect(dogrulaParametreler(p, v.icerik)).toEqual({ gecerli: true });
+  });
+
+  it("sebeke: boş mallar, tekrarlı mal, tavan oranı 0 ve > 1 000 000, kasa payı aralığı, ek alan (.strict) reddedilir", () => {
+    const { v, p } = mulkParam();
+    const dene = (duzenle: (s: ReturnType<typeof sebeke>) => void): string => {
+      const q = kopya(p);
+      const s = sebeke();
+      duzenle(s);
+      q.mulk!.sebeke = s;
+      return hatalar(dogrulaParametreler(q, v.icerik)).join("\n");
+    };
+    expect(dene((s) => (s.mallar = []))).toMatch(/sebeke\.mallar bos olamaz/);
+    expect(dene((s) => s.mallar.push({ mal: "elektrik", tavanOraniPpm: 500_000 }))).toMatch(/mulk\.sebeke\.mallar: yinelenen kimlik/);
+    expect(dene((s) => (s.mallar[0]!.tavanOraniPpm = 0))).toMatch(/tavanOraniPpm/);
+    expect(dene((s) => (s.mallar[0]!.tavanOraniPpm = 1_000_001))).toMatch(/mulk\.sebeke\.mallar\[0\] \("elektrik"\)\.tavanOraniPpm: en fazla 1000000/);
+    expect(dene((s) => (s.mallar[0]!.tavanOraniPpm = 1_000_000))).toBe("");
+    expect(dene((s) => (s.kasaPayiPpm = 1_000_001))).toMatch(/kasaPayiPpm/);
+    expect(dene((s) => (s.kasaPayiPpm = -1))).toMatch(/kasaPayiPpm/);
+    expect(dene((s) => (s.kasaPayiPpm = 0))).toBe("");
+    expect(dene((s) => ((s.mallar[0] as unknown as Record<string, unknown>)["fiyatKaynagi"] = "canli"))).not.toBe(""); // canlı fiyat yolu şemada yok
+    expect(dene((s) => ((s as unknown as Record<string, unknown>)["elektrik"] = true))).not.toBe("");
+    expect(dene((s) => ((s as unknown as Record<string, unknown>)["surum"] = 2))).not.toBe("");
+  });
+
+  it("yontemGecersizKilma: ciktiPpm 0, negatif, > 2 000 000, ondalık ve ek alan reddedilir; 2 000 000 ve 750 000 geçer", () => {
+    const { v, p } = mulkParam();
+    const dene = (ciktiPpm: unknown, ek?: Record<string, unknown>): string => {
+      const q = kopya(p);
+      q.mulk!.yontemGecersizKilma = { standart_gida_isleme: { ciktiPpm, ...ek } as { ciktiPpm: number } };
+      return hatalar(dogrulaParametreler(q, v.icerik)).join("\n");
+    };
+    expect(dene(0)).toMatch(/ciktiPpm/);
+    expect(dene(-5)).toMatch(/ciktiPpm/);
+    expect(dene(2_000_001)).toMatch(/mulk\.yontemGecersizKilma\.standart_gida_isleme\.ciktiPpm: en fazla 2000000/);
+    expect(dene(750_000.5)).toMatch(/ciktiPpm/);
+    expect(dene("750000")).not.toBe("");
+    expect(dene(2_000_000)).toBe("");
+    expect(dene(750_000)).toBe("");
+    expect(dene(1_000_000, { girdiPpm: 1 })).not.toBe(""); // yalnız çıktı ölçeklenir
+  });
+});
+
+describe("mulk.ekYapilar.<yapı>.olcekHucre (G7 için isteğe bağlı, etkisiz)", () => {
+  it("alan yokken geçerli; [yuva, M, L] kuralları: S = yuva, M >= S, L >= M, en çok 5; üç elemandan başka biçim reddedilir", () => {
+    const v = miniVeriyiYukle();
+    const ek = Object.keys(v.param.mulk!.ekYapilar!)[0]!;
+    const yuva = v.param.mulk!.ekYapilar![ek]!.yuva;
+    const dene = (o: unknown): string => {
+      const q = kopya(v.param);
+      (q.mulk!.ekYapilar![ek] as unknown as Record<string, unknown>)["olcekHucre"] = o;
+      return hatalar(dogrulaParametreler(q, v.icerik)).join("\n");
+    };
+    expect(dogrulaParametreler(v.param, v.icerik)).toEqual({ gecerli: true });
+    expect(dene([yuva, yuva + 1, yuva + 2])).toBe("");
+    expect(dene([yuva + 1, yuva + 1, yuva + 2])).toMatch(/olcekHucre\[0\]: S ayak izi yuva degerine/);
+    expect(dene([yuva, yuva + 2, yuva + 1])).toMatch(/olcekHucre\[2\]: L ayak izi M'den kucuk olamaz/);
+    expect(dene([yuva, yuva - 1 > 0 ? yuva - 1 : 1, yuva + 1])).toMatch(yuva === 1 ? /^$/ : /olcekHucre\[1\]: M ayak izi S'den kucuk olamaz/);
+    expect(dene([yuva, yuva + 1, MULK_ENCOK_AYAK_IZI + 1])).toMatch(new RegExp(`olcekHucre\\[2\\]: en cok ${MULK_ENCOK_AYAK_IZI} hucre`));
+    expect(dene([yuva, yuva + 1])).not.toBe("");
+    expect(dene([yuva, yuva + 1, yuva + 2, yuva + 3])).not.toBe("");
+    expect(dene("1,2,3")).not.toBe("");
   });
 });

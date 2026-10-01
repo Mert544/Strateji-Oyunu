@@ -54,6 +54,25 @@ describe("mesaj semalari", () => {
     for (const k of HER_KOMUT) expect(KomutSemasi.parse(k)).toEqual(k);
   });
 
+  it("insa komutlarinda istege bagli yontem (yalniz ekleme): yontemli ve yontemsiz komut gecer; eski komut aynen; dize olmayan reddedilir", () => {
+    const temel = { tesis_insa_hucre: { tur: "tesis_insa_hucre", ilce: "tr_41_gebze", tesisTuru: "gida_fabrikasi", hucreler: ["1:1", "2:1"] }, yapi_yerlestir: { tur: "yapi_yerlestir", ilce: "tr_41_gebze", tesisTuru: "gida_fabrikasi", hucreler: ["1:1", "2:1"], sinif: "kirsal" } };
+    for (const [tur, govde] of Object.entries(temel)) {
+      // (b) geriye uyum: yontemsiz eski komut aynen kabul edilir ve aynen doner (alan eklenmez).
+      expect(KomutSemasi.parse(govde), tur).toEqual(govde);
+      expect("yontem" in KomutSemasi.parse(govde), tur).toBe(false);
+      // (a) yontemli komut aynen kabul edilir (olcek ile birlikte de).
+      expect(KomutSemasi.parse({ ...govde, yontem: "degirmen" }), tur).toEqual({ ...govde, yontem: "degirmen" });
+      expect(KomutSemasi.parse({ ...govde, olcek: 1, yontem: "ekmek_firini" }), tur).toEqual({ ...govde, olcek: 1, yontem: "ekmek_firini" });
+      // (c) dize olmayan, bos ya da cok uzun deger reddedilir.
+      for (const kotu of [123, null, true, {}, ["degirmen"], "", "x".repeat(65)]) expect(KomutSemasi.safeParse({ ...govde, yontem: kotu }).success, `${tur} yontem=${JSON.stringify(kotu)}`).toBe(false);
+      // Ws zarfinda da gecer.
+      const z = istemciMesajiCoz(JSON.stringify({ tur: "komut", anahtar: "k1", komut: { ...govde, yontem: "degirmen" } }));
+      expect(z.tamam && z.mesaj.tur === "komut" && (z.mesaj.komut as { yontem?: string }).yontem).toBe("degirmen");
+    }
+    // Baska komutlara yontem eklenmez: fazla alan atilir (mevcut kural).
+    expect("yontem" in KomutSemasi.parse({ tur: "parsel_al", ilce: "i", hucreler: ["1:1"], sinif: "kirsal", yontem: "degirmen" })).toBe(false);
+  });
+
   it("komut zarfindaki ve komuttaki fazla alanlar (t, oyuncu) atilir", () => {
     const r = istemciMesajiCoz(
       JSON.stringify({ tur: "komut", anahtar: "a-1", t: 5, oyuncu: "x", komut: { tur: "vergi_ayarla", oranPpm: 3, t: 9, oyuncu: "y" } }),

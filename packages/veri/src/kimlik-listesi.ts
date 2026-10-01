@@ -11,7 +11,9 @@
  *  (f) içerikteki mal `tabanFiyat`ı listedeki `taban` (₺) ile aynı olmalı (örn. `findik_urunu` 240, katalogdaki 190 düzeltmesi).
  * Önek denetimi `mallar[]` ve `tesisTurleri[]` içindir (içerik dizileri); ek yapılar `mulk.ekYapilar` anahtarlarıdır (derlemede kimliğe göre
  * sıralanır, dolayısıyla yalnız üyelik denetlenir); dükkân türleri henüz içerikte yoktur (üyelik + ad alanı denetimi).
- * Yöntem ve teknoloji kimlikleri bu kilidin kapsamı DIŞINDADIR (kimlik listesi açık nokta 3 ve 4: ayrı kimlik listeleri; sonraki iş).
+ * Yöntem kimlikleri (docs/arastirma/p4-p5-sartname.md §3.5): listede isteğe bağlı üst düzey `yontemler` bölümü varsa `icerik.yontemler[]` de kilide girer
+ * (Y1-Y8: biçim, tekillik, ev sahibi, ad alanı, üyelik, önek, ev sahibi değişmezliği, `mulkKipi` eşitliği, tür başına yöntem sayısı uyarısı); bölüm yoksa yöntem
+ * kilidi uygulanmaz (eski paketler ve testler). Teknoloji kimlikleri bu kilidin kapsamı DIŞINDADIR (kimlik listesi açık nokta 4: ayrı kimlik listesi; sonraki iş).
  */
 import { z } from "zod";
 import type { DogrulamaSonucu, VeriPaketi } from "./dogrula";
@@ -27,6 +29,16 @@ const Kimlik = z.string().min(1);
 
 const MalKaydi = z.object({ id: Kimlik, ad: z.string().min(1).optional(), asama: Asama, taban: z.number().int().positive().optional() }).strict();
 const YapiKaydi = z.object({ id: Kimlik, asama: Asama }).strict();
+const YontemKaydi = z
+  .object({
+    id: Kimlik,
+    /** Yöntemin doğduğu tesis türü (`yapilar.tesisTurleri` üyesi); `icerik.tesisTurleri[].yontemler` içinde onu barındıran tür olmalıdır (Y6). */
+    evSahibi: Kimlik,
+    asama: Asama,
+    /** İçerikteki `YontemTanimi.mulkKipi` ile AYNI olmalı (Y7). */
+    mulkKipi: z.literal(true).optional(),
+  })
+  .strict();
 const YasakliKaydi = z.object({ id: Kimlik, neden: z.string().min(1), yerine: z.array(Kimlik) }).strict();
 
 export const KimlikListesiSema = z
@@ -36,11 +48,16 @@ export const KimlikListesiSema = z
     mallar: z.array(MalKaydi),
     yapilar: z.object({ tesisTurleri: z.array(YapiKaydi), ekYapilar: z.array(YapiKaydi), kamuYapilari: z.array(YapiKaydi) }).strict(),
     dukkanTurleri: z.array(YapiKaydi),
+    /** İsteğe bağlı: alan yoksa yöntem kilidi uygulanmaz (alan eklemesi; `surum` 1 kalır). Sıra kalıcıdır: yalnız sona ekleme (Y5). */
+    yontemler: z.array(YontemKaydi).optional(),
     yasakli: z.object({ mallar: z.array(YasakliKaydi) }).strict(),
   })
   .strict();
 
 export type KimlikListesi = z.infer<typeof KimlikListesiSema>;
+
+/** Yöntem kimliği ile tesis türü kimliğinin kesişebildiği tek kayıt (`hidro_santrali`: hem tür hem yöntem; doğrulandı: betik). */
+export const YONTEM_TUR_CAKISMA_ISTISNALARI: readonly string[] = ["hidro_santrali"];
 
 /** İçeriğin kimlik dizileri (kilit denetimi girdisi). */
 export interface KimlikKilidiGirdisi {
@@ -52,6 +69,11 @@ export interface KimlikKilidiGirdisi {
   ekYapilar?: readonly string[];
   /** `param.mulk.perakende.dukkanTurleri[]` kimlikleri (varsa). */
   dukkanTurleri?: readonly string[];
+  /**
+   * `icerik.yontemler[]` sırasıyla: kimlik, yöntemi barındıran tesis türü (`icerik.tesisTurleri[].yontemler`; hiçbirinde değilse tanımsız; birden çok türde ise ilk tür) ve
+   * `mulkKipi` bayrağı. Yalnız listede `yontemler` bölümü varsa denetlenir.
+   */
+  yontemler?: readonly { id: string; evSahibi: string | undefined; mulkKipi: boolean }[];
 }
 
 function tekrarlar(l: readonly string[]): string[] {
@@ -73,6 +95,7 @@ export function kimlikListesiHatalari(ham: unknown): string[] {
     ["yapilar.ekYapilar", l.yapilar.ekYapilar.map((m) => m.id)],
     ["yapilar.kamuYapilari", l.yapilar.kamuYapilari.map((m) => m.id)],
     ["dukkanTurleri", l.dukkanTurleri.map((m) => m.id)],
+    ["yontemler", (l.yontemler ?? []).map((m) => m.id)],
     ["yasakli.mallar", l.yasakli.mallar.map((m) => m.id)],
   ];
   for (const [ad, ids] of gruplar) {
@@ -89,7 +112,24 @@ export function kimlikListesiHatalari(ham: unknown): string[] {
   // Yapı kimlikleri ile mal kimlikleri de ayrı tutulur (görünen ad karışmasın)
   const yapi = new Set([...l.yapilar.tesisTurleri, ...l.yapilar.ekYapilar, ...l.yapilar.kamuYapilari].map((m) => m.id));
   for (const id of [...mal].sort()) if (yapi.has(id)) hatalar.push(`kimlik-listesi: mal ve yapi kimlikleri kesisiyor: ${id}`);
+  if (l.yontemler !== undefined) {
+    // Y2: ev sahibi listedeki bir tesis turudur.
+    const tur = new Set(l.yapilar.tesisTurleri.map((m) => m.id));
+    for (const y of l.yontemler) if (!tur.has(y.evSahibi)) hatalar.push(`kimlik-listesi.yontemler.${y.id}: evSahibi listede yok: ${y.evSahibi}`);
+    // Y3: ad alani: yontem kimligi mal, ek yapi, kamu yapisi, dukkan turu ve (istisna disinda) tesis turu kimlikleriyle kesismez.
+    const ek = new Set(l.yapilar.ekYapilar.map((m) => m.id));
+    const kamu = new Set(l.yapilar.kamuYapilari.map((m) => m.id));
+    for (const y of l.yontemler) {
+      const kesisen = mal.has(y.id) ? "mal" : ek.has(y.id) || kamu.has(y.id) ? "yapi" : duk.has(y.id) ? "dukkan turu" : tur.has(y.id) && !YONTEM_TUR_CAKISMA_ISTISNALARI.includes(y.id) ? "yapi" : undefined;
+      if (kesisen !== undefined) hatalar.push(`kimlik-listesi: yontem ve ${kesisen} ad alanlari kesisiyor: ${y.id}`);
+    }
+  }
   return hatalar;
+}
+
+/** Y8 (uyari, hata degil; uretim K-8): tur basina yontem sayisi 10'u asarsa. `tesisTurleri` = `icerik.tesisTurleri` (kimlik ve yontem listesi). */
+export function yontemSayisiUyarilari(tesisTurleri: readonly { id: string; yontemler: readonly string[] }[]): string[] {
+  return tesisTurleri.filter((t) => t.yontemler.length > 10).map((t) => `icerik.tesisTurleri.${t.id}: yontem sayisi > 10 (${t.yontemler.length})`);
 }
 
 /**
@@ -135,6 +175,20 @@ export function kimlikKilidiHatalari(ham: unknown, g: KimlikKilidiGirdisi): stri
   const uyeDuk = new Set(l.dukkanTurleri.map((m) => m.id));
   for (const id of g.dukkanTurleri ?? []) if (!uyeDuk.has(id)) hatalar.push(`mulk.perakende.dukkanTurleri: kimlik listede yok (kimlik-listesi.json'a once eklenmeli): ${id}`);
 
+  // Yöntem kilidi (Y4-Y7): yalnız listede `yontemler` bölümü varsa.
+  if (l.yontemler !== undefined && g.yontemler !== undefined) {
+    const liste = l.yontemler;
+    for (const id of g.yontemler.map((y) => y.id)) if (!KIMLIK_BICIMI.test(id)) hatalar.push(`icerik.yontemler: gecersiz kimlik bicimi: "${id}"`);
+    onek("icerik.yontemler", g.yontemler.map((y) => y.id), liste.map((y) => y.id)); // Y4 (uyelik) ve Y5 (onek)
+    const kayit = new Map(liste.map((y) => [y.id, y]));
+    for (const y of g.yontemler) {
+      const k = kayit.get(y.id);
+      if (k === undefined) continue;
+      if (y.evSahibi !== k.evSahibi) hatalar.push(`icerik.yontemler.${y.id}: ev sahibi degisti: icerikte ${y.evSahibi ?? "(yok)"}, listede ${k.evSahibi}`); // Y6
+      if (y.mulkKipi !== (k.mulkKipi === true)) hatalar.push(`icerik.yontemler.${y.id}: mulkKipi listeyle ayni degil`); // Y7
+    }
+  }
+
   // (d) ad alanı: içerikteki mal ve dükkân türü kesişmez
   const malKume = new Set(mallar);
   for (const id of g.dukkanTurleri ?? []) if (malKume.has(id)) hatalar.push(`icerik: mal ve dukkan turu ad alanlari kesisiyor: ${id}`);
@@ -157,10 +211,16 @@ export function kimlikKilidiHatalari(ham: unknown, g: KimlikKilidiGirdisi): stri
 export function dogrulaKimlikKilidi(paket: Pick<VeriPaketi, "icerik" | "param" | "kimlikListesi">): DogrulamaSonucu {
   if (paket.kimlikListesi === undefined) return { gecerli: true };
   const ek = paket.param.mulk?.ekYapilar;
+  // `perakende` bloğu (G7) şemaya girene kadar yapısal okunur: dükkân türü kimlikleri aynı çağrıda kilide verilir.
+  const perakende = (paket.param.mulk as { perakende?: { dukkanTurleri?: readonly { id: string }[] } } | undefined)?.perakende;
+  const evSahibi = new Map<string, string>();
+  for (const t of paket.icerik.tesisTurleri) for (const y of t.yontemler) if (!evSahibi.has(y)) evSahibi.set(y, t.id);
   const hatalar = kimlikKilidiHatalari(paket.kimlikListesi, {
     mallar: paket.icerik.mallar,
     tesisTurleri: paket.icerik.tesisTurleri.map((x) => x.id),
+    yontemler: paket.icerik.yontemler.map((y) => ({ id: y.id, evSahibi: evSahibi.get(y.id), mulkKipi: y.mulkKipi === true })),
     ...(ek !== undefined ? { ekYapilar: Object.keys(ek) } : {}),
+    ...(perakende?.dukkanTurleri !== undefined ? { dukkanTurleri: perakende.dukkanTurleri.map((t) => t.id) } : {}),
   }).map((h) => `[kimlik-listesi] ${h}`);
   return hatalar.length === 0 ? { gecerli: true } : { gecerli: false, hatalar };
 }

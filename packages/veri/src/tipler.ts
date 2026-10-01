@@ -166,6 +166,12 @@ export interface YontemTanimi {
   kirlilikPpmSaat?: number;
   /** Sanayi (B2): hidro santral yöntemi; elektrik çıktısı `sanayi.hidro.akarsuEgrisiPpm` (12 ay, iklim takvimi) ile çarpılır. */
   hidro?: boolean;
+  /**
+   * Yalnız MÜLK kipinde seçilebilir (parsel dünyası + `param.mulk`; docs/arastirma/p4-p5-sartname.md §4.1). Bölge kipinde `icerikDerle` bu yöntemi tür
+   * listelerinden süzer (bölge botları ve komutları görmez; indeksler ve kimlik tablosu sabit kalır). Tür varsayılanı (`yontemler[0]`) olamaz,
+   * `gerekliTeknoloji` taşıyamaz (kilitsizlik).
+   */
+  mulkKipi?: true;
 }
 
 export interface TesisTuruTanimi {
@@ -592,7 +598,44 @@ export interface MulkEkYapiTanimi {
   makasIndirimPpm?: number;
   /** Ticaret ofisi: işletmenin ticaret emri yuvasına eklenir (`temelEmirYuvasi` ile birlikte). */
   emirYuvasi?: number;
+  /**
+   * Ölçeğe göre kapladığı hücre sayısı `[S, M, L]` (yalnız `dukkan` kullanır; sartname §4.2): `[0] = yuva`, `[1] >= [0]`, `[2] >= [1]`, hepsi en çok 5.
+   * Yoksa ek yapı ölçeklenmez (mevcut davranış).
+   */
+  olcekHucre?: [number, number, number];
 }
+
+/** Şebekeden otomatik alınan bir mal (`MulkSebekeParametreleri.mallar[]`). */
+export interface SebekeMali {
+  /**
+   * Mal kimliği. "elektrik" (depolanamaz) anlık denge yoluyla, diğer depolanabilir mallar (örn. yakıt) stoksuz tüketim anı yoluyla çözülür
+   * (çekirdek yolu G6-2'de; bu şema yalnız veridir).
+   */
+  mal: string;
+  /**
+   * Birim fiyatın kamu fiyat tavanına oranı (ppm); 0 < değer <= 1 000 000: şebeke ASLA tavanın üstünde satmaz. Fiyat TABANA bağlıdır
+   * (`tabanFiyat x kamuIthalatCarpaniPpm x tavanOraniPpm`); canlı pazar fiyatı yolu yoktur.
+   */
+  tavanOraniPpm: number;
+}
+
+/**
+ * Mülk kipinde şebeke tedariki (sartname §4.7, §5.2): santralsiz tesis elektriği (ve listedeki diğer malları) şebekeden alır; bedel kamu kasasına ve
+ * lavaboya gider. BLOK YOKSA şebeke yoktur ve çekirdek davranışı bugünküyle bayt bayt aynıdır (bayrak = bloğun varlığı).
+ */
+export interface MulkSebekeParametreleri {
+  surum: 1;
+  /** Şebekeden otomatik alınan mallar (içerik mal kimliği; boş olamaz; tekil). Sıra anlamsızdır; çekirdek mal indeksine göre sıralar. */
+  mallar: SebekeMali[];
+  /** Toplam bedelin ilçe kamu kasasına giden payı (ppm); kalanı lavaboda yanar. Tamsayı: kasa = floor(ödeme x pay / 1e6), lavabo = ödeme - kasa. */
+  kasaPayiPpm: number;
+}
+
+/**
+ * Yöntem çıktısı için yedek geçersiz kılma (sartname §4.8, §5.9; varsayılan KAPALI): mülk kipinde yöntemin çıktısı `ciktiPpm / 1e6` ile çarpılır
+ * (girdiye dokunulmaz). `ciktiPpm = 1 000 000` ve blok yok: davranış bugünküyle aynı.
+ */
+export type MulkYontemGecersizKilmaParametreleri = Record<string, { ciktiPpm: number }>;
 
 /**
  * Kamu arsası parametreleri (docs/12 §10, docs/06 §15.6). Tanımlıysa çekirdek mülk dünyasını KURARKEN her ilçenin kamu kümesini
@@ -707,6 +750,10 @@ export interface MulkParametreleri {
   ekYapilar?: Record<string, MulkEkYapiTanimi>;
   /** İşletme (oyuncu, il) başına temel ticaret emri yuvası; Ticaret ofisi `emirYuvasi` ekler. Yoksa emir sayısı sınırsızdır. */
   temelEmirYuvasi?: number;
+  /** Şebeke tedariki (sartname §4.7); yoksa şebeke yoktur (eski dünyalar ve bölge kipi). */
+  sebeke?: MulkSebekeParametreleri;
+  /** Yöntem çıktısı yedek geçersiz kılma (sartname §4.8); yoksa yok. Varsayılan KAPALI (`ciktiPpm: 1000000`). */
+  yontemGecersizKilma?: MulkYontemGecersizKilmaParametreleri;
   /** Kamu arsası (docs/06 §15.6); yoksa kamu kuralı kapalıdır (dünya `mulk.kamu` taşımaz). */
   kamu?: MulkKamuParametreleri;
   /** Kamu kasaları ve para defteri (docs/06 §15.7); yoksa kapalıdır (dünya `mulk.para` taşımaz). */

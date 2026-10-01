@@ -12,6 +12,7 @@ import {
   type VeriPaketi,
 } from "./dogrula";
 import { dogrulaKimlikKilidi } from "./kimlik-listesi";
+import { dogrulaPerakende } from "./perakende-dogrula";
 
 // ---------------------------------------------------------------------------
 // Yükleme
@@ -32,6 +33,13 @@ function jsonOku(goreliYol: string): unknown {
   }
 }
 
+let sonUyarilar: string[] = [];
+
+/** Son yüklenen paketin doğrulama UYARILARI (hata değil; `dogrulaPerakende`). */
+export function veriUyarilari(): readonly string[] {
+  return sonUyarilar;
+}
+
 function paketYukle(haritaDosyasi: string, secenek: HaritaSecenekleri): VeriPaketi {
   const paket = {
     harita: jsonOku(haritaDosyasi),
@@ -49,6 +57,14 @@ function paketYukle(haritaDosyasi: string, secenek: HaritaSecenekleri): VeriPake
   if (!kilit.gecerli) {
     throw new Error(`Veri paketi gecersiz (${haritaDosyasi}):\n - ${kilit.hatalar.join("\n - ")}`);
   }
+  // Ek semantik kurallar (sartname §4.5 Katman 2; yalnız Node): hata paketi reddeder, uyarılar `veriUyarilari()` ile okunur ve BOLGE_VERI_UYARI=1 iken stderr'e yazılır
+  // (varsayılan sessizdir: yükleyici test ve ölçümlerde binlerce kez çağrılır; A0 çıkmaz mal uyarıları bugünkü veride bilinen ve tutarlıdır).
+  const ek = dogrulaPerakende(paket);
+  if (!ek.gecerli) {
+    throw new Error(`Veri paketi gecersiz (${haritaDosyasi}):\n - ${ek.hatalar.join("\n - ")}`);
+  }
+  sonUyarilar = ek.uyarilar;
+  if (process.env["BOLGE_VERI_UYARI"] === "1") for (const u of ek.uyarilar) console.warn(`[veri uyarisi] ${u}`);
   // Tarım açıksa ve harita tarım alanı taşımıyorsa (ör. gerçek harita) etiket/konumdan varsayılan türet.
   tarimAlanlariniTamamla(paket);
   // Pazar v1 açıksa liman tanımı olmayan liman bölgelerine (ör. gerçek harita) dünya kapısı ve mesafe türet.

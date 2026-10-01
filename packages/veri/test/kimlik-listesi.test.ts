@@ -4,7 +4,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { dogrulaKimlikKilidi, dogrulaVeriPaketi, kimlikKilidiHatalari, kimlikListesiHatalari, KIMLIK_BICIMI, miniVeriyiYukle, MINI_HARITA_SECENEKLERI, varsayilanVeriyiYukle } from "../src";
+import { dogrulaKimlikKilidi, dogrulaVeriPaketi, kimlikKilidiHatalari, kimlikListesiHatalari, KIMLIK_BICIMI, miniVeriyiYukle, MINI_HARITA_SECENEKLERI, varsayilanVeriyiYukle, yontemSayisiUyarilari } from "../src";
 import type { KimlikKilidiGirdisi, KimlikListesi } from "../src";
 import { ilImzaVerisiniYukle } from "../src";
 
@@ -260,5 +260,157 @@ describe("dogrulaKimlikKilidi (yükleyicilerin uyguladığı paket denetimi) lis
     (v.kimlikListesi as KimlikListesi).mallar.push({ id: "tekstil", asama: "S" });
     const r = dogrulaKimlikKilidi(v);
     expect(r.gecerli === false && r.hatalar.join("\n")).toMatch(/\[kimlik-listesi\] kimlik-listesi\.mallar: yasakli kimlik mal olamaz: tekstil/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Yöntem kilidi (sartname §3.5; Y1-Y8): listede isteğe bağlı `yontemler` bölümü
+// ---------------------------------------------------------------------------
+
+/** Varsayılan içeriğin yöntemleri liste biçiminde (T3'ün ilk 24 kaydı: hepsi A0, yöntemi barındıran tür ev sahibi). */
+function yontemGirdisi(): { liste: KimlikListesi; g: KimlikKilidiGirdisi; v: ReturnType<typeof varsayilanVeriyiYukle> } {
+  const v = varsayilanVeriyiYukle();
+  const evSahibi = new Map<string, string>();
+  for (const t of v.icerik.tesisTurleri) for (const y of t.yontemler) if (!evSahibi.has(y)) evSahibi.set(y, t.id);
+  const liste = listeOku();
+  liste.yontemler = v.icerik.yontemler.map((y) => ({ id: y.id, evSahibi: evSahibi.get(y.id) as string, asama: "A0" as const }));
+  const g: KimlikKilidiGirdisi = {
+    mallar: v.icerik.mallar.map((m) => ({ id: m.id, tabanFiyat: m.tabanFiyat })),
+    tesisTurleri: v.icerik.tesisTurleri.map((t) => t.id),
+    ekYapilar: Object.keys(v.param.mulk?.ekYapilar ?? {}),
+    yontemler: v.icerik.yontemler.map((y) => ({ id: y.id, evSahibi: evSahibi.get(y.id), mulkKipi: y.mulkKipi === true })),
+  };
+  return { liste, g, v };
+}
+
+describe("yöntem kilidi (Y1-Y8)", () => {
+  it("bugünkü 24 yöntem listeyle uyumlu: hata yok (hidro_santrali hem tür hem yöntem: istisna)", () => {
+    const { liste, g, v } = yontemGirdisi();
+    expect(v.icerik.yontemler).toHaveLength(24);
+    expect(kimlikListesiHatalari(liste)).toEqual([]);
+    expect(kilit(liste, g)).toBe("");
+    expect(v.icerik.tesisTurleri.some((t) => t.id === "hidro_santrali")).toBe(true);
+    expect(v.icerik.yontemler.some((y) => y.id === "hidro_santrali")).toBe(true);
+  });
+
+  it("yontemler alanı YOKKEN yöntem kilidi uygulanmaz (bugünkü liste; içeriğe sahte yöntem eklense de hata yok)", () => {
+    const { g } = yontemGirdisi();
+    const liste = listeOku();
+    expect(liste.yontemler).toBeUndefined();
+    expect(kilit(liste, { ...g, yontemler: [...(g.yontemler ?? []), { id: "sahte_yontem", evSahibi: "ciftlik", mulkKipi: false }] })).toBe("");
+  });
+
+  it("Y1: yöntem kimliği biçimi ve tekrar liste hatasıdır; şema ek alanı ve geçersiz aşamayı reddeder", () => {
+    const { liste } = yontemGirdisi();
+    const bozuk = structuredClone(liste);
+    bozuk.yontemler![0]!.id = "Bozuk-Kimlik";
+    expect(kimlikListesiHatalari(bozuk).join("\n")).toMatch(/kimlik-listesi\.yontemler: gecersiz kimlik bicimi.*"Bozuk-Kimlik"/);
+    const tekrar = structuredClone(liste);
+    tekrar.yontemler!.push({ ...tekrar.yontemler![3]! });
+    expect(kimlikListesiHatalari(tekrar).join("\n")).toMatch(/kimlik-listesi\.yontemler: tekrarlanan kimlik: /);
+    const fazla = structuredClone(liste) as unknown as { yontemler: Record<string, unknown>[] };
+    fazla.yontemler[0]!["ek"] = 1;
+    expect(kimlikListesiHatalari(fazla)).not.toEqual([]);
+    const asama = structuredClone(liste) as unknown as { yontemler: Record<string, unknown>[] };
+    asama.yontemler[0]!["asama"] = "B9";
+    expect(kimlikListesiHatalari(asama)).not.toEqual([]);
+    const mk = structuredClone(liste) as unknown as { yontemler: Record<string, unknown>[] };
+    mk.yontemler[0]!["mulkKipi"] = false; // yalnız literal true
+    expect(kimlikListesiHatalari(mk)).not.toEqual([]);
+  });
+
+  it("Y2: evSahibi yapilar.tesisTurleri üyesi olmalı", () => {
+    const { liste } = yontemGirdisi();
+    liste.yontemler![5]!.evSahibi = "yok_boyle_tur";
+    expect(kimlikListesiHatalari(liste).join("\n")).toMatch(new RegExp(`kimlik-listesi\\.yontemler\\.${liste.yontemler![5]!.id}: evSahibi listede yok: yok_boyle_tur`));
+  });
+
+  it("Y3: ad alanı: yöntem kimliği mal, ek yapı, dükkân türü ve tesis türü kimlikleriyle kesişemez; hidro_santrali istisnası", () => {
+    const { liste } = yontemGirdisi();
+    const dene = (id: string): string => {
+      const l = structuredClone(liste);
+      l.yontemler!.push({ id, evSahibi: "ciftlik", asama: "A1" });
+      return kimlikListesiHatalari(l).join("\n");
+    };
+    expect(dene("un")).toMatch(/kimlik-listesi: yontem ve mal ad alanlari kesisiyor: un/);
+    expect(dene("ambar")).toMatch(/kimlik-listesi: yontem ve yapi ad alanlari kesisiyor: ambar/);
+    expect(dene("nobet_evi")).toMatch(/kimlik-listesi: yontem ve yapi ad alanlari kesisiyor: nobet_evi/);
+    expect(dene("bakkal")).toMatch(/kimlik-listesi: yontem ve dukkan turu ad alanlari kesisiyor: bakkal/);
+    expect(dene("ahir")).toMatch(/kimlik-listesi: yontem ve yapi ad alanlari kesisiyor: ahir/);
+    expect(dene("yeni_yontem_ok")).toBe("");
+    // istisna: bugünkü hidro_santrali (hem tür hem yöntem) hata vermiyor (üstteki test); başka tür kimliği yöntem olamaz
+    expect(liste.yontemler!.some((y) => y.id === "hidro_santrali")).toBe(true);
+  });
+
+  it("Y4: içerikte olup listede olmayan yöntem reddedilir (önce listeye eklenmeli)", () => {
+    const { liste, g } = yontemGirdisi();
+    expect(kilit(liste, { ...g, yontemler: [...g.yontemler!, { id: "yeni_yontem", evSahibi: "ciftlik", mulkKipi: false }] })).toMatch(/icerik\.yontemler: kimlik listede yok \(kimlik-listesi\.json'a once eklenmeli\): yeni_yontem/);
+  });
+
+  it("Y5: yalnız sona ekleme: araya ekleme, yeniden sıralama ve silme önek ihlalidir; sona ekleme (listede de varsa) geçer", () => {
+    const { liste, g } = yontemGirdisi();
+    const y = g.yontemler!;
+    // araya ekleme (listedeki bir kimlik içerikte yanlış yerde)
+    const araya = [...y.slice(0, 5), y[22]!, ...y.slice(5, 22), ...y.slice(23)];
+    expect(kilit(liste, { ...g, yontemler: araya })).toMatch(/icerik\.yontemler\[5\]: onek ihlali/);
+    // yeniden sıralama
+    expect(kilit(liste, { ...g, yontemler: [...y].reverse() })).toMatch(/icerik\.yontemler\[0\]: onek ihlali/);
+    // silme (sonrakiler kayar)
+    expect(kilit(liste, { ...g, yontemler: [...y.slice(0, 2), ...y.slice(3)] })).toMatch(/icerik\.yontemler\[2\]: onek ihlali/);
+    // sona ekleme: listeye de eklenmişse geçer
+    const uzun = structuredClone(liste);
+    uzun.yontemler!.push({ id: "yeni_yontem", evSahibi: "ciftlik", asama: "A0" });
+    expect(kilit(uzun, { ...g, yontemler: [...y, { id: "yeni_yontem", evSahibi: "ciftlik", mulkKipi: false }] })).toBe("");
+  });
+
+  it("Y6: ev sahibi değişmezliği: içerikte yöntemi barındıran tür listedekiyle aynı olmalı (hiçbir türde değilse de ihlal)", () => {
+    const { liste, g } = yontemGirdisi();
+    const y = g.yontemler!.map((k) => ({ ...k }));
+    const i = y.findIndex((k) => k.id === "standart_parca");
+    const eski = y[i]!.evSahibi;
+    y[i]!.evSahibi = "celikhane";
+    expect(kilit(liste, { ...g, yontemler: y })).toMatch(new RegExp(`icerik\\.yontemler\\.standart_parca: ev sahibi degisti: icerikte celikhane, listede ${eski}`));
+    y[i]!.evSahibi = undefined;
+    expect(kilit(liste, { ...g, yontemler: y })).toMatch(/icerik\.yontemler\.standart_parca: ev sahibi degisti: icerikte \(yok\), listede /);
+  });
+
+  it("Y7: mulkKipi eşitliği: içerik ve liste bayrağı aynı olmalı (iki yönde)", () => {
+    const { liste, g } = yontemGirdisi();
+    const y = g.yontemler!.map((k) => ({ ...k }));
+    y[1]!.mulkKipi = true; // içerikte var, listede yok
+    expect(kilit(liste, { ...g, yontemler: y })).toMatch(new RegExp(`icerik\\.yontemler\\.${y[1]!.id}: mulkKipi listeyle ayni degil`));
+    const l2 = structuredClone(liste);
+    l2.yontemler![2]!.mulkKipi = true; // listede var, içerikte yok
+    expect(kilit(l2, g)).toMatch(new RegExp(`icerik\\.yontemler\\.${l2.yontemler![2]!.id}: mulkKipi listeyle ayni degil`));
+    const l3 = structuredClone(liste);
+    l3.yontemler![3]!.mulkKipi = true;
+    const y3 = g.yontemler!.map((k) => ({ ...k }));
+    y3[3]!.mulkKipi = true;
+    expect(kilit(l3, { ...g, yontemler: y3 })).toBe(""); // ikisi de var: geçer
+  });
+
+  it("Y8: tür başına 10'dan fazla yöntem UYARIDIR (hata değil)", () => {
+    expect(yontemSayisiUyarilari([{ id: "a", yontemler: Array.from({ length: 10 }, (_, i) => `y${i}`) }])).toEqual([]);
+    expect(yontemSayisiUyarilari([{ id: "a", yontemler: Array.from({ length: 11 }, (_, i) => `y${i}`) }])).toEqual(["icerik.tesisTurleri.a: yontem sayisi > 10 (11)"]);
+    const { v } = yontemGirdisi();
+    expect(yontemSayisiUyarilari(v.icerik.tesisTurleri)).toEqual([]);
+  });
+
+  it("dogrulaKimlikKilidi: paketten kurulur (ev sahibi türden, mulkKipi içerikten) ve aynı çağrıda dükkân türleri geçer", () => {
+    const { liste, v } = yontemGirdisi();
+    v.kimlikListesi = liste;
+    expect(dogrulaKimlikKilidi(v)).toEqual({ gecerli: true });
+    // bozulmuş ev sahibi (listede): paket denetimi yakalar
+    v.kimlikListesi = structuredClone(liste);
+    v.kimlikListesi.yontemler!.find((y) => y.id === "standart_parca")!.evSahibi = "celikhane";
+    const r = dogrulaKimlikKilidi(v);
+    expect(r.gecerli === false && r.hatalar.join("\n")).toMatch(/\[kimlik-listesi\] icerik\.yontemler\.standart_parca: ev sahibi degisti/);
+    // dükkân türleri aynı çağrıda: listede olmayan dükkân türü reddedilir, olan geçer (perakende bloğu G7'de şemaya girer; yapısal okunur)
+    v.kimlikListesi = liste;
+    (v.param.mulk as unknown as { perakende: unknown }).perakende = { dukkanTurleri: [{ id: "bakkal" }] };
+    expect(dogrulaKimlikKilidi(v)).toEqual({ gecerli: true });
+    (v.param.mulk as unknown as { perakende: unknown }).perakende = { dukkanTurleri: [{ id: "bakkal" }, { id: "olmayan_dukkan" }] };
+    const r2 = dogrulaKimlikKilidi(v);
+    expect(r2.gecerli === false && r2.hatalar.join("\n")).toMatch(/mulk\.perakende\.dukkanTurleri: kimlik listede yok .*: olmayan_dukkan/);
   });
 });
