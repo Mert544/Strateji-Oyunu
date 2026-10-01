@@ -145,3 +145,24 @@
 /* Defter kartı satırı (B7): ödül sütunu sağda, metin kırılır, ödül kırılmaz */
 .dk-oneri-satir { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
 .dk-oneri-satir > p { margin: 0; min-width: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); }
+/* D0 kartında Defter adımı: tek soluk satır (A1 akış okuması 3; metin `dukkan.D0.defter_adim`) */
+.dk-oneri-defter-satir { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); }
+/* K1 bağlaması (dukkan-bagla-k1, f144eba): İşletmem içinde seçili dükkânın ayrıntı paneli, satırdaki Raf/Git düğmeleri, marka satırı. Dokunma hedefi ≥ 44 px, 360 px'te taşma yok, birincil düğme yok (eylemler .eylem; tek birincil kuralı bozulmaz) */
+.dk-panel { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; margin-top: var(--s-3); padding: var(--s-3) var(--s-4) var(--s-4); border: 1px solid var(--cizgi-ince); border-radius: var(--r-lg); background: var(--yuzey); overflow-wrap: anywhere; }
+.dk-panel > .yk-baslik { flex-wrap: wrap; align-items: center; margin: 0; padding-bottom: var(--s-2); }
+.dk-panel .dk-baslik { margin: 0; min-width: 0; font-size: var(--yazi-lg); }
+.dk-panel .yk-baslik .dk-menu { width: 44px; height: 44px; }
+.dk-panel .yk-baslik .dk-menu-liste { flex: 1 1 100%; align-self: stretch; margin-top: 0; }
+.dk-panel .eylem, .dk-panel .mini-dugme { min-height: 44px; }
+.dk-satir .ml-ad { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.mulk-liste .dk-satir .eylem { flex: none; min-height: 44px; margin: 0; font-size: var(--yazi-sm); }
+.dk-satir .eylem[aria-expanded="true"] { background: var(--birincil-tint); border-color: transparent; color: var(--birincil-ink); font-weight: 600; }
+.dk-marka-satir { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); }
+.dk-marka-satir > p { margin: 0; min-width: 0; }
+@media (max-width: 420px) {
+  /* Dar telefonda satır iki katlı: simge + ad üstte, Raf ve Git altta yarı yarıya */
+  .dk-satir { flex-wrap: wrap; align-items: center; }
+  .dk-satir .ml-ad { flex: 1 1 calc(100% - 40px); }
+  .mulk-liste .dk-satir .eylem { flex: 1 1 0; }
+  .dk-panel { padding: var(--s-3); }
+}
