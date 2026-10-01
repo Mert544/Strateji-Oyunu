@@ -1,6 +1,6 @@
 /**
  * WebSocket bağdaştırıcısı (F4) GERÇEK sunucuya karşı: el sıkışma, abone/kare/delta, komut + idempotans, hazine formülü,
- * zaman eşitleme, yeniden bağlanma, bilinmeyen ilçe, komut zinciri (ilk başarısızlıkta durur).
+ * zaman eşitleme, yeniden bağlanma, bilinmeyen ilçe, yapı yerleştirme (tek atomik komut; yarım alım yok).
  * Sunucu: packages/sunucu (bellek deposu, elle saat, mini-6 parsel fikstürü). Node 22'nin yerleşik WebSocket'i.
  */
 import { afterEach, describe, expect, it } from "vitest";
@@ -215,7 +215,7 @@ describe("WsBaglanti: gerçek sunucu", () => {
     expect(gunluk).toHaveLength(1);
   });
 
-  it("komut zinciri: arsa alınamazsa yapı komutu GÖNDERİLMEZ; arsa alınır ama yapı olmazsa Türkçe bildirim", async () => {
+  it("yapı yerleştirme tek atomik komut: arsa alınamazsa ya da yapı olmazsa HİÇBİR ŞEY değişmez (yarım alım yok); atomik komut yoksa arsa alan yerleşim yapılmaz", async () => {
     await hazirla();
     const a = await ac("ali");
     const v = await ac("veli");
@@ -236,32 +236,41 @@ describe("WsBaglanti: gerçek sunucu", () => {
       toplamMili: 8_000_000,
       malzeme: [], indirimli: false, hazineYetmez: false,
     });
-    let insaCagri = 0;
-    const sarmal: MulkBaglantisi = {
+    await bekle(() => a.ozet() !== null);
+    const hazineOnce = a.ozet()!.hazineMili;
+    const insaatSayisi = (): number => ts!.yazar.sim.dunya.insaatlar.length;
+    const aliHucre = (): number => ts!.yazar.sim.dunya.mulk!.hucreler.filter((h) => h.sahip === "ali").length;
+    // 1) arsa başarısız (veli'nin hücreleri): atomik komut reddedilir, hiçbir şey alınmaz
+    const k1 = await yerlesimiUygula(a, ILCE, plan(CIFT_B, CIFT_B));
+    expect(k1).toMatchObject({ tamam: false, asama: "insa", yol: "atomik", gonderilen: 1, alinan: [], odenenMili: 0 });
+    expect(k1.mesaj).toBe("Çiftlik kurulamadı: Bir hücre az önce veli tarafından alındı. Hiçbir şey değişmedi.");
+    // 2) yapı başarısız: yanlış yuva (1 hücre) -> sunucu reddeder; arsa SENDE KALMAZ (eski zincirdeki yarım alım yok)
+    const k2 = await yerlesimiUygula(a, ILCE, plan([CIFT_A[0]!], [CIFT_A[0]!]));
+    expect(k2).toMatchObject({ tamam: false, asama: "insa", yol: "atomik", gonderilen: 1, alinan: [] });
+    expect(k2.mesaj).toContain("Bu yapı 2 hücre kaplar (seçilen 1).");
+    expect(k2.mesaj).toContain("Hiçbir şey değişmedi.");
+    expect((await a.sahiplikAl(ILCE))!.hucreler.has(CIFT_A[0]!)).toBe(false);
+    expect(a.ozet()!.hazineMili).toBe(hazineOnce);
+    expect(insaatSayisi()).toBe(0);
+    expect(aliHucre()).toBe(0); // sunucuda da ali'nin hücresi yok
+    // 3) tam başarı: TEK komut (arsa + yapı)
+    const k3 = await yerlesimiUygula(a, ILCE, plan([CIFT_A[0]!, CIFT_A[1]!], [CIFT_A[0]!, CIFT_A[1]!]));
+    expect(k3).toMatchObject({ tamam: true, yol: "atomik", gonderilen: 1, alinan: [CIFT_A[0], CIFT_A[1]] });
+    expect(k3.mesaj).toMatch(/^Çiftlik kuruluyor: arsa 2 hücre, [\d.]+\u00a0₺ \+ yapı 6\.000\u00a0₺\.$/);
+    expect(insaatSayisi()).toBe(1);
+    expect(aliHucre()).toBe(2);
+    expect((await ts!.depo.gunluk.oku(0)).filter((x) => x.komut.tur === "parsel_al")).toHaveLength(1); // yalnız veli'nin hazırlık alımı; ali tek komut gönderdi
+    // 4) atomik komutu olmayan bağlantı: arsa alan yerleşim YAPILMAZ (komut gönderilmez)
+    let parselCagri = 0;
+    const eski: MulkBaglantisi = {
       ben: a.ben,
       oyuncuAdi: (x) => a.oyuncuAdi(x),
-      parselAl: (k) => a.parselAl(k),
+      parselAl: (k) => (parselCagri++, a.parselAl(k)),
       sahiplikAl: (i) => a.sahiplikAl(i),
-      tesisInsa: (k) => {
-        insaCagri++;
-        return a.tesisInsa(k);
-      },
+      tesisInsa: (k) => a.tesisInsa(k),
     };
-    // 1) arsa başarısız (veli'nin hücreleri): yapı gönderilmez
-    const k1 = await yerlesimiUygula(sarmal, ILCE, plan(CIFT_B, CIFT_B));
-    expect(k1).toMatchObject({ tamam: false, asama: "parsel", yol: "zincir", gonderilen: 1, alinan: [] });
-    expect(k1.mesaj).toBe("Arsa alınamadı, Çiftlik kurulmadı: Bir hücre az önce veli tarafından alındı.");
-    expect(insaCagri).toBe(0);
-    // 2) arsa başarılı, yapı başarısız: yanlış yuva (1 hücre) -> sunucu reddeder; arsa sende kalır
-    const k2 = await yerlesimiUygula(sarmal, ILCE, plan([CIFT_A[0]!], [CIFT_A[0]!]));
-    expect(k2).toMatchObject({ tamam: false, asama: "insa", gonderilen: 2, alinan: [CIFT_A[0]] });
-    expect(k2.mesaj).toContain("Arsa alındı (1 hücre");
-    expect(k2.mesaj).toContain("Bu yapı 2 hücre kaplar (seçilen 1).");
-    expect(insaCagri).toBe(1);
-    // 3) tam başarı: kendi hücren (CIFT_A[0]) + 1 yeni hücre alınır, sonra yapı kurulur (2 komut)
-    const k3 = await yerlesimiUygula(sarmal, ILCE, plan([CIFT_A[0]!, CIFT_A[1]!], [CIFT_A[1]!]));
-    expect(k3).toMatchObject({ tamam: true, gonderilen: 2, alinan: [CIFT_A[1]] });
-    expect(k3.mesaj).toMatch(/^Çiftlik kuruluyor: arsa 1 hücre, [\d.]+\u00a0₺ \+ yapı 6\.000\u00a0₺\.$/);
-    expect(insaCagri).toBe(2);
+    const k4 = await yerlesimiUygula(eski, ILCE, plan(CIFT_B, CIFT_B));
+    expect(k4).toMatchObject({ tamam: false, gonderilen: 0, alinan: [], neden: "desteklenmiyor" });
+    expect(parselCagri).toBe(0);
   });
 });

@@ -217,7 +217,7 @@ describe("komut yolu (sahte bağdaştırıcı)", () => {
         return y ? { yuva: y.yuva, paraMili: y.paraMili, sureSaat: y.sureSaat } : null;
       },
     });
-  /** Atomik komutu olmayan bağlantı: zincir yolunu zorlar (çekirdekte `yapi_yerlestir` yokken olan durum). */
+  /** Atomik komutu olmayan bağlantı (eski sunucu): arsa alan yerleşim yapılmaz. */
   const zincirli = (b: SahteBaglanti, sayac: { parsel: number; insa: number } = { parsel: 0, insa: 0 }): MulkBaglantisi => ({
     ben: b.ben,
     oyuncuAdi: (x) => b.oyuncuAdi(x),
@@ -253,38 +253,42 @@ describe("komut yolu (sahte bağdaştırıcı)", () => {
     expect((await b.sahiplikAl("i"))!.hucreler.size).toBe(0);
   });
 
-  it("atomik: karışık sınıfta zincire düşer (tek sınıf ister)", async () => {
+  it("karışık sınıfta da TEK atomik komut (siniflar): her hücre kendi sınıfında alınır, hazine düşüşü önizlemeyle aynı", async () => {
     const iz = izgara(30, 20, (x) => (x >= 4 ? KASABA : KIRSAL));
     const b = new SahteBaglanti({ izgaraAl: async () => iz, komsular: false, saat: () => 1, hazineMili: 50_000_000, yapiBilgisi: () => ({ yuva: 2, paraMili: 6_000_000, sureSaat: 2 }) });
     const plan = yerlesimPlani(yapi("ciftlik"), x0 + 3, y0 + 3, 0, baglam(iz, [], { sahiplik: (await b.sahiplikAl("i"))! }));
     expect(plan.parseller).toHaveLength(2);
-    const sayac = { parsel: 0, insa: 0 };
-    const r = await yerlesimiUygula(zincirli(b, sayac), "i", plan);
-    expect(r).toMatchObject({ tamam: true, yol: "zincir", gonderilen: 3 });
-    expect(sayac).toEqual({ parsel: 2, insa: 1 });
+    const r = await yerlesimiUygula(b, "i", plan);
+    expect(r).toMatchObject({ tamam: true, yol: "atomik", gonderilen: 1 });
+    const s = (await b.sahiplikAl("i"))!;
+    expect(s.hucreler.get(id(3, 3))).toMatchObject({ sinif: "kirsal" });
+    expect(s.hucreler.get(id(4, 3))).toMatchObject({ sinif: "kasaba" });
+    expect(b.ozet().hazineMili).toBe(50_000_000 - plan.arsaMili - 6_000_000);
   });
 
-  it("zincir: arsa başarısızsa yapı komutu gönderilmez (hazine yetersiz)", async () => {
-    const b = yeni(1_500_000); // arsa 2 hücre ≈ 2.000 ₺ > 1.500 ₺
+  it("atomik komutu olmayan bağlantıda arsa alan yerleşim yapılmaz: hiç komut gitmez (yarım alım yok)", async () => {
+    const b = yeni();
     const sayac = { parsel: 0, insa: 0 };
     const plan = yerlesimPlani(yapi("ciftlik"), x0 + 3, y0 + 3, 0, { ...baglam(izgara()), hazineMili: null });
     const r = await yerlesimiUygula(zincirli(b, sayac), "i", plan);
-    expect(r).toMatchObject({ tamam: false, asama: "parsel", yol: "zincir", gonderilen: 1, alinan: [] });
-    expect(r.mesaj).toBe("Arsa alınamadı, Çiftlik kurulmadı: Hazinede yeterli para yok.");
-    expect(sayac).toEqual({ parsel: 1, insa: 0 });
+    expect(r).toMatchObject({ tamam: false, gonderilen: 0, alinan: [], neden: "desteklenmiyor" });
+    expect(sayac).toEqual({ parsel: 0, insa: 0 });
+    expect(b.ozet()).toMatchObject({ hazineMili: 50_000_000, ilceHucre: [] });
   });
 
-  it("zincir: arsa alınır, yapı reddedilirse arsa kalır ve mesaj bunu söyler; eşzamanlı inşaat sınırı", async () => {
+  it("eşzamanlı inşaat sınırı: 3. yerleşim reddedilir ve arsa ALINMAZ (eski zincirdeki 'arsa sende kalır' yolu yok)", async () => {
     const b = yeni();
-    const z = zincirli(b);
-    expect((await yerlesimiUygula(z, "i", await planYap(b, "ciftlik", 3, 3))).tamam).toBe(true);
-    expect((await yerlesimiUygula(z, "i", await planYap(b, "ahir", 3, 6))).tamam).toBe(true);
+    expect((await yerlesimiUygula(b, "i", await planYap(b, "ciftlik", 3, 3))).tamam).toBe(true);
+    expect((await yerlesimiUygula(b, "i", await planYap(b, "ahir", 3, 6))).tamam).toBe(true);
+    const hazine = b.ozet().hazineMili;
     // üçüncü: istemci planı sınırı bilmiyormuş gibi (surenInsaat 0) gönderir; sahte sunucu reddeder
     const plan3 = await planYap(b, "ciftlik", 3, 9, { surenInsaat: 0 });
     expect(plan3.gecerli).toBe(true);
-    const ucuncu = await yerlesimiUygula(z, "i", plan3);
-    expect(ucuncu).toMatchObject({ tamam: false, asama: "insa", yol: "zincir", gonderilen: 2 });
-    expect(ucuncu.mesaj).toMatch(/^Arsa alındı \(2 hücre, [\d.]+\u00a0₺\) ama Çiftlik kurulamadı: Aynı anda en çok 2 inşaat sürebilir\. Hücreler sende; yapıyı yeniden deneyebilirsin\.$/);
+    const ucuncu = await yerlesimiUygula(b, "i", plan3);
+    expect(ucuncu).toMatchObject({ tamam: false, asama: "insa", yol: "atomik", gonderilen: 1, alinan: [], odenenMili: 0 });
+    expect(ucuncu.mesaj).toBe("Çiftlik kurulamadı: Aynı anda en çok 2 inşaat sürebilir. Hiçbir şey değişmedi.");
+    expect(b.ozet().hazineMili).toBe(hazine);
+    expect((await b.sahiplikAl("i"))!.hucreler.has(id(3, 9))).toBe(false);
   });
 
   it("geri al (sahte): inşaat kalkar, alınan hücreler bırakılır, ödenen para iade edilir", async () => {

@@ -1,15 +1,15 @@
 /**
  * "Yapı önce yerleşim" ve "hazır arsa" için komut yolu (F4).
- *   1. Atomik: bağdaştırıcı `atomikYerlestirme()` diyorsa ve boş hücreler tek sınıftansa TEK `yapi_yerlestir` komutu
- *      (arsa + inşaat bir arada; başarısızsa hiçbir şey değişmez).
- *   2. Zincir (geçici yol, çekirdekte atomik komut yokken): `parsel_al` (sınıf başına) → `tesis_insa_hucre`. İlk başarısızlıkta
- *      durur: sonraki komut GÖNDERİLMEZ; arsa alınıp yapı reddedilirse hücreler oyuncuda kalır ve mesaj bunu söyler.
+ *   - Yapı yerleştirme (arsa + yapı): HER durumda TEK atomik `yapi_yerlestir` komutu; hücreler birden çok arsa sınıfındaysa hücre başına
+ *     sınıf `siniflar` ile gider (baş lider şartı: yarım alım yok; yapı reddedilirse hiçbir şey değişmez). Arsa alınmayan yerleşim
+ *     (yurt: bütün hücreler kendinin) atomik komut yoksa `tesis_insa_hucre` ile kurulur (alım olmadığı için yarım durum yoktur).
+ *   - Hazır arsa satın alma (`parselZinciri`): sınıf başına `parsel_al`; yapı içermez, her adım kendi başına bir alımdır.
  * Sonuç, oyuncuya gösterilecek Türkçe bildirimle döner. Bağdaştırıcı sahte ya da gerçek olabilir (aynı `MulkBaglantisi`).
  */
 import { fmt, paraMili } from "../arayuz/bicim";
 import type { MulkBaglantisi, ParselSonucu } from "./baglanti";
 import type { ParselAdimi, YerlesimPlani } from "./yapi";
-import type { HucreId } from "@bolge/cekirdek";
+import type { ArsaSinifi, HucreId } from "@bolge/cekirdek";
 
 const nokta = (m: string): string => (/[.!?]$/.test(m) ? m : `${m}.`);
 
@@ -46,44 +46,26 @@ export async function parselZinciri(b: MulkBaglantisi, ilce: string, adimlar: re
   return { alinan, odenenMili: odenen, gonderilen, hata: null };
 }
 
-/** Yerleşim planını uygular: atomik komut varsa o, yoksa `parsel_al` (boş hücreler) + `tesis_insa_hucre`. */
+/** Yerleşim planını uygular: arsa + yapı TEK `yapi_yerlestir` komutu (çok sınıfta `siniflar`); arsasız yerleşim atomik komut yoksa `tesis_insa_hucre`. */
 export async function yerlesimiUygula(b: MulkBaglantisi, ilce: string, plan: YerlesimPlani): Promise<ZincirSonucu> {
   const ad = plan.yapi.ad;
-  if (b.yapiYerlestir && b.atomikYerlestirme?.() === true && plan.parseller.length <= 1) {
+  if (b.yapiYerlestir && b.atomikYerlestirme?.() === true) {
     const sinif = plan.parseller[0]?.sinif ?? "kirsal";
-    const r = await b.yapiYerlestir({ ilce, tesisTuru: plan.yapi.id, hucreler: plan.hucreler.map((h) => h.id), sinif });
+    // Hücre başına sınıf yalnız birden çok sınıfta gider; sahip olunan hücrenin sınıfı denetlenmez (komutta `sinif` değeri kullanılır)
+    const sinifOf = new Map<HucreId, ArsaSinifi>();
+    for (const p of plan.parseller) for (const id of p.hucreler) sinifOf.set(id, p.sinif);
+    const hucreler = plan.hucreler.map((h) => h.id);
+    const siniflar = plan.parseller.length > 1 ? hucreler.map((id) => sinifOf.get(id) ?? sinif) : undefined;
+    const r = await b.yapiYerlestir({ ilce, tesisTuru: plan.yapi.id, hucreler, sinif, ...(siniflar ? { siniflar } : {}) });
     if (!r.tamam) return { tamam: false, asama: "insa", yol: "atomik", alinan: [], odenenMili: 0, gonderilen: 1, neden: r.mesaj, mesaj: `${ad} kurulamadı: ${nokta(r.mesaj)} Hiçbir şey değişmedi.` };
     const arsa = plan.alinacak.length > 0 ? `arsa ${fmt(plan.alinacak.length)} hücre, ${paraMili(plan.arsaMili, "yakin")} + ` : "";
     return { tamam: true, yol: "atomik", alinan: [...plan.alinacak], odenenMili: plan.arsaMili, gonderilen: 1, mesaj: `${ad} kuruluyor: ${arsa}yapı ${paraMili(plan.yapiMili, "yakin")}.` };
   }
-  if (!b.tesisInsa) return { tamam: false, asama: "insa", yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 0, mesaj: "Bu bağlantı yapı kurmayı desteklemiyor.", neden: "desteklenmiyor" };
-  const p = await parselZinciri(b, ilce, plan.parseller);
-  if (p.hata) {
-    return {
-      tamam: false,
-      asama: "parsel",
-      yol: "zincir",
-      alinan: p.alinan,
-      odenenMili: p.odenenMili,
-      gonderilen: p.gonderilen,
-      neden: p.hata.mesaj,
-      mesaj: p.alinan.length > 0 ? `Arsa kısmen alındı (${fmt(p.alinan.length)} hücre), ${ad} kurulmadı: ${nokta(p.hata.mesaj)}` : `Arsa alınamadı, ${ad} kurulmadı: ${nokta(p.hata.mesaj)}`,
-    };
+  // Atomik komut yok: arsa alan yerleşim yapılmaz (yarım alım olmasın); arsasız yerleşim (yurt) yalnız inşaat komutudur
+  if (plan.alinacak.length > 0 || !b.tesisInsa) {
+    return { tamam: false, asama: "insa", yol: "atomik", alinan: [], odenenMili: 0, gonderilen: 0, mesaj: "Bu bağlantı yapı yerleştirmeyi desteklemiyor. Hiçbir şey değişmedi.", neden: "desteklenmiyor" };
   }
   const r = await b.tesisInsa({ tur: "tesis_insa_hucre", ilce, tesisTuru: plan.yapi.id, hucreler: plan.hucreler.map((h) => h.id) });
-  const gonderilen = p.gonderilen + 1;
-  if (!r.tamam) {
-    return {
-      tamam: false,
-      asama: "insa",
-      yol: "zincir",
-      alinan: p.alinan,
-      odenenMili: p.odenenMili,
-      gonderilen,
-      neden: r.mesaj,
-      mesaj: p.alinan.length > 0 ? `Arsa alındı (${fmt(p.alinan.length)} hücre, ${paraMili(p.odenenMili, "yakin")}) ama ${ad} kurulamadı: ${nokta(r.mesaj)} Hücreler sende; yapıyı yeniden deneyebilirsin.` : `${ad} kurulamadı: ${nokta(r.mesaj)}`,
-    };
-  }
-  const arsa = p.alinan.length > 0 ? `arsa ${fmt(p.alinan.length)} hücre, ${paraMili(p.odenenMili, "yakin")} + ` : "";
-  return { tamam: true, yol: "zincir", alinan: p.alinan, odenenMili: p.odenenMili, gonderilen, mesaj: `${ad} kuruluyor: ${arsa}yapı ${paraMili(plan.yapiMili, "yakin")}.` };
+  if (!r.tamam) return { tamam: false, asama: "insa", yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 1, neden: r.mesaj, mesaj: `${ad} kurulamadı: ${nokta(r.mesaj)}` };
+  return { tamam: true, yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 1, mesaj: `${ad} kuruluyor: yapı ${paraMili(plan.yapiMili, "yakin")}.` };
 }

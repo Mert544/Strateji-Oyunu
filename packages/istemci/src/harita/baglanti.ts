@@ -46,13 +46,15 @@ export type ParselSonucu =
 /**
  * Atomik "yapı önce yerleşim" isteği (çekirdek `yapi_yerlestir`): arsa al + inşaatı başlat TEK işlemde; başarısızsa hiçbir şey
  * değişmez. `hucreler` yapının bütün ayak izi (kendi + boş hücreler); `sinif` boş hücrelerin (alınacakların) arsa sınıfı.
- * Boş hücreler tek sınıftan değilse atomik yol kullanılamaz: zincir (parsel_al ×sınıf + tesis_insa_hucre) çalışır.
+ * Boş hücreler birden çok sınıftaysa `siniflar` verilir (`hucreler` ile aynı uzunluk, `siniflar[i]` = `hucreler[i]`'nin sınıfı; sahip
+ * olunan hücrenin sınıfı denetlenmez): arsa + yapı yine TEK komuttur, yarım alım olmaz.
  */
 export interface YerlestirIstegi {
   ilce: string;
   tesisTuru: string;
   hucreler: HucreId[];
   sinif: ArsaSinifi;
+  siniflar?: ArsaSinifi[];
 }
 
 /**
@@ -598,6 +600,8 @@ export class SahteBaglanti implements MulkBaglantisi {
     if (!yapi) return red("yapi_yok", "Bu yapı türü kurulamaz");
     if (i.hucreler.length !== yapi.yuva) return red("yuva", `Bu yapı ${yapi.yuva} hücre kaplar (verilen ${i.hucreler.length})`);
     const s_ = k.sahiplik;
+    if (i.siniflar && i.siniflar.length !== i.hucreler.length) return red("sinif_uyusmuyor", `Sınıf listesi hücrelerle aynı uzunlukta olmalı (${i.siniflar.length} / ${i.hucreler.length})`);
+    const sinifi = (id: HucreId): ArsaSinifi => (i.siniflar ? (i.siniflar[i.hucreler.indexOf(id)] ?? i.sinif) : i.sinif);
     const dolu = new Set<HucreId>();
     for (const ins of k.insaatlar) for (const id of ins.hucreler) dolu.add(id);
     const alinacak: HucreId[] = [];
@@ -614,10 +618,12 @@ export class SahteBaglanti implements MulkBaglantisi {
         if (neden) return red("uygunsuz", `${MESAJ.uygunsuz}: ${neden}`, id);
         const kg = kamuGrubuBul(s_.kamu, h.x, h.y);
         if (kg) return red("kamu", kamuNedeni(kg.tur), id);
-        if (arsaSinifi(d) !== i.sinif) return red("sinif_uyusmuyor", MESAJ.sinif_uyusmuyor, id);
+        if (arsaSinifi(d) !== sinifi(id)) return red("sinif_uyusmuyor", MESAJ.sinif_uyusmuyor, id);
         alinacak.push(id);
       }
     }
+    // Çekirdek `alimPlani` gibi: hücreler kimliğe göre sıralı, her biri kendi sınıfında, eğri sırası alım sırasıyla ilerler
+    alinacak.sort((p, q) => (p < q ? -1 : p > q ? 1 : 0));
     let benim = 0;
     for (const h of s_.hucreler.values()) if (h.sahip === this.ben.id) benim++;
     if (benim + alinacak.length > ILCE_HUCRE_SINIRI) return red("hucre_siniri", MESAJ.hucre_siniri);
@@ -625,11 +631,12 @@ export class SahteBaglanti implements MulkBaglantisi {
     const simdi = this.simZamani();
     const suren = k.insaatlar.filter((x) => x.bitis > simdi).length;
     if (suren >= (this.s.esZamanliInsaat ?? 2)) return red("esz_insaat", `Aynı anda en çok ${this.s.esZamanliInsaat ?? 2} inşaat sürebilir`);
-    const arsa = parselFiyatiMili(i.sinif, s_.satilmis, s_.uygun, alinacak.length);
+    const deger = alinacak.map((id, n) => parselFiyatiMili(sinifi(id), s_.satilmis + n, s_.uygun, 1));
+    const arsa = deger.reduce((t, x) => t + x, 0);
     if (this.hazine !== null && this.hazine < arsa + yapi.paraMili) return red("hazine", "Hazinede yeterli para yok");
     // Değişiklikler (artık başarısız olamaz)
     const t = this.saat();
-    alinacak.forEach((id, n) => s_.hucreler.set(id, { sahip: this.ben.id, sinif: i.sinif, degerMili: parselFiyatiMili(i.sinif, s_.satilmis + n, s_.uygun, 1), alinma: t }));
+    alinacak.forEach((id, n) => s_.hucreler.set(id, { sahip: this.ben.id, sinif: sinifi(id), degerMili: deger[n]!, alinma: t }));
     s_.satilmis += alinacak.length;
     if (alinacak.length) this.ilkParselT ??= simdi;
     if (this.hazine !== null) this.hazine -= arsa + yapi.paraMili;

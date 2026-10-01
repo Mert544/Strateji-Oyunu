@@ -11,7 +11,7 @@ import type { ArsaSinifi, HucreId, OyuncuId } from "@bolge/cekirdek";
 import { fmt, paraMili } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import type { IlceSahipligi, YapiKaydi } from "./baglanti";
-import { alimTuru, arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselToplamFiyatiMili, sinirDenetle } from "./fiyat";
+import { alimTuru, arsaSinifi, hucreFiyatiMili, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, sinirDenetle } from "./fiyat";
 import type { AyrilmisHakki } from "./fiyat";
 import { carpBol } from "./olcek";
 import { durumAl, engelNedeni, hucreId } from "./hucre";
@@ -195,7 +195,7 @@ export interface YerlesimPlani {
   neden: string | null;
   /** Aynı işlemde satın alınacak boş hücreler. */
   alinacak: HucreId[];
-  /** `parsel_al` adımları (sınıf başına bir komut), sırasıyla. */
+  /** Satın alınacak hücrelerin sınıf başına dökümü (kart/gösterim; komut tektir: `yapi_yerlestir`, çok sınıfta `siniflar` ile). */
   parseller: ParselAdimi[];
   arsaMili: number;
   /** Yapı parası (mili-₺); ilk-yapı indirimi uygulanmışsa indirimli. */
@@ -266,25 +266,32 @@ export function yerlesimPlani(yapi: YapiTanimi, cx: number, cy: number, donus: n
     }
     hucreler.push({ id, x, y, neden, benim });
   }
-  // Satın alma adımları: sınıf başına, artımlı fiyat (önceki adımlar satılmış sayısını artırır)
-  const gruplar = new Map<ArsaSinifi, HucreId[]>();
+  // Arsa: tek atomik `yapi_yerlestir` (çok sınıfta `siniflar` ile). Çekirdek `alimPlani` ile BİREBİR fiyat: hücreler kimliğe göre (dizge)
+  // sıralanır, her hücre KENDİ sınıfında fiyatlanır; artımlı eğri sırası yalnız ayrılmamış hücrelerde ilerler, ayrılmış hücre taban fiyattadır.
+  // Tek sınıfta toplam sıradan bağımsızdır (eski parsel_al toplamıyla aynı). Adımlar yalnız gösterim/gruplama içindir: sınıf başına bir satır.
+  const fiyatDurumu = { uygun: b.sahiplik.uygun, satilmis: b.sahiplik.satilmis, ayrilmisSatilmis: b.sahiplik.ayrilmisSatilmis ?? 0 };
+  const sinifOf = new Map<HucreId, ArsaSinifi>();
   for (const id of alinacak) {
     const c = hucreler.find((h) => h.id === id)!;
-    const s = arsaSinifi(durumAl(b.izgara, c.x, c.y));
-    let l = gruplar.get(s);
-    if (!l) gruplar.set(s, (l = []));
+    sinifOf.set(id, arsaSinifi(durumAl(b.izgara, c.x, c.y)));
+  }
+  const bedel = new Map<HucreId, number>();
+  let normalSira = 0;
+  for (const id of [...alinacak].sort((p, q) => (p < q ? -1 : p > q ? 1 : 0))) {
+    const sn = sinifOf.get(id)!;
+    bedel.set(id, b.sahiplik.ayrilmis?.has(id) ? hucreFiyatiMili(sn, fiyatDurumu, 0, true) : hucreFiyatiMili(sn, fiyatDurumu, normalSira++, false));
+  }
+  const gruplar = new Map<ArsaSinifi, HucreId[]>();
+  for (const id of alinacak) {
+    const sn = sinifOf.get(id)!;
+    let l = gruplar.get(sn);
+    if (!l) gruplar.set(sn, (l = []));
     l.push(id);
   }
   const parseller: ParselAdimi[] = [];
-  // Her adım sunucuda sırayla uygulanır: satılmış sayısı ve (ayrılmış alındıysa) ayrılmış-satılmış sayacı ilerler
-  let satilmis = b.sahiplik.satilmis;
-  let ayrilmisSatilmis = b.sahiplik.ayrilmisSatilmis ?? 0;
   for (const [sinif, liste] of [...gruplar.entries()].sort((p, q) => (["kirsal", "kasaba", "sehir"].indexOf(p[0]) - ["kirsal", "kasaba", "sehir"].indexOf(q[0])))) {
     const ayrilmis = b.sahiplik.ayrilmis ? liste.filter((h) => b.sahiplik.ayrilmis!.has(h)).length : 0;
-    const mili = parselToplamFiyatiMili(sinif, { uygun: b.sahiplik.uygun, satilmis, ayrilmisSatilmis }, liste.length - ayrilmis, ayrilmis);
-    parseller.push({ sinif, hucreler: liste, mili, ...(ayrilmis > 0 ? { ayrilmis } : {}) });
-    satilmis += liste.length;
-    ayrilmisSatilmis += ayrilmis;
+    parseller.push({ sinif, hucreler: liste, mili: liste.reduce((t, id) => t + (bedel.get(id) ?? 0), 0), ...(ayrilmis > 0 ? { ayrilmis } : {}) });
   }
   const arsaMili = parseller.reduce((t, p) => t + p.mili, 0);
   const indirimli = b.indirim !== undefined && b.indirim.ppm > 0 && b.indirim.kalan > 0;

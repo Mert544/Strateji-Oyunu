@@ -229,17 +229,18 @@ export class WsBaglanti implements MulkBaglantisi {
   }
 
   /**
-   * Sunucu atomik `yapi_yerlestir` komutunu biliyor mu? Protokol paketi (sunucuyla aynı depoda, aynı sürüm) komut şemasında
-   * tanıyorsa evet. Yoksa yerleşim iki komutlu zincirle yürür (`zincir.ts`).
+   * Sunucu atomik `yapi_yerlestir` komutunu (hücre başına sınıf dahil) biliyor mu? Protokol paketi (sunucuyla aynı depoda, aynı sürüm)
+   * komut şemasında tanıyorsa evet. Hayırsa yapı yerleştirme arsa alan bir yolla YAPILMAZ (`zincir.ts`: yarım alım olmaz).
    */
   atomikYerlestirme(): boolean {
-    return komutVarMi({ tur: "yapi_yerlestir", ilce: "x", tesisTuru: "x", hucreler: ["1:1"], sinif: "kirsal" });
+    // Hücre başına sınıf (`siniflar`) da tanınmalı: iki sınıfa düşen yerleşim de TEK komuttur (yarım alım yok)
+    return komutVarMi({ tur: "yapi_yerlestir", ilce: "x", tesisTuru: "x", hucreler: ["1:1"], sinif: "kirsal", siniflar: ["kirsal"] }, "siniflar");
   }
 
   async yapiYerlestir(i: YerlestirIstegi): Promise<TesisSonucu> {
     try {
       // Çekirdek tipinde henüz olmayan komut: şema sürümüne göre sunucu kabul eder (`atomikYerlestirme`).
-      const r = await this.komutGonder({ tur: "yapi_yerlestir", ilce: i.ilce, tesisTuru: i.tesisTuru, hucreler: i.hucreler, sinif: i.sinif } as unknown as Komut);
+      const r = await this.komutGonder({ tur: "yapi_yerlestir", ilce: i.ilce, tesisTuru: i.tesisTuru, hucreler: i.hucreler, sinif: i.sinif, ...(i.siniflar ? { siniflar: i.siniflar } : {}) } as unknown as Komut);
       if (r.tamam) {
         for (const h of i.hucreler) this.insaBaslangic.set(h, r.t);
         return { tamam: true, t: r.t };
@@ -958,12 +959,15 @@ export class WsBaglanti implements MulkBaglantisi {
 
 /** Komut sunucunun komut şemasında var mı? (protokol paketiyle; sunucu aynı şemayı kullanır) */
 const komutOnbellek = new Map<string, boolean>();
-function komutVarMi(k: Record<string, unknown>): boolean {
+function komutVarMi(k: Record<string, unknown>, alan?: string): boolean {
   const tur = String(k["tur"]);
-  let v = komutOnbellek.get(tur);
+  const anahtar = alan ? `${tur}.${alan}` : tur;
+  let v = komutOnbellek.get(anahtar);
   if (v === undefined) {
-    v = KomutSemasi.safeParse(k).success;
-    komutOnbellek.set(tur, v);
+    const r = KomutSemasi.safeParse(k);
+    // `alan` verilirse şema o alanı TANIMALI (zod bilinmeyen alanı sessizce atar; eski sunucu `siniflar`ı yok sayıp yanlış sınıfla alırdı)
+    v = r.success && (alan === undefined || alan in (r.data as unknown as Record<string, unknown>));
+    komutOnbellek.set(anahtar, v);
   }
   return v;
 }
