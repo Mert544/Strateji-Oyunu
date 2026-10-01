@@ -471,7 +471,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Origin: https://kotu.ornek.
 curl -si -X POST "${H[@]}" -d '{"j":"<jeton>"}' -c cerez.txt $U/giris/onay        # beklenen: 200 {"tamam":true,"yeniHesap":true,"oyuncu":"o_..."} + bolge_oturum çerezi (HttpOnly, Secure, SameSite=Lax)
 curl -s -b cerez.txt -X POST -H "Origin: ..." $U/giris/bilet                      # beklenen: {"tamam":true,"bilet":"bil1....","bitis":...} (60 sn, tek kullanım)
 curl -s -b cerez.txt $U/giris/ben                                                 # beklenen: {"tamam":true,"eposta":"davetli@ornek.org","oyuncu":"o_...",...}
-$D logs sunucu | grep -c 'ornek.org'                                              # beklenen: 0 (günlükte tam adres ve jeton yok)
+$D logs sunucu | grep -c 'davetli@'                                               # beklenen: 0 (günlükte tam adres ve jeton yok; posta olayı yalnız maskeli görünür: {"olay":"giris_posta_gonderildi","kime":"d***@ornek.org"} = ilk harf + alan adı)
 ```
 Yerelde doğrulanan: davetliye 1 posta dosyası, davetsize yok ve aynı yanıt, yanlış Origin 403, onay 200, bilet 200, `/giris/ben` 200, günlükte adres yok. Postadaki bağlantıyı kullanmadan önce dosyayı silmek ya da bağlantıyı davetliye iletmek operatör işidir (SMTP yok). Bağlantı 10 dk geçerlidir, tek kullanımlıktır.
 
@@ -508,7 +508,7 @@ PG_BIN=<pg bin dizini> deploy/geri-yukle.sh deploy/yedekler/<en-yeni>.dump "post
 ```
 Yerelde (unix soketli pg 16) doğrulananlar: iki ardışık yedekte `--sakla 1` en eskisini siler; `--sakla 2` ile 2 çift kalır; var olmayan veritabanında `yedek HATA` ve kod 1, eski yedeklere ve yabancı dosyaya (`notlar.txt`) dokunulmaz; `--sakla 0` kod 2; son yedekten `geri-yukle.sh --olustur` sonrası açılan sunucunun `durumOzeti`'si kaynağınkiyle AYNI; `yedek-dongu.sh` başlangıçta bir yedek alır, sonra zamanlanan saatte (bir sonraki gün hesabı dahil) ikincisini alır ve `.son-basari` güncellenir. Konteyner ve healthcheck (`docker compose up`) daemon olmadığı için koşulamadı: ilk gerçek makinede bu adım ilk kez Docker ile denenecek. Yedek servisinin parola yolu `PGPASSWORD` ortamıdır (URI'de parola yok).
 
-**15. Hesap silme (KVKK; e-posta onaylı)** (G5 hesap silme, K2 `hesap-sil`; DOĞRULAMA: belge yazıldı, gerçek pg provası P6 PG adımından sonra yapılacak, bu satır prova sonucuyla güncellenir)
+**15. Hesap silme (KVKK; e-posta onaylı)** (G5 hesap silme, K2 `hesap-sil`; DOĞRULAMA: bu adımın komutları `df0a728`'de gerçek pg 16 (unix soketli küme, `BOLGE_DEPO=pg`) ve e-posta kipi + `--uretim` sunucusuyla, gerçek curl/psql ile Docker'sız denendi: istek 202 ve hiçbir şey silinmedi, GET 200 yan etkisiz, onay 200 çerez temizlendi, hesap/oturum/bağlantı/hesap_oyuncu 0, eski çerez 401, açık ws kod 4003 `oturum kapandi` ile kapandı, ikinci kullanım 400, günlük satırları (md5) aynı, sunucu günlüğünde tam adres ve jeton 0, yeniden kayıt yeni hesap/oyuncu/ad. DENENMEDİ: Docker/compose biçimi ve ters vekil arkasında `Secure` çerezle tarayıcıdan akış)
 Önkoşul: adım 11'deki gibi giriş yapılmış bir TEST hesabı (`cerez.txt` çerezi, `$U`, `$H`); gerçek davetli hesabıyla denemeyin, silme kalıcıdır. **Dağıtım şartları** (hesap silmenin oyun ekranından çalışması için; sunucu kodunda değişiklik gerekmez): (1) ters vekil `/giris/*` yolunu sunucuya iletmeli (`/giris/hesap-sil` ve `/giris/hesap-sil-onay` dahil; posta bağlantısı sunucunun kendi `<genel>/giris/hesap-sil-onay` sayfasına gider, bu yüzden `GENEL_URL` bu yolu sunan adres olmalı); (2) `BOLGE_IZINLI_KOKENLER` istemcinin sunulduğu kökeni (şema + ana makine + port) içermeli, yoksa istekler 403 `origin` alır. Denetim: aşağıdaki isteklerin `Origin` başlığına istemcinin kökenini yazın; 202 ve 200 dönmeli. Silme iki adımdır: istek yalnız onay postası gönderir, hesabı onay siler.
 ```sh
 Q="$D exec -T pg psql -U bolge -d bolge -tAc"
@@ -523,9 +523,10 @@ curl -si -X POST "${H[@]}" -d '{"j":"<jeton>"}' $U/giris/hesap-sil-onay         
 $Q "SELECT count(*) FROM hesap WHERE eposta='davetli@ornek.org'"                   # beklenen: 0 (oturum, bağlantı ve hesap_oyuncu satırları da gider: ON DELETE CASCADE)
 curl -s -o /dev/null -w '%{http_code}\n' -b cerez.txt $U/giris/ben                  # beklenen: 401 (oturum düştü; açık ws kod 4003 ile kapanır)
 curl -s -o /dev/null -w '%{http_code}\n' -X POST "${H[@]}" -d '{"j":"<jeton>"}' $U/giris/hesap-sil-onay   # beklenen: 400 baglanti_gecersiz (ikinci kullanım)
-$Q "$OZ"                                                                           # SONRA: ÖNCEKİYLE AYNI (mülk devredilmez, oyuncu günlükte anonim kalır)
-$Q "SELECT count(*) FROM log WHERE dunya='ana' AND hesap='<oyuncu kimliği>'"       # beklenen: silmeden öncekiyle AYNI (günlük satırları silinmez; e-posta ya da ad günlükte hiç yoktur)
-$D logs sunucu | grep -c 'ornek.org'                                               # beklenen: 0
+$Q "$OZ"                                                                           # SONRA: ÖNCEKİYLE AYNI (görüntü özeti yalnız altı sim-saatte bir yenilenir: kısa denemede aynı çıkması zayıf kanıttır, asıl kanıt günlük karmasıdır, aşağıda)
+$Q "SELECT md5(coalesce(string_agg(seq||komut::text||hesap, ',' ORDER BY seq),'')) FROM log WHERE dunya='ana'"   # ÖNCE ve SONRA aynı olmalı (silme günlüğe komut yazmaz, satır silinmez)
+$Q "SELECT seq, hesap, komut->>'tur' FROM log WHERE dunya='ana' AND komut->>'oyuncu'='<oyuncu kimliği>'"   # oyuncunun satırları kalır: kimlik opaktır (hesap sütunu 'sistem' ya da opak oyuncu kimliği; e-posta ya da ad günlükte hiç yoktur)
+$D logs sunucu | grep -c 'davetli@'                                                # beklenen: 0 (tam adres yok; maskeli 'd***@alan' satırı beklenir)
 ```
 Davet listesi kullanılıyorsa silinen kişinin adresi liste dosyasında kalır: operatör dosyadan çıkarır (kod dokunmaz; kılavuz bölüm 2). Aynı adresle yeniden kayıt YENİ hesap, yeni opak oyuncu ve yeni otomatik ad verir; eski mülk eskisinin kalır. Hız sınırı: hesap başına saatte 3 istek (4.'sü 429 `hiz_siniri`, posta gitmez), onay IP başına sınırlıdır. Ayrıntı ve hata kodları: [KIMLIK.md](KIMLIK.md) (§2 uçlar, §6 hesap silme, §8 KVKK).
 
