@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daireyiCoz, EngelDunyasi, gorusVar, ilerle, karoEngeli, ortenVar } from "../src/yuru/carpisma";
+import { daireyiCoz, EngelDunyasi, gorusVar, ilerle, kameraEngeli, karoEngeli, ortenVar } from "../src/yuru/carpisma";
 import type { AyakIzleri } from "../src/yuru/karo-geometri";
 import { VARSAYILAN_YOL, yolBul } from "../src/yuru/yol-bulma";
 import type { YolSorgusu } from "../src/yuru/yol-bulma";
@@ -99,6 +99,19 @@ describe("yürüyüş: 2B çarpışma ve kayma", () => {
     expect(ortenVar(d, 120, 5, 105, 95, 1, 105)).toBe(true);
     // Kamera 40 m yüksekte ve karakter binaya yakın değil: hat bina üstünden geçer
     expect(ortenVar(d, 140, 60, 105, 90, 1, 105)).toBe(false);
+  });
+
+  it("kamera çarpışması: karakter başından kameraya ilk duvarın oranı", () => {
+    // Karakter x = 95, kamera 20 m doğuda (x = 115) ve 5 m yüksekte; duvar (bina x 100..110, üst 10 m) araya girer.
+    const t = kameraEngeli(d, 95, 1.5, 105, 115, 5, 105);
+    expect(t).toBeCloseTo(5 / 20, 5); // ilk kesişim x = 100
+    // Kamera binanın üstünden geçecek kadar yüksekse engel yok
+    expect(kameraEngeli(d, 95, 1.5, 105, 115, 60, 105)).toBe(1);
+    // Bina yok yönde engel yok
+    expect(kameraEngeli(d, 95, 1.5, 105, 75, 5, 105)).toBe(1);
+    // Karakterin hemen yanındaki duvar (%3 içinde) yok sayılır
+    const ince = dunya([{ h: kare(100, 100, 100.5, 110), bina: 0 }]);
+    expect(kameraEngeli(ince, 99.99, 1.5, 105, 120, 5, 105)).toBe(1);
   });
 });
 

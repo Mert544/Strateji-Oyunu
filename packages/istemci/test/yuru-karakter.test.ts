@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { animasyonDokusu, deriKonumu, karakterCoz, kareIndeksi, kareKaristir } from "../src/yuru/karakter-veri";
+import { HIZ } from "../src/yuru/kontrol";
 
 const DOSYA = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "yuru", "varlik", "karakter.ykr");
 
@@ -70,5 +72,54 @@ describe("yürüyüş: pişirilmiş karakter (Quaternius UAL, CC0)", () => {
       expect(doku).toBeCloseTo(m[i]!, 5);
     }
     expect(kareIndeksi(v.animasyonlar[0]!, 5)).toEqual([0, 0, 0]);
+  });
+});
+
+describe("yürüyüş: karakter varyantı (düşük poligon, boyut bütçesi)", () => {
+  const b = readFileSync(DOSYA);
+  const v = karakterCoz(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer);
+
+  it("üçgen ≤ 4.500, kemik ≤ 24 (parmaklar ele, ayak parmakları ayağa katılı)", () => {
+    expect(v.indeks.length / 3).toBeLessThanOrEqual(4500);
+    expect(v.indeks.length / 3).toBeGreaterThan(2500);
+    expect(v.kemik).toBeLessThanOrEqual(24);
+  });
+
+  it("dosya boyutu: gzip ≤ 120 KB (önceki 204 KB'ın %40 altı)", () => {
+    expect(gzipSync(b, { level: 9 }).length).toBeLessThanOrEqual(120 * 1024);
+  });
+
+  it("oynatma oranı: yürü 4, koş 7, depar 10 m/s hızlarında ~1,6–2,1×", () => {
+    const hizlar: [string, number][] = [
+      ["yuru", HIZ.yuru],
+      ["kos", HIZ.kos],
+      ["depar", HIZ.depar],
+    ];
+    for (const [ad, hiz] of hizlar) {
+      const a = v.animasyonlar.find((x) => x.ad === ad)!;
+      expect(hiz / a.hiz).toBeGreaterThan(1.6);
+      expect(hiz / a.hiz).toBeLessThan(2.1);
+    }
+  });
+
+  it("deri giydirilmiş sınırlayıcı kutu her animasyon karesinde makul (kemik katılımı şekli bozmaz)", () => {
+    const m = new Float32Array(v.kemik * 12);
+    for (const a of v.animasyonlar) {
+      for (let k = 0; k < a.kare; k++) {
+        kareKaristir(v, a, a.sure ? (k / a.kare) * a.sure : 0, m);
+        let yMax = -Infinity;
+        let yMin = Infinity;
+        let r = 0;
+        for (let i = 0; i < v.kose; i += 7) {
+          const [x, y, z] = deriKonumu(v, m, i);
+          yMax = Math.max(yMax, y);
+          yMin = Math.min(yMin, y);
+          r = Math.max(r, Math.hypot(x, z));
+        }
+        expect(yMax).toBeLessThan(2.3);
+        expect(yMin).toBeGreaterThan(-0.35);
+        expect(r).toBeLessThan(1.4);
+      }
+    }
   });
 });

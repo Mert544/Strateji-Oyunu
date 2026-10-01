@@ -6,6 +6,10 @@
  *   → karo akışı (1,5 km öteye geçiş, kayan orijin) → Esc / "‹ Haritaya dön" ile haritaya dönüş
  *   (+ masaüstünde uzun basma ve Y kısayolu, inşaat yer tutucuları ve bayraklar, koyu tema; ölçüm: çizim çağrısı, fps).
  *
+ * İkinci tur (kamera ve his): üçüncü şahıs kamera (14 m, ~35°, karakter ekranın ~%10'u; tekerlek 6–40 m; sağ tık/sürükle
+ * yörünge; tıkla-git yolunda kamera karakterin arkasına geçer), oyunsu hızlar (4 / 7 / 10 m/s), kısa zıplama, eski yan
+ * panelin gizlenmesi, ipucu şeridinin solması, düşük ufuk kamerasında ≤60 çizim çağrısı ve kent sokağı (bina duvarına
+ * çarpan kamera) denetlenir.
  * Masaüstü 1440×900 ve mobil 390×844. Sayfa küçük, Range destekli yerel HTTP sunucusundan açılır:
  * istemci/dunya.html + harita.js + yuru.js + harita-verisi/ (karolar/gebze-z15.pmtiles dahil; hepsini pnpm dunya üretir).
  * fps SwiftShader'a (CPU) görelidir; gerçek GPU'da çok daha yüksek olması beklenir.
@@ -183,6 +187,7 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   // Satın alma bildirimi telefonda kartın üstüne binebilir: kapat (bildirime dokunmak kapatır)
   await sayfa.locator("#bildirimler .bildirim").evaluateAll((l) => l.forEach((x) => (x as HTMLElement).click()));
   await sayfa.waitForTimeout(300);
+  const panelOnce = await sayfa.locator("#panel").isVisible();
   const t0 = Date.now();
   if (mobil) await dugme.tap();
   else await dugme.click();
@@ -202,6 +207,20 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   kontrol(`${e} küre askıda`, (await sayfa.evaluate(() => window.__olcum?.sahne.askida)) === true);
   olcumler[`${cihaz}-giris`] = { girisMs, cizim: d.cizim, ucgen: d.ucgen, karo: d.karo };
   await ekran("1-giris");
+
+  // Kamera, ekran düzeni ve eski panel
+  const ke = await sayfa.evaluate(() => window.__yuru!.karakterEkran());
+  kontrol(`${e} karakter ekran yüksekliğinin %8–12'si`, ke.oran >= 0.08 && ke.oran <= 0.125, `%${(ke.oran * 100).toFixed(1)} (${ke.piksel.toFixed(0)} px)`);
+  const kd0 = await sayfa.evaluate(() => window.__yuru!.kameraDurum());
+  const derece = (kd0.egim * 180) / Math.PI;
+  kontrol(`${e} varsayılan kamera: arkada, 10–14 m, 30–40°`, kd0.mesafe >= 10 && kd0.mesafe <= 14 && derece >= 30 && derece <= 40, `${kd0.mesafe} m, ${derece.toFixed(0)}°`);
+  const ayakAlt = ke.ayak[1] > (mobil ? 844 : 900) * 0.5;
+  kontrol(`${e} karakter kadrajın alt yarısında (ufuk ve sokak görünür)`, ayakAlt, `ayak y = ${ke.ayak[1].toFixed(0)}`);
+  kontrol(`${e} eski yan panel (Bölge / Dikkat / Devlet seç) gizli`, (await sayfa.locator("#panel").isHidden()) && (await sayfa.getByText("Devlet seç").first().isHidden()));
+  const kapGen = await sayfa.evaluate(() => document.getElementById("yuru-kap")!.getBoundingClientRect().width);
+  kontrol(`${e} yürüyüş sahnesi tüm genişliği kaplar`, Math.abs(kapGen - (mobil ? 390 : 1440)) < 2, `${kapGen} px`);
+  kontrol(`${e} kısa ipucu şeridi görünür (ilk 10 sn)`, await sayfa.locator(".yuru-ipucu").isVisible());
+  kontrol(`${e} üst sol "‹ Haritaya dön", mini harita, ODbL atfı duruyor`, (await sayfa.locator(".yuru-geri").isVisible()) && (await sayfa.locator(".yuru-mini").isVisible()) && (await sayfa.locator(".yuru-atif").isVisible()));
 
   // E / hap: parsel kartı (başlangıç hücresi bizim)
   if (mobil) await sayfa.locator(".yuru-hap").tap();
@@ -223,6 +242,57 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   const havada = (await yuruDurum(sayfa))!;
   await sayfa.waitForFunction(() => window.__yuru?.durum().y === 0, null, { timeout: 5000 }).catch(() => undefined);
   kontrol(`${e} zıpladı ve indi`, havada.y > 0.1 && havada.anim === "zipla" && (await yuruDurum(sayfa))!.y === 0, `tepe örneği ${havada.y.toFixed(2)} m`);
+
+  // Oyunsu hızlar: yürüme ~4, koşu ~7, depar ~10 m/s (anlık; ivme yok)
+  if (!mobil) {
+    await sayfa.locator(".yuru-tuval").focus();
+    await sayfa.keyboard.down("KeyW");
+    await sayfa.waitForTimeout(700);
+    const hKos = (await yuruDurum(sayfa))!.hiz;
+    await sayfa.keyboard.down("Shift");
+    await sayfa.waitForTimeout(500);
+    const hDepar = (await yuruDurum(sayfa))!;
+    await sayfa.keyboard.up("Shift");
+    await sayfa.keyboard.up("KeyW");
+    kontrol(`${e} W koşu ~7 m/s, Shift depar ~10 m/s`, hKos > 6 && hKos < 8 && hDepar.hiz > 9 && hDepar.hiz < 11 && hDepar.anim === "depar", `${hKos.toFixed(1)} / ${hDepar.hiz.toFixed(1)} m/s (${hDepar.anim})`);
+  } else {
+    await dokunSurukle(sayfa, 90, 640, 90, 620, 600);
+    const hYuru = (await yuruDurum(sayfa))!.hiz;
+    kontrol(`${e} sanal çubuğu az itmek ~4 m/s yürütür`, hYuru === 0 || (hYuru > 3.3 && hYuru < 4.7), `${hYuru.toFixed(1)} m/s`);
+  }
+  // Kamera: tekerlek/ayar sınırı 6–40 m, sağ tık yörüngesi
+  await sayfa.evaluate(() => window.__yuru!.kamera({ mesafe: 999 }));
+  const uzak = await sayfa.evaluate(() => window.__yuru!.kameraDurum().mesafe);
+  await sayfa.evaluate(() => window.__yuru!.kamera({ mesafe: 0.1 }));
+  const yakin = await sayfa.evaluate(() => window.__yuru!.kameraDurum().mesafe);
+  kontrol(`${e} kamera yakınlaşma sınırı 6–40 m`, uzak === 40 && yakin === 6, `${yakin} … ${uzak} m`);
+  if (!mobil) {
+    await sayfa.mouse.move(720, 450);
+    for (let i = 0; i < 40; i++) await sayfa.mouse.wheel(0, 300);
+    await sayfa.waitForTimeout(150);
+    const w1 = await sayfa.evaluate(() => window.__yuru!.kameraDurum().mesafe);
+    for (let i = 0; i < 60; i++) await sayfa.mouse.wheel(0, -300);
+    await sayfa.waitForTimeout(150);
+    const w2 = await sayfa.evaluate(() => window.__yuru!.kameraDurum().mesafe);
+    kontrol(`${e} tekerlek 6–40 m arası yakınlaştırır`, Math.abs(w1 - 40) < 0.01 && Math.abs(w2 - 6) < 0.01, `${w2.toFixed(1)} … ${w1.toFixed(1)} m`);
+    await ekran("3a-yakin");
+    await sayfa.evaluate(() => window.__yuru!.kamera({ mesafe: 14, egim: 0.62 }));
+    const y0 = (await sayfa.evaluate(() => window.__yuru!.kameraDurum())).yaw;
+    await sayfa.mouse.move(720, 400);
+    await sayfa.mouse.down({ button: "right" });
+    await sayfa.mouse.move(800, 400, { steps: 6 });
+    await sayfa.mouse.up({ button: "right" });
+    const y1 = (await sayfa.evaluate(() => window.__yuru!.kameraDurum())).yaw;
+    kontrol(`${e} sağ tık sürükleme kamerayı yörüngede döndürür`, Math.abs(y1 - y0) > 0.3, `Δyaw ${(y1 - y0).toFixed(2)} rad`);
+    await sayfa.mouse.move(720, 400);
+    await sayfa.mouse.down();
+    await sayfa.mouse.move(640, 400, { steps: 6 });
+    await sayfa.mouse.up();
+    const y2 = (await sayfa.evaluate(() => window.__yuru!.kameraDurum())).yaw;
+    kontrol(`${e} sol tık sürükleme de döndürür (tıklama değil: yol kurulmaz)`, Math.abs(y2 - y1) > 0.3 && ((await yuruDurum(sayfa))?.yol ?? 1) === 0, `Δyaw ${(y2 - y1).toFixed(2)} rad`);
+  }
+  await sayfa.evaluate(() => window.__yuru!.kamera({ mesafe: 14, egim: 0.62 }));
+  await sayfa.waitForTimeout(1300);
 
   // Koş: WASD (masaüstü) / sanal çubuk (telefon)
   let once = d.dunya;
@@ -254,8 +324,15 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
     else await sayfa.mouse.click(h.x, h.y);
     await sayfa.waitForTimeout(300);
     const yolVar = ((await yuruDurum(sayfa))?.yol ?? 0) > 0;
+    // Kamerayı yandan sapıt: elle bekleme (1,1 sn) bitince yolda giderken karakterin arkasına hızla geçmeli
+    await sayfa.evaluate(() => window.__yuru!.kamera({ yaw: window.__yuru!.kameraDurum().yaw + 1.5 }));
     await sayfa.waitForFunction(() => (window.__yuru?.durum().yol ?? 1) === 0, null, { timeout: 40000 }).catch(() => undefined);
     d = (await yuruDurum(sayfa))!;
+    {
+      const kk = await sayfa.evaluate(() => window.__yuru!.kameraDurum());
+      const fark = Math.abs((((kk.yaw - (kk.yon + Math.PI)) % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI);
+      kontrol(`${e} tıkla-git yolunda kamera karakterin arkasına geçti`, fark < 0.5, `fark ${fark.toFixed(2)} rad`);
+    }
     const kalan = Math.hypot(d.dunya[0] - h.dunya[0], d.dunya[1] - h.dunya[1]);
     kontrol(`${e} ${mobil ? "dokun" : "tıkla"}-git hedefe vardı`, yolVar && kalan < 2, `kalan ${kalan.toFixed(2)} m, yürünen ${Math.hypot(d.dunya[0] - once[0], d.dunya[1] - once[1]).toFixed(1)} m`);
     await ekran("4-tikla-git");
@@ -299,6 +376,20 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   kontrol(`${e} karo akışı: uzak noktada 3×3 pencere hazır, orijin kaydı`, d.karo.hazir === 9 && (d.orijin[0] !== orijin0[0] || d.orijin[1] !== orijin0[1]), `orijin ${orijin0.map((v) => v.toFixed(0))} → ${d.orijin.map((v) => v.toFixed(0))}, ${JSON.stringify(d.karo)}`);
   await ekran("6-akis");
 
+  // Ufka bakan alçak kamera (en çok pencere görünür): çizim çağrısı bütçesi
+  await sayfa.evaluate(() => window.__yuru!.kamera({ egim: 0.1, mesafe: 6 }));
+  await sayfa.waitForTimeout(300);
+  const ufuk = await sayfa.evaluate(() => window.__yuru!.olc(800));
+  kontrol(`${e} ufka bakan alçak kamerada çizim çağrısı ≤ 60`, ufuk.cizimEnCok <= 60, `${ufuk.cizimEnCok} çağrı`);
+  olcumler[`${cihaz}-ufuk`] = ufuk;
+  await ekran("6a-ufuk");
+  await sayfa.evaluate(() => window.__yuru!.kamera({ egim: 0.62, mesafe: 14 }));
+
+  // İpucu şeridi ilk ~10 sn sonra solar
+  await sayfa.waitForFunction(() => document.querySelector(".yuru-ipucu")?.classList.contains("solgun") === true, null, { timeout: 15000 }).catch(() => undefined);
+  await sayfa.waitForTimeout(1400);
+  kontrol(`${e} ipucu şeridi 10 sn sonra soldu`, await sayfa.locator(".yuru-ipucu").isHidden());
+
   // Ölçüm: yürürken (masaüstü W basılı) ve boşta
   if (!mobil) await sayfa.keyboard.down("KeyW");
   const yuruOlc = await sayfa.evaluate(() => window.__yuru!.olc(3000));
@@ -306,6 +397,19 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   const bostaOlc = await sayfa.evaluate(() => window.__yuru!.olc(2000));
   olcumler[`${cihaz}-olcum`] = { yururken: yuruOlc, bosta: bostaOlc };
   kontrol(`${e} ölçüm: çizim çağrısı ≤ 60`, yuruOlc.cizimEnCok <= 60, `${yuruOlc.cizimEnCok} çağrı, ${yuruOlc.ucgenEnCok} üçgen, ${yuruOlc.fps.toFixed(1)} fps (SwiftShader), CPU ${yuruOlc.cpuMsOrt.toFixed(1)} ms/kare`);
+
+  // Kent sokağı (Gebze'de bitişik apartman blokları): kamera duvara çarpınca öne çekilir, bina ve sokak birlikte görünür
+  await sayfa.evaluate(() => window.__yuru!.git(29.42714, 40.81348));
+  await sayfa.waitForTimeout(400);
+  await yuruHazir(sayfa);
+  await sayfa.waitForTimeout(500);
+  const kent = await sayfa.evaluate(() => ({ d: window.__yuru!.durum(), k: window.__yuru!.kameraDurum(), e: window.__yuru!.karakterEkran() }));
+  kontrol(`${e} kent sokağında çizim ≤ 60, kamera mesafesi ≤ ayar`, kent.d.cizim > 0 && kent.d.cizim <= 60 && kent.k.etkin <= kent.k.mesafe + 1e-6, `${kent.d.cizim} çağrı, etkin ${kent.k.etkin.toFixed(1)}/${kent.k.mesafe} m, karakter %${(kent.e.oran * 100).toFixed(1)}`);
+  await ekran("6b-kent");
+  await sayfa.evaluate(() => window.__yuru!.kamera({ mesafe: 7, egim: 0.45 }));
+  await sayfa.waitForTimeout(300);
+  await ekran("6c-kent-yakin");
+  await sayfa.evaluate(() => window.__yuru!.kamera({ mesafe: 14, egim: 0.62 }));
 
   if (!mobil) {
     // Koyu tema
@@ -324,6 +428,7 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   const harita = await sayfa.evaluate(() => window.__harita?.durum() ?? null);
   kontrol(`${e} ${mobil ? "‹ Haritaya dön" : "Esc"} ile haritaya döndü (L3 korunur)`, !d.acik && (await sayfa.locator("#yuru-kap").isHidden()) && harita?.duzey === 3, JSON.stringify(harita));
   await ekran("8-donus");
+  kontrol(`${e} haritaya dönünce yan panel eski durumuna döndü`, (await sayfa.locator("#panel").isVisible()) === panelOnce, `önce ${panelOnce ? "görünür" : "gizli"}`);
 
   if (!mobil) {
     // Uzun basma (L3): basılan noktada yürüyüş; bot parsellerine yakın açılır ve inşaat yer tutucuları görünür
@@ -351,7 +456,7 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
       d = (await yuruDurum(sayfa))!;
       kontrol(`${e} uzun basma ile yürüyüş açıldı`, d.acik && d.hazir, d.hucre);
       kontrol(`${e} inşaat yer tutucuları ve bayraklar örneklenmiş`, d.arsa.insaat > 20, `${d.arsa.insaat} örnek kutu`);
-      await sayfa.evaluate(() => window.__yuru?.kamera({ yaw: 0.6, egim: 0.85, mesafe: 70 }));
+      await sayfa.evaluate(() => window.__yuru?.kamera({ yaw: 0.6, egim: 0.8, mesafe: 40 }));
       await sayfa.waitForTimeout(600);
       await ekran("9-insaat");
       await sayfa.keyboard.press("Escape");

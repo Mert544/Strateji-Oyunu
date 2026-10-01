@@ -147,13 +147,16 @@ function birimKutu(): { konum: Float32Array; golge: Uint8Array; indeks: Uint16Ar
   return { konum: Float32Array.from(konum), golge: Uint8Array.from(golge), indeks: Uint16Array.from(indeks) };
 }
 
-const IZGARA_R = 6; // hücre (solma 2–5,5 hücre; malzeme)
+/** Izgara yarıçapı (hücre): çok soluk ve karakterin yakınında (solma ~14–50 m; sahne.ts), yakın planda gürültü yapmasın. */
+const IZGARA_R = 3;
+/** Parsel kenar şeridi genişliği (m): kendi arsan kalın, başkalarınınki ince (şerit: kenar çizgisi 1 piksele inip kaybolmasın). */
+const KENAR_GENISLIK = { ben: 0.26, baskasi: 0.12 } as const;
 const SAHIPLIK_R = 45; // hücre (~1,3 km)
 
 export class ArsaKatmani {
   readonly izgara: LineSegments;
   readonly dolgu: Mesh;
-  readonly kenar: LineSegments;
+  readonly kenar: Mesh;
   readonly insaat: Mesh;
   private izgaraCapa = { x: NaN, y: NaN };
   private sahiplikCapa = { x: NaN, y: NaN };
@@ -172,7 +175,7 @@ export class ArsaKatmani {
     this.palet = palet;
     this.izgara = new LineSegments(new BufferGeometry(), malz.izgara);
     this.dolgu = new Mesh(new BufferGeometry(), malz.dolgu);
-    this.kenar = new LineSegments(new BufferGeometry(), malz.kenar);
+    this.kenar = new Mesh(new BufferGeometry(), malz.kenar);
     const kutu = birimKutu();
     const g = new InstancedBufferGeometry();
     g.setAttribute("position", new BufferAttribute(kutu.konum, 3));
@@ -264,6 +267,7 @@ export class ArsaKatmani {
     const ix: number[] = [];
     const kk: number[] = [];
     const kr: number[] = [];
+    const kx: number[] = [];
     if (s) {
       for (const [id, h] of s.hucreler) {
         const c = idCoz(id);
@@ -283,9 +287,17 @@ export class ArsaKatmani {
         // Kenar: yalnız komşusu aynı sahipte olmayan kenarlar (birleşik parsel tek çerçeve)
         const ayni = (dx: number, dy: number): boolean => s.hucreler.get(`${c.x + dx}:${c.y + dy}`)?.sahip === h.sahip;
         const ka = ben ? 0.95 : 0.5;
+        // Eksene paralel kenar → ince dörtgen şerit (uçlar yarım genişlik uzar: köşelerde boşluk kalmaz)
+        const yari = KENAR_GENISLIK[ben ? "ben" : "baskasi"] / 2;
         const ekle = (ax: number, az: number, bx: number, bz: number): void => {
-          kk.push(ax, 0.06, az, bx, 0.06, bz);
-          kr.push(renk[0], renk[1], renk[2], ka, renk[0], renk[1], renk[2], ka);
+          const x0k = Math.min(ax, bx) - yari;
+          const x1k = Math.max(ax, bx) + yari;
+          const z0k = Math.min(az, bz) - yari;
+          const z1k = Math.max(az, bz) + yari;
+          const t = kk.length / 3;
+          kk.push(x0k, 0.06, z0k, x1k, 0.06, z0k, x1k, 0.06, z1k, x0k, 0.06, z1k);
+          for (let q = 0; q < 4; q++) kr.push(renk[0], renk[1], renk[2], ka);
+          kx.push(t, t + 2, t + 1, t, t + 3, t + 2);
         };
         if (!ayni(0, -1)) ekle(x0, z0, x1, z0);
         if (!ayni(0, 1)) ekle(x0, z1, x1, z1);
@@ -300,8 +312,9 @@ export class ArsaKatmani {
     const e = this.kenar.geometry;
     e.setAttribute("position", new BufferAttribute(Float32Array.from(kk), 3));
     e.setAttribute("aRenk", new BufferAttribute(Float32Array.from(kr), 4));
+    e.setIndex(kx.length ? new BufferAttribute(Uint32Array.from(kx), 1) : null);
     this.dolgu.visible = ix.length > 0;
-    this.kenar.visible = kk.length > 0;
+    this.kenar.visible = kx.length > 0;
   }
 
   /**
@@ -338,9 +351,9 @@ export class ArsaKatmani {
       const ben = b.sahip === this.ben;
       const bx = (c.x - this.cerceve.X0) * k + k * 0.08;
       const bz = (c.y - this.cerceve.Y0) * k + k * 0.08;
-      const boy = ben ? 9 : 5.5;
+      const boy = ben ? 7 : 4.5;
       kutu(bx, 0, bz, 0.22, boy, 0.22, this.palet.koyu ? [0.75, 0.78, 0.82] : [0.35, 0.37, 0.4]);
-      kutu(bx + 0.22, boy - (ben ? 1.6 : 1.1), bz, ben ? 2.6 : 1.6, ben ? 1.5 : 1, 0.1, ben ? this.palet.ben : this.palet.baskasi);
+      kutu(bx + 0.22, boy - (ben ? 1.4 : 1.0), bz, ben ? 2.2 : 1.4, ben ? 1.3 : 0.9, 0.1, ben ? this.palet.ben : this.palet.baskasi);
     }
     const g = this.insaat.geometry as InstancedBufferGeometry;
     g.setAttribute("aOfset", new InstancedBufferAttribute(Float32Array.from(of), 3));

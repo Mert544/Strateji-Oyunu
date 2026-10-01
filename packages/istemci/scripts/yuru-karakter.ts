@@ -7,6 +7,11 @@
  * Kaynak: https://quaternius.itch.io/universal-animation-library (Standard paketi, `Unreal-Godot/UAL1_Standard.glb`,
  * kök hareketi kapalı sürüm). Lisans CC0 1.0 (paketteki License.txt).
  *
+ * Boyut (1 Ekim, ikinci tur): ağ ~%75 sadeleştirilir (scripts/yuru-sadelestir.ts; kamera artık ~14 m'de, karakter
+ * ekran yüksekliğinin ~%10'u), parmak kemikleri ele ve ayak parmağı kemikleri ayağa katılır (52 → 20 kemik) ve yürüme
+ * döngüleri 12–18 kare/sn örneklenir (gölgelendirici kareler arasında doğrusal karıştırır). Doğal hızlar oyun
+ * hızlarına (yürü 4, koş 7, depar 10 m/s) göre ayarlıdır: oynatma oranı ~1,8× kalır.
+ *
  * Neden pişirme: çalışma zamanında GLTFLoader + SkinnedMesh + AnimationMixer kabuğa (three köprüsü) ~40 KB gzip
  * eklerdi ve tek dosya bütçesi (400 KB) buna yer bırakmıyor. Bunun yerine kemik matrisleri kare kare örneklenir
  * (`bone.matrixWorld × boneInverse`), int16 olarak saklanır; çalışma zamanında bir animasyon dokusuna (kemik × 3 satır,
@@ -25,18 +30,34 @@ import { gzipSync } from "node:zlib";
 import { AnimationMixer, Box3, Matrix4, Vector3 } from "three";
 import type { AnimationClip, BufferGeometry, Object3D, SkinnedMesh } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { sadelestir } from "./yuru-sadelestir";
 
 const AYRI = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CIKTI = join(AYRI, "src", "yuru", "varlik", "karakter.ykr");
 
-/** Pişirilecek animasyonlar: [kaynak ad, çıktı ad, kare/sn; 0 = tek kare (poz)]. */
-const ANIMASYONLAR: [string, string, number][] = [
-  ["Idle_Loop", "dur", 0],
-  ["Walk_Loop", "yuru", 24],
-  ["Jog_Fwd_Loop", "kos", 24],
-  ["Sprint_Loop", "depar", 30],
-  ["Jump_Loop", "zipla", 0],
+/**
+ * Pişirilecek animasyonlar: [kaynak ad, çıktı ad, kare/sn (0 = tek kare poz), doğal hız m/s].
+ * Doğal hız, oyun hızına (HIZ: 4 / 7 / 10 m/s) göre oynatma oranını ~1,8× tutar; ayak kayması sınırlı kalır.
+ */
+const ANIMASYONLAR: [string, string, number, number][] = [
+  ["Idle_Loop", "dur", 0, 0],
+  ["Walk_Loop", "yuru", 12, 2.2],
+  ["Jog_Fwd_Loop", "kos", 14, 3.9],
+  ["Sprint_Loop", "depar", 18, 5.4],
+  ["Jump_Loop", "zipla", 0, 0],
 ];
+
+/** Hedef üçgen sayısı (kaynak 13.744); ikinci argüman ya da YURU_UCGEN ile değiştirilir. */
+const HEDEF_UCGEN = Number(process.argv[3] ?? process.env["YURU_UCGEN"] ?? 3600);
+
+/** Sadeleştirmede kemik katılımı: parmaklar ele, ayak parmağı ayağa (sakin görsel; kamera uzak). */
+function kemikBirlestir(ad: string): string {
+  const p = /^(?:index|middle|pinky|ring|thumb)_\d+(?:_leaf)?_([lr])$/.exec(ad);
+  if (p) return `hand_${p[1]}`;
+  const a = /^ball(?:_leaf)?_([lr])$/.exec(ad);
+  if (a) return `foot_${a[1]}`;
+  return ad;
+}
 
 const DON_OLCEK = 1 / 16000;
 const OTELEME_OLCEK = 1 / 8000;
@@ -69,6 +90,12 @@ async function main(): Promise<void> {
     w: [number, number, number, number];
   }
   const koseler: Kose[] = [];
+  // Kemik katılımı: kaynak kemik → katılan kemik (ad eşlemesiyle)
+  const ilkKemik = (b: number): number => {
+    const ad = kemikBirlestir(iskelet.bones[b]!.name);
+    const i = iskelet.bones.findIndex((x) => x.name === ad);
+    return i >= 0 ? i : b;
+  };
   const anahtar = new Map<string, number>();
   const indeks: number[] = [];
   agler.forEach((ag, m) => {
@@ -80,8 +107,17 @@ async function main(): Promise<void> {
     const yeni: number[] = [];
     for (let i = 0; i < P.count; i++) {
       const p: [number, number, number] = [P.getX(i), P.getY(i), P.getZ(i)];
-      const j: [number, number, number, number] = [J.getX(i), J.getY(i), J.getZ(i), J.getW(i)];
-      const wr = [W.getX(i), W.getY(i), W.getZ(i), W.getW(i)];
+      // Aynı kemiğe katılan etkileri topla (en büyük dört kalır)
+      const toplamAgirlik = new Map<number, number>();
+      for (const [jj, ww] of [[J.getX(i), W.getX(i)], [J.getY(i), W.getY(i)], [J.getZ(i), W.getZ(i)], [J.getW(i), W.getW(i)]] as const)
+        if (ww > 0) toplamAgirlik.set(ilkKemik(jj), (toplamAgirlik.get(ilkKemik(jj)) ?? 0) + ww);
+      const sirali = [...toplamAgirlik].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 4);
+      const j: [number, number, number, number] = [0, 0, 0, 0];
+      const wr = [0, 0, 0, 0];
+      sirali.forEach(([b, ww], q) => {
+        j[q] = b;
+        wr[q] = ww;
+      });
       const top = wr.reduce((a, b) => a + b, 0) || 1;
       // Ağırlıkları 0–255'e niceleyip toplamı 255'e tamamla
       const wq = wr.map((x) => Math.round((x / top) * 255));
@@ -111,8 +147,60 @@ async function main(): Promise<void> {
       if (a !== b && b !== c && a !== c) indeks.push(a, b, c);
     }
   });
+  const kaynakUcgen = indeks.length / 3;
+  const kaynakKose = koseler.length;
+
+  // --- Sadeleştirme (dörtlü hata; deri ağırlığı farkı ek maliyet; bölge dikişleri korunur) ---
+  const agirlikFarki = (a: number, b: number): number => {
+    const ka = koseler[a]!;
+    const kb = koseler[b]!;
+    const t = new Map<number, number>();
+    for (let q = 0; q < 4; q++) {
+      t.set(ka.j[q]!, (t.get(ka.j[q]!) ?? 0) + ka.w[q]! / 255);
+      t.set(kb.j[q]!, (t.get(kb.j[q]!) ?? 0) - kb.w[q]! / 255);
+    }
+    let d = 0;
+    for (const x of t.values()) d += Math.abs(x);
+    return d;
+  };
+  const konumDizisi = Float64Array.from(koseler.flatMap((k) => k.p));
+  const sade = sadelestir(konumDizisi, indeks, { hedef: HEDEF_UCGEN, ekMaliyet: (u, v) => 4e-4 * agirlikFarki(u, v) });
+  console.log(`sadeleştirme: ${kaynakUcgen} → ${sade.indeks.length / 3} üçgen (${sade.cokertme} çökertme, son hata ${sade.sonHata.toExponential(2)} m²)`);
+  // Kullanılan köşeleri sıkıştır
+  const yeniNo = new Int32Array(koseler.length).fill(-1);
+  const sadeKoseler: Kose[] = [];
+  for (const i of sade.indeks) {
+    if (yeniNo[i]! < 0) {
+      yeniNo[i] = sadeKoseler.length;
+      sadeKoseler.push(koseler[i]!);
+    }
+  }
+  koseler.length = 0;
+  koseler.push(...sadeKoseler);
+  indeks.length = 0;
+  for (const i of sade.indeks) indeks.push(yeniNo[i]!);
+  // Normaller: konum + malzeme grubu başına alan ağırlıklı yüz normali (düzgün gölgeleme, dikişlerde kesinti yok)
+  {
+    const grup = new Map<string, [number, number, number]>();
+    const gk = (k: Kose): string => `${k.m}|${k.p.map((x) => Math.round(x * 2000)).join(",")}`;
+    for (const k of koseler) grup.set(gk(k), [0, 0, 0]);
+    for (let f = 0; f < indeks.length; f += 3) {
+      const [a, b, c] = [koseler[indeks[f]!]!, koseler[indeks[f + 1]!]!, koseler[indeks[f + 2]!]!];
+      const u = [b.p[0] - a.p[0], b.p[1] - a.p[1], b.p[2] - a.p[2]];
+      const v = [c.p[0] - a.p[0], c.p[1] - a.p[1], c.p[2] - a.p[2]];
+      const n = [u[1]! * v[2]! - u[2]! * v[1]!, u[2]! * v[0]! - u[0]! * v[2]!, u[0]! * v[1]! - u[1]! * v[0]!];
+      for (const k of [a, b, c]) {
+        const g = grup.get(gk(k))!;
+        g[0] += n[0]!;
+        g[1] += n[1]!;
+        g[2] += n[2]!;
+      }
+    }
+    for (const k of koseler) k.n = [...grup.get(gk(k))!] as Kose["n"];
+  }
   const V = koseler.length;
   if (V >= 65536) throw new Error(`çok köşe: ${V}`);
+  console.log(`köşe ${kaynakKose} → ${V}`);
 
   // --- Kullanılan kemikler ---
   const kullanilan = [...new Set(koseler.flatMap((k) => k.j.filter((_, i) => k.w[i]! > 0)))].sort((a, b) => a - b);
@@ -129,7 +217,7 @@ async function main(): Promise<void> {
   const M = new Matrix4();
   const v = new Vector3();
   const ayakAdi = iskelet.bones.findIndex((b) => /^ball_l$/.test(b.name));
-  for (const [kaynak, ad, fps] of ANIMASYONLAR) {
+  for (const [kaynak, ad, fps, hizSabit] of ANIMASYONLAR) {
     const klip = animasyonlar.find((a) => a.name === kaynak);
     if (!klip) throw new Error(`animasyon yok: ${kaynak}`);
     karisici.stopAllAction();
@@ -174,7 +262,9 @@ async function main(): Promise<void> {
       }
     }
     // Doğal hız (yaklaşık): döngüde iki adım; her adımda gövde, ayak ucunun ileri-geri genliği kadar ilerler.
-    const hiz = fps === 0 || !Number.isFinite(zMax) ? 0 : (2 * (zMax - zMin)) / klip.duration;
+    const kestirim = fps === 0 || !Number.isFinite(zMax) ? 0 : (2 * (zMax - zMin)) / klip.duration;
+    console.log(`  ${ad}: ayak genliğinden kestirilen hız ${kestirim.toFixed(2)} m/s, kullanılan ${hizSabit}`);
+    const hiz = hizSabit;
     animBilgi.push({ ad, kare: F, sure: fps === 0 ? 0 : klip.duration, hiz });
   }
   const boy = kutu.max.y - kutu.min.y;

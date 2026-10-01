@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aciYaklas, animasyonSec, cubukDegeri, hareketYonu, HIZ, ileriSag, kameraKonumu, kameraSinirla, yerKesisimi, yonAcisi, ziplaAdimi } from "../src/yuru/kontrol";
+import { aciYaklas, animasyonSec, arkaYaw, bakisNoktasi, cubukDegeri, ekranOrani, hareketYonu, HIZ, ileriSag, KAMERA_GORUS, KAMERA_SINIR, kameraKonumu, kameraSinirla, VARSAYILAN_KAMERA, yawTakip, yerKesisimi, yonAcisi, ZIPLA, ziplaAdimi } from "../src/yuru/kontrol";
 
 describe("yürüyüş: kamera ve kontrol matematiği", () => {
   it("yaw = 0: kamera güneyde, ileri kuzey (−z), sağ doğu (+x)", () => {
@@ -42,8 +42,61 @@ describe("yürüyüş: kamera ve kontrol matematiği", () => {
   it("kamera sınırları", () => {
     const d = kameraSinirla({ yaw: 9, egim: 3, mesafe: 1000 });
     expect(d.egim).toBeLessThan(1.5);
-    expect(d.mesafe).toBe(70);
+    expect(d.mesafe).toBe(40);
+    expect(kameraSinirla({ yaw: 0, egim: 0, mesafe: 1 }).mesafe).toBe(6);
     expect(d.yaw).toBe(9);
+  });
+
+  it("varsayılan kamera: arkada ve hafif üstte (10–14 m, 30–40°), karakter ekranın ~%8–12'si", () => {
+    const k = VARSAYILAN_KAMERA;
+    expect(k.mesafe).toBeGreaterThanOrEqual(10);
+    expect(k.mesafe).toBeLessThanOrEqual(14);
+    const derece = (k.egim * 180) / Math.PI;
+    expect(derece).toBeGreaterThanOrEqual(30);
+    expect(derece).toBeLessThanOrEqual(40);
+    const oran = ekranOrani(1.8, k.mesafe);
+    expect(oran).toBeGreaterThan(0.08);
+    expect(oran).toBeLessThan(0.12);
+    expect(KAMERA_SINIR.mesafeMin).toBe(6);
+    expect(KAMERA_SINIR.mesafeMax).toBe(40);
+    // Karakter kameranın önünde: kamera hedefin gerisinde (yaw = 0 → +z) ve yukarıda
+    const c = kameraKonumu([0, 1.3, 0], k);
+    expect(c[2]).toBeGreaterThan(8);
+    expect(c[1]).toBeGreaterThan(1.3 + 4);
+  });
+
+  it("bakış noktası karakterin önündedir (kamera yönünde) ve alçaktır: ufuk kadrajda kalır", () => {
+    const b = bakisNoktasi([0, 1.3, 0], { yaw: 0, egim: 0.62, mesafe: 14 });
+    expect(b[2]).toBeLessThan(-4); // yaw 0: ileri = −z
+    expect(b[1]).toBeLessThan(1.3);
+    const b2 = bakisNoktasi([0, 1.3, 0], { yaw: Math.PI / 2, egim: 0.62, mesafe: 14 });
+    expect(b2[0]).toBeLessThan(-4);
+  });
+
+  it("kamera yaw'ı karakterin arkasına hızla geçer; el bekleyişinde ve durunca değişmez", () => {
+    const yon = 1.0;
+    const hedef = arkaYaw(yon);
+    expect(arkaYaw(yon)).toBeCloseTo(yon + Math.PI, 12);
+    let yaw = hedef + 2;
+    yaw = yawTakip(yaw, yon, 1 / 60, true, false);
+    expect(Math.abs(yaw - (hedef + 2))).toBeCloseTo(KAMERA_GORUS.takipHizi / 60, 9);
+    expect(yawTakip(yaw, yon, 1 / 60, false, false)).toBe(yaw);
+    expect(yawTakip(yaw, yon, 1 / 60, true, true)).toBe(yaw);
+    // 0,6 sn içinde yarım turu (π) kapatır: "hızlı" ama sabit hız
+    let y = hedef + Math.PI;
+    for (let i = 0; i < 40; i++) y = yawTakip(y, yon, 1 / 60, true, false);
+    expect(Math.abs(y - hedef)).toBeLessThan(0.01);
+  });
+
+  it("oyunsu hızlar: yürüme ~4, koşu ~7, depar ~10 m/s; dönüş anında", () => {
+    expect(HIZ.yuru).toBeCloseTo(4, 0);
+    expect(HIZ.kos).toBeCloseTo(7, 0);
+    expect(HIZ.depar).toBeCloseTo(10, 0);
+    // yarım tur ≤ 0,1 sn
+    expect(Math.PI / HIZ.donus).toBeLessThan(0.1);
+    expect(animasyonSec(HIZ.kos * 0.97, false)).toBe("kos");
+    expect(animasyonSec(HIZ.depar * 0.97, false)).toBe("depar");
+    expect(animasyonSec(HIZ.yuru * 0.97, false)).toBe("yuru");
   });
 
   it("sanal çubuk: ölü bölge, yukarı ileri, büyüklük ≤ 1", () => {
@@ -68,12 +121,13 @@ describe("yürüyüş: kamera ve kontrol matematiği", () => {
     expect(animasyonSec(HIZ.kos, false)).toBe("kos");
     expect(animasyonSec(HIZ.depar, false)).toBe("depar");
     expect(animasyonSec(HIZ.kos, true)).toBe("zipla");
-    expect(HIZ.depar / HIZ.kos).toBeGreaterThan(1.5);
+    expect(HIZ.depar / HIZ.kos).toBeGreaterThan(1.4);
+    expect(HIZ.kos / HIZ.yuru).toBeGreaterThan(1.6);
   });
 
-  it("zıplama: yükselir, tepe ~0,85 m, ~0,65 s sonra yere iner", () => {
+  it("zıplama kısa: tepe ~0,4–0,5 m, ~0,35–0,4 s sonra yere iner", () => {
     let y = 0;
-    let vy = 5.2;
+    let vy: number = ZIPLA.hiz;
     let tepe = 0;
     let t = 0;
     const dt = 1 / 60;
@@ -82,10 +136,10 @@ describe("yürüyüş: kamera ve kontrol matematiği", () => {
       tepe = Math.max(tepe, y);
       t += dt;
     } while (y > 0 && t < 3);
-    expect(tepe).toBeGreaterThan(0.7);
-    expect(tepe).toBeLessThan(1);
-    expect(t).toBeGreaterThan(0.5);
-    expect(t).toBeLessThan(0.8);
+    expect(tepe).toBeGreaterThan(0.35);
+    expect(tepe).toBeLessThan(0.55);
+    expect(t).toBeGreaterThan(0.3);
+    expect(t).toBeLessThan(0.45);
     expect(vy).toBe(0);
   });
 });

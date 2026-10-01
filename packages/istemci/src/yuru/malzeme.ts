@@ -14,15 +14,15 @@ export interface SisAyari {
 }
 
 /**
- * Çatı kesme ve yakın duvar atma (bina ve kenar çizgileri ortak): kameraya 7 m'den yakın parçalar ve karakteri
- * örten yarık içindeki parçalar atılır. `vYer` dünya (yerel çizim) konumudur.
+ * Çatı kesme ve yakın duvar atma (bina ve kenar çizgileri ortak): kameraya 1 m'den yakın parçalar (kamera bina duvarına
+ * çarpınca öne çekilir; bu yalnız son güvence) ve karakteri örten yarık içindeki parçalar atılır. `vYer` dünya (yerel çizim) konumudur.
  */
 const KES_F = /* glsl */ `
 uniform vec4 uKes;
 uniform vec2 uKesP;
 varying vec3 vYer;
 void kes() {
-  if (vYer.y > 0.25 && vUzak < 7.0) discard;
+  if (vYer.y > 0.25 && vUzak < 1.0) discard;
   if (uKesP.x > 0.5 && vYer.y > 0.25) {
     vec2 a = uKes.xy;
     vec2 ab = uKes.zw - a;

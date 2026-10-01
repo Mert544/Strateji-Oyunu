@@ -282,3 +282,25 @@ export function ortenVar(d: EngelDunyasi, kx: number, ky: number, kz: number, hx
   });
   return var_;
 }
+
+/**
+ * Kamera çarpışması: karakter başından (h) kameraya (k) giden hat boyunca ilk bina duvarının konumu, başlangıçtan
+ * (karakter) kameraya oran olarak [0, 1]; engel yoksa 1. Hat 2B'de bir kenarı kesiyorsa ve kesişimde hattın yüksekliği
+ * binanın üst kotunun altındaysa engel sayılır. Karakterin hemen yanındaki (%3) duvarlar yok sayılır.
+ */
+export function kameraEngeli(d: EngelDunyasi, hx: number, hy: number, hz: number, kx: number, ky: number, kz: number): number {
+  let enYakin_ = 1;
+  d.kenarlar(Math.min(kx, hx), Math.min(kz, hz), Math.max(kx, hx), Math.max(kz, hz), (ax, az, bx, bz, ust) => {
+    const rx = kx - hx;
+    const rz = kz - hz;
+    const sx = bx - ax;
+    const sz = bz - az;
+    const den = rx * sz - rz * sx;
+    if (Math.abs(den) < 1e-12) return;
+    const t = ((ax - hx) * sz - (az - hz) * sx) / den;
+    const u = ((ax - hx) * rz - (az - hz) * rx) / den;
+    if (t <= 0.03 || t >= 1 || u < 0 || u > 1) return;
+    if (hy + (ky - hy) * t < ust && t < enYakin_) enYakin_ = t;
+  });
+  return enYakin_;
+}

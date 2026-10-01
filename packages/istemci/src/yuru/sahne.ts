@@ -2,9 +2,11 @@
  * L4 yürüyüş sahnesi (yuru.js yığınının girişi): küreden ve haritadan bağımsız ayrı bir three.js sahnesi.
  *
  * Gerçek sokak: Protomaps z15 karoları (işçide geometriye çevrilir), ~3×3 karo (~2,8 km) pencere, kayan orijin.
- * Oyun hissi (Capital Rift örneği): tepkisel kinematik kontrolcü (WASD/oklar anında koşu, Shift depar, Boşluk zıplama,
- * tıkla-git + yol bulma; telefonda dokun-git + sanal çubuk + Zıpla), 2B çarpışma ve kayma; gecikmesiz takip kamerası
- * (sürükle: döndür, tekerlek: yakınlaş); bina karakteri örtünce yarık kesme. Karakterler örneklenmiş (Quaternius
+ * Oyun hissi (Capital Rift / Minecraft örneği): tepkisel kinematik kontrolcü (WASD/oklar anında koşu 7 m/s, Shift depar
+ * 10 m/s, çubukla yürüme 4 m/s, anında dönüş, kısa zıplama, tıkla-git + yol bulma; telefonda dokun-git + sanal çubuk +
+ * Zıpla), 2B çarpışma ve kayma; üçüncü şahıs takip kamerası (karakterin arkasında, 14 m, ~35°; gecikmesiz konum;
+ * sağ tık/sürükle: yörünge, tekerlek: 6–40 m; tıkla-git yolunda karakterin arkasına hızla geçer; bina duvarına girerse
+ * öne çekilir); kamera çatıların üstündeyken karakteri örten binada yarık kesme. Karakterler örneklenmiş (Quaternius
  * manken, CC0; tek çizim çağrısı, ileride diğer oyuncular). Karolar karakterle akar (ilçenin tamamında kesintisiz).
  * Arsa ızgarası yakın çevrede, parsel bayrakları uzaktan; bağlamsal `[E]` hapı (yönet / yapı kur / bilgi / satın al);
  * mini harita; ODbL atfı. Çizim yalnız bir şey değişince yapılır (boşta 0 fps).
@@ -19,7 +21,7 @@ import { ARAZI_ADLARI, durumAl, durumSinifi, engelNedeni, hucreId, kisaAd, satin
 import type { Izgara } from "../harita/hucre";
 import { ArsaKatmani, ASAMA_ADI, insaatKaynagiMi, ornekInsaatlar } from "./arsa";
 import type { InsaatBilgisi } from "./arsa";
-import { daireyiCoz, gorusVar, ilerle, karoEngeli, ortenVar } from "./carpisma";
+import { daireyiCoz, gorusVar, ilerle, kameraEngeli, karoEngeli, ortenVar } from "./carpisma";
 import { Girdi } from "./girdi";
 import { etkilesimSec } from "./etkilesim";
 import type { Etkilesim } from "./etkilesim";
@@ -28,7 +30,7 @@ import KaroIsci from "./karo.worker?worker&inline";
 import { KaroYonetici } from "./karo-yonetici";
 import { cerceveKur, dunyaHucre, dunyaKaro, dunyaLl, karoKenari, llDunya, orijinGerekli, orijinKaydir } from "./koordinat";
 import type { Cerceve, Orijin } from "./koordinat";
-import { aciYaklas, animasyonSec, hareketYonu, HIZ, KARAKTER_R, kameraKonumu, kameraSinirla, VARSAYILAN_KAMERA, yerKesisimi, yonAcisi, ZIPLA, ziplaAdimi } from "./kontrol";
+import { aciYaklas, animasyonSec, arkaYaw, bakisNoktasi, hareketYonu, HIZ, KAMERA_GORUS, KARAKTER_R, kameraKonumu, kameraSinirla, VARSAYILAN_KAMERA, yawTakip, yerKesisimi, yonAcisi, ZIPLA, ziplaAdimi } from "./kontrol";
 import type { KameraDurumu } from "./kontrol";
 import { binaMalzemesi, cizgiMalzemesi, katmanMalzemesi, kutuMalzemesi, temaGuncelle, yerMalzemesi } from "./malzeme";
 import type { SisAyari } from "./malzeme";
@@ -89,13 +91,22 @@ declare global {
       sinamaHedef: (enAz?: number, enCok?: number) => { x: number; y: number; dunya: [number, number] } | null;
       /** Kamera durumunu ayarla (ekran görüntüleri için). */
       kamera: (k: Partial<KameraDurumu>) => void;
+      /** Kamera ayarı, etkin mesafe (bina çarpışması sonrası), karakter yönü ve kamera konumu. */
+      kameraDurum: () => KameraDurumu & { etkin: number; yon: number; konum: [number, number, number] };
+      /** Karakterin ekrandaki boyu: ekran yüksekliğine oranı, piksel boyu ve ayak noktası. */
+      karakterEkran: () => { oran: number; piksel: number; ayak: [number, number]; bas: [number, number] };
       /** Karakteri dünya metresiyle göreli taşı (karo akışı sınaması). */
       isinla: (dx: number, dz: number) => void;
+      /** Karakteri boylam/enlem noktasına taşı (sınama; çarpışma dışı noktaya iner). */
+      git: (boylam: number, enlem: number) => void;
     };
   }
 }
 
-const SIS: SisAyari = { yakin: 320, uzak: 860 };
+/** Sis: yakın derinlik sakin ve yumuşak; ufuktaki binalar silik, pencere kenarı (≥925 m) hiç görünmez. */
+const SIS: SisAyari = { yakin: 200, uzak: 760 };
+/** Kısa ipucu şeridi bu kadar sn sonra solar. */
+const IPUCU_SURESI = 10_000;
 const DUR_HIZ = 0.05;
 
 let cssEklendi = false;
@@ -105,7 +116,7 @@ export class YuruSahnesi {
   private tuval: HTMLCanvasElement;
   private renderer: WebGLRenderer | null = null;
   private sahne = new Scene();
-  private kamera = new PerspectiveCamera(45, 1, 0.3, 1400);
+  private kamera = new PerspectiveCamera(KAMERA_GORUS.dikeyAci, 1, KAMERA_GORUS.yakin, KAMERA_GORUS.uzak);
   private isci: Worker | null = null;
   private palet: YuruPaleti;
   private malz: Record<"yer" | "bina" | "cizgi" | "izgara" | "dolgu" | "kenar" | "kutu" | "isaret", ShaderMaterial>;
@@ -145,7 +156,11 @@ export class YuruSahnesi {
   private takili = 0;
   private cubuk: [number, number] = [0, 0];
   private kam: KameraDurumu = { ...VARSAYILAN_KAMERA };
-  private kamHedef: [number, number, number] = [0, 1.25, 0];
+  private kamHedef: [number, number, number] = [0, KAMERA_GORUS.hedefYuksek, 0];
+  /** Bina çarpışmasından sonra etkin kamera mesafesi (m) ve son elle döndürme anı (ms). */
+  private kamEtkin: number = VARSAYILAN_KAMERA.mesafe;
+  private kamElSon = -1e9;
+  private ipucuZamani = 0;
   private hucre = { x: NaN, y: NaN };
   private kesme = false;
 
@@ -176,7 +191,7 @@ export class YuruSahnesi {
       yer: yerMalzemesi(p, SIS),
       bina,
       cizgi: cizgiMalzemesi(p, SIS, bina),
-      izgara: katmanMalzemesi(1, [2.2 * 29, 5.5 * 29], p, SIS),
+      izgara: katmanMalzemesi(1, [14, 50], p, SIS),
       dolgu: katmanMalzemesi(1, null, p, SIS),
       kenar: katmanMalzemesi(1, null, p, SIS),
       kutu: kutuMalzemesi(p, SIS),
@@ -197,7 +212,7 @@ export class YuruSahnesi {
       <button type="button" class="yuru-hap" data-eylem="kart" hidden>${mobil ? "" : "<kbd>E</kbd>"}<span></span></button>
       <button type="button" class="yuru-zipla yalniz-dokunma" data-eylem="zipla" aria-label="Zıpla">Zıpla</button>
       <section class="yuru-kart" aria-label="Parsel kartı" hidden></section>
-      <div class="yuru-ipucu">${mobil ? "Dokun: git · solda sürükle: koş · sağda: kamera" : "Tıkla: git · WASD / oklar: koş · Shift: depar · Boşluk: zıpla · sürükle: kamera · tekerlek: yakınlaş · E: etkileşim · Esc: dön"}</div>
+      <div class="yuru-ipucu">${mobil ? "Solda sürükle: koş · sağda sürükle: kamera · dokun: git" : "WASD: koş · Shift: depar · Boşluk: zıpla · sağ tık sürükle: kamera · tekerlek: yakınlaş · E: etkileşim"}</div>
       <div class="yuru-atif"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap katkıcıları</a> · <a href="https://protomaps.com" target="_blank" rel="noopener">Protomaps</a> · Karakter: Quaternius (CC0)</div>
       <div class="yuru-durum" role="status" aria-live="polite"></div>`;
     this.kap.append(this.mini.tuval);
@@ -208,6 +223,7 @@ export class YuruSahnesi {
     this.girdi = new Girdi(this.tuval, this.kap, {
       tikla: (x, y) => this.tikla(x, y),
       dondur: (dx, dy) => {
+        this.kamElSon = performance.now();
         this.kam = kameraSinirla({ yaw: this.kam.yaw - dx * 0.0062, egim: this.kam.egim + dy * 0.0045, mesafe: this.kam.mesafe });
         this.iste();
       },
@@ -248,7 +264,7 @@ export class YuruSahnesi {
     // Karakter gölgesi (yumuşak disk) ve tıkla-git hedef halkası
     this.golge = new Mesh(diskGeometrisi(0.55, 0.32, this.palet.golge), this.malz.isaret);
     // Oyuncu halkası: karakter uzaktan ve kalabalıkta seçilsin (oyuncu renginde, durağan)
-    this.halka = new Mesh(halkaGeometrisi(0.62, 0.78, this.palet.ben), this.malz.isaret);
+    this.halka = new Mesh(halkaGeometrisi(0.5, 0.62, this.palet.ben), this.malz.isaret);
     this.halka.renderOrder = 4;
     this.sahne.add(this.halka);
     this.golge.renderOrder = 4;
@@ -263,11 +279,21 @@ export class YuruSahnesi {
       sinamaHedef: (a, b) => this.sinamaHedef(a, b),
       kamera: (k) => {
         this.kam = kameraSinirla({ ...this.kam, ...k });
+        this.kamEtkin = Math.min(this.kamEtkin, this.kam.mesafe);
+        this.kamElSon = performance.now();
         this.iste();
       },
+      kameraDurum: () => ({ ...this.kam, etkin: this.kamEtkin, yon: this.yon, konum: this.kamera.position.toArray() as [number, number, number] }),
+      karakterEkran: () => this.karakterEkran(),
       isinla: (dx, dz) => {
         this.x += dx;
         this.z += dz;
+        this.yolBirak();
+        this.iste();
+      },
+      git: (boylam, enlem) => {
+        [this.x, this.z] = llDunya(this.cerceve, boylam, enlem);
+        this.dogusDuzelt();
         this.yolBirak();
         this.iste();
       },
@@ -314,6 +340,7 @@ export class YuruSahnesi {
     this.z = z;
     this.hiz = 0;
     this.kam = { ...VARSAYILAN_KAMERA };
+    this.kamEtkin = this.kam.mesafe;
     this.orijin = orijinKaydir(x, z, karoKenari(this.cerceve));
     if (!this.isci) {
       this.isci = new KaroIsci();
@@ -347,9 +374,11 @@ export class YuruSahnesi {
     while (this.acik && this.g === g && !this.karolar.hazir(true, this.merkezKaro) && performance.now() - t0 < 10_000) await new Promise((r) => setTimeout(r, 50));
     if (!this.acik || this.g !== g) return;
     this.dogusDuzelt();
+    this.acilisBakisi();
     this.hazir = true;
     this.durumYaz("");
-    this.kamHedef = [this.x - this.orijin.x, 1.25, this.z - this.orijin.z];
+    this.kamHedef = [this.x - this.orijin.x, KAMERA_GORUS.hedefYuksek, this.z - this.orijin.z];
+    this.ipucuGoster();
     this.tuval.focus({ preventScroll: true });
     this.iste();
   }
@@ -357,6 +386,8 @@ export class YuruSahnesi {
   kapat(): void {
     if (!this.acik) return;
     this.acik = false;
+    if (this.ipucuZamani) clearTimeout(this.ipucuZamani);
+    this.ipucuZamani = 0;
     this.kap.hidden = true;
     document.body.classList.remove("yuru-acik");
     this.girdi.sifirla();
@@ -453,7 +484,7 @@ export class YuruSahnesi {
     this.isaret.geometry.dispose();
     this.isaret.geometry = halkaGeometrisi(0.55, 0.8, this.palet.ben);
     this.halka.geometry.dispose();
-    this.halka.geometry = halkaGeometrisi(0.62, 0.78, this.palet.ben);
+    this.halka.geometry = halkaGeometrisi(0.5, 0.62, this.palet.ben);
     this.mini.gecersiz();
     this.iste();
   }
@@ -461,6 +492,41 @@ export class YuruSahnesi {
   private durumYaz(m: string): void {
     this.ui.durum.textContent = m;
     this.ui.durum.hidden = !m;
+  }
+
+  /**
+   * Açılışta karakter ve kamera en uzun serbest koridora (genelde sokağa) bakar: kamera karakterin arkasında durur.
+   * Eşit uzunlukta koridorlarda kuzeye en yakın olan seçilir.
+   */
+  private acilisBakisi(): void {
+    const e = this.karolar?.engel;
+    if (!e) return;
+    let enIyi = -1;
+    let aci = Math.PI;
+    const adaylar = Array.from({ length: 24 }, (_, i) => (i / 24) * Math.PI * 2).sort((a, b) => Math.abs(a - Math.PI) - Math.abs(b - Math.PI));
+    for (const a of adaylar) {
+      const dx = Math.sin(a);
+      const dz = Math.cos(a);
+      let s = 0;
+      for (let d = 8; d <= 96; d += 8) {
+        if (!gorusVar(e, this.x, this.z, this.x + dx * d, this.z + dz * d, KARAKTER_R + 0.2)) break;
+        s = d;
+      }
+      if (s > enIyi) {
+        enIyi = s;
+        aci = a;
+      }
+    }
+    this.yon = aci;
+    this.kam = { ...this.kam, yaw: arkaYaw(aci) };
+    this.kamEtkin = this.kam.mesafe;
+  }
+
+  /** Kısa ipucu şeridi: açılışta görünür, 10 sn sonra solar (CSS geçişi). */
+  private ipucuGoster(): void {
+    this.ui.ipucu.classList.remove("solgun");
+    if (this.ipucuZamani) clearTimeout(this.ipucuZamani);
+    this.ipucuZamani = window.setTimeout(() => this.ui.ipucu.classList.add("solgun"), IPUCU_SURESI);
   }
 
   /** Doğuş noktası bir binanın içindeyse ya da çarpışıyorsa en yakın serbest noktaya taşı (sarmal arama). */
@@ -700,7 +766,7 @@ export class YuruSahnesi {
     const c0 = performance.now();
     let devam = this.surekli;
     if (this.hazir) devam = this.adim(dt) || devam;
-    this.kameraGuncelle();
+    this.kameraGuncelle(dt);
     this.renderer.render(this.sahne, this.kamera);
     this.cizim = this.renderer.info.render.calls;
     this.ucgen = this.renderer.info.render.triangles;
@@ -731,9 +797,11 @@ export class YuruSahnesi {
       vx = (dx / L) * hedefHiz;
       vz = (dz / L) * hedefHiz;
     } else if (this.yol.length) {
+      const yolHiz = this.yolDepar || tg.kos ? HIZ.depar : HIZ.kos;
       let [hx, hz] = this.yol[0]!;
       let d = Math.hypot(hx - this.x, hz - this.z);
-      while (d < 0.25 && this.yol.length) {
+      // Ara noktayı geçerken sapmamak için eşik, bir karede alınan yola göre büyür
+      while (d < Math.max(0.25, yolHiz * dt * 0.6) && this.yol.length) {
         this.yol.shift();
         if (!this.yol.length) break;
         [hx, hz] = this.yol[0]!;
@@ -741,7 +809,7 @@ export class YuruSahnesi {
       }
       if (!this.yol.length) this.isaret.visible = false;
       else {
-        hedefHiz = this.yolDepar || tg.kos ? HIZ.depar : HIZ.kos;
+        hedefHiz = yolHiz;
         if (this.yol.length === 1) hedefHiz = Math.min(hedefHiz, Math.max(1.2, d * 6));
         vx = ((hx - this.x) / d) * hedefHiz;
         vz = ((hz - this.z) / d) * hedefHiz;
@@ -758,7 +826,11 @@ export class YuruSahnesi {
         if (this.takili > 0.6) this.yolBirak();
       } else this.takili = 0;
       this.hiz = gercek;
+      // Dönüş anında (oyunsu); kamera yalnız tıkla-git yolunda karakterin arkasına hızla geçer, WASD'de elle
+      // döndürülmedikçe sabit kalır (yan basışta kamera dönmez: kayarak yürümek Minecraft/Roblox gibi)
       if (gercek > DUR_HIZ) this.yon = aciYaklas(this.yon, yonAcisi(vx, vz), HIZ.donus * dt);
+      const yoldaGidiyor = this.yol.length > 0 && !tg.ileri && !tg.sag && !this.cubuk[0] && !this.cubuk[1];
+      this.kam = { ...this.kam, yaw: yawTakip(this.kam.yaw, this.yon, dt, yoldaGidiyor && gercek > DUR_HIZ, performance.now() - this.kamElSon < KAMERA_GORUS.elBekleme * 1000) };
     } else this.hiz = 0;
     // Zıplama (kinematik; binaların üstüne çıkılmaz, çarpışma 2B)
     const havada = this.y > 0 || this.vy > 0;
@@ -770,7 +842,7 @@ export class YuruSahnesi {
       this.animZaman = 0;
     }
     const a = this.kalabalik?.animasyon(ad);
-    if (a && a.hiz > 0) this.animZaman += dt * Math.min(1.7, Math.max(0.7, this.hiz / a.hiz));
+    if (a && a.hiz > 0) this.animZaman += dt * Math.min(2.2, Math.max(0.6, this.hiz / a.hiz));
     const hareket = this.hiz > DUR_HIZ || havada;
 
     // Kayan orijin
@@ -801,21 +873,55 @@ export class YuruSahnesi {
     return hareket || this.yol.length > 0 || ileri !== 0 || sag !== 0;
   }
 
-  /** Takip kamerası: gecikmesiz (oyun hissi); zıplamada hedef yarı yüksekliği izler. */
-  private kameraGuncelle(): void {
-    const hedef: [number, number, number] = [this.x - this.orijin.x, 1.25 + this.y * 0.5, this.z - this.orijin.z];
+  /**
+   * Üçüncü şahıs takip kamerası: karakterin arkasında ve hafif üstünde; konum gecikmesizdir (oyun hissi). Bakış noktası
+   * karakterin biraz önündedir, böylece karakter kadrajın alt üçte birinde durur ve ufuk görünür. Kamera bina duvarına
+   * girecekse karaktere doğru öne çekilir (anlık), duvar kalkınca hızla geri açılır. Duvar yerine kamera binaların
+   * üstündeyse karakteri örten çatıda yarık açılır.
+   */
+  private kameraGuncelle(dt: number): void {
+    const lx = this.x - this.orijin.x;
+    const lz = this.z - this.orijin.z;
+    const hedef: [number, number, number] = [lx, KAMERA_GORUS.hedefYuksek + this.y * 0.35, lz];
     this.kamHedef = hedef;
-    const [cx, cy, cz] = kameraKonumu(hedef, this.kam);
-    this.kamera.position.set(cx, Math.max(0.6, cy), cz);
-    this.kamera.lookAt(hedef[0], hedef[1], hedef[2]);
-    this.kamera.updateMatrixWorld();
-    // Çatı kesme: kamera → karakter başı hattını bina örtüyorsa yarık aç
     const e = this.karolar?.engel;
+    const ham = kameraKonumu(hedef, this.kam);
+    let izinli = this.kam.mesafe;
+    if (e && this.hazir) {
+      const t = kameraEngeli(e, this.x, hedef[1], this.z, ham[0] + this.orijin.x, Math.max(0.6, ham[1]), ham[2] + this.orijin.z);
+      if (t < 1) izinli = Math.max(KAMERA_GORUS.enKisa, Math.min(this.kam.mesafe, this.kam.mesafe * t - 0.7));
+    }
+    this.kamEtkin = Math.min(this.kamEtkin, this.kam.mesafe);
+    if (izinli < this.kamEtkin) this.kamEtkin = izinli;
+    else this.kamEtkin = Math.min(izinli, this.kamEtkin + KAMERA_GORUS.geriAcma * dt);
+    const d = { ...this.kam, mesafe: this.kamEtkin };
+    const [cx, cy, cz] = kameraKonumu(hedef, d);
+    const bak = bakisNoktasi(hedef, d);
+    this.kamera.position.set(cx, Math.max(0.6, cy), cz);
+    this.kamera.lookAt(bak[0], bak[1], bak[2]);
+    this.kamera.updateMatrixWorld();
+    // Çatı kesme: kamera → karakter başı hattını bina örtüyorsa yarık aç (kamera çatıların üstündeyken)
     const kes = !!e && this.hazir && ortenVar(e, cx + this.orijin.x, cy, cz + this.orijin.z, this.x, 1.6 + this.y, this.z);
     this.kesme = kes;
     const u = this.malz.bina.uniforms;
     u["uKesP"]!.value = [kes ? 1 : 0, 4.2];
     u["uKes"]!.value = [hedef[0], hedef[2], cx, cz];
+  }
+
+  /** Karakterin ekrandaki boyu (ayak → baş): sınama ve ayar için. */
+  private karakterEkran(): { oran: number; piksel: number; ayak: [number, number]; bas: [number, number] } {
+    const w = this.tuval.clientWidth;
+    const h = this.tuval.clientHeight;
+    const lx = this.x - this.orijin.x;
+    const lz = this.z - this.orijin.z;
+    const nokta = (y: number): [number, number] => {
+      const v = new Vector3(lx, y, lz).project(this.kamera);
+      return [((v.x + 1) / 2) * w, ((1 - v.y) / 2) * h];
+    };
+    const ayak = nokta(this.y);
+    const bas = nokta(this.y + 1.78);
+    const piksel = Math.hypot(ayak[0] - bas[0], ayak[1] - bas[1]);
+    return { oran: piksel / h, piksel, ayak, bas };
   }
 
   // --- ölçüm ve sınama ---------------------------------------------------------------------------------
