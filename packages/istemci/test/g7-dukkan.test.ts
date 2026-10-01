@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { Scene, ShaderMaterial } from "three";
 import type { IlceSahipligi } from "../src/harita/baglanti";
+import { dukkanSimgeKatmani, oyunKatmanlari, yapiDolguRengi } from "../src/harita/stil";
 import { MARKA_RENK_SAYISI, MARKA_SIMGELERI, DUKKAN_SIMGELERI, dukkanSimgesi, markaRenkBelirteci } from "../src/tasarim/marka";
 import { ArsaKatmani, asamaKutulari, dukkanKutulari, ornekInsaatlar } from "../src/yuru/arsa";
 import type { InsaatBilgisi } from "../src/yuru/arsa";
@@ -84,5 +85,69 @@ describe("örnek veri ve katman", () => {
     expect(eksik).toBe(say([{ hucre: "10:10", asama: 2 }])); // inşaat sürerken dükkân görünümü yok
     expect(sahne.children.length).toBe(4); // izgara, dolgu, kenar, kutu: dükkân ek nesne açmaz
     expect(kat.engelHalkalari()[0]!.ust).toBeLessThan(10);
+  });
+});
+
+describe("L3 dükkân boyası", () => {
+  const r = (ad: string): string => `#${ad.length.toString(16).padStart(2, "0")}0000`;
+  it("yapı dolgusu: marka özelliği varsa oyuncu paleti (12 renk), yoksa yapının kendi rengi", () => {
+    const e = yapiDolguRengi(r) as unknown as unknown[];
+    expect(e[0]).toBe("case");
+    expect(e[1]).toEqual(["has", "m"]);
+    expect((e[2] as unknown[]).length).toBe(2 + 12 * 2 + 1);
+    expect(e[3]).toEqual(["get", "c"]);
+  });
+  it("dükkân simge katmanı yalnız simgeler kayıtlıysa eklenir; yalnız bitmiş dükkânlarda", () => {
+    expect(oyunKatmanlari(r, false).some((l) => l.id === "dukkan-simge")).toBe(false);
+    expect(oyunKatmanlari(r, false, true).some((l) => l.id === "dukkan-simge")).toBe(true);
+    const k = dukkanSimgeKatmani(r);
+    expect(k.type).toBe("symbol");
+    expect(JSON.stringify((k as { filter: unknown }).filter)).toContain('"has","d"');
+  });
+});
+
+/** Kullanılan ifade alt kümesi için katı değerlendirici (case, has, get, match, all, >=, concat): olmayan alanı `get` ile okumak HATA. */
+function degerle(e: unknown, o: Record<string, unknown>): unknown {
+  if (!Array.isArray(e)) return e;
+  const [op, ...a] = e as [string, ...unknown[]];
+  switch (op) {
+    case "get": {
+      if (!((a[0] as string) in o)) throw new Error(`olmayan alan okundu: ${a[0] as string}`);
+      return o[a[0] as string];
+    }
+    case "has": return (a[0] as string) in o;
+    case "case": {
+      for (let i = 0; i + 1 < a.length; i += 2) if (degerle(a[i], o)) return degerle(a[i + 1], o);
+      return degerle(a[a.length - 1], o);
+    }
+    case "match": {
+      const v = degerle(a[0], o);
+      for (let i = 1; i + 1 < a.length; i += 2) if (a[i] === v) return a[i + 1];
+      return a[a.length - 1];
+    }
+    case "all": return a.every((x) => degerle(x, o));
+    case ">=": return (degerle(a[0], o) as number) >= (degerle(a[1], o) as number);
+    case "concat": return a.map((x) => String(degerle(x, o))).join("");
+    default: throw new Error(`desteklenmeyen işlem: ${op}`);
+  }
+}
+
+describe("L3 dükkân ifadeleri sahte GeoJSON özellikleriyle", () => {
+  const r = (ad: string): string => `renk${ad}`;
+  const duz = { c: "#123456", a: 3 }; // dükkân olmayan yapı: d ve m alanları hiç yok
+  const dukkan = { c: "#123456", a: 3, d: "bakkal", m: 4 };
+  const insaatDukkan = { c: "#123456", a: 1, d: "firin", m: 2 };
+  it("dolgu rengi: alan yokken hata vermez ve yapının rengi; marka varsa paletin ilgili rengi", () => {
+    const e = yapiDolguRengi(r);
+    expect(degerle(e, duz)).toBe("#123456");
+    expect(degerle(e, dukkan)).toBe("renk--oyuncu-4");
+    expect(degerle(e, { ...dukkan, m: 99 })).toBe("renk--murekkep-3");
+  });
+  it("simge katmanı: yalnız bitmiş dükkânda ve `dukkan-<tür>` görüntüsü; dükkân olmayan yapıda alan okunmaz", () => {
+    const k = dukkanSimgeKatmani(r) as unknown as { filter: unknown; layout: Record<string, unknown> };
+    expect(degerle(k.filter, duz)).toBe(false);
+    expect(degerle(k.filter, insaatDukkan)).toBe(false);
+    expect(degerle(k.filter, dukkan)).toBe(true);
+    expect(degerle(k.layout["icon-image"], dukkan)).toBe("dukkan-bakkal");
   });
 });

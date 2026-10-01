@@ -225,8 +225,37 @@ export function seritRengi(r: RenkOku, su: ExpressionSpecification, sahiplikMerc
   ] as ExpressionSpecification;
 }
 
-/** Oyun katmanları: kamu, sahiplik, arsa sınırı, yapı, odak örtüsü, vurgu, seçim, seçili sınırlar. */
-export function oyunKatmanlari(r: RenkOku, sahiplikMercegi: boolean): LayerSpecification[] {
+/**
+ * Dükkân marka rengi (G7): yapı özelliği `m` (marka renk indeksi 0..11) -> oyuncu paleti (`--oyuncu-N`). `m` yoksa yapının
+ * kendi rengi (`c`) kalır; markasız dükkân da böyledir.
+ */
+export function yapiDolguRengi(r: RenkOku): ExpressionSpecification {
+  const m: unknown[] = ["match", ["get", "m"]];
+  for (let i = 0; i < 12; i++) m.push(i, r(`--oyuncu-${i}`));
+  m.push(r("--murekkep-3"));
+  return ["case", ["has", "m"], m, ["get", "c"]] as unknown as ExpressionSpecification;
+}
+
+/**
+ * Dükkân türü simgesi (G7): bitmiş (Tamam) dükkânın üstünde `dukkan-<tür kimliği>` görüntüsü (özellik `d` = dükkanTurleri kimliği;
+ * SDF, mürekkep rengi, kâğıt halesi). Görüntüleri `gorunum.ts` tür kimliği adıyla kaydeder (simge: `dukkanSimgesi(tur)`; Lucide
+ * shopping-basket, croissant, ham, candy, hammer, store); kayıt yokken katman eklenmez (`oyunKatmanlari(…, true)`). Dükkân
+ * olmayan yapıda `d` ve `m` alanları hiç yoktur (`has` korumaları).
+ */
+export function dukkanSimgeKatmani(r: RenkOku): LayerSpecification {
+  return {
+    id: "dukkan-simge",
+    type: "symbol",
+    source: "yapilar",
+    minzoom: 15.5,
+    filter: ["all", [">=", ["get", "a"], 3], ["has", "d"]],
+    layout: { "icon-image": ["concat", "dukkan-", ["get", "d"]] as unknown as ExpressionSpecification, "icon-size": lin(15.5, 0.55, 18, 1), "icon-allow-overlap": true, "icon-ignore-placement": true },
+    paint: { "icon-color": r("--murekkep"), "icon-halo-color": r("--yuzey"), "icon-halo-width": 1.2 },
+  };
+}
+
+/** Oyun katmanları: kamu, sahiplik, arsa sınırı, yapı, odak örtüsü, vurgu, seçim, seçili sınırlar. `dukkanSimgeleri`: dükkân türü simgeleri kayıtlıysa. */
+export function oyunKatmanlari(r: RenkOku, sahiplikMercegi: boolean, dukkanSimgeleri = false): LayerSpecification[] {
   const sb = sahiplikBoyasi(r, sahiplikMercegi);
   return [
     // Kamu arsası: devlet tonu + seyrek nokta dokusu ("kamu-doku", gorunum.ts) + ince kenar; satılmaz, sakin
@@ -251,9 +280,10 @@ export function oyunKatmanlari(r: RenkOku, sahiplikMercegi: boolean): LayerSpeci
       paint: { "line-color": r("--murekkep-3"), "line-width": lin(15, 0.7, 18, 1.6), "line-opacity": 0.5 },
     },
     // Yapı: katman rengi (iş), aşamaya göre dolgu 0,25 / 0,45 / 0,65 / 1; inşaatta kesik, bitince düz kenar
-    { id: "yapi-dolgu", type: "fill", source: "yapilar", minzoom: 13, paint: { "fill-color": ["get", "c"], "fill-opacity": ["match", ["get", "a"], 0, 0.25, 1, 0.45, 2, 0.65, 0.92] } },
+    { id: "yapi-dolgu", type: "fill", source: "yapilar", minzoom: 13, paint: { "fill-color": yapiDolguRengi(r), "fill-opacity": ["match", ["get", "a"], 0, 0.25, 1, 0.45, 2, 0.65, 0.92] } },
     { id: "yapi-cizgi", type: "line", source: "yapilar", minzoom: 13, filter: [">=", ["get", "a"], 3], paint: { "line-color": r("--murekkep-2"), "line-width": 1.2, "line-opacity": 0.7 } },
     { id: "yapi-cizgi-insaat", type: "line", source: "yapilar", minzoom: 13, filter: ["<", ["get", "a"], 3], paint: { "line-color": r("--murekkep-2"), "line-width": 1.2, "line-dasharray": [2, 1.5] } },
+    ...(dukkanSimgeleri ? [dukkanSimgeKatmani(r)] : []),
     // Odak: seçili olmayan iller ve ilçeler kâğıt örtüyle soluklaşır
     { id: "ortu-il", type: "fill", source: "iller", filter: ["==", ["get", "kimlik"], "__yok__"], paint: { "fill-color": r("--harita-kara"), "fill-opacity": 0.55 } },
     { id: "ortu-ilce", type: "fill", source: "ilceler", filter: ["==", ["get", "kimlik"], "__yok__"], paint: { "fill-color": r("--harita-kara"), "fill-opacity": 0.45 } },
