@@ -48,6 +48,27 @@ describe("yöntem silüetleri", () => {
   });
 });
 
+describe("kutu bütçesi (örneklenmiş kutu çizimi; çizim çağrısı değil, köşe/örnek yükü)", () => {
+  // Sabitlenmiş sayılar: biri değişirse bilerek güncellenmeli (sokak 22/19 çizim çağrısı bütçesi örnek sayısından bağımsızdır,
+  // ama telefonda üçgen/örnek yükü yapı başına bu sayılarla orantılıdır)
+  const BEKLENEN = { degirmen: 11, ekmek_firini: 7, kepek_gubresi: 7, sut_kepekli: 9, cam_firini: 11, celik_dograma: 18 } as const;
+  it("yöntem silüeti başına kutu sayısı sabit ve ≤ 20", () => {
+    for (const y of SILUETLI_YONTEMLER) {
+      expect(siluetKutulari(y, c).length, y).toBe(BEKLENEN[y]);
+      expect(siluetKutulari(y, c).length, y).toBeLessThanOrEqual(20);
+    }
+  });
+  it("dükkân 9 kutu; genel Tamam gövde 3 kutu; en büyük yapı ≤ 20", () => {
+    expect(dukkanKutulari(c).length).toBe(9);
+    expect(asamaKutulari(3, c).length).toBe(3);
+    expect(Math.max(dukkanKutulari(c).length, ...SILUETLI_YONTEMLER.map((y) => siluetKutulari(y, c).length))).toBeLessThanOrEqual(20);
+  });
+  it("hücre boyutundan bağımsız oran: 29 m dışında bir hücrede de kutu sayısı aynı (geometri ölçekle değişir, sayı değişmez)", () => {
+    for (const y of SILUETLI_YONTEMLER) expect(siluetKutulari(y, 40).length, y).toBe(BEKLENEN[y]);
+    expect(dukkanKutulari(40).length).toBe(9);
+  });
+});
+
 describe("katman ve örnek veri", () => {
   const sahipl = (h: string[]): IlceSahipligi => ({ ilce: "x", uygun: 1000, satilmis: h.length, hucreler: new Map(h.map((id) => [id, { sahip: "bot", sinif: "kirsal" as const, degerMili: 1, alinma: 0 }])) });
   const pal = {
