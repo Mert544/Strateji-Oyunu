@@ -34,6 +34,9 @@ body.mulk-paneli #harita-hazine .hz-saat { padding-left: 0; border-left: 0; }
     background: var(--yuzey); color: var(--murekkep); font-weight: 600; font-size: var(--yazi-sm); box-shadow: var(--golge-2);
   }
   body.isletme-acik .isletme-dugme { background: var(--birincil-tint); color: var(--birincil-ink); }
+  /* İlk dükkân önerisi varken düğmede nokta (erişilebilir ad K1'de: aria-label); --birincil --yuzey üzerinde ≥ 4,5:1 */
+  .isletme-dugme[data-oneri="1"] { position: relative; }
+  .isletme-dugme[data-oneri="1"]::after { content: ""; position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--birincil); box-shadow: 0 0 0 2px var(--yuzey); }
   body.harita-acik.mulk-paneli.isletme-acik #panel { display: flex; height: 62vh; max-height: none; }
   body.harita-acik.isletme-acik :is(#harita-alt, #yapi-kart, #parsel-kart) { visibility: hidden; }
 }

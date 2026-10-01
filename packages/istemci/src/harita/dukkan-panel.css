@@ -97,3 +97,12 @@
   .dk-marka { position: fixed; inset: 0; z-index: var(--z-modal); padding: var(--s-4); overflow-y: auto; background: var(--yuzey); }
   .dk-panel .segment button { min-width: 0; }
 }
+/* D. Ek: ilk dükkân önerisi (kart, İşletmem'in en üstü) ve maliyet kartında pencere stoğu satırı */
+.dk-oneri { position: relative; display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); padding-right: 52px; border-radius: var(--r-lg); background: var(--yuzey); color: var(--murekkep); box-shadow: inset 3px 0 0 var(--ikincil), var(--golge-2); }
+.dk-oneri[data-durum="kapali"] { display: none; }
+.dk-oneri-baslik { margin: 0; font-size: var(--yazi-md); font-weight: 600; line-height: var(--satir-md); }
+.dk-oneri-govde { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); }
+.dk-oneri .eylem { align-self: flex-start; min-height: 44px; }
+.dk-oneri-kapat { position: absolute; top: var(--s-1); right: var(--s-1); width: 44px; height: 44px; }
+.dk-stok { font-variant-numeric: tabular-nums; }
+.dk-stok[data-durum="eksik"] { color: var(--uyari-ink); }
