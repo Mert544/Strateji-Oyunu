@@ -200,9 +200,9 @@ VITEST_JSON="$GUNLUK_DIZIN/vitest.json"
 s=$(date +%s)
 cd "$WT" || exit 2
 if command -v setsid >/dev/null; then
-  CI=true setsid timeout "${PG_DOGRULA_ZAMAN_ASIMI_SN:-1200}" node_modules/.bin/vitest run --minWorkers=1 --maxWorkers="$ISCI" --reporter=json --outputFile="$VITEST_JSON" "${TEST_DOSYALARI[@]}" >"$GUNLUK_DIZIN/vitest.log" 2>&1 &
+  CI=true setsid timeout "${PG_DOGRULA_ZAMAN_ASIMI_SN:-1200}" node_modules/.bin/vitest run --minWorkers=1 --maxWorkers="$ISCI" --reporter=default --reporter=json --outputFile.json="$VITEST_JSON" "${TEST_DOSYALARI[@]}" >"$GUNLUK_DIZIN/vitest.log" 2>&1 &
 else
-  CI=true timeout "${PG_DOGRULA_ZAMAN_ASIMI_SN:-1200}" node_modules/.bin/vitest run --minWorkers=1 --maxWorkers="$ISCI" --reporter=json --outputFile="$VITEST_JSON" "${TEST_DOSYALARI[@]}" >"$GUNLUK_DIZIN/vitest.log" 2>&1 &
+  CI=true timeout "${PG_DOGRULA_ZAMAN_ASIMI_SN:-1200}" node_modules/.bin/vitest run --minWorkers=1 --maxWorkers="$ISCI" --reporter=default --reporter=json --outputFile.json="$VITEST_JSON" "${TEST_DOSYALARI[@]}" >"$GUNLUK_DIZIN/vitest.log" 2>&1 &
 fi
 KOSU_PID=$!
 wait "$KOSU_PID"; VK=$?
