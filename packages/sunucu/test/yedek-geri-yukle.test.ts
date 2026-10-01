@@ -11,13 +11,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import pg from "pg";
 import { SAAT, SISTEM_OYUNCUSU } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
 import { postgresDeposu } from "../src/depo/postgres";
 import { ElleSaat } from "../src/saat";
 import { DunyaYazari } from "../src/yazar";
 import { GUNEY, KUZEY, veri } from "./yardimci";
+import { pgHavuzu } from "./pg-yardimci";
 
 const PG = process.env.BOLGE_PG_URL;
 const KOK = fileURLToPath(new URL("../../../", import.meta.url));
@@ -37,7 +37,7 @@ const veritabanlari: string[] = [];
 afterAll(async () => {
   for (const d of dizinler) await rm(d, { recursive: true, force: true });
   if (!PG) return;
-  const y = new pg.Pool({ connectionString: PG, max: 1 });
+  const y = pgHavuzu({ connectionString: PG, max: 1 });
   for (const ad of veritabanlari) await y.query(`DROP DATABASE IF EXISTS ${ad} WITH (FORCE)`).catch(() => undefined);
   await y.end();
 });
@@ -53,7 +53,7 @@ describe.skipIf(!PG || !BIN)("yedek ve geri yukleme tatbikati (gercek pg)", () =
     const kaynakAd = `bolge_yedek_k_${sonek}`;
     const hedefAd = `bolge_yedek_h_${sonek}`;
     veritabanlari.push(kaynakAd, hedefAd);
-    const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
+    const yonetici = pgHavuzu({ connectionString: PG, max: 1 });
     await yonetici.query(`CREATE DATABASE ${kaynakAd}`);
     await yonetici.end();
     const url = (ad: string): string => {

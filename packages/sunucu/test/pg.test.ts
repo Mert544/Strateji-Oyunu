@@ -29,6 +29,7 @@ import { girisOrtami } from "./giris-yardimci";
 import { ac, arayaMal, eskiDunya, sonaMal } from "./goc-yardimci";
 import { oyunOturumSozlesmesi } from "./oyun-oturum-sozlesmesi";
 import { profilSozlesmesi } from "./profil-sozlesmesi";
+import { pgHavuzu } from "./pg-yardimci";
 import { KUZEY, SIR, mulkVerisi, veri } from "./yardimci";
 
 const PG = process.env.BOLGE_PG_URL;
@@ -48,7 +49,7 @@ const hesapOnek = (): string => `${HESAP_ONEKI}${Date.now().toString(36)}${proce
 
 afterAll(async () => {
   if (!PG) return;
-  const h = new pg.Pool({ connectionString: PG, max: 1 });
+  const h = pgHavuzu({ connectionString: PG, max: 1 });
   for (const t of TABLOLAR) await h.query(`DELETE FROM ${t} WHERE dunya LIKE $1`, [`${ON}-%`]).catch(() => undefined);
   await h.query("DELETE FROM giris_baglanti WHERE ozet LIKE $1 OR eposta_anahtar LIKE $1", [`${HESAP_ONEKI}%`]).catch(() => undefined);
   await h.query("DELETE FROM hesap WHERE id LIKE $1", [`${HESAP_ONEKI}%`]).catch(() => undefined);
@@ -71,7 +72,7 @@ async function acReddet(dunya: string, v: ReturnType<typeof veri>, ek: Parameter
 }
 
 async function sorgu<T extends pg.QueryResultRow>(sql: string, p: unknown[] = []): Promise<T[]> {
-  const h = new pg.Pool({ connectionString: PG, max: 1 });
+  const h = pgHavuzu({ connectionString: PG, max: 1 });
   try {
     return (await h.query<T>(sql, p)).rows;
   } finally {
@@ -82,12 +83,12 @@ async function sorgu<T extends pg.QueryResultRow>(sql: string, p: unknown[] = []
 describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
   it("eski semayla (001, surum kaydi yok, eski birincil anahtar) acilmis veritabani yeni kodla yukseltilir; veri korunur; idempotent", async () => {
     const ad = `bolge_eski_${process.pid}_${Date.now()}`;
-    const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
+    const yonetici = pgHavuzu({ connectionString: PG, max: 1 });
     await yonetici.query(`CREATE DATABASE ${ad}`);
     const u = new URL(PG as string);
     u.pathname = `/${ad}`;
     const baglanti = u.toString();
-    const havuz = new pg.Pool({ connectionString: baglanti, max: 2 });
+    const havuz = pgHavuzu({ connectionString: baglanti, max: 2 });
     try {
       // Eski dünya: yalnız 001 uygulanmış (log + snapshots, PK (dunya, seq, sim_t)), sürüm kaydı yok.
       await havuz.query(await readFile(new URL("../sql/001-baslangic.sql", import.meta.url), "utf8"));
@@ -134,12 +135,12 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
 
   it("sifirdan kurulum alti adimi uygular; en son goruntu secimi deterministik (seq, sim_t, olusturma, kural_sur)", async () => {
     const ad = `bolge_yeni_${process.pid}_${Date.now()}`;
-    const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
+    const yonetici = pgHavuzu({ connectionString: PG, max: 1 });
     await yonetici.query(`CREATE DATABASE ${ad}`);
     const u = new URL(PG as string);
     u.pathname = `/${ad}`;
     const baglanti = u.toString();
-    const havuz = new pg.Pool({ connectionString: baglanti, max: 1 });
+    const havuz = pgHavuzu({ connectionString: baglanti, max: 1 });
     try {
       expect(await postgresSemasiKur(havuz)).toEqual([1, 2, 3, 4, 5, 6]);
       expect(await postgresSemasiKur(havuz)).toEqual([]);
@@ -493,7 +494,7 @@ describe.skipIf(!PG)("postgres: CLI (--depo pg)", () => {
 describe.skipIf(!PG)("postgres: baglanti kopmasi (fail-stop)", () => {
   it("pg baglantilari zorla kesilince surec cokmez: yazar olumcul olur (olumculHata), /saglik 503, bolge_olumcul 1", async () => {
     const ad = `bolge_kes_${process.pid}_${Date.now()}`;
-    const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
+    const yonetici = pgHavuzu({ connectionString: PG, max: 1 });
     await yonetici.query(`CREATE DATABASE ${ad}`);
     const u = new URL(PG as string);
     u.pathname = `/${ad}`;
@@ -527,12 +528,12 @@ describe.skipIf(!PG)("postgres: baglanti kopmasi (fail-stop)", () => {
 describe.skipIf(!PG)("postgres: hesap, oturum ve giris baglantisi (sema surumu 4)", () => {
   it("surum 3 veritabani 4'e yukseltilir (yalniz ekleme): veri korunur, hesap tablolari gelir; 004 idempotent; semaKur:false acik hata verir", async () => {
     const ad = `bolge_s3_${process.pid}_${Date.now()}`;
-    const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
+    const yonetici = pgHavuzu({ connectionString: PG, max: 1 });
     await yonetici.query(`CREATE DATABASE ${ad}`);
     const u = new URL(PG as string);
     u.pathname = `/${ad}`;
     const baglanti = u.toString();
-    const havuz = new pg.Pool({ connectionString: baglanti, max: 2 });
+    const havuz = pgHavuzu({ connectionString: baglanti, max: 2 });
     try {
       // Sürüm 3 veritabanı: 001, 002, 003 uygulanmış ve kayıtlı (004 yok).
       await havuz.query("CREATE TABLE sunucu_sema (surum integer PRIMARY KEY, ad text NOT NULL, uygulandi timestamptz NOT NULL DEFAULT now())");
@@ -665,7 +666,7 @@ describe.skipIf(!PG)("postgres: hesap, oturum ve giris baglantisi (sema surumu 4
 describe.skipIf(!PG)("postgres: oyun oturumu kaydi, test dunyasi silme ve dokum (sema surumu 5)", () => {
   it("005 idempotent; oyun oturumu deposu sozlesmesi (bellek ve dosyayla ayni); dunyalar birbirinden ayridir", async () => {
     const sql005 = await readFile(new URL("../sql/005-oyun-oturum.sql", import.meta.url), "utf8");
-    const h = new pg.Pool({ connectionString: PG, max: 1 });
+    const h = pgHavuzu({ connectionString: PG, max: 1 });
     try {
       await h.query(sql005);
       await h.query(sql005);
@@ -684,7 +685,7 @@ describe.skipIf(!PG)("postgres: oyun oturumu kaydi, test dunyasi silme ve dokum 
 
   it("006 (gorunen ad) idempotent; mevcut hesap satiri korunur (ad NULL, secildi false); ad sutunlari hesap sozlesmesinde (hesap deposu testi) dolu calisir", async () => {
     const sql006 = await readFile(new URL("../sql/006-gorunen-ad.sql", import.meta.url), "utf8");
-    const h = new pg.Pool({ connectionString: PG, max: 1 });
+    const h = pgHavuzu({ connectionString: PG, max: 1 });
     try {
       await h.query(sql006);
       await h.query(sql006);

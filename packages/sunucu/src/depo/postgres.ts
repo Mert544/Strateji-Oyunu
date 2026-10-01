@@ -121,19 +121,28 @@ export interface GeriDonusSonucu extends AnlikGoruntuKaydi {
 
 export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { havuz: Pool; yedektenDon(etiket: string): Promise<GeriDonusSonucu> }> {
   const havuz: Pool = s.havuz ?? new (await import("pg")).default.Pool({ connectionString: s.baglanti, max: 4 });
-  // Asenkron ölümcül hatalar: pg bağlantı kopmasında boştaki havuz bağlantısı (havuz `error`) ve dünya kilidini tutan bağlantı (istemci `error`)
-  // olay yayar; dinleyici yoksa Node işlenmemiş `error` olayıyla süreci çökertir (`olumcul` olayı ve `/saglik` 503 olmadan). Burada dinlenir ve
-  // `Depo.hataDinle` ile yazara iletilir (yazar ölümcül olur; fail-stop). Kapanıştan sonraki hatalar yok sayılır.
+  // Asenkron ölümcül hatalar: pg bağlantı kopmasında boştaki havuz bağlantısı (havuz `error`), ÖDÜNÇ ALINMIŞ istemci (havuzun dinleyicisi checkout'ta kalkar; her yeni
+  // istemciye `connect` olayında takılır) ve dünya kilidini tutan bağlantı olay yayar; dinleyici yoksa Node işlenmemiş `error` olayıyla süreci çökertir (`olumcul` olayı
+  // ve `/saglik` 503 olmadan). Burada dinlenir ve `Depo.hataDinle` ile yazara iletilir (yazar ölümcül olur; fail-stop). Kapanıştan sonraki hatalar yok sayılır
+  // (`Pool.end()` soket kapanışını beklemez: sonraki yönetici kesmesi 57P01 getirebilir; bkz. `pg-havuz.ts`). Aynı hata nesnesi (havuz + istemci dinleyicisi) bir kez bildirilir.
   let kapali = false;
   let bekleyenHata: Error | null = null;
   const hataDinleyicileri: Array<(e: Error) => void> = [];
+  const bildirilen = new WeakSet<object>();
   const hataBildir = (e: unknown): void => {
     if (kapali) return;
+    if (typeof e === "object" && e !== null) {
+      if (bildirilen.has(e)) return;
+      bildirilen.add(e);
+    }
     const hata = e instanceof Error ? e : new Error(String(e));
     if (hataDinleyicileri.length === 0) bekleyenHata ??= hata;
     else for (const f of hataDinleyicileri) f(hata);
   };
   havuz.on("error", hataBildir);
+  havuz.on("connect", (c: PoolClient) => {
+    c.on("error", hataBildir);
+  });
   let kilitBaglantisi: PoolClient | null = null;
   const kilitAnahtari = fnv1a32(`bolge-dunya:${s.dunya}`) | 0;
   try {

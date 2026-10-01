@@ -13,6 +13,7 @@
 import { readFile, readdir, rmdir, rm, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fnv1a32 } from "@bolge/cekirdek";
+import { pgHavuzuAc } from "./depo/pg-havuz";
 
 export const TEST_DUNYA_ONEKI = "test";
 
@@ -116,8 +117,7 @@ async function mevcutTablolar(c: Sorgulayici): Promise<Set<string>> {
 export async function pgTestDunyasiSil(baglanti: string, s: TestDunyaSecenekleri): Promise<TestDunyaRaporu> {
   testDunyaAdiniDenetle(s.dunya, s.onek);
   if (s.hesapOneki !== undefined) onekDenetle(s.hesapOneki, "hesap oneki");
-  const pg = (await import("pg")).default;
-  const havuz = new pg.Pool({ connectionString: baglanti, max: 2 });
+  const havuz = await pgHavuzuAc({ connectionString: baglanti, max: 2 }); // error dinleyicili: kapanışta yönetici kesmesi (57P01) süreci düşürmez
   const c = await havuz.connect();
   const kilitAnahtari = fnv1a32(`bolge-dunya:${s.dunya}`) | 0;
   try {
@@ -175,8 +175,7 @@ export interface TestDunyaSayimi {
  * türetilemez) için `hesap_oyuncu`/`hesap`/`oturum`; `hesapOneki`: hesap kimliği öneki.
  */
 export async function pgTestDunyasiSay(baglanti: string, s: { dunya: string; oyuncular?: readonly string[]; hesapOneki?: string }): Promise<TestDunyaSayimi> {
-  const pg = (await import("pg")).default;
-  const havuz = new pg.Pool({ connectionString: baglanti, max: 1 });
+  const havuz = await pgHavuzuAc({ connectionString: baglanti, max: 1 });
   try {
     const tablolar = await mevcutTablolar(havuz);
     const kalan: Record<string, number> = {};

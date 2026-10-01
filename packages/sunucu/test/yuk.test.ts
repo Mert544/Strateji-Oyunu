@@ -22,7 +22,6 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { afterAll, describe, expect, it } from "vitest";
-import pg from "pg";
 import { PARSEL_ONAYARLARI, parselBotuOlustur } from "@bolge/botlar";
 import type { ParselBotu } from "@bolge/botlar";
 import { SAAT, anlikGoruntuOlusturOzetli, icerikKimlikTablosuOlustur, kuralSurumuHesapla } from "@bolge/cekirdek";
@@ -37,6 +36,7 @@ import { ElleSaat } from "../src/saat";
 import { sunucuBaslat } from "../src/sunucu";
 import { DunyaYazari } from "../src/yazar";
 import { SIR, token } from "./yardimci";
+import { pgHavuzu } from "./pg-yardimci";
 
 const AGIR = process.env.BOLGE_AGIR_TEST === "1";
 const KOK = fileURLToPath(new URL("../../../", import.meta.url));
@@ -128,7 +128,7 @@ function maliyetOlc(f: () => void, n = 5): { cpuMs: number; duvarMs: number } {
 /** pg depoda düşen koşu için sunucu durumu: bağlantılar, kilitler, veritabanı başına dünya sayısı (başarısızsa kendi hatasını yazar). */
 async function pgTani(): Promise<string[]> {
   if (DEPO !== "pg" || !process.env.BOLGE_PG_URL) return [];
-  const h = new pg.Pool({ connectionString: process.env.BOLGE_PG_URL, max: 1, connectionTimeoutMillis: 3000 });
+  const h = pgHavuzu({ connectionString: process.env.BOLGE_PG_URL, max: 1, connectionTimeoutMillis: 3000 });
   try {
     const a = await h.query("SELECT state, wait_event_type, count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() GROUP BY 1, 2");
     const k = await h.query("SELECT locktype, mode, granted, count(*)::int AS n FROM pg_locks GROUP BY 1, 2, 3");
@@ -155,7 +155,7 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
       L("pg deposu acildi (sema kuruldu)");
       const dunya = pgDunya;
       temizlik.push(async () => {
-        const h = new pg.Pool({ connectionString: process.env.BOLGE_PG_URL, max: 1 });
+        const h = pgHavuzu({ connectionString: process.env.BOLGE_PG_URL, max: 1 });
         for (const t of ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit", "profil_damga"]) await h.query(`DELETE FROM ${t} WHERE dunya = $1`, [dunya]);
         await h.end();
       });

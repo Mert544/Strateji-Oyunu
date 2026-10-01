@@ -4,7 +4,6 @@
  * Mülk kipi (dedektör yalnız orada çalışır). Sahte duvar saatiyle koşar; gerçek bekleme yok.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import pg from "pg";
 import { SAAT, SISTEM_OYUNCUSU, Simulasyon, alinanOdulDegeri, odulDegeri } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
 import { SunucuMesajiSemasi } from "@bolge/protokol";
@@ -19,6 +18,7 @@ import type { CalisanSunucu } from "../src/sunucu";
 import { DunyaYazari } from "../src/yazar";
 import type { YazarSecenekleri } from "../src/yazar";
 import { SIR, kamuKumesi, mulkVerisi, token, veri } from "./yardimci";
+import { pgHavuzu } from "./pg-yardimci";
 
 const E = VARSAYILAN_DUNYA_EPOCH_MS;
 const TOHUM = 4;
@@ -483,7 +483,7 @@ describe.skipIf(!process.env.BOLGE_PG_URL)("dedektor + pg profili (damga tablosu
       expect(new Set(anahtarlar).size).toBe(anahtarlar.length);
       await y.kapat();
     } finally {
-      const h = new pg.Pool({ connectionString: url, max: 1 });
+      const h = pgHavuzu({ connectionString: url, max: 1 });
       for (const t of ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit", "profil_damga"]) await h.query(`DELETE FROM ${t} WHERE dunya = $1`, [dunya]).catch(() => undefined);
       await h.end();
     }

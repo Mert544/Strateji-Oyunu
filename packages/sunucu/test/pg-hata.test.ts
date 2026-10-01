@@ -8,6 +8,7 @@ import { EventEmitter } from "node:events";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Pool } from "pg";
 import { postgresDeposu, SQL_SEMA_SURUMU } from "../src/depo/postgres";
+import { havuzaDinleyiciTak } from "../src/depo/pg-havuz";
 import { GelistirmeKimligi } from "../src/kimlik";
 import { ElleSaat } from "../src/saat";
 import { sunucuBaslat } from "../src/sunucu";
@@ -41,6 +42,7 @@ class SahteHavuz extends EventEmitter {
   async connect(): Promise<SahteIstemci> {
     const c = new SahteIstemci();
     this.istemciler.push(c);
+    this.emit("connect", c); // gercek havuz her yeni istemci icin baglanti kurulunca 'connect' yayar (ilk odunc almadan once)
     return c;
   }
   async end(): Promise<void> {
@@ -103,6 +105,34 @@ describe("pg asenkron olumcul hata (sahte havuz)", () => {
     expect(yazar.olumculMu).toBe(true);
     expect(olumculler[0]?.message).toContain("terminating connection");
     expect(await saglik(sunucu)).toEqual({ kod: 503, durum: "olumcul" });
+  });
+
+  it("ODUNC ALINMIS (kilit olmayan) istemcinin 'error' olayi da surec dusurmez ve olumcul yoldan gider; ayni hata nesnesi havuzdan ve istemciden gelse de BIR kez bildirilir", async () => {
+    const { havuz, depo } = await kur();
+    const { yazar, olumculler } = await yazarVeSunucu(depo);
+    const c = (await havuz.connect()) as SahteIstemci; // islem sirasinda alinan baska bir baglanti (hesap/profil/gunluk yazimi gibi)
+    expect(c.listenerCount("error")).toBeGreaterThan(0); // havuzun dinleyicisi checkout'ta kalkar: dinleyiciyi depo takar
+    const e = new Error("terminating connection due to administrator command");
+    expect(() => c.emit("error", e)).not.toThrow();
+    expect(() => havuz.emit("error", e)).not.toThrow();
+    expect(yazar.olumculMu).toBe(true);
+    expect(olumculler).toHaveLength(1);
+    expect(olumculler[0]?.message).toContain("terminating connection");
+  });
+
+  it("havuzaDinleyiciTak (test ve arac havuzlari): havuz ve her yeni istemci 'error'u yutar (dinleyicisiz EventEmitter'da emit('error') firlatir: sureci dusururdu); bildir cagrilir", () => {
+    const sahip = new SahteHavuz();
+    expect(() => new SahteHavuz().emit("error", new Error("dinleyicisiz"))).toThrow(/dinleyicisiz/); // karsit kanit: dinleyicisiz bugunku kirilma
+    const gelen: string[] = [];
+    havuzaDinleyiciTak(sahip as unknown as Pool, (e) => gelen.push(e.message));
+    expect(() => sahip.emit("error", new Error("bosta 57P01"))).not.toThrow();
+    const c = new SahteIstemci();
+    sahip.emit("connect", c);
+    expect(() => c.emit("error", new Error("odunc 57P01"))).not.toThrow();
+    expect(gelen).toEqual(["bosta 57P01", "odunc 57P01"]);
+    // Varsayilan bildir: hata yutulur.
+    const sessiz = havuzaDinleyiciTak(new SahteHavuz() as unknown as Pool);
+    expect(() => (sessiz as unknown as EventEmitter).emit("error", new Error("x"))).not.toThrow();
   });
 
   it("yazar kurulmadan once gelen hata kaybolmaz: yazar kurulunca olumcul olur ve olumculHata dinleyicisi eklenince hemen bildirilir", async () => {
