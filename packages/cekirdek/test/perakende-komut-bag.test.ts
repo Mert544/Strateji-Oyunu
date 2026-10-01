@@ -13,8 +13,13 @@ import { miniVeriyiYukle } from "@bolge/veri";
 
 function veri(blok: boolean): CekirdekVeriPaketi {
   return mulkVeriTam((v) => {
-    if (!blok) return;
     const mulk = v.param.mulk!;
+    if (!blok) {
+      // G7-4: gerçek parametreler.json blok ve dükkân ek yapısını taşır; "blok yok" kurgusu açıkça silinir
+      delete mulk.perakende;
+      if (mulk.ekYapilar !== undefined) delete mulk.ekYapilar["dukkan"];
+      return;
+    }
     mulk.ekYapilar = { ...(mulk.ekYapilar ?? {}), dukkan: { ad: "Dukkan", yuva: 1, insaSaati: 4, insaParasi: 6_000_000, insaMaliyeti: { celik: 20_000, parca: 8_000 }, enFazlaIlBasina: 6, olcekHucre: [1, 2, 3] } };
     mulk.perakende = perakendeBlogu();
   });

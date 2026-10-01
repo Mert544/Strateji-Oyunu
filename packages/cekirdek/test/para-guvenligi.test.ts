@@ -832,6 +832,8 @@ describe("kamu NPC alıcısı: ödenek rezervi, pay tavanları, fiyat tavanı", 
 
 describe("ayrılmış hücre kuralı (ayrilmisHucreHesapTavani, taban fiyat, ilçe eğrisinden muafiyet)", () => {
   const TABAN = 1_000_000; // kırsal
+  /** Arsa hücre fiyatı tam liraya YUKARI yuvarlanır (şartname §9.4; G7-4): bağımsız ifade (çekirdek işlevini çağırmaz). */
+  const yukari = (mili: number): number => Math.ceil(mili / 1000) * 1000;
   const PAY = 2_000_000; // satisPayiCarpaniPpm
 
   function ayrSim(duzenle?: (v: CekirdekVeriPaketi) => void, oyuncular = ["a"]) {
@@ -906,7 +908,7 @@ describe("ayrılmış hücre kuralı (ayrilmisHucreHesapTavani, taban fiyat, il�
     // ilk 3 normal hücre: taban × (1 + 2,0 × k/uygun)
     const uygun = ilceDurum(ayrSim(), OVA).uygunHucre;
     let beklenen = 0;
-    for (let k = 0; k < 3; k++) beklenen += Math.floor((TABAN * (PPM + Math.floor((PAY * k) / uygun))) / PPM);
+    for (let k = 0; k < 3; k++) beklenen += yukari(Math.floor((TABAN * (PPM + Math.floor((PAY * k) / uygun))) / PPM));
     expect(f).toBe(beklenen);
   });
 
@@ -918,14 +920,14 @@ describe("ayrılmış hücre kuralı (ayrilmisHucreHesapTavani, taban fiyat, il�
     tamam(s, "a", al(OVA, [...ayr, ...normal].sort()));
     const uygun = ilceDurum(s, OVA).uygunHucre;
     let beklenen = 3 * TABAN;
-    for (let k = 0; k < 2; k++) beklenen += Math.floor((TABAN * (PPM + Math.floor((PAY * k) / uygun))) / PPM);
+    for (let k = 0; k < 2; k++) beklenen += yukari(Math.floor((TABAN * (PPM + Math.floor((PAY * k) / uygun))) / PPM));
     expect(h0 - anlikHazine(s.dunya, "a")).toBe(beklenen);
     expect(ilceDurum(s, OVA).satilmisHucre).toBe(5);
     expect(ilceDurum(s, OVA).ayrilmisSatilmis).toBe(3);
     const sahip = new Map(s.dunya.mulk!.hucreler.map((h) => [h.id, h.degerMili]));
     for (const id of ayr) expect(sahip.get(id)).toBe(TABAN);
     expect(sahip.get(normal[0]!)).toBe(TABAN);
-    expect(sahip.get(normal[1]!)).toBe(Math.floor((TABAN * (PPM + Math.floor(PAY / uygun))) / PPM));
+    expect(sahip.get(normal[1]!)).toBe(yukari(Math.floor((TABAN * (PPM + Math.floor(PAY / uygun))) / PPM)));
   });
 
   it("parsel_birak ayrılmış hücre: hesap ve ilçe sayaçları düşer, iade taban değerin %70'i; yeniden alınca sayaç geri gelir", () => {
@@ -995,7 +997,7 @@ describe("ayrılmış hücre kuralı (ayrilmisHucreHesapTavani, taban fiyat, il�
     // başlangıç (hiç satış yok): normal k. hücre eğriden, ayrılmış taban
     expect(hucreFiyatiMili(s.ic, ilce(), "kirsal", 0)).toBe(TABAN);
     expect(hucreFiyatiMili(s.ic, ilce(), "kirsal", 5, true)).toBe(TABAN);
-    expect(hucreFiyatiMili(s.ic, ilce(), "kirsal", 3)).toBe(Math.floor((TABAN * (PPM + Math.floor((PAY * 3) / ilce().uygunHucre))) / PPM));
+    expect(hucreFiyatiMili(s.ic, ilce(), "kirsal", 3)).toBe(yukari(Math.floor((TABAN * (PPM + Math.floor((PAY * 3) / ilce().uygunHucre))) / PPM)));
     // a: 4 ayrılmış + 2 normal tek komutta
     const beklenen = parselToplamFiyatiMili(s.ic, ilce(), "kirsal", 2, 4);
     const h0 = anlikHazine(s.dunya, "a");
@@ -1005,7 +1007,7 @@ describe("ayrılmış hücre kuralı (ayrilmisHucreHesapTavani, taban fiyat, il�
     expect(ilce().satilmisHucre).toBe(6);
     expect(ilce().ayrilmisSatilmis).toBe(4);
     const sonraki = hucreFiyatiMili(s.ic, ilce(), "kirsal", 0);
-    expect(sonraki).toBe(Math.floor((TABAN * (PPM + Math.floor((PAY * 2) / ilce().uygunHucre))) / PPM));
+    expect(sonraki).toBe(yukari(Math.floor((TABAN * (PPM + Math.floor((PAY * 2) / ilce().uygunHucre))) / PPM)));
     const h1 = anlikHazine(s.dunya, "b");
     tamam(s, "b", al(OVA, kirsal(false).slice(2, 3)));
     expect(h1 - anlikHazine(s.dunya, "b")).toBe(sonraki);

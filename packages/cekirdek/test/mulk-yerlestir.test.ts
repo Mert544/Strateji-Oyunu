@@ -259,7 +259,8 @@ describe("parsel_birak", () => {
     const vergi0 = araziVergisiSaat(d, s.ic, "a");
     const hz0 = anlikHazine(d, "a");
     tamam(s, "a", { tur: "parsel_birak", ilce: OVA, hucreler: birak });
-    const iade = degerler.reduce((t, x) => t + Math.floor((x * 700_000) / PPM), 0);
+    // İade: Σ hücre değeri x %70, sonra AŞAĞI tam liraya (§9.4; G7-4; eski: hücre başına mili aşağı = 1 417 500, yeni 1 417 000)
+    const iade = Math.floor(Math.floor((degerler.reduce((t, x) => t + x, 0) * 700_000) / PPM) / 1000) * 1000;
     expect(iade).toBeGreaterThan(0);
     // iade tam hazineye gider (tembel vergi oranı ayrıca akar; aynı anda ölçüldüğü için fark kesin)
     expect(anlikHazine(d, "a") - hz0).toBe(iade);
@@ -314,8 +315,9 @@ describe("parsel_birak", () => {
     const hv = anlikHazine(vsy.dunya, "a");
     const deger = hucreBul(vsy.dunya, g[0]!)!.degerMili + hucreBul(vsy.dunya, g[1]!)!.degerMili;
     tamam(vsy, "a", { tur: "parsel_birak", ilce: OVA, hucreler: g });
-    expect(anlikHazine(vsy.dunya, "a") - hv).toBeLessThanOrEqual(Math.floor((deger * 700_000) / PPM) + 2);
-    expect(anlikHazine(vsy.dunya, "a") - hv).toBeGreaterThanOrEqual(Math.floor((deger * 700_000) / PPM) - 2);
+    // iade aşağı tam lira: %70'in altında en çok 999 mili (§9.4)
+    expect(anlikHazine(vsy.dunya, "a") - hv).toBeLessThanOrEqual(Math.floor((deger * 700_000) / PPM));
+    expect(anlikHazine(vsy.dunya, "a") - hv).toBeGreaterThanOrEqual(Math.floor((deger * 700_000) / PPM) - 999);
     // al-bırak döngüsü: her tur hazineyi azaltır
     const d = vsy.dunya;
     let onceki = anlikHazine(d, "a");

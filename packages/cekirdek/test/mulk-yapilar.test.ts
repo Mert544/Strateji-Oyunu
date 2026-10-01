@@ -44,10 +44,10 @@ function ekle(s: Simulasyon, tur: string, hucre: string): Komut {
 }
 
 describe("ek yapı tanımları", () => {
-  it("docs/11'deki 6 yapı parametrede tanımlı; hepsi 1 yuvalı; tesis türleriyle çakışmaz; Ordugâh yok", () => {
+  it("docs/11'deki 6 yapı + G7 dükkânı (7) parametrede tanımlı; hepsi 1 yuvalı; tesis türleriyle çakışmaz; Ordugâh yok", () => {
     const s = mulkSim([], bolVeri());
     const ids = s.ic.mulk!.ekYapilar.map((y) => y.id);
-    expect(ids).toEqual(["ambar", "atolye_lab", "garaj", "konut", "muhtarlik", "ticaret_ofisi"]);
+    expect(ids).toEqual(["ambar", "atolye_lab", "dukkan", "garaj", "konut", "muhtarlik", "ticaret_ofisi"]); // G7-4: dukkan (6 -> 7)
     expect(s.ic.mulk!.ekYapilar.every((y) => y.yuva === 1 && y.insaMaliyeti.length > 0)).toBe(true);
     for (const id of ids) expect(s.ic.tesisTuruIndeks[id]).toBeUndefined();
     expect(ids).not.toContain("ordugah");

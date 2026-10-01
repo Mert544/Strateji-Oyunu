@@ -59,7 +59,8 @@ describe("parsel kısa koşu: düzen ve servet bileşenleri", () => {
     const s = Simulasyon.olustur(veri, 1);
     s.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "a", bolgeler: [], ilce: "sn_m_ova_merkez" } });
     const pk = hibeKitDegeri(s);
-    expect(pk).toEqual({ hibe: 50_000_000, kit: 35_600_000, toplam: 85_600_000 });
+    // G7-4: kit başlangıç stoğuna pencere 3 000 eklendi (+1 080 000): eski 35 600 000 / 85 600 000
+    expect(pk).toEqual({ hibe: 50_000_000, kit: 36_680_000, toplam: 86_680_000 });
     expect(stokDegeriMili(s, "a")).toBe(pk.kit);
     expect(araziDegeriMili(s, "a")).toBe(0); // 6 yurt hücresi: degerMili 0
     expect(s.dunya.mulk!.hucreler.filter((h) => h.sahip === "a")).toHaveLength(6);

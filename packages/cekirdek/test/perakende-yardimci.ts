@@ -15,7 +15,12 @@ export function perakendeVeri(duzenle?: (v: CekirdekVeriPaketi, pr: MulkPerakend
     mulk.yeniOyuncu.hibe = 5_000_000_000;
     mulk.yeniOyuncu.indirimliYapiSayisi = 0;
     mulk.yeniOyuncu.ayrilmisHucrePpm = 0;
-    if (!blok) return void duzenle?.(v, undefined as unknown as MulkPerakendeParametreleri);
+    // G7-4: gerçek parametreler.json `perakende` ve `ekYapilar.dukkan` taşır: "blok yok" kurgusu bloğu AÇIKÇA siler (G7-4 öncesi JSON'da hiç yoktu).
+    if (!blok) {
+      delete mulk.perakende;
+      if (mulk.ekYapilar !== undefined) delete mulk.ekYapilar["dukkan"];
+      return void duzenle?.(v, undefined as unknown as MulkPerakendeParametreleri);
+    }
     mulk.ekYapilar = { ...(mulk.ekYapilar ?? {}), dukkan: { ad: "Dukkan", yuva: 1, insaSaati: 4, insaParasi: 6_000_000, insaMaliyeti: { celik: 20_000, parca: 8_000 }, enFazlaIlBasina: 6, olcekHucre: [1, 2, 3] } };
     mulk.perakende = perakendeBlogu();
     duzenle?.(v, mulk.perakende);

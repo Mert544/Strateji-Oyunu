@@ -115,6 +115,9 @@ export function p4Oncesi<V extends VeriPaketi>(v: V): V {
     delete m["sebeke"];
     delete m["yontemGecersizKilma"];
     delete m["perakende"];
+    delete m["bakim"]; // G7-4: mülk bakımı (C) değerleri G6 sonrasıdır
+    const yo = m["yeniOyuncu"] as { baslangicStok?: Record<string, number> } | undefined;
+    if (yo?.baslangicStok !== undefined) delete yo.baslangicStok["pencere"]; // G7-4: dükkân bedeli için kit pencere (yeni mal)
     const ek = m["ekYapilar"] as Gevsek | undefined;
     if (ek !== undefined) delete ek["dukkan"];
     const atolye = (ek?.["atolye_lab"] as { ad?: string } | undefined);

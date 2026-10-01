@@ -41,23 +41,26 @@ const PPM = 1_000_000;
 /** Çekirdekteki `satisPayiCarpaniPpm` (2.000.000 = "× (1 + 2·pay)"). */
 const PAY_CARPANI_PPM = 2_000_000;
 
+/** Çekirdek `arsaTamLiraYukari`: mili-₺ tutarı bir sonraki tam liraya yukarı yuvarlar (şartname §9.4; tamsayı). */
+const tamLiraYukari = (mili: number): number => Math.floor((mili + 999) / 1000) * 1000;
+
 /**
  * Çekirdek `parselFiyati` ile birebir (mili-₺): `adet` hücre, ilçede şu an `satilmis` / `uygun` satılmışken. k. hücre (0'dan)
- * taban × (1 + 2·(satilmis + k)/uygun), her adımda tamsayı bölmeyle aşağı yuvarlanır. Toplu alım indirim yaratmaz.
+ * taban × (1 + 2·(satilmis + k)/uygun), tamsayı bölmeyle aşağı yuvarlanır, sonra HER hücre tam liraya YUKARI yuvarlanır (§9.4). Toplu alım indirim yaratmaz.
  */
 export function parselFiyatiMili(sinif: ArsaSinifi, satilmis: number, uygun: number, adet: number): number {
   const taban = TABAN_FIYAT[sinif] * 1000;
   let toplam = 0;
   for (let k = 0; k < adet; k++) {
     const pay = uygun > 0 ? Math.floor((PAY_CARPANI_PPM * (satilmis + k)) / uygun) : 0;
-    toplam += Math.floor((taban * (PPM + pay)) / PPM);
+    toplam += tamLiraYukari(Math.floor((taban * (PPM + pay)) / PPM));
   }
   return toplam;
 }
 
-/** Tek hücrenin fiyatı (tam ₺). */
+/** Tek hücrenin fiyatı (tam ₺): çekirdekle aynı tek formül (`parselFiyatiMili`, bir hücre; yukarı yuvarlanmış tam lira). */
 export function hucreFiyati(sinif: ArsaSinifi, satilmis: number, uygun: number): number {
-  return Math.round(TABAN_FIYAT[sinif] * fiyatCarpani(satilmis, uygun));
+  return parselFiyatiMili(sinif, satilmis, uygun, 1) / 1000;
 }
 
 // --- ayrılmış hücre (yeni oyunculara ayrılmış; docs/06 §15.7) -----------------------------------------------------------
@@ -78,7 +81,7 @@ export interface IlceFiyatDurumu {
 
 /** Çekirdek `hucreFiyatiMili`: `sinif` sınıfında k. (0'dan) hücrenin fiyatı (mili-₺); ayrılmışsa taban, eğriden muaf. */
 export function hucreFiyatiMili(sinif: ArsaSinifi, ilce: IlceFiyatDurumu, k = 0, ayrilmis = false): number {
-  if (ayrilmis) return TABAN_FIYAT[sinif] * 1000;
+  if (ayrilmis) return tamLiraYukari(TABAN_FIYAT[sinif] * 1000);
   return parselFiyatiMili(sinif, Math.max(0, ilce.satilmis - (ilce.ayrilmisSatilmis ?? 0)) + k, ilce.uygun, 1);
 }
 

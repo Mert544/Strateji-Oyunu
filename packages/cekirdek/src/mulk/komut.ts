@@ -105,15 +105,29 @@ function hucreListesi(hucreler: unknown, tavan: number): string[] | string {
   return sirali;
 }
 
+/** 1 ₺ = 1 000 mili-₺ (`lojistik/cozum.ts` MILI ile aynı). */
+const MILI_TAM_LIRA = 1000;
+
+/** Arsa tutarını (mili-₺, >= 0) bir sonraki TAM LİRAYA yukarı yuvarlar (şartname §9.4): tamsayı, kayan nokta yok. */
+export function arsaTamLiraYukari(mili: Mili): Mili {
+  return Math.floor((mili + MILI_TAM_LIRA - 1) / MILI_TAM_LIRA) * MILI_TAM_LIRA;
+}
+
+/** Oyuncuya giden arsa iadesini (mili-₺, >= 0) AŞAĞI tam liraya yuvarlar (şartname §9.4): yuvarlanan <= 999 mili hiçbir yere yazılmaz. */
+export function arsaTamLiraAsagi(mili: Mili): Mili {
+  return Math.floor(mili / MILI_TAM_LIRA) * MILI_TAM_LIRA;
+}
+
 /**
  * Parsel fiyatı (mili-para): `adet` hücre, ilçede şu an `satilmis` / `uygun` satılmışken. k. hücre (0'dan):
- * taban × (PPM + carpanPpm × (satilmis + k) / uygun) / PPM, aşağı yuvarlanır.
+ * taban × (PPM + carpanPpm × (satilmis + k) / uygun) / PPM, aşağı yuvarlanır, sonra HER hücre için tam liraya YUKARI yuvarlanır (§9.4): hücre fiyatı,
+ * toplam ve saklanan `degerMili` hep 1 000'in katıdır ve birbirine eşittir.
  */
 export function parselFiyati(taban: Mili, carpanPpm: number, satilmis: number, uygun: number, adet: number): Mili {
   let toplam = 0;
   for (let k = 0; k < adet; k++) {
     const pay = uygun > 0 ? carpBol(carpanPpm, satilmis + k, uygun) : 0;
-    toplam += carpBol(taban, PPM + pay, PPM);
+    toplam += arsaTamLiraYukari(carpBol(taban, PPM + pay, PPM));
   }
   return toplam;
 }
@@ -124,7 +138,7 @@ export type IlceFiyatDurumu = Pick<IlceDurumu, "uygunHucre" | "satilmisHucre" | 
 function hucreFiyatiParametreyle(p: MulkParametreleri, ilce: IlceFiyatDurumu, sinif: ArsaSinifi, k: number, ayrilmis: boolean): Mili {
   const taban = p.hucreFiyati[sinif];
   // Ayrılmış hücre (docs/06 §15.7): taban (sınıf) fiyatından, satış payı çarpanından muaf; ilçe eğrisini ilerletmez.
-  if (ayrilmis) return taban;
+  if (ayrilmis) return arsaTamLiraYukari(taban);
   return parselFiyati(taban, p.satisPayiCarpaniPpm, ilce.satilmisHucre - (ilce.ayrilmisSatilmis ?? 0) + k, ilce.uygunHucre, 1);
 }
 
@@ -656,7 +670,7 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
         if (h.tesis !== undefined || h.insaat !== undefined) return hata(`hucre bos degil (yapi ya da insaat var): ${id}`);
         deger += h.degerMili;
       }
-      const iade = carpBol(deger, mk.p.parselBirakIadePpm ?? PARSEL_BIRAK_IADE_VARSAYILAN, PPM);
+      const iade = arsaTamLiraAsagi(carpBol(deger, mk.p.parselBirakIadePpm ?? PARSEL_BIRAK_IADE_VARSAYILAN, PPM));
       if (iade > 0 && !hazineEkle(d, oyuncu, iade, "iade")) return hata("iade yapilamadi");
       // Değişiklikler (artık başarısız olamaz): hücreler boşalır; arazi değeri, ilçe hücre sayacı ve ilçe satılmışı düşer.
       const mo = mulkOyuncuAl(m, oyuncu, d.zaman);

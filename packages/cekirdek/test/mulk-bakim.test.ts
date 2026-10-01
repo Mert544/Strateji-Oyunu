@@ -31,6 +31,7 @@ function kur(duzenle?: Duzen, fabrika = true): Simulasyon {
     m.yeniOyuncu.indirimliYapiSayisi = 0;
     m.yeniOyuncu.ayrilmisHucrePpm = 0;
     m.esZamanliInsaat = 10;
+    delete m.bakim; // G7-4: gerçek parametreler.json bakım değerlerini taşır; "blok yok" kurgusu burada kurulur, testler bloğu kendisi ekler/değiştirir
     duzenle?.(x);
   });
   const s = mulkSim(["a"], v, 7);
@@ -59,7 +60,7 @@ function noktalar(s: Simulasyon, gun: number, adet: number): string[] {
 
 describe("(a) derleme: yalnız etkin satırlar", () => {
   it("blok yok, {} ve kimlik değerleri (çarpan 1 000 000, tavan = sanayi değeri, parça çarpanı 1 000 000 / boş): ic.mulk.bakim OLUŞMAZ", () => {
-    expect(icerikDerle(kur(undefined, false).dunya && mulkVeriTam()).mulk!.bakim).toBeUndefined();
+    expect(icerikDerle(mulkVeriTam((x) => void delete x.param.mulk!.bakim)).mulk!.bakim).toBeUndefined();
     const kimlikler: MulkBakimParametreleri[] = [{}, { asinmaHizCarpaniPpm: PPM }, { asinmaVerimKaybiTavaniPpm: 400_000 }, { yontemParcaPpm: {} }, { yontemParcaPpm: { yuzey_cevher: PPM } }, { asinmaHizCarpaniPpm: PPM, asinmaVerimKaybiTavaniPpm: 400_000, yontemParcaPpm: { yuzey_cevher: PPM } }];
     for (const b of kimlikler) {
       expect(icerikDerle(mulkVeriTam(bakimli(b))).mulk!.bakim, JSON.stringify(b)).toBeUndefined();

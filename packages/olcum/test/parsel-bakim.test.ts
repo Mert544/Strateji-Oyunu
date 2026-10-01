@@ -95,7 +95,8 @@ describe("bakım ve aşınma ölçümü", () => {
   });
 
   it("onarimYonetimi: parça ithalatı yok, eşikte genel onarım var; bakimYonetimi: ithalat var, onarım gerekmez", () => {
-    const sec: ParselKosuSecenek = { tohumlar: [1], gecGun: 2, olcumGunu: 30, yerlesik: { ciftci: 1, pasif: 0 }, gecAcilislari: [], bakimOlc: true };
+    // G7-4: gerçek parametreler.json mülk bakımı C değerlerini taşır (asinmaHizCarpaniPpm 500 000: aşınma YARI hızda): %40 eşiğine 30 yerine 60 günde varılır.
+    const sec: ParselKosuSecenek = { tohumlar: [1], gecGun: 2, olcumGunu: 60, yerlesik: { ciftci: 1, pasif: 0 }, gecAcilislari: [], bakimOlc: true };
     const onarim = parselTohumKos({ ...sec, onarimYonetimi: true }, 1).bakim!.oyuncular.find((o) => o.id === "ciftci_1")!;
     const tam = parselTohumKos({ ...sec, bakimYonetimi: true }, 1).bakim!.oyuncular.find((o) => o.id === "ciftci_1")!;
     const yok = parselTohumKos(sec, 1).bakim!.oyuncular.find((o) => o.id === "ciftci_1")!;
@@ -105,7 +106,7 @@ describe("bakım ve aşınma ölçümü", () => {
     expect(tam.toplam.akis.parcaIthalat).toBeGreaterThan(0);
     expect(tam.toplam.onarim.sayi).toBe(0); // bakım karşılanır: aşınma eşiğe varmaz
     // günlük seri: her gün için [ithalat, stok]; toplam ithalat günlük toplamlara eşit
-    expect(tam.gunluk).toHaveLength(32);
+    expect(tam.gunluk).toHaveLength(62);
     expect(tam.gunluk.reduce((t, d) => t + d[0], 0)).toBe(tam.toplam.akis.parcaIthalat);
   });
 

@@ -218,7 +218,7 @@
     "olcekInsaSureCarpaniPpm": [1000000, 1500000, 2000000],
     "yeniOyuncu": {
       "hibe": 50000000,
-      "baslangicStok": { "celik": 120000, "parca": 40000, "gida": 200000 },
+      "baslangicStok": { "celik": 120000, "parca": 40000, "gida": 200000, "pencere": 3000 },
       "yurtHucre": 6,
       "ilkYapiIndirimPpm": 300000,
       "indirimliYapiSayisi": 5,
@@ -282,8 +282,56 @@
       "atolye_lab": {
         "ad": "Atölye", "yuva": 1, "insaSaati": 6, "insaParasi": 8000000, "insaMaliyeti": { "celik": 30000, "parca": 15000 },
         "enFazlaIlBasina": 1
+      },
+      "dukkan": {
+        "ad": "Dükkân", "yuva": 1, "insaSaati": 4, "insaParasi": 6000000, "insaMaliyeti": { "celik": 20000, "parca": 8000, "pencere": 4000 },
+        "enFazlaIlBasina": 6, "olcekHucre": [1, 2, 3]
       }
     },
+    "perakende": {
+      "surum": 1,
+      "acikOlcekler": [0],
+      "ilceBasinaEnFazla": 2,
+      "fiyatBandiPpm": [700000, 1400000],
+      "fiyatKademeleriPpm": [850000, 950000, 1050000, 1150000],
+      "varsayilanFiyatKademesi": 2,
+      "kampanyaKademesi": 0,
+      "fiyatDegisimEnAzSaat": 6,
+      "cesitKatsayiPpm": 250000,
+      "esnaf": { "fiyatPpm": 1120000, "tabanPayPpm": 250000 },
+      "olcekler": [
+        { "rafYuvasi": 4, "kasaMiliSaat": 90000, "giderMiliSaat": 132000, "cekimCarpaniPpm": 1000000 },
+        { "rafYuvasi": 6, "kasaMiliSaat": 198000, "giderMiliSaat": 204000, "cekimCarpaniPpm": 1600000 },
+        { "rafYuvasi": 8, "kasaMiliSaat": 324000, "giderMiliSaat": 330000, "cekimCarpaniPpm": 2400000 }
+      ],
+      "dukkanTurleri": [
+        { "id": "bakkal", "ad": "Bakkal", "mallar": ["gida", "ekmek", "un", "sut", "sut_urunu", "sekerleme", "findik_urunu", "yakit"], "tamCesit": 6, "olcekAraligi": [0] },
+        { "id": "firin", "ad": "Fırın", "mallar": ["ekmek", "gida"], "tamCesit": 2, "olcekAraligi": [0] },
+        { "id": "sarkuteri", "ad": "Şarküteri", "mallar": ["sut", "sut_urunu", "gida"], "tamCesit": 3, "olcekAraligi": [0] },
+        { "id": "sekerci", "ad": "Şekerci", "mallar": ["sekerleme", "findik_urunu"], "tamCesit": 2, "olcekAraligi": [0] }
+      ],
+      "talep": {
+        "yerelOlcek": 40,
+        "ilceSinifiNufus": { "kirsal": 10000, "kasaba": 40000, "sehir": 120000 },
+        "talep1000Saat": { "gida": 90, "ekmek": 60, "un": 10, "sut": 20, "sut_urunu": 20, "sekerleme": 6, "findik_urunu": 3, "yakit": 15 },
+        "gruplar": {
+          "gida": {
+            "mallar": ["gida", "ekmek", "un", "sut", "sut_urunu"],
+            "takvimPpm": [1030000, 1020000, 1010000, 1000000, 990000, 970000, 960000, 970000, 1000000, 1020000, 1020000, 1010000],
+            "bayram": { "oncesiGun": 5, "oncesiPpm": 1250000, "sonrasiGun": 10, "sonrasiPpm": 875000 }
+          },
+          "tatli": {
+            "mallar": ["sekerleme", "findik_urunu"],
+            "takvimPpm": [1100000, 1050000, 980000, 950000, 900000, 850000, 820000, 850000, 950000, 1100000, 1200000, 1250000],
+            "bayram": { "oncesiGun": 7, "oncesiPpm": 1800000, "sonrasiGun": 28, "sonrasiPpm": 800000 }
+          },
+          "yakit": { "mallar": ["yakit"], "takvimPpm": [1400000, 1400000, 1200000, 950000, 750000, 650000, 600000, 600000, 750000, 950000, 1300000, 1450000] }
+        },
+        "bayramGunleri": [159, 227, 513, 582]
+      },
+      "marka": { "hesapBasinaEnFazla": 3, "simgeSayisi": 8, "renkSayisi": 12 }
+    },
+    "bakim": { "asinmaHizCarpaniPpm": 500000, "asinmaVerimKaybiTavaniPpm": 250000, "yontemParcaPpm": { "yuzey_cevher": 200000, "hidro_santrali": 200000 } },
     "hareketsizlik": { "uykuGun": 14, "curumeGun": 45, "curumePpmGun": 20000, "acikArtirmaGun": 90, "tatilGunYillik": 30 }
   }
 }

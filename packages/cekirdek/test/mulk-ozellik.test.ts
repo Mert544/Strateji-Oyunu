@@ -66,7 +66,10 @@ describe("arsa fiyatı: taban × (1 + 2 · ilçede satılmış pay), hücre baş
     // satılmış pay %25 (20/80) -> × 1,5
     expect(parselFiyati(BIN, 2 * PPM, 20, 80, 1)).toBe(1_500_000);
     // üç hücre: 0/81, 1/81, 2/81
-    const beklenen = [0, 1, 2].reduce((t, k) => t + Math.floor((BIN * (PPM + Math.floor((2 * PPM * k) / 81))) / PPM), 0);
+    // Her hücre tam liraya YUKARI yuvarlanır (§9.4; G7-4): eski değer (aşağı) 3 074 073 idi, yeni 3 075 000 (3 hücre, 81 uygun).
+    const yukari = (mili: number): number => Math.ceil(mili / 1000) * 1000;
+    const beklenen = [0, 1, 2].reduce((t, k) => t + yukari(Math.floor((BIN * (PPM + Math.floor((2 * PPM * k) / 81))) / PPM)), 0);
+    expect(beklenen).toBe(3_075_000);
     expect(parselFiyati(BIN, 2 * PPM, 0, 81, 3)).toBe(beklenen);
     expect(parselFiyati(2_500_000, 2 * PPM, 40, 80, 1)).toBe(5_000_000);
   });

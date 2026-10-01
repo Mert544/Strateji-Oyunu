@@ -473,7 +473,11 @@ describe("mulk.bakim (bakım C, sartname §5.10): V18 şema ve türev sınır, V
   };
 
   it("blok yok, boş blok ve kimlik değerleri geçerli (no-op)", () => {
+    // G7-4: gerçek parametreler.json artık bakım değerlerini taşır (500 000 / 250 000 / yuzey_cevher + hidro_santrali 200 000); "blok yok" kurgusu testin kendisinde kurulur.
     const v = miniVeriyiYukle();
+    expect(v.param.mulk?.bakim).toEqual({ asinmaHizCarpaniPpm: 500_000, asinmaVerimKaybiTavaniPpm: 250_000, yontemParcaPpm: { yuzey_cevher: 200_000, hidro_santrali: 200_000 } });
+    expect(prm(v.param.mulk?.bakim)).toBe(""); // gerçek değerler V18/V19'dan geçer
+    delete v.param.mulk!.bakim;
     expect(v.param.mulk?.bakim).toBeUndefined();
     expect(prm(undefined)).toBe("");
     expect(prm({})).toBe("");

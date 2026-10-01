@@ -57,6 +57,15 @@ export function p3Oncesi(v: Veri): Veri {
     delete c.param.pazar.emilimSaat[id];
     delete c.param.pazar.arzSaat[id];
   }
+  // G7-4: gerçek içerik yeni oyuncu başlangıç stoğuna `pencere` (yeni mal) ekler; 14 mallı içerikte yeni mal yoktur (yalnız bu YARDIMCI değişir, iddialar aynı).
+  const yo = (c.param.mulk as { yeniOyuncu?: { baslangicStok?: Record<string, number> } } | undefined)?.yeniOyuncu;
+  if (yo?.baslangicStok !== undefined) for (const id of YENI_MALLAR) delete yo.baslangicStok[id];
+  // G7-4: dükkân (`mulk.perakende`, `ekYapilar.dukkan`) yeni mallara (pencere, un, ekmek...) başvurur: 14 mallı (P3 öncesi) içerikte yoktur.
+  const mulk = c.param.mulk as { perakende?: unknown; ekYapilar?: Record<string, unknown> } | undefined;
+  if (mulk !== undefined) {
+    delete mulk.perakende;
+    if (mulk.ekYapilar !== undefined) delete mulk.ekYapilar["dukkan"];
+  }
   return c;
 }
 
