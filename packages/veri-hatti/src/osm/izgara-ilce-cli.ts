@@ -4,6 +4,7 @@
  *   tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --ilce tr_16_gemlik --ilce tr_41_korfez [--dogrula]
  *   tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --rapor        # manifestten boyut tablosu (markdown)
  *   tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --kontrol      # manifest + dosya sha256 doğrulaması
+ *   tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --nufus        # manifestteki ilçelere yapilandirma/ilce-nufus.json'dan nufus yazar (ağ gerekmez)
  *
  * Çıktılar packages/veri/haritalar/odbl/izgara/ altına (ODbL dizini) ve manifest.json'a yazılır. Karo özütü yoksa
  * `pmtiles extract` ile sabitlenmiş Protomaps yapısından alınır (ağ). Erişilemezse hat durur; veri uydurulmaz.
@@ -12,6 +13,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ONBELLEK } from "../yollar";
+import { ilceNufusu } from "./ilce-nufus";
 import { IzgaraManifestSemasi, IZGARA_MANIFEST_YOLU, manifestOku, manifestiDogrula, sha256Hex, type IlceIzgarasi, type IzgaraManifesti } from "./izgara-manifest";
 import { KARO_KAYNAK_URL, KARO_YAPISI, idariHalkalar, ilceBilgisi, ilceIzgarasiUret, type IlceUretimi } from "./izgara-ilce";
 import { VARSAYILAN_SECENEKLER } from "./izgara-uygunluk";
@@ -37,6 +39,12 @@ function argumanlar(ad: string): string[] {
 }
 const bayrak = (ad: string): boolean => process.argv.includes(`--${ad}`);
 
+/** Manifest girdisine `nufus` (veride kimliği varsa; yoksa alan hiç yazılmaz: isteğe bağlı). */
+const nufusAlani = (kimlik: string): { nufus?: number } => {
+  const n = ilceNufusu(kimlik);
+  return n === undefined ? {} : { nufus: n };
+};
+
 function ilceKaydi(u: IlceUretimi, bhiYol: string, seritYol: string): IlceIzgarasi {
   const st = u.istatistik;
   return {
@@ -44,6 +52,7 @@ function ilceKaydi(u: IlceUretimi, bhiYol: string, seritYol: string): IlceIzgara
     ad: u.bilgi.ad,
     il: u.bilgi.il,
     osmIliski: u.bilgi.osmIliski,
+    ...nufusAlani(u.bilgi.kimlik),
     bhi: { yol: bhiYol, bayt: u.bhiBayt, sha256: u.bhiSha256, hamBayt: u.bhiHamBayt },
     seritler: { yol: seritYol, bayt: u.seritBayt, sha256: u.seritSha256 },
     cerceve: u.cerceve,
@@ -108,7 +117,33 @@ function rapor(m: IzgaraManifesti): string {
   return s.join("\n");
 }
 
+/** Mevcut manifestteki her ilçeye `nufus` yazar (veri, karo ve ağ gerekmez; BHI1/şerit dosyalarına dokunulmaz). */
+function nufusGuncelle(): void {
+  const m = manifestOku();
+  let yazilan = 0;
+  const ilceler = m.ilceler.map((i) => {
+    const { nufus: _eski, ...geri } = i;
+    const ek = nufusAlani(i.kimlik);
+    if (ek.nufus !== undefined) yazilan++;
+    // `nufus`, `osmIliski`'den hemen sonra (deterministik anahtar sırası)
+    const sonuc: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(geri)) {
+      sonuc[k] = v;
+      if (k === "osmIliski" && ek.nufus !== undefined) sonuc["nufus"] = ek.nufus;
+    }
+    return sonuc as unknown as IlceIzgarasi;
+  });
+  const yeni: IzgaraManifesti = { ...m, ilceler };
+  IzgaraManifestSemasi.parse(yeni);
+  writeFileSync(IZGARA_MANIFEST_YOLU, `${JSON.stringify(yeni, null, 2)}\n`);
+  console.log(`manifest: ${yazilan}/${ilceler.length} ilceye nufus yazildi`);
+}
+
 function main(): void {
+  if (bayrak("nufus")) {
+    nufusGuncelle();
+    return;
+  }
   if (bayrak("rapor")) {
     console.log(rapor(manifestOku()));
     return;

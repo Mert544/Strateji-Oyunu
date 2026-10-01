@@ -10,6 +10,7 @@ import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { bhiCoz } from "@bolge/veri";
 import { izgaraSay } from "../../istemci/src/harita/hucre";
+import { ilceNufusOku, ilceNufusu } from "../src/osm/ilce-nufus";
 import { ikiliCoz } from "../src/osm/izgara-cikti";
 import { YerelPmtiles } from "../src/osm/izgara-pmtiles";
 import { PMTILES, TIPPECANOE } from "../src/osm/izgara-arac";
@@ -72,6 +73,16 @@ describe("izgara manifesti", () => {
       const say = izgaraSay(istemci);
       expect({ kota: say.kota, uygun: say.uygun }, i.kimlik).toEqual({ kota: i.hucre.kara, uygun: i.hucre.uygun });
     }
+  });
+
+  it("her ilcenin nufusu yapilandirma/ilce-nufus.json ile ayni (TUIK ADNKS 2025); Gemlik, Gebze, Korfez", () => {
+    const v = ilceNufusOku();
+    for (const i of m.ilceler) {
+      expect(i.nufus, i.kimlik).toBeDefined();
+      expect(i.nufus, i.kimlik).toBe(ilceNufusu(i.kimlik, v));
+    }
+    const nufus = Object.fromEntries(m.ilceler.map((i) => [i.kimlik, i.nufus]));
+    expect(nufus).toEqual({ tr_16_gemlik: 124_400, tr_41_gebze: 414_960, tr_41_korfez: 183_077 });
   });
 
   it("manifest dosyasi kanonik (yeniden bicimlendirme ayni baytlari verir)", () => {

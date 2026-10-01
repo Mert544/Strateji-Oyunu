@@ -10,6 +10,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
+import { ILCE_NUFUS_ENCOK } from "@bolge/veri";
 import { z } from "zod";
 import { ikiliCoz, type IkiliIzgara } from "./izgara-cikti";
 import { ODBL_DIZINI } from "./ortak";
@@ -24,6 +25,8 @@ const ilce = z
     ad: z.string().min(1),
     il: z.string().min(1),
     osmIliski: z.number().int().positive(),
+    /** İlçe nüfusu (yapilandirma/ilce-nufus.json, TÜİK ADNKS 2025); isteğe bağlı: sunucu `ParselIzgaraIlce.nufus` olarak okur (G7). */
+    nufus: z.number().int().min(1).max(ILCE_NUFUS_ENCOK).optional(),
     /** BHI1 (gzip): sunucu ve istemci BU dosyayı okur. */
     bhi: dosya.extend({ hamBayt: z.number().int().positive() }).strict(),
     /** İstemci vektör katmanı (şerit PMTiles, z15). */

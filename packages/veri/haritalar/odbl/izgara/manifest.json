@@ -29,6 +29,7 @@
       "ad": "Gemlik",
       "il": "tr_16",
       "osmIliski": 1273958,
+      "nufus": 124400,
       "bhi": {
         "yol": "izgara/tr_16_gemlik.bhi.gz",
         "bayt": 37023,
@@ -71,6 +72,7 @@
       "ad": "Gebze",
       "il": "tr_41",
       "osmIliski": 1211496,
+      "nufus": 414960,
       "bhi": {
         "yol": "ornek/gebze-hucreler.bhi.gz",
         "bayt": 85234,
@@ -113,6 +115,7 @@
       "ad": "Körfez",
       "il": "tr_41",
       "osmIliski": 1211492,
+      "nufus": 183077,
       "bhi": {
         "yol": "izgara/tr_41_korfez.bhi.gz",
         "bayt": 47931,
