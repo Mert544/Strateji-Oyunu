@@ -427,14 +427,25 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
         kontrol(`${e} yapı önce yerleşim: kartta "2 hücre alınacak" + Ahır bedeli`, /2 hücre alınacak/.test(k2) && /5\.600\s₺/.test(k2) && !!planB && planB.gecerli, k2);
         await ekran("10-yapi-once-yerlesim");
       }
-      const seqOnce = ts.yazar.seq;
+      // İstemcinin gönderdiği komutları say (sunucu `seq`i defter ödülü gibi sistem komutlarını da sayar; yurt önce akışında ilk arsa damgası burada gelir)
+      await sayfa.evaluate(() => {
+        const bg = window.__harita?.baglanti() as unknown as { komutGonder: (k: { tur: string }) => unknown } | undefined;
+        const w = window as unknown as { __gonderilen?: string[] };
+        w.__gonderilen = [];
+        if (!bg) return;
+        const o = bg.komutGonder.bind(bg);
+        bg.komutGonder = (k) => {
+          w.__gonderilen?.push(k.tur);
+          return o(k);
+        };
+      });
       await tikla(sayfa, false, "#yapi-kart [data-yk='onayla']");
       await sayfa.waitForSelector("#bildirimler .bildirim >> text=Ahır kuruluyor", { timeout: 20000 });
       const t3 = (await sayfa.locator("#bildirimler .bildirim").last().innerText()).replace(/\s+/g, " ");
       if (ilk) {
         kontrol(`${e} Ahır: arsa + yapı tek işlemde, bildirim Türkçe`, /Ahır kuruluyor: arsa 2 hücre, [\d.]+\s₺ \+ yapı 5\.600\s₺\./.test(t3), t3);
-        const kmt = ts.yazar.seq - seqOnce;
-        kontrol(`${e} komut yolu: ${atomik ? "tek atomik yapi_yerlestir" : "zincir (parsel_al + tesis_insa_hucre)"}`, kmt === (atomik ? 1 : 2), `sunucuya ${kmt} komut`);
+        const gonderilen = await sayfa.evaluate(() => (window as unknown as { __gonderilen?: string[] }).__gonderilen ?? []);
+        kontrol(`${e} komut yolu: ${atomik ? "tek atomik yapi_yerlestir" : "zincir (parsel_al + tesis_insa_hucre)"}`, atomik ? gonderilen.join() === "yapi_yerlestir" : gonderilen.join() === "parsel_al,tesis_insa_hucre", `istemci komutları: ${gonderilen.join(", ")}`);
       }
       await sayfa.waitForTimeout(500);
     };
@@ -641,9 +652,9 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     return p ? { gecerli: p.gecerli, neden: p.neden, ek: p.ekHucreler, alinacak: p.alinacak.length, arsaMili: p.arsaMili, yapiMili: p.yapiMili, toplamMili: p.toplamMili, hedef: p.hedef.ad } : null;
   });
   const k1 = (await kart(sayfa)).replace(/\s+/g, " ");
-  const tl = (mili: number): string => `${new Intl.NumberFormat("tr-TR").format(Math.ceil(mili / 1000))}\u00a0₺`;
+  const tl = (mili: number): string => `${new Intl.NumberFormat("tr-TR").format(Math.ceil(mili / 1000))} ₺`; // kart metni boşlukları sadeleştirilmiş (NBSP -> boşluk) okunur;
   kontrol(`${e} Büyüt: harita Gebze'de, kart: ek hücre, arsa, büyütme, süre, tek toplam`, !!plan && plan.gecerli && plan.ek.length === 1 && plan.hedef === "M" && /Çiftlik büyüt/.test(k1) && /S ölçek/.test(k1) && /M ölçek · 3 hücre/.test(k1) && /L ölçek · 4 hücre/.test(k1) && /Arsa/.test(k1) && /Büyütme/.test(k1) && /Süre/.test(k1) && /Toplam/.test(k1), `${JSON.stringify(plan)} | ${k1}`);
-  kontrol(`${e} kartta büyütme ${plan ? tl(plan.yapiMili) : "?"} (S → M ×1,5 çekirdek bedeli) ve toplam ${plan ? tl(plan.toplamMili) : "?"} (arsa + büyütme)`, !!plan && plan.yapiMili === 9_000_000 && k1.includes("9.000\u00a0₺") && k1.includes(`Toplam ${tl(plan.toplamMili)}`) && plan.toplamMili === plan.arsaMili + plan.yapiMili, k1);
+  kontrol(`${e} kartta büyütme ${plan ? tl(plan.yapiMili) : "?"} (S → M ×1,5 çekirdek bedeli) ve toplam ${plan ? tl(plan.toplamMili) : "?"} (arsa + büyütme)`, !!plan && plan.yapiMili === 9_000_000 && k1.includes("9.000 ₺") && k1.includes(`Toplam ${tl(plan.toplamMili)}`) && plan.toplamMili === plan.arsaMili + plan.yapiMili, k1);
   const hayalet = await sayfa.evaluate(() => window.__harita?.gorunum()?.ml.queryRenderedFeatures({ layers: ["olcek-hayalet-dolgu"] }).length ?? 0);
   kontrol(`${e} hayalet haritada: büyüyen tesis + ek hücre`, hayalet >= 3, `${hayalet} özellik`);
   const kamuMetin = await alt(sayfa).catch(() => "");
