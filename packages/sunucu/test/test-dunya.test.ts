@@ -112,6 +112,28 @@ describe("dosya deposu: test dunyasi silme ve sayim", () => {
     expect(Object.values(sonra.kalan).every((n) => n === 0)).toBe(true);
     expect((await readdir(d)).filter((x) => x !== "yazar.kilit" && x !== "notlarim.txt")).toEqual([]);
     expect(await readFile(join(d, "notlarim.txt"), "utf8")).toBe("dokunma");
+    expect(rapor.dizinSilindi).toBe(false); // başka dosya var: dizin KORUNUR
+  });
+
+  it("silmeden sonra BOS kalan test dunyasi dizini de silinir (kilit dosyasi dahil); icinde baska dosya ya da alt dizin varsa dizin korunur; ikinci silme ve sayim olmayan dizinde 0", async () => {
+    const d = await geciciDizin("test-dizin-");
+    await dunyaOynat(d);
+    const rapor = await dosyaTestDunyasiSil(d, { dunya: "test-dizin" });
+    expect(rapor.dizinSilindi).toBe(true);
+    expect(await stat(d).catch(() => null)).toBeNull(); // dizin yok
+    expect((await dosyaTestDunyasiSay(d, "test-dizin")).toplam).toBe(0);
+    // Alt dizin (goruntu disinda) kalirsa dizin silinmez.
+    const e = await geciciDizin("test-dizin2-");
+    await dunyaOynat(e);
+    await mkdir(join(e, "elle-konan"));
+    expect((await dosyaTestDunyasiSil(e, { dunya: "test-dizin2" })).dizinSilindi).toBe(false);
+    expect(await stat(join(e, "elle-konan")).then(() => true, () => false)).toBe(true);
+    // Yazar kilidi tutuluyorsa (baska surec) hicbir sey silinmez, dizin de yerinde kalir.
+    const f = await geciciDizin("test-dizin3-");
+    await dunyaOynat(f);
+    await writeFile(join(f, "yazar.kilit"), String(process.ppid));
+    await expect(dosyaTestDunyasiSil(f, { dunya: "test-dizin3" })).rejects.toThrow(/kilitli/);
+    expect(await stat(f).then(() => true, () => false)).toBe(true);
   });
 
   it("dizin adi test onekiyle baslamiyorsa ya da dunya adi paylasilansa reddeder; dosyalar yerinde kalir", async () => {

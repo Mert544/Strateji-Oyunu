@@ -10,7 +10,7 @@
  *   Hesap kimliği önekiyle (`--test-hesap-oneki`, G5 testlerindeki `pgh...` gibi) açıkça istenen hesaplar bu korumaya tabi değildir.
  * pg'de hepsi tek işlemdir. Hesap tabloları dünyadan bağımsızdır (G5): eşleme `hesap_oyuncu.oyuncu_id` üzerindendir, `ON DELETE CASCADE` oturum ve eşlemeyi götürür.
  */
-import { readFile, readdir, rm, stat } from "node:fs/promises";
+import { readFile, readdir, rmdir, rm, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { fnv1a32 } from "@bolge/cekirdek";
 
@@ -25,6 +25,8 @@ export interface TestDunyaRaporu {
   oyuncular: string[];
   /** Başka dünyada da kullanıldığı için silinmeyen hesap sayısı. */
   korunanHesap: number;
+  /** Dosya deposu: silmeden sonra BOŞ kalan test dünyası dizininin kendisi de silindi mi (içinde başka dosya varsa silinmez). */
+  dizinSilindi?: boolean;
   toplam: number;
 }
 
@@ -234,6 +236,7 @@ export async function dosyaTestDunyasiSil(dizin: string, s: TestDunyaSecenekleri
   if (resolve(dizin) === resolve(VARSAYILAN_DOSYA_DIZINI)) throw new Error(`test dunyasi silme reddedildi: varsayilan dosya dizini (${VARSAYILAN_DOSYA_DIZINI}) silinemez`);
   const { kilitAl } = await import("./depo/dosya");
   const birak = await kilitAl(dizin); // yazar çalışıyorsa fırlatır
+  let rapor: TestDunyaRaporu;
   try {
     const silinen: Record<string, number> = {};
     const oy = await dosyaOyunculari(dizin);
@@ -245,10 +248,14 @@ export async function dosyaTestDunyasiSil(dizin: string, s: TestDunyaSecenekleri
     const gd = join(dizin, "goruntu");
     silinen["goruntu"] = (await readdir(gd).catch(() => [] as string[])).length;
     await rm(gd, { recursive: true, force: true });
-    return { dunya: s.dunya, depo: "dosya", silinen, oyuncular: oy, korunanHesap: 0, toplam: Object.values(silinen).reduce((a, b) => a + b, 0) };
+    rapor = { dunya: s.dunya, depo: "dosya", silinen, oyuncular: oy, korunanHesap: 0, toplam: Object.values(silinen).reduce((a, b) => a + b, 0) };
   } finally {
-    await birak();
+    await birak(); // yazar.kilit kalkar
   }
+  // Boş kalan test dünyası dizininin kendisi de silinir: YALNIZ boşsa (rmdir özyinelemesizdir; başka dosya varsa ENOTEMPTY ile atlanır, elle konan dosyaya dokunulmaz).
+  // Dizin adı test önekiyle başlar (yukarıda denetlendi) ve varsayılan dizin değildir.
+  rapor.dizinSilindi = await rmdir(dizin).then(() => true, () => false);
+  return rapor;
 }
 
 /** Dosya deposu: test dünyası dizininde kalan dosya/satır sayısı (silmeden sonra 0). */
