@@ -77,7 +77,7 @@ export const GIRIS_METIN = {
   "giris.G8.cikis_tumu_onay": "Hesabının bütün oturumları kapanır. Devam edilsin mi?",
   "giris.G8.sonuc": "Çıkış yaptın. Yeniden girmek için bağlantı iste.",
   "giris.G8.eposta_satiri": "E-posta: {adres}",
-  "giris.G8.silme_bilgi": "Hesabını silmek istersen bize yaz: {destek_eposta}",
+  "giris.G8.silme_bilgi": "Hesabınla ilgili bir sorun olursa bize yaz: {destek_eposta}",
   // T1 arayüz sözleşmesinden (A1 tablosunda ayrı satırı yok): yer tutucu, g3 geçersiz bağlantı başlığı ve eylemi, çıkış onayı vazgeç
   "giris.G1.ornek": "ad@ornek.com",
   "giris.G2.gonderiliyor": "Gönderiliyor…",
@@ -86,7 +86,7 @@ export const GIRIS_METIN = {
   "giris.G8.vazgec": "Vazgeç",
   // Sahip metni (boş: ilgili satır gösterilmez)
   "giris.G8.hesap_sil": "Hesabı sil",
-  "giris.G8.hesap_sil_onay": "Hesabını silmek için e-postana bir onay bağlantısı göndereceğiz. Silme kalıcıdır ve bağlantıdaki sayfada onaylanınca yapılır. Devam edilsin mi?",
+  "giris.G8.hesap_sil_onay": "Hesabın silinince geri getirilemez; önce e-postana bir onay bağlantısı göndereceğiz. Devam edilsin mi?",
   "giris.G8.hesap_sil_gonder": "Onay bağlantısı gönder",
   "giris.G8.hesap_sil_bildirim": "Onay bağlantısı e-postana gönderildi.",
   "giris.G8.hesap_sil_sonuc": "Onay bağlantısı e-postana gönderildi. Hesabın silinmedi; silmek için bağlantıdaki sayfada onayla.",

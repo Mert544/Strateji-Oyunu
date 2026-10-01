@@ -29,6 +29,6 @@ describe("sahip metni dolu", () => {
     const g1 = girisHtml(d({ ekran: "g1" }), b);
     expect(g1).toContain('<a class="gr-baglanti" data-eylem="veri-kullanimi" href="https://ornek.org/kvkk" target="_blank" rel="noopener noreferrer">Veri kullanımı</a>');
     const h = hesapHtml({ eposta: "a@b.co", onayAcik: false, cikiyor: false });
-    expect(h).toContain('Hesabını silmek istersen bize yaz: <a class="gr-baglanti" href="mailto:destek@ornek.org">destek@ornek.org</a>');
+    expect(h).toContain('Hesabınla ilgili bir sorun olursa bize yaz: <a class="gr-baglanti" href="mailto:destek@ornek.org">destek@ornek.org</a>');
   });
 });

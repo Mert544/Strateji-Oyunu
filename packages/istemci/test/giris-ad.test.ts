@@ -169,7 +169,7 @@ describe("Ayarlar Hesabı sil", () => {
     expect(sil()).not.toContain("alertdialog");
     const o = sil({ onayAcik: true });
     expect(o).toContain(`role="alertdialog" aria-modal="true" aria-labelledby="gr-sil-onay" data-giris-onay="hesap-sil"`);
-    expect(o).toContain("Silme kalıcıdır ve bağlantıdaki sayfada onaylanınca yapılır.");
+    expect(o).toContain("Hesabın silinince geri getirilemez;");
     expect(o).toContain(`<button class="tehlike" type="button" data-eylem="hesap-sil-onayla">Onay bağlantısı gönder</button>`);
     expect(o).toContain(`data-eylem="hesap-sil-vazgec" data-varsayilan-odak="1">Vazgeç</button>`);
     expect(sil({ gonderildi: true })).toContain(`role="status" data-kod="hesap-sil-sonuc">Onay bağlantısı e-postana gönderildi.`);
