@@ -583,3 +583,63 @@ export interface DunyaGorunumu {
   dunya: Readonly<Dunya>;
   ic: DerlenmisIcerik;
 }
+
+// ---------------------------------------------------------------------------
+// Mülk sözleşmesi TASLAĞI (S1; docs/11). Henüz `Komut` birliğine ve `Dunya`'ya
+// bağlı DEĞİLDİR: S3 bunları bayrak (`parametreler.mulk`) arkasında bağlar.
+// Bölge kipinde hiçbir alan tanımlanmaz; durum özeti birebir aynı kalır.
+// ---------------------------------------------------------------------------
+
+/** z20 kare hücre kimliği: "x:y" (Web Mercator z20 karo koordinatı, ~30 m). */
+export type HucreId = string;
+
+/** Arsa sınıfı; taban fiyatı ve izinli yapıları belirler. */
+export type ArsaSinifi = "kirsal" | "kasaba" | "sehir";
+
+/** İlçe gelişim seviyesi: Köy → Kasaba → Merkez → Şehir. */
+export type IlceSeviyesi = 0 | 1 | 2 | 3;
+
+/** Tek bir hücrenin mülkiyet kaydı. Parsel asla zorla el değiştirmez (yalnız hareketsizlik açık artırması). */
+export interface HucreDurumu {
+  id: HucreId;
+  ilce: string;
+  sinif: ArsaSinifi;
+  sahip: OyuncuId;
+  /** Satın alma bedeli (mili-₺); arazi vergisinin tabanı. */
+  degerMili: Mili;
+  /** Üzerindeki tesisin kimliği; boşsa tanımsız. */
+  tesis?: number;
+  alinma: Ms;
+}
+
+/** Oyuncu-il işletme düğümü: (oyuncu, il) başına bir `BolgeDurumu`, il merkezine sıfır süreli kenarla bağlı. */
+export interface IsletmeDugumu {
+  oyuncu: OyuncuId;
+  il: string;
+  /** Bağlı olduğu lojistik/pazar merkezi (53 bölgeden biri). */
+  merkezBolge: string;
+  /** Bu düğümün `bolgeler` dizisindeki indeksi. */
+  bolgeIndeksi: number;
+}
+
+/** İlçe düzeyi paylaşılan durum. */
+export interface IlceDurumu {
+  id: string;
+  il: string;
+  seviye: IlceSeviyesi;
+  /** Toplam uygun hücre sayısı (veri hattından). */
+  uygunHucre: number;
+  /** Satılmış hücre sayısı; fiyat çarpanı (1 + 2·pay) bundan türetilir. */
+  satilmisHucre: number;
+}
+
+/** Tesisin kapladığı hücreler (1–3). Bölge kipinde tanımsız; S3 `TesisDurumu`'na `hucreler?` olarak ekler. */
+export interface TesisMulkAlanlari {
+  hucreler?: HucreId[];
+}
+
+/** Mülk komutları; S3 bunları `Komut` birliğine katar. Coğrafi geçerliliği (hücre ilçede mi, uygun mu) sunucu doğrular. */
+export type MulkKomutu =
+  | { tur: "parsel_al"; ilce: string; hucreler: HucreId[]; sinif: ArsaSinifi }
+  | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[] }
+  | { tur: "insaat_iptal"; insaat: number };
