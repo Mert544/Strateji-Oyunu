@@ -6,7 +6,7 @@ import { createServer } from "node:http";
 import { WebSocketServer } from "ws";
 import type { WebSocket } from "ws";
 import type { AddressInfo } from "node:net";
-import { SISTEM_OYUNCUSU } from "@bolge/cekirdek";
+import { SISTEM_OYUNCUSU, adKanonik } from "@bolge/cekirdek";
 import type { Komut, OyuncuId } from "@bolge/cekirdek";
 import {
   EN_BUYUK_MESAJ_BAYT,
@@ -20,6 +20,7 @@ import {
   kareFarki,
 } from "@bolge/protokol";
 import type { HataKodu, IlgiKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
+import type { AdSuzgeci } from "./ad-suzgec";
 import { HizSiniri, VARSAYILAN_HIZ_SINIRI } from "./hiz-siniri";
 import { OlayDongusuOlcer, metrikMetni, metrikSunucusuBaslat, saglikYaniti } from "./metrik";
 import type { MetrikSecenekleri, MetrikSunucusu, SaglikDurumu } from "./metrik";
@@ -40,6 +41,11 @@ export interface SunucuSecenekleri {
   hizSiniri?: HizSiniriSecenekleri;
   /** Komut olmayan turlarda en sık yayın aralığı (ms, duvar). Varsayılan 1000. */
   yayinAraligiMs?: number;
+  /**
+   * Marka adı (`marka_tanimla.ad`) yasaklı ad süzgeci (görünen adla AYNI süzgeç ve liste; G7). Yoksa yalnız çekirdek sözdizimi ve kanonik (küçük harf) biçim uygulanır.
+   * Ad komutu günlüğe yazılmadan ÖNCE süzülür; günlüğe kanonik ad girer.
+   */
+  adSuzgeci?: AdSuzgeci;
   /** `merhaba` gelmezse bağlantı kapanır (ms). Varsayılan 5000. */
   merhabaZamanAsimiMs?: number;
   /**
@@ -480,7 +486,17 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       return hata(b, "yetki", "oyuncu_katil yalniz yonetici (oyuncu kendi katilimi icin 'katil' mesajini kullanir)", { anahtar: m.anahtar });
     }
     if (m.komut.tur === "sistem_odul" && !k.yonetici) return hata(b, "yetki", "sistem_odul yalniz yonetici", { anahtar: m.anahtar });
-    yazaraIlet(b, k, oyuncu, b.istemci, m.anahtar, m.komut);
+    // Moderasyon komutu: marka sıfırlama yalnız yönetici (çekirdek de "sistem" yolunu ister; burada oyuncu kimliğiyle günlüğe hiç girmez).
+    if (m.komut.tur === "marka_sifirla" && !k.yonetici) return hata(b, "yetki", "marka_sifirla yalniz yonetici", { anahtar: m.anahtar });
+    let komut: Komut = m.komut;
+    if (komut.tur === "marka_tanimla") {
+      // Ad GÜNLÜĞE YAZILMADAN önce: çekirdek sözdizimi + kanonik (küçük harf) biçim (istemciye güvenilmez, yeniden çevrilir), sonra yasaklı ad süzgeci. Günlüğe kanonik ad girer.
+      const r = adKanonik(komut.ad);
+      if (!r.tamam) return hata(b, "ad_gecersiz", r.hata, { anahtar: m.anahtar });
+      if (s.adSuzgeci?.yasakliMi(r.ad) === true) return hata(b, "ad_yasakli", "marka adi kullanilamaz", { anahtar: m.anahtar });
+      komut = { ...komut, ad: r.ad };
+    }
+    yazaraIlet(b, k, oyuncu, b.istemci, m.anahtar, komut);
   }
 
   /**

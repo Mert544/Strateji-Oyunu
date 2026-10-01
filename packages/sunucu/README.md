@@ -70,6 +70,8 @@ Sunum katmanıdır: çekirdek durumunu YALNIZ okur, `durumOzeti`ne girmez (testl
 
 ## Esnaf Defteri: kavram dedektörü, ödül ve damgalar (rehber-gorevler.md §3.1, sunucu P0)
 
+**Marka komutları (G7; `src/sunucu.ts` `komutAl`).** `marka_sifirla {oyuncu, marka}` (moderasyon) YALNIZ yönetici: oyuncu kimliğiyle `yetki` hatası döner ve komut günlüğe hiç girmez (yönetici kimliğiyle `sistem` olarak yazılır; çekirdek de sistem yolunu ister). `marka_tanimla.ad` günlüğe yazılmadan ÖNCE çekirdek `adKanonik`'ten (sözdizimi + sabit tablolu küçük harf; marka adı ve görünen ad TEK kural) ve yasaklı ad süzgecinden (görünen adla AYNI liste ve süzgeç, `--yasakli-adlar`; kimlik kipinden bağımsız yüklenir) geçer: günlüğe ve yanıta KANONİK ad girer; ret `hata` mesajıdır (`ad_gecersiz` çekirdek iletisiyle, `ad_yasakli`; kodlar `/giris/ad` ile aynıdır, `anahtar` taşır) ve komut günlüğe girmez. Protokol zod'u ham `ad`ın uzunluğunu (2..24) ayrıca denetler (25 karakter `gecersiz_mesaj`).
+
 Para ve mal ödülü ÇEKİRDEKTEdir (`sistem_odul {oyuncu, kavram}`, tutar komutta yok: tutar, tavan 8.000 ₺ ve "kavram başına bir kez" çekirdek ödül tablosunda, `parametreler.json odul`); kozmetik/bilgi damgaları profilde. Sunucu yalnız **ne zaman verileceğini** saptar (`src/odul/dedektor.ts`, çekirdeği YALNIZ okur), komutu **sistem kimliğiyle günlüğe yazar** ve profili/Defter okumasını sunar. Tutar sunucuda yazılmaz, LLM yoktur. **Yalnız mülk kipinde** çalışır (bölge kipinde başlangıç yapıları bedava ödül olurdu); insan oyuncular için (sunucu botları ve sistem hariç).
 
 **Kavram koşulları** (çekirdek durumundan türetilir; tablo `dedektor.ts` başlığında):

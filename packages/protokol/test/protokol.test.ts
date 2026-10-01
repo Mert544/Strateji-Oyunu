@@ -112,6 +112,16 @@ describe("mesaj semalari", () => {
     expect("dukkanTuru" in KomutSemasi.parse({ tur: "parsel_al", ilce: "i", hucreler: ["1:1"], sinif: "kirsal", dukkanTuru: "bakkal" })).toBe(false);
   });
 
+  it("hata kodlari: marka adi reddi ad_gecersiz / ad_yasakli (/giris/ad ile ayni dizgeler) komuta bagli hata mesajinda gecer; bilinmeyen kod reddedilir", () => {
+    for (const kod of ["ad_gecersiz", "ad_yasakli"]) {
+      const m = { tur: "hata", kod, mesaj: "marka adi kullanilamaz", anahtar: "m1" };
+      const r = sunucuMesajiCoz(JSON.stringify(m));
+      expect(r.tamam, kod).toBe(true);
+      expect(r.tamam && r.mesaj).toEqual(m);
+    }
+    expect(sunucuMesajiCoz(JSON.stringify({ tur: "hata", kod: "ad_bilinmeyen", mesaj: "x" })).tamam).toBe(false);
+  });
+
   it("komut zarfindaki ve komuttaki fazla alanlar (t, oyuncu) atilir", () => {
     const r = istemciMesajiCoz(
       JSON.stringify({ tur: "komut", anahtar: "a-1", t: 5, oyuncu: "x", komut: { tur: "vergi_ayarla", oranPpm: 3, t: 9, oyuncu: "y" } }),

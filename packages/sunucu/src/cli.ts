@@ -326,8 +326,9 @@ async function ana(): Promise<void> {
     davetli = DavetliListesi.dosyadan(resolve(a["davetli-liste"]));
   }
   // Yasakli ad listesi (gorunen ad): dunya acilmadan once yuklenir; uretimde dosya yok/bozuksa acilis durur, gelistirmede uyari + bos liste.
-  const yasakli = kimlikKipi.kip === "eposta" ? yasakliAdSuzgeciYukle({ ...(a["yasakli-adlar"] !== undefined ? { yol: resolve(a["yasakli-adlar"]) } : {}), uretim: a.uretim }) : undefined;
-  if (yasakli?.uyari != null) yaz("uyari", { mesaj: yasakli.uyari });
+  // Marka adi (G7) ayni listeyi kullanir: kimlik kipinden bagimsiz (gelistirmede de) yuklenir.
+  const yasakli = yasakliAdSuzgeciYukle({ ...(a["yasakli-adlar"] !== undefined ? { yol: resolve(a["yasakli-adlar"]) } : {}), uretim: a.uretim });
+  if (yasakli.uyari != null) yaz("uyari", { mesaj: yasakli.uyari });
   const sayi = (ad: string, d: string | undefined): number => {
     const n = Number(d);
     if (!Number.isFinite(n) || n < 0) throw new Error(`--${ad} gecersiz: ${d}`);
@@ -415,7 +416,7 @@ async function ana(): Promise<void> {
       depo: depo.hesap,
       // Gorunen ad: sozdizimi + kucuk harf cekirdek adKanonik'ten (marka adiyla ortak kural), yasakli ad suzgeci sunucuda (yukleme yukarida, dunya acilmadan once).
       adKurali: adKanonik,
-      adSuzgeci: (yasakli as NonNullable<typeof yasakli>).suzgec,
+      adSuzgeci: yasakli.suzgec,
       posta: kimlikKipi.posta === "konsol" ? new KonsolPostaGondericisi() : new DosyaPostaGondericisi(resolve(a["posta-dizin"] as string)),
       sirlar: kimlikKipi.sirlar,
       baglantiTabani: () => a["giris-baglanti"] ?? `${genelUrl ?? yerelUrl()}/giris/onay`,
@@ -453,6 +454,7 @@ async function ana(): Promise<void> {
     ...(oturumKaydi ? { oturumKaydi } : {}),
     ...(giris ? { giris } : {}),
     ...(adCozucu ? { adCozucu } : {}),
+    adSuzgeci: yasakli.suzgec,
     port,
     host: a.host as string,
     hizSiniri: { kapasite: kapasite ?? 20, saniyeBasina: saniyeBasina ?? 5 },

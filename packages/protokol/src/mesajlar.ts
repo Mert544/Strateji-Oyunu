@@ -168,7 +168,10 @@ export type HataKodu =
   | "kapaniyor"
   | "ic_hata"
   /** Sunucu kapalıyken geçen süreyi yetiştiriyor: komut kabul edilmedi (günlüğe girmedi); `durum` bitişi bildirir. */
-  | "yetisiyor";
+  | "yetisiyor"
+  /** Marka adı (`marka_tanimla.ad`) sözdizimi (çekirdek `adKanonik`) ya da yasaklı ad süzgeci (sunucu) reddi: komut günlüğe girmedi. Kodlar `/giris/ad` ile aynıdır. */
+  | "ad_gecersiz"
+  | "ad_yasakli";
 
 export type SunucuMesaji =
   | {
@@ -375,7 +378,7 @@ export const SunucuMesajiSemasi = z.discriminatedUnion("tur", [
   z.object({ tur: z.literal("donusOzeti"), ozet: DonusOzetiSemasi }),
   z.object({
     tur: z.literal("hata"),
-    kod: z.enum(["gecersiz_mesaj", "protokol_surumu", "kimlik", "kural_surumu", "sira", "yetki", "hiz_siniri", "gecersiz_ilgi", "kapaniyor", "ic_hata", "yetisiyor"]),
+    kod: z.enum(["gecersiz_mesaj", "protokol_surumu", "kimlik", "kural_surumu", "sira", "yetki", "hiz_siniri", "gecersiz_ilgi", "kapaniyor", "ic_hata", "yetisiyor", "ad_gecersiz", "ad_yasakli"]),
     mesaj: z.string(),
     anahtar: z.string().optional(),
     istek: tam.optional(),
