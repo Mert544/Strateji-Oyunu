@@ -3,6 +3,7 @@
  * Tanınmayan metin ham hâliyle cümleye gömülür: hiçbir hata sessizce yutulmaz. Bölge kipi çevirisi `komut/hata.ts`'dedir.
  */
 import { paraMili } from "../arayuz/bicim";
+import { dukkanMetni } from "./dukkan-metin";
 import { KAMU_TUR_ADI } from "./kamu";
 import type { KamuTuru } from "./kamu";
 import { ETIKET_ADI } from "./yapi";
@@ -11,7 +12,53 @@ const ENGEL: Record<string, string> = { su: "su", yol: "yol tamponu", askeri: "a
 
 type Kural = [RegExp, (m: RegExpMatchArray, ad: (id: string) => string) => string];
 
+/** Süre ("3 sa 20 dk"): saat tam sayı gelir (çekirdek yukarı yuvarlar). */
+const saatMetni = (n: string): string => `${n} sa`;
+
+/**
+ * Dükkân komutları (G7; `mulk/dukkanKomut.ts`): çekirdek ASCII iletisi -> `dukkan-metin.ts` anahtarı (T1 tablosu `kod` sütunu: DUK-xx, MRK-xx). Genel kurallardan ÖNCE denenir
+ * ("ilde en cok N Dükkân" genel ek yapı iletisinden önce yakalanır).
+ */
+const DUKKAN_KURALLARI: Kural[] = [
+  [/^perakende kapali/, () => dukkanMetni("dukkan.D1.kapali")],
+  [/^dukkan turu gerekli/, () => dukkanMetni("dukkan.D2.tur_gerekli")],
+  [/^bilinmeyen dukkan turu/, () => dukkanMetni("dukkan.D2.tur_yok")],
+  [/^dukkan olcegi henuz acik degil/, () => dukkanMetni("dukkan.D2.boy_acilmadi")],
+  [/dukkani \w+ olceginde kurulamaz/, () => dukkanMetni("dukkan.D2.boy_uyumsuz")],
+  [/^dukkanTuru yalniz dukkan yapisinda verilebilir/, () => dukkanMetni("dukkan.D2.tur_yalniz_kurarken")],
+  [/^ilcede en cok (\d+) dukkan/, (m) => dukkanMetni("dukkan.D2.ilce_siniri", { n: m[1] as string })],
+  [/^ilde en cok (\d+) d[uü]kk[aâ]n/i, (m) => dukkanMetni("dukkan.D2.il_siniri", { n: m[1] as string })],
+  [/^gecersiz yuva/, () => dukkanMetni("dukkan.D5.yuva_gecersiz")],
+  [/^fiyat degisimi icin (\d+) saat beklenmeli/, (m) => dukkanMetni("dukkan.D5.degisim_cok_sik", { sure: saatMetni(m[1] as string), n: m[1] as string })],
+  [/^yuva zaten bos/, () => dukkanMetni("dukkan.D5.raf_zaten_bos")],
+  [/^bilinmeyen mal/, () => dukkanMetni("dukkan.D5.mal_bilinmiyor")],
+  [/^bu mal bu dukkan turunde satilamaz/, () => dukkanMetni("dukkan.D5.mal_satilamaz")],
+  [/^bu mal baska yuvada/, () => dukkanMetni("dukkan.D5.mal_baska_rafta")],
+  [/^yuva zaten bu malla dolu/, () => dukkanMetni("dukkan.D5.raf_zaten_dolu")],
+  [/^bos yuvaya fiyat verilemez/, () => dukkanMetni("dukkan.D6.once_mal")],
+  [/^gecersiz fiyat kademesi/, () => dukkanMetni("dukkan.D6.fiyat_gecersiz")],
+  [/^fiyat zaten bu kademede/, () => dukkanMetni("dukkan.D6.fiyat_ayni")],
+  [/^kampanya kademesi acik degil/, () => dukkanMetni("dukkan.D6.kampanya_kapali")],
+  [/^kampanya haftalik gun siniri \(en cok (\d+) gun\)/, (m) => dukkanMetni("dukkan.D6.kampanya_hafta", { n: m[1] as string })],
+  [/^kampanya gunluk saat siniri \(en cok (\d+) saat\)/, (m) => dukkanMetni("dukkan.D6.kampanya_gun", { n: m[1] as string })],
+  [/^hesap basina en cok (\d+) marka/, (m) => dukkanMetni("dukkan.D7.marka_siniri", { n: m[1] as string })],
+  [/^marka adi metin olmali/, () => dukkanMetni("dukkan.D7.ad_yazilmali")],
+  [/^marka adi (\d+) ile (\d+) karakter/, (m) => dukkanMetni("dukkan.D7.uzunluk", { en_az: m[1] as string, en_cok: m[2] as string })],
+  [/^marka adinda gecersiz karakter/, () => dukkanMetni("dukkan.D7.karakter")],
+  [/^marka adi bastan ya da sondan bosluk/, () => dukkanMetni("dukkan.D7.bosluk_kenar")],
+  [/^marka adinda art arda bosluk/, () => dukkanMetni("dukkan.D7.bosluk_art_arda")],
+  [/^marka adi en az bir harf/, () => dukkanMetni("dukkan.D7.harf_gerekli")],
+  [/^marka adi (yasakli|kullanilamaz)|^ad (yasakli|kullanilamaz)/, () => dukkanMetni("dukkan.D7.ad_yasakli")],
+  [/^gecersiz marka simgesi|^gecersiz marka rengi/, () => dukkanMetni("dukkan.D7.simge_renk")],
+  [/^marka zaten bu degerlerde/, () => dukkanMetni("dukkan.D7.zaten_boyle")],
+  [/^bilinmeyen marka|^gecersiz marka sirasi/, () => dukkanMetni("dukkan.D7.marka_yok")],
+  [/^dukkan zaten bu markada/, () => dukkanMetni("dukkan.D7.dukkan_zaten_markada")],
+  [/^dukkan henuz tamamlanmadi/, () => dukkanMetni("dukkan.D81.henuz_bitmedi")],
+  [/^dukkan bulunamadi/, () => dukkanMetni("dukkan.D81.yok")],
+];
+
 const KURALLAR: Kural[] = [
+  ...DUKKAN_KURALLARI,
   [/^mulk kipi kapali/, () => "Bu dünya mülk kipinde değil."],
   [/^bilinmeyen ilce/, () => "Bu ilçe sunucunun dünyasında yok."],
   [/^gecersiz arsa sinifi/, () => "Geçersiz arsa sınıfı."],

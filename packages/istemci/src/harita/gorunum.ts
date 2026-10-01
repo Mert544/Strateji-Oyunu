@@ -816,7 +816,7 @@ export class HaritaGorunumu {
   }
 
   /** İlk-yapı indirimi (çekirdek `yapiPlani`): oran ve kalan hak; bağdaştırıcı bilmiyorsa tanımsız (indirim uygulanmaz). */
-  private ilkYapiIndirimi(): { ppm: number; kalan: number } | undefined {
+  ilkYapiIndirimi(): { ppm: number; kalan: number } | undefined {
     const kalan = this.baglanti.ozet?.()?.indirimliYapiKalan;
     const ppm = this.tablo.param.mulk?.yeniOyuncu.ilkYapiIndirimPpm;
     return kalan != null && ppm ? { ppm, kalan } : undefined;
@@ -1297,6 +1297,19 @@ export class HaritaGorunumu {
   /** Yapı kataloğu (menü ve Yerleş önerileri). */
   yapiKatalogu(): readonly YapiTanimi[] {
     return this.katalog;
+  }
+
+  /** Dükkân kurulabilir mi: katalogda `dukkan` ek yapısı var ve yapı yerleşim kipi kurulu (dünyada G7 açık). */
+  dukkanKurulabilir(): boolean {
+    return this.yerlesim !== null && this.katalog.some((y) => y.id === "dukkan");
+  }
+
+  /**
+   * D0 "Dükkân kur" ve Defter kartındaki ikincil düğme: yapı yerleşim kipini `dukkan` seçili açar (maliyet kartında dükkân türü seçimi D2). İlçe açık olmalıdır
+   * (`mulk-panel.ts` önce ilçeyi açar). Başlayamazsa false.
+   */
+  dukkanKurBaslat(): boolean {
+    return this.dukkanKurulabilir() && (this.yerlesim?.sec("dukkan") ?? false);
   }
 
   /** Yapı menüsünde "Önerilen" rozeti (Yerleş açılış önerisi). */

@@ -18,7 +18,7 @@
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
-import type { GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
+import type { DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce } from "./hata-mulk";
 import { parselToplamFiyatiMili } from "./fiyat";
 
@@ -256,6 +256,22 @@ export class WsBaglanti implements MulkBaglantisi {
       return { tamam: false, hata: "sunucu", mesaj: mulkHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)), ...(hucre ? { hucre } : {}) };
     } catch (e) {
       return this.agHatasi(e);
+    }
+  }
+
+  /** Dükkân görünümü için son birikimli kare. */
+  dukkanKaresi(): DukkanKaresi | null {
+    return this.kare;
+  }
+
+  /** Dükkân komutu (raf, fiyat, marka, yıkım, inşaat iptali): TEK komut; ret nedeni Türkçe (`hata-mulk.ts`). */
+  async dukkanKomutu(komut: Komut): Promise<DukkanKomutSonucu> {
+    try {
+      const r = await this.komutGonder(komut);
+      if (r.tamam) return { tamam: true, t: r.t };
+      return { tamam: false, mesaj: mulkHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)) };
+    } catch (e) {
+      return { tamam: false, mesaj: this.agHatasi(e).mesaj };
     }
   }
 

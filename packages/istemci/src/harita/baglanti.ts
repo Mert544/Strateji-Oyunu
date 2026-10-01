@@ -10,9 +10,9 @@
  * Arayüzün mülk uzantıları (`tesisInsa`, `ozet`, `dinle`, `ilgi`) isteğe bağlıdır: yürüyüş (L4) gibi yalnız
  * `parselAl`/`sahiplikAl` kullanan tüketiciler etkilenmez.
  */
-import type { ArsaSinifi, HucreId, Mili, MulkKomutu, OyuncuId } from "@bolge/cekirdek";
+import type { ArsaSinifi, HucreId, Komut, Mili, MulkKomutu, OyuncuId } from "@bolge/cekirdek";
 import { DEFTER_DAMGALARI, DEFTER_ODUL_SIRASI, defterSablonu } from "@bolge/protokol";
-import type { Defter, DefterKazanilan, DefterOdulu, DonusOzeti, KamuGrubuKaresi } from "@bolge/protokol";
+import type { Defter, DefterKazanilan, DefterOdulu, DonusOzeti, IlgiKaresi, KamuGrubuKaresi } from "@bolge/protokol";
 import { kavramEtkinBos } from "./etkin";
 import { arsaSinifi, bitisikMi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili } from "./fiyat";
 import { durumAl, engelNedeni, hucreId, idCoz, izgaraSay } from "./hucre";
@@ -213,6 +213,12 @@ export interface IsletmeDurumu {
   mallar: Array<{ mal: string; stokMili: number; uretimMili: number; satisMili: number; alisMili: number }>;
 }
 
+/** Dükkân görünümünün kaynağı olan karenin gereken kısmı (`dukkan-kopru.ts` girdisi). */
+export type DukkanKaresi = Pick<IlgiKaresi, "t" | "bolgeler" | "oyuncu" | "ilceler" | "fiyat">;
+
+/** Dükkân komutunun (raf, fiyat, marka, yıkım) sonucu: ret nedeni Türkçe (`hata-mulk.ts`; DUK-xx/MRK-xx metin tablosundan). */
+export type DukkanKomutSonucu = { tamam: true; t: number } | { tamam: false; mesaj: string };
+
 /** Harita ile sunucu arasındaki sözleşme. */
 export interface MulkBaglantisi {
   /** Bu istemcinin oyuncusu. */
@@ -231,6 +237,10 @@ export interface MulkBaglantisi {
   yapiGeriAl?(i: GeriAlIstegi): Promise<TesisSonucu>;
   /** Ölçek büyütme (`tesis_olcek_yukselt`): ek hücrelerin arsası + yükseltme tek işlemde. Tanımsızsa "Büyüt" gösterilmez. */
   olcekYukselt?(i: OlcekIstegi): Promise<TesisSonucu>;
+  /** Dükkân görünümü için son birikimli kare (yalnız sunucu bağdaştırıcısı; yoksa null: dükkân yüzeyleri çıkmaz). */
+  dukkanKaresi?(): DukkanKaresi | null;
+  /** Dükkân komutu (`dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`, `dukkan_yik`, `insaat_iptal`): tek komut, Türkçe ret. */
+  dukkanKomutu?(komut: Komut): Promise<DukkanKomutSonucu>;
   /** Oyuncu özeti (eşzamanlı; son bilinen). */
   ozet?(): MulkOzeti | null;
   /** Esnaf Defteri (`defterIste` → `defter`); okunamazsa null. */

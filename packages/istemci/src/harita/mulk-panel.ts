@@ -29,6 +29,7 @@ import { dukkanBolumuHtml, dukkanDikkatMaddeleri, ustKartHtml } from "./dukkan-h
 import { dukkanMetni } from "./dukkan-metin";
 import { DEFTER_ATLA_ANAHTARI, IlkSatisIzleyici, ONERI_KAPALI_ANAHTARI, oneriDurumu, rafaKonabilirStok, tarayiciDeposu } from "./dukkan-veri";
 import type { DukkanKaynagi } from "./dukkan-veri";
+import { dukkanKaynagiKur } from "./dukkan-kaynak";
 import type { Defter } from "@bolge/protokol";
 import { bildir } from "../arayuz/bildirim";
 import mulkCss from "./mulk-panel.css?inline";
@@ -281,8 +282,6 @@ export interface MulkPaneliSecenekleri {
   ilceAc: (ilce: string) => void | Promise<void>;
   /** Dükkân verisi (G7 köprüsü); yoksa dükkân yüzeyleri hiç çıkmaz (Defter kartı yine çalışır). */
   dukkan?: DukkanKaynagi;
-  /** "Dükkân kur" (D0 kartı): yapı kurma akışını dükkân türü seçimiyle açar; yoksa düğme etkisiz. */
-  dukkanKur?: () => void;
 }
 
 /** Kabuğa verilen sağlayıcı. */
@@ -340,19 +339,34 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   };
   // Dükkân yüzeyleri (G9): üstte tek kart (D0 öneri ya da B7 Defter kartı), Dükkânlarım bölümü, Dikkat maddeleri, ilk satış bildirimi.
   // Kapatma/atlama tercihi yerel (localStorage; erişilemezse oturum içi). Dükkân kaynağı yoksa yalnız Defter kartı çalışır.
+  // Dükkân kaynağı: verilmediyse sunucu bağdaştırıcısının karesinden (K2 köprüsü); sahte bağdaştırıcıda yok (dükkân yüzeyleri çıkmaz)
+  const dukkanKaynagi: DukkanKaynagi | undefined =
+    s.dukkan ??
+    (b.dukkanKaresi
+      ? dukkanKaynagiKur({
+          kare: () => b.dukkanKaresi?.() ?? null,
+          ic,
+          katalog,
+          hazineMili: () => b.isletme?.()?.hazineMili ?? null,
+          stokMili: (mal) => b.isletme?.()?.mallar.find((x) => x.mal === mal)?.stokMili ?? 0,
+          indirim: () => s.gorunum.ilkYapiIndirimi(),
+        })
+      : undefined);
+  /** "Dükkân kur" bağlı mı: dükkân verisi var ve harita dükkân kurabiliyor (yoksa D0 kartı hiç çıkmaz). */
+  const dukkanKurulabilir = (): boolean => dukkanKaynagi !== undefined && s.gorunum.dukkanKurulabilir();
   const depo = tarayiciDeposu();
   const ilkSatis = new IlkSatisIzleyici(depo);
   let yenile: (() => void) | null = null;
   const ekYapiMi = (tur: string): boolean => katalog.find((k) => k.id === tur)?.ek === true;
   const ustDurum = (d: IsletmeDurumu | null): "dukkan" | "defter" | null => {
     if (!d) return null;
-    const g = s.dukkan?.gorunum() ?? null;
+    const g = dukkanKaynagi?.gorunum() ?? null;
     return oneriDurumu({
       yapilar: d.yapilar,
       ekYapiMi,
       dukkan: g,
       stokVar: g ? rafaKonabilirStok(d.mallar, g.satilabilirMallar) : false,
-      dukkanKurulabilir: s.dukkanKur !== undefined,
+      dukkanKurulabilir: dukkanKurulabilir(),
       oneriKapatildi: depo.oku(ONERI_KAPALI_ANAHTARI) === "1",
       defterAtlandi: depo.oku(DEFTER_ATLA_ANAHTARI) === "1",
       defterSiradaki: defterUstKarti(defter, ad.mal) !== null,
@@ -370,7 +384,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       dugme.removeAttribute("aria-label");
     }
   };
-  const dukkanGorunumu = () => s.dukkan?.gorunum() ?? null;
+  const dukkanGorunumu = () => dukkanKaynagi?.gorunum() ?? null;
   const dukkanDikkat = (): MulkDikkatMaddesi[] =>
     dukkanDikkatMaddeleri(dukkanGorunumu(), ad.mal, (mal) => (son?.mallar.find((x) => x.mal === mal)?.stokMili ?? 0) > 0).map((x, i) => ({ tur: x.tur, baslik: x.baslik, ayrinti: "", ...(x.ilce ? { ilce: x.ilce } : {}), sira: i }));
   const epoch = (): number => b.dunyaEpochMs?.() ?? DUNYA_EPOCH_MS;
@@ -401,7 +415,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         case "isletme": {
           const durum = ustDurum(d);
           oneriIsareti(durum);
-          const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal), s.dukkanKur !== undefined);
+          const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal), dukkanKurulabilir());
           const dukkan = dukkanBolumuHtml(dukkanGorunumu(), { ilceAdi: ad.ilce, simdi: d?.simZamani ?? 0 });
           return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch()) : undefined, { ust, dukkan });
         }
@@ -443,8 +457,12 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         return true;
       }
       if (eylem === "dukkan-kur") {
+        // Telefonda alt sayfa kapanır; oyuncunun ilçesi açılır (Büyüt gibi), sonra yapı yerleşim kipi `dukkan` seçili başlar
         isletmeSayfasi(false);
-        s.dukkanKur?.();
+        const ilce = son?.katilimIlcesi ?? son?.ilceHucre[0]?.[0] ?? null;
+        void Promise.resolve(ilce ? s.ilceAc(ilce) : undefined).then(() => {
+          if (!s.gorunum.dukkanKurBaslat()) bildir(dukkanMetni("dukkan.D1.kapali"), "bilgi");
+        });
         return true;
       }
       const bd = t.closest("[data-mulk-buyut]") as HTMLElement | null;
