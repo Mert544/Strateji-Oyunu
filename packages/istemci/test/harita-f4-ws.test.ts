@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { parselFiksturuYukle } from "@bolge/veri";
-import { SAAT, SISTEM_OYUNCUSU } from "@bolge/cekirdek";
+import { mulkOyuncuBul, SAAT, SISTEM_OYUNCUSU } from "@bolge/cekirdek";
 import { kamuKumesi, katil, mulkVerisi, testSunucusu, token } from "../../sunucu/test/yardimci";
 import type { TestSunucusu } from "../../sunucu/test/yardimci";
 import { WsBaglanti } from "../src/harita/baglanti-ws";
@@ -72,6 +72,22 @@ async function hazirla(): Promise<void> {
 }
 
 describe("WsBaglanti: gerçek sunucu", () => {
+  it("katılım protokolün katil mesajıyla ve seçilen ilçeyle (ayrılmış hak yalnız katılım ilçesinde); hosgeldin epoch'u okunur", async () => {
+    ts = await testSunucusu({ veri: yurtsuzVeri() });
+    const b = await ac("ayse");
+    expect(b.ozet()).toBeNull();
+    expect(await b.katil("")).toMatchObject({ tamam: false });
+    expect(b.sonKatil).toBeNull();
+    const r = await b.katil(ILCE);
+    expect(r).toEqual({ tamam: true });
+    expect(b.sonKatil?.ilce).toBe(ILCE);
+    expect(mulkOyuncuBul(ts.yazar.sim.dunya, "ayse")?.katilimIlcesi).toBe(ILCE);
+    await bekle(() => b.isletme() !== null);
+    expect(b.isletme()?.katilimIlcesi).toBe(ILCE);
+    const e = b.dunyaEpochMs();
+    expect(e === null || Number.isSafeInteger(e)).toBe(true);
+  });
+
   it("el sıkışma, ilçe aboneliği, hazine formülü; parsel_al ve tesis_insa_hucre; iki istemci aynı kareyi görür", async () => {
     await hazirla();
     const a = await ac("ali");

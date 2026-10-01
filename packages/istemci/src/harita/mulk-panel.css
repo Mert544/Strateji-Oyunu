@@ -23,3 +23,14 @@
 body.mulk-paneli #geride, body.mulk-paneli #duraklama-isareti { display: none !important; }
 /* Masaüstünde hazine ve saat üst çubukta (oyuncu düğmesi ve tarih şeridi): haritadaki çip yalnız bağlantı koptuğunda */
 @media (min-width: 821px) { body.mulk-paneli #harita-hazine:not(.kopuk) { display: none; } }
+/* Telefonda harita açıkken İşletmem: kırıntının altındaki düğme paneli alt sayfa olarak açar (masaüstünde panel zaten sağda) */
+.isletme-dugme { display: none; }
+@media (max-width: 820px) {
+  body.harita-acik.mulk-paneli .isletme-dugme {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 var(--s-4); border: 0; border-radius: var(--r-hap);
+    background: var(--yuzey); color: var(--murekkep); font-weight: 600; font-size: var(--yazi-sm); box-shadow: var(--golge-2);
+  }
+  body.isletme-acik .isletme-dugme { background: var(--birincil-tint); color: var(--birincil-ink); }
+  body.harita-acik.mulk-paneli.isletme-acik #panel { display: flex; height: 62vh; max-height: none; }
+  body.harita-acik.isletme-acik :is(#harita-alt, #yapi-kart, #parsel-kart) { visibility: hidden; }
+}

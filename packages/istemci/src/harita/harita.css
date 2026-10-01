@@ -98,5 +98,5 @@ body.harita-acik #bildirimler { bottom: 140px; }
 
 /* Mülk kipi: bölge simülasyonu paneli gösterilmez; işletme paneli (harita.js, .mulk-paneli) kurulunca panel ve saat geri gelir
    (Yerleş ekranı açıkken değil: tam ekran seçim) */
-body.mulk-kipi #mercek-kap, body.mulk-kipi:is(:not(.mulk-paneli), .yerles-acik) :is(#panel, .kart-zaman, #oyuncu-cubuk) { display: none; }
-body.mulk-kipi:is(:not(.mulk-paneli), .yerles-acik) #uygulama { grid-template-columns: minmax(0, 1fr); }
+body.mulk-kipi #mercek-kap, body.mulk-kipi:is(:not(.mulk-paneli), .yerles-acik, .donus-acik) :is(#panel, .kart-zaman, #oyuncu-cubuk) { display: none; }
+body.mulk-kipi:is(:not(.mulk-paneli), .yerles-acik, .donus-acik) #uygulama { grid-template-columns: minmax(0, 1fr); }

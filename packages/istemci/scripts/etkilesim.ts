@@ -90,7 +90,7 @@ async function oyunKipi(baglam: BrowserContext, html: string, mobil: boolean): P
   const secenekler = await sayfa.locator('form[data-form="tesis_insa"] select[name="tesisTuru"] option:not([disabled])').evaluateAll((l) => l.map((o) => (o as HTMLOptionElement).value));
   kontrol(`${e}: tesis seçenekleri içerikten (en az 3 açık tür)`, secenekler.length >= 3, `(${secenekler.join(",")})`);
   const tur = secenekler.includes("ciftlik") ? "ciftlik" : (secenekler[0] as string);
-  await sayfa.locator('form[data-form="tesis_insa"] select[name="tesisTuru"]').selectOption(tur);
+  await sayfa.locator('form[data-form="tesis_insa"] select[name="tesisTuru"]').selectOption(tur, { force: true }); // yüklü makinede panel tazelemesi "kararlılık" beklemesini aşar
   const onizleme = await sayfa.locator('form[data-form="tesis_insa"] .onizleme').innerText();
   kontrol(`${e}: maliyet önizlemesi (para, süre)`, /Para:/.test(onizleme) && /Süre:/.test(onizleme), `(${onizleme.replace(/\s+/g, " ").slice(0, 90)})`);
   await sayfa.locator('form[data-form="tesis_insa"]').scrollIntoViewIfNeeded();

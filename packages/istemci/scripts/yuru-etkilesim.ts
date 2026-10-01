@@ -379,6 +379,10 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   await sayfa.evaluate(() => window.__yuru?.isinla(1500, -400));
   await sayfa.waitForTimeout(300);
   await yuruHazir(sayfa);
+  // Orijin kaydı kare döngüsünde olur: yüklü makinede (2–5 fps) birkaç saniye sürebilir
+  await sayfa
+    .waitForFunction((o) => { const x = window.__yuru?.durum().orijin; return !!x && (x[0] !== o[0] || x[1] !== o[1]); }, orijin0, { timeout: 10000 })
+    .catch(() => undefined);
   d = (await yuruDurum(sayfa))!;
   kontrol(`${e} karo akışı: uzak noktada 3×3 pencere hazır, orijin kaydı`, d.karo.hazir === 9 && (d.orijin[0] !== orijin0[0] || d.orijin[1] !== orijin0[1]), `orijin ${orijin0.map((v) => v.toFixed(0))} → ${d.orijin.map((v) => v.toFixed(0))}, ${JSON.stringify(d.karo)}`);
   await ekran("6-akis");

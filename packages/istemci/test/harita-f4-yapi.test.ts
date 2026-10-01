@@ -176,6 +176,8 @@ describe("yerleşim planı", () => {
     expect(await b.yapiYerlestir({ ilce: "i", tesisTuru: "ciftlik", hucreler: [hucre], sinif: "kirsal" })).toMatchObject({ tamam: false, hata: "kamu" });
     expect(mulkHatasiTurkce(`hucre kamu arsasi (satilmaz): ${hucre} (pazar, k:mahalle:x_1)`)).toBe("Bu hücre kamu arsası (Pazar yeri): satılmaz.");
     expect(mulkHatasiTurkce("muhtarlik kamu yapisidir (oyuncuya kapali)")).toBe("Bu yapı kamu yapısıdır: oyunculara kapalı.");
+    expect(mulkHatasiTurkce("ayrilmis hucre yalniz katilim ilcesinde satilir (katilim ilcesi: yok): 1:2")).toBe("Ayrılmış hücre yalnız katılım ilçende satılır; bu ilçede normal hücre alabilirsin.");
+    expect(mulkHatasiTurkce("ilcede gunluk ayrilmis satis tavani asildi: a (tavan 30, bugun 30, istenen 2)")).toBe("İlçenin bugünkü ayrılmış satış tavanı doldu (30 hücre); yarın yeniden açılır.");
     expect(katalog.some((y) => y.id === "muhtarlik")).toBe(false);
   });
 

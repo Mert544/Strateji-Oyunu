@@ -8,7 +8,7 @@
  */
 import { esc, fmt, yuzde } from "./bicim";
 import type { MulkBaglantisi } from "../harita/baglanti";
-import { ACILIS, ACILIS_SIRASI, YERLES_ADAYLARI, yerlesOner } from "../harita/yerles";
+import { ACILIS, ACILIS_SIRASI, tabanYeter, YERLES_ADAYLARI, yerlesOner } from "../harita/yerles";
 import type { Acilis, AdayDurumu } from "../harita/yerles";
 import { izgaraVarMi } from "../harita/veri";
 import type { Hiyerarsi } from "../harita/veri";
@@ -22,6 +22,8 @@ export interface YerlesGirdisi {
   git: (ilce: string, acilis: Acilis, oneriYapi: string) => Promise<void>;
   /** Ekran kapandığında. */
   kapandi?: () => void;
+  /** Yapının ayak izi (hücre; kataloğdan). Verilmezse 1. */
+  yuva?: (yapi: string) => number;
 }
 
 export interface YerlesEkrani {
@@ -44,7 +46,8 @@ async function durumlariTopla(g: YerlesGirdisi): Promise<AdayDurumu[]> {
         ad: c?.ad ?? aday.ilce,
         il,
         doluluk: sh && sh.uygun > 0 ? sh.satilmis / sh.uygun : null,
-        ayrilmis: sh ? Math.round(sh.uygun * 0.2) : null,
+        ayrilmis: sh?.ayrilmisAdet ?? null,
+        ayakIzi: g.yuva?.(ACILIS[aday.acilis].yapi) ?? 1,
         izgara: izgaraVarMi(aday.ilce),
         sunucuda: sh ? true : (b.ilceVarMi?.(aday.ilce) ?? null),
       };
@@ -82,7 +85,7 @@ export async function yerlesAc(g: YerlesGirdisi): Promise<YerlesEkrani> {
       yog === null
         ? `<span class="yr-doluluk yok">Doluluk bilinmiyor</span>`
         : `<span class="yr-doluluk"><span class="yr-cubuk" aria-hidden="true"><i style="width:${Math.max(2, Math.round(yog * 100))}%"></i></span><b>${esc(yuzde(yog * 100, yog < 0.1 ? 1 : 0))}</b> dolu</span>`;
-    const ayrilmis = d.ayrilmis === null ? "" : `<span class="yr-ayrilmis">≈ ${fmt(d.ayrilmis)} hücre yeni oyunculara ayrılmış</span>`;
+    const ayrilmis = d.ayrilmis === null ? "" : `<span class="yr-ayrilmis">${fmt(d.ayrilmis)} hücre yeni oyunculara ayrılmış${tabanYeter(d) ? ` · ilk ${esc(ACILIS[d.aday.acilis].yapiAd)} için yeter` : ""}</span>`;
     const durum = !d.izgara ? `<span class="yr-durum zayif">Arsa ızgarası yakında: yalnız gezebilirsin</span>` : d.sunucuda === false ? `<span class="yr-durum zayif">Bu ilçe sunucuda henüz yok</span>` : `<span class="yr-durum iyi">Hazır arsalar var</span>`;
     return `<button type="button" class="yr-kart" role="radio" aria-checked="${d.aday.ilce === secili}" data-ilce="${esc(d.aday.ilce)}">
       <span class="yr-ad">${esc(d.ad)} <small>${esc(d.il)}</small></span>

@@ -17,6 +17,8 @@ export interface MulkPaneli {
   cubuk(): { html: string; baslik: string } | null;
   /** Sunucunun sim saati (saat; tarih ve saat şeridi için) ya da null (bilinmiyor). */
   simSaat(): number | null;
+  /** Dünya epoch'u (ms): sunucu bildirdiyse o (`hosgeldin.dunyaEpochMs`), yoksa varsayılan. Gerçek an = epoch + t. */
+  epochMs(): number;
   /** Panel içi tık (veri öznitelikleri); işlendiyse true. */
   tikla(t: HTMLElement): boolean;
   /** Veri değişince çağrılır; dönen işlev aboneliği kaldırır. */

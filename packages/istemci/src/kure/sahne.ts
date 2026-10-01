@@ -10,7 +10,7 @@ import { KameraKontrol } from "../kamera/kontrol";
 import { DIKEY_ACI, enUzakMesafe, sigmaMesafesi, yerelBaz } from "../kamera/durum";
 import { BolgeKatmani, BOLGE_YARICAPI } from "./bolge-katmani";
 import { DunyaKatmani } from "./dunya";
-import { gunesYonu } from "./gunes";
+import { gunesYonu, mutlakGunesYonu } from "./gunes";
 import { DERECE, aci, birim, isinKureKesisimi, llVek, vekLl } from "./matematik";
 import type { Vek3 } from "./matematik";
 import { ortakOlustur } from "./ortak";
@@ -72,6 +72,8 @@ export class Sahne {
   secili = -1;
   /** Görünen sim saati (kesirli); güneş yönü için. */
   simSaatiKaynagi: () => number = () => 0;
+  /** Mutlak saat (sunucu ve mülk kipi): gerçek an (epoch ms) ya da null; varsa güneş ona göre (çevrimdışı demo: sim saati). */
+  mutlakZamanKaynagi: () => number | null = () => null;
   readonly merkezler: Vek3[];
   private renkler: BolgeRenkTamponu;
   private pikselOrani: number;
@@ -378,7 +380,8 @@ export class Sahne {
     const degisti = this.kontrol.guncelle(dt);
     const o = this.ortak;
     o.uZaman.value = ts / 1000;
-    const g = gunesYonu(this.simSaatiKaynagi());
+    const an = this.mutlakZamanKaynagi();
+    const g = an !== null ? mutlakGunesYonu(an) : gunesYonu(this.simSaatiKaynagi());
     o.uGunes.value.set(g[0], g[1], g[2]);
     const dist = this.kontrol.durum.dist;
     o.uGenislikOlcek.value = Math.min(1.3, Math.max(0.12, dist * 0.5));

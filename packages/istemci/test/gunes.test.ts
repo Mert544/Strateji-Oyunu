@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { altGunesNoktasi, gunesYonu, simSaatMetni } from "../src/kure/gunes";
+import { altGunesNoktasi, gunesYonu, mutlakGunesNoktasi, simSaatMetni } from "../src/kure/gunes";
 import { uzunluk, vekLl } from "../src/kure/matematik";
 import { ETIKET_EN_COK, etiketSayisi } from "../src/arayuz/etiketler";
 import { bolgePaneli, malPaneli, nedenSatiri } from "../src/arayuz/govde";
@@ -7,6 +7,15 @@ import { esc, kisalt } from "../src/arayuz/bicim";
 import type { Dizin, Kare } from "../src/veri/kare-tipleri";
 
 describe("güneş ve sim saati", () => {
+  it("mutlak saat (mülk kipi): 1 Ekim 00:00 TRT = 21:00 UTC → boylam 135°B; 12:00 TRT → 45°D; ekinoks/gündönümü deklinasyonu", () => {
+    const epoch = Date.parse("2026-09-30T21:00:00Z");
+    expect(mutlakGunesNoktasi(epoch).boylam).toBeCloseTo(-135, 6);
+    expect(mutlakGunesNoktasi(epoch).enlem).toBeLessThan(-2);
+    expect(mutlakGunesNoktasi(epoch + 12 * 3_600_000).boylam).toBeCloseTo(45, 6);
+    expect(mutlakGunesNoktasi(Date.parse("2027-03-20T12:00:00Z")).enlem).toBeCloseTo(0, 0);
+    expect(mutlakGunesNoktasi(Date.parse("2027-06-21T12:00:00Z")).enlem).toBeGreaterThan(23);
+  });
+
   it("sim saat 0 = 09:00 UTC: alt-güneş boylamı 45°D, ekinoksta enlem 0", () => {
     const n = altGunesNoktasi(0);
     expect(n.boylam).toBeCloseTo(45, 9);

@@ -228,7 +228,15 @@ function baslat(): void {
     kureyiAskiyaAl: (a) => {
       s.askida = a;
     },
-    mulkPaneli: (p) => panel.mulkKipiKur(p),
+    mulkPaneli: (p) => {
+      panel.mulkKipiKur(p);
+      // Mülk kipinde küre güneşi mutlak saatte (epoch + t, sunucunun zamanı); çevrimdışı demo eski varsayımla kalır
+      if (sahne)
+        sahne.mutlakZamanKaynagi = () => {
+          const h = p.simSaat();
+          return h === null ? null : p.epochMs() + h * 3_600_000;
+        };
+    },
   });
 
   const etiketler = new Etiketler(

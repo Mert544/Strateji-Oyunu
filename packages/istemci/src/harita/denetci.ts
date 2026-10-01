@@ -104,6 +104,30 @@ export class HaritaDenetci {
   private yerlesEkrani: YerlesEkrani | null = null;
   private baglantiSozu: Promise<MulkBaglantisi | undefined> | null = null;
   private mulkPaneliKuruldu = false;
+  private donusAcik = false;
+
+  /** Dönüş özeti ekranı (varsa). Oyuncu "Git" ile bir ilçeye geçtiyse true. */
+  private async donusGoster(): Promise<boolean> {
+    const g = this.gorunum;
+    if (!g || this.donusAcik || !g.baglanti.donusOzeti?.()) return false;
+    this.donusAcik = true;
+    let gitti = false;
+    try {
+      const [m, h] = await Promise.all([gorunumModulu(), this.hiyerarsiAl()]);
+      await m.donusuGoster({
+        gorunum: g,
+        hiyerarsi: h,
+        kap: this.sahneKap,
+        ilceAc: (ilce) => {
+          gitti = true;
+          void this.ilceAc(ilce).then(() => this.gorunum?.mulkeUc());
+        },
+      });
+    } finally {
+      this.donusAcik = false;
+    }
+    return gitti;
+  }
   // Kürede çift tık algılama (kamera kontrolündeki eşiklerle aynı)
   private sonTik = { t: 0, x: 0, y: 0 };
   private basili: { x: number; y: number; t: number; dugme: number; ek: boolean } | null = null;
@@ -329,6 +353,13 @@ export class HaritaDenetci {
         this.kure.mulkPaneli(m.mulkPaneliKur({ gorunum: g, hiyerarsi: h, ilceAc: (ilce) => void this.ilceAc(ilce).then(() => this.gorunum?.mulkeUc()) }));
       }
       await g.baglanti.hazirBekle?.();
+      // "Sen yokken": gösterilmemiş dönüş özeti varsa önce o (kapanınca devam); ilk girişte özet yoktur. Yetişme bitince
+      // ayrıca gelen özet (`donusOzeti` mesajı) için bağdaştırıcı dinlenir.
+      this.durumYazi.textContent = "";
+      if (await this.donusGoster()) return;
+      g.baglanti.dinle?.(() => {
+        if (!this.donusAcik && g.baglanti.donusOzeti?.()) void this.donusGoster();
+      });
       const oz = g.baglanti.ozet?.() ?? null;
       const hucreli = oz?.ilceHucre.find(([, n]) => n > 0)?.[0];
       this.durumYazi.textContent = "";
@@ -344,6 +375,7 @@ export class HaritaDenetci {
         baglanti: g.baglanti,
         hiyerarsi: h,
         git: (ilce, acilis, yapi) => this.yerlesGit(ilce, acilis, yapi),
+        yuva: (yapi) => g.yapiKatalogu().find((k) => k.id === yapi)?.yuva ?? 1,
         kapandi: () => {
           this.yerlesEkrani = null;
         },

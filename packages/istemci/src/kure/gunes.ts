@@ -21,3 +21,23 @@ export function gunesYonu(simSaat: number): Vek3 {
   const n = altGunesNoktasi(simSaat);
   return llVek(n.boylam, n.enlem);
 }
+
+/**
+ * Mutlak saatte (sunucu ve mülk kipi) alt-güneş noktası: gerçek an (epoch ms, UTC). Boylam UTC saatinden, deklinasyon yılın
+ * gününden (ilkbahar ekinoksu ≈ 80. gün); zaman denklemi yok sayılır (sapma ≤ 4°, kürede görünmez).
+ */
+export function mutlakGunesNoktasi(anMs: number): { boylam: number; enlem: number } {
+  const d = new Date(anMs);
+  const utc = d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600;
+  let boylam = 180 - 15 * utc;
+  if (boylam > 180) boylam -= 360;
+  if (boylam < -180) boylam += 360;
+  const yilBasi = Date.UTC(d.getUTCFullYear(), 0, 1);
+  const gun = (anMs - yilBasi) / 86_400_000;
+  return { boylam, enlem: 23.44 * Math.sin((2 * Math.PI * (gun - 79.5)) / 365.25) };
+}
+
+export function mutlakGunesYonu(anMs: number): Vek3 {
+  const n = mutlakGunesNoktasi(anMs);
+  return llVek(n.boylam, n.enlem);
+}

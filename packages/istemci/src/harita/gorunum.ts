@@ -24,6 +24,7 @@ import type { Icerik } from "../komut/tablo";
 import { arsaKenarlari, arsalariTuret, arsaSinirlari, arsaSiniflari, hucredenArsa, kamuBilgisi, kamuBloklari, onerilenArsa, sinifGruplari } from "./arsa";
 import type { Arsa, ArsaKumesi, ArsaTercihi } from "./arsa";
 import { SahteBaglanti } from "./baglanti";
+import { DONUS_ORNEGI } from "./donus-ekrani";
 import { KAMU_ACIKLAMA, KAMU_TUR_ADI, kamuGrubuBul, kamuNedeni, kamuSahibiAdi } from "./kamu";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import type { Duzey, HaritaDurumu } from "./denetci";
@@ -63,6 +64,7 @@ import type { Hiyerarsi, SinirKatmani } from "./veri";
 export { baglantiKur } from "./baglanti-kur";
 export { yerlesAc } from "../arayuz/yerles-ekrani";
 export { mulkPaneliKur } from "./mulk-panel";
+export { donusuGoster } from "./donus-ekrani";
 
 export interface GorunumSecenekleri {
   hiyerarsi: Hiyerarsi;
@@ -179,6 +181,7 @@ export class HaritaGorunumu {
         gecikme: 120,
         hazineMili: 50_000_000,
         kamu: true,
+        ...(new URLSearchParams(location.search).get("donus") === "ornek" ? { donusOrnegi: DONUS_ORNEGI } : {}),
         yapiBilgisi: (tur) => {
           const y = this.katalog.find((k) => k.id === tur);
           return y ? { yuva: y.yuva, paraMili: y.paraMili, sureSaat: y.sureSaat } : null;

@@ -106,9 +106,12 @@ export interface GercekTarih {
   gunAdi: string;
 }
 
-/** Sim saatinden gerçek tarih (Europe/Istanbul = sabit UTC+3): epoch + t. Artık yıllar `Date` ile doğru. */
-export function gercekTarih(simSaat: number): GercekTarih {
-  const d = new Date(DUNYA_EPOCH_MS + TURKIYE_OFSETI_MS + Math.floor(Math.max(0, simSaat) * 3_600_000));
+/**
+ * Sim saatinden gerçek tarih (Europe/Istanbul = sabit UTC+3): epoch + t. Artık yıllar `Date` ile doğru. `epochMs`: sunucunun
+ * bildirdiği dünya epoch'u (`hosgeldin.dunyaEpochMs`); yoksa varsayılan.
+ */
+export function gercekTarih(simSaat: number, epochMs = DUNYA_EPOCH_MS): GercekTarih {
+  const d = new Date(epochMs + TURKIYE_OFSETI_MS + Math.floor(Math.max(0, simSaat) * 3_600_000));
   const ay = d.getUTCMonth();
   return { yil: d.getUTCFullYear(), ay, gun: d.getUTCDate(), ayAdi: AY_ADLARI[ay] ?? "", gunAdi: GUNLER[d.getUTCDay()] ?? "" };
 }

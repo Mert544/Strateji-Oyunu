@@ -17,7 +17,7 @@
  */
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
-import type { IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
+import type { DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
 import type { GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce } from "./hata-mulk";
 import { parselFiyatiMili } from "./fiyat";
@@ -258,10 +258,34 @@ export class WsBaglanti implements MulkBaglantisi {
     await this.karedeBekle(() => this.kare !== null, 10_000);
   }
 
+  /** Protokolün `katil` mesajı (ilçe HER ZAMAN gönderilir: ayrılmış hücre hakkı yalnız katılım ilçesinde geçerlidir). */
+  private katilBekleyen: { anahtar: string; zamanlayici: ReturnType<typeof setTimeout>; coz: (s: { tamam: true } | { tamam: false; hata: string }) => void } | null = null;
+
+  /** Sınama kancası: son gönderilen `katil` mesajı. */
+  sonKatil: { anahtar: string; ilce: string } | null = null;
+
+  private katilGonder(ilce: string): Promise<{ tamam: true } | { tamam: false; hata: string }> {
+    const anahtar = `${this.istemciKimligi.slice(-10)}-k${(++this.sayac).toString(36)}-${rastgele(5)}`.slice(0, 64);
+    return new Promise((coz) => {
+      const zamanlayici = setTimeout(() => {
+        if (this.katilBekleyen?.anahtar !== anahtar) return;
+        this.katilBekleyen = null;
+        coz({ tamam: false, hata: "zaman_asimi" });
+      }, this.s.komutZamanAsimiMs ?? 30_000);
+      this.katilBekleyen = { anahtar, zamanlayici, coz };
+      this.sonKatil = { anahtar, ilce };
+      this.gonder({ tur: "katil", anahtar, ilce });
+    });
+  }
+
   async katil(ilce: string): Promise<{ tamam: boolean; mesaj?: string }> {
-    if (!this.s.katilIste) return { tamam: false, mesaj: "Hesabın dünyaya henüz katılmamış; katılım hizmeti bu sunucuda yok." };
+    if (!ilce) return { tamam: false, mesaj: "Katılım için bir ilçe seçilmeli." };
     try {
-      await this.s.katilIste(ilce);
+      if (this.s.katilIste) await this.s.katilIste(ilce);
+      else {
+        const r = await this.katilGonder(ilce);
+        if (!r.tamam) return { tamam: false, mesaj: r.hata === "zaman_asimi" ? "Sunucudan yanıt gelmedi; yeniden dene." : mulkHatasiTurkce(r.hata) };
+      }
       // Katılım sonrası oyuncu karesi gelene kadar bekle (yurt, işletme, hazine karede).
       this.aboneIste();
       const tamam = await this.karedeBekle(() => this.kare?.oyuncu !== undefined, 10_000);
@@ -283,6 +307,25 @@ export class WsBaglanti implements MulkBaglantisi {
       surenInsaat: k.oyuncu.insaatlar.filter((x) => x[1] === "tesis").length,
       yetisiyor: this.yetisme ? { ilerleme: this.yetisme.hedef > this.yetisme.bas ? Math.max(0, Math.min(1, (this.yetisme.simdi - this.yetisme.bas) / (this.yetisme.hedef - this.yetisme.bas))) : 0 } : null,
     };
+  }
+
+  private donus: DonusOzeti | null = null;
+
+  /** Gösterilmemiş "Sen yokken" özeti (hosgeldin ya da yetişme sonrası `donusOzeti` mesajı). */
+  donusOzeti(): DonusOzeti | null {
+    return this.donus;
+  }
+
+  /** Özet gösterildi: sunucuya `ozetOkundu` (istemcinin gördüğü sim zamanı); çapa ilerler. */
+  ozetOkundu(): void {
+    this.donus = null;
+    this.gonder({ tur: "ozetOkundu", t: Math.max(0, this.simZamani()) });
+  }
+
+  /** Sunucunun dünya epoch'u (`hosgeldin.dunyaEpochMs`; protokole isteğe bağlı alan olarak ekleniyor): yoksa null. */
+  dunyaEpochMs(): number | null {
+    const e = (this.hos as { dunyaEpochMs?: unknown } | null)?.dunyaEpochMs;
+    return typeof e === "number" && Number.isSafeInteger(e) ? e : null;
   }
 
   /** İşletme özeti: oyuncu karesi (hazine, kalkan, inşaatlar, arazi) ve kendi işletme düğümlerinin özel verisi (stok, tesis, emir). */
@@ -348,6 +391,8 @@ export class WsBaglanti implements MulkBaglantisi {
       ilceHucre: (mk?.ilceHucre ?? []).map(([i, n]) => [i, n]),
       korumaBitis: o.korumaBitis > t ? o.korumaBitis : null,
       ayrilmisBitis: mk?.ayrilmisBitis !== undefined && mk.ayrilmisBitis > t ? mk.ayrilmisBitis : null,
+      // Katılım ilçesi: karede varsa o (ileriye uyumlu), yoksa bu oturumda gönderilen `katil`ın ilçesi, yoksa tek yurt ilçesi
+      katilimIlcesi: (mk as { katilimIlcesi?: string } | undefined)?.katilimIlcesi ?? this.sonKatil?.ilce ?? (mk?.ilceHucre.length === 1 ? (mk.ilceHucre[0]?.[0] ?? null) : null),
       indirimliYapiKalan: mk?.indirimliYapiKalan ?? null,
       yapilar,
       mallar: [...stok.entries()].sort((a, b) => a[0] - b[0]).map(([m, x]) => ({ mal: mallar[m] ?? String(m), ...x })),
@@ -500,6 +545,13 @@ export class WsBaglanti implements MulkBaglantisi {
         this.karedeKosulBak();
         return this.degisti();
       case "komutSonucu": {
+        const k = this.katilBekleyen;
+        if (k && k.anahtar === m.anahtar) {
+          this.katilBekleyen = null;
+          clearTimeout(k.zamanlayici);
+          k.coz(m.sonuc.tamam ? { tamam: true } : { tamam: false, hata: m.sonuc.hata });
+          return;
+        }
         const b = this.bekleyenler.get(m.anahtar);
         if (!b) return;
         clearTimeout(b.zamanlayici);
@@ -521,6 +573,9 @@ export class WsBaglanti implements MulkBaglantisi {
         return this.durumAl(m);
       case "ozet":
         return;
+      case "donusOzeti":
+        this.donus = m.ozet;
+        return this.degisti();
     }
   }
 
@@ -546,6 +601,7 @@ export class WsBaglanti implements MulkBaglantisi {
 
   private hosgeldinAl(m: Mesaj<"hosgeldin">): void {
     this.hos = m;
+    if (m.donusOzeti) this.donus = m.donusOzeti;
     this.ben = { id: m.oyuncu, ad: m.oyuncu };
     this.durum = "bagli";
     this.sonHata = null;
@@ -741,6 +797,7 @@ export class WsBaglanti implements MulkBaglantisi {
       satilmis: c.satilmisHucre,
       yapilar: [...gruplar.values()],
       ...(c.kamuAdet !== undefined ? { kamuAdet: c.kamuAdet } : {}),
+      ...(c.ayrilmisAdet !== undefined ? { ayrilmisAdet: c.ayrilmisAdet } : {}),
       ...(c.kamu ? { kamu: c.kamu } : {}),
     };
   }

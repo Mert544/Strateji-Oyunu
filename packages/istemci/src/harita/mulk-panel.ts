@@ -9,7 +9,7 @@
  * Bölge, Devlet ve Savaş sekmeleri yoktur; öneri motoru bölge kipine özgüdür (yerine "Rehber görevler yakında").
  * Veri bağdaştırıcının `isletme()` özetinden okunur (sunucu karesi ya da sahte bağdaştırıcı); burada hesap yoktur.
  */
-import { esc, fmt, gercekTarih, sureMetni, tamTarihMetni, yuzde } from "../arayuz/bicim";
+import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, sureMetni, tamTarihMetni, yuzde } from "../arayuz/bicim";
 import type { GovdeDurumu } from "../arayuz/govde";
 import type { MulkPaneli } from "../arayuz/mulk-paneli";
 import { hasatCubuklari } from "../arayuz/tarim-govde";
@@ -57,6 +57,8 @@ export interface MulkAdlari {
   mal: (mal: string) => string;
   ilce: (ilce: string) => string;
   il: (il: string) => string;
+  /** Ayrılmış hücre hakkının süresi (gün; `mulk.yeniOyuncu.ayrilmisGun`, yoksa 14). */
+  ayrilmisGun?: number;
 }
 
 const sure = (ms: number): string => sureMetni(Math.max(0, ms) / SAAT);
@@ -87,11 +89,16 @@ function gitDugmesi(ilce: string | undefined): string {
 }
 
 /** Kalkan, ayrılmış hücre ve ilk yapı indirimi satırları (savaş dili yok). */
-export function korumaSatirlari(d: IsletmeDurumu): string {
+export function korumaSatirlari(d: IsletmeDurumu, ilceAdi?: (ilce: string) => string, ayrilmisGun = 14): string {
   const t = d.simZamani;
   const l: string[] = [];
   if (d.korumaBitis !== null && d.korumaBitis > t) l.push(`<li>${ikon("shield", 15)}<span><b>Yeni oyuncu kalkanı</b> · ${sure(d.korumaBitis - t)} kaldı<br><span class="soluk">Ticarette komisyon, tarife ve ihracat vergisi yok.</span></span></li>`);
-  if (d.ayrilmisBitis !== null && d.ayrilmisBitis > t) l.push(`<li>${ikon("sprout", 15)}<span><b>Ayrılmış hücre hakkı</b> · ${sure(d.ayrilmisBitis - t)} kaldı<br><span class="soluk">Yeni oyunculara ayrılmış hücreleri alabilirsin.</span></span></li>`);
+  if (d.ayrilmisBitis !== null && d.ayrilmisBitis > t) {
+    const yer = d.katilimIlcesi ? (ilceAdi?.(d.katilimIlcesi) ?? d.katilimIlcesi) : null;
+    l.push(
+      `<li>${ikon("sprout", 15)}<span><b>Ayrılmış hücre hakkı</b> · ${sure(d.ayrilmisBitis - t)} kaldı<br><span class="soluk">Yalnız ${yer ? `katılım ilçen ${esc(yer)}` : "katılım ilçende"} ve katılımının ilk ${fmt(ayrilmisGun)} gününde geçerli: yeni oyunculara ayrılmış hücreleri taban fiyattan alabilirsin.</span></span></li>`,
+    );
+  }
   if (d.indirimliYapiKalan !== null && d.indirimliYapiKalan > 0) l.push(`<li>${ikon("hammer", 15)}<span><b>İlk yapı indirimi</b> · ${fmt(d.indirimliYapiKalan)} yapı daha</span></li>`);
   return l.length ? `<ul class="mulk-koruma">${l.join("")}</ul>` : "";
 }
@@ -111,7 +118,7 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
   const toplam = d.ilceHucre.reduce((s, [, n]) => s + n, 0);
   const ilk = [...ben.ad.trim()][0] ?? "?";
   let s = `<div class="mulk-kimlik"><span class="mulk-amblem" aria-hidden="true">${esc(ilk)}</span><div><b>${esc(ben.ad)}</b><span class="soluk">${toplam ? `${fmt(d.ilceHucre.length)} ilçede ${fmt(toplam)} hücre` : "Henüz arsan yok"}</span></div></div>`;
-  s += korumaSatirlari(d);
+  s += korumaSatirlari(d, ad.ilce, ad.ayrilmisGun ?? 14);
   s += `<h3>Arsalarım</h3>`;
   if (!d.ilceHucre.length) s += `<div class="bos-durum">${ikon("map-pin", 28)}<p class="ipucu-metin">Henüz arsan yok. Bir ilçe seç, hazır arsalardan birini al.</p></div>`;
   else {
@@ -173,8 +180,8 @@ export function mulkDikkatPaneli(l: MulkDikkatMaddesi[]): string {
   return s;
 }
 
-export function mulkOlayPaneli(simSaat: number, g: GovdeDurumu): string {
-  const tarih = gercekTarih(simSaat);
+export function mulkOlayPaneli(simSaat: number, g: GovdeDurumu, epochMs?: number): string {
+  const tarih = gercekTarih(simSaat, epochMs);
   const t = g.dizin?.tarim;
   let s = `<div class="takvim-kutu"><div class="takvim-baslik"><b>${esc(tamTarihMetni(tarih))}</b>`;
   if (t) {
@@ -184,6 +191,35 @@ export function mulkOlayPaneli(simSaat: number, g: GovdeDurumu): string {
     s += `<p class="ipucu-metin">Hasat ritmi: aylık ortalama hasat oranı (yıllık ortalama %100). Vurgulu çubuk içinde bulunduğumuz aydır.</p></div>`;
   } else s += `</div></div>`;
   return s + `<div class="bos-durum">${ikon("cloud-sun-rain", 28)}<p class="ipucu-metin">Şu an ilçelerini etkileyen bir olay yok.</p></div>`;
+}
+
+/**
+ * Telefonda harita açıkken panel gizlidir: "İşletmem" düğmesi (kırıntının altında) paneli alt sayfa olarak açar ve kapatır.
+ * Masaüstünde düğme görünmez (panel zaten sağda).
+ */
+function isletmeSayfasi(ac: boolean): void {
+  document.body.classList.toggle("isletme-acik", ac);
+  document.getElementById("isletme-dugme")?.setAttribute("aria-expanded", String(ac));
+  if (ac) {
+    document.getElementById("panel")?.classList.remove("kapali");
+    document.body.classList.remove("panel-kapali");
+  }
+}
+
+function isletmeDugmesiKur(): void {
+  if (document.getElementById("isletme-dugme")) return;
+  const d = document.createElement("button");
+  d.type = "button";
+  d.id = "isletme-dugme";
+  d.className = "isletme-dugme";
+  d.setAttribute("aria-controls", "panel");
+  d.setAttribute("aria-expanded", "false");
+  d.innerHTML = `${ikon("building", 16)}İşletmem`;
+  d.addEventListener("click", () => isletmeSayfasi(!document.body.classList.contains("isletme-acik")));
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.body.classList.contains("isletme-acik")) isletmeSayfasi(false);
+  });
+  document.getElementById("harita-gezgin")?.append(d);
 }
 
 export interface MulkPaneliSecenekleri {
@@ -200,6 +236,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     st.textContent = mulkCss;
     document.head.append(st);
   }
+  isletmeDugmesiKur();
   const b = s.gorunum.baglanti;
   const ic = s.gorunum.tablo;
   const katalog = s.gorunum.yapiKatalogu();
@@ -208,11 +245,13 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     mal: (mal) => ic.mallar[ic.malIdx[mal] ?? -1]?.ad ?? mal,
     ilce: (ilce) => s.hiyerarsi.ilceler.get(ilce)?.ad ?? ilce,
     il: (il) => s.hiyerarsi.iller.get(il)?.ad ?? il,
+    ayrilmisGun: ic.param.mulk?.yeniOyuncu.ayrilmisGun ?? 14,
   };
   // Biten inşaatlar: bir inşaat listeden düşünce (ya da bitişi geçince) bu oturumda hatırlanır
   const insaatlar = new Map<string, { tur: string; ilce?: string; bitis: number }>();
   const bitenler = new Map<string, { tur: string; ilce?: string; bitis: number }>();
   let son: IsletmeDurumu | null = null;
+  const epoch = (): number => b.dunyaEpochMs?.() ?? DUNYA_EPOCH_MS;
   const oku = (): IsletmeDurumu | null => {
     const d = b.isletme?.() ?? null;
     if (!d) return son;
@@ -246,7 +285,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         case "dikkat":
           return mulkDikkatPaneli(d ? mulkDikkatMaddeleri(d, ad, bitenler) : []);
         case "olaylar":
-          return mulkOlayPaneli((d?.simZamani ?? b.ozet?.()?.simZamani ?? 0) / SAAT, g);
+          return mulkOlayPaneli((d?.simZamani ?? b.ozet?.()?.simZamani ?? 0) / SAAT, g, epoch());
       }
       return "";
     },
@@ -267,9 +306,11 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       const t = b.ozet?.()?.simZamani;
       return t === undefined ? null : t / SAAT;
     },
+    epochMs: epoch,
     tikla(t) {
       const g = t.closest("[data-mulk-ilce]") as HTMLElement | null;
       if (!g) return false;
+      isletmeSayfasi(false); // telefonda alt sayfa kapanır: harita görünsün
       s.ilceAc(g.dataset["mulkIlce"] ?? "");
       return true;
     },

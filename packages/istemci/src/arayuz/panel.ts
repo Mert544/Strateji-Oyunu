@@ -22,7 +22,7 @@ import type { Icerik } from "../komut/tablo";
 import type { Komut } from "../komut/tipler";
 import type { Oneri } from "../isci/protokol";
 import { hasatCubuklari, olayPaneli, olaySayisi } from "./tarim-govde";
-import { esc, fmt, gercekTarih, kisalt, simSaatMetni, tamTarihMetni, tarihMetni, yuzde } from "./bicim";
+import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, kisalt, simSaatMetni, tamTarihMetni, tarihMetni, yuzde } from "./bicim";
 import { ikon } from "../tasarim/ikon";
 import type { IkonAdi } from "../tasarim/ikon";
 import { hasatMetni, takvimDurumu, takvimParametresi } from "../veri/tarim";
@@ -446,7 +446,7 @@ export class Panel {
       return;
     }
     const d = takvimDurumu(simSaat, takvimParametresi(tarim));
-    const g = gercekTarih(simSaat);
+    const g = gercekTarih(simSaat, this.mulk?.epochMs() ?? DUNYA_EPOCH_MS);
     const anahtar = `${d.mutlakGun}|${g.yil}-${g.ay}-${g.gun}`;
     if (anahtar === this.takvimAnahtari) return;
     this.takvimAnahtari = anahtar;

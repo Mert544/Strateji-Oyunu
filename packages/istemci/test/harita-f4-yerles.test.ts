@@ -8,7 +8,7 @@ import { kamuGrubuBul } from "../src/harita/kamu";
 import { sunucuSecenekleri } from "../src/harita/baglanti-ws";
 import { Bit } from "../src/harita/hucre";
 import type { Izgara } from "../src/harita/hucre";
-import { ACILIS, ACILIS_SIRASI, YERLES_ADAYLARI, yerlesOner, yerlesSkoru } from "../src/harita/yerles";
+import { ACILIS, ACILIS_SIRASI, tabanYeter, YERLES_ADAYLARI, yerlesOner, yerlesSkoru } from "../src/harita/yerles";
 import type { AdayDurumu } from "../src/harita/yerles";
 import { yapiAsamasi } from "../src/harita/yapi";
 
@@ -57,6 +57,20 @@ describe("Yerleş: adaylar ve skor", () => {
     expect(new Set([...ilk, ...sonraki].map((d) => d.aday.ilce)).size).toBe(6);
     // aday havuzu ≤ 3 ise hepsi
     expect(yerlesOner(hepsi.slice(0, 2))).toHaveLength(2);
+  });
+
+  it("taban hücre: ayrılmış hücresi ilk yapının ayak izine yeten ilçeler öne alınır (botların ilçe seçimiyle aynı kural)", () => {
+    const d = [
+      durum("tr_41_gebze", { izgara: true, ayrilmis: 1, ayakIzi: 2 }),
+      durum("tr_41_kandira", { izgara: true, ayrilmis: 50, ayakIzi: 2 }),
+      durum("tr_16_gemlik", { izgara: false, ayrilmis: 2, ayakIzi: 2 }),
+      durum("tr_54_hendek", { izgara: true, ayrilmis: null }),
+    ];
+    expect(tabanYeter(d[0]!)).toBe(false);
+    expect(tabanYeter(d[2]!)).toBe(true);
+    expect(tabanYeter(d[3]!)).toBe(false);
+    const oner = yerlesOner(d, 3);
+    expect(oner.slice(0, 2).map((x) => x.aday.ilce)).toEqual(["tr_41_kandira", "tr_16_gemlik"]);
   });
 
   it("çeşitlilik: doluluğu bilinenler arasında en az biri yoğun, en az biri sakin", () => {

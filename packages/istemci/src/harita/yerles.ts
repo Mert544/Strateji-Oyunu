@@ -7,7 +7,9 @@
  * Skor (docs/arastirma/baslangic-ve-ustalik.md §3.4):
  *   0,35·düşük doluluk + 0,25·imza-açılış uyumu + 0,20·bu dönemde etkin ürün + 0,10·kalan ayrılmış hücre + 0,10·çarşıya yakınlık.
  * İmza uyumu, dönem etkinliği ve çarşı yakınlığı küratörlü sabit değerlerdir (veri hattı `il-imza.json` üretince kalkacak).
- * Eklenen tek kural: arsa ızgarası olan ilçe oynanabilir olduğu için +0,5 (ızgarasız ilçe yalnız gezilebilir).
+ * Eklenen kural: arsa ızgarası olan ilçe oynanabilir olduğu için +0,5 (ızgarasız ilçe yalnız gezilebilir).
+ * Sıralama ÖNCE taban hücreye bakar: ayrılmış (taban fiyatlı) hücresi açılışın ilk yapısının ayak izine yeten ilçeler öne
+ * (`tabanYeter`); ölçüm botlarının ilçe seçimi de aynı kuralı kullanır (botlar/src/parsel.ts `ilceSec`).
  */
 
 export type Acilis = "tarim" | "sanayi" | "pazar";
@@ -62,12 +64,22 @@ export interface AdayDurumu {
   il: string;
   /** Satılmış / uygun (0–1); sunucuda yoksa null. */
   doluluk: number | null;
-  /** Yeni oyunculara ayrılmış yaklaşık hücre sayısı (uygun hücrenin %20'si); bilinmiyorsa null. */
+  /**
+   * Yeni oyunculara ayrılmış hücre sayısı (sunucunun `ayrilmisAdet`'i; bilinmiyorsa null). Protokol satılmış ayrılmış hücreyi
+   * ayrıca vermez: sayı üst sınırdır (ayrılmış hücreler yalnız yeni oyunculara satıldığından erken dönemde fark küçüktür).
+   */
   ayrilmis: number | null;
+  /** Önerilen açılışın ilk yapısının ayak izi (hücre); bilinmiyorsa 1. */
+  ayakIzi?: number;
   /** Arsa ızgarası var (oynanabilir). */
   izgara: boolean;
   /** Sunucunun dünyasında var mı (bilinmiyorsa null). */
   sunucuda: boolean | null;
+}
+
+/** Ayrılmış hücre ilk yapının ayak izine yetiyor mu? (bilinmiyorsa hayır: bilinen ve yeten ilçe öne geçer) */
+export function tabanYeter(d: AdayDurumu): boolean {
+  return d.ayrilmis !== null && d.ayrilmis >= (d.ayakIzi ?? 1);
 }
 
 /** Yerleş skoru (0–1,5): formül yukarıda. */
@@ -84,7 +96,8 @@ export function yerlesSkoru(d: AdayDurumu): number {
  * Eşit skorda ilçe kimliği sırası (deterministik).
  */
 export function yerlesOner(durumlar: readonly AdayDurumu[], kac = 3, kaydir = 0): AdayDurumu[] {
-  const sirali = [...durumlar].sort((a, b) => yerlesSkoru(b) - yerlesSkoru(a) || (a.aday.ilce < b.aday.ilce ? -1 : 1));
+  const yeter = (d: AdayDurumu): number => (tabanYeter(d) ? 0 : 1);
+  const sirali = [...durumlar].sort((a, b) => yeter(a) - yeter(b) || yerlesSkoru(b) - yerlesSkoru(a) || (a.aday.ilce < b.aday.ilce ? -1 : 1));
   if (sirali.length <= kac) return sirali;
   const bas = (kaydir * kac) % sirali.length;
   const dilim: AdayDurumu[] = [];
@@ -99,10 +112,11 @@ export function yerlesOner(durumlar: readonly AdayDurumu[], kac = 3, kaydir = 0)
       if (dilim.some(varMi)) return;
       const aday = sirali.find((d) => varMi(d) && !dilim.includes(d));
       if (!aday) return;
-      // En düşük skorlu kartın yerine; ama öteki rolün tek temsilcisi çıkarılmaz.
+      // En düşük skorlu kartın yerine; ama öteki rolün tek temsilcisi çıkarılmaz, taban hücresi yeten kart yetmeyenle değişmez.
       for (let i = dilim.length - 1; i >= 0; i--) {
         const sonra = dilim.filter((_, j) => j !== i);
         if (diger(dilim[i]!) && !sonra.some(diger)) continue;
+        if (yeter(aday) > yeter(dilim[i]!)) continue;
         dilim[i] = aday;
         return;
       }

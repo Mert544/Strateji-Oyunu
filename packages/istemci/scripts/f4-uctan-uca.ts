@@ -21,6 +21,7 @@ import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
 import type { Browser, BrowserContext, Page } from "playwright-core";
+import { mulkOyuncuBul } from "@bolge/cekirdek";
 import { f4SunucuBaslat, GEBZE } from "./f4-sunucu";
 import type { F4Sunucu } from "./f4-sunucu";
 
@@ -88,8 +89,8 @@ async function sayfaAc(baglam: BrowserContext, adres: string, ts: F4Sunucu, oyun
   await sayfa.addInitScript("window.__name = (f) => f; window.__bildirimCarpan = 6;");
   sayfa.on("pageerror", (e) => konsol.push(`[${oyuncu}] pageerror: ${e.message}`));
   sayfa.on("console", (m) => m.type() === "error" && konsol.push(`[${oyuncu}] ${m.text()}`));
-  // Protokolde oyuncunun kendi katılımı yok (oturum hizmeti sonraki iş): sınama köprüsü yönetici komutuyla katar.
-  await sayfa.exposeFunction("__katilIste", async (ilce: string) => ts.katil(oyuncu, ilce));
+  // Katılım protokolün `katil` mesajıyla (Yerleş ekranının seçtiği ilçe her zaman gönderilir); sınama köprüsü yok.
+  void ts;
   const url = `${adres}/dunya.html?sunucu=${encodeURIComponent(ts.url)}&token=${ts.token(oyuncu)}&adaptif=0&hiz=3600&acilis=0`;
   await sayfa.goto(url);
   return sayfa;
@@ -152,6 +153,8 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.waitForTimeout(800);
   kontrol(`${e} Yerleş kapandı, harita Gebze L3'te önerilen hazır arsada`, (await sayfa.locator("#yerles").count()) === 0);
   const oz = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.() ?? null);
+  const katilim = await sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { sonKatil?: { ilce: string } | null }).sonKatil ?? null);
+  kontrol(`${e} katılım protokolün "katil" mesajıyla, seçilen ilçe gönderildi; çekirdekte katılım ilçesi Gebze`, katilim?.ilce === GEBZE && mulkOyuncuBul(ts.yazar.sim.dunya, "ali")?.katilimIlcesi === GEBZE, `${JSON.stringify(katilim)} / ${mulkOyuncuBul(ts.yazar.sim.dunya, "ali")?.katilimIlcesi}`);
   kontrol(`${e} sunucudan yurt (6 hücre) ve hibe: hazine 50.000 ₺`, !!oz && oz.ilceHucre.some(([i, n]) => i === "tr_41_gebze" && n === 6) && oz.hazineMili === 50_000_000, JSON.stringify(oz));
   const hazine = (await sayfa.locator("#harita-hazine").textContent() ?? "").replace(/\s+/g, " ");
   kontrol(`${e} hazine çipi (masaüstünde mülk paneli kurulunca üst çubuğa taşınır)`, /Hazine\s*50\.000 ₺/.test(hazine), hazine);
@@ -503,7 +506,10 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await ts.yonetici.zamanIlerlet(t0 + 5 * 60_000);
   // Elle saatte zaman yalnız değişiklikle gelir: istemci eşitlemeyi hemen ister (gerçek saatli sunucuda 20 sn'lik döngü yeter)
   await sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { zamanEsitle?: () => Promise<void> }).zamanEsitle?.());
-  await sayfa.waitForTimeout(2600);
+  // Etiketler iki saniyelik tazelemeyle güncellenir; yüklü makinede gecikebilir: en çok 12 sn bekle
+  await sayfa
+    .waitForFunction(() => [...document.querySelectorAll(".yapi-etiket")].some((x) => /Çiftlik · İskele/.test(x.textContent ?? "")), null, { timeout: 12000 })
+    .catch(() => undefined);
   const asamaIskele = await gorunum(sayfa);
   kontrol(`${e} +5 dk: ali kendi çiftliğinde aşama İskele`, asamaIskele.etiketler.some((x) => /Çiftlik · İskele/.test(x)), asamaIskele.etiketler.join(" | "));
   await ts.yonetici.zamanIlerlet(t0 + 30 * 60_000);
@@ -549,6 +555,18 @@ async function ayse(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: stri
   const altM = await alt(sayfa);
   kontrol(`${e} hazır arsa seçili, alt çubuk görünür`, /Hazır arsa/.test(altM) && (await sayfa.locator("#harita-alt").isVisible()), altM);
   await ekran("2-hazir-arsa");
+  // Telefonda harita açıkken İşletmem: düğme paneli alt sayfa olarak açar ve kapatır
+  kontrol(`${e} harita açıkken panel gizli, "İşletmem" düğmesi görünür`, (await sayfa.locator("#panel").isHidden()) && (await sayfa.locator("#isletme-dugme").isVisible()));
+  await sayfa.locator("#isletme-dugme").tap();
+  await sayfa.waitForTimeout(400);
+  const sayfaMetni = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
+  kontrol(`${e} İşletmem alt sayfası açıldı (arsalar, kalkan); alt çubuk gizli`, (await sayfa.locator("#panel").isVisible()) && /Arsalarım/.test(sayfaMetni) && /Yeni oyuncu kalkanı/.test(sayfaMetni) && !(await sayfa.locator("#harita-alt").isVisible()), sayfaMetni.slice(0, 120));
+  const tasmaI = await sayfa.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  kontrol(`${e} İşletmem alt sayfası: yatay taşma yok`, !tasmaI);
+  await ekran("2a-isletme");
+  await sayfa.locator("#isletme-dugme").tap();
+  await sayfa.waitForTimeout(300);
+  kontrol(`${e} düğmeye yeniden dokununca alt sayfa kapanır, alt çubuk geri gelir`, (await sayfa.locator("#panel").isHidden()) && (await sayfa.locator("#harita-alt").isVisible()));
   // Hücre aracı düğmesi yalnız dokunmatikte görünür (ileri düzey): seçimi temizleyince boştaki çubukta
   const arsaKimlik = await sayfa.evaluate(() => window.__harita?.gorunum()?.seciliArsa()?.kimlik ?? "");
   await sayfa.locator("#harita-alt [data-eylem='temizle']").tap();
@@ -608,8 +626,17 @@ async function sahteYerles(tarayici: Browser, adres: string, konsol: string[]): 
   await sayfa.addInitScript("window.__name = (f) => f; window.__bildirimCarpan = 6;");
   sayfa.on("pageerror", (x) => konsol.push(`[sahte] pageerror: ${x.message}`));
   sayfa.on("console", (m) => m.type() === "error" && konsol.push(`[sahte] ${m.text()}`));
-  await sayfa.goto(`${adres}/dunya.html?yerles=1&adaptif=0&hiz=3600&acilis=0`);
+  await sayfa.goto(`${adres}/dunya.html?yerles=1&donus=ornek&adaptif=0&hiz=3600&acilis=0`);
+  // "Sen yokken" (örnek özet): Yerleş'ten önce açılır; tek birincil düğme, en çok 8 satır, şablon metni; Enter ile geçilir
+  await sayfa.waitForSelector("#donus .dn-kutu", { timeout: 120000 });
+  await sayfa.waitForTimeout(400);
+  const dn = (await sayfa.locator("#donus").innerText()).replace(/\s+/g, " ");
+  const dnSatir = await sayfa.locator("#donus .dn-satirlar li").count();
+  kontrol(`${e} "Sen yokken": başlık, net sonuç, biten işler, Git; ≤8 satır; sunucu satırı yok`, /Sen yokken/.test(dn) && /\+₺1\.960/.test(dn) && /Gebze: Ahır/.test(dn) && dnSatir >= 3 && dnSatir <= 8 && !/sunucu|kapalı/i.test(dn) && (await sayfa.locator("#donus .birincil").count()) === 1 && (await sayfa.locator("#donus [data-dn-git]").count()) >= 1, dn.slice(0, 200));
+  await sayfa.screenshot({ path: join(EKRAN, "f4-sahte-0-donus-koyu.png") });
+  await sayfa.keyboard.press("Enter");
   await sayfa.waitForFunction(() => window.__harita?.yerles() != null, null, { timeout: 120000 });
+  kontrol(`${e} Enter ile "Sen yokken" kapanır, Yerleş açılır`, (await sayfa.locator("#donus").count()) === 0);
   await sayfa.evaluate(() => window.__olcum?.duraklat(true));
   kontrol(`${e} Yerleş (sahte bağdaştırıcı): 3 aday, Devlet seç yok`, (await sayfa.locator(".yr-kart").count()) === 3 && (await sayfa.locator("#devlet-sec").isHidden()));
   await sayfa.locator("[data-acilis='pazar']").click();
@@ -629,6 +656,22 @@ async function sahteYerles(tarayici: Browser, adres: string, konsol: string[]): 
   await sayfa.screenshot({ path: join(EKRAN, "f4-sahte-2-yapi-menusu-koyu.png") });
   kontrol("[sahte/masaüstü] konsol hatası yok", konsol.filter((x) => x.includes("[sahte]")).length === 0, konsol.slice(0, 3).join(" | "));
   await baglam.close();
+  // Telefonda "Sen yokken": alttan sayfa, yatay taşma yok, Devam tam genişlik
+  const mb = await tarayici.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, colorScheme: "light" });
+  const ms = await mb.newPage();
+  await ms.addInitScript("window.__name = (f) => f;");
+  await ms.goto(`${adres}/dunya.html?yerles=1&donus=ornek&adaptif=0&acilis=0`);
+  await ms.waitForSelector("#donus .dn-kutu", { timeout: 120000 });
+  await ms.waitForTimeout(400);
+  await ms.evaluate("Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined)))");
+  const kutu = await ms.locator("#donus .dn-kutu").boundingBox();
+  const tasma = await ms.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  kontrol("[sahte/mobil] \"Sen yokken\" alttan sayfa; taşma yok", !!kutu && Math.abs(kutu.y + kutu.height - 844) < 10 && kutu.width >= 389 && !tasma, JSON.stringify(kutu));
+  await ms.screenshot({ path: join(EKRAN, "f4-sahte-0-donus-mobil.png") });
+  await ms.locator("#donus [data-dn='devam']").tap();
+  await ms.waitForTimeout(300);
+  kontrol("[sahte/mobil] Devam ile kapanır", (await ms.locator("#donus").count()) === 0);
+  await mb.close();
 }
 
 async function main(): Promise<void> {

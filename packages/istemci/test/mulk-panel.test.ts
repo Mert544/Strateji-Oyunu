@@ -48,6 +48,7 @@ describe("mülk kipi paneli", () => {
     expect(h).toContain("Yeni oyuncu kalkanı");
     expect(h).toContain("13 gün kaldı");
     expect(h).toContain("Ayrılmış hücre hakkı");
+    expect(isletmePaneli(durum({ katilimIlcesi: "tr_41_gebze" }), { ad: "Ali" }, ad)).toContain("Yalnız katılım ilçen Gebze ve katılımının ilk 14 gününde geçerli");
     expect(h).toContain("İlk yapı indirimi");
     expect(h).not.toMatch(/savaş|devlet|bölge/i);
     expect(h).toContain('data-mulk-ilce="tr_41_gebze"');
