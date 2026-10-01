@@ -9,6 +9,7 @@ Kullanım: `deploy/pg-dogrula.sh <sha | worktree-yolu> [--taban <ref>] [--sema <
 - Şema: koşudan sonra `SELECT max(surum) FROM sunucu_sema`, beklenen `sql/NNN-*.sql` en büyük NNN'si.
 - `<sha>` verilirse o uçta kurulu bir worktree aranır (ana çalışma ağacı hariç); yoksa geçici ayrık worktree + `pnpm install --frozen-lockfile --offline` (~6 sn). Kapı koşarken kurulum istemiyorsan worktree yolu ver.
 - Çıktı: stdout'a tek satır `PG GECTI|KIRIK sha=... test=gecen/toplam sema=bulunan/beklenen sure=Ns kirik=<adim|->`; JSON `SP/takim/kapi-sonuclari/pg-<kisa sha>.json` (sha, adımlar, test sayıları, şema, süre, worktree); günlükler `pg-<kisa sha>/`. Çıkış kodu 0/1/2.
+- JSON `testler`: bütün testlerin adı, durumu ve süresi (ms). `--izle <regex>` eşleşen testleri `izlenen` olarak JSON'a ve özet satırının altına yazar (örn. belirli bir regresyon testinin geçtiğini ve süresini göstermek için).
 - `trap`: EXIT, INT, TERM, HUP'ta vitest süreç grubu, pg kümesi (`pg_ctl -m immediate stop`), dizin ve geçici worktree temizlenir.
 
 ## Kabul

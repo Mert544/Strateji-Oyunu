@@ -11,6 +11,8 @@
 #   --taban <ref>    "değişmiş test dosyaları" için karşılaştırma tabanı (varsayılan: entegrasyon).
 #   --sema <N>       beklenen şema sürümü (varsayılan: packages/sunucu/sql/NNN-*.sql dosyalarının en büyük NNN'si).
 #   --dosya <test>   ek test dosyası (tekrarlanabilir).
+#   --izle <regex>   adı (dosya > başlık) eşleşen testleri JSON'da `izlenen` olarak adı, durumu ve süresiyle ayrıca göster; satırlar stdout'a da yazılır
+#                    (tekrarlanabilir). JSON'daki `testler` bütün testlerin adını, durumunu ve süresini (ms) her zaman taşır.
 #
 # Koşulan: packages/sunucu/test/pg.test.ts ve yedek-geri-yukle.test.ts, ayrıca taban...uç arasında DEĞİŞMİŞ ve BOLGE_PG_URL
 # içeren test dosyaları (tam vitest koşulmaz). Kapı koşuyorsa vitest --minWorkers=1 --maxWorkers=1, değilse 2 (vitest 2.1.9 tek başına --maxWorkers=1 kabul etmez) (PG_DOGRULA_ISCI ile ezilir).
@@ -22,15 +24,16 @@
 # Kümeye yalnız unix soketiyle (TCP portu yok), fsync=off; dizin her koşuda benzersizdir. Linux/macOS (bash) içindir.
 set -uo pipefail
 
-KULLANIM() { sed -n '2,23p' "$0"; }
+KULLANIM() { sed -n '2,26p' "$0"; }
 [ $# -ge 1 ] || { KULLANIM; exit 2; }
 HEDEF="$1"; shift
-TABAN="entegrasyon"; SEMA_BEKLENEN=""; EK_DOSYALAR=()
+TABAN="entegrasyon"; SEMA_BEKLENEN=""; EK_DOSYALAR=(); IZLE=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --taban) TABAN="${2:?--taban deger ister}"; shift 2 ;;
     --sema) SEMA_BEKLENEN="${2:?--sema deger ister}"; shift 2 ;;
     --dosya) EK_DOSYALAR+=("${2:?--dosya deger ister}"); shift 2 ;;
+    --izle) IZLE+=("${2:?--izle deger ister}"); shift 2 ;;
     *) echo "bilinmeyen secenek: $1" >&2; KULLANIM; exit 2 ;;
   esac
 done
@@ -90,6 +93,7 @@ pg_calistir() {
 
 T0=$(date +%s)
 ADIMLAR_TSV="$GUNLUK_DIZIN/adimlar.tsv"; : > "$ADIMLAR_TSV"
+: > "$GUNLUK_DIZIN/izle.txt"; for d in "${IZLE[@]:-}"; do [ -n "$d" ] && printf '%s\n' "$d" >> "$GUNLUK_DIZIN/izle.txt"; done
 adim_kaydet() { printf '%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" >> "$ADIMLAR_TSV"; }   # ad durum kod sure
 KIRIK_ADIM="-"
 TEST_TOPLAM=0; TEST_GECEN=0; TEST_KIRIK=0; TEST_ATLANAN=0; SEMA_BULUNAN="-"; TEST_DOSYALARI=()
@@ -101,7 +105,7 @@ bitir() {  # JSON + özet satırı yaz, çıkış kodunu belirle
   local ozet="PG $sonuc sha=$KISA test=$TEST_GECEN/$TEST_TOPLAM sema=$SEMA_BULUNAN/${SEMA_BEKLENEN:-?} sure=${sure}s kirik=$KIRIK_ADIM"
   ADIMLAR_TSV="$ADIMLAR_TSV" SONUC="$sonuc" OZET="$ozet" SHA="$SHA" HEDEF="$HEDEF" TABAN="$TABAN" SURE="$sure" \
   TG="$TEST_GECEN" TT="$TEST_TOPLAM" TK="$TEST_KIRIK" TA="$TEST_ATLANAN" SB="$SEMA_BULUNAN" SX="${SEMA_BEKLENEN:-}" \
-  KA="$KIRIK_ADIM" WTY="$WT" NEDEN="$NEDEN" KIRLI="${KIRLI:-}" DOSYALAR="${TEST_DOSYALARI[*]:-}" ISCI="${ISCI:-}" node -e '
+  KA="$KIRIK_ADIM" WTY="$WT" NEDEN="$NEDEN" KIRLI="${KIRLI:-}" DOSYALAR="${TEST_DOSYALARI[*]:-}" ISCI="${ISCI:-}" TESTLER_JSON="$GUNLUK_DIZIN/testler.json" IZLE_DOSYA="$GUNLUK_DIZIN/izle.txt" IZLENEN_METIN="$GUNLUK_DIZIN/izlenen.txt" node -e '
     const fs = require("fs");
     const e = process.env;
     const adimlar = fs.readFileSync(e.ADIMLAR_TSV, "utf8").split("\n").filter(Boolean).map((l) => {
@@ -115,9 +119,16 @@ bitir() {  # JSON + özet satırı yaz, çıkış kodunu belirle
       sema: { bulunan: e.SB === "-" ? null : Number(e.SB), beklenen: e.SX === "" ? null : Number(e.SX) },
       adimlar,
     };
+    const oku = (y) => (fs.existsSync(y) ? fs.readFileSync(y, "utf8") : "");
+    const testler = oku(e.TESTLER_JSON) ? JSON.parse(oku(e.TESTLER_JSON)) : [];
+    j.testler = testler;
+    const desenler = oku(e.IZLE_DOSYA).split("\n").filter(Boolean).map((d) => new RegExp(d));
+    j.izlenen = testler.filter((t) => desenler.some((r) => r.test(t.ad)));
+    fs.writeFileSync(e.IZLENEN_METIN, j.izlenen.map((t) => `  izlenen: ${t.durum} ${t.sure_ms} ms :: ${t.ad}`).join("\n"));
     fs.writeFileSync(process.argv[1], JSON.stringify(j, null, 2) + "\n");
   ' "$SONUC_JSON"
   echo "$ozet"
+  [ -s "$GUNLUK_DIZIN/izlenen.txt" ] && cat "$GUNLUK_DIZIN/izlenen.txt" && echo
   [ "$sonuc" = "GECTI" ]
 }
 kirik() {  # adim, ileti
@@ -203,6 +214,9 @@ if [ -f "$VITEST_JSON" ]; then
     const kirik = [];
     for (const f of j.testResults ?? []) for (const t of f.assertionResults ?? []) if (t.status === "failed") kirik.push(`${String(f.name).split("/packages/").pop()} > ${t.fullName}`);
     fs.writeFileSync(process.env.KT, kirik.slice(0, 20).join(" | ") + "\n");
+    const testler = [];
+    for (const f of j.testResults ?? []) for (const t of f.assertionResults ?? []) testler.push({ ad: `${String(f.name).split("/packages/").pop()} > ${t.fullName}`, durum: t.status, sure_ms: Math.round(t.duration ?? 0) });
+    fs.writeFileSync(process.env.KT.replace("kirik-testler.txt", "testler.json"), JSON.stringify(testler));
     console.log([j.numTotalTests ?? 0, j.numPassedTests ?? 0, j.numFailedTests ?? 0, (j.numPendingTests ?? 0) + (j.numTodoTests ?? 0)].join(" "));
   ')
   KIRIK_TESTLER="$(cat "$GUNLUK_DIZIN/kirik-testler.txt" 2>/dev/null | tr -d '\n')"
