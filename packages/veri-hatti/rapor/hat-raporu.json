@@ -1,0 +1,976 @@
+{
+  "surum": 1,
+  "kaynaklar": {
+    "ne_admin1": {
+      "sha256": "22d0e3ad85eb3e27f17cabf8ba2d50e554fbc27a87796ff891d958185da62fb5",
+      "bayt": 40726851
+    },
+    "ne_admin0": {
+      "sha256": "239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255",
+      "bayt": 13287234
+    },
+    "ne_ports": {
+      "sha256": "c5a5028f5187a5e1b9fe7f0fab99804a8be7482099a2365d404fb7e9dd6b5457",
+      "bayt": 279075
+    },
+    "ne_places": {
+      "sha256": "fd3fa867a320cbd5c5b6bb5bc550afeec2939fb2cef688e508007282a55ac42f",
+      "bayt": 4932147
+    },
+    "usgs_mrds": {
+      "sha256": "31be4baaa86b082787bc74989146183db21badf7157db39b3f0a6fe0b38a5477",
+      "bayt": 25791223
+    }
+  },
+  "bolgeSayisi": 53,
+  "kenarSayisi": {
+    "kara": 101,
+    "deniz": 38,
+    "hava": 4
+  },
+  "kiyiBolgeleri": [
+    "adriyatik",
+    "antalya",
+    "attika",
+    "bati_karadeniz",
+    "budjak",
+    "burgaz",
+    "canakkale",
+    "coruh",
+    "cukurova",
+    "dobruca",
+    "dogu_karadeniz",
+    "ege",
+    "ege_adalari",
+    "girit",
+    "guney_marmara",
+    "istanbul",
+    "izmit",
+    "kastamonu",
+    "kolhis",
+    "menderes",
+    "mora",
+    "orta_karadeniz",
+    "pindus",
+    "rodop_kiyisi",
+    "selanik",
+    "trakya",
+    "tuna_deltasi",
+    "varna"
+  ],
+  "limanlar": {
+    "adriyatik": [
+      "Durres (ne_ports)"
+    ],
+    "antalya": [
+      "Antalya (ne_places)"
+    ],
+    "attika": [
+      "Piraeus (ne_ports)"
+    ],
+    "bati_karadeniz": [
+      "Zonguldak (ne_places)"
+    ],
+    "budjak": [
+      "Odessa (ne_ports)"
+    ],
+    "burgaz": [
+      "Burgas (ne_ports)"
+    ],
+    "canakkale": [
+      "Canakkale (ne_ports)"
+    ],
+    "coruh": [
+      "Rize (ne_places)"
+    ],
+    "cukurova": [
+      "Mersin (ne_ports)"
+    ],
+    "dobruca": [
+      "Constanta (ne_places)"
+    ],
+    "dogu_karadeniz": [
+      "Trabzon (ne_ports)"
+    ],
+    "ege": [
+      "Izmir (ne_ports)"
+    ],
+    "ege_adalari": [
+      "Rhodes (ne_ports)",
+      "Chios (ne_ports)",
+      "Kos (ne_ports)",
+      "Paros (ne_ports)",
+      "Samos (ne_ports)"
+    ],
+    "girit": [
+      "Canea (ne_ports)",
+      "Iraklion (ne_ports)"
+    ],
+    "guney_marmara": [
+      "Bandirma (ne_ports)"
+    ],
+    "istanbul": [
+      "Istanbul (ne_ports)"
+    ],
+    "izmit": [
+      "Izmit (ne_places)"
+    ],
+    "kastamonu": [
+      "Sinop (ne_ports)"
+    ],
+    "kolhis": [
+      "Batumi (ne_ports)",
+      "Poti (ne_ports)"
+    ],
+    "mora": [
+      "Gythion (ne_ports)",
+      "Katakolon (ne_ports)",
+      "Kalamata (ne_ports)",
+      "Patras (ne_ports)",
+      "Corfu (ne_ports)"
+    ],
+    "orta_karadeniz": [
+      "Samsun (ne_ports)"
+    ],
+    "pindus": [
+      "Volos (ne_ports)"
+    ],
+    "rodop_kiyisi": [
+      "Kavala (ne_ports)",
+      "Alexandroupolis (ne_ports)"
+    ],
+    "selanik": [
+      "Thessaloniki (ne_ports)"
+    ],
+    "trakya": [
+      "Tekirdag (ne_ports)"
+    ],
+    "tuna_deltasi": [
+      "Tulcea (ne_ports)"
+    ],
+    "varna": [
+      "Varna (ne_ports)"
+    ]
+  },
+  "elenenLimanlar": [
+    {
+      "ad": "Galati",
+      "neden": "bolge \"siret\" kiyi degil (nehir limani)"
+    }
+  ],
+  "darGecitler": [
+    "sipka",
+    "istanbul",
+    "canakkale",
+    "kafkas_gecidi"
+  ],
+  "kaldirilanKaraKenarlari": [
+    "tuna_ovasi - sofya",
+    "tuna_ovasi - meric",
+    "tuna_ovasi - burgaz",
+    "tuna_platosu - burgaz",
+    "kolhis - kur_vadisi"
+  ],
+  "nufus": {
+    "budjak": {
+      "gercekToplam": 1128296,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Odessa 991000",
+        "Izmayil 83194",
+        "Illichivsk 54102"
+      ],
+      "oyunNufusu": 264000
+    },
+    "tuna_deltasi": {
+      "gercekToplam": 92475,
+      "yerlesimSayisi": 1,
+      "enBuyukYerlesimler": [
+        "Tulcea 92475"
+      ],
+      "oyunNufusu": 74000
+    },
+    "dobruca": {
+      "gercekToplam": 303399,
+      "yerlesimSayisi": 1,
+      "enBuyukYerlesimler": [
+        "Constanta 303399"
+      ],
+      "oyunNufusu": 136000
+    },
+    "siret": {
+      "gercekToplam": 1224644,
+      "yerlesimSayisi": 6,
+      "enBuyukYerlesimler": [
+        "Iasi 325914",
+        "Galati 311156",
+        "Braila 213569"
+      ],
+      "oyunNufusu": 275000
+    },
+    "prahova": {
+      "gercekToplam": 622952,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Ploiesti 232542",
+        "Pitesti 171021",
+        "Buzau 130954"
+      ],
+      "oyunNufusu": 195000
+    },
+    "eflak": {
+      "gercekToplam": 2265318,
+      "yerlesimSayisi": 6,
+      "enBuyukYerlesimler": [
+        "Bucharest 1942000",
+        "Slatina 78988",
+        "Calarasi 73224"
+      ],
+      "oyunNufusu": 376000
+    },
+    "guney_karpatlar": {
+      "gercekToplam": 683259,
+      "yerlesimSayisi": 5,
+      "enBuyukYerlesimler": [
+        "Craiova 304142",
+        "Rimnicu Vilcea 107558",
+        "Drobeta-Turnu Severin 106578"
+      ],
+      "oyunNufusu": 205000
+    },
+    "tuna_ovasi": {
+      "gercekToplam": 290868,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Pleven 118675",
+        "Vratsa 71633",
+        "Turnovo 53115"
+      ],
+      "oyunNufusu": 133000
+    },
+    "tuna_platosu": {
+      "gercekToplam": 309838,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Ruse 184270",
+        "Shumen 87283",
+        "Razgrad 38285"
+      ],
+      "oyunNufusu": 137000
+    },
+    "varna": {
+      "gercekToplam": 407601,
+      "yerlesimSayisi": 2,
+      "enBuyukYerlesimler": [
+        "Varna 312770",
+        "Dobrich 94831"
+      ],
+      "oyunNufusu": 158000
+    },
+    "sipka": {
+      "gercekToplam": 42211,
+      "yerlesimSayisi": 1,
+      "enBuyukYerlesimler": [
+        "Lovec 42211"
+      ],
+      "oyunNufusu": 50000
+    },
+    "pannon": {
+      "gercekToplam": 956952,
+      "yerlesimSayisi": 6,
+      "enBuyukYerlesimler": [
+        "Timisoara 315053",
+        "Novi Sad 225457",
+        "Arad 169065"
+      ],
+      "oyunNufusu": 243000
+    },
+    "morava": {
+      "gercekToplam": 1690197,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Belgrade 1099000",
+        "Nis 250000",
+        "Kragujevac 171197"
+      ],
+      "oyunNufusu": 324000
+    },
+    "adriyatik": {
+      "gercekToplam": 1936996,
+      "yerlesimSayisi": 26,
+      "enBuyukYerlesimler": [
+        "Tirana 895350",
+        "Elbasan 165010",
+        "Shkoder 155767"
+      ],
+      "oyunNufusu": 347000
+    },
+    "vardar": {
+      "gercekToplam": 699747,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Skopje 494087",
+        "Tetovo 119132",
+        "Bitola 86528"
+      ],
+      "oyunNufusu": 207000
+    },
+    "sofya": {
+      "gercekToplam": 1318534,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Sofia 1185000",
+        "Pernik 82467",
+        "Kyustendil 51067"
+      ],
+      "oyunNufusu": 286000
+    },
+    "meric": {
+      "gercekToplam": 563624,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Plovdiv 340494",
+        "Stara Zagora 143431",
+        "Khaskovo 79699"
+      ],
+      "oyunNufusu": 186000
+    },
+    "burgaz": {
+      "gercekToplam": 292334,
+      "yerlesimSayisi": 2,
+      "enBuyukYerlesimler": [
+        "Burgas 195966",
+        "Sliven 96368"
+      ],
+      "oyunNufusu": 133000
+    },
+    "pindus": {
+      "gercekToplam": 325694,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Larissa 128758",
+        "Volos 110632",
+        "Ioanina 86304"
+      ],
+      "oyunNufusu": 141000
+    },
+    "selanik": {
+      "gercekToplam": 942437,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Thessaloniki 828000",
+        "Seres 55886",
+        "Katerini 53293"
+      ],
+      "oyunNufusu": 241000
+    },
+    "rodop_kiyisi": {
+      "gercekToplam": 208420,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Kavala 59240",
+        "Alexandroupoli 52979",
+        "Xanthi 50570"
+      ],
+      "oyunNufusu": 112000
+    },
+    "attika": {
+      "gercekToplam": 3827153,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Athens 3242000",
+        "Piraievs 466065",
+        "Chalkida 71842"
+      ],
+      "oyunNufusu": 490000
+    },
+    "mora": {
+      "gercekToplam": 416489,
+      "yerlesimSayisi": 7,
+      "enBuyukYerlesimler": [
+        "Patra 163360",
+        "Agrinio 75233",
+        "Kalamata 71823"
+      ],
+      "oyunNufusu": 159000
+    },
+    "girit": {
+      "gercekToplam": 224715,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Iraklio 137154",
+        "Hania 78728",
+        "Sitia 8833"
+      ],
+      "oyunNufusu": 117000
+    },
+    "ege_adalari": {
+      "gercekToplam": 144692,
+      "yerlesimSayisi": 5,
+      "enBuyukYerlesimler": [
+        "Rodos 56969",
+        "Mitilini 29328",
+        "Hios 26891"
+      ],
+      "oyunNufusu": 93000
+    },
+    "trakya": {
+      "gercekToplam": 397879,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Edirne 126470",
+        "Tekirdag 122287",
+        "Luleburgaz 90899"
+      ],
+      "oyunNufusu": 156000
+    },
+    "istanbul": {
+      "gercekToplam": 10061000,
+      "yerlesimSayisi": 1,
+      "enBuyukYerlesimler": [
+        "Istanbul 10061000"
+      ],
+      "oyunNufusu": 800000
+    },
+    "canakkale": {
+      "gercekToplam": 87791,
+      "yerlesimSayisi": 1,
+      "enBuyukYerlesimler": [
+        "Canakkale 87791"
+      ],
+      "oyunNufusu": 72000
+    },
+    "izmit": {
+      "gercekToplam": 1013400,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Izmit 466504",
+        "Sakarya 286787",
+        "Adapazari 260109"
+      ],
+      "oyunNufusu": 250000
+    },
+    "guney_marmara": {
+      "gercekToplam": 1793801,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Bursa 1492000",
+        "Balikesir 261516",
+        "Bilecik 40285"
+      ],
+      "oyunNufusu": 334000
+    },
+    "ege": {
+      "gercekToplam": 2830971,
+      "yerlesimSayisi": 2,
+      "enBuyukYerlesimler": [
+        "Izmir 2587000",
+        "Manisa 243971"
+      ],
+      "oyunNufusu": 421000
+    },
+    "menderes": {
+      "gercekToplam": 696725,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Denizli 372344",
+        "Aydin 198857",
+        "Soke 77341"
+      ],
+      "oyunNufusu": 207000
+    },
+    "frigya": {
+      "gercekToplam": 1009731,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Eskisehir 514869",
+        "Kutahya 185008",
+        "Afyon 156992"
+      ],
+      "oyunNufusu": 250000
+    },
+    "antalya": {
+      "gercekToplam": 1021492,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Antalya 783000",
+        "Isparta 172334",
+        "Burdur 66158"
+      ],
+      "oyunNufusu": 251000
+    },
+    "cukurova": {
+      "gercekToplam": 3350692,
+      "yerlesimSayisi": 6,
+      "enBuyukYerlesimler": [
+        "Adana 1293000",
+        "Tarsus 894318",
+        "Icel 616990"
+      ],
+      "oyunNufusu": 458000
+    },
+    "konya": {
+      "gercekToplam": 1131516,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Konya 919000",
+        "Karaman 120399",
+        "Eregli 92117"
+      ],
+      "oyunNufusu": 264000
+    },
+    "ankara": {
+      "gercekToplam": 4186115,
+      "yerlesimSayisi": 5,
+      "enBuyukYerlesimler": [
+        "Ankara 3716000",
+        "Kirikkale 211138",
+        "Kirsehir 94336"
+      ],
+      "oyunNufusu": 513000
+    },
+    "bati_karadeniz": {
+      "gercekToplam": 382111,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Zonguldak 156918",
+        "Karabuk 128564",
+        "Bolu 96629"
+      ],
+      "oyunNufusu": 153000
+    },
+    "kastamonu": {
+      "gercekToplam": 105236,
+      "yerlesimSayisi": 2,
+      "enBuyukYerlesimler": [
+        "Kastamonu 70402",
+        "Sinop 34834"
+      ],
+      "oyunNufusu": 79000
+    },
+    "kapadokya": {
+      "gercekToplam": 759406,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Kayseri 592840",
+        "Nigde 91039",
+        "Nevsehir 75527"
+      ],
+      "oyunNufusu": 216000
+    },
+    "sivas": {
+      "gercekToplam": 481605,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Sivas 264022",
+        "Tokat 129702",
+        "Yozgat 87881"
+      ],
+      "oyunNufusu": 172000
+    },
+    "orta_karadeniz": {
+      "gercekToplam": 973105,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Samsun 609339",
+        "Corum 183418",
+        "Bafra 97452"
+      ],
+      "oyunNufusu": 245000
+    },
+    "firat": {
+      "gercekToplam": 2175639,
+      "yerlesimSayisi": 5,
+      "enBuyukYerlesimler": [
+        "Gaziantep 1044000",
+        "Sanliurfa 449549",
+        "Kahramanmaras 376045"
+      ],
+      "oyunNufusu": 368000
+    },
+    "dicle": {
+      "gercekToplam": 1284912,
+      "yerlesimSayisi": 5,
+      "enBuyukYerlesimler": [
+        "Diyarbakir 644763",
+        "Batman 302074",
+        "Nusaybin 152668"
+      ],
+      "oyunNufusu": 282000
+    },
+    "yukari_firat": {
+      "gercekToplam": 842696,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Malatya 461574",
+        "Elazig 271492",
+        "Bingol 80568"
+      ],
+      "oyunNufusu": 228000
+    },
+    "erzurum": {
+      "gercekToplam": 720488,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Erzurum 420691",
+        "Erzincan 129407",
+        "Agri 87854"
+      ],
+      "oyunNufusu": 210000
+    },
+    "van": {
+      "gercekToplam": 585445,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Van 371713",
+        "Hakkari 77699",
+        "Tatvan 73222"
+      ],
+      "oyunNufusu": 189000
+    },
+    "kars": {
+      "gercekToplam": 77486,
+      "yerlesimSayisi": 1,
+      "enBuyukYerlesimler": [
+        "Kars 77486"
+      ],
+      "oyunNufusu": 68000
+    },
+    "dogu_karadeniz": {
+      "gercekToplam": 1050945,
+      "yerlesimSayisi": 4,
+      "enBuyukYerlesimler": [
+        "Trabzon 764714",
+        "Ordu 155117",
+        "Giresun 98864"
+      ],
+      "oyunNufusu": 255000
+    },
+    "coruh": {
+      "gercekToplam": 311722,
+      "yerlesimSayisi": 2,
+      "enBuyukYerlesimler": [
+        "Rize 279450",
+        "Artvin 32272"
+      ],
+      "oyunNufusu": 138000
+    },
+    "kolhis": {
+      "gercekToplam": 284237,
+      "yerlesimSayisi": 3,
+      "enBuyukYerlesimler": [
+        "Batumi 155542",
+        "Sukhumi 81546",
+        "Poti 47149"
+      ],
+      "oyunNufusu": 131000
+    },
+    "kafkas_gecidi": {
+      "gercekToplam": 222447,
+      "yerlesimSayisi": 2,
+      "enBuyukYerlesimler": [
+        "Kutaisi 183945",
+        "Tskhinvali 38502"
+      ],
+      "oyunNufusu": 116000
+    },
+    "kur_vadisi": {
+      "gercekToplam": 1257063,
+      "yerlesimSayisi": 2,
+      "enBuyukYerlesimler": [
+        "Tbilisi 1100000",
+        "Rustavi 157063"
+      ],
+      "oyunNufusu": 279000
+    }
+  },
+  "mrds": {
+    "morava": {
+      "bakir": {
+        "icerde": 14,
+        "yakin": 9,
+        "ornekler": [
+          "Besna Kobila Mtn. Deposits",
+          "Kisnica Mine",
+          "Majdanpek"
+        ],
+        "iddiaBinBirim": 650,
+        "muaf": false
+      }
+    },
+    "adriyatik": {
+      "cevher": {
+        "icerde": 23,
+        "yakin": 0,
+        "ornekler": [
+          "Bushtrica Mine",
+          "Guri Kuq Including: See Alt Names",
+          "Guri Kuq Mine"
+        ],
+        "iddiaBinBirim": 200,
+        "muaf": false
+      },
+      "bakir": {
+        "icerde": 17,
+        "yakin": 3,
+        "ornekler": [
+          "Fushe-Arrez",
+          "Golaj",
+          "Kurbnesh-Perlat"
+        ],
+        "iddiaBinBirim": 250,
+        "muaf": false
+      }
+    },
+    "vardar": {
+      "bakir": {
+        "icerde": 3,
+        "yakin": 0,
+        "ornekler": [
+          "Bucim"
+        ],
+        "iddiaBinBirim": 300,
+        "muaf": false
+      }
+    },
+    "sofya": {
+      "cevher": {
+        "icerde": 0,
+        "yakin": 0,
+        "ornekler": [],
+        "iddiaBinBirim": 400,
+        "muaf": true
+      },
+      "bakir": {
+        "icerde": 0,
+        "yakin": 0,
+        "ornekler": [],
+        "iddiaBinBirim": 350,
+        "muaf": true
+      }
+    },
+    "meric": {
+      "bakir": {
+        "icerde": 33,
+        "yakin": 0,
+        "ornekler": [
+          "Assarel",
+          "Chelopech",
+          "Elatzite"
+        ],
+        "iddiaBinBirim": 300,
+        "muaf": false
+      }
+    },
+    "selanik": {
+      "bakir": {
+        "icerde": 1,
+        "yakin": 0,
+        "ornekler": [
+          "Trilofon"
+        ],
+        "iddiaBinBirim": 250,
+        "muaf": false
+      }
+    },
+    "attika": {
+      "cevher": {
+        "icerde": 9,
+        "yakin": 0,
+        "ornekler": [
+          "Euboia",
+          "Hagios Ioannis Larymna",
+          "Larymna Mine and Euboea Island Deposit"
+        ],
+        "iddiaBinBirim": 250,
+        "muaf": false
+      }
+    },
+    "cukurova": {
+      "cevher": {
+        "icerde": 2,
+        "yakin": 0,
+        "ornekler": [
+          "Icel, Adana, and Kahramanmaras",
+          "Karatas"
+        ],
+        "iddiaBinBirim": 250,
+        "muaf": false
+      }
+    },
+    "kastamonu": {
+      "bakir": {
+        "icerde": 6,
+        "yakin": 0,
+        "ornekler": [
+          "Asikoy Mine",
+          "Bakibaba Mine"
+        ],
+        "iddiaBinBirim": 350,
+        "muaf": false
+      }
+    },
+    "sivas": {
+      "cevher": {
+        "icerde": 14,
+        "yakin": 0,
+        "ornekler": [
+          "Cetinkaya Mine",
+          "Divrigi",
+          "Divrigi Iron Ore Deposit"
+        ],
+        "iddiaBinBirim": 900,
+        "muaf": false
+      }
+    },
+    "dicle": {
+      "bakir": {
+        "icerde": 3,
+        "yakin": 0,
+        "ornekler": [
+          "Cambasi",
+          "Ergani Bakir Isletmesi",
+          "Siirt"
+        ],
+        "iddiaBinBirim": 250,
+        "muaf": false
+      }
+    },
+    "yukari_firat": {
+      "cevher": {
+        "icerde": 25,
+        "yakin": 0,
+        "ornekler": [
+          "Attepe Mine",
+          "Deveci Mine",
+          "Ergani"
+        ],
+        "iddiaBinBirim": 700,
+        "muaf": false
+      },
+      "bakir": {
+        "icerde": 7,
+        "yakin": 0,
+        "ornekler": [
+          "Ergani",
+          "Ergani - Maden",
+          "Karabork"
+        ],
+        "iddiaBinBirim": 350,
+        "muaf": false
+      }
+    },
+    "dogu_karadeniz": {
+      "bakir": {
+        "icerde": 15,
+        "yakin": 3,
+        "ornekler": [
+          "Guzelyayla",
+          "Kankoy Yomra",
+          "Kutlular Surmene"
+        ],
+        "iddiaBinBirim": 350,
+        "muaf": false
+      }
+    },
+    "coruh": {
+      "bakir": {
+        "icerde": 15,
+        "yakin": 0,
+        "ornekler": [
+          "Cakmakkaya Mine",
+          "Damar Mine",
+          "Murgul"
+        ],
+        "iddiaBinBirim": 500,
+        "muaf": false
+      }
+    },
+    "kur_vadisi": {
+      "bakir": {
+        "icerde": 3,
+        "yakin": 3,
+        "ornekler": [
+          "Alaverdi",
+          "Madneuli Mine"
+        ],
+        "iddiaBinBirim": 250,
+        "muaf": false
+      }
+    }
+  },
+  "mrdsAdaylari": [
+    {
+      "bolge": "eflak",
+      "mal": "cevher",
+      "icerde": 3,
+      "yakin": 0
+    },
+    {
+      "bolge": "morava",
+      "mal": "cevher",
+      "icerde": 6,
+      "yakin": 0
+    },
+    {
+      "bolge": "vardar",
+      "mal": "cevher",
+      "icerde": 7,
+      "yakin": 0
+    },
+    {
+      "bolge": "pindus",
+      "mal": "cevher",
+      "icerde": 4,
+      "yakin": 0
+    },
+    {
+      "bolge": "pindus",
+      "mal": "bakir",
+      "icerde": 3,
+      "yakin": 0
+    },
+    {
+      "bolge": "guney_marmara",
+      "mal": "cevher",
+      "icerde": 4,
+      "yakin": 0
+    },
+    {
+      "bolge": "frigya",
+      "mal": "cevher",
+      "icerde": 3,
+      "yakin": 0
+    },
+    {
+      "bolge": "sivas",
+      "mal": "bakir",
+      "icerde": 3,
+      "yakin": 0
+    },
+    {
+      "bolge": "dicle",
+      "mal": "cevher",
+      "icerde": 8,
+      "yakin": 0
+    },
+    {
+      "bolge": "erzurum",
+      "mal": "cevher",
+      "icerde": 4,
+      "yakin": 0
+    },
+    {
+      "bolge": "kolhis",
+      "mal": "bakir",
+      "icerde": 3,
+      "yakin": 3
+    },
+    {
+      "bolge": "kur_vadisi",
+      "mal": "cevher",
+      "icerde": 6,
+      "yakin": 0
+    }
+  ]
+}

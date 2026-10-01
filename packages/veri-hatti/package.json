@@ -1,0 +1,22 @@
+{
+  "name": "@bolge/veri-hatti",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Gerçek dünya veri hattı: Natural Earth + USGS MRDS -> packages/veri/haritalar/gercek-*.json",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@bolge/veri": "workspace:*",
+    "fflate": "^0.8.3",
+    "mapshaper": "^0.7.71",
+    "topojson-client": "^3.1.0",
+    "undici": "^8.11.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-specification": "^1.0.5"
+  }
+}

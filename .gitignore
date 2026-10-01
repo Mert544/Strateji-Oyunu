@@ -4,3 +4,8 @@ raporlar/
 .DS_Store
 coverage/
 /izleyici/
+/packages/veri-hatti/.onbellek/
+/istemci/
+packages/istemci/dist/
+packages/istemci/dist-tek/
+packages/istemci/.onbellek/
