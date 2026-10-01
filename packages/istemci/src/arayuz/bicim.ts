@@ -67,8 +67,11 @@ export const PARA_ARASI = "\u00a0";
 /** Eksi işareti (U+2212); tire değil, sayıyla aynı yükseklikte. */
 export const EKSI = "\u2212";
 
-/** Mili-para -> tam lira yuvarlaması: aşağı (varsayılan; bakiye, ödül), yukarı (gereken tutar), en yakın. */
-export type ParaYuvarlama = "asagi" | "yukari" | "yakin";
+/**
+ * Mili-para -> tam lira yuvarlaması (B4, TEK kural; "en yakın" hiçbir yerde yok): hazine, gelir, net akış, ödül, dönüş ve
+ * varlık değeri AŞAĞI (varsayılan); fiyat, maliyet, gereken ve ödenen bedel YUKARI.
+ */
+export type ParaYuvarlama = "asagi" | "yukari";
 
 /** Tam lira: para(1234) -> "1.234 ₺", para(-5) -> "−5 ₺". Ondalık gösterilmez (oyunda tutarlar tam liradır). */
 export function para(tl: number): string {
@@ -78,11 +81,11 @@ export function para(tl: number): string {
 
 function tamLira(mili: number, yuvarlama: ParaYuvarlama): number {
   const a = Math.abs(mili) / 1000;
-  const t = yuvarlama === "yukari" ? Math.ceil(a) : yuvarlama === "yakin" ? Math.round(a) : Math.floor(a);
+  const t = yuvarlama === "yukari" ? Math.ceil(a) : Math.floor(a);
   return mili < 0 ? -t : t;
 }
 
-/** Mili-para (çekirdek birimi; 1 ₺ = 1000 mili): paraMili(1_234_000) -> "1.234 ₺". Yuvarlama çağıranın kararıdır (varsayılan aşağı). */
+/** Mili-para (çekirdek birimi; 1 ₺ = 1000 mili): paraMili(1_234_000) -> "1.234 ₺". Yuvarlama kuralı B4: gelir/hazine aşağı (varsayılan), maliyet yukarı. */
 export function paraMili(mili: number, yuvarlama: ParaYuvarlama = "asagi"): string {
   return para(tamLira(mili, yuvarlama));
 }

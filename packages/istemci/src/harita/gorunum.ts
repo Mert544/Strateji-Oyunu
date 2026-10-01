@@ -999,7 +999,7 @@ export class HaritaGorunumu {
       : neden
         ? "Satılık değil"
         : "Sahipsiz";
-    const deger = sahip ? (sahip.degerMili > 0 ? paraMili(sahip.degerMili, "yakin") : "—") : neden ? "—" : sayi ? para(this.hucreFiyatiGoster(id, sinif, sayi)) : "—";
+    const deger = sahip ? (sahip.degerMili > 0 ? paraMili(sahip.degerMili, "asagi") : "—") : neden ? "—" : sayi ? para(this.hucreFiyatiGoster(id, sinif, sayi)) : "—";
     const ayrilmis = !sahip && !neden && this.ayrilmisMi(id) && this.ayrilmisHakki()?.var !== false;
     const doluluk = this.sahiplik && this.sahiplik.uygun > 0 ? yuzde((100 * this.sahiplik.satilmis) / this.sahiplik.uygun, 2) : "—";
     const ilceAd = this.ilceKimlik ? (this.s.hiyerarsi.ilceler.get(this.ilceKimlik)?.ad ?? "") : "";
@@ -1184,7 +1184,7 @@ export class HaritaGorunumu {
     this.altCiz();
     try {
       const r = await parselZinciri(this.baglanti, ilce, o.adimlar);
-      if (!r.hata) bildir(`Arsa satın alındı: ${fmt(r.alinan.length)} hücre, ${paraMili(r.odenenMili, "yakin")}.`, "tamam");
+      if (!r.hata) bildir(`Arsa satın alındı: ${fmt(r.alinan.length)} hücre, ${paraMili(r.odenenMili, "yukari")}.`, "tamam");
       else if (r.alinan.length > 0) bildir(`Arsa kısmen alındı (${fmt(r.alinan.length)} hücre): ${r.hata.mesaj}`, "hata");
       else bildir(`Arsa alınamadı: ${r.hata.mesaj}`, "hata");
     } catch (e) {
@@ -1775,7 +1775,7 @@ export class HaritaGorunumu {
     try {
       const r = await this.baglanti.parselAl({ tur: "parsel_al", ilce, hucreler: this.secim.liste, sinif: o.sinif });
       if (r.tamam) {
-        bildir(`Parsel satın alındı: ${fmt(r.hucreler.length)} hücre, ${paraMili(r.toplamMili, "yakin")}.`, "tamam");
+        bildir(`Parsel satın alındı: ${fmt(r.hucreler.length)} hücre, ${paraMili(r.toplamMili, "yukari")}.`, "tamam");
         this.secim.temizle();
         this.kartHucre = r.hucreler[0] ?? null;
         const sh = await this.baglanti.sahiplikAl(ilce);

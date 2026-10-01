@@ -38,12 +38,13 @@ describe("para biçimi (T-1: 1.234 ₺)", () => {
     expect(paraIsaretli(-400)).toBe(`0${NB}₺`);
   });
 
-  it("mili-para: yuvarlama çağıranda (varsayılan aşağı; maliyet 'yukarı'; ham tutar 'yakın')", () => {
+  it("mili-para: tek yuvarlama kuralı (B4): varsayılan aşağı (hazine, gelir, ödül), maliyet 'yukarı'; 'en yakın' yok", () => {
     expect(paraMili(1_234_000)).toBe(`1.234${NB}₺`);
     expect(paraMili(1_234_999)).toBe(`1.234${NB}₺`); // aşağı
     expect(paraMili(1_234_001, "yukari")).toBe(`1.235${NB}₺`); // gereken tutar yukarı
-    expect(paraMili(1_234_500, "yakin")).toBe(`1.235${NB}₺`);
-    expect(paraMili(1_234_499, "yakin")).toBe(`1.234${NB}₺`);
+    expect(paraMili(1_234_500)).toBe(`1.234${NB}₺`); // yarım lira aşağı (en yakın değil)
+    expect(paraMili(1_234_500, "yukari")).toBe(`1.235${NB}₺`);
+    expect(paraMili(1_234_000, "yukari")).toBe(`1.234${NB}₺`); // tam lira değişmez
     expect(paraMili(8_000_000)).toBe(`8.000${NB}₺`);
     expect(paraMili(-12_000)).toBe(`−12${NB}₺`);
     expect(paraMili(-12_500)).toBe(`−12${NB}₺`); // işaretten bağımsız aşağı = mutlak değerde aşağı
