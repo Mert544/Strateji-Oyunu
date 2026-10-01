@@ -58,7 +58,11 @@
 - **Kamu arazileri ve politikaları:** kamu, oyuncuya hitap eden bir fırsat ve rekabet aracına dönüştürülür; araştırılacak.
 
 ## 9. Takım yapısı (sahip önerisi, uygulandı)
-- **Baş lider** (takım lideri) görevleri dağıtır ve kararları sahibe sunar.
+- **Baş lider** (takım lideri): iki takımın ve liderlerin başı, genel denetçi; görevleri dağıtır, son doğrulamayı yapar, commit/push eder ve **genel kararları verir** (sahibe sunar).
 - **Ar-Ge lideri** + 4 araştırmacı: araştırmaları dağıtır, eleştirel inceler, sentez raporu yazar.
 - **Geliştirme lideri** + 4 geliştirici: kod işlerini dosya sahipliği kuralıyla (çekirdekte aynı anda tek yazar) dağıtır, doğrular, baş lidere teslim eder; commit ve push baş liderde kalır.
 - Görsel tasarım işi ayrı, daha güçlü modelli bir tasarım ajanında.
+- **Modeller:** takım liderleri ve tasarım ajanı güçlü model, alt ajanlar hızlı model.
+- **Akış:** ajan raporunu kendi liderine gönderir → lider inceler, gerekirse düzeltme ister → onaylanan iş ve sentez baş lidere gelir → baş lider doğrular, karar verir, GitHub'a gönderir.
+- **Teknik not:** alt ajanlar kendi ajanlarını açamadığı için tüm ajanları baş lider açar; ajanlar raporlarını mesajla doğrudan liderlerine gönderir.
+- **Profesyonel ürün ilkesi:** renkler, bina yapıları ve 3B görselleme amatör görünmemeli; haritada ve arayüzde büyük harf kullanılmaz.
