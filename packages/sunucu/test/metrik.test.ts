@@ -4,6 +4,9 @@
  */
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { SAAT, SISTEM_OYUNCUSU } from "@bolge/cekirdek";
@@ -363,21 +366,27 @@ describe("CLI ortam degiskenleri", () => {
     expect((await s2.ilk).metrikPort).toBeNull();
   }, 180_000);
 
-  it("uretim kipi: acik sir ister, elle saat yasak; dunya epoch ortamdan dogrulanir; loopback disi metrik token ister", async () => {
+  it("uretim kipi: gelistirme kimligi kapali, bilet sirri acik ve guclu, elle saat yasak; dunya epoch ortamdan dogrulanir; loopback disi metrik token ister", async () => {
     const hata = async (ortam: Record<string, string>): Promise<string> => {
       const s = baslat({ BOLGE_PORT: "0", BOLGE_HARITA: "mini", BOLGE_DEPO: "bellek", ...ortam });
       const o = await s.ilk;
       expect(o.olay).toBe("olumcul");
       return String(o.hata);
     };
-    expect(await hata({ BOLGE_URETIM: "1" })).toMatch(/BOLGE_GELISTIRME_SIRRI/);
-    expect(await hata({ BOLGE_URETIM: "1", BOLGE_GELISTIRME_SIRRI: "kisa" })).toMatch(/16 karakter/);
-    expect(await hata({ BOLGE_URETIM: "1", BOLGE_GELISTIRME_SIRRI: "degistir-uzun-rastgele-imza-sirri" })).toMatch(/ornek/);
-    expect(await hata({ BOLGE_URETIM: "1", BOLGE_GELISTIRME_SIRRI: "x".repeat(24), BOLGE_METRIK_TOKEN: "degistir-uzun-rastgele-metrik-tokeni" })).toMatch(/metrik token/);
-    expect(await hata({ BOLGE_URETIM: "1", BOLGE_GELISTIRME_SIRRI: "x".repeat(24), BOLGE_ELLE_SAAT: "1" })).toMatch(/elle-saat yasak/);
+    // Uretimde varsayilan kimlik e-postadir: gelistirme sirri artik istenmez, bilet sirri istenir (ayrintili kip denetimi: giris-birim/giris-cli testleri).
+    const URETIM = { BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org", BOLGE_GENEL_URL: "https://sunucu.ornek.org" };
+    expect(await hata({ BOLGE_URETIM: "1" })).toMatch(/BOLGE_BILET_SIRRI/);
+    expect(await hata({ BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "kisa" })).toMatch(/32 karakter/);
+    expect(await hata({ BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "degistir-uzun-rastgele-imza-sirri-0123456789" })).toMatch(/ornek/);
+    expect(await hata({ ...URETIM, BOLGE_METRIK_TOKEN: "degistir-uzun-rastgele-metrik-tokeni" })).toMatch(/metrik token/);
+    expect(await hata({ ...URETIM, BOLGE_ELLE_SAAT: "1" })).toMatch(/elle-saat yasak/);
     expect(await hata({ BOLGE_DUNYA_EPOCH: "2026-09-30T21:30:00Z" })).toMatch(/gece yarisi/);
     expect(await hata({ BOLGE_METRIK_PORT: "0", BOLGE_METRIK_HOST: "0.0.0.0" })).toMatch(/token/);
-    const iyi = baslat({ BOLGE_PORT: "0", BOLGE_HARITA: "mini", BOLGE_DEPO: "bellek", BOLGE_URETIM: "1", BOLGE_GELISTIRME_SIRRI: "uretim-sirri-0123456789" });
-    expect((await iyi.ilk).olay).toBe("hazir");
+    const posta = await mkdtemp(join(tmpdir(), "bolge-uretim-posta-"));
+    kapatilacak.push(() => rm(posta, { recursive: true, force: true }));
+    const iyi = baslat({ BOLGE_PORT: "0", BOLGE_HARITA: "mini", BOLGE_DEPO: "bellek", ...URETIM, BOLGE_POSTA_DIZIN: posta });
+    const hazir = await iyi.ilk;
+    expect(hazir.olay).toBe("hazir");
+    expect(hazir.kimlik).toBe("eposta");
   }, 180_000);
 });

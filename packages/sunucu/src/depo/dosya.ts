@@ -12,13 +12,16 @@
  * - `profil.jsonl`: oyuncu çapaları ve özet kayıtları (satır başına `{o, c}` çapa güncellemesi ya da `{o, k: [...]}` kayıt ekleme).
  *   Bellekte tutulur; açılışta okunur (yarım son satır atılır), çok satır birikince atomik yeniden yazılır (sıkıştırma). `esitle`
  *   fdatasync yapar (anlık görüntüden önce). Kayıtlar günlükten yeniden türetilebildiği için satır başına fsync yoktur.
+ * - `hesap.jsonl`: hesap, oturum ve giriş bağlantısı işlemleri (satır başına bir `HesapIslemi`; bkz. `DosyaHesapDeposu`). Her işlem fdatasync ile
+ *   kalıcıdır (tüketilen bağlantı çökmeyle yeniden canlanmasın). Açık belirteç yazılmaz, yalnız SHA-256 özetleri.
  * - `yazar.kilit`: tek yazar kilidi (içinde süreç kimliği). Kilit varsa ve sahibi yaşıyorsa açılış reddedilir; sahibi
  *   ölmüşse (kill -9 sonrası) kilit devralınır.
  */
 import { copyFile, mkdir, open, readdir, readFile, rename, rm, stat, truncate, writeFile } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { join } from "node:path";
-import { BellekProfilDeposu } from "./bellek";
+import { BellekHesapDeposu, BellekProfilDeposu } from "./bellek";
+import type { HesapIslemi } from "./bellek";
 import { seqSurekliligiDenetle } from "./tipler";
 import type { AnlikGoruntuKaydi, Capa, Damga, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, OzetKaydi } from "./tipler";
 
@@ -27,6 +30,7 @@ const GUNLUK_DOSYASI = "gunluk.jsonl";
 const GORUNTU_DIZINI = "goruntu";
 const KILIT_DOSYASI = "yazar.kilit";
 const PROFIL_DOSYASI = "profil.jsonl";
+const HESAP_DOSYASI = "hesap.jsonl";
 
 async function dizinFsync(dizin: string): Promise<void> {
   // Windows dizin tutamacında fsync'i desteklemez (EPERM); NTFS üst veriyi kendi günlüğüyle korur. Üretim Linux'tadır.
@@ -323,6 +327,103 @@ export class DosyaProfilDeposu extends BellekProfilDeposu {
   }
 }
 
+/**
+ * Dosya tabanlı hesap deposu: bellekteki durum + satır başına bir işlem (`hesap.jsonl`). Her işlem tek `write` + `fdatasync` ile kalıcılaşır,
+ * yanıt ondan sonra döner. Açılışta sondaki yarım satır atılır (onaylanmamıştı); ortadaki bozuk satır açılışı DURDURUR (sessizce
+ * bağlantı/oturum atılmaz). Satır sayısı canlı durumun çok üstüne çıkınca atomik yeniden yazılır (sıkıştırma).
+ */
+export class DosyaHesapDeposu extends BellekHesapDeposu {
+  private satir = 0;
+  private zincir: Promise<void> = Promise.resolve();
+  private kapali = false;
+
+  private constructor(
+    private readonly yol: string,
+    private readonly dizin: string,
+    private tutamac: FileHandle,
+  ) {
+    super();
+  }
+
+  static async ac(dizin: string): Promise<DosyaHesapDeposu> {
+    const yol = join(dizin, HESAP_DOSYASI);
+    const metin = await readFile(yol, "utf8").catch((e: NodeJS.ErrnoException) => {
+      if (e.code === "ENOENT") return "";
+      throw e;
+    });
+    const yarim = metin !== "" && !metin.endsWith("\n");
+    if (yarim) {
+      // Yol üzerinden kes (Windows'ta ekleme kipindeki tutamaç dosyayı kısaltamaz): tamamlanmış satırlar korunur.
+      await truncate(yol, Buffer.byteLength(metin.slice(0, metin.lastIndexOf("\n") + 1), "utf8"));
+    }
+    const tutamac = await open(yol, "a+");
+    const d = new DosyaHesapDeposu(yol, dizin, tutamac);
+    const satirlar = (yarim ? metin.slice(0, metin.lastIndexOf("\n") + 1) : metin).split("\n");
+    for (let i = 0; i < satirlar.length; i++) {
+      const s = satirlar[i] as string;
+      if (s === "") continue;
+      let islem: HesapIslemi;
+      try {
+        islem = JSON.parse(s) as HesapIslemi;
+      } catch {
+        await tutamac.close();
+        throw new Error(`hesap dosyasi satiri ${i + 1} bozuk JSON (orta satir bozulmasi; elle inceleme gerekir)`);
+      }
+      d.uygula(islem);
+      d.satir++;
+    }
+    if (d.satir > 2 * d.gerekliSatir() + 200) await d.sikistir();
+    else await dizinFsync(dizin);
+    return d;
+  }
+
+  private gerekliSatir(): number {
+    return this.hesaplar.size + this.baglantilar.size + this.oturumlar.size;
+  }
+
+  protected override async yaz(islem: HesapIslemi): Promise<void> {
+    const is = this.zincir.then(async () => {
+      await this.tutamac.write(JSON.stringify(islem) + "\n");
+      await this.tutamac.datasync();
+      this.satir++;
+      if (this.satir > 5_000 + 4 * this.gerekliSatir()) await this.sikistir();
+    });
+    this.zincir = is.catch(() => undefined);
+    await is;
+  }
+
+  /** Bellekteki canlı durumdan atomik yeniden yazım (geçici dosya, fsync, rename). */
+  private async sikistir(): Promise<void> {
+    const islemler = this.durumIslemleri();
+    const gecici = `${this.yol}.tmp`;
+    const h = await open(gecici, "w");
+    try {
+      await h.write(islemler.map((i) => JSON.stringify(i) + "\n").join(""));
+      await h.sync();
+    } finally {
+      await h.close();
+    }
+    await this.tutamac.close();
+    await rename(gecici, this.yol);
+    await dizinFsync(this.dizin);
+    this.tutamac = await open(this.yol, "a+");
+    this.satir = islemler.length;
+  }
+
+  override async esitle(): Promise<void> {
+    await this.zincir;
+    await this.tutamac.datasync();
+  }
+
+  override async kapat(): Promise<void> {
+    if (this.kapali) return;
+    this.kapali = true;
+    await this.zincir;
+    await this.tutamac.datasync();
+    await this.tutamac.close();
+  }
+}
+
 /** Dizini hazırlar, tek yazar kilidini alır, günlüğü (yarım kuyruğu keserek) ve görüntü deposunu açar. */
 export async function dosyaDeposu(dizin: string): Promise<Depo> {
   await mkdir(dizin, { recursive: true });
@@ -331,18 +432,21 @@ export async function dosyaDeposu(dizin: string): Promise<Depo> {
     const gunluk = await DosyaGunlukDeposu.ac(dizin);
     const goruntu = await DosyaGoruntuDeposu.ac(dizin);
     const profil = await DosyaProfilDeposu.ac(dizin);
+    const hesap = await DosyaHesapDeposu.ac(dizin);
     return {
       gunluk: {
         ekle: (t) => gunluk.ekle(t),
         oku: (s) => gunluk.oku(s),
         kapat: async () => {
           await profil.kapat(); // idempotent: yazar zaten kapatmış olabilir
+          await hesap.kapat();
           await gunluk.kapat();
           await kilidiBirak();
         },
       },
       goruntu,
       profil,
+      hesap,
       /** Günlük dosyasının ve `goruntu/` dizinindeki dosyaların bayt toplamı. */
       boyut: async () => {
         const gunlukBayt = (await stat(join(dizin, GUNLUK_DOSYASI)).catch(() => ({ size: 0 }))).size;

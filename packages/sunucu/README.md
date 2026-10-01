@@ -152,6 +152,13 @@ curl -s http://127.0.0.1:8787/saglik       # {"durum":"ok",...}
 - `--uretim` / `BOLGE_URETIM=1` kipi: gelişim varsayılan sırrıyla ve 16 karakterden kısa ya da `degistir...` örnek değerli sırlarla açılmayı reddeder, `--elle-saat` yasaktır; metrik token'ı da aynı denetimden geçer.
 - **Doğrulama durumu:** ortamda Docker daemon yok; `docker compose -f deploy/docker-compose.yml --env-file deploy/.env.ornek config` (statik doğrulama) geçer, sırsız çağrı sırasıyla "PG_SIFRE gerekli" hatası verir. **İmaj derlenemedi: daemon yok**; Dockerfile'ın `pnpm install --frozen-lockfile --filter` adımı ve CLI başlatma komutu yerelde aynı dosya kümesiyle denendi, ama `docker build` hiç koşmadı. İlk gerçek makinede `docker compose ... up -d --build` + `/saglik` denemesi yapılmalıdır.
 
+### Giriş (e-posta bağlantısı, G5)
+
+Oyuncu girişi yalnız e-posta bağlantısıyladır (Google yok); tasarım, uçlar, süreler ve KVKK tablosu: `KIMLIK.md`. `BOLGE_KIMLIK=eposta` (üretimde varsayılan ve tek kip) sunucunun HTTP portunda `/giris/` uçlarını açar: `POST /giris/istek` → posta → `GET|POST /giris/onay` (çerez) → `POST /giris/bilet` (60 sn, tek kullanımlık ws bileti) → ws `merhaba.token`. `BOLGE_KIMLIK=gelistirme` (geliştirme varsayılanı) bugünkü `gel1.` token'ıyla çalışır ve **`--uretim`'de reddedilir** (`GelistirmeKimligi` hiç kurulmaz, `--token` kapalıdır).
+- Üretimin zorunluları: `BOLGE_BILET_SIRRI` (>= 32 karakter, örnek değer değil; rotasyonda eskisi `BOLGE_BILET_SIRRI_ESKI`), `BOLGE_IZINLI_KOKENLER` (Origin izin listesi, virgüllü; hem `/giris/` POST'ları hem ws), `BOLGE_GENEL_URL` (https; postadaki bağlantının genel adresi). Çerezler `Secure` olur. `BOLGE_POSTA=konsol` üretimde reddedilir (bağlantı günlüğe sızmasın); `dosya` kabul. Gerçek SMTP/SES bağdaştırıcısı henüz yoktur (`PostaGonderici` arayüzü hazırdır), onsuz üretimde e-posta gitmez.
+- Geliştirmede deneme: `pnpm -s sunucu -- --harita mini --parsel --elle-saat --depo bellek --kimlik eposta`, sonra `curl -s -X POST -H 'Origin: http://127.0.0.1:8787' -H 'content-type: application/json' -d '{"eposta":"ben@ornek.org"}' http://127.0.0.1:8787/giris/istek`; posta `raporlar/posta/*.json` dosyasına düşer (bağlantı içinde). Sunucu kendi adresini izinli köken sayar (`--genel-url` yoksa).
+- Hesap, oturum ve bağlantı kayıtları seçilen depoda tutulur (bellek, dosya `hesap.jsonl`, pg şema sürümü 4: `hesap`, `hesap_oyuncu`, `giris_baglanti`, `oturum`). Günlük ve metrikte belirteç, tam e-posta ve IP yoktur; metrik `bolge_giris_olay_toplam{olay=...}` yalnız sayaçtır.
+
 ### Ortam değişkenleri
 
 Her seçenek `BOLGE_<AD>` ile verilebilir; komut satırı bayrağı ortam değişkenini ezer (`pnpm -s sunucu -- --yardim` tam liste).
@@ -173,6 +180,12 @@ Her seçenek `BOLGE_<AD>` ile verilebilir; komut satırı bayrağı ortam deği�
 | `BOLGE_HIZ_SINIRI` | bağlantı başına komut hız sınırı `N/saniye` | `20/5` |
 | `BOLGE_METRIK_PORT`, `BOLGE_METRIK_HOST`, `BOLGE_METRIK_TOKEN` | ayrı metrik sunucusu; port boşsa kapalı | kapalı, `127.0.0.1`, yok |
 | `BOLGE_DIZIN` | dosya deposu dizini (`BOLGE_DEPO=dosya`) | `raporlar/dunya` |
+| `BOLGE_KIMLIK` | `gelistirme` (gel1 token) \| `eposta` (e-posta bağlantısı + ws bileti); `--uretim`'de `gelistirme` reddedilir | `gelistirme`; üretimde `eposta` |
+| `BOLGE_BILET_SIRRI`, `BOLGE_BILET_SIRRI_ESKI` | ws bileti ve bağlantı imza sırrı (üretimde >= 32 karakter, `degistir...`/`gelistirme...` değil); eski sır yalnız doğrular (rotasyon). Yalnız ortamdan verilir | geliştirme değeri (üretimde yok) |
+| `BOLGE_POSTA`, `BOLGE_POSTA_DIZIN` | posta bağdaştırıcısı `dosya` \| `konsol` (`konsol` üretimde yasak); dosya postacısının dizini | `dosya`, `raporlar/posta` |
+| `BOLGE_GENEL_URL`, `BOLGE_GIRIS_BAGLANTISI`, `BOLGE_GIRIS_SONRASI` | sunucunun genel adresi (üretimde https, zorunlu); postadaki bağlantı tabanı (varsayılan `<genel>/giris/onay`); onay formu sonrası yönlendirme | `http://127.0.0.1:<port>`, `<genel>/giris/onay`, kısa sayfa |
+| `BOLGE_IZINLI_KOKENLER` | virgüllü Origin izin listesi (üretimde zorunlu); genel adresin kökeni kendiliğinden eklenir | boş (geliştirmede kendi adresi) |
+| `BOLGE_TARAYICI_BAGLI`, `BOLGE_GUVENILIR_PROXY`, `BOLGE_GECICI_ALANLAR` | bağlantı isteği yapan tarayıcıya bağlı olsun (`1` açar); IP `X-Forwarded-For` son öğesi (`1`); geçici e-posta alanı listesi (JSON) | `0` (kapalı), kapalı, `veri/gecici-eposta-alanlari.json` |
 
 Compose düzeyinde (`deploy/.env`): `PG_SIFRE`, `GELISTIRME_SIRRI`, `METRIK_TOKEN` (zorunlu), `SUNUCU_PORT`, `METRIK_YAYIN_PORT` ve yukarıdaki `BOLGE_*` seçimleri.
 

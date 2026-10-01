@@ -16,7 +16,13 @@ import { bellekDeposu } from "./depo/bellek";
 import { dosyaDeposu } from "./depo/dosya";
 import { postgresDeposu } from "./depo/postgres";
 import type { Depo } from "./depo/tipler";
+import { geciciAlanlariYukle } from "./giris/eposta";
+import { GirisHizmeti } from "./giris/hizmet";
+import { GirisUclari } from "./giris/http";
+import { kimlikKipiCoz } from "./giris/kip";
+import { DosyaPostaGondericisi, KonsolPostaGondericisi } from "./giris/posta";
 import { GelistirmeKimligi, gelistirmeTokeni } from "./kimlik";
+import type { KimlikDogrulayici } from "./kimlik";
 import { parselDosyasiYukle } from "./parsel-dosya";
 import { DuvarSaati, ElleSaat } from "./saat";
 import { sunucuBaslat } from "./sunucu";
@@ -58,14 +64,28 @@ const YARDIM = `Bolge Stratejisi sunucusu
                        Varsayilan adres 127.0.0.1; loopback disi --metrik-host icin --metrik-token (>= 16 karakter) zorunlu
   --metrik-host H      (vars. 127.0.0.1)
   --metrik-token T     /metrik icin Bearer token ($BOLGE_METRIK_TOKEN)
-  --uretim             uretim kipi ($BOLGE_URETIM=1): gelistirme sirri acikca (>= 16 karakter) verilmeli, --elle-saat yasak
-  --gelistirme-sirri S gelistirme token imza sirri (vars. $BOLGE_GELISTIRME_SIRRI)
-  --token OYUNCU       bu oyuncu icin gelistirme token'i yaz ve cik ("sistem" = yonetici)
+  --uretim             uretim kipi ($BOLGE_URETIM=1): gelistirme kimligi KAPALI (kimlik = eposta zorunlu), --token kapali, --elle-saat yasak,
+                       BOLGE_BILET_SIRRI (>= 32 karakter, ornek deger degil), BOLGE_IZINLI_KOKENLER ve https BOLGE_GENEL_URL zorunlu, konsol postacisi yasak
+  --kimlik KIP         gelistirme | eposta (vars. gelistirme; --uretim'de eposta). eposta: e-posta baglantisiyla giris (packages/sunucu/KIMLIK.md):
+                       POST /giris/istek, GET|POST /giris/onay, POST /giris/bilet, GET /giris/ben, POST /giris/cikis, POST /giris/cikis-tumu
+  --posta TUR          eposta kipinde posta bagdastiricisi: dosya | konsol (vars. dosya; konsol --uretim'de yasak). Gercek SMTP/SES takilabilir arayuzdur
+  --posta-dizin YOL    dosya postacisinin dizini (vars. raporlar/posta; git disi)
+  --genel-url URL      sunucunun disaridan gorunen adresi (postadaki baglanti taban: <URL>/giris/onay); vars. http://127.0.0.1:<port>
+  --giris-baglanti URL postadaki baglantinin tabani (ornegin istemci sayfasi; sonuna ?j=<jeton> eklenir); vars. <genel-url>/giris/onay
+  --giris-sonrasi URL  onay sayfasi (form) basarili olunca yonlendirilecek adres (vars. kisa bir sayfa)
+  --izinli-kokenler L  virgullu Origin izin listesi (POST uclari ve ws): ornek https://oyun.ornek.org; genel-url koku kendiliginden eklenir
+  --tarayici-bagli 0|1 baglanti, istegi yapan tarayiciya bagli olsun (vars. 0)
+  --guvenilir-proxy    istemci IP'si X-Forwarded-For'un son ogesidir (ters vekil arkasinda; vars. kapali)
+  --gecici-alanlar YOL gecici e-posta alani listesi (JSON { "alanlar": [...] }; vars. packages/sunucu/veri/gecici-eposta-alanlari.json)
+  --gelistirme-sirri S gelistirme token imza sirri (vars. $BOLGE_GELISTIRME_SIRRI; yalniz kimlik = gelistirme)
+  --token OYUNCU       bu oyuncu icin gelistirme token'i yaz ve cik ("sistem" = yonetici); --uretim'de kapali
 
 Ortam degiskenleri: her secenek BOLGE_<AD> ile de verilir (bayrak ortamdan ustundur): BOLGE_PORT, BOLGE_HOST, BOLGE_HARITA,
 BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_TOHUM, BOLGE_DEPO, BOLGE_DIZIN, BOLGE_PG_URL, BOLGE_DUNYA, BOLGE_HIZ, BOLGE_ELLE_SAAT (1),
 BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT, BOLGE_GORUNTU_ISCI (0|1), BOLGE_ODUL (0|1),
-BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI.`;
+BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI,
+BOLGE_KIMLIK, BOLGE_POSTA, BOLGE_POSTA_DIZIN, BOLGE_GENEL_URL, BOLGE_GIRIS_BAGLANTISI, BOLGE_GIRIS_SONRASI, BOLGE_IZINLI_KOKENLER, BOLGE_TARAYICI_BAGLI (0|1),
+BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
 
 function yaz(olay: string, veri: Record<string, unknown> = {}): void {
   process.stdout.write(JSON.stringify({ olay, ...veri }) + "\n");
@@ -140,6 +160,16 @@ async function ana(): Promise<void> {
       "metrik-host": { type: "string", default: ev("METRIK_HOST", "127.0.0.1") as string },
       "metrik-token": { type: "string", ...varsayilan(ev("METRIK_TOKEN")) },
       uretim: { type: "boolean", default: evBool("URETIM") },
+      kimlik: { type: "string", ...varsayilan(ev("KIMLIK")) },
+      posta: { type: "string", ...varsayilan(ev("POSTA")) },
+      "posta-dizin": { type: "string", default: ev("POSTA_DIZIN", "raporlar/posta") as string },
+      "genel-url": { type: "string", ...varsayilan(ev("GENEL_URL")) },
+      "giris-baglanti": { type: "string", ...varsayilan(ev("GIRIS_BAGLANTISI")) },
+      "giris-sonrasi": { type: "string", ...varsayilan(ev("GIRIS_SONRASI")) },
+      "izinli-kokenler": { type: "string", ...varsayilan(ev("IZINLI_KOKENLER")) },
+      "tarayici-bagli": { type: "string", default: ev("TARAYICI_BAGLI", "0") as string },
+      "guvenilir-proxy": { type: "boolean", default: evBool("GUVENILIR_PROXY") },
+      "gecici-alanlar": { type: "string", ...varsayilan(ev("GECICI_ALANLAR")) },
       "gelistirme-sirri": { type: "string" },
       token: { type: "string" },
       yardim: { type: "boolean", default: false },
@@ -150,14 +180,25 @@ async function ana(): Promise<void> {
     process.stdout.write(YARDIM + "\n");
     return;
   }
+  // Kimlik kipi ve üretim denetimleri (saf işlev: giris/kip.ts). Üretimde `gelistirme` kimliği ve `--token` reddedilir.
+  const izinliListe = (a["izinli-kokenler"] ?? "").split(",").map((k) => k.trim()).filter((k) => k !== "");
+  const kimlikKipi = kimlikKipiCoz({
+    uretim: a.uretim,
+    ...(a.kimlik !== undefined ? { kimlik: a.kimlik } : {}),
+    ...(ev("BILET_SIRRI") !== undefined ? { biletSirri: ev("BILET_SIRRI") as string } : {}),
+    ...(ev("BILET_SIRRI_ESKI") !== undefined ? { biletSirriEski: ev("BILET_SIRRI_ESKI") as string } : {}),
+    ...(a.posta !== undefined ? { posta: a.posta } : {}),
+    izinliKokenler: izinliListe,
+    ...(a["genel-url"] !== undefined ? { genelUrl: a["genel-url"] } : {}),
+    tokenKomutu: a.token !== undefined,
+    gelistirmeSirriVerildi: a["gelistirme-sirri"] !== undefined || process.env.BOLGE_GELISTIRME_SIRRI !== undefined,
+  });
   const sir = a["gelistirme-sirri"] ?? process.env.BOLGE_GELISTIRME_SIRRI ?? "gelistirme-sirri-degistir";
   if (a.token !== undefined) {
     process.stdout.write(gelistirmeTokeni(sir, a.token) + "\n");
     return;
   }
   if (a.uretim) {
-    if (process.env.BOLGE_GELISTIRME_SIRRI === undefined && a["gelistirme-sirri"] === undefined) throw new Error("uretim kipi: BOLGE_GELISTIRME_SIRRI (ya da --gelistirme-sirri) acikca verilmeli");
-    if (sir.length < 16 || sir === "gelistirme-sirri-degistir" || sir.startsWith("degistir")) throw new Error("uretim kipi: gelistirme sirri en az 16 karakter olmali ve varsayilan/ornek ('degistir...') deger olmamali");
     const mt = a["metrik-token"];
     if (mt !== undefined && mt.startsWith("degistir")) throw new Error("uretim kipi: metrik token'i ornek ('degistir...') deger olmamali");
     if (a["elle-saat"]) throw new Error("uretim kipi: --elle-saat yasak");
@@ -233,15 +274,53 @@ async function ana(): Promise<void> {
   // Yetisme ilerleme gunlugu: kapali gecen sure isletilirken ~1 sn'de bir (ve bitiste) satir.
   yazar.yetismeDinle((d) => yaz(d.yetisiyor ? "yetisme" : "yetisti", { ...d }));
   const [kapasite, saniyeBasina] = (a["hiz-siniri"] as string).split("/").map((x) => sayi("hiz-siniri", x));
+  // Kimlik: geliştirmede `GelistirmeKimligi` (üretimde HİÇ kurulmaz); eposta kipinde ws bileti (`AuthKimligi`) + `/giris/` uçları.
+  const port = Math.trunc(sayi("port", a.port));
+  let calisanPort = port;
+  let kimlik: KimlikDogrulayici;
+  let giris: GirisUclari | undefined;
+  if (kimlikKipi.kip === "gelistirme") kimlik = new GelistirmeKimligi(sir);
+  else {
+    if (!depo.hesap) throw new Error("secilen depo hesap deposu sunmuyor (e-posta girisi icin bellek, dosya ya da pg)");
+    const genelUrl = a["genel-url"]?.replace(/\/+$/, "");
+    const yerelUrl = (): string => `http://127.0.0.1:${calisanPort}`;
+    const gecici = geciciAlanlariYukle(a["gecici-alanlar"] !== undefined ? resolve(a["gecici-alanlar"]) : undefined);
+    const hizmet = new GirisHizmeti({
+      depo: depo.hesap,
+      posta: kimlikKipi.posta === "konsol" ? new KonsolPostaGondericisi() : new DosyaPostaGondericisi(resolve(a["posta-dizin"] as string)),
+      sirlar: kimlikKipi.sirlar,
+      baglantiTabani: () => a["giris-baglanti"] ?? `${genelUrl ?? yerelUrl()}/giris/onay`,
+      geciciAlanlar: gecici,
+      tarayiciBagli: ["1", "evet", "true"].includes((a["tarayici-bagli"] as string).toLowerCase()),
+      // Günlük: yalnız olay adı ve maskelenmiş/anonim alanlar (belirteç, tam adres, IP yok).
+      gunluk: (olay, veri) => yaz(olay, veri ?? {}),
+    });
+    giris = new GirisUclari({
+      hizmet,
+      izinliKokenler: [...izinliListe, ...(genelUrl !== undefined ? [new URL(genelUrl).origin] : [])],
+      cerezGuvenli: a.uretim,
+      guvenilirProxy: a["guvenilir-proxy"] as boolean,
+      ...(a["giris-sonrasi"] !== undefined ? { girisSonrasiAdres: a["giris-sonrasi"] } : {}),
+    });
+    kimlik = hizmet.kimlik;
+  }
   const sunucu = await sunucuBaslat({
     yazar,
-    kimlik: new GelistirmeKimligi(sir),
-    port: Math.trunc(sayi("port", a.port)),
+    kimlik,
+    ...(giris ? { giris } : {}),
+    port,
     host: a.host as string,
     hizSiniri: { kapasite: kapasite ?? 20, saniyeBasina: saniyeBasina ?? 5 },
     ...(a["metrik-port"] !== undefined ? { metrik: { port: Math.trunc(sayi("metrik-port", a["metrik-port"])), host: a["metrik-host"] as string, ...(a["metrik-token"] !== undefined ? { token: a["metrik-token"] } : {}) } } : {}),
   });
   yazar.uyari((m) => yaz("uyari", { mesaj: m }));
+  for (const m of kimlikKipi.uyarilar) yaz("uyari", { mesaj: m });
+  calisanPort = sunucu.port;
+  // Genel adres verilmediyse (geliştirme) sunucunun kendi adresi de izinli köken olur (onay sayfasının formu buradan POST eder).
+  if (giris && a["genel-url"] === undefined) {
+    giris.kokenEkle(`http://127.0.0.1:${sunucu.port}`);
+    giris.kokenEkle(`http://localhost:${sunucu.port}`);
+  }
 
   let kapaniyor = false;
   const kapat = (sinyal: string): void => {
@@ -265,7 +344,7 @@ async function ana(): Promise<void> {
     if (m === "kapat") kapat("ipc");
   });
   // `hazir` sinyal işleyicileri kurulduktan SONRA yazılır: hazir görüldükten hemen sonra gelen SIGTERM düzgün kapanışa gider.
-  yaz("hazir", { port: sunucu.port, metrikPort: sunucu.metrikPort, pid: process.pid, kuralSurumu: yazar.kuralSurumu, kurtarma: yazar.kurtarma });
+  yaz("hazir", { port: sunucu.port, metrikPort: sunucu.metrikPort, kimlik: kimlikKipi.kip, pid: process.pid, kuralSurumu: yazar.kuralSurumu, kurtarma: yazar.kurtarma });
 }
 
 ana().catch((e: unknown) => {

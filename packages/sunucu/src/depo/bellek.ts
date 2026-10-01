@@ -1,6 +1,7 @@
 /** Bellek içi depo (testler ve geçici geliştirme dünyası). Kayıtlar yapısal kopyayla saklanır. */
 import { OZET_KAYIT_OMRU_MS, OZET_KAYIT_TAVANI, damgaSirasi, ozetKaydiAnahtari, seqSurekliligiDenetle } from "./tipler";
-import type { AnlikGoruntuKaydi, Capa, Damga, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, OzetKaydi, ProfilDeposu } from "./tipler";
+import { OyuncuCakismasi } from "./tipler";
+import type { AnlikGoruntuKaydi, BaglantiKaydi, BaglantiTuketimi, Capa, Damga, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, HesapDeposu, HesapKaydi, OturumKaydi, OzetKaydi, ProfilDeposu } from "./tipler";
 
 export class BellekGunlukDeposu implements GunlukDeposu {
   private readonly kayitlar: GunlukKaydi[] = [];
@@ -132,8 +133,205 @@ export function kayitSirasi(a: OzetKaydi, b: OzetKaydi): number {
   return a.t - b.t || (a.tur < b.tur ? -1 : a.tur > b.tur ? 1 : 0) || a.sira - b.sira;
 }
 
-export function bellekDeposu(): Depo & { gunluk: BellekGunlukDeposu; goruntu: BellekGoruntuDeposu; profil: BellekProfilDeposu } {
+/** Hesap deposundaki bir değişiklik (dosya deposunda satır başına bir işlem; yeniden oynatma aynı `uygula` ile yapılır). */
+export type HesapIslemi =
+  | { o: "h+"; h: HesapKaydi }
+  | { o: "h-"; id: string }
+  | { o: "b+"; k: BaglantiKaydi }
+  | { o: "b-"; ozet: string }
+  | { o: "o+"; k: OturumKaydi }
+  | { o: "o~"; id: string; s: number; b: number }
+  | { o: "o-"; id: string }
+  | { o: "oh-"; h: string }
+  | { o: "s"; t: number };
+
+/**
+ * Bellek içi hesap deposu; dosya deposunun da tabanıdır. Her işlem eşzamanlı uygulanır (atomik) ve ardından `yaz` beklenir
+ * (bellekte boş; dosyada satır + fdatasync): yanıt ancak kayıt kalıcı olunca döner.
+ */
+export class BellekHesapDeposu implements HesapDeposu {
+  protected readonly hesaplar = new Map<string, HesapKaydi>();
+  protected readonly anahtarlar = new Map<string, string>();
+  protected readonly oyuncular = new Map<string, string>();
+  protected readonly baglantilar = new Map<string, BaglantiKaydi>();
+  protected readonly oturumlar = new Map<string, OturumKaydi>();
+
+  /** Kalıcılık kancası (dosya deposu geçersiz kılar). */
+  protected async yaz(_islem: HesapIslemi): Promise<void> {}
+
+  /** Bir işlemi uygular; döndürdüğü sayı ya da kimlikler çağıranın sonucudur. Yeniden oynatma da bunu kullanır. */
+  protected uygula(i: HesapIslemi): string[] {
+    switch (i.o) {
+      case "h+":
+        this.hesaplar.set(i.h.id, structuredClone(i.h));
+        this.anahtarlar.set(i.h.anahtar, i.h.id);
+        this.oyuncular.set(i.h.oyuncu, i.h.id);
+        return [];
+      case "h-": {
+        const h = this.hesaplar.get(i.id);
+        if (!h) return [];
+        this.hesaplar.delete(i.id);
+        this.anahtarlar.delete(h.anahtar);
+        this.oyuncular.delete(h.oyuncu);
+        for (const [ozet, b] of this.baglantilar) if (b.anahtar === h.anahtar) this.baglantilar.delete(ozet);
+        return this.oturumlariSil(i.id);
+      }
+      case "b+":
+        for (const [ozet, b] of this.baglantilar) if (b.anahtar === i.k.anahtar) this.baglantilar.delete(ozet);
+        this.baglantilar.set(i.k.ozet, structuredClone(i.k));
+        return [];
+      case "b-":
+        this.baglantilar.delete(i.ozet);
+        return [];
+      case "o+":
+        this.oturumlar.set(i.k.id, structuredClone(i.k));
+        return [];
+      case "o~": {
+        const o = this.oturumlar.get(i.id);
+        if (o) this.oturumlar.set(i.id, { ...o, sonKullanim: i.s, bitis: i.b });
+        return [];
+      }
+      case "o-":
+        this.oturumlar.delete(i.id);
+        return [];
+      case "oh-":
+        return this.oturumlariSil(i.h);
+      case "s":
+        this.suresiGecenleriSil(i.t);
+        return [];
+    }
+  }
+
+  private suresiGecenleriSil(t: number): { baglanti: number; oturum: number } {
+    let baglanti = 0;
+    let oturum = 0;
+    for (const [ozet, b] of this.baglantilar) {
+      if (b.bitis > t) continue;
+      this.baglantilar.delete(ozet);
+      baglanti++;
+    }
+    for (const [id, o] of this.oturumlar) {
+      if (o.bitis > t && o.mutlakBitis > t) continue;
+      this.oturumlar.delete(id);
+      oturum++;
+    }
+    return { baglanti, oturum };
+  }
+
+  private oturumlariSil(hesap: string): string[] {
+    const silinen: string[] = [];
+    for (const [id, o] of this.oturumlar) {
+      if (o.hesap !== hesap) continue;
+      this.oturumlar.delete(id);
+      silinen.push(id);
+    }
+    return silinen;
+  }
+
+  async hesapOlustur(h: HesapKaydi): Promise<{ hesap: HesapKaydi; yeni: boolean }> {
+    const mevcut = this.anahtarlar.get(h.anahtar);
+    if (mevcut !== undefined) return { hesap: structuredClone(this.hesaplar.get(mevcut) as HesapKaydi), yeni: false };
+    if (this.oyuncular.has(h.oyuncu) || this.hesaplar.has(h.id)) throw new OyuncuCakismasi(h.oyuncu);
+    const i: HesapIslemi = { o: "h+", h };
+    this.uygula(i);
+    await this.yaz(i);
+    return { hesap: structuredClone(h), yeni: true };
+  }
+
+  async hesapBulAnahtar(anahtar: string): Promise<HesapKaydi | null> {
+    const id = this.anahtarlar.get(anahtar);
+    const h = id === undefined ? undefined : this.hesaplar.get(id);
+    return h ? structuredClone(h) : null;
+  }
+
+  async hesapBulId(id: string): Promise<HesapKaydi | null> {
+    const h = this.hesaplar.get(id);
+    return h ? structuredClone(h) : null;
+  }
+
+  async hesapSil(id: string): Promise<string[] | null> {
+    if (!this.hesaplar.has(id)) return null;
+    const i: HesapIslemi = { o: "h-", id };
+    const silinen = this.uygula(i);
+    await this.yaz(i);
+    return silinen;
+  }
+
+  async baglantiEkle(k: BaglantiKaydi): Promise<void> {
+    const i: HesapIslemi = { o: "b+", k };
+    this.uygula(i);
+    await this.yaz(i);
+  }
+
+  async baglantiTuket(ozet: string, simdi: number, tarayiciOzeti: string | null): Promise<BaglantiTuketimi> {
+    const b = this.baglantilar.get(ozet);
+    if (!b || b.bitis <= simdi) return { durum: "yok" };
+    if (b.tarayiciOzeti !== null && b.tarayiciOzeti !== tarayiciOzeti) return { durum: "tarayici" };
+    const i: HesapIslemi = { o: "b-", ozet };
+    this.uygula(i);
+    await this.yaz(i);
+    return { durum: "tamam", kayit: structuredClone(b) };
+  }
+
+  async oturumEkle(o: OturumKaydi): Promise<void> {
+    const i: HesapIslemi = { o: "o+", k: o };
+    this.uygula(i);
+    await this.yaz(i);
+  }
+
+  async oturumBul(id: string): Promise<OturumKaydi | null> {
+    const o = this.oturumlar.get(id);
+    return o ? structuredClone(o) : null;
+  }
+
+  async oturumUzat(id: string, sonKullanim: number, bitis: number): Promise<void> {
+    if (!this.oturumlar.has(id)) return;
+    const i: HesapIslemi = { o: "o~", id, s: sonKullanim, b: bitis };
+    this.uygula(i);
+    await this.yaz(i);
+  }
+
+  async oturumSil(id: string): Promise<boolean> {
+    if (!this.oturumlar.has(id)) return false;
+    const i: HesapIslemi = { o: "o-", id };
+    this.uygula(i);
+    await this.yaz(i);
+    return true;
+  }
+
+  async hesabinOturumlariniSil(hesap: string): Promise<string[]> {
+    const i: HesapIslemi = { o: "oh-", h: hesap };
+    const silinen = this.uygula(i);
+    if (silinen.length > 0) await this.yaz(i);
+    return silinen;
+  }
+
+  async sureGecmisleriSil(simdi: number): Promise<{ baglanti: number; oturum: number }> {
+    const sonuc = this.suresiGecenleriSil(simdi);
+    if (sonuc.baglanti + sonuc.oturum > 0) await this.yaz({ o: "s", t: simdi });
+    return sonuc;
+  }
+
+  async sayilar(): Promise<{ hesap: number; oturum: number; baglanti: number }> {
+    return { hesap: this.hesaplar.size, oturum: this.oturumlar.size, baglanti: this.baglantilar.size };
+  }
+
+  /** Canlı durumu işlem listesi olarak verir (dosya sıkıştırması; yeniden oynatınca aynı durum). */
+  protected durumIslemleri(): HesapIslemi[] {
+    return [
+      ...[...this.hesaplar.values()].map((h): HesapIslemi => ({ o: "h+", h })),
+      ...[...this.baglantilar.values()].map((k): HesapIslemi => ({ o: "b+", k })),
+      ...[...this.oturumlar.values()].map((k): HesapIslemi => ({ o: "o+", k })),
+    ];
+  }
+
+  async esitle(): Promise<void> {}
+
+  async kapat(): Promise<void> {}
+}
+
+export function bellekDeposu(): Depo & { gunluk: BellekGunlukDeposu; goruntu: BellekGoruntuDeposu; profil: BellekProfilDeposu; hesap: BellekHesapDeposu } {
   const gunluk = new BellekGunlukDeposu();
   const goruntu = new BellekGoruntuDeposu();
-  return { gunluk, goruntu, profil: new BellekProfilDeposu(), boyut: async () => ({ gunlukBayt: gunluk.bayt(), goruntuBayt: goruntu.bayt() }) };
+  return { gunluk, goruntu, profil: new BellekProfilDeposu(), hesap: new BellekHesapDeposu(), boyut: async () => ({ gunlukBayt: gunluk.bayt(), goruntuBayt: goruntu.bayt() }) };
 }

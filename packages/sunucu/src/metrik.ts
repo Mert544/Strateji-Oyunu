@@ -159,6 +159,8 @@ export interface MetrikGirdisi {
   olayDongusu: OlayDongusuGecikmesi;
   /** Esnaf Defteri dedektörü: günlüğe giren ödül komutları (uygulanan / çekirdek reddi). */
   odul: { verilen: number; reddedilen: number; taramaToplamMs: number; izgara: number; taramaSonMs: number; taramaEnUzunMs: number };
+  /** E-posta girişi olay sayaçları (yalnız toplu sayılar; belirteç, adres ve IP YOK). Giriş kapalıysa yoktur. */
+  giris?: Record<string, number>;
   depo: { gunlukBayt: number; goruntuBayt: number } | null;
   commit: Histogram;
   surec: { rssBayt: number; heapBayt: number; cpuSaniye: number };
@@ -218,6 +220,10 @@ export function metrikMetni(g: MetrikGirdisi): string {
     satir("bolge_olay_dongusu_gecikme_p99_ms", "gauge", "Olay dongusu gecikmesi p99 (ms).", g.olayDongusu.p99Ms),
     satir("bolge_olay_dongusu_gecikme_en_buyuk_ms", "gauge", "Olay dongusu gecikmesi en buyuk (ms).", g.olayDongusu.maxMs),
   );
+  if (g.giris) {
+    o.push("# HELP bolge_giris_olay_toplam E-posta girisi olaylari (olay etiketine gore; kisisel veri yok).", "# TYPE bolge_giris_olay_toplam counter");
+    for (const [olay, n] of Object.entries(g.giris)) o.push(`bolge_giris_olay_toplam{olay="${olay}"} ${n}`);
+  }
   if (g.depo) {
     ekle(
       satir("bolge_depo_gunluk_bayt", "gauge", "Gunluk deposu boyutu (bayt; pg'de tum dunyalarin log tablosu).", g.depo.gunlukBayt),

@@ -1,6 +1,7 @@
 /**
  * Takılabilir kimlik doğrulama. Oyuncu kimliği YALNIZ token'dan çözülür; istemcinin söylediği kimliğe güvenilmez.
- * Şimdilik geliştirme token'ı (HMAC-SHA256 imzalı); Better Auth oturum doğrulayıcısı aynı arayüzü uygulayacak.
+ * İki uygulama var: geliştirme token'ı (`GelistirmeKimligi`, HMAC-SHA256 imzalı; `--uretim`'de HİÇ kurulmaz) ve e-posta bağlantısıyla
+ * girişten gelen ws bileti (`AuthKimligi`, giris/auth-kimligi.ts).
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { SISTEM_OYUNCUSU } from "@bolge/cekirdek";
@@ -10,6 +11,10 @@ export interface Kimlik {
   oyuncu: OyuncuId;
   /** Yönetici: sistem komutları (oyuncu_katil) ve elle saatte zamanIlerlet. Komutları "sistem" olarak damgalanır. */
   yonetici: boolean;
+  /** E-posta girişinde hesap kimliği (opak); geliştirme kimliğinde yoktur. Yaptırım ve iptal için. */
+  hesap?: string;
+  /** E-posta girişinde bileti üreten oturumun kimliği (oturum kapanınca bağlantı düşer); geliştirme kimliğinde yoktur. */
+  oturum?: string;
 }
 
 export interface KimlikDogrulayici {

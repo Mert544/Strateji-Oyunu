@@ -24,6 +24,7 @@ import { HizSiniri, VARSAYILAN_HIZ_SINIRI } from "./hiz-siniri";
 import { OlayDongusuOlcer, metrikMetni, metrikSunucusuBaslat, saglikYaniti } from "./metrik";
 import type { MetrikSecenekleri, MetrikSunucusu, SaglikDurumu } from "./metrik";
 import type { HizSiniriSecenekleri } from "./hiz-siniri";
+import type { GirisBaglantisi } from "./giris/http";
 import type { Kimlik, KimlikDogrulayici } from "./kimlik";
 import { ElleSaat } from "./saat";
 import { YetisiyorHatasi } from "./yazar";
@@ -79,6 +80,11 @@ export interface SunucuSecenekleri {
    * gerçek zamana/yüke bağlı olmaz (yük altında kararsızlık olmaz).
    */
   sonrakiTur?: (f: () => void) => void;
+  /**
+   * E-posta bağlantısıyla giriş (G5): `/giris/` HTTP uçları, ws `Origin` izin listesi ve oturum iptalinde bağlantıların kapatılması.
+   * Verilmezse `/giris/` 404'tür (geliştirme kimliği). `kimlik` olarak `giris.hizmet.kimlik` (AuthKimligi) verilir.
+   */
+  giris?: GirisBaglantisi;
 }
 
 /** `ozetIste` jeton bedeli (dünyanın tamamını özetlemek pahalıdır). */
@@ -163,10 +169,28 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       yanit.end(r.govde);
       return;
     }
+    if (s.giris && yol.startsWith("/giris/")) {
+      void s.giris.isle(istek, yanit);
+      return;
+    }
     yanit.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
     yanit.end("yok\n");
   });
-  const wss = new WebSocketServer({ server: http, maxPayload: EN_BUYUK_MESAJ_BAYT });
+  // ws `Origin` izin listesi (CSWSH): tarayıcılar Origin gönderir; listede olmayan reddedilir. Origin'siz (tarayıcı olmayan) istemci geçer:
+  // oturum zaten çerezle yetkili bir POST'tan alınan tek kullanımlık biletle açılır.
+  const wss = new WebSocketServer({
+    server: http,
+    maxPayload: EN_BUYUK_MESAJ_BAYT,
+    ...(s.giris
+      ? {
+          verifyClient: (bilgi: { origin?: string }): boolean => {
+            const liste = s.giris?.izinliKokenler ?? [];
+            const o = bilgi.origin;
+            return liste.length === 0 || o === undefined || o === "" || liste.includes(o.trim().replace(/\/+$/, "").toLowerCase());
+          },
+        }
+      : {}),
+  });
   await new Promise<void>((coz, reddet) => {
     http.once("listening", coz);
     http.once("error", reddet);
@@ -216,6 +240,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       yayin: { atlananKare: yayinSayaci.atlananKare, yavasKopan: yayinSayaci.yavasKopan, sira: yayinSirasi.size },
       olayDongusu: olayDongusu.olcum(),
       odul: { verilen: m.odulVerilen, reddedilen: m.odulReddedilen, taramaToplamMs: Math.round(m.odulTaramaToplamMs * 100) / 100, izgara: m.odulIzgaraSayisi, taramaSonMs: Math.round(m.odulTaramaSonMs * 100) / 100, taramaEnUzunMs: Math.round(m.odulTaramaEnUzunMs * 100) / 100 },
+      ...(s.giris ? { giris: s.giris.sayaclar.hepsi() } : {}),
       depo: depoOnbellek.boyut,
       commit: m.commit,
       surec: { rssBayt: bellek.rss, heapBayt: bellek.heapUsed, cpuSaniye: Math.round(((cpu.user + cpu.system) / 1e6) * 1000) / 1000 },
@@ -581,6 +606,15 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     ws.on("error", () => ws.terminate());
   });
 
+  // Oturum iptali (çıkış, tümünü kapat, hesap silme): o oturumun biletiyle açılmış ws bağlantıları kapanır (KAPANIS.kimlik).
+  s.giris?.iptalDinle((o) => {
+    const kume = new Set(o.oturumlar);
+    for (const b of baglantilar) if (b.kimlik?.oturum !== undefined && kume.has(b.kimlik.oturum)) b.ws.close(KAPANIS.kimlik, "oturum kapandi");
+  });
+  // Süresi geçmiş giriş bağlantıları ve oturumlar saatte bir temizlenir (yanıtı etkilemez; hata yutulur).
+  const girisBakim = s.giris ? setInterval(() => void s.giris?.bakim().catch(() => undefined), 3_600_000) : null;
+  girisBakim?.unref();
+
   // Ölü bağlantı temizliği ve hız sınırı kovalarının bakımı.
   const bakim = setInterval(() => {
     for (const b of baglantilar) {
@@ -614,6 +648,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       kapaniyor = true;
       yayinSirasi.clear();
       clearInterval(bakim);
+      if (girisBakim) clearInterval(girisBakim);
       olayDongusu.kapat();
       for (const b of baglantilar) b.ws.close(KAPANIS.kapaniyor, "sunucu kapaniyor");
       await new Promise<void>((coz) => wss.close(() => coz()));

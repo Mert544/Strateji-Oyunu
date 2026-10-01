@@ -19,6 +19,8 @@ import { ElleSaat } from "../src/saat";
 import { sunucuBaslat } from "../src/sunucu";
 import type { CalisanSunucu } from "../src/sunucu";
 import { DunyaYazari } from "../src/yazar";
+import { hesapSozlesmesi } from "./hesap-sozlesmesi";
+import { girisOrtami } from "./giris-yardimci";
 import { ac, arayaMal, eskiDunya, sonaMal } from "./goc-yardimci";
 import { profilSozlesmesi } from "./profil-sozlesmesi";
 import { KUZEY, SIR, mulkVerisi, veri } from "./yardimci";
@@ -31,10 +33,16 @@ const pgAc = (dunya: string, semaKur = true) => postgresDeposu({ baglanti: PG as
 
 const TABLOLAR = ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit", "profil_damga"];
 
+/** Hesap tabloları dünyadan bağımsızdır: testler `pgh` önekiyle yazar, hesap silinince hesap_oyuncu ve oturum ON DELETE CASCADE ile gider. */
+const HESAP_ONEKI = "pgh";
+const hesapOnek = (): string => `${HESAP_ONEKI}${Date.now().toString(36)}${process.pid.toString(36)}${sayac++}`;
+
 afterAll(async () => {
   if (!PG) return;
   const h = new pg.Pool({ connectionString: PG, max: 1 });
   for (const t of TABLOLAR) await h.query(`DELETE FROM ${t} WHERE dunya LIKE $1`, [`${ON}-%`]).catch(() => undefined);
+  await h.query("DELETE FROM giris_baglanti WHERE ozet LIKE $1 OR eposta_anahtar LIKE $1", [`${HESAP_ONEKI}%`]).catch(() => undefined);
+  await h.query("DELETE FROM hesap WHERE id LIKE $1", [`${HESAP_ONEKI}%`]).catch(() => undefined);
   await h.end();
 });
 
@@ -85,13 +93,13 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
       ).rejects.toThrow(/duplicate key|unique/i);
 
       // Göçsüz açılış açık hatayla reddedilir (sessizce eski şemada çalışmaz).
-      await expect(postgresDeposu({ baglanti, dunya: "eskidunya", semaKur: false })).rejects.toThrow(/sema surumu eski: 1 < 3/);
+      await expect(postgresDeposu({ baglanti, dunya: "eskidunya", semaKur: false })).rejects.toThrow(new RegExp(`sema surumu eski: 1 < ${SQL_SEMA_SURUMU}`));
 
       // Yeni kodla (semaKur) yükseltme.
       const depo = await postgresDeposu({ baglanti, dunya: "eskidunya", semaKur: true });
       try {
         expect(await postgresSemaSurumu(havuz)).toBe(SQL_SEMA_SURUMU);
-        expect((await havuz.query("SELECT surum FROM sunucu_sema ORDER BY surum")).rows.map((r) => r.surum)).toEqual([1, 2, 3]);
+        expect((await havuz.query("SELECT surum FROM sunucu_sema ORDER BY surum")).rows.map((r) => r.surum)).toEqual([1, 2, 3, 4]);
         // Veri korunur.
         expect((await depo.gunluk.oku(0)).map((k) => [k.seq, k.kuralSurumu])).toEqual([[1, "k-eski"]]);
         expect(await depo.goruntu.sonuncu()).toEqual(g);
@@ -114,7 +122,7 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
     }
   });
 
-  it("sifirdan kurulum iki adimi uygular; en son goruntu secimi deterministik (seq, sim_t, olusturma, kural_sur)", async () => {
+  it("sifirdan kurulum dort adimi uygular; en son goruntu secimi deterministik (seq, sim_t, olusturma, kural_sur)", async () => {
     const ad = `bolge_yeni_${process.pid}_${Date.now()}`;
     const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
     await yonetici.query(`CREATE DATABASE ${ad}`);
@@ -123,7 +131,7 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
     const baglanti = u.toString();
     const havuz = new pg.Pool({ connectionString: baglanti, max: 1 });
     try {
-      expect(await postgresSemasiKur(havuz)).toEqual([1, 2, 3]);
+      expect(await postgresSemasiKur(havuz)).toEqual([1, 2, 3, 4]);
       expect(await postgresSemasiKur(havuz)).toEqual([]);
     } finally {
       await havuz.end();
@@ -504,4 +512,120 @@ describe.skipIf(!PG)("postgres: baglanti kopmasi (fail-stop)", () => {
       await yonetici.end();
     }
   }, 60_000);
+});
+
+describe.skipIf(!PG)("postgres: hesap, oturum ve giris baglantisi (sema surumu 4)", () => {
+  it("surum 3 veritabani 4'e yukseltilir (yalniz ekleme): veri korunur, hesap tablolari gelir; 004 idempotent; semaKur:false acik hata verir", async () => {
+    const ad = `bolge_s3_${process.pid}_${Date.now()}`;
+    const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
+    await yonetici.query(`CREATE DATABASE ${ad}`);
+    const u = new URL(PG as string);
+    u.pathname = `/${ad}`;
+    const baglanti = u.toString();
+    const havuz = new pg.Pool({ connectionString: baglanti, max: 2 });
+    try {
+      // Sürüm 3 veritabanı: 001, 002, 003 uygulanmış ve kayıtlı (004 yok).
+      await havuz.query("CREATE TABLE sunucu_sema (surum integer PRIMARY KEY, ad text NOT NULL, uygulandi timestamptz NOT NULL DEFAULT now())");
+      for (const [surum, ad2, dosya] of [[1, "baslangic", "001-baslangic"], [2, "goc-profil", "002-goc-profil"], [3, "defter", "003-defter"]] as const) {
+        await havuz.query(await readFile(new URL(`../sql/${dosya}.sql`, import.meta.url), "utf8"));
+        await havuz.query("INSERT INTO sunucu_sema (surum, ad) VALUES ($1, $2)", [surum, ad2]);
+      }
+      expect(await postgresSemaSurumu(havuz)).toBe(3);
+      expect((await havuz.query("SELECT to_regclass('hesap') IS NULL AS yok")).rows[0]?.yok).toBe(true);
+      await havuz.query(
+        "INSERT INTO log (dunya, seq, t, hesap, istemci, anahtar, komut, kural_sur, sema_sur) VALUES ('s3dunya',1,10,'ali','i','a1','{\"tur\":\"vergi_ayarla\",\"oranPpm\":5}'::jsonb,'k3',1)",
+      );
+      await havuz.query("INSERT INTO profil_damga (dunya, oyuncu, kavram, t, kaynak) VALUES ('s3dunya','ali','ilk_yapi',5,'odul')");
+      // Göçsüz açılış açık hata verir; semaKur ile yalnız 4. adım uygulanır.
+      await expect(postgresDeposu({ baglanti, dunya: "s3dunya", semaKur: false })).rejects.toThrow(/sema surumu eski: 3 < 4/);
+      expect(await postgresSemasiKur(havuz)).toEqual([4]);
+      expect(await postgresSemaSurumu(havuz)).toBe(4);
+      expect((await havuz.query("SELECT max(surum) AS m FROM sunucu_sema")).rows[0]?.m).toBe(4);
+      expect((await havuz.query("SELECT surum, ad FROM sunucu_sema ORDER BY surum")).rows.map((r) => `${r.surum} ${r.ad}`)).toEqual(["1 baslangic", "2 goc-profil", "3 defter", "4 hesap"]);
+      expect(await postgresSemasiKur(havuz)).toEqual([]); // idempotent
+      // 004'ün kendisi de iki kez koşunca hata vermez (IF NOT EXISTS) ve veriye dokunmaz.
+      const sql004 = await readFile(new URL("../sql/004-hesap.sql", import.meta.url), "utf8");
+      await havuz.query(sql004);
+      await havuz.query(sql004);
+      expect((await havuz.query("SELECT count(*)::int AS n FROM log WHERE dunya = 's3dunya'")).rows[0]?.n).toBe(1);
+      expect((await havuz.query("SELECT count(*)::int AS n FROM profil_damga WHERE dunya = 's3dunya'")).rows[0]?.n).toBe(1);
+      for (const t of ["hesap", "hesap_oyuncu", "giris_baglanti", "oturum"]) expect((await havuz.query("SELECT to_regclass($1) IS NOT NULL AS var", [t])).rows[0]?.var, t).toBe(true);
+      // Açılışta eski veri okunur, hesap deposu çalışır.
+      const depo = await postgresDeposu({ baglanti, dunya: "s3dunya", semaKur: false });
+      try {
+        expect((await depo.gunluk.oku(0)).map((k) => k.seq)).toEqual([1]);
+        expect(await depo.profil?.damgaOku("ali")).toEqual([{ kavram: "ilk_yapi", t: 5, kaynak: "odul" }]);
+        expect((await depo.hesap?.sayilar())).toEqual({ hesap: 0, oturum: 0, baglanti: 0 });
+      } finally {
+        await depo.gunluk.kapat();
+      }
+    } finally {
+      await havuz.end();
+      await yonetici.query(`DROP DATABASE ${ad} WITH (FORCE)`);
+      await yonetici.end();
+    }
+  });
+
+  it("hesap deposu sozlesmesi (bellek ve dosya ile ayni): hesap basina bir oyuncu, tek kullanimlik sureli baglanti, oturum, silme", async () => {
+    const depo = await pgAc(yeniDunya("hesap"));
+    try {
+      await hesapSozlesmesi(depo.hesap as NonNullable<typeof depo.hesap>, hesapOnek());
+    } finally {
+      await depo.gunluk.kapat();
+    }
+  });
+
+  it("veritabani kisitlari: hesap_oyuncu(hesap_id PK, oyuncu_id UNIQUE), eposta_anahtar UNIQUE; test oneki tek islemde silinir (ON DELETE CASCADE, artik kalmaz)", async () => {
+    const depo = await pgAc(yeniDunya("hesap-kisit"));
+    const onek = hesapOnek();
+    try {
+      const h = depo.hesap as NonNullable<typeof depo.hesap>;
+      const a = { id: `${onek}-a`, eposta: "a@ornek.org", anahtar: `${onek}-a@ornek.org`, oyuncu: `${onek}-oa`, olusturma: 1 };
+      const b = { id: `${onek}-b`, eposta: "b@ornek.org", anahtar: `${onek}-b@ornek.org`, oyuncu: `${onek}-ob`, olusturma: 1 };
+      await h.hesapOlustur(a);
+      await h.hesapOlustur(b);
+      for (const hesap of [a, b]) {
+        await h.oturumEkle({ id: `${onek}-o-${hesap.id}`, hesap: hesap.id, gizliOzet: "x", olusturma: 1, sonKullanim: 1, bitis: 9, mutlakBitis: 9 });
+        await h.baglantiEkle({ ozet: `${onek}-bag-${hesap.id}`, eposta: hesap.eposta, anahtar: hesap.anahtar, bitis: 9, tarayiciOzeti: null, olusturma: 1 });
+      }
+      // Şema düzeyinde kısıtlar (uygulama hatası olsa bile veritabanı korur).
+      await expect(sorgu("INSERT INTO hesap_oyuncu (hesap_id, oyuncu_id) VALUES ($1, 'baska')", [a.id])).rejects.toThrow(/duplicate key|unique/i); // hesap başına bir oyuncu
+      await expect(sorgu("INSERT INTO hesap_oyuncu (hesap_id, oyuncu_id) VALUES ($1, $2)", [b.id, a.oyuncu])).rejects.toThrow(/duplicate key|unique/i); // oyuncu başına bir hesap
+      await expect(sorgu("INSERT INTO oturum (id, hesap_id, gizli_ozet, olusturma, son_kullanim, bitis, mutlak_bitis) VALUES ('x', 'yok-hesap', 'g', 1, 1, 1, 1)")).rejects.toThrow(/foreign key/i);
+      // Test önekiyle tek işlemde silme: hesap_oyuncu ve oturum zincirle gider; bağlantılar adres anahtarıyla.
+      const c = await sorgu<{ n: number }>("WITH a AS (DELETE FROM giris_baglanti WHERE eposta_anahtar LIKE $1 RETURNING 1), b AS (DELETE FROM hesap WHERE id LIKE $1 RETURNING 1) SELECT (SELECT count(*) FROM b)::int AS n", [`${onek}%`]);
+      expect(c[0]?.n).toBe(2);
+      for (const t of ["hesap", "hesap_oyuncu", "oturum"]) expect((await sorgu<{ n: number }>(`SELECT count(*)::int AS n FROM ${t} WHERE ${t === "hesap_oyuncu" ? "oyuncu_id" : "id"} LIKE $1`, [`${onek}%`]))[0]?.n, t).toBe(0);
+      expect((await sorgu<{ n: number }>("SELECT count(*)::int AS n FROM giris_baglanti WHERE eposta_anahtar LIKE $1", [`${onek}%`]))[0]?.n).toBe(0);
+    } finally {
+      await depo.gunluk.kapat();
+    }
+  });
+
+  it("e-posta girisi pg hesap deposuyla uctan uca: istek -> posta -> onay -> bilet -> ws; ikinci giris ayni oyuncu", async () => {
+    const depo = await pgAc(yeniDunya("giris"));
+    const onek = hesapOnek();
+    const eposta = `${onek}@ornek.org`;
+    const ortam = await girisOrtami({ depo });
+    try {
+      const t = ortam.yeniTarayici();
+      const ilk = await ortam.girisYap(t, eposta);
+      expect(ilk.yeniHesap).toBe(true);
+      const bilet = (await t.post("/giris/bilet")).json?.bilet as string;
+      const { SunucuIstemcisi } = await import("../src/istemci");
+      const ws = await SunucuIstemcisi.baglan(ortam.ts.url, bilet, "pg-ist");
+      expect(ws.hosgeldin?.oyuncu).toBe(ilk.oyuncu);
+      await ws.kapat();
+      expect(await ortam.girisYap(ortam.yeniTarayici(), eposta.toUpperCase())).toEqual({ oyuncu: ilk.oyuncu, yeniHesap: false });
+      expect((await t.post("/giris/cikis")).durum).toBe(200);
+      expect((await t.istek("/giris/ben")).durum).toBe(401);
+      // Silme: hesap ve oturumlar gider.
+      const hesap = await depo.hesap?.hesapBulAnahtar(eposta);
+      expect(await ortam.hizmet.hesapSil(hesap?.id as string)).toBe(true);
+      expect(await depo.hesap?.hesapBulAnahtar(eposta)).toBeNull();
+    } finally {
+      await ortam.kapat();
+      await depo.gunluk.kapat();
+    }
+  });
 });

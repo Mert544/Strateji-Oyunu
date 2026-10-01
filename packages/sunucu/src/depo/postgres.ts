@@ -12,12 +12,14 @@
  *   sürümlü kayıt yerinde kalır. `yedekle` ayrıca `snapshot_yedek`'e değişmez bir kopya yazar; `yedektenDon` onu en yeni görüntü yapar.
  *   En son görüntü: `ORDER BY seq DESC, sim_t DESC, olusturma DESC, kural_sur DESC`.
  * - Profil (çapalar, özet kayıtları): `profil_capa` / `profil_kayit` (PK = idempotans anahtarı; halka ≤ 200, ömür 30 sim-günü).
+ * - Hesap (e-posta bağlantısıyla giriş, şema sürümü 4): `hesap`, `hesap_oyuncu`, `giris_baglanti`, `oturum` (`hesap-postgres.ts`; yalnız ekleme göçü).
  */
 import { readFile } from "node:fs/promises";
 import { gunzipSync, gzipSync } from "node:zlib";
 import type { Pool, PoolClient } from "pg";
 import { fnv1a32 } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
+import { PostgresHesapDeposu } from "./hesap-postgres";
 import { seqSurekliligiDenetle } from "./tipler";
 import { OZET_KAYIT_OMRU_MS, OZET_KAYIT_TAVANI } from "./tipler";
 import type { AnlikGoruntuKaydi, Capa, Damga, Depo, GoruntuEki, GunlukKaydi, OzetKaydi, ProfilDeposu } from "./tipler";
@@ -38,6 +40,7 @@ const SEMA_ADIMLARI: ReadonlyArray<{ surum: number; ad: string; dosya: URL }> = 
   { surum: 1, ad: "baslangic", dosya: new URL("../../sql/001-baslangic.sql", import.meta.url) },
   { surum: 2, ad: "goc-profil", dosya: new URL("../../sql/002-goc-profil.sql", import.meta.url) },
   { surum: 3, ad: "defter", dosya: new URL("../../sql/003-defter.sql", import.meta.url) },
+  { surum: 4, ad: "hesap", dosya: new URL("../../sql/004-hesap.sql", import.meta.url) },
 ];
 
 /** Bu kodun beklediği SQL şema sürümü. */
@@ -247,6 +250,8 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
       async kapat(): Promise<void> {},
     },
     profil: new PostgresProfilDeposu(havuz, s.dunya),
+    /** Hesap, oturum ve giriş bağlantısı (`sql/004-hesap.sql`; dünyadan bağımsız tablolar). */
+    hesap: new PostgresHesapDeposu(havuz),
     /** Günlük: `log` tablosunun toplam boyutu (TÜM dünyalar; tablo ortaktır); görüntü: bu dünyanın görüntü gövdeleri. */
     async boyut() {
       const g = await havuz.query<{ b: string }>("SELECT pg_total_relation_size('log') AS b");

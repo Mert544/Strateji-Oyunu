@@ -175,6 +175,93 @@ export interface ProfilDeposu {
   kapat(): Promise<void>;
 }
 
+/**
+ * Hesap, oturum ve giriş bağlantısı kayıtları (G5; KIMLIK.md §5–§7). Kişisel veri YALNIZ e-postadır: IP, tarayıcı bilgisi, ad yoktur.
+ * Hesap ile oyuncu AYRIDIR: `oyuncu` sunucu üretimli ve opaktır (e-postadan türetilmez), çekirdeğe yalnız o girer.
+ * Zamanlar duvar saati epoch ms'dir (sim zamanı değil). Hesap tabloları DÜNYADAN BAĞIMSIZDIR (pg'de `dunya` sütunu yoktur).
+ */
+export interface HesapKaydi {
+  /** Opak hesap kimliği. */
+  id: string;
+  /** Posta gönderilen adres (küçük harf). */
+  eposta: string;
+  /** Normalleştirilmiş benzersizlik anahtarı (Gmail noktaları, `+takma` atılmış). Hesap başına bir oyuncu bu anahtarla sağlanır. */
+  anahtar: string;
+  /** Hesabın TEK oyuncusu: `hesap_oyuncu(hesap_id PK, oyuncu_id UNIQUE)`. */
+  oyuncu: string;
+  olusturma: number;
+}
+
+/** Tek kullanımlık giriş bağlantısı: açık belirteç ASLA tutulmaz, yalnız SHA-256 özeti. Süre dolunca ya da kullanılınca silinir. */
+export interface BaglantiKaydi {
+  /** Belirtecin SHA-256 özeti (base64url). */
+  ozet: string;
+  eposta: string;
+  anahtar: string;
+  bitis: number;
+  /** İsteği yapan tarayıcı çerezinin SHA-256 özeti; yoksa (tarayıcıya bağlı değilse) null. */
+  tarayiciOzeti: string | null;
+  olusturma: number;
+}
+
+/** Oturum: çerezdeki belirteç `<id>.<gizli>`; depoda yalnız `gizli`nin SHA-256 özeti. */
+export interface OturumKaydi {
+  id: string;
+  hesap: string;
+  gizliOzet: string;
+  olusturma: number;
+  sonKullanim: number;
+  /** Kayan bitiş (her uzatmada `min(şimdi + kayan süre, mutlakBitis)`). */
+  bitis: number;
+  /** Mutlak üst sınır (açılıştan itibaren; uzatmayla aşılmaz). */
+  mutlakBitis: number;
+}
+
+export type BaglantiTuketimi =
+  | { durum: "tamam"; kayit: BaglantiKaydi }
+  /** Yok, süresi dolmuş ya da zaten kullanılmış. */
+  | { durum: "yok" }
+  /** Bağlantı geçerli ama başka bir tarayıcıda açıldı; TÜKETİLMEDİ. */
+  | { durum: "tarayici" };
+
+/** `hesapOlustur` oyuncu kimliği başka bir hesaba aitse fırlatılır (çağıran yeni kimlik üretip yeniden dener). */
+export class OyuncuCakismasi extends Error {
+  constructor(oyuncu: string) {
+    super(`oyuncu kimligi zaten kullanimda: ${oyuncu}`);
+    this.name = "OyuncuCakismasi";
+  }
+}
+
+/**
+ * Hesap deposu (bellek, dosya ve pg: AYNI sözleşme, test/hesap-sozlesmesi.ts). Tüm işlemler atomiktir ve yanıt, kayıt KALICI olduktan
+ * sonra döner (dosyada fdatasync, pg'de commit): tüketilen bağlantı çökmeden sonra yeniden canlanmaz.
+ */
+export interface HesapDeposu {
+  /** Anahtar zaten varsa mevcut hesabı döndürür (`yeni: false`; verilen `oyuncu` yok sayılır). Oyuncu kimliği çakışırsa `OyuncuCakismasi`. */
+  hesapOlustur(h: HesapKaydi): Promise<{ hesap: HesapKaydi; yeni: boolean }>;
+  hesapBulAnahtar(anahtar: string): Promise<HesapKaydi | null>;
+  hesapBulId(id: string): Promise<HesapKaydi | null>;
+  /** Hesabı, oyuncu eşlemesini, oturumlarını ve bekleyen bağlantılarını siler (KVKK silme). Silinen oturum kimliklerini döndürür; yoksa null. */
+  hesapSil(id: string): Promise<string[] | null>;
+  /** Aynı adresin (anahtar) önceki bekleyen bağlantıları DÜŞER, yenisi eklenir (tek işlem). */
+  baglantiEkle(k: BaglantiKaydi): Promise<void>;
+  /** Geçerli (`bitis > simdi`) ve tarayıcı uyumluysa kaydı siler ve döndürür (tek kullanım). Uyumsuzsa tüketmez. */
+  baglantiTuket(ozet: string, simdi: number, tarayiciOzeti: string | null): Promise<BaglantiTuketimi>;
+  oturumEkle(o: OturumKaydi): Promise<void>;
+  oturumBul(id: string): Promise<OturumKaydi | null>;
+  oturumUzat(id: string, sonKullanim: number, bitis: number): Promise<void>;
+  oturumSil(id: string): Promise<boolean>;
+  /** Hesabın bütün oturumlarını siler; silinen oturum kimliklerini döndürür. */
+  hesabinOturumlariniSil(hesap: string): Promise<string[]>;
+  /** Süresi dolmuş bağlantıları ve oturumları (`bitis <= simdi` ya da `mutlakBitis <= simdi`) siler. */
+  sureGecmisleriSil(simdi: number): Promise<{ baglanti: number; oturum: number }>;
+  /** Yalnız toplu sayılar (metrik/tanı; kişisel veri yok). */
+  sayilar(): Promise<{ hesap: number; oturum: number; baglanti: number }>;
+  /** Yazılanları kalıcılaştırır. */
+  esitle(): Promise<void>;
+  kapat(): Promise<void>;
+}
+
 /** Depo boyutu (bayt): metrik için; pahalı olabilir, çağıran önbellekler. */
 export interface DepoBoyutu {
   gunlukBayt: number;
@@ -194,6 +281,8 @@ export interface Depo {
    * demektir; fail-stop). Dinleyici eklenmeden önce oluşmuş hata, dinleyici eklenince bir kez iletilir. Depo kapatıldıktan sonraki hatalar yok sayılır.
    */
   hataDinle?(f: (e: Error) => void): void;
+  /** İsteğe bağlı: yoksa e-posta bağlantısıyla giriş kapalıdır (geliştirme kimliği kullanılır). */
+  hesap?: HesapDeposu;
 }
 
 /** Ekleme öncesi ortak süreklilik denetimi: toplu içinde ve son seq'e göre +1 artış. */
