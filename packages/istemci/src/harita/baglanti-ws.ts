@@ -1090,10 +1090,10 @@ function komutVarMi(k: Record<string, unknown>, alan?: string): boolean {
   return v;
 }
 
-/** Sayfa adresinden sunucu seçenekleri: `?sunucu=ws://...&token=...`. Sunucu parametresi yoksa null (sahte bağdaştırıcı). */
-export function sunucuSecenekleri(arama: string): { url: string; token: string } | null {
+/** Sayfa adresinden sunucu seçenekleri: `?sunucu=ws://...&token=...`. `varsayilan` (kendi köken, `giris/kip.ts`) yalnız `?sunucu=` yokken geçer; ikisi de yoksa null (sahte bağdaştırıcı). */
+export function sunucuSecenekleri(arama: string, varsayilan = ""): { url: string; token: string } | null {
   const q = new URLSearchParams(arama);
-  const url = q.get("sunucu");
+  const url = q.get("sunucu") || varsayilan;
   if (!url) return null;
   const token = q.get("token") ?? "";
   return { url, token };

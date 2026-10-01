@@ -13,6 +13,7 @@ import { isinKureKesisimi, vekLl } from "../kure/matematik";
 import type { Vek3 } from "../kure/matematik";
 import { ara, dizinKur } from "./arama";
 import type { AramaDizini, AramaKaydi } from "./arama";
+import { kokenSunucusu } from "../giris/kip";
 import type { MulkBaglantisi } from "./baglanti";
 import type { MulkPaneli } from "../arayuz/mulk-paneli";
 import { noktadakiOzellik } from "./geometri";
@@ -341,9 +342,14 @@ export class HaritaDenetci {
     return this.gorunumYukleniyor;
   }
 
+  /** Gerçek sunucu kullanılacak mı: `?sunucu=` var ya da barındırılan sayfada kendi köken (`kokenSunucusu`). */
+  private sunucuVar(): boolean {
+    return new URLSearchParams(location.search).has("sunucu") || kokenSunucusu(location, location.search) !== "";
+  }
+
   /** `?sunucu=ws://...` varsa gerçek sunucuya WebSocket bağlantısı (sayfa başına bir kez); yoksa tanımsız (sahte bağdaştırıcı). */
   private baglantiAl(): Promise<MulkBaglantisi | undefined> {
-    if (!new URLSearchParams(location.search).has("sunucu")) return Promise.resolve(undefined);
+    if (!this.sunucuVar()) return Promise.resolve(undefined);
     this.baglantiSozu ??= gorunumModulu()
       .then((m) => m.baglantiKur(location.search))
       .catch((e: unknown) => {
@@ -359,7 +365,7 @@ export class HaritaDenetci {
    */
   async mulkBaslat(zorla = false): Promise<void> {
     if (this.yerlesEkrani) return;
-    this.durumYazi.textContent = new URLSearchParams(location.search).has("sunucu") ? "Sunucuya bağlanılıyor…" : "Yerleş hazırlanıyor…";
+    this.durumYazi.textContent = this.sunucuVar() ? "Sunucuya bağlanılıyor…" : "Yerleş hazırlanıyor…";
     try {
       const g = await this.gorunumAl();
       // Panel: devlet oyunu yerine işletme (harita yığınındaki sağlayıcı; bölge kipinde çağrılmaz)

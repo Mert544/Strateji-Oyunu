@@ -14,7 +14,7 @@ import param from "../../veri/icerik/parametreler.json";
 import dunyaTopo from "./veri/dunya-ulkeler-kure.topo.json";
 import type { HaritaDosyasi, IcerikDosyasi, Parametreler } from "@bolge/veri";
 import { bildir } from "./arayuz/bildirim";
-import { girisKipi } from "./giris/kip";
+import { girisKipi, kokenSunucusu } from "./giris/kip";
 import { girisModulu } from "./giris/yukle";
 import { devletKartlari, devletSecimiHtml, secimBelirteci, secimCoz } from "./arayuz/devlet-sec";
 import { Etiketler } from "./arayuz/etiketler";
@@ -377,7 +377,7 @@ function baslat(): void {
     (kat.querySelector("[data-devlet]") as HTMLElement | null)?.focus();
   }
   // Mülk kipi (sunucu bağlı ya da ?yerles=1): "Devlet seç" gösterilmez; giriş Yerleş ekranıyla başlar (bölge kipinde kalır).
-  const mulkKipi = q.has("sunucu") || q.get("yerles") === "1";
+  const mulkKipi = q.has("sunucu") || q.get("yerles") === "1" || kokenSunucusu(location, location.search) !== "";
   if (mulkKipi) document.body.classList.add("mulk-kipi");
   s.mulkKipiAyarla(mulkKipi);
   devletAcici = () => {
@@ -433,7 +433,7 @@ window.addEventListener("unhandledrejection", (e) => hataGoster("Hata: " + Strin
  * BAŞLAMAZ. Geliştirme token'ı (`?token=`) ve sahte bağdaştırıcı (`?sunucu` yok) giriş ekranı olmadan aynen açılır.
  */
 function acilis(): void {
-  const kip = girisKipi(location.search);
+  const kip = girisKipi(location.search, kokenSunucusu(location, location.search));
   if (kip.kip !== "eposta") return baslat();
   // Giriş yığını (giris.js) kip belirlenir belirlenmez yüklenmeye başlar; yüklenemezse kullanıcıya hata metni çıkar
   girisModulu()

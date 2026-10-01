@@ -1,7 +1,8 @@
 /**
  * Giriş kipi ve bağlantı adresi (G9-a; saf): sayfa adresinden hangi kimlik yolunun kullanılacağı.
  *
- * - `sahte`: `?sunucu=` yok: bellek içi sahte bağdaştırıcı, giriş yok (bugünkü varsayılan).
+ * - `sahte`: `?sunucu=` yok ve sayfa yerel/dosya/`?yerles=1`/`?sahte=1`: bellek içi sahte bağdaştırıcı, giriş yok. Barındırılan sayfada (yerel olmayan http/https kökeni)
+ *   `?sunucu=` yoksa sayfanın KENDİ kökenine bağlanılır (`kokenSunucusu`): davetli oyuncu kısa adresle girer.
  * - `gelistirme`: `?sunucu=ws://...&token=<geliştirme token'ı>`: giriş ekranı YOK, token aynen `merhaba.token` olur
  *   (sunucu `--kimlik gelistirme`; geliştirme ve testler bu yolla çalışmaya devam eder).
  * - `eposta`: `?sunucu=ws://...` ve token yok: e-posta bağlantısıyla giriş (G5). Çerez httpOnly'dir; token `localStorage`'a yazılmaz.
@@ -21,6 +22,27 @@ export function httpTabani(wsUrl: string): string {
   }
 }
 
+export interface KonumBilgisi {
+  protocol: string;
+  host: string;
+  hostname: string;
+}
+
+/** Yerel geliştirme adresleri: kendi köken varsayılanı uygulanmaz (sahte bağdaştırıcı ve `?sunucu=` ile geliştirme sürer). */
+const YEREL_ADRES = /^(localhost|127(\.\d+){3}|\[::1\]|::1)$/i;
+
+/**
+ * Sayfanın kendi kökenindeki sunucu adresi (`?sunucu=` yokken varsayılan): https → `wss://<host>`, http → `ws://<host>` (yol bugünkü varsayılanla aynı: kök, `/`).
+ * "" (varsayılan yok): `?sunucu=` var (değeri ne olursa olsun; geliştirme önceliklidir), `?yerles=1`, `?sahte=1`, http/https dışı (`file:`) ya da yerel adres.
+ */
+export function kokenSunucusu(konum: KonumBilgisi, arama: string): string {
+  if (konum.protocol !== "https:" && konum.protocol !== "http:") return "";
+  const q = new URLSearchParams(arama);
+  if (q.has("sunucu") || q.get("yerles") === "1" || q.get("sahte") === "1") return "";
+  if (YEREL_ADRES.test(konum.hostname)) return "";
+  return `${konum.protocol === "https:" ? "wss" : "ws"}://${konum.host}`;
+}
+
 export type GirisKipi = "sahte" | "gelistirme" | "eposta";
 
 export interface KipBilgisi {
@@ -33,7 +55,7 @@ export interface KipBilgisi {
   httpTabani?: string;
 }
 
-/** `varsayilanSunucu`: derleme zamanı üretim adresi (verilirse `?sunucu=` olmasa da e-posta kipidir). */
+/** `varsayilanSunucu`: `?sunucu=` yokken kullanılacak adres (`kokenSunucusu`; verilirse `?sunucu=` olmasa da e-posta kipidir). */
 export function girisKipi(arama: string, varsayilanSunucu?: string): KipBilgisi {
   const q = new URLSearchParams(arama);
   const url = q.get("sunucu") || varsayilanSunucu || "";

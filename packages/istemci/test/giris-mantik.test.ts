@@ -9,7 +9,8 @@ import type { GirisSonucu } from "../src/giris/api";
 import { GirisAkisi, TEKRAR_SINIRI_ESIGI, YENIDEN_GONDER_MS } from "../src/giris/akis";
 import { epostaAnahtari, epostaKontrol, epostaTemizle } from "../src/giris/eposta";
 import { hataAnahtari, hataEylemi, hizSiniriDakika } from "../src/giris/hata";
-import { baglantiJetonu, girisKipi, jetonsuzAdres } from "../src/giris/kip";
+import { baglantiJetonu, girisKipi, jetonsuzAdres, kokenSunucusu } from "../src/giris/kip";
+import { sunucuSecenekleri } from "../src/harita/baglanti-ws";
 import { BILET_OMRU_MS, BiletSaglayici } from "../src/giris/oturum";
 
 describe("kip ve adres", () => {
@@ -23,6 +24,40 @@ describe("kip ve adres", () => {
     expect(girisKipi("", "wss://oyun.ornek.org")).toMatchObject({ kip: "eposta", url: "wss://oyun.ornek.org" });
     // geliştirme token'ı üretim adresinde de geliştirme sayılır (sunucu `--uretim`de reddeder; istemci tahmin etmez)
     expect(girisKipi("?token=ali", "wss://oyun.ornek.org")).toMatchObject({ kip: "gelistirme", token: "ali" });
+  });
+
+  it("kendi köken: ?sunucu yokken https → wss://host, http → ws://host (port korunur); kip e-posta, giriş HTTP kökü aynı köken", () => {
+    const https = { protocol: "https:", host: "oyun.ornek.org", hostname: "oyun.ornek.org" };
+    const http = { protocol: "http:", host: "203.0.113.7:8080", hostname: "203.0.113.7" };
+    expect(kokenSunucusu(https, "")).toBe("wss://oyun.ornek.org");
+    expect(kokenSunucusu(https, "?j=abc")).toBe("wss://oyun.ornek.org");
+    expect(kokenSunucusu(http, "")).toBe("ws://203.0.113.7:8080");
+    expect(girisKipi("", kokenSunucusu(https, ""))).toEqual({ kip: "eposta", url: "wss://oyun.ornek.org", httpTabani: "https://oyun.ornek.org" });
+    expect(girisKipi("?token=ali", kokenSunucusu(http, "?token=ali"))).toMatchObject({ kip: "gelistirme", url: "ws://203.0.113.7:8080", token: "ali" });
+    // sunucu bağlantısının ws yolu bugünkü varsayılanla aynı: kök (yol eklenmez)
+    expect(new URL(kokenSunucusu(https, "")).pathname).toBe("/");
+  });
+
+  it("kendi köken uygulanmaz: ?sunucu var (geliştirme önceliklidir, boş değer dahil), ?yerles=1, ?sahte=1, file:, yerel adres", () => {
+    const https = { protocol: "https:", host: "oyun.ornek.org", hostname: "oyun.ornek.org" };
+    expect(kokenSunucusu(https, "?sunucu=ws://127.0.0.1:8080")).toBe("");
+    expect(kokenSunucusu(https, "?sunucu=")).toBe("");
+    expect(kokenSunucusu(https, "?yerles=1")).toBe("");
+    expect(kokenSunucusu(https, "?sahte=1")).toBe("");
+    expect(kokenSunucusu({ protocol: "file:", host: "", hostname: "" }, "")).toBe("");
+    for (const h of ["localhost", "127.0.0.1", "[::1]"]) expect(kokenSunucusu({ protocol: "http:", host: `${h}:5173`, hostname: h }, "")).toBe("");
+    // ?sunucu verilince kip ve adres aynen eskisi gibi
+    expect(girisKipi("?sunucu=ws://127.0.0.1:8080&token=ali", kokenSunucusu(https, "?sunucu=ws://127.0.0.1:8080&token=ali"))).toEqual({ kip: "gelistirme", url: "ws://127.0.0.1:8080", token: "ali" });
+  });
+
+  it("sunucuSecenekleri: parametre varsa o adres (varsayılana üstün); yoksa varsayılan; ikisi de yoksa null; geçersiz parametre değiştirilmez", () => {
+    expect(sunucuSecenekleri("?sunucu=ws://a:1&token=t", "wss://oyun.ornek.org")).toEqual({ url: "ws://a:1", token: "t" });
+    expect(sunucuSecenekleri("", "wss://oyun.ornek.org")).toEqual({ url: "wss://oyun.ornek.org", token: "" });
+    expect(sunucuSecenekleri("?token=ali", "ws://h:9")).toEqual({ url: "ws://h:9", token: "ali" });
+    expect(sunucuSecenekleri("")).toBeNull();
+    // geçersiz değer olduğu gibi geçer (bağlanma hatası bağlantı katmanında), boş değer eskisi gibi sunucusuz
+    expect(sunucuSecenekleri("?sunucu=bozuk")).toEqual({ url: "bozuk", token: "" });
+    expect(sunucuSecenekleri("?sunucu=")).toBeNull();
   });
 
   it("httpTabani: ws→http, wss→https, yol ve sorgu atılır, çözülemezse boş", () => {
