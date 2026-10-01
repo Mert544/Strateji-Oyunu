@@ -3,7 +3,7 @@
  * - `ilk_ekmek`: gerçek G6-3 içeriğiyle (değirmen -> fırın) ÜRETİMLE tetiklenir; girdisiz fırın tetiklemez.
  * - `ilk_pencere`: pencere ÜRETİMİYLE tetiklenir; başlangıç kitindeki pencere (`baslangicStok.pencere`, G7 yaması) STOKtur, tetiklemez.
  * - `ilk_raf`: dükkânın bir raf yuvasında mal SEÇİLİ olunca (stok ve satış şartı yok); `ilk_cam`: cam üretimi.
- * - Etkin: kural `@bolge/protokol` `kavramEtkin`'dedir, sunucu sarmalayıcısı `etkin.ts` içerikten girdiyi kurar; tetikleyici yöntem/dükkân içerikte yoksa kavram etkin değil (gerçek içerik bugün: ekmek var; pencere, cam, dükkân yok).
+ * - Etkin: kural `@bolge/protokol` `kavramEtkin`'dedir, sunucu sarmalayıcısı `etkin.ts` içerikten girdiyi kurar; tetikleyici yöntem/dükkân içerikte yoksa kavram etkin değil (beklentiler içerikten türetilir: G7-4 sonrası ekmek ve dükkân var; pencere ve cam yöntemi G8 verisiyle gelir).
  * G8-1 verisi (`odul.kavramlar` +2, pencere/cam yöntemleri) gelene kadar FİKSTÜR içerik kullanılır (testte bellekte eklenir; JSON değişmez); gerçek içerik testi G8-1 sonrası.
  */
 import { describe, expect, it } from "vitest";
@@ -13,6 +13,7 @@ import { mulkSim } from "../../cekirdek/test/mulk-yardimci";
 import { dukkanEkle, dukkanlariSil, perakendeVeri } from "../../cekirdek/test/perakende-yardimci";
 import { bellekDeposu } from "../src/depo/bellek";
 import { DAMGA_IZGARA_KAVRAMLARI, ODUL_IZGARA_KAVRAMLARI, damgaSaglandi, ilkRaf, kavramSaglandi, oyuncuDugumleri } from "../src/odul/dedektor";
+import { kavramEtkin as protokolKavramEtkin } from "@bolge/protokol";
 import { kavramEtkin } from "../src/odul/etkin";
 import { ElleSaat } from "../src/saat";
 import { DunyaYazari } from "../src/yazar";
@@ -184,15 +185,41 @@ describe("ilk_raf damgası: en az bir yuvada mal SEÇİLİ (stok ve satış şar
 // Etkin kuralı
 // ---------------------------------------------------------------------------------------------------------------------------------------------
 describe("kavramEtkin: tetikleyici tesis/yöntem/dükkân içerikte yoksa kavram etkin değil", () => {
-  it("gerçek içerik (bugün): ekmek fırını var -> ilk_ekmek etkin; pencere/cam yöntemi ve dükkân yok -> ilk_pencere, ilk_cam, ilk_dukkan, ilk_raf etkin değil; yer tutucu ve diğerleri", () => {
-    const s = Simulasyon.olustur(bolMulk(mulkVerisi()), 1);
+  it("gerçek içerik: beklenti İÇERİKTEN türetilir (protokol kavramEtkin + ham içerik; içerik değişince test kendiliğinden doğru kalır); G7-4 sonrası ilk_dukkan ve ilk_raf etkin, ilk_ekmek etkin, yer tutucu hep değil", () => {
+    const v = bolMulk(mulkVerisi());
+    const s = Simulasyon.olustur(v, 1);
+    // Bağımsız girdi: sarmalayıcıya (etkin.ts) DEĞİL, ham içerik verisine bakar (v.icerik.yontemler çıktıları, v.param.mulk.perakende).
+    const girdi = { yontemCiktilari: v.icerik.yontemler.flatMap((y) => Object.keys(y.ciktilar)), perakende: v.param.mulk?.perakende !== undefined };
+    const hepsi = ["ilk_yapi", "ilk_satis", "ilk_isleme", "ilk_ekmek", "zincir_kapandi", "ilk_dukkan", "ilk_pencere", "ilk_cam", "ilk_raf", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"];
+    for (const k of hepsi) expect(kavramEtkin(s.ic, k), k).toBe(protokolKavramEtkin(girdi, k));
+    // Bugünkü içerik (G7-4: perakende + dükkân verisi var; ekmek fırını yöntemi var): açıkça etkin.
+    expect(girdi.perakende).toBe(true);
+    expect(kavramEtkin(s.ic, "ilk_dukkan")).toBe(true);
+    expect(kavramEtkin(s.ic, "ilk_raf")).toBe(true);
     expect(kavramEtkin(s.ic, "ilk_ekmek")).toBe(true);
-    expect(kavramEtkin(s.ic, "ilk_pencere")).toBe(false);
-    expect(kavramEtkin(s.ic, "ilk_cam")).toBe(false);
+    // Pencere/cam: yalnız o malı ÇIKTI veren yöntem içerikte olunca etkin (G8 verisi gelince kendiliğinden true; sabit değer yazılmaz).
+    expect(kavramEtkin(s.ic, "ilk_pencere")).toBe(s.ic.yontemler.some((y) => "pencere" in y.ciktilar));
+    expect(kavramEtkin(s.ic, "ilk_cam")).toBe(s.ic.yontemler.some((y) => "cam" in y.ciktilar));
+    expect(kavramEtkin(s.ic, "ilk_sozlesme")).toBe(false); // yer tutucu: içerik ne olursa olsun
+    for (const k of ["ilk_yapi", "ilk_satis", "ilk_isleme", "zincir_kapandi", "ikinci_ilce", "ilk_arastirma"]) expect(kavramEtkin(s.ic, k), k).toBe(true);
+  });
+
+  it("perakende bloğu SİLİNMİŞ içerik (fikstür): ilk_dukkan ve ilk_raf etkin DEĞİL (diğer kavramlar etkilenmez); blok geri gelince etkin", () => {
+    const perakendesiz = bolMulk(mulkVerisi(), (x) => {
+      const m = x.param.mulk;
+      if (m === undefined) throw new Error("fikstür: mulk yok");
+      delete m.perakende;
+      if (m.ekYapilar !== undefined) delete m.ekYapilar["dukkan"];
+    });
+    const s = Simulasyon.olustur(perakendesiz, 1);
+    expect(s.ic.mulk?.perakende).toBeUndefined();
     expect(kavramEtkin(s.ic, "ilk_dukkan")).toBe(false);
     expect(kavramEtkin(s.ic, "ilk_raf")).toBe(false);
-    expect(kavramEtkin(s.ic, "ilk_sozlesme")).toBe(false);
-    for (const k of ["ilk_yapi", "ilk_satis", "ilk_isleme", "zincir_kapandi", "ikinci_ilce", "ilk_arastirma"]) expect(kavramEtkin(s.ic, k), k).toBe(true);
+    expect(kavramEtkin(s.ic, "ilk_ekmek")).toBe(true);
+    expect(kavramEtkin(s.ic, "ilk_yapi")).toBe(true);
+    const geri = Simulasyon.olustur(perakendeVeri(), 1);
+    expect(kavramEtkin(geri.ic, "ilk_dukkan")).toBe(true);
+    expect(kavramEtkin(geri.ic, "ilk_raf")).toBe(true);
   });
 
   it("pencere/cam yöntemi içeriğe girince etkin; dükkân (mulk.perakende) tanımlanınca ilk_dukkan ve ilk_raf etkin; yöntem çıkarılınca (ekmek) etkin değil", () => {

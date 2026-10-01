@@ -8,6 +8,7 @@ import { SAAT, SISTEM_OYUNCUSU, Simulasyon, alinanOdulDegeri, odulDegeri } from 
 import type { Komut } from "@bolge/cekirdek";
 import { SunucuMesajiSemasi } from "@bolge/protokol";
 import { bellekDeposu } from "../src/depo/bellek";
+import { kavramEtkin } from "../src/odul/etkin";
 import { postgresDeposu } from "../src/depo/postgres";
 import type { Depo, GunlukKaydi } from "../src/depo/tipler";
 import { GelistirmeKimligi } from "../src/kimlik";
@@ -182,7 +183,8 @@ describe("kavram saptama ve odulun gunluge girisi", () => {
       if (k.tur === "odul") expect(k.odul?.degerMili).toBe(odulDegeri(y.sim.ic, k.kavram));
       else expect(k.odul).toBeUndefined();
     }
-    expect(d?.siradaki.map((s) => [s.kavram, s.etkin])).toEqual([["ilk_dukkan", false], ["ilk_sozlesme", false]]); // etkin kurali (P4/P5): bu icerikte mulk.perakende (dukkan) yok -> ilk_dukkan etkin degil; dukkanli icerikte etkin: odul-p4p5.test.ts
+    expect(d?.siradaki.map((s) => [s.kavram, s.etkin])).toEqual([["ilk_dukkan", kavramEtkin(y.sim.ic, "ilk_dukkan")], ["ilk_sozlesme", false]]); // etkin kurali (P4/P5): beklenti icerikten turetilir (mulk.perakende); yer tutucu hep false
+    expect(kavramEtkin(y.sim.ic, "ilk_dukkan")).toBe(true); // G7-4 sonrasi gercek icerik dukkan verisi tasir: ilk_dukkan etkin
     expect(d?.toplamOdulMili).toBe(KAVRAMLAR_ALI.reduce((n, k) => n + (odulDegeri(y.sim.ic, k) ?? 0), 0));
     expect(d?.tavanMili).toBe(y.sim.ic.param.odul?.tavanMili);
     // Veli: yalniz damga; siradaki 8 kavramin hepsi
