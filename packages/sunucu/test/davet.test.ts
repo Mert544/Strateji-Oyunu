@@ -1,6 +1,6 @@
 /**
- * Davetli listesi (kayıt kapısı): ayrıştırma ve normalleştirme, dosyadan yükleme/yenileme, hizmette sızdırmama (davetli olmayana yanıt AYNI, posta yok),
- * bağlantıdan sonra listeden çıkarılan adresin onayı, varsayılan kapalı, CLI (SIGHUP, bozuk/eksik dosyada açılış durur, günlükte adres yok).
+ * Davetli listesi (kayıt kapısı): ayrıştırma ve normalleştirme, dosyadan yükleme (çalışırken yeniden yüklenmez), hizmette sızdırmama (davetli olmayana yanıt AYNI, posta yok),
+ * bağlantıdan sonra listeden çıkarılan adresin onayı, varsayılan kapalı, CLI (bozuk/eksik dosyada açılış durur, günlükte adres yok).
  */
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
@@ -54,28 +54,26 @@ describe("davetli listesi ayristirma", () => {
     expect(l.uyeMi("aliveli@gmail.com")).toBe(true);
     expect(l.uyeMi("kisi@ornek.org")).toBe(true);
     expect(l.uyeMi("kisi@ornek.com")).toBe(false);
-    expect(() => l.yenile()).toThrow(/yenilenemez/);
   });
 });
 
 describe("davetli listesi dosyasi", () => {
-  it("yok ya da bozuk dosya fırlatir (acilis durur); yenile: yeni adresler gelir, bozuk dosyada ESKI liste korunur", async () => {
+  it("yok ya da bozuk dosya firlatir (acilis durur); bos dosya = kimse davetli degil; dosya yalniz acilista okunur", async () => {
     const d = await gecici();
     const yol = join(d, "davetli.txt");
     expect(() => DavetliListesi.dosyadan(yol)).toThrow(/okunamadi/);
     await writeFile(yol, "ali@ornek.org\n");
     const l = DavetliListesi.dosyadan(yol);
     expect(l.uyeMi("ali@ornek.org")).toBe(true);
+    // Calisirken yeniden yuklenmez: dosya degisse de acik liste ayni kalir (degistirmek icin yeniden baslatilir).
+    await writeFile(yol, "veli@ornek.org\n");
     expect(l.uyeMi("veli@ornek.org")).toBe(false);
-    await writeFile(yol, "ali@ornek.org\nveli@ornek.org\n");
-    expect(l.yenile()).toBe(2);
-    expect(l.uyeMi("veli@ornek.org")).toBe(true);
+    expect(l.uyeMi("ali@ornek.org")).toBe(true);
+    expect(DavetliListesi.dosyadan(yol).uyeMi("veli@ornek.org")).toBe(true); // yeniden baslatma
     await writeFile(yol, "ali@ornek.org\nbozuk satir\n");
-    expect(() => l.yenile()).toThrow(/satir 2/);
-    expect(l.boyut).toBe(2); // eski liste korundu
-    expect(l.uyeMi("veli@ornek.org")).toBe(true);
+    expect(() => DavetliListesi.dosyadan(yol)).toThrow(/satir 2/);
     await writeFile(yol, "");
-    expect(l.yenile()).toBe(0); // bos liste: kimse davetli degil
+    expect(DavetliListesi.dosyadan(yol).boyut).toBe(0);
     await writeFile(yol, "\u0000\u0001");
     expect(() => DavetliListesi.dosyadan(yol)).toThrow();
   });
@@ -127,24 +125,20 @@ describe("giris hizmeti: kayit kapisi", () => {
   });
 
   it("baglanti verildikten sonra listeden cikarilan adres onaylayamaz (baglanti_gecersiz); hesap acilmaz; listeye geri alininca yeni baglanti calisir", async () => {
-    const dizin = await gecici();
-    const yol = join(dizin, "davetli.txt");
-    await writeFile(yol, "ali@ornek.org\n");
-    const liste = DavetliListesi.dosyadan(yol);
-    const o = await girisOrtami({ hizmet: { davetliler: liste } });
+    // Çalışırken liste değişmez: "çıkarma" testte listeyi taşıyan değişken nesneyle taklit edilir (üretimde yeniden başlatma bu sonucu verir).
+    let liste = DavetliListesi.metinden("ali@ornek.org\n");
+    const o = await girisOrtami({ hizmet: { davetliler: { uyeMi: (a: string) => liste.uyeMi(a) } } });
     try {
       const t = o.yeniTarayici();
       const { jeton } = await o.baglantiIste(t, "ali@ornek.org");
-      await writeFile(yol, "baska@ornek.org\n");
-      liste.yenile();
+      liste = DavetliListesi.metinden("baska@ornek.org\n");
       const r = await t.post("/giris/onay", { j: jeton });
       expect(r.durum).toBe(400);
       expect(r.json?.kod).toBe("baglanti_gecersiz");
       expect(await o.hesapDeposu.hesapBulAnahtar("ali@ornek.org")).toBeNull();
       expect(o.hizmet.sayaclar.al("onay.davet_disi")).toBe(1);
       // Aynı bağlantı yeniden denenemez (tüketildi); listeye geri alınınca yeni bağlantı çalışır.
-      await writeFile(yol, "baska@ornek.org\nali@ornek.org\n");
-      liste.yenile();
+      liste = DavetliListesi.metinden("baska@ornek.org\nali@ornek.org\n");
       expect(await o.girisYap(o.yeniTarayici(), "ali@ornek.org")).toMatchObject({ yeniHesap: true });
     } finally {
       await o.kapat();
@@ -221,7 +215,7 @@ async function postaBekle(dizin: string, adet: number, ms = 8_000): Promise<numb
 }
 
 describe("CLI: --davetli-liste", () => {
-  it("davetliye posta gider, davetsize gitmez (yanit ayni); SIGHUP listeyi yeniden okur; bozuk dosyada eski liste korunur; adres sureç ciktisinda yok", async () => {
+  it("davetliye posta gider, davetsize gitmez (yanit ayni); adres surec ciktisinda yok", async () => {
     const d = await gecici();
     const liste = join(d, "davetli.txt");
     const posta = join(d, "posta");
@@ -240,27 +234,9 @@ describe("CLI: --davetli-liste", () => {
     await bekle(600);
     expect((await readdir(posta).catch(() => [] as string[])).filter((x) => x.endsWith(".json")).length).toBe(1);
 
-    // SIGHUP: yeni adres eklenir (yeniden baslatmadan).
-    await writeFile(liste, "olan@ornek.org\nolmayan@ornek.org\n");
-    s.p.kill("SIGHUP");
-    for (let i = 0; i < 100 && !s.olaylar.some((o) => o.olay === "davetliListeYenilendi"); i++) await bekle(50);
-    expect(s.olaylar.find((o) => o.olay === "davetliListeYenilendi")).toMatchObject({ adet: 2 });
-    await new Tarayici(taban, taban).post("/giris/istek", { eposta: "olmayan@ornek.org" });
-    expect(await postaBekle(posta, 2)).toBe(2);
-
-    // Bozuk dosya: uyarı, eski liste (2 adres) korunur.
-    await writeFile(liste, "olan@ornek.org\nbozuk satir\n");
-    s.p.kill("SIGHUP");
-    for (let i = 0; i < 100 && !s.olaylar.some((o) => o.olay === "uyari" && String(o.mesaj).includes("yenilenemedi")); i++) await bekle(50);
-    const uyari = s.olaylar.find((o) => o.olay === "uyari" && String(o.mesaj).includes("yenilenemedi"));
-    expect(uyari).toBeDefined();
-    expect(String(uyari?.mesaj)).toMatch(/satir 2/);
-    await new Tarayici(taban, taban).post("/giris/istek", { eposta: "olmayan@ornek.org" });
-    expect(await postaBekle(posta, 3)).toBe(3); // hala davetli
-
     expect(s.cikti()).not.toMatch(/olan@|olmayan@/); // günlükte tam adres yok (G5 maskeli gönderim kaydı kalır)
     const mektuplar = await Promise.all((await readdir(posta)).filter((x) => x.endsWith(".json")).map(async (x) => JSON.parse(await readFile(join(posta, x), "utf8")) as { kime: string }));
-    expect(mektuplar.every((m) => m.kime === "olan@ornek.org" || m.kime === "olmayan@ornek.org")).toBe(true);
+    expect(mektuplar.map((m) => m.kime)).toEqual(["olan@ornek.org"]);
   }, 120_000);
 
   it("liste yok / bozuk ise acilis durur; gelistirme kimligiyle birlikte verilemez; bozuk satir hatasinda adres yok", async () => {

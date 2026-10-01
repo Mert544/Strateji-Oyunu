@@ -83,7 +83,7 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --gecici-alanlar YOL gecici e-posta alani listesi (JSON { "alanlar": [...] }; vars. packages/sunucu/veri/gecici-eposta-alanlari.json)
   --davetli-liste YOL  kayit kapisi (Alfa-0; vars. KAPALI): satir basina bir e-posta adresi (# aciklama), G5 normallestirmesiyle eslesir. Listede olmayan adrese yanit
                        AYNIDIR ama posta gitmez. Liste kisisel veridir: sunucuda tutulur, depoya girmez (ornek raporlar/davetli.txt). Yok/bozuksa acilis durur;
-                       calisirken SIGHUP listeyi yeniden okur (bozuksa eski liste korunur). Yalniz --kimlik eposta ile
+                       calisirken yeniden yuklenmez (degistirmek icin sunucuyu yeniden baslatin). Yalniz --kimlik eposta ile
   --gelistirme-sirri S gelistirme token imza sirri (vars. $BOLGE_GELISTIRME_SIRRI; yalniz kimlik = gelistirme)
   --oturum-kaydi 0|1   oyun baglantisi oturum olayi kaydi (insan testi; vars. 0): oyuncunun ilk baglantisi acilinca oturum baslar, son baglantisi kapaninca
                        biter; yalniz zaman ve opak oyuncu kimligi (IP/cihaz/e-posta yok). 90 gunden eski ayrinti gun duzeyinde toplu sayiya cevrilir. Giris oturumu degildir
@@ -441,16 +441,6 @@ async function ana(): Promise<void> {
         process.exit(1);
       });
   };
-  if (davetli && process.platform !== "win32") {
-    // SIGHUP: davetli listesini yeniden oku (sunucuyu yeniden baslatmadan davet eklemek/cikarmak). Bozuk dosyada eski liste korunur; adres yazilmaz.
-    process.on("SIGHUP", () => {
-      try {
-        yaz("davetliListeYenilendi", { adet: (davetli as DavetliListesi).yenile() });
-      } catch (e) {
-        yaz("uyari", { mesaj: `davetli listesi yenilenemedi, eski liste korunuyor: ${e instanceof Error ? e.message : String(e)}` });
-      }
-    });
-  }
   process.on("SIGINT", () => kapat("SIGINT"));
   process.on("SIGTERM", () => kapat("SIGTERM"));
   // Windows'ta SIGTERM yakalanamaz (süreç zorla biter): IPC kanalıyla başlatılan süreç aynı düzgün kapanışı "kapat" mesajıyla alır.

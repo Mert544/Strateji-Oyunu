@@ -6,7 +6,8 @@
  *   ile girişi de geçer; bir adres, bir hesap kuralıyla aynı anahtar.
  * - Liste KİŞİSEL VERİDİR: sunucuda tutulur, DEPOYA GİRMEZ (örnek konum `raporlar/davetli.txt`; `raporlar/` git dışıdır). Günlüğe, metriğe, hata iletisine
  *   adres YAZILMAZ (yalnız adet ve satır numarası).
- * - Bozuk satır ya da okunamayan dosya AÇILIŞI DURDURUR (kapıyı sessizce açık bırakmak yerine). `yenile()` (SIGHUP) bozuk dosyada ESKİ listeyi korur ve hata verir.
+ * - Bozuk satır ya da okunamayan dosya AÇILIŞI DURDURUR (kapıyı sessizce açık bırakmak yerine). Liste çalışırken YENİDEN YÜKLENMEZ (baş lider kararı): değiştirmek için
+ *   sunucuyu yeniden başlatmak yeter (platforma özel sinyal varsayımı yok).
  * - Dosya boş olabilir (kimse davetli değil).
  */
 import { readFileSync } from "node:fs";
@@ -36,33 +37,22 @@ export function davetliListesiAyristir(metin: string): Set<string> {
 }
 
 export class DavetliListesi implements Davetliler {
-  private anahtarlar: ReadonlySet<string>;
-
-  private constructor(
-    private readonly yol: string,
-    anahtarlar: ReadonlySet<string>,
-  ) {
-    this.anahtarlar = anahtarlar;
-  }
+  private constructor(private readonly anahtarlar: ReadonlySet<string>) {}
 
   /** Dosyadan yükler; yok ya da bozuksa fırlatır (açılış durur). */
   static dosyadan(yol: string): DavetliListesi {
-    return new DavetliListesi(yol, DavetliListesi.oku(yol));
-  }
-
-  /** Testler ve gömülü kullanım: bellekteki metinden. */
-  static metinden(metin: string): DavetliListesi {
-    return new DavetliListesi("", davetliListesiAyristir(metin));
-  }
-
-  private static oku(yol: string): Set<string> {
     let metin: string;
     try {
       metin = readFileSync(yol, "utf8");
     } catch (e) {
       throw new Error(`davetli listesi okunamadi (${(e as NodeJS.ErrnoException).code ?? "hata"}): ${yol}`);
     }
-    return davetliListesiAyristir(metin);
+    return new DavetliListesi(davetliListesiAyristir(metin));
+  }
+
+  /** Testler ve gömülü kullanım: bellekteki metinden. */
+  static metinden(metin: string): DavetliListesi {
+    return new DavetliListesi(davetliListesiAyristir(metin));
   }
 
   get boyut(): number {
@@ -71,12 +61,5 @@ export class DavetliListesi implements Davetliler {
 
   uyeMi(anahtar: string): boolean {
     return this.anahtarlar.has(anahtar);
-  }
-
-  /** Dosyayı yeniden okur (SIGHUP). Hata olursa ESKİ liste korunur ve fırlatılır. Yeni adet döner. */
-  yenile(): number {
-    if (this.yol === "") throw new Error("davetli listesi dosyadan yuklenmedi: yenilenemez");
-    this.anahtarlar = DavetliListesi.oku(this.yol);
-    return this.anahtarlar.size;
   }
 }
