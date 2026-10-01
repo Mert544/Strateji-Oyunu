@@ -632,7 +632,8 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const insaat0 = ts.yazar.sim.dunya.insaatlar.length;
   await tikla(sayfa, false, "[data-eylem='yurt-kur']");
   await sayfa.waitForSelector("#bildirimler .bildirim >> text=Çiftlik kuruluyor", { timeout: 30000 });
-  const tYurt = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
+  // "kuruluyor" bildirimi bilgi türündedir (yerlesim.ts: tamam ? "bilgi"); `.tamam` yalnız satın alma ve geri alma bildirimlerindedir
+  const tYurt = (await sayfa.locator("#bildirimler .bildirim.bilgi", { hasText: "Çiftlik kuruluyor" }).last().innerText()).replace(/\s+/g, " ");
   kontrol(`${e} tek tıkla Çiftlik yurtta: arsa yok, indirimli yapı 4.200 ₺`, /Çiftlik kuruluyor: yapı 4\.200\s₺\./.test(tYurt) && ts.yazar.sim.dunya.insaatlar.length === insaat0 + 1, tYurt);
   await sayfa.waitForFunction(() => (window.__harita?.baglanti()?.ozet?.()?.surenInsaat ?? 0) >= 1, null, { timeout: 15000 });
   const hazine1 = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
@@ -675,7 +676,7 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const insaOnce = ts.yazar.sim.dunya.insaatlar.length;
   await tikla(sayfa, false, "#yapi-kart [data-ok='onayla']");
   await sayfa.waitForSelector("#bildirimler .bildirim >> text=ölçeğe büyütülüyor", { timeout: 20000 });
-  const t1 = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
+  const t1 = (await sayfa.locator("#bildirimler .bildirim.bilgi", { hasText: "ölçeğe büyütülüyor" }).last().innerText()).replace(/\s+/g, " ");
   kontrol(`${e} onay: sunucu kabul etti, bildirim Türkçe`, /Çiftlik M ölçeğe büyütülüyor: .*büyütme 9\.000\s₺\./.test(t1), t1);
   kontrol(`${e} sunucuda ölçek inşaatı başladı (tek komut, hedef M)`, ts.yazar.sim.dunya.insaatlar.length === insaOnce + 1 && ts.yazar.sim.dunya.insaatlar.some((i) => i.tur === "olcek" && i.hedef === tesisId && i.olcek === 1), `${ts.yazar.sim.dunya.insaatlar.length} inşaat`);
   await sayfa.waitForFunction(() => (window.__harita?.baglanti()?.ozet?.()?.surenInsaat ?? 0) >= 1, null, { timeout: 15000 });
