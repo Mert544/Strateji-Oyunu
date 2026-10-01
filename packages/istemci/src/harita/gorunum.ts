@@ -34,7 +34,7 @@ import type { IlceSayilari } from "./fiyat";
 import { parselZinciri } from "./zincir";
 import { kavramEtkin } from "./etkin";
 import { ASAMA_ADI, yapiAsamasi, yapiKatalogu, yapiKatmani, yapiRengiCss } from "./yapi";
-import { altlikKatmanlari, boyalar, IZGARA_CIZGI_ZOOM, L3_ZOOM, oyunKatmanlari, sahiplikBoyasi, SERIT_ONCESI, seritRengi, sinirKatmanlari, zeminKatmanlari } from "./stil";
+import { altlikKatmanlari, ayrilmisKatmanlari, boyalar, IZGARA_CIZGI_ZOOM, L3_ZOOM, oyunKatmanlari, sahiplikBoyasi, SERIT_ONCESI, seritRengi, sinirKatmanlari, zeminKatmanlari } from "./stil";
 import { ikon } from "../tasarim/ikon";
 import type { YapiTanimi } from "./yapi";
 import { dukkanKaynagiKur, dukkanKurBilgisi, referansFiyati } from "./dukkan-kaynak";
@@ -397,7 +397,7 @@ export class HaritaGorunumu {
 
   /** Stilin tüm katmanları (tema değişince aynı listeden yeniden boyanır; serit ve hayalet ayrıca). */
   private katmanlar(): LayerSpecification[] {
-    return [...zeminKatmanlari(renk), ...(this.altlikVar ? altlikKatmanlari(renk) : []), ...sinirKatmanlari(renk), ...oyunKatmanlari(renk, this.sahiplikAcik)];
+    return [...zeminKatmanlari(renk), ...(this.altlikVar ? altlikKatmanlari(renk) : []), ...sinirKatmanlari(renk), ...oyunKatmanlari(renk, this.sahiplikAcik), ...ayrilmisKatmanlari(renk)];
   }
 
   private stil(): StyleSpecification {
@@ -417,6 +417,7 @@ export class HaritaGorunumu {
         arsalar: { type: "geojson", data: BOS },
         "arsa-kamu": { type: "geojson", data: BOS },
         "arsa-vurgu": { type: "geojson", data: BOS },
+        ayrilmis: { type: "geojson", data: BOS },
         yapilar: { type: "geojson", data: BOS },
       },
       layers: this.katmanlar(),
