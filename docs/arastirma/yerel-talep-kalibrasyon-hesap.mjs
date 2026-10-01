@@ -225,4 +225,155 @@ yaz("## 6. Arsa fiyat beklentisine etki");
 yaz();
 yaz("Hücre fiyatı sınıf tabanından gelir (kırsal 1.000, kasaba 2.500, şehir 6.500 ₺; `fiyat.ts`) ve talep modelinden bağımsızdır. Dolaylı etki: dükkân neti arsa alımının geri ödemesini belirler. Doyma neti ≈ 727 ₺/sa (kasa dolu) ile bir şehir hücresi (6.500 ₺) ≈ 9 saatte çıkar; ticari hücre ×1,45 (9.425 ₺) ≈ 13 saat. Dolayısıyla nüfus ≥ ~30 bin olan ilçelerde arsa fiyatı dükkân kararını bağlamaz; < 10 bin nüfuslu ilçelerde net ≈ 0 olduğundan dükkân hiç kurulmaz ve ticari hücre talebi doğmaz. A3'ün olduğu gibi hâlinde bütün ilçeler bu ikinci gruba düşer.");
 yaz();
+// ------------------------------------------------------------------------------------------------ 7 para dengesi (30 gün)
+yaz("## 7. Para dengesi: 30 günlük kâğıt model (200 oyuncu; %75 ekmek zinciri, %25 ekmek + cam → pencere)");
+yaz();
+yaz("Bant (docs/06 §10.5, :253): **lavabo / (vergi + ihracat − ithalat) = 0,3–0,6**. Mülk kipinde nüfus vergisi yoktur (vergi = 0); ihracat = `ihracatNpc` + `yerelNpc` (kit gıdası satışı dahil); ithalat = `ithalatNpc` (parça, malzeme, silis, çelik); lavabo = `isletme` + `sebeke` + `araziVergisi` + `harcama` (yapı) + `arsa` (hücre). Hibe ve ödül musluktur ama orana girmez. Kâğıt model: kararlı hâl saatlik akış × yük (satış / kapasite), NPC dilimi kişi başı (ekmek 62,5, pencere 25 birim/sa), fiyat dinamiği yok (arz kendi dilimiyle sınırlanır: doyum ve fiyat çöküşü modelde yoktur).");
+yaz();
+const NPC_KEPEK = IC.mallar.find((m) => m.id === "kepek").tabanFiyat / 1000 * 0.891;
+const NPC_PENCERE = IC.mallar.find((m) => m.id === "pencere").tabanFiyat / 1000 * 0.891;
+const ITH = 1.111;
+const FP = (id) => IC.mallar.find((m) => m.id === id).tabanFiyat / 1000;
+const SEB_E = 10.35;
+const SEB_Y = 103.5;
+const DILIM_EKMEK = 62.5;
+const DILIM_PENCERE = 25;
+// Bir saatlik kararlı akış (₺/sa) — tip "s1" (ekmek) ya da "s2" (ekmek + cam → pencere); yerelSat = dükkân satışı birim/sa
+function saat(tip, yerelSat) {
+  const sold = yerelSat + DILIM_EKMEK;
+  const yuk = Math.min(1, sold / 240);
+  const ihr = DILIM_EKMEK * EKMEK * 0.891 + Math.min(33 * yuk, 30) * NPC_KEPEK;
+  const yerel = yerelSat * EKMEK * 1.05;
+  let ithal = 2.1 * FP("parca") * ITH;
+  let seb = yuk * (27 * SEB_E + 20 * SEB_Y);
+  let isl = 3 * 60 + GIDER_S;
+  let ihrP = 0;
+  if (tip === "s2") {
+    const yd = Math.min(1, DILIM_PENCERE / 28);
+    const yc = (32 * yd) / 50;
+    ihrP = DILIM_PENCERE * NPC_PENCERE;
+    ithal += 60 * yc * FP("silis") * ITH + 24 * yd * FP("celik") * ITH + 5 * yd * FP("parca") * ITH + 2 * FP("parca") * ITH;
+    seb += 16 * yc * SEB_Y + (18 * yc + 15 * yd) * SEB_E;
+    isl += 2 * 60;
+  }
+  return { ihracat: ihr + ihrP, yerel, ithal, sebeke: seb, isletme: isl, vergi: 0.46 };
+}
+const GUNLER = 30;
+function oyuncuGunleri(tip, yerelSat, yenidenYatirim = 0) {
+  const gun = [];
+  const st = saat(tip, yerelSat);
+  for (let g = 0; g < GUNLER; g++) {
+    const f = g === 0 ? 0.9 : 1;
+    let yat = { harcama: 0, arsa: 0, ithal: 0 };
+    let tek = { hibe: 0, odul: 0, kit: 0 };
+    if (g === 0) {
+      yat = { harcama: 22400, arsa: 3625, ithal: 1228 };
+      tek = { hibe: 50000, odul: 1200, kit: 12600 };
+    }
+    let f2 = 0;
+    if (tip === "s2") {
+      f2 = g < 3 ? 0 : g === 3 ? 0.85 : 1;
+      if (g === 3) yat = { harcama: yat.harcama + 30000, arsa: yat.arsa + 10000, ithal: yat.ithal + 33000 };
+    }
+    // s2 ek kalemleri yalnız gün ≥ 3'ten: ekmek kısmı her gün, cam/pencere kısmı f2
+    const s1 = saat("s1", yerelSat);
+    const farkIhr = st.ihracat - s1.ihracat;
+    const farkIth = st.ithal - s1.ithal;
+    const farkSeb = st.sebeke - s1.sebeke;
+    const farkIsl = st.isletme - s1.isletme;
+    gun.push({
+      ihracat: 24 * (s1.ihracat * f + farkIhr * f2) + tek.kit,
+      yerel: 24 * s1.yerel * f,
+      ithal: 24 * (s1.ithal * f + farkIth * f2) + yat.ithal,
+      sebeke: 24 * (s1.sebeke * f + farkSeb * f2),
+      isletme: 24 * (s1.isletme * f + farkIsl * f2),
+      vergi: 24 * s1.vergi,
+      harcama: yat.harcama,
+      arsa: yat.arsa,
+      hibe: tek.hibe,
+      odul: tek.odul,
+    });
+    // yeniden yatırım: günlük net kârın bir payı yapı/ölçek (M/L) ve hücre harcamasına gider (lavabo: harcama)
+    const x = gun[gun.length - 1];
+    const netG = x.ihracat + x.yerel - x.ithal - x.sebeke - x.isletme - x.vergi - x.harcama - x.arsa;
+    if (g > 0 && netG > 0) x.harcama += yenidenYatirim * netG;
+  }
+  return gun;
+}
+function dunya(yerelSat, yenidenYatirim = 0) {
+  const topla = { ihracat: 0, yerel: 0, ithal: 0, sebeke: 0, isletme: 0, vergi: 0, harcama: 0, arsa: 0, hibe: 0, odul: 0 };
+  for (const [tip, adet] of [["s1", 150], ["s2", 50]]) {
+    for (const g of oyuncuGunleri(tip, yerelSat, yenidenYatirim)) for (const k of Object.keys(topla)) topla[k] += g[k] * adet;
+  }
+  const lavabo = topla.isletme + topla.sebeke + topla.vergi + topla.harcama + topla.arsa;
+  const D = topla.ihracat + topla.yerel - topla.ithal;
+  const musluk = topla.ihracat + topla.yerel + topla.hibe + topla.odul;
+  return { ...topla, lavabo, D, R: lavabo / D, lavabo_musluk: (lavabo + topla.ithal) / musluk };
+}
+function yerelSatOyuncu(olcek, mod, fn) {
+  const kk = dagit(mod);
+  let top = 0;
+  ILCELER.forEach((x, i) => {
+    top += ilce(fn(x), olcek, kk[i]).satToplam;
+  });
+  return top / 200;
+}
+yaz("### 7.1 yerelOlcek taraması: (b) ilçe başına nüfus; 30 gün toplamı");
+yaz();
+yaz(baslik("yerelOlcek", "Yerleşim", "Dükkân satışı birim/sa/oyuncu", "ihracatNpc+yerelNpc M ₺ (30 g)", "ithalatNpc M ₺", "lavabo M ₺ (ithalat hariç)", "**lavabo / (ihracat − ithalat)**", "(lavabo + ithalat) / musluk", "Bant 0,3–0,6"));
+const bNufus = (x) => x.N;
+for (const olcek of [10, 15, 20, 25, 30, 35, 40, 50]) {
+  for (const mod of ["U", "N"]) {
+    const d = dunya(yerelSatOyuncu(olcek, mod, bNufus));
+    yaz(satir(olcek, mod, ond(yerelSatOyuncu(olcek, mod, bNufus), 1), ond((d.ihracat + d.yerel) / 1e6, 1), ond(d.ithal / 1e6, 1), ond(d.lavabo / 1e6, 1), ond(d.R, 2), ond(d.lavabo_musluk, 2), d.R < 0.3 ? "**altında (enflasyon)**" : d.R > 0.6 ? "üstünde" : "içinde"));
+  }
+}
+yaz();
+// banda çekme: R ≥ 0,3 sağlayan en büyük yerelOlcek (U ve N için)
+const bandOlcek = {};
+for (const mod of ["U", "N"]) {
+  let en = 0;
+  for (let o = 1; o <= 60; o++) if (dunya(yerelSatOyuncu(o, mod, bNufus)).R >= 0.3) en = o;
+  bandOlcek[mod] = en;
+}
+yaz(`Banda (R ≥ 0,3) giren en büyük yerelOlcek: U ${bandOlcek.U}, N ${bandOlcek.N}.`);
+yaz();
+yaz("### 7.1b Yeniden yatırım duyarlılığı: günlük net kârın r payı yapı/ölçek ve hücreye harcanırsa (lavabo `harcama`)");
+yaz();
+yaz(baslik("r", "yerelOlcek 40, U: R", "yerelOlcek 40, N: R", "Banda (R ≥ 0,3) giren en büyük yerelOlcek (U / N)"));
+const enBuyuk = (r, mod) => {
+  let en = 0;
+  for (let o = 1; o <= 100; o++) if (dunya(yerelSatOyuncu(o, mod, bNufus), r).R >= 0.3) en = o;
+  return en;
+};
+for (const r of [0, 0.1, 0.25, 0.5]) {
+  yaz(satir(ond(r, 2), ond(dunya(yerelSatOyuncu(40, "U", bNufus), r).R, 2), ond(dunya(yerelSatOyuncu(40, "N", bNufus), r).R, 2), `${enBuyuk(r, "U")} / ${enBuyuk(r, "N")}`));
+}
+yaz();
+yaz("Model dışı yeniden yatırım olmadan (r = 0) ve R'nin yalnız işletme + şebeke + ilk yatırım lavabolarına bağlı olduğu hâlde oran 0,23–0,30; oyuncu net kârının yaklaşık %10–25'ini yeni yapıya, ölçek yükseltmeye ve hücreye harcadığında 0,3–0,6 bandına girer. Bu yüzden R'nin asıl kaldıracı `yerelOlcek` değil yeniden yatırım lavabolarıdır (M/L bedeli, hücre, arsa fiyatı).");
+yaz();
+yaz("### 7.2 Hazine eğrisi (tek oyuncu, yerelOlcek 40 ve banda çekilmiş değer; ₺)");
+yaz();
+const kritik = Math.min(bandOlcek.U, bandOlcek.N);
+for (const olcek of [40, kritik]) {
+  const ys = (yerelSatOyuncu(olcek, "U", bNufus) + yerelSatOyuncu(olcek, "N", bNufus)) / 2;
+  yaz(`**yerelOlcek ${olcek}** (dükkân satışı ${ond(ys, 1)} birim/sa/oyuncu, U–N ortalaması):`);
+  yaz();
+  yaz(baslik("Gün sonu", "Ekmek zinciri hazine", "Ekmek + cam → pencere hazine", "Ekmek zinciri günlük net", "Ekmek + pencere günlük net"));
+  const g1 = oyuncuGunleri("s1", ys);
+  const g2 = oyuncuGunleri("s2", ys);
+  const kum = (g, n) => {
+    let h = 0;
+    for (let i = 0; i <= n; i++) {
+      const x = g[i];
+      h += x.hibe + x.odul + x.ihracat + x.yerel - x.ithal - x.sebeke - x.isletme - x.vergi - x.harcama - x.arsa;
+    }
+    return h;
+  };
+  const net = (g, n) => kum(g, n) - (n > 0 ? kum(g, n - 1) : 0);
+  for (const n of [0, 1, 2, 3, 7, 14, 29]) yaz(satir(n + 1, tam(kum(g1, n)), tam(kum(g2, n)), tam(net(g1, n)), tam(net(g2, n))));
+  yaz();
+}
+yaz("Okuma: kâğıt modelde her kalem kararlı hâl akışıdır; NPC fiyat dinamiği, doyum ve stok yoktur (bunlar R'yi yukarı ya da aşağı oynatır). Oran R bandın altındaysa lavabo yetersizdir (enflasyon): ya gelir musluğu (yerelNpc) kısılır ya lavabo (şebeke, işletme) artar.");
+yaz();
 console.log(cikti.join("\n"));

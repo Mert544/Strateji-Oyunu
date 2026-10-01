@@ -5,7 +5,7 @@
 ## 1. Özet (önce bu)
 
 1. **Asıl bulgu, nüfus verisinden önce sınıf kuralı.** A3 §6.5 ilçe sınıfını "uygun hücrelerin baskın sınıfı" olarak tanımlıyor. Üç ızgaralı Alfa-0 ilçesinde (z20 manifesti, `arsaSinifi` geçici eşlemesi) kırsal hücre payı **%93–97**: Gemlik 97, Gebze 93, Körfez 93. Üçü de **kırsal** çıkar; sınıf eşdeğeri 10.000 iken ADNKS 2025 nüfusları Gemlik 124.400, Körfez 183.077, Gebze 414.960 (eşdeğer/gerçek 0,02–0,08). T3'ün nüfus bandı kuralı (20 bin / 69 bin) üçünü de şehir yapar. Bu kuralla dünya `yerelNpc` ≈ 10 M ₺/hafta (ZP8 %8–9) ve ilçelerin 0–13'ünde dükkân kârlı; A2 §1.10 beklentisi 92,9 M ₺ (%45) idi.
-2. **Öneri (en küçük değişiklik): sınıf nüfus bandından türetilir; A3'ün sabitleri (10 / 40 / 120 bin) ve `yerelOlcek` 50 kalır.** Sınıf eşiği T3'ün geometrik eşiği: kırsal < 20.000, kasaba < 69.282, şehir üstü. İlçe başına isteğe bağlı `nufus` alanı saklanır (çekirdek şimdilik yalnız sınıfı türetir; (b) tam nüfus kullanımına geçiş yalnız bir parametre değişikliğidir, öneri `yerelOlcek` 35). Sonuç (c0, `yerelOlcek` 50): dünya `yerelNpc` 83–87 M ₺/hafta, ZP8 %43–44, dükkân geri ödeme medyanı 23–30 sa, kârlı ilçe 38–43/45; nüfus eşdeğeri hatası 1,6× (A3 olduğu gibi 8,1×). (a) tek başına yetmez (aşağıda).
+2. **Karar (baş lider, 241f1b9 üzerine): (b) ilçe başına gerçek nüfus, `yerelOlcek` 40.** T3 nüfus verisiyle yeniden hesaplandı: ZP8 %44 (U) / %52 (N), geri ödeme medyanı 37 / 22 sa, dünya `yerelNpc` 87 / 123 M ₺/hafta, kârlı ilçe 36 / 42. Daha küçük değişiklik isteyen yedek yol (c0): sınıf nüfus bandından (20 bin / 69.282), A3 sabitleri ve `yerelOlcek` 50 (ZP8 %43–44, geri ödeme 23–30 sa, hata 1,6×). (a) tek başına yetmez.
 3. **Geri dönüşü zor:** ilçe başına nüfus (ya da sınıf) alanının şemaya girmesi (fikstür/göç). İsteğe bağlı alan olarak girerse geriye uyumlu; sabitler, eşikler ve `yerelOlcek` kolay geri dönüşlüdür.
 
 ## 2. Nüfus dağılımı (45 ilçe, ADNKS 2025; Kocaeli 12, Sakarya 16, Bursa 17)
@@ -42,25 +42,25 @@ Yerleşim **U**: eşit (4–5/ilçe); **N**: nüfusla orantılı (en az 1). ZP8 
 |---|---|---|---|---|---|---|
 | **A3 olduğu gibi** (baskın hücre sınıfı → kırsal 10 bin) | 50 | 10,7 / 9,9 | %9 / %8 | 0 / 13 | −78 / −60 | hiç / hiç |
 | (a) sınıf sabiti kalır, yerelOlcek kalibre (toplam talep gerçeğe eşit) | ≈ 700 (×14) | 155,9 / 105,9 | %58 / %49 | 45 / 44 | 649 / 727 | 14 / 12 |
-| **(c0) sınıf nüfus bandından (20 bin / 69 bin), A3 sabitleri 10 / 40 / 120 bin (öneri)** | **50** | 87,4 / 83,4 | %44 / %43 | 38 / 43 | 383 / 297 | 23 / 30 |
+| (c0) sınıf nüfus bandından (20 bin / 69 bin), A3 sabitleri 10 / 40 / 120 bin (yedek) | 50 | 87,4 / 83,4 | %44 / %43 | 38 / 43 | 383 / 297 | 23 / 30 |
 | (b) ilçe başına gerçek nüfus | 50 | 99,4 / 153,7 | %47 / %58 | 38 / 43 | 332 / 530 | 27 / 17 |
-| (b) | 40 | 86,5 / 123,0 | %44 / %52 | 36 / 42 | 240 / 398 | 37 / 22 |
+| **(b), baş lider kararı** | **40** | 86,5 / 123,0 | %44 / %52 | 36 / 42 | 240 / 398 | 37 / 22 |
 | (b) | 35 | 79,3 / 107,6 | %41 / %49 | 35 / 41 | 193 / 332 | 46 / 27 |
 | (c) karma: sınıf nüfus bandından (30 / 150 bin), eşdeğer 13 / 73 / 299 bin | 50 | 97,1 / 120,6 | %46 / %52 | 36 / 45 | 260 / 390 | 34 / 23 |
 
 - **A3 olduğu gibi:** talep nüfusa değil ilçe sayısına bağlanır; Gebze ile Harmancık aynıdır. Dükkân hiçbir ilçede kârlı değildir (U); P7 dükkân akışı ve A0-12 ölçütü tutmaz.
 - **(a):** toplam talebi gerçeğe eşitler ama ilçeleri eşitler (küçük ilçe zengin, büyük fakir). ZP8 sınırı aşılır (%58). Tek başına yeterli değil.
-- **(c0), öneri:** A3'ün sabitleri ve `yerelOlcek` 50 aynen kalır; yalnız ilçe sınıfının kaynağı değişir (baskın hücre sınıfı → nüfus bandı). Her iki hedef (ZP8 ≤ %50, geri ödeme ≤ 48 sa) iki yerleşimde de tutar; hata 1,6×.
+- **(c0), yedek yol:** A3'ün sabitleri ve `yerelOlcek` 50 aynen kalır; yalnız ilçe sınıfının kaynağı değişir (baskın hücre sınıfı → nüfus bandı). Her iki hedef (ZP8 ≤ %50, geri ödeme ≤ 48 sa) iki yerleşimde de tutar; hata 1,6×.
 - **(b):** hata 1,0× (ortalama mutlak log hatası), tam nüfus kullanımı. `yerelOlcek` 50'de ZP8 N yerleşiminde %58'e çıkar; 35'te %41–49 ve geri ödeme 27–46 sa (hedefler tutar). Gerçeğe en yakın ama `yerelOlcek` değişir; (c0)'ın üstüne sonradan eklenebilir.
 - **(c):** hata 1,5× (A3 olduğu gibi 8,1×); sabitleri 13 / 73 / 299 bine çeker. (c0)'a göre kazanç küçük, ama sabitler (A3 §6.5, T3 verisi) değişir; önerilmez.
 
 ## 5. Etkiler
 
-| Konu | A3 olduğu gibi | (c0) önerisi (50) |
+| Konu | A3 olduğu gibi | (b), 40 |
 |---|---|---|
-| Dükkân geri ödemesi (medyan) | hiç (net < 0) | 23–30 sa (A0-12 ≤ 48 sa tutar) |
-| `yerelNpc` musluğu | ≈ 10 M ₺/hafta | 83–87 M ₺/hafta |
-| ZP8 | %8–9 | %43–44 (izlenir) |
+| Dükkân geri ödemesi (medyan) | hiç (net < 0) | 22–37 sa (A0-12 ≤ 48 sa tutar) |
+| `yerelNpc` musluğu | ≈ 10 M ₺/hafta | 87–123 M ₺/hafta |
+| ZP8 | %8–9 | %44–52 (N yerleşimi sınırda; izlenir) |
 | Arsa fiyat beklentisi | Hücre fiyatı sınıf tabanından gelir (1.000 / 2.500 / 6.500 ₺), talepten bağımsız. Dolaylı: doyma neti 727 ₺/sa ile şehir hücresi ≈ 9 sa, ticari hücre (×1,45) ≈ 13 sa'te çıkar; nüfus ≥ 30 bin ilçelerde arsa fiyatı dükkân kararını bağlamaz. A3 olduğu gibi: hiçbir ilçede dükkân kârlı değil, ticari hücre talebi doğmaz | Nüfusu ≥ 30 bin olan 36 ilçede dükkân kurulur; nüfusu < 10 bin olan 3 ilçede kurulmaz (net ≈ 0) |
 
 ## 6. Kaynak (T3 taraması; doğrulanmadı)
@@ -77,10 +77,38 @@ Yerleşim **U**: eşit (4–5/ilçe); **N**: nüfusla orantılı (en az 1). ZP8 
 | Z-1 | İlçe başına `nufus` (ya da talep sınıfı) alanının fikstür şemasına girmesi | Fikstür/göç, çekirdek derleme ve canlı durum (seviye, esnaf yoğunluğu) ona bağlanır | İsteğe bağlı alan (yoksa sınıf sabiti yedek); geriye uyum testi |
 | Z-2 | Talep sınıfı kuralı (baskın hücre sınıfı ↔ nüfus) | `ilceSinifi` derlemede bir kez hesaplanır; Q kimliği (GZ-4) ona dayanır | Baskın hücre sınıfı talep için kullanılmaz (üç ölçülü ilçede de kırsal) |
 
-1. **(Baş lider)** (c0): sınıf nüfus bandından (20 bin / 69.282), A3 sabitleri ve `yerelOlcek` 50 kalır, ilçe başına isteğe bağlı `nufus` alanı eklenir. Kabul mü? Sonradan (b) için `yerelOlcek` 35.
+1. **(Baş lider)** Para dengesi bandı (§7): kâğıt modelde yeniden yatırım olmadan R = 0,24–0,26 (bandın altı); banda ancak `yerelOlcek` ≤ 10 ile girer ve dükkân ekonomisi çöker. Yeniden yatırım payı r ≥ %10 ise 40 bantta. Öneri: 40'ta kal, gerçek koşuyla ölç (§8); r ölçülmeden `yerelOlcek` 10'a inilmesin. Onay?
 2. **(O3/K3)** Kalan 42 ilçenin hücre sınıf dağılımı ölçülsün (üç ilçede 3/3 kırsal; kent merkezleri doğrulanmadı).
 3. **(T3/O3)** Birincil TÜİK tablosuyla bir kez teyit; lisans için hukuk teyidi.
 4. **(A3)** Şartname §6.5 ve S-6'daki "nüfus verisi yok" ve "sınıf baskın hücre sınıfı" satırları karar sonrası güncellenmeli (`yerelOlcek` 50 kalır).
+
+## 7. Para dengesi: 30 günlük kâğıt model (200 oyuncu; %75 ekmek, %25 ekmek + cam → pencere)
+
+Bant (docs/06 §10.5, :253): lavabo / (vergi + ihracat − ithalat) = **0,3–0,6**; altı enflasyondur. Mülk kipinde vergi = 0; ihracat = `ihracatNpc` + `yerelNpc`; ithalat = `ithalatNpc`; lavabo = `isletme` + `sebeke` + `araziVergisi` + `harcama` + `arsa`. G7 çekirdekte yok, bu yüzden kararlı hâl akışlı kâğıt model (betik §7); NPC dilimi kişi başı (ekmek 62,5, pencere 25 birim/sa), fiyat dinamiği ve doyum yok.
+
+| yerelOlcek | Yerleşim | ihracat + yerel M ₺ (30 g) | ithalat M ₺ | lavabo M ₺ | **R** | (lavabo + ithalat) / musluk |
+|---|---|---|---|---|---|---|
+| 10 | U / N | 896 / 896 | 227 | 203 | 0,30 / 0,30 | 0,47 |
+| 20 | U / N | 997 / 1.032 | 227 | 218 / 223 | 0,28 / 0,28 | 0,44 / 0,43 |
+| 35 | U / N | 1.111 / 1.236 | 227 | 235 / 254 | 0,27 / 0,25 | 0,41 / 0,39 |
+| **40** | U / N | 1.143 / 1.304 | 227 | 240 / 264 | **0,26 / 0,24** | 0,40 / 0,37 |
+| 50 | U / N | 1.200 / 1.440 | 227 | 248 / 284 | 0,25 / 0,23 | 0,39 / 0,35 |
+
+- **R bandın altında (0,23–0,26)** `yerelOlcek` 40'ta; her ölçekte 0,23–0,30. Sebep: lavabolar yalnız işletme (60 ₺/sa/tesis, dükkân 132), şebeke ve ilk yatırımdır; oyuncunun yeniden yatırımı modelde yoktur.
+- **Hazine eğrisi** (tek oyuncu, yerelOlcek 40): ekmek zinciri gün 1: 141.894 ₺, gün 3: 376.000, gün 8: 961.266, gün 30: **3,54 M ₺** (günlük net 117.053 ₺); ekmek + pencere gün 30: 4,50 M ₺. Hibenin 50.000 ₺'sinin gün 1'de 3 katına çıkması ve 30 günde ~70 katı birikimi **para yutmazsa enflasyon** demektir (S1 tek oyunculu 272 bin ₺/gün değil, NPC dilimiyle 117 bin ₺/gün).
+- **Banda çekmek:** r = 0 ile R ≥ 0,3 için `yerelOlcek` ≤ 10 gerekir (dükkân neti ≈ 30 ₺/sa; A0-12 geri ödeme > 300 sa çöker). Yeniden yatırım payı r (net kârın yapı/ölçek/hücreye giden kısmı) arttıkça R bantta kalır: r = %10 → 0,33 / 0,32; %25 → 0,44 / 0,43; %50 → 0,62 / 0,61 (`yerelOlcek` 40). Yani **belirsizlik `yerelOlcek`ten değil r'den gelir**. `yerelOlcek` 40'ta r ≥ %10 yeterlidir.
+- **Öneri:** `yerelOlcek` 40'ta kal; gerçek koşuyla r ve R ölçülsün (§8). Banda çekme kuralı birebir uygulanırsa değer 10 olur ve dükkân ekonomisi A0-12'yi bozar: bu çatışma baş liderin bilgisine sunulur, `yerelOlcek`i 10'a indirmeyi önermiyorum. Gerçek koşuda R < 0,3 ve r < %10 çıkarsa ilk kaldıraç lavabo (M/L bedeli, hücre/arsa fiyatı, şebeke payı), son kaldıraç `yerelOlcek`.
+
+## 8. O2 koşu listesi (G7 kapıdan geçince; tek seferlik ölçüm)
+
+| # | Koşu | Ölçülecek | Beklenen |
+|---|---|---|---|
+| P1 | Mülk kipi, 30 sim-günü, tohum 1–3, `yerelOlcek` 40, (b) ilçe nüfusu, 200 bot (%75 ekmek, %25 ekmek + cam → pencere), ağır koşu | `Dunya.mulk.para` kalemleri (`ihracatNpc`, `yerelNpc`, `ithalatNpc`, `isletme`, `sebeke`, `harcama`, `arsa`, `araziVergisi`, `hibe`, `odul`) günlük; korunum eşitliği; **R** ve (lavabo + ithalat) / musluk | R 0,23–0,33 (r'ye bağlı); korunum fark 0 |
+| P2 | Aynı koşuda yeniden yatırım payı **r** = (`harcama` + `arsa`) / net kâr, gün 7–30 | r'nin bot dağılımı | r ≥ %10 ise R bantta |
+| P3 | Hazine eğrisi: oyuncu başı medyan (p10–p90) gün 1, 3, 7, 14, 30 | Birikim (model: 3,5 M ₺ / 30 gün) | Gerçek < model (doyum, fiyat çöküşü) |
+| P4 | Pazar doyumu: ekmek NPC fiyat/taban ve satış/emilim | Arz/emilim 2,26; fiyat çöküşü | Fiyat ×0,25'e doğru düşerse R ve ihracat düşer |
+| P5 | Dükkân: geri ödeme medyanı, ZP3, ZP8 | A0-12 (≤ 48 sa), ZP8 ≤ %50 | 22–37 sa, %44–52 |
+| P6 | `yerelOlcek` {20, 40, 50} yalnız P1'in bir tohumunda | R ve ZP8 duyarlılığı | 4b tablosuyla uyumlu |
 
 ## Ek A. Betik
 

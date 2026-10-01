@@ -103,3 +103,69 @@ Ortalama mutlak log hatası (nüfus eşdeğeri ↔ gerçek): A3 olduğu gibi 8,1
 
 Hücre fiyatı sınıf tabanından gelir (kırsal 1.000, kasaba 2.500, şehir 6.500 ₺; `fiyat.ts`) ve talep modelinden bağımsızdır. Dolaylı etki: dükkân neti arsa alımının geri ödemesini belirler. Doyma neti ≈ 727 ₺/sa (kasa dolu) ile bir şehir hücresi (6.500 ₺) ≈ 9 saatte çıkar; ticari hücre ×1,45 (9.425 ₺) ≈ 13 saat. Dolayısıyla nüfus ≥ ~30 bin olan ilçelerde arsa fiyatı dükkân kararını bağlamaz; < 10 bin nüfuslu ilçelerde net ≈ 0 olduğundan dükkân hiç kurulmaz ve ticari hücre talebi doğmaz. A3'ün olduğu gibi hâlinde bütün ilçeler bu ikinci gruba düşer.
 
+## 7. Para dengesi: 30 günlük kâğıt model (200 oyuncu; %75 ekmek zinciri, %25 ekmek + cam → pencere)
+
+Bant (docs/06 §10.5, :253): **lavabo / (vergi + ihracat − ithalat) = 0,3–0,6**. Mülk kipinde nüfus vergisi yoktur (vergi = 0); ihracat = `ihracatNpc` + `yerelNpc` (kit gıdası satışı dahil); ithalat = `ithalatNpc` (parça, malzeme, silis, çelik); lavabo = `isletme` + `sebeke` + `araziVergisi` + `harcama` (yapı) + `arsa` (hücre). Hibe ve ödül musluktur ama orana girmez. Kâğıt model: kararlı hâl saatlik akış × yük (satış / kapasite), NPC dilimi kişi başı (ekmek 62,5, pencere 25 birim/sa), fiyat dinamiği yok (arz kendi dilimiyle sınırlanır: doyum ve fiyat çöküşü modelde yoktur).
+
+### 7.1 yerelOlcek taraması: (b) ilçe başına nüfus; 30 gün toplamı
+
+| yerelOlcek | Yerleşim | Dükkân satışı birim/sa/oyuncu | ihracatNpc+yerelNpc M ₺ (30 g) | ithalatNpc M ₺ | lavabo M ₺ (ithalat hariç) | **lavabo / (ihracat − ithalat)** | (lavabo + ithalat) / musluk | Bant 0,3–0,6 |
+|---|---|---|---|---|---|---|---|---|
+| 10 | U | 14,5 | 896,3 | 226,6 | 202,5 | 0,30 | 0,47 | içinde |
+| 10 | N | 14,5 | 896,1 | 226,6 | 202,5 | 0,30 | 0,47 | içinde |
+| 15 | U | 20,3 | 950,6 | 226,6 | 210,7 | 0,29 | 0,46 | **altında (enflasyon)** |
+| 15 | N | 21,8 | 964,1 | 226,6 | 212,7 | 0,29 | 0,45 | **altında (enflasyon)** |
+| 20 | U | 25,3 | 997,3 | 226,6 | 217,7 | 0,28 | 0,44 | **altında (enflasyon)** |
+| 20 | N | 29,0 | 1032,0 | 226,6 | 222,9 | 0,28 | 0,43 | **altında (enflasyon)** |
+| 25 | U | 30,2 | 1043,1 | 226,6 | 224,6 | 0,28 | 0,43 | **altında (enflasyon)** |
+| 25 | N | 36,3 | 1100,0 | 226,6 | 233,1 | 0,27 | 0,41 | **altında (enflasyon)** |
+| 30 | U | 34,0 | 1078,8 | 226,6 | 229,9 | 0,27 | 0,42 | **altında (enflasyon)** |
+| 30 | N | 43,6 | 1167,9 | 226,6 | 243,3 | 0,26 | 0,40 | **altında (enflasyon)** |
+| 35 | U | 37,5 | 1110,8 | 226,6 | 234,7 | 0,27 | 0,41 | **altında (enflasyon)** |
+| 35 | N | 50,8 | 1235,9 | 226,6 | 253,5 | 0,25 | 0,39 | **altında (enflasyon)** |
+| 40 | U | 40,9 | 1142,8 | 226,6 | 239,6 | 0,26 | 0,40 | **altında (enflasyon)** |
+| 40 | N | 58,1 | 1303,8 | 226,6 | 263,7 | 0,24 | 0,37 | **altında (enflasyon)** |
+| 50 | U | 47,0 | 1199,8 | 226,6 | 248,1 | 0,25 | 0,39 | **altında (enflasyon)** |
+| 50 | N | 72,6 | 1439,7 | 226,6 | 284,1 | 0,23 | 0,35 | **altında (enflasyon)** |
+
+Banda (R ≥ 0,3) giren en büyük yerelOlcek: U 10, N 10.
+
+### 7.1b Yeniden yatırım duyarlılığı: günlük net kârın r payı yapı/ölçek ve hücreye harcanırsa (lavabo `harcama`)
+
+| r | yerelOlcek 40, U: R | yerelOlcek 40, N: R | Banda (R ≥ 0,3) giren en büyük yerelOlcek (U / N) |
+|---|---|---|---|
+| 0,00 | 0,26 | 0,24 | 10 / 10 |
+| 0,10 | 0,33 | 0,32 | 100 / 64 |
+| 0,25 | 0,44 | 0,43 | 100 / 100 |
+| 0,50 | 0,62 | 0,61 | 100 / 100 |
+
+Model dışı yeniden yatırım olmadan (r = 0) ve R'nin yalnız işletme + şebeke + ilk yatırım lavabolarına bağlı olduğu hâlde oran 0,23–0,30; oyuncu net kârının yaklaşık %10–25'ini yeni yapıya, ölçek yükseltmeye ve hücreye harcadığında 0,3–0,6 bandına girer. Bu yüzden R'nin asıl kaldıracı `yerelOlcek` değil yeniden yatırım lavabolarıdır (M/L bedeli, hücre, arsa fiyatı).
+
+### 7.2 Hazine eğrisi (tek oyuncu, yerelOlcek 40 ve banda çekilmiş değer; ₺)
+
+**yerelOlcek 40** (dükkân satışı 49,5 birim/sa/oyuncu, U–N ortalaması):
+
+| Gün sonu | Ekmek zinciri hazine | Ekmek + cam → pencere hazine | Ekmek zinciri günlük net | Ekmek + pencere günlük net |
+|---|---|---|---|---|
+| 1 | 141.894 | 141.894 | 141.894 | 141.894 |
+| 2 | 258.947 | 258.947 | 117.053 | 117.053 |
+| 3 | 376.000 | 376.000 | 117.053 | 117.053 |
+| 4 | 493.053 | 452.811 | 117.053 | 76.811 |
+| 8 | 961.266 | 1.075.178 | 117.053 | 155.592 |
+| 15 | 1.780.638 | 2.164.319 | 117.053 | 155.592 |
+| 30 | 3.536.435 | 4.498.194 | 117.053 | 155.592 |
+
+**yerelOlcek 10** (dükkân satışı 14,5 birim/sa/oyuncu, U–N ortalaması):
+
+| Gün sonu | Ekmek zinciri hazine | Ekmek + cam → pencere hazine | Ekmek zinciri günlük net | Ekmek + pencere günlük net |
+|---|---|---|---|---|
+| 1 | 100.051 | 100.051 | 100.051 | 100.051 |
+| 2 | 170.611 | 170.611 | 70.561 | 70.561 |
+| 3 | 241.172 | 241.172 | 70.561 | 70.561 |
+| 4 | 311.733 | 271.491 | 70.561 | 30.319 |
+| 8 | 593.976 | 707.888 | 70.561 | 109.099 |
+| 15 | 1.087.902 | 1.471.583 | 70.561 | 109.099 |
+| 30 | 2.146.314 | 3.108.073 | 70.561 | 109.099 |
+
+Okuma: kâğıt modelde her kalem kararlı hâl akışıdır; NPC fiyat dinamiği, doyum ve stok yoktur (bunlar R'yi yukarı ya da aşağı oynatır). Oran R bandın altındaysa lavabo yetersizdir (enflasyon): ya gelir musluğu (yerelNpc) kısılır ya lavabo (şebeke, işletme) artar.
+
