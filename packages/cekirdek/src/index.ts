@@ -13,6 +13,7 @@ export { SISTEM_OYUNCUSU } from "./motor";
 export type { KurtarmaSecenegi } from "./motor";
 export { BaglamUygulamasi } from "./baglam";
 export { icerikDerle, hucreKarmasi } from "./derle";
+export { AD_KURALI, adKanonik, adSozdizimiHatasi } from "./ad";
 export { dunyaKur } from "./kurulum";
 export {
   stokUzlastir,
