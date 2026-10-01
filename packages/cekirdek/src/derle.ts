@@ -10,6 +10,10 @@ import { kamuKumeleriHesapla } from "./mulk/kamu";
 import { kamuIthalatCarpaniHesapla } from "./mulk/kamuFiyat";
 import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk } from "./tipler";
 
+/** Derleme zamanı anahtarı: bkz. `mulkDerle`. */
+declare const __BOLGE_MULKSUZ__: boolean | undefined;
+const MULKSUZ_PAKET: boolean = typeof __BOLGE_MULKSUZ__ !== "undefined" && __BOLGE_MULKSUZ__ === true;
+
 /** Kimlik listesinden kimlik -> indeks eşlemesi; tekrarlanan kimlikte hata. Prototipsiz nesne (örn. "constructor" güvenli). */
 function indeksle(tur: string, kimlikler: readonly string[]): Record<string, number> {
   const harita: Record<string, number> = Object.create(null) as Record<string, number>;
@@ -115,6 +119,9 @@ function odulTablosunuDogrula(ic: DerlenmisIcerik): void {
 function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk {
   const p = veri.param.mulk as NonNullable<CekirdekVeriPaketi["param"]["mulk"]>;
   if (veri.parsel !== undefined && veri.parselIzgara !== undefined) throw new Error("icerikDerle: parsel ve parselIzgara birlikte verilemez");
+  // Yalnız istemci işçisi paketlemesinde (vite `define`) true: bölge kipli tarayıcı simülasyonu parsel dünyası açmaz; hücre dizini sınıfı pakete girmez.
+  // Sunucu, testler ve ölçümde sabit tanımsızdır (mülk kipi tam çalışır); davranış ve altınlar değişmez.
+  if (MULKSUZ_PAKET) throw new Error("icerikDerle: mulk kipi (parsel dunyasi) bu paketlemede yok");
   // Kompakt hücre dizini (docs/06 §15.11): JSON fikstüründen ya da BHI1 ızgaralarından; iki yol aynı API'yi ve aynı dünyayı kurar.
   let hucreDizini: HucreDizini;
   let f: ParselFiksturu;

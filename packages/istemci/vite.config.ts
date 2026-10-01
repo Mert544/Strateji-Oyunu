@@ -62,10 +62,13 @@ function haritaVerisiSun(): Plugin {
   };
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const tek = mode === "tek";
   return {
     root: AYRI,
+    // Derleme (vite build) anahtarı: tarayıcı simülasyon işçisi bölge kipindedir, parsel dünyası açmaz; çekirdeğin mülk kipi hücre dizini pakete girmez
+    // (`cekirdek/src/derle.ts`). Test ve geliştirme sunucusunda tanımsız kalır (mülk kipi tam çalışır).
+    define: command === "build" ? { __BOLGE_MULKSUZ__: "true" } : {},
     base: "./",
     plugins: [haritaVerisi(), haritaVerisiSun(), ...(tek ? [viteSingleFile()] : [])],
     worker: { format: "iife" as const },

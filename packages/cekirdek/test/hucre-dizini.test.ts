@@ -451,6 +451,27 @@ describe("4b. Gebze'nin ~1/10'u (~50 bin hücre, kapı boyutu): ızgara girdisi 
   }, 240_000);
 });
 
+describe("4c. istemci işçisi paketlemesi: mülksüz anahtar (vite define __BOLGE_MULKSUZ__)", () => {
+  it("anahtar yoksa mülk kipi açılır; true ise parsel dünyası açılmaz (okunur hata) ama parselsiz içerik derlenir", async () => {
+    const d = sentetikDunya(20);
+    const bos = sentetikVeri("izgara", d);
+    expect(Simulasyon.olustur(bos, 1).ic.mulk).toBeDefined();
+    vi.resetModules();
+    vi.stubGlobal("__BOLGE_MULKSUZ__", true);
+    try {
+      const { icerikDerle } = await import("../src/derle");
+      expect(() => icerikDerle(sentetikVeri("izgara", d))).toThrow(/mulk kipi \(parsel dunyasi\) bu paketlemede yok/);
+      expect(() => icerikDerle(sentetikVeri("json", d))).toThrow(/mulk kipi \(parsel dunyasi\) bu paketlemede yok/);
+      const parselsiz = sentetikVeri("izgara", d);
+      delete parselsiz.parselIzgara;
+      expect(icerikDerle(parselsiz).mulk).toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+      vi.resetModules();
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // 5. tembel hücre dizisi sınırı
 // ---------------------------------------------------------------------------

@@ -33,7 +33,8 @@ import { KAMU_SAHIP_ONEKI, PPM } from "../tipler";
 import type { Dunya, HucreId, KamuBlok, KamuGrubu, KamuGrubuDurumu, KamuIlceDurumu, KamuKumesi, KamuTuru } from "../tipler";
 import { hucreXY, sirali } from "./durum";
 import { ilceMerkeziDizi } from "./geometri";
-import { DIZI_KIRSAL_DEGIL, DIZI_SU, DIZI_UYGUN, HucreDizini, durumEngeli } from "./hucreDizini";
+import { DIZI_KIRSAL_DEGIL, DIZI_SU, DIZI_UYGUN, durumEngeli } from "./hucreDizini";
+import type { HucreDizini } from "./hucreDizini";
 import type { IlceHucreDizileri } from "./hucreDizini";
 
 /** Kamu algoritmasının sürümü (dünya durumuna yazılır; kümeyi üreten kural değişirse artırılır, eski dünyalar dondurulmuş kalır). */
@@ -716,7 +717,8 @@ export function ilceKamuHesaplaDizi(c: IlceHucreDizileri, su: Int32Array, kp: Mu
 /** Fikstürün tüm ilçeleri için kamu kümeleri (derleme zamanında bir kez; `mulkDurumuKur` bunu dondurur). */
 export function kamuKumeleriHesapla(f: ParselFiksturu | HucreDizini, kp: MulkKamuParametreleri): Map<string, KamuKumesi> {
   const sonuc = new Map<string, KamuKumesi>();
-  if (f instanceof HucreDizini) {
+  // Dizin ayrımı yapısaldır (`instanceof` değil): sınıfın değeri bu modülde okunmaz, mülk kipsiz paketlemede (istemci işçisi) ağaç sallamayla düşer.
+  if ("ilceNo" in f) {
     // Kompakt dizin: ilçe başına geçici diziler (yineleme sırasıyla); su hücreleri önce tüm ilçelerden toplanır (kıyı komşu ilçenin suyunu da görür).
     const suListe: number[] = [];
     if (kp.kiyiDerinlik > 0) {

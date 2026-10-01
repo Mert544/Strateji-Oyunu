@@ -50,13 +50,22 @@ Ara sonuç (K3, tek koşu, Gebze, BHI1 yolu, 508 634 hücre; makine yükü ~16, 
 
 Önce (JSON, 8064ded) ve üç ilçe (BHI1) sonuçları: **O2 AĞIR satırında; sonuç gelince bu tabloya eklenir (yer tutucu).** Yurt süresi dizinle değişmez (algoritma aynı); yurt halka dalı ayrı (aşağıda).
 
-## 5. `pnpm dunya` önce / sonra (kapı boşken, aynı ağaç, tek koşu)
-| | önce (8064ded) | sonra (701e938) | fark |
+## 5. `pnpm dunya` önce / sonra (aynı ağaç, tek koşu) ve istemci boyutu düzeltmesi
+| | önce (8064ded) | ilk teslim (701e938) | düzeltme (bu uç) |
 |---|---|---|---|
-| `istemci/dunya.html` | 1304,6 KB / gzip 372,5 KB | 1315,1 KB / gzip 376,1 KB | +10,5 KB / +3,6 KB gzip |
-| `dist/assets/index-*.js` | 1241,5 KB / 359,0 KB | 1252,1 KB / 362,7 KB | +10,6 KB / +3,7 KB |
-| `gorunum-*.js`, `harita.js`, `yuru.js` | aynı | aynı | 0 |
-Bütçe 400 KB gzip: tamam (376,1 KB). Artış çekirdek paketindeki dizin sınıfından (~870 satır) ve `veri/saf` BHI1 okuyucusundan gelir (paket içi pay ayrıştırması yapılmadı). Keşif tahmini +1,5-2,5 KB gzip'ti; gerçek +3,6 KB.
+| `istemci/dunya.html` | 1304,6 KB / gzip 372,5 KB | 1315,1 KB / gzip 376,1 KB (+3,6) | 1292,6 KB / gzip 367,6 KB (-4,9) |
+| `dist/assets/index-*.js` | 1241,5 KB / 359,0 KB | 1252,1 KB / 362,7 KB | 1229,5 KB / 354,3 KB |
+| `gorunum-*.js`, `harita.js`, `yuru.js` | aynı | aynı | aynı |
+Bütçe 400 KB gzip: tamam (367,6 KB).
+
+**Modül dökümü** (geçici betik, commit'lenmedi: vite `generateBundle` kancasıyla `chunk.modules[*].renderedLength`; `mode: "tek"`; hem ana pakette hem `worker.plugins` ile işçide). Tarayıcı simülasyon işçisi (`sim.worker`, ana pakete satır içi gömülü):
+| işçi paketi | ham | gzip | `hucreDizini.ts` | `mulk/kamu.ts` | `derle.ts` |
+|---|---|---|---|---|---|
+| önce | 299 849 | 90 470 | - | 21 512 | 9 553 |
+| ilk teslim | 310 662 | 94 064 | 23 358 | 22 431 | 8 387 |
+| düzeltme | 287 594 | 86 259 | 389 | 3 427 | 4 329 |
+Kaynak: artışın TAMAMI çekirdekteki `HucreDizini` sınıfından (tek başına küçültülmüş ~12 KB, gzip 4,5 KB) gelir; `veri/src/izgara.ts` işçiye yalnız 245 bayt girer (BHI1 okuyucusu ağaç sallamayla düşer; ayrı `@bolge/veri/bhi` girişine gerek kalmadı). İstemci işçisi `Simulasyon.olustur`'u parselsiz (bölge kipi) çağırır, ama `derle.ts` `mulkDerle`'yi statik gösterdiği için mülk kipi kodu (kamu, dizin) pakete giriyordu.
+**Çözüm:** `derle.ts`'te derleme zamanı anahtarı `__BOLGE_MULKSUZ__` (vite `define`, yalnız `command === "build"`; `packages/istemci/vite.config.ts`'te 3 satır): true iken `mulkDerle` parsel dünyası açmayı okunur hatayla reddeder, böylece `HucreDizini` ve yalnız `mulkDerle`'den erişilen kamu kodu istemci işçisinde ağaç sallamayla düşer. Sunucu, testler, ölçüm ve geliştirme sunucusunda sabit TANIMSIZDIR: mülk kipi tam çalışır, davranış ve altınlar değişmez; `hucre-dizini.test.ts` 4c anahtarı true/tanımsız olarak sınar. `kamu.ts` dizin ayrımı `instanceof` yerine yapısal (`"ilceNo" in f`) yapıldı (sınıf değeri okunmasın). Sonuç: işçi önceki sürümden de küçük (-4,2 KB gzip), hücre dizininin istemciye net maliyeti negatif (hedef ≤ +1 KB). Yan etki: istemci işçisi artık mülk kipini hiç taşımaz; tarayıcı yerel mülk simülasyonu gerekirse (ör. çevrimdışı parsel demo) anahtar kaldırılmalıdır (şu an böyle bir yol yok: `sim.worker.ts` parselsiz).
 
 ## 6. Yurt süresi (BHI1 yolunda) ve halka önerisi
 (a) BHI1 yolunda yurt: katılım başına CPU p50 0,91 sn, p95 1,21 sn; geçici tepe RSS 665 MB (Gebze, 508 bin hücre). Neden: `ilcePlani` tüm uygun serbest hücreleri aday listesine alır (486 bin nesne) ve `kumeSec` hepsini (uzaklık², kimlik) sıralayıp `Map`'e koyar, oysa küme 6 hücredir. Bu davranış dizinden önce de vardı (algoritma değişmedi).
