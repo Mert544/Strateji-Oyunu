@@ -122,13 +122,14 @@ describe("D-1 Dükkânlarım", () => {
 
 describe("D-2 tür seçimi", () => {
   it("tür kartları: aria-pressed, simge, sayı ('bu ilçede 1 / 2'), tür uyumu işareti", () => {
-    const h = turSecimiHtml({ secili: "firin", ilceSayi: 1, ilceSinir: 2, ilSayi: 1, ilSinir: 6, uyum: { bakkal: true, sekerci: false } });
+    const h = turSecimiHtml({ secili: "firin", ilceSayi: 1, ilceSinir: 2, ilSayi: 1, ilSinir: 6, uyum: { bakkal: true, firin: false, sekerci: false } });
     expect(h).toContain(`<button type="button" class="dk-tur" data-tur="firin" aria-pressed="true">`);
     expect(h).toContain(`data-tur="bakkal" aria-pressed="false"`);
     expect(h).toContain("Bakkal · gündelik mallar");
     expect(h).toContain("bu ilçede 1 / 2");
     expect(h).toContain(`data-uyum="var">depondaki malla satabilirsin`);
     expect(h).toContain(`data-uyum="yok">malın yok`);
+    expect(h).toContain(`data-uyum="ithal">malın yok; Pazar&#39;dan alabilirsin`);
     expect(h).toContain("Bu ilçede dükkânın: 1 / 2");
     expect(h).toContain("Bu ilde dükkânın: 1 / 6");
     expect(h).toContain(`<p class="dk-neden" id="dk-neden" role="status"></p>`);
@@ -143,8 +144,11 @@ describe("D-2 tür seçimi", () => {
 
   it("şekerci kartında ithal gerekir ipucu (tür uyumu yok): diğer türlerde 'malın yok'", () => {
     const h = turSecimiHtml({ secili: null, ilceSayi: 0, ilceSinir: 2, ilSayi: 0, ilSinir: 6, uyum: { sekerci: false, bakkal: false } });
-    expect(h).toContain(`data-uyum="yok">malın yok; Pazar&#39;dan alabilirsin`);
+    expect(h).toContain(`data-uyum="ithal">malın yok; Pazar&#39;dan alabilirsin`);
     expect(h).toContain(`data-uyum="yok">malın yok</span>`);
+    // şekerci için yok değeri hiç yazılmaz; stoğu olan şekerci "var" kalır
+    expect(h.match(/data-uyum="yok"/g)?.length).toBe(1);
+    expect(turSecimiHtml({ secili: null, ilceSayi: 0, ilceSinir: 2, ilSayi: 0, ilSinir: 6, uyum: { sekerci: true } })).toContain(`data-uyum="var">depondaki malla satabilirsin`);
   });
 
   it("G8 yoksa yapı market kartı yok", () => {

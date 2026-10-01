@@ -139,7 +139,7 @@ export function turSecimiHtml(g: TurSecimiGirdisi): string {
   let s = `<h4 class="dk-baslik">${enc("dukkan.D2.baslik")}</h4><p class="dk-ipucu">${enc("dukkan.D2.yer_ipucu")}</p><div class="dk-tur-liste">`;
   for (const t of g.turler ?? DUKKAN_TURLERI) {
     const u = g.uyum?.[t];
-    s += `<button type="button" class="dk-tur" data-tur="${t}" aria-pressed="${g.secili === t}"${doluIlce ? ` aria-disabled="true" aria-describedby="dk-neden"` : ""}>${ikon(TUR_IKONU[t], 20)}<span class="dk-tur-ad">${esc(m(`dukkan.D2.tur_${t}`))}</span><span class="dk-tur-sayi">${enc("dukkan.D2.tur_sayi", { n: g.ilceSayi, m: g.ilceSinir })}</span>${u === undefined ? "" : `<span class="dk-tur-uyum soluk" data-uyum="${u ? "var" : "yok"}">${enc(u ? "dukkan.D2.tur_uyum.var" : t === "sekerci" ? "dukkan.D2.tur_uyum.yok_ithal" : "dukkan.D2.tur_uyum.yok")}</span>`}</button>`;
+    s += `<button type="button" class="dk-tur" data-tur="${t}" aria-pressed="${g.secili === t}"${doluIlce ? ` aria-disabled="true" aria-describedby="dk-neden"` : ""}>${ikon(TUR_IKONU[t], 20)}<span class="dk-tur-ad">${esc(m(`dukkan.D2.tur_${t}`))}</span><span class="dk-tur-sayi">${enc("dukkan.D2.tur_sayi", { n: g.ilceSayi, m: g.ilceSinir })}</span>${u === undefined ? "" : `<span class="dk-tur-uyum soluk" data-uyum="${u ? "var" : t === "sekerci" ? "ithal" : "yok"}">${enc(u ? "dukkan.D2.tur_uyum.var" : t === "sekerci" ? "dukkan.D2.tur_uyum.yok_ithal" : "dukkan.D2.tur_uyum.yok")}</span>`}</button>`;
   }
   s += `</div><p class="dk-sinir">${enc("dukkan.D2.ilce_sayac", { n: g.ilceSayi })}</p><p class="dk-sinir">${enc("dukkan.D2.il_sayac", { n: g.ilSayi })}</p>`;
   const neden = g.neden ?? (doluIlce ? "dukkan.D2.ilce_siniri" : g.ilSayi >= g.ilSinir ? "dukkan.D2.il_siniri" : null);
