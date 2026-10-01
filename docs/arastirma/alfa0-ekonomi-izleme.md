@@ -59,7 +59,7 @@ Okuma yolları: **[S]** = bugünkü `/metrik` ucu (`packages/sunucu/src/metrik.t
 ### E2 r
 
 - **Tanım (`yerel-talep-kalibrasyon.md` §8.1):** `r = Σ yatırım / Σ net kâr`, oyuncu başına 7 günlük pencere, sonra dünya medyanı (p10–p90). Yatırım: `lavabo.arsa` (`mulk/komut.ts:216`), yapı bedeli (`yapi_yerlestir` → `maliyetiDus` → `lavabo.harcama`, `mulk/komut.ts:469`, `ekonomi/maliyet.ts:22`), `tesis_olcek_yukselt` (`sanayi/komut.ts:57`), `kenar_gelistir` (`lojistik/cozum.ts:328,343`). **Yatırım değildir:** `genel_onarim` (`sanayi/komut.ts:113`), `arama_sondaji` (`:146`), `arastirma`. Net kâr: Δ(`ihracatNpc + yerelNpc`) − Δ(`ithalatNpc + isletme + sebeke + araziVergisi`) oyuncu başına (`ParaAkisi` ya da komut günlüğü).
-- **Okuma:** [O]. `lavabo.harcama` yatırım ve bakımı **karıştırır**, bu yüzden dünya sayaçlarından r çıkmaz: komut başına hazine farkı gerekir (O2'nin `SERMAYE_KOMUTLARI` ve `hazineOnce - anlikHazine` kalıbı, `insan-cikarma.ts:317-336`; `tesis_olcek_yukselt` ve `kenar_gelistir` bu kümeye **eklenmeli**). Canlı [K2] için bir `yatirim` sayacı (komut anında yazılan) gerekir (§8.2).
+- **Okuma:** [O]. `lavabo.harcama` yatırım ve bakımı **karıştırır**, bu yüzden dünya sayaçlarından r çıkmaz: komut başına hazine farkı gerekir (O2'nin `SERMAYE_KOMUTLARI` ve `hazineOnce - anlikHazine` kalıbı, `insan-cikarma.ts:317-336`; `tesis_olcek_yukselt` ve `kenar_gelistir` bu kümeye **eklenmeli**). Canlı için komut başına hazine farkı sunucu tarafında toplanır (K2-7, §8.2); çekirdeğe yeni kalem eklenmez.
 - **Eşikler.** Yeşil %10–%40: R bantta kalır (r = %10 ⇒ R 0,32–0,33). Sarı %5–%10 ya da %40–%50. Kırmızı < %5 (hazine birikir, para yutulmaz: enflasyon riski; hazine eğrisi gün 30'da 3,5 M ₺/oyuncu) ya da > %50 (R 0,62 üstü).
 - **Kırmızıda:** r < %5 ise ayarlanacak şey para değil **yatırım sürtünmesi**: yapı/ölçek bedeli ↓ (yatırım caziplik ↑), hücre fiyatı ↓, Defter yatırım kartı (tasarım işi); R'yi yükseltmek için E1 listesine bakılır (r'yi artırmak ve lavabo kalemi artırmak ayrı yollar). r > %50 ise lavabo kalemleri ↓ (E1 üst bölge).
 
@@ -157,13 +157,13 @@ Bugün (7553b55) `/metrik` hiçbir ekonomi alanı sunmaz. **Seçenek 1 (önerile
 | K2-4 | `bolge_tesis_yontem{tur,yontem}` (anlık dağılım) | E6 anlık | gauge |
 | K2-5 | `bolge_tesis_asinma_ppm{tur,ceyrek}` | E9 | gauge |
 | K2-6 | `bolge_odul_musluk_mili` (`musluk.odul`) | E10 (dünya) | gauge |
-| K2-7 | **Yatırım sayacı:** `yapiUygula`/`tesis_olcek_yukselt`/`kenar_gelistir` anında `lavabo.harcama`'dan ayrı `yatirim` kalemi (çekirdek değişikliği: K3, para defteri sürümü; **A2 önerisi, geri dönüşü zor**) | E2 | yeni kalem |
+| K2-7 | **r için komut başına hazine farkı (sunucu tarafı):** sermaye komutlarında (`parsel_al`, `yapi_yerlestir`, `tesis_insa_hucre`, `tesis_olcek_yukselt`, `kenar_gelistir`) komut öncesi/sonrası hazine farkı oyuncu başına toplanır. **Çekirdeğe `yatirim` kalemi eklenmez** (Ar-Ge lideri kararı; para defteri sürümü değişmez) | E2 | sunucu sayacı |
 | K2-8 | **Dükkân başına kümülatif satış miktarı** (q) ve `DukkanDurumu.kurulus` | E4 (b), E5 | çekirdek alan (A3 şartnamesine eklenir) |
 | O2-1 | `insan-cikarma.ts`: `tesis_olcek_yukselt` ve `kenar_gelistir` komutlarını `SERMAYE_KOMUTLARI`'na ekle (`:29`); dünya düzeyi çıktı (yalnız test oyuncusu değil) | E2, E4–E6 | O2 |
 | O2-2 | `dukkan` olgusunu `kurulus`tan oku (şimdi ilk dükkân yapı komutu `:360`) | E4 | O2 |
 | O2-3 | Bot ve insan oyuncuyu ayrı raporla (bot gerçekçilik dağılımı, `bot-kurallari-g6-g8.md` §1.1) | tümü | O2 |
 
-**Hangi koşullarda hangisi.** İlk canlı gün için tek bakılacaklar [S]'de mevcut (ödül sayaçları) ve O2-1/O2-2 ile bir günlük oynatma; K2-1…K2-6 P5 sonrası ilk Alfa-0 haftasından önce eklenirse Grafana benzeri panoda E1, E3, E7, E8 canlı izlenir; K2-7 ve K2-8 çekirdek ve şartname işidir (Alfa-0'a yetişmezse E2 ve E5 yalnız [O] ile yaklaşık okunur).
+**Hangi koşullarda hangisi.** İlk canlı gün için tek bakılacaklar [S]'de mevcut (ödül sayaçları) ve O2-1/O2-2 ile bir günlük oynatma; K2-1…K2-6 P5 sonrası ilk Alfa-0 haftasından önce eklenirse Grafana benzeri panoda E1, E3, E7, E8 canlı izlenir; K2-7 sunucu, K2-8 çekirdek ve şartname işidir (Alfa-0'a yetişmezse E2 ve E5 yalnız [O] ile yaklaşık okunur).
 
 ## 9. İzleme çizelgesi
 
@@ -181,5 +181,5 @@ Bugün (7553b55) `/metrik` hiçbir ekonomi alanı sunmaz. **Seçenek 1 (önerile
 2. `yerelNpc`, `lavabo.sebeke`, dükkân durumu alanları P5 sonrası oluşur; adlar A3 şartnamesine bağlıdır (alan adı öneri).
 3. Canlı M insan karışımıdır (seçici/rehberli yok); G2 kararının tek kaynağı K-1 seçici M'dir.
 4. E5 `ek net` tanımı NPC ihracat fiyatına göre (A2 §1.9); satış miktarı sayacı (K2-8) yoksa yaklaşıktır.
-5. **Karar gerekli:** `R_kasa` bilgi olarak mı, E1'in resmi tanımı olarak mı (kasa girişi lavabo sayılsın mı)? Öneri: bilgi.
+5. **Kapandı (Ar-Ge lideri):** `R_kasa` yalnız bilgi; resmi R `docs/06:253` tanımıdır (kasa girişi lavabo sayılmaz).
 6. Bu belge ayar parametrelerinin **yönünü** verir; büyüklükleri (ör. `kasaPayiPpm` 150.000, `yerelOlcek` 35) K-1/K-2 sonrası kesinleşir. Bakım sanayicisi Alfa-1.
