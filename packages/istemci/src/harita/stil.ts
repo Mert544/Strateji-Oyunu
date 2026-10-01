@@ -254,6 +254,23 @@ export function dukkanSimgeKatmani(r: RenkOku): LayerSpecification {
   };
 }
 
+/**
+ * Üretim yöntemi simgesi (G6/G8): bitmiş yapının üstünde `yontem-<yöntem kimliği>` görüntüsü (özellik `y`; yalnız oyuncunun kendi
+ * tesislerinde taşınır, başkasının yapısında `y` yoktur: yöntemsiz görünüm; SDF, mürekkep rengi, kâğıt halesi). Görüntüleri
+ * `gorunum.ts` yöntem kimliği adıyla kaydeder (simge: `yontemSimgesi(y)`) ve kayıttan sonra katmanı ekler.
+ */
+export function yontemSimgeKatmani(r: RenkOku): LayerSpecification {
+  return {
+    id: "yontem-simge",
+    type: "symbol",
+    source: "yapilar",
+    minzoom: 15.5,
+    filter: ["all", [">=", ["get", "a"], 3], ["has", "y"]],
+    layout: { "icon-image": ["concat", "yontem-", ["get", "y"]] as unknown as ExpressionSpecification, "icon-size": lin(15.5, 0.55, 18, 1), "icon-allow-overlap": true, "icon-ignore-placement": true },
+    paint: { "icon-color": r("--murekkep"), "icon-halo-color": r("--yuzey"), "icon-halo-width": 1.2 },
+  };
+}
+
 /** Oyun katmanları: kamu, sahiplik, arsa sınırı, yapı, odak örtüsü, vurgu, seçim, seçili sınırlar. `dukkanSimgeleri`: dükkân türü simgeleri kayıtlıysa. */
 export function oyunKatmanlari(r: RenkOku, sahiplikMercegi: boolean, dukkanSimgeleri = false): LayerSpecification[] {
   const sb = sahiplikBoyasi(r, sahiplikMercegi);
