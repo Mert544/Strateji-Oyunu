@@ -36,7 +36,22 @@ services:
       BOLGE_DEPO: pg
       BOLGE_PG_URL: postgres://bolge:${PG_SIFRE:?PG_SIFRE gerekli}@pg:5432/bolge
       BOLGE_DUNYA: ${BOLGE_DUNYA:-ana}
-      BOLGE_GELISTIRME_SIRRI: ${GELISTIRME_SIRRI:?GELISTIRME_SIRRI gerekli (>= 16 karakter)}
+      # Kimlik: yalniz e-posta baglantisiyla giris (G5). Uretimde gelistirme kimligi kapali; BOLGE_GELISTIRME_SIRRI VERILMEZ (yok sayilir).
+      BOLGE_KIMLIK: eposta
+      # Bilet ve baglanti imza sirri: >= 32 karakter, 'degistir...'/'gelistirme...' ile baslamaz. Rotasyonda eski sir BILET_SIRRI_ESKI'de kalir.
+      BOLGE_BILET_SIRRI: ${BILET_SIRRI:?BILET_SIRRI gerekli (>= 32 karakter)}
+      BOLGE_BILET_SIRRI_ESKI: ${BILET_SIRRI_ESKI:-}
+      # Origin izin listesi (virgullu) ve postadaki baglantinin genel adresi (https): ikisi de zorunlu.
+      BOLGE_IZINLI_KOKENLER: ${IZINLI_KOKENLER:?IZINLI_KOKENLER gerekli (virgullu Origin listesi, ornek https://oyun.ornek.org)}
+      BOLGE_GENEL_URL: ${GENEL_URL:?GENEL_URL gerekli (https://...)}
+      BOLGE_GUVENILIR_PROXY: ${GUVENILIR_PROXY:-0}
+      # Posta: gercek SMTP/SES bagdastirici henuz yok; 'dosya' postacisi baglantiyi /veri/posta altina JSON olarak yazar (kisisel veri + giris
+      # baglantisi icerir: erisimi kisitli tutun, isi bitince silin). 'konsol' uretimde yasak.
+      BOLGE_POSTA: dosya
+      BOLGE_POSTA_DIZIN: /veri/posta
+      # Davetli listesi (kayit kapisi; bos = kapali). Dosya IMAJA GIRMEZ: ana makinedeki DAVET_DIZIN dizini /davet olarak salt okunur baglanir;
+      # DAVETLI_LISTE_DOSYA bu dizindeki dosya adidir. Liste calisirken yeniden yuklenmez: degisince `docker compose restart sunucu`.
+      BOLGE_DAVETLI_LISTE: ${DAVETLI_LISTE_DOSYA:+/davet/${DAVETLI_LISTE_DOSYA}}
       BOLGE_HOST: 0.0.0.0
       BOLGE_PORT: "8787"
       BOLGE_HARITA: ${BOLGE_HARITA:-sentetik}
@@ -53,6 +68,11 @@ services:
       BOLGE_METRIK_PORT: "9464"
       BOLGE_METRIK_HOST: 0.0.0.0
       BOLGE_METRIK_TOKEN: ${METRIK_TOKEN:?METRIK_TOKEN gerekli (>= 16 karakter)}
+    volumes:
+      # Dosya postacisi ve (BOLGE_DEPO=dosya olsaydi) dosya deposu: /veri (imajda node kullanicisina aittir).
+      - veri:/veri
+      # Davetli listesi dizini (salt okunur). Dizin yoksa docker bos bir dizin olusturur; liste dosyasi 'node' (uid 1000) tarafindan okunabilmeli (chmod 644).
+      - ${DAVET_DIZIN:-./davet}:/davet:ro
     ports:
       # Yalniz localhost'a yayinlanir; disariya TLS sonlandiran bir ters vekil acsin.
       - "127.0.0.1:${SUNUCU_PORT:-8787}:8787"
@@ -61,3 +81,4 @@ services:
 
 volumes:
   pgdata:
+  veri:

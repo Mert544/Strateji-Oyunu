@@ -116,7 +116,7 @@ Para ve mal ödülü ÇEKİRDEKTEdir (`sistem_odul {oyuncu, kavram}`, tutar komu
 
 ## Postgres
 
-- **Şema ve göç adımları:** `sunucu_sema` tablosu sürümü tutar (`SQL_SEMA_SURUMU = 3`). `postgresSemasiKur` (CLI ve `semaKur: true` her açılışta çağırır) eksik adımları sırayla, her biri tek işlemde ve şema advisory kilidi altında uygular; idempotenttir. Sürüm kaydı olmayan ama `snapshots` tablosu olan eski veritabanı sürüm 1 sayılır ve 002'ye yükseltilir (veri korunur). `semaKur: false` ile eski şemalı veritabanı açılırsa açık hata verir (`pg sema surumu eski`).
+- **Şema ve göç adımları:** `sunucu_sema` tablosu sürümü tutar (`SQL_SEMA_SURUMU = 5`: 1 baslangic, 2 goc-profil, 3 defter, 4 hesap, 5 oyun-oturum). `postgresSemasiKur` (CLI ve `semaKur: true` her açılışta çağırır) eksik adımları sırayla, her biri tek işlemde ve şema advisory kilidi altında uygular; idempotenttir. Sürüm kaydı olmayan ama `snapshots` tablosu olan eski veritabanı sürüm 1 sayılır ve 002'ye yükseltilir (veri korunur). `semaKur: false` ile eski şemalı veritabanı açılırsa açık hata verir (`pg sema surumu eski`).
   - 003: `profil_damga` (Esnaf Defteri damgaları; PK `(dunya, oyuncu, kavram)`, olgu: kavram, t, kaynak).
   - 002: `snapshots` birincil anahtarı `(dunya, seq, sim_t, kural_sur)` (içerik göçü görüntüsü eskisiyle aynı seq/zamanda yazılabilir; eski kayıt kalır), `snapshot_yedek` (göç yedeği), `profil_capa` ve `profil_kayit` (çapalar ve özet kayıtları; PK = idempotans anahtarı `(dunya, oyuncu, tur, t, sira)`; halka ≤ 200 ve 30 sim-günü ömür `kayitEkle`'de uygulanır).
   - En son görüntü: `ORDER BY seq DESC, sim_t DESC, olusturma DESC, kural_sur DESC` (deterministik; aynı anahtar yeniden yazılırsa `olusturma` yenilenir).
@@ -144,14 +144,15 @@ Bu bölüm tek makinede (sunucu + Postgres 16) açık alfa için gerekenleri top
 ### Kurulum (Docker Compose)
 
 ```sh
-cp deploy/.env.ornek deploy/.env          # deploy/.env git'e girmez; PG_SIFRE, GELISTIRME_SIRRI, METRIK_TOKEN'i DEGISTIRIN (>= 16 karakter)
+cp deploy/.env.ornek deploy/.env          # deploy/.env git'e girmez; PG_SIFRE, METRIK_TOKEN (>= 16), BILET_SIRRI (>= 32) DEGISTIRIN; IZINLI_KOKENLER ve GENEL_URL (https) gercek adresiniz olsun
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
 curl -s http://127.0.0.1:8787/saglik       # {"durum":"ok",...}
 ```
 
 - `deploy/Dockerfile`: çok aşamalı (node:22-bookworm-slim), `pnpm install --frozen-lockfile` yalnız sunucu bağımlılık kümesi için, **root olmayan** `node` kullanıcısı, `HEALTHCHECK` = `/saglik`, `VOLUME /veri` (yalnız `BOLGE_DEPO=dosya` için). İmaj `deploy/Dockerfile.dockerignore` ile küçültülür (istemci/veri hattı kaynakları girmez).
 - `deploy/docker-compose.yml`: `pg` (postgres:16, adlandırılmış kalıcı hacim `pgdata`, veritabanı dışarıya yayınlanmaz) + `sunucu` (`BOLGE_URETIM=1`, `BOLGE_DEPO=pg`). Portlar **yalnız 127.0.0.1**'e yayınlanır: oyuncu ws portu 8787 ve metrik portu 9464; internete TLS sonlandıran bir ters vekille (Cloudflare, Caddy, nginx) açın. `stop_grace_period: 60s` (kapanışta kuyruk yazılır, kapanış görüntüsü alınır). Zorunlu sırlar `${VAR:?}` ile verilmezse `compose` açık hata verir.
-- `--uretim` / `BOLGE_URETIM=1` kipi: gelişim varsayılan sırrıyla ve 16 karakterden kısa ya da `degistir...` örnek değerli sırlarla açılmayı reddeder, `--elle-saat` yasaktır; metrik token'ı da aynı denetimden geçer.
+- `--uretim` / `BOLGE_URETIM=1` kipi (G5): geliştirme kimliği KAPALIDIR (`BOLGE_KIMLIK=eposta`; `BOLGE_GELISTIRME_SIRRI` verilirse yok sayılır, bu yüzden compose'ta yoktur). Sunucu `BOLGE_BILET_SIRRI` (>= 32 karakter; `degistir...`/`gelistirme...` ile başlayan örnek değer reddedilir), `BOLGE_IZINLI_KOKENLER` (Origin izin listesi) ve https `BOLGE_GENEL_URL` verilmeden AÇILMAZ; `--elle-saat` ve konsol postacısı yasaktır; metrik token'ı (`degistir...`) aynı denetimden geçer. Compose'taki karşılıkları `deploy/.env`'de `BILET_SIRRI`, `IZINLI_KOKENLER`, `GENEL_URL` (zorunlu; verilmezse `compose` açık hata verir), `BILET_SIRRI_ESKI` (rotasyon), `GUVENILIR_PROXY`.
+- **Posta ve davet (Alfa-0):** gerçek SMTP/SES bağdaştırıcısı henüz yok; `BOLGE_POSTA=dosya` bağlantıyı `/veri/posta/*.json` olarak yazar (adlandırılmış hacim `veri`; içinde e-posta ve giriş bağlantısı vardır: `docker compose ... exec sunucu ls /veri/posta`, erişimi kısıtlayın, işi bitince silin; bağlantıyı davetliye elle iletmek operatör işidir). Davetli listesi (`BOLGE_DAVETLI_LISTE`, varsayılan kapalı) imaja GİRMEZ: ana makinedeki `DAVET_DIZIN` (varsayılan `deploy/davet`, git dışı) `/davet` olarak SALT OKUNUR bağlanır, `DAVETLI_LISTE_DOSYA` o dizindeki dosya adıdır (satır başına bir e-posta, `#` açıklama; dosya `node` (uid 1000) tarafından okunabilir olmalı, `chmod 644`). Liste çalışırken yeniden yüklenmez: değişince `$D restart sunucu`. Liste kişisel veridir; Alfa-0 sonunda silinir (KVKK).
 - **Doğrulama durumu:** ortamda Docker daemon yok; `docker compose -f deploy/docker-compose.yml --env-file deploy/.env.ornek config` (statik doğrulama) geçer, sırsız çağrı sırasıyla "PG_SIFRE gerekli" hatası verir. **İmaj derlenemedi: daemon yok**; Dockerfile'ın `pnpm install --frozen-lockfile --filter` adımı ve CLI başlatma komutu yerelde aynı dosya kümesiyle denendi, ama `docker build` hiç koşmadı. İlk gerçek makinede `docker compose ... up -d --build` + `/saglik` denemesi yapılmalıdır.
 
 ### Giriş (e-posta bağlantısı, G5)
@@ -174,11 +175,11 @@ Her seçenek `BOLGE_<AD>` ile verilebilir; komut satırı bayrağı ortam deği�
 
 | Değişken | Anlam | Varsayılan |
 | --- | --- | --- |
-| `BOLGE_URETIM` | `1` = üretim kipi (sır/elle-saat denetimleri) | kapalı |
+| `BOLGE_URETIM` | `1` = üretim kipi (geliştirme kimliği kapalı; bilet sırrı, izinli kökenler ve https genel adres zorunlu; elle saat ve konsol postacısı yasak) | kapalı |
 | `BOLGE_DEPO` | `pg` \| `dosya` \| `bellek` | `dosya` |
 | `BOLGE_PG_URL` | pg bağlantı URI'si (`BOLGE_DEPO=pg`) | yok |
 | `BOLGE_DUNYA` | dünya adı (aynı veritabanında birden çok dünya olabilir) | `ana` |
-| `BOLGE_GELISTIRME_SIRRI` | oyuncu token imza sırrı (üretimde >= 16 karakter, açıkça verilmeli) | yerel geliştirme değeri |
+| `BOLGE_GELISTIRME_SIRRI` | geliştirme kimliğinin (`gel1.` token) imza sırrı; yalnız `BOLGE_KIMLIK=gelistirme`. `--uretim`'de yok sayılır (uyarı); üretimde sır `BOLGE_BILET_SIRRI`'dır | yerel geliştirme değeri |
 | `BOLGE_HOST` / `BOLGE_PORT` | ws + `/saglik` dinleme adresi | `127.0.0.1` / `8787` |
 | `BOLGE_HARITA`, `BOLGE_PARSEL`, `BOLGE_TOHUM` | harita (`mini`, `sentetik`, `gercek[:ad]`), mülk kipi, ilk açılış tohumu | `sentetik`, kapalı, `1` |
 | `BOLGE_DUNYA_EPOCH` | yalnız YENİ dünyada duvar saati epoch'u (Türkiye gece yarısı); boş = `2026-09-30T21:00:00Z` | boş |
@@ -199,7 +200,7 @@ Her seçenek `BOLGE_<AD>` ile verilebilir; komut satırı bayrağı ortam deği�
 | `BOLGE_DAVETLI_LISTE` | kayıt kapısı: davetli e-posta listesi dosyası (satır başına bir adres; kişisel veri, depoya girmez, örnek `raporlar/davetli.txt`); çalışırken yeniden yüklenmez (değiştirmek için yeniden başlatın); yok/bozuksa açılış durur; yalnız `eposta` kimliği | kapalı |
 | `BOLGE_TARAYICI_BAGLI`, `BOLGE_GUVENILIR_PROXY`, `BOLGE_GECICI_ALANLAR` | bağlantı isteği yapan tarayıcıya bağlı olsun (`1` açar); IP `X-Forwarded-For` son öğesi (`1`); geçici e-posta alanı listesi (JSON) | `0` (kapalı), kapalı, `veri/gecici-eposta-alanlari.json` |
 
-Compose düzeyinde (`deploy/.env`): `PG_SIFRE`, `GELISTIRME_SIRRI`, `METRIK_TOKEN` (zorunlu), `SUNUCU_PORT`, `METRIK_YAYIN_PORT` ve yukarıdaki `BOLGE_*` seçimleri.
+Compose düzeyinde (`deploy/.env`): `PG_SIFRE`, `METRIK_TOKEN`, `BILET_SIRRI`, `IZINLI_KOKENLER`, `GENEL_URL` (zorunlu), `BILET_SIRRI_ESKI`, `GUVENILIR_PROXY`, `DAVET_DIZIN`, `DAVETLI_LISTE_DOSYA`, `SUNUCU_PORT`, `METRIK_YAYIN_PORT` ve yukarıdaki `BOLGE_*` seçimleri. `GELISTIRME_SIRRI` kalktı.
 
 ### Yedek ve geri yükleme (pg)
 
@@ -335,7 +336,7 @@ Gerçek bir makinede (Docker + Compose v2) İLK kurulumda, sırayla ve bir adım
 
 ```sh
 D="docker compose -f deploy/docker-compose.yml --env-file deploy/.env"
-# ön koşul: deploy/.env üç sır DEGISTIRILMIS (>= 16 karakter, "degistir..." ile başlamayan); saat NTP ile senkron:
+# ön koşul: deploy/.env sırları DEGISTIRILMIS (PG_SIFRE, METRIK_TOKEN >= 16; BILET_SIRRI >= 32; hiçbiri "degistir..." ile başlamayan), IZINLI_KOKENLER ve GENEL_URL (https) dolu; saat NTP ile senkron:
 timedatectl show -p NTPSynchronized      # NTPSynchronized=yes (dünyanın saati duvar saatidir; bkz. "Mutlak saat")
 ```
 
@@ -345,9 +346,9 @@ $D build                                  # beklenen: hata yok (pnpm install --f
 $D up -d && $D ps                         # beklenen: pg "healthy", sunucu "Up (healthy)" (HEALTHCHECK ilk 60 sn bekler)
 $D exec sunucu id -u                      # beklenen: 1000 (root DEĞİL; Dockerfile "USER node")
 $D exec sunucu whoami                     # beklenen: node
-$D logs sunucu | grep '"olay":"hazir"'    # beklenen: tek JSON satırı; port 8787, metrikPort 9464; "olumcul" yok
+$D logs sunucu | grep '"olay":"hazir"'    # beklenen: tek JSON satırı; port 8787, metrikPort 9464, kimlik "eposta", davetli (liste verildiyse adet, yoksa null); "olumcul" yok
 ```
-Sunucu "unhealthy" ya da yeniden başlıyorsa: `$D logs sunucu` son satırı (`olumcul` + neden). Sık nedenler: sır reddi (adım 3), `PG_SIFRE` ile pg'nin ilk kurulumdaki şifresi farklı (`pgdata` hacmi ilk şifreyle kurulur; şifre sonradan `.env`'de değişirse `docker volume rm bolge_pgdata` ile sıfırlayın, YALNIZ boş kurulumda).
+Sunucu "unhealthy" ya da yeniden başlıyorsa: `$D logs sunucu` son satırı (`olumcul` + neden). Sık nedenler: sır reddi (adım 4), `PG_SIFRE` ile pg'nin ilk kurulumdaki şifresi farklı (`pgdata` hacmi ilk şifreyle kurulur; şifre sonradan `.env`'de değişirse `docker volume rm bolge_pgdata` ile sıfırlayın, YALNIZ boş kurulumda).
 
 **2. Sağlık ve hazır uçları**
 ```sh
@@ -368,11 +369,13 @@ ss -ltn | grep -E ':(5432|8787|9464)\b'                                         
 **4. Üretim kipi örnek/varsayılan sırları reddeder** (yerelde Docker'sız aynı denetim; konteyner kısmı için `.env.ornek`'i olduğu gibi kullanın)
 ```sh
 $D --env-file deploy/.env.ornek config >/dev/null && echo "yapi ok"               # beklenen: "yapi ok" (statik doğrulama; sırsız çağrı "PG_SIFRE gerekli" hatası verir)
-$D --env-file deploy/.env.ornek run --rm --no-deps sunucu; echo "kod=$?"          # beklenen: kod=1; mesaj "uretim kipi: gelistirme sirri en az 16 karakter olmali ve varsayilan/ornek ('degistir...') deger olmamali"; sunucu HİÇ başlamaz
-$D run --rm --no-deps -e BOLGE_GELISTIRME_SIRRI=kisa sunucu; echo "kod=$?"        # beklenen: kod=1 (< 16 karakter)
+$D --env-file deploy/.env.ornek run --rm --no-deps sunucu; echo "kod=$?"          # beklenen: kod=1; mesaj "uretim kipi: BOLGE_BILET_SIRRI varsayilan/ornek ('degistir...', 'gelistirme...') deger olmamali"; sunucu HİÇ başlamaz
+$D run --rm --no-deps -e BOLGE_BILET_SIRRI=kisa sunucu; echo "kod=$?"             # beklenen: kod=1 ("BOLGE_BILET_SIRRI en az 32 karakter olmali")
+$D run --rm --no-deps -e BOLGE_KIMLIK=gelistirme sunucu; echo "kod=$?"             # beklenen: kod=1 ("gelistirme kimligi kapali")
+$D run --rm --no-deps -e BOLGE_GENEL_URL=http://oyun.ornek.org sunucu; echo "kod=$?" # beklenen: kod=1 ("BOLGE_GENEL_URL https olmali")
 $D run --rm --no-deps -e BOLGE_ELLE_SAAT=1 sunucu; echo "kod=$?"                  # beklenen: kod=1 (üretimde elle saat yasak)
 # yerel eşdeğer (Docker'sız): BOLGE_URETIM=1 BOLGE_DEPO=bellek BOLGE_PORT=0 node --import tsx packages/sunucu/src/cli.ts   # beklenen: çıkış kodu 1 + aynı mesaj
-#   sırsız: "BOLGE_GELISTIRME_SIRRI (ya da --gelistirme-sirri) acikca verilmeli"; örnek/kısa sır, örnek metrik token'ı ve BOLGE_ELLE_SAAT=1 için yukarıdaki mesajlar; BOLGE_METRIK_HOST=0.0.0.0 + tokensiz: "metrik ucu loopback disi bir adrese (0.0.0.0) baglanmak icin en az 16 karakterlik bir token ... gerektirir" (hepsi kod=1, olay `olumcul`)
+#   sırsız: "BOLGE_BILET_SIRRI acikca verilmeli"; örnek sır: "... varsayilan/ornek ('degistir...', 'gelistirme...') deger olmamali"; kısa sır: "en az 32 karakter olmali"; BOLGE_IZINLI_KOKENLER yok: "BOLGE_IZINLI_KOKENLER (Origin izin listesi) verilmeli"; BOLGE_GENEL_URL yok/http: "verilmeli" / "https olmali (Secure cerez)"; BOLGE_KIMLIK=gelistirme: "gelistirme kimligi kapali"; BOLGE_POSTA=konsol: "konsol postacisi kapali"; BOLGE_ELLE_SAAT=1: "--elle-saat yasak"; örnek metrik token'ı; BOLGE_METRIK_HOST=0.0.0.0 + tokensiz: "metrik ucu loopback disi bir adrese (0.0.0.0) baglanmak icin en az 16 karakterlik bir token ... gerektirir" (hepsi kod=1, olay `olumcul`)
 ```
 `BOLGE_METRIK_TOKEN=degistir...` de aynı şekilde reddedilir (`uretim kipi: metrik token'i ornek ...`). **Sunucu `PG_SIFRE`'yi DENETLEMEZ** (pg'nin kendi sırrıdır): `grep -c degistir deploy/.env` çıktısı 0 olmalı. Not: `run` ile verilen `-e` değerleri `.env`'in üzerine yazılır; açık üretim sunucusuna dokunmaz (`--no-deps`: pg'ye de dokunmaz, `--rm`: kalıcı konteyner bırakmaz).
 
@@ -412,7 +415,7 @@ Gerçek dönem göçünde sıra: SIGTERM ile kapat (kuyruk boş) → döküm (ad
 **7. pg şema sürümü ve yükseltme**
 ```sh
 $D exec -T pg psql -U bolge -d bolge -tAc "SELECT surum, ad FROM sunucu_sema ORDER BY surum"
-#   beklenen: 1 baslangic | 2 goc-profil | 3 defter  (güncel şema sürümü = 3; max(surum) = 3)
+#   beklenen: 1 baslangic | 2 goc-profil | 3 defter | 4 hesap | 5 oyun-oturum  (güncel şema sürümü = 5; max(surum) = 5)
 ```
 Yükseltme: eski sürümlü (1 ya da 2; ya da sürüm tablosuz eski kurulum) bir veritabanını yeni imajla açmak eksik adımları kendisi uygular (CLI varsayılanı `semaKur`; adım başına işlem + şema kilidi, veri korunur); sunucu kütüphane olarak `semaKur: false` ile açılır ve eski şemayı reddeder. Prova: adım 5'teki `bolge_geri` kopyasını yeni imajla açın ve yukarıdaki sorguyu o veritabanında koşun. Otomatik: `test/pg.test.ts` (sürümsüz eski şemadan yükseltme, veri korunur, idempotent).
 
@@ -444,7 +447,30 @@ $D exec -T pg psql -U bolge -d bolge -tAc "SELECT max(seq) FROM log"   # kill ö
 ```
 Yerel eşdeğeri `test/kurtarma-sureci.test.ts` (üç kipte SIGKILL, dünya özeti eşitliği) ve kapanış testleridir. Pg konteynerini de aynı şekilde sınayın (`docker kill pg`). Yazma hatasında (kalıcı katmanın bir yazması reddedilirse) sunucu ÖLÜMCÜL olur (`/saglik` 503, `bolge_olumcul 1`) ve yeniden başlatılana kadar açık yazma yapmaz; bu bilinçlidir (fail-stop). **Provada saptanan sapma (K2'ye bildirildi):** pg süreci düşünce (yerelde `pg_ctl -m immediate stop`) boştaki havuz bağlantısı `Connection terminated unexpectedly` ile kopar ve havuzun `error` olayı dinlenmediği için süreç işlenmeyen hatayla çıkış kodu 1'le çöker; `olumcul` olayı yazılmaz ve `/saglik` 503 görülmez. `restart: unless-stopped` süreci yeniden başlatır; pg dönünce kurtarma temizdir (seq korunur, `kalanKayit` 0). Davranış sonuç olarak fail-stop'tur ama günlük satırı yoktur.
 
-**Sonuç ölçütü:** 1-10 geçtiyse ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
+**11. Giriş (e-posta bağlantısı) ve kayıt kapısı** (G5; yerelde Docker'sız aynı akış denendi: `BOLGE_URETIM=1 BOLGE_DEPO=bellek` + yukarıdaki üç zorunlu değişken + `BOLGE_POSTA_DIZIN` + `BOLGE_DAVETLI_LISTE`)
+```sh
+U=https://<GENEL_URL>      # ya da http://127.0.0.1:8787 (compose'ta ters vekil olmadan; çerezler Secure olduğundan tarayıcıyla değil curl ile denenir)
+H=(-H "Origin: <IZINLI_KOKENLER'den biri>" -H 'content-type: application/json')
+curl -si -X POST "${H[@]}" -d '{"eposta":"davetli@ornek.org"}' $U/giris/istek     # beklenen: HTTP 202 {"tamam":true,"gecerlilikSn":600}
+curl -si -X POST "${H[@]}" -d '{"eposta":"davetsiz@ornek.org"}' $U/giris/istek    # beklenen: AYNI 202 gövde (kullanıcı sızdırmama); yalnız davetliye posta düşer
+$D exec sunucu ls /veri/posta                                                     # beklenen: yalnız davetlinin dosyası (içinde ?j=<jeton> bağlantısı)
+curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Origin: https://kotu.ornek.org' -H 'content-type: application/json' -d '{"eposta":"davetli@ornek.org"}' $U/giris/istek   # beklenen: 403 (Origin izin listesi)
+curl -si -X POST "${H[@]}" -d '{"j":"<jeton>"}' -c cerez.txt $U/giris/onay        # beklenen: 200 {"tamam":true,"yeniHesap":true,"oyuncu":"o_..."} + bolge_oturum çerezi (HttpOnly, Secure, SameSite=Lax)
+curl -s -b cerez.txt -X POST -H "Origin: ..." $U/giris/bilet                      # beklenen: {"tamam":true,"bilet":"bil1....","bitis":...} (60 sn, tek kullanım)
+curl -s -b cerez.txt $U/giris/ben                                                 # beklenen: {"tamam":true,"eposta":"davetli@ornek.org","oyuncu":"o_...",...}
+$D logs sunucu | grep -c 'ornek.org'                                              # beklenen: 0 (günlükte tam adres ve jeton yok)
+```
+Yerelde doğrulanan: davetliye 1 posta dosyası, davetsize yok ve aynı yanıt, yanlış Origin 403, onay 200, bilet 200, `/giris/ben` 200, günlükte adres yok. Postadaki bağlantıyı kullanmadan önce dosyayı silmek ya da bağlantıyı davetliye iletmek operatör işidir (SMTP yok). Bağlantı 10 dk geçerlidir, tek kullanımlıktır.
+
+**12. Davet listesi yüklendi**
+```sh
+$D logs sunucu | grep '"olay":"hazir"' | grep -o '"davetli":[0-9a-z]*'           # beklenen: "davetli":<davetli adedi> (liste verildiyse); liste yoksa "davetli":null = kayıt herkese açık
+ls -l deploy/davet/                                                               # beklenen: dosya var ve okunabilir (644); deploy/davet git'e girmez (deploy/.gitignore)
+$D exec sunucu head -c 0 /davet/$(grep ^DAVETLI_LISTE_DOSYA deploy/.env | cut -d= -f2-) && echo okunabilir  # beklenen: okunabilir (konteynerde salt okunur bağlama)
+```
+Liste yoksa (`davetli listesi okunamadi (ENOENT)`) ya da bozuksa (`davetli listesi satir N gecerli bir e-posta adresi degil`) sunucu AÇILMAZ (kapı sessizce açık kalmaz; ileti satır numarası verir, adres vermez). **BOŞ bir liste açılır** ve `"davetli":0` verir: liste kipi açıktır ama kimse davetli değildir, kimseye bağlantı gitmez (kapı tamamen kapalı); adet 0 ise dosyayı denetleyin. Yerelde üçü de denendi. Listeyi değiştirince `$D restart sunucu` ve `davetli` adedini yeniden denetleyin. Liste dosyası Alfa-0 sonunda silinir.
+
+**Sonuç ölçütü:** 1-12 geçtiyse ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
 
 ## Testler
 

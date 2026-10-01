@@ -2,3 +2,5 @@
 .env
 *.dump
 *.dump.sha256
+# Davetli listesi ve ornek posta ciktilari kisisel veridir.
+davet/
