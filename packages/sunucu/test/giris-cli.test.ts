@@ -4,7 +4,7 @@
  */
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -109,7 +109,8 @@ describe("CLI: --uretim ve kimlik kipi", () => {
 
   it("--uretim: gelistirme sirri verilmisse uyari olayi (yok sayilir) ve sunucu e-posta kipinde acilir", async () => {
     const posta = await gecici();
-    const s = baslat({ ...URETIM, BOLGE_POSTA_DIZIN: posta, BOLGE_GELISTIRME_SIRRI: "eski-dagitimdan-kalan-sir-0123456789" });
+    await writeFile(join(posta, "yasakli-adlar.json"), JSON.stringify({ yasakliKelimeler: ["bim"], yasakliIcerik: ["migros"] })); // uretimde yasakli ad listesi zorunlu
+    const s = baslat({ ...URETIM, BOLGE_POSTA_DIZIN: posta, BOLGE_YASAKLI_ADLAR: join(posta, "yasakli-adlar.json"), BOLGE_GELISTIRME_SIRRI: "eski-dagitimdan-kalan-sir-0123456789" });
     const hazir = await s.ilk;
     expect(hazir.olay).toBe("hazir");
     expect(hazir.kimlik).toBe("eposta");
@@ -119,6 +120,26 @@ describe("CLI: --uretim ve kimlik kipi", () => {
     await expect(SunucuIstemcisi.baglan(`ws://127.0.0.1:${hazir.port}`, gelistirmeTokeni("eski-dagitimdan-kalan-sir-0123456789", "sistem"), "x")).rejects.toThrow(/kimlik/);
     await expect(SunucuIstemcisi.baglan(`ws://127.0.0.1:${hazir.port}`, gelistirmeTokeni("gelistirme-sirri-degistir", "sistem"), "x")).rejects.toThrow(/kimlik/);
   }, 120_000);
+});
+
+describe("CLI: yasakli ad listesi (gorunen ad)", () => {
+  it("--uretim: liste yok/bozuksa acilis durur (okunur hata, icerik yok); gelistirmede uyari + bos liste ve acilir; gecerli listeyle uretim acilir", async () => {
+    const d = await gecici();
+    const yok = join(d, "yok.json");
+    const o1 = await baslat({ ...URETIM, BOLGE_YASAKLI_ADLAR: yok, BOLGE_POSTA_DIZIN: join(d, "posta") }).ilk;
+    expect(o1.olay).toBe("olumcul");
+    expect(String(o1.hata)).toMatch(/yasakli ad listesi dosya yok.*uretimde acilis durur/);
+    await writeFile(join(d, "bozuk.json"), '{"yasakliKelimeler": ["gizli-kelime"]}');
+    const o2 = await baslat({ ...URETIM, BOLGE_YASAKLI_ADLAR: join(d, "bozuk.json"), BOLGE_POSTA_DIZIN: join(d, "posta") }).ilk;
+    expect(o2.olay).toBe("olumcul");
+    expect(String(o2.hata)).toMatch(/bicim gecersiz/);
+    expect(String(o2.hata)).not.toContain("gizli-kelime");
+    // Gelistirme: uyari olayi ve acilir (varsayilan yol yoksa da; T3 dosyasi gelene kadar).
+    const s = baslat({ ...TEMEL, BOLGE_KIMLIK: "eposta", BOLGE_POSTA_DIZIN: join(d, "posta"), BOLGE_YASAKLI_ADLAR: yok });
+    const hazir = await s.ilk;
+    expect(hazir.olay).toBe("hazir");
+    expect(s.olaylar.some((e) => e.olay === "uyari" && String(e.mesaj).includes("BOS listeyle devam"))).toBe(true);
+  }, 180_000);
 });
 
 describe("CLI: e-posta kipi uctan uca (gelistirme, dosya postacisi)", () => {

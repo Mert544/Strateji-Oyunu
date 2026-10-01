@@ -1,0 +1,5 @@
+{
+  "aciklama": "Otomatik gorunen ad (hesap acilirken sunucu uretir): kucuk harfli SIFAT + ISIM + bosluk + rakam (ornek: 'caliskan degirmenci 427'). ELLE SECILMISTIR: hakaret, argo, kisi/marka/siyaset/din adi ve cagrisim tasiyan sozcuk YOKTUR; yalniz iyi niyetli niteliklerle eski meslekler. Her kelime ad kuralindan (kucuk harf, izinli kume) gecer; sifat <= 9, isim <= 10 karakter (sifat + isim <= 19: sonuc en cok 24 karakter). Liste degisirse yalniz bu dosya degisir (kural donemi karari degildir; adlar hesapla birlikte saklanir).",
+  "sifatlar": ["çalışkan", "sakin", "cesur", "neşeli", "titiz", "dürüst", "akıllı", "meraklı", "becerikli", "sabırlı", "yaratıcı", "cömert", "hızlı", "usta", "kararlı", "gayretli", "uyanık", "mert", "tedbirli", "kibar", "bilge", "azimli", "içten", "yardımcı", "nazik", "zarif"],
+  "isimler": ["değirmenci", "fırıncı", "kayıkçı", "bahçıvan", "arıcı", "marangoz", "demirci", "çiftçi", "balıkçı", "terzi", "bakkal", "kasap", "manav", "nalbant", "çömlekçi", "halıcı", "dokumacı", "kervancı", "gezgin", "tüccar", "çoban", "sepetçi", "boyacı", "yelkenci"]
+}

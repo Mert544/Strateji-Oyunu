@@ -25,9 +25,11 @@ Tüm yanıtlar `cache-control: no-store`. Hata gövdesi: `{ tamam: false, kod, m
 | --- | --- | --- | --- |
 | `POST /giris/istek` | `{ eposta }` | **202** `{ tamam: true, gecerlilikSn }`; `Set-Cookie: bolge_giris` (yalnız tarayıcı bağı açıksa). Hesabın varlığı, e-posta başına sınır ve posta sonucu yanıtı DEĞİŞTİRMEZ; posta yanıttan sonra gider. | `gecersiz_istek` (400), `gecersiz_eposta` (422), `gecici_eposta` (422), `hiz_siniri` (429, IP ya da genel; `Retry-After`), `origin` (403) |
 | `GET /giris/onay?j=<jeton>` | — | Onay sayfası (HTML, `no-referrer`, CSP). YAN ETKİSİZ: jeton tüketilmez, çerez verilmez; önizleme botları bağlantıyı tüketemez. Jeton biçimce geçersizse 400 sayfa. | — |
-| `POST /giris/onay` | `{ j }` (JSON) ya da `j=...` (onay sayfasının formu, form-urlencoded) | **200** `{ tamam: true, yeniHesap, oyuncu }` + `Set-Cookie: bolge_oturum`. Form gönderiminde HTML sayfa ya da `--giris-sonrasi` adresine 303. | `baglanti_gecersiz` (400: kullanılmış, süresi dolmuş, bozuk, yeni bağlantıyla düşmüş), `tarayici_uyumsuz` (403; yalnız tarayıcı bağı açıksa; bağlantı tüketilmez), `gecici_eposta` (422), `hiz_siniri` (429), `origin` (403) |
+| `POST /giris/onay` | `{ j }` (JSON) ya da `j=...` (onay sayfasının formu, form-urlencoded) | **200** `{ tamam: true, yeniHesap, oyuncu, ad?, adSecildi? }` + `Set-Cookie: bolge_oturum`. Form gönderiminde HTML sayfa ya da `--giris-sonrasi` adresine 303. | `baglanti_gecersiz` (400: kullanılmış, süresi dolmuş, bozuk, yeni bağlantıyla düşmüş), `tarayici_uyumsuz` (403; yalnız tarayıcı bağı açıksa; bağlantı tüketilmez), `gecici_eposta` (422), `hiz_siniri` (429), `origin` (403) |
 | `POST /giris/bilet` | (gövdesiz; çerez) | **200** `{ tamam: true, bilet, bitis, oyuncu }` (`bitis` epoch ms) | `oturum_yok` (401), `hiz_siniri` (429), `origin` (403) |
-| `GET /giris/ben` | (çerez) | **200** `{ tamam: true, eposta, oyuncu, oturumBitis, oturumMutlakBitis }` | `oturum_yok` (401) |
+| `GET /giris/ben` | (çerez) | **200** `{ tamam: true, eposta, oyuncu, oturumBitis, oturumMutlakBitis, ad?, adSecildi? }` | `oturum_yok` (401) |
+| `POST /giris/ad` | `{ ad }` (JSON; çerez + izinli Origin) | **200** `{ tamam: true, ad, adSecildi: true }` (`ad` KANONİK, küçük harfli). Özellik kapalıysa (adKurali yok) uç 404'tür. | `ad_gecersiz` (422; `mesaj` nedeni söyler: "ad ..."), `ad_yasakli` (422; genel ileti), `ad_sinir` (429; günde en çok bir değişiklik, `beklemeSn` gece yarısına kalan süre), `hiz_siniri` (429), `oturum_yok` (401), `origin` (403), `gecersiz_istek` (400) |
+| `GET /giris/ad-oner` | (çerez) | **200** `{ tamam: true, ad }`: o an üretilmiş YENİ opak öneri (küçük harfli "sıfat isim rakam"; kuraldan ve süzgeçten geçmiş, başka hesapta olmayan). KAYDETMEZ; oyuncu beğenirse `POST /giris/ad` ile seçer. Oturum başına dakikada 10. | `oturum_yok` (401), `hiz_siniri` (429; `beklemeSn`), `bulunamadi` (404: özellik kapalı), `yontem` (405) |
 | `POST /giris/cikis` | (çerez) | **200** `{ tamam: true }`, çerez silinir; oturum ve açık ws bağlantıları kapanır; idempotent | `origin` (403) |
 | `POST /giris/cikis-tumu` | (çerez) | **200** `{ tamam: true }`; hesabın bütün oturumları ve ws bağlantıları kapanır | `oturum_yok` (401), `origin` (403) |
 
@@ -57,11 +59,24 @@ Tüm yanıtlar `cache-control: no-store`. Hata gövdesi: `{ tamam: false, kod, m
 ## 6. Hesap ve oyuncu
 
 - **Hesap** = e-posta + oturumlar; **oyuncu** = çekirdekteki `OyuncuId`. Eşleme `hesap_oyuncu(hesap_id PK, oyuncu_id UNIQUE)`: hesap başına bir oyuncu, oyuncu başına bir hesap (veritabanı kısıtı).
-- `oyuncuId` sunucu üretimli ve opak (`o_` + 8 karakter, 40 bit rastgelelik); e-postadan ya da hesap kimliğinden türetilmez. Görünen ad ayrı bir profil alanı olacaktır (çekirdeğe girmez; henüz yok).
+- `oyuncuId` sunucu üretimli ve opak (`o_` + 8 karakter, 40 bit rastgelelik); e-postadan ya da hesap kimliğinden türetilmez. Görünen ad hesapla birlikte saklanır (§6a); çekirdek durumuna ve günlüğe GİRMEZ.
 - Adres normalleştirme: küçük harf, `+takma` her alanda atılır, Gmail/Googlemail'de noktalar da atılır ve alan `gmail.com` olur. Benzersizlik bu anahtarladır; posta, kullanıcının yazdığı (küçük harfli) adrese gider. Gmail dışında nokta anlamlıdır.
 - Geçici alan engeli: liste VERİ dosyasıdır (`veri/gecici-eposta-alanlari.json`, `--gecici-alanlar` ile değiştirilir); alt alanlar kapsanır. Engel alana bağlıdır ve hesabın varlığından bağımsızdır (sızdırmaz); hesap açılırken de yeniden denetlenir. Liste elle derlenmiş KISA bir başlangıç listesidir, üçüncü taraf listeden kopya değildir; kapsamlı ve güncel liste için kaynak ve lisans seçimi sahibe aittir.
 - Her hesap e-postayı doğrulayarak açıldığı için "doğrulanmamış hesap" durumu yoktur.
 - Hesap silme (KVKK): `GirisHizmeti.hesapSil(hesapId)` hesap, e-posta bağı, oturumlar ve bekleyen bağlantıları siler ve açık bağlantıları kapatır. HTTP ucu YOKTUR (yönetim işi): aynı adresle yeniden kayıt serbesttir ve YENİ hesap + YENİ, farklı opak oyuncu kimliği verir; eski oyuncu kimliği ve eski mülk dünyada eskisinin olarak kalır (§9).
+
+### 5a. Alfa-0 önerisi: onay ekranı istemci sayfasında (G-3)
+
+Postadaki bağlantı varsayılan olarak sunucunun `GET /giris/onay` sayfasına gider (yan etkisiz, yedek olarak KALIR). Alfa-0'da onay ekranının istemcide olması isteniyorsa: `BOLGE_GIRIS_BAGLANTISI=<istemci sayfası>` (örn. `https://oyun.ornek.org/`); postadaki bağlantı `<istemci sayfası>?j=<jeton>` olur, istemci sayfası `j` parametresini okur ve `POST /giris/onay {j}` çağırır (bu uç zaten vardır; Origin izin listesinde istemci kökeni bulunmalıdır). Varsayılan bağlantı tabanı DEĞİŞMEDİ. (Kod lideri notu "`/?giris=<jeton>`": parametre adı bugün `j`dir; `giris` adı istenirse bağlantı parametre adı için bir seçenek eklenir.)
+
+### 6a. Görünen ad (İ-1)
+
+- **Hesap başına bir ad.** Hesap açılırken sunucu OPAK, küçük harfli bir ad üretir: sıfat + isim + 3 basamaklı rakam (örn. "çalışkan değirmenci 427"; kelimeler `veri/gorunen-ad-kelimeleri.json`, elle seçilmiş, 26 sıfat x 24 isim x 900 rakam ≈ 560 bin birleşim). Ad e-postadan ya da oyuncu kimliğinden TÜRETİLMEZ (kişisel veri sızmaz). Otomatik üretimde aynı ad başka hesapta varsa yeniden denenir; oyuncunun SEÇTİĞİ adlarda çakışma serbesttir (ad bir kimlik değildir; yalnız arama dizini vardır, UNIQUE yok). Eski (adsız) hesaplara açılışta (`adlariYukle`) ve girişte otomatik ad yazılır.
+- **Seçme/değiştirme:** `POST /giris/ad {ad}` (çerez + Origin/CSRF, G5'teki gibi). Kural çekirdek `adKanonik`'ten (marka adıyla AYNI; sabit Türkçe tablo; sunucuda ayrı tablo yok): 2-24 karakter, `^[A-Za-zÇĞİÖŞÜçğıöşü0-9 .'&-]+$`, baş/son/art arda boşluk reddedilir, en az bir harf, DÜZELTME YAPILMAZ; sonra yasaklı ad süzgeci (`ad-suzgec.ts`, §7.7 4a katlama; kelime eşitliği ve alt dizgi). Önce doğrulanır, SONRA küçük harfe çevrilir (kanonik ad saklanır ve süzgeç kanonik ad üzerinde koşar); ret iletileri çekirdekten "ad ..." diliyle döner. Akıllı tırnak (’) çevirisi istemcidedir; sunucu yalnız izinli karakteri kabul eder.
+- **Değişiklik sınırı:** günde (00:00 TRT, `turkiyeGeceYarisi`; kampanya ve S-18 ile aynı gün sınırı) en çok BİR değişiklik. Otomatik addan oyuncunun İLK seçtiği ada geçiş sayılmaz (ilk seçimden sonra aynı gün bir değişiklik serbesttir, ikincisi 429 `ad_sinir`); aynı adı yeniden seçmek değişiklik sayılmaz. Olay kayıtlarında oyuncu kimliği sabittir; ekranda o anki ad görünür. Hesap başına ad denemesi ayrıca hız sınırlıdır (10 ani, dakikada 1).
+- **Yasaklı ad listesi:** `packages/veri/icerik/yasakli-adlar.json` (T3; yol `--yasakli-adlar`/`BOLGE_YASAKLI_ADLAR`). Yalnız sunucuda okunur (istemci/çekirdek/protokol kaynağında geçmez, testle). Dosya yok/bozuksa `--uretim`'de açılış DURUR; geliştirmede uyarı verilir ve boş listeyle devam edilir.
+- **Öneri:** `GET /giris/ad-oner` (oturumlu, oturum başına dakikada 10) yeni bir opak ad döner ve KAYDETMEZ (G-6).
+- **Başkalarına gösterim:** kare üzerinden (`IlgiKaresi.adlar?`, ayrı dal: `kare-adlar`).
 
 ## 7. Hesap koruma ve kötüye kullanım
 
@@ -88,13 +103,14 @@ Uygulananlar:
 | Oturum kaydı (kimlik, gizli özeti, açılış/son kullanım/bitiş zamanı) | Giriş oturumu | Kayan 30 gün, mutlak 90 gün; çıkışta silinir; bakım süresi geçenleri saatte bir siler |
 | Oyun bağlantısı oturum kaydı (`BOLGE_OTURUM_KAYDI=1`; varsayılan KAPALI; opak oyuncu kimliği, açılış ve kapanış zamanı) | İnsan testi ölçümü: oturum sayısı ve süresi | Ayrıntı 90 gün; sonrası yalnız günlük toplu sayı (oturum, farklı oyuncu, toplam süre; kişi başına iz yok). IP, cihaz, tarayıcı, e-posta YOK; `profil_capa`'ya yazılmaz; test dünyası silinince gider (`--test-dunya-sil`) |
 | Davetli listesi (`--davetli-liste`; Alfa-0 kayıt kapısı; yalnız e-posta adresleri) | Davetsizin girişini engellemek (en çok 200 davetli) | Sunucuda dosya olarak tutulur, DEPOYA, günlüğe, metriğe girmez; Alfa-0 bitince dosya silinir |
+| Görünen ad (hesapla birlikte; otomatik opak ad ya da oyuncunun seçtiği 2-24 karakterlik kısıtlı ad) | Oyuncuların birbirini ekranda tanıması | Hesap açıkken; hesap silinince gider (aynı satır). Başkalarına KARE üzerinden gösterilir; çekirdek durumuna/günlüğe girmez. Arayüz uyarısı: "adın oyundaki herkese görünür" (T1) |
 | Hız sınırı kovaları | Kötüye kullanım | Yalnız bellek (IP burada), yeniden başlatmada ve boşalınca düşer; depoya yazılmaz |
 | Günlük ve metrik | İşletim | Yalnız olay adı, sayaç, maskelenmiş adres; belirteç ve IP yok |
 | Oyun verisi (`oyuncuId`, komut günlüğü, dünya) | Sözleşmenin ifası | Dünya boyunca; `oyuncuId` opaktır |
 
 Oyun oturum kaydı giriş (kimlik) oturumu değildir: o çerezle açılan hesap oturumudur (`oturum` tablosu), bu oyuncunun ws bağlantısı süresidir (`oyun_oturum`). Test dünyası silme (`--test-dunya-sil <ad>`) dünyanın günlüğünü, görüntülerini ve yedeklerini, profil/oturum kayıtlarını ve YALNIZ o dünyanın oyuncularının hesap, oturum ve bağlantı satırlarını tek işlemde siler; başka dünyada da kullanılan hesaba dokunmaz.
 
-E-posta dışında kişisel veri tutulmaz: ad, IP, cihaz/tarayıcı bilgisi, konum yoktur. Aydınlatma metni, açık rıza gerektirmeyen işleme ve yurt dışına aktarım (posta sağlayıcısı bölgesi, AB önerilir) hukuk metinleri sahip işidir. Hesap silinince e-posta bağı gider, oyuncu anonim kalır (komut günlüğü dünya durumunun parçasıdır; `oyuncuId` geri çözülemez).
+E-posta ve oyuncunun görünen adı dışında kişisel veri tutulmaz: IP, cihaz/tarayıcı bilgisi, konum yoktur; görünen ad kısa ve kısıtlı karakterlidir, oyuncu kendi seçer ve gösterim öncesi arayüzde uyarılır. Aydınlatma metni, açık rıza gerektirmeyen işleme ve yurt dışına aktarım (posta sağlayıcısı bölgesi, AB önerilir) hukuk metinleri sahip işidir. Hesap silinince e-posta bağı gider, oyuncu anonim kalır (komut günlüğü dünya durumunun parçasıdır; `oyuncuId` geri çözülemez).
 
 ## 9. Uygulanmayanlar ve açık sorular (sahip/baş lider)
 

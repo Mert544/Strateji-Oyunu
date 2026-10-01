@@ -62,6 +62,31 @@ describe("dosya hesap deposu", () => {
     await b.kapat();
   });
 
+  it("gorunen ad (ad, adSecildi, adDegisimT) yeniden acilista ve sikistirmada kalir; adsiz eski hesap adsiz kalir", async () => {
+    const d = await geciciDizin();
+    const a = await DosyaHesapDeposu.ac(d);
+    await a.hesapOlustur({ ...hesap, ad: "sakin balıkçı 321" });
+    await a.hesapOlustur({ id: "h2", eposta: "veli@ornek.org", anahtar: "veli@ornek.org", oyuncu: "o_bbbbbbbb", olusturma: 2 }); // eski: adsız
+    expect(await a.adYaz("h1", "cesur terzi 100", true, 77_000)).toBe(true);
+    await a.kapat();
+    const b = await DosyaHesapDeposu.ac(d);
+    expect(await b.hesapBulId("h1")).toEqual({ ...hesap, ad: "cesur terzi 100", adSecildi: true, adDegisimT: 77_000 });
+    expect((await b.hesapBulId("h2"))?.ad).toBeUndefined();
+    expect(await b.adVarMi("sakin balıkçı 321")).toBe(false); // eski ad serbest
+    expect(await b.adVarMi("cesur terzi 100")).toBe(true);
+    // Çok işlem: sıkıştırma durumu (h+ satırı güncel adı taşır) korur.
+    for (let i = 0; i < 400; i++) await b.adYaz("h1", `ad ${i % 10}`, i % 2 === 0, i % 3 === 0 ? i : null);
+    await b.adYaz("h1", "son ad", true, 5);
+    await b.kapat();
+    const c = await DosyaHesapDeposu.ac(d);
+    expect(await c.hesapBulId("h1")).toEqual({ ...hesap, ad: "son ad", adSecildi: true, adDegisimT: 5 });
+    expect((await c.adlariListele()).sort((x, y) => (x.hesap < y.hesap ? -1 : 1))).toEqual([
+      { hesap: "h1", oyuncu: hesap.oyuncu, ad: "son ad" },
+      { hesap: "h2", oyuncu: "o_bbbbbbbb", ad: null },
+    ]);
+    await c.kapat();
+  });
+
   it("cokmeden kalan yarim son satir atilir; ortadaki bozuk satir acilisi durdurur", async () => {
     const d = await geciciDizin();
     const a = await DosyaHesapDeposu.ac(d);

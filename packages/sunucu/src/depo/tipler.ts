@@ -190,6 +190,15 @@ export interface HesapKaydi {
   /** Hesabın TEK oyuncusu: `hesap_oyuncu(hesap_id PK, oyuncu_id UNIQUE)`. */
   oyuncu: string;
   olusturma: number;
+  /**
+   * Görünen ad (İ-1): KANONİK (küçük harfli) ad; hesap açılırken sunucu üretir (opak: sıfat + isim + rakam, e-postadan/oyuncu kimliğinden türetilmez), oyuncu sonradan seçer.
+   * Eski hesaplarda yoktur (açılışta doldurulur). Çekirdek durumuna GİRMEZ.
+   */
+  ad?: string;
+  /** Oyuncu adını kendisi seçti mi (yoksa/false: otomatik ad). */
+  adSecildi?: boolean;
+  /** Sayılan son ad DEĞİŞİKLİĞİNİN zamanı (epoch ms; günde en çok bir değişiklik için). Otomatik addan ilk seçim sayılmaz. */
+  adDegisimT?: number;
 }
 
 /** Tek kullanımlık giriş bağlantısı: açık belirteç ASLA tutulmaz, yalnız SHA-256 özeti. Süre dolunca ya da kullanılınca silinir. */
@@ -257,6 +266,12 @@ export interface HesapDeposu {
   sureGecmisleriSil(simdi: number): Promise<{ baglanti: number; oturum: number }>;
   /** Yalnız toplu sayılar (metrik/tanı; kişisel veri yok). */
   sayilar(): Promise<{ hesap: number; oturum: number; baglanti: number }>;
+  /** Görünen adı yazar (hesap yoksa false). `degisimT`: sayılan son değişiklik zamanı (null = hiç). Atomiktir. */
+  adYaz(hesap: string, ad: string, secildi: boolean, degisimT: number | null): Promise<boolean>;
+  /** Bu (kanonik) ad herhangi bir hesapta var mı (otomatik ad üretiminde çakışma denetimi). */
+  adVarMi(ad: string): Promise<boolean>;
+  /** Bütün hesapların `oyuncu`, `ad` (yoksa null) çiftleri (açılışta bellek önbelleği ve eksik adların doldurulması). */
+  adlariListele(): Promise<Array<{ hesap: string; oyuncu: string; ad: string | null }>>;
   /** Yazılanları kalıcılaştırır. */
   esitle(): Promise<void>;
   kapat(): Promise<void>;

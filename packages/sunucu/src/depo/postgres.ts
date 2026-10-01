@@ -48,6 +48,7 @@ const SEMA_ADIMLARI: ReadonlyArray<{ surum: number; ad: string; dosya: URL }> = 
   { surum: 3, ad: "defter", dosya: new URL("../../sql/003-defter.sql", import.meta.url) },
   { surum: 4, ad: "hesap", dosya: new URL("../../sql/004-hesap.sql", import.meta.url) },
   { surum: 5, ad: "oyun-oturum", dosya: new URL("../../sql/005-oyun-oturum.sql", import.meta.url) },
+  { surum: 6, ad: "gorunen-ad", dosya: new URL("../../sql/006-gorunen-ad.sql", import.meta.url) },
 ];
 
 /** Bu kodun beklediği SQL şema sürümü. */

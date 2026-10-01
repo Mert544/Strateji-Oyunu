@@ -138,6 +138,7 @@ export function kayitSirasi(a: OzetKaydi, b: OzetKaydi): number {
 export type HesapIslemi =
   | { o: "h+"; h: HesapKaydi }
   | { o: "h-"; id: string }
+  | { o: "a~"; id: string; ad: string; s: boolean; t: number | null }
   | { o: "b+"; k: BaglantiKaydi }
   | { o: "b-"; ozet: string }
   | { o: "o+"; k: OturumKaydi }
@@ -176,6 +177,16 @@ export class BellekHesapDeposu implements HesapDeposu {
         this.oyuncular.delete(h.oyuncu);
         for (const [ozet, b] of this.baglantilar) if (b.anahtar === h.anahtar) this.baglantilar.delete(ozet);
         return this.oturumlariSil(i.id);
+      }
+      case "a~": {
+        const h = this.hesaplar.get(i.id);
+        if (!h) return [];
+        h.ad = i.ad;
+        if (i.s) h.adSecildi = true;
+        else delete h.adSecildi; // temsil: yalnız true yazılır (pg'de de false alanı yoktur)
+        if (i.t === null) delete h.adDegisimT;
+        else h.adDegisimT = i.t;
+        return [];
       }
       case "b+":
         for (const [ozet, b] of this.baglantilar) if (b.anahtar === i.k.anahtar) this.baglantilar.delete(ozet);
@@ -256,6 +267,23 @@ export class BellekHesapDeposu implements HesapDeposu {
     const silinen = this.uygula(i);
     await this.yaz(i);
     return silinen;
+  }
+
+  async adYaz(hesap: string, ad: string, secildi: boolean, degisimT: number | null): Promise<boolean> {
+    if (!this.hesaplar.has(hesap)) return false;
+    const i: HesapIslemi = { o: "a~", id: hesap, ad, s: secildi, t: degisimT };
+    this.uygula(i);
+    await this.yaz(i);
+    return true;
+  }
+
+  async adVarMi(ad: string): Promise<boolean> {
+    for (const h of this.hesaplar.values()) if (h.ad === ad) return true;
+    return false;
+  }
+
+  async adlariListele(): Promise<Array<{ hesap: string; oyuncu: string; ad: string | null }>> {
+    return [...this.hesaplar.values()].map((h) => ({ hesap: h.id, oyuncu: h.oyuncu, ad: h.ad ?? null }));
   }
 
   async baglantiEkle(k: BaglantiKaydi): Promise<void> {

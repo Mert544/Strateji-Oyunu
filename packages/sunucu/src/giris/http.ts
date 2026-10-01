@@ -13,7 +13,7 @@
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { GIRIS_TARAYICI_CEREZI, GIRIS_YOLLARI, GirisIstegiSemasi, GirisOnayiSemasi, OTURUM_CEREZI } from "@bolge/protokol";
-import type { GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisHatasi, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
+import type { GirisAdOneriYaniti, GirisAdYaniti, GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisHatasi, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
 import type { GirisHizmeti, IptalOlayi } from "./hizmet";
 import type { GirisSayaclari } from "./sayac";
 
@@ -48,6 +48,9 @@ const HATA_DURUMU: Record<GirisHataKodu, number> = {
   hiz_siniri: 429,
   baglanti_gecersiz: 400,
   tarayici_uyumsuz: 403,
+  ad_gecersiz: 422,
+  ad_yasakli: 422,
+  ad_sinir: 429,
   oturum_yok: 401,
   origin: 403,
   yontem: 405,
@@ -61,6 +64,9 @@ const HATA_METNI: Record<GirisHataKodu, string> = {
   hiz_siniri: "cok fazla istek; biraz sonra yeniden deneyin",
   baglanti_gecersiz: "baglanti gecersiz, suresi dolmus ya da daha once kullanilmis",
   tarayici_uyumsuz: "baglanti girisi istediginiz tarayicida acilmali",
+  ad_gecersiz: "ad gecersiz",
+  ad_yasakli: "ad kullanilamaz",
+  ad_sinir: "ad gunde en cok bir kez degistirilebilir",
   oturum_yok: "oturum yok ya da suresi dolmus",
   origin: "kaynak (Origin) izinli degil",
   yontem: "yontem desteklenmiyor",
@@ -186,8 +192,8 @@ export class GirisUclari implements GirisBaglantisi {
     yanit.end(JSON.stringify(govde));
   }
 
-  private hata(istek: IncomingMessage, yanit: ServerResponse, kod: GirisHataKodu, ek: { beklemeSn?: number; baslik?: Record<string, string | string[]> } = {}): void {
-    const g: GirisHatasi = { tamam: false, kod, mesaj: HATA_METNI[kod], ...(ek.beklemeSn !== undefined ? { beklemeSn: ek.beklemeSn } : {}) };
+  private hata(istek: IncomingMessage, yanit: ServerResponse, kod: GirisHataKodu, ek: { beklemeSn?: number; mesaj?: string; baslik?: Record<string, string | string[]> } = {}): void {
+    const g: GirisHatasi = { tamam: false, kod, mesaj: ek.mesaj ?? HATA_METNI[kod], ...(ek.beklemeSn !== undefined ? { beklemeSn: ek.beklemeSn } : {}) };
     const retry: Record<string, string> = ek.beklemeSn !== undefined ? { "retry-after": String(ek.beklemeSn) } : {};
     this.json(istek, yanit, HATA_DURUMU[kod], g, { ...retry, ...ek.baslik });
   }
@@ -270,6 +276,15 @@ export class GirisUclari implements GirisBaglantisi {
       case GIRIS_YOLLARI.ben:
         if (izin("GET")) await this.ben(istek, yanit);
         return;
+      case GIRIS_YOLLARI.adOner:
+        if (!this.hizmet.adAcik) return this.hata(istek, yanit, "bulunamadi");
+        if (izin("GET")) await this.adOner(istek, yanit);
+        return;
+      case GIRIS_YOLLARI.ad:
+        // Görünen ad özelliği kapalıysa (adKurali verilmedi) uç yoktur.
+        if (!this.hizmet.adAcik) return this.hata(istek, yanit, "bulunamadi");
+        if (izin("POST")) await this.ad(istek, yanit);
+        return;
       case GIRIS_YOLLARI.cikis:
       case GIRIS_YOLLARI.cikisTumu:
         if (izin("POST")) await this.cikis(istek, yanit, yol === GIRIS_YOLLARI.cikisTumu);
@@ -331,7 +346,7 @@ export class GirisUclari implements GirisBaglantisi {
       yanit.writeHead(200, { ...SAYFA_BASLIKLARI, "set-cookie": cerezler });
       return void yanit.end(sayfa("giriş yapıldı", "<p>giriş yapıldı. bu sekmeyi kapatıp oyuna dönebilirsiniz.</p>"));
     }
-    const govde: GirisOnayYaniti = { tamam: true, yeniHesap: r.yeniHesap, oyuncu: r.oyuncu };
+    const govde: GirisOnayYaniti = { tamam: true, yeniHesap: r.yeniHesap, oyuncu: r.oyuncu, ...(r.ad !== undefined ? { ad: r.ad, adSecildi: r.adSecildi === true } : {}) };
     this.json(istek, yanit, 200, govde, { "set-cookie": cerezler });
   }
 
@@ -359,8 +374,37 @@ export class GirisUclari implements GirisBaglantisi {
     const belirtec = cerezOku(istek, OTURUM_CEREZI);
     const r = await this.hizmet.oturumBul(belirtec);
     if (!r) return this.hata(istek, yanit, "oturum_yok");
-    const govde: GirisBenYaniti = { tamam: true, eposta: r.hesap.eposta, oyuncu: r.hesap.oyuncu, oturumBitis: r.oturum.bitis, oturumMutlakBitis: r.oturum.mutlakBitis };
+    const govde: GirisBenYaniti = {
+      tamam: true,
+      eposta: r.hesap.eposta,
+      oyuncu: r.hesap.oyuncu,
+      oturumBitis: r.oturum.bitis,
+      oturumMutlakBitis: r.oturum.mutlakBitis,
+      ...(r.hesap.ad !== undefined ? { ad: r.hesap.ad, adSecildi: r.hesap.adSecildi === true } : {}),
+    };
     this.json(istek, yanit, 200, govde, this.yenile(belirtec, r));
+  }
+
+  /** `GET /giris/ad-oner`: yeni bir opak ad önerisi (kaydetmez). */
+  private async adOner(istek: IncomingMessage, yanit: ServerResponse): Promise<void> {
+    const belirtec = cerezOku(istek, OTURUM_CEREZI);
+    const r = await this.hizmet.adOner(belirtec);
+    if (!r.tamam) return this.hata(istek, yanit, r.kod, r.beklemeSn !== undefined ? { beklemeSn: r.beklemeSn } : {});
+    const govde: GirisAdOneriYaniti = { tamam: true, ad: r.ad };
+    this.json(istek, yanit, 200, govde);
+  }
+
+  /** `POST /giris/ad {ad}`: görünen adı seçer/değiştirir (oturum çerezi + izinli Origin). */
+  private async ad(istek: IncomingMessage, yanit: ServerResponse): Promise<void> {
+    if (!this.postOnKosulu(istek, yanit)) return;
+    const girdi = await this.jsonGovde(istek);
+    // Ad alanının varlığı denetlenir; uzunluk/karakter kuralını ÇEKİRDEK söyler (okunur ileti; protokol şeması sınırı aynıdır: istemci için `GirisAdIstegiSemasi`).
+    const ham = typeof girdi === "object" && girdi !== null && !Array.isArray(girdi) ? (girdi as { ad?: unknown }).ad : undefined;
+    if (ham === undefined) return this.hata(istek, yanit, "gecersiz_istek");
+    const r = await this.hizmet.adSec(cerezOku(istek, OTURUM_CEREZI), ham);
+    if (!r.tamam) return this.hata(istek, yanit, r.kod, { ...(r.beklemeSn !== undefined ? { beklemeSn: r.beklemeSn } : {}), ...(r.mesaj !== undefined ? { mesaj: r.mesaj } : {}) });
+    const govde: GirisAdYaniti = { tamam: true, ad: r.ad, adSecildi: true };
+    this.json(istek, yanit, 200, govde);
   }
 
   private async cikis(istek: IncomingMessage, yanit: ServerResponse, tumu: boolean): Promise<void> {

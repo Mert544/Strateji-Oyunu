@@ -13,6 +13,9 @@ interface HesapSatiri {
   eposta_anahtar: string;
   olusturma: string;
   oyuncu_id: string;
+  ad: string | null;
+  ad_secildi: boolean;
+  ad_degisim_t: string | null;
 }
 
 interface BaglantiSatiri {
@@ -34,9 +37,15 @@ interface OturumSatiri {
   mutlak_bitis: string;
 }
 
-const HESAP_SECIMI = "SELECT h.id, h.eposta, h.eposta_anahtar, h.olusturma, o.oyuncu_id FROM hesap h JOIN hesap_oyuncu o ON o.hesap_id = h.id";
+const HESAP_SECIMI = "SELECT h.id, h.eposta, h.eposta_anahtar, h.olusturma, o.oyuncu_id, h.ad, h.ad_secildi, h.ad_degisim_t FROM hesap h JOIN hesap_oyuncu o ON o.hesap_id = h.id";
 
-const hesapKaydi = (x: HesapSatiri): HesapKaydi => ({ id: x.id, eposta: x.eposta, anahtar: x.eposta_anahtar, oyuncu: x.oyuncu_id, olusturma: Number(x.olusturma) });
+const hesapKaydi = (x: HesapSatiri): HesapKaydi => {
+  const k: HesapKaydi = { id: x.id, eposta: x.eposta, anahtar: x.eposta_anahtar, oyuncu: x.oyuncu_id, olusturma: Number(x.olusturma) };
+  if (x.ad !== null) k.ad = x.ad;
+  if (x.ad_secildi) k.adSecildi = true;
+  if (x.ad_degisim_t !== null) k.adDegisimT = Number(x.ad_degisim_t);
+  return k;
+};
 const baglantiKaydi = (x: BaglantiSatiri): BaglantiKaydi => ({ ozet: x.ozet, eposta: x.eposta, anahtar: x.eposta_anahtar, bitis: Number(x.bitis), tarayiciOzeti: x.tarayici_ozeti, olusturma: Number(x.olusturma) });
 const oturumKaydi = (x: OturumSatiri): OturumKaydi => ({
   id: x.id,
@@ -57,7 +66,7 @@ export class PostgresHesapDeposu implements HesapDeposu {
     const c = await this.havuz.connect();
     try {
       await c.query("BEGIN");
-      const r = await c.query("INSERT INTO hesap (id, eposta, eposta_anahtar, olusturma) VALUES ($1,$2,$3,$4) ON CONFLICT (eposta_anahtar) DO NOTHING", [h.id, h.eposta, h.anahtar, h.olusturma]);
+      const r = await c.query("INSERT INTO hesap (id, eposta, eposta_anahtar, olusturma, ad, ad_secildi, ad_degisim_t) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (eposta_anahtar) DO NOTHING", [h.id, h.eposta, h.anahtar, h.olusturma, h.ad ?? null, h.adSecildi === true, h.adDegisimT ?? null]);
       if (r.rowCount === 0) {
         await c.query("ROLLBACK");
         const m = await c.query<HesapSatiri>(`${HESAP_SECIMI} WHERE h.eposta_anahtar = $1`, [h.anahtar]); // AYNI istemciyle: havuzdan ikinci baglanti alinmaz
@@ -86,6 +95,21 @@ export class PostgresHesapDeposu implements HesapDeposu {
   async hesapBulId(id: string): Promise<HesapKaydi | null> {
     const r = await this.havuz.query<HesapSatiri>(`${HESAP_SECIMI} WHERE h.id = $1`, [id]);
     return r.rows[0] ? hesapKaydi(r.rows[0]) : null;
+  }
+
+  async adYaz(hesap: string, ad: string, secildi: boolean, degisimT: number | null): Promise<boolean> {
+    const r = await this.havuz.query("UPDATE hesap SET ad = $2, ad_secildi = $3, ad_degisim_t = $4 WHERE id = $1", [hesap, ad, secildi, degisimT]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
+  async adVarMi(ad: string): Promise<boolean> {
+    const r = await this.havuz.query("SELECT 1 FROM hesap WHERE ad = $1 LIMIT 1", [ad]);
+    return (r.rowCount ?? 0) > 0;
+  }
+
+  async adlariListele(): Promise<Array<{ hesap: string; oyuncu: string; ad: string | null }>> {
+    const r = await this.havuz.query<{ id: string; oyuncu_id: string; ad: string | null }>("SELECT h.id, o.oyuncu_id, h.ad FROM hesap h JOIN hesap_oyuncu o ON o.hesap_id = h.id");
+    return r.rows.map((x) => ({ hesap: x.id, oyuncu: x.oyuncu_id, ad: x.ad }));
   }
 
   async hesapSil(id: string): Promise<string[] | null> {

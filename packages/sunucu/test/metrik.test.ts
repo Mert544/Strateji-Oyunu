@@ -4,7 +4,7 @@
  */
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -384,7 +384,8 @@ describe("CLI ortam degiskenleri", () => {
     expect(await hata({ BOLGE_METRIK_PORT: "0", BOLGE_METRIK_HOST: "0.0.0.0" })).toMatch(/token/);
     const posta = await mkdtemp(join(tmpdir(), "bolge-uretim-posta-"));
     kapatilacak.push(() => rm(posta, { recursive: true, force: true }));
-    const iyi = baslat({ BOLGE_PORT: "0", BOLGE_HARITA: "mini", BOLGE_DEPO: "bellek", ...URETIM, BOLGE_POSTA_DIZIN: posta });
+    await writeFile(join(posta, "yasakli-adlar.json"), JSON.stringify({ yasakliKelimeler: [], yasakliIcerik: [] })); // uretimde yasakli ad listesi zorunlu (gorunen ad)
+    const iyi = baslat({ BOLGE_PORT: "0", BOLGE_HARITA: "mini", BOLGE_DEPO: "bellek", ...URETIM, BOLGE_POSTA_DIZIN: posta, BOLGE_YASAKLI_ADLAR: join(posta, "yasakli-adlar.json") });
     const hazir = await iyi.ilk;
     expect(hazir.olay).toBe("hazir");
     expect(hazir.kimlik).toBe("eposta");

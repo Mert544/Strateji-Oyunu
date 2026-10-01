@@ -19,6 +19,8 @@ export const GIRIS_YOLLARI = {
   onay: "/giris/onay",
   bilet: "/giris/bilet",
   ben: "/giris/ben",
+  ad: "/giris/ad",
+  adOner: "/giris/ad-oner",
   cikis: "/giris/cikis",
   cikisTumu: "/giris/cikis-tumu",
 } as const;
@@ -42,6 +44,12 @@ export type GirisHataKodu =
   | "baglanti_gecersiz"
   /** 403: bağlantı isteği yapan tarayıcıdan farklı bir tarayıcıda açıldı (bağlantı tüketilmez; doğru tarayıcıda açılabilir). */
   | "tarayici_uyumsuz"
+  /** 422: görünen ad kuralına uymuyor (uzunluk 2-24, izinli karakterler, baş/son/art arda boşluk, en az bir harf); `mesaj` nedeni söyler. Düzeltme yapılmaz. */
+  | "ad_gecersiz"
+  /** 422: ad kuralına uyuyor ama yasaklı ad listesinde (katlanmış karşılaştırma); `mesaj` genel ("ad kullanilamaz"), listeyi sızdırmaz. */
+  | "ad_yasakli"
+  /** 429: ad günde (00:00 TRT sınırı) en çok bir kez değiştirilebilir; `beklemeSn` bir sonraki Türkiye gece yarısına kalan süredir. */
+  | "ad_sinir"
   /** 401: oturum çerezi yok, süresi dolmuş ya da kapatılmış. */
   | "oturum_yok"
   /** 403: `Origin` yok ya da izin listesinde değil. */
@@ -54,7 +62,7 @@ export type GirisHataKodu =
 
 export const GirisHatasiSemasi = z.object({
   tamam: z.literal(false),
-  kod: z.enum(["gecersiz_istek", "gecersiz_eposta", "gecici_eposta", "hiz_siniri", "baglanti_gecersiz", "tarayici_uyumsuz", "oturum_yok", "origin", "yontem", "bulunamadi", "ic_hata"]),
+  kod: z.enum(["gecersiz_istek", "gecersiz_eposta", "gecici_eposta", "hiz_siniri", "baglanti_gecersiz", "tarayici_uyumsuz", "ad_gecersiz", "ad_yasakli", "ad_sinir", "oturum_yok", "origin", "yontem", "bulunamadi", "ic_hata"]),
   mesaj: z.string(),
   beklemeSn: z.number().int().nonnegative().optional(),
 });
@@ -76,6 +84,10 @@ export const GirisOnayYanitiSemasi = z.object({
   yeniHesap: z.boolean(),
   /** Hesabın tek oyuncusu (opak, sunucu üretimli; e-postadan türetilmez). */
   oyuncu: z.string().min(1).max(32),
+  /** Görünen ad (sunucu üretimli küçük harfli opak ad ya da oyuncunun seçtiği; yoksa sunucuda ad özelliği kapalıdır). */
+  ad: z.string().min(2).max(24).optional(),
+  /** Oyuncu adını kendisi seçti mi (false: otomatik ad; istemci ad seçme ekranını gösterir). */
+  adSecildi: z.boolean().optional(),
 });
 export type GirisOnayYaniti = z.infer<typeof GirisOnayYanitiSemasi>;
 
@@ -95,8 +107,29 @@ export const GirisBenYanitiSemasi = z.object({
   oyuncu: z.string().min(1).max(32),
   oturumBitis: z.number().int().positive(),
   oturumMutlakBitis: z.number().int().positive(),
+  /** Görünen ad ve seçilip seçilmediği (bkz. `GirisOnayYanitiSemasi`). */
+  ad: z.string().min(2).max(24).optional(),
+  adSecildi: z.boolean().optional(),
 });
 export type GirisBenYaniti = z.infer<typeof GirisBenYanitiSemasi>;
+
+/**
+ * `POST /giris/ad` gövdesi: oturumlu (çerez) ve `Origin` izinli. Ad sunucuda doğrulanır ve KÜÇÜK HARFE çevrilerek saklanır (Türkçe sabit tablo; çekirdek `adKanonik`);
+ * yanıttaki `ad` kaydedilen (kanonik) biçimdir. Sınırlar `AD_KURALI` ile aynıdır (sunucu testi eşitliği sınar). Günde (00:00 TRT) en çok bir değişiklik; otomatik
+ * addan ilk seçime geçiş sayılmaz.
+ */
+export const GirisAdIstegiSemasi = z.object({ ad: z.string().min(2).max(24) });
+export type GirisAdIstegi = z.infer<typeof GirisAdIstegiSemasi>;
+export const GirisAdYanitiSemasi = z.object({ tamam: z.literal(true), ad: z.string().min(2).max(24), adSecildi: z.literal(true) });
+export type GirisAdYaniti = z.infer<typeof GirisAdYanitiSemasi>;
+
+/**
+ * `GET /giris/ad-oner` yanıtı (oturum çerezi gerekir): sunucunun o an ürettiği YENİ bir opak öneri (küçük harfli "sıfat isim rakam"; ad kuralından ve yasaklı ad
+ * süzgecinden geçmiş, başka hesapta olmayan). KAYDETMEZ; oyuncu beğenirse `POST /giris/ad` ile seçer. Hız sınırlıdır (oturum başına). Hata kodları: `oturum_yok` (401),
+ * `hiz_siniri` (429), `bulunamadi` (404: görünen ad özelliği kapalı).
+ */
+export const GirisAdOneriYanitiSemasi = z.object({ tamam: z.literal(true), ad: z.string().min(2).max(24) });
+export type GirisAdOneriYaniti = z.infer<typeof GirisAdOneriYanitiSemasi>;
 
 /** `POST /giris/cikis` ve `/giris/cikis-tumu` yanıtı. */
 export const GirisTamamSemasi = z.object({ tamam: z.literal(true) });

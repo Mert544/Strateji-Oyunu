@@ -109,7 +109,7 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
       const depo = await postgresDeposu({ baglanti, dunya: "eskidunya", semaKur: true });
       try {
         expect(await postgresSemaSurumu(havuz)).toBe(SQL_SEMA_SURUMU);
-        expect((await havuz.query("SELECT surum FROM sunucu_sema ORDER BY surum")).rows.map((r) => r.surum)).toEqual([1, 2, 3, 4, 5]);
+        expect((await havuz.query("SELECT surum FROM sunucu_sema ORDER BY surum")).rows.map((r) => r.surum)).toEqual([1, 2, 3, 4, 5, 6]);
         // Veri korunur.
         expect((await depo.gunluk.oku(0)).map((k) => [k.seq, k.kuralSurumu])).toEqual([[1, "k-eski"]]);
         expect(await depo.goruntu.sonuncu()).toEqual(g);
@@ -132,7 +132,7 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
     }
   });
 
-  it("sifirdan kurulum bes adimi uygular; en son goruntu secimi deterministik (seq, sim_t, olusturma, kural_sur)", async () => {
+  it("sifirdan kurulum alti adimi uygular; en son goruntu secimi deterministik (seq, sim_t, olusturma, kural_sur)", async () => {
     const ad = `bolge_yeni_${process.pid}_${Date.now()}`;
     const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
     await yonetici.query(`CREATE DATABASE ${ad}`);
@@ -141,7 +141,7 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
     const baglanti = u.toString();
     const havuz = new pg.Pool({ connectionString: baglanti, max: 1 });
     try {
-      expect(await postgresSemasiKur(havuz)).toEqual([1, 2, 3, 4, 5]);
+      expect(await postgresSemasiKur(havuz)).toEqual([1, 2, 3, 4, 5, 6]);
       expect(await postgresSemasiKur(havuz)).toEqual([]);
     } finally {
       await havuz.end();
@@ -547,11 +547,11 @@ describe.skipIf(!PG)("postgres: hesap, oturum ve giris baglantisi (sema surumu 4
       );
       await havuz.query("INSERT INTO profil_damga (dunya, oyuncu, kavram, t, kaynak) VALUES ('s3dunya','ali','ilk_yapi',5,'odul')");
       // Göçsüz açılış açık hata verir; semaKur ile yalnız 4. adım uygulanır.
-      await expect(postgresDeposu({ baglanti, dunya: "s3dunya", semaKur: false })).rejects.toThrow(/sema surumu eski: 3 < 5/);
-      expect(await postgresSemasiKur(havuz)).toEqual([4, 5]);
-      expect(await postgresSemaSurumu(havuz)).toBe(5);
-      expect((await havuz.query("SELECT max(surum) AS m FROM sunucu_sema")).rows[0]?.m).toBe(5);
-      expect((await havuz.query("SELECT surum, ad FROM sunucu_sema ORDER BY surum")).rows.map((r) => `${r.surum} ${r.ad}`)).toEqual(["1 baslangic", "2 goc-profil", "3 defter", "4 hesap", "5 oyun-oturum"]);
+      await expect(postgresDeposu({ baglanti, dunya: "s3dunya", semaKur: false })).rejects.toThrow(/sema surumu eski: 3 < 6/);
+      expect(await postgresSemasiKur(havuz)).toEqual([4, 5, 6]);
+      expect(await postgresSemaSurumu(havuz)).toBe(6);
+      expect((await havuz.query("SELECT max(surum) AS m FROM sunucu_sema")).rows[0]?.m).toBe(6);
+      expect((await havuz.query("SELECT surum, ad FROM sunucu_sema ORDER BY surum")).rows.map((r) => `${r.surum} ${r.ad}`)).toEqual(["1 baslangic", "2 goc-profil", "3 defter", "4 hesap", "5 oyun-oturum", "6 gorunen-ad"]);
       expect(await postgresSemasiKur(havuz)).toEqual([]); // idempotent
       // 004'ün kendisi de iki kez koşunca hata vermez (IF NOT EXISTS) ve veriye dokunmaz.
       const sql004 = await readFile(new URL("../sql/004-hesap.sql", import.meta.url), "utf8");
@@ -679,6 +679,24 @@ describe.skipIf(!PG)("postgres: oyun oturumu kaydi, test dunyasi silme ve dokum 
     } finally {
       await a.gunluk.kapat();
       await b.gunluk.kapat();
+    }
+  });
+
+  it("006 (gorunen ad) idempotent; mevcut hesap satiri korunur (ad NULL, secildi false); ad sutunlari hesap sozlesmesinde (hesap deposu testi) dolu calisir", async () => {
+    const sql006 = await readFile(new URL("../sql/006-gorunen-ad.sql", import.meta.url), "utf8");
+    const h = new pg.Pool({ connectionString: PG, max: 1 });
+    try {
+      await h.query(sql006);
+      await h.query(sql006);
+      const onek = hesapOnek();
+      await h.query("INSERT INTO hesap (id, eposta, eposta_anahtar, olusturma) VALUES ($1, $2, $2, 1)", [`${onek}-h`, `${onek}@ornek.org`]);
+      await h.query("INSERT INTO hesap_oyuncu (hesap_id, oyuncu_id) VALUES ($1, $2)", [`${onek}-h`, `${onek}-o`.slice(0, 32)]);
+      const r = await h.query("SELECT ad, ad_secildi, ad_degisim_t FROM hesap WHERE id = $1", [`${onek}-h`]);
+      expect(r.rows[0]).toEqual({ ad: null, ad_secildi: false, ad_degisim_t: null });
+      await h.query(sql006); // veri varken de idempotent
+      expect((await h.query("SELECT 1 FROM hesap WHERE id = $1", [`${onek}-h`])).rowCount).toBe(1);
+    } finally {
+      await h.end();
     }
   });
 

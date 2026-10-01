@@ -10,12 +10,13 @@ import { gercekVeriyiYukle, miniVeriyiYukle, parselFiksturuYukle, varsayilanVeri
 import type { VeriPaketi } from "@bolge/veri";
 import { ARKETIPLER, botOlustur } from "@bolge/botlar";
 import type { ArketipAdi } from "@bolge/botlar";
-import { SAAT } from "@bolge/cekirdek";
+import { SAAT, adKanonik } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi, IcerikKimlikTablosu } from "@bolge/cekirdek";
 import { bellekDeposu } from "./depo/bellek";
 import { dosyaDeposu, dosyaSaltOkunur } from "./depo/dosya";
 import { postgresDeposu } from "./depo/postgres";
 import type { Depo } from "./depo/tipler";
+import { yasakliAdSuzgeciYukle } from "./ad-suzgec";
 import { DavetliListesi } from "./giris/davet";
 import { geciciAlanlariYukle } from "./giris/eposta";
 import { GirisHizmeti } from "./giris/hizmet";
@@ -84,6 +85,8 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --davetli-liste YOL  kayit kapisi (Alfa-0; vars. KAPALI): satir basina bir e-posta adresi (# aciklama), G5 normallestirmesiyle eslesir. Listede olmayan adrese yanit
                        AYNIDIR ama posta gitmez. Liste kisisel veridir: sunucuda tutulur, depoya girmez (ornek raporlar/davetli.txt). Yok/bozuksa acilis durur;
                        calisirken yeniden yuklenmez (degistirmek icin sunucuyu yeniden baslatin). Yalniz --kimlik eposta ile
+  --yasakli-adlar YOL  yasakli ad listesi (JSON { yasakliKelimeler, yasakliIcerik }; vars. packages/veri/icerik/yasakli-adlar.json): oyuncunun gorunen adi (ve marka adi)
+                       bu listeden gecer. Dosya yok/bozuksa --uretim'de acilis durur, gelistirmede uyari verilir ve BOS listeyle devam edilir. Yalniz sunucuda okunur
   --gelistirme-sirri S gelistirme token imza sirri (vars. $BOLGE_GELISTIRME_SIRRI; yalniz kimlik = gelistirme)
   --oturum-kaydi 0|1   oyun baglantisi oturum olayi kaydi (insan testi; vars. 0): oyuncunun ilk baglantisi acilinca oturum baslar, son baglantisi kapaninca
                        biter; yalniz zaman ve opak oyuncu kimligi (IP/cihaz/e-posta yok). 90 gunden eski ayrinti gun duzeyinde toplu sayiya cevrilir. Giris oturumu degildir
@@ -105,7 +108,7 @@ BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_TOHUM, BOLGE_DEPO, BOLGE_DIZIN, BOLG
 BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT, BOLGE_GORUNTU_ISCI (0|1), BOLGE_ODUL (0|1),
 BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI,
 BOLGE_KIMLIK, BOLGE_POSTA, BOLGE_POSTA_DIZIN, BOLGE_GENEL_URL, BOLGE_GIRIS_BAGLANTISI, BOLGE_GIRIS_SONRASI, BOLGE_IZINLI_KOKENLER, BOLGE_TARAYICI_BAGLI (0|1),
-BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR, BOLGE_DAVETLI_LISTE, BOLGE_OTURUM_KAYDI (0|1), BOLGE_OTURUM_BOSLUK_DK, BOLGE_TEST_DUNYA_ONEKI, BOLGE_TEST_DUNYA_SIL_ONAY. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
+BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR, BOLGE_DAVETLI_LISTE, BOLGE_YASAKLI_ADLAR, BOLGE_OTURUM_KAYDI (0|1), BOLGE_OTURUM_BOSLUK_DK, BOLGE_TEST_DUNYA_ONEKI, BOLGE_TEST_DUNYA_SIL_ONAY. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
 
 function yaz(olay: string, veri: Record<string, unknown> = {}): void {
   process.stdout.write(JSON.stringify({ olay, ...veri }) + "\n");
@@ -191,6 +194,7 @@ async function ana(): Promise<void> {
       "guvenilir-proxy": { type: "boolean", default: evBool("GUVENILIR_PROXY") },
       "gecici-alanlar": { type: "string", ...varsayilan(ev("GECICI_ALANLAR")) },
       "davetli-liste": { type: "string", ...varsayilan(ev("DAVETLI_LISTE")) },
+      "yasakli-adlar": { type: "string", ...varsayilan(ev("YASAKLI_ADLAR")) },
       "oturum-kaydi": { type: "string", default: ev("OTURUM_KAYDI", "0") as string },
       "oturum-bosluk-dk": { type: "string", default: ev("OTURUM_BOSLUK_DK", String(VARSAYILAN_OTURUM_BOSLUGU_MS / 60_000)) as string },
       "test-dunya-sil": { type: "string" },
@@ -311,6 +315,9 @@ async function ana(): Promise<void> {
     if (kimlikKipi.kip !== "eposta") throw new Error("--davetli-liste yalniz --kimlik eposta ile (gelistirme kimliginde kayit kapisi yoktur)");
     davetli = DavetliListesi.dosyadan(resolve(a["davetli-liste"]));
   }
+  // Yasakli ad listesi (gorunen ad): dunya acilmadan once yuklenir; uretimde dosya yok/bozuksa acilis durur, gelistirmede uyari + bos liste.
+  const yasakli = kimlikKipi.kip === "eposta" ? yasakliAdSuzgeciYukle({ ...(a["yasakli-adlar"] !== undefined ? { yol: resolve(a["yasakli-adlar"]) } : {}), uretim: a.uretim }) : undefined;
+  if (yasakli?.uyari != null) yaz("uyari", { mesaj: yasakli.uyari });
   const sayi = (ad: string, d: string | undefined): number => {
     const n = Number(d);
     if (!Number.isFinite(n) || n < 0) throw new Error(`--${ad} gecersiz: ${d}`);
@@ -380,6 +387,9 @@ async function ana(): Promise<void> {
     const gecici = geciciAlanlariYukle(a["gecici-alanlar"] !== undefined ? resolve(a["gecici-alanlar"]) : undefined);
     const hizmet = new GirisHizmeti({
       depo: depo.hesap,
+      // Gorunen ad: sozdizimi + kucuk harf cekirdek adKanonik'ten (marka adiyla ortak kural), yasakli ad suzgeci sunucuda (yukleme yukarida, dunya acilmadan once).
+      adKurali: adKanonik,
+      adSuzgeci: (yasakli as NonNullable<typeof yasakli>).suzgec,
       posta: kimlikKipi.posta === "konsol" ? new KonsolPostaGondericisi() : new DosyaPostaGondericisi(resolve(a["posta-dizin"] as string)),
       sirlar: kimlikKipi.sirlar,
       baglantiTabani: () => a["giris-baglanti"] ?? `${genelUrl ?? yerelUrl()}/giris/onay`,
@@ -397,6 +407,7 @@ async function ana(): Promise<void> {
       ...(a["giris-sonrasi"] !== undefined ? { girisSonrasiAdres: a["giris-sonrasi"] } : {}),
     });
     kimlik = hizmet.kimlik;
+    await hizmet.adlariYukle(); // bellek onbellegi (kare yolu) ve eski hesaplarin otomatik adi
   }
   let oturumKaydi: OturumKaydedici | undefined;
   if (["1", "evet", "true"].includes((a["oturum-kaydi"] as string).toLowerCase())) {

@@ -118,5 +118,36 @@ async function sozlesme(depo: HesapDeposu, onek: string): Promise<void> {
   expect(await depo.hesapBulId(veli.id)).toEqual(veli); // başkası etkilenmez
   // Silinen adres yeniden kaydolabilir ve oyuncu kimliği de yeniden kullanılabilir (eşleme silinmişti).
   expect((await depo.hesapOlustur({ ...ali, id: `${onek}-h-ali2` })).yeni).toBe(true);
+
+  // --- görünen ad (İ-1): hesapla birlikte yazılır, sonradan değişir, hesapla birlikte silinir; benzersiz DEĞİL ---
+  const ayse = { ...hesap("ayse"), ad: "çalışkan değirmenci 427" };
+  expect(await depo.adVarMi("çalışkan değirmenci 427")).toBe(false);
+  expect(await depo.hesapOlustur(ayse)).toEqual({ hesap: ayse, yeni: true });
+  expect(await depo.hesapBulId(ayse.id)).toEqual(ayse); // adSecildi/adDegisimT yok: otomatik ad
+  expect(await depo.hesapBulAnahtar(ayse.anahtar)).toEqual(ayse);
+  expect(await depo.adVarMi("çalışkan değirmenci 427")).toBe(true);
+  expect(await depo.adVarMi("baska ad 123")).toBe(false);
+  // Aynı adres yeniden kaydolmaya kalkarsa mevcut hesap (adıyla) döner; verilen yeni ad yok sayılır.
+  expect((await depo.hesapOlustur({ ...ayse, id: `${onek}-h-ayse-baska`, oyuncu: `${onek}-o_ayse2`, ad: "yeni ad 111" })).hesap.ad).toBe("çalışkan değirmenci 427");
+  // Ad yazma: seçildi + değişim zamanı; geri alma (null) ve olmayan hesap.
+  expect(await depo.adYaz(ayse.id, "sakin balıkçı 100", true, null)).toBe(true);
+  expect(await depo.hesapBulId(ayse.id)).toEqual({ ...ayse, ad: "sakin balıkçı 100", adSecildi: true });
+  expect(await depo.adYaz(ayse.id, "cesur terzi 200", true, 123_456)).toBe(true);
+  expect(await depo.hesapBulId(ayse.id)).toEqual({ ...ayse, ad: "cesur terzi 200", adSecildi: true, adDegisimT: 123_456 });
+  expect(await depo.adYaz(`${onek}-yok-hesap`, "x y 1", false, null)).toBe(false);
+  expect(await depo.adVarMi("çalışkan değirmenci 427")).toBe(false); // eski ad serbest kaldı
+  // Ad benzersiz değildir: iki hesap aynı adı taşıyabilir (seçilen adlarda çakışma serbest).
+  expect(await depo.adYaz(veli.id, "cesur terzi 200", true, null)).toBe(true);
+  const liste = await depo.adlariListele();
+  expect(liste.filter((x) => x.ad === "cesur terzi 200").map((x) => x.hesap).sort()).toEqual([ayse.id, veli.id].sort());
+  expect(liste.find((x) => x.hesap === ayse.id)).toEqual({ hesap: ayse.id, oyuncu: ayse.oyuncu, ad: "cesur terzi 200" });
+  // Adı olmayan (eski) hesap listede ad: null.
+  const eski = hesap("eski");
+  await depo.hesapOlustur(eski);
+  expect((await depo.adlariListele()).find((x) => x.hesap === eski.id)).toEqual({ hesap: eski.id, oyuncu: eski.oyuncu, ad: null });
+  expect((await depo.hesapBulId(eski.id))?.ad).toBeUndefined();
+  // Hesap silinince ad da gider.
+  expect((await depo.hesapSil(ayse.id)) ?? []).toEqual([]);
+  expect((await depo.adlariListele()).some((x) => x.hesap === ayse.id)).toBe(false);
   await depo.esitle();
 }

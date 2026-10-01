@@ -25,6 +25,15 @@ export const BILINEN_GIRIS_OLAYLARI = [
   "bilet.hiz_siniri",
   "http.origin_reddi",
   "oturum.kapatildi",
+  "ad.otomatik",
+  "ad.ilk_secim",
+  "ad.degisti",
+  "ad.gecersiz",
+  "ad.yasakli",
+  "ad.sinir",
+  "ad.hiz_siniri",
+  "ad.oner",
+  "ad.oner_hiz_siniri",
 ] as const;
 
 export class GirisSayaclari {

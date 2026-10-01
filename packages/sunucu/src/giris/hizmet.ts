@@ -10,6 +10,8 @@
  */
 import { randomBytes } from "node:crypto";
 import { HizSiniri } from "../hiz-siniri";
+import { turkiyeGeceYarisi } from "../saat";
+import type { AdSuzgeci } from "../ad-suzgec";
 import type { HizSiniriSecenekleri } from "../hiz-siniri";
 import { OyuncuCakismasi } from "../depo/tipler";
 import type { HesapDeposu, HesapKaydi, OturumKaydi } from "../depo/tipler";
@@ -17,6 +19,8 @@ import { AuthKimligi } from "./auth-kimligi";
 import { epostaCoz, epostaMaskele, geciciAlanMi } from "./eposta";
 import type { EpostaBicimi } from "./eposta";
 import { Imzalayici, baglantiJetonuCoz, baglantiJetonuUret, biletUret, oturumBelirteciCoz, oturumBelirteciUret, ozet, rastgele, sabitEsit } from "./jeton";
+import { AdUretici, adIletisi, adKelimeleriniYukle } from "./gorunen-ad";
+import type { AdKurali } from "./gorunen-ad";
 import { girisPostasi } from "./posta";
 import type { PostaGonderici } from "./posta";
 import type { Davetliler } from "./davet";
@@ -58,6 +62,10 @@ export interface GirisSinirlari {
   onayIpBasina: HizSiniriSecenekleri;
   /** Oturum başına bilet. Varsayılan 30 ani, 0,5/sn. Aşımda 429. */
   biletOturumBasina: HizSiniriSecenekleri;
+  /** Hesap başına ad denemesi (doğrulama reddi dahil). Varsayılan 10 ani, dakikada 1. Aşımda 429. (Günlük değişiklik sınırı ayrıdır.) */
+  adHesapBasina: HizSiniriSecenekleri;
+  /** Oturum başına ad önerisi (`GET /giris/ad-oner`). Varsayılan 10 ani, dakikada 10. Aşımda 429. */
+  adOneriOturumBasina: HizSiniriSecenekleri;
 }
 
 const saatlik = (n: number, kapasite = n): HizSiniriSecenekleri => ({ kapasite, saniyeBasina: n / 3600 });
@@ -68,6 +76,8 @@ export const VARSAYILAN_GIRIS_SINIRLARI: GirisSinirlari = {
   genel: saatlik(1000),
   onayIpBasina: saatlik(60, 20),
   biletOturumBasina: { kapasite: 30, saniyeBasina: 0.5 },
+  adHesapBasina: { kapasite: 10, saniyeBasina: 1 / 60 },
+  adOneriOturumBasina: { kapasite: 10, saniyeBasina: 10 / 60 },
 };
 
 export interface GirisHizmetiSecenekleri {
@@ -84,6 +94,15 @@ export interface GirisHizmetiSecenekleri {
    * AYNIDIR (202, aynı gövde), yalnız posta gitmez: kimin davetli olduğu dışarıdan anlaşılmaz. Verilmezse (varsayılan) kapı açıktır.
    */
   davetliler?: Davetliler;
+  /**
+   * Görünen ad kuralı (çekirdek `adKanonik`: sözdizimi + küçük harf). VERİLİRSE görünen ad özelliği açılır: hesap açılırken otomatik ad üretilir, `POST /giris/ad`
+   * çalışır. Verilmezse özellik KAPALIDIR (ad yok); üretim CLI'si her zaman verir.
+   */
+  adKurali?: AdKurali;
+  /** Yasaklı ad süzgeci (`ad-suzgec.ts`; verilmezse süzgeç yok). Otomatik adlar da süzgeçten geçer. */
+  adSuzgeci?: AdSuzgeci;
+  /** Otomatik ad üreticisi (varsayılan: `veri/gorunen-ad-kelimeleri.json`, `adKurali` ile doğrulanır). */
+  adUretici?: AdUretici;
   /** Bağlantı, isteği yapan tarayıcıya bağlansın mı (KIMLIK.md §1). Varsayılan false: postayı telefonda başka bir tarayıcıda açan oyuncu kilitlenmesin. */
   tarayiciBagli?: boolean;
   sureler?: Partial<GirisSureleri>;
@@ -100,7 +119,7 @@ export type IstekSonucu =
   | { tamam: false; kod: "gecersiz_eposta" | "gecici_eposta" | "hiz_siniri"; beklemeSn?: number };
 
 export type OnaySonucu =
-  | { tamam: true; yeniHesap: boolean; oyuncu: string; belirtec: string; cerezOmruSn: number }
+  | { tamam: true; yeniHesap: boolean; oyuncu: string; ad?: string; adSecildi?: boolean; belirtec: string; cerezOmruSn: number }
   | { tamam: false; kod: "baglanti_gecersiz" | "tarayici_uyumsuz" | "hiz_siniri" | "gecici_eposta"; beklemeSn?: number };
 
 export type OturumSonucu = { hesap: HesapKaydi; oturum: OturumKaydi; /** Bu çağrıda kayan süre uzadı (çerez yeniden verilmeli). */ uzatildi: boolean; cerezOmruSn: number };
@@ -108,6 +127,12 @@ export type OturumSonucu = { hesap: HesapKaydi; oturum: OturumKaydi; /** Bu ça�
 export type BiletSonucu =
   | { tamam: true; bilet: string; bitis: number; oyuncu: string; oturum: OturumSonucu }
   | { tamam: false; kod: "oturum_yok" | "hiz_siniri"; beklemeSn?: number };
+
+export type AdSonucu =
+  | { tamam: true; ad: string; degisti: boolean }
+  | { tamam: false; kod: "oturum_yok" | "ad_gecersiz" | "ad_yasakli" | "ad_sinir" | "hiz_siniri"; mesaj?: string; beklemeSn?: number };
+
+export type AdOneriSonucu = { tamam: true; ad: string } | { tamam: false; kod: "oturum_yok" | "hiz_siniri"; beklemeSn?: number };
 
 export interface IptalOlayi {
   oturumlar: string[];
@@ -152,6 +177,14 @@ export class GirisHizmeti {
   private readonly genelSiniri: HizSiniri;
   private readonly onaySiniri: HizSiniri;
   private readonly biletSiniri: HizSiniri;
+  private readonly adSiniri: HizSiniri;
+  private readonly adOneriSiniri: HizSiniri;
+  private readonly adKurali: AdKurali | null;
+  private readonly adSuzgeci: AdSuzgeci | null;
+  private readonly adUretici: AdUretici | null;
+  /** oyuncu kimliği -> görünen ad (bellek önbelleği; kare yolu eşzamanlı okur). `adlariYukle` açılışta doldurur, değişiklikler anında yazılır. */
+  private readonly adlar = new Map<string, string>();
+  private readonly adSirasi = new Map<string, Promise<unknown>>();
   private readonly isler = new Set<Promise<void>>();
   private readonly sira = new Map<string, Promise<void>>();
   private readonly dinleyiciler: Array<(o: IptalOlayi) => void> = [];
@@ -175,6 +208,11 @@ export class GirisHizmeti {
     this.genelSiniri = new HizSiniri(sinirlar.genel, this.simdi);
     this.onaySiniri = new HizSiniri(sinirlar.onayIpBasina, this.simdi);
     this.biletSiniri = new HizSiniri(sinirlar.biletOturumBasina, this.simdi);
+    this.adSiniri = new HizSiniri(sinirlar.adHesapBasina, this.simdi);
+    this.adOneriSiniri = new HizSiniri(sinirlar.adOneriOturumBasina, this.simdi);
+    this.adKurali = s.adKurali ?? null;
+    this.adSuzgeci = s.adSuzgeci ?? null;
+    this.adUretici = this.adKurali === null ? null : (s.adUretici ?? new AdUretici(adKelimeleriniYukle(undefined, this.adKurali)));
     this.sayaclar = new GirisSayaclari();
     this.kimlik = new AuthKimligi({ imzalayici: this.imz, simdi: this.simdi, biletOmruMs: this.sureler.biletOmruMs, sayaclar: this.sayaclar });
   }
@@ -287,11 +325,13 @@ export class GirisHizmeti {
       this.sayaclar.artir("onay.davet_disi");
       return { tamam: false, kod: "baglanti_gecersiz" };
     }
-    const { hesap, yeni } = await this.hesapBulVeyaAc(t.kayit.eposta, t.kayit.anahtar);
-    if (hesap === null) {
+    const bulunan = await this.hesapBulVeyaAc(t.kayit.eposta, t.kayit.anahtar);
+    const yeni = bulunan.yeni;
+    if (bulunan.hesap === null) {
       this.sayaclar.artir("onay.baglanti_gecersiz");
       return { tamam: false, kod: "gecici_eposta" };
     }
+    const hesap = await this.adGaranti(bulunan.hesap);
     const o = oturumBelirteciUret();
     await this.depo.oturumEkle({
       id: o.id,
@@ -305,7 +345,14 @@ export class GirisHizmeti {
     this.sayaclar.artir("onay.tamam");
     if (yeni) this.sayaclar.artir("onay.yeni_hesap");
     this.gunluk("giris_onaylandi", { yeniHesap: yeni });
-    return { tamam: true, yeniHesap: yeni, oyuncu: hesap.oyuncu, belirtec: o.belirtec, cerezOmruSn: Math.round(this.sureler.oturumKayanMs / 1000) };
+    return {
+      tamam: true,
+      yeniHesap: yeni,
+      oyuncu: hesap.oyuncu,
+      ...(hesap.ad !== undefined ? { ad: hesap.ad, adSecildi: hesap.adSecildi === true } : {}),
+      belirtec: o.belirtec,
+      cerezOmruSn: Math.round(this.sureler.oturumKayanMs / 1000),
+    };
   }
 
   /** Hesabı bulur; yoksa açar (oyuncu kimliği sunucu üretimli, çakışırsa yenilenir). Yeni hesap geçici alandaysa null. */
@@ -316,7 +363,13 @@ export class GirisHizmeti {
     if (!e || geciciAlanMi(e.alan, this.geciciAlanlar)) return { hesap: null, yeni: false };
     for (let deneme = 0; deneme < 8; deneme++) {
       try {
-        const r = await this.depo.hesapOlustur({ id: rastgele(12), eposta: e.eposta, anahtar, oyuncu: oyuncuKimligiUret(), olusturma: this.simdi() });
+        // Görünen ad açıksa hesapla birlikte otomatik ad yazılır (opak: sıfat + isim + rakam; e-postadan türetilmez).
+        const ad = this.adKurali === null ? undefined : await this.yeniAd();
+        const r = await this.depo.hesapOlustur({ id: rastgele(12), eposta: e.eposta, anahtar, oyuncu: oyuncuKimligiUret(), olusturma: this.simdi(), ...(ad !== undefined ? { ad } : {}) });
+        if (r.yeni && r.hesap.ad !== undefined) {
+          this.adlar.set(r.hesap.oyuncu, r.hesap.ad);
+          this.sayaclar.artir("ad.otomatik");
+        }
         return { hesap: r.hesap, yeni: r.yeni };
       } catch (hata) {
         if (!(hata instanceof OyuncuCakismasi)) throw hata;
@@ -343,6 +396,7 @@ export class GirisHizmeti {
       await this.depo.oturumSil(o.id);
       return null;
     }
+    const hesapAdli = await this.adGaranti(hesap);
     let guncel = o;
     let uzatildi = false;
     if (an - o.sonKullanim >= this.sureler.oturumUzatmaAraligiMs) {
@@ -351,7 +405,7 @@ export class GirisHizmeti {
       guncel = { ...o, sonKullanim: an, bitis };
       uzatildi = true;
     }
-    return { hesap, oturum: guncel, uzatildi, cerezOmruSn: Math.max(1, Math.floor((guncel.bitis - an) / 1000)) };
+    return { hesap: hesapAdli, oturum: guncel, uzatildi, cerezOmruSn: Math.max(1, Math.floor((guncel.bitis - an) / 1000)) };
   }
 
   /** ws bileti: oturuma bağlı, 60 sn, tek kullanımlık. Yönetici/`sistem` için üretilemez (oyuncu kimliği hesaptan gelir). */
@@ -391,10 +445,136 @@ export class GirisHizmeti {
 
   /** KVKK silme talebi (yönetim işi, HTTP ucu YOK): hesap, e-posta bağı ve oturumlar silinir; oyuncu anonim kalır. */
   async hesapSil(hesapId: string): Promise<boolean> {
+    const hesap = await this.depo.hesapBulId(hesapId);
     const silinen = await this.depo.hesapSil(hesapId);
     if (silinen === null) return false;
+    if (hesap) this.adlar.delete(hesap.oyuncu); // ad hesapla birlikte gider (kare artık adı taşımaz)
     this.iptalBildir(silinen);
     return true;
+  }
+
+  // --- 4. görünen ad (İ-1) ------------------------------------------------------------------------------------------------------
+
+  /** Görünen ad özelliği açık mı (`adKurali` verildi). */
+  get adAcik(): boolean {
+    return this.adKurali !== null;
+  }
+
+  /** Oyuncunun görünen adı (bellek önbelleği; eşzamanlı; kare yolu için). Adı olmayan ya da özellik kapalıysa undefined. */
+  adCoz(oyuncu: string): string | undefined {
+    return this.adlar.get(oyuncu);
+  }
+
+  /** Açılışta bütün hesapların adlarını belleğe yükler; adı olmayan (eski) hesaplara otomatik ad yazar. Yüklenen ad sayısını döndürür. */
+  async adlariYukle(): Promise<number> {
+    if (this.adKurali === null) return 0;
+    for (const x of await this.depo.adlariListele()) {
+      let ad = x.ad;
+      if (ad === null) {
+        ad = await this.yeniAd();
+        await this.depo.adYaz(x.hesap, ad, false, null);
+        this.sayaclar.artir("ad.otomatik");
+      }
+      this.adlar.set(x.oyuncu, ad);
+    }
+    return this.adlar.size;
+  }
+
+  /**
+   * Otomatik ad: sıfat + isim + 3 basamaklı rakam (küçük harfli, ad kuralından ve yasaklı ad süzgecinden geçer). Başka hesapta aynı ad varsa yeniden denenir
+   * (seçilen adlarda çakışma serbesttir; ad bir kimlik değildir). Deterministik olmak zorunda değildir ve çekirdeğe girmez.
+   */
+  private async yeniAd(): Promise<string> {
+    const u = this.adUretici as AdUretici;
+    const kural = this.adKurali as AdKurali;
+    let son = "";
+    for (let deneme = 0; deneme < 20; deneme++) {
+      const aday = u.uret();
+      son = aday;
+      const k = kural(aday);
+      if (!k.tamam || k.ad !== aday) continue;
+      if (this.adSuzgeci?.yasakliMi(aday) === true) continue;
+      if (await this.depo.adVarMi(aday)) continue;
+      return aday;
+    }
+    return son;
+  }
+
+  /** Yeni bir opak ad ÖNERİSİ (kaydetmez; oturumlu; oturum başına hız sınırlı). Özellik kapalıysa HTTP katmanı 404 verir. */
+  async adOner(belirtec: string | undefined): Promise<AdOneriSonucu> {
+    if (this.adKurali === null) return { tamam: false, kod: "oturum_yok" };
+    const r = await this.oturumBul(belirtec);
+    if (!r) return { tamam: false, kod: "oturum_yok" };
+    if (!this.adOneriSiniri.al(r.oturum.id)) {
+      this.sayaclar.artir("ad.oner_hiz_siniri");
+      return { tamam: false, kod: "hiz_siniri", beklemeSn: 10 };
+    }
+    this.sayaclar.artir("ad.oner");
+    return { tamam: true, ad: await this.yeniAd() };
+  }
+
+  /** Eski hesapta ad yoksa otomatik ad yazar (açılışta `adlariYukle` doldurur; bu, açılıştan sonra sızan boşluğa karşı güvencedir). */
+  private async adGaranti(hesap: HesapKaydi): Promise<HesapKaydi> {
+    if (this.adKurali === null || hesap.ad !== undefined) return hesap;
+    const ad = await this.yeniAd();
+    await this.depo.adYaz(hesap.id, ad, false, null);
+    this.adlar.set(hesap.oyuncu, ad);
+    this.sayaclar.artir("ad.otomatik");
+    return { ...hesap, ad, adSecildi: false };
+  }
+
+  private adSirala<T>(hesap: string, is: () => Promise<T>): Promise<T> {
+    const onceki = this.adSirasi.get(hesap) ?? Promise.resolve();
+    const yeni = onceki.then(is, is);
+    const temiz = yeni.then(() => undefined, () => undefined);
+    this.adSirasi.set(hesap, temiz);
+    void temiz.then(() => {
+      if (this.adSirasi.get(hesap) === temiz) this.adSirasi.delete(hesap);
+    });
+    return yeni;
+  }
+
+  /**
+   * Oyuncunun görünen adını seçer/değiştirir (çerezli oturum). Sözdizimi ve küçük harf çevirisi çekirdek `adKanonik`'ten (düzeltme yapılmaz, reddedilir),
+   * sonra yasaklı ad süzgeci (kanonik ad üzerinde). Günlük (00:00 TRT) en çok BİR değişiklik: otomatik addan oyuncunun İLK seçtiği ada geçiş sayılmaz; aynı adı
+   * yeniden seçmek değişiklik sayılmaz. Hesap başına ad denemesi hız sınırlıdır (doğrulama reddi dahil).
+   */
+  async adSec(belirtec: string | undefined, ham: unknown): Promise<AdSonucu> {
+    const kural = this.adKurali;
+    if (kural === null) return { tamam: false, kod: "oturum_yok" };
+    const r = await this.oturumBul(belirtec);
+    if (!r) return { tamam: false, kod: "oturum_yok" };
+    if (!this.adSiniri.al(r.hesap.id)) {
+      this.sayaclar.artir("ad.hiz_siniri");
+      return { tamam: false, kod: "hiz_siniri", beklemeSn: 60 };
+    }
+    return this.adSirala(r.hesap.id, async (): Promise<AdSonucu> => {
+      const hesap = await this.depo.hesapBulId(r.hesap.id);
+      if (!hesap) return { tamam: false, kod: "oturum_yok" };
+      const k = kural(ham);
+      if (!k.tamam) {
+        this.sayaclar.artir("ad.gecersiz");
+        // Çekirdek iletisi marka adı diliyle yazılmıştır ("marka adi ..."); görünen ad ucunda "ad ..." olarak döner.
+        return { tamam: false, kod: "ad_gecersiz", mesaj: adIletisi(k.hata) };
+      }
+      const ad = k.ad;
+      if (this.adSuzgeci?.yasakliMi(ad) === true) {
+        this.sayaclar.artir("ad.yasakli");
+        return { tamam: false, kod: "ad_yasakli", mesaj: "ad kullanilamaz" };
+      }
+      const an = this.simdi();
+      const ilkSecim = hesap.adSecildi !== true;
+      if (!ilkSecim && hesap.ad === ad) return { tamam: true, ad, degisti: false };
+      if (!ilkSecim && hesap.adDegisimT !== undefined && turkiyeGeceYarisi(hesap.adDegisimT) === turkiyeGeceYarisi(an)) {
+        this.sayaclar.artir("ad.sinir");
+        return { tamam: false, kod: "ad_sinir", mesaj: "ad gunde en cok bir kez degistirilebilir; yarin (00:00 TRT) tekrar deneyin", beklemeSn: Math.ceil((turkiyeGeceYarisi(an) + GUN_MS - an) / 1000) };
+      }
+      // İlk seçim günlük hakkı tüketmez (değişim zamanı korunur); sonraki değişiklikler zamanı yazar.
+      await this.depo.adYaz(hesap.id, ad, true, ilkSecim ? (hesap.adDegisimT ?? null) : an);
+      this.adlar.set(hesap.oyuncu, ad);
+      this.sayaclar.artir(ilkSecim ? "ad.ilk_secim" : "ad.degisti");
+      return { tamam: true, ad, degisti: true };
+    });
   }
 
   private iptalBildir(oturumlar: string[]): void {
@@ -411,5 +591,7 @@ export class GirisHizmeti {
     this.ipSiniri.temizle();
     this.onaySiniri.temizle();
     this.biletSiniri.temizle();
+    this.adSiniri.temizle();
+    this.adOneriSiniri.temizle();
   }
 }
