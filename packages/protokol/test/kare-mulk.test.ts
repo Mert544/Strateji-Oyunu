@@ -111,7 +111,7 @@ describe("mulk kare eklemeleri", () => {
   it("yalnizca sahip degisince: delta ayrilmis tasimaz ve ilceAyni referans onbellegiyle ucuz", () => {
     const { sim } = kurulum();
     const a = kare(sim, null);
-    sim.uygula({ t: 2 * SAAT, oyuncu: "veli", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [sim.ic.mulk!.fikstur.ilceler.find((c) => c.id === ILCE)!.hucreler.filter((h) => h.uygun && h.sinif === "kirsal" && !kamuKumesi(sim).has(h.id)).at(-1)!.id], sinif: "kirsal" } });
+    sim.uygula({ t: 2 * SAAT, oyuncu: "veli", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [sim.ic.mulk!.fikstur.ilceler.find((c) => c.id === ILCE)!.hucreler.filter((h) => h.uygun && h.sinif === "kirsal" && !kamuKumesi(sim).has(h.id) && !sim.ic.mulk!.ayrilmis.has(h.id)).at(-1)!.id], sinif: "kirsal" } });
     const b = kare(sim, null);
     expect(a.ilceler?.[0]?.ayrilmis).toBe(b.ilceler?.[0]?.ayrilmis); // aynı önbellek dizisi
     const delta = kareFarki(a, b);
@@ -189,7 +189,7 @@ describe("kamu arsasi yayini (dikdortgen blok)", () => {
     expect(IlgiKaresiSemasi.safeParse(bozuk).success).toBe(false);
     // Delta: ilçe zaten istemcideyken kamu tekrarlanmaz; uygulayınca korunur.
     const a = kare(sim, null, true);
-    const satilacak = [...(sim.ic.mulk?.fikstur.ilceler.find((c) => c.id === ILCE)?.hucreler ?? [])].reverse().find((h) => h.uygun && h.sinif === "kirsal" && !kamuIds.has(h.id) && !sim.dunya.mulk?.hucreler.some((x) => x.id === h.id));
+    const satilacak = [...(sim.ic.mulk?.fikstur.ilceler.find((c) => c.id === ILCE)?.hucreler ?? [])].reverse().find((h) => h.uygun && h.sinif === "kirsal" && !kamuIds.has(h.id) && !sim.ic.mulk!.ayrilmis.has(h.id) && !sim.dunya.mulk?.hucreler.some((x) => x.id === h.id));
     sim.uygula({ t: 3 * SAAT, oyuncu: "veli", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [satilacak!.id], sinif: "kirsal" } });
     const b = kare(sim, null, true);
     const delta = kareFarki(a, b);
