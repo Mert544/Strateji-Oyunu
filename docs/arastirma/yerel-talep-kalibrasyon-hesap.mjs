@@ -72,19 +72,22 @@ function ilce(N, olcek, k) {
 }
 
 // ------------------------------------------------------------------------------------------------ nüfus tablosu
-// DOĞRULANMADI: TÜİK ADNKS 2023–2024 ilçe nüfusları, YAKLAŞIK (bin kişi, ±%15), hafızadan; kaynak taraması (T3/O3) bekliyor.
-const ILCELER = [
-  ["Kocaeli", "Gebze", 410], ["Kocaeli", "İzmit", 390], ["Kocaeli", "Darıca", 195], ["Kocaeli", "Körfez", 180], ["Kocaeli", "Derince", 135],
-  ["Kocaeli", "Gölcük", 150], ["Kocaeli", "Karamürsel", 55], ["Kocaeli", "Kartepe", 135], ["Kocaeli", "Başiskele", 140], ["Kocaeli", "Çayırova", 130],
-  ["Kocaeli", "Dilovası", 55], ["Kocaeli", "Kandıra", 55],
-  ["Sakarya", "Adapazarı", 280], ["Sakarya", "Serdivan", 150], ["Sakarya", "Erenler", 105], ["Sakarya", "Arifiye", 45], ["Sakarya", "Akyazı", 90],
-  ["Sakarya", "Hendek", 85], ["Sakarya", "Sapanca", 50], ["Sakarya", "Karasu", 55], ["Sakarya", "Kocaali", 33], ["Sakarya", "Geyve", 45],
-  ["Sakarya", "Pamukova", 17], ["Sakarya", "Taraklı", 6], ["Sakarya", "Söğütlü", 28], ["Sakarya", "Ferizli", 33], ["Sakarya", "Kaynarca", 28], ["Sakarya", "Karapürçek", 4],
-  ["Bursa", "Osmangazi", 890], ["Bursa", "Nilüfer", 540], ["Bursa", "Yıldırım", 640], ["Bursa", "Mudanya", 110], ["Bursa", "Gemlik", 120],
-  ["Bursa", "İnegöl", 300], ["Bursa", "Mustafakemalpaşa", 105], ["Bursa", "Orhangazi", 80], ["Bursa", "Karacabey", 80], ["Bursa", "Gürsu", 90],
-  ["Bursa", "Kestel", 70], ["Bursa", "İznik", 45], ["Bursa", "Orhaneli", 20], ["Bursa", "Keles", 10], ["Bursa", "Harmancık", 5],
-  ["Bursa", "Büyükorhan", 11], ["Bursa", "Yenişehir", 22],
-].map(([il, ad, bin]) => ({ il, ad, N: bin * 1000 }));
+// Kaynak: T3 kaynak taraması `ilce-nufus.tsv` (TÜİK ADNKS 2025, 31.12.2025; bülten 9.2.2026; ikincil derleme, birincil teyit YOK = doğrulanmadı).
+// Sayılar bu betiğe KOPYALANMAZ: dosya yolu birinci argümandır. Kullanım:
+//   node docs/arastirma/yerel-talep-kalibrasyon-hesap.mjs <ilce-nufus.tsv> > docs/arastirma/yerel-talep-kalibrasyon-hesap-cikti.md
+const TSV_YOLU = process.argv[2];
+if (TSV_YOLU === undefined) {
+  console.error("kullanım: node yerel-talep-kalibrasyon-hesap.mjs <ilce-nufus.tsv>");
+  process.exit(2);
+}
+const ILCELER = fs
+  .readFileSync(TSV_YOLU, "utf8")
+  .split("\n")
+  .slice(1)
+  .filter((x) => x.trim() !== "")
+  .map((x) => x.split("\t"))
+  .map((c) => ({ kimlik: c[0], ad: c[1], il: c[2], N: Number(c[3]) }));
+if (ILCELER.length !== 45) throw new Error(`45 ilçe beklenir: ${ILCELER.length}`);
 // Ölçülen (z20 ızgara manifesti, entegrasyon 7553b55; istemci `arsaSinifi` geçici eşlemesiyle; uygun hücreler): baskın sınıf.
 const OLCULEN_SINIF = { Gemlik: [465007, 4347, 9292], Gebze: [451912, 20366, 13578], Körfez: [328183, 8064, 15136] }; // kırsal, kasaba, şehir
 
@@ -94,9 +97,9 @@ const medyan = (sirali[22].N);
 
 yaz("# Yerel talep kalibrasyonu: hesap çıktısı (otomatik üretildi)");
 yaz();
-yaz("Girdi: `packages/veri/icerik/icerik.json` (ekmek taban fiyatı). Nüfus tablosu **yaklaşık ve doğrulanmadı** (hafızadan, TÜİK ADNKS 2023–2024; ±%15). Model: p4-p5-ekonomi-hesap.mjs §5 (fırın dükkânı, ekmek rafı, 1,05 R, çeşit 0,5, kasa 90 birim/sa).");
+yaz("Girdi: `packages/veri/icerik/icerik.json` (ekmek taban fiyatı). Nüfus: T3 `ilce-nufus.tsv` (TÜİK ADNKS 2025, ikincil derleme; birincil teyit yok = doğrulanmadı). Model: p4-p5-ekonomi-hesap.mjs §5 (fırın dükkânı, ekmek rafı, 1,05 R, çeşit 0,5, kasa 90 birim/sa).");
 yaz();
-yaz("## 1. Nüfus dağılımı (45 ilçe, yaklaşık)");
+yaz("## 1. Nüfus dağılımı (45 ilçe, ADNKS 2025, ikincil derleme)");
 yaz();
 const bantlar = [["< 10 bin", 0, 10e3], ["10–30 bin", 10e3, 30e3], ["30–60 bin", 30e3, 60e3], ["60–100 bin", 60e3, 100e3], ["100–200 bin", 100e3, 200e3], ["200–400 bin", 200e3, 400e3], ["≥ 400 bin", 400e3, 1e12]];
 yaz(baslik("Nüfus bandı", "İlçe sayısı", "Toplam nüfus", "Toplamın payı"));
@@ -135,6 +138,7 @@ yaz();
 yaz("Oyuncu yerleşimi iki senaryo: **U** her ilçede eşit (200 oyuncu / 45 ≈ 4,4; ilçe başına dükkân = 4 ya da 5 dağıtılarak), **N** oyuncu nüfusla orantılı (en az 1). Her oyuncu 1 fırın dükkânı. ZP8 payı = yerelNpc / (yerelNpc + ihracatNpc 112,3 M ₺/hafta).");
 yaz();
 const SIN = (N) => (N < 30e3 ? "kirsal" : N < 150e3 ? "kasaba" : "sehir");
+const SIN0 = (N) => (N < 20e3 ? "kirsal" : N < 69282 ? "kasaba" : "sehir"); // T3: 10/40/120 bin eşdeğerlere en yakın (geometrik eşik)
 const bandGM = (s) => {
   const g = ILCELER.filter((x) => SIN(x.N) === s);
   return Math.round(Math.exp(g.reduce((t, x) => t + Math.log(x.N), 0) / g.length) / 1000) * 1000;
@@ -155,7 +159,7 @@ const KOSUL = [
   ["(a) sınıf sabiti kalır, yerelOlcek kalibre (toplam talep gerçek nüfusa eşitlenir)", () => 10000, (toplamN * 50) / (10000 * 45)],
   ["(b) ilçe başına gerçek nüfus, yerelOlcek 50", (x) => x.N, 50],
   [`(c) karma: nüfus bandından sınıf (< 30 bin kırsal, < 150 bin kasaba, ≥ 150 bin şehir), sınıf eşdeğeri = bant geometrik ortalaması (${tam(GM.kirsal)} / ${tam(GM.kasaba)} / ${tam(GM.sehir)}), yerelOlcek 50`, (x) => GM[SIN(x.N)], 50],
-  ["(c0) karma, sınıf eşdeğeri 10 / 40 / 120 bin (A3 sabitleri), yerelOlcek 50", (x) => ({ kirsal: 10000, kasaba: 40000, sehir: 120000 })[SIN(x.N)], 50],
+  ["(c0) karma, nüfus bandından sınıf (< 20 bin / < 69 bin / üstü), sınıf eşdeğeri 10 / 40 / 120 bin (A3 sabitleri), yerelOlcek 50", (x) => ({ kirsal: 10000, kasaba: 40000, sehir: 120000 })[SIN0(x.N)], 50],
 ];
 yaz(baslik("Seçenek", "Yerleşim", "Dünya talep Q ekmek birim/sa", "yerelNpc ₺/hafta", "ZP8 payı", "Kârlı ilçe (net > 0)", "Medyan dükkân neti ₺/sa", "Medyan geri ödeme sa"));
 const sonuc = {};
@@ -214,7 +218,7 @@ for (const s of ["kirsal", "kasaba", "sehir"]) {
 yaz();
 const hataA3 = ILCELER.reduce((t, x) => t + Math.abs(Math.log(10000 / x.N)), 0) / ILCELER.length;
 const hataC = ILCELER.reduce((t, x) => t + Math.abs(Math.log(GM[SIN(x.N)] / x.N)), 0) / ILCELER.length;
-const hataC0 = ILCELER.reduce((t, x) => t + Math.abs(Math.log(({ kirsal: 10000, kasaba: 40000, sehir: 120000 })[SIN(x.N)] / x.N)), 0) / ILCELER.length;
+const hataC0 = ILCELER.reduce((t, x) => t + Math.abs(Math.log(({ kirsal: 10000, kasaba: 40000, sehir: 120000 })[SIN0(x.N)] / x.N)), 0) / ILCELER.length;
 yaz(`Ortalama mutlak log hatası (nüfus eşdeğeri ↔ gerçek): A3 olduğu gibi ${ond(Math.exp(hataA3), 1)}×, (c0) ${ond(Math.exp(hataC0), 1)}×, (c) ${ond(Math.exp(hataC), 1)}×, (b) 1,0×.`);
 yaz();
 yaz("## 6. Arsa fiyat beklentisine etki");

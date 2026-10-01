@@ -1,20 +1,20 @@
 # Yerel talep kalibrasyonu: hesap çıktısı (otomatik üretildi)
 
-Girdi: `packages/veri/icerik/icerik.json` (ekmek taban fiyatı). Nüfus tablosu **yaklaşık ve doğrulanmadı** (hafızadan, TÜİK ADNKS 2023–2024; ±%15). Model: p4-p5-ekonomi-hesap.mjs §5 (fırın dükkânı, ekmek rafı, 1,05 R, çeşit 0,5, kasa 90 birim/sa).
+Girdi: `packages/veri/icerik/icerik.json` (ekmek taban fiyatı). Nüfus: T3 `ilce-nufus.tsv` (TÜİK ADNKS 2025, ikincil derleme; birincil teyit yok = doğrulanmadı). Model: p4-p5-ekonomi-hesap.mjs §5 (fırın dükkânı, ekmek rafı, 1,05 R, çeşit 0,5, kasa 90 birim/sa).
 
-## 1. Nüfus dağılımı (45 ilçe, yaklaşık)
+## 1. Nüfus dağılımı (45 ilçe, ADNKS 2025, ikincil derleme)
 
 | Nüfus bandı | İlçe sayısı | Toplam nüfus | Toplamın payı |
 |---|---|---|---|
-| < 10 bin | 3 | 15.000 | %0 |
-| 10–30 bin | 7 | 136.000 | %2 |
-| 30–60 bin | 10 | 471.000 | %8 |
-| 60–100 bin | 6 | 495.000 | %8 |
-| 100–200 bin | 12 | 1.655.000 | %27 |
-| 200–400 bin | 3 | 970.000 | %16 |
-| ≥ 400 bin | 4 | 2.480.000 | %40 |
+| < 10 bin | 3 | 22.301 | %0 |
+| 10–30 bin | 6 | 109.330 | %2 |
+| 30–60 bin | 10 | 492.575 | %8 |
+| 60–100 bin | 7 | 607.901 | %9 |
+| 100–200 bin | 11 | 1.575.153 | %24 |
+| 200–400 bin | 4 | 1.206.896 | %18 |
+| ≥ 400 bin | 4 | 2.533.719 | %39 |
 
-Toplam 6.222.000; medyan ilçe 80.000; ortalama 138.267; en büyük/en küçük 890.000 / 4.000 (oran 223). Dağılım ağır kuyrukludur: ilk 6 ilçe toplamın %51'ini taşır.
+Toplam 6.547.875; medyan ilçe 86.543; ortalama 145.508; en büyük/en küçük 886.111 / 6.089 (oran 146). Dağılım ağır kuyrukludur: ilk 6 ilçe toplamın %49'ini taşır.
 
 ## 2. Ölçülen hücre sınıfı: baskın sınıf kuralı üç ilçede de kırsal çıkıyor
 
@@ -22,9 +22,9 @@ Kural (A3 §6.5): ilçe sınıfı = uygun hücrelerin en çok olan sınıfı (is
 
 | İlçe | Kırsal hücre | Kasaba hücre | Şehir hücre | Kırsal payı | Baskın sınıf | Yaklaşık nüfus | Sınıf eşdeğeri (10 / 40 / 120 bin) | Eşdeğer / gerçek |
 |---|---|---|---|---|---|---|---|---|
-| Gemlik | 465.007 | 4.347 | 9.292 | %97 | **kırsal** | 120.000 | 10.000 | 0,083 |
-| Gebze | 451.912 | 20.366 | 13.578 | %93 | **kırsal** | 410.000 | 10.000 | 0,024 |
-| Körfez | 328.183 | 8.064 | 15.136 | %93 | **kırsal** | 180.000 | 10.000 | 0,056 |
+| Gemlik | 465.007 | 4.347 | 9.292 | %97 | **kırsal** | 124.400 | 10.000 | 0,080 |
+| Gebze | 451.912 | 20.366 | 13.578 | %93 | **kırsal** | 414.960 | 10.000 | 0,024 |
+| Körfez | 328.183 | 8.064 | 15.136 | %93 | **kırsal** | 183.077 | 10.000 | 0,055 |
 
 Üç ilçede de kırsal hücre payı %93–97; gerçek nüfusları 120–410 bin. Sınıf eşdeğeri 10 bin demek talebi 12–41 kat eksik saymaktır. (Diğer 42 ilçe ölçülmedi: Osmangazi, Nilüfer gibi kent merkezlerinde pay değişebilir, ama arazi tabanlı hücre sınıfı yoğun kentte bile ilçe alanının büyük kısmı kırsal olduğundan baskın sınıf büyük olasılıkla kırsaldır (doğrulanmadı).)
 
@@ -52,15 +52,15 @@ Oyuncu yerleşimi iki senaryo: **U** her ilçede eşit (200 oyuncu / 45 ≈ 4,4;
 | Seçenek | Yerleşim | Dünya talep Q ekmek birim/sa | yerelNpc ₺/hafta | ZP8 payı | Kârlı ilçe (net > 0) | Medyan dükkân neti ₺/sa | Medyan geri ödeme sa |
 |---|---|---|---|---|---|---|---|
 | A3 şartnamesi olduğu gibi: baskın hücre sınıfı = kırsal (10.000), yerelOlcek 50 | U | 1.350 | 10.716.300 | %9 | 0/45 | -78 | hiç |
-| A3 şartnamesi olduğu gibi: baskın hücre sınıfı = kırsal (10.000), yerelOlcek 50 | N | 1.350 | 9.758.437 | %8 | 15/45 | -60 | hiç |
-| (a) sınıf sabiti kalır, yerelOlcek kalibre (toplam talep gerçek nüfusa eşitlenir) | U | 18.666 | 148.170.708 | %57 | 45/45 | 610 | 15 |
-| (a) sınıf sabiti kalır, yerelOlcek kalibre (toplam talep gerçek nüfusa eşitlenir) | N | 18.666 | 101.697.962 | %48 | 44/45 | 727 | 12 |
-| (b) ilçe başına gerçek nüfus, yerelOlcek 50 | U | 18.666 | 94.588.912 | %46 | 37/45 | 297 | 30 |
-| (b) ilçe başına gerçek nüfus, yerelOlcek 50 | N | 18.666 | 145.728.524 | %56 | 42/45 | 512 | 17 |
-| (c) karma: nüfus bandından sınıf (< 30 bin kırsal, < 150 bin kasaba, ≥ 150 bin şehir), sınıf eşdeğeri = bant geometrik ortalaması (12.000 / 74.000 / 317.000), yerelOlcek 50 | U | 16.149 | 91.826.784 | %45 | 35/45 | 265 | 34 |
-| (c) karma: nüfus bandından sınıf (< 30 bin kırsal, < 150 bin kasaba, ≥ 150 bin şehir), sınıf eşdeğeri = bant geometrik ortalaması (12.000 / 74.000 / 317.000), yerelOlcek 50 | N | 16.149 | 113.747.677 | %50 | 45/45 | 397 | 23 |
-| (c0) karma, sınıf eşdeğeri 10 / 40 / 120 bin (A3 sabitleri), yerelOlcek 50 | U | 7.140 | 56.677.320 | %34 | 35/45 | 83 | 108 |
-| (c0) karma, sınıf eşdeğeri 10 / 40 / 120 bin (A3 sabitleri), yerelOlcek 50 | N | 7.140 | 54.645.054 | %33 | 43/45 | 154 | 58 |
+| A3 şartnamesi olduğu gibi: baskın hücre sınıfı = kırsal (10.000), yerelOlcek 50 | N | 1.350 | 9.859.007 | %8 | 13/45 | -60 | hiç |
+| (a) sınıf sabiti kalır, yerelOlcek kalibre (toplam talep gerçek nüfusa eşitlenir) | U | 19.644 | 155.930.050 | %58 | 45/45 | 649 | 14 |
+| (a) sınıf sabiti kalır, yerelOlcek kalibre (toplam talep gerçek nüfusa eşitlenir) | N | 19.644 | 105.926.948 | %49 | 44/45 | 727 | 12 |
+| (b) ilçe başına gerçek nüfus, yerelOlcek 50 | U | 19.644 | 99.430.838 | %47 | 38/45 | 332 | 27 |
+| (b) ilçe başına gerçek nüfus, yerelOlcek 50 | N | 19.644 | 153.704.531 | %58 | 43/45 | 530 | 17 |
+| (c) karma: nüfus bandından sınıf (< 30 bin kırsal, < 150 bin kasaba, ≥ 150 bin şehir), sınıf eşdeğeri = bant geometrik ortalaması (13.000 / 73.000 / 299.000), yerelOlcek 50 | U | 17.049 | 97.065.292 | %46 | 36/45 | 260 | 34 |
+| (c) karma: nüfus bandından sınıf (< 30 bin kırsal, < 150 bin kasaba, ≥ 150 bin şehir), sınıf eşdeğeri = bant geometrik ortalaması (13.000 / 73.000 / 299.000), yerelOlcek 50 | N | 17.049 | 120.582.073 | %52 | 45/45 | 390 | 23 |
+| (c0) karma, nüfus bandından sınıf (< 20 bin / < 69 bin / üstü), sınıf eşdeğeri 10 / 40 / 120 bin (A3 sabitleri), yerelOlcek 50 | U | 11.010 | 87.397.380 | %44 | 38/45 | 383 | 23 |
+| (c0) karma, nüfus bandından sınıf (< 20 bin / < 69 bin / üstü), sınıf eşdeğeri 10 / 40 / 120 bin (A3 sabitleri), yerelOlcek 50 | N | 11.010 | 83.400.311 | %43 | 43/45 | 297 | 30 |
 
 Okuma: **A3'ün olduğu gibi** hâlinde her ilçe kırsal sayılır: talep nüfusa değil ilçe sayısına bağlanır, dükkân neti kırsal düzeyde (≈ 30 ₺/sa) kalır ve yerelNpc ihmal edilebilir; bu A2 §1.10'daki %45'lik ZP8 beklentisinin (ilçelerin %60'ı şehir varsayımıyla) çok altındadır. (a) toplamı gerçek nüfusa getirir ama her ilçeyi eşit yapar: küçük ilçe zengin, büyük ilçe fakir görünür. (b) gerçeğe en yakın, ama şemaya ilçe başına nüfus alanı ister. (c) karma, şemaya yalnız sınıf bilgisini taşır; hata bandı içinde kalır (aşağıda).
 
@@ -68,36 +68,36 @@ Okuma: **A3'ün olduğu gibi** hâlinde her ilçe kırsal sayılır: talep nüfu
 
 | Seçenek | yerelOlcek | Yerleşim | yerelNpc ₺/hafta | ZP8 payı | Kârlı ilçe | Medyan dükkân neti ₺/sa | Medyan geri ödeme sa |
 |---|---|---|---|---|---|---|---|
-| (b) ilçe başına gerçek nüfus | 20 | U | 50.981.011 | %31 | 25/45 | 40 | 225 |
-| (b) ilçe başına gerçek nüfus | 20 | N | 58.291.115 | %34 | 38/45 | 126 | 71 |
-| (b) ilçe başına gerçek nüfus | 30 | U | 68.183.948 | %38 | 33/45 | 126 | 71 |
-| (b) ilçe başına gerçek nüfus | 30 | N | 87.436.964 | %44 | 40/45 | 254 | 35 |
-| (b) ilçe başına gerçek nüfus | 35 | U | 74.784.935 | %40 | 33/45 | 169 | 53 |
-| (b) ilçe başına gerçek nüfus | 35 | N | 102.010.095 | %48 | 40/45 | 319 | 28 |
-| (b) ilçe başına gerçek nüfus | 40 | U | 81.386.726 | %42 | 35/45 | 211 | 42 |
-| (b) ilçe başına gerçek nüfus | 40 | N | 116.583.003 | %51 | 41/45 | 383 | 23 |
-| (b) ilçe başına gerçek nüfus | 50 | U | 94.588.912 | %46 | 37/45 | 297 | 30 |
-| (b) ilçe başına gerçek nüfus | 50 | N | 145.728.524 | %56 | 42/45 | 512 | 17 |
-| (c) karma, bant geometrik ortalaması | 20 | U | 51.276.305 | %31 | 30/45 | 27 | 333 |
-| (c) karma, bant geometrik ortalaması | 20 | N | 49.927.734 | %31 | 32/45 | 80 | 112 |
-| (c) karma, bant geometrik ortalaması | 30 | U | 72.599.360 | %39 | 35/45 | 106 | 84 |
-| (c) karma, bant geometrik ortalaması | 30 | N | 74.891.865 | %40 | 35/45 | 186 | 48 |
-| (c) karma, bant geometrik ortalaması | 35 | U | 78.280.979 | %41 | 35/45 | 146 | 61 |
-| (c) karma, bant geometrik ortalaması | 35 | N | 86.330.926 | %43 | 45/45 | 239 | 37 |
-| (c) karma, bant geometrik ortalaması | 40 | U | 82.796.515 | %42 | 35/45 | 186 | 48 |
-| (c) karma, bant geometrik ortalaması | 40 | N | 96.141.860 | %46 | 45/45 | 292 | 31 |
-| (c) karma, bant geometrik ortalaması | 50 | U | 91.826.784 | %45 | 35/45 | 265 | 34 |
-| (c) karma, bant geometrik ortalaması | 50 | N | 113.747.677 | %50 | 45/45 | 397 | 23 |
+| (b) ilçe başına gerçek nüfus | 20 | U | 53.619.803 | %32 | 26/45 | 54 | 166 |
+| (b) ilçe başına gerçek nüfus | 20 | N | 61.481.228 | %35 | 38/45 | 133 | 67 |
+| (b) ilçe başına gerçek nüfus | 30 | U | 72.054.284 | %39 | 34/45 | 147 | 61 |
+| (b) ilçe başına gerçek nüfus | 30 | N | 92.222.128 | %45 | 41/45 | 265 | 34 |
+| (b) ilçe başına gerçek nüfus | 35 | U | 79.300.620 | %41 | 35/45 | 193 | 46 |
+| (b) ilçe başına gerçek nüfus | 35 | N | 107.592.562 | %49 | 41/45 | 332 | 27 |
+| (b) ilçe başına gerçek nüfus | 40 | U | 86.546.818 | %44 | 36/45 | 240 | 37 |
+| (b) ilçe başına gerçek nüfus | 40 | N | 122.963.494 | %52 | 42/45 | 398 | 22 |
+| (b) ilçe başına gerçek nüfus | 50 | U | 99.430.838 | %47 | 38/45 | 332 | 27 |
+| (b) ilçe başına gerçek nüfus | 50 | N | 153.704.531 | %58 | 43/45 | 530 | 17 |
+| (c) karma, bant geometrik ortalaması | 20 | U | 54.133.985 | %33 | 31/45 | 25 | 362 |
+| (c) karma, bant geometrik ortalaması | 20 | N | 52.924.625 | %32 | 33/45 | 77 | 116 |
+| (c) karma, bant geometrik ortalaması | 30 | U | 77.504.473 | %41 | 36/45 | 103 | 87 |
+| (c) karma, bant geometrik ortalaması | 30 | N | 79.387.176 | %41 | 36/45 | 181 | 49 |
+| (c) karma, bant geometrik ortalaması | 35 | U | 84.234.023 | %43 | 36/45 | 142 | 63 |
+| (c) karma, bant geometrik ortalaması | 35 | N | 91.953.919 | %45 | 45/45 | 234 | 38 |
+| (c) karma, bant geometrik ortalaması | 40 | U | 88.511.875 | %44 | 36/45 | 181 | 49 |
+| (c) karma, bant geometrik ortalaması | 40 | N | 102.695.589 | %48 | 45/45 | 286 | 31 |
+| (c) karma, bant geometrik ortalaması | 50 | U | 97.065.292 | %46 | 36/45 | 260 | 34 |
+| (c) karma, bant geometrik ortalaması | 50 | N | 120.582.073 | %52 | 45/45 | 390 | 23 |
 
 ## 5. Karma seçenekte (c) sınıf sabitinin hatası
 
 | Sınıf (nüfus bandı) | İlçe sayısı | Bant | Geometrik ortalama (önerilen eşdeğer) | Eşdeğer / gerçek: en düşük | en yüksek | Ortalama mutlak log hatası |
 |---|---|---|---|---|---|---|
-| kirsal | 10 | < 30 bin | 12.000 | 0,43 | 3,00 | 1,84× |
-| kasaba | 24 | 30–150 bin | 74.000 | 0,53 | 2,24 | 1,48× |
-| sehir | 11 | ≥ 150 bin | 317.000 | 0,36 | 2,11 | 1,64× |
+| kirsal | 9 | < 30 bin | 13.000 | 0,51 | 2,13 | 1,53× |
+| kasaba | 23 | 30–150 bin | 73.000 | 0,49 | 2,31 | 1,43× |
+| sehir | 13 | ≥ 150 bin | 299.000 | 0,34 | 1,94 | 1,62× |
 
-Ortalama mutlak log hatası (nüfus eşdeğeri ↔ gerçek): A3 olduğu gibi 7,8×, (c0) 2,1×, (c) 1,6×, (b) 1,0×.
+Ortalama mutlak log hatası (nüfus eşdeğeri ↔ gerçek): A3 olduğu gibi 8,1×, (c0) 1,6×, (c) 1,5×, (b) 1,0×.
 
 ## 6. Arsa fiyat beklentisine etki
 
