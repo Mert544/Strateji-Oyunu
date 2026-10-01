@@ -576,6 +576,28 @@ describe.skipIf(!PG)("postgres: hesap, oturum ve giris baglantisi (sema surumu 4
     }
   });
 
+  it("REGRESYON havuz kilitlenmesi: ayni e-postayla 5 ESZAMANLI hesapOlustur (havuz max 4, biri advisory kilitte) < 5 sn biter; tek hesap olusur, diger 4 cagri mevcut hesabi dogru doner", async () => {
+    const depo = await pgAc(yeniDunya("hesap-yaris"));
+    const onek = hesapOnek();
+    const h = depo.hesap as NonNullable<typeof depo.hesap>;
+    const anahtar = `${onek}-yaris@ornek.org`;
+    const bas = Date.now();
+    const sonuclar = await Promise.all(
+      [0, 1, 2, 3, 4].map((i) => h.hesapOlustur({ id: `${onek}-h-${i}`, eposta: anahtar, anahtar, oyuncu: `${onek}-o${i}`.slice(0, 32), olusturma: 1_000 + i })),
+    );
+    expect(Date.now() - bas, "havuz kilitlenmedi (5 sn altinda bitti)").toBeLessThan(5_000);
+    const yeniler = sonuclar.filter((r) => r.yeni);
+    expect(yeniler).toHaveLength(1);
+    expect(sonuclar.filter((r) => !r.yeni)).toHaveLength(4);
+    const kazanan = (yeniler[0] as (typeof sonuclar)[number]).hesap;
+    for (const r of sonuclar) expect(r.hesap).toEqual(kazanan); // hepsi ayni (kazanan) hesabi gorur
+    expect(await h.hesapBulAnahtar(anahtar)).toEqual(kazanan);
+    expect((await sorgu<{ n: number }>("SELECT count(*)::int AS n FROM hesap WHERE eposta_anahtar = $1", [anahtar]))[0]?.n).toBe(1);
+    // Havuz sonra da calisir (baglanti sizintisi yok): ardisik islemler hemen donmeli.
+    expect((await h.sayilar()).hesap).toBeGreaterThanOrEqual(1);
+    await depo.gunluk.kapat();
+  });
+
   it("hesap deposu sozlesmesi (bellek ve dosya ile ayni): hesap basina bir oyuncu, tek kullanimlik sureli baglanti, oturum, silme", async () => {
     const depo = await pgAc(yeniDunya("hesap"));
     try {

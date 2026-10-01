@@ -60,7 +60,8 @@ export class PostgresHesapDeposu implements HesapDeposu {
       const r = await c.query("INSERT INTO hesap (id, eposta, eposta_anahtar, olusturma) VALUES ($1,$2,$3,$4) ON CONFLICT (eposta_anahtar) DO NOTHING", [h.id, h.eposta, h.anahtar, h.olusturma]);
       if (r.rowCount === 0) {
         await c.query("ROLLBACK");
-        const mevcut = await this.hesapBulAnahtar(h.anahtar);
+        const m = await c.query<HesapSatiri>(`${HESAP_SECIMI} WHERE h.eposta_anahtar = $1`, [h.anahtar]); // AYNI istemciyle: havuzdan ikinci baglanti alinmaz
+        const mevcut = m.rows[0] ? hesapKaydi(m.rows[0]) : null;
         if (!mevcut) throw new Error("hesap olusturulamadi (eszamanli silme)");
         return { hesap: mevcut, yeni: false };
       }
