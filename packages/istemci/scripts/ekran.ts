@@ -47,7 +47,7 @@ async function main(): Promise<void> {
   await sayfa.addInitScript("window.__name = (f) => f;");
   sayfa.on("console", (m) => (m.type() === "error" || m.type() === "warning") && console.log("konsol:", m.text()));
   sayfa.on("pageerror", (e) => console.log("pageerror:", e.message));
-  await sayfa.goto(`file://${resolve(arg("html", join(DEPO, "istemci", "dunya.html")))}?adaptif=0&hiz=${arg("hiz", "21600")}&ileri=${arg("ileri", "0")}`);
+  await sayfa.goto(`file://${resolve(arg("html", join(DEPO, "istemci", "dunya.html")))}?adaptif=0&hiz=${arg("hiz", "21600")}&ileri=${arg("ileri", "0")}#${arg("devlet", "izle")}`);
   await sayfa.waitForFunction(() => window.__olcum?.hazir() === true, null, { timeout: 240000 });
   await sayfa.waitForFunction((hedef) => (window.__olcum?.simSaat() ?? 0) >= hedef, Number(arg("sim", "48")), { timeout: 240000 });
   const olay = arg("olay", "");

@@ -83,18 +83,6 @@ export function bolgeTarimBolumu(g: GovdeDurumu, i: number): string {
   return s;
 }
 
-/** Tarım kararları yer tutucusu (komut arayüzü sonraki görevde; burada hangi kararların var olduğu yazar). */
-export function tarimKararlari(g: GovdeDurumu, bolgeSecili: boolean): string {
-  const t = g.dizin?.tarim;
-  if (!t) return "";
-  const dis = bolgeSecili ? "" : " disabled";
-  return `<h3>Tarım kararları <span class="rozet belirsiz">yakında</span></h3>
-<div class="karar-yer" aria-label="Tarım kararları (yakında)">
-  <div class="karar-satir"><span><b>Ekim planı</b><br><span class="soluk">${esc(t.urunler.map((u) => u.ad).join(" / "))} payları (ekim nöbeti)</span></span><button type="button" disabled${dis}>Planla</button></div>
-  <div class="karar-satir"><span><b>Gübre dozu</b><br><span class="soluk">0–${t.azamiGubreDozu}; her doz toprağı besler, çıktıyı artırır, gübre girdisi ister</span></span><button type="button" disabled${dis}>Ayarla</button></div>
-</div>`;
-}
-
 // ---------------------------------------------------------------------------------------------
 // Lejant ve özetler
 // ---------------------------------------------------------------------------------------------

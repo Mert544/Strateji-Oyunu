@@ -8,8 +8,14 @@ import icerik from "../../veri/icerik/icerik.json";
 import param from "../../veri/icerik/parametreler.json";
 import dunyaTopo from "./veri/dunya-ulkeler.topo.json";
 import type { HaritaDosyasi, IcerikDosyasi, Parametreler } from "@bolge/veri";
+import { bildir } from "./arayuz/bildirim";
+import { devletKartlari, devletSecimiHtml, secimBelirteci, secimCoz } from "./arayuz/devlet-sec";
 import { Etiketler } from "./arayuz/etiketler";
 import { Panel } from "./arayuz/panel";
+import { hataCevir } from "./komut/hata";
+import { komutOzeti } from "./komut/kayit";
+import { icerikTablosu } from "./komut/tablo";
+import type { Komut, OzetBaglami } from "./komut/tipler";
 import { Sahne } from "./kure/sahne";
 import { slerp } from "./kure/matematik";
 import type { Vek3 } from "./kure/matematik";
@@ -39,6 +45,12 @@ declare global {
       sekme: (s: string) => void;
       hazir: () => boolean;
       karaSayisi: () => number;
+      /** Oyuncunun devlet indeksi (-1: yalnızca izleme; yok: henüz seçilmedi). */
+      devlet: () => number;
+      /** Komutu işçiye gönderir (arayüzdeki gönderimle aynı yol). */
+      komut: (k: Komut) => void;
+      /** Bölge kimliğinden indeks (bilinmiyorsa -1). */
+      bolgeIndeksi: (id: string) => number;
     };
   }
 }
@@ -137,6 +149,7 @@ function baslat(): void {
   };
   s.simSaatiKaynagi = gorunenSaat;
 
+  let devletAcici: () => void = () => undefined;
   const bolgeAd = (i: number): string => harita.harita.bolgeler[i]?.ad ?? "?";
   const panel: Panel = new Panel(
     {
@@ -166,6 +179,10 @@ function baslat(): void {
       kuzey: () => s.kontrol.kuzeyYukari(),
       dunya: () => s.dunyayiGoster(),
       tema: temaDegistir,
+      komutGonder: (k) => komutGonder(k),
+      formHata: (m) => bildir(m, "hata"),
+      oneriIste: () => isciyeGonder({ tur: "oneriIste" }),
+      devletSec: () => devletAcici(),
     },
     bolgeAd,
     harita.atif,
@@ -209,6 +226,18 @@ function baslat(): void {
         s.dizinKur(m.dizin);
         panel.dizinKur(m.dizin);
         break;
+      case "komutSonuc": {
+        const o = ozetBaglami();
+        if (!o) break;
+        if (m.sonuc.tamam) {
+          bildir(`Tamam — ${komutOzeti(m.komut, o)}.`, "tamam");
+          isciyeGonder({ tur: "oneriIste" });
+        } else bildir(`Olmadı: ${hataCevir(m.sonuc.hata, o)}`, "hata");
+        break;
+      }
+      case "oneriler":
+        panel.oneriYaz(m.liste);
+        break;
       case "kare":
         sonKare = m.kare;
         if (!ilkKare) simMsAlinan = m.simMs;
@@ -216,7 +245,13 @@ function baslat(): void {
         panel.kareYaz(m.kare);
         if (!ilkKare) {
           ilkKare = true;
-          if (q.get("acilis") !== "0") s.acilisUcusu();
+          if (q.get("acilis") !== "0") {
+            // Oyuncu kipinde açılış uçuşu kendi bölgelerine gider (seçim yapmadan: Devlet sekmesi açık kalır).
+            const ilk = benim >= 0 ? m.kare.bolgeler.findIndex((b) => b.sahip === benim) : -1;
+            if (ilk >= 0) s.bolgeyeUc(ilk);
+            else s.acilisUcusu();
+          }
+          if (benim >= 0) isciyeGonder({ tur: "oneriIste" });
           document.getElementById("yukleme")?.classList.add("bitti");
         }
         break;
@@ -233,15 +268,74 @@ function baslat(): void {
   };
   isci.onerror = (e: ErrorEvent): void => hataGoster("İşçi hatası: " + e.message);
 
-  isciyeGonder({
-    tur: "baslat",
-    veri: { harita: harita.harita as HaritaDosyasi, icerik: icerik as unknown as IcerikDosyasi, param: param as unknown as Parametreler },
-    tohum: Number(q.get("tohum")) || 1,
-    botlar: BOTLAR,
-    hiz,
-    duraklat,
-    ileriSaat: Number(q.get("ileri")) || 0,
-  });
+  // --- devlet seçimi ve komutlar ---
+  const veriPaketi = { harita: harita.harita as HaritaDosyasi, icerik: icerik as unknown as IcerikDosyasi, param: param as unknown as Parametreler };
+  const ic = icerikTablosu(veriPaketi.icerik, veriPaketi.param);
+  const devletIdler = veriPaketi.harita.devletler.map((d) => d.id);
+  let benim = -2; // -2: henüz seçilmedi, -1: yalnızca izle, >= 0: yönetilen devlet
+  let komutNo = 0;
+  const ozetBaglami = (): OzetBaglami | null => (dizin ? { ic, dizin, bolgeAd } : null);
+
+  function komutGonder(k: Komut): void {
+    if (benim < 0) {
+      bildir("Yalnızca izliyorsunuz: komut vermek için bir devlet seçin.", "hata");
+      return;
+    }
+    isciyeGonder({ tur: "komut", id: ++komutNo, komut: k });
+  }
+
+  function oyunuBaslat(devlet: number): void {
+    benim = devlet;
+    if (devlet >= 0) panel.oyunuKur(ic);
+    document.getElementById("yukleme")?.classList.remove("bitti");
+    isciyeGonder({ tur: "baslat", veri: veriPaketi, tohum: Number(q.get("tohum")) || 1, botlar: BOTLAR, hiz, duraklat, ileriSaat: Number(q.get("ileri")) || 0, oyuncuDevlet: devlet });
+  }
+
+  function belirteciYaz(idx: number): void {
+    const t = secimBelirteci(idx, devletIdler);
+    try {
+      history.replaceState(null, "", `#${t}`);
+    } catch {
+      location.hash = t;
+    }
+  }
+
+  /** "Devlet seç" katmanı: ilk açılışta (oyun başlamadan) ya da oyundayken (seçince sayfa yeniden yüklenir). */
+  function devletKatmaniAc(oyunda: boolean): void {
+    const kat = document.getElementById("devlet-sec") as HTMLElement;
+    kat.innerHTML = devletSecimiHtml(devletKartlari(veriPaketi.harita, veriPaketi.icerik), oyunda);
+    kat.hidden = false;
+    document.body.classList.add("secim-acik");
+    kat.onclick = (e): void => {
+      const t = e.target as HTMLElement;
+      if (t.closest("[data-devlet-kapat]")) {
+        kat.hidden = true;
+        document.body.classList.remove("secim-acik");
+        return;
+      }
+      const d = t.closest("[data-devlet]") as HTMLElement | null;
+      if (!d) return;
+      const idx = Number(d.dataset["devlet"]);
+      belirteciYaz(idx);
+      kat.hidden = true;
+      document.body.classList.remove("secim-acik");
+      if (oyunda) location.reload();
+      else oyunuBaslat(idx);
+    };
+    (kat.querySelector("[data-devlet]") as HTMLElement | null)?.focus();
+  }
+  devletAcici = () => devletKatmaniAc(benim !== -2);
+
+  const secim = secimCoz(location.hash, location.search, devletIdler);
+  if (secim === null) {
+    document.getElementById("yukleme")?.classList.add("bitti");
+    devletKatmaniAc(false);
+  } else oyunuBaslat(secim);
+
+  // Önerilen eylemler: oyuncu kipinde, panel görünürken birkaç saniyede bir yenilenir.
+  window.setInterval(() => {
+    if (benim >= 0 && ilkKare && !document.hidden && !document.querySelector("#sekme-icerik select:focus, #sekme-icerik input:focus")) isciyeGonder({ tur: "oneriIste" });
+  }, 7000);
 
   window.__olcum = {
     bilgi: () => s.olcum(),
@@ -261,6 +355,9 @@ function baslat(): void {
     sekme: (x) => panel.sekmeSec(x as never),
     hazir: () => ilkKare,
     karaSayisi: () => s.dunya.istatistik.karaUcgen,
+    devlet: () => benim,
+    komut: (k) => komutGonder(k),
+    bolgeIndeksi: (id) => harita.harita.bolgeler.findIndex((b) => b.id === id),
   };
 
   s.baslat();

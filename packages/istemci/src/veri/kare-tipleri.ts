@@ -161,8 +161,93 @@ export interface SavasKaresi {
   hedefBolge: number;
   evre: "hazirlik" | "pencere" | "bitti";
   ilan: number;
+  /** Savaş penceresinin açılışı (sim-saat). İzleyici biçiminde yoktur; yalnızca istemci kullanır. */
+  pencereBasi?: number;
   pencereBitis: number;
   sonuc: null | { kazanan: number; saldiranGuc: number; savunanGuc: number; kayipYuzde: number };
+}
+
+/** Oyuncunun bir tesisi (komutlar tesisi kimliğiyle ister; BolgeKaresi.tesis bunu taşımaz). */
+export interface OyuncuTesisKaresi {
+  id: number;
+  /** DizinTesisTuru indeksi. */
+  tur: number;
+  /** DizinYontem indeksi. */
+  yontem: number;
+  aktif: boolean;
+  /** Ölçek kademesi 0 = S, 1 = M, 2 = L; sanayi kapalıysa tanımsız. */
+  olcek?: number;
+  /** Aşınma (%); sanayi kapalıysa tanımsız. */
+  asinma?: number;
+  /** Genel onarım durmasının bitişi (sim-saat); yoksa tanımsız. */
+  onarimBitis?: number;
+}
+
+/** Oyuncunun kendi bölgesinin komutlar için gereken ek durumu. */
+export interface OyuncuBolgeKaresi {
+  tesisler: OyuncuTesisKaresi[];
+  /** Mal indeksine göre kalan rezerv (birim). */
+  rezerv: number[];
+  /** Mal indeksine göre başlangıç rezervi (birim; sondaj için damar var mı). */
+  rezervIlk: number[];
+  /** Mal indeksine göre kullanılmış keşif hakkı; sanayi kapalıysa boş. */
+  kesif: number[];
+  /** Ticaret emirleri: [mal, yön (0 ihracat, 1 ithalat), istenen oran (birim/sa), gerçekleşen oran (birim/sa)]. */
+  emirler: Array<[number, number, number, number]>;
+  /** Tarım tesisi sayısı (kurulu + inşaatı süren); tarım dışı bölgede 0. */
+  tarimTesisi: number;
+}
+
+export interface OyuncuInsaatKaresi {
+  id: number;
+  tur: "tesis" | "kenar" | "olcek" | "onarim";
+  bolge: number;
+  /** Tesis türü indeksi (tesis), kenar indeksi (kenar), tesis kimliği (olcek) veya -1 (onarim). */
+  hedef: number;
+  /** Bitiş (sim-saat, iki ondalık). */
+  bitis: number;
+  olcek?: number;
+}
+
+export interface OyuncuAnlasmaKaresi {
+  tur: "ticaret" | "ortak_altyapi";
+  /** Karşı oyuncunun indeksi. */
+  karsi: number;
+  benTeklif: boolean;
+  karsiTeklif: boolean;
+  aktif: boolean;
+}
+
+/**
+ * Komutla yönetilen oyuncunun durumu (yalnız oyuncu kipinde, işçi tarafından eklenir; izleyici biçiminde yoktur).
+ * Zamanlar sim-saattir. Komut formları ve "önerilen eylemler" yalnızca bu alandan beslenir.
+ */
+export interface OyuncuKaresi {
+  /** Oyuncu indeksi (= devlet indeksi). */
+  idx: number;
+  vergiPpm: number;
+  askeriRezervPpm: number;
+  /** Bakım düzeyi 0..2; sanayi kapalıysa tanımsız. */
+  bakim?: number;
+  /** Açık teknolojilerin indeksleri. */
+  teknolojiler: number[];
+  arastirma: { teknoloji: number; bitis: number } | null;
+  /** Açık karar kimlikleri (ör. deniz_kenar_gelistir). */
+  kararlar: string[];
+  /** Oyuncu indeksine göre yeni oyuncu korumasının bitişi (sim-saat); koruma yoksa 0. */
+  koruma: number[];
+  /** Erken oyun süre çarpanı (binde; 100 = %10 süre). */
+  sureCarpani: number;
+  /** Teknoloji indeksine göre maliyet/süre çarpanı (binde; yayılım indirimi). */
+  yayilim: number[];
+  insaatlar: OyuncuInsaatKaresi[];
+  partiler: Array<{ bolge: number; birlik: number; adet: number; bitis: number }>;
+  anlasmalar: OyuncuAnlasmaKaresi[];
+  /** Benim yaptırım uyguladığım ve bana yaptırım uygulayan oyuncu indeksleri. */
+  yaptirimBen: number[];
+  yaptirimBana: number[];
+  /** Bölge indeksine göre (yalnız sahip olunanlar). */
+  bolgeler: Record<number, OyuncuBolgeKaresi>;
 }
 
 export interface Kare {
@@ -179,4 +264,6 @@ export interface Kare {
   hazineOrani: number[];
   /** İklim olayları (B1); tarım kapalıysa tanımsız. */
   iklim?: IklimKaresi;
+  /** Komutla yönetilen oyuncunun durumu; yalnızca oyuncu kipinde. */
+  oyuncu?: OyuncuKaresi;
 }

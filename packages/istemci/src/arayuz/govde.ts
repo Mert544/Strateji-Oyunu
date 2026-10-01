@@ -7,7 +7,9 @@ import type { Hucre, KapsamDurumu } from "../veri/kapsam";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
 import { malRengiHex, sekilKodu } from "../veri/renkler";
 import { esc, fmt, fmt1, kisalt, sinirla } from "./bicim";
-import { bolgeTarimBolumu, olayOzeti, tarimKararlari, tarimLejanti, tarimNedenSatiri } from "./tarim-govde";
+import { bolgeTarimBolumu, olayOzeti, tarimLejanti, tarimNedenSatiri } from "./tarim-govde";
+import { baglamKur, kenarGelistirDugmesi, komutBolumu } from "./komut-govde";
+import type { OyunDurumu } from "./komut-govde";
 
 export const DURUM_AD: Record<KapsamDurumu, string> = {
   karsilanan: "Karşılanan",
@@ -50,6 +52,8 @@ export interface GovdeDurumu {
   bolgeAd: (i: number) => string;
   /** Hazine geçmişi: oyuncu -> son değerler. */
   hazineGecmisi: number[][];
+  /** Komut arayüzü durumu; yalnızca oyuncu kipinde (izleme kipinde tanımsız... ya da komutsuz). */
+  oyun?: OyunDurumu;
 }
 
 /** Tarım görünümü ikonu (yaprak). */
@@ -92,7 +96,7 @@ export function bolgePaneli(g: GovdeDurumu): string {
   const { kare, dizin, bolge: i } = g;
   if (!kare || !dizin) return "<p class='ipucu-metin'>Simülasyon başlatılıyor…</p>";
   if (i < 0) {
-    return "<p class='ipucu-metin'>Küre üzerinde bir bölgeye dokunun veya tıklayın: stoklar, tesisler, üretim, tarım ve karşılanma burada görünür. Çift tıklama/dokunma bölgeye uçar.</p>" + tarimKararlari(g, false) + komutYeri(false);
+    return "<p class='ipucu-metin'>Küre üzerinde bir bölgeye dokunun veya tıklayın: stoklar, tesisler, üretim, tarım ve karşılanma burada görünür. Çift tıklama/dokunma bölgeye uçar.</p>" + komutBolumu(g, -1);
   }
   const bk = kare.bolgeler[i];
   const b = dizin.bolgeler[i];
@@ -138,20 +142,7 @@ export function bolgePaneli(g: GovdeDurumu): string {
     if (gel.length) s += `<div class="satir"><span class="ad" style="flex:none">Gelen</span><span style="text-align:right;flex:1">${topla(gel)}</span></div>`;
     if (gid.length) s += `<div class="satir"><span class="ad" style="flex:none">Giden</span><span style="text-align:right;flex:1">${topla(gid)}</span></div>`;
   }
-  return s + tarimKararlari(g, true) + komutYeri(true);
-}
-
-/** Komut arayüzü sonraki adımda gelecek: yer tutucu. */
-function komutYeri(bolgeSecili: boolean): string {
-  const dis = bolgeSecili ? "" : " disabled";
-  return `<h3>Komutlar <span class="rozet belirsiz">yakında</span></h3>
-<div class="komut-yer" aria-label="Komutlar (yakında)">
-  <button type="button" disabled${dis}>Tesis kur</button>
-  <button type="button" disabled${dis}>Kenar geliştir</button>
-  <button type="button" disabled${dis}>Birlik üret</button>
-  <button type="button" disabled${dis}>Savaş ilan et</button>
-</div>
-<p class="ipucu-metin">Şimdilik dünyayı izliyor ve dolaşıyorsunuz; dört bot (sanayici, tüccar, lojistikçi, militarist) oynuyor.</p>`;
+  return s + komutBolumu(g, i);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -275,7 +266,7 @@ export function darbogazPaneli(g: GovdeDurumu): string {
       if (!e) continue;
       const a = g.bolgeAd(e.a), b = g.bolgeAd(e.b);
       const k = kare.kenarlar[d.kenar] as [number, number, number];
-      s += `<button type="button" class="liste-satir" data-kenar="${d.kenar}"><span><b>${esc(a)} — ${esc(b)}</b><br><span class="soluk">${e.tur} yolu, ${e.sure} sa</span></span><span class="sayi">%${Math.round(d.kullanim * 100)}<br><span class="soluk">${fmt1(k[0])}/sa${k[2] > 0 ? ` · askeri ${fmt1(k[2])}` : ""}</span></span></button>`;
+      s += `<div class="liste-kap"><button type="button" class="liste-satir" data-kenar="${d.kenar}"><span><b>${esc(a)} — ${esc(b)}</b><br><span class="soluk">${e.tur} yolu, ${e.sure} sa</span></span><span class="sayi">%${Math.round(d.kullanim * 100)}<br><span class="soluk">${fmt1(k[0])}/sa${k[2] > 0 ? ` · askeri ${fmt1(k[2])}` : ""}</span></span></button>${baglamKur(g) ? `<div class="kenar-eylem">${kenarGelistirDugmesi(g, d.kenar)}</div>` : ""}</div>`;
     }
     s += "</div>";
   }

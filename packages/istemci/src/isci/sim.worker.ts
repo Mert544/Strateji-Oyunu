@@ -1,6 +1,7 @@
 /**
  * Simülasyon işçisi: @bolge/cekirdek + @bolge/botlar tarayıcıda (Web Worker) çalışır. 4 bot (sanayici, tüccar,
- * lojistikçi, militarist) oynar; oyuncu izler. Dünya hızı: sim saniyesi / gerçek saniye. Her sim-saatte bir
+ * lojistikçi, militarist) oynar; oyuncu devlet seçtiyse o devletin botu yerine oyuncu komut verir (üç bot kalır),
+ * seçmediyse izler. Dünya hızı: sim saniyesi / gerçek saniye. Her sim-saatte bir
  * gözlem alınır; ana iş parçacığına en çok ~2,5 kare/sn gönderilir (yapısal kopya maliyetini sınırlamak için).
  *
  * Çekirdek koduna dokunulmaz; bot koşucusu (`kos`) mevcut simülasyonla, saat sınırlarına kadar çağrılarak
@@ -9,7 +10,9 @@
 import { SAAT, Simulasyon } from "@bolge/cekirdek";
 import { botOlustur, kos } from "@bolge/botlar";
 import type { ArketipAdi, KosuOyuncusu } from "@bolge/botlar";
+import { oneriUret } from "../komut/oneri";
 import { dizinKur, kareAl } from "./kare";
+import { oyuncuKomutu } from "./oyuncu";
 import { hataMetni, veriPaketiniHazirla } from "./veri-hazirla";
 import type { IsciMesaji, IsciyeMesaj, IsciVeriPaketi } from "./protokol";
 import type { Kare } from "../veri/kare-tipleri";
@@ -25,6 +28,8 @@ let veri: IsciVeriPaketi | null = null;
 let tohum = 1;
 let oyuncular: KosuOyuncusu[] = [];
 let idler: string[] = [];
+/** Komutla yönetilen oyuncunun kimliği (izleme kipinde null). */
+let oyuncuId: string | null = null;
 let hiz = 21600;
 let duraklat = false;
 let hedefMs = 0;
@@ -53,10 +58,13 @@ function baslat(m: Extract<IsciyeMesaj, { tur: "baslat" }>): void {
   for (const b of veri.harita.bolgeler) devletBolge.get(b.devlet)?.push(b.id);
   const devletler = veri.harita.devletler.slice(0, m.botlar.length);
   if (devletler.length < m.botlar.length) throw new Error("haritada bot sayisindan az devlet var");
+  const benim = m.oyuncuDevlet !== undefined && m.oyuncuDevlet >= 0 && m.oyuncuDevlet < devletler.length ? m.oyuncuDevlet : -1;
+  oyuncuId = benim >= 0 ? `o${benim}` : null;
+  // Oyuncunun devletinde bot yoktur (komut vermez; yine de katılır); diğer devletleri botlar oynar.
   oyuncular = devletler.map((d, i) => ({
     id: `o${i}`,
     bolgeler: devletBolge.get(d.id) ?? [],
-    bot: botOlustur(m.botlar[i] as ArketipAdi, `o${i}`, tohum),
+    bot: i === benim ? null : botOlustur(m.botlar[i] as ArketipAdi, `o${i}`, tohum),
     katilmaMs: 0,
   }));
   idler = oyuncular.map((o) => o.id);
@@ -71,7 +79,7 @@ function baslat(m: Extract<IsciyeMesaj, { tur: "baslat" }>): void {
   const ileri = Math.max(0, Math.floor(m.ileriSaat ?? 0));
   for (let h = 1; h <= ileri; h++) adimAt(h * SAAT);
   hedefMs = sim.dunya.zaman;
-  kapsam.postMessage({ tur: "hazir", dizin: dizinKur(sim, m.botlar) });
+  kapsam.postMessage({ tur: "hazir", dizin: dizinKur(sim, m.botlar.map((b, i) => (i === benim ? "oyuncu" : b))) });
   kareyiGonder(true);
   sonGercek = performance.now();
   if (zamanlayici !== null) clearInterval(zamanlayici);
@@ -92,7 +100,7 @@ function adimAt(sinirMs: number): void {
       const saat = Math.round(t / SAAT);
       if (saat === sonGozlemSaat) return; // kos() her çağrının başında aynı anı yeniden gözler
       sonGozlemSaat = saat;
-      sonKare = kareAl(s, idler);
+      sonKare = kareAl(s, idler, oyuncuId ?? undefined);
     },
   });
 }
@@ -137,10 +145,29 @@ function dongu(): void {
   }
 }
 
+/** Oyuncu komutu: o anki sim zamanında uygulanır, sonuç ve (başarılıysa) taze kare hemen gönderilir. */
+function komutAl(m: Extract<IsciyeMesaj, { tur: "komut" }>): void {
+  if (!sim) return;
+  const sonuc = oyuncuKomutu(sim, oyuncuId, m.komut);
+  if (sonuc.tamam) {
+    sonKare = kareAl(sim, idler, oyuncuId ?? undefined);
+    sonGozlemSaat = sonKare.saat;
+    kareyiGonder(true);
+  }
+  kapsam.postMessage({ tur: "komutSonuc", ...(m.id !== undefined ? { id: m.id } : {}), komut: m.komut, sonuc, saat: Math.round(sim.dunya.zaman / SAAT) });
+}
+
+function oneriGonder(): void {
+  if (!sim || oyuncuId === null) return;
+  kapsam.postMessage({ tur: "oneriler", saat: Math.round(sim.dunya.zaman / SAAT), liste: oneriUret(sim, oyuncuId) });
+}
+
 kapsam.onmessage = (e): void => {
   const m = e.data;
   try {
     if (m.tur === "baslat") baslat(m);
+    else if (m.tur === "komut") komutAl(m);
+    else if (m.tur === "oneriIste") oneriGonder();
     else if (m.tur === "hiz") hiz = m.hiz;
     else if (m.tur === "duraklat") {
       duraklat = m.duraklat;

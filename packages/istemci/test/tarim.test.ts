@@ -31,7 +31,7 @@ import type { TarimPaleti } from "../src/veri/tarim";
 import { bolgeTamponuOlustur } from "../src/veri/renkler";
 import type { Dizin, DizinTarim, Kare, OlayKaresi } from "../src/veri/kare-tipleri";
 import { bolgePaneli, malPaneli, nedenSatiri } from "../src/arayuz/govde";
-import { bolgeTarimBolumu, hasatCubuklari, olayPaneli, olaySayisi, tarimKararlari, tarimLejanti, tarimNedenSatiri } from "../src/arayuz/tarim-govde";
+import { bolgeTarimBolumu, hasatCubuklari, olayPaneli, olaySayisi, tarimLejanti, tarimNedenSatiri } from "../src/arayuz/tarim-govde";
 import type { GovdeDurumu } from "../src/arayuz/govde";
 
 const AY_GUNLERI = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -325,22 +325,12 @@ describe("tarım panelleri", () => {
     expect(bolgeTarimBolumu(g({ bolge: 2 }), 2)).toContain("tarım dışı");
     const { tarim: _t, ...tarimsiz } = dizin;
     expect(bolgeTarimBolumu(g({ dizin: tarimsiz }), 0)).toBe("");
-    expect(tarimKararlari(g({ dizin: tarimsiz }), true)).toBe("");
-  });
-
-  it("kararlar yer tutucusu: ekim planı ve gübre dozu yazar; ürün adları içerikten gelir", () => {
-    const h = tarimKararlari(g(), true);
-    expect(h).toContain("Ekim planı");
-    expect(h).toContain("Gübre dozu");
-    expect(h).toContain("Buğday / Baklagil / Nadas");
-    expect(h).toContain("yakında");
-    expect(tarimKararlari(g(), false)).toContain("disabled");
   });
 
   it("bölge paneli tarım bölümünü ve kararları içerir; mal paneli tarım satırı ve lejant verir", () => {
     const bp = bolgePaneli(g({ bolge: 3 }));
     expect(bp).toContain("Tarım");
-    expect(bp).toContain("Tarım kararları");
+    expect(bp).toContain("Komutlar"); // izleme kipinde komut bölümü: devlet seçme çağrısı
     const mp = malPaneli(g());
     expect(mp).toContain('data-gorunum="tarim"');
     expect(mp).toContain("Gübre"); // yeni mal içerikten satır olarak gelir

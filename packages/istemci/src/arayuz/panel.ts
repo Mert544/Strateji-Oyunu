@@ -7,14 +7,21 @@ import { simSaatMetni } from "../kure/gunes";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
 import { bolgePaneli, darbogazPaneli, hazinePaneli, malIkonu, malPaneli, nedenSatiri, savasPaneli, yaprakIkonu } from "./govde";
 import type { GovdeDurumu } from "./govde";
+import { baglamKur, devletPaneli, yeniOyunDurumu } from "./komut-govde";
+import { komutTanimi } from "../komut/kayit";
+import type { Icerik } from "../komut/tablo";
+import type { Komut } from "../komut/tipler";
+import type { Oneri } from "../isci/protokol";
 import { hasatCubuklari, olayPaneli, olaySayisi } from "./tarim-govde";
-import { esc } from "./bicim";
+import { esc, kisalt } from "./bicim";
 import { hasatMetni, takvimDurumu, takvimMetni, takvimParametresi } from "../veri/tarim";
 
-export type Sekme = "bolge" | "mal" | "hazine" | "darbogaz" | "savas" | "olaylar";
+export type Sekme = "bolge" | "mal" | "hazine" | "darbogaz" | "savas" | "olaylar" | "devlet";
 
-const SEKMELER: ReadonlyArray<{ id: Sekme; ad: string }> = [
+/** "Devlet" sekmesi yalnızca oyuncu kipinde görünür. */
+const SEKMELER: ReadonlyArray<{ id: Sekme; ad: string; oyuncu?: boolean }> = [
   { id: "bolge", ad: "Bölge" },
+  { id: "devlet", ad: "Devlet", oyuncu: true },
   { id: "mal", ad: "Mal" },
   { id: "hazine", ad: "Hazine" },
   { id: "darbogaz", ad: "Darboğaz" },
@@ -33,6 +40,14 @@ export interface PanelGeriCagrilari {
   kuzey: () => void;
   dunya: () => void;
   tema: () => void;
+  /** Oyuncu komutunu işçiye gönderir (sonuç bildirimle gösterilir). */
+  komutGonder: (k: Komut) => void;
+  /** Form doğrulama hatası (komut gönderilmedi). */
+  formHata: (mesaj: string) => void;
+  /** Önerilen eylemleri yeniden hesaplat. */
+  oneriIste: () => void;
+  /** "Devlet seç" katmanını aç. */
+  devletSec: () => void;
 }
 
 const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
@@ -46,6 +61,10 @@ export class Panel {
   private sonNeden = "";
   private malCubuguDizin: Dizin | null = null;
   private takvimAnahtari = "";
+  /** Bir form alanı odaktayken yapılamayan yeniden çizim bekliyor mu. */
+  private bekleyen = false;
+  /** İşaretçi panel içinde basılı (tıklama bitmeden DOM değiştirilmez; yoksa tıklama kaybolur). */
+  private basiliT = -1e9;
 
   constructor(
     private g: PanelGeriCagrilari,
@@ -56,7 +75,7 @@ export class Panel {
     this.durum = { kare: null, dizin: null, mal: -1, tarimGorunumu: false, bolge: -1, bolgeAd, hazineGecmisi: [] };
     // sekmeler
     const nav = $("sekmeler");
-    nav.innerHTML = SEKMELER.map((s) => `<button type="button" role="tab" id="sek-${s.id}" data-sekme="${s.id}" aria-selected="${s.id === this.sekme}">${s.ad}</button>`).join("");
+    this.sekmeleriCiz();
     nav.addEventListener("click", (e) => {
       const b = (e.target as HTMLElement).closest("button[data-sekme]") as HTMLElement | null;
       if (b) this.sekmeSec(b.dataset["sekme"] as Sekme);
@@ -72,15 +91,18 @@ export class Panel {
     $("kuzey").addEventListener("click", () => this.g.kuzey());
     $("dunya-dugme").addEventListener("click", () => this.g.dunya());
     $("tema").addEventListener("click", () => this.g.tema());
+    $("oyuncu-cubuk").addEventListener("click", () => this.sekmeSec("devlet"));
     window.addEventListener("keydown", (e) => {
-      if (e.code === "Space" && (e.target as HTMLElement).tagName !== "BUTTON") {
+      if (e.code === "Space" && !["BUTTON", "INPUT", "SELECT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) {
         e.preventDefault();
         this.duraklatAyarla(!this.duraklatildi, true);
       }
     });
     // içerik olayları (temsilci)
+    this.komutOlaylariniBagla();
     $("sekme-icerik").addEventListener("click", (e) => {
       const t = e.target as HTMLElement;
+      if (this.komutTikla(t)) return;
       const mal = t.closest("[data-mal]") as HTMLElement | null;
       const bolge = t.closest("[data-bolge]") as HTMLElement | null;
       const kenar = t.closest("[data-kenar]") as HTMLElement | null;
@@ -108,6 +130,145 @@ export class Panel {
     $("panel-atif").innerHTML = atif.map(esc).join(" · ") + (gecici ? " · <b>geçici bölge katmanı</b>" : "");
   }
 
+  private sekmeleriCiz(): void {
+    const oyuncu = this.durum.oyun !== undefined;
+    $("sekmeler").innerHTML = SEKMELER.filter((s) => oyuncu || !s.oyuncu)
+      .map((s) => `<button type="button" role="tab" id="sek-${s.id}" data-sekme="${s.id}" aria-selected="${s.id === this.sekme}">${s.ad}</button>`)
+      .join("");
+  }
+
+  /** Oyuncu kipini açar: komut arayüzü durumunu kurar, "Devlet" sekmesini ekler ve ona geçer. */
+  oyunuKur(ic: Icerik): void {
+    this.durum.oyun = yeniOyunDurumu(ic);
+    this.sekme = "devlet";
+    this.sekmeleriCiz();
+    $("oyuncu-cubuk").hidden = false;
+    document.body.classList.add("oyuncu-kipi");
+    this.sonIcerik = "";
+    this.tazele();
+  }
+
+  oneriYaz(liste: Oneri[]): void {
+    if (!this.durum.oyun) return;
+    this.durum.oyun.oneriler = liste;
+    this.sonIcerik = "";
+    this.tazele();
+  }
+
+  get oyuncuKipi(): boolean {
+    return this.durum.oyun !== undefined;
+  }
+
+  /** Üst çubuktaki devlet düğmesi: devlet adı ve hazine. */
+  private oyuncuCubuguYaz(kare: Kare): void {
+    const o = kare.oyuncu;
+    const d = this.durum.dizin;
+    if (!o || !d) return;
+    const dev = d.devletler[d.oyuncular[o.idx]?.devlet ?? -1];
+    const ad = (dev?.ad ?? "").split(" ")[0] ?? "";
+    const hazine = kare.hazine[o.idx] ?? 0;
+    const k = $("oyuncu-cubuk");
+    const metin = `<i class="nokta" style="background:var(--d${o.idx % 4})"></i><span class="ocad">${esc(ad)}</span><b>${kisalt(hazine)}</b>`;
+    if (k.innerHTML !== metin) k.innerHTML = metin;
+    k.title = `${dev?.ad ?? ""}: hazine ${hazine.toLocaleString("tr-TR")} para. Devlet sekmesini açmak için dokunun.`;
+  }
+
+  private get basili(): boolean {
+    return performance.now() - this.basiliT < 2500;
+  }
+
+  private formOdakta(): boolean {
+    const a = document.activeElement;
+    return a !== null && a.matches("#sekme-icerik select, #sekme-icerik input");
+  }
+
+  /** Bir formun değerlerini oyun durumuna kaydeder (yeniden çizimde korunur). */
+  private formKaydet(f: HTMLFormElement): void {
+    const oyun = this.durum.oyun;
+    if (!oyun) return;
+    for (const [ad, v] of new FormData(f).entries()) {
+      if (typeof v === "string") oyun.formlar.set(`${f.dataset["kapsam"] ?? "d"}:${f.dataset["form"] ?? ""}:${ad}`, v);
+    }
+  }
+
+  /** Komut düğmelerine (veri öznitelikli) tıklama; işlendiyse true. */
+  private komutTikla(t: HTMLElement): boolean {
+    const km = t.closest("[data-komut]") as HTMLElement | null;
+    if (km) {
+      this.g.komutGonder(JSON.parse(km.dataset["komut"] ?? "null") as Komut);
+      return true;
+    }
+    const on = t.closest("[data-oneri]") as HTMLElement | null;
+    if (on) {
+      const o = this.durum.oyun?.oneriler?.[Number(on.dataset["oneri"])];
+      if (o) this.g.komutGonder(o.komut);
+      return true;
+    }
+    if (t.closest("[data-oneri-yenile]")) {
+      this.g.oneriIste();
+      return true;
+    }
+    if (t.closest("[data-devlet-sec]")) {
+      this.g.devletSec();
+      return true;
+    }
+    return false;
+  }
+
+  private komutOlaylariniBagla(): void {
+    const kap = $("sekme-icerik");
+    kap.addEventListener("pointerdown", () => {
+      this.basiliT = performance.now();
+    });
+    const birak = (): void => {
+      window.setTimeout(() => {
+        this.basiliT = -1e9;
+        if (this.bekleyen && !this.formOdakta()) {
+          this.bekleyen = false;
+          this.sonIcerik = "";
+          this.tazele();
+        }
+      }, 30);
+    };
+    window.addEventListener("pointerup", birak);
+    window.addEventListener("pointercancel", birak);
+    kap.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const f = (e.target as HTMLElement).closest("form.komut-form") as HTMLFormElement | null;
+      const b = baglamKur(this.durum);
+      const t = f ? komutTanimi(f.dataset["form"] ?? "") : undefined;
+      if (!f || !b || !t) return;
+      const kapsam = f.dataset["kapsam"] ?? "d";
+      const g = Object.fromEntries([...new FormData(f).entries()].flatMap(([k, v]): Array<[string, string]> => (typeof v === "string" ? [[k, v]] : [])));
+      const k = t.komut({ ...b, bolge: kapsam === "d" ? b.bolge : Number(kapsam) }, g);
+      if (typeof k === "string") this.g.formHata(k);
+      else this.g.komutGonder(k);
+    });
+    kap.addEventListener("change", (e) => {
+      const f = (e.target as HTMLElement).closest("form.komut-form") as HTMLFormElement | null;
+      if (!f) return;
+      this.formKaydet(f);
+      this.sonIcerik = "";
+      this.icerikCiz(!this.basili || (e.target as HTMLElement).tagName === "SELECT");
+    });
+    kap.addEventListener("input", (e) => {
+      const el = e.target as HTMLInputElement;
+      const f = el.closest("form.komut-form") as HTMLFormElement | null;
+      if (!f) return;
+      this.formKaydet(f);
+      if (el.type === "range" && el.nextElementSibling) el.nextElementSibling.textContent = `%${el.value}`;
+    });
+    kap.addEventListener("focusout", () => {
+      window.setTimeout(() => {
+        if (this.bekleyen && !this.formOdakta()) {
+          this.bekleyen = false;
+          this.sonIcerik = "";
+          this.tazele();
+        }
+      }, 0);
+    });
+  }
+
   private panelKapali(k: boolean): void {
     $("panel").classList.toggle("kapali", k);
     document.body.classList.toggle("panel-kapali", k);
@@ -117,7 +278,7 @@ export class Panel {
     this.sekme = s;
     for (const b of document.querySelectorAll<HTMLElement>("#sekmeler button")) b.setAttribute("aria-selected", String(b.dataset["sekme"] === s));
     this.sonIcerik = "";
-    this.icerikCiz();
+    this.icerikCiz(true);
     if (window.matchMedia("(max-width: 820px)").matches) this.panelKapali(false);
   }
 
@@ -184,6 +345,7 @@ export class Panel {
 
   kareYaz(kare: Kare): void {
     this.durum.kare = kare;
+    if (this.durum.oyun) this.oyuncuCubuguYaz(kare);
     const gec = this.durum.hazineGecmisi;
     kare.hazine.forEach((h, i) => {
       const a = gec[i] ?? (gec[i] = []);
@@ -251,7 +413,12 @@ export class Panel {
     if (b.innerHTML !== metin) b.innerHTML = metin;
   }
 
-  private icerikCiz(): void {
+  private icerikCiz(zorla = false): void {
+    // Bir form alanı (seçim/sayı) odaktayken yeniden çizim, açık listeyi ve imleci bozar: bırakınca çizilir.
+    if (!zorla && (this.formOdakta() || this.basili)) {
+      this.bekleyen = true;
+      return;
+    }
     const d = this.durum;
     let h = "";
     switch (this.sekme) {
@@ -273,11 +440,24 @@ export class Panel {
       case "olaylar":
         h = olayPaneli(d);
         break;
+      case "devlet":
+        h = devletPaneli(d);
+        break;
     }
     if (h === this.sonIcerik) return;
     this.sonIcerik = h;
     const kap = $("sekme-icerik");
     const ust = kap.scrollTop;
+    // Açık/kapalı bölümleri yeniden çizmeden önce gerçek DOM'dan oku (toggle olayına güvenme: gecikebilir).
+    const acik = this.durum.oyun?.acik;
+    if (acik) {
+      for (const dt of kap.querySelectorAll<HTMLDetailsElement>("details.komut")) {
+        const ad = dt.dataset["ac"];
+        if (!ad) continue;
+        if (dt.open) acik.add(ad);
+        else acik.delete(ad);
+      }
+    }
     kap.innerHTML = h;
     kap.scrollTop = ust;
   }

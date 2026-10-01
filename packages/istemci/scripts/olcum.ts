@@ -81,7 +81,7 @@ async function main(): Promise<void> {
     });
     sayfa.on("pageerror", (e) => konsol.push(`pageerror: ${e.message}`));
     const t0 = Date.now();
-    await sayfa.goto(`file://${html}?adaptif=0&hiz=${hizSecimi}`);
+    await sayfa.goto(`file://${html}?adaptif=0&hiz=${hizSecimi}#izle`);
     await sayfa.waitForFunction(() => window.__olcum?.hazir() === true, null, { timeout: 60000 });
     const ilkKareMs = Date.now() - t0;
     // Simülasyon ilerlesin (akışlar/kapsam oluşsun): sim saatine göre bekle.
