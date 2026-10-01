@@ -92,7 +92,9 @@ describe("(1b) yakıt stoksuz mal: ekmek fırını ticaret emri OLMADAN çalış
   it("sebekeTuketim.yakit = gerçek tüketim = Σ girdi × verim; bedel hem elektrik hem yakıtı içerir", () => {
     const f = g6Tesis(s, "a", "ekmek_firini");
     const tuk = (g6Dugum(s, "a") as { sebekeTuketim?: Record<string, number> }).sebekeTuketim;
-    expect(tuk?.["yakit"]).toBe(carpBol(8_000, f.verimPpm, PPM));
+    // Tam kadro yakıt girdisi YÖNTEMİN içeriğinden okunur (sabit yazılmaz): gerçek içerikte ekmek_firini yakıt 20 000, sentetik veride başka olabilir.
+    const yakitGirdisi = s.ic.yontemler[f.yontem]!.girdiler["yakit"]!;
+    expect(tuk?.["yakit"]).toBe(carpBol(yakitGirdisi, f.verimPpm, PPM));
     expect(akisSebeke(s, "a")).toBe(bedelBeklenen(s, "a"));
     expect(carpBol(tuk!["yakit"]!, YAKIT_FIYAT, MILI)).toBeGreaterThan(0);
   });
