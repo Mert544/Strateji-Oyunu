@@ -36,6 +36,7 @@ import { altlikKatmanlari, boyalar, IZGARA_CIZGI_ZOOM, L3_ZOOM, oyunKatmanlari, 
 import { ikon } from "../tasarim/ikon";
 import type { YapiTanimi } from "./yapi";
 import { YerlesimKipi } from "./yerlesim";
+import { yapiCizimi } from "./gorunurluk";
 import { cerceveBirlestir } from "./geometri";
 import {
   ARAZI_ADLARI,
@@ -506,6 +507,8 @@ export class HaritaGorunumu {
   uyut(): void {
     this.yerlesim?.iptal();
     this.yerlesim?.menuAc(false);
+    // Küre düzeyi: "Geri al" şeridi gizlenir (sayaç sürer; ilçeye dönülünce yeniden görünür)
+    this.yerlesim?.gorunurluk(0);
     this.ipucuGizle();
     this.kart.hidden = true;
     this.alt.hidden = true;
@@ -621,6 +624,8 @@ export class HaritaGorunumu {
     if (!this.ilceKimlik) {
       this.duzey = 1;
       this.alt.hidden = true;
+      // İl düzeyinde yapı dolgusu ve etiketi çizilmez (ilçe adlarına binmesin); yapılar bir önceki ilçeden kalmış olabilir
+      this.yapilariCiz();
       this.yerlesim?.gorunurluk(1);
       return;
     }
@@ -669,6 +674,7 @@ export class HaritaGorunumu {
     const s = this.sahiplik;
     if (!s) {
       src.setData(BOS);
+      this.yapilariCiz();
       return;
     }
     const ben = this.baglanti.ben.id;
@@ -1068,12 +1074,14 @@ export class HaritaGorunumu {
   private yapilariCiz(zorla = false): void {
     const src = this.harita.getSource("yapilar") as GeoJSONSource | undefined;
     if (!src) return;
-    const yapilar = this.sahiplik?.yapilar ?? [];
+    // İl ve küre düzeyinde (ilçe seçili değil) yapı çizilmez: dolgu ve etiket yalnız ilçe/arsa düzeyinde (`gorunurluk.ts`)
+    const cizim = yapiCizimi(this.ilceKimlik, this.duzey);
+    const yapilar = cizim.dolgu ? (this.sahiplik?.yapilar ?? []) : [];
     const simdi = this.baglanti.ozet?.()?.simZamani ?? 0;
     const ben = this.baglanti.ben.id;
     const sure = (y: (typeof yapilar)[number]): number => (this.katalog.find((k) => k.id === y.tur)?.ilkGunSureSaat ?? 1) * 3_600_000;
     // Aşama ancak birkaç saatte bir değişir: iki saniyelik tazelemede aynıysa kaynak yeniden yüklenmez (harita boşta kalsın)
-    const imza = `${this.duzey >= 3 ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${y.bitis === undefined ? 0 : 1}`).join(";")}`;
+    const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${y.bitis === undefined ? 0 : 1}`).join(";")}`;
     if (!zorla && imza === this.yapiImzasi) return;
     this.yapiImzasi = imza;
     for (const m of this.yapiEtiketleri) m.remove();
@@ -1098,7 +1106,7 @@ export class HaritaGorunumu {
         sx += c.x + 0.5;
         sy += c.y + 0.5;
       }
-      if (this.duzey < 3 || y.hucreler.length === 0) continue;
+      if (!cizim.etiket || y.hucreler.length === 0) continue;
       const e = document.createElement("div");
       e.className = `yapi-etiket asama${a}${y.sahip === ben ? " benim" : ""}`;
       e.style.setProperty("--kr", yapiRengiCss(y.tur));

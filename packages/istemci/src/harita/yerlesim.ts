@@ -11,6 +11,7 @@ import type { GeoJSONSource, Map as MlHarita, MapMouseEvent } from "maplibre-gl"
 import { bildir } from "../arayuz/bildirim";
 import { esc, fmt, sureMetni } from "../arayuz/bicim";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
+import { geriSeridiGorunur } from "./gorunurluk";
 import { hucreSiniri, noktadanHucre } from "./hucre";
 import type { Izgara } from "./hucre";
 import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yapiRengiCss, yerlesimPlani } from "./yapi";
@@ -73,6 +74,8 @@ export class YerlesimKipi {
   /** Son başarılı işlem: 5 dk içinde "Geri al" (bağdaştırıcı `yapiGeriAl` sunuyorsa). */
   private sonIslem: { ilce: string; ad: string; hucreler: string[]; alinan: string[]; bitis: number } | null = null;
   private geriZamanlayici = 0;
+  /** Son bildirilen harita düzeyi (0 küre, 1 il, 2 ilçe, 3 arsa): "Geri al" şeridi yalnız 2 ve 3'te görünür. */
+  private duzeyNo = 0;
   private geri: HTMLElement;
   private menuAcik = false;
   private hazir = false;
@@ -200,6 +203,8 @@ export class YerlesimKipi {
 
   /** Yeni ilçe/düzey: menü düğmesi yalnız ızgaralı ilçede ve yapı kurabilen bağdaştırıcıda görünür. */
   gorunurluk(duzey: number): void {
+    this.duzeyNo = duzey;
+    if (this.sonIslem) this.geriYaz();
     const var_ = duzey >= 2 && !!this.g.izgara() && !!this.g.baglanti.tesisInsa && this.g.katalog.length > 0;
     this.dugme.hidden = !var_;
     if (!var_) {
@@ -436,6 +441,8 @@ export class YerlesimKipi {
     const s = this.sonIslem;
     if (!s || Date.now() >= s.bitis) return this.geriGizle();
     const kalan = Math.ceil((s.bitis - Date.now()) / 1000);
+    // Küre ve il düzeyinde ya da başka ilçede gizli (sayaç sürer; işlemin ilçesine dönülünce yeniden görünür)
+    const gorunur = geriSeridiGorunur(this.duzeyNo, this.g.ilce(), s.ilce, s.bitis - Date.now());
     const sure = `${Math.floor(kalan / 60)}:${String(kalan % 60).padStart(2, "0")}`;
     // Yalnız sayaç güncellenir: düğmeler her saniye yeniden kurulmasın (tıklama ve odak kaybolmasın)
     const sayac = this.geri.querySelector<HTMLElement>("[data-yg='sure']");
@@ -444,7 +451,7 @@ export class YerlesimKipi {
       this.geri.dataset["islem"] = String(s.bitis);
       this.geri.innerHTML = `<span>${esc(s.ad)} kuruluyor · <b data-yg="sure">${sure}</b> içinde geri alabilirsin</span><button type="button" data-yg="geri-al">${ikon("undo-2", 15)} Geri al</button><button type="button" data-yg="kapat" aria-label="Kapat">${ikon("x", 15)}</button>`;
     }
-    this.geri.hidden = false;
+    this.geri.hidden = !gorunur;
   }
 
   private geriGizle(): void {
