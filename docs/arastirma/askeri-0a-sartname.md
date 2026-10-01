@@ -230,7 +230,7 @@ export interface AskeriEskiyaParametreleri {
 | VA6 | `duyuruSaat + kuleEkiSaat ≤ planlamaOncesiGun × 24` (duyuru planlama anından önce başlayamaz) | `askeri.eskiya: duyuru suresi planlama oncesinden uzun` |
 | VA7 | `tahminAltPpm ≤ 1 000 000 ≤ tahminUstPpm`; `tahminAltPpm ≤ kuleTahminAltPpm ≤ 1 000 000 ≤ kuleTahminUstPpm ≤ tahminUstPpm` (Kule tahmini daraltır) | `askeri.eskiya: kule tahmin araligi genel araligin icinde olmali` |
 | VA8 | `karakolGuc` iki elemanlı, her biri ≥ 0, `karakolGuc[1] ≤ karakolGuc[0]` | `askeri.eskiya.karakolGuc: [birinci, ikinci] azalan olmali` |
-| VA9 | `ganimet` anahtarları `icerik.mallar` kimlikleri, her mal **depolanabilir** (`depolanabilir !== false`) ve `categori` fark etmeksizin değer > 0 tamsayı; para alanı yok (`ganimet` yalnız mal) | `askeri.eskiya.ganimet: bilinmeyen ya da depolanamaz mal: <id>` |
+| VA9 | `ganimet` anahtarları `icerik.mallar` kimlikleri, her mal **depolanabilir** (`depolanabilir !== false`) ve kategorisi fark etmeksizin değer > 0 tamsayı; para alanı yok (`ganimet` yalnız mal) | `askeri.eskiya.ganimet: bilinmeyen ya da depolanamaz mal: <id>` |
 | VA10 | `yenilgiKayipPpm`, `reviriGeriPpm` ≤ 1 000 000; `kalkanSonrasiYagmaPpm ≤ yagmaOraniPpm` | zod + `askeri.eskiya: kalkan sonrasi yagma genel yagmadan buyuk olamaz` |
 | VA11 | `etkin = true` iken `mulk` bloğu tanımlı ve `ekYapilar` `ordugah` kaydını içermeli (Ordugâh şartı uygulanabilir olsun) | `askeri.eskiya.etkin: mulk.ekYapilar.ordugah tanimsiz` |
 
