@@ -653,3 +653,12 @@ S3 iki sprinte taşabilir. Botların parsel kipine taşınması (E20-G10) Sprint
 ---
 
 *Kaynaklar: onaylı geçiş planı (1 Ekim 2026), [arastirma/arayuz-ux](arastirma/arayuz-ux.md), [arastirma/oyun-tasarimi-parsel](arastirma/oyun-tasarimi-parsel.md), [arastirma/sokak-seviyesi-3d](arastirma/sokak-seviyesi-3d.md), [arastirma/paylasilan-dunya-mimarisi](arastirma/paylasilan-dunya-mimarisi.md), kod geçiş keşfi ve yol haritası planı raporları (bu belgeye işlendi), [00](00-vizyon-ve-kararlar.md), [04](04-yol-haritasi.md), [06](06-simulasyon-spesifikasyonu.md), [08](08-alti-katman.md), [10](10-gorev-listesi.md).*
+
+## Ek karar (1 Ekim, sahibin geri bildirimi): hücre seçimi oyuncuya gösterilmez
+Sahip, hücre hücre arsa seçmenin zamanla sıkıcı olacağını belirtti. Karar:
+- **Arka plan atomu değişmez:** z20 hücre (sahiplik, sınırlar, adalet, sunucu doğrulaması); `parsel_al {ilce, hucreler, sinif}` aynen kalır.
+- **Yapı önce yerleşim:** oyuncu yapı türünü seçip hayaleti yerleştirir; altındaki boş hücreler aynı işlemde otomatik satın alınır (maliyet kartında arsa + yapı bedeli). Ayrı "arsa al" adımı ana akıştan çıkar.
+- **Hazır arsalar (adalar):** ilçe, OSM yollarıyla çevrili adalara göre önceden 4–12 hücrelik arsalara bölünür; boş arsa tek tıkla alınır. Komşu boş araziye "Genişlet" tek tık.
+- **Hücre ızgarası:** yalnız ileri düzey araç (Shift) ya da gizli.
+- **Tasarım ilkesi:** arsa edinimi oyunun ilk dakikaları ve ara sıra genişleme; döngünün ağırlığı üretim, ticaret, yönetişim ve rekabette. ≤72 hücre / ≤%25 sınırı ve boş arsa vergisi biriktirmeyi kârsız tutar.
+- **Uygulama:** F4 istemci entegrasyonunda; çekirdek ve sunucu değişmez (yalnız yerleşim + satın alma tek komut zinciri olarak gönderilir).
