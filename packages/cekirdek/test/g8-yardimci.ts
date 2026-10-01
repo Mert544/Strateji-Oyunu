@@ -13,8 +13,8 @@ import type { G6Secenek } from "./g6-yardimci";
 export const G8_YONTEMLER = ["cam_firini", "celik_dograma"] as const;
 
 const SENTETIK_G8 = [
-  { id: "cam_firini", ad: "Cam firini", girdiler: { silis: 60_000, yakit: 16_000, elektrik: 18_000 }, ciktilar: { cam: 50_000 }, isci: 5_000, bakim: { parca: 1_000 }, kirlilikPpmSaat: 60, mulkKipi: true },
-  { id: "celik_dograma", ad: "Celik dograma", girdiler: { celik: 24_000, cam: 32_000, parca: 5_000, elektrik: 15_000 }, ciktilar: { pencere: 28_000 }, isci: 7_000, bakim: { parca: 1_000 }, kirlilikPpmSaat: 20, mulkKipi: true },
+  { id: "cam_firini", ad: "Cam firini", girdiler: { silis: 60_000, yakit: 12_000, elektrik: 18_000 }, ciktilar: { cam: 50_000 }, isci: 5_000, bakim: { parca: 1_000 }, kirlilikPpmSaat: 60, mulkKipi: true },
+  { id: "celik_dograma", ad: "Celik dograma", girdiler: { celik: 24_000, cam: 32_000, parca: 5_000, elektrik: 15_000 }, ciktilar: { pencere: 30_000 }, isci: 7_000, bakim: { parca: 1_000 }, kirlilikPpmSaat: 20, mulkKipi: true },
 ] as const;
 
 /** G6 yöntemleri + G8'in iki yöntemi (toplam altı `mulkKipi` yöntemi); yeni kopya. `sec.bayrak === false`: `mulkKipi` bayrağı yok (karşıt kanıt). */
