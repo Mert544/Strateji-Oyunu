@@ -58,7 +58,7 @@ describe("davetli listesi ayristirma", () => {
 });
 
 describe("davetli listesi dosyasi", () => {
-  it("yok ya da bozuk dosya firlatir (acilis durur); bos dosya = kimse davetli degil; dosya yalniz acilista okunur", async () => {
+  it("yok, bozuk ya da gecerli satirsiz (bos / yalniz yorum ve bosluk) dosya firlatir (acilis durur); 1 satir yeter; dosya yalniz acilista okunur", async () => {
     const d = await gecici();
     const yol = join(d, "davetli.txt");
     expect(() => DavetliListesi.dosyadan(yol)).toThrow(/okunamadi/);
@@ -72,8 +72,12 @@ describe("davetli listesi dosyasi", () => {
     expect(DavetliListesi.dosyadan(yol).uyeMi("veli@ornek.org")).toBe(true); // yeniden baslatma
     await writeFile(yol, "ali@ornek.org\nbozuk satir\n");
     expect(() => DavetliListesi.dosyadan(yol)).toThrow(/satir 2/);
-    await writeFile(yol, "");
-    expect(DavetliListesi.dosyadan(yol).boyut).toBe(0);
+    for (const bos of ["", "\n\n", "   \n\t\n", "# yalniz yorum\n# baska yorum\n", "\uFEFF# bom ve yorum\r\n  \r\n"]) {
+      await writeFile(yol, bos);
+      expect(() => DavetliListesi.dosyadan(yol), JSON.stringify(bos)).toThrow(/davetli listesi bos: gecerli satir yok/);
+    }
+    await writeFile(yol, "# yorum\n  tek@ornek.org  \n");
+    expect(DavetliListesi.dosyadan(yol).boyut).toBe(1); // 1 satir yeter
     await writeFile(yol, "\u0000\u0001");
     expect(() => DavetliListesi.dosyadan(yol)).toThrow();
   });
@@ -254,5 +258,23 @@ describe("CLI: --davetli-liste", () => {
     expect(b.hata).toMatch(/satir 2/);
     expect(b.cikti).not.toContain("sakli-ad");
     expect((await hata({ ...TEMEL, BOLGE_KIMLIK: "gelistirme", BOLGE_DAVETLI_LISTE: bozuk })).hata).toMatch(/yalniz --kimlik eposta/);
+    // Gecerli satiri olmayan liste: acilis durur (gelistirmede de), iletide adres yok.
+    for (const icerik of ["", "   \n\n", "# yalniz yorum\n  # baska\n"]) {
+      const bos = join(d, "bos.txt");
+      await writeFile(bos, icerik);
+      const r = await hata({ ...TEMEL, BOLGE_DAVETLI_LISTE: bos });
+      expect(r.hata, JSON.stringify(icerik)).toMatch(/davetli listesi bos: gecerli satir yok/);
+    }
+    // Uretimde de (ayni kural): bos liste ile acilmaz.
+    const bosUretim = join(d, "bos-uretim.txt");
+    await writeFile(bosUretim, "# yorum\n");
+    expect((await hata({ ...TEMEL, BOLGE_URETIM: "1", BOLGE_ELLE_SAAT: "", BOLGE_DAVETLI_LISTE: bosUretim, BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org", BOLGE_GENEL_URL: "https://sunucu.ornek.org" })).hata).toMatch(/davetli listesi bos/);
+    // 1 satir: acilir.
+    const bir = join(d, "bir.txt");
+    await writeFile(bir, "# yorum\n  tek@ornek.org\n");
+    const iyi = baslat({ ...TEMEL, BOLGE_POSTA_DIZIN: join(d, "posta2"), BOLGE_DAVETLI_LISTE: bir });
+    const hazir = await iyi.ilk;
+    expect(hazir.olay).toBe("hazir");
+    expect(hazir.davetli).toBe(1);
   }, 120_000);
 });

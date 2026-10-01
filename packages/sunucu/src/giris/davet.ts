@@ -8,7 +8,8 @@
  *   adres YAZILMAZ (yalnız adet ve satır numarası).
  * - Bozuk satır ya da okunamayan dosya AÇILIŞI DURDURUR (kapıyı sessizce açık bırakmak yerine). Liste çalışırken YENİDEN YÜKLENMEZ (baş lider kararı): değiştirmek için
  *   sunucuyu yeniden başlatmak yeter (platforma özel sinyal varsayımı yok).
- * - Dosya boş olabilir (kimse davetli değil).
+ * - Dosyada GEÇERLİ SATIR yoksa (boş dosya, yalnız yorum/boşluk) açılış DURUR (geliştirmede de üretimde de): kimsenin giremeyeceği bir kapı hatadır, yanlış dosya ya da
+ *   unutulmuş doldurma işaretidir. Hata iletisi adres içermez.
  */
 import { readFileSync } from "node:fs";
 import { epostaCoz } from "./eposta";
@@ -39,7 +40,7 @@ export function davetliListesiAyristir(metin: string): Set<string> {
 export class DavetliListesi implements Davetliler {
   private constructor(private readonly anahtarlar: ReadonlySet<string>) {}
 
-  /** Dosyadan yükler; yok ya da bozuksa fırlatır (açılış durur). */
+  /** Dosyadan yükler; yok, bozuk ya da GEÇERLİ SATIRSIZ (boş/yalnız yorum) ise fırlatır (açılış durur). */
   static dosyadan(yol: string): DavetliListesi {
     let metin: string;
     try {
@@ -47,7 +48,9 @@ export class DavetliListesi implements Davetliler {
     } catch (e) {
       throw new Error(`davetli listesi okunamadi (${(e as NodeJS.ErrnoException).code ?? "hata"}): ${yol}`);
     }
-    return new DavetliListesi(davetliListesiAyristir(metin));
+    const l = new DavetliListesi(davetliListesiAyristir(metin));
+    if (l.boyut === 0) throw new Error(`davetli listesi bos: gecerli satir yok (bos dosya ya da yalniz yorum/bosluk): ${yol}; kimse giremez, acilis durduruldu`);
+    return l;
   }
 
   /** Testler ve gömülü kullanım: bellekteki metinden. */
