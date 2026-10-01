@@ -901,12 +901,11 @@ export class HaritaGorunumu {
     }
     this.alt.hidden = false;
     if (this.varis) return this.varisCiz(sayi);
-    const ilceAd = this.s.hiyerarsi.ilceler.get(this.ilceKimlik)?.ad ?? "";
     const coklu = `<button type="button" class="yalniz-dokunma" data-eylem="coklu" aria-pressed="${this.cokluSecim}">Çoklu seç</button>`;
     const aracDugme = `<button type="button" class="yalniz-dokunma" data-eylem="hucre-araci" aria-pressed="${this.hucreAraci}" title="Hücre hücre seçim (ileri düzey)">Hücre aracı</button>`;
     const yapiDugme = this.yerlesim ? `<button type="button" data-eylem="yapi-menu">Yapı kur</button>` : "";
     // 1) Hücre seçimi (ileri düzey araç: Shift ya da "Hücre aracı")
-    if (this.secim.boyut > 0) return this.hucreBari(sayi, ilceAd, coklu, aracDugme);
+    if (this.secim.boyut > 0) return this.hucreBari(sayi, coklu, aracDugme);
     // 2) Kamu arsası (bilgi kartı; seçilemez, satın alınamaz)
     const ks = this.kamuSecili;
     if (ks) {
@@ -931,16 +930,16 @@ export class HaritaGorunumu {
         const sinir = o.engel;
         this.alt.innerHTML = `
           <span class="alt-sayi"><small>Hazır arsa</small><b data-alan="arsa-hucre">${fmt(a.hucreler.length)} hücre</b></span>
-          <span class="alt-sayi"><small>Sınıf</small><b data-alan="arsa-sinif">${esc(siniflar)}</b></span>
+          <span class="alt-sayi"><small>Fiyat bölgesi</small><b data-alan="arsa-sinif">${esc(siniflar)}</b></span>
           <span class="alt-sayi alt-toplam"><small>Fiyat</small><b data-alan="arsa-toplam">${paraMili(o.mili, "yukari")}</b></span>
-          <span class="alt-sayi"><small>${esc(ilceAd)} payın</small><b>${fmt(o.benimSonra)} / ${fmt(ilceTavani(sayi.uygun))}</b></span>
+          <span class="alt-sayi"><small>Bu ilçede hücre sınırın</small><b>${fmt(o.benimSonra)} / ${fmt(ilceTavani(sayi.uygun))}</b></span>
           <div class="alt-dugmeler">${yapiDugme}<button type="button" data-eylem="temizle">Temizle</button><button type="button" class="birincil" data-eylem="arsa-al" ${sinir || this.satinAliniyor ? "disabled" : ""}>Satın al</button></div>
           <ul class="alt-uyari">${sinir ? `<li>${esc(sinir)}</li>` : ""}</ul>`;
       } else if (d.durum === "benim") {
         this.alt.innerHTML = `
           <span class="alt-sayi"><small>Senin arsan</small><b>${fmt(a.hucreler.length)} hücre</b></span>
-          <span class="alt-sayi"><small>Sınıf</small><b>${esc(siniflar)}</b></span>
-          <span class="alt-ipucu">Üzerine yapı kurmak için “Yapı kur”.</span>
+          <span class="alt-sayi"><small>Fiyat bölgesi</small><b>${esc(siniflar)}</b></span>
+          <span class="alt-ipucu" data-alan="arsa-durum">${esc(this.arsaYapiMetni(a))}</span>
           <div class="alt-dugmeler">${yapiDugme}<button type="button" data-eylem="temizle">Temizle</button></div>`;
       } else {
         this.alt.innerHTML = `
@@ -954,11 +953,11 @@ export class HaritaGorunumu {
     const hazirlaniyor = this.izgara && !this.arsaK ? " Arsalar hazırlanıyor…" : "";
     const ipucu = window.matchMedia("(pointer: coarse)").matches ? "Bir hazır arsaya dokun" : "Bir hazır arsaya tıkla";
     this.alt.innerHTML = `<span class="alt-ipucu">${ipucu} ya da “Yapı kur” ile yapıyı seçip yerleştir.${hazirlaniyor}</span>
-      <span class="alt-sayi"><small>${esc(ilceAd)} payın</small><b>${fmt(sayi.benim)} / ${fmt(ilceTavani(sayi.uygun))}</b></span>
+      <span class="alt-sayi"><small>Bu ilçede hücre sınırın</small><b>${fmt(sayi.benim)} / ${fmt(ilceTavani(sayi.uygun))}</b></span>
       <div class="alt-dugmeler">${yapiDugme}${aracDugme}</div>`;
   }
 
-  private hucreBari(sayi: IlceSayilari, ilceAd: string, coklu: string, aracDugme: string): void {
+  private hucreBari(sayi: IlceSayilari, coklu: string, aracDugme: string): void {
     const o = satinAlmaOzeti(this.secim.liste, this.sinifAl, sayi, this.benimKume());
     const sinifMetni = o.sinif
       ? SINIF_ADI[o.sinif]
@@ -966,10 +965,10 @@ export class HaritaGorunumu {
     const uyari = o.engeller.map((m) => `<li>${esc(m)}</li>`).join("");
     this.alt.innerHTML = `
       <span class="alt-sayi"><small>Seçili</small><b data-alan="sayi">${fmt(o.sayi)} hücre</b></span>
-      <span class="alt-sayi"><small>Sınıf</small><b data-alan="sinif">${esc(sinifMetni)}</b></span>
+      <span class="alt-sayi"><small>Fiyat bölgesi</small><b data-alan="sinif">${esc(sinifMetni)}</b></span>
       <span class="alt-sayi"><small>Hücre fiyatı</small><b>${o.hucreFiyati ? para(o.hucreFiyati) : "—"}</b></span>
       <span class="alt-sayi alt-toplam"><small>Toplam</small><b data-alan="toplam">${para(o.toplam)}</b></span>
-      <span class="alt-sayi"><small>${esc(ilceAd)} payın</small><b>${fmt(o.sinir.sonra)} / ${fmt(o.sinir.tavan)}</b></span>
+      <span class="alt-sayi"><small>Bu ilçede hücre sınırın</small><b>${fmt(o.sinir.sonra)} / ${fmt(o.sinir.tavan)}</b></span>
       <div class="alt-dugmeler">
         ${aracDugme}${coklu}
         <button type="button" data-eylem="temizle">Temizle</button>
@@ -1005,7 +1004,7 @@ export class HaritaGorunumu {
       <h3><span>Parsel ${esc(kisaAd(id))}</span><button type="button" data-eylem="kart-kapat" aria-label="Kartı kapat">${ikon("x", 18)}</button></h3>
       <dl>
         <dt>Sahip</dt><dd data-alan="sahip">${sahipMetni}</dd>
-        <dt>Sınıf</dt><dd data-alan="sinif">${neden ? esc(neden) : `${SINIF_ADI[sinif]} · ${ARAZI_ADLARI[durumSinifi(d)] ?? ""}`}</dd>
+        <dt>Fiyat bölgesi</dt><dd data-alan="sinif">${neden ? esc(neden) : `${SINIF_ADI[sinif]} · ${ARAZI_ADLARI[durumSinifi(d)] ?? ""}`}</dd>
         <dt>${sahip ? "Değer" : "Fiyat"}</dt><dd data-alan="deger">${deger}</dd>
         ${ayrilmis ? `<dt>Ayrılmış</dt><dd data-alan="ayrilmis" data-ayrilmis="1">taban fiyat, katılımının ilk ${this.tablo.param.mulk?.yeniOyuncu.ayrilmisGun ?? 14} günü</dd>` : ""}
         <dt>${esc(ilceAd)}</dt><dd>${doluluk} dolu</dd>
@@ -1042,6 +1041,20 @@ export class HaritaGorunumu {
       }, 0);
     });
     return this.arsaHazir;
+  }
+
+  /**
+   * Senin arsanın alt şerit metni: yapı ya da inşaat varsa durumu (A4: "Yapı kur" ipucu kalkar), yoksa ipucu.
+   * Arsa hücrelerine değen yapılar sahiplik anlık görüntüsünden bulunur.
+   */
+  private arsaYapiMetni(a: Arsa): string {
+    const hucreler = new Set<string>(a.hucreler);
+    const burada = (this.sahiplik?.yapilar ?? []).filter((y) => y.hucreler.some((h) => hucreler.has(h)));
+    if (burada.length === 0) return "Üzerine yapı kurmak için “Yapı kur”.";
+    const ad = (tur: string | undefined): string => this.katalog.find((k) => k.id === tur)?.ad ?? "Yapı";
+    const parca = burada.map((y) => `${ad(y.tur)} ${y.durum === "insaat" ? "inşa ediliyor" : "kurulu"}`);
+    const m = parca.join(" · ");
+    return `${m}.`;
   }
 
   /** Arsanın satış durumu (sahiplikten). */

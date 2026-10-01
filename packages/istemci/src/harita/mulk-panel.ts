@@ -23,6 +23,7 @@ import type { HaritaGorunumu } from "./gorunum";
 import type { Hiyerarsi } from "./veri";
 import { ASAMA_ADI, yapiAsamasi } from "./yapi";
 import { OLCEK_AD, olcekBuyutulebilir } from "./olcek";
+import { mulkMetni } from "./mulk-metin";
 import { defterBirlesikMetni, defterHtml, kazanimBildirimleri, yeniKazanilanlar } from "./defter";
 import type { Defter } from "@bolge/protokol";
 import { bildir } from "../arayuz/bildirim";
@@ -65,6 +66,8 @@ export interface MulkAdlari {
   il: (il: string) => string;
   /** Ayrılmış hücre hakkının süresi (gün; `mulk.yeniOyuncu.ayrilmisGun`, yoksa 14). */
   ayrilmisGun?: number;
+  /** İlk yapı indirimi yüzdesi ("%30"; `mulk.yeniOyuncu.ilkYapiIndirimPpm`'den); yoksa metin yüzdesiz. */
+  indirimYuzde?: string;
   /** Tesis satırında "Büyüt" gösterilsin mi (`olcek.ts` `olcekBuyutulebilir`); tanımsızsa gösterilmez. */
   buyut?: (y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]) => boolean;
 }
@@ -96,19 +99,41 @@ function gitDugmesi(ilce: string | undefined): string {
   return ilce ? `<button type="button" class="eylem" data-mulk-ilce="${esc(ilce)}" title="Haritada göster">${ikon("map-pin", 15)}Git</button>` : "";
 }
 
-/** Kalkan, ayrılmış hücre ve ilk yapı indirimi satırları (savaş dili yok). */
-export function korumaSatirlari(d: IsletmeDurumu, ilceAdi?: (ilce: string) => string, ayrilmisGun = 14): string {
+/** Hak özeti bloğunun (telefonda) kullanıcı tercihi: açık/kapalı; yok ise masaüstünde açık, telefonda kapalı. Panel yenilenince korunur. */
+let korumaAcikTercih: boolean | null = null;
+
+/** ≥ 821 px: masaüstü (özet satırı gizli, liste açık). Tarayıcı dışında (test) false. */
+function masaustuMu(): boolean {
+  return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(min-width: 821px)").matches;
+}
+
+export interface KorumaSecenegi {
+  /** `details` açık mı (verilmezse kullanıcı tercihi, yoksa masaüstünde açık). */
+  acik?: boolean;
+  /** İlk yapı indirimi yüzdesi ("%30"; parametreden); verilmezse yüzdesiz metin. */
+  indirimYuzde?: string;
+}
+
+/**
+ * Yeni oyuncu hakları (kalkan, ayrılmış hücre, ilk yapı indirimi; savaş dili yok): `details.mk-ozet` içinde özet satırı ("Yeni oyuncu hakların · 3") ve
+ * liste (A6). Telefonda varsayılan kapalı, masaüstünde açık (özet satırı CSS ile gizli). Etkin hak yoksa blok hiç yazılmaz; sayı yalnız etkin olanlar.
+ */
+export function korumaSatirlari(d: IsletmeDurumu, ilceAdi?: (ilce: string) => string, ayrilmisGun = 14, sec: KorumaSecenegi = {}): string {
   const t = d.simZamani;
   const l: string[] = [];
-  if (d.korumaBitis !== null && d.korumaBitis > t) l.push(`<li>${ikon("shield", 15)}<span><b>Yeni oyuncu kalkanı</b> · ${sure(d.korumaBitis - t)} kaldı<br><span class="soluk">Ticarette komisyon, tarife ve ihracat vergisi yok.</span></span></li>`);
+  if (d.korumaBitis !== null && d.korumaBitis > t) l.push(`<li>${ikon("shield", 15)}<span><b>${esc(mulkMetni("mulk.koruma.kalkan", { sure: sure(d.korumaBitis - t) }))}</b><br><span class="soluk">${esc(mulkMetni("mulk.koruma.kalkan_ayrinti"))}</span></span></li>`);
   if (d.ayrilmisBitis !== null && d.ayrilmisBitis > t) {
     const yer = d.katilimIlcesi ? (ilceAdi?.(d.katilimIlcesi) ?? d.katilimIlcesi) : null;
-    l.push(
-      `<li>${ikon("sprout", 15)}<span><b>Ayrılmış hücre hakkı</b> · ${sure(d.ayrilmisBitis - t)} kaldı<br><span class="soluk">Yalnız ${yer ? `katılım ilçen ${esc(yer)}` : "katılım ilçende"} ve katılımının ilk ${fmt(ayrilmisGun)} gününde geçerli: yeni oyunculara ayrılmış hücreleri taban fiyattan alabilirsin.</span></span></li>`,
-    );
+    const ayrinti = yer ? mulkMetni("mulk.koruma.ayrilmis_ayrinti", { yer, gun: fmt(ayrilmisGun) }) : mulkMetni("mulk.koruma.ayrilmis_ayrinti_yersiz", { gun: fmt(ayrilmisGun) });
+    l.push(`<li>${ikon("sprout", 15)}<span><b>${esc(mulkMetni("mulk.koruma.ayrilmis", { sure: sure(d.ayrilmisBitis - t) }))}</b><br><span class="soluk">${esc(ayrinti)}</span></span></li>`);
   }
-  if (d.indirimliYapiKalan !== null && d.indirimliYapiKalan > 0) l.push(`<li>${ikon("hammer", 15)}<span><b>İlk yapı indirimi</b> · ${fmt(d.indirimliYapiKalan)} yapı daha</span></li>`);
-  return l.length ? `<ul class="mulk-koruma">${l.join("")}</ul>` : "";
+  if (d.indirimliYapiKalan !== null && d.indirimliYapiKalan > 0) {
+    const metin = sec.indirimYuzde ? mulkMetni("mulk.koruma.indirim", { yuzde: sec.indirimYuzde, n: fmt(d.indirimliYapiKalan) }) : mulkMetni("mulk.koruma.indirim_yuzdesiz", { n: fmt(d.indirimliYapiKalan) });
+    l.push(`<li>${ikon("hammer", 15)}<span><b>${esc(metin)}</b></span></li>`);
+  }
+  if (!l.length) return "";
+  const acik = sec.acik ?? korumaAcikTercih ?? masaustuMu();
+  return `<details class="mk-ozet"${acik ? " open" : ""}><summary>${esc(mulkMetni("mulk.koruma.ozet", { n: l.length }))}</summary><ul class="mulk-koruma">${l.join("")}</ul></details>`;
 }
 
 function yapiDurumu(y: IsletmeYapisi, t: number): string {
@@ -127,7 +152,7 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
   const toplam = d.ilceHucre.reduce((s, [, n]) => s + n, 0);
   const ilk = [...ben.ad.trim()][0] ?? "?";
   let s = `<div class="mulk-kimlik"><span class="mulk-amblem" aria-hidden="true">${esc(ilk)}</span><div><b>${esc(ben.ad)}</b><span class="soluk">${toplam ? `${fmt(d.ilceHucre.length)} ilçede ${fmt(toplam)} hücre` : "Henüz arsan yok"}</span></div></div>`;
-  s += korumaSatirlari(d, ad.ilce, ad.ayrilmisGun ?? 14);
+  s += korumaSatirlari(d, ad.ilce, ad.ayrilmisGun ?? 14, ad.indirimYuzde ? { indirimYuzde: ad.indirimYuzde } : {});
   s += `<h3>Arsalarım</h3>`;
   if (!d.ilceHucre.length) s += `<div class="bos-durum">${ikon("map-pin", 28)}<p class="ipucu-metin">Henüz arsan yok. Bir ilçe seç, hazır arsalardan birini al.</p></div>`;
   else {
@@ -246,6 +271,15 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     document.head.append(st);
   }
   isletmeDugmesiKur();
+  // Hak özeti `details` açık/kapalı tercihi panel yenilenince korunur (toggle olayı kabarmaz: yakalama aşamasında dinlenir)
+  document.addEventListener(
+    "toggle",
+    (e) => {
+      const t = e.target;
+      if (t instanceof HTMLDetailsElement && t.classList.contains("mk-ozet")) korumaAcikTercih = t.open;
+    },
+    true,
+  );
   const b = s.gorunum.baglanti;
   const ic = s.gorunum.tablo;
   const katalog = s.gorunum.yapiKatalogu();
@@ -255,6 +289,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     ilce: (ilce) => s.hiyerarsi.ilceler.get(ilce)?.ad ?? ilce,
     il: (il) => s.hiyerarsi.iller.get(il)?.ad ?? il,
     ayrilmisGun: ic.param.mulk?.yeniOyuncu.ayrilmisGun ?? 14,
+    ...(ic.param.mulk?.yeniOyuncu.ilkYapiIndirimPpm ? { indirimYuzde: yuzde(ic.param.mulk.yeniOyuncu.ilkYapiIndirimPpm / 10_000) } : {}),
     ...(b.olcekYukselt ? { buyut: (y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]) => olcekBuyutulebilir(ic, y, tumu) } : {}),
   };
   // Biten inşaatlar: bir inşaat listeden düşünce (ya da bitişi geçince) bu oturumda hatırlanır
