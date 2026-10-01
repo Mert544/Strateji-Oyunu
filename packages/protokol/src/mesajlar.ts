@@ -239,6 +239,8 @@ const bolgeKaresiSemasi = z.object({
     nufus: tam,
     tesisler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)])])),
     durus: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+    // Yalnız ekleme: tamamlanmış dükkânlar (tabela). Eski istemci bilinmeyen anahtarı atar.
+    dukkanlar: z.array(z.tuple([tam, z.string(), z.union([z.literal(0), z.literal(1), z.literal(2)]), z.string(), tam, tam])).optional(),
   }),
   ozel: z
     .object({
@@ -247,6 +249,18 @@ const bolgeKaresiSemasi = z.object({
       tesisler: z.array(z.tuple([tam, tam, tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
       // Yalnız ekleme: S olmayan tesislerin ölçeği (demete öğe eklenmez; zod tuple fazla öğeyi reddeder). Eski istemci bilinmeyen anahtarı atar.
       tesisOlcek: z.array(z.tuple([tam, z.union([z.literal(1), z.literal(2)])])).optional(),
+      // Yalnız ekleme: sahibine dükkân görünümü (raf demeti `fiyatT` ile İLK tanımda tamdır; demete öğe eklenmez).
+      dukkanlar: z
+        .array(
+          z.tuple([
+            tam,
+            z.array(z.tuple([z.string(), tam, tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
+            tam,
+            z.tuple([tam, tam, tam]),
+            tam,
+          ]),
+        )
+        .optional(),
       emirler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
       birlikler: z.array(tam),
       gidaPpm: tam,
@@ -279,6 +293,8 @@ const ilceKaresiSemasi = z.object({
   ayrilmisAdet: tam.optional(),
   // Yalnız ekleme: para ile satılmış ayrılmış hücre sayısı (fiyat eğrisi sayacı); 0 ise yazılmaz.
   ayrilmisSatilmis: tam.optional(),
+  // Yalnız ekleme: dükkânı olan oyuncuya ilçe talebi Q `[mal, qMiliSaat]` (isteyenin raf mallarında).
+  talep: z.array(z.tuple([z.string(), tam])).optional(),
   ayrilmis: z.array(z.string()).optional(),
   kamuAdet: tam.optional(),
   kamu: z
@@ -313,6 +329,9 @@ const oyuncuKaresiSemasi = z.object({
       katilimIlcesi: z.string().optional(),
     })
     .optional(),
+  // Yalnız ekleme (isteğe bağlı, yalnız kendisine): marka tanımları ve ilk dükkân satışı anı.
+  markalar: z.array(z.tuple([z.string(), tam, tam])).optional(),
+  ilkSatisT: tam.optional(),
 });
 /** Görünen adlar: oyuncu kimliği -> ad (sunucu üretimli ya da oyuncunun seçtiği; 2-24 karakter). */
 const adlarSemasi = z.record(z.string().min(1).max(32), z.string().min(2).max(24));

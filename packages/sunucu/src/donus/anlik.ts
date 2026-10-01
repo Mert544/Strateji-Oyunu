@@ -6,6 +6,7 @@
 import { SAAT, anlikMiktar, carpBol } from "@bolge/cekirdek";
 import type { DerlenmisIcerik, Dunya, Ms } from "@bolge/cekirdek";
 import type { SonGorulen } from "../depo/tipler";
+import { dukkanGeliriTembel } from "../odul/dedektor";
 
 export interface AnlikKaynagi {
   readonly dunya: Readonly<Dunya>;
@@ -47,5 +48,6 @@ export function oyuncuAnligi(kaynak: AnlikKaynagi, oyuncu: string): SonGorulen |
       if (u !== 0) uretim[id] = (uretim[id] ?? 0) + u;
     }
   }
-  return { t, hazine: anlikMiktar(o.hazine, t), defter, stok, uretim };
+  const dukkan = dukkanGeliriTembel(d, oyuncu, t);
+  return { t, hazine: anlikMiktar(o.hazine, t), defter, ...(dukkan > 0 ? { dukkanGeliri: dukkan } : {}), stok, uretim };
 }

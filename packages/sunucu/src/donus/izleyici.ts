@@ -7,7 +7,8 @@
  *   (olayın kesin sim zamanı, durumdan okunur; taramanın yapıldığı an DEĞİL); aksi halde iptal edilmiştir ve kayıt yoktur
  *   (başarılı `insaat_iptal` ayrıca bildirilir: aynı t'de iptal/bitiş sıralamasını kesinleştirir).
  * - **Satış toplamı:** her sim-günü sınırında (`t % GUN === 0`; `t = 0` Türkiye gece yarısına hizalıdır) oyuncunun kümülatif
- *   ihracat / gider sayaçları değiştiyse bir kayıt: `[günlükİhracatFarkı, günlükGiderFarkı, kümülatifİhracat, kümülatifGider]`.
+ *   satış (NPC ihracat + dükkân geliri, G7) / gider sayaçları değiştiyse bir kayıt: `[günlükSatışFarkı, günlükGiderFarkı, kümülatifSatış, kümülatifGider]` (dükkânı olmayan
+ *   dünyada satış = ihracat: kayıtlar eskisiyle bayt bayt aynı).
  *   Kümülatif değerler kayıtta durduğu için kurtarmada önceki sınır depodan okunur; sınırlar `calistirKadar` adımları sınırda
  *   durdurularak kesin t'de taranır (yazar uygular), böylece canlı koşu, yetişme ve kurtarma yeniden oynatması AYNI kaydı üretir.
  * - İdempotans anahtarı `(oyuncu, tur, t, sira)`; `sira` = inşaat kimliği (satış toplamında 0). Günlük seq'ine bağlı değildir.
@@ -15,6 +16,7 @@
 import { GUN, SAAT, carpBol } from "@bolge/cekirdek";
 import type { DerlenmisIcerik, Dunya } from "@bolge/cekirdek";
 import type { OzetKaydi } from "../depo/tipler";
+import { dukkanGeliriTembel } from "../odul/dedektor";
 
 export interface OyuncuKaydi {
   oyuncu: string;
@@ -93,10 +95,13 @@ export class OzetIzleyici {
     const sonuc: OyuncuKaydi[] = [];
     for (const o of d.oyuncular) {
       const df = o.ticaretDefteri;
-      if (!df) continue;
-      const ihracat = tembel(df.toplam.brutIhracat, df.oran.brutIhracat, df.t0, t);
-      const gider =
-        tembel(df.toplam.brutIthalat, df.oran.brutIthalat, df.t0, t) + tembel(df.toplam.komisyon, df.oran.komisyon, df.t0, t) + tembel(df.toplam.prim, df.oran.prim, df.t0, t);
+      // Satış = NPC ihracat + dükkân geliri (G7). Ticaret defteri olmayan ama dükkân geliri olan oyuncu da izlenir; ikisi de yoksa atlanır (eski davranış).
+      const dukkan = dukkanGeliriTembel(d, o.id, t);
+      if (!df && dukkan === 0) continue;
+      const ihracat = (df ? tembel(df.toplam.brutIhracat, df.oran.brutIhracat, df.t0, t) : 0) + dukkan;
+      const gider = df
+        ? tembel(df.toplam.brutIthalat, df.oran.brutIthalat, df.t0, t) + tembel(df.toplam.komisyon, df.oran.komisyon, df.t0, t) + tembel(df.toplam.prim, df.oran.prim, df.t0, t)
+        : 0;
       const onceki = this.sonSatis.get(o.id);
       if (onceki === undefined ? ihracat === 0 && gider === 0 : onceki[0] === ihracat && onceki[1] === gider) continue;
       const [pi, pg] = onceki ?? [0, 0];

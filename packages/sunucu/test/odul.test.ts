@@ -135,7 +135,7 @@ describe("kavram saptama ve odulun gunluge girisi", () => {
       const k = JSON.parse(s[3]) as { oyuncu: string; kavram: string };
       expect(k.oyuncu).toBe("ali"); // veli yalniz parsel aldi: odul yok
       expect(s[4]).toBe(`odul:ali:${k.kavram}`);
-      expect(["ilk_dukkan", "ilk_sozlesme"]).not.toContain(k.kavram);
+      expect(["ilk_dukkan", "ilk_sozlesme"]).not.toContain(k.kavram); // dukkani olmayan ali ilk_dukkan almaz
     }
     // HEPSI sim-saat sinirinda (koşullar tamamlanmis yapi/arastirma/uretim ister); komut aninda odul YOK.
     const t5 = 5 * SAAT;
@@ -182,7 +182,7 @@ describe("kavram saptama ve odulun gunluge girisi", () => {
       if (k.tur === "odul") expect(k.odul?.degerMili).toBe(odulDegeri(y.sim.ic, k.kavram));
       else expect(k.odul).toBeUndefined();
     }
-    expect(d?.siradaki.map((s) => [s.kavram, s.etkin])).toEqual([["ilk_dukkan", false], ["ilk_sozlesme", false]]);
+    expect(d?.siradaki.map((s) => [s.kavram, s.etkin])).toEqual([["ilk_dukkan", true], ["ilk_sozlesme", false]]);
     expect(d?.toplamOdulMili).toBe(KAVRAMLAR_ALI.reduce((n, k) => n + (odulDegeri(y.sim.ic, k) ?? 0), 0));
     expect(d?.tavanMili).toBe(y.sim.ic.param.odul?.tavanMili);
     // Veli: yalniz damga; siradaki 8 kavramin hepsi

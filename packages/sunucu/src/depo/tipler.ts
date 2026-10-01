@@ -102,6 +102,11 @@ export interface SonGorulen {
   hazine: number;
   /** Ticaret defteri kümülatif toplamları (şimdilik ihracat, ithalat, komisyon, liman primi). */
   defter: { brutIhracat: number; brutIthalat: number; komisyon: number; prim: number };
+  /**
+   * Kümülatif dükkân (yerel NPC) satış geliri (mili-₺; `dukkanGeliri` sayacı + tembel `paraAkisi.yerel`): "sen yokken" `satis` = ihracat farkı + bu farkı. İSTEĞE BAĞLI:
+   * dükkân geliri yoksa (perakende kapalı/hiç satış) YAZILMAZ; eski çapa (alan yok) 0 sayılır.
+   */
+  dukkanGeliri?: number;
   /** Mal kimliği -> oyuncunun bölgelerindeki stok toplamı. */
   stok: Record<string, number>;
   /** Mal kimliği -> oyuncunun bölgelerindeki kümülatif üretim. */

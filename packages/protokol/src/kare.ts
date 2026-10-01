@@ -32,8 +32,8 @@
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { PPM, anlikMiktar, carpBol, kamuBloklari } from "@bolge/cekirdek";
-import type { ArsaSinifi, DerlenmisIcerik, DerlenmisMulk, Dunya, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
+import { GUN, PPM, anlikMiktar, carpBol, kamuBloklari, yerelPazarGorunumu } from "@bolge/cekirdek";
+import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
 
 /** Dikdörtgen kamu bloğu: `[x0, y0, x1, y1]` = x0..x1 × y0..y1 (dört uç dahil) hücreleri ("x:y" kimliği), hepsi kamu arsası. */
 export type KamuBlogu = [x0: number, y0: number, x1: number, y1: number];
@@ -62,10 +62,30 @@ export interface KareSecenekleri {
 export interface KareKaynagi {
   readonly dunya: Readonly<Dunya>;
   readonly ic: DerlenmisIcerik;
+  /**
+   * Çözüm bağlamı (`Simulasyon` sağlar): yalnız perakende okuma API'si (`yerelPazarGorunumu`) için; yoksa dükkân ayrıntı alanları (`OzelBolgeKaresi.dukkanlar`,
+   * `IlceKaresi.talep`) YAZILMAZ (genel `dukkanlar` ve `OyuncuKaresi.markalar` durumdan okunur, bağlam gerekmez).
+   */
+  readonly baglam?: Baglam;
 }
 
 /** Tembel stok formülü: `[miktar, oran (yerel + gelen, /saat), t0, artik, kapasite]`. */
 export type StokFormulu = [miktar: Mili, oran: Mili, t0: Ms, artik: number, kapasite: Mili];
+
+/** Genel dükkân (tabela): `[ek yapı kimliği, tür, ölçek (0 S, 1 M, 2 L), markaAd ("" markasız), simge, renk]`. */
+export type GenelDukkan = [id: number, tur: string, olcek: 0 | 1 | 2, markaAd: string, simge: number, renk: number];
+
+/**
+ * Sahibine dükkân raf yuvası: `[mal ("" boş yuva), fiyat (saklanan kademe), etkin (etkin kademe; kampanya penceresine göre), mevcut (0/1; stoksuz yuva çekime girmez),
+ * istekMiliSaat (kasa kırpmalı satış isteği), fiyatT (son fiyat/mal değişim anı; hiç değişmediyse 0)]`. Demet `fiyatT` ile İLK tanımda tamamdır: bu demete öğe EKLENMEZ.
+ */
+export type DukkanRaf = [mal: string, fiyat: number, etkin: number, mevcut: 0 | 1, istekMiliSaat: Mili, fiyatT: Ms];
+
+/**
+ * Sahibine dükkân: `[ek yapı kimliği, raf (yuva sırasıyla), kasaPpm (Σ istek / kasa kapasitesi, <= PPM), kampanya [bitis (0 yok), kalanSaat (bugün için), kalanGun (bu hafta için)],
+ * karsilanmaPpm (stok isteği karşılıyor mu; < PPM ise "neden satmıyor")]`. Tutar alanı yoktur; gerçekleşen satış geliri `ParaAkisi.yerel` oranından okunur.
+ */
+export type SahipDukkan = [id: number, raf: DukkanRaf[], kasaPpm: number, kampanya: [bitis: Ms, kalanSaat: number, kalanGun: number], karsilanmaPpm: number];
 
 /** Herkese açık bölge verisi. tesisler: `[tesisTuruIndeksi, aktif (0/1)]`; durus: 0 normal, 1 savunma, 2 geri çekil. */
 export interface GenelBolgeKaresi {
@@ -73,6 +93,11 @@ export interface GenelBolgeKaresi {
   nufus: number;
   tesisler: Array<[tur: number, aktif: 0 | 1]>;
   durus: 0 | 1 | 2;
+  /**
+   * Yalnız ekleme (isteğe bağlı): bölgedeki TAMAMLANMIŞ dükkânlar (tabela için; sahip ve marka tanımı sahibinden okunur). Dükkân yoksa (ya da yıkılınca) alan YAZILMAZ;
+   * yıkım (`dukkan_yik`) yapıyı listeden düşürür. Eski istemci alanı sessizce yok sayar.
+   */
+  dukkanlar?: GenelDukkan[];
 }
 
 /** Yalnız sahibine giden bölge verisi (ham çekirdek birimleri). */
@@ -91,6 +116,11 @@ export interface OzelBolgeKaresi {
    * Eski istemci (z.object bilinmeyen anahtarı atar) alanı sessizce yok sayar.
    */
   tesisOlcek?: Array<[id: number, olcek: 1 | 2]>;
+  /**
+   * Yalnız ekleme (isteğe bağlı, yalnız sahibine): dükkânlar, raf görünümü, kasa doluluğu, kampanya hakkı ve "neden satmıyor" bilgisiyle (`SahipDukkan`). Dükkân yoksa ya da çözüm
+   * bağlamı yoksa alan YAZILMAZ. `fiyatT` raf demetindedir (DUK-18 geri sayımı istemcide `fiyatDegisimEnAzSaat`'ten hesaplanır).
+   */
+  dukkanlar?: SahipDukkan[];
   /** `[mal, yön (0 ihracat, 1 ithalat), istenen oran, gerçekleşen oran]` (mili-birim/saat) */
   emirler: Array<[mal: number, yon: 0 | 1, oranSaat: Mili, gerceklesenSaat: Mili]>;
   /** Birlik indeksine göre adet. */
@@ -145,6 +175,11 @@ export interface IlceKaresi {
    * taşır, `deltaUygula` önceki girdiden korur.
    */
   ayrilmis?: string[];
+  /**
+   * Yalnız ekleme (isteğe bağlı, yalnız dükkânı olan oyuncuya): bu ilçedeki yerel NPC hane talebi Q (`[mal, mili-birim/saat]`) YALNIZ isteyenin kendi dükkânlarının raf mallarında
+   * (mal kimliğine göre sıralı; boş yuva ve talebi 0 olan mal yazılmaz); hiç yoksa alan YAZILMAZ. Esnaf payı gösterimi için (G9); G7 kabulünü bağlamaz.
+   */
+  talep?: Array<[mal: string, qMiliSaat: Mili]>;
 }
 
 /** Oyuncunun mülk kaydı (yalnız kendisine). */
@@ -193,6 +228,13 @@ export interface OyuncuKaresi {
   erkenOyun?: ErkenOyunFormulu;
   /** Mülk kipinde oyuncunun arazi kaydı (katılmış ama hücresi yoksa da vardır). */
   mulk?: MulkOyuncuKaresi;
+  /** Yalnız ekleme (isteğe bağlı, yalnız kendisine): marka tanımları `[ad (kanonik küçük harf), simge, renk]`, dizin = `DukkanDurumu.marka`. Hiç marka yoksa alan YAZILMAZ. */
+  markalar?: Array<[ad: string, simge: number, renk: number]>;
+  /**
+   * Yalnız ekleme (isteğe bağlı, yalnız kendisine): ilk dükkân satışı anı (`MulkOyuncuDurumu.ilkSatisT`; yerel satış oranının ilk > 0 olduğu çözüm anı). Yoksa alan YAZILMAZ.
+   * İstemcinin "ilk satışın oldu" bildirimi bu alanın ilk görünüşünden (ya da `ozel.dukkanlar` raf `istekMiliSaat > 0` ve `ParaAkisi.yerel`) türetilir.
+   */
+  ilkSatisT?: Ms;
 }
 
 export interface IlgiKaresi {
@@ -353,6 +395,16 @@ export function ilceIlgisiKur(kaynak: KareKaynagi, istenen: readonly string[], o
   return [...kume].sort();
 }
 
+/** Kare başına bir kez, tembel: oyuncunun dükkân görünümü (`yerelPazarGorunumu`; çözümle aynı çekirdek, durumu DEĞİŞTİRMEZ). Bağlam ya da dükkân yoksa boş. */
+function dukkanGorunumleri(kaynak: KareKaynagi, oyuncu: OyuncuId | null): { bul(ekYapi: number): DukkanGorunumu | undefined; hepsi(): DukkanGorunumu[] } {
+  let liste: DukkanGorunumu[] | null = null;
+  const yukle = (): DukkanGorunumu[] => {
+    if (liste === null) liste = oyuncu !== null && kaynak.baglam !== undefined && kaynak.ic.mulk?.perakende !== undefined ? yerelPazarGorunumu(kaynak.dunya as Dunya, kaynak.baglam, oyuncu) : [];
+    return liste;
+  };
+  return { bul: (ekYapi) => yukle().find((g) => g.ekYapi === ekYapi), hepsi: yukle };
+}
+
 /**
  * Dünyadan ilgi alanı karesi (saf; dünyayı değiştirmez). `oyuncu` null ise yalnız genel veri. `ilceler` (mülk
  * kipi) verilmezse ilçe bölümü boş liste olur; bölge kipinde hiç yazılmaz.
@@ -366,6 +418,7 @@ export function ilgiKaresiCikar(
 ): IlgiKaresi {
   const d = kaynak.dunya;
   const bolgeler: BolgeKaresi[] = [];
+  const gorunum = dukkanGorunumleri(kaynak, oyuncu);
   for (const i of bolgeIndeksleri) {
     const b = d.bolgeler[i];
     if (!b) continue;
@@ -379,6 +432,15 @@ export function ilgiKaresiCikar(
         durus: DURUS[b.savunma.durus] ?? 0,
       },
     };
+    const dukkanlar = (b.ekYapilar ?? []).filter((e) => e.dukkan !== undefined);
+    if (dukkanlar.length > 0) {
+      const sahibi = b.sahip === null ? undefined : d.mulk?.oyuncular.find((x) => x.id === b.sahip);
+      girdi.genel.dukkanlar = dukkanlar.map((e): GenelDukkan => {
+        const dk = e.dukkan as NonNullable<typeof e.dukkan>;
+        const m = dk.marka === undefined ? undefined : sahibi?.markalar?.[dk.marka];
+        return [e.id, dk.tur, dk.olcek, m?.ad ?? "", m?.simge ?? 0, m?.renk ?? 0];
+      });
+    }
     if (oyuncu !== null && b.sahip === oyuncu) {
       girdi.ozel = {
         stoklar: b.stoklar.map(stokFormulu),
@@ -392,6 +454,37 @@ export function ilgiKaresiCikar(
       };
       const olcekler = b.tesisler.flatMap((x): Array<[number, 1 | 2]> => (x.olcek === 1 || x.olcek === 2 ? [[x.id, x.olcek]] : []));
       if (olcekler.length > 0) girdi.ozel.tesisOlcek = olcekler;
+      if (dukkanlar.length > 0) {
+        const pk = kaynak.ic.mulk?.perakende?.p;
+        const liste: SahipDukkan[] = [];
+        for (const e of dukkanlar) {
+          const g = gorunum.bul(e.id);
+          const dk = e.dukkan as NonNullable<typeof e.dukkan>;
+          if (g === undefined || pk === undefined) continue;
+          const bugun = Math.floor(d.zaman / GUN);
+          const hafta = Math.floor(bugun / 7);
+          const kampanyaAcik = pk.kampanyaKademesi !== undefined && (pk.kampanyaGunlukEnFazlaSaat ?? 0) > 0 && (pk.kampanyaHaftalikEnFazlaGun ?? 0) > 0;
+          const kp = dk.kampanya;
+          const kampanya: SahipDukkan[3] = !kampanyaAcik
+            ? [0, 0, 0]
+            : [
+                kp !== undefined && kp.bitis > d.zaman ? kp.bitis : 0,
+                Math.max(0, (pk.kampanyaGunlukEnFazlaSaat ?? 0) - (kp !== undefined && kp.gun === bugun ? kp.saat : 0)),
+                Math.max(0, (pk.kampanyaHaftalikEnFazlaGun ?? 0) - (kp !== undefined && kp.hafta === hafta ? kp.gunSayisi : 0)),
+              ];
+          liste.push([
+            e.id,
+            dk.raf.map((y, i): DukkanRaf => {
+              const v = g.yuvalar[i];
+              return [y.mal ?? "", y.fiyat, v?.etkinKademe ?? y.fiyat, v?.mevcut === true ? 1 : 0, v?.istek ?? 0, y.fiyatT ?? 0];
+            }),
+            g.kasaDolulukPpm,
+            kampanya,
+            b.yerelKarsilanmaPpm ?? PPM,
+          ]);
+        }
+        if (liste.length > 0) girdi.ozel.dukkanlar = liste;
+      }
     }
     bolgeler.push(girdi);
   }
@@ -435,6 +528,8 @@ export function ilgiKaresiCikar(
           sonEtkinlik: mo.sonEtkinlik,
         };
         if (mo.katilimIlcesi !== undefined) kare.oyuncu.mulk.katilimIlcesi = mo.katilimIlcesi;
+        if (mo.markalar !== undefined && mo.markalar.length > 0) kare.oyuncu.markalar = mo.markalar.map((x): [string, number, number] => [x.ad, x.simge, x.renk]);
+        if (mo.ilkSatisT !== undefined) kare.oyuncu.ilkSatisT = mo.ilkSatisT;
         const mk = kaynak.ic.mulk;
         if (mk) {
           kare.oyuncu.mulk.indirimliYapiKalan = Math.max(0, mk.p.yeniOyuncu.indirimliYapiSayisi - (mo.indirimliYapi ?? 0));
@@ -483,6 +578,7 @@ export function ilgiKaresiCikar(
       liste.push(girdi);
     }
     const mk = kaynak.ic.mulk;
+    const mo0 = oyuncu === null ? undefined : m.oyuncular.find((x) => x.id === oyuncu);
     kare.ilceler = m.ilceler
       .filter((c) => istenen.has(c.id))
       .map((c) => {
@@ -492,6 +588,11 @@ export function ilgiKaresiCikar(
         if (ayrilmis) {
           girdi.ayrilmisAdet = ayrilmis.length;
           if (secenek.ayrilmisListesi === true) girdi.ayrilmis = ayrilmis;
+        }
+        if (oyuncu !== null && (mo0?.ilceHucre.length ?? 0) > 0) {
+          const q = new Map<string, Mili>();
+          for (const g of gorunum.hepsi()) if (g.ilce === c.id) for (const y of g.yuvalar) if (y.mal !== undefined && y.q > 0) q.set(y.mal, y.q);
+          if (q.size > 0) girdi.talep = [...q.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
         }
         const k = kamuKompakt(d, c.id);
         if (k) {

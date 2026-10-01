@@ -73,7 +73,8 @@ export function donusOzeti(g: DonusGirdisi): DonusOzeti | null {
 
   // --- Net sonuç: kümülatif sayaç farkları (O(1)) ---
   const hazineFarki = g.anlik.hazine - sg.hazine;
-  const satis = g.anlik.defter.brutIhracat - sg.defter.brutIhracat;
+  // Satış = NPC ihracat farkı + dükkân (yerel NPC) geliri farkı (G7; çapada alan yoksa 0). `diger` hazine farkından türetildiği için toplam eşitliği korunur.
+  const satis = g.anlik.defter.brutIhracat - sg.defter.brutIhracat + ((g.anlik.dukkanGeliri ?? 0) - (sg.dukkanGeliri ?? 0));
   const gider = -(
     g.anlik.defter.brutIthalat - sg.defter.brutIthalat +
     (g.anlik.defter.komisyon - sg.defter.komisyon) +
