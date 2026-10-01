@@ -6,4 +6,4 @@ Dal: `takim/t1/g9-gorsel` (taban `entegrasyon` 7553b55). Sözleşme: `g9-sozlesm
 - `src/tasarim/ikon.ts` + `ikon-veri.ts`: 11 yeni Lucide simgesi (lucide-static 1.49.0): `candy`, `croissant`, `ellipsis`, `ham`, `inbox`, `log-out`, `mail`, `shopping-basket`, `tag`, `trash-2`, `user-round` (`hammer`, `store` zaten vardı). Dükkân türü eşlemesi: bakkal `shopping-basket`, fırın `croissant`, şarküteri `ham`, şekerci `candy`, yapı market `hammer`.
 - Görsel denetim: sabit HTML önizlemesi (depoda yok), 390×844 açık ve 1440×900 koyu; g1, g2, g4; yatay taşma yok. Düğme `.birincil.gr-dugme` tek başına çalışır (çerçeve burada, zemin temel.css'te).
 - Doğrulama: tipkontrol temiz; `tasarim.test.ts` yeşil (büyük harf yasağı giris.css'i de tarar). Playwright ve `pnpm dunya` koşulmadı (talimat).
-- Açık: dükkân CSS'i (`dukkan-panel.css`) A1'in dükkân metin tablosu gelince.
+- `src/harita/dukkan-panel.css` (yeni, ek commit): `.dk-*` sınıfları; harita.js ile yüklenir (dunya.html bütçesine girmez); 2,0 KB gzip. Metin: `g9-dukkan-metin-son.md` (A1'in 138 anahtarı + T1 kararları; SP/takim/t1).

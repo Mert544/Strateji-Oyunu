@@ -1,0 +1,73 @@
+/*
+ * Dükkân paneli (G9 B; sözleşme: SP/takim/t1/g9-sozlesme.md, metin: g9-dukkan-metin-son.md). harita.js ile yüklenir
+ * (dunya.html bütçesine girmez). Yalnız belirteç; hex ve büyük harf yok. Kural: önleme soluk düğme (`aria-disabled`, odak kalır) +
+ * neden satırı; ret kartın içinde. Telefon 390×844: dokunma hedefi ≥44 px, alt sayfa en çok %60. Kademe ve yuva seçimi birincil sayılmaz.
+ */
+.dk-bolum { display: flex; flex-direction: column; gap: var(--s-2); }
+.dk-satir { display: flex; align-items: center; gap: var(--s-3); min-height: 56px; padding: var(--s-2) 0; border-bottom: 1px solid var(--cizgi-ince); }
+.dk-satir:last-child { border-bottom: 0; }
+.dk-satir .ikon { flex: none; color: var(--katman-pazar-ink); }
+.dk-satir[data-durum="insaat"] .soluk { color: var(--uyari-ink); }
+.dk-bos { padding: var(--s-4); }
+.dk-palet-kart { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 56px; padding: var(--s-3) var(--s-4); text-align: left; border: 1px solid var(--cizgi-ince); border-radius: var(--r-lg); background: var(--yuzey); color: var(--murekkep); font-size: var(--yazi-sm); }
+.dk-palet-kart:hover { background: var(--yuzey-3); }
+.dk-palet-kart > .ikon { flex: none; padding: 6px; box-sizing: content-box; border-radius: var(--r-md); background: var(--katman-pazar-tint); color: var(--katman-pazar-ink); }
+.dk-palet-kart b { display: block; font-size: var(--yazi-md); font-weight: 600; }
+.dk-baslik { margin: var(--s-3) 0 var(--s-1); font-size: var(--yazi-lg); font-weight: 600; }
+.dk-ipucu, .dk-sinir, .dk-not, .dk-fiyat-satiri, .dk-sinir-sure, .dk-kampanya { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); font-variant-numeric: tabular-nums; }
+.dk-neden { margin: var(--s-1) 0 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--uyari-ink); }
+.dk-hata { margin: var(--s-1) 0 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--hata-ink); }
+.dk-hata:empty, .dk-neden:empty { display: none; }
+.dk-panel [aria-disabled="true"] { cursor: not-allowed; }
+/* D-2 tür seçimi */
+.dk-tur-liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+.dk-tur { display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 0 var(--s-2); min-height: 56px; padding: var(--s-2) var(--s-3); text-align: left; border: 1px solid var(--cizgi); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); font-size: var(--yazi-sm); font-weight: 600; }
+.dk-tur .ikon { grid-row: span 2; color: var(--katman-pazar-ink); }
+.dk-tur[aria-pressed="true"] { border-color: var(--birincil); background: var(--birincil-tint); color: var(--birincil-ink); }
+.dk-tur[aria-disabled="true"] { background: var(--yuzey-2); color: var(--murekkep-3); border-color: var(--cizgi-ince); }
+.dk-tur-sayi { font-size: var(--yazi-xs); font-weight: 400; color: var(--murekkep-2); }
+.dk-tahmin { padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--bilgi-tint); color: var(--bilgi-ink); font-size: var(--yazi-sm); }
+.dk-tahmin[hidden] { display: none; }
+/* D-5 raf: masaüstü 4 satır, telefon 2×2 */
+.dk-raf { display: flex; flex-direction: column; gap: var(--s-2); }
+.dk-yuva { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; min-height: 64px; padding: var(--s-2) var(--s-3); text-align: left; border: 1px solid var(--cizgi); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); font-size: var(--yazi-sm); }
+.dk-yuva[data-durum="bos"] { border-style: dashed; background: transparent; color: var(--murekkep-2); }
+.dk-yuva[data-durum="stoksuz"] { border-color: var(--uyari-cizgi); border-width: 2px; }
+.dk-yuva b { font-weight: 600; }
+.dk-yuva-stok, .dk-yuva-fiyat { font-size: var(--yazi-xs); color: var(--murekkep-2); font-variant-numeric: tabular-nums; }
+.dk-secici { display: flex; flex-direction: column; padding: var(--s-2); background: var(--yuzey); border-radius: var(--r-lg); box-shadow: var(--golge-2); }
+.dk-mal { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); width: 100%; min-height: 48px; padding: 0 var(--s-3); text-align: left; border: 0; border-radius: var(--r-md); background: transparent; color: var(--murekkep); font-size: var(--yazi-sm); font-variant-numeric: tabular-nums; }
+.dk-mal:hover { background: var(--yuzey-3); }
+.dk-mal[aria-disabled="true"] { color: var(--murekkep-3); }
+/* D-6 fiyat: .segment (temel.css) dükkân panelinde tam genişlik, 44 px */
+.dk-panel .segment { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+.dk-panel .segment[data-sutun="2"] { grid-template-columns: repeat(2, 1fr); }
+.dk-panel .segment button { min-height: 44px; }
+/* D-7 marka */
+.dk-marka { display: flex; flex-direction: column; gap: var(--s-3); }
+.dk-girdi { width: 100%; min-height: 44px; padding: 0 var(--s-3); border: 1px solid var(--cizgi-guclu); border-radius: var(--r-md); background: var(--yuzey-2); color: var(--murekkep); font-size: var(--yazi-md); scroll-margin-block: 96px; }
+.dk-girdi:focus-visible { outline: 2px solid var(--odak); outline-offset: 0; background: var(--yuzey); }
+.dk-girdi[aria-invalid="true"] { border-color: var(--hata); }
+.dk-sayac { align-self: flex-end; font-size: var(--yazi-xs); color: var(--murekkep-3); font-variant-numeric: tabular-nums; }
+.dk-onizleme { margin: 0; font-size: var(--yazi-sm); color: var(--murekkep-2); }
+.dk-onizleme b { color: var(--murekkep); font-weight: 600; overflow-wrap: anywhere; }
+.dk-palet { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.dk-simge, .dk-renk { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--cizgi); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); }
+.dk-renk { background: var(--renk, var(--yuzey-3)); border-color: transparent; }
+.dk-simge[aria-checked="true"], .dk-renk[aria-checked="true"] { box-shadow: 0 0 0 2px var(--yuzey), 0 0 0 4px var(--odak); }
+/* D-8 satış görünümü */
+.dk-ozet { display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-3); border-radius: var(--r-md); background: var(--yuzey-2); }
+.dk-ozet-satir { margin: 0; font-size: var(--yazi-sm); color: var(--murekkep); font-variant-numeric: tabular-nums; }
+.dk-kasa { margin: 0; font-size: var(--yazi-sm); color: var(--uyari-ink); }
+.dk-menu { min-width: 44px; min-height: 44px; }
+/* D-4 iptal ve D-8.1 kaldırma onayı: masaüstünde panel içinde kart, telefonda alt sayfa */
+.dk-onay { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4); border-radius: var(--r-lg); background: var(--yuzey); box-shadow: var(--golge-3); font-size: var(--yazi-md); line-height: var(--satir-md); }
+.dk-onay .eylem, .dk-onay .tehlike { min-height: 44px; }
+@media (max-width: 820px) {
+  .dk-tur-liste { grid-template-columns: 1fr; }
+  .dk-raf { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dk-yuva { min-height: 72px; }
+  .dk-secici, .dk-onay { position: fixed; z-index: var(--z-modal); left: 0; right: 0; bottom: 0; max-height: 60vh; overflow-y: auto; border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--golge-3); padding-bottom: calc(var(--s-4) + env(safe-area-inset-bottom)); }
+  .dk-marka { position: fixed; inset: 0; z-index: var(--z-modal); padding: var(--s-4); overflow-y: auto; background: var(--yuzey); }
+  .dk-panel .segment button { min-width: 0; }
+}
