@@ -15,7 +15,7 @@
  * - `yazar.kilit`: tek yazar kilidi (içinde süreç kimliği). Kilit varsa ve sahibi yaşıyorsa açılış reddedilir; sahibi
  *   ölmüşse (kill -9 sonrası) kilit devralınır.
  */
-import { copyFile, mkdir, open, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, open, readdir, readFile, rename, rm, stat, truncate, writeFile } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { join } from "node:path";
 import { BellekProfilDeposu } from "./bellek";
@@ -29,6 +29,8 @@ const KILIT_DOSYASI = "yazar.kilit";
 const PROFIL_DOSYASI = "profil.jsonl";
 
 async function dizinFsync(dizin: string): Promise<void> {
+  // Windows dizin tutamacında fsync'i desteklemez (EPERM); NTFS üst veriyi kendi günlüğüyle korur. Üretim Linux'tadır.
+  if (process.platform === "win32") return;
   const h = await open(dizin, "r");
   try {
     await h.sync();
@@ -122,12 +124,12 @@ export class DosyaGunlukDeposu implements GunlukDeposu {
       throw e;
     });
     const { kayitlar, gecerliBayt } = gunlukAyristir(metin);
+    // Çökmeden kalan yarım satır: kes (onaylanmamıştı; istemci aynı anahtarla yeniden dener). Kesme yol üzerinden ve ekleme
+    // tutamacı açılmadan yapılır: Windows'ta ekleme kipindeki tutamaç dosyayı kısaltamaz (EPERM).
+    const kesildi = gecerliBayt < Buffer.byteLength(metin, "utf8");
+    if (kesildi) await truncate(yol, gecerliBayt);
     const h = await open(yol, "a+");
-    if (gecerliBayt < Buffer.byteLength(metin, "utf8")) {
-      // Çökmeden kalan yarım satır: kes (onaylanmamıştı; istemci aynı anahtarla yeniden dener).
-      await h.truncate(gecerliBayt);
-      await h.sync();
-    }
+    if (kesildi) await h.sync();
     await dizinFsync(dizin);
     return new DosyaGunlukDeposu(yol, h, kayitlar.at(-1)?.seq ?? 0);
   }

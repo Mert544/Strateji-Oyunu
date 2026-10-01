@@ -1,0 +1,12 @@
+# Depo LF ile saklanır ve her işletim sisteminde LF ile açılır: "dosya güncel mi" testleri
+# (üretilen CSS, harita ve parsel fikstürleri, DATA_SOURCES.md tabloları) bayt bayt karşılaştırır.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.pmtiles binary
+*.gz binary
+*.br binary
+*.ykr binary
+*.bhi binary

@@ -50,7 +50,7 @@ function sunucuSureci(dizin: string, botlar: string, isci = "0"): Surec {
   const p = spawn(
     process.execPath,
     ["--import", "tsx", CLI, "--port", "0", "--harita", "mini", "--tohum", String(TOHUM), "--depo", "dosya", "--dizin", dizin, "--elle-saat", "--goruntu-saat", "6", "--goruntu-isci", isci, "--commit-ms", "20", "--botlar", botlar, "--hiz-siniri", "1000/1000", "--gelistirme-sirri", SIR],
-    { cwd: KOK, stdio: ["ignore", "pipe", "pipe"] },
+    { cwd: KOK, stdio: ["ignore", "pipe", "pipe", "ipc"] },
   );
   surecler.push(p);
   const olaylar: Array<Record<string, unknown>> = [];
@@ -207,7 +207,9 @@ describe.each([
     const yeniden = await i3.komut("son-0", { tur: "vergi_ayarla", oranPpm: 1 });
     expect(yeniden.tur === "komutSonucu" && yeniden.tekrar).toBe(true);
     await i3.kapat();
-    s3.p.kill("SIGTERM");
+    // Düzgün kapanış: POSIX'te gerçek SIGTERM yolu; Windows'ta sinyal yakalanamadığı için aynı kapanış IPC ile.
+    if (process.platform === "win32") s3.p.send("kapat");
+    else s3.p.kill("SIGTERM");
     expect((await s3.cikis).kod).toBe(0);
     expect(s3.olaylar.some((o) => o.olay === "kapandi")).toBe(true);
     await y3.kapat();

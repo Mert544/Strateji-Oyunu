@@ -259,6 +259,10 @@ async function ana(): Promise<void> {
   };
   process.on("SIGINT", () => kapat("SIGINT"));
   process.on("SIGTERM", () => kapat("SIGTERM"));
+  // Windows'ta SIGTERM yakalanamaz (süreç zorla biter): IPC kanalıyla başlatılan süreç aynı düzgün kapanışı "kapat" mesajıyla alır.
+  process.on("message", (m) => {
+    if (m === "kapat") kapat("ipc");
+  });
   // `hazir` sinyal işleyicileri kurulduktan SONRA yazılır: hazir görüldükten hemen sonra gelen SIGTERM düzgün kapanışa gider.
   yaz("hazir", { port: sunucu.port, metrikPort: sunucu.metrikPort, pid: process.pid, kuralSurumu: yazar.kuralSurumu, kurtarma: yazar.kurtarma });
 }

@@ -34,6 +34,8 @@ Son doğrulama: temiz kopyada tip denetimi, lint, tüm testler ve istemci boyutu
 - "Aynı andaki komutlar tek çözüm" kural değişikliği ertelendi (hedef zaten tutuyor).
 
 ## 4. Senin kararını bekleyenler
+> **Kapandı (1 Ekim akşam, [12 §14](12-yon-taslagi.md)):** S4-2…S4-10, T-2 ve Y-1 önerildiği gibi onaylandı. T-1: `1.234 ₺`. A-1: yalnız e-posta bağlantısı (Google yok). A-2 sahip işi olarak açık.
+
 | # | Soru | Öneri |
 |---|---|---|
 | S4-2 | Askeri birim adı: "müfreze / bölük" mü, "tümen / alay" mı? | Müfreze / bölük |

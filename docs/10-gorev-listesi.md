@@ -545,6 +545,24 @@ Arka planda: **E12-G1** v0.3 bölge kipi ölçümü (worktree `1a7fe08`) sürüy
 
 **Sprint sonu beklenen çıktı:** serileştirici ve sunucu iskeleti (iki istemci uçtan uca), 81 il / ~973 ilçe ağacı ve Gebze karo raporu, akışsız sakin küre, MapLibre'de il → ilçe → hücre seçimi, parsel fikstürü ve H1–H9 tanımları; mülk modeli bayrak arkasında başlamış. S3 iki sprinte taşabilir. **Sprint 2 adayları:** E20-G10 (botların parsel kipine taşınması, ilk iş), E20-G3…G6, E18-G4…G6, E21-G4…G6, E19-G3/G4/G6/G8, E22-G1.
 
+### 5A. Sprint A0-02: Alfa-0 yolu, birinci dalga (1 Ekim akşam)
+
+**Mantık.** Toplantı notu 1 §6'daki yolun 1–3. adımları: istemci kusurları ve yükseltme formu, P4 (ekmek zinciri + dükkân) ve P5 (cam → pencere), gerçek giriş. Askeri 0a sonraki sprintte ([12 §14](12-yon-taslagi.md)). Ar-Ge kodlamadan önce gelir: çekirdek işleri G4 şartnamesi baş lider onayından geçmeden başlamaz. Çekirdekte aynı anda tek yazar (G6 → G7 → G8). Görevler ofis Task Board'unda `SPRINT-A0-02` altında; sonuç raporları `docs/agent-results/`.
+
+| # | Görev | Sahip | Bağımlılık | Kabul |
+|---|---|---|---|---|
+| G0 | Windows'ta yeşil temel çizgi (`.gitattributes` LF, dizin fsync, `packageManager`) ve kararların kaydı | Baş lider | — | `pnpm kontrol` 0 kırmızı |
+| G1 | İstemci kusur turu (toplantı notu §5, 8 madde) ve tek para biçimi `1.234 ₺` | İstemci | G0 | Önce/sonra ekran görüntüleri; e2e yeşil; `dunya.html` ≤ 400 KB |
+| G2 | Ölçek yükseltme formu ek hücre gönderir (`ekHucreler`) | İstemci | G1 | S → M yükseltmesi sunucuda kabul (e2e) |
+| G3 | Alfa-0 ilçelerinde arsa ızgarası (önce Gemlik, Körfez; sonra 3 il), üretilmiş manifest | Veri | G0 | Boyut raporu; istemci ve sunucu aynı veriyi okur |
+| G4 | Ar-Ge: P4/P5 uygulama şartnamesi (yerel pazar kanalı, `dukkan` S, tarifler, komutlar) | Ar-Ge | G0 | Baş lider onayı |
+| G5 | Sunucu: e-posta bağlantısıyla giriş (KIMLIK.md, Google yok) | Sunucu | G0 | `--uretim`'de geliştirme kimliği kapalı; uçtan uca giriş testi |
+| G6 | Çekirdek P4a: ekmek zinciri (`degirmen` + kepek, `ekmek_firini`) | Çekirdek | G4 | Bot zinciri tamamlar; bölge kipi altınları aynı |
+| G7 | Çekirdek P4b: yerel pazar kanalı + `dukkan` S | Çekirdek | G6 | Determinizm, serileştirme, para korunumu |
+| G8 | Çekirdek P5: cam → pencere, yapı market | Çekirdek | G7 | Bot zinciri tamamlar |
+| G9 | İstemci: giriş ekranı ve dükkân paneli | İstemci | G2, G5, G7 | Gerçek tıklamayla e2e |
+| G10 | Uçtan uca test (A0-6), dogfood, insan testi kılavuzu | Test | G8, G9 | Masaüstü ve telefon e2e; `docs/toplanti/3/` |
+
 ### 5.0 Önceki sprint taslağı (1 Ekim sabahı)
 
 > **Değişti: docs/11'e bakın.** Aşağıdaki 5.1 ve 5.2, ürün dönüşünden önceki taslaktır ve tarihsel kayıt olarak korunur. Adım 1'in Pazar kısmı (E8-G1…G4) ve adım 3'ün komut çubuğu (E10-G1) tamamlandı; adım 2 (Devlet) E23'e, adım 3'ün onboarding'i E21-G6'ya, adım 4 (Lojistik) arka plana, adım 5 (Teknoloji) Alfa-1 sonrasına, adım 6 (kararlar) K23–K35'e, adım 7 (Katman B spike) E19-G2/E21-G1'e taşındı.
