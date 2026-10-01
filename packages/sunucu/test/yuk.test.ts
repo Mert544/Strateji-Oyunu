@@ -10,7 +10,7 @@
  *
  * Ortam: BOLGE_YUK_BOT (vars. 100), BOLGE_YUK_TUR (vars. 24 tur = 6 sim-günü), BOLGE_YUK_DEPO (bellek | dosya | pg; vars. dosya),
  * BOLGE_YUK_SENARYO=kademeli (BOLGE_YUK_KADEME=5: tur başına katılan bot), BOLGE_YUK_ISINMA=4, BOLGE_YUK_HEDEF_ZORUNLU=1 (ısınmış p95 > 300 ms ise düşer),
- * BOLGE_YUK_ABONE=0 (ilçe aboneliği/kare yayını yok), BOLGE_YUK_GORUNTU_SAAT (görüntü aralığı, sim-saat; vars. 6), BOLGE_YUK_ISCI=0 (görüntü işçisi kapalı), BOLGE_YUK_PROFIL=dosya.cpuprofile (ana iş parçacığı CPU profili). Rapor: raporlar/yuk/yuk-<zaman>.json (git dışı) ve konsol özeti.
+ * BOLGE_YUK_ABONE=0 (ilçe aboneliği/kare yayını yok), BOLGE_YUK_GORUNTU_SAAT (görüntü aralığı, sim-saat; vars. 6), BOLGE_YUK_ISCI=0 (görüntü işçisi kapalı), BOLGE_YUK_ODUL=1 (Esnaf Defteri ödül dedektörü açık; kapasite/gecikme karşılaştırması için), BOLGE_YUK_PROFIL=dosya.cpuprofile (ana iş parçacığı CPU profili). Rapor: raporlar/yuk/yuk-<zaman>.json (git dışı) ve konsol özeti.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { Session } from "node:inspector";
@@ -156,7 +156,7 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
       const dunya = pgDunya;
       temizlik.push(async () => {
         const h = new pg.Pool({ connectionString: process.env.BOLGE_PG_URL, max: 1 });
-        for (const t of ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit"]) await h.query(`DELETE FROM ${t} WHERE dunya = $1`, [dunya]);
+        for (const t of ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit", "profil_damga"]) await h.query(`DELETE FROM ${t} WHERE dunya = $1`, [dunya]);
         await h.end();
       });
     } else {
@@ -165,7 +165,7 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
       depo = await dosyaDeposu(d);
     }
     const saat = new ElleSaat();
-    const yazar = await DunyaYazari.ac({ veri: v, tohum: 7, depo, saat, goruntuAraligiMs: GORUNTU_SAAT * SAAT, goruntuIsci: ISCI, ...(DILIM !== undefined ? { uygulamaDilimiMs: DILIM } : {}) });
+    const yazar = await DunyaYazari.ac({ veri: v, tohum: 7, depo, saat, goruntuAraligiMs: GORUNTU_SAAT * SAAT, goruntuIsci: ISCI, odul: process.env.BOLGE_YUK_ODUL === "1", ...(DILIM !== undefined ? { uygulamaDilimiMs: DILIM } : {}) });
     const sunucu = await sunucuBaslat({
       yazar,
       kimlik: new GelistirmeKimligi(SIR),

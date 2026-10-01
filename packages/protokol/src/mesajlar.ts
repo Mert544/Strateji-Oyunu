@@ -15,6 +15,8 @@
 import { z } from "zod";
 import type { Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi } from "./komut-sema";
+import { DefterSemasi } from "./defter";
+import type { Defter } from "./defter";
 import { DonusOzetiSemasi } from "./donus";
 import type { DonusOzeti } from "./donus";
 import type { IlgiKaresi, KareDeltasi } from "./kare";
@@ -118,6 +120,12 @@ export const ZamanIsteSemasi = z.object({
 
 export const OzetIsteSemasi = z.object({ tur: z.literal("ozetIste"), istek: istekNo.optional() });
 
+/**
+ * Esnaf Defteri okuması (yalnız oyuncu): yanıt `defter` mesajıdır (`istek` aynen döner). Kazanılan ödüller/damgalar ve sıradaki ödüllü
+ * kavramlar; tutarlar çekirdek ödül tablosundan okunur (bkz. `defter.ts`).
+ */
+export const DefterIsteSemasi = z.object({ tur: z.literal("defterIste"), istek: istekNo.optional() });
+
 /** Yalnız yönetici ve yalnız elle saatli (test/geliştirme) sunucuda: sim saatini `t`'ye ilerletir. */
 export const ZamanIlerletSemasi = z.object({ tur: z.literal("zamanIlerlet"), t: z.number().int().nonnegative().safe(), istek: istekNo.optional() });
 
@@ -129,6 +137,7 @@ export const IstemciMesajiSemasi = z.discriminatedUnion("tur", [
   OzetOkunduSemasi,
   ZamanIsteSemasi,
   OzetIsteSemasi,
+  DefterIsteSemasi,
   ZamanIlerletSemasi,
 ]);
 export type IstemciMesaji = z.infer<typeof IstemciMesajiSemasi>;
@@ -202,6 +211,8 @@ export type SunucuMesaji =
    */
   | { tur: "zaman"; istemciGonderim: number; sunucuDuvar: number; simZamani: Ms; hiz: number; yayin?: boolean }
   | { tur: "ozet"; istek?: number; t: Ms; seq: number; durumOzeti: string }
+  /** `defterIste` yanıtı: Esnaf Defteri (alanlar `Defter`'in düzleşmiş hâlidir; tutarlar çekirdek ödül tablosundan okunur). */
+  | ({ tur: "defter"; istek?: number } & Defter)
   /**
    * Yetişme durumu (yalnız ekleme): sunucu kapalı geçen süreyi işletirken yaklaşık saniyede bir, bitince bir kez
    * (`yetisiyor: false`) gönderilir. `simZamani` dünyanın şimdiki zamanı, `hedefZamani` ulaşılacak sim zamanıdır.
@@ -349,6 +360,7 @@ export const SunucuMesajiSemasi = z.discriminatedUnion("tur", [
   }),
   z.object({ tur: z.literal("zaman"), istemciGonderim: z.number(), sunucuDuvar: z.number(), simZamani: tam, hiz: z.number(), yayin: z.boolean().optional() }),
   z.object({ tur: z.literal("ozet"), istek: tam.optional(), t: tam, seq: tam, durumOzeti: z.string() }),
+  z.object({ tur: z.literal("defter"), istek: tam.optional() }).merge(DefterSemasi),
   z.object({ tur: z.literal("durum"), yetisiyor: z.boolean(), simZamani: tam, hedefZamani: tam }),
   z.object({ tur: z.literal("donusOzeti"), ozet: DonusOzetiSemasi }),
   z.object({

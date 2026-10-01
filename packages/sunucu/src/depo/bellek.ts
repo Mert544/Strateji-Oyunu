@@ -1,6 +1,6 @@
 /** Bellek içi depo (testler ve geçici geliştirme dünyası). Kayıtlar yapısal kopyayla saklanır. */
-import { OZET_KAYIT_OMRU_MS, OZET_KAYIT_TAVANI, ozetKaydiAnahtari, seqSurekliligiDenetle } from "./tipler";
-import type { AnlikGoruntuKaydi, Capa, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, OzetKaydi, ProfilDeposu } from "./tipler";
+import { OZET_KAYIT_OMRU_MS, OZET_KAYIT_TAVANI, damgaSirasi, ozetKaydiAnahtari, seqSurekliligiDenetle } from "./tipler";
+import type { AnlikGoruntuKaydi, Capa, Damga, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, OzetKaydi, ProfilDeposu } from "./tipler";
 
 export class BellekGunlukDeposu implements GunlukDeposu {
   private readonly kayitlar: GunlukKaydi[] = [];
@@ -59,6 +59,7 @@ export class BellekGoruntuDeposu implements GoruntuDeposu {
 export class BellekProfilDeposu implements ProfilDeposu {
   protected readonly capalar = new Map<string, Capa>();
   protected readonly kayitlar = new Map<string, Map<string, OzetKaydi>>();
+  protected readonly damgalar = new Map<string, Map<string, Damga>>();
 
   async capaOku(oyuncu: string): Promise<Capa | null> {
     const c = this.capalar.get(oyuncu);
@@ -77,9 +78,30 @@ export class BellekProfilDeposu implements ProfilDeposu {
     return [...(this.kayitlar.get(oyuncu)?.values() ?? [])].map((k) => structuredClone(k)).sort(kayitSirasi);
   }
 
+  async damgaEkle(oyuncu: string, damgalar: readonly Damga[]): Promise<number> {
+    return this.damgaUygula(oyuncu, damgalar).length;
+  }
+
+  async damgaOku(oyuncu: string): Promise<Damga[]> {
+    return [...(this.damgalar.get(oyuncu)?.values() ?? [])].map((d) => ({ ...d })).sort(damgaSirasi);
+  }
+
   async esitle(): Promise<void> {}
 
   async kapat(): Promise<void> {}
+
+  /** Yeni (daha önce olmayan) damgalar; ilk yazım kazanır. */
+  protected damgaUygula(oyuncu: string, damgalar: readonly Damga[]): Damga[] {
+    let m = this.damgalar.get(oyuncu);
+    if (!m) this.damgalar.set(oyuncu, (m = new Map()));
+    const yeni: Damga[] = [];
+    for (const d of damgalar) {
+      if (m.has(d.kavram)) continue;
+      m.set(d.kavram, { kavram: d.kavram, t: d.t, kaynak: d.kaynak });
+      yeni.push(d);
+    }
+    return yeni;
+  }
 
   protected capaUygula(oyuncu: string, kismi: Capa): void {
     this.capalar.set(oyuncu, { ...(this.capalar.get(oyuncu) ?? {}), ...structuredClone(kismi) });

@@ -20,7 +20,7 @@ import type { FileHandle } from "node:fs/promises";
 import { join } from "node:path";
 import { BellekProfilDeposu } from "./bellek";
 import { seqSurekliligiDenetle } from "./tipler";
-import type { AnlikGoruntuKaydi, Capa, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, OzetKaydi } from "./tipler";
+import type { AnlikGoruntuKaydi, Capa, Damga, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, OzetKaydi } from "./tipler";
 
 const TUTULAN_GORUNTU = 3;
 const GUNLUK_DOSYASI = "gunluk.jsonl";
@@ -244,7 +244,7 @@ export class DosyaProfilDeposu extends BellekProfilDeposu {
     // Son satır "\n" ile bitmediyse yarımdır: atılır (kayıtlar günlükten yeniden türetilir).
     for (const s of satirlar.slice(0, -1)) {
       if (s === "") continue;
-      let o: { o: string; c?: Capa; k?: OzetKaydi[] };
+      let o: { o: string; c?: Capa; k?: OzetKaydi[]; d?: Damga[] };
       try {
         o = JSON.parse(s);
       } catch {
@@ -252,9 +252,10 @@ export class DosyaProfilDeposu extends BellekProfilDeposu {
       }
       if (o.c) d.capaUygula(o.o, o.c);
       if (o.k) d.kayitUygula(o.o, o.k, Number.NEGATIVE_INFINITY);
+      if (o.d) d.damgaUygula(o.o, o.d);
       d.satir++;
     }
-    const gerekli = d.capalar.size + [...d.kayitlar.values()].reduce((n, m) => n + m.size, 0);
+    const gerekli = d.gerekliSatir();
     if (d.satir > 2 * gerekli + 100 || (metin !== "" && !metin.endsWith("\n"))) await d.sikistir();
     return d;
   }
@@ -265,8 +266,8 @@ export class DosyaProfilDeposu extends BellekProfilDeposu {
     if (this.satir > 20_000 + 4 * this.gerekliSatir()) await this.sikistir();
   }
 
-  private gerekliSatir(): number {
-    return this.capalar.size + [...this.kayitlar.values()].reduce((n, m) => n + m.size, 0);
+  gerekliSatir(): number {
+    return this.capalar.size + [...this.kayitlar.values()].reduce((n, m) => n + m.size, 0) + [...this.damgalar.values()].reduce((n, m) => n + m.size, 0);
   }
 
   /** Bellekteki durumdan atomik yeniden yazım (geçici dosya, fsync, rename). */
@@ -274,6 +275,7 @@ export class DosyaProfilDeposu extends BellekProfilDeposu {
     const satirlar: string[] = [];
     for (const [o, c] of this.capalar) satirlar.push(JSON.stringify({ o, c }));
     for (const [o, m] of this.kayitlar) if (m.size > 0) satirlar.push(JSON.stringify({ o, k: [...m.values()] }));
+    for (const [o, m] of this.damgalar) if (m.size > 0) satirlar.push(JSON.stringify({ o, d: [...m.values()] }));
     const gecici = `${this.yol}.tmp`;
     const h = await open(gecici, "w");
     try {
@@ -296,6 +298,12 @@ export class DosyaProfilDeposu extends BellekProfilDeposu {
   override async kayitEkle(oyuncu: string, kayitlar: readonly OzetKaydi[], simdi: number): Promise<number> {
     const yeni = this.kayitUygula(oyuncu, kayitlar, simdi);
     if (yeni.length > 0) await this.ekle({ o: oyuncu, k: yeni });
+    return yeni.length;
+  }
+
+  override async damgaEkle(oyuncu: string, damgalar: readonly Damga[]): Promise<number> {
+    const yeni = this.damgaUygula(oyuncu, damgalar);
+    if (yeni.length > 0) await this.ekle({ o: oyuncu, d: yeni });
     return yeni.length;
   }
 

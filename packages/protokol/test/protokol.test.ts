@@ -4,11 +4,14 @@ import { MILI, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikMiktar } from "@bolge/cek
 import type { Komut } from "@bolge/cekirdek";
 import { miniVeriyiYukle } from "@bolge/veri";
 import {
+  DEFTER_ODUL_SIRASI,
   DONUS_SABLON,
+  DefterSemasi,
   DonusOzetiSemasi,
   IlgiKaresiSemasi,
   KomutSemasi,
   PROTOKOL_SURUMU,
+  defterSablonu,
   deltaBosMu,
   deltaUygula,
   ilgiAlaniKur,
@@ -104,6 +107,42 @@ describe("hosgeldin.dunyaEpochMs (yalniz ekleme)", () => {
     expect(r.tamam && r.mesaj.tur === "hosgeldin" ? r.mesaj.dunyaEpochMs : null).toBe(1_790_802_000_000);
     expect(sunucuMesajiCoz(JSON.stringify({ ...hos, dunyaEpochMs: "2026-09-30" })).tamam).toBe(false);
     expect(sunucuMesajiCoz(JSON.stringify({ ...hos, dunyaEpochMs: 1.5 })).tamam).toBe(false);
+  });
+});
+
+describe("Esnaf Defteri (defterIste / defter, yalniz ekleme)", () => {
+  const defter = {
+    tur: "defter",
+    istek: 7,
+    kazanilan: [
+      { kavram: "ilk_parsel", sablon: "defter.kavram.ilk_parsel", tur: "damga", t: 3_600_000 },
+      { kavram: "ilk_yapi", sablon: "defter.kavram.ilk_yapi", tur: "odul", t: 7_200_000, odul: { mal: { celik: 5000 }, degerMili: 600_000 } },
+      { kavram: "ilk_satis", sablon: "defter.kavram.ilk_satis", tur: "odul", odul: { paraMili: 500_000, degerMili: 500_000 } },
+    ],
+    siradaki: [{ kavram: "ilk_dukkan", sablon: "defter.kavram.ilk_dukkan", etkin: false, odul: { mal: { celik: 10_000 }, degerMili: 1_200_000 } }],
+    toplamOdulMili: 1_100_000,
+    tavanMili: 8_000_000,
+  };
+
+  it("istemci defterIste (istek istege bagli) ve sunucu defter mesaji gecerli; metin alani yok, sablon anahtari var", () => {
+    expect(istemciMesajiCoz(JSON.stringify({ tur: "defterIste" })).tamam).toBe(true);
+    const r = istemciMesajiCoz(JSON.stringify({ tur: "defterIste", istek: 3 }));
+    expect(r.tamam && r.mesaj.tur === "defterIste" ? r.mesaj.istek : null).toBe(3);
+    expect(istemciMesajiCoz(JSON.stringify({ tur: "defterIste", istek: "x" })).tamam).toBe(false);
+    const c = sunucuMesajiCoz(JSON.stringify(defter));
+    expect(c.tamam).toBe(true);
+    expect(c.tamam && c.mesaj.tur === "defter" ? c.mesaj.kazanilan[1]?.odul?.degerMili : null).toBe(600_000);
+    expect(DEFTER_ODUL_SIRASI).toEqual(["ilk_yapi", "ilk_satis", "ilk_isleme", "zincir_kapandi", "ilk_dukkan", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"]);
+    expect(defterSablonu("ilk_yapi")).toBe("defter.kavram.ilk_yapi");
+  });
+
+  it("defter sema: tur, tamsayi alanlar ve bilinmeyen tur reddedilir; t ve odul istege bagli", () => {
+    expect(sunucuMesajiCoz(JSON.stringify({ ...defter, kazanilan: [{ kavram: "a", sablon: "s", tur: "metin" }] })).tamam).toBe(false);
+    expect(sunucuMesajiCoz(JSON.stringify({ ...defter, toplamOdulMili: 1.5 })).tamam).toBe(false);
+    expect(sunucuMesajiCoz(JSON.stringify({ ...defter, kazanilan: [{ kavram: "a", sablon: "s", tur: "damga" }] })).tamam).toBe(true);
+    const { tavanMili: _t, ...eksik } = defter;
+    expect(sunucuMesajiCoz(JSON.stringify(eksik)).tamam).toBe(false);
+    expect(DefterSemasi.safeParse({ kazanilan: [], siradaki: [], toplamOdulMili: 0, tavanMili: 0 }).success).toBe(true);
   });
 });
 

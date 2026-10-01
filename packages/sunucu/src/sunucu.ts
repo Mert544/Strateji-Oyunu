@@ -78,6 +78,8 @@ export interface SunucuSecenekleri {
 
 /** `ozetIste` jeton bedeli (dünyanın tamamını özetlemek pahalıdır). */
 const OZET_BEDELI = 5;
+/** `defterIste` jeton bedeli (profil okuması + çekirdek tablosu; ucuz ama sınırsız olmasın). */
+const DEFTER_BEDELI = 2;
 
 interface Baglanti {
   ws: WebSocket;
@@ -207,6 +209,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       },
       yayin: { atlananKare: yayinSayaci.atlananKare, yavasKopan: yayinSayaci.yavasKopan, sira: yayinSirasi.size },
       olayDongusu: olayDongusu.olcum(),
+      odul: { verilen: m.odulVerilen, reddedilen: m.odulReddedilen },
       depo: depoOnbellek.boyut,
       commit: m.commit,
       surec: { rssBayt: bellek.rss, heapBayt: bellek.heapUsed, cpuSaniye: Math.round(((cpu.user + cpu.system) / 1e6) * 1000) / 1000 },
@@ -516,6 +519,15 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
         const ek = m.istek !== undefined ? { istek: m.istek } : {};
         if (!hizSiniri.al(k.oyuncu, OZET_BEDELI)) return hata(b, "hiz_siniri", "ozet istegi siniri", ek);
         return gonder(b, { tur: "ozet", ...ek, ...yazar.ozet() });
+      }
+      case "defterIste": {
+        // Esnaf Defteri (yalnız oyuncu): çekirdek ödül tablosundan okunan tutarlar, profil damgaları; metin yok (şablon anahtarı).
+        const ek = m.istek !== undefined ? { istek: m.istek } : {};
+        if (k.yonetici) return hata(b, "yetki", "defterIste yalniz oyuncu icin", ek);
+        if (!hizSiniri.al(k.oyuncu, DEFTER_BEDELI)) return hata(b, "hiz_siniri", "defter istegi siniri", ek);
+        const d = await yazar.defter(k.oyuncu);
+        if (!d) return hata(b, "yetki", "defter bu oyuncu icin yok", ek);
+        return gonder(b, { tur: "defter", ...ek, ...d });
       }
       case "zamanIlerlet": {
         const ek = m.istek !== undefined ? { istek: m.istek } : {};

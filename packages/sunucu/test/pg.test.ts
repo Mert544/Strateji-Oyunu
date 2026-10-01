@@ -25,7 +25,7 @@ let sayac = 0;
 const yeniDunya = (ad: string): string => `${ON}-${ad}-${process.pid}-${Date.now()}-${sayac++}`;
 const pgAc = (dunya: string, semaKur = true) => postgresDeposu({ baglanti: PG as string, dunya, semaKur });
 
-const TABLOLAR = ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit"];
+const TABLOLAR = ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit", "profil_damga"];
 
 afterAll(async () => {
   if (!PG) return;
@@ -81,13 +81,13 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
       ).rejects.toThrow(/duplicate key|unique/i);
 
       // Göçsüz açılış açık hatayla reddedilir (sessizce eski şemada çalışmaz).
-      await expect(postgresDeposu({ baglanti, dunya: "eskidunya", semaKur: false })).rejects.toThrow(/sema surumu eski: 1 < 2/);
+      await expect(postgresDeposu({ baglanti, dunya: "eskidunya", semaKur: false })).rejects.toThrow(/sema surumu eski: 1 < 3/);
 
       // Yeni kodla (semaKur) yükseltme.
       const depo = await postgresDeposu({ baglanti, dunya: "eskidunya", semaKur: true });
       try {
         expect(await postgresSemaSurumu(havuz)).toBe(SQL_SEMA_SURUMU);
-        expect((await havuz.query("SELECT surum FROM sunucu_sema ORDER BY surum")).rows.map((r) => r.surum)).toEqual([1, 2]);
+        expect((await havuz.query("SELECT surum FROM sunucu_sema ORDER BY surum")).rows.map((r) => r.surum)).toEqual([1, 2, 3]);
         // Veri korunur.
         expect((await depo.gunluk.oku(0)).map((k) => [k.seq, k.kuralSurumu])).toEqual([[1, "k-eski"]]);
         expect(await depo.goruntu.sonuncu()).toEqual(g);
@@ -119,7 +119,7 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
     const baglanti = u.toString();
     const havuz = new pg.Pool({ connectionString: baglanti, max: 1 });
     try {
-      expect(await postgresSemasiKur(havuz)).toEqual([1, 2]);
+      expect(await postgresSemasiKur(havuz)).toEqual([1, 2, 3]);
       expect(await postgresSemasiKur(havuz)).toEqual([]);
     } finally {
       await havuz.end();

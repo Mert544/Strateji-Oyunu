@@ -46,20 +46,23 @@
  * özet karşılaştırılır) + görüntüden sonraki günlük kayıtları. Kurtarılan dünyanın zamanı, son kaydın `t`'si ile
  * görüntü zamanının büyüğüdür; canlı dünyayla karşılaştırma AYNI t'de yapılmalıdır (`calistirKadar(t)`, docs/06 §14).
  */
-import { SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikGoruntuOlustur, icerikKimlikTablosuOlustur, kamuHucreleri, kuralSurumuHesapla } from "@bolge/cekirdek";
-import type { CekirdekVeriPaketi, IcerikKimlikTablosu, Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
+import { SAAT, SISTEM_OYUNCUSU, Simulasyon, alinanOdulDegeri, anlikGoruntuOlustur, icerikKimlikTablosuOlustur, kamuHucreleri, kuralSurumuHesapla, odulDegeri } from "@bolge/cekirdek";
+import type { CekirdekVeriPaketi, Dunya, IcerikKimlikTablosu, Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
 import type { Bot } from "@bolge/botlar";
 import type { Dizin } from "@bolge/protokol";
 import { SEMA_SURUMU } from "./depo/tipler";
-import type { AnlikGoruntuKaydi, Depo, GunlukKaydi, IdempotansGirdisi, OzetKaydi } from "./depo/tipler";
+import type { AnlikGoruntuKaydi, Damga, Depo, GunlukKaydi, IdempotansGirdisi, OzetKaydi } from "./depo/tipler";
 import { oyuncuAnligi } from "./donus/anlik";
 import { OzetIzleyici } from "./donus/izleyici";
 import type { OyuncuKaydi } from "./donus/izleyici";
 import { GoruntuIscisi } from "./goruntu";
+import { IZGARA_MS, DONUS_ESIGI_MS, ODUL_SIRASI, ilkUretim, kavramSaglandi, oyuncuDugumleri, sonEtkinlik } from "./odul/dedektor";
+import type { OdulAday } from "./odul/dedektor";
+import { defterKur } from "./odul/defter";
 import type { GoruntuIsciSecenekleri } from "./goruntu";
 import { donusOzeti } from "./donus/ozet";
 import type { DonusEsikleri } from "./donus/ozet";
-import type { DonusOzeti } from "@bolge/protokol";
+import type { Defter, DonusOzeti } from "@bolge/protokol";
 import { YazarMetrikleri } from "./metrik";
 import { VARSAYILAN_DUNYA_EPOCH_MS, turkiyeGeceYarisiMi } from "./saat";
 import type { Saat } from "./saat";
@@ -124,6 +127,12 @@ export interface YazarSecenekleri {
    * Açılış, kapanış, göç, yetişme sonu ve `goruntuAl()` görüntüleri her zaman eşzamanlıdır (süren işçi işini önce bitirirler).
    */
   goruntuIsci?: boolean | GoruntuIsciSecenekleri;
+  /**
+   * Esnaf Defteri ödül dedektörü (`odul/dedektor.ts`): kavramlar saptanınca `sistem_odul` komutu (sistem kimliği, idempotans anahtarı
+   * `odul:<oyuncu>:<kavram>`) günlüğe girer ve çekirdek durumunu DEĞİŞTİRİR (hazine/stok): bu yüzden "sunum katmanı" sayılmaz, kapalıyken
+   * hiçbir ödül komutu yoktur. Kavramların HEPSİ her SİM-SAAT sınırında değerlendirilir (dünya sınırda durdurulur, bölünme nötrdür; koşullar tamamlanmış yapı/araştırma/üretim ister). YALNIZ MÜLK KİPİNDE çalışır (bölge kipinde başlangıç yapıları bedava ödül olurdu); ödül tablosu da gerekir. Varsayılan KAPALI (CLI: `--odul`/`BOLGE_ODUL`, varsayılan açık).
+   */
+  odul?: boolean;
   /**
    * Büyük bir komut toplusunu (ör. 361 komut x 3-5 ms çekirdek maliyeti) uygularken olay döngüsüne bu kadar ms'de bir nefes ver (ms; 0 = kapalı).
    * Uygulama SIRASI, günlük (önce yazılır) ve sonuçlar değişmez; yalnız önceki komutların yanıtları toplunun sonunu beklemeden gider,
@@ -336,6 +345,15 @@ export class DunyaYazari {
   private isciSonrakiDenemeOlcu = Number.NEGATIVE_INFINITY;
   private readonly isciYenidenDenemeMs: number;
   private readonly uygulamaDilimiMs: number;
+  /** Esnaf Defteri dedektörü açık mı (ödül tablosu da gerekir). */
+  private readonly odulAcik: boolean;
+  /** Değerlendirilmiş son sim-saat sınırı (bu sınırın ödülleri ya verildi ya da koşul yoktu; kurtarmada `floor(zaman/saat)`). */
+  private sonIzgaraT: Ms = 0;
+  /** Profile yazılacak damgalar (ödül + bilgi/kozmetik); `donusYaz` ile birlikte kalıcılaşır. */
+  private damgaBekleyen: Array<{ oyuncu: string; damga: Damga }> = [];
+  /** Bu süreçte damga olarak kuyruğa alınmış (oyuncu|kavram): aynı damga her ızgarada yeniden kuyruğa girmesin. */
+  private readonly damgaKuyruklandi = new Set<string>();
+  private readonly botKimlikleri: Set<string>;
 
   private constructor(
     readonly sim: Simulasyon,
@@ -357,6 +375,8 @@ export class DunyaYazari {
     this.ilerlemeAraligiMs = s.ilerlemeAraligiMs ?? 1000;
     this.isciYenidenDenemeMs = s.isciYenidenDenemeMs ?? 5000;
     this.uygulamaDilimiMs = s.uygulamaDilimiMs ?? 20;
+    this.odulAcik = s.odul === true && sim.ic.param.odul !== undefined && sim.ic.mulk !== undefined;
+    this.botKimlikleri = new Set((s.botlar ?? []).map((b) => b.bot.oyuncu));
   }
 
   /** Depodan kurtarır (görüntü + kalan günlük) ya da yeni dünya kurar; saati dünyanın zamanından başlatır. */
@@ -445,8 +465,10 @@ export class DunyaYazari {
       if (k.seq !== y.seqDegeri + 1) throw new Error(`gunluk seq boslugu: ${y.seqDegeri} -> ${k.seq}`);
       if (k.kuralSurumu !== kuralSurumu) throw new Error(`gunluk kaydi ${k.seq} farkli kural surumuyle yazilmis: ${k.kuralSurumu}`);
       y.donusOnce(k.t);
+      const onceki = y.odulAcik ? sonEtkinlik(sim.dunya, k.oyuncu) : null;
       const r = sim.uygula({ t: k.t, oyuncu: k.oyuncu, komut: k.komut });
       y.donusKomutSonrasi(k.oyuncu, k.komut, r);
+      y.odulKomutSonrasi(k, r, onceki); // yeniden oynatma: yalnız damga; yeni ödül KOMUTU üretmez (günlükteki ödüller zaten oynatılır)
       if (!r.tamam) y.kurtarma.kalanBasarisiz++;
       y.seqDegeri = k.seq;
       y.idempotansYaz(idempotansAnahtari(k.oyuncu, k.istemci, k.anahtar), { oyuncu: k.oyuncu, istemci: k.istemci, anahtar: k.anahtar, seq: k.seq, t: k.t, komut: k.komut, sonuc: r, bekleyenler: [] });
@@ -454,6 +476,8 @@ export class DunyaYazari {
     y.yerlestir();
     y.donusTara();
     y.donusSinirIsle();
+    // Izgara tabanı: bu sınıra kadarki sim-saat sınırları değerlendirilmiş sayılır (ödüller günlükte; eksik kalan sonraki sınırda verilir).
+    y.sonIzgaraT = Math.floor(sim.dunya.zaman / IZGARA_MS) * IZGARA_MS;
     await y.donusYaz(true);
     y.sonDamga = sim.dunya.zaman;
     y.sonGoruntuZamani = g ? g.simZamani : sim.dunya.zaman;
@@ -708,47 +732,50 @@ export class DunyaYazari {
     const zaman0 = this.sim.dunya.zaman;
     let uygulanan = 0;
     let basarili = 0;
-    // 1. Günlüğe yaz (önce), sonra uygula.
+    // 1. Günlüğe yaz (önce), sonra uygula. Dedektör açıkken toplu sim-saat pencerelerine bölünür: pencereler arasında dünya ızgara
+    //    sınırlarında durdurulup (değerlendirme + ödül) ilerletilir; ödül komutu günlükte tetikleyen komutun hemen ardındadır.
     const toplu = this.bekleyenler.splice(0, this.enCokToplu);
     if (toplu.length > 0) {
-      const kayitlar: GunlukKaydi[] = toplu.map((b, i) => ({
-        seq: this.seqDegeri + 1 + i,
-        t: b.t,
-        oyuncu: b.oyuncu,
-        komut: b.komut,
-        istemci: b.istemci,
-        anahtar: b.anahtar,
-        kuralSurumu: this.kuralSurumu,
-        semaSurumu: SEMA_SURUMU,
-      }));
-      try {
-        await this.s.depo.gunluk.ekle(kayitlar);
-      } catch (e) {
-        this.olumculYap(e instanceof Error ? e : new Error(String(e)), toplu);
-        return;
-      }
-      let dilimBasi = performance.now();
-      for (let i = 0; i < toplu.length; i++) {
-        // Dilimleme: günlük zaten yazıldı; sıra ve sonuçlar aynı, yalnız yanıtlar ve ws okumaları toplunun sonunu beklemez.
-        if (this.uygulamaDilimiMs > 0 && i > 0 && performance.now() - dilimBasi >= this.uygulamaDilimiMs) {
-          await new Promise<void>((r) => setImmediate(r));
-          dilimBasi = performance.now();
+      const parcalar: Bekleyen[][] = this.odulAcik ? this.pencereParcalari(toplu) : [toplu];
+      for (const parca of parcalar) {
+        if (this.odulAcik && !(await this.izgaraIlerle(parca[0]?.t ?? this.sim.dunya.zaman))) {
+          this.olumculYap(this.olumcul ?? new Error("izgara ilerletilemedi"), toplu);
+          return;
         }
-        const b = toplu[i] as Bekleyen;
-        const k = kayitlar[i] as GunlukKaydi;
-        this.donusOnce(k.t);
-        const sonuc = this.sim.uygula({ t: k.t, oyuncu: k.oyuncu, komut: k.komut });
-        this.donusKomutSonrasi(k.oyuncu, k.komut, sonuc);
-        this.seqDegeri = k.seq;
-        uygulanan++;
-        if (sonuc.tamam) basarili++;
-        if (sonuc.tamam) this.metrikler.komutTamam++;
-        else this.metrikler.komutBasarisiz++;
-        b.girdi.seq = k.seq;
-        b.girdi.sonuc = sonuc;
-        const yanit: KomutYaniti = { seq: k.seq, t: k.t, komut: k.komut, sonuc, tekrar: false };
-        for (const w of b.girdi.bekleyenler.splice(0)) w.coz(yanit);
-        this.metrikler.commit.gozle(this.olcuFn() - b.gelis);
+        const kayitlar: GunlukKaydi[] = parca.map((b, i) => ({
+          seq: this.seqDegeri + 1 + i,
+          t: b.t,
+          oyuncu: b.oyuncu,
+          komut: b.komut,
+          istemci: b.istemci,
+          anahtar: b.anahtar,
+          kuralSurumu: this.kuralSurumu,
+          semaSurumu: SEMA_SURUMU,
+        }));
+        try {
+          await this.s.depo.gunluk.ekle(kayitlar);
+        } catch (e) {
+          this.olumculYap(e instanceof Error ? e : new Error(String(e)), toplu);
+          return;
+        }
+        let dilimBasi = performance.now();
+        for (let i = 0; i < parca.length; i++) {
+          // Dilimleme: günlük zaten yazıldı; sıra ve sonuçlar aynı, yalnız yanıtlar ve ws okumaları toplunun sonunu beklemez.
+          if (this.uygulamaDilimiMs > 0 && i > 0 && performance.now() - dilimBasi >= this.uygulamaDilimiMs) {
+            await new Promise<void>((r) => setImmediate(r));
+            dilimBasi = performance.now();
+          }
+          const b = parca[i] as Bekleyen;
+          const k = kayitlar[i] as GunlukKaydi;
+          const sonuc = this.kaydiUygula(k);
+          uygulanan++;
+          if (sonuc.tamam) basarili++;
+          b.girdi.seq = k.seq;
+          b.girdi.sonuc = sonuc;
+          const yanit: KomutYaniti = { seq: k.seq, t: k.t, komut: k.komut, sonuc, tekrar: false };
+          for (const w of b.girdi.bekleyenler.splice(0)) w.coz(yanit);
+          this.metrikler.commit.gozle(this.olcuFn() - b.gelis);
+        }
       }
     }
     // 2. Dünyayı ilerlet (bekleyen bir komutun zamanını geçmeden).
@@ -761,7 +788,13 @@ export class DunyaYazari {
       if (this.donus) hedef = Math.min(hedef, OzetIzleyici.sonrakiSinir(this.sim.dunya.zaman));
       // `>=`: zaman ilerlemese bile aynı t'deki bekleyen olaylar (ör. son komutun planladığı `cozum`) işlenir; tur
       // sonundaki dünya her zaman "t'ye yerleşmiş" durumdur (docs/06 §14: karşılaştırma aynı t'de calistirKadar(t)).
-      if (hedef >= this.sim.dunya.zaman) this.sim.calistirKadar(hedef);
+      if (hedef >= this.sim.dunya.zaman) {
+        // Dedektör açıkken dünya her sim-saat sınırında durdurulur (değerlendirme + ödül günlüğe); bölünme nötrdür.
+        if (this.odulAcik) {
+          if (!(await this.izgaraIlerle(hedef))) return;
+        }
+        this.sim.calistirKadar(hedef);
+      }
     } else {
       this.yerlestir();
     }
@@ -919,10 +952,11 @@ export class DunyaYazari {
    * hata AŞIRI KAPSAMA yönündedir (kayıp yok). Hata olursa yazı atılmaz, bir sonraki turda yeniden denenir.
    */
   private donusYaz(esitle = false): Promise<void> {
+    const damga = this.damgaYaz(esitle);
     const d = this.donus;
     const profil = this.s.depo.profil;
-    if (!d || !profil) return Promise.resolve();
-    return this.profilIs(async () => {
+    if (!d || !profil) return damga;
+    const ana = this.profilIs(async () => {
       const kay = d.bekleyen.splice(0);
       const kirli = [...d.kirli];
       d.kirli.clear();
@@ -947,6 +981,7 @@ export class DunyaYazari {
         this.uyariDinleyici?.(`ozet profili yazilamadi: ${e instanceof Error ? e.message : String(e)}`);
       }
     });
+    return Promise.all([damga, ana]).then(() => undefined);
   }
 
   /** Dünyayı şimdiye yerleştirir ve süren taramaları günceller (özet/çapa okumasından önce). */
@@ -1042,6 +1077,201 @@ export class DunyaYazari {
       this.sonGoruntuSeq = this.seqDegeri;
       this.uyariDinleyici?.(`anlik goruntu alinamadi: ${this.sonGoruntuHatasi}`);
     }
+  }
+
+  // --- Esnaf Defteri ödül dedektörü (odul/dedektor.ts; README "Esnaf Defteri") --------------------------------------------------
+
+  private static odulAnahtari(oyuncu: string, kavram: string): string {
+    return `odul:${oyuncu}:${kavram}`;
+  }
+
+  /** Günlük kaydını (zaten yazıldı) dünyaya uygular: kanca sırası, seq ve sayaçlar; canlı koşuda komut adayları toplanır. */
+  private kaydiUygula(k: GunlukKaydi): KomutSonucu {
+    this.donusOnce(k.t);
+    const onceki = this.odulAcik ? sonEtkinlik(this.sim.dunya, k.oyuncu) : null;
+    const sonuc = this.sim.uygula({ t: k.t, oyuncu: k.oyuncu, komut: k.komut });
+    this.donusKomutSonrasi(k.oyuncu, k.komut, sonuc);
+    this.odulKomutSonrasi(k, sonuc, onceki);
+    this.seqDegeri = k.seq;
+    if (sonuc.tamam) this.metrikler.komutTamam++;
+    else this.metrikler.komutBasarisiz++;
+    return sonuc;
+  }
+
+  /** Toplu komutlarını sim-saat penceresine göre art arda gruplar (pencereler arasında dünya ızgara sınırında durur). */
+  private pencereParcalari(toplu: Bekleyen[]): Bekleyen[][] {
+    const p: Bekleyen[][] = [];
+    let son = Number.NaN;
+    for (const b of toplu) {
+      const w = Math.floor(b.t / IZGARA_MS);
+      if (w !== son) {
+        p.push([]);
+        son = w;
+      }
+      (p[p.length - 1] as Bekleyen[]).push(b);
+    }
+    return p;
+  }
+
+  /**
+   * Dünyayı `hedef`'e her sim-saat sınırında durarak ilerletir (`calistirKadar` bölünmesi nötrdür). Her yeni sınırda, dünya tam o t'deyken
+   * (aynı t'deki komutlardan ÖNCE) zamanla oluşan kavramlar değerlendirilir ve ödüller günlüğe girer. Dönüş false: günlük yazılamadı (ölümcül).
+   */
+  private async izgaraIlerle(hedef: Ms): Promise<boolean> {
+    for (;;) {
+      const g = (Math.floor(this.sim.dunya.zaman / IZGARA_MS) + 1) * IZGARA_MS;
+      if (g > hedef) break;
+      this.sim.calistirKadar(g);
+      this.donusTara();
+      this.donusSinirIsle();
+      if (g > this.sonIzgaraT) {
+        this.sonIzgaraT = g;
+        if (!(await this.odulIzgara(g))) return false;
+      }
+    }
+    return this.olumcul === null;
+  }
+
+  /** Ödül henüz verilebilir mi: tabloda var, alınmamış, bu anahtar denenmemiş, tavan ve mal yeri uygun (çekirdeğin reddedeceği durumlar komut üretmez). */
+  private odulUygunMu(o: Readonly<Dunya["oyuncular"][number]>, kavram: string, ekDeger = 0): boolean {
+    const ic = this.sim.ic;
+    const tablo = ic.param.odul;
+    if (tablo === undefined) return false;
+    const deger = odulDegeri(ic, kavram);
+    if (deger === undefined) return false;
+    if (o.alinanOdul?.includes(kavram)) return false;
+    if (this.idempotans.has(idempotansAnahtari(SISTEM_OYUNCUSU, "sunucu", DunyaYazari.odulAnahtari(o.id, kavram)))) return false;
+    if (alinanOdulDegeri(ic, o) + ekDeger + deger > tablo.tavanMili) return false;
+    const k = tablo.kavramlar[kavram] as NonNullable<(typeof tablo.kavramlar)[string]>;
+    if (Object.keys(k.mal ?? {}).length > 0 && oyuncuDugumleri(this.sim.dunya, o.id).length === 0) return false;
+    return true;
+  }
+
+  /** Izgara noktası `g`: zamanla oluşan kavramlar (ve komut kavramları için yedek değerlendirme), `ilk_uretim` damgası. */
+  private async odulIzgara(g: Ms): Promise<boolean> {
+    const d = this.sim.dunya;
+    const ic = this.sim.ic;
+    const adaylar: OdulAday[] = [];
+    for (const o of d.oyuncular) {
+      if (this.botKimlikleri.has(o.id)) continue;
+      for (const kavram of ODUL_SIRASI) {
+        if (this.odulUygunMu(o, kavram) && kavramSaglandi(ic, d, o, kavram, g)) adaylar.push({ oyuncu: o.id, kavram });
+      }
+      if (!this.damgaKuyruklandi.has(`${o.id}|ilk_uretim`) && ilkUretim(d, o.id, g)) this.damgaKuyrukla(o.id, { kavram: "ilk_uretim", t: g, kaynak: "damga" });
+    }
+    return this.odulYaz(adaylar, g);
+  }
+
+  /**
+   * Ödül adaylarını `sistem_odul` komutu olarak günlüğe yazar ve uygular (hepsi tek `ekle`, sistem kimliği, anahtar `odul:<oyuncu>:<kavram>`,
+   * t = `max(t, dünya zamanı)`). Adaylar yazmadan önce yeniden süzülür (durum değişmiş olabilir). Dönüş false: günlük yazılamadı.
+   */
+  private async odulYaz(adaylar: OdulAday[], t: Ms): Promise<boolean> {
+    if (adaylar.length === 0) return true;
+    const d = this.sim.dunya;
+    const ic = this.sim.ic;
+    const tt = Math.max(t, d.zaman);
+    const secilen: OdulAday[] = [];
+    const eklenen = new Map<string, number>();
+    for (const a of adaylar) {
+      const o = d.oyuncular.find((x) => x.id === a.oyuncu);
+      if (!o || this.botKimlikleri.has(o.id)) continue;
+      if (secilen.some((x) => x.oyuncu === a.oyuncu && x.kavram === a.kavram)) continue;
+      const ek = eklenen.get(o.id) ?? 0;
+      if (!this.odulUygunMu(o, a.kavram, ek) || !kavramSaglandi(ic, d, o, a.kavram, tt)) continue;
+      eklenen.set(o.id, ek + (odulDegeri(ic, a.kavram) ?? 0));
+      secilen.push(a);
+    }
+    if (secilen.length === 0) return true;
+    const kayitlar: GunlukKaydi[] = secilen.map((a, i) => ({
+      seq: this.seqDegeri + 1 + i,
+      t: tt,
+      oyuncu: SISTEM_OYUNCUSU,
+      komut: { tur: "sistem_odul", oyuncu: a.oyuncu, kavram: a.kavram },
+      istemci: "sunucu",
+      anahtar: DunyaYazari.odulAnahtari(a.oyuncu, a.kavram),
+      kuralSurumu: this.kuralSurumu,
+      semaSurumu: SEMA_SURUMU,
+    }));
+    try {
+      await this.s.depo.gunluk.ekle(kayitlar);
+    } catch (e) {
+      this.olumculYap(e instanceof Error ? e : new Error(String(e)), []);
+      return false;
+    }
+    for (const k of kayitlar) {
+      const sonuc = this.kaydiUygula(k);
+      this.idempotansYaz(idempotansAnahtari(k.oyuncu, k.istemci, k.anahtar), { oyuncu: k.oyuncu, istemci: k.istemci, anahtar: k.anahtar, seq: k.seq, t: k.t, komut: k.komut, sonuc, bekleyenler: [] });
+      if (sonuc.tamam) this.metrikler.odulVerilen++;
+      else this.metrikler.odulReddedilen++;
+    }
+    return true;
+  }
+
+  /**
+   * Uygulanan her kayıttan sonra: (1) başarılı `sistem_odul` -> ödül damgası (zaman profilde, tutar çekirdekte); (2) insan oyuncunun başarılı komutundan
+   * sonra `ilk_parsel`/`ilk_donus` damgaları. Ödül komutu YALNIZ sim-saat sınırında üretilir; kurtarma yeniden oynatması da yalnız damga türetir.
+   */
+  private odulKomutSonrasi(k: GunlukKaydi, sonuc: KomutSonucu, onceki: number | null): void {
+    if (!this.odulAcik || !sonuc.tamam) return;
+    if (k.komut.tur === "sistem_odul") {
+      this.damgaKuyrukla(k.komut.oyuncu, { kavram: k.komut.kavram, t: k.t, kaynak: "odul" });
+      return;
+    }
+    if (k.oyuncu === SISTEM_OYUNCUSU || this.botKimlikleri.has(k.oyuncu)) return;
+    if (k.komut.tur === "parsel_al") this.damgaKuyrukla(k.oyuncu, { kavram: "ilk_parsel", t: k.t, kaynak: "damga" });
+    if (onceki !== null && k.t - onceki >= DONUS_ESIGI_MS) this.damgaKuyrukla(k.oyuncu, { kavram: "ilk_donus", t: k.t, kaynak: "damga" });
+  }
+
+  private damgaKuyrukla(oyuncu: string, damga: Damga): void {
+    const a = `${oyuncu}|${damga.kavram}`;
+    if (this.damgaKuyruklandi.has(a)) return;
+    this.damgaKuyruklandi.add(a);
+    this.damgaBekleyen.push({ oyuncu, damga });
+  }
+
+  /** Bekleyen damgaları profil deposuna yazar (idempotent; hata olursa yeniden denenir). Profil yoksa damga tutulmaz. */
+  private damgaYaz(esitle = false): Promise<void> {
+    const profil = this.s.depo.profil;
+    if (!profil) {
+      this.damgaBekleyen.length = 0;
+      return Promise.resolve();
+    }
+    if (this.damgaBekleyen.length === 0 && !esitle) return Promise.resolve();
+    return this.profilIs(async () => {
+      const l = this.damgaBekleyen.splice(0);
+      try {
+        const grup = new Map<string, Damga[]>();
+        for (const x of l) {
+          let g = grup.get(x.oyuncu);
+          if (!g) grup.set(x.oyuncu, (g = []));
+          g.push(x.damga);
+        }
+        for (const [o, g] of grup) await profil.damgaEkle(o, g);
+        if (esitle && l.length > 0) await profil.esitle();
+      } catch (e) {
+        this.damgaBekleyen.unshift(...l);
+        this.uyariDinleyici?.(`damga profili yazilamadi: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    });
+  }
+
+  /**
+   * Esnaf Defteri (`defterIste`): kazanılan ödüller/damgalar + sıradaki ödüllü kavramlar; tutarlar çekirdek ödül tablosundan okunur (yazılmaz).
+   * Bot oyuncular için null. Dedektör kapalıyken de çalışır (çekirdekteki `alinanOdul` okunur; zamanlar profil damgasından, yoksa alan yok).
+   */
+  async defter(oyuncu: OyuncuId): Promise<Defter | null> {
+    if (this.botKimlikleri.has(oyuncu)) return null;
+    this.yerlestir();
+    await this.damgaYaz();
+    const profil = this.s.depo.profil;
+    const damgalar = profil ? await profil.damgaOku(oyuncu) : [];
+    return defterKur(this.sim.ic, this.sim.dunya, oyuncu, damgalar);
+  }
+
+  /** Dedektör açık mı (test/tanı). */
+  get odulDedektoruAcik(): boolean {
+    return this.odulAcik;
   }
 
   /**

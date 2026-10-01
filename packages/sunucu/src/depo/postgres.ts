@@ -20,7 +20,7 @@ import { fnv1a32 } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
 import { seqSurekliligiDenetle } from "./tipler";
 import { OZET_KAYIT_OMRU_MS, OZET_KAYIT_TAVANI } from "./tipler";
-import type { AnlikGoruntuKaydi, Capa, Depo, GoruntuEki, GunlukKaydi, OzetKaydi, ProfilDeposu } from "./tipler";
+import type { AnlikGoruntuKaydi, Capa, Damga, Depo, GoruntuEki, GunlukKaydi, OzetKaydi, ProfilDeposu } from "./tipler";
 
 export interface PostgresSecenekleri {
   /** postgres://... bağlantı dizesi. */
@@ -35,6 +35,7 @@ export interface PostgresSecenekleri {
 const SEMA_ADIMLARI: ReadonlyArray<{ surum: number; ad: string; dosya: URL }> = [
   { surum: 1, ad: "baslangic", dosya: new URL("../../sql/001-baslangic.sql", import.meta.url) },
   { surum: 2, ad: "goc-profil", dosya: new URL("../../sql/002-goc-profil.sql", import.meta.url) },
+  { surum: 3, ad: "defter", dosya: new URL("../../sql/003-defter.sql", import.meta.url) },
 ];
 
 /** Bu kodun beklediği SQL şema sürümü. */
@@ -325,6 +326,23 @@ class PostgresProfilDeposu implements ProfilDeposu {
       [this.dunya, oyuncu],
     );
     return r.rows.map((x): OzetKaydi => ({ t: Number(x.t), tur: x.tur, ilce: x.ilce, degerler: x.degerler, ...(x.aktor_ref !== null ? { aktorRef: x.aktor_ref } : {}), sira: Number(x.sira) }));
+  }
+
+  async damgaEkle(oyuncu: string, damgalar: readonly Damga[]): Promise<number> {
+    if (damgalar.length === 0) return 0;
+    const degerler: unknown[] = [this.dunya, oyuncu];
+    const satirlar = damgalar.map((d, i) => {
+      const b = 2 + i * 3;
+      degerler.push(d.kavram, d.t, d.kaynak);
+      return `($1,$2,$${b + 1},$${b + 2},$${b + 3})`;
+    });
+    const r = await this.havuz.query(`INSERT INTO profil_damga (dunya, oyuncu, kavram, t, kaynak) VALUES ${satirlar.join(",")} ON CONFLICT DO NOTHING`, degerler);
+    return r.rowCount ?? 0;
+  }
+
+  async damgaOku(oyuncu: string): Promise<Damga[]> {
+    const r = await this.havuz.query<{ kavram: string; t: string; kaynak: Damga["kaynak"] }>("SELECT kavram, t, kaynak FROM profil_damga WHERE dunya = $1 AND oyuncu = $2 ORDER BY t, kavram", [this.dunya, oyuncu]);
+    return r.rows.map((x): Damga => ({ kavram: x.kavram, t: Number(x.t), kaynak: x.kaynak }));
   }
 
   async esitle(): Promise<void> {}

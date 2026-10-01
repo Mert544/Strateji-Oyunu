@@ -77,6 +77,9 @@ export class YazarMetrikleri {
   isciGoruntu = 0;
   goruntuAtlanan = 0;
   isciHatasi = 0;
+  /** Esnaf Defteri dedektörü: günlüğe giren `sistem_odul` komutları (uygulanan / çekirdek reddi). */
+  odulVerilen = 0;
+  odulReddedilen = 0;
 }
 
 /** Olay döngüsü gecikmesi (ms): p50, p99 ve en büyük. `perf_hooks.monitorEventLoopDelay` çözünürlüğü (10 ms) tabanı dahildir. */
@@ -149,6 +152,8 @@ export interface MetrikGirdisi {
   /** Kare yayını: yavaş istemci nedeniyle atlanan kare, koparılan bağlantı, yayın sırasındaki bağlantı sayısı. */
   yayin: { atlananKare: number; yavasKopan: number; sira: number };
   olayDongusu: OlayDongusuGecikmesi;
+  /** Esnaf Defteri dedektörü: günlüğe giren ödül komutları (uygulanan / çekirdek reddi). */
+  odul: { verilen: number; reddedilen: number };
   depo: { gunlukBayt: number; goruntuBayt: number } | null;
   commit: Histogram;
   surec: { rssBayt: number; heapBayt: number; cpuSaniye: number };
@@ -198,6 +203,8 @@ export function metrikMetni(g: MetrikGirdisi): string {
     satir("bolge_yayin_atlanan_kare_toplam", "counter", "Yavas istemci (tampon siniri) nedeniyle atlanan kare/delta.", g.yayin.atlananKare),
     satir("bolge_yayin_yavas_kopan_toplam", "counter", "Cok yavas oldugu icin koparilan baglanti sayisi.", g.yayin.yavasKopan),
     satir("bolge_yayin_sira", "gauge", "Kare yayini sirasinda bekleyen baglanti sayisi.", g.yayin.sira),
+    satir("bolge_odul_verilen_toplam", "counter", "Esnaf Defteri dedektorunun gunluge yazdigi ve uygulanan odul komutlari.", g.odul.verilen),
+    satir("bolge_odul_reddedilen_toplam", "counter", "Cekirdegin reddettigi (beklenmeyen) odul komutlari.", g.odul.reddedilen),
     satir("bolge_olay_dongusu_gecikme_p50_ms", "gauge", "Olay dongusu gecikmesi p50 (ms; perf_hooks, kayan pencere).", g.olayDongusu.p50Ms),
     satir("bolge_olay_dongusu_gecikme_p99_ms", "gauge", "Olay dongusu gecikmesi p99 (ms).", g.olayDongusu.p99Ms),
     satir("bolge_olay_dongusu_gecikme_en_buyuk_ms", "gauge", "Olay dongusu gecikmesi en buyuk (ms).", g.olayDongusu.maxMs),

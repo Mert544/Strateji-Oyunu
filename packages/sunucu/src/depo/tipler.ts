@@ -131,6 +131,21 @@ export interface OzetKaydi {
   sira: number;
 }
 
+/**
+ * Esnaf Defteri damgası: oyuncunun bir kavramı ilk kez kazandığı an. Yalnız OLGU (kavram, sim zamanı, kaynak); metin YOKTUR (KVKK).
+ * `kaynak`: "odul" = çekirdek `sistem_odul` komutu uygulandı (para/mal ödülü; tutar çekirdek tablosundadır, burada yazılmaz);
+ * "damga" = para/mal taşımayan bilgi/kozmetik kavram (yalnız profilde). Anahtar `(oyuncu, kavram)`: ilk yazım kazanır (idempotans).
+ */
+export interface Damga {
+  kavram: string;
+  t: Ms;
+  kaynak: "odul" | "damga";
+}
+
+export function damgaSirasi(a: Damga, b: Damga): number {
+  return a.t - b.t || (a.kavram < b.kavram ? -1 : a.kavram > b.kavram ? 1 : 0);
+}
+
 /** Oyuncu başına en çok özet kaydı (halka) ve saklama süresi (sim ms): docs/arastirma/donus-deneyimi.md §5.3. */
 export const OZET_KAYIT_TAVANI = 200;
 export const OZET_KAYIT_OMRU_MS = 30 * 24 * 3_600_000;
@@ -151,6 +166,10 @@ export interface ProfilDeposu {
   kayitEkle(oyuncu: string, kayitlar: readonly OzetKaydi[], simdi: Ms): Promise<number>;
   /** `t`'ye göre artan, sonra (tur, sira) sıralı. */
   kayitOku(oyuncu: string): Promise<OzetKaydi[]>;
+  /** Damgaları ekler (idempotent: `(oyuncu, kavram)` bir kez, ilk yazım kazanır); yeni eklenen sayısını döndürür. */
+  damgaEkle(oyuncu: string, damgalar: readonly Damga[]): Promise<number>;
+  /** `t`'ye göre artan, sonra kavram sıralı. */
+  damgaOku(oyuncu: string): Promise<Damga[]>;
   /** Yazılanları kalıcılaştırır (fsync); anlık görüntüden ÖNCE çağrılır. */
   esitle(): Promise<void>;
   kapat(): Promise<void>;

@@ -26,6 +26,7 @@ Bütün seçenekler: `pnpm -s sunucu -- --yardim`. İmza sırrını `BOLGE_GELIS
 Dünya sunucu kapalıyken de akar (sahip kararı, docs/12 §7). Varsayılan saat (`DuvarSaati`, `--hiz 1`) mutlaktır: `t = duvar saati − dunyaEpochMs`. Epoch dünyayla birlikte anlık görüntü üst verisinde saklanır; yeni dünyada varsayılan `2026-09-30T21:00Z` (1 Ekim 2026 00:00 TRT, kalıcı UTC+3; `--dunya-epoch` yalnız yeni dünyada, bir Türkiye gece yarısı olmalı). Epoch'suz eski dünya ilk mutlak açılışta "şimdi = dünyanın şimdiki zamanı" olarak bağlanır.
 
 - **Yetişme:** açılışta son görüntü + kalan günlük uygulanır; dünya duvar saatinin gerisindeyse (`yetisiyor`) ana döngü 1 sim-saatlik adımlarla yetişir (uykusuz, her adımda olay döngüsüne nefes; görüntü 24 sim-saatte bir ve bitişte). İlerleme stdout'a `{"olay":"yetisme",...}` / `{"olay":"yetisti",...}` satırlarıyla (~1 sn'de bir) yazılır. Ölçü: sentetik harita + 2 bot, 30 gün ≈ 11 sn.
+- **Esnaf Defteri ödülleri yetişirken de verilir** (sistem komutu, dünya zamanıyla damgalı, sim-saat sınırlarında): kesintisiz sunucuyla aynı t'de aynı sırada (bkz. "Esnaf Defteri").
 - **Komut sözleşmesi:** yetişirken dışarıdan gelen yeni komut kuyruklanmaz, `yetisiyor` hata koduyla reddedilir (günlüğe girmez; işlenmiş anahtar ilk sonucuyla yanıtlanır). Bağlantı `hosgeldin.yetisiyor` ve sonraki `durum` mesajlarıyla ilerlemeyi ve bitişi öğrenir; istemci bitince aynı anahtarla yeniden dener. Sunucu botları yetişirken de karar verir (dünyanın zamanıyla damgalanır).
 - **Gerçek tarih için epoch:** mutlak saatli ve epoch'lu dünyada `hosgeldin.dunyaEpochMs` (epoch ms, isteğe bağlı alan; protokole yalnız ekleme) gelir: gerçek tarih = `dunyaEpochMs + simZamani`. Elle saatli (`--elle-saat`), birikimli/hızlı ya da epoch'suz dünyada alan HİÇ gönderilmez (test: `hosgeldin-epoch.test.ts`, `protokol.test.ts`).
 - **Monoton koruma:** duvar saati geri giderse (NTP) sim zamanı geri gitmez; saat eski değeri aşana kadar bekler, bir kez `uyari` olayı yazılır. Yeniden başlatmada duvar dünyadan gerideyse hata yoktur (`kurtarma.saatGeriMs`).
@@ -65,9 +66,56 @@ Sunum katmanıdır: çekirdek durumunu YALNIZ okur, `durumOzeti`ne girmez (testl
 4. `kurtarma.goc` (`hazir` olayında): `yenidenIndekslendi`, `eskiKuralSurumu`, `yeniKuralSurumu`, `yalnizEkle`, `eklenen` (uzay -> kimlikler), `eklenenSayisi`, `ihlalSayisi`; göç yoksa `null`.
 5. Zarf SÜRÜM 1 (tablosuz) eski görüntü: kural sürümü aynıysa bayraksız açılır. Kural farklıysa göç için görüntünün yazıldığı içeriğin kimlik tablosu gerekir (`--goc-eski-tablo YOL.json`, kodda `gocEskiTablo`); sürüm 2 görüntü tablosunu kendisi taşır.
 
+## Esnaf Defteri: kavram dedektörü, ödül ve damgalar (rehber-gorevler.md §3.1, sunucu P0)
+
+Para ve mal ödülü ÇEKİRDEKTEdir (`sistem_odul {oyuncu, kavram}`, tutar komutta yok: tutar, tavan 8.000 ₺ ve "kavram başına bir kez" çekirdek ödül tablosunda, `parametreler.json odul`); kozmetik/bilgi damgaları profilde. Sunucu yalnız **ne zaman verileceğini** saptar (`src/odul/dedektor.ts`, çekirdeği YALNIZ okur), komutu **sistem kimliğiyle günlüğe yazar** ve profili/Defter okumasını sunar. Tutar sunucuda yazılmaz, LLM yoktur. **Yalnız mülk kipinde** çalışır (bölge kipinde başlangıç yapıları bedava ödül olurdu); insan oyuncular için (sunucu botları ve sistem hariç).
+
+**Kavram koşulları** (çekirdek durumundan türetilir; tablo `dedektor.ts` başlığında):
+
+| Kavram | Saptama | Koşul |
+| --- | --- | --- |
+| `ilk_yapi` | sim-saat sınırı | işletme düğümlerinden birinde TAMAMLANMIŞ üretim yapısı (`BolgeDurumu.tesisler`; süren inşaat sayılmaz) |
+| `ilk_satis` | sim-saat sınırı | `ticaretDefteri.toplam.brutIhracat` (tembel: toplam + oran x dt) > 0 |
+| `ilk_isleme` | sim-saat sınırı | düğümde işleme yapısı (aktif yöntemi ham/ara girdiyi ara/tüketim malına çevirir; enerji hariç) VE o çıktı malının kümülatif üretimi > 0 |
+| `zincir_kapandi` | sim-saat sınırı | oyuncunun iki FARKLI aktif yapısından birinin (enerji dışı) çıktısı ötekinin girdisi VE o çıktının kümülatif üretimi > 0 (en az bir üretim çevrimi) |
+| `ikinci_ilce` | sim-saat sınırı | tamamlanmış üretim yapıları EN AZ İKİ FARKLI ilçede (`ilk_yapi` ile aynı yapı tanımı; hücre sahipliği YETMEZ) |
+| `ilk_arastirma` | sim-saat sınırı | `teknolojiler.length > 0` (araştırma TAMAMLANDI; başlatma değil: rehber başlamayı da kabul eder, güvenli olan tamamlanmadır) |
+| `ilk_dukkan`, `ilk_sozlesme` | YER TUTUCU | çekirdekte olay yok (dükkân P4, sözleşme sonra): dedektörde durur, TETİKLENMEZ; Defter'de `etkin: false` |
+| (damga) `ilk_parsel` | komut | başarılı `parsel_al` (para/mal ödülü YOK; baş lider kararı: arazi spekülasyon değil üretim aracıdır) |
+| (damga) `ilk_uretim` | sim-saat sınırı | herhangi bir düğümde kümülatif üretim > 0 |
+| (damga) `ilk_donus` | komut | iki kabul edilen komut arası >= 6 sa (`MulkOyuncuDurumu.sonEtkinlik`) |
+
+**Günlüğe giriş ve idempotans.** Komut: oyuncu = `sistem`, istemci = `sunucu`, anahtar = `odul:<oyuncu>:<kavram>`. Aday verilmez: kavram oyuncunun `alinanOdul`'unda varsa, anahtar idempotans tablosunda varsa (denenmiş), ödül tavanı aşacaksa ya da mal ödülü için işletme düğümü yoksa (çekirdeğin reddedeceği her durum) komut ÜRETİLMEZ; böylece reddedilen komut günlükte birikmez. Kurtarmada günlükteki `sistem_odul` kayıtları normal oynatılır, yeniden oynatma YENİ ödül komutu üretmez (yalnız damga türetir); yeniden başlatma `alinanOdul` ve idempotans tablosundan çift ödülü engeller.
+
+**Determinizm (en kritik nokta).** Ödülün t'si hazineyi/stoku etkiler; bu yüzden tespit anı canlı koşuda, yetişmede ve kurtarmada aynıdır:
+- **Sabit ızgara = her sim-saat sınırı** (`t % SAAT === 0`). Dedektör açıkken dünya her sınırda DURDURULUR (`calistirKadar` bölünmesi nötrdür), dünya tam o t'deyken, aynı t'deki komutlardan ÖNCE zamanla oluşan kavramlar (`ilk_yapi`, `ilk_satis`, `ilk_isleme`, `zincir_kapandi`) değerlendirilir ve ödül günlüğe o t ile girer. Canlı turlar (rastgele aralık), yetişme (1 sim-saat adım) ve kurtarma aynı sınırlardan geçer; komut toplusu sim-saat pencerelerine bölünür, pencereler arasında dünya sınırda ilerletilir (hiçbir komut bir sınırı değerlendirmeden atlatmaz).
+- **Hiçbir kavram komutla tek adımda verilmez:** altısı da sim-saat sınırında, tamamlanmış yapı/araştırma/üretim koşuluyla değerlendirilir (ödül, bedelinden ucuza alınamasın). Bu yüzden "komut anında ödül" t sapması da yoktur: her ödülün t'si bir sim-saat sınırıdır.
+- Günlük kurtarmanın tek doğrusudur: çökmede ödül komutu günlüğe yazılmadıysa bir sonraki sınırda (kapalı süre dahil) verilir; yazıldıysa aynen oynatılır.
+- Testler (`odul.test.ts`, `odul-sureci.test.ts`): kesintisiz sunucu (saatlik, 7 dk ve 90 dk tur adımı) ile 1, 8 ve 48 saat kapalı kalıp yetişen sunucu AYNI ödülleri aynı t'de aynı sırayla verir (günlük, `durumOzeti` ve damgalar birebir); kill -9 sonrası çift ödül yok; CLI + dosya deposu + SIGKILL; gerçek pg.
+
+**"Sunum kapalı" ile fark.** "Sen yokken" izleyicisi (`donus: false`) çekirdek durumunu DEĞİŞTİRMEZ: kapalıyken `durumOzeti` aynıdır (`donus.test.ts`). Ödül dedektörü ise çekirdek durumunu değiştirir (hazine/stok): bu yüzden **sunum katmanı sayılmaz**. Kapalıyken (`odul: false` / `--odul 0` / `BOLGE_ODUL=0`) hiçbir ödül komutu yoktur ve durum YALNIZ ödül kadar farklıdır: açık yazarın günlüğünden ödül komutları çıkarılıp yeniden oynatılınca kapalı dünyayla aynı t'de aynı `durumOzeti` çıkar (test). Kitaplık varsayılanı kapalı, CLI/compose varsayılanı AÇIK.
+
+**Damgalar** (profil deposu: bellek, dosya, pg `profil_damga`, şema 3 `sql/003-defter.sql`): `(oyuncu, kavram)` anahtarlı, ilk yazım kazanır; yalnız olgu tutulur: `kavram`, `t` (sim ms), `kaynak` (`odul` = çekirdek ödülü alındı, `damga` = para/mal taşımayan bilgi/kozmetik); metin YOK (KVKK). Ödül damgası t'yi taşır (tutar çekirdekte); `ilk_parsel`, `ilk_uretim`, `ilk_donus` yalnız burada. Yazım `donusYaz` ile aynı hatta (anlık görüntüden önce kalıcılaşır), kurtarmada günlükten yeniden türetilir (idempotent).
+
+**Defter okuması (protokol, yalnız ekleme).** İstemci `{ tur: "defterIste", istek?: int }` (yalnız oyuncu; yönetici `yetki` hatası; hız sınırı jeton bedeli 2) gönderir, sunucu şu mesajı döner:
+
+```
+{ tur: "defter", istek?: int,
+  kazanilan: [{ kavram, sablon, tur: "odul"|"damga", t?: ms, odul?: { paraMili?: int, mal?: {malKimligi: miliBirim}, degerMili: int } }],
+  siradaki:  [{ kavram, sablon, etkin: bool, odul: { paraMili?, mal?, degerMili } }],
+  toplamOdulMili: int, tavanMili: int }
+```
+
+`sablon` = `defter.kavram.<kavram>` (metin istemcide); tutarlar çekirdek ödül tablosundan okunur (`odulDegeri`, `alinanOdulDegeri`), sunucu tutar yazmaz. `kazanilan`: alınmış ödüller (çekirdek `alinanOdul`; `t` profil damgasından, yoksa alan yok) + bilgi/kozmetik damgalar, zaman sırasıyla. `siradaki`: alınmamış ödüllü kavramlar kritik yol sırasıyla (`ilk_yapi, ilk_satis, ilk_isleme, zincir_kapandi, ilk_dukkan, ilk_sozlesme, ikinci_ilce, ilk_arastirma`); `etkin: false` = yer tutucu, istemci gizler. Dedektör kapalıyken de çalışır. Metrikler: `bolge_odul_verilen_toplam`, `bolge_odul_reddedilen_toplam` (beklenmedik çekirdek reddi; 0 olmalı).
+
+**Kötüye kullanım (ödül bedelden ucuza alınamaz).** (1) `ikinci_ilce`: hücre alıp ödülü bekleyip `parsel_birak` ile iade almak risksiz arbitrajdı; koşul artık ikinci ilçede TAMAMLANMIŞ üretim yapısıdır (yapı bedeli ödülden büyüktür). (2) `ilk_arastirma`: rehber başlamayı da kabul eder, ama ödül araştırmanın TAMAMLANMASINA bağlıdır (`teknolojiler.length` artınca, sim-saat sınırında): çekirdekte araştırma iptal komutu ve iade YOKTUR (maliyet başlangıçta lavaboya düşer), yine de başlatıp bırakmaya kapalı olması için tamamlanma seçildi. (3) `ilk_satis` (₺500) başlangıç kitinden tek birim satışla alınabilir: ödül küçük ve tek seferlik, rehberin amacı (ilk satışı yaptırmak) bu; kabul. (4) `zincir_kapandi`: iki yapının bedeli ödülden fazla; ayrıca çıktının en az bir üretim çevrimi şartı vardır. Testler: `odul.test.ts` "kotuye kullanim" (al-bırak döngüsü ödül vermez; araştırma sürerken ödül yok, tamamlanınca bir kez).
+
+**Belirsiz kalan tanımlar** (rehber sözlüğü yapısal/ham; seçimler kabul edildi): `ilk_yapi` "üretim yapısı" ek yapıları (Ambar, Ticaret ofisi) saymaz; `ilk_isleme` işleme yapısı tanımı içerikten türetilir (girdi ham/ara + çıktı ara/tüketim, enerji hariç) ve yapıyla birlikte KÜMÜLATİF üretim ister; `zincir_kapandi` akış/verim şartı koymaz (yalnız yapısal zincir + bir üretim çevrimi); `ilk_donus` yalnız mülk kipinde (`sonEtkinlik`); `ilk_yapi` ödülünün "tabela rengi" kozmetiği (rehber) henüz ayrı damga değildir.
+
 ## Postgres
 
-- **Şema ve göç adımları:** `sunucu_sema` tablosu sürümü tutar (`SQL_SEMA_SURUMU = 2`). `postgresSemasiKur` (CLI ve `semaKur: true` her açılışta çağırır) eksik adımları sırayla, her biri tek işlemde ve şema advisory kilidi altında uygular; idempotenttir. Sürüm kaydı olmayan ama `snapshots` tablosu olan eski veritabanı sürüm 1 sayılır ve 002'ye yükseltilir (veri korunur). `semaKur: false` ile eski şemalı veritabanı açılırsa açık hata verir (`pg sema surumu eski`).
+- **Şema ve göç adımları:** `sunucu_sema` tablosu sürümü tutar (`SQL_SEMA_SURUMU = 3`). `postgresSemasiKur` (CLI ve `semaKur: true` her açılışta çağırır) eksik adımları sırayla, her biri tek işlemde ve şema advisory kilidi altında uygular; idempotenttir. Sürüm kaydı olmayan ama `snapshots` tablosu olan eski veritabanı sürüm 1 sayılır ve 002'ye yükseltilir (veri korunur). `semaKur: false` ile eski şemalı veritabanı açılırsa açık hata verir (`pg sema surumu eski`).
+  - 003: `profil_damga` (Esnaf Defteri damgaları; PK `(dunya, oyuncu, kavram)`, olgu: kavram, t, kaynak).
   - 002: `snapshots` birincil anahtarı `(dunya, seq, sim_t, kural_sur)` (içerik göçü görüntüsü eskisiyle aynı seq/zamanda yazılabilir; eski kayıt kalır), `snapshot_yedek` (göç yedeği), `profil_capa` ve `profil_kayit` (çapalar ve özet kayıtları; PK = idempotans anahtarı `(dunya, oyuncu, tur, t, sira)`; halka ≤ 200 ve 30 sim-günü ömür `kayitEkle`'de uygulanır).
   - En son görüntü: `ORDER BY seq DESC, sim_t DESC, olusturma DESC, kural_sur DESC` (deterministik; aynı anahtar yeniden yazılırsa `olusturma` yenilenir).
 - **Yerel deneme kümesi** (root olmayan kullanıcıyla; unix soketi, TCP kapalı):
@@ -118,6 +166,7 @@ Her seçenek `BOLGE_<AD>` ile verilebilir; komut satırı bayrağı ortam deği�
 | `BOLGE_DUNYA_EPOCH` | yalnız YENİ dünyada duvar saati epoch'u (Türkiye gece yarısı); boş = `2026-09-30T21:00:00Z` | boş |
 | `BOLGE_GOC` | `1` = içerik göçüne izin (yalnız dönem sınırında) | kapalı |
 | `BOLGE_COMMIT_MS`, `BOLGE_GORUNTU_SAAT` | grup commit aralığı (ms), görüntü aralığı (sim-saat) | `75`, `6` |
+| `BOLGE_ODUL` | `1` = Esnaf Defteri ödül dedektörü (kavram → `sistem_odul` günlüğe; çekirdek durumunu değiştirir; bkz. "Esnaf Defteri"); `0` = kapalı | `1` |
 | `BOLGE_GORUNTU_ISCI` | `1` = periyodik görüntü serileştirme/özet/gzip işi worker_threads işçisinde (bkz. "Performans"); `0` = ana döngüde | `1` |
 | `BOLGE_HIZ_SINIRI` | bağlantı başına komut hız sınırı `N/saniye` | `20/5` |
 | `BOLGE_METRIK_PORT`, `BOLGE_METRIK_HOST`, `BOLGE_METRIK_TOKEN` | ayrı metrik sunucusu; port boşsa kapalı | kapalı, `127.0.0.1`, yok |

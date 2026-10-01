@@ -96,7 +96,7 @@ describe("histogram ve metin bicimi (saf)", () => {
     const girdi = {
       baglanti: 2, bagliOyuncu: 1, komutTamam: 5, komutBasarisiz: 2, reddedilen: { hizSiniri: 1, yetisiyor: 3 }, tur: 10, seq: 7, simZamaniMs: 99, bekleyenKomut: 0,
       yetisiyor: true, yetismeKalanMs: 3600000, saatGerideMs: 0, olumcul: false, goruntuSayisi: 2, goruntuHatasi: 0, goruntuYasiSimMs: 5, goruntuYasiSaniye: 1.5, goruntuBayt: 1234, goruntuSureSonMs: 12.5, goruntuSureEnUzunMs: 40,
-      goruntuIsci: { kopyaSonMs: 3.5, kopyaEnUzunMs: 9, isciSonMs: 80, alinan: 4, atlanan: 2, hata: 1 }, yayin: { atlananKare: 6, yavasKopan: 1, sira: 3 }, olayDongusu: { p50Ms: 10.5, p99Ms: 40, maxMs: 120.5 },
+      goruntuIsci: { kopyaSonMs: 3.5, kopyaEnUzunMs: 9, isciSonMs: 80, alinan: 4, atlanan: 2, hata: 1 }, yayin: { atlananKare: 6, yavasKopan: 1, sira: 3 }, olayDongusu: { p50Ms: 10.5, p99Ms: 40, maxMs: 120.5 }, odul: { verilen: 3, reddedilen: 0 },
       depo: { gunlukBayt: 10, goruntuBayt: 20 }, commit: h, surec: { rssBayt: 1, heapBayt: 2, cpuSaniye: 0.5 }, calismaSaniye: 3,
     };
     const m = metrikMetni(girdi);

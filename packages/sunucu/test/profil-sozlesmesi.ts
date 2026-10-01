@@ -33,5 +33,16 @@ export async function profilSozlesmesi(depo: Depo): Promise<void> {
   expect(l).toHaveLength(OZET_KAYIT_TAVANI);
   expect(l[0]?.sira).toBe(160);
   expect(l.at(-1)?.sira).toBe(359);
+  // Damgalar (Esnaf Defteri): (oyuncu, kavram) idempotent, ilk yazim kazanir; t'ye gore sirali; oyuncular ayri.
+  expect(await p.damgaOku("ali")).toEqual([]);
+  expect(await p.damgaEkle("ali", [{ kavram: "ilk_yapi", t: 7_200_000, kaynak: "odul" }, { kavram: "ilk_parsel", t: 3_600_000, kaynak: "damga" }])).toBe(2);
+  expect(await p.damgaEkle("ali", [{ kavram: "ilk_yapi", t: 9_999, kaynak: "damga" }, { kavram: "ilk_uretim", t: 7_200_000, kaynak: "damga" }])).toBe(1);
+  expect(await p.damgaOku("ali")).toEqual([
+    { kavram: "ilk_parsel", t: 3_600_000, kaynak: "damga" },
+    { kavram: "ilk_uretim", t: 7_200_000, kaynak: "damga" },
+    { kavram: "ilk_yapi", t: 7_200_000, kaynak: "odul" },
+  ]);
+  expect(await p.damgaOku("veli")).toEqual([]);
+  expect(await p.damgaEkle("ali", [])).toBe(0);
   await p.esitle();
 }

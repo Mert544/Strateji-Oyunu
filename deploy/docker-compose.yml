@@ -45,6 +45,8 @@ services:
       BOLGE_GOC: ${BOLGE_GOC:-0}
       # Periyodik anlik goruntu ayri is parcacaginda (worker_threads): ana dongu yalniz yapisal kopyayi alir. 0 = ana dongude.
       BOLGE_GORUNTU_ISCI: ${BOLGE_GORUNTU_ISCI:-1}
+      # Esnaf Defteri odul dedektoru (kavram -> sistem_odul gunluge girer; cekirdek durumunu degistirir). 0 = kapali.
+      BOLGE_ODUL: ${BOLGE_ODUL:-1}
       # Bos ortam degiskeni "verilmedi" sayilir (varsayilan epoch kullanilir).
       BOLGE_DUNYA_EPOCH: ${BOLGE_DUNYA_EPOCH:-}
       # Metrik: ayri port; konteyner icinde 0.0.0.0, bu yuzden token ZORUNLU (sunucu aksi halde baslamaz).
