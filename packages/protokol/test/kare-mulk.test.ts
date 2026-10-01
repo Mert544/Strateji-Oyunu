@@ -40,6 +40,53 @@ function kare(sim: Simulasyon, oyuncu: string | null, liste = true): IlgiKaresi 
   return ilgiKaresiCikar(sim, ilgiAlaniKur(sim, [], oyuncu), oyuncu, ilceIlgisiKur(sim, [ILCE], oyuncu), { ayrilmisListesi: liste, kamuListesi: liste });
 }
 
+describe("oyuncu.mulk.katilimIlcesi (yalniz sahibine, istege bagli)", () => {
+  function katilimli(ilce?: string): Simulasyon {
+    const v: CekirdekVeriPaketi = { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") };
+    const yo = v.param.mulk?.yeniOyuncu;
+    if (yo) {
+      yo.hibe = 500_000_000;
+      yo.yurtHucre = 0;
+    }
+    const sim = Simulasyon.olustur(v, 3);
+    sim.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "ali", bolgeler: [], ...(ilce ? { ilce } : {}) } });
+    sim.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "veli", bolgeler: [] } }); // katilim ilcesi yok
+    return sim;
+  }
+
+  it("cekirdekte varsa yalniz sahibinin oyuncu karesinde; yoksa alan HIC yok; izleyici ve baskasi gormez; sema gecerli", () => {
+    const sim = katilimli("sn_m_ova_tasra");
+    const cekirdek = sim.dunya.mulk?.oyuncular.find((o) => o.id === "ali")?.katilimIlcesi;
+    expect(cekirdek).toBe("sn_m_ova_tasra");
+    const ali = kare(sim, "ali");
+    const veli = kare(sim, "veli");
+    const izleyici = kare(sim, null);
+    expect(ali.oyuncu?.mulk?.katilimIlcesi).toBe("sn_m_ova_tasra");
+    expect(IlgiKaresiSemasi.parse(ali)).toEqual(ali);
+    // Katilim ilcesi olmayan oyuncuda alan hic gonderilmez (undefined bile degil).
+    expect(veli.oyuncu?.mulk).toBeDefined();
+    expect("katilimIlcesi" in (veli.oyuncu?.mulk ?? {})).toBe(false);
+    expect(JSON.stringify(veli)).not.toContain("katilimIlcesi");
+    // Baskasinin degeri sizmaz; izleyicide oyuncu karesi yok.
+    expect(izleyici.oyuncu).toBeUndefined();
+    expect(JSON.stringify(izleyici)).not.toContain("katilimIlcesi");
+    expect(JSON.stringify(veli)).not.toContain("sn_m_ova_tasra");
+    // Delta: sahibinin karesine yansir ve uygulayinca ayni kare.
+    const bos = kare(sim, "veli");
+    const d = kareFarki(bos, ali);
+    expect(KareDeltasiSemasi.parse(d)).toEqual(d);
+    expect(deltaUygula(bos, d)).toEqual(ali);
+  });
+
+  it("bolge kipinde (mulk yok) alan yoktur", () => {
+    const sim = Simulasyon.olustur(miniVeriyiYukle(), 3);
+    sim.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "ali", bolgeler: ["m_ova"] } });
+    const k = ilgiKaresiCikar(sim, ilgiAlaniKur(sim, [0], "ali"), "ali", ilceIlgisiKur(sim, [], "ali"));
+    expect(k.oyuncu?.mulk).toBeUndefined();
+    expect(JSON.stringify(k)).not.toContain("katilimIlcesi");
+  });
+});
+
 describe("mulk kare eklemeleri", () => {
   it("hucre degeri yalniz sahibine; ayrilmis kume herkese, sirali ve cekirdek kumesiyle ayni; semadan gecer", () => {
     const { sim, h1 } = kurulum();

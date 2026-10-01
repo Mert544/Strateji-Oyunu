@@ -74,6 +74,11 @@ export interface SunucuSecenekleri {
   yayinParca?: number;
   /** Bir yayın parçasının süre bütçesi (ms): aşılınca parça biter, kalanlar sonraki setImmediate'e kalır. Varsayılan 6. */
   yayinButceMs?: number;
+  /**
+   * Yayın parçalarının "sonraki tur" zamanlayıcısı (varsayılan `setImmediate`). Testler elle sürülen bir zamanlayıcı verir: parça sayısı
+   * gerçek zamana/yüke bağlı olmaz (yük altında kararsızlık olmaz).
+   */
+  sonrakiTur?: (f: () => void) => void;
 }
 
 /** `ozetIste` jeton bedeli (dünyanın tamamını özetlemek pahalıdır). */
@@ -129,6 +134,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   const yavasSureMs = s.yavasSureMs ?? 30_000;
   const yayinParca = Math.max(1, s.yayinParca ?? 8);
   const yayinButceMs = s.yayinButceMs ?? 6;
+  const sonrakiTur = s.sonrakiTur ?? ((f: () => void): void => void setImmediate(f));
   const tamponOlcer = s.tamponOlcer ?? ((ws: WebSocket) => ws.bufferedAmount);
   const tampon = (b: Baglanti): number => tamponOlcer(b.ws, b.kimlik?.oyuncu ?? null);
   const duvarMs = s.duvarMs ?? (() => performance.now());
@@ -318,7 +324,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   function yayinPlanla(): void {
     if (yayinPlanli || yayinSirasi.size === 0) return;
     yayinPlanli = true;
-    setImmediate(yayinParcasi);
+    sonrakiTur(yayinParcasi);
   }
 
   const zamanYayinAraligiMs = s.zamanYayinAraligiMs ?? 15_000;

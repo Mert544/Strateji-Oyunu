@@ -130,7 +130,7 @@ describe("goruntu isci: bayt bayt esitlik ve kopya anı", () => {
 
 describe("goruntu isci: tek is kurali, hata, cokme", () => {
   it("isci meşgulken periyodik goruntu ATLANIR (kuyruklanmaz); is bitince sonraki turda alinir", async () => {
-    process.env.BOLGE_TEST_ISCI_GECIKME_MS = "800";
+    process.env.BOLGE_TEST_ISCI_GECIKME_MS = "2500";
     const { yazar, saat, depo } = await kur({ araligiSaat: 1, goruntuIsci: { betik: new URL("./yavas-isci.ts", import.meta.url) } });
     const ilkSayi = depo.goruntu.sayi; // açılış görüntüsü
     saat.ilerlet(2 * SAAT);

@@ -16,9 +16,9 @@ afterEach(async () => {
   ts = null;
 });
 
-async function bekle(kosul: () => boolean, ms = 5000): Promise<void> {
+async function bekle(kosul: () => boolean | Promise<boolean>, ms = 20_000): Promise<void> {
   const son = Date.now() + ms;
-  while (!kosul()) {
+  while (!(await kosul())) {
     if (Date.now() > son) throw new Error("zaman asimi");
     await new Promise((r) => setTimeout(r, 5));
   }
@@ -45,39 +45,56 @@ async function kur(sunucu: Parameters<typeof testSunucusu>[0] = {}) {
   return { y, ali, veli, degistir };
 }
 
+/** Sunucunun şimdiki ova duruşu (gerçek durum; protokol kodu: 0 normal, 1 savunma, 2 geri çekil). Karşılaştırma gerçek duruma dayanır: ara kareler birleşebilir. */
+const DURUS_KODU = { normal: 0, savunma: 1, geri_cekil: 2 } as const;
+const sunucuDurusu = (): number => {
+  const y = (ts as TestSunucusu).yazar;
+  return DURUS_KODU[y.sim.dunya.bolgeler[y.sim.ic.bolgeIndeks["m_ova"] as number]?.savunma.durus ?? "normal"];
+};
+const istemciDurusu = (c: SunucuIstemcisi): number | undefined => {
+  const ova = (ts as TestSunucusu).yazar.sim.ic.bolgeIndeks["m_ova"] as number;
+  return c.kare?.bolgeler.find((b) => b.i === ova)?.genel.durus;
+};
+/** İstemcinin karesi sunucunun gerçek durumuna yetişene kadar bekler. */
+const yetis = (c: SunucuIstemcisi): Promise<void> => bekle(() => istemciDurusu(c) === sunucuDurusu());
+const metrik = async (ad: string): Promise<number> => Number(new RegExp(`${ad} (\\d+)`).exec(await (ts as TestSunucusu).sunucu.metrikMetni())?.[1]);
+
 const kareler = (c: SunucuIstemcisi): number => c.gelenler.filter((m) => m.tur === "kare" || m.tur === "delta").length;
 const tamKareler = (c: SunucuIstemcisi): number => c.gelenler.filter((m) => m.tur === "kare").length;
 
 describe("kare yayini parcalari", () => {
-  it("parca=1: baglantilar farkli setImmediate turlarinda islenir; hepsi kareyi alir; sira bosalir", async () => {
-    const turlar: number[] = [];
-    let tik = 0;
-    let dur = false;
-    const sayac = (): void => {
-      tik++;
-      if (!dur) setImmediate(sayac);
-    };
-    setImmediate(sayac);
-    const { ali, veli, degistir } = await kur({ sunucu: { yayinParca: 1, yayinButceMs: 1000, tamponOlcer: () => (turlar.push(tik), 0) } });
+  it("parca=1 ve elle surulen 'sonraki tur': 2 abone en az 2 turda islenir (gercek zamana/yuke bagli degil); hepsi kareyi alir; sira bosalir", async () => {
+    const kuyruk: Array<() => void> = [];
+    // Idle turlar yayin kuyruguna girmesin (yayinAraligiMs buyuk): yalniz komut turlari yayin dogurur.
+    const { ali, veli, degistir } = await kur({ sunucu: { yayinParca: 1, yayinButceMs: 1e9, yayinAraligiMs: 1e12, sonrakiTur: (f) => void kuyruk.push(f) } });
+    while (kuyruk.length > 0) (kuyruk.shift() as () => void)(); // kurulumdan kalan yayin turlari (varsa) bosaltilir
     const a0 = kareler(ali);
     const v0 = kareler(veli);
-    turlar.length = 0;
-    await degistir();
-    await bekle(() => kareler(ali) > a0 && kareler(veli) > v0);
-    dur = true;
-    // Bir yayında iki abone: parça=1 olduğundan en az iki ayrı tur (aynı turda ikisi birden işlenseydi tek değer olurdu).
-    const yayinTurlari = new Set(turlar);
-    expect(yayinTurlari.size).toBeGreaterThanOrEqual(2);
-    const m = await (ts as TestSunucusu).sunucu.metrikMetni();
-    expect(m).toMatch(/bolge_yayin_sira 0\n/);
+    await degistir(); // komut turu: yayin sirasina iki abone girer, parca zamanlanir (elle surulene kadar calismaz)
+    await bekle(() => kuyruk.length > 0);
+    expect(await metrik("bolge_yayin_sira")).toBe(2);
+    expect(kareler(ali)).toBe(a0); // henuz kimseye kare gitmedi
+    expect(kareler(veli)).toBe(v0);
+    // Elle say: her tur tek baglanti isler; kuyruk bosalana kadar.
+    let turSayisi = 0;
+    while (kuyruk.length > 0) {
+      (kuyruk.shift() as () => void)();
+      turSayisi++;
+      expect(turSayisi).toBeLessThan(100);
+    }
+    expect(turSayisi).toBeGreaterThanOrEqual(2); // parca=1: iki baglanti en az iki ayri turda
+    expect(await metrik("bolge_yayin_sira")).toBe(0); // sira bosaldi
+    await bekle(() => kareler(ali) > a0 && kareler(veli) > v0); // hepsi kareyi aldi
+    await yetis(ali);
+    await yetis(veli);
   });
 
-  it("varsayilan parca: kare akisi sürer, iki istemcinin karesi ayni dunyayi gosterir", async () => {
+  it("varsayilan parca: kare akisi surer, iki istemcinin karesi sunucunun gercek durumuna yetisir", async () => {
     const { ali, veli, degistir } = await kur();
     for (let i = 0; i < 3; i++) await degistir();
-    const ova = (ts as TestSunucusu).yazar.sim.ic.bolgeIndeks["m_ova"] as number;
-    const durus = (c: SunucuIstemcisi): number | undefined => c.kare?.bolgeler.find((b) => b.i === ova)?.genel.durus;
-    await bekle(() => durus(ali) === durus(veli) && durus(ali) === 2);
+    await yetis(ali);
+    await yetis(veli);
+    expect(istemciDurusu(ali)).toBe(istemciDurusu(veli));
   });
 });
 
@@ -86,39 +103,36 @@ describe("yavas istemci kurali", () => {
     let veliTampon = 0;
     const { ali, veli, degistir } = await kur({ sunucu: { enCokTampon: 1000, kopmaTamponu: 1e9, yavasSureMs: 1e12, tamponOlcer: (_ws, o) => (o === "veli" ? veliTampon : 0) } });
     await degistir();
-    await bekle(() => ali.kare !== null);
+    await yetis(ali);
+    await yetis(veli); // yolda kare kalmasin
     const v0 = kareler(veli);
     const tam0 = tamKareler(veli);
     veliTampon = 5000; // yavaş
     await degistir();
     await degistir();
-    await bekle(() => kareler(ali) >= 3 + 1);
+    await yetis(ali); // yayin gecti
+    await bekle(async () => (await metrik("bolge_yayin_atlanan_kare_toplam")) > 0);
     expect(kareler(veli)).toBe(v0); // atlandı
-    const m = await (ts as TestSunucusu).sunucu.metrikMetni();
-    expect(Number(/bolge_yayin_atlanan_kare_toplam (\d+)/.exec(m)?.[1])).toBeGreaterThan(0);
-    expect(m).toMatch(/bolge_yayin_yavas_kopan_toplam 0\n/);
+    expect(await metrik("bolge_yayin_yavas_kopan_toplam")).toBe(0);
     // Yetişti: sonraki yayında delta DEĞİL tam kare (zincir atlanan karelerden sonra bozulmasın).
     veliTampon = 0;
     await degistir();
     await bekle(() => tamKareler(veli) > tam0);
-    expect(veli.kare).not.toBeNull();
-    const ova = (ts as TestSunucusu).yazar.sim.ic.bolgeIndeks["m_ova"] as number;
-    const durus = (c: SunucuIstemcisi): number | undefined => c.kare?.bolgeler.find((b) => b.i === ova)?.genel.durus;
-    await bekle(() => durus(veli) === durus(ali));
+    await yetis(veli);
   });
 
   it("kopmaTamponu ustunde baglanti KOPAR (sayac); diger istemci sürer", async () => {
     let veliTampon = 0;
     const { ali, veli, degistir } = await kur({ sunucu: { enCokTampon: 1000, kopmaTamponu: 10_000, yavasSureMs: 1e12, tamponOlcer: (_ws, o) => (o === "veli" ? veliTampon : 0) } });
     await degistir();
+    await yetis(ali);
     veliTampon = 50_000;
     await degistir();
-    await bekle(() => veli.ws.readyState === veli.ws.CLOSED, 5000);
+    await bekle(() => veli.ws.readyState === veli.ws.CLOSED);
     expect(ali.ws.readyState).toBe(ali.ws.OPEN);
-    const m = await (ts as TestSunucusu).sunucu.metrikMetni();
-    expect(Number(/bolge_yayin_yavas_kopan_toplam (\d+)/.exec(m)?.[1])).toBe(1);
+    expect(await metrik("bolge_yayin_yavas_kopan_toplam")).toBe(1);
     await degistir(); // yayın sürer
-    await bekle(() => kareler(ali) >= 3);
+    await yetis(ali);
   });
 
   it("enCokTampon ustunde yavasSureMs boyunca kalan istemci KOPAR (sahte saat)", async () => {
@@ -126,16 +140,20 @@ describe("yavas istemci kurali", () => {
     let veliTampon = 0;
     const { veli, degistir } = await kur({ sunucu: { enCokTampon: 1000, kopmaTamponu: 1e9, yavasSureMs: 30_000, duvarMs: () => an, tamponOlcer: (_ws, o) => (o === "veli" ? veliTampon : 0) } });
     await degistir();
+    await yetis(veli);
     veliTampon = 5000;
     an = 1000;
     await degistir(); // yavaşlık başladı (atlanır)
+    await bekle(async () => (await metrik("bolge_yayin_atlanan_kare_toplam")) > 0);
     expect(veli.ws.readyState).toBe(veli.ws.OPEN);
     an = 20_000;
-    await degistir(); // 19 sn: henüz kopmaz
-    await new Promise((r) => setTimeout(r, 100));
+    await degistir(); // 19 sn: henüz kopmaz (atlama sayaci artar)
+    const atlanan = await metrik("bolge_yayin_atlanan_kare_toplam");
+    await degistir();
+    await bekle(async () => (await metrik("bolge_yayin_atlanan_kare_toplam")) > atlanan);
     expect(veli.ws.readyState).toBe(veli.ws.OPEN);
     an = 32_000; // 31 sn > 30 sn
     await degistir();
-    await bekle(() => veli.ws.readyState === veli.ws.CLOSED, 5000);
+    await bekle(() => veli.ws.readyState === veli.ws.CLOSED);
   });
 });

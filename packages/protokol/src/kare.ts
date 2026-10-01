@@ -141,6 +141,11 @@ export interface MulkOyuncuKaresi {
   indirimliYapiKalan?: number;
   /** Ayrılmış hücreleri satın alabilme bitişi (katılım + ayrılmış süre; sim ms). */
   ayrilmisBitis?: Ms;
+  /**
+   * KATILIM ilçesi (çekirdek `MulkOyuncuDurumu.katilimIlcesi`: yurt ilçesi ya da yurtsuz katılımdaki `ilce`; ayrılmış hücre yalnız burada satılır).
+   * Çekirdekte yoksa (katılım ilçesi belirlenemediyse ya da kural kapalıysa) ALAN YOKTUR; bölge kipinde zaten `mulk` yoktur. Yalnız sahibine.
+   */
+  katilimIlcesi?: string;
 }
 
 /** Erken oyun süre çarpanı formülü: `[katılımZamanı, başlangıçÇarpanıPpm, sabitMs, bitişMs]` (bkz. `erkenOyunCarpani`). */
@@ -378,6 +383,7 @@ export function ilgiKaresiCikar(
           ilceHucre: mo.ilceHucre.map((x): [string, number] => [x.ilce, x.hucre]),
           sonEtkinlik: mo.sonEtkinlik,
         };
+        if (mo.katilimIlcesi !== undefined) kare.oyuncu.mulk.katilimIlcesi = mo.katilimIlcesi;
         const mk = kaynak.ic.mulk;
         if (mk) {
           kare.oyuncu.mulk.indirimliYapiKalan = Math.max(0, mk.p.yeniOyuncu.indirimliYapiSayisi - (mo.indirimliYapi ?? 0));

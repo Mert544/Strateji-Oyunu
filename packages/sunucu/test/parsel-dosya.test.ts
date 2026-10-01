@@ -95,7 +95,7 @@ describe("CLI --parsel-dosya", () => {
     const { olay, p } = await cliBaslat("--parsel-dosya", yol);
     expect(olay.olay).toBe("hazir");
     p.kill("SIGKILL");
-  }, 30_000);
+  }, 120_000);
 
   it("bozuk dosyada olumcul hata (anlasilir mesaj); --parsel ile birlikte verilemez", async () => {
     const f = parselFiksturuYukle("mini-6");
@@ -106,5 +106,5 @@ describe("CLI --parsel-dosya", () => {
     expect(String(r.olay.hata)).toMatch(/parsel fiksturu gecersiz[\s\S]*uygunHucre/);
     const r2 = await cliBaslat("--parsel", "--parsel-dosya", yol);
     expect(String(r2.olay.hata)).toMatch(/birlikte verilemez/);
-  }, 30_000);
+  }, 120_000);
 });

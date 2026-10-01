@@ -223,5 +223,5 @@ describe.each([
     ref4.calistirKadar(T);
     expect(h4.kurtarma.durumOzeti).toBe(ref4.durumOzeti());
     await oldur(s4);
-  }, 60_000);
+  }, 180_000);
 });

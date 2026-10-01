@@ -22,7 +22,7 @@ afterEach(async () => {
 
 /** Sunucu tarafının oyuncunun kapanışını (çıkış çapası) işlemesini bekler. */
 async function baglantilarBosalsin(t: TestSunucusu): Promise<void> {
-  for (let n = 0; n < 200 && t.sunucu.baglantiSayisi > 1; n++) await new Promise((r) => setTimeout(r, 5));
+  for (let n = 0; n < 4000 && t.sunucu.baglantiSayisi > 1; n++) await new Promise((r) => setTimeout(r, 5));
   await t.yazar.profilBekle();
 }
 

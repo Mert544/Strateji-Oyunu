@@ -302,6 +302,7 @@ const oyuncuKaresiSemasi = z.object({
       sonEtkinlik: tam,
       indirimliYapiKalan: tam.optional(),
       ayrilmisBitis: tam.optional(),
+      katilimIlcesi: z.string().optional(),
     })
     .optional(),
 });

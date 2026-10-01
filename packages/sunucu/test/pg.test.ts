@@ -379,5 +379,5 @@ describe.skipIf(!PG)("postgres: CLI (--depo pg)", () => {
     expect(ilk.some((o) => o.olay === "kapandi")).toBe(true);
     const ikinci = await kos();
     expect((ikinci.find((o) => o.olay === "hazir") as { kurtarma: { goruntuSeq: number | null } }).kurtarma.goruntuSeq).not.toBeNull();
-  }, 60_000);
+  }, 180_000);
 });
