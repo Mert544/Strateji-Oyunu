@@ -37,6 +37,11 @@ export type PerakendeDogrulamaSonucu = DogrulamaSonucu & { uyarilar: string[] };
 /** Mülk kipi yöntem çıktı/girdi değer oranı bandı (A2 §1.13): [1,16; 1,48] (yüzde 116 ve 148). */
 const ORAN_ALT_YUZDE = 116;
 const ORAN_UST_YUZDE = 148;
+/**
+ * V15 yöntem başına ÜST SINIR istisnası (A2 §1.13, baş lider ve Kod lideri kararı; G8 değerleri `celik_dograma` 30 pencere, `cam_firini` yakıt 12): bant GENİŞLEMEZ, yalnız bu iki kimliğin
+ * ÜST sınırı değişir (alt sınır 1,16 aynen). Başka yöntem için EMSAL DEĞİLDİR: bandı aşan her yeni yöntem kendi rakamlı gerekçesi ve onayıyla gelir; G8 değerleri değişirse yeniden sınanır.
+ */
+export const V15_YONTEM_UST_YUZDE: Readonly<Record<string, number>> = Object.freeze({ cam_firini: 170, celik_dograma: 160 });
 
 export function dogrulaPerakende(paket: Pick<VeriPaketi, "icerik" | "param">, secenek: PerakendeDogrulamaSecenegi = {}): PerakendeDogrulamaSonucu {
   const hatalar: string[] = [];
@@ -117,7 +122,8 @@ export function dogrulaPerakende(paket: Pick<VeriPaketi, "icerik" | "param">, se
       else girdi += q * t;
     }
     if (!tam || girdi <= 0) continue;
-    if (cikti * 100 < girdi * ORAN_ALT_YUZDE || cikti * 100 > girdi * ORAN_UST_YUZDE) uyarilar.push(`icerik.yontemler.${y.id}: oran bandi disi`);
+    const ust = Object.prototype.hasOwnProperty.call(V15_YONTEM_UST_YUZDE, y.id) ? (V15_YONTEM_UST_YUZDE[y.id] as number) : ORAN_UST_YUZDE;
+    if (cikti * 100 < girdi * ORAN_ALT_YUZDE || cikti * 100 > girdi * ust) uyarilar.push(`icerik.yontemler.${y.id}: oran bandi disi`);
   }
 
   // V17: mulk.yontemGecersizKilma anahtarları içerik yöntemleridir (aralık `dogrulaParametreler`de).

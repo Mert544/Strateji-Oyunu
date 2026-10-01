@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { CIKMAZ_MAL_HATA, YAN_URUN_KURALI_HATA, dogrulaPerakende, miniVeriyiYukle, varsayilanVeriyiYukle, veriUyarilari } from "../src/index";
+import { V15_YONTEM_UST_YUZDE } from "../src/perakende-dogrula";
 
 const kopya = <T>(x: T): T => structuredClone(x);
 const hatalar = (r: ReturnType<typeof dogrulaPerakende>): string => (r.gecerli ? "" : r.hatalar.join("\n"));
@@ -122,6 +123,57 @@ describe("V15: mulkKipi yöntem çıktı/girdi değer oranı bandı [1,16; 1,48]
     // uyarı hata değildir
     ayarla(300);
     expect(dogrulaPerakende(v).gecerli).toBe(true);
+  });
+});
+
+describe("V15 istisnası: yöntem başına ÜST sınır (cam_firini 1,70, celik_dograma 1,60); bant genişlemez, emsal değildir", () => {
+  /** `standart_gida_isleme` gövdesinden `id` kimlikli mulkKipi yöntemi kurar; çıktı değeri girdi değerinin `yuzde`'si. */
+  function kur(id: string, yuzde: number) {
+    const v = varsayilanVeriyiYukle();
+    const taban = (m: string) => v.icerik.mallar.find((x) => x.id === m)!.tabanFiyat;
+    const kaynak = v.icerik.yontemler.find((k) => k.id === "standart_gida_isleme")!;
+    const y = structuredClone(kaynak);
+    y.id = id;
+    y.mulkKipi = true;
+    const girdiDeger = Object.entries(y.girdiler).reduce((a, [m, q]) => a + q * taban(m), 0);
+    const [cikti] = Object.keys(y.ciktilar);
+    y.ciktilar = { [cikti as string]: Math.floor((girdiDeger * yuzde) / 100 / taban(cikti as string)) };
+    v.icerik.yontemler = v.icerik.yontemler.filter((k) => k.id !== id);
+    v.icerik.yontemler.push(y);
+    return v;
+  }
+  const bandDisi = (v: ReturnType<typeof kur>, id: string) => dogrulaPerakende(v).uyarilar.includes(`icerik.yontemler.${id}: oran bandi disi`);
+
+  it("cam_firini: 1,64 ve 1,69 sessiz; 1,72 uyarı; alt sınır 1,16 aynen (1,10 uyarı)", () => {
+    expect(bandDisi(kur("cam_firini", 164), "cam_firini")).toBe(false);
+    expect(bandDisi(kur("cam_firini", 169), "cam_firini")).toBe(false);
+    expect(bandDisi(kur("cam_firini", 172), "cam_firini")).toBe(true);
+    expect(bandDisi(kur("cam_firini", 110), "cam_firini")).toBe(true);
+  });
+  it("celik_dograma: 1,55 ve 1,59 sessiz; 1,62 uyarı; alt sınır 1,16 aynen", () => {
+    expect(bandDisi(kur("celik_dograma", 155), "celik_dograma")).toBe(false);
+    expect(bandDisi(kur("celik_dograma", 159), "celik_dograma")).toBe(false);
+    expect(bandDisi(kur("celik_dograma", 162), "celik_dograma")).toBe(true);
+    expect(bandDisi(kur("celik_dograma", 110), "celik_dograma")).toBe(true);
+  });
+  it("NEGATİF KONTROL (emsal değil): aynı 1,55 başka kimlikte UYARI verir; üst sınır haritası yalnız iki kimliği içerir; celik_dograma sınırı cam_firini'ne taşınmaz", () => {
+    expect(bandDisi(kur("baska_yontem", 155), "baska_yontem")).toBe(true);
+    expect(bandDisi(kur("degirmen", 165), "degirmen")).toBe(true);
+    expect(Object.keys(V15_YONTEM_UST_YUZDE).sort()).toEqual(["cam_firini", "celik_dograma"]);
+    expect(bandDisi(kur("cam_firini", 165), "cam_firini")).toBe(false); // 1,65 cam_firini için sessiz...
+    expect(bandDisi(kur("celik_dograma", 165), "celik_dograma")).toBe(true); // ...celik_dograma için 1,60'ı aşar
+    // kalıtsal anahtar sızıntısı yok
+    expect(bandDisi(kur("constructor", 165), "constructor")).toBe(true);
+  });
+  it("şartname §16.1 satırı (A3 f33f3eb): cam_firini 1,649 ve celik_dograma 1,549 uyarı VERMEZ; 1,71 / 1,61 uyarı verir; harita dışı yöntem 1,49 uyarı verir", () => {
+    expect(bandDisi(kur("cam_firini", 164.9), "cam_firini")).toBe(false);
+    expect(bandDisi(kur("celik_dograma", 154.9), "celik_dograma")).toBe(false);
+    expect(bandDisi(kur("cam_firini", 171), "cam_firini")).toBe(true);
+    expect(bandDisi(kur("celik_dograma", 161), "celik_dograma")).toBe(true);
+    expect(bandDisi(kur("harita_disi_yontem", 149), "harita_disi_yontem")).toBe(true);
+  });
+  it("uyarı hata değildir (bant dışı değerlerde paket geçerli kalır)", () => {
+    expect(dogrulaPerakende(kur("cam_firini", 300)).gecerli).toBe(true);
   });
 });
 
