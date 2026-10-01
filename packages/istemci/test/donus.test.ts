@@ -26,8 +26,11 @@ describe("dönüş ekranı", () => {
 
   it("net sonuç işaretli, üretim, en çok 8 satır; Git yalnız ilçede; K5+ girmen yeter", () => {
     const s = donusSatirlari(DONUS_ORNEGI, ad);
-    expect(s[0]!.html).toContain("+1.960\u00a0₺");
-    expect(s[0]!.html).toContain("giderler −180\u00a0₺");
+    // B9: "Net: +1.960 ₺ (satış +2.140 ₺, gider −180 ₺)"; ilk sayı net, "satış" yalnız kalemde
+    expect(s[0]!.html).toContain("Net: +1.960\u00a0₺</b>");
+    expect(s[0]!.html).toContain("(satış +2.140\u00a0₺, gider −180\u00a0₺)");
+    expect(s[0]!.html).not.toContain("giderler");
+    expect(donusSatirlari({ ...DONUS_ORNEGI, net: { ...DONUS_ORNEGI.net, hazineFarki: -180_000, kalemler: { satis: 0, gider: -180_000, diger: 0 } } }, ad)[0]!.html).toBe('<b class="">Net: −180\u00a0₺</b> <span class="soluk">(gider −180\u00a0₺)</span>');
     expect(s[1]!.html).toBe("Üretimden çıkanlar: Tahıl 220 · Gıda 60");
     expect(s[2]!.git).toBe("tr_41_gebze");
     const cok: DonusOzeti = { ...DONUS_ORNEGI, maddeler: Array.from({ length: 20 }, (_, i) => ({ ...DONUS_ORNEGI.maddeler[0]!, tohum: i, onem: i })) };

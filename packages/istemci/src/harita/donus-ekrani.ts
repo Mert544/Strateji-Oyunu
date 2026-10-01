@@ -65,9 +65,9 @@ export function donusSatirlari(o: DonusOzeti, ad: DonusAdlari): Array<{ html: st
   if (n.hazineFarki !== 0 || n.kalemler.satis !== 0) {
     const kalem: string[] = [];
     if (n.kalemler.satis) kalem.push(`satış ${paraIsaretli(n.kalemler.satis)}`);
-    if (n.kalemler.gider) kalem.push(`giderler ${paraIsaretli(n.kalemler.gider)}`);
+    if (n.kalemler.gider) kalem.push(`gider ${paraIsaretli(n.kalemler.gider)}`);
     if (n.kalemler.diger) kalem.push(`diğer ${paraIsaretli(n.kalemler.diger)}`);
-    l.push({ html: `<b class="${n.hazineFarki > 0 ? "dn-arti" : ""}">${esc(paraIsaretli(n.hazineFarki))}</b>${kalem.length ? ` <span class="soluk">${esc(kalem.join(", "))}</span>` : ""}` });
+    l.push({ html: `<b class="${n.hazineFarki > 0 ? "dn-arti" : ""}">Net: ${esc(paraIsaretli(n.hazineFarki))}</b>${kalem.length ? ` <span class="soluk">(${esc(kalem.join(", "))})</span>` : ""}` }); // B9: "Net" sözcüğü ilk sayının net olduğunu söyler; kalemler parantezde
   }
   if (n.uretim.length) l.push({ html: `Üretimden çıkanlar: ${esc(n.uretim.map((u) => `${ad.mal(u.mal)} ${fmt(Math.round(u.miktar / 1000))}`).join(" · "))}` });
   const maddeler = [...o.maddeler].sort((a, b) => b.onem - a.onem);
