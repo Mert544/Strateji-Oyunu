@@ -1,6 +1,6 @@
 # g7-protokol (K2) — 1. teslim: marka komut yolu
 
-Dal `takim/k2/g7-protokol`. TABAN: K3 `takim/k3/g7-1b-komut` c08030f + entegrasyon d13ba4a'nin (gorunen-ad/ad-suzgec) gecici merge'i (`7e6c968`; merge commit rebase'te duser, bu commit'in kendisi temizdir).
+Dal `takim/k2/g7-protokol-temiz` (TEMIZ UC; eski `takim/k2/g7-protokol` gecici merge'li taban idi, kullanilmaz). TABAN: K3 `takim/k3/g7-2-yerel-pazar` 8042a58 (d13ba4a ustu, dogrusal, merge yok); uzerine `cherry-pick` ile 3 commit (marka komut yolu, ad kodlari siniri testi, kare/dedektor/sen yokken) ve rapor notu.
 
 - `sunucu.ts komutAl`: `marka_sifirla` yalniz yonetici (oyuncu: `yetki`, gunluge girmez); `marka_tanimla.ad` gunluge yazilmadan once `adKanonik` + yasakli ad suzgeci: gunluge KANONIK ad girer, ret `ad_gecersiz` / `ad_yasakli` (kodlar /giris/ad ile ayni), reddedilen komut gunluge girmez. `SunucuSecenekleri.adSuzgeci?`.
 - `cli.ts`: yasakli ad listesi kimlik kipinden bagimsiz yuklenir (gorunen ad ile ayni suzgec instance'i sunucuya da verilir).
@@ -10,7 +10,7 @@ Dal `takim/k2/g7-protokol`. TABAN: K3 `takim/k3/g7-1b-komut` c08030f + entegrasy
 
 # 2. teslim: kare alanlari, ilk_dukkan dedektoru, "sen yokken" satis
 
-TABAN: ayni gecici merge'e (`7e6c968`) ek olarak K3 `takim/k3/g7-2-yerel-pazar` fd8e21e (G7-2 durum tipleri 43692cd + yerel pazar baglamasi) merge'i; rebase'te duser.
+TABAN: K3 G7-2 durum tipleri (cad9780) ve yerel pazar baglamasi (8042a58) dogrusal zincirde; K3 g7-2 entegrasyona girince bu 3 commit `git cherry-pick <3 commit>` ile paket ucuna alinir (merge commit yok).
 
 ## Kare alanlari (hepsi ISTEGE BAGLI nesne alani; demetler buyumez; `PROTOKOL_SURUMU` ayni)
 | Alan | Kime | Bicim |
