@@ -16,7 +16,7 @@ import type { AramaDizini, AramaKaydi } from "./arama";
 import type { MulkBaglantisi } from "./baglanti";
 import type { MulkPaneli } from "../arayuz/mulk-paneli";
 import { noktadakiOzellik } from "./geometri";
-import { aramaKayitlari, disKaraCoz, hiyerarsiYukle, illerYukle, izgaraYukle, OSM_ATIF } from "./veri";
+import { aramaKayitlari, hiyerarsiYukle, illerYukle, izgaraYukle, OSM_ATIF } from "./veri";
 import { yuruAc } from "../yuru/giris";
 import { ortuIle } from "../tasarim/ortu";
 import type { Hiyerarsi } from "./veri";
@@ -34,8 +34,6 @@ export interface KureBaglami {
   bolgeyeDon: (kimlik: string | null) => void;
   /** Küre çizimini askıya al / sürdür (harita açıkken küre çizilmez). */
   kureyiAskiyaAl: (askida: boolean) => void;
-  /** Küre ülke TopoJSON'u (haritada komşu ülkeler, "dış kara"; bellekte zaten var). */
-  dunyaTopo?: unknown;
   /** Mülk kipi başlayınca panelin içerik sağlayıcısı (harita yığınından; kabuk paneli ona bağlar). */
   mulkPaneli?: (p: MulkPaneli) => void;
 }
@@ -282,7 +280,6 @@ export class HaritaDenetci {
           const g = new m.HaritaGorunumu(this.kap, this.sahneKap, {
             hiyerarsi: h,
             iller,
-            ...(this.kure.dunyaTopo ? { dunya: disKaraCoz(this.kure.dunyaTopo as Parameters<typeof disKaraCoz>[0]) } : {}),
             ...(b ? { baglanti: b } : {}),
             ilceSec: (ilce) => void this.ilceAc(ilce),
             yuruAc: (boylam, enlem) => this.yuruBaslat(boylam, enlem),

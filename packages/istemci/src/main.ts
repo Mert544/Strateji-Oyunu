@@ -10,7 +10,8 @@ import { ikon } from "./tasarim/ikon";
 import SimIsci from "./isci/sim.worker?worker&inline";
 import icerik from "../../veri/icerik/icerik.json";
 import param from "../../veri/icerik/parametreler.json";
-import dunyaTopo from "./veri/dunya-ulkeler.topo.json";
+// Küre için kaba ülke katmanı (tek dosya bütçesi); haritanın 50m "dış kara"sı harita.js'te
+import dunyaTopo from "./veri/dunya-ulkeler-kure.topo.json";
 import type { HaritaDosyasi, IcerikDosyasi, Parametreler } from "@bolge/veri";
 import { bildir } from "./arayuz/bildirim";
 import { devletKartlari, devletSecimiHtml, secimBelirteci, secimCoz } from "./arayuz/devlet-sec";
@@ -227,7 +228,6 @@ function baslat(): void {
     kureyiAskiyaAl: (a) => {
       s.askida = a;
     },
-    dunyaTopo,
     mulkPaneli: (p) => panel.mulkKipiKur(p),
   });
 

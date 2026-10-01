@@ -4,7 +4,10 @@
  *   pnpm --filter @bolge/istemci veri:hazirla
  *
  * Çıktılar (src/veri/):
- *  - dunya-ulkeler.topo.json : 50m ülkeler, sadeleştirilmiş (kıta dolgusu + ülke sınırları), nesne "ulkeler"
+ *  - dunya-ulkeler.topo.json : 50m ülkeler, sadeleştirilmiş (kıta dolgusu + ülke sınırları), nesne "ulkeler". Yalnız harita
+ *    yığınında (harita.js, "dış kara"); tek dosyaya girmez.
+ *  - dunya-ulkeler-kure.topo.json : küre için daha kaba sürüm (aynı 50m kaynaktan; daha güçlü sadeleştirme, küçük adalar
+ *    düşer, 5 000 nicemleme), nesne "ulkeler". Tek dosya bütçesi için (≈ 56 → 25 KB gzip).
  *  - gecici-bolgeler.topo.json : GEÇİCİ oyun bölge katmanı (Türkiye + Balkanlar admin-1, 10m), nesne "bolgeler".
  *    Her geometrinin properties'i: { id: sentetik-50 bölge kimliği, ad: il adı, enlemMikro, boylamMikro }.
  *    Gerçek harita dosyası (gercek-karadeniz.json) hazır olunca yükleyici onu tercih eder; bu dosya yedektir.
@@ -15,7 +18,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { topology } from "topojson-server";
-import { presimplify, simplify, quantile } from "topojson-simplify";
+import { filter, filterWeight, presimplify, simplify, quantile } from "topojson-simplify";
 import { quantize } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
 
@@ -59,7 +62,7 @@ function ozellikMerkezi(g: Geometry): [number, number, number] {
   return [en.c[0], en.c[1], en.alan];
 }
 
-function kucult(fc: FeatureCollection, nesneAdi: string, nicemleme: number, ozellikler: (f: Feature) => Record<string, unknown>, tutulanOran: number): unknown {
+function kucult(fc: FeatureCollection, nesneAdi: string, nicemleme: number, ozellikler: (f: Feature) => Record<string, unknown>, tutulanOran: number, kucukHalkaCarpani = 0): unknown {
   const ozFc: FeatureCollection = {
     type: "FeatureCollection",
     features: fc.features.map((f) => ({ type: "Feature", properties: ozellikler(f), geometry: f.geometry })),
@@ -68,7 +71,9 @@ function kucult(fc: FeatureCollection, nesneAdi: string, nicemleme: number, ozel
   const ps = presimplify(topo);
   const esik = quantile(ps, tutulanOran);
   // simplify mutlak koordinat döndürür; yeniden nicemleyerek delta kodlu küçük dosya elde edilir.
-  return quantize(simplify(ps, esik), nicemleme);
+  const sade = simplify(ps, esik);
+  // İsteğe bağlı: ağırlığı eşiğin bu katından küçük halkalar (küçük adalar) düşer
+  return quantize(kucukHalkaCarpani > 0 ? filter(sade, filterWeight(sade, esik * kucukHalkaCarpani)) : sade, nicemleme);
 }
 
 // ---------------------------------------------------------------------------
@@ -80,7 +85,13 @@ function dunyaUret(): void {
   const metin = JSON.stringify(topo);
   writeFileSync(join(CIKTI, "dunya-ulkeler.topo.json"), metin);
   console.log(`dunya-ulkeler.topo.json: ${(metin.length / 1024).toFixed(0)} KB`);
+  const kure = JSON.stringify(kucult(fc, "ulkeler", 5e3, () => ({}), KURE_ORANI, 4));
+  writeFileSync(join(CIKTI, "dunya-ulkeler-kure.topo.json"), kure);
+  console.log(`dunya-ulkeler-kure.topo.json: ${(kure.length / 1024).toFixed(0)} KB`);
 }
+
+/** Küre sürümünde tutulan nokta oranı (yükseklik eşiği yüzdeliği). */
+const KURE_ORANI = Number(process.env["KURE_ORANI"] ?? 0.1);
 
 // ---------------------------------------------------------------------------
 // 2. Geçici bölge katmanı

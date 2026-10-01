@@ -56,7 +56,8 @@ import {
 import type { Izgara, Sinir } from "./hucre";
 import { Secim, secilemezNedeni } from "./secim";
 import type { SecimBaglami } from "./secim";
-import { ilceleriYukle, izgaraYukle, OSM_ATIF_HTML, seritUrl } from "./veri";
+import { disKaraCoz, ilceleriYukle, izgaraYukle, OSM_ATIF_HTML, seritUrl } from "./veri";
+import dunyaUlkeler from "../veri/dunya-ulkeler.topo.json";
 import type { Hiyerarsi, SinirKatmani } from "./veri";
 
 export { baglantiKur } from "./baglanti-kur";
@@ -302,7 +303,7 @@ export class HaritaGorunumu {
     const st: StyleSpecification = {
       version: 8,
       sources: {
-        dunya: { type: "geojson", data: this.s.dunya ?? BOS },
+        dunya: { type: "geojson", data: this.s.dunya ?? disKaraCoz(dunyaUlkeler as unknown as Parameters<typeof disKaraCoz>[0]) },
         iller: { type: "geojson", data: this.s.iller.fc, promoteId: "kimlik" },
         "il-sinir": { type: "geojson", data: this.s.iller.sinir ?? BOS },
         ilceler: { type: "geojson", data: BOS, promoteId: "kimlik" },
