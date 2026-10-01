@@ -29,7 +29,9 @@ import { dukkanBolumuHtml, dukkanDikkatMaddeleri, ustKartHtml } from "./dukkan-h
 import { dukkanMetni } from "./dukkan-metin";
 import { DEFTER_ATLA_ANAHTARI, IlkSatisIzleyici, ONERI_KAPALI_ANAHTARI, oneriDurumu, rafaKonabilirStok, tarayiciDeposu } from "./dukkan-veri";
 import type { DukkanKaynagi } from "./dukkan-veri";
-import { dukkanKaynagiKur } from "./dukkan-kaynak";
+import { dukkanKaynagiKur, referansFiyati } from "./dukkan-kaynak";
+import { DukkanPaneli, dukkanPanelParam, panelEylemiOku } from "./dukkan-panel";
+import { dukkanTuruMallari } from "./etkin";
 import type { Defter } from "@bolge/protokol";
 import { bildir } from "../arayuz/bildirim";
 import mulkCss from "./mulk-panel.css?inline";
@@ -385,6 +387,56 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     }
   };
   const dukkanGorunumu = () => dukkanKaynagi?.gorunum() ?? null;
+  // Dükkân ayrıntısı (raf, kademe, marka, kaldırma): komutlar bağdaştırıcının `dukkanKomutu` ucundan; kare gelmemişse ya da dükkân kuralı yoksa panel çıkmaz
+  const panelParam = dukkanPanelParam(ic);
+  const dukkanPaneli: DukkanPaneli | undefined =
+    dukkanKaynagi && b.dukkanKomutu && panelParam
+      ? new DukkanPaneli({
+          gorunum: dukkanGorunumu,
+          malAdi: ad.mal,
+          simdi: () => b.ozet?.()?.simZamani ?? 0,
+          stokMili: (mal) => b.isletme?.()?.mallar.find((x) => x.mal === mal)?.stokMili ?? 0,
+          referans: (mal) => referansFiyati(ic, b.dukkanKaresi?.() ?? null)(mal),
+          turMallari: (tur) => (tur === null ? [] : dukkanTuruMallari(ic, tur)),
+          komut: (k) => b.dukkanKomutu!(k),
+          param: panelParam,
+          degisti: () => yenile?.(),
+          bildir: (metin, tur) => bildir(metin, tur),
+          yapiKur: () => {
+            isletmeSayfasi(false);
+            s.gorunum.yapiMenusuAc();
+          },
+        })
+      : undefined;
+  if (dukkanPaneli) {
+    // Marka adı yazılırken yalnız sayaç, önizleme ve hata yamalanır (yeniden çizim odağı bozardı); oklarla simge/renk gezinme (roving tabindex)
+    document.addEventListener("input", (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement) || t.id !== "dk-marka-ad") return;
+      dukkanPaneli.girdi(t.value);
+      const taslak = document.createElement("div");
+      taslak.innerHTML = dukkanPaneli.markaFormu();
+      for (const sel of ['[data-alan="marka-sayac"]', '[data-alan="marka-onizleme"]', "#dk-marka-hata"]) {
+        const yeni = taslak.querySelector(sel);
+        const eski = document.querySelector(sel);
+        if (yeni && eski && eski.innerHTML !== yeni.innerHTML) eski.innerHTML = yeni.innerHTML;
+      }
+      if (taslak.querySelector("#dk-marka-hata")?.textContent) t.setAttribute("aria-invalid", "true");
+      else t.removeAttribute("aria-invalid");
+    });
+    document.addEventListener("keydown", (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement) || !t.matches(".dk-simge, .dk-renk")) return;
+      const adim = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+      if (adim === 0) return;
+      e.preventDefault();
+      const simge = t.classList.contains("dk-simge");
+      const grup = [...document.querySelectorAll<HTMLElement>(simge ? ".dk-simge" : ".dk-renk")];
+      const yeni = (grup.indexOf(t) + adim + grup.length) % grup.length;
+      const o = simge ? { eylem: "simge", simge: yeni } : { eylem: "renk", renk: yeni };
+      void dukkanPaneli.eylem(o).then(() => window.setTimeout(() => document.querySelectorAll<HTMLElement>(simge ? ".dk-simge" : ".dk-renk")[yeni]?.focus(), 0));
+    });
+  }
   const dukkanDikkat = (): MulkDikkatMaddesi[] =>
     dukkanDikkatMaddeleri(dukkanGorunumu(), ad.mal, (mal) => (son?.mallar.find((x) => x.mal === mal)?.stokMili ?? 0) > 0).map((x, i) => ({ tur: x.tur, baslik: x.baslik, ayrinti: "", ...(x.ilce ? { ilce: x.ilce } : {}), sira: i }));
   const epoch = (): number => b.dunyaEpochMs?.() ?? DUNYA_EPOCH_MS;
@@ -416,7 +468,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
           const durum = ustDurum(d);
           oneriIsareti(durum);
           const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal), dukkanKurulabilir());
-          const dukkan = dukkanBolumuHtml(dukkanGorunumu(), { ilceAdi: ad.ilce, simdi: d?.simZamani ?? 0 });
+          const dukkan = dukkanBolumuHtml(dukkanGorunumu(), { ilceAdi: ad.ilce, simdi: d?.simZamani ?? 0, secili: dukkanPaneli?.durum.secili ?? null }) + (dukkanPaneli?.html() ?? "");
           return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch()) : undefined, { ust, dukkan });
         }
         case "hazine":
@@ -463,6 +515,11 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         void Promise.resolve(ilce ? s.ilceAc(ilce) : undefined).then(() => {
           if (!s.gorunum.dukkanKurBaslat()) bildir(dukkanMetni("dukkan.D1.kapali"), "bilgi");
         });
+        return true;
+      }
+      const pe = dukkanPaneli ? panelEylemiOku(t) : null;
+      if (pe && dukkanPaneli) {
+        void dukkanPaneli.eylem(pe);
         return true;
       }
       const bd = t.closest("[data-mulk-buyut]") as HTMLElement | null;

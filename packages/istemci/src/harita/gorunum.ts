@@ -1315,6 +1315,11 @@ export class HaritaGorunumu {
     return this.dukkanKurulabilir() && (this.yerlesim?.sec("dukkan") ?? false);
   }
 
+  /** Yapı menüsünü açar (stoksuz dükkân rafında "Yapı kur" yönlendirmesi); menü düğmesi görünür değilse etkisiz. */
+  yapiMenusuAc(): void {
+    this.yerlesim?.menuAc(true);
+  }
+
   /**
    * Yapı kurma kartı için dükkân bilgisi (D2 tür seçimi, D3 pencere satırı, sayaçlar): kare köprüden görünüme çevrilir; kare ya da dünyada dükkân yoksa tanımsız
    * (`dukkan` yapısı düz yapı kartıyla çıkar). Bu ilçedeki ve ilindeki dükkân sayısı kendi dükkânlarındır.

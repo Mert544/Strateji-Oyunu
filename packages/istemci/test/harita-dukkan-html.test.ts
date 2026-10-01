@@ -138,6 +138,10 @@ describe("D-1 Dükkânlarım", () => {
     expect(h).toContain(`<li class="dk-satir" data-dukkan="8" data-durum="insaat">`);
     expect(h).toContain("<b>bereket</b>");
     expect(h).toContain("İnşa sürüyor · 1 sa 30 dk");
+    // ayrıntı düğmesi: açıkta "Raf", inşadakinde "Daha fazla"; seçili dükkânda aria-expanded
+    expect(h).toContain(`data-eylem="dukkan-sec" data-dukkan="7" aria-expanded="false">Raf</button>`);
+    expect(h).toContain(`data-eylem="dukkan-sec" data-dukkan="8" aria-expanded="false">Daha fazla</button>`);
+    expect(dukkanBolumuHtml(g, { ilceAdi, simdi: 0.5 * SAAT, secili: 7 })).toContain(`data-dukkan="7" aria-expanded="true"`);
     // inşadaki satırda ilçe yoksa Git yok
     expect(h.split(`data-dukkan="8"`)[1]).not.toContain("data-mulk-ilce");
   });
@@ -569,6 +573,13 @@ describe("dukkan-duzelt 5-9", () => {
 
 describe("D-7 marka formu", () => {
   const f = (k: Partial<Parameters<typeof markaFormuHtml>[0]> = {}): string => markaFormuHtml({ ad: "", simge: 0, renk: 0, ...k });
+  it("sunucu ret metni (anahtarsız) hata satırında görünür ve alan geçersiz işaretlenir", () => {
+    const h = f({ ad: "yasak", retMetin: "Bu ad kullanılamaz; başka bir ad dene." });
+    expect(h).toContain('<p id="dk-marka-hata" class="dk-hata" role="alert">Bu ad kullanılamaz; başka bir ad dene.</p>');
+    expect(h).toContain('aria-invalid="true"');
+    expect(h).toContain('data-durum="hata"');
+  });
+
 
   it("iskelet: dialog, alan öznitelikleri, sayaç, açıklama ve uyarı, tek birincil Kaydet, ikincil Şimdilik markasız", () => {
     const h = f({ ad: "Bereket Bakkal" });

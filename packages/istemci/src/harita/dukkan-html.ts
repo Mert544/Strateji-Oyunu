@@ -96,6 +96,13 @@ export function defterKartiHtml(siradakiMetin: string, odulHtml: string, dukkanK
 export interface DukkanBolumuSecenegi {
   ilceAdi: (ilce: string) => string;
   simdi: number;
+  /** Ayrıntısı açık dükkân (`aria-expanded`). */
+  secili?: number | null;
+}
+
+/** Satırın ayrıntı düğmesi: açık dükkânda "Raf" (raf, fiyat, marka), inşadakinde "Daha fazla" (iptal). */
+function acDugmesi(d: Pick<DukkanKaydi, "id" | "durum">, acik: boolean): string {
+  return `<button type="button" class="eylem" data-eylem="dukkan-sec" data-dukkan="${d.id}" aria-expanded="${acik}">${enc(d.durum === "insaat" ? "dukkan.D81.menu" : "dukkan.D5.baslik")}</button>`;
 }
 
 /** "Git" düğmesi mevcut `data-mulk-ilce` işleyicisini kullanır (yeni anahtar yok: `D1.satir_git`). */
@@ -118,7 +125,7 @@ export function dukkanBolumuHtml(g: DukkanGorunumu | null, o: DukkanBolumuSecene
   if (!g.dukkanlar.length) return s + `<div class="bos-durum dk-bos">${ikon("store", 28)}<p class="ipucu-metin">${enc("dukkan.D1.isletmem_bos")}</p></div></section>`;
   s += `<ul class="mulk-liste">`;
   for (const d of g.dukkanlar)
-    s += `<li class="dk-satir" data-dukkan="${d.id}" data-durum="${d.durum}">${ikon(d.tur === null ? "store" : TUR_IKONU[d.tur], 20)}<span class="ml-ad">${satirMetni(d, o.simdi)}</span>${gitDugmesi(d.ilce, o.ilceAdi)}</li>`;
+    s += `<li class="dk-satir" data-dukkan="${d.id}" data-durum="${d.durum}">${ikon(d.tur === null ? "store" : TUR_IKONU[d.tur], 20)}<span class="ml-ad">${satirMetni(d, o.simdi)}</span>${acDugmesi(d, o.secili === d.id)}${gitDugmesi(d.ilce, o.ilceAdi)}</li>`;
   return s + `</ul></section>`;
 }
 
@@ -416,6 +423,8 @@ export interface MarkaFormuGirdisi {
   gonder?: boolean;
   /** Sunucu reddi: metin anahtarı (`D7.*`, ret kodundan `DUKKAN_RET_ANAHTARI`). */
   ret?: DukkanMetinAnahtari;
+  /** Sunucu reddi: hazır Türkçe metin (`dukkanKomutu` ret çevirisi; anahtar bilinmiyorsa). */
+  retMetin?: string;
   gonderiyor?: boolean;
 }
 
@@ -427,21 +436,22 @@ export interface MarkaFormuGirdisi {
 export function markaFormuHtml(g: MarkaFormuGirdisi): string {
   const yerel = g.ad === "" ? (g.gonder ? ("ad_yazilmali" as const) : null) : g.gonder ? adHatasi(g.ad) : adCanliHatasi(g.ad);
   const hata: DukkanMetinAnahtari | null = g.ret ?? (yerel ? (`dukkan.D7.${yerel}` as DukkanMetinAnahtari) : null);
+  const hataVar = hata !== null || g.retMetin !== undefined;
   const onizleme = g.ad === "" ? m("dukkan.D7.yer_tutucu") : adHatasi(g.ad) === null ? adKucuk(g.ad) : null;
   const simge = ((g.simge % MARKA_SIMGELERI.length) + MARKA_SIMGELERI.length) % MARKA_SIMGELERI.length;
   const renk = ((g.renk % MARKA_RENK_SAYISI) + MARKA_RENK_SAYISI) % MARKA_RENK_SAYISI;
   const simgeler = MARKA_SIMGELERI.map((ad, i) => `<button type="button" class="dk-simge" role="radio" aria-checked="${i === simge}" tabindex="${i === simge ? 0 : -1}" data-simge="${i}" aria-label="${enc(`dukkan.D7.simge_ad.${ad}` as DukkanMetinAnahtari)}">${ikon(ad, 20)}</button>`).join("");
   const renkler = MARKA_RENK_ADLARI.map((ad, i) => `<button type="button" class="dk-renk" role="radio" aria-checked="${i === renk}" tabindex="${i === renk ? 0 : -1}" data-renk="${i}" style="--renk:var(${markaRenkBelirteci(i)})" aria-label="${enc(`dukkan.D7.renk_ad.${ad}` as DukkanMetinAnahtari)}"></button>`).join("");
   return (
-    `<div class="dk-marka" role="dialog" aria-modal="true" aria-labelledby="dk-marka-baslik" data-durum="${g.gonderiyor ? "gonderiyor" : hata ? "hata" : "bos"}">` +
+    `<div class="dk-marka" role="dialog" aria-modal="true" aria-labelledby="dk-marka-baslik" data-durum="${g.gonderiyor ? "gonderiyor" : hataVar ? "hata" : "bos"}">` +
     `<h4 id="dk-marka-baslik" class="dk-baslik">${enc("dukkan.D7.baslik")}</h4>` +
     `<p class="dk-ipucu">${enc("dukkan.D7.aciklama")}</p>` +
     `<label class="gr-etiket" for="dk-marka-ad">${enc("dukkan.D7.alan")}</label>` +
-    `<input id="dk-marka-ad" class="dk-girdi" type="text" name="marka" maxlength="24" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="${enc("dukkan.D7.yer_tutucu")}" value="${esc(g.ad)}" aria-describedby="dk-marka-not dk-marka-hata"${hata ? ` aria-invalid="true"` : ""}>` +
+    `<input id="dk-marka-ad" class="dk-girdi" type="text" name="marka" maxlength="24" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="${enc("dukkan.D7.yer_tutucu")}" value="${esc(g.ad)}" aria-describedby="dk-marka-not dk-marka-hata"${hataVar ? ` aria-invalid="true"` : ""}>` +
     `<span class="dk-sayac" data-alan="marka-sayac">${esc(`${g.ad.length} / 24`)}</span>` +
     `<p id="dk-marka-not" class="dk-ipucu">${enc("dukkan.D7.buyuk_harf_notu")} ${enc("dukkan.D7.kvkk_uyari")}</p>` +
     `<p class="dk-onizleme" data-alan="marka-onizleme" aria-live="polite">${onizleme !== null ? enc("dukkan.D7.onizleme", { kucuk: onizleme }) : ""}</p>` +
-    `<p id="dk-marka-hata" class="dk-hata" role="alert">${hata ? enc(hata, { en_az: AD_MIN, en_cok: AD_MAX }) : ""}</p>` +
+    `<p id="dk-marka-hata" class="dk-hata" role="alert">${hata ? enc(hata, { en_az: AD_MIN, en_cok: AD_MAX }) : g.retMetin !== undefined ? esc(g.retMetin) : ""}</p>` +
     `<div class="dk-palet" role="radiogroup" aria-label="${enc("dukkan.D7.simge_grup")}">${simgeler}</div>` +
     `<div class="dk-palet" role="radiogroup" aria-label="${enc("dukkan.D7.renk_grup")}">${renkler}</div>` +
     `<div class="yk-dugmeler"><button type="button" class="birincil" data-eylem="marka-kaydet"${g.gonderiyor ? ` disabled data-durum="yukleniyor"` : ""}>${enc("dukkan.D7.dugme_kaydet")}</button>` +
