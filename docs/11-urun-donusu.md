@@ -434,7 +434,7 @@ Günde bir-iki kısa ziyaret yeterlidir. Günlük giriş ödülü yoktur (K13). 
 | Teknoloji yayılımı | Geç gelenlerin araştırması ucuzlar (Teknoloji v1 ile) |
 | Yönlendirme | Yerleş ekranı 3 ilçe önerir ve nedenini yazar ("Verimli ova, liman yakın"); doluluğu düşük ilçeler öne çıkar |
 | İlk 10 dakika | İlçe seç → ilk hücreyi al (hibe karşılar) → Tarla kur (hızlandırılmış) → (Alfa-1: yürüyerek git) → ilk hasat satışını izle |
-| İlk gün | Yol seçimi: Tarımcı, Sanayici ya da Tüccar. Her yolda herhangi bir sırayla yapılabilen 5–7 hedef |
+| İlk gün | Açılış önerisi (sınıf değil): Tarım, Sanayi ya da Pazar. Her açılışta herhangi bir sırayla yapılabilen 5–7 hedef |
 
 ### 7.10 Pazar
 
@@ -514,7 +514,7 @@ Geçişler `fitBounds` + `maxZoom` ile ve 600–900 ms sürer ([MapLibre](https:
 
 | # | Ekran | İçerik |
 |---|---|---|
-| 1 | **Giriş / Yerleş** | Oturum açma; 3 önerilen ilçe ve nedenleri; yol seçimi (Tarımcı, Sanayici, Tüccar) |
+| 1 | **Giriş / Yerleş** | Oturum açma; 3 önerilen ilçe ve nedenleri; açılış önerisi (Tarım, Sanayi, Pazar; sınıf değil, değiştirilebilir) |
 | 2 | **Strateji haritası L0–L3** | Yakınlaştıkça ayrıntı kazanan tek harita; kırıntı yolu ve arama |
 | 3 | **Parsel modu** | Hücre ızgarası, seçim, satın alma alt çubuğu, parsel kartı |
 | 4 | **İnşa modu** | Yapı paleti, hayalet, maliyet kartı, Taslak düğmesi, ✓ ↻ ✕ çubuğu |
