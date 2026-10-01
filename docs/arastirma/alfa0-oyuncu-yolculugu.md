@@ -38,7 +38,7 @@
 | Konu | Oyuncu ne yapar | Ne görür | Neye karar verir | Durum |
 |---|---|---|---|---|
 | **Erken oyun hızı** | Yapıları hızlı kurar | İlk 24 saatte inşa süreleri normalin %10'u; sonra 7. güne doğru yavaşça normale döner | Kaç yapı, hangi sırayla (aynı anda en çok 2 inşaat) | **Bugün kodda** |
-| **Dükkânı çalıştırmak** | Raf, fiyat ve marka ayarlar | Her yuvaya bir mal; 4 fiyat kademesi (normal varsayılan; kampanya açıksa 4, kapalıysa 3 seçenek); fiyatı en çok 6 saatte bir değiştirir; marka adı **herkese görünür** (küçük harfle kaydedilir) | Fiyat, marka, hangi mal | **Geliyor** (G7, G9) |
+| **Dükkânı çalıştırmak** | Raf, fiyat ve marka ayarlar | Her yuvaya bir mal; fiyat kademesi: **Alfa-0'da kampanya varsayılan kapalıdır, oyuncu 3 kademe görür** (uygun, normal, yüksek; normal varsayılan); kampanya sonradan açılırsa 4. kademe gelir; fiyatı en çok 6 saatte bir değiştirir; marka adı **herkese görünür** (küçük harfle kaydedilir) | Fiyat, marka, hangi mal | **Geliyor** (G7, G9) |
 | **Dükkân kendi kendine satar** | Çıkar, döner | "Sen yokken" sayfası: net sonuç, biten yapılar, dükkândan satış | Rafı yenilemek, fiyatı değiştirmek | Sen yokken ekranı **bugün kodda**; dükkân satırı **geliyor** |
 | **Zincirin ilk ürünleri** | Ekmeği satar ya da dükkâna koyar | Defter: "ilk ekmek" (5 ekmek); zincir kapanınca Defter ödülü | Ekmeği nerede satacağı | **Geliyor** (P4) |
 | **İkinci yapı** | Ahır ya da bir başka yapı kurabilir | Maliyet kartı, Dikkat paneli önerileri | Hangi yön (zorunlu yol yok) | **Bugün kodda**; ahırın kepek yöntemi **geliyor** |
