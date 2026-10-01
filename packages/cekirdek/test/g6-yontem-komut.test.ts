@@ -55,6 +55,7 @@ describe("denetimler (yontem_degistir ile aynı iletiler) ve başarısız komut 
     const s = mulkSim(["a"], veri, 7);
     const y = new G6Yerlestirici(s, "a");
     const sahip = s.dunya.mulk!.hucreler.filter((h) => h.sahip === "a");
+    s.calistirKadar(s.dunya.zaman); // bekleyen çözüm olayı komuttan önce işlenir (komut dışı bir durum değişimi): karşılaştırma bundan SONRA alınır
     const once = s.durumOzeti();
     // yurt hücrelerinden 2 bitişik hücre: `yapi_yerlestir` hücreleri sahipli de olsa denetimler komut başında çalışır
     const [x, yy] = sahip[0]!.id.split(":").map(Number) as [number, number];
