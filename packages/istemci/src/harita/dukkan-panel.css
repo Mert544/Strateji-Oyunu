@@ -102,6 +102,8 @@
 .dk-oneri[data-durum="kapali"] { display: none; }
 .dk-oneri-baslik { margin: 0; font-size: var(--yazi-md); font-weight: 600; line-height: var(--satir-md); }
 .dk-oneri-govde { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); }
+/* Boş raf kararı: kit notu gövdenin altında tek satır, soluk değil (normal ağırlık, ana metin rengi) */
+.dk-oneri-not { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); font-weight: 400; color: var(--murekkep); }
 .dk-oneri .eylem { align-self: flex-start; min-height: 44px; }
 .dk-oneri-kapat { position: absolute; top: var(--s-1); right: var(--s-1); width: 44px; height: 44px; }
 .dk-stok { font-variant-numeric: tabular-nums; }
