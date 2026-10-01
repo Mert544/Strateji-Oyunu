@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   dakikaSaniye,
   defterKartiHtml,
+  dukkanAdi,
   dukkanBolumuHtml,
   dukkanDikkatMaddeleri,
   dukkanMenusuHtml,
@@ -108,6 +109,17 @@ describe("D-1 Dükkânlarım", () => {
     expect(h).toContain(`<section class="dk-bolum" data-ekran="d1"><h3>Dükkânlarım</h3>`);
     expect(h).toContain(`class="bos-durum dk-bos"`);
     expect(h).toContain("Henüz dükkânın yok. Yapı kur → Dükkân");
+  });
+
+  it("türü bilinmeyen (null) inşadaki dükkân türsüz çizilir: ad 'Dükkân', genel store simgesi", () => {
+    const g = gorunum({ dukkanlar: [dukkan({ id: 3, tur: null, durum: "insaat", bitis: 2 * SAAT, ilce: undefined })] });
+    const h = dukkanBolumuHtml(g, { ilceAdi, simdi: 0 });
+    expect(h).toContain(`data-dukkan="3" data-durum="insaat"`);
+    expect(h).toContain("<b>Dükkân</b>");
+    expect(h).toContain(`href="#i-store"`);
+    expect(h).toContain("İnşa sürüyor · 2 sa");
+    expect(dukkanAdi({ markaAd: "", tur: null })).toBe("Dükkân");
+    expect(dukkanAdi({ markaAd: "bereket", tur: null })).toBe("bereket");
   });
 
   it("satırlar: açık dükkân net/sa ve Git; inşadaki dükkân kalan süre; marka adı yoksa tür adı", () => {

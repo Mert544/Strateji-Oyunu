@@ -55,7 +55,7 @@ export function dakikaSaniye(ms: number): string {
 
 /** Dükkân adı: marka adı (kanonik küçük harf) ya da tür adı. */
 export function dukkanAdi(d: Pick<DukkanKaydi, "markaAd" | "tur">): string {
-  return d.markaAd || turAdi(d.tur);
+  return d.markaAd || (d.tur === null ? m("dukkan.D1.palet_baslik") : turAdi(d.tur));
 }
 
 // --- D-0 ve B7: üst kart -------------------------------------------------------------------------
@@ -118,7 +118,7 @@ export function dukkanBolumuHtml(g: DukkanGorunumu | null, o: DukkanBolumuSecene
   if (!g.dukkanlar.length) return s + `<div class="bos-durum dk-bos">${ikon("store", 28)}<p class="ipucu-metin">${enc("dukkan.D1.isletmem_bos")}</p></div></section>`;
   s += `<ul class="mulk-liste">`;
   for (const d of g.dukkanlar)
-    s += `<li class="dk-satir" data-dukkan="${d.id}" data-durum="${d.durum}">${ikon(TUR_IKONU[d.tur], 20)}<span class="ml-ad">${satirMetni(d, o.simdi)}</span>${gitDugmesi(d.ilce, o.ilceAdi)}</li>`;
+    s += `<li class="dk-satir" data-dukkan="${d.id}" data-durum="${d.durum}">${ikon(d.tur === null ? "store" : TUR_IKONU[d.tur], 20)}<span class="ml-ad">${satirMetni(d, o.simdi)}</span>${gitDugmesi(d.ilce, o.ilceAdi)}</li>`;
   return s + `</ul></section>`;
 }
 

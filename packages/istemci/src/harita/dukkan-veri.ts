@@ -38,7 +38,8 @@ export interface DukkanYuvasi {
 export interface DukkanKaydi {
   /** Ek yapı kimliği. */
   id: number;
-  tur: DukkanTuru;
+  /** Dükkân türü; inşadaki dükkânda tür henüz bilinmeyebilir (null: türsüz çizilir, adı "Dükkân", simgesi genel `store`). */
+  tur: DukkanTuru | null;
   durum: "insaat" | "acik";
   ilce?: string;
   /** Marka (tabela): kanonik küçük harfli ad; markasız ise boş. */
