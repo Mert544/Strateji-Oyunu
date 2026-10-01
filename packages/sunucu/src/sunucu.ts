@@ -6,7 +6,7 @@ import { WebSocketServer } from "ws";
 import type { WebSocket } from "ws";
 import type { AddressInfo } from "node:net";
 import { SISTEM_OYUNCUSU } from "@bolge/cekirdek";
-import type { OyuncuId } from "@bolge/cekirdek";
+import type { Komut, OyuncuId } from "@bolge/cekirdek";
 import {
   EN_BUYUK_MESAJ_BAYT,
   KAPANIS,
@@ -44,6 +44,13 @@ export interface SunucuSecenekleri {
   ilgiCozucu?: (tur: "il" | "ilce", kimlik: string) => string[] | null;
   /** Bir bağlantının abone olabileceği en çok bölge (ve ayrıca en çok ilçe). Varsayılan 256. */
   enCokIlgi?: number;
+  /**
+   * Periyodik `zaman` yayını aralığı (ms, `duvarMs` ölçeğinde); kimliği doğrulanmış bağlantılara gider ve yalnız `t`
+   * değiştiğinde de istemci saatinin kaymamasını sağlar. Varsayılan 15 000; 0 = kapalı.
+   */
+  zamanYayinAraligiMs?: number;
+  /** Yayın aralığının duvar saati kaynağı (ms; testler sahte saat verir). Varsayılan `performance.now`. */
+  duvarMs?: () => number;
   /** Gönderim tamponu bu kadarı aşarsa delta atlanır, sonraki yayında tam kare gider. Varsayılan 4 MiB. */
   enCokTampon?: number;
 }
@@ -59,6 +66,8 @@ interface Baglanti {
   /** Mülk kipinde istenen ilçeler. */
   istenenIlceler: string[];
   abone: boolean;
+  /** Mülk kipi: ilçe karelerine ayrılmış hücre listesi de gelsin (abone mesajındaki `ayrilmis`). */
+  ayrilmis: boolean;
   sonKare: IlgiKaresi | null;
   rev: number;
   canli: boolean;
@@ -111,7 +120,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     const oyuncu = kareOyuncusu(b);
     const ilgi = ilgiAlaniKur(yazar.sim, b.istenen, oyuncu);
     const ilceIlgisi = ilceIlgisiKur(yazar.sim, b.istenenIlceler, oyuncu);
-    const kare = ilgiKaresiCikar(yazar.sim, ilgi, oyuncu, ilceIlgisi);
+    const kare = ilgiKaresiCikar(yazar.sim, ilgi, oyuncu, ilceIlgisi, { ayrilmisListesi: b.ayrilmis });
     if (tam || b.sonKare === null) {
       b.rev++;
       gonder(b, { tur: "kare", rev: b.rev, seq: yazar.seq, ilgi, ...(yazar.sim.dunya.mulk ? { ilceIlgisi } : {}), kare });
@@ -124,7 +133,17 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     b.sonKare = kare;
   }
 
+  const duvarMs = s.duvarMs ?? (() => performance.now());
+  const zamanYayinAraligiMs = s.zamanYayinAraligiMs ?? 15_000;
+  let sonZamanYayini = duvarMs();
   yazar.dinle((olay) => {
+    // Periyodik zaman yayını (komut ve yayın hızından bağımsız; her tur denetlenir).
+    const an = duvarMs();
+    if (zamanYayinAraligiMs > 0 && an - sonZamanYayini >= zamanYayinAraligiMs) {
+      sonZamanYayini = an;
+      const m: SunucuMesaji = { tur: "zaman", istemciGonderim: -1, sunucuDuvar: Date.now(), simZamani: zamanBilgisi(), hiz: yazar.saat.hiz, yayin: true };
+      for (const b of baglantilar) if (b.kimlik) gonder(b, m);
+    }
     const simdi = performance.now();
     if (olay.basarili === 0 && simdi - sonYayin < yayinAraligiMs) return;
     sonYayin = simdi;
@@ -135,6 +154,11 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   yazar.yetismeDinle((d) => {
     for (const b of baglantilar) if (b.kimlik) gonder(b, { tur: "durum", yetisiyor: d.yetisiyor, simZamani: d.simZamani, hedefZamani: d.hedefZamani });
   });
+
+  /** İstemcinin eşitleneceği sim zamanı: yetişirken dünyanın şimdiki zamanı, değilse saatin hedefi. */
+  function zamanBilgisi(): number {
+    return yazar.yetisiyor ? yazar.sim.dunya.zaman : yazar.saat.simdi();
+  }
 
   function aboneOl(b: Baglanti, m: Extract<IstemciMesaji, { tur: "abone" }>): void {
     const ic = yazar.sim.ic;
@@ -175,28 +199,45 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     if (tekil.length > enCokIlgi || tekilIlce.length > enCokIlgi) return hata(b, "gecersiz_ilgi", `en cok ${enCokIlgi} bolge ve ${enCokIlgi} ilceye abone olunabilir`);
     b.istenen = tekil;
     b.istenenIlceler = tekilIlce;
+    b.ayrilmis = m.ayrilmis === true;
     b.abone = true;
     kareGonder(b, true);
+  }
+
+  /** Komutu hız sınırı ve yetişme denetimiyle yazara iletir; yanıt `komutSonucu`, hata aynı anahtarlı `hata`. */
+  function yazaraIlet(b: Baglanti, k: Kimlik, oyuncu: OyuncuId, istemci: string, anahtar: string, komut: Komut): void {
+    const yeniAnahtar = !yazar.anahtarVarMi(oyuncu, istemci, anahtar);
+    // Yetişirken yeni komut kuyruklanmaz, reddedilir (hız sınırı jetonu da harcanmaz); işlenmiş anahtarlar ilk sonuçla yanıtlanır.
+    if (yeniAnahtar && yazar.yetisiyor) {
+      return hata(b, "yetisiyor", "sunucu kapaliyken gecen sureyi yetistiriyor; 'durum' mesaji bitisi bildirince ayni anahtarla yeniden deneyin", { anahtar });
+    }
+    if (yeniAnahtar && !hizSiniri.al(k.oyuncu)) {
+      return hata(b, "hiz_siniri", "cok fazla komut; biraz bekleyip ayni anahtarla yeniden deneyin", { anahtar });
+    }
+    yazar.komutGonder(oyuncu, istemci, anahtar, komut).then(
+      (y) => gonder(b, { tur: "komutSonucu", anahtar, seq: y.seq, t: y.t, komut: y.komut, sonuc: y.sonuc, tekrar: y.tekrar }),
+      (e: unknown) => hata(b, e instanceof YetisiyorHatasi ? "yetisiyor" : "ic_hata", e instanceof Error ? e.message : String(e), { anahtar }),
+    );
   }
 
   function komutAl(b: Baglanti, k: Kimlik, m: Extract<IstemciMesaji, { tur: "komut" }>): void {
     // İstemcinin söylediği kimlik yoktur: oyuncu token'dan; yönetici komutları "sistem" olarak damgalanır.
     const oyuncu = k.yonetici ? SISTEM_OYUNCUSU : k.oyuncu;
     if (m.komut.tur === "oyuncu_katil" && !k.yonetici) {
-      return hata(b, "yetki", "oyuncu_katil yalniz yonetici", { anahtar: m.anahtar });
+      return hata(b, "yetki", "oyuncu_katil yalniz yonetici (oyuncu kendi katilimi icin 'katil' mesajini kullanir)", { anahtar: m.anahtar });
     }
-    const yeniAnahtar = !yazar.anahtarVarMi(oyuncu, b.istemci, m.anahtar);
-    // Yetişirken yeni komut kuyruklanmaz, reddedilir (hız sınırı jetonu da harcanmaz); işlenmiş anahtarlar ilk sonuçla yanıtlanır.
-    if (yeniAnahtar && yazar.yetisiyor) {
-      return hata(b, "yetisiyor", "sunucu kapaliyken gecen sureyi yetistiriyor; 'durum' mesaji bitisi bildirince ayni anahtarla yeniden deneyin", { anahtar: m.anahtar });
-    }
-    if (yeniAnahtar && !hizSiniri.al(k.oyuncu)) {
-      return hata(b, "hiz_siniri", "cok fazla komut; biraz bekleyip ayni anahtarla yeniden deneyin", { anahtar: m.anahtar });
-    }
-    yazar.komutGonder(oyuncu, b.istemci, m.anahtar, m.komut).then(
-      (y) => gonder(b, { tur: "komutSonucu", anahtar: m.anahtar, seq: y.seq, t: y.t, komut: y.komut, sonuc: y.sonuc, tekrar: y.tekrar }),
-      (e: unknown) => hata(b, e instanceof YetisiyorHatasi ? "yetisiyor" : "ic_hata", e instanceof Error ? e.message : String(e), { anahtar: m.anahtar }),
-    );
+    yazaraIlet(b, k, oyuncu, b.istemci, m.anahtar, m.komut);
+  }
+
+  /**
+   * Oyuncunun kendi katılımı: oyuncu kimliği doğrulanmış kimlikten gelir (mesajda yoktur), komut "sistem" olarak damgalanır.
+   * İdempotans kapsamı oyuncuya özeldir (`katil:<oyuncu>`): başka bir oyuncunun aynı anahtarı ya da istemci kimliği çakışmaz.
+   */
+  function katilAl(b: Baglanti, k: Kimlik, m: Extract<IstemciMesaji, { tur: "katil" }>): void {
+    if (k.yonetici) return hata(b, "yetki", "yonetici oyuncuyu 'komut' + oyuncu_katil ile katar", { anahtar: m.anahtar });
+    if (!yazar.sim.dunya.mulk) return hata(b, "gecersiz_mesaj", "katil yalniz mulk kipinde gecerli", { anahtar: m.anahtar });
+    const komut: Komut = { tur: "oyuncu_katil", oyuncu: k.oyuncu, bolgeler: [], ...(m.ilce !== undefined ? { ilce: m.ilce } : {}) };
+    yazaraIlet(b, k, SISTEM_OYUNCUSU, `katil:${k.oyuncu}`, m.anahtar, komut);
   }
 
   async function mesajIsle(b: Baglanti, m: IstemciMesaji): Promise<void> {
@@ -242,8 +283,10 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
         return aboneOl(b, m);
       case "komut":
         return komutAl(b, k, m);
+      case "katil":
+        return katilAl(b, k, m);
       case "zamanIste":
-        return gonder(b, { tur: "zaman", istemciGonderim: m.istemciGonderim, sunucuDuvar: Date.now(), simZamani: yazar.yetisiyor ? yazar.sim.dunya.zaman : yazar.saat.simdi(), hiz: yazar.saat.hiz });
+        return gonder(b, { tur: "zaman", istemciGonderim: m.istemciGonderim, sunucuDuvar: Date.now(), simZamani: zamanBilgisi(), hiz: yazar.saat.hiz });
       case "ozetIste": {
         const ek = m.istek !== undefined ? { istek: m.istek } : {};
         if (!hizSiniri.al(k.oyuncu, OZET_BEDELI)) return hata(b, "hiz_siniri", "ozet istegi siniri", ek);
@@ -261,7 +304,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   }
 
   wss.on("connection", (ws) => {
-    const b: Baglanti = { ws, kimlik: null, istemci: "", istenen: [], istenenIlceler: [], abone: false, sonKare: null, rev: 0, canli: true, zincir: Promise.resolve() };
+    const b: Baglanti = { ws, kimlik: null, istemci: "", istenen: [], istenenIlceler: [], abone: false, ayrilmis: false, sonKare: null, rev: 0, canli: true, zincir: Promise.resolve() };
     baglantilar.add(b);
     const zamanAsimi = setTimeout(() => {
       if (!b.kimlik) ws.close(KAPANIS.zamanAsimi, "merhaba zaman asimi");

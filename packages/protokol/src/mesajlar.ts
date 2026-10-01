@@ -47,7 +47,10 @@ export const MerhabaSemasi = z.object({
   token: z.string().min(1).max(4096),
   /** Kurulum/sekme başına kalıcı istemci kimliği; idempotans anahtarlarının kapsamıdır. */
   istemciKimligi: kisaKimlik,
-  /** İstemcinin yüklediği veriden hesapladığı kural sürümü (`kuralSurumuHesapla`); verilirse sunucuyla eşleşmeli. */
+  /**
+   * İstemcinin yüklediği veriden hesapladığı kural sürümü (`kuralSurumuHesapla`). İSTEĞE BAĞLI: gönderilmezse bağlantı
+   * kabul edilir ve bağlayıcı değer `hosgeldin.kuralSurumu`'dur; gönderilir ve sunucuyla uyuşmazsa `kural_surumu` hatası.
+   */
   kuralSurumu: z.string().min(1).max(64).optional(),
 });
 
@@ -59,6 +62,12 @@ export const AboneSemasi = z.object({
   iller: z.array(z.string().min(1).max(64)).max(128).optional(),
   /** İlçe kimlikleri (mülk kipi: ilçe durumu ve hücre sahipliği). */
   ilceler: z.array(z.string().min(1).max(64)).max(256).optional(),
+  /**
+   * Mülk kipi: ilçe karelerine ayrılmış hücre LİSTESİ (`ayrilmis`) de gelsin mi (varsayılan hayır). Liste büyük olabilir
+   * (Gebze ölçeğinde ilçe başına ~1,5 MB / gzip ~200 KB); yalnız ayrılmış hücreleri çizen istemci ister. `ayrilmisAdet` (sayı)
+   * her zaman gelir.
+   */
+  ayrilmis: z.boolean().optional(),
 });
 
 export const KomutMesajiSemasi = z.object({
@@ -68,6 +77,20 @@ export const KomutMesajiSemasi = z.object({
   komut: KomutSemasi,
   /** Yalnız tanı içindir; damgalamada YOK SAYILIR (zamanı sunucu basar). */
   istemciZamani: z.number().optional(),
+});
+
+/**
+ * Oyuncunun kendi katılımı (yalnız mülk kipi): sunucu `oyuncu_katil {oyuncu: <doğrulanmış kimlik>, bolgeler: [], ilce}`
+ * komutunu "sistem" olarak damgalar; oyuncu kimliği ASLA mesajdan gelmez (başkası adına katılım olmaz). Yanıt
+ * `komutSonucu` (aynı `anahtar`); ikinci katılım çekirdeğin "oyuncu zaten katilmis" hatasını ya da idempotans
+ * sonucunu döner. Yönetici yolu (`komut` + `oyuncu_katil`) aynen kalır.
+ */
+export const KatilSemasi = z.object({
+  tur: z.literal("katil"),
+  /** İdempotans anahtarı (kapsam: katılan oyuncu + anahtar). */
+  anahtar: kisaKimlik,
+  /** Bedava yurdun ilçesi (yoksa çekirdek doluluğu en düşük ilçeyi seçer). */
+  ilce: z.string().min(1).max(64).optional(),
 });
 
 export const ZamanIsteSemasi = z.object({
@@ -85,6 +108,7 @@ export const IstemciMesajiSemasi = z.discriminatedUnion("tur", [
   MerhabaSemasi,
   AboneSemasi,
   KomutMesajiSemasi,
+  KatilSemasi,
   ZamanIsteSemasi,
   OzetIsteSemasi,
   ZamanIlerletSemasi,
@@ -144,7 +168,11 @@ export type SunucuMesaji =
   | { tur: "delta"; rev: number; onceki: number; seq: number; delta: KareDeltasi }
   /** `tekrar`: anahtar daha önce işlenmişti, ilk sonuç döndü (yeniden uygulanmadı). */
   | { tur: "komutSonucu"; anahtar: string; seq: number; t: Ms; komut: Komut; sonuc: KomutSonucu; tekrar: boolean }
-  | { tur: "zaman"; istemciGonderim: number; sunucuDuvar: number; simZamani: Ms; hiz: number }
+  /**
+   * `zamanIste` yanıtı ya da (`yayin: true`) sunucunun periyodik zaman yayını: yalnız `t` değiştiğinde de istemci saati
+   * kaymasın. Yayında `istemciGonderim` anlamsızdır (-1); gidiş-dönüş ölçülemez, `simZamani` tek yönlü gecikme kadar eskidir.
+   */
+  | { tur: "zaman"; istemciGonderim: number; sunucuDuvar: number; simZamani: Ms; hiz: number; yayin?: boolean }
   | { tur: "ozet"; istek?: number; t: Ms; seq: number; durumOzeti: string }
   /**
    * Yetişme durumu (yalnız ekleme): sunucu kapalı geçen süreyi işletirken yaklaşık saniyede bir, bitince bir kez
@@ -178,13 +206,29 @@ const bolgeKaresiSemasi = z.object({
     })
     .optional(),
 });
+const hucreTaban = [z.string(), z.string(), z.enum(["kirsal", "kasaba", "sehir"]), tam, tam] as const;
+/** `[kimlik, sahip, sınıf, tesis, inşaat, tür?, değerMili?]` (son iki eleman isteğe bağlı: bkz. `HucreKaresi`). */
+const hucreKaresiSemasi = z.union([
+  z.tuple([...hucreTaban]),
+  z.tuple([...hucreTaban, z.string()]),
+  z.tuple([...hucreTaban, z.string(), tam]),
+]);
+const insaatTaban = [tam, z.string(), tam, tam, tam] as const;
+/** `[kimlik, tür, bölge, hedef, bitiş, başlangıç?, ekYapı?]` (bkz. `OyuncuKaresi.insaatlar`). */
+const insaatKaresiSemasi = z.union([
+  z.tuple([...insaatTaban]),
+  z.tuple([...insaatTaban, tam]),
+  z.tuple([...insaatTaban, tam, z.string()]),
+]);
 const ilceKaresiSemasi = z.object({
   id: z.string(),
   il: z.string(),
   seviye: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
   uygunHucre: tam,
   satilmisHucre: tam,
-  hucreler: z.array(z.tuple([z.string(), z.string(), z.enum(["kirsal", "kasaba", "sehir"]), tam, tam])),
+  hucreler: z.array(hucreKaresiSemasi),
+  ayrilmisAdet: tam.optional(),
+  ayrilmis: z.array(z.string()).optional(),
 });
 const oyuncuKaresiSemasi = z.object({
   id: z.string(),
@@ -194,9 +238,17 @@ const oyuncuKaresiSemasi = z.object({
   teknolojiler: z.array(tam),
   arastirma: z.object({ teknoloji: tam, bitis: tam }).nullable(),
   korumaBitis: tam,
-  insaatlar: z.array(z.tuple([tam, z.string(), tam, tam, tam])),
+  insaatlar: z.array(insaatKaresiSemasi),
+  erkenOyun: z.tuple([tam, tam, tam, tam]).optional(),
   mulk: z
-    .object({ araziDegeriMili: tam, araziVergisi: stokFormuluSemasi, ilceHucre: z.array(z.tuple([z.string(), tam])), sonEtkinlik: tam })
+    .object({
+      araziDegeriMili: tam,
+      araziVergisi: stokFormuluSemasi,
+      ilceHucre: z.array(z.tuple([z.string(), tam])),
+      sonEtkinlik: tam,
+      indirimliYapiKalan: tam.optional(),
+      ayrilmisBitis: tam.optional(),
+    })
     .optional(),
 });
 export const IlgiKaresiSemasi = z.object({
@@ -250,7 +302,7 @@ export const SunucuMesajiSemasi = z.discriminatedUnion("tur", [
     sonuc: komutSonucuSemasi,
     tekrar: z.boolean(),
   }),
-  z.object({ tur: z.literal("zaman"), istemciGonderim: z.number(), sunucuDuvar: z.number(), simZamani: tam, hiz: z.number() }),
+  z.object({ tur: z.literal("zaman"), istemciGonderim: z.number(), sunucuDuvar: z.number(), simZamani: tam, hiz: z.number(), yayin: z.boolean().optional() }),
   z.object({ tur: z.literal("ozet"), istek: tam.optional(), t: tam, seq: tam, durumOzeti: z.string() }),
   z.object({ tur: z.literal("durum"), yetisiyor: z.boolean(), simZamani: tam, hedefZamani: tam }),
   z.object({

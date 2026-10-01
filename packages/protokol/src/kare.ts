@@ -14,11 +14,23 @@
  *   girdisi genel veridir (seviye, satılmış hücre, hücre sahipliği ve üzerindeki tesis/inşaat); oyuncunun arazi kaydı
  *   (arazi değeri, tembel arazi vergisi formülü) yalnız kendisine.
  *
+ * - F4 eklemeleri (hepsi İSTEĞE BAĞLI alan; eski istemci yok sayar): hücrede tesis/ek yapı türü (herkese; yoksa inşaattaki
+ *   tür) ve yalnız sahibine hücre değeri; ilçede ayrılmış (yeni oyuncuya satılan) hücre kümesi (türetilmiş, DEĞİŞMEZ: delta
+ *   yalnız ilçe ilk girdiğinde taşır, sonrasında atlanır; yalnız ABONE OLUNAN/oyuncunun ilçeleri için ve yalnız isteyen
+ *   bağlantıya, çünkü Gebze ölçeğinde ilçe başına ~1,5 MB; sayı `ayrilmisAdet` her zaman gelir); yalnız sahibine erken
+ *   oyun çarpanı FORMÜLÜ (`erkenOyun`; çarpan zamanla değiştiği için değer değil formül gider, delta kirlenmez), ilk-yapı
+ *   indirimi kalan hakkı, ayrılmış hücre satın alma bitişi ve inşaatın başlangıcı/ek yapı kimliği.
+ *
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { anlikMiktar } from "@bolge/cekirdek";
-import type { ArsaSinifi, DerlenmisIcerik, Dunya, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
+import { PPM, anlikMiktar, carpBol } from "@bolge/cekirdek";
+import type { ArsaSinifi, DerlenmisIcerik, DerlenmisMulk, Dunya, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
+
+export interface KareSecenekleri {
+  /** İlçe karelerine ayrılmış hücre listesini (`IlceKaresi.ayrilmis`) ekle (varsayılan hayır; büyük). */
+  ayrilmisListesi?: boolean;
+}
 
 /** Kare çıkarmak için gereken en az simülasyon yüzü (`Simulasyon` bunu sağlar). */
 export interface KareKaynagi {
@@ -64,8 +76,12 @@ export interface BolgeKaresi {
   ozel?: OzelBolgeKaresi;
 }
 
-/** Hücre: `[kimlik "x:y", sahip, sınıf, tesis kimliği (-1 yok), inşaat kimliği (-1 yok)]`. */
-export type HucreKaresi = [id: string, sahip: OyuncuId, sinif: ArsaSinifi, tesis: number, insaat: number];
+/**
+ * Hücre: `[kimlik "x:y", sahip, sınıf, tesis kimliği (-1 yok), inşaat kimliği (-1 yok), tür?, değerMili?]`.
+ * `tür` (herkese): üzerindeki tesisin türü ya da ek yapı kimliği; tesis yoksa süren inşaatın türü; ikisi de yoksa alan
+ * yoktur (ya da `değerMili` varsa ""). `değerMili` YALNIZ hücrenin sahibine: satın alma bedeli (mili-para).
+ */
+export type HucreKaresi = [id: string, sahip: OyuncuId, sinif: ArsaSinifi, tesis: number, insaat: number, tur?: string, degerMili?: Mili];
 
 /** İlçe (mülk kipi, genel veri): durum + sahiplenilmiş hücreler (kimliğe göre sıralı). */
 export interface IlceKaresi {
@@ -75,6 +91,14 @@ export interface IlceKaresi {
   uygunHucre: number;
   satilmisHucre: number;
   hucreler: HucreKaresi[];
+  /** Yeni oyunculara ayrılmış hücre sayısı (türetilmiş, değişmez; yoksa alan yok). */
+  ayrilmisAdet?: number;
+  /**
+   * Ayrılmış hücrelerin LİSTESİ (kimliğe göre sıralı; satılmış olanlar da listededir): yalnız `abone {ayrilmis: true}`
+   * isteyen bağlantıya (`KareSecenekleri.ayrilmisListesi`); büyük olabilir. Değişmezdir: delta yalnız ilçe ilk girdiğinde
+   * taşır, `deltaUygula` önceki girdiden korur.
+   */
+  ayrilmis?: string[];
 }
 
 /** Oyuncunun mülk kaydı (yalnız kendisine). */
@@ -85,7 +109,14 @@ export interface MulkOyuncuKaresi {
   /** `[ilçe, hücre sayısı]` */
   ilceHucre: Array<[ilce: string, hucre: number]>;
   sonEtkinlik: Ms;
+  /** İlk-yapı indirimi kalan hakkı (kaç yapı daha indirimli). */
+  indirimliYapiKalan?: number;
+  /** Ayrılmış hücreleri satın alabilme bitişi (katılım + ayrılmış süre; sim ms). */
+  ayrilmisBitis?: Ms;
 }
+
+/** Erken oyun süre çarpanı formülü: `[katılımZamanı, başlangıçÇarpanıPpm, sabitMs, bitişMs]` (bkz. `erkenOyunCarpani`). */
+export type ErkenOyunFormulu = [katilma: Ms, baslangicPpm: number, sabitMs: Ms, bitisMs: Ms];
 
 /** Oyuncunun kendi durumu (yalnız kendisine). */
 export interface OyuncuKaresi {
@@ -96,8 +127,13 @@ export interface OyuncuKaresi {
   teknolojiler: number[];
   arastirma: { teknoloji: number; bitis: Ms } | null;
   korumaBitis: Ms;
-  /** `[kimlik, tür, bölge, hedef, bitiş]`; tür: "tesis" | "kenar" | "olcek" | "onarim". */
-  insaatlar: Array<[id: number, tur: string, bolge: number, hedef: number, bitis: Ms]>;
+  /**
+   * `[kimlik, tür, bölge, hedef, bitiş, başlangıç?, ekYapı?]`; tür: "tesis" | "kenar" | "olcek" | "onarim". `başlangıç`
+   * (mülk kipi hücreli inşaat; yoksa -1) aşama hesabı içindir; `ekYapı` ek yapı inşaatında `mulk.ekYapilar` kimliğidir.
+   */
+  insaatlar: Array<[id: number, tur: string, bolge: number, hedef: number, bitis: Ms, baslangic?: Ms, ekYapi?: string]>;
+  /** Erken oyun süre çarpanı formülü (inşa, kenar, birlik, araştırma süreleri); değer için `erkenOyunCarpani(f, t)`. */
+  erkenOyun?: ErkenOyunFormulu;
   /** Mülk kipinde oyuncunun arazi kaydı (katılmış ama hücresi yoksa da vardır). */
   mulk?: MulkOyuncuKaresi;
 }
@@ -132,6 +168,32 @@ export interface KareDeltasi {
 }
 
 const DURUS: Record<string, 0 | 1 | 2> = { normal: 0, savunma: 1, geri_cekil: 2 };
+
+/**
+ * Erken oyun süre çarpanı (ppm, (0, PPM]) t anında: çekirdeğin `sureCarpaniPpm`'i ile aynı tamsayı formülü
+ * (katılımdan itibaren `sabit` kadar sabit, `bitiş`e kadar doğrusal artış, sonra PPM).
+ */
+export function erkenOyunCarpani(f: Readonly<ErkenOyunFormulu>, t: Ms): number {
+  const [katilma, baslangic, sabitMs, bitisMs] = f;
+  const gecen = t > katilma ? t - katilma : 0;
+  if (gecen <= sabitMs) return baslangic;
+  if (gecen >= bitisMs) return PPM;
+  return baslangic + carpBol(PPM - baslangic, gecen - sabitMs, bitisMs - sabitMs);
+}
+
+/** İlçe başına ayrılmış hücre listesi (türetilmiş; çekirdek derlemesi başına bir kez hesaplanır, referans sabittir). */
+const ayrilmisOnbellek = new WeakMap<DerlenmisMulk, Map<string, string[] | null>>();
+function ayrilmisHucreler(mk: DerlenmisMulk, ilce: string): string[] | undefined {
+  let m = ayrilmisOnbellek.get(mk);
+  if (!m) ayrilmisOnbellek.set(mk, (m = new Map()));
+  let l = m.get(ilce);
+  if (l === undefined) {
+    const t = mk.ilceler.get(ilce);
+    const liste = t ? t.hucreler.filter((h) => mk.ayrilmis.has(h.id)).map((h) => h.id).sort() : [];
+    m.set(ilce, (l = liste.length > 0 ? liste : null));
+  }
+  return l ?? undefined;
+}
 
 export function stokFormulu(s: Readonly<Stok>): StokFormulu {
   return [s.miktar, s.yerelOran + s.gelenOran, s.t0, s.artik, s.kapasite];
@@ -178,6 +240,7 @@ export function ilgiKaresiCikar(
   bolgeIndeksleri: readonly number[],
   oyuncu: OyuncuId | null,
   ilceler: readonly string[] = [],
+  secenek: KareSecenekleri = {},
 ): IlgiKaresi {
   const d = kaynak.dunya;
   const bolgeler: BolgeKaresi[] = [];
@@ -222,8 +285,15 @@ export function ilgiKaresiCikar(
         korumaBitis: o.korumaBitis,
         insaatlar: d.insaatlar
           .filter((x) => x.sahip === oyuncu)
-          .map((x): OyuncuKaresi["insaatlar"][number] => [x.id, x.tur, x.bolge, x.hedef, x.bitis]),
+          .map((x): OyuncuKaresi["insaatlar"][number] => {
+            const girdi: OyuncuKaresi["insaatlar"][number] = [x.id, x.tur, x.bolge, x.hedef, x.bitis];
+            if (x.baslangic !== undefined || x.ekYapi !== undefined) girdi.push(x.baslangic ?? -1);
+            if (x.ekYapi !== undefined) girdi.push(x.ekYapi);
+            return girdi;
+          }),
       };
+      const eo = kaynak.ic.param.erkenOyun;
+      if (eo) kare.oyuncu.erkenOyun = [o.katilmaZamani, eo.baslangicCarpaniPpm, eo.sabitSaat * 3_600_000, eo.bitisSaat * 3_600_000];
       const mo = d.mulk?.oyuncular.find((x) => x.id === oyuncu);
       if (mo) {
         kare.oyuncu.mulk = {
@@ -232,6 +302,11 @@ export function ilgiKaresiCikar(
           ilceHucre: mo.ilceHucre.map((x): [string, number] => [x.ilce, x.hucre]),
           sonEtkinlik: mo.sonEtkinlik,
         };
+        const mk = kaynak.ic.mulk;
+        if (mk) {
+          kare.oyuncu.mulk.indirimliYapiKalan = Math.max(0, mk.p.yeniOyuncu.indirimliYapiSayisi - (mo.indirimliYapi ?? 0));
+          kare.oyuncu.mulk.ayrilmisBitis = o.katilmaZamani + mk.ayrilmisSureMs;
+        }
       }
     }
   }
@@ -239,21 +314,64 @@ export function ilgiKaresiCikar(
   if (m) {
     const istenen = new Set(ilceler);
     const hucreler = new Map<string, HucreKaresi[]>();
+    // Hücre üzerindeki tür: tesis/ek yapı kimliği -> tür kimliği (yalnız gerekirse, kare başına bir kez kurulur).
+    let tesisTuru: Map<number, string> | null = null;
+    let insaatTuru: Map<number, string> | null = null;
+    const turler = (): void => {
+      if (tesisTuru !== null) return;
+      tesisTuru = new Map();
+      insaatTuru = new Map();
+      for (const b of d.bolgeler) {
+        if (b.merkez === undefined) continue;
+        for (const t of b.tesisler) tesisTuru.set(t.id, kaynak.ic.tesisTurleri[t.tur]?.id ?? "");
+        for (const e of b.ekYapilar ?? []) tesisTuru.set(e.id, e.tur);
+      }
+      for (const i of d.insaatlar) {
+        if (i.hucreler === undefined) continue;
+        insaatTuru.set(i.id, i.ekYapi ?? kaynak.ic.tesisTurleri[i.hedef]?.id ?? "");
+      }
+    };
     for (const h of m.hucreler) {
       if (!istenen.has(h.ilce)) continue;
       let liste = hucreler.get(h.ilce);
       if (!liste) hucreler.set(h.ilce, (liste = []));
-      liste.push([h.id, h.sahip, h.sinif, h.tesis ?? -1, h.insaat ?? -1]);
+      const girdi: HucreKaresi = [h.id, h.sahip, h.sinif, h.tesis ?? -1, h.insaat ?? -1];
+      let tur: string | undefined;
+      if (h.tesis !== undefined || h.insaat !== undefined) {
+        turler();
+        tur = h.tesis !== undefined ? (tesisTuru as unknown as Map<number, string>).get(h.tesis) : (insaatTuru as unknown as Map<number, string>).get(h.insaat as number);
+      }
+      const sahibi = oyuncu !== null && h.sahip === oyuncu;
+      if (tur !== undefined || sahibi) girdi.push(tur ?? "");
+      if (sahibi) girdi.push(h.degerMili);
+      liste.push(girdi);
     }
+    const mk = kaynak.ic.mulk;
     kare.ilceler = m.ilceler
       .filter((c) => istenen.has(c.id))
-      .map((c) => ({ id: c.id, il: c.il, seviye: c.seviye, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, hucreler: hucreler.get(c.id) ?? [] }));
+      .map((c) => {
+        const girdi: IlceKaresi = { id: c.id, il: c.il, seviye: c.seviye, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, hucreler: hucreler.get(c.id) ?? [] };
+        const ayrilmis = mk ? ayrilmisHucreler(mk, c.id) : undefined;
+        if (ayrilmis) {
+          girdi.ayrilmisAdet = ayrilmis.length;
+          if (secenek.ayrilmisListesi === true) girdi.ayrilmis = ayrilmis;
+        }
+        return girdi;
+      });
   }
   return kare;
 }
 
 function ayni(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** İlçe girdisi eşitliği; büyük `ayrilmis` listesi önce referansla (kare başına aynı önbellek dizisi) karşılaştırılır. */
+function ilceAyni(a: IlceKaresi, b: IlceKaresi): boolean {
+  if (a.ayrilmis !== b.ayrilmis && !ayni(a.ayrilmis, b.ayrilmis)) return false;
+  const { ayrilmis: _a, ...x } = a;
+  const { ayrilmis: _b, ...y } = b;
+  return ayni(x, y);
 }
 
 /** İki kare arasındaki fark. Yalnız `t` değiştiyse `deltaBosMu` true döner (göndermeye gerek yok). */
@@ -273,10 +391,16 @@ export function kareFarki(eski: IlgiKaresi, yeni: IlgiKaresi): KareDeltasi {
   if (eski.ilceler !== undefined || yeni.ilceler !== undefined) {
     const eskiIlce = new Map((eski.ilceler ?? []).map((c) => [c.id, c]));
     const yeniIlce = new Set((yeni.ilceler ?? []).map((c) => c.id));
-    const degisen = (yeni.ilceler ?? []).filter((c) => {
+    const degisen: IlceKaresi[] = [];
+    for (const c of yeni.ilceler ?? []) {
       const e = eskiIlce.get(c.id);
-      return e === undefined || !ayni(e, c);
-    });
+      if (e !== undefined && ilceAyni(e, c)) continue;
+      // Ayrılmış hücre kümesi değişmezdir: ilçe zaten istemcideyse delta taşımaz (kare boyutu).
+      if (e !== undefined && c.ayrilmis !== undefined && ayni(e.ayrilmis, c.ayrilmis)) {
+        const { ayrilmis: _atla, ...kalan } = c;
+        degisen.push(kalan);
+      } else degisen.push(c);
+    }
     const cikan = (eski.ilceler ?? []).filter((c) => !yeniIlce.has(c.id)).map((c) => c.id);
     if (degisen.length > 0) delta.ilceler = degisen;
     if (cikan.length > 0) delta.cikanIlceler = cikan;
@@ -310,7 +434,11 @@ export function deltaUygula(kare: IlgiKaresi, delta: KareDeltasi): IlgiKaresi {
   if (kare.ilceler !== undefined || delta.ilceler !== undefined) {
     const ilce = new Map((kare.ilceler ?? []).map((c) => [c.id, c]));
     for (const c of delta.cikanIlceler ?? []) ilce.delete(c);
-    for (const c of delta.ilceler ?? []) ilce.set(c.id, c);
+    for (const c of delta.ilceler ?? []) {
+      const onceki = ilce.get(c.id);
+      // `ayrilmis` yoksa önceki girdiden korunur (değişmezdir).
+      ilce.set(c.id, c.ayrilmis === undefined && onceki?.ayrilmis !== undefined ? { ...c, ayrilmis: onceki.ayrilmis } : c);
+    }
     yeni.ilceler = [...ilce.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   }
   return yeni;

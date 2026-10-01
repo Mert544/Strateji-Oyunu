@@ -31,6 +31,15 @@
  * KESİNTİ ADALETİ (çekirdek işi; burada YOK): kesinti > 15 dk ise rastgele olumsuz olayların "ön duyuru → etki"
  * geçişi kesinti kadar ötelenmeli (canli-dunya-simulasyonu.md §2.2); yetişme olayları şimdilik kesintisiz oynatır.
  *
+ * İçerik göçü (docs/06 §14.2, `gocIzni`): kural sürümü farklıysa (içerik/parametre değişmiş) varsayılan HATA'dır (eski
+ * davranış). `gocIzni: true` ile ve YALNIZ görüntüden sonra günlük kaydı yokken (dönem sınırı) görüntü
+ * `anlikGoruntudenYukleSonuclu` ile göçürülür: üst verideki özet `goc.eskiDurumOzeti`'ne karşı denetlenir, hemen yeni
+ * (güncel kural sürümlü, zarf v2) görüntü alınır ve `kurtarma.goc` doldurulur. Görüntüden sonra HER günlük kaydı eski kural
+ * sürümüyle yazılmıştır (açılış hep görüntü + kuyruk; yeni kuralla hiç açılmamıştır) ve günlük kural sürümleri arasında
+ * yeniden oynatılamaz (`ekim_plani.ekimPpm` gibi komutlar indeks sırasına bağlıdır): bu yüzden göç REDDEDİLİR, günlük
+ * oynatılmaz. Kural: kayıtta kural sürümü alanı olmasa da görüntü seq'inden sonra kayıt sayısı > 0 ise ret yeterlidir.
+ * `yalnizEkleZorunlu` varsayılan AÇIK (içeriğe araya ekleme/yeniden sıralama üretimde reddedilir).
+ *
  * Kurtarma: son anlık görüntü (`anlikGoruntudenYukle`: kural sürümü + zarf özeti denetimi; ek olarak üst verideki
  * özet karşılaştırılır) + görüntüden sonraki günlük kayıtları. Kurtarılan dünyanın zamanı, son kaydın `t`'si ile
  * görüntü zamanının büyüğüdür; canlı dünyayla karşılaştırma AYNI t'de yapılmalıdır (`calistirKadar(t)`, docs/06 §14).
@@ -81,8 +90,30 @@ export interface YazarSecenekleri {
   yetismeGoruntuAraligiMs?: Ms;
   /** Yetişme ilerleme bildirimlerinin en sık aralığı (ms, duvar). Varsayılan 1000. */
   ilerlemeAraligiMs?: number;
+  /**
+   * İçerik göçüne izin ver (varsayılan KAPALI: kural sürümü ya da özet uyuşmazsa hata). Yalnız dönem sınırında, görüntüden
+   * sonra günlük kaydı yokken çalışır; bkz. dosya başlığı.
+   */
+  gocIzni?: boolean;
+  /** Göçte içerik yalnız SONA eklenebilir (araya ekleme/taşıma hata). Varsayılan true (üretim); yalnız geliştirmede false. */
+  yalnizEkleZorunlu?: boolean;
   /** Yetişirken her adımdan sonra çağrılır (test/enstrümantasyon: söz döndürerek yetişmeyi bekletebilir). */
   yetismeAdimKancasi?: (d: YetismeDurumu) => void | Promise<void>;
+}
+
+/** Açılışta yapılan içerik göçünün özeti (`GocRaporu`'ndan). */
+export interface GocOzeti {
+  /** Kimlik tabloları farklıydı: dünya yeniden indekslendi (özet görüntününkinden farklı olur). */
+  yenidenIndekslendi: boolean;
+  eskiKuralSurumu: string;
+  yeniKuralSurumu: string;
+  /** Yalnızca sona ekleme miydi. */
+  yalnizEkle: boolean;
+  /** Eklenen kimlikler (uzay -> kimlikler) ve toplam sayısı. */
+  eklenen: Record<string, string[]>;
+  eklenenSayisi: number;
+  /** Yalnız-ekle ihlali sayısı (`yalnizEkleZorunlu` kapalıyken > 0 olabilir). */
+  ihlalSayisi: number;
 }
 
 /** Yetişme (kapalıyken geçen süreyi işletme) ilerlemesi. */
@@ -132,6 +163,8 @@ export interface KurtarmaRaporu {
   sureMs: number;
   /** Dünyanın duvar saati epoch'u (mutlak saatte; elle saatli eski dünyada null). */
   dunyaEpochMs: number | null;
+  /** İçerik göçü yapıldıysa özeti (yoksa null). */
+  goc: GocOzeti | null;
   /** Açılışta duvar saatinin gerisinde kalan sim süresi (yetişilecek miktar; mutlak saat değilse 0). */
   yetisecekMs: Ms;
   /** Açılışta duvar saati dünya zamanının gerisindeyse (saat geri gitmiş) fark; yoksa 0. Dünya geri gitmez, saat bekler. */
@@ -247,14 +280,41 @@ export class DunyaYazari {
     let sim: Simulasyon;
     let seq = 0;
     let idempotansGirdileri: IdempotansGirdisi[] = [];
+    let goc: GocOzeti | null = null;
     if (g) {
-      if (g.kuralSurumu !== kuralSurumu) {
-        throw new Error(`kural surumu uyusmuyor: goruntu ${g.kuralSurumu}, veri ${kuralSurumu} (donem sinirinda goc gerekir)`);
+      const kuralFarkli = g.kuralSurumu !== kuralSurumu;
+      if (kuralFarkli && s.gocIzni !== true) {
+        throw new Error(`kural surumu uyusmuyor: goruntu ${g.kuralSurumu}, veri ${kuralSurumu} (donem sinirinda goc gerekir: gocIzni / --goc)`);
       }
       if (g.semaSurumu !== SEMA_SURUMU) throw new Error(`desteklenmeyen goruntu sema surumu: ${g.semaSurumu}`);
-      sim = Simulasyon.anlikGoruntudenYukle(s.veri, g.metin);
-      const ozet = sim.durumOzeti();
-      if (ozet !== g.durumOzeti) throw new Error(`goruntu ust verisindeki ozet uyusmuyor: ${g.durumOzeti} != ${ozet}`);
+      if (kuralFarkli) {
+        // Göç yalnız dönem sınırında: görüntüden sonra yazılmış her kayıt ESKİ kural sürümüyledir ve oynatılamaz.
+        const arta = await s.depo.gunluk.oku(g.seq);
+        if (arta.length > 0) {
+          throw new Error(
+            `goc yalniz donem sinirinda: goruntuden (seq ${g.seq}) sonra ${arta.length} gunluk kaydi var (eski kural surumu ${g.kuralSurumu}); ` +
+              "once eski kural surumuyle acip goruntu alin (duzgun kapanista kuyruk bosalir), sonra goc edin; gunluk yeniden oynatilmadi",
+          );
+        }
+        const r = Simulasyon.anlikGoruntudenYukleSonuclu(s.veri, g.metin, [], { gocIzni: true, yalnizEkleZorunlu: s.yalnizEkleZorunlu ?? true });
+        sim = r.sim;
+        // Üst verideki özet YAZILDIĞI HALİYLE dünyanındır: göçte `goc.eskiDurumOzeti`ne karşı denetlenir.
+        if (r.goc.eskiDurumOzeti !== g.durumOzeti) throw new Error(`goruntu ust verisindeki ozet uyusmuyor (goc): ${g.durumOzeti} != ${r.goc.eskiDurumOzeti}`);
+        if (!r.goc.yenidenIndekslendi && sim.durumOzeti() !== g.durumOzeti) throw new Error(`goruntu ust verisindeki ozet uyusmuyor: ${g.durumOzeti} != ${sim.durumOzeti()}`);
+        goc = {
+          yenidenIndekslendi: r.goc.yenidenIndekslendi,
+          eskiKuralSurumu: r.goc.eskiKuralSurumu,
+          yeniKuralSurumu: r.goc.yeniKuralSurumu,
+          yalnizEkle: r.goc.yalnizEkle,
+          eklenen: { ...r.goc.eklenen },
+          eklenenSayisi: Object.values(r.goc.eklenen).reduce((n, l) => n + l.length, 0),
+          ihlalSayisi: r.goc.ihlaller.length,
+        };
+      } else {
+        sim = Simulasyon.anlikGoruntudenYukle(s.veri, g.metin);
+        const ozet = sim.durumOzeti();
+        if (ozet !== g.durumOzeti) throw new Error(`goruntu ust verisindeki ozet uyusmuyor: ${g.durumOzeti} != ${ozet}`);
+      }
       seq = g.seq;
       idempotansGirdileri = g.ek.idempotans;
     } else {
@@ -271,6 +331,7 @@ export class DunyaYazari {
       durumOzeti: "",
       sureMs: 0,
       dunyaEpochMs: null,
+      goc,
       yetisecekMs: 0,
       saatGeriMs: 0,
     });
@@ -326,7 +387,8 @@ export class DunyaYazari {
     }
     // Görüntü yoksa hemen al: tohum ve başlangıç durumu kalıcı olsun (sonraki açılışlar tohuma bağlı kalmaz).
     // Epoch yeni bağlandıysa da (eski dünya) hemen kalıcı olsun: çökme sonrası kapalı süre kaybolmasın.
-    if (!g || epochYeni) await y.goruntuAl();
+    // Göçten hemen sonra yeni (güncel kural sürümlü, zarf v2) görüntü: sonraki açılış göçmez.
+    if (!g || epochYeni || goc) await y.goruntuAl();
     Object.assign(y.kurtarma, { seq: y.seqDegeri, simZamani: sim.dunya.zaman, durumOzeti: sim.durumOzeti(), sureMs: Math.round(performance.now() - bas) });
     return y;
   }
@@ -657,20 +719,9 @@ export class DunyaYazari {
     }
   }
 
-  /**
-   * GEÇİCİ (çekirdek hatası): `lojistik/akis.ts` MCF önbellek kaydının `yol` dizisini akışa doğrudan koyuyor
-   * (`yol: y.yol`); önbellek isabetinde iki akış (ve modül önbelleği) aynı diziyi paylaşıyor ve `dunyaSerilestir`
-   * paylaşılan referansı reddediyor. Çekirdek bu dizileri hiç değiştirmediği için kopyalamak değer korur (özet aynı)
-   * ve canlı dünyayı JSON'dan kurtarılan dünyayla yapısal olarak aynı yapar. Çekirdek düzeltilince kaldırılmalı.
-   */
-  private paylasimiKir(): void {
-    for (const a of this.sim.dunya.lojistik.akislar) a.yol = a.yol.slice();
-  }
-
   /** Anlık görüntü alır ve kaydeder (bekleyen, henüz günlüğe yazılmamış komut görüntüye girmez; hepsi uygulanmamıştır). */
   async goruntuAl(): Promise<AnlikGoruntuKaydi> {
     this.yerlestir();
-    this.paylasimiKir();
     const metin = anlikGoruntuOlustur(this.sim, this.kuralSurumu);
     // Zarf kanonik JSON'dur ve `durumOzeti` dünyadan SONRA gelir: son geçiş zarfınkidir (dünyayı ikinci kez özetlemeyiz).
     const ozetIndeksi = metin.lastIndexOf('"durumOzeti":"');

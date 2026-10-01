@@ -36,8 +36,8 @@ describe("mulk kipi: iki istemci", () => {
     const b = await ts.baglan("veli");
     const ka = await a.abone([]);
     expect(ka.ilceIlgisi).toEqual([]);
-    a.gonder({ tur: "abone", ilceler: [ILCE] });
-    b.gonder({ tur: "abone", ilceler: [ILCE] });
+    a.gonder({ tur: "abone", ilceler: [ILCE], ayrilmis: true }); // ayrılmış hücre listesini ister
+    b.gonder({ tur: "abone", ilceler: [ILCE] }); // istemez: yalnız sayı
     await kareBekle(a, () => a.kare?.ilceler?.length === 1);
     await kareBekle(b, () => b.kare?.ilceler?.length === 1);
     expect(hucreler(a.kare)).toEqual([]);
@@ -49,7 +49,23 @@ describe("mulk kipi: iki istemci", () => {
     await kareBekle(a, () => sahiplik(a.kare) === `${H1}=ali,${H2}=ali`);
     await kareBekle(b, () => sahiplik(b.kare) === `${H1}=ali,${H2}=ali`);
     expect(b.kare?.ilceler?.[0]?.satilmisHucre).toBe(2);
-    expect(a.kare?.ilceler).toEqual(b.kare?.ilceler);
+    // Genel veri iki karede aynı; hücre DEĞERİ (7. eleman) yalnız sahibinin karesinde.
+    const hucreA = a.kare?.ilceler?.[0]?.hucreler ?? [];
+    const hucreB = b.kare?.ilceler?.[0]?.hucreler ?? [];
+    expect(hucreA.map((h) => h.slice(0, 5))).toEqual(hucreB.map((h) => h.slice(0, 5)));
+    expect(hucreA.every((h) => typeof h[6] === "number" && h[6] > 0)).toBe(true);
+    expect(hucreB.every((h) => h.length === 5)).toBe(true);
+    // Ayrılmış hücre kümesi (türetilmiş, herkese açık; abone olunan ilçe için): iki karede aynı, boş değil.
+    const ayrilmis = a.kare?.ilceler?.[0]?.ayrilmis;
+    expect(ayrilmis?.length).toBeGreaterThan(0);
+    expect(ayrilmis).toEqual([...(ayrilmis ?? [])].sort());
+    expect(b.kare?.ilceler?.[0]?.ayrilmis).toBeUndefined(); // liste istenmedi
+    expect(b.kare?.ilceler?.[0]?.ayrilmisAdet).toBe(ayrilmis?.length);
+    expect(a.kare?.ilceler?.[0]?.ayrilmisAdet).toBe(ayrilmis?.length);
+    // Oyuncuya özel yeni alanlar: erken oyun formülü, indirimli yapı hakkı, ayrılmış hücre bitişi (yalnız kendi karesinde).
+    expect(a.kare?.oyuncu?.erkenOyun).toBeDefined();
+    expect(a.kare?.oyuncu?.mulk?.indirimliYapiKalan).toBe(5);
+    expect(a.kare?.oyuncu?.mulk?.ayrilmisBitis).toBe((a.kare?.oyuncu?.erkenOyun?.[0] ?? 0) + 14 * 24 * SAAT);
 
     // Sahiplenilmiş hücre ikinci kez alınamaz (çekirdek kuralı; başarısız komut günlükte ama durumu değiştirmez).
     const rb = await b.komut("p2", { tur: "parsel_al", ilce: ILCE, hucreler: [H1], sinif: "kirsal" });
@@ -69,6 +85,16 @@ describe("mulk kipi: iki istemci", () => {
     expect(ri.tur === "komutSonucu" && ri.sonuc.tamam).toBe(true);
     const insaatVar = (k: IlgiKaresi | null) => (hucreler(k) as Array<[string, string, string, number, number]> | undefined)?.every((h) => h[4] >= 0) === true;
     await kareBekle(b, () => insaatVar(b.kare));
+    // Başkasının hücresindeki inşaatın TÜRÜ herkese görünür (6. eleman); değeri yalnız sahibine.
+    const turlerB = (b.kare?.ilceler?.[0]?.hucreler ?? []).map((h) => h[5]);
+    expect(turlerB).toEqual(["ciftlik", "ciftlik"]);
+    await kareBekle(a, () => a.kare?.oyuncu?.insaatlar.length === 1);
+    const ins = a.kare?.oyuncu?.insaatlar[0] ?? [];
+    expect(ins.length).toBe(6); // başlangıç var, ek yapı yok
+    expect(ins[5]).toBeGreaterThanOrEqual(SAAT);
+    expect(b.kare?.oyuncu?.insaatlar).toEqual([]);
+    expect(a.kare?.oyuncu?.mulk?.indirimliYapiKalan).toBe(4); // ilk yapı indirimli
+    expect(b.kare?.oyuncu?.mulk?.indirimliYapiKalan).toBe(5);
 
     // İl aboneliği: ilin ilçeleri + merkez bölge (genel veri).
     const c = await ts.baglan("izleyici");
@@ -78,6 +104,8 @@ describe("mulk kipi: iki istemci", () => {
     if (kc.tur === "kare") {
       expect(kc.ilceIlgisi).toEqual(["sn_m_ova_merkez", "sn_m_ova_tasra"]);
       expect(kc.kare.bolgeler.map((x) => x.id)).toEqual(["m_ova"]);
+      expect(kc.kare.oyuncu).toBeUndefined(); // izleyicide oyuncuya özel alanlar yok
+      expect(JSON.stringify(kc.kare)).not.toContain("erkenOyun");
     }
     c.gonder({ tur: "abone", ilceler: ["yok_ilce"] });
     const h = await c.bekle((m) => m.tur === "hata");

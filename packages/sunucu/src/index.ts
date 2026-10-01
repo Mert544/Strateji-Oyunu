@@ -1,6 +1,6 @@
 /** @bolge/sunucu: paylaşılan dünyanın tek yazar sunucusu. */
 export { DunyaYazari, YetisiyorHatasi } from "./yazar";
-export type { YazarSecenekleri, KomutYaniti, KurtarmaRaporu, SunucuBotu, TurOlayi, YetismeDurumu } from "./yazar";
+export type { YazarSecenekleri, KomutYaniti, GocOzeti, KurtarmaRaporu, SunucuBotu, TurOlayi, YetismeDurumu } from "./yazar";
 export { sunucuBaslat } from "./sunucu";
 export type { SunucuSecenekleri, CalisanSunucu } from "./sunucu";
 export { SunucuIstemcisi } from "./istemci";
@@ -16,3 +16,4 @@ export { postgresDeposu, postgresSemasiKur } from "./depo/postgres";
 export type { PostgresSecenekleri } from "./depo/postgres";
 export { SEMA_SURUMU } from "./depo/tipler";
 export type { AnlikGoruntuKaydi, Depo, GoruntuDeposu, GoruntuEki, GunlukDeposu, GunlukKaydi, IdempotansGirdisi } from "./depo/tipler";
+export { parselDosyasiYukle } from "./parsel-dosya";

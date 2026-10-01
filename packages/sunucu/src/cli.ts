@@ -16,6 +16,7 @@ import { dosyaDeposu } from "./depo/dosya";
 import { postgresDeposu } from "./depo/postgres";
 import type { Depo } from "./depo/tipler";
 import { GelistirmeKimligi, gelistirmeTokeni } from "./kimlik";
+import { parselDosyasiYukle } from "./parsel-dosya";
 import { DuvarSaati, ElleSaat } from "./saat";
 import { sunucuBaslat } from "./sunucu";
 import { DunyaYazari } from "./yazar";
@@ -26,12 +27,18 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --host H             (vars. 127.0.0.1)
   --harita AD          mini | sentetik | gercek[:ad] (vars. sentetik)
   --parsel             mulk kipi: haritanin parsel fiksturu (mini -> mini-6, sentetik -> sentetik-50)
+  --parsel-dosya YOL   mulk kipi: verilen parsel fiksturu JSON'u (@bolge/veri dogrulayicisindan, harita ile, gecer);
+                       --parsel ile birlikte verilmez
   --tohum N            yalniz ilk acilista (vars. 1)
   --depo TUR           bellek | dosya | pg (vars. dosya)
   --dizin YOL          dosya deposu dizini (vars. raporlar/dunya; git disi)
   --pg-url URL         pg deposu (vars. $BOLGE_PG_URL); --dunya AD (vars. ana)
   --hiz X              sim ms / gercek ms (vars. 1 = gercek zaman, MUTLAK saat: t = duvar - dunya-epoch;
                        kapaliyken de akar, acilista yetisilir). 1'den farkli hiz birikimli kiptir
+  --goc                icerik gocune izin (varsayilan KAPALI: kural surumu degismisse hata). Yalniz donem sinirinda,
+                       goruntuden sonra gunluk kaydi yokken; icerik yalniz SONA eklenebilir. Oncesinde veri dizinini yedekleyin
+                       (yeni goruntu ayni seq/zamanda eskisinin uzerine yazilir)
+  --goc-esnek          (yalniz gelistirme) gocte araya ekleme/siralama degisimine de izin
   --birikimli          kapaliyken duran eski saat (hiz 1 ile bile); mutlak saat degil
   --dunya-epoch T      yalniz yeni dunyada: duvar saati epoch'u (ISO, ornek 2026-09-30T21:00:00Z, ya da epoch ms);
                        bir Turkiye gece yarisi (UTC+3) olmali (vars. 2026-09-30T21:00:00Z = 1 Ekim 2026 00:00 TRT)
@@ -83,6 +90,7 @@ async function ana(): Promise<void> {
       host: { type: "string", default: "127.0.0.1" },
       harita: { type: "string", default: "sentetik" },
       parsel: { type: "boolean", default: false },
+      "parsel-dosya": { type: "string" },
       tohum: { type: "string", default: "1" },
       depo: { type: "string", default: "dosya" },
       dizin: { type: "string", default: "raporlar/dunya" },
@@ -91,6 +99,8 @@ async function ana(): Promise<void> {
       hiz: { type: "string", default: "1" },
       "elle-saat": { type: "boolean", default: false },
       birikimli: { type: "boolean", default: false },
+      goc: { type: "boolean", default: false },
+      "goc-esnek": { type: "boolean", default: false },
       "dunya-epoch": { type: "string" },
       "commit-ms": { type: "string", default: "75" },
       "goruntu-saat": { type: "string", default: "6" },
@@ -124,6 +134,11 @@ async function ana(): Promise<void> {
     if ((a.botlar as string).trim() !== "") throw new Error("sunucu botlari mulk kipini henuz oynamiyor (--botlar ile --parsel birlikte olmaz)");
     veri.parsel = parselFiksturuYukle(ad);
   }
+  if (a["parsel-dosya"] !== undefined) {
+    if (a.parsel) throw new Error("--parsel ve --parsel-dosya birlikte verilemez");
+    if ((a.botlar as string).trim() !== "") throw new Error("sunucu botlari mulk kipini henuz oynamiyor (--botlar ile --parsel-dosya birlikte olmaz)");
+    veri.parsel = parselDosyasiYukle(resolve(a["parsel-dosya"]), veri);
+  }
   let depo: Depo;
   if (a.depo === "bellek") depo = bellekDeposu();
   else if (a.depo === "dosya") depo = await dosyaDeposu(resolve(a.dizin as string));
@@ -149,6 +164,8 @@ async function ana(): Promise<void> {
     goruntuAraligiMs: Math.round(sayi("goruntu-saat", a["goruntu-saat"]) * SAAT),
     botlar: botlarKur(veri, a.botlar as string),
     ...(dunyaEpochMs !== undefined ? { dunyaEpochMs } : {}),
+    gocIzni: a.goc as boolean,
+    yalnizEkleZorunlu: !(a["goc-esnek"] as boolean),
   });
   yazar.olumculHata((e) => {
     yaz("olumcul", { hata: e.message });

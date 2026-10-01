@@ -106,6 +106,13 @@ export class SunucuIstemcisi {
     return (await b) as Mesaj<"komutSonucu"> | Mesaj<"hata">;
   }
 
+  /** Oyuncunun kendi katılımı (mülk kipi): `katil` gönderir; komutSonucu veya aynı anahtarlı hata döner. */
+  async katil(anahtar: string, ilce?: string): Promise<Mesaj<"komutSonucu"> | Mesaj<"hata">> {
+    const b = this.bekle((m) => (m.tur === "komutSonucu" || m.tur === "hata") && m.anahtar === anahtar);
+    this.gonder({ tur: "katil", anahtar, ...(ilce !== undefined ? { ilce } : {}) });
+    return (await b) as Mesaj<"komutSonucu"> | Mesaj<"hata">;
+  }
+
   async ozet(): Promise<Mesaj<"ozet">> {
     const istek = ++this.istekSayaci;
     const b = this.bekle((m) => (m.tur === "ozet" || m.tur === "hata") && m.istek === istek);
