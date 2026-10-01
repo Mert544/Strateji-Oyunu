@@ -1,7 +1,11 @@
 /**
  * Simgeler: liman, dar geçit, kapsam nedeni, savaş hedefi ve seçim halkası. Hepsi tek örneklenmiş (instanced)
  * çizimde, ekrana dönük sabit piksel boyutlu SDF gliflerdir.
- *   tür: 0 liman, 1 dar geçit, 2 kapasite, 3 girdi eksik, 4 mesafe, 5 erişim yok, 6 savaş hedefi, 7 seçim halkası
+ *   tür: 0 liman, 1 dar geçit, 2 kapasite, 3 girdi eksik, 4 mesafe, 5 erişim yok, 6 savaş hedefi, 7 seçim halkası,
+ *        8 kuraklık, 9 don, 10 sel, 11 kış fırtınası, 12 bilinmeyen olay (olay rozetleri),
+ *        13 olay uyarı halkası (kesikli, yayılan nabız), 14 etkin olay halkası (dolu, yayılan nabız), 15 yayılım halkası,
+ *        16 uyarı halkası (kesikli, sabit boyut)
+ * İklim olayları da aynı tek çizim çağrısındadır (ek çizim çağrısı yok).
  */
 import { BufferAttribute, DynamicDrawUsage, InstancedBufferAttribute, InstancedBufferGeometry, Mesh, ShaderMaterial, Uniform } from "three";
 import type { Object3D } from "three";
@@ -18,9 +22,23 @@ import type { BolgeRenkTamponu, RGB } from "../veri/renkler";
 const KAPASITE = 512;
 const SIMGE_YARICAP = 1.014;
 
+/** Küre üzerinde gösterilecek bir iklim olayı (merkez rozeti + nabız halkası + yayılım halkaları). */
+export interface OlayGirdisi {
+  merkez: number;
+  /** Rozet glif kodu (8..12). */
+  glif: number;
+  aktif: boolean;
+  renk: RGB;
+  /** Etki bölgeleri: [bölge, şiddet payı 0..1]; merkez dahil olabilir (merkez ayrıca çizilir). */
+  etki: ReadonlyArray<[number, number]>;
+  /** Etki gücü (0..1): aktif olayda sönümle azalır. */
+  guc: number;
+}
+
 export interface SimgeGirdisi {
   renkler: BolgeRenkTamponu;
   savaslar: readonly SavasKaresi[];
+  olaylar?: readonly OlayGirdisi[];
   secili: number;
   savasRengi: RGB;
   secimRengi: RGB;
@@ -123,6 +141,19 @@ export class SimgeKatmani {
       if (s.evre === "bitti" || n >= KAPASITE - 20) continue;
       const c = this.merkezler[s.hedefBolge];
       if (c) this.yaz(n++, olcekle(c, SIMGE_YARICAP + 0.002), 6, g.savasRengi, 27, 1);
+    }
+    for (const o of g.olaylar ?? []) {
+      const c = this.merkezler[o.merkez];
+      if (!c || n >= KAPASITE - 24) continue;
+      // sabit halka (nabzın sönük anında da olay görünsün) + yayılan nabız halkası
+      this.yaz(n++, olcekle(c, SIMGE_YARICAP + 0.001), o.aktif ? 15 : 16, o.renk, 54, 1);
+      this.yaz(n++, olcekle(c, SIMGE_YARICAP + 0.0015), o.aktif ? 14 : 13, o.renk, o.aktif ? 120 : 104, 0.95);
+      for (const [b, pay] of o.etki) {
+        const cb = this.merkezler[b];
+        if (!cb || b === o.merkez || n >= KAPASITE - 22) continue;
+        this.yaz(n++, olcekle(cb, SIMGE_YARICAP + 0.001), 15, o.renk, 28 + 22 * pay, (o.aktif ? 0.4 + 0.6 * o.guc : 0.7) * (0.5 + 0.5 * pay));
+      }
+      this.yaz(n++, olcekle(c, SIMGE_YARICAP + 0.003), o.glif, o.renk, 34, o.aktif ? 1 : 0.9);
     }
     if (g.secili >= 0 && this.merkezler[g.secili]) {
       this.yaz(n++, olcekle(this.merkezler[g.secili] as Vek3, SIMGE_YARICAP - 0.002), 7, g.secimRengi, 42, 1);

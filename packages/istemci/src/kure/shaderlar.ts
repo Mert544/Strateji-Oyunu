@@ -353,9 +353,18 @@ void main() {
   vec4 c = projectionMatrix * modelViewMatrix * vec4(aKonum, 1.0);
   float boy = aBoyut;
   float a = aAlfa;
+  float tohum = fract(dot(aKonum, vec3(12.9898, 78.233, 37.719)) * 43.0);
   if (aTur < 1.5) { boy *= uYakin; a *= uYakin; }
   if (aTur > 5.5 && aTur < 6.5) boy *= 0.85 + 0.25 * sin(uZaman * 7.0);
-  if (aTur > 6.5) boy *= 1.0 + 0.06 * sin(uZaman * 4.0);
+  if (aTur > 6.5 && aTur < 7.5) boy *= 1.0 + 0.06 * sin(uZaman * 4.0);
+  // İklim olayı: simge hafif atar; uyarı ve etki halkaları yayılarak sönen nabız gibi genişler.
+  if (aTur > 7.5 && aTur < 12.5) boy *= 1.0 + 0.07 * sin(uZaman * 5.0 + tohum * 6.2831853);
+  if (aTur > 12.5 && aTur < 14.5) {
+    float faz = fract(uZaman * (aTur < 13.5 ? 0.35 : 0.65) + tohum);
+    boy *= 0.45 + 0.75 * faz;
+    a *= (1.0 - faz) * min(1.0, faz * 8.0);
+  }
+  if (aTur > 14.5 && aTur < 15.5) a *= 0.75 + 0.25 * sin(uZaman * 2.0 + tohum * 6.2831853);
   vec2 off = kose * boy / uEkran;
   c.xy += off * c.w;
   gl_Position = c;
@@ -369,6 +378,7 @@ void main() {
 export const SIMGE_FS = /* glsl */ `
 uniform vec3 uPanel;
 uniform vec3 uMurekkep;
+uniform float uZaman;
 varying vec2 vK;
 varying float vTur;
 varying vec3 vRenk;
@@ -377,6 +387,12 @@ float seg(vec2 p, vec2 a, vec2 b) {
   vec2 pa = p - a, ba = b - a;
   float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
   return length(pa - ba * h);
+}
+// Kutupsal tekrar: q'yu n eşit dilimden birine katlar (güneş ışınları, kar tanesi kolları).
+vec2 dilim(vec2 q, float n) {
+  float k = 6.2831853 / n;
+  float aa = mod(atan(q.y, q.x) + 0.5 * k, k) - 0.5 * k;
+  return length(q) * vec2(cos(aa), sin(aa));
 }
 float glif(vec2 q, float t) {
   float d = 10.0;
@@ -418,28 +434,72 @@ float glif(vec2 q, float t) {
     // erişim yok: çarpı
     d = min(d, seg(q, vec2(-0.45, -0.45), vec2(0.45, 0.45)));
     d = min(d, seg(q, vec2(-0.45, 0.45), vec2(0.45, -0.45)));
-  } else {
+  } else if (t < 6.5) {
     // savaş: çapraz kılıçlar
     d = min(d, seg(q, vec2(-0.52, -0.52), vec2(0.52, 0.52)));
     d = min(d, seg(q, vec2(-0.52, 0.52), vec2(0.52, -0.52)));
+  } else if (t < 8.5) {
+    // kuraklık: güneş (halka + 8 ışın)
+    d = min(d, abs(length(q) - 0.20));
+    d = min(d, seg(dilim(q, 8.0), vec2(0.36, 0.0), vec2(0.56, 0.0)));
+  } else if (t < 9.5) {
+    // don: kar tanesi (6 kol, her kolda iki tüy)
+    vec2 p = dilim(q, 6.0);
+    d = min(d, seg(p, vec2(0.0, 0.0), vec2(0.58, 0.0)));
+    d = min(d, seg(p, vec2(0.34, 0.0), vec2(0.48, 0.15)));
+    d = min(d, seg(p, vec2(0.34, 0.0), vec2(0.48, -0.15)));
+  } else if (t < 10.5) {
+    // sel: iki dalga çizgisi
+    float dx = max(0.0, abs(q.x) - 0.58) * 3.0;
+    float s = 0.09 * sin(q.x * 9.0);
+    d = min(abs(q.y - 0.22 - s), abs(q.y + 0.14 - s)) + dx;
+  } else if (t < 11.5) {
+    // kış fırtınası: yıldırım
+    d = min(d, seg(q, vec2(0.16, 0.58), vec2(-0.16, 0.04)));
+    d = min(d, seg(q, vec2(-0.16, 0.04), vec2(0.14, 0.04)));
+    d = min(d, seg(q, vec2(0.14, 0.04), vec2(-0.16, -0.58)));
+  } else {
+    // bilinmeyen olay: ünlem
+    d = min(d, seg(q, vec2(0.0, 0.52), vec2(0.0, -0.08)));
+    d = min(d, length(q - vec2(0.0, -0.42)));
   }
   return d;
 }
 void main() {
   float r = length(vK);
   if (r > 1.0) discard;
-  if (vTur > 6.5) {
+  if (vTur > 12.5) {
+    // olay halkaları: 13 uyarı (kesikli, dönen, nabız), 14 etkin (dolu halka + hafif dolgu, nabız), 15 yayılım (ince halka),
+    // 16 uyarı (kesikli, sabit boyut)
+    float ra;
+    if (vTur < 13.5 || vTur > 15.5) {
+      float dilimNo = fract(atan(vK.y, vK.x) * 2.546479 + uZaman * 0.25);
+      ra = smoothstep(0.80, 0.86, r) * (1.0 - smoothstep(0.94, 1.0, r)) * step(0.4, dilimNo);
+    } else if (vTur < 14.5) {
+      ra = max(smoothstep(0.72, 0.80, r) * (1.0 - smoothstep(0.94, 1.0, r)), 0.14 * (1.0 - smoothstep(0.70, 0.80, r)));
+    } else {
+      ra = smoothstep(0.78, 0.84, r) * (1.0 - smoothstep(0.95, 1.0, r));
+    }
+    if (ra < 0.01) discard;
+    gl_FragColor = vec4(vRenk, ra * vAlfa);
+    return;
+  }
+  if (vTur > 6.5 && vTur < 7.5) {
     float a = smoothstep(0.80, 0.86, r) * (1.0 - smoothstep(0.94, 1.0, r));
     if (a < 0.01) discard;
     gl_FragColor = vec4(vRenk, a * vAlfa);
     return;
   }
-  vec3 zemin = vTur > 5.5 ? vRenk : uPanel;
-  vec3 glifRenk = vTur > 5.5 ? vec3(1.0) : uMurekkep;
+  bool dolu = vTur > 5.5;
+  vec3 zemin = dolu ? vRenk : uPanel;
+  vec3 glifRenk = dolu ? vec3(1.0) : uMurekkep;
   float halka = smoothstep(0.80, 0.90, r);
-  vec3 renk = mix(zemin, vTur > 5.5 ? uPanel : uMurekkep, halka * (vTur > 5.5 ? 0.0 : 0.55));
+  vec3 renk = mix(zemin, dolu ? uPanel : uMurekkep, halka * (dolu ? 0.0 : 0.55));
+  // olay simgesi: beyaz çerçeve (her arka planda seçilir)
+  if (vTur > 7.5) renk = mix(renk, vec3(1.0), smoothstep(0.78, 0.86, r));
   float d = glif(vK, vTur);
   float g = 1.0 - smoothstep(0.10, 0.17, d);
+  if (vTur > 7.5) g *= 1.0 - smoothstep(0.80, 0.86, r);
   renk = mix(renk, glifRenk, g);
   float a = (1.0 - smoothstep(0.93, 1.0, r)) * vAlfa;
   gl_FragColor = vec4(renk, a);

@@ -60,6 +60,7 @@ export const MAL_RENK_HEX: Record<string, string> = {
   petrol: "#4f5d9a",
   yakit: "#e5484d",
   muhimmat: "#c2388f",
+  gubre: "#3f8f5a",
 };
 
 export function malRengiHex(id: string): string {

@@ -10,6 +10,7 @@ import { SAAT, Simulasyon } from "@bolge/cekirdek";
 import { botOlustur, kos } from "@bolge/botlar";
 import type { ArketipAdi, KosuOyuncusu } from "@bolge/botlar";
 import { dizinKur, kareAl } from "./kare";
+import { hataMetni, veriPaketiniHazirla } from "./veri-hazirla";
 import type { IsciMesaji, IsciyeMesaj, IsciVeriPaketi } from "./protokol";
 import type { Kare } from "../veri/kare-tipleri";
 
@@ -38,6 +39,12 @@ let gerideMi = false;
 
 function baslat(m: Extract<IsciyeMesaj, { tur: "baslat" }>): void {
   veri = m.veri;
+  // Tarım alanı JSON'da yoksa Node yükleyicisiyle aynı kuralla türetilir ve paket doğrulanır; hata arayüze iletilir.
+  const hazir = veriPaketiniHazirla(veri);
+  if (!hazir.tamam) {
+    kapsam.postMessage({ tur: "hata", mesaj: hataMetni(hazir.hatalar) });
+    return;
+  }
   tohum = m.tohum;
   hiz = m.hiz;
   duraklat = m.duraklat;
@@ -60,6 +67,10 @@ function baslat(m: Extract<IsciyeMesaj, { tur: "baslat" }>): void {
   sonKareGonderilen = -1;
   // İlk adım: t=0'da katılım, karar ve gözlem.
   adimAt(0);
+  // Test/ölçüm için: ilk kare gösterilmeden önce eşzamanlı ileri sarma (ör. iklim olaylarını yakalamak için).
+  const ileri = Math.max(0, Math.floor(m.ileriSaat ?? 0));
+  for (let h = 1; h <= ileri; h++) adimAt(h * SAAT);
+  hedefMs = sim.dunya.zaman;
   kapsam.postMessage({ tur: "hazir", dizin: dizinKur(sim, m.botlar) });
   kareyiGonder(true);
   sonGercek = performance.now();

@@ -1,6 +1,8 @@
 /** Tema: CSS özel özelliklerinden (token) sahne paletini okur; açık/koyu tema değişince yeniden okunur. */
 import { hexRgb } from "../veri/renkler";
 import type { Palet, RGB } from "../veri/renkler";
+import { OLAY_SIMGELERI } from "../veri/tarim";
+import type { TarimPaleti } from "../veri/tarim";
 
 export interface SahnePaleti {
   okyanus: RGB;
@@ -27,6 +29,11 @@ export interface SahnePaleti {
   seritKontur: RGB;
   zemin: string;
   palet: Palet;
+  /** Tarım görünümü: toprak verimliliği paleti. */
+  tarim: TarimPaleti;
+  /** Olay türü -> renk (tema belirteçlerinden; bilinmeyen türler `olayDiger`). */
+  olay: Record<string, RGB>;
+  olayDiger: RGB;
 }
 
 function rgba(v: string): [number, number, number, number] {
@@ -59,7 +66,12 @@ export function paletiOku(): SahnePaleti {
     },
     kullanim: ["--u0", "--u1", "--u2", "--u3", "--u4"].map((n) => hexRgb(t(n))),
   };
+  const olay: Record<string, RGB> = {};
+  for (const [tur, sim] of Object.entries(OLAY_SIMGELERI)) olay[tur] = hexRgb(t(sim.renkDegiskeni));
   return {
+    olay,
+    olayDiger: hexRgb(t("--olay-diger")),
+    tarim: { toprak: ["--t0", "--t1", "--t2", "--t3", "--t4"].map((n) => hexRgb(t(n))), tarimDisi: hexRgb(t("--tarim-disi")) },
     okyanus: hexRgb(t("--sahne-okyanus")),
     okyanusDerin: hexRgb(t("--sahne-okyanus-derin")),
     kara: hexRgb(t("--sahne-kara")),

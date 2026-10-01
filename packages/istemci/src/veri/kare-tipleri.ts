@@ -60,6 +60,36 @@ export interface DizinBirlik {
   ad: string;
 }
 
+/** Bölgenin sabit tarım tanımı (harita + türetme): iklim tipi indeksi, toprak tabanı (binde), tesis tavanı, sulanabilir pay (%). */
+export type DizinBolgeTarim = [iklimTipi: number, tabanBinde: number, tesisTavani: number, sulanabilirYuzde: number];
+
+/** Tarım katmanının sabit tanımı (içerik + parametrelerden; tarım kapalıysa dizinde yoktur). */
+export interface DizinTarim {
+  /** Dünya t=0 anının takvim günü (0 = 1 Ocak). */
+  baslangicGunu: number;
+  /** Takvim hız çarpanı (sim günü başına takvim günü). */
+  gunCarpani: number;
+  /** 12 ayın gün sayıları (toplam 365). */
+  ayGunleri: number[];
+  /** Olay uyarı süresi (saat). */
+  uyariSaat: number;
+  /** Ürün grupları (ekim payı sırasıyla). */
+  urunler: Array<{ id: string; ad: string }>;
+  /** Olay türü kimlikleri (OlayKaresi.tur bu indekstir). */
+  olayTurleri: string[];
+  /** İklim tipi kimlikleri (DizinBolgeTarim[0] bu indekstir). */
+  iklimTipleri: string[];
+  /** 12 ay: tarım bölgelerinin ortalama hasat oranı (binde; 1000 = yıllık ortalama). */
+  hasatAylik: number[];
+  /** İklim tipine göre (iklimTipleri sırasıyla) 12 aylık hasat oranı (binde). */
+  hasatTipleri: number[][];
+  /** `gubre` malının indeksi. */
+  gubreMal: number;
+  azamiGubreDozu: number;
+  /** Bölge indeksine göre tarım tanımı; tarım dışı bölge null. */
+  bolgeler: Array<DizinBolgeTarim | null>;
+}
+
 export interface Dizin {
   devletler: DizinDevlet[];
   mallar: DizinMal[];
@@ -69,6 +99,32 @@ export interface Dizin {
   tesisTurleri: DizinTesisTuru[];
   yontemler: DizinYontem[];
   birlikler: DizinBirlik[];
+  /** Tarım katmanı (B1); kapalıysa tanımsız. */
+  tarim?: DizinTarim;
+}
+
+/**
+ * Bölge tarım durumu: [toprak (binde), iklim hasat oranı (binde; 1000 = yıllık ortalama), olay kaybı (binde),
+ * gübre dozu, gübre karşılanma (%), ekim payları (%, ürün sırasıyla)].
+ */
+export type TarimKaresi = [toprak: number, iklim: number, olayKaybi: number, gubreDozu: number, gubreKarsilanma: number, ekim: number[]];
+
+/** Etkin veya uyarıdaki iklim olayı. Zamanlar sim-saat; etki: [bölge, şiddet %]. */
+export interface OlayKaresi {
+  id: number;
+  /** DizinTarim.olayTurleri indeksi. */
+  tur: number;
+  merkez: number;
+  uyari: number;
+  baslangic: number;
+  bitis: number;
+  /** Merkez şiddeti (%). */
+  siddet: number;
+  etki: Array<[number, number]>;
+}
+
+export interface IklimKaresi {
+  olaylar: OlayKaresi[];
 }
 
 /** tesis: [tesisTuruIndeksi, yontemIndeksi, aktif(0/1), verim%, isci%]; ordu: [[birlikIndeksi, adet], ...] */
@@ -84,6 +140,8 @@ export interface BolgeKaresi {
   ordu: Array<[number, number]>;
   /** 0 normal, 1 savunma, 2 geri çekil. */
   durus: number;
+  /** Tarım durumu (B1); tarım kapalıysa veya bölge tarım dışıysa tanımsız. */
+  tarim?: TarimKaresi;
 }
 
 /** [kapasite, kullanılan, askeri kullanılan] (birim/saat). */
@@ -119,4 +177,6 @@ export interface Kare {
   savaslar: SavasKaresi[];
   hazine: number[];
   hazineOrani: number[];
+  /** İklim olayları (B1); tarım kapalıysa tanımsız. */
+  iklim?: IklimKaresi;
 }

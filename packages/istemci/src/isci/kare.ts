@@ -3,20 +3,54 @@
  * uyarlanmış kopyası (izleyici paketi node:fs'e bağlı olduğundan tarayıcı işçisine alınamaz). Çekirdeğin
  * genel API'sini kullanır; çekirdek değişmez.
  */
-import { MILI, PPM, SAAT, anlikHazine, anlikMiktar } from "@bolge/cekirdek";
+import { MILI, PPM, SAAT, anlikHazine, anlikMiktar, tarimTablosu } from "@bolge/cekirdek";
 import type { Simulasyon } from "@bolge/cekirdek";
 import { NEDEN_KODLARI } from "../veri/kare-tipleri";
-import type { BolgeKaresi, Dizin, Kare, SavasKaresi } from "../veri/kare-tipleri";
+import type { BolgeKaresi, Dizin, DizinTarim, Kare, OlayKaresi, SavasKaresi } from "../veri/kare-tipleri";
+import { hasatAylikHesapla } from "../veri/tarim";
 
 const DURUS_KODU = { normal: 0, savunma: 1, geri_cekil: 2 } as const;
 
 const onda1 = (mili: number): number => Math.round(mili / 100) / 10;
 const tam = (mili: number): number => Math.round(mili / MILI);
 
+/**
+ * Tarım katmanının sabit tanımı (içerik + parametrelerden): ürünler, olay türleri ve iklim tipleri içerikten okunur
+ * (sabit liste yok). Tarım kapalıysa (parametrelerde `iklim`/`tarim` yoksa) tanımsız döner.
+ */
+function tarimDizini(sim: Simulasyon): DizinTarim | undefined {
+  const tb = tarimTablosu(sim.ic);
+  if (tb === null) return undefined;
+  const ik = tb.iklim;
+  const iklimTipleri = Object.keys(ik.hasatEgrisiPpm);
+  const bolgeler: DizinTarim["bolgeler"] = sim.ic.harita.bolgeler.map((b) => {
+    const t = b.tarim;
+    if (!t) return null;
+    return [Math.max(0, iklimTipleri.indexOf(t.iklimTipi)), Math.round(t.toprakTabanPpm / 1000), t.tarimTesisTavani, Math.round((t.sulanabilirPpm * 100) / PPM)];
+  });
+  const tarimTipleri = sim.ic.harita.bolgeler.flatMap((b) => (b.tarim ? [b.tarim.iklimTipi as string] : []));
+  return {
+    baslangicGunu: ik.baslangicGunu,
+    gunCarpani: ik.gunCarpani,
+    ayGunleri: [...ik.ayGunleri],
+    uyariSaat: ik.uyariSaat,
+    urunler: (sim.ic.icerik.tarimUrunleri ?? []).map((u) => ({ id: u.id, ad: u.ad })),
+    olayTurleri: Object.keys(ik.olaylar),
+    iklimTipleri,
+    hasatAylik: hasatAylikHesapla(ik.hasatEgrisiPpm, tarimTipleri),
+    hasatTipleri: iklimTipleri.map((t) => hasatAylikHesapla(ik.hasatEgrisiPpm, [t])),
+    gubreMal: tb.gubreMal,
+    azamiGubreDozu: tb.tarim.azamiGubreDozu,
+    bolgeler,
+  };
+}
+
 export function dizinKur(sim: Simulasyon, botlar: readonly string[]): Dizin {
   const h = sim.ic.harita;
   const devletIdx = new Map(h.devletler.map((d, i) => [d.id, i]));
+  const tarim = tarimDizini(sim);
   return {
+    ...(tarim ? { tarim } : {}),
     devletler: h.devletler.map((d) => ({ id: d.id, ad: d.ad, blok: d.blok })),
     mallar: sim.ic.mallar.map((m) => ({ id: m.id, ad: m.ad, kategori: m.kategori, taban: m.tabanFiyat / MILI })),
     bolgeler: h.bolgeler.map((b) => ({
@@ -52,6 +86,18 @@ export function kareAl(sim: Simulasyon, oyuncuIdleri: readonly string[]): Kare {
     tesis: b.tesisler.map((x) => [x.tur, x.yontem, x.aktif ? 1 : 0, Math.round((x.verimPpm * 100) / PPM), Math.round((x.isciPpm * 100) / PPM)]),
     ordu: b.birlikler.flatMap((adet, i): Array<[number, number]> => (adet > 0 ? [[i, adet]] : [])),
     durus: DURUS_KODU[b.savunma.durus],
+    ...(b.tarim
+      ? {
+          tarim: [
+            Math.round(b.tarim.toprakPpm / 1000),
+            Math.round(b.tarim.iklimPpm / 1000),
+            Math.round(b.tarim.olayKaybiPpm / 1000),
+            b.tarim.gubreDozu,
+            Math.round((b.tarim.gubreKarsilanmaPpm * 100) / PPM),
+            b.tarim.ekimPpm.map((x) => Math.round((x * 100) / PPM)),
+          ] as NonNullable<BolgeKaresi["tarim"]>,
+        }
+      : {}),
   }));
 
   const kenarlar = d.kenarlar.map((k): [number, number, number] => [onda1(k.kapasiteSaat), onda1(k.kullanilanSaat), onda1(k.askeriKullanilanSaat)]);
@@ -101,5 +147,24 @@ export function kareAl(sim: Simulasyon, oyuncuIdleri: readonly string[]): Kare {
     return o ? Math.round((o.hazine.yerelOran + o.hazine.gelenOran) / MILI) : 0;
   });
 
-  return { saat: Math.round(t / SAAT), bolgeler, kenarlar, akislar, kapsam, fiyat, savaslar, hazine, hazineOrani };
+  const kare: Kare = { saat: Math.round(t / SAAT), bolgeler, kenarlar, akislar, kapsam, fiyat, savaslar, hazine, hazineOrani };
+  const iklim = d.iklim;
+  if (iklim) {
+    const turler = Object.keys(sim.ic.param.iklim?.olaylar ?? {});
+    kare.iklim = {
+      olaylar: iklim.olaylar.map(
+        (o): OlayKaresi => ({
+          id: o.id,
+          tur: Math.max(0, turler.indexOf(o.tur)),
+          merkez: o.merkez,
+          uyari: Math.round(o.uyari / SAAT),
+          baslangic: Math.round(o.etkiBaslangic / SAAT),
+          bitis: Math.round(o.bitis / SAAT),
+          siddet: Math.round((o.siddetPpm * 100) / PPM),
+          etki: o.etki.map((e): [number, number] => [e.bolge, Math.round((e.siddetPpm * 100) / PPM)]),
+        }),
+      ),
+    };
+  }
+  return kare;
 }

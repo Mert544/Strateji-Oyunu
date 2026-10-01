@@ -16,6 +16,7 @@ import type { Vek3 } from "./matematik";
 import { ortakOlustur } from "./ortak";
 import type { Ortak } from "./ortak";
 import { SimgeKatmani } from "./simgeler";
+import type { OlayGirdisi } from "./simgeler";
 import { paletiOku } from "./tema";
 import type { SahnePaleti } from "./tema";
 import type { DunyaKarasi } from "../veri/cografya";
@@ -23,6 +24,7 @@ import type { DunyaHaritasi } from "../veri/harita-birlestir";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
 import { bolgeRenkleriniHesapla, bolgeTamponuOlustur } from "../veri/renkler";
 import type { BolgeRenkTamponu } from "../veri/renkler";
+import { olayEvresi, olaySimgesi, olaySonumu, tarimRenkleriniHesapla } from "../veri/tarim";
 
 export interface SahneOlaylari {
   /** Tek tıklama: bölge indeksi veya -1 (boşluk). */
@@ -55,6 +57,8 @@ export class Sahne {
   dizin: Dizin | null = null;
   kare: Kare | null = null;
   malSecili = -1;
+  /** "Tarım" harita görünümü (bölge dolgusu toprak verimliliği + ekim deseni); mal görünümünü geçersiz kılar. */
+  tarimGorunumu = false;
   secili = -1;
   /** Görünen sim saati (kesirli); güneş yönü için. */
   simSaatiKaynagi: () => number = () => 0;
@@ -141,13 +145,16 @@ export class Sahne {
     if (!kare || !this.dizin) return;
     this.serit?.guncelle(kare, malKenarlari(kare, this.malSecili));
     this.parcacik?.guncelle(kare, this.malSecili);
+    // Tarım görünümünde akış parçacıkları gizlenir: dolgu ve desen okunur kalsın.
+    if (this.parcacik) for (const o of this.parcacik.nesneler) o.visible = !this.tarimGorunumu;
     this.savas?.guncelle(kare.savaslar);
     this.simgeleriYenile();
   }
 
   private renkleriYenile(): void {
     const dizin = this.dizin ?? this.onDizin();
-    bolgeRenkleriniHesapla(this.kare, dizin, this.malSecili, this.palet.palet, this.renkler);
+    if (this.tarimGorunumu) tarimRenkleriniHesapla(this.kare, dizin, this.palet.tarim, this.renkler);
+    else bolgeRenkleriniHesapla(this.kare, dizin, this.malSecili, this.palet.palet, this.renkler);
     this.bolge.renkleriYaz(this.renkler, this.secili, [1, 1, 1]);
   }
 
@@ -167,10 +174,34 @@ export class Sahne {
     };
   }
 
+  /** Etkin ve uyarıdaki iklim olaylarını simge katmanının girdisine çevirir (türler dizinden, renkler temadan). */
+  private olayGirdileri(): OlayGirdisi[] {
+    const kare = this.kare;
+    const tarim = this.dizin?.tarim;
+    if (!kare?.iklim || !tarim) return [];
+    const cikti: OlayGirdisi[] = [];
+    for (const o of kare.iklim.olaylar) {
+      const evre = olayEvresi(o, kare.saat);
+      if (evre === "bitti") continue;
+      const tur = tarim.olayTurleri[o.tur] ?? "";
+      cikti.push({
+        merkez: o.merkez,
+        glif: olaySimgesi(tur).glif,
+        aktif: evre === "aktif",
+        renk: this.palet.olay[tur] ?? this.palet.olayDiger,
+        etki: o.etki.map(([b, p]): [number, number] => [b, p / Math.max(1, o.siddet)]),
+        guc: olaySonumu(o, kare.saat),
+      });
+      if (cikti.length >= 16) break;
+    }
+    return cikti;
+  }
+
   private simgeleriYenile(): void {
     this.simge?.guncelle({
       renkler: this.renkler,
       savaslar: this.kare?.savaslar ?? [],
+      olaylar: this.olayGirdileri(),
       secili: this.secili,
       savasRengi: this.palet.savas,
       secimRengi: this.palet.secimCizgi.slice(0, 3) as [number, number, number],
@@ -179,6 +210,13 @@ export class Sahne {
 
   malSec(m: number): void {
     this.malSecili = m;
+    this.tarimGorunumu = false;
+    this.kareUygula(this.kare);
+  }
+
+  /** "Tarım" görünümünü aç/kapat. */
+  tarimGorunumuAyarla(a: boolean): void {
+    this.tarimGorunumu = a;
     this.kareUygula(this.kare);
   }
 

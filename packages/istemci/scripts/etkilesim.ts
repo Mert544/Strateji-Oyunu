@@ -133,7 +133,7 @@ async function main(): Promise<void> {
     // mal seçici ve sekmeler
     await sayfa.locator('#mal-cubugu button[data-mal="1"]').click();
     kontrol(`${etiket}: mal çubuğu seçer`, (await sayfa.evaluate(() => window.__olcum?.sahne.malSecili)) === 1);
-    for (const sek of ["mal", "hazine", "darbogaz", "savas", "bolge"]) {
+    for (const sek of ["mal", "hazine", "darbogaz", "savas", "olaylar", "bolge"]) {
       await sayfa.locator(`#sek-${sek}`).click({ force: true });
       const aria = await sayfa.locator(`#sek-${sek}`).getAttribute("aria-selected");
       kontrol(`${etiket}: sekme ${sek}`, aria === "true" && (await sayfa.locator("#sekme-icerik").innerText()).length > 10);
@@ -146,6 +146,33 @@ async function main(): Promise<void> {
     const tasma = await sayfa.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     kontrol(`${etiket}: yatay sayfa kaydırması yok`, !tasma);
     kontrol(`${etiket}: konsol hatası yok`, konsol.length === 0, konsol.join(" | "));
+    // tarım görünümü ve iklim olayı: ileri sarılmış dünyada bir olay etkin/uyarıdayken
+    const sayfa2 = await baglam.newPage();
+    await sayfa2.addInitScript("window.__name = (f) => f;");
+    const konsol2: string[] = [];
+    sayfa2.on("pageerror", (e) => konsol2.push(e.message));
+    sayfa2.on("console", (m) => m.type() === "error" && konsol2.push(m.text()));
+    await sayfa2.goto(`file://${html}?adaptif=0&acilis=0&hiz=3600&ileri=230`);
+    await sayfa2.waitForFunction(() => window.__olcum?.hazir() === true, null, { timeout: 240000 });
+    await sayfa2.waitForFunction(() => (window.__olcum?.kare()?.iklim?.olaylar.length ?? 0) > 0, null, { timeout: 120000 });
+    const takvim = await sayfa2.locator("#takvim").innerText();
+    kontrol(`${etiket}: üst çubukta iklim takvimi (tarih ve hasat)`, /\d+ (Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)/.test(takvim) && /%\d+/.test(takvim), `(${takvim.replace(/\s+/g, " ")})`);
+    await sayfa2.locator('#mal-cubugu button[data-gorunum="tarim"]').click();
+    kontrol(`${etiket}: Tarım çipi görünümü açar`, (await sayfa2.evaluate(() => window.__olcum?.sahne.tarimGorunumu)) === true && (await sayfa2.locator('#mal-cubugu button[data-gorunum="tarim"]').getAttribute("aria-pressed")) === "true");
+    await sayfa2.locator('#mal-cubugu button[data-mal="1"]').click();
+    kontrol(`${etiket}: mal çipi Tarım görünümünü kapatır`, (await sayfa2.evaluate(() => window.__olcum?.sahne.tarimGorunumu)) === false);
+    await sayfa2.locator("#sek-olaylar").click({ force: true });
+    const satirlar = sayfa2.locator("#sekme-icerik .olay-satir");
+    kontrol(`${etiket}: Olaylar sekmesi olayı listeler`, (await satirlar.count()) > 0);
+    const hedef = Number(await satirlar.first().getAttribute("data-bolge"));
+    await satirlar.first().dispatchEvent("click");
+    await sayfa2.waitForTimeout(300);
+    const sec = await sayfa2.evaluate(() => window.__olcum?.sahne.secili);
+    kontrol(`${etiket}: olay satırına tıklayınca merkez bölge seçilir ve uçuş başlar`, sec === hedef && (await sayfa2.evaluate(() => window.__olcum?.sahne.kontrol.ucuyorMu() === true)), `(seçili=${sec}, hedef=${hedef})`);
+    const bolgeMetni = await sayfa2.locator("#sekme-icerik").innerText();
+    kontrol(`${etiket}: bölge panelinde Tarım bölümü ve kararlar`, /Toprak durumu/.test(bolgeMetni) && /Ekim planı/.test(bolgeMetni) && /Gübre dozu/.test(bolgeMetni));
+    kontrol(`${etiket}: mal çubuğunda gübre (içerikten) var`, (await sayfa2.locator("#mal-cubugu").innerText()).includes("Gübre"));
+    kontrol(`${etiket}: tarım sayfasında konsol hatası yok`, konsol2.length === 0, konsol2.join(" | "));
     await baglam.close();
   }
   await tarayici.close();

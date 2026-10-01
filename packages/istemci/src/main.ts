@@ -32,6 +32,8 @@ declare global {
       simSaat: () => number;
       bolgeSec: (i: number, uc?: boolean) => void;
       malSec: (m: number) => void;
+      /** "Tarım" harita görünümünü aç/kapat. */
+      tarim: (a: boolean) => void;
       hiz: (h: number) => void;
       duraklat: (d: boolean) => void;
       sekme: (s: string) => void;
@@ -143,6 +145,7 @@ function baslat(): void {
         panel.malAyarla(m);
       },
       bolgeSec: (i, uc) => olaySec(i, uc),
+      tarimGorunum: (a) => tarimSec(a),
       kenareUc: (k) => {
         const e = dizin?.kenarlar[k];
         if (!e) return;
@@ -170,6 +173,11 @@ function baslat(): void {
   );
   panel.hizAyarla(hiz, false);
   panel.duraklatAyarla(duraklat, false);
+
+  function tarimSec(a: boolean): void {
+    s.tarimGorunumuAyarla(a);
+    panel.tarimGorunumAyarla(a);
+  }
 
   function olaySec(i: number, uc: boolean): void {
     s.bolgeSec(i);
@@ -203,6 +211,7 @@ function baslat(): void {
         break;
       case "kare":
         sonKare = m.kare;
+        if (!ilkKare) simMsAlinan = m.simMs;
         s.kareUygula(m.kare);
         panel.kareYaz(m.kare);
         if (!ilkKare) {
@@ -218,6 +227,7 @@ function baslat(): void {
         break;
       case "hata":
         hataGoster("Simülasyon işçisi hatası:\n" + m.mesaj);
+        document.getElementById("yukleme")?.classList.add("bitti");
         break;
     }
   };
@@ -230,6 +240,7 @@ function baslat(): void {
     botlar: BOTLAR,
     hiz,
     duraklat,
+    ileriSaat: Number(q.get("ileri")) || 0,
   });
 
   window.__olcum = {
@@ -242,6 +253,7 @@ function baslat(): void {
       s.malSec(m);
       panel.malAyarla(m);
     },
+    tarim: (a) => tarimSec(a),
     hiz: (h) => {
       panel.hizAyarla(h, true);
     },

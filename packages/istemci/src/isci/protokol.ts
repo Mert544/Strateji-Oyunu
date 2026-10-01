@@ -10,7 +10,7 @@ export interface IsciVeriPaketi {
 }
 
 export type IsciyeMesaj =
-  | { tur: "baslat"; veri: IsciVeriPaketi; tohum: number; botlar: string[]; hiz: number; duraklat: boolean }
+  | { tur: "baslat"; veri: IsciVeriPaketi; tohum: number; botlar: string[]; hiz: number; duraklat: boolean; ileriSaat?: number }
   | { tur: "hiz"; hiz: number }
   | { tur: "duraklat"; duraklat: boolean };
 

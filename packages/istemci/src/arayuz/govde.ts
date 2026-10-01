@@ -7,6 +7,7 @@ import type { Hucre, KapsamDurumu } from "../veri/kapsam";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
 import { malRengiHex, sekilKodu } from "../veri/renkler";
 import { esc, fmt, fmt1, kisalt, sinirla } from "./bicim";
+import { bolgeTarimBolumu, olayOzeti, tarimKararlari, tarimLejanti, tarimNedenSatiri } from "./tarim-govde";
 
 export const DURUM_AD: Record<KapsamDurumu, string> = {
   karsilanan: "Karşılanan",
@@ -41,12 +42,19 @@ export interface GovdeDurumu {
   kare: Kare | null;
   dizin: Dizin | null;
   mal: number;
+  /** "Tarım" harita görünümü açık mı (mal seçimini geçersiz kılar). */
+  tarimGorunumu?: boolean;
   /** Seçili bölge indeksi (-1: yok). */
   bolge: number;
   /** Bölge adı (geçici/gerçek haritadan; dizinden farklı olabilir). */
   bolgeAd: (i: number) => string;
   /** Hazine geçmişi: oyuncu -> son değerler. */
   hazineGecmisi: number[][];
+}
+
+/** Tarım görünümü ikonu (yaprak). */
+export function yaprakIkonu(boy: number): string {
+  return `<svg width="${boy}" height="${boy}" viewBox="-5 -5 10 10" aria-hidden="true"><path d="M-3.6 3.6C-4 -1 -1 -3.8 3.8 -3.8C3.8 0.8 1 3.8 -3.6 3.6ZM-3.6 3.6L1 -1" fill="var(--t3)" stroke="var(--ink2)" stroke-width="0.6" stroke-linejoin="round"/></svg>`;
 }
 
 export function malIkonu(d: Dizin, m: number, boy: number): string {
@@ -84,7 +92,7 @@ export function bolgePaneli(g: GovdeDurumu): string {
   const { kare, dizin, bolge: i } = g;
   if (!kare || !dizin) return "<p class='ipucu-metin'>Simülasyon başlatılıyor…</p>";
   if (i < 0) {
-    return "<p class='ipucu-metin'>Küre üzerinde bir bölgeye dokunun veya tıklayın: stoklar, tesisler, üretim ve karşılanma burada görünür. Çift tıklama/dokunma bölgeye uçar.</p>" + komutYeri(false);
+    return "<p class='ipucu-metin'>Küre üzerinde bir bölgeye dokunun veya tıklayın: stoklar, tesisler, üretim, tarım ve karşılanma burada görünür. Çift tıklama/dokunma bölgeye uçar.</p>" + tarimKararlari(g, false) + komutYeri(false);
   }
   const bk = kare.bolgeler[i];
   const b = dizin.bolgeler[i];
@@ -102,6 +110,7 @@ export function bolgePaneli(g: GovdeDurumu): string {
     s += `<div class="satir"><span class="ad">İkmal karşılanma</span><span class="sayi">%${bk.ikmal} ${cubuk(bk.ikmal)}</span></div>`;
     s += `<div class="satir"><span class="ad">Duruş</span><span>${["normal", "savunma", "geri çekil"][bk.durus] ?? "?"}</span></div>`;
   }
+  s += bolgeTarimBolumu(g, i);
   s += `<h3>Mallar</h3><div class="tablo-kap"><table class="mini-tablo"><thead><tr><th>Mal</th><th class="sayi">Stok</th><th class="sayi">Üretim/sa</th><th>Karşılanma</th></tr></thead><tbody>`;
   for (let m = 0; m < nm; m++) {
     const h = hucre(kare, t, i, m);
@@ -129,7 +138,7 @@ export function bolgePaneli(g: GovdeDurumu): string {
     if (gel.length) s += `<div class="satir"><span class="ad" style="flex:none">Gelen</span><span style="text-align:right;flex:1">${topla(gel)}</span></div>`;
     if (gid.length) s += `<div class="satir"><span class="ad" style="flex:none">Giden</span><span style="text-align:right;flex:1">${topla(gid)}</span></div>`;
   }
-  return s + komutYeri(true);
+  return s + tarimKararlari(g, true) + komutYeri(true);
 }
 
 /** Komut arayüzü sonraki adımda gelecek: yer tutucu. */
@@ -152,18 +161,21 @@ function komutYeri(bolgeSecili: boolean): string {
 export function malPaneli(g: GovdeDurumu): string {
   const { kare, dizin } = g;
   if (!kare || !dizin) return "";
-  let s = `<p class="ipucu-metin">Bir mal seçin: bölgeler o malın kapsam durumuna boyanır (neresi açık ve neden). Akış parçacıkları malın rengindedir.</p>`;
+  let s = `<p class="ipucu-metin">Bir görünüm veya mal seçin: bölgeler sahip devlete, seçili malın kapsam durumuna (neresi açık ve neden) ya da tarım verimliliğine boyanır. Akış parçacıkları malın rengindedir.</p>`;
+  if (g.tarimGorunumu && dizin.tarim) s += `<h3>Tarım görünümü göstergesi</h3>` + tarimLejanti(g) + `<h3>Görünüm ve mal</h3>`;
   s += `<div class="mal-liste">`;
-  s += `<button type="button" class="mal-satir${g.mal < 0 ? " secili" : ""}" data-mal="-1"><span>Hepsi (sahip devlet rengi)</span></button>`;
+  s += `<button type="button" class="mal-satir${g.mal < 0 && !g.tarimGorunumu ? " secili" : ""}" data-mal="-1"><span>Hepsi (sahip devlet rengi)</span></button>`;
+  if (dizin.tarim) s += `<button type="button" class="mal-satir${g.tarimGorunumu ? " secili" : ""}" data-gorunum="tarim" aria-pressed="${g.tarimGorunumu === true}"><span>${yaprakIkonu(12)} Tarım (toprak verimliliği ve ekim deseni)</span></button>`;
   const MN = 0.3, MX = 2.0;
   const poz = (v: number): number => sinirla((v - MN) / (MX - MN), 0, 1) * 100;
   dizin.mallar.forEach((mal, m) => {
     const v = (kare.fiyat[m] ?? 1000) / 1000;
     const a = poz(1), b = poz(v);
     const yuk = v >= 1;
-    s += `<button type="button" class="mal-satir${g.mal === m ? " secili" : ""}" data-mal="${m}" aria-pressed="${g.mal === m}"><span>${malIkonu(dizin, m, 12)} ${esc(mal.ad)}</span><span class="fiyat-iz"><span class="fiyat-dolgu" style="left:${Math.min(a, b)}%;width:${Math.abs(b - a)}%;background:${yuk ? "var(--k-acik)" : "var(--k-karsilanan)"}"></span><span class="fiyat-orta" style="left:${a}%"></span></span><span class="sayi">%${Math.round(v * 100)}</span></button>`;
+    s += `<button type="button" class="mal-satir${g.mal === m && !g.tarimGorunumu ? " secili" : ""}" data-mal="${m}" aria-pressed="${g.mal === m && !g.tarimGorunumu}"><span>${malIkonu(dizin, m, 12)} ${esc(mal.ad)}</span><span class="fiyat-iz"><span class="fiyat-dolgu" style="left:${Math.min(a, b)}%;width:${Math.abs(b - a)}%;background:${yuk ? "var(--k-acik)" : "var(--k-karsilanan)"}"></span><span class="fiyat-orta" style="left:${a}%"></span></span><span class="sayi">%${Math.round(v * 100)}</span></button>`;
   });
   s += `</div><p class="ipucu-metin">Fiyat çubuğu: çizgi = taban fiyat (%100); sağa uzayan pahalı (talep &gt; arz), sola uzayan ucuz.</p>`;
+  if (g.tarimGorunumu) return s;
   s += `<h3>Gösterge</h3><div class="gosterge">
 <span class="g-oge"><i class="g-kutu" style="background:var(--k-karsilanan)"></i>Karşılanan</span>
 <span class="g-oge"><i class="g-kutu g-nokta" style="background:var(--k-kismi)"></i>Kısmi (noktalı)</span>
@@ -179,6 +191,7 @@ export function malPaneli(g: GovdeDurumu): string {
 export function nedenSatiri(g: GovdeDurumu): string {
   const { kare, dizin, mal: m, bolge } = g;
   if (!kare || !dizin) return "";
+  if (g.tarimGorunumu && dizin.tarim) return tarimNedenSatiri(g);
   const t = kareTuret(kare, dizin.oyuncular.length);
   const nb = dizin.bolgeler.length, nm = dizin.mallar.length;
   if (bolge >= 0) {
@@ -219,7 +232,7 @@ export function nedenSatiri(g: GovdeDurumu): string {
   const nn2: Record<string, number> = {};
   for (const c of kare.kapsam) if (c[3] > 0) nn2[["yok", "kapasite", "girdi_eksik", "mesafe", "erisim_yok"][c[3]] ?? "yok"] = (nn2[["yok", "kapasite", "girdi_eksik", "mesafe", "erisim_yok"][c[3]] ?? "yok"] ?? 0) + 1;
   const en = Object.keys(nn2).sort((a, b) => (nn2[b] ?? 0) - (nn2[a] ?? 0)).map((n) => `${NEDEN_KISA[n] ?? n} ${nn2[n]}`).join(", ");
-  return `Şu an ${kare.kapsam.length} bölge×mal hücresi tam karşılanmıyor` + (en ? ` (${esc(en)})` : "") + ". <span class='soluk'>Üstteki çubuktan bir mal seçerek “neresi açık” görünümüne geçin.</span>";
+  return `Şu an ${kare.kapsam.length} bölge×mal hücresi tam karşılanmıyor` + (en ? ` (${esc(en)})` : "") + olayOzeti(g) + ". <span class='soluk'>Üstteki çubuktan bir mal seçerek “neresi açık” görünümüne geçin.</span>";
 }
 
 // ---------------------------------------------------------------------------------------------
