@@ -1249,6 +1249,12 @@ Sunucu kapalıyken geçen süre açılışta 1 sim-saatlik adımlarla yetiştiri
 
 Maliyet: çözüm başına `O(D × Y + I × M)` (D dükkân, Y ≤ 8 yuva, I dükkânlı ilçe, M ≤ 24 mal): ihmal edilebilir; yine de `cekirdek/bench/komut-maliyeti.ts` dükkânlı senaryoyla yeniden koşulur, çözüm başına CPU artışı ≤ %5 hedeflenir (docs/06 §15.9 taban 2,6–2,9 ms). Önbellek gerekirse yalnız `WeakMap` ve girdiyle anahtarlı (durum metnine girmez, §15.9 kalıbı). Bundle: çekirdek +2–3 KB gzip (K3 keşif §4).
 
+**Alfa-0 istisnası (baş lider kararı):**
+- **Ölçülen:** K3'ün tek koşusu. Dükkânsız dünyada ek maliyet yok; en kötü durumda ×1,63. Ölçüt (≤ %5) **karşılanmadı**.
+- **Koşul:** koşu PG adımıyla eşzamanlıydı, loadavg 6–10 (ölçüm gürültülü).
+- **Karar:** Alfa-0 için kabul edildi; **ölçüt silinmiyor** (≤ %5 hedefi geçerli kalır).
+- **Şart:** O2 sessiz bir pencerede tek koşu yapar, oyuncu başına 1–2 dükkânlı gerçekçi senaryoyla. Çözüm p95 300 ms'i aşarsa K4 optimizasyonu **Alfa-0 açılışından ÖNCE** yapılır.
+
 ### 6.10 Bilinçli sadeleştirmeler (Alfa-0)
 
 **V15 oran bandı istisnası (Alfa-0 notu; baş lider ve Kod lideri kararı):** `cam_firini` ve `celik_dograma` (G8) taban fiyatlı değer oranı [1,16; 1,48] bandının dışındadır (1,649 ve 1,549); V15'te **yöntem başına üst sınır** 1,70 ve 1,60 tanımlıdır (§4.4, §4.5 V15). Alfa-0'a özgü istisnadır, başka yönteme emsal olmaz.
