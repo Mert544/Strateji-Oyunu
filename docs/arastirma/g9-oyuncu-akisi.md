@@ -1,13 +1,13 @@
 # G9 oyuncu akışı: giriş ekranı ve dükkân paneli (A1)
 
-> **Durum.** 1 Ekim 2026 gece, Ar-Ge A1. **Yalnız belge**: kod, parametre ve başka belge değiştirilmedi; hiçbir test koşulmadı, hiçbir sunucu başlatılmadı. T1 (metin, düzen, telefon) ve K1 (istemci mantığı, komut) için girdidir. Sayıların hepsi **öneri ya da başka belgenin taslağıdır**; **(doğrulanmadı)** etiketi koddan ya da kaynak belgeden teyit edilemeyen bilgiyi gösterir.
+> **Durum.** 1 Ekim 2026 gece, Ar-Ge A1. **Yalnız belge**: kod, parametre ve başka belge değiştirilmedi; hiçbir test koşulmadı, hiçbir sunucu başlatılmadı. T1 (metin, düzen, telefon) ve K1 (istemci mantığı, komut) için girdidir. Sayılar **öneri ya da başka belgenin onaylı sürümündendir** (A3 795c370); **(doğrulanmadı)** etiketi koddan ya da kaynak belgeden teyit edilemeyen bilgiyi gösterir.
 >
-> **Bağımlılık işareti.** A3'ün şartnamesi (`docs/arastirma/p4-p5-sartname.md`, dal `takim/a3/p4-p5-sartname`, 4f354c0) §6–§10 hâlâ **taslaktır (Parça 2)**. Bu belgede o bölümlere dayanan her yer **"A3 Parça 2'ye göre güncellenecek"** diye işaretlidir (ilgili satırda `[A3-P2]`). G5 (e-posta girişi) K2 dalında uygulanmıştır (`takim/k2/g5-eposta-giris`, 23527a0, `docs/agent-results/G5-k2.md`) ve `entegrasyon`'a **henüz girmemiştir**; uç ve hata kodları o dalın sözleşmesindendir.
+> **Bağımlılık işareti.** A3'ün şartnamesi (`docs/arastirma/p4-p5-sartname.md`, dal `takim/a3/p4-p5-sartname`, **795c370, baş lider onaylı**) §6–§10 **kesindir**; bu belgedeki dükkân sayıları, komutlar, kare alanları, DUK/MRK kodları ve metinleri o sürüme göre yazılmıştır (önceki `[A3-P2]` işaretleri kalktı). 795c370'in `entegrasyon`'a girip girmediği ve kodun (G7: K3/K2) henüz yazılıp yazılmadığı **(doğrulanmadı)**: kare alanları, `dukkan_yik` ve ad ucu kod gelene dek **sözleşmedir, çalışan davranış değildir**. G5 (e-posta girişi) K2 dalında uygulanmıştır (`takim/k2/g5-eposta-giris`, 23527a0, `docs/agent-results/G5-k2.md`) ve `entegrasyon`'a **henüz girmemiştir**; uç ve hata kodları o dalın sözleşmesindendir.
 
 | Alan | Değer |
 |---|---|
 | Görev | G9 "giriş ekranı ve dükkân paneli" ([10 §5A](../10-gorev-listesi.md)); bağımlılık G2, G5, G7 |
-| Dayanaklar | A3 `p4-p5-sartname.md` §7 (dukkan S), §9 (komutlar, ret iletileri), §10 (protokol), §6.8 (okuma API'si) · K2 `G5-k2.md` ve `KIMLIK.md` (K2 dalı sürümü) · A2 `p4-p5-ekonomi.md` §1.9 (dükkân ekonomisi; dal `takim/a2/p4-p5-ekonomi`) · [insan testi kılavuzu](insan-testi-kilavuzu.md) §3.2, §6.2 · ilk saat ekran incelemesi (dal `takim/a1/ilk-saat-inceleme`; B2, B4, B7, B8) · [rehber-gorevler](rehber-gorevler.md) §3.1 · [donus-deneyimi](donus-deneyimi.md) §2.9, §3C · [P4/P5 içerik taslağı](p4-p5-icerik-taslagi.md) §dükkân türleri |
+| Dayanaklar | A3 `p4-p5-sartname.md` (795c370) §7 (dukkan S), §9 (komutlar, ret iletileri), §10 (protokol), §6.8 (okuma API'si) · K2 `G5-k2.md` ve `KIMLIK.md` (K2 dalı sürümü) · A2 `p4-p5-ekonomi.md` §1.9 (dükkân ekonomisi; dal `takim/a2/p4-p5-ekonomi`) · [insan testi kılavuzu](insan-testi-kilavuzu.md) §3.2, §6.2 · ilk saat ekran incelemesi (dal `takim/a1/ilk-saat-inceleme`; B2, B4, B7, B8) · [rehber-gorevler](rehber-gorevler.md) §3.1 · [donus-deneyimi](donus-deneyimi.md) §2.9, §3C · [P4/P5 içerik taslağı](p4-p5-icerik-taslagi.md) §dükkân türleri |
 | Sahipler | **T1** (metin, düzen, telefon, erişilebilirlik) · **K1** (akış mantığı, komut gönderimi, durum) · K2 (sunucu uçları ve kare alanları; istek) |
 | Tekrar yok | Giriş sunucu tasarımı `KIMLIK.md`'de, dükkân kuralları A3 ve A2'de; burada yalnız **oyuncunun gördüğü ekran, kararı ve metni** vardır |
 
@@ -22,8 +22,8 @@
 5. **Giriş sızdırmaz.** Hesabın var olup olmadığı, e-posta başına sınır ve posta sonucu yanıtı değiştirmez (K2); bu yüzden "bağlantı gönderdik" cümlesi **koşulsuzdur** ve "gelmediyse" yardımı ekranın parçasıdır.
 6. **Telefon önceliklidir.** Bağlantı çoğu kez posta uygulamasının **uygulama içi tarayıcısında** açılır; tarayıcıya bağlama varsayılan kapalıdır (K2), ama oturum o tarayıcıda açılır: "oyuna dön" yolu G-3'ün parçasıdır **(doğrulanmadı: tarayıcı davranışı pilotta)**.
 7. **"Kilit yok, seçim var."** Dükkân M/L "henüz açılmadı" (DUK-04) dünyanın açılış zamanlamasıdır, oyuncu kilidi değildir; metin bunu **seviye ya da teknoloji** diliyle söylemez (§D-9).
-8. **Dükkân kaldırma (karar verildi, baş lider):** inşa sürerken iptal **%50 iadeli**; tamamlanmış dükkân **kaldırılabilir, iade yok**; arsa oyuncuda kalır, raftaki mallar depoya döner. "Dükkânı kaldır" akışı ve **iadesiz** onay metni D-8.1'dedir; komut ve ret kodu `[A3-P2]`.
-9. **Veri isteği (K2):** dükkân panelinin üç göstergesi bugün şartnamede yok: yuva başına "mevcut" (stoksuz yuva çekime girmez), ilçe talebi (`IlceKaresi.talep?`) ve görünen ad alanı (§C: İ-1…İ-5).
+8. **Dükkân kaldırma (karar verildi, baş lider):** inşa sürerken iptal **%50 iadeli**; tamamlanmış dükkân **kaldırılabilir, iade yok**; arsa oyuncuda kalır, raftaki mallar depoya döner. "Dükkânı kaldır" akışı ve **iadesiz** onay metni D-8.1'dedir; komut `dukkan_yik` (A3 §7.9); inşadaki dükkân için mevcut `insaat_iptal`; yarışta DUK-23 iptale yönlendirir.
+9. **Veri isteği (K2):** A3 §10.2 yuva başına `mevcut`, kasa doluluğu, kampanya hakları ve karşılanma oranını kareye koyar (İ-2, İ-4 **kapandı**); görünen ad alanı **karar verildi** (K2 uygular; İ-1). Açık kalanlar: ilçe talebi (`IlceKaresi.talep?`, İ-3) ve **fiyat değişim zamanı** (hız sınırı geri sayımı için; kareda yok: **İ-6**). Ayrıntı §C.
 10. **Ölçütler:** giriş [kılavuz S1.1](insan-testi-kilavuzu.md) (≤3 dk) ve A0-6 e2e; dükkân **A0-11** (ilk dükkân ≤36 sa, geri ödeme ≤48 sa), **A0-12** (perakende primi, ilk dükkân, fiyat savaşı), **A0-14** (ilk satış, kart atlama).
 
 ---
@@ -122,13 +122,13 @@ Kılavuzla bağ: [S1.1 giriş](insan-testi-kilavuzu.md) hedef ≤3 dk, kabul 6 d
 | | |
 |---|---|
 | **Amaç** | Yeni hesabın (`yeniHesap: true`) dünyada **görünecek takma adını** belirlemek |
-| **Oyuncu kararı** | Önerilen adı kabul etmek ya da değiştirmek ("tamam" en hızlı yol) |
-| **Gösterilen sayılar** | Uzunluk sayacı (en çok 24 karakter; kural §D-7'deki marka kuralıyla **aynı izinli küme** önerilir, K2 kararı bekler) |
-| **Metin** | Başlık: **Sana ne diyelim?** · Gövde: **Bu ad dünyadaki herkese görünür. Gerçek adını yazman gerekmez.** · Alan: **görünen adın** (hazır öneri, ör. "esnaf-4k7") · Düğme: **tamam** · Hata: **Bu ad kullanılamaz; başka bir ad dene.** |
+| **Oyuncu kararı** | Sunucunun önerdiği adı kabul etmek ya da kendi adını yazmak ("tamam" en hızlı yol) |
+| **Gösterilen sayılar** | Uzunluk sayacı (**2–24** karakter; kural **marka adıyla aynıdır**, A3 §7.7: bkz. D-7). Değiştirme hakkı: **günde 1** (gün sınırının tanımı ve ilk seçimin sayıya girip girmediği K2 kararıdır **(doğrulanmadı)**) |
+| **Metin** | Başlık: **Sana ne diyelim?** · Gövde: **Bu ad dünyadaki herkese görünür. Gerçek adını yazman gerekmez. Adını günde bir kez değiştirebilirsin.** · Alan: **görünen adın** (hazır öneri **küçük harfli**, sunucu üretir, ör. "esnaf-4k7") · Önizleme satırı: **Dünyada böyle görünürsün: {ad}** (yazdığın gibi; büyük harf kuralı S-12 sahip teyidi bekler: S11) · Düğme: **tamam** · Hatalar: **Bu ad kullanılamaz; başka bir ad dene.** (yasak liste: neden söylenmez) · uzunluk/karakter hataları D-9 MRK-04…08 metinlerinin "ad" uyarlaması · Günlük sınır: **Adını günde yalnız bir kez değiştirebilirsin.** (öneri; ileti K2/T1) |
 | **Telefon / masaüstü** | Önerilen ad alanda **hazır** gelir; klavye açılmadan "tamam" ile geçilebilir (K3/K4 için sürtünme yok) |
 | **Ölçüt** | S1.1 (giriş → ilk karar); KVKK |
-| **Sahip** | T1 (metin), **K2 (alan ve uç yok)**, K1 |
-| **Ret ve bağımlılık** | **Görünen ad alanı bugün YOK:** `KIMLIK.md` §6 "ayrı bir profil alanı olacaktır (çekirdeğe girmez; henüz yok)"; ekran görüntülerindeki "ali", "cem" geliştirme kimliğidir. **E-posta öneki ad olarak kullanılmaz** (kişisel veri sızar). Bu ekran K2 işi bitmeden yapılamaz: **İ-1**. Geçici çözüm: sunucu üretimli opak ad (`o_xxxxxxxx`) ya da istemci önerisi, ad değiştirme sonra |
+| **Sahip** | T1 (metin), **K2 (profil alanı ve uç: karar verildi, uygulama K2)**, K1 |
+| **Ret ve bağımlılık** | **Karar verildi (baş lider; A3 §7.7):** oyuncu adı **seçer**; sunucu **küçük harfli** bir ad **üretir** (öneri); kural marka adıyla **aynı** tek doğrulayıcıdır (`adSozdizimiHatasi`; 2–24; izinli küme `A-Z a-z Ç Ğ İ Ö Ş Ü ç ğ ı ö ş ü 0-9`, boşluk, `.` `'` `-` `&`; baş/son ve ardışık boşluk yok; en az bir harf); **yasaklı liste yalnız sunucuda** (`ad-suzgec.ts`, `yasakli-adlar.json`; katlama büyük/küçük harf, aksan ve ayırıcıya duyarsız, bot/ajan yoluna uygulanmaz); **günde 1 değişiklik**; **hesap kimliği sabit, ekranda hep güncel ad görünür** (eski ad kimlik değildir). Ad **profilde** saklanır; çekirdek günlüğüne ve dünya durumuna girmez; sıfırlama sunucu yönetici yoludur (KVKK). **E-posta öneki ad olarak kullanılmaz.** Profil alanı ve ucu **G5'te yoktur** (`KIMLIK.md` §6 "henüz yok"): ucun adı, ret iletisi ve gün sınırı K2 işidir **(doğrulanmadı)**: **İ-1**. Ekran görüntülerindeki "ali", "cem" geliştirme kimliğidir |
 
 ## G-5. Giriş sonrası yönlendirme
 
@@ -192,7 +192,7 @@ Hata gövdesi `{ tamam: false, kod, mesaj, beklemeSn? }` (K2). Ekran, sunucunun 
 
 # B. Dükkân akışı
 
-Kaynaklar: A3 §7 (dükkân), §9.3 (kod ve iletiler), §10.2 (kare alanları); A2 §1.9 (sayılar). **Tüm A3 sayıları taslaktır `[A3-P2]`; A2'nin sayıları `afdf29f` sürümündendir.** Dükkân S sabitleri (taslak): raf **4 yuva**, kasa **90 birim/sa**, işletme gideri **132 ₺/sa**, bedel **6.000 ₺ + 20 çelik + 8 makine parçası + 4 pencere** (P-İthal: baş lider kuralı, G7'den itibaren; A3 4f354c0 §7.4), inşa **4 sa (ilk 24 saatte ≈24 dk)**, ilçede ≤2 dükkân, ilde ≤6, ayak izi S = **1 hücre**.
+Kaynaklar: A3 §7 (dükkân), §9.3 (kod ve iletiler), §10.2 (kare alanları), §15.3 (ölçüm); A2 §1.9 (sayılar). **A3 sayıları 795c370 (onaylı) sürümündendir; A2'nin sayıları `afdf29f` sürümündendir** (A3 şartnamesi A2'ye `eab8fcc` ile bağlıdır; iki sürüm arasında sayı farkı olup olmadığı **(doğrulanmadı)**). Dükkân S sabitleri (A3 §7.2–§7.6): raf **4 yuva**, kasa **90 birim/sa**, işletme gideri **132 ₺/sa**, bedel **6.000 ₺ + 20 çelik + 8 makine parçası + 4 pencere** (P-İthal: baş lider kuralı, G7'den itibaren; A3 §7.4), inşa **4 sa (ilk 24 saatte ≈24 dk)**, ilçede ≤2 dükkân, ilde ≤6, ayak izi S = **1 hücre**.
 
 ```
 D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve ilk açılış
@@ -213,7 +213,7 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Telefon / masaüstü** | Telefon: Defter kartı panelin **üstünde** (ilk saat incelemesi B7), palet kartı tam genişlik. Masaüstü: sağ panelde aynı sıra |
 | **Ölçüt** | **A0-11** (ilk dükkân ≤36 sa: bu kart **tek** keşif yolu), **A0-14** (kart atlama ≤1/5), Gö2 |
 | **Sahip** | T1 (kart, metin), K1 (`ilk_dukkan` `etkin` bayrağı: `harita/baglanti.ts:376` listesi) |
-| **Ret ve bağımlılık** | **G7+G9.** `ilk_dukkan` bugün yer tutucudur ve `etkin: false` gelir (`odul/dedektor.ts`); A3 §7.8 tetiği **ilk satış** yapar (yapı bitti değil: ödül bedelden ucuza alınamasın) `[A3-P2]`. Tür **beş S** (bakkal, fırın, şarküteri, şekerci, yapı market): yapı market G8'e bağlıdır |
+| **Ret ve bağımlılık** | **G7+G9.** `ilk_dukkan` bugün yer tutucudur ve `etkin: false` gelir (`odul/dedektor.ts`); A3 §7.8 tetiği **ilk satış** yapar (yapı bitti değil: ödül bedelden ucuza alınamasın). Tür **beş S** (bakkal, fırın, şarküteri, şekerci, yapı market): yapı market G8'e bağlıdır |
 
 **Yönlendirme yolları (3):** (a) Yapı kur paleti; (b) Defter "kendi tezgâhın" kartı (yapı kurma akışına götürür); (c) **Dikkat/öneri**: "ekmek stoğun birikiyor; dükkânda sat" (öneri motoru kural 2, yarım iş: **zincir kurulu ama satış kanalı yok**). (c) B7 öneri motoru gelince etkin olur.
 
@@ -228,9 +228,9 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Telefon / masaüstü** | Telefon: 5 kart dikey liste, seçilince alt panel (D-3). Masaüstü: palet grid |
 | **Ölçüt** | A0-11 (seçim süresi), Y1 benzeri; yanlış anlama **YA1 benzeri** ("tür kilit mi") |
 | **Sahip** | T1 (kartlar), K1 (`yapi_yerlestir` / `tesis_insa_hucre` + `dukkanTuru`) |
-| **Ret ve bağımlılık** | `[A3-P2]` Komut: `tesisTuru: "dukkan"` + **`dukkanTuru`** zorunlu (DUK-01/02/03). **İlk saat incelemesi B2:** yer olarak **ücretsiz yurt hücresi** önerilir ("arsa 0 ₺"); ek arsa almak zorunlu değildir (`yapi_yerlestir` kendi hücreni kabul eder). İlçe sınırı DUK-06, il sınırı DUK-07: **önleme:** sınır dolmuşsa tür kartı soluk ve **neden satırı** ("Bu ilçede en çok 2 dükkânın olabilir") |
+| **Ret ve bağımlılık** | Komut (A3 §9.1–9.2): `tesisTuru: "dukkan"` + **`dukkanTuru`** zorunlu (DUK-01/02/03). **İlk saat incelemesi B2:** yer olarak **ücretsiz yurt hücresi** önerilir ("arsa 0 ₺"); ek arsa almak zorunlu değildir (`yapi_yerlestir` kendi hücreni kabul eder). İlçe sınırı DUK-06, il sınırı DUK-07: **önleme:** sınır dolmuşsa tür kartı soluk ve **neden satırı** ("Bu ilçede en çok 2 dükkânın olabilir") |
 
-**Mal listeleri (taslak `[A3-P2]`; T3 verisi):** bakkal 8 mal (gıda, ekmek, un, süt, süt ürünü, şekerleme, fındık ürünü, yakıt); fırın (ekmek, gıda); şarküteri (süt, süt ürünü, gıda); şekerci (şekerleme, fındık ürünü); yapı market (cam, pencere, çelik, parça). Raf 4 yuvadır: oyuncu hangi 4 malı koyacağını **seçer** ([içerik taslağı](p4-p5-icerik-taslagi.md)).
+**Mal listeleri (T3 verisi, A3 §7.3; liste veri dosyasındadır, ekran onu **okur**, belge kopyası bağlayıcı değildir):** bakkal 8 mal (gıda, ekmek, un, süt, süt ürünü, şekerleme, fındık ürünü, yakıt); fırın (ekmek, gıda); şarküteri (süt, süt ürünü, gıda); şekerci (şekerleme, fındık ürünü); yapı market (cam, pencere, çelik, parça). **Çeşit sayısı** (`tamCesit`: bakkal 6, fırın 2, şarküteri 3, şekerci 2, yapı market 4) çekimi etkiler; **boş yuva çeşit paydasında sayılmaz** (A3 §7.5). Raf 4 yuvadır ve **bir mal tek yuvada olabilir**: malı 4'ten az olan türlerde (fırın, şekerci) **yuvalar kalıcı olarak boş kalır**; bu bir eksik değildir (D-5, D-8). Oyuncu hangi malları koyacağını **seçer** ([içerik taslağı](p4-p5-icerik-taslagi.md)).
 
 ## D-3. Maliyet kartı ve yatırım tahmini
 
@@ -243,9 +243,9 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Telefon / masaüstü** | Telefon: alt kart, ödül/Defter bildirimi **kartı örtmez** (B5/BK-3 çözümü) ve açıkken sırada bekler. Masaüstü: harita üstü kart (mevcut `Çiftlik` maliyet kartı düzeni) |
 | **Ölçüt** | A0-11 (kurma kararı ≤3 dk), A0-12 (perakende primi: bedel/geri ödeme anlaşılırlığı) |
 | **Sahip** | T1 (düzen, metin), K1 (planlayıcıdan sayılar; **kart ile çip aynı yuvarlama**) |
-| **Ret ve bağımlılık** | **Pencere kuralı (A3 4f354c0 §7.4; baş lider kararı, karar verildi) `[A3-P2]`:** dükkân bedeli **G7'den itibaren ithal pencerelidir (P-İthal)**: **6.000 ₺ + 20 çelik + 8 makine parçası + 4 pencere**. NPC pencere arzı doğrulandı (60/sa, A3 B3). Pencere stoğu yoksa kart **eksik satırı** (**Pencere 4: stokta 0**) ve **Pazar'dan al** kısayolunu verir; çekirdek iletisi `yetersiz stok: <düğüm> (mal indeksi <n>)` mal **adını** söylemelidir (A3 §9.3 K1 notu: bugün "çelik ya da makine parçası" der). **Gerçek maliyet ≈ 2.400 ₺** (4 × 540 × 1,111; A3 kırılganlık notu), A2'nin 1.600 ₺'sinden fazladır: kart rakamı **yaklaşık** der ve yukarı yuvarlar. **Kırılganlık (A3 B3):** ithalat emri kalıcı orandır, gerçekleşme **bir sonraki tam saat tıkında** başlar ve bitince **elle iptal** gerekir; bu yüzden kısayol (a) emri 4 pencere için hazır doldurur, (b) süreyi görünür kılar ("en geç 1 saat içinde gelir"), (c) pencere geldikten sonra **iptal hatırlatması** (Dikkat) bırakır. İlk dükkân zamanı (A0-11) bu bekleme ve unutulan iptale duyarlıdır |
+| **Ret ve bağımlılık** | **Pencere kuralı (A3 §7.4; baş lider kararı, verildi):** dükkân bedeli **G7'den itibaren ithal pencerelidir (P-İthal)**: **6.000 ₺ + 20 çelik + 8 makine parçası + 4 pencere**. NPC pencere arzı doğrulandı (60/sa, A3 B3). Pencere stoğu yoksa kart **eksik satırı** (**Pencere 4: stokta 0**) ve **Pazar'dan al** kısayolunu verir; çekirdek iletisi `yetersiz stok: <düğüm> (mal indeksi <n>)` mal **adını** söylemelidir (A3 §9.3 K1 notu: bugün "çelik ya da makine parçası" der). **Gerçek maliyet ≈ 2.400 ₺** (4 × 540 × 1,111; A3 kırılganlık notu), A2'nin 1.600 ₺'sinden fazladır: kart rakamı **yaklaşık** der ve yukarı yuvarlar. **Kırılganlık (A3 B3):** ithalat emri kalıcı orandır, gerçekleşme **bir sonraki tam saat tıkında** başlar ve bitince **elle iptal** gerekir; bu yüzden kısayol (a) emri 4 pencere için hazır doldurur, (b) süreyi görünür kılar ("en geç 1 saat içinde gelir"), (c) pencere geldikten sonra **iptal hatırlatması** (Dikkat) bırakır. İlk dükkân zamanı (A0-11) bu bekleme ve unutulan iptale duyarlıdır. Kart rakamları **veri paketinden** (`ekYapilar.dukkan`) okunur, koda gömülmez: A3 §7.4'e göre P-Yok'a dönüş (kural dönemi, yalnız veri) bedeli 7.440 ₺ yapar ve pencere satırını kaldırır; kırık satır göstermemek için kart satırları veriden üretilir |
 
-**Yatırım tahmini bloğu (öneri; A2 §1.9 "Yatırım Tahmini kartı").** İlçe sınıfına göre dürüst bir beklenti: **şehir** ≈ 727 ₺/sa net, geri ödeme ≈ 12 sa; **kasaba** ≈ 524 ₺/sa, ≈ 17 sa; **kırsal** ≈ 32 ₺/sa, ≈ 281 sa (A2, tek dükkân, normal fiyat, nakit yatırım, indirimli; A2 pencereyi ≈1.600 ₺ sayar, gerçek ithalat ≈2.400 ₺: geri ödeme **birkaç saat uzar**, kart bunu "yaklaşık" ile söyler). Kırsal ilçede metin: **Bu ilçede küçük bir pazar var; dükkân kendini yaklaşık 12 günde öder.** Sonuç, "kilit değil, sonuç"tur ([12 §12](../12-yon-taslagi.md)): kart engellemez, **bilgi verir**. **Veri isteği İ-3:** ilçe talebi bugün kare alanında yok (`IlceKaresi.talep?` A3 §10.2: "G9'da istenirse K2 sonra ekler") `[A3-P2]`; olmadan blok **gizlenir**, sayı uydurulmaz.
+**Yatırım tahmini bloğu (öneri; A2 §1.9 "Yatırım Tahmini kartı").** İlçe sınıfına göre dürüst bir beklenti: **şehir** ≈ 727 ₺/sa net, geri ödeme ≈ 12 sa; **kasaba** ≈ 524 ₺/sa, ≈ 17 sa; **kırsal** ≈ 32 ₺/sa, ≈ 281 sa (A2, tek dükkân, normal fiyat, nakit yatırım, indirimli; A2 pencereyi ≈1.600 ₺ sayar, gerçek ithalat ≈2.400 ₺: geri ödeme **birkaç saat uzar**, kart bunu "yaklaşık" ile söyler). Kırsal ilçede metin: **Bu ilçede küçük bir pazar var; dükkân kendini yaklaşık 12 günde öder.** Sonuç, "kilit değil, sonuç"tur ([12 §12](../12-yon-taslagi.md)): kart engellemez, **bilgi verir**. **Veri isteği İ-3:** ilçe talebi bugün kare alanında yok (`IlceKaresi.talep?` A3 §10.2: "G9'da istenirse K2 sonra ekler"); olmadan blok **gizlenir**, sayı uydurulmaz.
 
 ## D-4. İnşa ve ilk açılış
 
@@ -258,7 +258,7 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Telefon / masaüstü** | Telefon: bildirim kuyruğu 1; öneri çipi Dikkat'te kalıcı (24 saat). Masaüstü: bina panelinde **rafa git** |
 | **Ölçüt** | **A0-11 (ilk satış zamanı)**, Y10 (bekleme), A0-12 (ilk dükkân medyan ≤36 sa) |
 | **Sahip** | K1 (etiket, öneri), T1 (metin), K2 (`insaat_bitti` kaydı hazır: `donus/izleyici.ts:83`) |
-| **Ret ve bağımlılık** | **Boşluk:** inşa bitince yeni dükkânın rafı **boştur** (`dukkanVarsayilani`: yuvalar boş, kademe varsayılan; A3 §7.2) `[A3-P2]`; hiçbir şey satılmaz. Bu yüzden öneri **zorunlu bir parçadır**, süs değil. İlk dükkân ölçütü (A0-11) **iki ayrı zaman** ister: **yapı komutu** ve **ilk satış** (`dukkanGeliri > 0`, Defter `ilk_dukkan` tetiği) |
+| **Ret ve bağımlılık** | **Boşluk:** inşa bitince yeni dükkânın rafı **boştur** (`dukkanVarsayilani`: yuvalar boş, kademe varsayılan; A3 §7.2); hiçbir şey satılmaz. Bu yüzden öneri **zorunlu bir parçadır**, süs değil. İlk dükkân ölçütü (A0-11) **üç zaman** ister (A3 §15.3): **yapı komutu** (`DukkanDurumu.baslangic`), **kurulma** (`kurulus`, inşaat bitişi) ve **ilk satış** (`MulkOyuncuDurumu.ilkSatisT`); üçü de durumdan okunur. İnşa iptali (D-8.1) ilk 24 saatte dakikalarla ölçülür (inşa ≈24 dk) |
 
 ## D-5. Raf atama
 
@@ -266,14 +266,26 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 |---|---|
 | **Amaç** | Hangi malın satılacağını seçmek (4 yuva) |
 | **Oyuncu kararı** | Her yuva için **bir mal** (ya da boş) |
-| **Gösterilen sayılar** | Her malda: **stok** (düğüm toplamı), **üretim hızı** (birim/sa), **dünya fiyatı R** ve kademe fiyatı (aşağı yuvarlı); yuva başı **tahmini satış** ("≈ 28 birim/sa"; `istek`, kasa kırpmalı); dükkân başı **kasa doluluğu** (90 birim/sa'e oran) |
-| **Metin** | Başlık: **Raf** · Boş yuva: **boş: mal ekle** · Yuva seçici başlığı: **Bu yuvaya hangi malı koyalım?** · Mal satırı: **ekmek · stokta 320 · 63 ₺** · Mal yok (stoksuz): **stoğun yok; üretim kurunca satış başlar** (soluk) · Bilgi: **Bir mal tek rafta olabilir. Kasa saatte en çok 90 birim satar.** |
+| **Gösterilen sayılar** | Her malda: **stok** (düğüm toplamı), **üretim hızı** (birim/sa), **dünya fiyatı R** (`IlgiKaresi.fiyat`) ve kademe fiyatı (aşağı yuvarlı); yuva başına kareden: **`mevcut`** (stok var mı), **tahmini satış** (`istekMiliSaat`; "≈ 28 birim/sa", kasa kırpmalı), dükkân başına **kasa doluluğu** (`kasaPpm`: 90 birim/sa kasaya oran) ve **karşılanma** (`karsilanmaPpm`, bölge düzeyi) |
+| **Metin** | Başlık: **Raf** · Boş yuva: **boş: mal ekle** · Yuva seçici başlığı: **Bu yuvaya hangi malı koyalım?** · Mal satırı: **ekmek · stokta 320 · 63 ₺** · Seçicide koyulabilecek mal kalmadıysa: **Bu dükkânda koyabileceğin başka mal kalmadı.** · Bilgi: **Bir mal tek rafta olabilir. Kasa saatte en çok 90 birim satar. Mal koyunca fiyat normale döner.** · "Neden satmıyor" satırları aşağıdaki tabloda |
 | **Telefon / masaüstü** | Telefon: 2×2 yuva ızgarası, her biri ≥44 px; mal seçici alt sayfa. Masaüstü: bina panelinde 4 satır |
 | **Ölçüt** | **A0-11 / A0-12** (ilk satış, çeşit), YA5 (satış anlayışı), A0-14 |
 | **Sahip** | K1 (`dukkan_raf`), T1 (seçici, metin) |
-| **Ret ve bağımlılık** | `[A3-P2]` `dukkan_raf {dukkan, yuva, mal \| null}`; tutar alanı yok. **Önleme > ret:** (1) tür dışı mal seçicide **hiç gösterilmez** (DUK-13), (2) başka yuvada olan mal **soluk** ve "zaten rafta" (DUK-14), (3) dolu yuvada mal değişimi **hız sınırı** sayacıyla (DUK-18; D-6). **Stoksuz yuva çekime girmez** (A3 §6.4 adım 1): istemci bunu **görünür** yapmalı (yuva soluk, "stoğun yok"); **veri isteği İ-2:** yuva başına `mevcut` bayrağı (`dukkanlar` özel kare alanında yok); yoksa istemci düğüm stoğundan **yaklaşık** türetir (mevcut koşul: `anlikMiktar > 0 ∥ uretimOrani > 0 ∥ gelenOran > 0`) **(doğrulanmadı: kare alanı erişimi)** |
+| **Ret ve bağımlılık** | Komut (A3 §9.1): `dukkan_raf {dukkan, yuva, mal \| null}` (`null` = yuvayı boşalt); tutar alanı yok. **Önleme > ret:** (1) tür dışı mal seçicide **hiç gösterilmez** (DUK-13); (2) başka yuvada olan mal **soluk** ve "zaten rafta" (DUK-14); (3) dolu yuvada mal **değişimi** hız sınırına tabidir (DUK-18; D-6), ilk doldurma ve boşaltma **muaf**; (4) aynı mal aynı yuvaya (DUK-19b) ve boş yuvayı boşaltma (DUK-19a) kontrolde yapılamaz; (5) mal koymak yuvanın kademesini **normal**'e çeker (`varsayilanFiyatKademesi`): seçici bunu söyler. **"Neden satmıyor" artık veriden gelir (A3 §10.2; İ-2 kapandı):** istemci düğüm stoğundan **tahmin yürütmez**, kare alanlarını okur |
 
-**Not (zorunlu seçim yok):** Rafa mal koymak **bedelsizdir** (tutar yok) ve geri alınabilir; mal değişimi 6 saatlik hız sınırına tabidir (ilk doldurma ve boşaltma muaf).
+**Not (zorunlu seçim yok):** Rafa mal koymak **bedelsizdir** (tutar yok) ve geri alınabilir; **dolu yuvada mal değişimi** hız sınırına tabidir (ilk doldurma ve boşaltma muaf).
+
+**"Neden satmıyor" eşlemesi (kare alanı → ekran satırı; K1 türetir, T1 metni yazar):**
+
+| Kare verisi (`OzelBolgeKaresi.dukkanlar`) | Yuvanın durumu | Ekran satırı |
+|---|---|---|
+| `mal = ""` | Yuva boş (satış yok; çeşit payında sayılmaz) | **boş: mal ekle** (tür malı yuvadan azsa: bu yuva boş kalabilir, uyarı yok) |
+| `mevcut = 0` | **Stoksuz yuva çekime girmez** (A3 §6.4 adım 1) | **{mal}: stoğun yok; üretim kurunca satış başlar** (soluk) |
+| `mevcut = 1` ve `karsilanmaPpm < PPM` | Stok var ama isteği karşılamıyor (bölge düzeyi) | **Stoğun talebi karşılamıyor; satış düşüyor.** |
+| `kasaPpm` ≈ PPM (eşik öneri: ≥ %95) | Kasa dolu: istek kırpılıyor | **Kasa dolu: satış kasa sınırında.** |
+| `etkin ≠ fiyat` | Kampanya bitti, yuva otomatik normale döndü (saklanan kademe kampanyada kalır) | **Kampanya bitti; fiyat normale döndü.** |
+
+Gösterilen **birim fiyat `etkin` kademeden** hesaplanır, saklanan `fiyat`'tan değil (A3 §7.5b `etkinKademe`).
 
 ## D-6. Fiyat kademesi ve kampanya penceresi
 
@@ -281,12 +293,12 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 |---|---|
 | **Amaç** | Her yuvanın **fiyat kademesi**ni seçmek; kampanyayı yalnız pencere içinde kullanmak |
 | **Oyuncu kararı** | Her yuva için **bir kademe** (varsayılan **normal**) |
-| **Gösterilen sayılar** | **4 kademe** (baş lider onaylı): **kampanya 0,85 R**, **uygun 0,95 R**, **normal 1,05 R (varsayılan)**, **yüksek 1,15 R**. Seçili kademenin **birim fiyatı** (R × çarpan, **aşağı yuvarlı tam ₺**; örnek ekmek R=60 ₺: 51 / 57 / 63 / 69) ve yuva başı **tahmini satış ve net**. Hız sınırı: **kalan süre** (6 saat; dakika çözünürlüğü). Kampanya hakkı: **bugün kalan 6 saat**, **bu hafta kalan gün (en çok 2)** |
-| **Metin** | Segment: **kampanya · uygun · normal · yüksek** · Altı: **Normal fiyat, çoğu zaman en iyi dengedir.** (**yüksek** seçilince: **Fiyat yükselince satış payın düşebilir; kasa doluysa gelir artar.**) · Hız sınırı: **Fiyatı en erken 3 saat 20 dk sonra değiştirebilirsin.** · Kampanya düğmesi: **kampanya başlat (6 saat)** · Kampanya açıkken: **Kampanya sürüyor: 4 saat 10 dk kaldı** · Kampanya uyarısı: **Kampanya fiyatı dünya pazarında satmaktan düşüktür; satış artmayabilir.** |
+| **Gösterilen sayılar** | **4 kademe** (baş lider onaylı): **kampanya 0,85 R**, **uygun 0,95 R**, **normal 1,05 R (varsayılan)**, **yüksek 1,15 R**. Seçili kademenin **birim fiyatı** (R × çarpan, **aşağı yuvarlı tam ₺**; örnek ekmek R=60 ₺: 51 / 57 / 63 / 69) ve yuva başı **tahmini satış ve net**. Hız sınırı: **kalan süre** (6 saat; dakika çözünürlüğü; **kareden hesaplanamaz: İ-6**). Kampanya hakkı (kareden `kampanya: [bitis, kalanSaat, kalanGun]`): **bugün kalan saat** (en çok 6), **bu hafta kalan gün** (en çok 2) |
+| **Metin** | Segment: **kampanya · uygun · normal · yüksek** · Altı: **Normal fiyat, çoğu zaman en iyi dengedir.** (**yüksek** seçilince: **Fiyat yükselince satış payın düşebilir; kasa doluysa gelir artar.**) · Hız sınırı: **Fiyatı en erken 3 saat 20 dk sonra değiştirebilirsin.** · Kampanya düğmesi: **kampanya başlat** (altında: **Bugün en çok {n} saat; en geç gün sonunda biter. Bu hafta {m} gün hakkın var.**) · Kampanya açıkken: **Kampanya sürüyor: 4 saat 10 dk kaldı** · Kampanya uyarısı: **Kampanya fiyatı dünya pazarında satmaktan düşüktür; satış artmayabilir.** |
 | **Telefon / masaüstü** | Telefon: 4 kademe **segment kontrol** (her biri ≥44 px, yan yana sığmazsa 2×2); hız sınırında kontrol soluk ve süre satırı. Masaüstü: yuva satırında 4 düğme |
 | **Ölçüt** | **A0-12:** perakende primi **1,05–1,20** (alarm **>1,30**), fiyat savaşı (**<0,85 R**) süresi **≤%5**; kademe dağılımı insan testinde gözlenir. A2: rasyonel oyuncu **üst kademeye yığılır** (1,15 R → prim 1,291): arayüz **yüksek**'i öne **çıkarmaz** |
 | **Sahip** | T1 (kontrol, metin, adlar), K1 (`dukkan_fiyat`, geri sayım) |
-| **Ret ve bağımlılık** | **Karar verildi (baş lider):** veride **hep 4 kademe** (0,85 / 0,95 / 1,05 / 1,15; sayı ve sıra kalıcı, GZ-3); **kademe adları T1 işidir, çekirdek yalnız indeks bilir** (A3 §7.5). **Kampanya penceresi** parametreleri G7 şemasındadır (`kampanyaGunlukEnFazlaSaat`, `kampanyaHaftalikEnFazlaGun`; kampanya **varsayılan KAPALI**, açılabilir; A3 4f354c0 §4.3). İki durum: **(a) kampanya kapalı** (parametreler tanımsız ya da 0): kampanya segmenti **gizlenir**, ekranda **3 seçenek** (uygun, normal, yüksek) görünür; kampanya kademesi `dukkan_fiyat` ile seçilemez (DUK-20) ve ekran bunu zaten önler. **(b) kampanya açık:** 4 segment, **"kampanya başlat (6 saat)"** düğmesi ve **hak sayaçları** (bugün kalan saat, bu hafta kalan gün). Hız sınırı komut öncesi **önlenir** (DUK-18); boş yuvaya fiyat verilemez (DUK-17: önce mal); aynı kademe (DUK-19c). **Kampanya komut ve durum biçimi `[A3-P2]`** (ayrı komut mu, kademe 0'ın pencere içinde kabulü mü: belirlenmedi) |
+| **Ret ve bağımlılık** | **Karar verildi (baş lider; A3 §7.5 ve §7.5b):** veride **hep 4 kademe** (0,85 / 0,95 / 1,05 / 1,15; sayı ve sıra kalıcı, GZ-3); **kademe adları T1 işidir, çekirdek yalnız indeks bilir**. **Kampanya kapalı** (varsayılan: `kampanyaKademesi` ve iki sınırın üçü tanımlı ve > 0 değilse): segment **gizlenir**, ekranda **3 seçenek**; kademe 0 yine de gönderilirse DUK-20. **Açık/kapalı bilgisi veri paketinden okunur** (`param.mulk.perakende`): kareden okunamaz, çünkü `kampanya = [0, 0, 0]` hem "kapalı" hem "bugünkü saat ve haftalık gün hakkı bitti" olabilir. **Kampanya açıkken:** (1) **ayrı komut yoktur**: kampanya `dukkan_fiyat {fiyat: kampanyaKademesi (0)}` ile başlar (ilk seçim pencereyi açar; "kampanya başlat" düğmesi bu komutu gönderir); (2) sınırlar **günde ≤ 6 saat, haftada ≤ 2 gün**; pencere **tam saat sınırlarında** işler: başladığın saat tam sayılır (10:20'de başlayan 16:00'da biter) ve pencere **gün sonunu geçmez** (21:00'de başlayan 24:00'te biter, kalan saat ertesi güne taşınmaz); (3) pencere **paylaşılır**: kampanya sürerken başka yuvaya kampanya vermek **ücretsizdir** ve sayacı artırmaz; (4) bitince yuva **otomatik normale döner** (`varsayilanFiyatKademesi`); saklanan kademe kampanyada kalır, ekran **"kampanya bitti; fiyat normale döndü"** der; (5) **erken bitirme:** kampanya yuvasına başka kademe verilirse hemen normale döner, **tüketilmiş saat iade edilmez**; (6) kampanya seçmek de fiyat değişimidir: **6 saatlik hız sınırı geçerlidir** (DUK-18). **Hafta = sim haftası** (`floor(gün/7)`, takvim haftası değil; S-18, sahip teyidi bekliyor): ekran **"bu hafta kalan gün"** der, **hafta günü adı vermez**; öneri: "hakların {n} gün sonra yenilenir" satırı (sim saatinden istemci hesaplar). **Hak kontrolü (K1; kare alanlarından):** pencere zaten etkinse (`bitis` > şimdi) düğme gerekmez; değilse hak var ⇔ `kalanSaat > 0` ve (`kalanSaat` < günlük sınır **ya da** `kalanGun > 0`) (bugün başlamışsa kalan saat yeter, yeni günse gün hakkı gerekir). Hız sınırı komut öncesi **önlenir** (DUK-18); boş yuvaya fiyat verilemez (DUK-17: önce mal); aynı kademe (DUK-19c). Ret kodları DUK-20/21/22: D-9 |
 
 **Dürüstlük kuralı (A2 §1.9):** kampanya kademesi bütün senaryolarda **net eksidir** (örn. −353 ₺/sa şehir, tek dükkân); arayüz kampanyayı **"kâr"** diye pazarlamaz.
 
@@ -298,21 +310,10 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Oyuncu kararı** | Ad, simge ve renk seç; ya da markasız bırak |
 | **Gösterilen sayılar** | Uzunluk sayacı **2–24**; hesap başına **en çok 3 marka**; simge ve renk sayısı (palet T1/T2 işi, AÖ-15) |
 | **Metin** | Başlık: **Marka** · Alan: **marka adı** · Açıklama: **Marka yalnızca tabeladır; satışı ya da fiyatı etkilemez.** · **Uyarı (KVKK, A3 §7.7):** **Marka adın dünyadaki herkese görünür ve kalıcıdır. Kişisel bilgi yazma.** · Düğme: **kaydet** · Markasız: **şimdilik markasız** |
-| **Telefon / masaüstü** | Telefon: **tam ekran form** (klavye açılırken alan görünür kalır); **akıllı tırnak** ve uzun tire iOS/Android'de otomatik gelir: istemci **kaydetmeden önce** `’` (U+2019) ve benzeri (`‘ ´`) işaretleri `'`, `–` ve `—` işaretlerini `-` ile değiştirir; **sunucu yalnız izinli karakterleri kabul eder** (baş lider kararı; A3 §7.7 madde 2: Unicode kesme işaretleri reddedilir, normalleştirme sunucuda ve çekirdekte yok). Masaüstü: bina panelinde satır içi form |
+| **Telefon / masaüstü** | Telefon: **tam ekran form** (klavye açılırken alan görünür kalır); **akıllı tırnak** iOS/Android'de otomatik gelir: istemci **kaydetmeden önce** `’` (U+2019) ve `‘` (U+2018) işaretlerini `'` (U+0027) ile değiştirir (A3 §7.7 istemci notu, baş lider kararı; K1/T1). **Çift akıllı tırnak (`“ ”`) çevrilmez** ve izinli küme dışıdır: canlı denetim MRK-05 metnini gösterir. Uzun tire (`–`, `—`) ve `´` için A3'te çeviri **yoktur**: istemci bunları sessizce çevirmez; canlı denetim uyarır (öneri; T1/K1 kararı). **Çekirdek ve sunucu yalnız izinli karakteri kabul eder** (normalleştirme çekirdekte yok; günlükteki metin = durumdaki metin). Masaüstü: bina panelinde satır içi form |
 | **Ölçüt** | Y8 benzeri (marka adımı atlanabilir mi), KVKK; satış ölçütlerine **etkisi yok** (A3: marka çekimi/fiyatı etkilemez) |
 | **Sahip** | T1 (metin, uyarı), K1 (`marka_tanimla`, `dukkan_marka`, istemci doğrulaması) |
-| **Ret ve bağımlılık** | `[A3-P2]` Kurallar (çekirdek, MRK-03…MRK-08): **2–24** karakter; izinli küme **A–Z a–z Ç Ğ İ Ö Ş Ü ç ğ ı ö ş ü 0–9, boşluk, `.` `'` `-` `&`**; baş/son boşluk yok; ardışık boşluk yok; en az bir harf. Yasak liste **sunucuda** (MRK-12 `marka adi kullanilamaz`): ret **yalnız gönderince** görünür ve neden söylenmez ("Bu ad kullanılamaz; başka bir ad dene."). İstemci **canlı denetim** yapar (aynı düzenli ifade, `^[A-Za-zÇĞİÖŞÜçğıöşü0-9 .'&-]+$`) ve kırpar |
-
-**Ret metinleri (canlı ve gönderim):**
-
-| Kod | Metin |
-|---|---|
-| MRK-04 | **Marka adı 2 ile 24 karakter arasında olmalı.** |
-| MRK-05 | **Marka adında yalnız harf, rakam, boşluk, nokta, kesme işareti, tire ve & kullanılabilir.** |
-| MRK-06 / 07 | **Marka adı boşlukla başlayıp bitemez ve art arda boşluk içeremez.** (istemci sessizce düzeltir; ret yalnız yarışta) |
-| MRK-08 | **Marka adında en az bir harf olmalı.** |
-| MRK-12 | **Bu ad kullanılamaz; başka bir ad dene.** |
-| MRK-02 | **En çok 3 marka tanımlayabilirsin.** |
+| **Ret ve bağımlılık** | Kurallar (A3 §7.7; tek doğrulayıcı `adSozdizimiHatasi`, `AD_KURALI = {min: 2, max: 24, izinli: /^[A-Za-zÇĞİÖŞÜçğıöşü0-9 .'&-]+$/}`; **marka adı ve oyuncunun görünen adı AYNI kuralı kullanır**): **2–24** karakter (UTF-16 kod birimi; izinli kümede bir karakter = bir kod birimi); izinli küme `A-Z a-z Ç Ğ İ Ö Ş Ü ç ğ ı ö ş ü 0-9`, boşluk, `.` `'` `-` `&`; **reddedilir, düzeltilmez:** baş/son boşluk (yalnız U+0020), ardışık boşluk, en az bir harf yok. İstemci göndermeden önce **kırpar** (K1) ve canlı denetim yapar (aynı düzenli ifade); ardışık boşluğu **uyarır** (çekirdek düzeltmez). **Yasaklı liste yalnız sunucuda** (`ad-suzgec.ts`, `yasakli-adlar.json`; MRK-12): ret **yalnız gönderince** görünür, **neden söylenmez**; katlama büyük/küçük harf, aksan ve ayırıcıya duyarsızdır ("Bim", "b.i.m" aynı sayılır); bot ve ajan yoluna uygulanmaz; liste kapsamı bu belgede **(doğrulanmadı)**. **Büyük harf (S-12):** A3 önerisi **serbest** ("arayüzde büyük harf yok" kuralı sabit arayüz metinleri içindir, oyuncunun yazdığı özel ad için değil); sahip ve KVKK teyidi bekliyor: S11. **Moderasyon:** yönetici `marka_sifirla` ile adı **"adsiz marka"** yer tutucusuna çevirebilir: tabela bu adı olduğu gibi göstermelidir. Ret kodları MRK-01…14: D-9 |
 
 ## D-8. Satış görünümü, Dikkat ve "sen yokken"
 
@@ -321,11 +322,11 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Amaç** | Dükkânın **ne kazandığını** ve **neye ihtiyaç duyduğunu** tek bakışta göstermek |
 | **Oyuncu kararı** | Tek bir düzeltme: "rafı doldur / fiyatı değiştir / bekle" (30 sn kuralı) |
 | **Gösterilen sayılar** | Dükkân kartında: **tahmini gelir** (aşağı), **gider 132 ₺/sa** (yukarı), **tahmini net** (gelir aşağı − gider yukarı), **kasa doluluğu** (%), yuva başına tahmini satış. Kümülatif **dükkân geliri** (aşağı). "Sen yokken": net sonuç = **hazine farkı birebir**; satış kalemi **ihracat + dükkân geliri farkı** (A3 §10.3) |
-| **Metin** | Kart: **Tahmini satış ≈ 640 ₺/sa · gider 132 ₺/sa · net ≈ 508 ₺/sa** · Kasa: **kasa %94 dolu: satış kasa sınırında** · **Dikkat maddeleri (≤5; öneri):** **Rafında boş yuva var** · **{mal} stoğun bitti; rafta satılmıyor** · **Kasa dolu: fiyatı yükseltmeyi düşünebilirsin** · **Kampanya bitti** · Sen yokken satırı: **{n} birim satıldı: +1.234 ₺** (mevcut `donus.net` ailesi; yeni aile gerekmez) |
+| **Metin** | Kart: **Tahmini satış ≈ 640 ₺/sa · gider 132 ₺/sa · net ≈ 508 ₺/sa** · Kasa: **kasa %94 dolu: satış kasa sınırında** · **Dikkat maddeleri (≤5; öneri):** **Rafına koyabileceğin başka mal var** (yalnız türün malı yuvadan fazlaysa; fırın ve şekerci 2 mal ile tamamdır) · **{mal} stoğun bitti; rafta satılmıyor** · **Kasa dolu: fiyatı yükseltmeyi düşünebilirsin** · **Kampanya bitti** · Sen yokken satırı: **{n} birim satıldı: +1.234 ₺** (mevcut `donus.net` ailesi; yeni aile gerekmez) |
 | **Telefon / masaüstü** | Telefon: kart İşletmem'in "Dükkânlarım" bölümünde ilk ekranda **özet satırı** (net), ayrıntı açılır; Dikkat rozeti. Masaüstü: bina paneli ve Dikkat |
 | **Ölçüt** | **A0-12** (prim, ilk dükkân medyan ≤36 sa, geri ödeme ≤48 sa), **A0-14** (ilk satışın görünürlüğü), A0-13 (özet ≈12 sn) |
 | **Sahip** | K1 (türetme, Dikkat), T1 (metin, düzen) |
-| **Ret ve bağımlılık** | Gösterge verisi: `OzelBolgeKaresi.dukkanlar` (raf, `istekMiliSaat`) ve `GenelBolgeKaresi.dukkanlar` (tabela) `[A3-P2]`. **`gercek` satış stoğa bağlıdır ve gösterilmez** (A3 §6.8): ekran **tahmin** der ("≈", "tahmini"), kesinlik iddia etmez. Stoksuz yuva (İ-2) görünmezse "satış durdu" nedeni anlatılamaz. **Net sonuç birebirliği** testle korunur (`satis + gider + diger = hazineFarki`; A3 §10.3). **İlk satış anı:** Defter damgası "ilk dükkân" (`ilk_dukkan`) **ilk satışla** gelir; ödül **10 çelik** ([rehber §3.1](rehber-gorevler.md)) |
+| **Ret ve bağımlılık** | Gösterge verisi (A3 §10.2): `OzelBolgeKaresi.dukkanlar` (raf: mal, kademe, `etkin`, `mevcut`, `istekMiliSaat`; `kasaPpm`; kampanya hakları; `karsilanmaPpm`) yalnız sahibine, `GenelBolgeKaresi.dukkanlar` (tabela: tür, ölçek, marka adı, simge, renk) herkese. **Dükkân başına gerçekleşen satış durumda tutulmaz:** kesin değer yalnız sahibin **toplam** yerel satış oranıdır (`ParaAkisi.yerel`, saatlik); dükkân bazlı gelir ve net **tahmindir** (`gercek` satış stoğa bağlıdır ve gösterilmez; A3 §6.8): ekran "≈" ve "tahmini" der, kesinlik iddia etmez; toplam satır **kesin** olarak ayrı gösterilebilir. "Neden satmıyor" satırları D-5 tablosundadır. **Net sonuç birebirliği** testle korunur (`satis + gider + diger = hazineFarki`; A3 §10.3). **İlk satış anı:** Defter damgası "ilk dükkân" (`ilk_dukkan`) **ilk satışla** gelir (yapı bitişiyle değil); ödül **10 çelik** ([rehber §3.1](rehber-gorevler.md)) **bir kez** verilir: dükkân kaldırılıp yeniden kurulursa tekrar verilmez (D-8.1) |
 
 ### D-8.1 İnşa iptali ve "dükkânı kaldır" (baş lider kararı)
 
@@ -333,44 +334,62 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 |---|---|
 | **Amaç** | Yanlış tür ya da yer seçen oyuncuyu **kilitlememek** ("kilit yok, seçim var") ve bunu **dürüst bir bedelle** yapmak |
 | **Oyuncu kararı** | İnşa sürerken: "iptal et". Tamamlanınca: "dükkânı kaldır" |
-| **Gösterilen sayılar** | **İnşa sürerken iptal %50 iadeli:** ödenen paranın ve malzemenin yarısı (para **aşağı** yuvarlı; örnek ödenen 4.200 ₺ → iade 2.100 ₺). **Tamamlanmış dükkân:** iade **yok** (0 ₺). Arsa oyuncuda kalır; raftaki mallar işletme deposuna döner (mal adları ve adetleri onay kartında listelenir) |
-| **Metin** | İnşa sırasında (mevcut geri al şeridiyle **aynı yol**, ayrı etiketle): **iptal et (iade %50)** · onay: **İnşaatı iptal edersen ödediğinin yarısı geri gelir. İptal edilsin mi?** · Tamamlanmış: **dükkânı kaldır** · Onay (iadesiz olduğu **açıkça** söylenir): **Dükkânı kaldırırsan harcadığın para geri gelmez; arsan ve raftaki malların sende kalır. Kaldırılsın mı?** · Düğmeler: **dükkânı kaldır**, **vazgeç** · Sonuç: **Dükkân kaldırıldı. Arsan ve malların sende.** |
+| **Gösterilen sayılar** | **İnşa sürerken iptal (`insaat_iptal`, mevcut komut) %50 iadeli:** ödenen paranın **ve malzemenin (pencere dahil)** yarısı (para **aşağı** yuvarlı; örnek ödenen 4.200 ₺ → iade 2.100 ₺; malzeme düğüm stoğuna döner). **İlk 5 yapı indirimi hakkı geri verilir** (iptalde). **Tamamlanmış dükkân (`dukkan_yik`): iade yok**, yıkımda para hareketi **0**. **Arsa oyuncuda kalır** (sonradan `parsel_birak %70` ile bırakılabilir). **Raftaki mallar zaten depodadır:** ayrı raf stoğu yoktur, satış il düğümü stoğundan çekilir; onay kartında mal listesi **gerekmez**. **İlk 5 yapı indirimi hakkı kaldırmada geri verilmez** ve **ilk dükkân ödülü yeniden kurulumda tekrar verilmez** (kur-yık döngüsüyle kullanılamasın diye) |
+| **Metin** | İnşa sırasında (mevcut geri al şeridiyle **aynı yol**, ayrı etiketle): **iptal et (iade %50)** · onay: **İnşaatı iptal edersen ödediğin paranın ve malzemenin yarısı geri gelir. İptal edilsin mi?** · Tamamlanmış: **dükkânı kaldır** · Onay (iadesiz olduğu **açıkça** söylenir): **Dükkânı kaldırırsan harcadığın para ve malzeme geri gelmez. Arsan, depondaki mallar ve markan sende kalır. Yeniden kurarsan bedeli yeniden ödersin. Kaldırılsın mı?** · Düğmeler: **dükkânı kaldır**, **vazgeç** · Sonuç: **Dükkân kaldırıldı. Arsan ve malların sende.** |
 | **Telefon / masaüstü** | Telefon: "dükkânı kaldır" dükkân kartının **ikincil** menüsünde (yanlış dokunma riski; ≥44 px, birincil düğmelerden uzak), onay **alt sayfa**. Masaüstü: bina panelinde menü |
 | **Ölçüt** | YA (kilit sanma), A0-14 (kart atlama), A0-11 (yanlış kuran oyuncunun yeniden kurma süresi) |
 | **Sahip** | T1 (onay metni, yerleşim), K1 (komut, durum) |
-| **Ret ve bağımlılık** | **Komut ve ret kodu `[A3-P2]`** (şartname §7.9 bugün "bırakılamaz/yıkılamaz" der; baş lider kararı bunu değiştirir). İnşa iptali mevcut `insaat_iptal` yoludur (`mulk/komut.ts`, iade `insaatIptalIadePpm`). Kaldırma sonrası ilçe ve il dükkân sayaçları açılır; **yeni dükkân bedeli tam ödenir**; ilk 5 yapı indirimi sayacının kaldırmada geri verilip verilmediği **(doğrulanmadı)**. Marka oyuncunun olduğundan (A3 §7.7) **kalır**, dükkân bağı düşer |
+| **Ret ve bağımlılık** | Komut: `dukkan_yik {dukkan}` (A3 §7.9 ve §9.1; oyuncu yolu; **tutar, oran, adet alanı yok**; yalnız `dukkan` ek yapısı için, diğer yapılara genellenmez). İnşadaki dükkân için **yeni komut yok:** mevcut `insaat_iptal` dükkân inşaatını kapsar (`mulk/komut.ts:607-632`; A3 koddan doğruladı). **Ret:** DUK-00; **DUK-10** (dükkân yok ya da başkasının: aynı ileti, bilgi sızdırmaz); **DUK-23** (kimlik oyuncunun **süren inşaatına** ait: "dükkân henüz bitmedi; inşaatı iptal edebilirsin"). **Önleme:** "kaldır" yalnız tamamlanmış dükkânda, "iptal et" yalnız inşada gösterilir; DUK-23 yalnız yarışta (inşa kaldır komutuyla çakışırsa) gelir ve ekran **iptal yolunu öne alır**. Kaldırma sonrası ilçe ve il dükkân sayaçları **hemen düşer** (türetilmiş sayaç); dükkân kareden ve hücrenin `tur` alanından kalkar; **marka oyuncuda kalır**, yalnız dükkân bağı düşer; `MulkOyuncuDurumu.ilkSatisT` ve kümülatif dükkân geliri kalır. İlk 24 saatte inşa süresi ≈24 dk: **iptal penceresi dakikalarla ölçülür**; "yanlış yer" fark edilince kaldırma yolu (iadesiz) bu yüzden önemlidir |
 
-## D-9. Ret durumları (A3 §9.3 kodlarıyla)
+## D-9. Ret durumları (A3 §9.3 kesin kodları)
 
-**Kural:** komut gönderilmeden önce önlenebilen her durum **kontrolde** çözülür (soluk düğme + neden satırı). Aşağıdaki ret iletileri yalnız **yarış** (başka sekme, eski durum) ve **sunucu süzgeci** için görünür. Görünen metin K1/T1'in `hata-mulk.ts` tablosundadır; **çekirdek iletisi** kod sütunundaki biçimdedir `[A3-P2]`.
+**Kural:** komut gönderilmeden önce önlenebilen her durum **kontrolde** çözülür (soluk düğme + neden satırı). Aşağıdaki ret iletileri yalnız **yarış** (başka sekme, eski durum) ve **sunucu süzgeci** için görünür. Çekirdek iletisi **küçük harfli ASCII-Türkçe düz dizgidir** ve hata kodu alanı yoktur (`KomutSonucu = {tamam: false, hata}`); **kod** sütunu belge, test ve K1 çeviri tablosu içindir. Görünen metin K1/T1'in `hata-mulk.ts` düzenli ifade tablosundadır; aşağıdaki metinler **A3 §9.3 önerisidir** (K1/T1 son kararı verir).
 
-| Kod | Çekirdek iletisi (kısaltılmış) | Önleme (ekranda) | Gösterilen metin |
+| Kod | Çekirdek iletisi (A3 §9.3, kesin) | Önleme (ekranda) | Gösterilen metin |
 |---|---|---|---|
 | DUK-00 | `perakende kapali` | Dükkân kartı **hiç gösterilmez** | **Bu dünyada dükkân henüz açık değil.** |
-| DUK-01 / 02 | `dukkan turu gerekli` / `yalniz dukkan yapisinda` | Tür seçmeden "kur" kapalı | **Dükkân türünü seçmelisin.** |
-| DUK-03 | `bilinmeyen dukkan turu` | Seçici yalnız geçerli türleri gösterir | **Bu dükkân türü yok.** |
-| DUK-04 | `dukkan olcegi henuz acik degil` | M ve L **hiç sunulmaz** | **Bu dükkân boyu henüz dünyada açılmadı.** (seviye, teknoloji, sıra **söylenmez**) |
-| DUK-05 | `<tur> dukkani <ölçek> olceginde kurulamaz` | Tür × boy uyumsuzluğu seçilemez | **Bu dükkân türü bu boyda kurulamaz.** |
-| DUK-06 | `ilcede en cok <n> dukkan` | Kart soluk + "bu ilçede dükkânın: 2 / 2" | **Bu ilçede en çok {n} dükkânın olabilir.** |
-| DUK-07 | `ilde en cok <n> <ad>` | Kart soluk + "bu ilde 6 / 6" | **Bu ilde en çok {n} dükkânın olabilir.** |
-| DUK-08 | `dukkan <S\|M\|L> olceginde <n> hucre kaplar` | Seçim ayak izine sabitlenir (S: 1 hücre) | **Dükkân {n} hücre kaplar.** |
-| DUK-10 | `dukkan bulunamadi` | (yarış) | **Bu dükkân artık yok.** |
-| DUK-12 | `gecersiz yuva` | Yuva 4 ile sınırlı | **Geçersiz raf yuvası.** |
-| DUK-13 | `bu mal bu dukkan turunde satilamaz` | Seçici tür dışı malı **göstermez** | **Bu dükkânda bu mal satılamaz.** |
-| DUK-14 | `bu mal baska yuvada` | Soluk + "zaten rafta" | **Bu mal zaten başka rafta.** |
-| DUK-15 | `bilinmeyen mal` | (yarış) | **Bilinmeyen mal.** |
-| DUK-16 | `gecersiz fiyat kademesi` | 4 kademe sabit | **Geçersiz fiyat.** |
+| DUK-01 | `dukkan turu gerekli (dukkanTuru)` | Tür seçmeden "kur" kapalı | **Dükkân türünü seçmelisin.** |
+| DUK-02 | `dukkanTuru yalniz dukkan yapisinda verilebilir: <tesisTuru>` | Tür seçici yalnız dükkân akışında | **Dükkân türü yalnız dükkân kurarken seçilir.** |
+| DUK-03 | `bilinmeyen dukkan turu: <id>` | Seçici yalnız geçerli türleri gösterir | **Bu dükkân türü yok.** |
+| DUK-04 | `dukkan olcegi henuz acik degil: <s\|m\|l>` | M ve L **hiç sunulmaz** | **Bu dükkân boyu henüz açılmadı.** (seviye, teknoloji, sıra **söylenmez**; oyuncu kilidi değildir) |
+| DUK-05 | `<tur> dukkani <s\|m\|l> olceginde kurulamaz` | Tür × boy uyumsuzluğu seçilemez | **Bu dükkân türü bu boyda kurulamaz.** |
+| DUK-06 | `ilcede en cok <n> dukkan (biten + suren)` | Kart soluk + "bu ilçede dükkânın: 2 / 2" (biten + süren sayılır) | **Bu ilçede en çok {n} dükkânın olabilir.** |
+| DUK-07 | `ilde en cok <n> <ad> (biten + suren)` (mevcut) | Kart soluk + "bu ilde 6 / 6" | **Bu ilde en çok {n} dükkânın olabilir.** |
+| DUK-08 | `dukkan <S\|M\|L> olceginde <n> hucre kaplar (verilen <k>)` (mevcut) | Seçim ayak izine sabitlenir (S: 1 hücre) | **Dükkân {n} hücre kaplar.** |
+| DUK-10 | `dukkan bulunamadi: <id>` (yok ya da oyuncunun değil) | (yarış) | **Bu dükkân yok.** |
+| DUK-12 | `gecersiz yuva: <n> (0..<son>)` | Yuva 4 ile sınırlı | **Geçersiz raf yuvası.** |
+| DUK-13 | `bu mal bu dukkan turunde satilamaz: <mal>` | Seçici tür dışı malı **göstermez** | **Bu dükkânda bu mal satılamaz.** |
+| DUK-14 | `bu mal baska yuvada: <mal>` | Soluk + "zaten rafta" | **Bu mal zaten başka rafta.** |
+| DUK-15 | `bilinmeyen mal: <mal>` (mevcut) | (yarış) | **Bilinmeyen mal.** |
+| DUK-16 | `gecersiz fiyat kademesi: <n> (0..<son>)` | 4 kademe sabit | **Geçersiz fiyat.** |
 | DUK-17 | `bos yuvaya fiyat verilemez` | Boş yuvada kademe kontrolü **kapalı** | **Önce rafa mal koy.** |
-| DUK-18 | `fiyat degisimi icin <n> saat beklenmeli` | Kontrol soluk + canlı süre (dakika çözünürlüğü) | **Fiyatı en erken {n} saat sonra değiştirebilirsin.** |
-| DUK-19a / b / c | `yuva zaten bos` / `zaten bu malla dolu` / `zaten bu kademede` | Aynı seçim yapılamaz | **Raf zaten boş.** · **Bu raf zaten bu malla dolu.** · **Fiyat zaten bu seviyede.** |
-| DUK-20 | (kampanya kademesi pencere dışı) `[A3-P2]` | Kampanya segmenti pencere dışında **gösterilmez** | **Kampanya yalnız kampanya penceresinde seçilebilir.** |
-| MRK-01…MRK-14 | bkz. D-7 tablosu | Canlı denetim | bkz. D-7 |
-| MRK-13 / 14 | `bilinmeyen marka` / `zaten bu markada` | Marka yoksa "dükkâna ata" kapalı | **Önce marka tanımlamalısın.** · **Dükkân zaten bu markada.** |
-| kaldırma `[A3-P2]` | dükkân kaldırma ret kodları (A3 Parça 2) | Yalnız tamamlanmış dükkânda "kaldır", inşada "iptal et" | **Bu dükkân artık yok.** (yarış) · diğerleri A3 Parça 2'ye göre |
+| DUK-18 | `fiyat degisimi icin <n> saat beklenmeli` (`n` kalan saat, **yukarı yuvarlı**) | Kontrol soluk + canlı süre (dakika çözünürlüğü; **İ-6 olmadan hesaplanamaz**) | **Fiyatı en erken {n} saat sonra değiştirebilirsin.** (ret tam saat der; ekran dakikayı kendi hesabından verir) |
+| DUK-19a | `yuva zaten bos` | Boş yuvada "boşalt" kapalı | **Raf zaten boş.** |
+| DUK-19b | `yuva zaten bu malla dolu: <mal>` | Aynı seçim yapılamaz | **Bu raf zaten bu malla dolu.** |
+| DUK-19c | `fiyat zaten bu kademede` | Aynı kademe seçilemez | **Fiyat zaten bu seviyede.** |
+| DUK-20 | `kampanya kademesi acik degil` | Kampanya kapalıyken segment **gizlenir** (D-6) | **Kampanya fiyatı şu an kullanılamıyor.** |
+| DUK-21 | `kampanya haftalik gun siniri (en cok <n> gun)` | Gün hakkı bitince "kampanya başlat" soluk + "bu hafta {n} gün hakkın vardı" | **Bu hafta en çok {n} gün kampanya yapabilirsin.** |
+| DUK-22 | `kampanya gunluk saat siniri (en cok <n> saat)` | Saat hakkı bitince "kampanya başlat" soluk | **Bugün en çok {n} saat kampanya yapabilirsin.** |
+| DUK-23 | `dukkan henuz tamamlanmadi: insaat_iptal kullanin (<id>)` (`dukkan_yik` inşadaki kimlikle) | "Kaldır" yalnız tamamlanmışta; inşada "iptal et" | **Dükkân henüz bitmedi; inşaatı iptal edebilirsin.** (ekran "iptal et" yolunu öne alır; D-8.1) |
+| MRK-01 | `gecersiz marka sirasi: <n>` | (yarış) | **Geçersiz marka.** |
+| MRK-02 | `hesap basina en cok <n> marka` | 3. markadan sonra "yeni marka" kapalı | **En çok {n} marka tanımlayabilirsin.** |
+| MRK-03 | `marka adi metin olmali` | Alan zorunlu | **Marka adı yazılmalı.** |
+| MRK-04 | `marka adi <min> ile <max> karakter arasinda olmali` | Canlı sayaç (2–24) | **Marka adı {min} ile {max} karakter olmalı.** |
+| MRK-05 | `marka adinda gecersiz karakter` | Canlı denetim (aynı düzenli ifade) | **Marka adında yalnız harf, rakam, boşluk, nokta, kesme işareti, tire ve & kullanılabilir.** |
+| MRK-06 | `marka adi bastan ya da sondan bosluk icermemeli` | İstemci göndermeden önce **kırpar** | **Marka adı boşlukla başlayıp bitemez.** (yalnız yarışta) |
+| MRK-07 | `marka adinda art arda bosluk olamaz` | Canlı denetim uyarır | **Art arda boşluk olamaz.** |
+| MRK-08 | `marka adi en az bir harf icermeli` | Canlı denetim | **Marka adında en az bir harf olmalı.** |
+| MRK-09 / 10 | `gecersiz marka simgesi: <n> (0..<son>)` / `gecersiz marka rengi: <n> (0..<son>)` | Palet yalnız geçerli seçenekleri sunar | **Geçersiz simge.** · **Geçersiz renk.** |
+| MRK-11 | `marka zaten bu degerlerde` | Değişmeyen markada "kaydet" kapalı | **Marka zaten böyle.** |
+| MRK-12 | `marka adi kullanilamaz` (**sunucu** süzgeci; çekirdek üretmez) | Yok: yalnız gönderince görünür, neden söylenmez | **Bu ad kullanılamaz; başka bir ad dene.** (görünen ad ucu için de aynı metin) |
+| MRK-13 | `bilinmeyen marka: <n>` | Marka yoksa "dükkâna ata" kapalı | **Önce marka tanımlamalısın.** |
+| MRK-14 | `dukkan zaten bu markada` | Aynı marka seçilemez | **Dükkân zaten bu markada.** |
+| SIS-01 | `marka_sifirla yalnizca 'sistem' ile verilebilir` | (oyuncu yolunda yok) | **İstemciye gösterilmez.** |
+| YON-01 | `yontem yalniz tesis turunde verilebilir: <tesisTuru>` | (G6 tesis akışı; dükkân paneli dışı) | **Yöntem yalnız tesis kurarken seçilir.** |
 | mevcut | `yetersiz hazine (gereken <n>)` | Maliyet kartında kırmızı satır | **Hazinede yeterli para yok (gereken {n} ₺, yukarı yuvarlı).** |
-| mevcut | `yetersiz stok: <düğüm> (mal indeksi <n>)` | Eksik malı kartta **ad ve adetle** göster | **{mal} yetmiyor: {var} / {gereken}. Pazar'dan alabilir ya da üretebilirsin.** |
+| mevcut | `yetersiz stok: <düğüm> (mal indeksi <n>)` | Eksik malı kartta **ad ve adetle** göster (A3 §9.3 K1 notu: bugünkü çeviri "çelik ya da makine parçası" der; **pencere** de eksik olabilir) | **{mal} yetmiyor: {var} / {gereken}. Pazar'dan alabilir ya da üretebilirsin.** |
 | mevcut | `ayni anda en cok <n> insaat` | Kur düğmesi soluk + "bir inşaat bitsin" | **Aynı anda en çok {n} inşaat sürebilir; birinin bitmesini bekle.** |
-| mevcut | `hucre zaten sahipli` / `hucre bos degil` | (yarış) | mevcut `hata-mulk.ts` metinleri |
+| mevcut | `hucre zaten sahipli` / `hucre bos degil` / `ilde isletme yok: <il>` | (yarış) | mevcut `hata-mulk.ts` metinleri |
 
 ---
 
@@ -378,11 +397,12 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 
 | # | İstek | Neden | Kabul |
 |---|---|---|---|
-| **İ-1** | **Görünen ad** profil alanı ve ucu (G5'te yok; `KIMLIK.md` §6 "henüz yok") | G-4 ekranı; herkese görünür ad; e-posta önekinin sızmaması | Ad kural ve yasak listesi, değiştirme sınırı, KVKK silme ile uyumlu |
-| **İ-2** | `OzelBolgeKaresi.dukkanlar` yuva başına **`mevcut`** bayrağı ve **kasa doluluğu** | D-5 ve D-8: stoksuz yuva çekime girmez; "satış durdu" nedeni anlatılamaz (`gercek` gösterilmez) | Bayrak, `yerelPazarHesapla` adım 1 ile aynı koşul |
-| **İ-3** | `IlceKaresi.talep?` (ilçe talebi Q) ya da hazır "yatırım tahmini" alanı | D-3 yatırım tahmini bloğu (A3 §10.2: "G9'da istenirse K2 sonra ekler") | Q ve esnaf payı; yoksa blok gizli |
-| **İ-4** | Kampanya penceresi **komutu ve kalan hak alanları** (parametreler G7 şemasında; günde ≤6 sa, haftada ≤2 gün) | D-6 (b): başlat düğmesi ve hak sayaçları; komut biçimi A3 Parça 1'de yok | `[A3-P2]`: komut adı, kalan hak alanı, `secim` türü, tutar yok |
-| **İ-5** | Dükkân **kaldırma komutu** ve ret kodları (baş lider kararı: inşada iptal %50 iadeli; tamamlanmışta iade yok, arsa kalır, raf mallar depoya) | D-8.1; A3 §7.9 "bırakılamaz" der | `[A3-P2]`: komut adı, ret kodları, mal iadesi biçimi |
+| **İ-1** | **Görünen ad** profil alanı ve ucu (G5'te yok; `KIMLIK.md` §6 "henüz yok"). **Karar verildi** (A3 §7.7, baş lider): oyuncu seçer, sunucu küçük harfli ad üretir, **günde 1 değişiklik**, hesap kimliği sabit ve ekranda güncel ad | G-4 ekranı; herkese görünür ad; e-posta önekinin sızmaması | **K2 uygular:** uç adı, ret iletisi, gün sınırı tanımı (gerçek 24 sa mı, 00:00 TRT mi), ilk seçimin sayıya girmesi; aynı `adSozdizimiHatasi` ve `ad-suzgec.ts` (marka ile ortak); KVKK silme ve yönetici sıfırlama yolu |
+| **İ-2** | ~~Yuva başına `mevcut` bayrağı ve kasa doluluğu~~ | D-5 ve D-8 | **Kapandı:** A3 §10.2 `OzelBolgeKaresi.dukkanlar` raf tuple'ında `mevcut` (0/1), `istekMiliSaat`, ayrıca `kasaPpm` ve `karsilanmaPpm` tanımlıdır; K2 uygular |
+| **İ-3** | `IlceKaresi.talep?` (ilçe talebi Q) ya da hazır "yatırım tahmini" alanı | D-3 yatırım tahmini bloğu (A3 §10.2: "G9'da istenirse K2 sonra ekler"; G7 kabulünü bağlamaz) | **Açık.** Q ve esnaf payı; yoksa blok gizli |
+| **İ-4** | ~~Kampanya komutu ve kalan hak alanları~~ | D-6 | **Kapandı:** **ayrı komut yok** (`dukkan_fiyat` kademe 0); hak sayaçları kare'de `kampanya: [bitis, kalanSaat, kalanGun]`; tutar alanı yok. Açık/kapalı bilgisi veri paketindedir (D-6) |
+| **İ-5** | ~~Dükkân kaldırma komutu ve ret kodları~~ | D-8.1 | **Kapandı:** `dukkan_yik {dukkan}` (A3 §7.9), ret DUK-10 ve DUK-23; inşada mevcut `insaat_iptal` |
+| **İ-6** | Raf yuvası başına **fiyat değişim zamanı** (`fiyatT`) ya da kalan bekleme süresi: `OzelBolgeKaresi.dukkanlar` raf tuple'ında **yok** (A3 §10.2: `[mal, fiyat, etkin, mevcut, istekMiliSaat]`); `fiyatT` yalnız çekirdek durumunda (`DukkanDurumu.raf`) | D-6: 6 saatlik hız sınırının **geri sayımı** ve komut öncesi önleme; olmazsa istemci yalnız kendi oturumunda yaptığı değişimi bilir, yeniden yükleyince ya da başka cihazda **bekleme görünmez** ve oyuncu DUK-18 reddiyle öğrenir | **Yeni istek (K2):** raf tuple'a `fiyatT` (Ms) eklemek (yalnız ekleme; protokol sürümü değişmez); yoksa D-6 yalnız DUK-18 reddine ve "yaklaşık" metne düşer |
 
 ---
 
@@ -392,7 +412,7 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 |---|---|---|
 | **Kılavuz S1.1** giriş ≤3 dk, kabul 6 dk | G-1…G-3 | Gözlem + günlük (`giris_onaylandi`) |
 | **A0-6** (giriş → Yerleş → …) | G-1…G-5 | e2e (masaüstü ve telefon) |
-| **A0-11** ilk dükkân medyan ≤36 sa; geri ödeme ≤48 sa | D-1…D-5, D-8 | Günlük (dükkân kurulum `t`, ilk gelir `t`) + insan testi ([kılavuz §6.2](insan-testi-kilavuzu.md)); **iki ayrı zaman** |
+| **A0-11** ilk dükkân medyan ≤36 sa; geri ödeme ≤48 sa | D-1…D-5, D-8 | Durum alanları: `baslangic`, `kurulus`, `ilkSatisT` (A3 §15.3) + insan testi ([kılavuz §6.2](insan-testi-kilavuzu.md)); **üç ayrı zaman** (ara kırılım: yapı → kurulma → ilk satış) |
 | **A0-12** perakende primi 1,05–1,20 (>1,30 alarm), ilk dükkân medyan ≤36 sa, fiyat savaşı <0,85 R süre ≤%5 | D-3, D-6, D-8 | Defter ve bot; kademe dağılımı |
 | **A0-14** ilk saatte ilk satış ≥%70; kart atlama ≤%30 | D-1 (Defter kartı), D-4, D-8 | İnsan testi |
 | **Y10** | G-2, D-4 | Gözlem (`BE-B`) |
@@ -405,37 +425,39 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 
 | # | Karar | Seçenekler | Neden zor | Öneri |
 |---|---|---|---|---|
-| **ZG-1** | **Görünen ad** kuralı ve kaynağı (G-4) | (a) oyuncu seçer, kural §D-7 gibi; (b) sunucu üretimli opak ad; (c) e-posta öneki | Ad **herkese görünür**, kişisel veri olabilir ve günlükte kalır; e-posta önekinin bir kez yayımlanması geri alınamaz | **(a) ya da (b)**, **(c) asla**; yasak liste ve silme yolu K2'de |
+| **ZG-1** | **Görünen ad** kuralı ve kaynağı (G-4) | **Karar verildi (baş lider; A3 §7.7):** oyuncu seçer, kural **marka adıyla ortak**, sunucu **küçük harfli** ad üretir, **günde 1 değişiklik**, hesap kimliği sabit; (c) e-posta öneki **asla** | Ad **herkese görünür**, kişisel veri olabilir ve günlükte kalır; e-posta önekinin bir kez yayımlanması geri alınamaz | Karar kapandı; K2 uygular (İ-1). **Açık kalan:** büyük harf (S-12, S11) |
 | **ZG-2** | **Alfa-0 kayıt kapısı** | **Karar verildi (baş lider): davetli listesi.** `--davetli-liste <dosya>` ile açılır; adresler G5'in **normalleştirilmiş e-posta anahtarı** biçiminde; listede olmayan adres de **aynı yanıtı** alır ama **posta gönderilmez** (sızdırmama); varsayılan **kapalı**, test dünyasında ve Alfa-0'da **açık**; liste dosyası **depoya girmez**; sahibi K2, **listeye kimin gireceği sahip kararı** | Hesap = oyuncu bire bir; davetli sayısı ilçe doluluğunu ve ayrılmış hücre hesabını belirler; liste sızarsa kimlik avı riski | Karar kapandı; G-2 metni davetsizi ele vermez; K2 uygular |
 | **ZG-3** | **Marka adı** serbest metin ve uyarı metni (D-7) | A3 GZ-8 kararı: serbest ama kısıtlı; uyarı metni T1 | Komut günlüğü ekleme-yalnızdır, **silme zordur**; uyarı olmadan kişisel veri yazılabilir | Uyarı **zorunlu** ve ilk marka girişinde görünür; `marka_sifirla` (sistem yolu) hazır |
 | **ZG-4** | **Fiyat kademelerinin sayısı ve sırası** (4, indeks 0 = kampanya) | **Karar verildi:** veride hep 4 kademe (A3 GZ-3); kampanya kapalıyken ekranda 3 seçenek (segment gizli) | Fiyatlar **indeksle** saklanır; araya kademe eklemek anlamı kaydırır. Adlar (kampanya, uygun, normal, yüksek) **kolay** değişir | 4 kademe sabit; adlar T1'in |
-| **ZG-5** | **Dükkân kaldırma** | **Karar verildi (baş lider):** inşa sürerken iptal **%50 iadeli**; tamamlanmış dükkân **kaldırılabilir, iade yok**; arsa oyuncuda kalır, raftaki mallar depoya döner | İadesiz onay metni açık olmalı; şemaya yeni komut girer (`[A3-P2]`) | Karar kapandı; metin D-8.1'de |
+| **ZG-5** | **Dükkân kaldırma** | **Karar verildi (baş lider):** inşa sürerken iptal **%50 iadeli**; tamamlanmış dükkân **kaldırılabilir, iade yok**; arsa oyuncuda kalır, raftaki mallar depoya döner | İadesiz onay metni açık olmalı; şemaya yeni komut girer (`dukkan_yik`, A3 §7.9) | Karar kapandı; metin D-8.1'de |
 | **ZG-6** | **Yuvarlama kuralı** (aşağı/yukarı) tek işlevde mi | Tek `paraMili` işlevi · yerel yardımcılar | Ekran görüntüleri ve oyuncu güveni; kod değişimi **kolay**, kuraldan sapma **güveni** zedeler | Tek işlev (ilk saat incelemesi B4); lint ile yerel biçimleyici yasak |
-| **ZG-7** | **Kampanya penceresi** komutu ve durumu | **Karar verildi:** kampanya onaylı (günde ≤6 sa, haftada ≤2 gün); parametreler G7 şemasında, **varsayılan kapalı, açılabilir**; açık sorun **komut biçimi** `[A3-P2]` | Durum alanı ve komut şemaya girer; sonradan çıkarmak göç ister; A2: kampanya **hep net eksi** (arayüz kâr diye sunmaz) | Komut biçimi A3 Parça 2'de; kampanya kapalıyken arayüz segmenti gizler |
+| **ZG-7** | **Kampanya penceresi** komutu ve durumu | **Karar verildi:** kampanya onaylı (günde ≤6 sa, haftada ≤2 gün); parametreler G7 şemasında, **varsayılan kapalı, açılabilir**; komut biçimi: **ayrı komut yok**, `dukkan_fiyat` kademe 0 (A3 §7.5b); hafta = sim haftası (S-18) | Durum alanı ve komut şemaya girer; sonradan çıkarmak göç ister; A2: kampanya **hep net eksi** (arayüz kâr diye sunmaz) | Karar kapandı; kampanya kapalıyken arayüz segmenti gizler; S-18 sahip teyidi bekler (S12) |
 
 # F. Açık sorular
 
 | # | Soru | Önerilen varsayılan |
 |---|---|---|
 | **S1** | ~~Dükkân yanlış türde/yerde kurulduysa geri dönüş?~~ | **Kapandı (baş lider):** D-8.1 (inşada %50 iade; tamamlanmışta iadesiz kaldırma) |
-| **S2** | **Görünen ad** (İ-1) hangi sprintte? G9'un önkoşulu | G-4'ü ertele; geçici opak ad |
+| **S2** | **Görünen ad ucu** (İ-1) hangi sprintte? G9'un önkoşulu; karar verildi ama uç G5'te yok | G-4'ü ertele; uç gelene dek sunucunun ürettiği küçük harfli ad kullanılır, ad değiştirme sonra |
 | **S3** | ~~Kampanya Alfa-0'da var mı?~~ | **Kapandı (baş lider):** onaylı, parametreyle açılır/kapanır; kapalıyken segment gizli (D-6 a), açıkken başlat ve hak sayaçları (D-6 b) |
 | **S4** | Birim fiyat gösterimi: tam ₺ (aşağı) mı, 1 ondalık mı? Ör. R=70 ₺ × 0,95 = 66,5 ₺ | Tam ₺ aşağı (66 ₺); T1 karar verir |
 | **S5** | Tarayıcıya bağlı bağlantı **varsayılan kapalı**; uygulama içi tarayıcı oyuna uygun mu? | Pilot (Android ve iOS) ile doğrulanır |
 | **S6** | KVKK silme talebi (`hesapSil` ucu yok): Ayarlar'da "hesabımı sil" olmadan nasıl yürür? | Yönetici yolu; destek metni sahip işi |
 | **S7** | ~~Davet/izin listesi~~ | **Kapandı (baş lider):** `--davetli-liste` (ZG-2) |
 | **S8** | Yatırım tahmini bloğu için `IlceKaresi.talep?` (İ-3): G9'a mı, sonraya mı? | Sonra; blok gizli kalır, sayı uydurulmaz |
-| **S9** | A3 Parça 2: DUK/MRK kodları ve metinler **değişirse** bu belgedeki §D-9 tablosu nasıl güncellenir? | A3 teslim notuyla birlikte A1 tabloyu yeniler |
-| **S10** | Defter `ilk_dukkan` tetiği **ilk satış** (A3 §7.8) ama A0-11 "ilk dükkân" **yapı** zamanını ister: hangisi bağlayıcı? | İkisi ayrı ölçülür; rapor ikisini ayrı satırda verir |
+| **S9** | ~~A3 Parça 2 sonrası D-9 güncellemesi~~ | **Kapandı:** D-9 A3 795c370 §9.3 kesin kodlarıyla yeniden yazıldı; A3 yeniden değişirse A1 günceller |
+| **S10** | ~~`ilk_dukkan` tetiği ile A0-11 zamanı~~ | **Kapandı (A3 §15.3, GZ-14):** tetik **ilk satış**; ölçüm **üç zaman** ayrı satırda (yapı komutu, kurulma, ilk satış) |
+| **S11** | **Büyük harf** (S-12): marka ve görünen adda oyuncunun yazdığı büyük harf serbest mi? A3 önerisi **serbest** ("arayüzde büyük harf yok" yalnız sabit metinler içindir); sunucunun ürettiği öneri küçük harfli. Sahip ve KVKK teyidi bekliyor | A3 önerisi: serbest. Küçük harfe zorlanırsa `AD_KURALI` ve G-4/D-7 canlı denetimi değişir (kural dönemi) |
+| **S12** | Kampanya haftası **sim haftasıdır** (`floor(gün/7)`; S-18; 1 Ekim 2026 perşembe olduğundan haftalar perşembe başlar); oyuncu "hafta" deyince takvim haftası anlayabilir | Ekran "bu hafta kalan gün" der, hafta günü adı vermez; "hakların {n} gün sonra yenilenir" satırı belirsizliği giderir; sahip teyidi |
 
 # G. Doğrulanmayanlar ve sınırlar
 
 | Konu | Durum |
 |---|---|
-| A3 §6–§10 sayıları, DUK/MRK kodları, **kampanya ve kaldırma komut biçimi** | **Taslak (Parça 2);** `[A3-P2]` işaretli yerler değişebilir |
-| Dükkân bedeli ve inşa süresi (6.000 ₺, 4 sa, 20 çelik, 8 parça, **4 pencere**) | A3 4f354c0 §7.2 ve §7.4: **P-İthal baş lider kararı (verildi)**; sayılar A3 Parça 2'de kesinleşir. Gerçek pencere maliyeti ≈2.400 ₺ (A3 B3) |
+| A3 §6–§10 sayıları, DUK/MRK kodları, kampanya ve kaldırma kuralları | **Kesin** (A3 795c370, baş lider onaylı); ama **kod henüz yok** olabilir (G7: K3/K2) ve 795c370'in `entegrasyon`'a girişi **(doğrulanmadı)** |
+| Dükkân bedeli ve inşa süresi (6.000 ₺, 4 sa, 20 çelik, 8 parça, **4 pencere**) | A3 §7.2 ve §7.4: **P-İthal baş lider kararı (verildi)**. Gerçek pencere maliyeti ≈2.400 ₺ (A3 B3); A2 1.600 ₺ sayar |
 | G5 uçları | K2 dalı (`takim/k2/g5-eposta-giris`); `entegrasyon`'a girmemiş olabilir |
 | Uygulama içi tarayıcı çerezi, posta uygulaması, yeniden gönder bekleme süresi (45 sn) | **Doğrulanmadı;** pilot |
-| Görünen ad alanı, stok bayrağı (`mevcut`), ilçe talebi alanı | **Yok;** İ-1, İ-2, İ-3 |
+| Görünen ad ucu (İ-1), ilçe talebi alanı (İ-3), fiyat değişim zamanı (İ-6) | **Kareda ve G5'te yok**; `mevcut`, kasa ve kampanya hakları A3 §10.2'de **tanımlıdır** ama uygulaması (K2) bekliyor |
 | Dükkân panelinin ekran düzeni (Dükkânlarım bölümü, bina paneli) | Mevcut İşletmem ve bina paneli düzenine göre **öneri**; görsel tasarım T1'de |
 | Hiçbir test koşulmadı; hiçbir sunucu başlatılmadı | Yalnız belge |
