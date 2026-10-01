@@ -14,6 +14,7 @@ import { idCoz } from "../harita/hucre";
 import { S } from "./karo-geometri";
 import { MARKA_RENK_SAYISI } from "../tasarim/marka";
 import { hucreDunya } from "./koordinat";
+import { SILUET_RENK, SILUET_RENK_ILK, SILUETLI_YONTEMLER, siluetKutulari, siluetliMi } from "./siluet";
 import type { Cerceve, Orijin } from "./koordinat";
 import type { Rgb, YuruPaleti } from "./palet";
 
@@ -29,6 +30,8 @@ export interface InsaatBilgisi {
    * dükkân görünümü (tabela, tente şeridi, raf) çizilir. Kaynak: sunucunun `DukkanDurumu` / `OyuncuMarka` verisi (G7).
    */
   dukkan?: { tur: string; markaRenk?: number };
+  /** Bitmiş (Tamam) yapının üretim yöntemi kimliği (G6/G8): imza silüetini belirler (siluet.ts). Yoksa genel gövde. */
+  yontem?: string;
   /** Sahte bağdaştırıcıda inşaat yoksa üretilen örnek (kartta belirtilir). */
   ornek?: boolean;
 }
@@ -60,13 +63,15 @@ export function ornekInsaatlar(s: IlceSahipligi | null, ben: string): InsaatBilg
   }
   const l: InsaatBilgisi[] = [];
   const sirali = [...sahipler.keys()].sort();
+  let sayac = 0;
   sirali.forEach((sahip, i) => {
     const h = sahipler.get(sahip)!.sort();
     // 3×3 parselin köşeleri (kimlik sırasında 0, 2, 6, 8): dört aşama, ortası boş kalır
-    // Örnek (sahte) dükkân: bitmiş (Tamam) örneklerin hepsi dükkân; tür ve marka rengi sırayla (deterministik)
+    // Örnek (sahte) veri: bitmiş (Tamam) örneklerin yarısı dükkân (tür ve marka rengi sırayla), yarısı imza silüetli üretim yöntemi
     const dukkan = (n: number): { tur: string; markaRenk: number } => ({ tur: ORNEK_DUKKANLAR[n % ORNEK_DUKKANLAR.length]!, markaRenk: (n * 5 + 2) % MARKA_RENK_SAYISI });
-    if (i === 0) [0, 2, 6, 8].forEach((j, a) => h[j] && l.push({ hucre: h[j], asama: a as Asama, ornek: true, ...(a === 3 ? { dukkan: dukkan(i) } : {}) }));
-    else if (h[0]) l.push({ hucre: h[0], asama: ((i - 1) % 4) as Asama, ornek: true, ...((i - 1) % 4 === 3 ? { dukkan: dukkan(i) } : {}) });
+    const tamam = (i: number): { dukkan: { tur: string; markaRenk: number } } | { yontem: string } => (sayac++ % 2 === 0 ? { dukkan: dukkan(i) } : { yontem: SILUETLI_YONTEMLER[Math.floor(sayac / 2) % SILUETLI_YONTEMLER.length]! });
+    if (i === 0) [0, 2, 6, 8].forEach((j, a) => h[j] && l.push({ hucre: h[j], asama: a as Asama, ornek: true, ...(a === 3 ? tamam(i) : {}) }));
+    else if (h[0]) l.push({ hucre: h[0], asama: ((i - 1) % 4) as Asama, ornek: true, ...((i - 1) % 4 === 3 ? tamam(i) : {}) });
   });
   return l;
 }
@@ -398,11 +403,12 @@ export class ArsaKatmani {
       const bx = (c.x - this.cerceve.X0) * k;
       const bz = (c.y - this.cerceve.Y0) * k;
       const sahip = this.sahiplik?.hucreler.get(ins.hucre)?.sahip;
-      // Bitmiş dükkân: gövde yerine dükkân görünümü; marka rengi oyuncu paletinden (markasız: nötr)
+      // Bitmiş yapı: dükkân (marka rengi, tabela, raf) ya da yöntem silüeti; ikisi de yoksa genel gövde
       const dukkan = ins.asama === 3 ? ins.dukkan : undefined;
+      const siluet = ins.asama === 3 && !dukkan && siluetliMi(ins.yontem) ? ins.yontem : null;
       const mr = dukkan?.markaRenk;
       const marka: Rgb = mr === undefined ? this.palet.insaat[2] : this.markaRengi(mr);
-      for (const [x, y, z, sx, sy, sz, r] of dukkan ? dukkanKutulari(k) : asamaKutulari(ins.asama, k)) {
+      for (const [x, y, z, sx, sy, sz, r] of dukkan ? dukkanKutulari(k) : siluet ? siluetKutulari(siluet, k) : asamaKutulari(ins.asama, k)) {
         let renk: Rgb =
           r === 4
             ? [this.palet.sinif[S.BINA_CATI * 3]!, this.palet.sinif[S.BINA_CATI * 3 + 1]!, this.palet.sinif[S.BINA_CATI * 3 + 2]!]
@@ -412,7 +418,9 @@ export class ArsaKatmani {
                 ? karis(marka, [1, 1, 1], 0.7)
                 : r === 7
                   ? this.palet.insaat[1]
-                  : this.palet.insaat[r as 0 | 1 | 2 | 3];
+                  : r >= SILUET_RENK_ILK
+                    ? this.siluetRengi(r, karis)
+                    : this.palet.insaat[r as 0 | 1 | 2 | 3];
         if (!dukkan && (r === 2 || r === 3) && sahip === this.ben) renk = karis(renk, this.palet.ben, 0.45);
         kutu(bx + x, y, bz + z, sx, sy, sz, renk);
       }
@@ -477,6 +485,27 @@ export class ArsaKatmani {
     const j = ((Math.trunc(i) % MARKA_RENK_SAYISI) + MARKA_RENK_SAYISI) % MARKA_RENK_SAYISI;
     const m = this.palet.marka;
     return [m[3 * j]!, m[3 * j + 1]!, m[3 * j + 2]!];
+  }
+
+  /**
+   * Silüet renkleri (yeni belirteç yok; mevcut paletten türer). Sıcak ışık sabittir (animasyon yok): koyu temada tam `camIsik`
+   * (akşam hissi), açık temada gövdeyle karışık (günışığında soluk).
+   */
+  private siluetRengi(r: number, karis: (a: Rgb, b: Rgb, t: number) => Rgb): Rgb {
+    const p = this.palet;
+    const cati = (i: number): number => p.sinif[S.CATI_KIREMIT * 3 + i]!;
+    switch (r) {
+      case SILUET_RENK.isik:
+        return p.koyu ? p.camIsik : karis(p.camIsik, p.insaat[3], 0.4);
+      case SILUET_RENK.cuval:
+        return karis(p.insaat[2], [1, 0.93, 0.78], 0.55);
+      case SILUET_RENK.metal:
+        return karis(p.insaat[1], [0.55, 0.6, 0.66], 0.5);
+      case SILUET_RENK.tugla:
+        return karis([cati(0), cati(1), cati(2)], [0, 0, 0], 0.25);
+      default:
+        return karis(p.insaat[0], [0.4, 0.3, 0.2], 0.5); // toprak/gübre
+    }
   }
 
   /** Hücredeki inşaat (kart için). */

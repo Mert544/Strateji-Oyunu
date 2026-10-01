@@ -62,7 +62,7 @@ describe("örnek veri ve katman", () => {
       expect(i.dukkan!.markaRenk).toBeGreaterThanOrEqual(0);
       expect(i.dukkan!.markaRenk).toBeLessThan(MARKA_RENK_SAYISI);
     }
-    expect(l.filter((i) => i.asama === 3 && !i.dukkan)).toEqual([]);
+    expect(l.filter((i) => i.asama === 3 && !i.dukkan && !i.yontem)).toEqual([]); // diğer Tamam örnekler yöntem silüetli
     expect(ornekInsaatlar(sahiplik(botlar()), "ben")).toEqual(l);
   });
   it("dükkân örnek sayısı: gövde yerine dükkân kutuları (marka rengi paletten); ek çizim nesnesi yok", () => {
