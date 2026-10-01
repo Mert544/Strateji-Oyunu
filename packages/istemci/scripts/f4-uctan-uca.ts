@@ -174,10 +174,10 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const sekmeler = (await sayfa.locator("#sekmeler").innerText()).replace(/\s+/g, " ").trim();
   kontrol(`${e} mülk paneli sekmeleri: İşletmem, Hazine, Mal, Dikkat, Olaylar; Bölge, Devlet, Savaş yok`, ["İşletmem", "Hazine", "Mal", "Dikkat", "Olaylar"].every((x) => sekmeler.includes(x)) && !/Savaş|Devlet|Bölge/.test(sekmeler), sekmeler);
   // Esnaf Defteri bölümü sunucudan (defterIste) gelir: ödül çubuğu ve sıradaki adımlar
-  await sayfa.waitForSelector("#sekme-icerik [data-alan='defter-odul']", { timeout: 20000 }).catch(() => undefined);
+  await sayfa.waitForSelector("#sekme-icerik .defter-liste", { timeout: 20000 }).catch(() => undefined);
   const isletme = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
   kontrol(`${e} İşletmem: ad, kalkan ve ayrılmış hücre (savaş dili yok), Gebze arsası`, /\bali\b/.test(isletme) && /Yeni oyuncu kalkanı/.test(isletme) && /Gebze/.test(isletme) && !/savaş|Cumhuriyet|bölge/i.test(isletme), isletme.slice(0, 260));
-  kontrol(`${e} Esnaf Defteri: ödül çubuğu (toplam / 8.000 ₺ tavan), sıradaki adımlar ödül tutarıyla (ilk yapı: çelik); yer tutucular gizli`, /Defter ödülleri/.test(isletme) && /\/ 8\.000\s₺/.test(isletme) && /İlk yapını kur/.test(isletme) && /çelik/.test(isletme) && /İlk satışını yap/.test(isletme) && !/dükkânını aç|sözleşmeni yap/.test(isletme) && (await sayfa.locator("#sekme-icerik .defter-cubuk").count()) === 1, isletme.slice(isletme.indexOf("Defter"), isletme.indexOf("Defter") + 240));
+  kontrol(`${e} Esnaf Defteri: ödül çubuğu ve tavan YOK; sıradaki adımlar "ödül: ..." ile (ilk yapı: çelik), ilk satış "Çiftliğinin tahılını sat."; yer tutucular gizli`, !/Defter ödülleri/.test(isletme) && !/\/ 8\.000\s₺/.test(isletme) && (await sayfa.locator("#sekme-icerik .defter-cubuk").count()) === 0 && /İlk yapını kur/.test(isletme) && /ödül: [^ ]* ?çelik/.test(isletme) && /Çiftliğinin tahılını sat\./.test(isletme) && !/dükkânını aç|sözleşmeni yap/.test(isletme), isletme.slice(isletme.indexOf("Defter"), isletme.indexOf("Defter") + 240));
   const cubuk = (await sayfa.locator("#oyuncu-cubuk").innerText()).replace(/\s+/g, " ");
   kontrol(`${e} üst çubukta oyuncu adı ve hazine (devlet adı yok)`, /ali/.test(cubuk) && /50\.000\s₺/.test(cubuk), cubuk);
   const tarih = `${await sayfa.locator("#takvim-gun").innerText()} · ${await sayfa.locator("#takvim-yil").innerText()}`;
@@ -369,8 +369,8 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const insaOnce = ts.yazar.sim.dunya.insaatlar.length;
   const sunucuKomut = ts.yazar.seq;
   await tikla(sayfa, false, "#yapi-kart [data-yk='onayla']");
-  await sayfa.waitForSelector("#bildirimler .bildirim.tamam >> text=Çiftlik kuruluyor", { timeout: 20000 });
-  const t2 = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
+  await sayfa.waitForSelector("#bildirimler .bildirim >> text=Çiftlik kuruluyor", { timeout: 20000 });
+  const t2 = (await sayfa.locator("#bildirimler .bildirim").last().innerText()).replace(/\s+/g, " ");
   kontrol(`${e} onay: Çiftlik kuruluyor (arsa zaten senin: tek komut; ilk yapı indirimli 4.200\s₺)`, /Çiftlik kuruluyor: yapı 4\.200\s₺\./.test(t2), t2);
   kontrol(`${e} sunucuda inşaat başladı (hücreli)`, ts.yazar.sim.dunya.insaatlar.length === insaOnce + 1 && (ts.yazar.sim.dunya.insaatlar.at(-1)?.hucreler?.length ?? 0) === 2, `${ts.yazar.sim.dunya.insaatlar.length} inşaat; yeni komut ${ts.yazar.seq - sunucuKomut}`);
   const insaatHucreler = [...(ts.yazar.sim.dunya.insaatlar.at(-1)?.hucreler ?? [])];
@@ -578,8 +578,10 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     .waitForFunction(() => /İlk yapın kuruldu/.test(document.getElementById("sekme-icerik")?.textContent ?? ""), null, { timeout: 30000 })
     .catch(() => undefined);
   const defterM = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
+  // Bildirimler tek tek görünür (kuyruk); Defter bildirimi sıra gelince belirir
+  await sayfa.waitForFunction(() => /Defter/.test(document.getElementById("bildirimler")?.textContent ?? ""), null, { timeout: 25000 }).catch(() => undefined);
   const bildirimler = (await sayfa.locator("#bildirimler").textContent()) ?? "";
-  kontrol(`${e} Defter: ilk yapı defterine işlendi (tarih ve çelik ödülü), sıradakilerden düştü; bildirim geldi`, /Defterine işlenenler/.test(defterM) && /İlk yapın kuruldu; kolay gelsin\. \d{1,2} (Ekim|Kasım) · 5 çelik/.test(defterM) && !/İlk yapını kur/.test(defterM) && /Defter: İlk yapın kuruldu|Defterine \d+ yeni satır işlendi/.test(bildirimler), defterM.slice(defterM.indexOf("Defter"), defterM.indexOf("Defter") + 320));
+  kontrol(`${e} Defter: ilk yapı defterine işlendi (tarih ve çelik ödülü), sıradakilerden düştü; bildirim geldi`, /Defterine işlenenler/.test(defterM) && /İlk yapın kuruldu; kolay gelsin\. \d{1,2} (Ekim|Kasım) · 5 çelik/.test(defterM) && !/İlk yapını kur/.test(defterM) && /Defter: İlk yapın kuruldu|Defterine \d+ satır işlendi/.test(bildirimler), defterM.slice(defterM.indexOf("Defter"), defterM.indexOf("Defter") + 320));
   await ekran("13b-defter");
   kontrol(`${e}/[veli] veli de tamamlananı görüyor (delta)`, veli2.tesis === 2 && veli2.insaat === 0, JSON.stringify(veli2));
   await sayfa.evaluate((h) => {
@@ -629,7 +631,7 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const hazine0 = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
   const insaat0 = ts.yazar.sim.dunya.insaatlar.length;
   await tikla(sayfa, false, "[data-eylem='yurt-kur']");
-  await sayfa.waitForSelector("#bildirimler .bildirim.tamam >> text=Çiftlik kuruluyor", { timeout: 30000 });
+  await sayfa.waitForSelector("#bildirimler .bildirim >> text=Çiftlik kuruluyor", { timeout: 30000 });
   const tYurt = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
   kontrol(`${e} tek tıkla Çiftlik yurtta: arsa yok, indirimli yapı 4.200 ₺`, /Çiftlik kuruluyor: yapı 4\.200\s₺\./.test(tYurt) && ts.yazar.sim.dunya.insaatlar.length === insaat0 + 1, tYurt);
   await sayfa.waitForFunction(() => (window.__harita?.baglanti()?.ozet?.()?.surenInsaat ?? 0) >= 1, null, { timeout: 15000 });
@@ -672,7 +674,7 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const hazineOnce = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
   const insaOnce = ts.yazar.sim.dunya.insaatlar.length;
   await tikla(sayfa, false, "#yapi-kart [data-ok='onayla']");
-  await sayfa.waitForSelector("#bildirimler .bildirim.tamam >> text=ölçeğe büyütülüyor", { timeout: 20000 });
+  await sayfa.waitForSelector("#bildirimler .bildirim >> text=ölçeğe büyütülüyor", { timeout: 20000 });
   const t1 = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
   kontrol(`${e} onay: sunucu kabul etti, bildirim Türkçe`, /Çiftlik M ölçeğe büyütülüyor: .*büyütme 9\.000\s₺\./.test(t1), t1);
   kontrol(`${e} sunucuda ölçek inşaatı başladı (tek komut, hedef M)`, ts.yazar.sim.dunya.insaatlar.length === insaOnce + 1 && ts.yazar.sim.dunya.insaatlar.some((i) => i.tur === "olcek" && i.hedef === tesisId && i.olcek === 1), `${ts.yazar.sim.dunya.insaatlar.length} inşaat`);
@@ -797,7 +799,7 @@ async function ayse(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: stri
     const planGecerli = await sayfa.evaluate(() => window.__harita?.gorunum()?.yerlesimKipi?.gecerliPlan?.gecerli ?? false);
     if (planGecerli) {
       await sayfa.locator("#yapi-kart [data-yk='onayla']").tap();
-      await sayfa.waitForSelector("#bildirimler .bildirim.tamam >> text=Çiftlik kuruluyor", { timeout: 20000 });
+      await sayfa.waitForSelector("#bildirimler .bildirim >> text=Çiftlik kuruluyor", { timeout: 20000 });
       kontrol(`${e} Çiftlik kuruluyor (sunucuda ayşe'nin inşaatı)`, ts.yazar.sim.dunya.insaatlar.some((i) => i.sahip === "ayse"));
       await sayfa.waitForTimeout(600);
       await ekran("5-insaat");
@@ -845,7 +847,7 @@ async function sahteYerles(tarayici: Browser, adres: string, konsol: string[]): 
     .waitForFunction(() => /İlk arsan; hayırlı olsun/.test(document.getElementById("sekme-icerik")?.textContent ?? ""), null, { timeout: 25000 })
     .catch(() => undefined);
   const sd = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} örnek defter: ilk arsa damgası, sıradaki ilk yapı (çelik), ödül çubuğu`, /İlk arsan; hayırlı olsun/.test(sd) && /damga/.test(sd) && /İlk yapını kur/.test(sd) && /Defter ödülleri/.test(sd), sd.slice(sd.indexOf("Defter"), sd.indexOf("Defter") + 200));
+  kontrol(`${e} örnek defter: ilk arsa damgası, sıradaki ilk yapı (çelik), "ödül:" öneki (çubuk yok)`, /İlk arsan; hayırlı olsun/.test(sd) && /damga/.test(sd) && /İlk yapını kur/.test(sd) && /ödül:/.test(sd) && !/Defter ödülleri/.test(sd), sd.slice(sd.indexOf("Defter"), sd.indexOf("Defter") + 200));
   await sayfa.screenshot({ path: join(EKRAN, "f4-sahte-1b-defter-koyu.png") });
   await tikla(sayfa, false, "#yapi-menu-dugme");
   const menu = (await sayfa.locator("#yapi-menu").innerText()).replace(/\s+/g, " ");

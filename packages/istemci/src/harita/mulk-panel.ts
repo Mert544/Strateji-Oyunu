@@ -23,7 +23,7 @@ import type { HaritaGorunumu } from "./gorunum";
 import type { Hiyerarsi } from "./veri";
 import { ASAMA_ADI, yapiAsamasi } from "./yapi";
 import { OLCEK_AD, olcekBuyutulebilir } from "./olcek";
-import { defterHtml, kazanimBildirimleri, yeniKazanilanlar } from "./defter";
+import { defterBirlesikMetni, defterHtml, kazanimBildirimleri, yeniKazanilanlar } from "./defter";
 import type { Defter } from "@bolge/protokol";
 import { bildir } from "../arayuz/bildirim";
 import mulkCss from "./mulk-panel.css?inline";
@@ -273,7 +273,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     try {
       const d = await b.defterAl();
       if (!d) return;
-      for (const m of kazanimBildirimleri(yeniKazanilanlar(defter, d), ad.mal)) bildir(m, "bilgi");
+      for (const o of kazanimBildirimleri(yeniKazanilanlar(defter, d), ad.mal)) bildir(o.mesaj, "bilgi", { grup: { ad: "defter", n: 1, deger: o.deger, birlestir: defterBirlesikMetni } });
       defter = d;
       f?.();
     } finally {

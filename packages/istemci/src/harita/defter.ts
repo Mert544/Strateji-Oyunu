@@ -5,8 +5,8 @@
  *
  * Ton: esnaf defteri; sakin, kısa, yargısız ("kolay gelsin", "hayırlı olsun"). Defter zorunlu değildir: sıra serbest, kilit yok.
  * Kazanılanlar tarih ve ödülle (damga = para/mal taşımayan kayıt), sıradakiler ödül tutarıyla; `etkin: false` yer tutucular
- * gösterilmez. Toplam ödül ve tavan tek ilerleme çubuğunda (kavram sayısı ya da yüzde yazılmaz). Yeni kazanılan ödül için
- * sakin bir bildirim (`yeniKazanilanlar`).
+ * gösterilmez. Ödül çubuğu ve tavan YOKTUR (ZK-1; sıradaki adımlarda "ödül: ..."; toplam yalnız "Defterine işlenen ödüller: ≈ ... değerinde"
+ * satırı). Yeni kazanılan ödül için sakin bir bildirim (`yeniKazanilanlar`); yakın zamandaki Defter bildirimleri tek bildirimde birleşir.
  */
 import type { Defter, DefterKazanilan, DefterOdulu } from "@bolge/protokol";
 import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, paraMili, tarihMetni } from "../arayuz/bicim";
@@ -22,7 +22,7 @@ export interface DefterMetni {
 /** `defter.kavram.<kavram>` şablonları. */
 export const DEFTER_METINLERI: Readonly<Record<string, DefterMetni>> = {
   "defter.kavram.ilk_yapi": { kazanildi: "İlk yapın kuruldu; kolay gelsin.", siradaki: "İlk yapını kur" },
-  "defter.kavram.ilk_satis": { kazanildi: "İlk satışın yapıldı; bereketli olsun.", siradaki: "İlk satışını yap" },
+  "defter.kavram.ilk_satis": { kazanildi: "İlk satışın yapıldı; bereketli olsun.", siradaki: "Çiftliğinin tahılını sat." },
   "defter.kavram.ilk_isleme": { kazanildi: "Ham malı işledin; ilk işlenmiş ürünün hayırlı olsun.", siradaki: "Ham malı işle (ör. tahılı gıdaya çevir)" },
   "defter.kavram.zincir_kapandi": { kazanildi: "Zincir kapandı: bir yapının çıktısı öbürünün girdisi oldu.", siradaki: "Zinciri kapat: bir yapının çıktısını öbürüne girdi yap" },
   "defter.kavram.ilk_dukkan": { kazanildi: "İlk dükkânın açıldı; siftahın bereketli olsun.", siradaki: "İlk dükkânını aç" },
@@ -36,6 +36,19 @@ export const DEFTER_METINLERI: Readonly<Record<string, DefterMetni>> = {
 
 export function defterMetni(sablon: string, kavram: string): DefterMetni {
   return DEFTER_METINLERI[sablon] ?? { kazanildi: `${kavram.replace(/_/g, " ")}: tamamlandı.`, siradaki: kavram.replace(/_/g, " ") };
+}
+
+/** Defter çerçeve metinleri (T1 tablosu: `defter.odul`, `defter.islenen`, `defter.bildirim.birlesik`, `defter.bildirim.birlesik_tutarsiz`). Yer tutucu `{ad}`. */
+export const DEFTER_CERCEVE = {
+  "defter.odul": "ödül: {odul}",
+  "defter.islenen": "Defterine işlenen ödüller: ≈ {tutar} değerinde",
+  "defter.bildirim.birlesik": "Defterine {n} satır işlendi · ≈ {tutar} değerinde",
+  "defter.bildirim.birlesik_tutarsiz": "Defterine {n} satır işlendi",
+} as const;
+
+/** "≈ {tutar}" kalıbında "≈" ile sayı bölünmez boşlukla birleşir (satır sonunda "≈" yalnız kalmasın). */
+function cerceve(anahtar: keyof typeof DEFTER_CERCEVE, yer: Readonly<Record<string, string | number>>): string {
+  return DEFTER_CERCEVE[anahtar].replace(/≈ /g, "≈\u00a0").replace(/\{([a-z_]+)\}/g, (tum, ad: string) => (ad in yer ? String(yer[ad]) : tum));
 }
 
 /** "≈" ile sayı arası bölünmez boşluk: "(≈\u00a0900\u00a0₺ değerinde)" satır sonunda "≈" yalnız kalmaz. */
@@ -64,7 +77,12 @@ export function odulMetni(o: DefterOdulu | undefined, malAdi: (m: string) => str
  */
 export function odulSutunu(o: DefterOdulu | undefined, malAdi: (m: string) => string): string {
   const p = odulParcalari(o, malAdi);
-  const satirlar = [p.para && `<span class="dt-ana">${esc(p.para)}</span>`, p.mal && `<span class="dt-ana">${esc(p.mal)}</span>`, p.deger && `<span class="dt-deger soluk">${esc(p.deger)} değerinde</span>`].filter(Boolean);
+  // "ödül: {odul}" öneki ilk parçanın önündedir (para ya da mal); değer satırı altında kalır
+  const ana = [p.para, p.mal].filter(Boolean);
+  const satirlar = [
+    ...ana.map((x, i) => `<span class="dt-ana">${esc(i === 0 ? cerceve("defter.odul", { odul: x }) : x)}</span>`),
+    p.deger && `<span class="dt-deger soluk">${esc(p.deger)} değerinde</span>`,
+  ].filter(Boolean);
   return satirlar.join("");
 }
 
@@ -81,21 +99,25 @@ export function kazanimBildirimi(k: DefterKazanilan, malAdi: (m: string) => stri
   return `Defter: ${defterMetni(k.sablon, k.kavram).kazanildi}${odul ? ` Ödül: ${odul}.` : ""}`;
 }
 
-/** Aynı anda birden çok kazanım tek bildirimde toplanır (sakin: art arda kart yığılmasın). */
-export function kazanimBildirimleri(yeni: readonly DefterKazanilan[], malAdi: (m: string) => string): string[] {
-  if (yeni.length <= 1) return yeni.map((k) => kazanimBildirimi(k, malAdi));
-  const deger = yeni.reduce((t, k) => t + (k.odul?.degerMili ?? 0), 0);
-  return [`Defterine ${fmt(yeni.length)} yeni satır işlendi${deger > 0 ? `; ödüllerin toplamı ${YAKLASIK}${paraMili(deger)}` : ""}. Ayrıntı İşletmem'de.`];
+/**
+ * Kazanım bildirimleri: her kazanım kendi cümlesiyle ve ödül değeriyle (mili-₺) döner; aynı pencerede (2 sn) gelenlerin birleşmesi bildirim
+ * kuyruğundadır (`bildirim-kuyrugu.ts` grup birleştirme: `defterBirlesikMetni`).
+ */
+export function kazanimBildirimleri(yeni: readonly DefterKazanilan[], malAdi: (m: string) => string): Array<{ mesaj: string; deger: number }> {
+  return yeni.map((k) => ({ mesaj: kazanimBildirimi(k, malAdi), deger: k.odul?.degerMili ?? 0 }));
+}
+
+/** Birleşik Defter bildirimi: "Defterine 2 satır işlendi · ≈ 600 ₺ değerinde" (değer yoksa tutarsız biçim; tutar aşağı yuvarlı). */
+export function defterBirlesikMetni(n: number, degerMili: number): string {
+  return degerMili > 0 ? cerceve("defter.bildirim.birlesik", { n: fmt(n), tutar: paraMili(degerMili, "asagi") }) : cerceve("defter.bildirim.birlesik_tutarsiz", { n: fmt(n) });
 }
 
 /** "Defter" bölümü (İşletmem'de). `epochMs`: tarihleri gerçek takvime çevirmek için. */
 export function defterHtml(d: Defter | null, malAdi: (m: string) => string, epochMs = DUNYA_EPOCH_MS): string {
   let s = `<h3>Defter</h3>`;
   if (!d) return s + `<p class="ipucu-metin">Defter yükleniyor…</p>`;
-  const tavan = Math.max(1, d.tavanMili);
-  const oran = Math.min(1, Math.max(0, d.toplamOdulMili / tavan));
-  s += `<div class="defter-odul" data-alan="defter-odul"><div class="defter-odul-satir"><span>Defter ödülleri</span><b>${paraMili(d.toplamOdulMili)} <span class="soluk">/ ${paraMili(d.tavanMili)}</span></b></div>`;
-  s += `<span class="defter-cubuk" role="img" aria-label="Defter ödülleri: ${paraMili(d.toplamOdulMili)}, tavan ${paraMili(d.tavanMili)}"><i style="width:${(oran * 100).toFixed(1)}%"></i></span></div>`;
+  // Ödül çubuğu ve tavan yok (ZK-1); toplam yalnız tek satır: işlenen ödüllerin değeri (çoğu mal olduğu için "değerinde")
+  if (d.toplamOdulMili > 0) s += `<p class="defter-islenen soluk" data-alan="defter-islenen">${esc(cerceve("defter.islenen", { tutar: paraMili(d.toplamOdulMili, "asagi") }))}</p>`;
   const siradaki = d.siradaki.filter((x) => x.etkin);
   if (siradaki.length) {
     s += `<p class="defter-baslik">Sıradaki adımlar</p><ul class="mulk-liste defter-liste">`;

@@ -299,7 +299,7 @@ export class OlcekKipi {
       const r = await this.g.baglanti.olcekYukselt({ bolge: `${il}#${this.g.baglanti.ben.id}`, tesis: t.id, olcek: p.hedef.olcek, ekHucreler: p.ekHucreler, ...(p.sinif && p.alinacak.length > 0 ? { sinif: p.sinif } : {}) });
       if (r.tamam) {
         const arsa = p.alinacak.length > 0 ? `arsa ${fmt(p.alinacak.length)} hücre, ${TL(p.arsaMili)} + ` : "";
-        bildir(`${ad} ${p.hedef.ad} ölçeğe büyütülüyor: ${arsa}büyütme ${TL(p.yapiMili)}.`, "tamam");
+        bildir(`${ad} ${p.hedef.ad} ölçeğe büyütülüyor: ${arsa}büyütme ${TL(p.yapiMili)}.`, "bilgi");
         await this.g.yenile();
         this.uygulaniyor = false;
         this.iptal();

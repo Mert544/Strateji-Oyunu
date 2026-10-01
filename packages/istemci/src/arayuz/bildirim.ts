@@ -2,42 +2,88 @@
  * Kısa bildirimler (toast). Kural: toast YALNIZ oyuncunun kendi eyleminin sonucu içindir (komut sonucu, form
  * hatası). Başka her olay (savaş ilanı, biten inşaat, iklim uyarısı) "Bildirimler" gelen kutusuna düşer
  * (arayuz/gelen-kutusu.ts) ve açılır pencere olarak gösterilmez.
+ *
+ * Aynı anda DOM'da yalnız BİR bildirim vardır (masaüstünde de; A5); gerisi `BildirimKuyrugu`nda bekler, süreleri görünür olunca başlar,
+ * hata öne geçer, Defter bildirimleri birleşir (bildirim-kuyrugu.ts). İşi süren işlemin ("… kuruluyor") bildirimi `bilgi` türündedir;
+ * başarı simgesi (`tamam`) yalnız biten işin bildirimidir.
  */
 import { ikon } from "../tasarim/ikon";
 import { bildirimKonumIzle } from "../tasarim/toast-konum";
+import { BildirimKuyrugu } from "./bildirim-kuyrugu";
+import type { BildirimOgesi, BildirimTuru, Cizici, GrupBilgisi } from "./bildirim-kuyrugu";
 
-export type BildirimTuru = "tamam" | "hata" | "bilgi";
+export type { BildirimTuru, GrupBilgisi } from "./bildirim-kuyrugu";
 
-const EN_COK = 4;
+export interface BildirimSecenegi {
+  /** Aynı gruptan (ör. Defter) yakın zamanda gelenler tek bildirimde birleşir. */
+  grup?: GrupBilgisi;
+}
 
 /** Süre çarpanı (yalnızca otomatik sınama içindir: yavaş ortamda ekran görüntüsü alınırken bildirim kaybolmasın). */
 const carpan = (): number => (window as unknown as { __bildirimCarpan?: number }).__bildirimCarpan ?? 1;
 
-export function bildir(mesaj: string, tur: BildirimTuru = "bilgi"): void {
-  const kap = document.getElementById("bildirimler");
-  if (!kap) return;
+interface Tutamac {
+  el: HTMLElement;
+  metin: HTMLElement;
+}
+
+function bildirimiKur(oge: BildirimOgesi, kapat: () => void): Tutamac {
   const d = document.createElement("div");
-  d.className = `bildirim ${tur}`;
-  d.setAttribute("role", tur === "hata" ? "alert" : "status");
+  d.className = `bildirim ${oge.tur}`;
+  d.setAttribute("role", oge.tur === "hata" ? "alert" : "status");
   const simge = document.createElement("b");
-  simge.innerHTML = ikon(tur === "tamam" ? "circle-check" : tur === "hata" ? "circle-alert" : "info", 20);
+  simge.innerHTML = ikon(oge.tur === "tamam" ? "circle-check" : oge.tur === "hata" ? "circle-alert" : "info", 20);
   simge.setAttribute("aria-hidden", "true");
   const metin = document.createElement("span");
-  metin.textContent = mesaj;
+  metin.textContent = oge.mesaj;
   const kapatDugme = document.createElement("button");
   kapatDugme.type = "button";
   kapatDugme.className = "bildirim-kapat";
   kapatDugme.setAttribute("aria-label", "Kapat");
   kapatDugme.innerHTML = ikon("x", 18);
   d.append(simge, metin, kapatDugme);
-  const kapat = (): void => {
-    d.classList.add("gidiyor");
-    window.setTimeout(() => d.remove(), 220);
-  };
   // Toast haritadaki fare ve dokunma olaylarını yutmaz (CSS: pointer-events none); yalnız bu düğme tıklanır
   kapatDugme.addEventListener("click", kapat);
-  kap.append(d);
-  bildirimKonumIzle(kap); // açık kartın/alt çubuğun 12 px üstüne oturur (görsel kimlik §5.3)
-  while (kap.childElementCount > EN_COK) kap.firstElementChild?.remove();
-  window.setTimeout(kapat, (tur === "hata" ? 8000 : 4500) * carpan());
+  return { el: d, metin };
+}
+
+const cizici: Cizici<Tutamac> = {
+  goster(oge) {
+    const kap = document.getElementById("bildirimler");
+    const t = bildirimiKur(oge, () => kuyruk().kapatGorunen());
+    if (kap) {
+      kap.append(t.el);
+      bildirimKonumIzle(kap); // açık kartın/alt çubuğun 12 px üstüne oturur (görsel kimlik §5.3)
+    }
+    return t;
+  },
+  guncelle(t, oge) {
+    t.metin.textContent = oge.mesaj;
+  },
+  kapat(t, bitti) {
+    t.el.classList.add("gidiyor");
+    window.setTimeout(() => {
+      t.el.remove();
+      bitti();
+    }, 220);
+  },
+};
+
+let ornek: BildirimKuyrugu<Tutamac> | null = null;
+function kuyruk(): BildirimKuyrugu<Tutamac> {
+  ornek ??= new BildirimKuyrugu<Tutamac>({
+    cizici,
+    simdi: () => performance.now(),
+    zamanla: (f, ms) => {
+      const id = window.setTimeout(f, ms);
+      return () => window.clearTimeout(id);
+    },
+    sure: (tur) => (tur === "hata" ? 8000 : 4500) * carpan(),
+  });
+  return ornek;
+}
+
+export function bildir(mesaj: string, tur: BildirimTuru = "bilgi", secenek: BildirimSecenegi = {}): void {
+  if (!document.getElementById("bildirimler")) return;
+  kuyruk().ekle({ mesaj, tur, ...(secenek.grup ? { grup: secenek.grup } : {}) });
 }

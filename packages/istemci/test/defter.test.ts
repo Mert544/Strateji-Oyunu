@@ -1,11 +1,11 @@
 /**
  * Esnaf Defteri (saf): şablon metinleri (tüm kavramlar), ödül metni, sıradaki/kazanılan listesi, gizlenen yer tutucular,
- * ödül çubuğu (toplam / tavan), yeni kazanılan bildirimi ve sahte bağdaştırıcının örnek defteri.
+ * ödül öneki ("ödül: ..."), işlenen ödül satırı (çubuk ve tavan yok), yeni kazanılan bildirimi ve birleşik metin ve sahte bağdaştırıcının örnek defteri.
  */
 import { describe, expect, it } from "vitest";
 import { DEFTER_DAMGALARI, DEFTER_ODUL_SIRASI, defterSablonu } from "@bolge/protokol";
 import type { Defter } from "@bolge/protokol";
-import { DEFTER_METINLERI, defterHtml, kazanimBildirimi, kazanimBildirimleri, odulMetni, odulSutunu, yeniKazanilanlar } from "../src/harita/defter";
+import { DEFTER_CERCEVE, DEFTER_METINLERI, defterBirlesikMetni, defterHtml, kazanimBildirimi, kazanimBildirimleri, odulMetni, odulSutunu, yeniKazanilanlar } from "../src/harita/defter";
 import { SahteBaglanti } from "../src/harita/baglanti";
 import { Bit, hucreId } from "../src/harita/hucre";
 
@@ -44,27 +44,32 @@ describe("Esnaf Defteri", () => {
     expect(odulMetni({ paraMili: 250_000, mal: { parca: 2000 }, degerMili: 450_000 }, malAdi)).toBe("250\u00a0₺ ve 2 makine parçası");
   });
 
-  it("sağ sütun: uzun ödül iki düzgün satır (ne, altta değeri); tutar parçaları ayrı ve bölünmez", () => {
+  it("sağ sütun: 'ödül:' öneki ilk parçanın önünde; uzun ödül iki düzgün satır (ne, altta değeri); tutar parçaları ayrı ve bölünmez", () => {
     expect(odulSutunu({ mal: { parca: 9000 }, degerMili: 900_000 }, malAdi)).toBe(
-      '<span class="dt-ana">9 makine parçası</span><span class="dt-deger soluk">≈\u00a0900\u00a0₺ değerinde</span>',
+      '<span class="dt-ana">ödül: 9 makine parçası</span><span class="dt-deger soluk">≈\u00a0900\u00a0₺ değerinde</span>',
     );
-    expect(odulSutunu({ paraMili: 500_000, degerMili: 500_000 }, malAdi)).toBe('<span class="dt-ana">500\u00a0₺</span>');
-    expect(odulSutunu({ paraMili: 250_000, mal: { parca: 2000 }, degerMili: 450_000 }, malAdi)).toBe('<span class="dt-ana">250\u00a0₺</span><span class="dt-ana">2 makine parçası</span>');
+    expect(odulSutunu({ paraMili: 500_000, degerMili: 500_000 }, malAdi)).toBe('<span class="dt-ana">ödül: 500\u00a0₺</span>');
+    expect(odulSutunu({ paraMili: 250_000, mal: { parca: 2000 }, degerMili: 450_000 }, malAdi)).toBe('<span class="dt-ana">ödül: 250\u00a0₺</span><span class="dt-ana">2 makine parçası</span>');
     expect(odulSutunu(undefined, malAdi)).toBe("");
   });
 
-  it("bölüm: ödül çubuğu (toplam / tavan), sıradakiler tutarla, yer tutucu gizli, kazanılanlar tarih ve ödülle; sayaç ya da yüzde yok", () => {
+  it("bölüm: ödül çubuğu ve tavan YOK; işlenen ödül tek satır; sıradakiler 'ödül:' ile, yer tutucu gizli, kazanılanlar tarih ve ödülle; sayaç ya da yüzde yok", () => {
     const h = defterHtml(defter, malAdi, EPOCH);
-    expect(h).toContain("600\u00a0₺ <span class=\"soluk\">/ 8.000\u00a0₺</span>");
-    expect(h).toContain('style="width:7.5%"');
-    expect(h).toContain("İlk satışını yap");
-    expect(h).toContain("500\u00a0₺");
+    expect(h).not.toContain("defter-cubuk");
+    expect(h).not.toContain("Defter ödülleri");
+    expect(h).not.toContain("8.000");
+    expect(h).not.toMatch(/\bwidth:/);
+    expect(h).toContain('<p class="defter-islenen soluk" data-alan="defter-islenen">Defterine işlenen ödüller: ≈\u00a0600\u00a0₺ değerinde</p>');
+    expect(h).toContain("Çiftliğinin tahılını sat.");
+    expect(h).toContain("ödül: 500\u00a0₺");
     expect(h).not.toContain("ilk_dukkan");
     expect(h).toContain("İlk yapın kuruldu; kolay gelsin.");
     expect(h).toContain("2 Ekim · 5 çelik (≈\u00a0600\u00a0₺ değerinde)");
     expect(h).toContain("1 Ekim · damga");
     expect(h).not.toMatch(/\d+\s*\/\s*\d+\s*(kavram|adım)|%\d/);
     expect(defterHtml(null, malAdi)).toContain("Defter yükleniyor");
+    // hiç ödül işlenmemişse satır yok
+    expect(defterHtml({ ...defter, toplamOdulMili: 0 }, malAdi, EPOCH)).not.toContain("defter-islenen");
   });
 
   it("yeni kazanılan bildirimi (ilk okumada yok)", () => {
@@ -73,8 +78,19 @@ describe("Esnaf Defteri", () => {
     const yeni = yeniKazanilanlar(once, defter);
     expect(yeni.map((k) => k.kavram)).toEqual(["ilk_yapi"]);
     expect(kazanimBildirimi(yeni[0]!, malAdi)).toBe("Defter: İlk yapın kuruldu; kolay gelsin. Ödül: 5 çelik (≈\u00a0600\u00a0₺ değerinde).");
-    expect(kazanimBildirimleri(yeni, malAdi)).toEqual([kazanimBildirimi(yeni[0]!, malAdi)]);
-    expect(kazanimBildirimleri(defter.kazanilan, malAdi)).toEqual(["Defterine 2 yeni satır işlendi; ödüllerin toplamı ≈\u00a0600\u00a0₺. Ayrıntı İşletmem'de."]);
+    // her kazanım kendi cümlesi ve değeriyle döner (birleştirme bildirim kuyruğunda: aynı 2 sn penceresindekiler tek bildirim)
+    expect(kazanimBildirimleri(yeni, malAdi)).toEqual([{ mesaj: kazanimBildirimi(yeni[0]!, malAdi), deger: 600_000 }]);
+    expect(kazanimBildirimleri(defter.kazanilan, malAdi).map((x) => x.deger)).toEqual([0, 600_000]);
+  });
+
+  it("birleşik bildirim metni: değer aşağı yuvarlı ve '≈' bölünmez; değer yoksa tutarsız biçim; çerçeve metinlerinde büyük harfli sözcük yok", () => {
+    expect(defterBirlesikMetni(2, 600_000)).toBe("Defterine 2 satır işlendi · ≈\u00a0600\u00a0₺ değerinde");
+    expect(defterBirlesikMetni(3, 600_999)).toBe("Defterine 3 satır işlendi · ≈\u00a0600\u00a0₺ değerinde");
+    expect(defterBirlesikMetni(2, 0)).toBe("Defterine 2 satır işlendi");
+    for (const [k, v] of Object.entries(DEFTER_CERCEVE)) {
+      expect(v, k).not.toMatch(/\b[A-ZÇĞİÖŞÜ]{2,}\b/);
+      expect(/₺|\bTL\b/.test(v), k).toBe(false);
+    }
   });
 
   it("sahte bağdaştırıcı örnek defter verir: arsa alınınca ilk arsa damgası; sıradakiler kritik yol sırasıyla", async () => {

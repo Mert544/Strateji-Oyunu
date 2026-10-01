@@ -496,7 +496,8 @@ export class YerlesimKipi {
     this.kartiYaz();
     try {
       const r = await yerlesimiUygula(this.g.baglanti, ilce, p);
-      bildir(r.mesaj, r.tamam ? "tamam" : "hata");
+      // "… kuruluyor": iş bitmedi, bilgi (başarı simgesi yalnız biten işin bildirimidir)
+      bildir(r.mesaj, r.tamam ? "bilgi" : "hata");
       await this.g.yenile();
       if (r.tamam) {
         this.geriGoster(ilce, p, r.alinan);
