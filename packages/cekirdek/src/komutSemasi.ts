@@ -35,7 +35,7 @@ export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   ekim_plani: { yol: "oyuncu", alanlar: { bolge: "kimlik", ekimPpm: "oran" } },
   gubre_dozu: { yol: "oyuncu", alanlar: { bolge: "kimlik", doz: "secim" } },
   // Sanayi
-  tesis_olcek_yukselt: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", olcek: "secim" } },
+  tesis_olcek_yukselt: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", olcek: "secim", ekHucreler: "kimlik", sinif: "secim" } },
   genel_onarim: { yol: "oyuncu", alanlar: { bolge: "kimlik" } },
   bakim_duzeyi: { yol: "oyuncu", alanlar: { duzey: "secim" } },
   arama_sondaji: { yol: "oyuncu", alanlar: { bolge: "kimlik", mal: "kimlik" } },
@@ -57,9 +57,9 @@ export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   sistem_odul: { yol: "sistem", alanlar: { oyuncu: "kimlik", kavram: "kimlik" } },
   // Mülk kipi
   parsel_al: { yol: "oyuncu", alanlar: { ilce: "kimlik", hucreler: "kimlik", sinif: "secim" } },
-  tesis_insa_hucre: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik" } },
+  tesis_insa_hucre: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", olcek: "secim" } },
   insaat_iptal: { yol: "oyuncu", alanlar: { insaat: "kimlik" } },
-  yapi_yerlestir: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", sinif: "secim" } },
+  yapi_yerlestir: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", sinif: "secim", olcek: "secim" } },
   parsel_birak: { yol: "oyuncu", alanlar: { ilce: "kimlik", hucreler: "kimlik" } },
 };
 

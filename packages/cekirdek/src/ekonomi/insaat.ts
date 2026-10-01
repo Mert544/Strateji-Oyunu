@@ -2,7 +2,7 @@
  * İnşaat tamamlanması: yeni tesis ya da kenar kapasite geliştirmesi.
  */
 import { icerikTablosu } from "./tablo";
-import { hucreBul } from "../mulk/durum";
+import { dizgeKarsilastir, hucreBul } from "../mulk/durum";
 import { ekYapiTamamla } from "../mulk/yapi";
 import { ppmUygula } from "../sabit";
 import type { Baglam, Dunya, KenarDurumu, TesisDurumu } from "../tipler";
@@ -33,7 +33,8 @@ export function insaatBitti(d: Dunya, ctx: Baglam, insaatId: number): void {
       };
       // Sanayi (B2): yeni tesis S ölçekte ve aşınmasız başlar; kapalıyken alanlar yazılmaz (özet değişmez).
       if (ctx.ic.param.sanayi !== undefined) {
-        tesis.olcek = 0;
+        // Mülk kipinde doğrudan M/L kurulumu (docs/06 §15.10): inşaat hedef kademeyi taşır; S kurulumda alan yoktur.
+        tesis.olcek = insaat.olcek ?? 0;
         tesis.asinmaPpm = 0;
       }
       // Mülk kipi (S3): hücreli inşaatın tesisi hücrelerini kaplar; hücreler inşaattan tesise geçer.
@@ -51,7 +52,18 @@ export function insaatBitti(d: Dunya, ctx: Baglam, insaatId: number): void {
   } else if (insaat.tur === "olcek") {
     // Ölçek yükseltmesi biter: tesis hâlâ varsa kademe yükselir (yükseltme sırasında tesis çalışmaya devam etmiştir).
     const ts = d.bolgeler[insaat.bolge]?.tesisler.find((x) => x.id === insaat.hedef);
-    if (ts && insaat.olcek !== undefined && (ts.olcek ?? 0) < insaat.olcek) ts.olcek = insaat.olcek;
+    const yukseldi = ts !== undefined && insaat.olcek !== undefined && (ts.olcek ?? 0) < insaat.olcek;
+    if (ts && yukseldi) ts.olcek = insaat.olcek;
+    // Mülk kipi (docs/06 §15.10): yükseltmeyle alınan ek hücreler tesisin ayak izine katılır (hücreler inşaattan tesise geçer); yükseltme geçersizse yalnız işaret kalkar.
+    if (insaat.hucreler !== undefined) {
+      if (ts && yukseldi && insaat.hucreler.length > 0) ts.hucreler = [...(ts.hucreler ?? []), ...insaat.hucreler].sort(dizgeKarsilastir);
+      for (const hid of insaat.hucreler) {
+        const h = hucreBul(d, hid);
+        if (h === undefined) continue;
+        delete h.insaat;
+        if (ts && yukseldi) h.tesis = ts.id;
+      }
+    }
   } else if (insaat.tur === "onarim") {
     // Genel onarım durması biter: süresi dolan tesisler çalışmaya döner.
     const b = d.bolgeler[insaat.bolge];

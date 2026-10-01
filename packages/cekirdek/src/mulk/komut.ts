@@ -34,6 +34,7 @@ import { maliyetYeterliMi, maliyetiDus } from "../ekonomi/maliyet";
 import { icerikTablosu } from "../ekonomi/tablo";
 import { hizlandirilmisSure } from "../erkenOyun";
 import { carpBol } from "../sabit";
+import { sanayiTablosu } from "../sanayi/tablo";
 import { anlikHazine, hazineEkle, oyuncuBul, stokEkle } from "../stok";
 import { tesisTuruAcikMi } from "../teknoloji";
 import { GUN, PPM, SAAT } from "../tipler";
@@ -53,6 +54,7 @@ import type {
   MulkDurumu,
   MulkKomutu,
   OyuncuId,
+  TesisDurumu,
 } from "../tipler";
 import type { MulkParametreleri } from "@bolge/veri";
 import {
@@ -242,10 +244,22 @@ interface YapiTuru {
   ad: string;
   ti: number | undefined;
   ek: DerlenmisEkYapi | undefined;
+  /** Bu ÖLÇEKTE kaplanan hücre sayısı (`mulk.olcekHucre[tür][olcek]`; S'de `yapiYuva`). */
   yuva: number;
+  /** Doğrudan kurulum ölçeği: 0 = S, 1 = M, 2 = L (ek yapılar yalnız S). */
+  olcek: 0 | 1 | 2;
 }
 
-function yapiTuruCoz(ctx: Baglam, mk: DerlenmisMulk, tesisTuru: unknown): YapiTuru | string {
+const OLCEK_ADLARI = ["S", "M", "L"] as const;
+
+/** Komutun `olcek` alanı (docs/06 §15.10): yok ya da 0 = S, 1 = M, 2 = L; başkası hata. */
+function olcekCoz(olcek: unknown): 0 | 1 | 2 | string {
+  if (olcek === undefined || olcek === 0) return 0;
+  if (olcek === 1 || olcek === 2) return olcek;
+  return `gecersiz olcek: ${String(olcek)} (0 = S, 1 = M, 2 = L)`;
+}
+
+function yapiTuruCoz(ctx: Baglam, mk: DerlenmisMulk, tesisTuru: unknown, olcek: 0 | 1 | 2): YapiTuru | string {
   const ti = typeof tesisTuru === "string" ? ctx.ic.tesisTuruIndeks[tesisTuru] : undefined;
   // Ek yapı (Ambar, Ticaret ofisi...): içerikte tesis türü değil, `mulk.ekYapilar`'da tanımlıdır.
   const ei = ti === undefined && typeof tesisTuru === "string" ? mk.ekYapiIndeks.get(tesisTuru) : undefined;
@@ -253,20 +267,34 @@ function yapiTuruCoz(ctx: Baglam, mk: DerlenmisMulk, tesisTuru: unknown): YapiTu
   const ek = ei === undefined ? undefined : (mk.ekYapilar[ei] as DerlenmisEkYapi);
   // Kamu yapıları (ör. Muhtarlık) mülk kipinde oyuncuya kapalıdır (`mulk.kamu.oyuncuyaKapaliYapilar`).
   if (ek !== undefined && mk.p.kamu?.oyuncuyaKapaliYapilar.includes(ek.id) === true) return `${ek.id} kamu yapisidir (oyuncuya kapali)`;
-  const yuva = ek !== undefined ? ek.yuva : (mk.yuva[ti as number] as number);
+  let yuva = ek !== undefined ? ek.yuva : (mk.yuva[ti as number] as number);
   if (yuva <= 0) return `tesis turu mulk kipinde insa edilemez: ${String(tesisTuru)}`;
-  return { ad: tesisTuru as string, ti, ek, yuva };
+  if (olcek > 0) {
+    // M/L (docs/06 §15.10): yalnız tesis türlerinde ve sanayi katmanı (ölçek çarpanları) açıkken; ek yapılar ölçeklenmez. KİLİT YOK: teknoloji, ilçe seviyesi, sıra aranmaz.
+    if (ek !== undefined) return `ek yapi olceklenemez: ${ek.id} (yalniz S)`;
+    if (sanayiTablosu(ctx.ic) === null) return "olcek icin sanayi katmani gerekli";
+    yuva = (mk.olcekHucre[ti as number] as number[])[olcek] as number;
+  }
+  return { ad: tesisTuru as string, ti, ek, yuva, olcek };
 }
 
-/** Yapı hücreleri: 1–3 hücre, sayısı türün yuvasına eşit, kenar-bitişik (4 komşuluk) tek küme. Sıralı listeyi ya da hatayı döndürür. */
+/**
+ * Yapı hücreleri: S'de 1–3, M/L'de en çok 5 hücre; sayısı o ölçeğin ayak izine eşit; kenar-bitişik (4 komşuluk) tek bağlı küme (I, L, T... her biçim).
+ * Sıralı listeyi ya da hatayı döndürür.
+ */
 function yapiHucreleri(tur: YapiTuru, hucreler: unknown): string[] | string {
-  const liste = hucreListesi(hucreler, 3);
+  const liste = hucreListesi(hucreler, tur.olcek > 0 ? ENCOK_AYAK_IZI : 3);
   if (typeof liste === "string") return liste;
-  if (liste.length !== tur.yuva) return `${tur.ad} ${tur.yuva} hucre kaplar (verilen ${liste.length})`;
+  if (liste.length !== tur.yuva) {
+    return tur.olcek === 0 ? `${tur.ad} ${tur.yuva} hucre kaplar (verilen ${liste.length})` : `${tur.ad} ${OLCEK_ADLARI[tur.olcek]} olceginde ${tur.yuva} hucre kaplar (verilen ${liste.length})`;
+  }
   for (const id of liste) if (!HUCRE_KIMLIGI.test(id)) return `gecersiz hucre kimligi: ${id}`;
   if (!kenarBitisikMi(liste)) return `yapi hucreleri kenar-bitisik olmali: ${liste.join(", ")}`;
   return liste;
 }
+
+/** Bir yapının kaplayabileceği en çok hücre (`mulk.olcekHucre` değerleri en çok 5; docs/06 §15.10). */
+export const ENCOK_AYAK_IZI = 5;
 
 /** "x:y", yalnız rakamlar (başında sıfır yok). */
 const HUCRE_KIMLIGI = /^(0|[1-9][0-9]*):(0|[1-9][0-9]*)$/;
@@ -278,7 +306,8 @@ interface YapiPlani {
   liste: string[];
   mal: readonly (readonly [number, Mili])[];
   para: Mili;
-  saat: number;
+  /** İnşaat süresi (ms; ölçek çarpanı dahil, erken oyun hızlandırması HARİÇ: o başlangıçta bir kez uygulanır). */
+  sureMs: number;
   indirimli: boolean;
   /** Oyuncunun ildeki işletme düğümü; henüz yoksa (aynı komutta açılacak) tanımsız. */
   dugum: BolgeDurumu | undefined;
@@ -298,6 +327,9 @@ function yapiPlani(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, i
   let mal: readonly (readonly [number, Mili])[];
   let para: Mili;
   let saat: number;
+  // S (ölçeksiz) taban bedel: ilk-yapı indirimi ölçekten bağımsız olsun diye (docs/06 §15.10) indirim tutarı bu tabandan hesaplanır.
+  let tabanMal: readonly (readonly [number, Mili])[];
+  let tabanPara: Mili;
   if (tur.ek !== undefined) {
     let mevcutAdet = dugum === undefined ? 0 : ekYapiSayisi(dugum, tur.ek.id);
     if (dugum !== undefined) for (const i of d.insaatlar) if (i.ekYapi === tur.ek.id && i.bolge === dugum.indeks) mevcutAdet++;
@@ -305,6 +337,8 @@ function yapiPlani(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, i
     mal = tur.ek.insaMaliyeti;
     para = tur.ek.insaParasi;
     saat = tur.ek.insaSaati;
+    tabanMal = mal;
+    tabanPara = para;
   } else {
     const ti = tur.ti as number;
     const tanim = ctx.ic.tesisTurleri[ti]!;
@@ -315,10 +349,20 @@ function yapiPlani(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, i
       const kalan = dugum === undefined ? (merkez.rezervIlk[satir.gerekliRezerv] as number) : (dugum.rezervKalan[satir.gerekliRezerv] as number);
       if (kalan <= 0) return `gerekli rezerv yok: ${tanim.gerekliRezerv}`;
     }
-    mal = satir.insaMaliyeti;
-    para = satir.insaParasi;
+    tabanMal = satir.insaMaliyeti;
+    tabanPara = satir.insaParasi;
+    mal = tabanMal;
+    para = tabanPara;
     saat = mk.insaSaati[ti] as number;
+    if (tur.olcek > 0) {
+      // Doğrudan M/L kurulumu (docs/06 §15.10): bedel (para + malzeme) × `olcekKademeleri[olcek].insaPpm` (yükseltmeyle AYNI tablo); süre × `olcekInsaSureCarpaniPpm`.
+      const insaPpm = (sanayiTablosu(ctx.ic) as NonNullable<ReturnType<typeof sanayiTablosu>>).p.olcekKademeleri[tur.olcek]!.insaPpm;
+      mal = tabanMal.map(([mi, q]) => [mi, carpBol(q, insaPpm, PPM)] as [number, Mili]);
+      para = carpBol(tabanPara, insaPpm, PPM);
+    }
   }
+  let sureMs = saat * SAAT;
+  if (tur.olcek > 0) sureMs = carpBol(sureMs, mk.p.olcekInsaSureCarpaniPpm[tur.olcek] as number, PPM);
   let suren = 0;
   for (const i of d.insaatlar) if (i.sahip === oyuncu && i.hucreler !== undefined) suren++;
   if (suren >= mk.p.esZamanliInsaat) return `ayni anda en cok ${mk.p.esZamanliInsaat} insaat`;
@@ -326,10 +370,15 @@ function yapiPlani(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, i
   const yo = mk.p.yeniOyuncu;
   const indirimli = yo.ilkYapiIndirimPpm > 0 && (mulkOyuncuBul(d, oyuncu)?.indirimliYapi ?? 0) < yo.indirimliYapiSayisi;
   if (indirimli) {
-    mal = mal.map(([mi, q]) => [mi, carpBol(q, PPM - yo.ilkYapiIndirimPpm, PPM)] as [number, Mili]);
-    para = carpBol(para, PPM - yo.ilkYapiIndirimPpm, PPM);
+    // İndirim TUTARI S tabanından hesaplanır (S'de eski formülle birebir aynı): M/L bedeli bu sabit tutar kadar düşer. Böylece "S kur + yükselt" toplamı
+    // doğrudan M/L bedeline eşit kalır (arbitraj yok) ve büyük ölçek indirimle ucuzlamaz.
+    mal = mal.map(([mi, q], i) => {
+      const q0 = (tabanMal[i] as readonly [number, Mili])[1];
+      return [mi, q - (q0 - carpBol(q0, PPM - yo.ilkYapiIndirimPpm, PPM))] as [number, Mili];
+    });
+    para -= tabanPara - carpBol(tabanPara, PPM - yo.ilkYapiIndirimPpm, PPM);
   }
-  return { tur, ilce, liste, mal, para, saat, indirimli, dugum };
+  return { tur, ilce, liste, mal, para, sureMs, indirimli, dugum };
 }
 
 /**
@@ -347,11 +396,79 @@ function yapiBedeliEksik(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: Oyunc
   return anlikHazine(d, oyuncu) < plan.para + ekPara ? "yetersiz hazine" : null;
 }
 
+/** Yerinde ölçek yükseltmesinin ek hücre planı (dünyayı değiştirmez): `olcekEkHucrePlani` üretir, sanayi komutu uygular. */
+export interface OlcekEkPlani {
+  ilce: IlceDurumu;
+  /** Yükseltmeyle eklenecek hücreler (sıralı; ölçeğin ek hücresi yoksa boş). */
+  ek: string[];
+  /** Ekin sahipsiz hücreleri için `parsel_al` planı; satın alınacak hücre yoksa null. */
+  alim: AlimPlani | null;
+  /** Ek hücrelerin satın alma bedeli (mili-para; alım yoksa 0). */
+  arsa: Mili;
+}
+
+/**
+ * Mülk kipinde `tesis_olcek_yukselt` ek hücre denetimi (docs/06 §15.10): hedef ölçeğin ayak izi (`olcekHucre`) ile tesisin bugünkü hücre sayısı arasındaki
+ * fark kadar EK hücre (`ekHucreler`) verilmeli; hücreler tesisin ilçesinde, tesis hücreleriyle birlikte kenar-bitişik tek küme olmalı ve ya oyuncunun BOŞ
+ * hücresi ya da sahipsiz olmalı (sahipsizler `sinif` sınıfında `parsel_al` kurallarıyla satın alınır: artımlı fiyat, ayrılmış hücre, kamu arsası reddi,
+ * 72 / %25 sınırı). Oyuncu başına eşzamanlı hücreli inşaat sınırı (`esZamanliInsaat`) yükseltmeye de uygulanır. Hata iletisi ya da plan döner.
+ */
+export function olcekEkHucrePlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ts: TesisDurumu, hedef: 1 | 2, ekHucreler: unknown, sinif: unknown): OlcekEkPlani | string {
+  const mevcut = ts.hucreler;
+  const ilkHucre = mevcut === undefined ? undefined : hucreBul(d, mevcut[0] as string);
+  if (mevcut === undefined || ilkHucre === undefined) return `tesisin hucresi yok: ${ts.id}`;
+  const hedefHucre = (mk.olcekHucre[ts.tur] as number[])[hedef];
+  if (hedefHucre === undefined) return "tesis turu mulk kipinde olceklenemez";
+  const ilce = ilceBul(d, ilkHucre.ilce) as IlceDurumu;
+  // Ayak izi tesisin GERÇEK hücre sayısından hesaplanır (eski dünyalarda M tesisi S ayak iziyle durabilir).
+  const gerekli = Math.max(0, hedefHucre - mevcut.length);
+  let ek: string[] = [];
+  if (gerekli === 0) {
+    if (ekHucreler !== undefined && !(Array.isArray(ekHucreler) && ekHucreler.length === 0)) return "bu yukseltme ek hucre gerektirmez (ekHucreler bos olmali)";
+  } else {
+    if (ekHucreler === undefined) return `olcek yukseltmesi ${gerekli} ek bitisik hucre ister (ekHucreler)`;
+    const liste = hucreListesi(ekHucreler, ENCOK_AYAK_IZI);
+    if (typeof liste === "string") return liste;
+    if (liste.length !== gerekli) return `olcek yukseltmesi ${gerekli} ek hucre ister (verilen ${liste.length})`;
+    for (const id of liste) if (!HUCRE_KIMLIGI.test(id)) return `gecersiz hucre kimligi: ${id}`;
+    if (!kenarBitisikMi([...mevcut, ...liste])) return `ek hucreler tesisin hucrelerine kenar-bitisik olmali: ${liste.join(", ")}`;
+    ek = liste;
+  }
+  if (sinif !== undefined && !SINIFLAR.includes(sinif as ArsaSinifi)) return `gecersiz arsa sinifi: ${String(sinif)}`;
+  const yeni: string[] = [];
+  for (const id of ek) {
+    const h = hucreBul(d, id);
+    if (h === undefined) {
+      yeni.push(id);
+      continue;
+    }
+    if (h.sahip !== oyuncu) return `hucre zaten sahipli: ${id} (${h.sahip})`;
+    if (h.ilce !== ilce.id) return `hucre bu ilcede degil: ${id}`;
+    if (h.tesis !== undefined || h.insaat !== undefined) return `hucre bos degil: ${id}`;
+  }
+  let alim: AlimPlani | null = null;
+  if (yeni.length > 0) {
+    if (sinif === undefined) return `sahipsiz hucre icin sinif gerekli: ${yeni.join(", ")}`;
+    const a = alimPlani(d, mk, oyuncu, ilce, yeni, sinif as ArsaSinifi);
+    if (typeof a === "string") return a;
+    alim = a;
+  }
+  let suren = 0;
+  for (const i of d.insaatlar) if (i.sahip === oyuncu && i.hucreler !== undefined) suren++;
+  if (suren >= mk.p.esZamanliInsaat) return `ayni anda en cok ${mk.p.esZamanliInsaat} insaat`;
+  return { ilce, ek, alim, arsa: alim === null ? 0 : alim.fiyat };
+}
+
+/** Planın sahipsiz ek hücrelerini satın alır (önceden denetlenmiş; hazineyi düşer). Alım yoksa doğru döner. */
+export function olcekEkHucreAl(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, plan: OlcekEkPlani): boolean {
+  return plan.alim === null ? true : alimUygula(d, ctx, mk, oyuncu, plan.alim);
+}
+
 /** Yapı inşaatını başlatır (denetlenmiş plan; düğüm artık vardır): bedeli düşer, hücreleri işaretler, bitişi planlar. */
 function yapiUygula(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, plan: YapiPlani, b: BolgeDurumu): boolean {
   if (!maliyetiDus(d, ctx, b.indeks, oyuncu, plan.mal, plan.para)) return false;
   const id = ctx.yeniKimlik(d);
-  const bitis = d.zaman + hizlandirilmisSure(d, ctx, oyuncu, plan.saat * SAAT);
+  const bitis = d.zaman + hizlandirilmisSure(d, ctx, oyuncu, plan.sureMs);
   const ins: InsaatDurumu = {
     id,
     tur: "tesis",
@@ -365,6 +482,7 @@ function yapiUygula(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, plan: YapiPlani, b:
     odenenMal: plan.mal.map(([mi, q]) => [mi, q] as [number, Mili]),
   };
   if (plan.tur.ek !== undefined) ins.ekYapi = plan.tur.ek.id;
+  if (plan.tur.olcek > 0) ins.olcek = plan.tur.olcek as 1 | 2;
   if (plan.indirimli) {
     ins.indirimli = true;
     const mo = mulkOyuncuAl(d.mulk as MulkDurumu, oyuncu, d.zaman);
@@ -396,7 +514,9 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
     case "tesis_insa_hucre": {
       const ilce = typeof k.ilce === "string" ? ilceBul(d, k.ilce) : undefined;
       if (ilce === undefined) return hata(`bilinmeyen ilce: ${String(k.ilce)}`);
-      const tur = yapiTuruCoz(ctx, mk, k.tesisTuru);
+      const olcek = olcekCoz(k.olcek);
+      if (typeof olcek === "string") return hata(olcek);
+      const tur = yapiTuruCoz(ctx, mk, k.tesisTuru, olcek);
       if (typeof tur === "string") return hata(tur);
       const liste = yapiHucreleri(tur, k.hucreler);
       if (typeof liste === "string") return hata(liste);
@@ -419,7 +539,9 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       const ilce = typeof k.ilce === "string" ? ilceBul(d, k.ilce) : undefined;
       if (ilce === undefined || !mk.ilceler.has(k.ilce)) return hata(`bilinmeyen ilce: ${String(k.ilce)}`);
       if (!SINIFLAR.includes(k.sinif)) return hata(`gecersiz arsa sinifi: ${String(k.sinif)}`);
-      const tur = yapiTuruCoz(ctx, mk, k.tesisTuru);
+      const olcek = olcekCoz(k.olcek);
+      if (typeof olcek === "string") return hata(olcek);
+      const tur = yapiTuruCoz(ctx, mk, k.tesisTuru, olcek);
       if (typeof tur === "string") return hata(tur);
       const liste = yapiHucreleri(tur, k.hucreler);
       if (typeof liste === "string") return hata(liste);

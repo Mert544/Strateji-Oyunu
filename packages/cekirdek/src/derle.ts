@@ -134,10 +134,17 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
   }
   const yuva = ic.tesisTurleri.map(() => 0);
   const insaSaati = ic.tesisTurleri.map((t) => t.insaSuresiSaat);
+  const olcekHucre: number[][] = ic.tesisTurleri.map(() => []);
   for (const tid of Object.keys(p.yapiYuva).sort()) {
     const ti = ic.tesisTuruIndeks[tid];
     if (ti === undefined) throw new Error(`icerikDerle: mulk.yapiYuva bilinmeyen tesis turu: ${tid}`);
     yuva[ti] = p.yapiYuva[tid] as number;
+    const o = p.olcekHucre[tid];
+    if (o === undefined || o[0] !== yuva[ti] || o[1] < o[0] || o[2] < o[1]) throw new Error(`icerikDerle: mulk.olcekHucre.${tid}: [S = yapiYuva, M >= S, L >= M] olmali`);
+    olcekHucre[ti] = [o[0], o[1], o[2]];
+  }
+  for (const tid of Object.keys(p.olcekHucre)) {
+    if (!(tid in p.yapiYuva)) throw new Error(`icerikDerle: mulk.olcekHucre yapiYuva'da olmayan tur: ${tid}`);
   }
   for (const tid of Object.keys(p.yapiInsaSaati ?? {}).sort()) {
     const ti = ic.tesisTuruIndeks[tid];
@@ -183,7 +190,7 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
   const kamu = p.kamu === undefined ? undefined : kamuKumeleriHesapla(f, p.kamu);
   const { kume: ayrilmis, sayilar: ayrilmisIlceSayisi } = ayrilmisHucreler(f.ilceler, p.yeniOyuncu.ayrilmisHucrePpm, kamu);
   const ayrilmisSureMs = (p.yeniOyuncu.ayrilmisGun ?? AYRILMIS_GUN_VARSAYILAN) * GUN;
-  const sonuc: DerlenmisMulk = { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisIlceSayisi, ayrilmisSureMs, kamuIthalatCarpaniPpm: kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar) };
+  const sonuc: DerlenmisMulk = { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, olcekHucre, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisIlceSayisi, ayrilmisSureMs, kamuIthalatCarpaniPpm: kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar) };
   if (kamu !== undefined) sonuc.kamu = kamu;
   return sonuc;
 }

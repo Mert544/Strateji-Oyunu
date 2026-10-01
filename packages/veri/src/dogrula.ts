@@ -534,6 +534,26 @@ function pazarKontrolu(hatalar: string[], p: Parametreler["pazar"]): void {
   }
 }
 
+/** Mülk ölçek tablosu (docs/06 §15.10): her `yapiYuva` türü için `olcekHucre` = [S, M, L]; S = yuva, M >= S, L >= M; süre çarpanları azalmaz. */
+function mulkKontrolu(hatalar: string[], k: NonNullable<Parametreler["mulk"]>): void {
+  for (const [tur, yuva] of Object.entries(k.yapiYuva)) {
+    const o = k.olcekHucre[tur];
+    if (o === undefined) {
+      hatalar.push(`mulk.olcekHucre.${tur}: yapiYuva turu icin [S, M, L] ayak izi gerekli`);
+      continue;
+    }
+    if (o[0] !== yuva) hatalar.push(`mulk.olcekHucre.${tur}[0]: S ayak izi yapiYuva degerine (${yuva}) esit olmali (bulunan ${o[0]})`);
+    if (o[1] < o[0]) hatalar.push(`mulk.olcekHucre.${tur}[1]: M ayak izi S'den kucuk olamaz`);
+    if (o[2] < o[1]) hatalar.push(`mulk.olcekHucre.${tur}[2]: L ayak izi M'den kucuk olamaz`);
+  }
+  for (const tur of Object.keys(k.olcekHucre)) {
+    if (!(tur in k.yapiYuva)) hatalar.push(`mulk.olcekHucre.${tur}: yapiYuva'da olmayan tur`);
+  }
+  const c = k.olcekInsaSureCarpaniPpm;
+  if (c[0] !== 1_000_000) hatalar.push("mulk.olcekInsaSureCarpaniPpm[0]: S carpani 1000000 olmali (referans)");
+  if (c[1] < c[0] || c[2] < c[1]) hatalar.push("mulk.olcekInsaSureCarpaniPpm: kademeler azalamaz (S <= M <= L)");
+}
+
 /** Şema + (içerik verilirse) mal ve birlik kimliklerinin geçerliliği. */
 export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): DogrulamaSonucu {
   const s = semaCalistir(ParametreSema, ham);
@@ -560,6 +580,7 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
   if (p.iklim !== undefined) iklimKontrolu(hatalar, p.iklim);
   if (p.sanayi !== undefined) sanayiKontrolu(hatalar, p.sanayi);
   pazarKontrolu(hatalar, p.pazar);
+  if (p.mulk !== undefined) mulkKontrolu(hatalar, p.mulk);
 
   if (icerik !== undefined) {
     const mallar = new Set(icerik.mallar.map((m) => m.id));

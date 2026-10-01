@@ -645,6 +645,13 @@ export interface MulkParametreleri {
   yapiYuva: Record<string, number>;
   /** İsteğe bağlı tesis türü -> inşa süresi (saat); yoksa içerikteki `insaSuresiSaat`. */
   yapiInsaSaati?: Record<string, number>;
+  /**
+   * Tesis türü -> ölçeğe göre kapladığı hücre sayısı `[S, M, L]` (docs/06 §15.10): S = `yapiYuva`, M >= S, L >= M, en çok 5. Her `yapiYuva` türü için tanımlıdır.
+   * Doğrudan kurulumda `hucreler` listesi o ölçeğin ayak izidir; yerinde yükseltmede aradaki fark kadar ek bitişik hücre gerekir.
+   */
+  olcekHucre: Record<string, [number, number, number]>;
+  /** Doğrudan kurulum süresi çarpanı `[S, M, L]` (ppm; S 1000000, azalmayan): süre = `yapiInsaSaati` × çarpan (docs/06 §15.10). */
+  olcekInsaSureCarpaniPpm: [number, number, number];
   /** Yeni oyuncu (H6). Bugün yalnız `hibe` ve `baslangicStok` uygulanır; diğerleri parametre yeridir. */
   yeniOyuncu: {
     /** Katılım hibesi (mili-para): mülk kipinde başlangıç hazinesi. */

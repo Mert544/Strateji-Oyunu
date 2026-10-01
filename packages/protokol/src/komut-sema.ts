@@ -17,6 +17,8 @@ const DIZI_EN_UZUN = 64;
 
 const kimlik = z.string().min(1).max(KIMLIK_EN_UZUN);
 const tamsayi = z.number().int().safe();
+/** Mülk kipinde ölçek seçimi (0 = S, 1 = M, 2 = L; docs/06 §15.10). */
+const olcekSecimi = z.union([z.literal(0), z.literal(1), z.literal(2)]);
 const anlasma = z.enum(["ticaret", "ortak_altyapi"]);
 
 export const KomutSemasi = z.discriminatedUnion("tur", [
@@ -30,7 +32,15 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
   z.object({ tur: z.literal("ekim_plani"), bolge: kimlik, ekimPpm: z.array(tamsayi).max(DIZI_EN_UZUN) }),
   z.object({ tur: z.literal("gubre_dozu"), bolge: kimlik, doz: tamsayi }),
   // Sanayi
-  z.object({ tur: z.literal("tesis_olcek_yukselt"), bolge: kimlik, tesis: tamsayi, olcek: z.union([z.literal(1), z.literal(2)]) }),
+  z.object({
+    tur: z.literal("tesis_olcek_yukselt"),
+    bolge: kimlik,
+    tesis: tamsayi,
+    olcek: z.union([z.literal(1), z.literal(2)]),
+    // Mülk kipinde yerinde yükseltmenin ek bitişik hücreleri; sahipsiz hücre varsa `sinif` zorunlu (çekirdek denetler).
+    ekHucreler: z.array(kimlik).max(5).optional(),
+    sinif: z.enum(["kirsal", "kasaba", "sehir"]).optional(),
+  }),
   z.object({ tur: z.literal("genel_onarim"), bolge: kimlik }),
   z.object({ tur: z.literal("bakim_duzeyi"), duzey: z.union([z.literal(0), z.literal(1), z.literal(2)]) }),
   z.object({ tur: z.literal("arama_sondaji"), bolge: kimlik, mal: kimlik }),
@@ -49,14 +59,15 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
   z.object({ tur: z.literal("yaptirim"), hedef: kimlik, aktif: z.boolean() }),
   // Mülk kipi (S3). Hücre kimliği "x:y" (z20 karo). Coğrafi geçerliliği çekirdek fikstürle denetler.
   z.object({ tur: z.literal("parsel_al"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN), sinif: z.enum(["kirsal", "kasaba", "sehir"]) }),
-  z.object({ tur: z.literal("tesis_insa_hucre"), ilce: kimlik, tesisTuru: kimlik, hucreler: z.array(kimlik).max(3) }),
+  z.object({ tur: z.literal("tesis_insa_hucre"), ilce: kimlik, tesisTuru: kimlik, hucreler: z.array(kimlik).max(5), olcek: olcekSecimi.optional() }),
   z.object({ tur: z.literal("insaat_iptal"), insaat: tamsayi }),
   z.object({
     tur: z.literal("yapi_yerlestir"),
     ilce: kimlik,
     tesisTuru: kimlik,
-    hucreler: z.array(kimlik).max(3),
+    hucreler: z.array(kimlik).max(5),
     sinif: z.enum(["kirsal", "kasaba", "sehir"]),
+    olcek: olcekSecimi.optional(),
   }),
   z.object({ tur: z.literal("parsel_birak"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN) }),
   // Sistem (yalnız yönetici kimliğiyle; sunucu "sistem" oyuncusu olarak damgalar; mülk kipinde bolgeler boş; isteğe bağlı `ilce`: bedava yurdun ilçesi)

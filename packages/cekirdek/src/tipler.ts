@@ -88,6 +88,8 @@ export interface DerlenmisMulk {
   hucreler: Map<HucreId, { ilce: string; hucre: ParselHucreTanimi }>;
   /** tesis türü indeksi -> yuva (0 = mülk kipinde inşa edilemez) */
   yuva: number[];
+  /** tesis türü indeksi -> ölçeğe göre ayak izi `[S, M, L]` (`mulk.olcekHucre`; S = yuva); inşa edilemeyen türde boş dizi. */
+  olcekHucre: number[][];
   /** tesis türü indeksi -> inşa süresi (saat) */
   insaSaati: number[];
   /** Yeni oyuncunun ilk işletme stoğu (mal indeksi -> mili-birim). */
@@ -479,9 +481,15 @@ export interface InsaatDurumu {
   /** tesis türü indeksi (tesis), kenar indeksi (kenar), tesis kimliği (olcek) veya -1 (onarim, bölge düzeyinde) */
   hedef: number;
   bitis: Ms;
-  /** Ölçek yükseltmesinde hedef kademe (1 = M, 2 = L); diğer türlerde tanımsız. */
+  /**
+   * Ölçek yükseltmesinde hedef kademe (1 = M, 2 = L); mülk kipinde M/L DOĞRUDAN KURULAN `tesis` inşaatında da bu kademe (tamamlanınca `TesisDurumu.olcek`).
+   * S kurulumda ve diğer türlerde tanımsızdır.
+   */
   olcek?: 1 | 2;
-  /** Mülk kipi (S3): hücreli inşaatın hücreleri (sıralı). Aşama `(şimdi − baslangic) / (bitis − baslangic)`'tan türetilir. */
+  /**
+   * Mülk kipi (S3): hücreli inşaatın hücreleri (sıralı). Aşama `(şimdi − baslangic) / (bitis − baslangic)`'tan türetilir.
+   * `olcek` türünde (yerinde yükseltme, docs/06 §15.10) yalnız yükseltmeyle EKLENECEK hücrelerdir (boş olabilir); tamamlanınca tesisin `hucreler`ine katılır.
+   */
   hucreler?: HucreId[];
   /** Mülk kipi (S3): inşaatın başlangıç anı (aşama hesabı için). */
   baslangic?: Ms;
@@ -638,7 +646,9 @@ export type Komut =
   | { tur: "ekim_plani"; bolge: string; ekimPpm: number[] }
   | { tur: "gubre_dozu"; bolge: string; doz: number }
   // Sanayi (B2)
-  | { tur: "tesis_olcek_yukselt"; bolge: string; tesis: number; olcek: 1 | 2 }
+  // Mülk kipinde (docs/06 §15.10) ayak izi büyür: `ekHucreler` yükseltmenin gerektirdiği EK bitişik hücrelerdir (oyuncunun boş hücresi ya da sahipsiz hücre:
+  // sahipsizler `sinif` sınıfında atomik satın alınır); bölge kipinde ikisi de verilemez.
+  | { tur: "tesis_olcek_yukselt"; bolge: string; tesis: number; olcek: 1 | 2; ekHucreler?: HucreId[]; sinif?: ArsaSinifi }
   | { tur: "genel_onarim"; bolge: string }
   | { tur: "bakim_duzeyi"; duzey: 0 | 1 | 2 }
   | { tur: "arama_sondaji"; bolge: string; mal: string }
@@ -955,10 +965,11 @@ export interface TesisMulkAlanlari {
 /** Mülk komutları. Coğrafi geçerliliği (hücre ilçede mi, uygun mu) sunucu doğrular; çekirdek fikstürdeki listeyi de denetler. */
 export type MulkKomutu =
   | { tur: "parsel_al"; ilce: string; hucreler: HucreId[]; sinif: ArsaSinifi }
-  | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[] }
+  // `olcek` (0 = S, 1 = M, 2 = L; yoksa S): `hucreler` o ölçeğin ayak izidir (`mulk.olcekHucre`), en çok 5 hücre (docs/06 §15.10).
+  | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[]; olcek?: 0 | 1 | 2 }
   | { tur: "insaat_iptal"; insaat: number }
   // Atomik "yapı önce yerleşim": `hucreler` yapının TÜM hücreleri (kenar-bitişik, yuva sayısınca); oyuncunun olmayan (sahipsiz) hücreler
   // `sinif` sınıfında satın alınır ve inşaat başlar; herhangi bir denetim başarısızsa hiçbir şey değişmez.
-  | { tur: "yapi_yerlestir"; ilce: string; tesisTuru: string; hucreler: HucreId[]; sinif: ArsaSinifi }
+  | { tur: "yapi_yerlestir"; ilce: string; tesisTuru: string; hucreler: HucreId[]; sinif: ArsaSinifi; olcek?: 0 | 1 | 2 }
   // Üzerinde yapı/inşaat olmayan kendi hücrelerini bırakır; hücre bedelinin `parselBirakIadePpm`'i (%70) iade edilir.
   | { tur: "parsel_birak"; ilce: string; hucreler: HucreId[] };

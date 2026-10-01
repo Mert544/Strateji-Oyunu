@@ -10,8 +10,10 @@ import { hizlandirilmisSure } from "../erkenOyun";
 import { carpBol } from "../sabit";
 import { oyuncuBul } from "../stok";
 import { tarimTablosu } from "../tarim/tablo";
+import { hucreBul } from "../mulk/durum";
+import { olcekEkHucreAl, olcekEkHucrePlani } from "../mulk/komut";
 import { PPM, SAAT } from "../tipler";
-import type { Baglam, BolgeDurumu, Dunya, Komut, KomutSonucu, OyuncuId } from "../tipler";
+import type { Baglam, BolgeDurumu, Dunya, HucreDurumu, InsaatDurumu, Komut, KomutSonucu, OyuncuId } from "../tipler";
 import { olcekKademesi } from "./carpan";
 import { sanayiTablosu } from "./tablo";
 
@@ -63,9 +65,13 @@ export function sanayiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut):
       if (d.insaatlar.some((i) => i.tur === "olcek" && i.hedef === ts.id)) return hata(`tesiste olcek yukseltmesi suruyor: ${ts.id}`);
       const o = oyuncuBul(d, oyuncu);
       if (!o) return hata(`bilinmeyen oyuncu: ${oyuncu}`);
-      // Teknoloji: hedef kademe (L: otomasyon) açık olmalı.
+      // Mülk kipi (docs/06 §15.10): KİLİT YOK (teknoloji aranmaz); ayak izi büyür, ek hücre gerekir. Bölge kipinde eski kural aynen.
+      const mk = ic.mulk;
+      const mulkMu = mk !== undefined && d.mulk !== undefined;
+      if (!mulkMu && (k.ekHucreler !== undefined || k.sinif !== undefined)) return hata("ekHucreler ve sinif yalniz mulk kipinde verilebilir");
+      // Teknoloji (yalnız bölge kipi): hedef kademe (L: otomasyon) açık olmalı.
       const tek = sn.olcekTeknoloji[k.olcek] as number;
-      if (tek >= 0 && !o.teknolojiler.includes(tek)) {
+      if (!mulkMu && tek >= 0 && !o.teknolojiler.includes(tek)) {
         return hata(`olcek icin teknoloji acik degil: ${sn.p.olcekKademeleri[k.olcek]?.gerekliTeknoloji ?? ""}`);
       }
       // Maliyet: hedef kademe inşa maliyeti - mevcut kademe maliyeti (para + mal).
@@ -76,6 +82,24 @@ export function sanayiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut):
       const oran = hedef - simdi;
       const mal = malOlcekle(tur.insaMaliyeti, oran);
       const para = carpBol(tur.insaParasi, oran, PPM);
+      if (mk !== undefined && mulkMu) {
+        // Mülk kipi: ek hücreler (kendi boş hücreleri ya da atomik satın alma) önce denetlenir; arsa + yükseltme tek hazine denetiminden geçer, hiçbir şey kısmen değişmez.
+        const ek = olcekEkHucrePlani(d, mk, oyuncu, ts, k.olcek, k.ekHucreler, k.sinif);
+        if (typeof ek === "string") return hata(ek);
+        const eksikMulk = maliyetYeterliMi(d, b.indeks, oyuncu, mal, para + ek.arsa);
+        if (eksikMulk !== null) return hata(eksikMulk === "yetersiz hazine" ? `yetersiz hazine (gereken ${para + ek.arsa})` : eksikMulk);
+        if (!olcekEkHucreAl(d, ctx, mk, oyuncu, ek)) return hata("yetersiz hazine");
+        if (!maliyetiDus(d, ctx, b.indeks, oyuncu, mal, para)) return hata("yetersiz hazine");
+        const id = ctx.yeniKimlik(d);
+        const sure = carpBol(tur.insaSuresiSaat * SAAT, sn.p.olcekYukseltmeSureCarpaniPpm, PPM);
+        const bitis = d.zaman + hizlandirilmisSure(d, ctx, oyuncu, sure);
+        // `hucreler`: yükseltmeyle EKLENECEK hücreler (boş olabilir); inşaat sürerken hücreler başka işe verilemez (`insaat` işareti) ve eşzamanlı inşaat sayacına girer.
+        const ins: InsaatDurumu = { id, tur: "olcek", sahip: oyuncu, bolge: b.indeks, hedef: ts.id, bitis, olcek: k.olcek, hucreler: ek.ek, baslangic: d.zaman, odenenPara: para, odenenMal: mal };
+        d.insaatlar.push(ins);
+        for (const hid of ek.ek) (hucreBul(d, hid) as HucreDurumu).insaat = id;
+        ctx.planla(d, bitis, { tur: "insaat_bitti", insaat: id });
+        return TAMAM;
+      }
       const eksik = maliyetYeterliMi(d, b.indeks, oyuncu, mal, para);
       if (eksik !== null) return hata(eksik);
       if (!maliyetiDus(d, ctx, b.indeks, oyuncu, mal, para)) return hata("yetersiz hazine");

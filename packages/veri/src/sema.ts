@@ -424,6 +424,8 @@ const mulkSema = z
     esZamanliInsaat: pozitif,
     yapiYuva: z.record(kimlik, pozitif.max(3, "yuva en fazla 3 olabilir")),
     yapiInsaSaati: z.record(kimlik, pozitif).optional(),
+    olcekHucre: z.record(kimlik, z.tuple([pozitif.max(5, "ayak izi en fazla 5 hucre"), pozitif.max(5, "ayak izi en fazla 5 hucre"), pozitif.max(5, "ayak izi en fazla 5 hucre")])),
+    olcekInsaSureCarpaniPpm: z.tuple([pozitif, pozitif, pozitif]),
     yeniOyuncu: z
       .object({
         hibe: negatifOlmayan,
