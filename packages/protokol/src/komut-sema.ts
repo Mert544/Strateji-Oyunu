@@ -59,7 +59,7 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
   z.object({ tur: z.literal("yaptirim"), hedef: kimlik, aktif: z.boolean() }),
   // Mülk kipi (S3). Hücre kimliği "x:y" (z20 karo). Coğrafi geçerliliği çekirdek fikstürle denetler.
   z.object({ tur: z.literal("parsel_al"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN), sinif: z.enum(["kirsal", "kasaba", "sehir"]) }),
-  z.object({ tur: z.literal("tesis_insa_hucre"), ilce: kimlik, tesisTuru: kimlik, hucreler: z.array(kimlik).max(5), olcek: olcekSecimi.optional(), yontem: kimlik.optional() }),
+  z.object({ tur: z.literal("tesis_insa_hucre"), ilce: kimlik, tesisTuru: kimlik, hucreler: z.array(kimlik).max(5), olcek: olcekSecimi.optional(), dukkanTuru: kimlik.optional(), yontem: kimlik.optional() }),
   z.object({ tur: z.literal("insaat_iptal"), insaat: tamsayi }),
   z.object({
     tur: z.literal("yapi_yerlestir"),
@@ -70,13 +70,22 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
     // Hücre başına sınıf (yalnız ekleme): `hucreler` ile aynı uzunluk (çekirdek denetler); verilirse `sinif` yerine her hücre kendi sınıfıyla alınır.
     siniflar: z.array(z.enum(["kirsal", "kasaba", "sehir"])).max(5).optional(),
     olcek: olcekSecimi.optional(),
+    dukkanTuru: kimlik.optional(),
     yontem: kimlik.optional(),
   }),
   z.object({ tur: z.literal("parsel_birak"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN) }),
+  // Perakende / dükkân (G7; sartname §10.1): TUTAR, MİKTAR, ORAN, ADET alanı yok (`fiyat` bir kademe indeksidir); protokol yalnız BİÇİM denetler (sözdizimi çekirdektedir: `cekirdek/src/ad.ts`; `ad` 2..24 = `AD_KURALI.min/max`, protokol çekirdeği çalışma zamanında içe aktarmaz: eşitlik protokol testinde bağlanır).
+  z.object({ tur: z.literal("dukkan_raf"), dukkan: tamsayi, yuva: tamsayi, mal: z.union([kimlik, z.null()]) }),
+  z.object({ tur: z.literal("dukkan_fiyat"), dukkan: tamsayi, yuva: tamsayi, fiyat: tamsayi }),
+  z.object({ tur: z.literal("marka_tanimla"), marka: tamsayi, ad: z.string().min(2).max(24), simge: tamsayi, renk: tamsayi }),
+  z.object({ tur: z.literal("dukkan_marka"), dukkan: tamsayi, marka: tamsayi }),
+  z.object({ tur: z.literal("dukkan_yik"), dukkan: tamsayi }),
   // Sistem (yalnız yönetici kimliğiyle; sunucu "sistem" oyuncusu olarak damgalar; mülk kipinde bolgeler boş; isteğe bağlı `ilce`: bedava yurdun ilçesi)
   z.object({ tur: z.literal("oyuncu_katil"), oyuncu: kimlik, bolgeler: z.array(kimlik).max(DIZI_EN_UZUN), ilce: kimlik.optional() }),
   // Ödül (docs/06 §15.7): TUTAR TAŞIMAZ (tutar, mal, tavan ve "bir kez" kuralı çekirdek ödül tablosundadır); yalnız "sistem" (yönetici kimliği).
   z.object({ tur: z.literal("sistem_odul"), oyuncu: kimlik, kavram: kimlik }),
+  // Marka sıfırlama (moderasyon; G7): yalnız "sistem" (yönetici kimliği); tutar taşımaz.
+  z.object({ tur: z.literal("marka_sifirla"), oyuncu: kimlik, marka: tamsayi }),
 ]);
 
 // Derleme zamanı denetimi: şemanın çıkarsanan tipi çekirdek `Komut` ile birebir aynı olmalı.

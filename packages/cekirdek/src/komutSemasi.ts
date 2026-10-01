@@ -10,8 +10,11 @@
  */
 import type { Komut, KomutTuru } from "./tipler";
 
-/** Alan türü: kimlik (bölge/mal/oyuncu/hücre...), seçim (sıralı seçenek, indeks, kademe), bayrak, miktar (para/mal tutarı ya da hızı), oran (ppm), adet (sayı). */
-export type AlanTuru = "kimlik" | "secim" | "bayrak" | "miktar" | "oran" | "adet";
+/**
+ * Alan türü: kimlik (bölge/mal/oyuncu/hücre...), seçim (sıralı seçenek, indeks, kademe), bayrak, miktar (para/mal tutarı ya da hızı), oran (ppm), adet (sayı),
+ * metin (oyuncunun serbest metni: marka adı; YALNIZ oyuncu yolunda; sistem/ajan yolunda YASAK, `SISTEM_ALAN_TURLERI`'ne girmez: oyuncu serbest metni ajana girmez).
+ */
+export type AlanTuru = "kimlik" | "secim" | "bayrak" | "miktar" | "oran" | "adet" | "metin";
 
 /** Sistem yolundaki bir komutta bulunabilecek alan türleri (para/miktar taşımayanlar). */
 export const SISTEM_ALAN_TURLERI: readonly AlanTuru[] = ["kimlik", "secim", "bayrak"];
@@ -57,10 +60,17 @@ export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   sistem_odul: { yol: "sistem", alanlar: { oyuncu: "kimlik", kavram: "kimlik" } },
   // Mülk kipi
   parsel_al: { yol: "oyuncu", alanlar: { ilce: "kimlik", hucreler: "kimlik", sinif: "secim" } },
-  tesis_insa_hucre: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", olcek: "secim", yontem: "kimlik" } },
+  tesis_insa_hucre: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", olcek: "secim", dukkanTuru: "kimlik", yontem: "kimlik" } },
   insaat_iptal: { yol: "oyuncu", alanlar: { insaat: "kimlik" } },
-  yapi_yerlestir: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", sinif: "secim", siniflar: "secim", olcek: "secim", yontem: "kimlik" } },
+  yapi_yerlestir: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", sinif: "secim", siniflar: "secim", olcek: "secim", dukkanTuru: "kimlik", yontem: "kimlik" } },
   parsel_birak: { yol: "oyuncu", alanlar: { ilce: "kimlik", hucreler: "kimlik" } },
+  // Perakende / dükkân (G7): hiçbir alan miktar/oran/adet DEĞİLDİR (`fiyat` bir kademe indeksidir: secim); `marka_sifirla` sistem yolu ve yalnız kimlik/seçim taşır.
+  dukkan_raf: { yol: "oyuncu", alanlar: { dukkan: "kimlik", yuva: "secim", mal: "kimlik" } },
+  dukkan_fiyat: { yol: "oyuncu", alanlar: { dukkan: "kimlik", yuva: "secim", fiyat: "secim" } },
+  marka_tanimla: { yol: "oyuncu", alanlar: { marka: "secim", ad: "metin", simge: "secim", renk: "secim" } },
+  dukkan_marka: { yol: "oyuncu", alanlar: { dukkan: "kimlik", marka: "secim" } },
+  dukkan_yik: { yol: "oyuncu", alanlar: { dukkan: "kimlik" } },
+  marka_sifirla: { yol: "sistem", alanlar: { oyuncu: "kimlik", marka: "secim" } },
 };
 
 /** Komut yalnız sistem yolundan mı verilir? */

@@ -182,6 +182,9 @@ export class Simulasyon {
     } else if (komut.tur === "sistem_odul") {
       // Para güvenliği (docs/06 §15.7): tutar taşımaz; yalnız sistem yolu (komutSemasi).
       sonuc = k.oyuncu === SISTEM_OYUNCUSU ? odulVer(d, ctx, komut.oyuncu, komut.kavram) : hata("sistem_odul yalnizca 'sistem' ile verilebilir");
+    } else if (komut.tur === "marka_sifirla") {
+      // Moderasyon (G7; sartname §9.1): yalnız sistem yolu, tutar taşımaz. Çekirdek yolu G7-3'tedir (şimdilik perakende kapalıdır: DUK-00).
+      sonuc = k.oyuncu === SISTEM_OYUNCUSU ? hata("perakende kapali") : hata("marka_sifirla yalnizca 'sistem' ile verilebilir");
     } else if (k.oyuncu === SISTEM_OYUNCUSU || !oyuncuBul(d, k.oyuncu)) {
       sonuc = hata(`bilinmeyen oyuncu: ${k.oyuncu}`);
     } else {
@@ -236,11 +239,18 @@ export class Simulasyon {
       case "yapi_yerlestir":
       case "parsel_birak":
       case "insaat_iptal":
+      case "dukkan_raf":
+      case "dukkan_fiyat":
+      case "marka_tanimla":
+      case "dukkan_marka":
+      case "dukkan_yik":
         return mulkKomutu(d, ctx, oyuncu, komut);
       case "oyuncu_katil":
         return hata("oyuncu_katil yonlendirilemez");
       case "sistem_odul":
         return hata("sistem_odul yonlendirilemez");
+      case "marka_sifirla":
+        return hata("marka_sifirla yonlendirilemez");
       default: {
         const _tamamlik: never = komut;
         return hata(`bilinmeyen komut: ${JSON.stringify(_tamamlik)}`);

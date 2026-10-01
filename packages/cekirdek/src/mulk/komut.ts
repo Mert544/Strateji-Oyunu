@@ -677,6 +677,13 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       }
       return TAMAM;
     }
+    case "dukkan_raf":
+    case "dukkan_fiyat":
+    case "marka_tanimla":
+    case "dukkan_marka":
+    case "dukkan_yik":
+      // Perakende komutları (G7; sartname §9.1-9.2): DUK-00 `mulk.perakende` yokken. Etkin yol G7-3'tedir (şimdilik blok tanımlı olsa da komutlar uygulanmaz).
+      return hata(mk.perakende === undefined ? "perakende kapali" : "perakende komutlari henuz uygulanmadi");
     default: {
       const _tamamlik: never = k;
       return hata(`bilinmeyen mulk komutu: ${JSON.stringify(_tamamlik)}`);

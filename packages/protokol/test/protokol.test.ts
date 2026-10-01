@@ -1,7 +1,7 @@
 /** Protokol: mesaj şemaları (kabul/ret, alan atma) ve ilgi alanı karesi (süzgeç, özel veri, formül, delta). */
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { MILI, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikMiktar } from "@bolge/cekirdek";
+import { AD_KURALI, MILI, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikMiktar } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
 import { miniVeriyiYukle } from "@bolge/veri";
 import {
@@ -71,6 +71,45 @@ describe("mesaj semalari", () => {
     }
     // Baska komutlara yontem eklenmez: fazla alan atilir (mevcut kural).
     expect("yontem" in KomutSemasi.parse({ tur: "parsel_al", ilce: "i", hucreler: ["1:1"], sinif: "kirsal", yontem: "degirmen" })).toBe(false);
+  });
+
+  it("perakende komutlari (G7; yalniz ekleme): biçim kabul/ret; ad 2..24 = AD_KURALI; dukkanTuru istege bagli; marka_sifirla; tutar/oran/adet alani yok", () => {
+    const yeniler: Komut[] = [
+      { tur: "dukkan_raf", dukkan: 7, yuva: 0, mal: "ekmek" },
+      { tur: "dukkan_raf", dukkan: 7, yuva: 1, mal: null },
+      { tur: "dukkan_fiyat", dukkan: 7, yuva: 0, fiyat: 2 },
+      { tur: "marka_tanimla", marka: 0, ad: "Istanbul Firini", simge: 1, renk: 2 },
+      { tur: "dukkan_marka", dukkan: 7, marka: 0 },
+      { tur: "dukkan_yik", dukkan: 7 },
+      { tur: "marka_sifirla", oyuncu: "p1", marka: 0 },
+    ];
+    for (const k of yeniler) expect(KomutSemasi.parse(k), k.tur).toEqual(k);
+    // ad sinirlari cekirdek AD_KURALI ile ayni (protokol cekirdegi calisma zamaninda ice aktarmaz: esitlik burada baglanir)
+    const ad = (n: number): unknown => ({ tur: "marka_tanimla", marka: 0, ad: "a".repeat(n), simge: 0, renk: 0 });
+    expect(KomutSemasi.safeParse(ad(AD_KURALI.min - 1)).success).toBe(false);
+    expect(KomutSemasi.safeParse(ad(AD_KURALI.min)).success).toBe(true);
+    expect(KomutSemasi.safeParse(ad(AD_KURALI.max)).success).toBe(true);
+    expect(KomutSemasi.safeParse(ad(AD_KURALI.max + 1)).success).toBe(false);
+    // bicim hatalari
+    for (const kotu of [
+      { tur: "dukkan_raf", dukkan: 1.5, yuva: 0, mal: "ekmek" },
+      { tur: "dukkan_raf", dukkan: 1, yuva: 0, mal: 5 },
+      { tur: "dukkan_raf", dukkan: 1, yuva: 0 },
+      { tur: "dukkan_fiyat", dukkan: 1, yuva: 0, fiyat: "2" },
+      { tur: "marka_tanimla", marka: 0, ad: 5, simge: 0, renk: 0 },
+      { tur: "dukkan_yik", dukkan: "7" },
+      { tur: "marka_sifirla", oyuncu: "", marka: 0 },
+    ]) expect(KomutSemasi.safeParse(kotu).success, JSON.stringify(kotu)).toBe(false);
+    // inşa komutlarinda dukkanTuru istege bagli (yontem ile birlikte da); geriye uyum: alan olmadan ayni
+    const govde = { tur: "yapi_yerlestir", ilce: "i", tesisTuru: "dukkan", hucreler: ["1:1"], sinif: "kirsal" };
+    expect(KomutSemasi.parse(govde)).toEqual(govde);
+    expect("dukkanTuru" in KomutSemasi.parse(govde)).toBe(false);
+    expect(KomutSemasi.parse({ ...govde, dukkanTuru: "bakkal" })).toEqual({ ...govde, dukkanTuru: "bakkal" });
+    expect(KomutSemasi.safeParse({ ...govde, dukkanTuru: 5 }).success).toBe(false);
+    const z = istemciMesajiCoz(JSON.stringify({ tur: "komut", anahtar: "k9", komut: { tur: "dukkan_fiyat", dukkan: 3, yuva: 0, fiyat: 1 } }));
+    expect(z.tamam && z.mesaj.tur === "komut" && (z.mesaj.komut as { tur: string }).tur).toBe("dukkan_fiyat");
+    // dukkanTuru baska komutlara eklenmez (fazla alan atilir)
+    expect("dukkanTuru" in KomutSemasi.parse({ tur: "parsel_al", ilce: "i", hucreler: ["1:1"], sinif: "kirsal", dukkanTuru: "bakkal" })).toBe(false);
   });
 
   it("komut zarfindaki ve komuttaki fazla alanlar (t, oyuncu) atilir", () => {

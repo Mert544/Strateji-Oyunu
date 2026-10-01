@@ -288,7 +288,7 @@ describe("komut alan sözlüğü (KOMUT_SEMASI)", () => {
 
   it("sistem yolundaki komutlar yalnız kimlik, seçim ve bayrak alanı taşır (miktar/oran/adet YOK)", () => {
     const sistem = turler.filter((t) => sistemKomutuMu(t)).sort();
-    expect(sistem).toEqual(["oyuncu_katil", "sistem_odul"]);
+    expect(sistem).toEqual(["marka_sifirla", "oyuncu_katil", "sistem_odul"]); // marka_sifirla (G7 moderasyon): yalnız {oyuncu: kimlik, marka: secim}
     for (const t of sistem) {
       for (const [alan, tur] of Object.entries(KOMUT_SEMASI[t].alanlar)) {
         expect(SISTEM_ALAN_TURLERI, `${t}.${alan}`).toContain(tur);
@@ -301,9 +301,13 @@ describe("komut alan sözlüğü (KOMUT_SEMASI)", () => {
     const tasiyan: Record<string, string[]> = {};
     for (const t of turler) {
       for (const [alan, tur] of Object.entries(KOMUT_SEMASI[t].alanlar)) {
-        if (!SISTEM_ALAN_TURLERI.includes(tur)) (tasiyan[t] ??= []).push(`${alan}:${tur}`);
+        // `metin` (marka adı; G7) miktar/oran/adet DEĞİLDİR: ayrı sınanır (yalnız `marka_tanimla.ad`, yalnız oyuncu yolunda).
+        if (!SISTEM_ALAN_TURLERI.includes(tur) && tur !== "metin") (tasiyan[t] ??= []).push(`${alan}:${tur}`);
       }
     }
+    const metinler = turler.flatMap((t) => Object.entries(KOMUT_SEMASI[t].alanlar).filter(([, tur]) => tur === "metin").map(([alan]) => `${t}.${alan}`));
+    expect(metinler).toEqual(["marka_tanimla.ad"]);
+    expect(KOMUT_SEMASI.marka_tanimla.yol).toBe("oyuncu");
     expect(tasiyan).toEqual({
       ticaret_emri: ["oranSaat:miktar"],
       vergi_ayarla: ["oranPpm:oran"],

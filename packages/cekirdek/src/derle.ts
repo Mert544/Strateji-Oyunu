@@ -8,6 +8,7 @@ import { GUN, PPM } from "./tipler";
 import { HucreDizini } from "./mulk/hucreDizini";
 import { kamuKumeleriHesapla } from "./mulk/kamu";
 import { kamuIthalatCarpaniHesapla } from "./mulk/kamuFiyat";
+import { perakendeDerle } from "./perakende/derle";
 import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, DerlenmisMulkBakim, DerlenmisSebeke } from "./tipler";
 
 /** Derleme zamanı anahtarı: bkz. `mulkDerle`. */
@@ -244,6 +245,9 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
     if (el !== undefined) sebeke.elektrik = { mal: el.mal, birimFiyatMili: el.birimFiyatMili };
     sonuc.sebeke = sebeke;
   }
+  // Perakende / dükkân (G7; sartname §4.6): blok yoksa alan OLUŞMAZ (`perakende/derle.ts`; saf, durum yazmaz).
+  const perakende = perakendeDerle(veri, ic);
+  if (perakende !== undefined) sonuc.perakende = perakende;
   // Yöntem çıktısı yedek geçersiz kılma (sartname §5.9; varsayılan KAPALI): tablo YALNIZ `ciktiPpm !== PPM` satırlarından kurulur; hepsi PPM ise ya da blok yoksa alan
   // HİÇ OLUŞMAZ (çekirdeğin kod yolu atlanır, bit-exact no-op). Çekirdek yolu (`ciktiCarpaniHesapla`) G6-2'dedir.
   const gecersiz = p.yontemGecersizKilma;

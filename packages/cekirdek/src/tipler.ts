@@ -32,6 +32,7 @@ import type {
   YontemTanimi,
 } from "@bolge/veri";
 import type { AyrilmisKumesi, HucreDizini, HucreHaritasi } from "./mulk/hucreDizini";
+import type { DerlenmisPerakende } from "./perakende/derle";
 
 export type Ms = number;
 export type Mili = number;
@@ -136,6 +137,8 @@ export interface DerlenmisMulk {
   bakim?: DerlenmisMulkBakim;
   /** Şebeke tedariki (`mulk.sebeke` tanımlıysa; sartname §4.6, §5.2): derlemede kurulur, yoksa alan OLUŞMAZ (şebeke yolu atlanır). */
   sebeke?: DerlenmisSebeke;
+  /** Perakende / dükkân (`mulk.perakende` tanımlıysa; sartname §4.6): `perakende/derle.ts` kurar; yoksa alan OLUŞMAZ (G7 yolları atlanır). */
+  perakende?: DerlenmisPerakende;
 }
 
 /** Derlenmiş mülk bakım ayarı (`mulk.bakim`, sartname §5.10.3): her alan yalnız etkinse (kimlikten farklıysa) vardır. */
@@ -734,6 +737,8 @@ export type Komut =
   | { tur: "oyuncu_katil"; oyuncu: OyuncuId; bolgeler: string[]; ilce?: string }
   // Ödül (para güvenliği, docs/06 §15.7): TUTAR TAŞIMAZ; tutar, mal, tavan ve "bir kez" kuralı çekirdek ödül tablosundan (`param.odul`). Yalnız "sistem".
   | { tur: "sistem_odul"; oyuncu: OyuncuId; kavram: string }
+  // Marka sıfırlama (moderasyon; G7, sartname §9.1): adı sabit yer tutucuya çevirir. Yalnız "sistem"; tutar taşımaz.
+  | { tur: "marka_sifirla"; oyuncu: OyuncuId; marka: number }
   // Mülk kipi (S3)
   | MulkKomutu;
 
@@ -1042,11 +1047,17 @@ export type MulkKomutu =
   | { tur: "parsel_al"; ilce: string; hucreler: HucreId[]; sinif: ArsaSinifi }
   // `olcek` (0 = S, 1 = M, 2 = L; yoksa S): `hucreler` o ölçeğin ayak izidir (`mulk.olcekHucre`), en çok 5 hücre (docs/06 §15.10).
   // `yontem` (isteğe bağlı yöntem kimliği; sartname §5.8): yalnız TESİS türü inşasında; `yontem_degistir` ile aynı denetimler ve iletiler; inşa bitince tesis o yöntemle başlar.
-  | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[]; olcek?: 0 | 1 | 2; yontem?: string }
+  | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[]; olcek?: 0 | 1 | 2; dukkanTuru?: string; yontem?: string }
   | { tur: "insaat_iptal"; insaat: number }
   // Atomik "yapı önce yerleşim": `hucreler` yapının TÜM hücreleri (kenar-bitişik, yuva sayısınca); oyuncunun olmayan (sahipsiz) hücreler
   // `sinif` sınıfında satın alınır ve inşaat başlar; herhangi bir denetim başarısızsa hiçbir şey değişmez. İsteğe bağlı `siniflar`
   // (`hucreler` ile aynı uzunluk) verilirse her hücre kendi sınıfında denetlenir ve fiyatlanır (iki sınıfa düşen yapı tek komutta alınır).
-  | { tur: "yapi_yerlestir"; ilce: string; tesisTuru: string; hucreler: HucreId[]; sinif: ArsaSinifi; siniflar?: ArsaSinifi[]; olcek?: 0 | 1 | 2; yontem?: string }
+  | { tur: "yapi_yerlestir"; ilce: string; tesisTuru: string; hucreler: HucreId[]; sinif: ArsaSinifi; siniflar?: ArsaSinifi[]; olcek?: 0 | 1 | 2; dukkanTuru?: string; yontem?: string }
   // Üzerinde yapı/inşaat olmayan kendi hücrelerini bırakır; hücre bedelinin `parselBirakIadePpm`'i (%70) iade edilir.
-  | { tur: "parsel_birak"; ilce: string; hucreler: HucreId[] };
+  | { tur: "parsel_birak"; ilce: string; hucreler: HucreId[] }
+  // Perakende / dükkân (G7; sartname §9.1): TUTAR, MİKTAR, ORAN, ADET alanı YOKTUR (`fiyat` bir KADEME indeksidir: secim). `dukkan` = `EkYapiDurumu.id`. Çekirdek yolu G7-3'tedir.
+  | { tur: "dukkan_raf"; dukkan: number; yuva: number; mal: string | null }
+  | { tur: "dukkan_fiyat"; dukkan: number; yuva: number; fiyat: number }
+  | { tur: "marka_tanimla"; marka: number; ad: string; simge: number; renk: number }
+  | { tur: "dukkan_marka"; dukkan: number; marka: number }
+  | { tur: "dukkan_yik"; dukkan: number };
