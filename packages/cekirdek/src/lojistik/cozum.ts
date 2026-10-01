@@ -38,6 +38,9 @@ import { defterOranYaz, pazarMuhasebesi, sifirKalemler, ticaretCarpanlari, ihrac
 import { pazarTablosu } from "../pazar/tablo";
 import { BOS_DUGUMLER, oyuncuDugumleri } from "../dugum";
 import { dugumIlcesi, kasaOranlari, paraAkisiYaz, paraMuhasebesi } from "../mulk/kasa";
+import { yerelPazarCoz, yerelSatisYaz } from "../mulk/perakende";
+import type { YerelCozum } from "../mulk/perakende";
+import { yerelSatisGeliri } from "../perakende/yerelPazar";
 import { araziVergisiOranAyarla, araziVergisiSaat } from "../mulk/vergi";
 import { kenarKullanilabilirMi } from "../politika";
 import { bakimCarpani, bakimDuzeyiIndeksi } from "../sanayi/carpan";
@@ -81,6 +84,8 @@ interface ParaBilesenleri {
   /** Şebeke bedeli (G6; mili-para/saat): toplam ve ilçe başına (düğümün kamu ilçesi). Şebeke yokken 0 ve boş harita. */
   sebeke: Mili;
   sebekeIlce: Map<string, Mili>;
+  /** Yerel pazar (G7-2) dükkân satış geliri (mili-para/saat; musluk `yerelNpc`). Dükkân yokken 0. */
+  yerel: Mili;
 }
 
 /**
@@ -97,6 +102,7 @@ function hazineKalemleri(
   o: OyuncuDurumu,
   hesaplar: readonly BolgeHesabi[] | null,
   dugumler: readonly number[],
+  yerel: YerelCozum | null = null,
 ): HazineKalemleri {
   const p = ctx.ic.param;
   const sn = sanayiTablosu(ctx.ic);
@@ -111,6 +117,7 @@ function hazineKalemleri(
   const makasIlce = new Map<string, Mili>();
   const komisyonIlce = new Map<string, Mili>();
   let sebekeGider = 0;
+  let yerelGelir = 0;
   const sebekeIlce = new Map<string, Mili>();
   const sb = ctx.ic.mulk?.sebeke;
   for (const r of dugumler) {
@@ -181,6 +188,19 @@ function hazineKalemleri(
         if (ilce !== undefined) sebekeIlce.set(ilce, (sebekeIlce.get(ilce) ?? 0) + bedel);
       }
     }
+    // Yerel pazar (G7-2, §6.4 Adım 7): dükkân satış geliri `R x kademe` ile; `hesaplar === null` iken (ödeme gücü tahmini) gercek = istek. Dükkân işletme gideri `isletme` lavabosuna girer.
+    if (yerel !== null) {
+      const sl = yerel.satirlar.get(r);
+      if (sl !== undefined) {
+        const hs = hesaplar === null ? null : (hesaplar[b.indeks] as BolgeHesabi);
+        for (const { s, m } of sl) {
+          const y = yerelSatisGeliri(s.istek, s.fiyatPpm, d.pazar.fiyat[m] as number, hs === null ? undefined : (hs.frD[m] as number));
+          gelir += y.gelir;
+          yerelGelir += y.gelir;
+        }
+      }
+      gider += yerel.gider.get(r) ?? 0;
+    }
     let aktifTesis = 0;
     for (const t of b.tesisler) if (t.aktif) aktifTesis++;
     let birlik = 0;
@@ -202,7 +222,7 @@ function hazineKalemleri(
   const isletmeGideri = gider - ithalat - sebekeGider; // şebeke `isletme` lavabosuna KARIŞMAZ (ayrı satır: lavabo.sebeke + kasa.giris.sebeke)
   const vergi = d.mulk !== undefined ? araziVergisiSaat(d, ctx.ic, o.id) : 0;
   gider += vergi;
-  const para = parali ? { ihracat: ihracatGelir, nufus: nufusGelir, ithalat, isletme: isletmeGideri, vergi, makasIlce, komisyonIlce, sebeke: sebekeGider, sebekeIlce } : null;
+  const para = parali ? { ihracat: ihracatGelir, nufus: nufusGelir, ithalat, isletme: isletmeGideri, vergi, makasIlce, komisyonIlce, sebeke: sebekeGider, sebekeIlce, yerel: yerelGelir } : null;
   return { gelir, gider, ithalat, ticaret: defter, para };
 }
 
@@ -269,17 +289,19 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   const odeme = new Map<OyuncuId, number>();
   // Oyuncu -> düğümleri (artan): oyuncu başına tüm düğümleri taramamak için bir kez (mülk kipinde düğümler çoktur).
   const sahipli = oyuncuDugumleri(d);
+  // Yerel pazar (G7-2): ilçe x mal talebinin dükkânlar ve esnaf arasında paylaşımı; `null` = dükkân yok / perakende kapalı (eski yol AYNEN).
+  const yerel = yerelPazarCoz(d, ctx, sahipli);
   for (const o of d.oyuncular) {
     const dl = sahipli.get(o.id) ?? BOS_DUGUMLER;
-    let k = hazineKalemleri(d, ctx, o, null, dl);
+    let k = hazineKalemleri(d, ctx, o, null, dl, yerel);
     // Ödenemeyen ithalat gerçekleşmez (tıklar arası hazine tükenmesi): önce ithalat hazineye sığdırılır,
     // ödeme gücü (tesis verimi kısıntısı) ithalat kısıldıktan sonraki gider üzerinden hesaplanır.
-    if (ithalatiHazineyeSigdir(d, o, k, dl)) k = hazineKalemleri(d, ctx, o, null, dl);
+    if (ithalatiHazineyeSigdir(d, o, k, dl)) k = hazineKalemleri(d, ctx, o, null, dl, yerel);
     odeme.set(o.id, odemeGucuPpm(o, k));
   }
   // Sahipsiz bölgeler "uykuda": hesap sıfır (üretim/tüketim/bozulma/rezerv tükenmesi yok).
   const hesaplar = d.bolgeler.map((b, r) =>
-    b.sahip === null ? bolgeUykuHesapla(d, ctx, r) : bolgeHesapla(d, ctx, r, odeme.get(b.sahip) ?? PPM),
+    b.sahip === null ? bolgeUykuHesapla(d, ctx, r) : bolgeHesapla(d, ctx, r, odeme.get(b.sahip) ?? PPM, yerel),
   );
   const fazla = sifirMatris(n, nm);
   const askeriTalep = sifirMatris(n, nm);
@@ -317,7 +339,7 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
 
   // 6. Hazine oranları
   for (const o of d.oyuncular) {
-    const k = hazineKalemleri(d, ctx, o, hesaplar, sahipli.get(o.id) ?? BOS_DUGUMLER);
+    const k = hazineKalemleri(d, ctx, o, hesaplar, sahipli.get(o.id) ?? BOS_DUGUMLER, yerel);
     hazineOranAyarla(d, o.id, k.gelir - k.gider);
     if (k.para !== null) {
       paraAkisiYaz(d, o.id, {
@@ -327,12 +349,16 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
         isletme: k.para.isletme,
         vergi: k.para.vergi,
         sebeke: k.para.sebeke,
+        yerel: k.para.yerel,
         kasa: kasaOranlari(d, ic, o.id, k.para.vergi, k.para.makasIlce, k.para.komisyonIlce, k.para.sebekeIlce),
       });
     }
     if (d.mulk !== undefined) araziVergisiOranAyarla(d, ic, o.id);
     if (k.ticaret !== null) defterOranYaz(d, o, k.ticaret);
   }
+
+  // 6b. Yuva başına gerçekleşen satış oranı (§7.1b): `paraMuhasebesi` kümülatif `satis` sayacını bu orandan tembel biriktirir.
+  if (yerel !== null) yerelSatisYaz(yerel, (dugum, mal) => (hesaplar[dugum] as BolgeHesabi).frD[mal] as number);
 
   // 7. Kenar kullanımı
   for (let e = 0; e < d.kenarlar.length; e++) {

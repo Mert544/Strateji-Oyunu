@@ -21,10 +21,11 @@
 import { carpBol } from "../sabit";
 import { hazineEkle, hazineUzlastir, oyuncuBul } from "../stok";
 import { GUN, KASA_GIRIS_KALEMLERI, PPM } from "../tipler";
-import type { DerlenmisIcerik, Dunya, KasaDurumu, KasaGirisKalemi, KasaGunu, KomutSonucu, Mili, NpcAlici, ParaAkisi, ParaDurumu } from "../tipler";
+import type { DerlenmisIcerik, Dunya, KasaDurumu, KasaGirisKalemi, KasaGunu, KomutSonucu, Mili, NpcAlici, ParaAkisi, ParaDurumu, RafYuvasi } from "../tipler";
 import type { MulkKasaParametreleri } from "@bolge/veri";
 import { sayacOranEkle, sayacSifir } from "../paraSayac";
 import { sirali, mulkOyuncuBul } from "./durum";
+import { oyuncuDukkanYuvalari } from "./perakende";
 import { kamuIlKimligi, kamuIlceKimligi, kamuMahalleKimligi } from "./kamu";
 
 const KASA_SAHIP = (k: KasaDurumu): string => k.sahip;
@@ -100,6 +101,9 @@ export function paraMuhasebesi(d: Dunya, ic: DerlenmisIcerik): void {
   if (para === undefined || m === undefined || kp === undefined) return;
   const t = d.zaman;
   const gun = Math.floor(t / GUN);
+  // Yuva satış sayaçları (G7-2, §7.1b) için oyuncu -> yuvalar; yalnız perakende verisi varken ve ilk gerekte (dükkânsız dünyada hiç kurulmaz).
+  let yuvaHaritasi: Map<string, RafYuvasi[]> | undefined;
+  const perakendeVar = ic.mulk?.perakende !== undefined;
   for (const mo of m.oyuncular) {
     const a = mo.paraAkisi;
     if (a === undefined) continue;
@@ -125,6 +129,16 @@ export function paraMuhasebesi(d: Dunya, ic: DerlenmisIcerik): void {
       sayacOranEkle(para.lavabo.araziVergisi, a.vergi - vergiKasa, dt);
       // Şebeke bedeli (G6): oyuncunun hazinesinden DÜŞEN para; kasa payı kasaya, kalanı lavabo.sebeke'ye (yeni musluk yok). Tembel kalem.
       if (a.sebeke !== undefined && a.sebeke > 0) sayacOranEkle((para.lavabo.sebeke ??= sayacSifir()), a.sebeke - sebekeKasa, dt);
+      // Yerel pazar (G7-2, §12.1): dükkân satış geliri NPC hane talebidir (yeni para): musluk `yerelNpc` (tembel) ve oyuncu `dukkanGeliri` AYNI oran ve süreyle artar (kasaya pay yok).
+      if (a.yerel !== undefined && a.yerel > 0) {
+        sayacOranEkle((para.musluk.yerelNpc ??= sayacSifir()), a.yerel, dt);
+        sayacOranEkle((mo.dukkanGeliri ??= sayacSifir()), a.yerel, dt);
+      }
+    }
+    // Yuva başına kümülatif satış MİKTARI (§7.1b; para DEĞİL, korunuma girmez): `satisOran` x aynı `dt`; tembel doğum. `paraAkisi` olmayan oyuncuda satış yoktur.
+    if (dt > 0 && perakendeVar) {
+      yuvaHaritasi ??= oyuncuDukkanYuvalari(d);
+      for (const y of yuvaHaritasi.get(mo.id) ?? []) if (y.satisOran !== undefined) sayacOranEkle((y.satis ??= sayacSifir()), y.satisOran, dt);
     }
     a.t0 = t;
   }
@@ -143,7 +157,10 @@ export function paraAkisiYaz(d: Dunya, oyuncu: string, akis: Omit<ParaAkisi, "t0
   if (mo === undefined) return;
   const kasa = akis.kasa.filter((e) => e.oran > 0);
   const sebeke = akis.sebeke ?? 0;
-  if (mo.paraAkisi === undefined && akis.ihracat === 0 && akis.nufus === 0 && akis.ithalat === 0 && akis.isletme === 0 && akis.vergi === 0 && sebeke === 0 && kasa.length === 0) return;
+  const yerel = akis.yerel ?? 0;
+  if (mo.paraAkisi === undefined && akis.ihracat === 0 && akis.nufus === 0 && akis.ithalat === 0 && akis.isletme === 0 && akis.vergi === 0 && sebeke === 0 && yerel === 0 && kasa.length === 0) return;
+  // İlk satış anı (A0-11, §7.1): yerel satış oranı ilk kez > 0 olduğunda bir kez yazılır (muhasebe adım 0 ile işlenmiş; `d.zaman` = bu çözümün anı).
+  if (yerel > 0) mo.ilkSatisT ??= d.zaman;
   const onceki = mo.paraAkisi;
   if (onceki !== undefined && onceki.kasa.length === kasa.length && kasa.every((e, i) => {
     const x = onceki.kasa[i] as ParaAkisi["kasa"][number];
@@ -159,10 +176,14 @@ export function paraAkisiYaz(d: Dunya, oyuncu: string, akis: Omit<ParaAkisi, "t0
     // `sebeke` > 0 iken yazılır, 0 iken alan SİLİNİR (kanonik özet: şebeke yokken alan yok).
     if (sebeke > 0) onceki.sebeke = sebeke;
     else delete onceki.sebeke;
+    // `yerel` (G7-2) aynı kalıpla: > 0 iken yazılır, 0 iken alan SİLİNİR.
+    if (yerel > 0) onceki.yerel = yerel;
+    else delete onceki.yerel;
     return;
   }
   const yeni: ParaAkisi = { t0: d.zaman, ihracat: akis.ihracat, nufus: akis.nufus, ithalat: akis.ithalat, isletme: akis.isletme, vergi: akis.vergi, kasa };
   if (sebeke > 0) yeni.sebeke = sebeke;
+  if (yerel > 0) yeni.yerel = yerel;
   mo.paraAkisi = yeni;
 }
 

@@ -33,7 +33,8 @@ import type { EkleIhlali, IcerikKimlikTablosu } from "./goc";
 import { durumIlceNo, durumUygunMu } from "./mulk/hucreDizini";
 import { KAMU_ALGORITMA_SURUMU, kamuIndeksiAra, kamuIndeksiKur } from "./mulk/kamu";
 import { fnv1a64 } from "./ozet";
-import { KASA_GIRIS_ISTEGE_BAGLI, KASA_GIRIS_KALEMLERI, LAVABO_ISTEGE_BAGLI, LAVABO_KALEMLERI, MUSLUK_KALEMLERI, OLAY_ONCELIGI, SAAT } from "./tipler";
+import { adKanonik } from "./ad";
+import { KASA_GIRIS_ISTEGE_BAGLI, KASA_GIRIS_KALEMLERI, LAVABO_ISTEGE_BAGLI, LAVABO_KALEMLERI, MUSLUK_ISTEGE_BAGLI, MUSLUK_KALEMLERI, OLAY_ONCELIGI, PPM, SAAT } from "./tipler";
 import type { DerlenmisIcerik, Dunya, Ms } from "./tipler";
 
 /** Serileştirme/çözme hatası: `yol` hatalı değerin JSON yolu ($ = kök). */
@@ -313,6 +314,11 @@ export function dunyaDogrula(deger: unknown): Dunya {
       const st = nesne(b.sebekeTuketim, `${y}.sebekeTuketim`);
       for (const k of Object.keys(st)) tamsayi(st[k], `${y}.sebekeTuketim.${k}`, 1);
     }
+    // Mülk kipi yerel pazar (G7-2; sartname §11.1): dükkân isteği karşılanma oranı, yalnız < PPM iken yazılır; yalnız işletme düğümünde.
+    if (b.yerelKarsilanmaPpm !== undefined) {
+      tamsayi(b.yerelKarsilanmaPpm, `${y}.yerelKarsilanmaPpm`, 0, PPM - 1);
+      if (b.merkez === undefined) hata(`${y}.yerelKarsilanmaPpm`, "yerel karsilanma yalniz isletme dugumunde olabilir");
+    }
     tamsayi(b.uretimT0, `${y}.uretimT0`);
     dizi(b.birlikler, `${y}.birlikler`, birlikSayisi).forEach((x, j) => tamsayi(x, `${y}.birlikler[${j}]`, 0));
     dizi(b.tesisler, `${y}.tesisler`).forEach((t, j) => {
@@ -339,6 +345,11 @@ export function dunyaDogrula(deger: unknown): Dunya {
         tamsayi(ek.id, `${ey}.id`, 0);
         dize(ek.tur, `${ey}.tur`);
         dizi(ek.hucreler, `${ey}.hucreler`).forEach((h, k) => dize(h, `${ey}.hucreler[${k}]`));
+        // Dükkân (G7-2; sartname §7.1, §11.1): yalnız `tur === "dukkan"` ek yapıda; içerik uyumu (tür, mal, kademe, raf uzunluğu) `dunyaIcerikUyumu`'nda.
+        if (ek.dukkan !== undefined) {
+          if (ek.tur !== "dukkan") hata(`${ey}.dukkan`, "dukkan alani yalniz tur 'dukkan' olan ek yapida olabilir");
+          dukkanDogrula(ek.dukkan, `${ey}.dukkan`);
+        }
       });
     }
   }
@@ -482,14 +493,42 @@ function sayacDogrula(v: unknown, yol: string): void {
   tamsayi(s.a, `${yol}.a`, 0, SAAT - 1);
 }
 
+/** Dükkân durumu biçimi (G7-2; sartname §7.1, §7.1b): tür, ölçek, marka, raf yuvaları (mal, fiyat kademesi, hız sınırı anı, kümülatif satış ve oranı), kampanya sayaçları, kuruluş zamanları. */
+function dukkanDogrula(v: unknown, yol: string): void {
+  const dk = nesne(v, yol);
+  alanlar(dk, yol, ["tur", "olcek", "raf", "baslangic", "kurulus"]);
+  dize(dk.tur, `${yol}.tur`);
+  tamsayi(dk.olcek, `${yol}.olcek`, 0, 2);
+  if (dk.marka !== undefined) tamsayi(dk.marka, `${yol}.marka`, 0);
+  const baslangic = tamsayi(dk.baslangic, `${yol}.baslangic`, 0);
+  const kurulus = tamsayi(dk.kurulus, `${yol}.kurulus`, 0);
+  if (baslangic > kurulus) hata(`${yol}.baslangic`, `baslangic (${baslangic}) kurulustan (${kurulus}) sonra olamaz`);
+  dizi(dk.raf, `${yol}.raf`).forEach((r, j) => {
+    const ry = `${yol}.raf[${j}]`;
+    const y = nesne(r, ry);
+    alanlar(y, ry, ["fiyat"]);
+    if (y.mal !== undefined) dize(y.mal, `${ry}.mal`);
+    tamsayi(y.fiyat, `${ry}.fiyat`, 0);
+    if (y.fiyatT !== undefined) tamsayi(y.fiyatT, `${ry}.fiyatT`, 0);
+    if (y.satis !== undefined) sayacDogrula(y.satis, `${ry}.satis`); // kümülatif satılan miktar (mili-birim); mal değişince korunur
+    if (y.satisOran !== undefined) tamsayi(y.satisOran, `${ry}.satisOran`, 1); // 0 iken alan silinir
+  });
+  if (dk.kampanya !== undefined) {
+    const k = nesne(dk.kampanya, `${yol}.kampanya`);
+    alanlar(k, `${yol}.kampanya`, ["hafta", "gunSayisi", "gun", "saat", "bitis"]);
+    for (const f of ["hafta", "gunSayisi", "gun", "saat", "bitis"] as const) tamsayi(k[f], `${yol}.kampanya.${f}`, 0);
+  }
+}
+
 /** Para defteri (docs/06 §15.7): musluk/lavabo sayaçları ve kasalar. */
 function paraDogrula(v: unknown): void {
   const p = nesne(v, "$.mulk.para");
   alanlar(p, "$.mulk.para", ["surum", "musluk", "lavabo", "kasalar"]);
   if (p.surum !== 1) hata("$.mulk.para.surum", `desteklenmeyen para defteri surumu: ${JSON.stringify(p.surum)}`);
   const musluk = nesne(p.musluk, "$.mulk.para.musluk");
-  for (const k of Object.keys(musluk)) if (!(MUSLUK_KALEMLERI as readonly string[]).includes(k)) hata(`$.mulk.para.musluk.${k}`, "bilinmeyen musluk kalemi");
+  for (const k of Object.keys(musluk)) if (!(MUSLUK_KALEMLERI as readonly string[]).includes(k) && !(MUSLUK_ISTEGE_BAGLI as readonly string[]).includes(k)) hata(`$.mulk.para.musluk.${k}`, "bilinmeyen musluk kalemi");
   for (const k of MUSLUK_KALEMLERI) sayacDogrula(musluk[k], `$.mulk.para.musluk.${k}`);
+  for (const k of MUSLUK_ISTEGE_BAGLI) if (musluk[k] !== undefined) sayacDogrula(musluk[k], `$.mulk.para.musluk.${k}`); // isteğe bağlı (tembel) kalem: yerelNpc (G7-2)
   const lavabo = nesne(p.lavabo, "$.mulk.para.lavabo");
   for (const k of Object.keys(lavabo)) if (!(LAVABO_KALEMLERI as readonly string[]).includes(k) && !(LAVABO_ISTEGE_BAGLI as readonly string[]).includes(k)) hata(`$.mulk.para.lavabo.${k}`, "bilinmeyen lavabo kalemi");
   for (const k of LAVABO_KALEMLERI) sayacDogrula(lavabo[k], `$.mulk.para.lavabo.${k}`);
@@ -575,12 +614,29 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
     if (o.indirimliYapi !== undefined) tamsayi(o.indirimliYapi, `${y}.indirimliYapi`, 1);
     if (o.ayrilmisHucre !== undefined) tamsayi(o.ayrilmisHucre, `${y}.ayrilmisHucre`, 1);
     if (o.katilimIlcesi !== undefined) dize(o.katilimIlcesi, `${y}.katilimIlcesi`);
+    // Perakende (G7-2; sartname §11.1): isteğe bağlı, yalnız kullanılınca yazılır.
+    if (o.dukkanGeliri !== undefined) sayacDogrula(o.dukkanGeliri, `${y}.dukkanGeliri`);
+    if (o.ilkSatisT !== undefined) tamsayi(o.ilkSatisT, `${y}.ilkSatisT`, 0);
+    if (o.markalar !== undefined) {
+      dizi(o.markalar, `${y}.markalar`).forEach((mv, j) => {
+        const my = `${y}.markalar[${j}]`;
+        const mr = nesne(mv, my);
+        alanlar(mr, my, ["ad", "simge", "renk"]);
+        const ad = dize(mr.ad, `${my}.ad`);
+        const kn = adKanonik(ad);
+        if (!kn.tamam) hata(`${my}.ad`, `marka adi gecersiz: ${kn.hata}`);
+        else if (kn.ad !== ad) hata(`${my}.ad`, `marka adi kanonik (kucuk harf) bicimde saklanmali: ${JSON.stringify(ad)}`);
+        tamsayi(mr.simge, `${my}.simge`, 0);
+        tamsayi(mr.renk, `${my}.renk`, 0);
+      });
+    }
     if (o.paraAkisi !== undefined) {
       const pa = nesne(o.paraAkisi, `${y}.paraAkisi`);
       alanlar(pa, `${y}.paraAkisi`, ["t0", "ihracat", "nufus", "ithalat", "isletme", "vergi", "kasa"]);
       tamsayi(pa.t0, `${y}.paraAkisi.t0`, 0);
       for (const k of ["ihracat", "nufus", "ithalat", "isletme", "vergi"] as const) tamsayi(pa[k], `${y}.paraAkisi.${k}`);
       if (pa.sebeke !== undefined) tamsayi(pa.sebeke, `${y}.paraAkisi.sebeke`, 1); // isteğe bağlı (şebeke > 0 iken yazılır)
+      if (pa.yerel !== undefined) tamsayi(pa.yerel, `${y}.paraAkisi.yerel`, 1); // isteğe bağlı (yerel satış geliri > 0 iken yazılır; G7-2)
       let oncekiKasa: string | null = null;
       dizi(pa.kasa, `${y}.paraAkisi.kasa`).forEach((e, j) => {
         const ey = `${y}.paraAkisi.kasa[${j}]`;
@@ -709,6 +765,29 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     if (b.birlikler.length !== ic.birlikler.length) hata(`${y}.birlikler`, `birlik sayisi ${b.birlikler.length}, icerikte ${ic.birlikler.length}`);
     for (const [j, e] of (b.ekYapilar ?? []).entries()) {
       if (ic.mulk?.ekYapiIndeks.has(e.tur) !== true) hata(`${y}.ekYapilar[${j}].tur`, `icerikte olmayan ek yapi: ${e.tur}`);
+      if (e.dukkan !== undefined) {
+        // Dükkân içerik uyumu (G7-2; sartname §11.2): perakende tanımlı, tür türler içinde, raf malları türün mal kümesinde, kademe aralıkta, raf uzunluğu ölçekle aynı, marka var, kampanya yalnız açıkken.
+        const dy = `${y}.ekYapilar[${j}].dukkan`;
+        const pk = ic.mulk?.perakende;
+        if (pk === undefined) hata(dy, "dukkan var ama perakende (mulk.perakende) tanimli degil");
+        const tur = pk.turler.get(e.dukkan.tur);
+        if (tur === undefined) hata(`${dy}.tur`, `icerikte olmayan dukkan turu: ${e.dukkan.tur}`);
+        const olcek = pk.p.olcekler[e.dukkan.olcek];
+        if (e.dukkan.raf.length !== olcek.rafYuvasi) hata(`${dy}.raf`, `raf yuvasi ${e.dukkan.raf.length}, olcekte ${olcek.rafYuvasi}`);
+        e.dukkan.raf.forEach((r, k) => {
+          if (r.mal !== undefined) {
+            const mi = ic.malIndeks[r.mal];
+            if (mi === undefined) hata(`${dy}.raf[${k}].mal`, `icerikte olmayan mal: ${r.mal}`);
+            if (!tur.malKumesi.has(mi)) hata(`${dy}.raf[${k}].mal`, `mal dukkan turunde yok: ${r.mal}`);
+          }
+          if (r.fiyat >= pk.p.fiyatKademeleriPpm.length) hata(`${dy}.raf[${k}].fiyat`, `fiyat kademesi ${r.fiyat}, kademe sayisi ${pk.p.fiyatKademeleriPpm.length}`);
+        });
+        if (e.dukkan.marka !== undefined && b.sahip !== null) {
+          const sayi = d.mulk?.oyuncular.find((o) => o.id === b.sahip)?.markalar?.length ?? 0;
+          if (e.dukkan.marka >= sayi) hata(`${dy}.marka`, `marka indeksi ${e.dukkan.marka}, oyuncunun ${sayi} markasi var`);
+        }
+        if (e.dukkan.kampanya !== undefined && !pk.kampanyaAcik) hata(`${dy}.kampanya`, "kampanya parametresi yok (kampanya kapali)");
+      }
     }
     // Şebeke stoksuz tüketimi (G6): mal KİMLİĞİ anahtarları içerikte olmalı.
     for (const mid of Object.keys(b.sebekeTuketim ?? {})) if (ic.malIndeks[mid] === undefined) hata(`${y}.sebekeTuketim.${mid}`, `icerikte olmayan mal: ${mid}`);

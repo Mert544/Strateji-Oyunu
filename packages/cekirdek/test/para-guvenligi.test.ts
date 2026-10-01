@@ -99,6 +99,7 @@ function korunumOlc(s: Simulasyon): Korunum {
   if (p.lavabo.sebeke !== undefined) lavabo += sayacOlcekli(p.lavabo.sebeke); // isteğe bağlı (şebeke; G6) kalem de toplanır
   let musluk = 0n;
   for (const k of MUSLUK_KALEMLERI) musluk += sayacOlcekli(p.musluk[k]);
+  if (p.musluk.yerelNpc !== undefined) musluk += sayacOlcekli(p.musluk.yerelNpc); // isteğe bağlı (yerel pazar; G7-2) kalem de toplanır
   return { hazine, kasa, lavabo, musluk };
 }
 

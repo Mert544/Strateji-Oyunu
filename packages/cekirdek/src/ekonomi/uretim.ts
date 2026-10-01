@@ -22,6 +22,7 @@ import { akarsuCarpani, sanayiTablosu } from "../sanayi/tablo";
 import type { SanayiTablosu } from "../sanayi/tablo";
 import { anlikMiktar, stokOranAyarla } from "../stok";
 import { tarimCiktiCarpani } from "../tarim/carpan";
+import type { YerelCozum } from "../mulk/perakende";
 import { tarimTablosu } from "../tarim/tablo";
 import type { TarimTablosu } from "../tarim/tablo";
 import { PPM, SAAT } from "../tipler";
@@ -55,6 +56,13 @@ export interface BolgeHesabi {
   fr4: number[];
   /** Gerçek (verimle ve karşılanma ile ölçeklenmiş) saatlik ihracat (mal bazında). */
   ihracatGercek: Mili[];
+  /**
+   * Mülk kipi yerel pazar (G7-2, sartname §6.3 a): düğümün dükkân satış isteği (mal bazında, mili-birim/saat; geçici, her çözümde sıfırlanır), katman 4a karşılanma
+   * oranı (ppm) ve gerçekleşen satış. Dükkân yokken hep 0, PPM ve 0 (bit-exact no-op: `d4a = 0`).
+   */
+  dukkan: Mili[];
+  frD: number[];
+  dukkanGercek: Mili[];
   /** Brüt çıktı oranı: Σ çıktı × verim. */
   ciktiGercek: Mili[];
   /**
@@ -147,6 +155,9 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
       fr3: new Array<number>(nm).fill(PPM),
       fr4: new Array<number>(nm).fill(PPM),
       ihracatGercek: sifirlar(nm),
+      dukkan: sifirlar(nm),
+      frD: new Array<number>(nm).fill(PPM),
+      dukkanGercek: sifirlar(nm),
       ciktiGercek: sifirlar(nm),
       ciktiCarpan: new Array<number>(tesisSayisi).fill(PPM),
       gubreIstek: sifirlar(tesisSayisi),
@@ -181,6 +192,9 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
   h.fr3.fill(PPM);
   h.fr4.fill(PPM);
   h.ihracatGercek.fill(0);
+  h.dukkan.fill(0);
+  h.frD.fill(PPM);
+  h.dukkanGercek.fill(0);
   h.ciktiGercek.fill(0);
   h.ciktiCarpan.fill(PPM);
   h.gubreIstek.fill(0);
@@ -260,7 +274,7 @@ function carpanlariYenile(tt: TarimTablosu, ctx: Baglam, h: BolgeHesabi, gubreKa
 }
 
 /** Adım 1: istihdam, potansiyel, talep ve arz. `odemePpm`: sahibin ödeme gücü (para lavaboları), varsayılan %100. */
-export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number = PPM): BolgeHesabi {
+export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number = PPM, yerel?: YerelCozum | null): BolgeHesabi {
   const tb = icerikTablosu(ctx.ic);
   const nm = tb.malSayisi;
   const b = d.bolgeler[r] as BolgeDurumu;
@@ -391,8 +405,11 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
     else h.ithalat[e.mal] = (h.ithalat[e.mal] as number) + e.gerceklesenSaat;
   }
 
+  // Yerel pazar (G7-2): düğümün dükkân satış isteği (katman 4a girdisi; talebe girer: lojistik stoğu düğüme çeker). Dükkân yokken `h.dukkan` hep 0.
+  const dukkanIstek = yerel?.istek.get(r);
+  if (dukkanIstek !== undefined) for (let m = 0; m < nm; m++) h.dukkan[m] = dukkanIstek[m] as number;
   for (let m = 0; m < nm; m++) {
-    h.talep[m] = (h.nufusTuketim[m] as number) + (h.ikmal[m] as number) + (h.girdiPot[m] as number) + (h.bakim[m] as number) + (h.ihracat[m] as number);
+    h.talep[m] = (h.nufusTuketim[m] as number) + (h.ikmal[m] as number) + (h.girdiPot[m] as number) + (h.bakim[m] as number) + (h.dukkan[m] as number) + (h.ihracat[m] as number);
     h.arz[m] = (h.ciktiPot[m] as number) + (h.ithalat[m] as number);
   }
   return h;
@@ -499,18 +516,20 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
       const d1 = (h.nufusTuketim[m] as number) + (h.ikmal[m] as number);
       const d2 = h.bakim[m] as number;
       const d3 = h.girdiPot[m] as number;
+      const d4a = h.dukkan[m] as number; // G7-2 katman 4a: yerel (dükkân) satış isteği; dükkân yokken 0
       const d4 = h.ihracat[m] as number;
       let a = (h.ciktiGercek[m] as number) + (h.ithalat[m] as number) + s.gelenOran - (giden[m] as number);
       if (a < 0) a = 0;
       // Stok, açığı en az STOK_UFKU_SAAT saat karşılayabiliyorsa tüm katmanlar %100 (stok "sınırsız" sayılır).
       // Aksi halde stok bu ufka yayılarak (saatte stok/ufuk) kullanılabilir akışa eklenir ve toplam katmanlara
       // öncelik sırasıyla paylaştırılır; böylece rejim geçişi sürekli (titreşimsiz) ve stok tam tükenir.
-      const acik = d1 + d2 + d3 + d4 - a;
+      const acik = d1 + d2 + d3 + d4a + d4 - a;
       const stok = h.stok[m] as number;
       if (acik <= 0 || stok >= acik * STOK_UFKU_SAAT) {
         h.fr1[m] = PPM;
         h.fr2[m] = PPM;
         h.fr3[m] = PPM;
+        h.frD[m] = PPM;
         h.fr4[m] = PPM;
         continue;
       }
@@ -522,10 +541,13 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
       a -= p2;
       const p3 = a < d3 ? a : d3;
       a -= p3;
+      const p4a = a < d4a ? a : d4a;
+      a -= p4a;
       const p4 = a < d4 ? a : d4;
       h.fr1[m] = oranPpm(p1, d1);
       h.fr2[m] = oranPpm(p2, d2);
       h.fr3[m] = oranPpm(p3, d3);
+      h.frD[m] = oranPpm(p4a, d4a);
       h.fr4[m] = oranPpm(p4, d4);
     }
     // Gübre karşılanma oranı (paylaşım yoksa tüm fr'ler PPM'dir); değişirse çıktı çarpanları yenilenir ve tur tekrarlanır.
@@ -577,6 +599,8 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
   }
   // İhracat 0 ise gerçek ihracat 0 (carpBol(0, x, PPM) = 0): çağrı atlanır.
   for (let m = 0; m < nm; m++) h.ihracatGercek[m] = (h.ihracat[m] as number) === 0 ? 0 : carpBol(h.ihracat[m] as number, h.fr4[m] as number, PPM);
+  // Gerçekleşen yerel (dükkân) satışı (G7-2): stoktan çıkan oran (bolgeOranlariUygula) ve gelirin girdisi; dükkân yokken 0.
+  for (let m = 0; m < nm; m++) h.dukkanGercek[m] = (h.dukkan[m] as number) === 0 ? 0 : carpBol(h.dukkan[m] as number, h.frD[m] as number, PPM);
   // Şebeke stoksuz tüketim (Y-c; G6 §5.2.2b): her şebekeli mal için GERÇEK tüketim = Σ_tesis Σ_(girdi) carpBol(carpBol(q, ölçek, PPM), verim, PPM) (stoktan düşmez; bedel buradan).
   if (stoksuz !== null) {
     for (let i = 0; i < tesisSayisi; i++) {
@@ -701,6 +725,16 @@ export function bolgeDurumunaYaz(ctx: Baglam, h: BolgeHesabi): void {
     }
   }
   b.ikmalKarsilanmaPpm = ikmalOran;
+  // Yerel pazar (G7-2): dükkân isteği olan malların en düşük karşılanma oranı; yalnız < PPM iken yazılır (aksi halde alan silinir/oluşmaz).
+  let yerelOran = PPM;
+  for (let m = 0; m < tb.malSayisi; m++) {
+    if ((h.dukkan[m] as number) > 0) {
+      const f = h.frD[m] as number;
+      if (f < yerelOran) yerelOran = f;
+    }
+  }
+  if (yerelOran < PPM) b.yerelKarsilanmaPpm = yerelOran;
+  else if (b.yerelKarsilanmaPpm !== undefined) delete b.yerelKarsilanmaPpm;
 }
 
 /**
@@ -735,14 +769,14 @@ export function bolgeOranlariUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi, giden
     const cikti = h.ciktiGercek[m] as number;
     // Hareketsiz mal (hiçbir girdi/çıktı/tüketim/stok/akış yok): yerel oran 0 (tüm terimler 0; carpBol(0, ...) = 0); hesap atlanır, sonuç aynı.
     const hareketsiz =
-      cikti === 0 && girdiGercek[m] === 0 && h.nufusTuketim[m] === 0 && h.ikmal[m] === 0 && h.bakim[m] === 0 && h.ihracatGercek[m] === 0 && h.ithalat[m] === 0 && giden[m] === 0 && h.stok[m] === 0;
+      cikti === 0 && girdiGercek[m] === 0 && h.nufusTuketim[m] === 0 && h.ikmal[m] === 0 && h.bakim[m] === 0 && h.ihracatGercek[m] === 0 && h.dukkanGercek[m] === 0 && h.ithalat[m] === 0 && giden[m] === 0 && h.stok[m] === 0;
     let yerel = 0;
     if (!hareketsiz) {
       const tuketim = carpBol(h.nufusTuketim[m] as number, h.fr1[m] as number, PPM) + carpBol(h.ikmal[m] as number, h.fr1[m] as number, PPM);
       const bakim = carpBol(h.bakim[m] as number, h.fr2[m] as number, PPM);
       const bozulmaPpmGun = (ctx.ic.mallar[m] as { bozulmaPpmGun: number }).bozulmaPpmGun;
       const bozulma = bozulmaPpmGun > 0 ? carpBol(h.stok[m] as number, bozulmaPpmGun, 24 * PPM) : 0;
-      yerel = cikti - (girdiGercek[m] as number) - tuketim - bakim - (h.ihracatGercek[m] as number) + (h.ithalat[m] as number) - (giden[m] as number) - bozulma;
+      yerel = cikti - (girdiGercek[m] as number) - tuketim - bakim - (h.ihracatGercek[m] as number) - (h.dukkanGercek[m] as number) + (h.ithalat[m] as number) - (giden[m] as number) - bozulma;
     }
     // Bozulma yalnızca stok varken işler; stok 0 iken yerel oran ≥ 0 kalır.
     b.uretimOrani[m] = cikti;
