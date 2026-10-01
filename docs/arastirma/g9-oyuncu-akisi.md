@@ -100,7 +100,7 @@ Kılavuzla bağ: [S1.1 giriş](insan-testi-kilavuzu.md) hedef ≤3 dk, kabul 6 d
 | **Telefon / masaüstü** | Telefon: büyük "posta uygulamasını aç" kısayolu **konmaz** (uygulama seçimi cihaza bağlı, **doğrulanmadı**); iki düğme alt alta. Masaüstü: aynı kart |
 | **Ölçüt** | S1.1 süre; **posta gecikmesi** (T4 takılma: "bağlantı gelmedi") kılavuz örnek satırı |
 | **Sahip** | T1, K1 |
-| **Ret ve bağımlılık** | **Posta hatası kullanıcıya görünmez** (K2 kararı: yalnız sayaç); bu yüzden "gelmedi" yolu burada çözülür. **Davetli listesi (baş lider kararı):** listede olmayan adres de **aynı ekranı** görür, yanıt aynıdır ama posta gönderilmez (sızdırmama); bu yüzden metin **"davetli misin" demez**, yalnız genel bir yardım satırı taşır ("davet edildiğin adresi kullandığından emin ol"); davetsiz kişi ek bilgi alamaz Yeniden gönder `POST /giris/istek` (e-posta başına 3/saat, K2): sınır aşılırsa `hiz_siniri` (G-6). Yeniden gönder bekleme süresi (45 sn) **öneridir**, K2'de parametre değildir **(doğrulanmadı)** |
+| **Ret ve bağımlılık** | **Posta hatası kullanıcıya görünmez** (K2 kararı: yalnız sayaç); bu yüzden "gelmedi" yolu burada çözülür. **Davetli listesi (baş lider kararı):** listede olmayan adres de **aynı ekranı** görür, yanıt aynıdır ama posta gönderilmez (sızdırmama); bu yüzden metin **"davetli misin" demez**, yalnız genel bir yardım satırı taşır ("davet edildiğin adresi kullandığından emin ol"); davetsiz kişi ek bilgi alamaz Yeniden gönder `POST /giris/istek` (e-posta başına 3/saat, K2): e-posta başına sınır aşılırsa sunucu yanıtı **değiştirmez** ve posta **gitmez** (sızdırmama), yani ekran sınırı bilemez: **istemci kendisi yavaşlatır** (oturumda 3 gönderimden sonra "biraz bekle" satırı) ve "gelmedi" yardımı bir destek yolu gösterir (sahip metni, §S6); `hiz_siniri` yalnız IP/genel sınırdır (G-6). Yeniden gönder bekleme süresi (45 sn) **öneridir**, K2'de parametre değildir **(doğrulanmadı)** |
 
 **Yeni bağlantı eskileri düşürür** (K2): yeniden gönderince eski e-postadaki bağlantı çalışmaz; ekran bunu söyler: **Yeni bağlantı gönderince eskisi geçersiz olur.**
 
@@ -151,7 +151,7 @@ Hata gövdesi `{ tamam: false, kod, mesaj, beklemeSn? }` (K2). Ekran, sunucunun 
 |---|---|---|---|---|
 | `gecersiz_eposta` (422) | Adres biçimi bozuk | G-1, alan altı | **Bu adres geçerli görünmüyor. Kontrol edip yeniden dene.** | alanda kal |
 | `gecici_eposta` (422) | Tek kullanımlık/geçici alan (alana bağlı; 148 alanlık başlangıç listesi) | G-1, alan altı | **Geçici e-posta adresleri kabul edilmiyor. Kalıcı bir adres kullan.** | alanda kal |
-| `hiz_siniri` (429) | E-posta başına 3/saat, IP başına 20/saat, genel sınır | G-1 ve G-2 | **Çok sık denendi. {n} dakika sonra yeniden dene.** (`beklemeSn` → yukarı yuvarlı dakika) | düğme kapalı + geri sayım |
+| `hiz_siniri` (429) | **IP** başına 20/saat ya da genel sınır (onay denemesi ve bilet de 429 verebilir). **E-posta başına 3/saat aşımı bu hatayı vermez:** yanıt aynıdır, posta gitmez (`KIMLIK.md`) | G-1, G-2, G-3 | **Çok sık denendi. {n} dakika sonra yeniden dene.** (`beklemeSn` → yukarı yuvarlı dakika) | düğme kapalı + geri sayım |
 | `origin` (403) | Yabancı ya da eksik köken | G-1 | **Giriş şu an yapılamıyor. Sayfayı yenileyip yeniden dene.** | yenile |
 | `gecersiz_istek` (400) | Gövde bozuk | G-1 | aynı genel metin | yenile |
 | ağ hatası / zaman aşımı | Bağlantı yok | G-1, G-2 | **Bağlantı kurulamadı. İnternetini kontrol edip yeniden dene.** | yeniden dene |
