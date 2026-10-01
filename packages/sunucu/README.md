@@ -135,7 +135,7 @@ runuser -u postgres -- $B/pg_ctl -D $S/veri -m fast stop && rm -rf $S   # işini
 
   Testler `pgt-*` dünyalarını kullanır ve sonunda siler; şema göç testleri geçici veritabanları (`bolge_eski_*`, `bolge_yeni_*`) açıp kaldırır. Postgres 16 ile doğrulandı.
 
-  **Tek komutla doğrulama:** `deploy/pg-dogrula.sh <sha | worktree-yolu>` geçici kümeyi açar, `pg.test.ts` ve `yedek-geri-yukle.test.ts` ile uçta değişmiş `BOLGE_PG_URL`'li test dosyalarını koşar, şema sürümünü `sql/` dosya sayısıyla karşılaştırır, özet satırı ve `SP/takim/kapi-sonuclari/pg-<sha>.json` yazar; küme her koşulda silinir (ayrıntı betiğin başlığında).
+  **Tek komutla doğrulama:** `deploy/pg-dogrula.sh <sha | worktree-yolu>` geçici kümeyi açar, `pg.test.ts` ve `yedek-geri-yukle.test.ts` ile uçta değişmiş `BOLGE_PG_URL`'li test dosyalarını koşar, şema sürümünü `sql/` dosya sayısıyla karşılaştırır, özet satırı ve `SP/takim/kapi-sonuclari/pg-<sha>-<zaman>.json` yazar (üzerine yazma yok; `pg-<sha>-ozet.json` ilk koşuyu saklar, tekrarlar `tekrarlar`a eklenir); küme her koşulda silinir (ayrıntı betiğin başlığında).
 
 ## Alfa-0 işletim
 

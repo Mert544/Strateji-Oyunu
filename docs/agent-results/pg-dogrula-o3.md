@@ -8,7 +8,7 @@ Kullanım: `deploy/pg-dogrula.sh <sha | worktree-yolu> [--taban <ref>] [--sema <
 - Koşulan: `pg.test.ts`, `yedek-geri-yukle.test.ts` ve `taban...uç` arasında değişmiş, `BOLGE_PG_URL` içeren test dosyaları (+ `--dosya`). Tam vitest koşulmaz. Kapı kilidi canlıysa `--minWorkers=1 --maxWorkers=1`, değilse en çok 2 (vitest 2.1.9 tek başına `--maxWorkers=1` kabul etmez; `PG_DOGRULA_ISCI` ezer).
 - Şema: koşudan sonra `SELECT max(surum) FROM sunucu_sema`, beklenen `sql/NNN-*.sql` en büyük NNN'si.
 - `<sha>` verilirse o uçta kurulu bir worktree aranır (ana çalışma ağacı hariç); yoksa geçici ayrık worktree + `pnpm install --frozen-lockfile --offline` (~6 sn). Kapı koşarken kurulum istemiyorsan worktree yolu ver.
-- Çıktı: stdout'a tek satır `PG GECTI|KIRIK sha=... test=gecen/toplam sema=bulunan/beklenen sure=Ns kirik=<adim|->`; JSON `SP/takim/kapi-sonuclari/pg-<kisa sha>.json` (sha, adımlar, test sayıları, şema, süre, worktree); günlükler `pg-<kisa sha>/`. Çıkış kodu 0/1/2.
+- Çıktı: stdout'a tek satır `PG GECTI|KIRIK sha=... test=gecen/toplam sema=bulunan/beklenen sure=Ns kirik=<adim|->`; JSON `SP/takim/kapi-sonuclari/pg-<kisa sha>-<zaman>.json` (sha, adımlar, test sayıları, şema, süre, worktree; üzerine yazma yok); `pg-<kisa sha>-ozet.json` ilk koşuyu saklar, sonrakiler `tekrarlar`a eklenir (sonuç farklıysa `kararsiz: true`); günlükler `pg-<kisa sha>-<zaman>/`. Çıkış kodu 0/1/2.
 - JSON `testler`: bütün testlerin adı, durumu ve süresi (ms). `--izle <regex>` eşleşen testleri `izlenen` olarak JSON'a ve özet satırının altına yazar (örn. belirli bir regresyon testinin geçtiğini ve süresini göstermek için).
 - `trap`: EXIT, INT, TERM, HUP'ta vitest süreç grubu, pg kümesi (`pg_ctl -m immediate stop`), dizin ve geçici worktree temizlenir.
 

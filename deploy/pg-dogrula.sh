@@ -19,12 +19,13 @@
 # Ortam: PG_BIN (varsayılan /usr/lib/postgresql/16/bin), KAPI_SP (varsayılan: entegrasyon worktree'sinin üst dizini),
 #        PG_DOGRULA_TMP (küme kökü, varsayılan /tmp), PG_DOGRULA_ZAMAN_ASIMI_SN (vitest için, varsayılan 1200).
 # Çıktı: stdout'a tek satır "PG GECTI|KIRIK sha=... test=gecen/toplam sema=bulunan/beklenen sure=Ns kirik=<adim|->";
-#        ayrıntı KAPI_SP/takim/kapi-sonuclari/pg-<kisa sha>.json (günlükler pg-<kisa sha>/ altında).
+#        ayrıntı KAPI_SP/takim/kapi-sonuclari/pg-<kisa sha>-<zaman>.json (günlükler pg-<kisa sha>-<zaman>/ altında); üzerine yazma yok.
+#        pg-<kisa sha>-ozet.json İLK koşuyu saklar, sonrakiler "tekrarlar"a eklenir (sonuç ilkinden farklıysa kararsiz: true).
 # Çıkış kodu: 0 geçti, 1 kırık, 2 kullanım ya da ortam hatası.
 # Kümeye yalnız unix soketiyle (TCP portu yok), fsync=off; dizin her koşuda benzersizdir. Linux/macOS (bash) içindir.
 set -uo pipefail
 
-KULLANIM() { sed -n '2,26p' "$0"; }
+KULLANIM() { sed -n '2,27p' "$0"; }
 [ $# -ge 1 ] || { KULLANIM; exit 2; }
 HEDEF="$1"; shift
 TABAN="entegrasyon"; SEMA_BEKLENEN=""; EK_DOSYALAR=(); IZLE=()
@@ -64,9 +65,13 @@ else
   KIRLI=""
 fi
 KISA="${SHA:0:7}"
-SONUC_JSON="$SONUC_DIZIN/pg-$KISA.json"
-GUNLUK_DIZIN="$SONUC_DIZIN/pg-$KISA"
-rm -rf "$GUNLUK_DIZIN"; mkdir -p "$GUNLUK_DIZIN"
+# Her koşu zaman damgalı AYRI bir JSON ve günlük dizinine yazar; hiçbir şeyin üzerine yazılmaz.
+ZAMAN="$(date -u +%Y%m%dT%H%M%SZ)"
+ADSON="$KISA-$ZAMAN"; [ -e "$SONUC_DIZIN/pg-$ADSON.json" ] || [ -e "$SONUC_DIZIN/pg-$ADSON" ] && ADSON="$ADSON-$$"
+SONUC_JSON="$SONUC_DIZIN/pg-$ADSON.json"
+OZET_JSON="$SONUC_DIZIN/pg-$KISA-ozet.json"
+GUNLUK_DIZIN="$SONUC_DIZIN/pg-$ADSON"
+mkdir -p "$GUNLUK_DIZIN"
 
 # --- temizlik: HER koşulda küme kapanır, dizin silinir, başlatılan süreçler pid ile kapatılır ----------------------------------
 KUME=""; KOSU_PID=""; KUME_ACIK=0
@@ -105,7 +110,7 @@ bitir() {  # JSON + özet satırı yaz, çıkış kodunu belirle
   local ozet="PG $sonuc sha=$KISA test=$TEST_GECEN/$TEST_TOPLAM sema=$SEMA_BULUNAN/${SEMA_BEKLENEN:-?} sure=${sure}s kirik=$KIRIK_ADIM"
   ADIMLAR_TSV="$ADIMLAR_TSV" SONUC="$sonuc" OZET="$ozet" SHA="$SHA" HEDEF="$HEDEF" TABAN="$TABAN" SURE="$sure" \
   TG="$TEST_GECEN" TT="$TEST_TOPLAM" TK="$TEST_KIRIK" TA="$TEST_ATLANAN" SB="$SEMA_BULUNAN" SX="${SEMA_BEKLENEN:-}" \
-  KA="$KIRIK_ADIM" WTY="$WT" NEDEN="$NEDEN" KIRLI="${KIRLI:-}" DOSYALAR="${TEST_DOSYALARI[*]:-}" ISCI="${ISCI:-}" TESTLER_JSON="$GUNLUK_DIZIN/testler.json" IZLE_DOSYA="$GUNLUK_DIZIN/izle.txt" IZLENEN_METIN="$GUNLUK_DIZIN/izlenen.txt" node -e '
+  ZAMAN="$ZAMAN" OZET_JSON="$OZET_JSON" KA="$KIRIK_ADIM" WTY="$WT" NEDEN="$NEDEN" KIRLI="${KIRLI:-}" DOSYALAR="${TEST_DOSYALARI[*]:-}" ISCI="${ISCI:-}" TESTLER_JSON="$GUNLUK_DIZIN/testler.json" IZLE_DOSYA="$GUNLUK_DIZIN/izle.txt" IZLENEN_METIN="$GUNLUK_DIZIN/izlenen.txt" node -e '
     const fs = require("fs");
     const e = process.env;
     const adimlar = fs.readFileSync(e.ADIMLAR_TSV, "utf8").split("\n").filter(Boolean).map((l) => {
@@ -113,7 +118,7 @@ bitir() {  # JSON + özet satırı yaz, çıkış kodunu belirle
       return { ad, durum, kod: Number(kod), sure_sn: Number(sure) };
     });
     const j = {
-      surum: 1, sonuc: e.SONUC, ozet: e.OZET, sha: e.SHA, hedef: e.HEDEF, worktree: e.WTY || null, taban: e.TABAN, kirli_agac: e.KIRLI !== "",
+      surum: 2, zaman: e.ZAMAN, sonuc: e.SONUC, ozet: e.OZET, sha: e.SHA, hedef: e.HEDEF, worktree: e.WTY || null, taban: e.TABAN, kirli_agac: e.KIRLI !== "",
       sure_sn: Number(e.SURE), kirik_adim: e.KA === "-" ? null : e.KA, kirik_ileti: e.NEDEN || null,
       test: { gecen: Number(e.TG), toplam: Number(e.TT), kirik: Number(e.TK), atlanan: Number(e.TA), dosyalar: e.DOSYALAR ? e.DOSYALAR.split(" ") : [], isci: e.ISCI ? Number(e.ISCI) : null },
       sema: { bulunan: e.SB === "-" ? null : Number(e.SB), beklenen: e.SX === "" ? null : Number(e.SX) },
@@ -126,8 +131,20 @@ bitir() {  # JSON + özet satırı yaz, çıkış kodunu belirle
     j.izlenen = testler.filter((t) => desenler.some((r) => r.test(t.ad)));
     fs.writeFileSync(e.IZLENEN_METIN, j.izlenen.map((t) => `  izlenen: ${t.durum} ${t.sure_ms} ms :: ${t.ad}`).join("\n"));
     fs.writeFileSync(process.argv[1], JSON.stringify(j, null, 2) + "\n");
+    // pg-<sha>-ozet.json: İLK resmi koşunun sonucu orada kalır; sonrakiler "tekrarlar"a eklenir, ilki değiştirmez.
+    // Tekrarın sonucu ilkinden farklıysa o satır ve üst düzey "kararsiz" true olur.
+    const kayit = { zaman: e.ZAMAN, sonuc: e.SONUC, ozet: e.OZET, json: process.argv[1] };
+    let oz = null;
+    try { oz = JSON.parse(fs.readFileSync(e.OZET_JSON, "utf8")); } catch (_) { /* yok ya da bozuk: ilk koşu say */ }
+    if (!oz || !oz.ilk) oz = { sha: e.SHA, ilk: kayit, tekrarlar: [], kararsiz: false };
+    else {
+      oz.tekrarlar.push({ ...kayit, tekrar: true, kararsiz: kayit.sonuc !== oz.ilk.sonuc });
+      oz.kararsiz = oz.tekrarlar.some((t) => t.kararsiz);
+    }
+    fs.writeFileSync(e.OZET_JSON, JSON.stringify(oz, null, 2) + "\n");
   ' "$SONUC_JSON"
   echo "$ozet"
+  echo "json: $SONUC_JSON (ozet: $OZET_JSON)" >&2
   [ -s "$GUNLUK_DIZIN/izlenen.txt" ] && cat "$GUNLUK_DIZIN/izlenen.txt" && echo
   [ "$sonuc" = "GECTI" ]
 }
