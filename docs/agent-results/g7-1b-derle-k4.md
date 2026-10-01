@@ -21,3 +21,7 @@ Dal: `takim/k4/g7-1b-derle`. Taban: `takim/k4/g7-1a-veri-sema` 13a67e8 + `takim/
 
 ## Geri dönüşü zor karar / açık soru
 Yok. Bağlama satırı (`DerlenmisMulk.perakende`), komut tipleri ve K2 zod satırları K3'ün G7-1b'sidir.
+
+## Güncelleme (A3 incelemesi)
+1. Izgara girdisinde `sinif` yoksa yerel kopya KALDIRILDI: `HucreDizini.izgaradan(g).fiksturOlustur(g)`'in ilçe sınıfı kullanılır (hücre dizininin kendi türetimi; BHI1 düzlemi kopyalanmaz); `durumArsaSinifi` içe aktarması da gitti. Test: ızgara ilçesinin sınıfı veri `ilceSinifiTuret` ile aynı sonucu verir.
+2. `talep1000Saat` satırı olup hiçbir mal grubunda olmayan mal derlemede `Error` verir: "icerikDerle: mulk.perakende.talep.talep1000Saat: mal grubu yok: <mal>" (testli). 8/8 test, eslint ve dosya kapsamlı tsc temiz.

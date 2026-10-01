@@ -107,7 +107,7 @@ describe("ilçe nüfusu ve taban talep (nufus'lu ve nufus'suz ilçe)", () => {
     expect(d.talepTaban.size).toBe(v.parsel!.ilceler.length);
   });
 
-  it("ızgara girdisi: `sinif` yoksa ızgaradan türetilir (veri `ilceSinifiTuret` ile aynı); nufus'lu ilçe nufus'u, nufus'suz ilçe türetilen sınıfın sabitini kullanır", () => {
+  it("ızgara girdisi: `sinif` yoksa hücre dizininin türetimiyle bulunur (veri `ilceSinifiTuret` ile aynı sonuç); nufus'lu ilçe nufus'u, nufus'suz ilçe türetilen sınıfın sabitini kullanır", () => {
     const dunya = sentetikDunya(60);
     const v = mulkVeriTam() as CekirdekVeriPaketi;
     delete v.parsel;
@@ -130,6 +130,7 @@ describe("derleme hataları (Error)", () => {
     expect(() => derle(veri((_, pr) => pr.talep.gruplar["tatli"]!.mallar.push("yok_mal")))).toThrow("talep.gruplar.tatli.mallar bilinmeyen mal: yok_mal");
     expect(() => derle(veri((_, pr) => (pr.talep.talep1000Saat["yok_mal"] = 5)))).toThrow("talep.talep1000Saat bilinmeyen mal: yok_mal");
     expect(() => derle(veri((_, pr) => pr.talep.gruplar["tatli"]!.mallar.push("sut")))).toThrow("mal birden cok grupta: sut");
+    expect(() => derle(veri((_, pr) => (pr.talep.talep1000Saat["celik"] = 5_000)))).toThrow("icerikDerle: mulk.perakende.talep.talep1000Saat: mal grubu yok: celik");
     expect(() => derle(veri((_, pr) => (pr.acikOlcekler = [])))).toThrow("acikOlcekler bos olamaz");
     expect(() => derle(veri((v) => delete v.param.mulk!.ekYapilar!["dukkan"]))).toThrow("mulk.ekYapilar.dukkan gerekli");
     expect(() => derle(veri((_, pr) => pr.dukkanTurleri.push({ ...pr.dukkanTurleri[0]! })))).toThrow("tekrarlanan tur: bakkal");

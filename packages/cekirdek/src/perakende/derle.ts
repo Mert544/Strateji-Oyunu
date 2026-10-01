@@ -10,8 +10,8 @@
  * bit-exact no-op). Çekirdek Node-only anlamsal kuralları (V3-V5, V13, V15) çalıştırmaz (`@bolge/veri` yükleyicilerinin işidir); burada yalnız derlemenin
  * bağımlı olduğu bütünlük hataları `Error` ile verilir: bilinmeyen mal ya da tür, boş `acikOlcekler`, `dukkan` ek yapısı yok.
  */
-import type { ArsaSinifi, MulkPerakendeParametreleri } from "@bolge/veri";
-import { durumArsaSinifi } from "../mulk/hucreDizini";
+import type { MulkPerakendeParametreleri } from "@bolge/veri";
+import { HucreDizini } from "../mulk/hucreDizini";
 import type { CekirdekVeriPaketi, DerlenmisIcerik } from "../tipler";
 import { ilceNufusEsdegeri, talepTabani } from "./yerelPazar";
 import type { BayramDalgasi, IlceSinifi } from "./yerelPazar";
@@ -52,28 +52,15 @@ export interface DerlenmisPerakende {
   kampanyaAcik: boolean;
 }
 
-/** Izgara ilçesinin sınıfı: içerideki hücrelerin EN YÜKSEK arsa sınıfı (`@bolge/veri ilceSinifiTuret` ile aynı tanım; hücre sınıfı talebe girmez: yalnız `sinif` alanı yoksa yedek). */
-function izgaraIlceSinifi(durum: Uint8Array): ArsaSinifi {
-  let en = 0;
-  for (let i = 0; i < durum.length; i++) {
-    const b = durum[i] as number;
-    if ((b & 1) === 0) continue; // ICERIDE
-    const s = durumArsaSinifi(b);
-    const sira = s === "sehir" ? 2 : s === "kasaba" ? 1 : 0;
-    if (sira > en) {
-      en = sira;
-      if (en === 2) break;
-    }
-  }
-  return en === 2 ? "sehir" : en === 1 ? "kasaba" : "kirsal";
-}
-
 /** Paketin ilçeleri (id, sınıf, isteğe bağlı nüfus): JSON fikstüründen ya da ızgara girdisinden; ikisi birlikte verilemez. */
 function ilceKayitlari(veri: CekirdekVeriPaketi): { id: string; sinif: IlceSinifi; nufus?: number }[] | undefined {
   if (veri.parsel !== undefined && veri.parselIzgara !== undefined) throw new Error("perakendeDerle: parsel ve parselIzgara birlikte verilemez");
   if (veri.parsel !== undefined) return veri.parsel.ilceler.map((c) => ({ id: c.id, sinif: c.sinif, ...(c.nufus !== undefined ? { nufus: c.nufus } : {}) }));
   if (veri.parselIzgara !== undefined) {
-    return veri.parselIzgara.ilceler.map((c) => ({ id: c.id, sinif: c.sinif ?? izgaraIlceSinifi(c.izgara.durum), ...(c.nufus !== undefined ? { nufus: c.nufus } : {}) }));
+    // `sinif` yoksa hücre dizininin kendi türetimi (`HucreDizini.izgaradan`: ilçedeki en yüksek arsa sınıfı; BHI1 düzlemi kopyalanmaz) kullanılır: yerel kopya yok.
+    const g = veri.parselIzgara;
+    const sinif = new Map(HucreDizini.izgaradan(g).fiksturOlustur(g).ilceler.map((c) => [c.id, c.sinif]));
+    return g.ilceler.map((c) => ({ id: c.id, sinif: c.sinif ?? (sinif.get(c.id) as IlceSinifi), ...(c.nufus !== undefined ? { nufus: c.nufus } : {}) }));
   }
   return undefined;
 }
@@ -125,7 +112,11 @@ export function perakendeDerle(veri: CekirdekVeriPaketi, ic: Pick<DerlenmisIceri
   }
 
   // Taban talep satırları: mal -> talep1000Saat (kimliğe göre sıralı gezilir); ilçe başına tek geçiş.
-  const talepMallari = Object.keys(talep.talep1000Saat).sort().map((m) => ({ mi: malIndeksi(m, "mulk.perakende.talep.talep1000Saat"), v: talep.talep1000Saat[m] as number }));
+  const talepMallari = Object.keys(talep.talep1000Saat).sort().map((m) => {
+    const mi = malIndeksi(m, "mulk.perakende.talep.talep1000Saat");
+    if (malGrubu[mi] === -1) throw new Error(`icerikDerle: mulk.perakende.talep.talep1000Saat: mal grubu yok: ${m}`);
+    return { mi, v: talep.talep1000Saat[m] as number };
+  });
   const talepTaban = new Map<string, number[]>();
   const ilceNufus = new Map<string, number>();
   for (const c of ilceler) {
