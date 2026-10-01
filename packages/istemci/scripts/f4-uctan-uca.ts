@@ -746,7 +746,7 @@ async function ayse(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: stri
   await sayfa.locator("#isletme-dugme").tap();
   await sayfa.waitForTimeout(400);
   const sayfaMetni = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} İşletmem alt sayfası açıldı (arsalar, kalkan); alt çubuk gizli`, (await sayfa.locator("#panel").isVisible()) && /Arsalarım/.test(sayfaMetni) && /Yeni oyuncu kalkanı/.test(sayfaMetni) && !(await sayfa.locator("#harita-alt").isVisible()), sayfaMetni.slice(0, 120));
+  kontrol(`${e} İşletmem alt sayfası açıldı (arsalar, "Yeni oyuncu hakların · N" özeti; kalkan satırı açılır ayrıntıda); alt çubuk gizli`, (await sayfa.locator("#panel").isVisible()) && /Arsalarım/.test(sayfaMetni) && /Yeni oyuncu hakların · \d+/.test(sayfaMetni) && !(await sayfa.locator("#harita-alt").isVisible()), sayfaMetni.slice(0, 120));
   const tasmaI = await sayfa.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   kontrol(`${e} İşletmem alt sayfası: yatay taşma yok`, !tasmaI);
   await ekran("2a-isletme");
