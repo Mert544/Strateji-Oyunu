@@ -15,10 +15,9 @@
  */
 import { SAAT } from "@bolge/cekirdek";
 import { botOlustur, kos } from "@bolge/botlar";
-import { varsayilanVeriyiYukle } from "@bolge/veri";
 import type { VeriPaketi } from "@bolge/veri";
 import { hazinePara, oyuncuBolgeleri, uretimDegeri } from "./metrik";
-import { DORT_BOT, devletSirasi, birlesikOzet, devletBolgeleri, say } from "./ortak";
+import { botArketibi, devletKimlikleri, devletSirasi, birlesikOzet, devletBolgeleri, iklimUygula, olcumBaglami, say, veriYukle } from "./ortak";
 import { genelVerdict } from "./tipler";
 import type { HipotezSecenek, HipotezSonucu, TohumSonucu, Verdict } from "./tipler";
 
@@ -45,11 +44,11 @@ interface Kosu {
 
 function tekKosu(veri: VeriPaketi, tohum: number, aktif: boolean, noktalarSaat: number[], pencereSaat: number, ilerleme: (m: string) => void): Kosu {
   const devletler = devletBolgeleri(veri.harita);
-  const devletIds = devletSirasi(Object.keys(devletler).slice(0, DORT_BOT.length), tohum);
+  const devletIds = devletSirasi(devletKimlikleri(veri.harita), tohum);
   const oyuncular = devletIds.map((d, i) => ({
     id: `o${i}`,
     bolgeler: devletler[d] as string[],
-    bot: botOlustur(i === 0 ? (aktif ? "sanayici" : "kur_ve_unut") : (DORT_BOT[i] as (typeof DORT_BOT)[number]), `o${i}`, tohum),
+    bot: botOlustur(i === 0 ? (aktif ? "sanayici" : "kur_ve_unut") : botArketibi(i), `o${i}`, tohum),
     katilmaMs: 0,
   }));
   const deger = new Map<number, { uretim: number; hazine: number }>();
@@ -72,7 +71,7 @@ function tekKosu(veri: VeriPaketi, tohum: number, aktif: boolean, noktalarSaat: 
 
 export function h7Kos(secenek: H7Secenek): HipotezSonucu {
   const basla = Date.now();
-  const veri = secenek.veri ?? varsayilanVeriyiYukle();
+  const temelVeri = veriYukle(secenek);
   const saatler = secenek.saatler ?? [24, 48, 72];
   const ekGunler = secenek.ekGunler ?? (secenek.kisa ? [] : [7, 14]);
   const tumSaatler = [...saatler, ...ekGunler.map((g) => g * 24)];
@@ -86,6 +85,7 @@ export function h7Kos(secenek: H7Secenek): HipotezSonucu {
   const oranlarTum: number[][] = [];
   const kumulatifTum: number[][] = [];
   for (const tohum of secenek.tohumlar) {
+    const veri = iklimUygula(temelVeri, secenek.iklim, tohum);
     const aktif = tekKosu(veri, tohum, true, tumSaatler, pencereSaat, ilerleme);
     const unut = tekKosu(veri, tohum, false, tumSaatler, pencereSaat, ilerleme);
     const satirlar = tumSaatler.map((s) => {
@@ -159,9 +159,10 @@ export function h7Kos(secenek: H7Secenek): HipotezSonucu {
       saatler,
       pencereSaat,
       ekGunler,
-      diger: DORT_BOT.slice(1),
+      diger: devletKimlikleri(temelVeri.harita).slice(1).map((_, i) => botArketibi(i + 1)),
       kurVeUnutIlkPlanKomut: "en fazla 10 (sanayici + tuccar ilk plani)",
       hizli: secenek.hizli === true,
+      ...olcumBaglami(secenek, temelVeri, secenek.tohumlar),
     },
     sureMs: Date.now() - basla,
   };

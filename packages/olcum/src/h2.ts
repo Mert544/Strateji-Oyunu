@@ -23,10 +23,9 @@ import { GUN, SAAT } from "@bolge/cekirdek";
 import type { Komut, OyuncuId, Simulasyon } from "@bolge/cekirdek";
 import { Bakis, adayiSec, botOlustur, genisAdaylar, kos } from "@bolge/botlar";
 import type { Aday, Bot } from "@bolge/botlar";
-import { varsayilanVeriyiYukle } from "@bolge/veri";
 import type { VeriPaketi } from "@bolge/veri";
 import { hazinePara, oyuncuBolgeleri, uretimDegeri } from "./metrik";
-import { DORT_BOT, devletSirasi, devletBolgeleri, karsilastir, say } from "./ortak";
+import { botArketibi, devletKimlikleri, devletSirasi, devletBolgeleri, iklimUygula, karsilastir, olcumBaglami, say, veriYukle } from "./ortak";
 import { genelVerdict } from "./tipler";
 import type { HipotezSecenek, HipotezSonucu, TohumSonucu, Verdict } from "./tipler";
 
@@ -221,26 +220,27 @@ const sayN = (x: number | null): number | null => (x === null ? null : say(x));
 
 export function h2Kos(secenek: H2Secenek): HipotezSonucu {
   const basla = Date.now();
-  const veri = secenek.veri ?? varsayilanVeriyiYukle();
+  const temelVeri = veriYukle(secenek);
   const gun = secenek.gun ?? (secenek.kisa ? 3 : secenek.hizli ? 12 : 30);
   const adaySayisi = secenek.aday ?? (secenek.kisa ? 4 : secenek.hizli ? 6 : 10);
   const ufukSaat = secenek.ufukSaat ?? 24;
   const kararPencereGun = secenek.kararPencereGun ?? 10;
   const ilerleme = secenek.ilerleme ?? (() => {});
-  const devletler = devletBolgeleri(veri.harita);
-  const tumDevletler = Object.keys(devletler).slice(0, DORT_BOT.length);
+  const devletler = devletBolgeleri(temelVeri.harita);
+  const tumDevletler = devletKimlikleri(temelVeri.harita);
 
   const tohumBasina: TohumSonucu[] = [];
   const ayrintiTohum: Array<Record<string, unknown>> = [];
   const metrikler: H2Metrikleri[] = [];
   for (const tohum of secenek.tohumlar) {
+    const veri = iklimUygula(temelVeri, secenek.iklim, tohum);
     const devletIds = devletSirasi(tumDevletler, tohum);
     const odakId = "o0";
     const odak = new OdakBotu(odakId, botOlustur("sanayici", odakId, tohum), adaySayisi, ufukSaat);
     const oyuncular = devletIds.map((d, i) => ({
       id: `o${i}`,
       bolgeler: devletler[d] as string[],
-      bot: i === 0 ? odak : botOlustur(DORT_BOT[i] as (typeof DORT_BOT)[number], `o${i}`, tohum),
+      bot: i === 0 ? odak : botOlustur(botArketibi(i), `o${i}`, tohum),
       katilmaMs: 0,
     }));
     const sonuc = kos({
@@ -338,10 +338,11 @@ export function h2Kos(secenek: H2Secenek): HipotezSonucu {
       ufukSaat,
       kararPencereGun,
       tukenmeGecisleriRIdenCikarilir: true,
-      oyuncular: DORT_BOT.slice(0, tumDevletler.length),
+      oyuncular: tumDevletler.map((_, i) => botArketibi(i)),
       odak: "o0 (devlet sirasi tohumla doner; ilk devlet, sanayici)",
       kararAraligiSaat: 6,
       hizli: secenek.hizli === true,
+      ...olcumBaglami(secenek, temelVeri, secenek.tohumlar),
     },
     sureMs: Date.now() - basla,
   };

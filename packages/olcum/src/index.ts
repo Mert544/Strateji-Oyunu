@@ -2,7 +2,7 @@ export * from "./metrik";
 export * from "./tipler";
 export * from "./ortak";
 export * from "./kosu";
-export { raporUret, verdictMetni } from "./rapor";
+export { raporUret, verdictMetni, haritaIklimMetni } from "./rapor";
 export type { KarsilastirmaVerisi, RaporMeta } from "./rapor";
 export { argumanAyristir, ana, dosyaAdi } from "./cli";
 export { h1Kos, ortalamaSira, anlamliSiralama, anlamliEsik, regretHesapla, enYakinLiman, odakKumesi, bolgeOrnekle, bolgeTuru, H1_ESIK, H1_ANLAMLI_ORAN, H1_ANLAMLI_TABAN, H1_PENCERE_BAS_GUN, H1_REFERANS_ONAYAR, H1_ARKA_PLAN_BOTLARI, H1_VARSAYILAN_BOLGE, H1_ISLETIMSEL_TANIM, BOLGE_TURLERI } from "./h1";

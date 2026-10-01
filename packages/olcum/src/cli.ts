@@ -1,7 +1,8 @@
 /**
- * Komut satırı: pnpm olcum --hip H1,H2,H3,H5,H6,H7 --tohum 1-10 --cikti raporlar/ [--hizli] [--tam] [--bolge 16] [--odak bolge_liman|bolge] [--anlamli 0.03] [--pencere-bas 3] [--h1-gun 7] [--ad v0.2] [--karsilastir onceki.json]
+ * Komut satırı: pnpm olcum --hip H1,H2,H3,H5,H6,H7 --tohum 1-10 --cikti raporlar/ [--harita sentetik|gercek] [--iklim gercek|hizli] [--hizli] [--tam] [--bolge 16] [--odak bolge_liman|bolge] [--anlamli 0.03] [--pencere-bas 3] [--h1-gun 7] [--ad v0.2] [--karsilastir onceki.json]
  * Varsayılan: tüm hipotezler, tohum 1-3, çıktı "raporlar". Dosya adları deterministiktir (tarih yok):
- * olcum-<hipotezler>-t<tohum aralığı>[-hizli][-<ad>].json / .md
+ * olcum-<hipotezler>-t<tohum aralığı>[-hizli][-gercek][-iklimgercek][-<ad>].json / .md
+ * (-gercek: gerçek harita; -iklimgercek: gerçek takvim, vars. "hizli" iklimde sonek yok).
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -10,6 +11,8 @@ import { calistir, hipotezAyristir } from "./kosu";
 import { raporUret } from "./rapor";
 import type { KarsilastirmaVerisi } from "./rapor";
 import { tohumAyristir } from "./ortak";
+import { TUM_HARITALAR, TUM_IKLIM_MODLARI } from "./tipler";
+import type { HaritaAdi, IklimModu } from "./tipler";
 
 interface Arguman {
   hip: string;
@@ -28,11 +31,25 @@ interface Arguman {
   pencereBas: number | undefined;
   /** H1 koşu süresi, gün (vars. 7). */
   h1Gun: number | undefined;
+  /** Ölçüm haritası (vars. sentetik). */
+  harita: HaritaAdi;
+  /** İklim takvimi modu (vars. hizli: gunCarpani=12; tarım kapalıysa etkisiz). */
+  iklim: IklimModu;
   /** Dosya adı soneki ve rapor "Sürüm/etiket" satırı (ör. v0.1). */
   ad: string | undefined;
   /** Önceki ölçüm JSON dosyası (özet tabloda yan yana gösterilir). */
   karsilastir: string | undefined;
   yardim: boolean;
+}
+
+function haritaAyristir(v: string): HaritaAdi {
+  if (!(TUM_HARITALAR as readonly string[]).includes(v)) throw new Error(`--harita ${TUM_HARITALAR.join("|")} olmali: ${v}`);
+  return v as HaritaAdi;
+}
+
+function iklimAyristir(v: string): IklimModu {
+  if (!(TUM_IKLIM_MODLARI as readonly string[]).includes(v)) throw new Error(`--iklim ${TUM_IKLIM_MODLARI.join("|")} olmali: ${v}`);
+  return v as IklimModu;
 }
 
 function bolgeSayisiAyristir(v: string): number {
@@ -62,7 +79,7 @@ function pencereAyristir(v: string): number {
 }
 
 export function argumanAyristir(argv: readonly string[]): Arguman {
-  const a: Arguman = { hip: "H1,H2,H3,H5,H6,H7", tohum: "1-3", cikti: "raporlar", hizli: false, tam: false, bolge: undefined, odak: undefined, anlamli: undefined, pencereBas: undefined, h1Gun: undefined, ad: undefined, karsilastir: undefined, yardim: false };
+  const a: Arguman = { hip: "H1,H2,H3,H5,H6,H7", tohum: "1-3", cikti: "raporlar", hizli: false, tam: false, harita: "sentetik", iklim: "hizli", bolge: undefined, odak: undefined, anlamli: undefined, pencereBas: undefined, h1Gun: undefined, ad: undefined, karsilastir: undefined, yardim: false };
   for (let i = 0; i < argv.length; i++) {
     const x = argv[i] as string;
     const deger = (): string => {
@@ -75,6 +92,8 @@ export function argumanAyristir(argv: readonly string[]): Arguman {
     else if (x === "--cikti") a.cikti = deger();
     else if (x === "--hizli") a.hizli = true;
     else if (x === "--tam") a.tam = true;
+    else if (x === "--harita") a.harita = haritaAyristir(deger());
+    else if (x === "--iklim") a.iklim = iklimAyristir(deger());
     else if (x === "--bolge") a.bolge = bolgeSayisiAyristir(deger());
     else if (x === "--odak") a.odak = odakAyristir(deger());
     else if (x === "--anlamli") a.anlamli = oranAyristir(deger());
@@ -86,6 +105,8 @@ export function argumanAyristir(argv: readonly string[]): Arguman {
     else if (x.startsWith("--hip=")) a.hip = x.slice(6);
     else if (x.startsWith("--tohum=")) a.tohum = x.slice(8);
     else if (x.startsWith("--cikti=")) a.cikti = x.slice(8);
+    else if (x.startsWith("--harita=")) a.harita = haritaAyristir(x.slice(9));
+    else if (x.startsWith("--iklim=")) a.iklim = iklimAyristir(x.slice(8));
     else if (x.startsWith("--bolge=")) a.bolge = bolgeSayisiAyristir(x.slice(8));
     else if (x.startsWith("--odak=")) a.odak = odakAyristir(x.slice(7));
     else if (x.startsWith("--anlamli=")) a.anlamli = oranAyristir(x.slice(10));
@@ -99,10 +120,14 @@ export function argumanAyristir(argv: readonly string[]): Arguman {
   return a;
 }
 
-const YARDIM = `Kullanim: pnpm olcum [--hip H1,H2,H3,H5,H6,H7] [--tohum 1-3] [--cikti raporlar/] [--hizli] [--tam] [--bolge 16] [--odak bolge_liman|bolge] [--anlamli 0.03] [--pencere-bas 3] [--h1-gun 7] [--ad v0.2] [--karsilastir onceki.json]
+const YARDIM = `Kullanim: pnpm olcum [--hip H1,H2,H3,H5,H6,H7] [--tohum 1-3] [--cikti raporlar/] [--harita sentetik|gercek] [--iklim gercek|hizli] [--hizli] [--tam] [--bolge 16] [--odak bolge_liman|bolge] [--anlamli 0.03] [--pencere-bas 3] [--h1-gun 7] [--ad v0.2] [--karsilastir onceki.json]
   --hip     Calistirilacak hipotezler (vars. tumu)
   --tohum   Tohum araligi veya listesi: 1-10, 1,2,5, 1-3,7 (vars. 1-3)
   --cikti   Rapor klasoru (vars. raporlar)
+  --harita  Olcum haritasi: sentetik (vars.; sentetik-50) veya gercek (gercek-karadeniz: 53 bolge, 4 devlet)
+  --iklim   Iklim takvimi (yalniz tarim aciksa): hizli (vars.; gunCarpani=12, 30 gunluk kosu ~1 yil gorur) veya gercek (gunCarpani=1,
+            30 gunluk kosu tek ay gorur). Iki modda da baslangic ayi tohumla doner: tohum k, param'daki baslangic ayindan (k-1) ay ileride
+            baslar (tohum 1 = 1 Ekim, 2 = 1 Kasim, ...; 12 ardisik tohum 12 ayi kapsar). Tarim kapaliysa sessizce etkisiz
   --hizli   Kucultulmus boyutlar (H1: 8 bolge, H2: 12 gun, ...)
   --tam     Tam boyut (H1: tum bolgeler; varsayilan 16 bolge ornegi; yavas)
   --bolge   H1 bolge sayisi (devlet basina esit ornek; --tam'i gecersiz kilmaz)
@@ -113,12 +138,12 @@ const YARDIM = `Kullanim: pnpm olcum [--hip H1,H2,H3,H5,H6,H7] [--tohum 1-3] [--
   --ad      Dosya adina sonek ve rapora "Surum/etiket" satiri (ornek: --ad v0.1 -> ...-t1-3-v0.1.md)
   --karsilastir  Onceki olcumun JSON dosyasi; ozet tabloda onceki olcum ve sonuc yan yana gosterilir`;
 
-export function dosyaAdi(hip: readonly string[], tohumlar: readonly number[], hizli: boolean, ad?: string): string {
+export function dosyaAdi(hip: readonly string[], tohumlar: readonly number[], hizli: boolean, ad?: string, harita?: HaritaAdi, iklim?: IklimModu): string {
   const ilk = tohumlar[0] as number;
   const son = tohumlar[tohumlar.length - 1] as number;
   const bitisik = tohumlar.length === son - ilk + 1;
   const t = tohumlar.length === 1 ? `${ilk}` : bitisik ? `${ilk}-${son}` : tohumlar.join("_");
-  return `olcum-${hip.join("")}-t${t}${hizli ? "-hizli" : ""}${ad ? `-${ad}` : ""}`;
+  return `olcum-${hip.join("")}-t${t}${hizli ? "-hizli" : ""}${harita === "gercek" ? "-gercek" : ""}${iklim === "gercek" ? "-iklimgercek" : ""}${ad ? `-${ad}` : ""}`;
 }
 
 export function ana(argv: readonly string[]): void {
@@ -135,13 +160,15 @@ export function ana(argv: readonly string[]): void {
     if (!Array.isArray(j.hipotezler)) throw new Error(`--karsilastir: gecerli bir olcum JSON'u degil (hipotezler yok): ${arg.karsilastir}`);
     karsilastirma = { kaynak: arg.karsilastir, etiket: j.etiket, hipotezler: j.hipotezler };
   }
-  console.log(`Olcum: ${hip.join(",")} | tohum ${tohumlar.join(",")} | cikti ${arg.cikti}${arg.hizli ? " | HIZLI" : ""}${arg.tam ? " | TAM" : ""}${arg.ad ? ` | etiket ${arg.ad}` : ""}`);
+  console.log(`Olcum: ${hip.join(",")} | tohum ${tohumlar.join(",")} | cikti ${arg.cikti}${arg.hizli ? " | HIZLI" : ""}${arg.tam ? " | TAM" : ""} | harita ${arg.harita} | iklim ${arg.iklim}${arg.ad ? ` | etiket ${arg.ad}` : ""}`);
   const basla = Date.now();
   const sonuclar = calistir({
     hipotezler: hip,
     tohumlar,
     hizli: arg.hizli,
     tam: arg.tam,
+    harita: arg.harita,
+    iklim: arg.iklim,
     ...(arg.bolge !== undefined ? { bolgeSayisi: arg.bolge } : {}),
     ...(arg.odak !== undefined ? { odak: arg.odak } : {}),
     ...(arg.anlamli !== undefined ? { anlamliOran: arg.anlamli } : {}),
@@ -150,7 +177,7 @@ export function ana(argv: readonly string[]): void {
     ilerleme: (m) => console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] ${m}`),
   });
   const sureMs = Date.now() - basla;
-  const ad = dosyaAdi(hip, tohumlar, arg.hizli, arg.ad);
+  const ad = dosyaAdi(hip, tohumlar, arg.hizli, arg.ad, arg.harita, arg.iklim);
   mkdirSync(arg.cikti, { recursive: true });
   const jsonMeta = {
     tohumlar,
@@ -158,7 +185,7 @@ export function ana(argv: readonly string[]): void {
     tam: arg.tam,
     etiket: arg.ad,
     sureMs,
-    secenekler: { hip, tohum: arg.tohum, hizli: arg.hizli, tam: arg.tam, bolge: arg.bolge ?? null, odak: arg.odak ?? "bolge_liman", anlamli: arg.anlamli ?? null, pencereBas: arg.pencereBas ?? 3, h1Gun: arg.h1Gun ?? 7, ad: arg.ad ?? null },
+    secenekler: { hip, tohum: arg.tohum, hizli: arg.hizli, tam: arg.tam, harita: arg.harita, iklim: arg.iklim, bolge: arg.bolge ?? null, odak: arg.odak ?? "bolge_liman", anlamli: arg.anlamli ?? null, pencereBas: arg.pencereBas ?? 3, h1Gun: arg.h1Gun ?? 7, ad: arg.ad ?? null },
   };
   const meta = { ...jsonMeta, karsilastirma };
   writeFileSync(join(arg.cikti, `${ad}.json`), JSON.stringify({ surum: 1, ...jsonMeta, hipotezler: sonuclar }, null, 2) + "\n", "utf8");

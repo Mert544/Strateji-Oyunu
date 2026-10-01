@@ -367,12 +367,37 @@ function h7Ayrinti(h: HipotezSonucu): string {
 const AYRINTI: Record<string, (h: HipotezSonucu) => string> = { H1: h1Ayrinti, H2: h2Ayrinti, H3: h3Ayrinti, H5: h5Ayrinti, H6: h6Ayrinti, H7: h7Ayrinti };
 
 /** Markdown raporu üretir. */
+/** Sonuçların ortak "parametreler" bloğundan harita ve iklim özeti (başlık ve "Ölçüm düzeneği" satırı için). */
+export function haritaIklimMetni(sonuclar: readonly HipotezSonucu[]): { harita: string; iklim: string; iklimKisa: string } {
+  const p = kayit(sonuclar[0]?.parametreler);
+  const ik = kayit(p["iklim"]);
+  const harita = typeof p["harita"] === "string" ? String(p["harita"]) : "sentetik";
+  const haritaUzun = `${harita}${typeof p["haritaAdi"] === "string" ? ` (${String(p["haritaAdi"])}; ${String(p["haritaBolgeSayisi"])} bölge, ${String(p["haritaDevletSayisi"])} devlet)` : ""}`;
+  const secenek = String(ik["secenek"] ?? "param");
+  let iklim: string;
+  if (ik["etkin"] === true) {
+    const aylar = kayit(ik["baslangicAylari"]);
+    const gunler = kayit(ik["baslangicGunleri"]);
+    const baslangic = Object.keys(aylar)
+      .map((t) => `t${t}=${String(aylar[t])}(${String(gunler[t])})`)
+      .join(", ");
+    iklim = `${secenek} (gunCarpani=${String(ik["gunCarpani"])}; başlangıç ayı tohumla döner: ${baslangic})`;
+  } else {
+    iklim = `${secenek} — etkisiz${typeof ik["not"] === "string" ? ` (${String(ik["not"])})` : ""}`;
+  }
+  return { harita: haritaUzun, iklim, iklimKisa: `${secenek}${ik["etkin"] === true ? "" : " (etkisiz)"}` };
+}
+
 export function raporUret(sonuclar: readonly HipotezSonucu[], meta: RaporMeta): string {
   const s: string[] = [];
-  s.push(`# Ölçüm raporu: ${sonuclar.map((x) => x.kimlik).join(", ")} (tohum ${meta.tohumlar.join(", ")})${meta.etiket ? ` — ${meta.etiket}` : ""}`);
+  const hi = haritaIklimMetni(sonuclar);
+  const haritaKisa = hi.harita.split(" ")[0] as string;
+  s.push(`# Ölçüm raporu: ${sonuclar.map((x) => x.kimlik).join(", ")} (tohum ${meta.tohumlar.join(", ")})${meta.etiket ? ` — ${meta.etiket}` : ""} — harita: ${haritaKisa}, iklim: ${hi.iklimKisa}`);
   s.push(`Bu rapor \`pnpm olcum\` ile üretilmiştir. Simülasyon deterministiktir: aynı tohum ve kod için sonuçlar (duvar saati hariç) birebir aynıdır.${meta.hizli ? " **Hızlı mod: boyutlar küçültülmüştür.**" : ""}`);
 
   s.push(`**Sürüm/etiket**: ${meta.etiket ?? "(belirtilmedi)"}${meta.tam ? " (tam boyut)" : ""}`);
+  s.push(`**Harita**: ${hi.harita}`);
+  s.push(`**İklim ayarı**: ${hi.iklim}`);
   if (meta.karsilastirma) {
     s.push(`**Karşılaştırma**: önceki ölçüm \`${meta.karsilastirma.kaynak}\`${meta.karsilastirma.etiket ? ` (etiket: ${meta.karsilastirma.etiket})` : ""}. Önceki sütunlar o dosyadaki değerlerdir; ölçüm tanımı değiştiyse ölçüm adı yanında belirtilir.`);
   }

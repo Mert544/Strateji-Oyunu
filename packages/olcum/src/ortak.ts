@@ -2,7 +2,9 @@
 import { SAAT, fnv1a64, kanonikSerilestir } from "@bolge/cekirdek";
 import type { Simulasyon } from "@bolge/cekirdek";
 import type { ArketipAdi } from "@bolge/botlar";
-import type { HaritaDosyasi } from "@bolge/veri";
+import { gercekVeriyiYukle, varsayilanVeriyiYukle } from "@bolge/veri";
+import type { HaritaDosyasi, VeriPaketi } from "@bolge/veri";
+import type { HipotezSecenek, IklimModu } from "./tipler";
 
 /**
  * Tohum dizgesini ayrıştırır: "1-10", "1,2,5", "1-3,7" ve bunların birleşimleri.
@@ -144,3 +146,107 @@ export const TOHUM_NOTU =
   "tohumlar arası fark esas olarak hangi devletin odak/ilk oyuncu olduğundan (devlet sırası rotasyonu, bkz. devletSirasi) " +
   "gelir. Bu yüzden tohumlar bağımsız örnek değil, birer koşuldur (haritanın asimetrisi × devlet konumu); " +
   "\"koşul başarı oranı\" koşullar üzerinden sayım olup istatistiksel güven aralığı vermez.";
+
+// ---------------------------------------------------------------------------
+// Harita seçimi ve iklim takvimi (E3-G2, E4-G7; docs/08 §7 ölçüm notu)
+// ---------------------------------------------------------------------------
+
+/** Ölçümde "hızlı" iklim: sim zamanının 1 günü = 12 takvim günü (30 günlük koşu ≈ 1 yıl görür). */
+export const OLCUM_GUN_CARPANI = 12;
+const AY_GUNLERI: readonly number[] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const AY_ADLARI = ["Ocak", "Subat", "Mart", "Nisan", "Mayis", "Haziran", "Temmuz", "Agustos", "Eylul", "Ekim", "Kasim", "Aralik"];
+
+/** Ölçüm veri paketi: `veri` verilmişse o; yoksa `harita` ("sentetik" vars. | "gercek"). Her çağrıda yeni kopya. */
+export function veriYukle(secenek: Pick<HipotezSecenek, "harita" | "veri">): VeriPaketi {
+  if (secenek.veri !== undefined) return secenek.veri;
+  return secenek.harita === "gercek" ? gercekVeriyiYukle() : varsayilanVeriyiYukle();
+}
+
+/** İklim takvimi ölçüm için etkin mi: seçenek verilmiş VE param'da hem `iklim` hem `tarim` (tarım açık) var. */
+export function iklimEtkin(veri: VeriPaketi, mod: IklimModu | undefined): boolean {
+  return mod !== undefined && veri.param.iklim !== undefined && veri.param.tarim !== undefined;
+}
+
+/**
+ * Tohuma göre başlangıç günü (başlangıç AYI rotasyonu): param'daki başlangıç gününün ayından (tohum - 1) ay ilerisi,
+ * ay içindeki gün sırası korunur (kısa aya sığmazsa ayın son günü). Tohum 1 param'ın başlangıç gününde kalır (vars. 273 =
+ * 1 Ekim); 12 ardışık tohum yılın 12 ayını başlangıç ayı olarak tam bir kez kapsar. (docs/08 §7: "12 farklı başlangıç ayı".)
+ */
+export function iklimBaslangicGunu(temelGun: number, tohum: number, ayGunleri: readonly number[] = AY_GUNLERI): number {
+  const baslar: number[] = [];
+  let t = 0;
+  for (const g of ayGunleri) {
+    baslar.push(t);
+    t += g;
+  }
+  const gun = (((temelGun % t) + t) % t) as number;
+  let ay = baslar.length - 1;
+  while ((baslar[ay] as number) > gun) ay--;
+  const icGun = gun - (baslar[ay] as number);
+  const yeniAy = (((ay + tohum - 1) % baslar.length) + baslar.length) % baslar.length;
+  return (baslar[yeniAy] as number) + Math.min(icGun, (ayGunleri[yeniAy] as number) - 1);
+}
+
+/**
+ * İklim seçeneğini param'a yansıtır (girdiyi değiştirmez; yalnız `param.iklim` yeni nesne, kalanı paylaşılır).
+ * - `mod` undefined: param olduğu gibi (kütüphane çağrılarında geriye uyum; CLI vars. "hizli" verir).
+ * - "hizli": gunCarpani = 12; "gercek": param'ın kendi gunCarpani'si (gerçek takvim = 1).
+ * - İki modda da başlangıç ayı tohuma göre döner: tohum k -> (k-1) ay ileri (iklimBaslangicGunu).
+ * - Tarım kapalıysa (param.iklim veya param.tarim yok) seçenek sessizce etkisizdir: aynı paket döner.
+ */
+export function iklimUygula(veri: VeriPaketi, mod: IklimModu | undefined, tohum: number): VeriPaketi {
+  if (!iklimEtkin(veri, mod)) return veri;
+  const ik = veri.param.iklim as NonNullable<VeriPaketi["param"]["iklim"]>;
+  return {
+    ...veri,
+    param: {
+      ...veri.param,
+      iklim: { ...ik, baslangicGunu: iklimBaslangicGunu(ik.baslangicGunu, tohum, ik.ayGunleri), gunCarpani: mod === "hizli" ? OLCUM_GUN_CARPANI : ik.gunCarpani },
+    },
+  };
+}
+
+/** Takvim gününün (0 = 1 Ocak) ay adı (ayGunleri'ne göre). */
+export function takvimAyAdi(gun: number, ayGunleri: readonly number[]): string {
+  let kalan = gun;
+  for (let m = 0; m < ayGunleri.length; m++) {
+    if (kalan < (ayGunleri[m] as number)) return AY_ADLARI[m] ?? String(m + 1);
+    kalan -= ayGunleri[m] as number;
+  }
+  return AY_ADLARI[AY_ADLARI.length - 1] as string;
+}
+
+/** Raporun "parametreler" bloğuna eklenen harita ve iklim özeti (her koşucu `...olcumBaglami(...)` ile ekler). */
+export function olcumBaglami(secenek: Pick<HipotezSecenek, "harita" | "veri" | "iklim">, veri: VeriPaketi, tohumlar: readonly number[]): Record<string, unknown> {
+  const etkin = iklimEtkin(veri, secenek.iklim);
+  const ik = veri.param.iklim;
+  return {
+    harita: secenek.harita ?? (secenek.veri !== undefined ? "ozel" : "sentetik"),
+    haritaAdi: veri.harita.ad,
+    haritaBolgeSayisi: veri.harita.bolgeler.length,
+    haritaDevletSayisi: veri.harita.devletler.length,
+    iklim: {
+      secenek: secenek.iklim ?? "param",
+      etkin,
+      gunCarpani: etkin ? (secenek.iklim === "hizli" ? OLCUM_GUN_CARPANI : (ik?.gunCarpani ?? 1)) : (ik?.gunCarpani ?? null),
+      baslangicGunleri: etkin ? Object.fromEntries(tohumlar.map((t) => [t, iklimUygula(veri, secenek.iklim, t).param.iklim?.baslangicGunu ?? 0])) : null,
+      baslangicAylari: etkin
+        ? Object.fromEntries(tohumlar.map((t) => [t, takvimAyAdi(iklimUygula(veri, secenek.iklim, t).param.iklim?.baslangicGunu ?? 0, ik?.ayGunleri ?? [])]))
+        : null,
+      not: etkin ? undefined : secenek.iklim === undefined ? "iklim secenegi verilmedi (param dosyasi oldugu gibi)" : "tarim/iklim kapali: secenek etkisiz",
+    },
+  };
+}
+
+/** Haritadaki devlet kimlikleri (harita sırasıyla, bölgesi olanlar). Sentetik 4 devlet, gerçek harita 4 devlet; sayı sabit varsayılmaz. */
+export function devletKimlikleri(harita: HaritaDosyasi): string[] {
+  const dev = devletBolgeleri(harita);
+  const sira = harita.devletler.map((d) => d.id).filter((d) => (dev[d] ?? []).length > 0);
+  for (const d of Object.keys(dev)) if (!sira.includes(d) && (dev[d] ?? []).length > 0) sira.push(d);
+  return sira;
+}
+
+/** i. devlete atanan arka plan botu: DORT_BOT döngüsel (4'ten fazla devlette baştan başlar). */
+export function botArketibi(i: number): ArketipAdi {
+  return DORT_BOT[i % DORT_BOT.length] as ArketipAdi;
+}

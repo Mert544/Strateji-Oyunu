@@ -1,3 +1,5 @@
+import type { VeriPaketi } from "@bolge/veri";
+
 /** Hipotez koşucularının ortak sonuç şeması. JSON'a serileştirilebilir, duvar saati alanı yalnızca `sureMs`tir. */
 export type Verdict = "gecti" | "kaldi" | "belirsiz";
 export type HipotezKimligi = "H1" | "H2" | "H3" | "H5" | "H6" | "H7";
@@ -35,9 +37,25 @@ export interface HipotezSonucu {
   sureMs: number;
 }
 
+/** Ölçüm haritası: "sentetik" (sentetik-50, vars.) veya "gercek" (gercek-karadeniz). */
+export type HaritaAdi = "sentetik" | "gercek";
+export const TUM_HARITALAR: readonly HaritaAdi[] = ["sentetik", "gercek"];
+/**
+ * İklim takvimi ölçüm modu (yalnız tarım açıkken etkili): "hizli" = gunCarpani 12 (30 günlük koşu ~1 yıl görür),
+ * "gercek" = param'ın gunCarpani'si (gerçek takvim, 30 günlük koşu tek ay görür). İki modda da başlangıç günü tohumla döner.
+ */
+export type IklimModu = "gercek" | "hizli";
+export const TUM_IKLIM_MODLARI: readonly IklimModu[] = ["gercek", "hizli"];
+
 /** Ortak koşucu seçenekleri. */
 export interface HipotezSecenek {
   tohumlar: number[];
+  /** Ölçüm haritası (vars. "sentetik"); `veri` verilmişse yok sayılır (yalnız etiket). */
+  harita?: HaritaAdi;
+  /** İklim takvimi modu (undefined = param olduğu gibi; CLI vars. "hizli"). Tarım kapalıysa sessizce etkisiz. */
+  iklim?: IklimModu;
+  /** Hazır veri paketi (test/üst katman); verilmezse `harita`ya göre yüklenir. */
+  veri?: VeriPaketi;
   /** Hızlı mod: küçültülmüş boyutlar (yalnızca süre için). */
   hizli?: boolean;
   /** Örnekleme yapan koşucuların (H1) bölge sayısı (devlet başına eşit dağıtılır); `tam` bunu geçersiz kılar. */

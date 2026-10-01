@@ -33,9 +33,8 @@ import { GUN, SAAT, anlikMiktar } from "@bolge/cekirdek";
 import type { Komut, SavasDurumu, Simulasyon } from "@bolge/cekirdek";
 import { botOlustur, kos } from "@bolge/botlar";
 import type { Bot } from "@bolge/botlar";
-import { varsayilanVeriyiYukle } from "@bolge/veri";
 import type { VeriPaketi } from "@bolge/veri";
-import { birlesikOzet, devletBolgeleri, karsilastir, komsuluk, say } from "./ortak";
+import { birlesikOzet, devletBolgeleri, iklimUygula, karsilastir, komsuluk, olcumBaglami, say, veriYukle } from "./ortak";
 import type { HipotezSecenek, HipotezSonucu, TohumSonucu, Verdict } from "./tipler";
 
 export const H5_ESIK_PPM = 250_000;
@@ -477,7 +476,7 @@ function varyantKos(
 
 export function h5Kos(secenek: H5Secenek): HipotezSonucu {
   const basla = Date.now();
-  const veri = secenek.veri ?? varsayilanVeriyiYukle();
+  const veri = veriYukle(secenek);
   const hazirlikGun = secenek.hazirlikGun ?? 8;
   const enCokSavas = secenek.enCokSavas ?? (secenek.kisa ? 6 : 16);
   const ikinciSaldiran = secenek.ikinciSaldiran ?? true;
@@ -488,7 +487,7 @@ export function h5Kos(secenek: H5Secenek): HipotezSonucu {
   const degerOranlari: number[] = [];
   const ayrintiTohum: Array<Record<string, unknown>> = [];
   for (const tohum of secenek.tohumlar) {
-    const ciktilar = varyantlar.map((v) => varyantKos(veri, tohum, v, hazirlikGun, enCokSavas, ikinciSaldiran, ilerleme));
+    const ciktilar = varyantlar.map((v) => varyantKos(iklimUygula(veri, secenek.iklim, tohum), tohum, v, hazirlikGun, enCokSavas, ikinciSaldiran, ilerleme));
     const enBuyuk = Math.max(0, ...ciktilar.flatMap((c) => [c.kayan.degerPpm, c.kayan.malPpm]));
     const kazanma = ciktilar.reduce((t, c) => t + c.saldiranKazanma, 0);
     const verdict: Verdict = enBuyuk > H5_ESIK_PPM + H5_TOLERANS_PPM ? "kaldi" : kazanma === 0 ? "belirsiz" : "gecti";
@@ -562,6 +561,7 @@ export function h5Kos(secenek: H5Secenek): HipotezSonucu {
       varyantlar,
       saldiranBot: "militarist (kendi savas ilani kapali; ilanlari koşucu verir, her saat tum uygun ciftler denenir)",
       hizli: secenek.hizli === true,
+      ...olcumBaglami(secenek, veri, secenek.tohumlar),
     },
     sureMs: Date.now() - basla,
   };

@@ -13,10 +13,9 @@ import { GUN, SAAT } from "@bolge/cekirdek";
 import type { Komut, OyuncuId, Simulasyon } from "@bolge/cekirdek";
 import { Bakis, adayiSec, askeriAdaylar, botOlustur, hedefGucKapasiteden, kos } from "@bolge/botlar";
 import type { Bot } from "@bolge/botlar";
-import { varsayilanVeriyiYukle } from "@bolge/veri";
 import type { VeriPaketi } from "@bolge/veri";
 import { fiyatOrani, kapsamOzeti, ortalama } from "./metrik";
-import { DORT_BOT, devletSirasi, birlesikOzet, devletBolgeleri, say } from "./ortak";
+import { botArketibi, devletKimlikleri, devletSirasi, birlesikOzet, devletBolgeleri, iklimUygula, olcumBaglami, say, veriYukle } from "./ortak";
 import { genelVerdict } from "./tipler";
 import type { HipotezSecenek, HipotezSonucu, TohumSonucu, Verdict } from "./tipler";
 
@@ -79,11 +78,11 @@ interface KosuCiktisi {
 
 function kosu(veri: VeriPaketi, tohum: number, gun: number, baslangicGun: number, oran: number, mudahale: boolean, botTohum: number, ilerleme: (m: string) => void): KosuCiktisi {
   const devletler = devletBolgeleri(veri.harita);
-  const devletIds = devletSirasi(Object.keys(devletler).slice(0, DORT_BOT.length), tohum);
+  const devletIds = devletSirasi(devletKimlikleri(veri.harita), tohum);
   const ornekler: Ornek[] = [];
   const oyuncular = devletIds.map((d, i) => {
     const id = `o${i}`;
-    const bot = botOlustur(DORT_BOT[i] as (typeof DORT_BOT)[number], id, botTohum);
+    const bot = botOlustur(botArketibi(i), id, botTohum);
     return { id, bolgeler: devletler[d] as string[], bot: mudahale ? new KaymaBotu(bot, baslangicGun * GUN, oran) : bot, katilmaMs: 0 };
   });
   const r = kos({
@@ -117,17 +116,18 @@ function kosu(veri: VeriPaketi, tohum: number, gun: number, baslangicGun: number
 
 export function h3Kos(secenek: H3Secenek): HipotezSonucu {
   const basla = Date.now();
-  const veri = secenek.veri ?? varsayilanVeriyiYukle();
+  const temelVeri = veriYukle(secenek);
   const gun = secenek.gun ?? (secenek.kisa ? 5 : 14);
   const baslangicGun = secenek.baslangicGun ?? (secenek.kisa ? 1 : 3);
   const oran = secenek.oran ?? 0.2;
   const ilerleme = secenek.ilerleme ?? (() => {});
-  const mallar = veri.icerik.mallar.map((m) => m.id);
+  const mallar = temelVeri.icerik.mallar.map((m) => m.id);
 
   const tohumBasina: TohumSonucu[] = [];
   const degisimTablosu: Array<Record<string, unknown>> = [];
   const enBuyukler: number[] = [];
   for (const tohum of secenek.tohumlar) {
+    const veri = iklimUygula(temelVeri, secenek.iklim, tohum);
     const temel = kosu(veri, tohum, gun, baslangicGun, oran, false, tohum, ilerleme);
     const mud = kosu(veri, tohum, gun, baslangicGun, oran, true, tohum, ilerleme);
     // Gürültü tabanı: aynı dünya tohumu, yalnızca bot sapma tohumu farklı (müdahale yok). Kaos duyarlılığını ölçer.
@@ -207,11 +207,12 @@ export function h3Kos(secenek: H3Secenek): HipotezSonucu {
       gun,
       mudahaleBaslangicGun: baslangicGun,
       askeriyeKayanKapasite: oran,
-      oyuncular: DORT_BOT,
+      oyuncular: devletKimlikleri(temelVeri.harita).map((_, i) => botArketibi(i)),
       ornekAraligiSaat: 6,
       degisimTanimi: "goreli; payda max(|temel|, 0.05)",
       gurultuTabani: "ayni dunya tohumu, yalniz bot sapma tohumu +1000 (mudahalesiz); mudahale < 2x gurultu ve gurultu >= %10 ise belirsiz",
       hizli: secenek.hizli === true,
+      ...olcumBaglami(secenek, temelVeri, secenek.tohumlar),
     },
     sureMs: Date.now() - basla,
   };

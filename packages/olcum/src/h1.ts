@@ -27,10 +27,9 @@ import { GUN } from "@bolge/cekirdek";
 import type { Simulasyon } from "@bolge/cekirdek";
 import { H1_ONAYARLARI, PASIF_ONAYAR, botOlustur, kos } from "@bolge/botlar";
 import type { ArketipAdi, KosuOyuncusu, Onayar } from "@bolge/botlar";
-import { varsayilanVeriyiYukle } from "@bolge/veri";
 import type { BolgeTanimi, HaritaDosyasi, VeriPaketi } from "@bolge/veri";
 import { hazinePara, israfDegeri, kenarGelistirmeBedeli, stokDegeri, tesisInsaBedeli } from "./metrik";
-import { birlesikOzet, devletBolgeleri, devletSirasi, karsilastir, say, shannon } from "./ortak";
+import { birlesikOzet, devletBolgeleri, devletSirasi, iklimUygula, karsilastir, olcumBaglami, say, shannon, veriYukle } from "./ortak";
 import { genelVerdict } from "./tipler";
 import type { HipotezSecenek, HipotezSonucu, TohumSonucu, Verdict } from "./tipler";
 
@@ -364,7 +363,7 @@ interface TurOzeti {
 
 export function h1Kos(secenek: H1Secenek): HipotezSonucu {
   const basla = Date.now();
-  const veri = secenek.veri ?? varsayilanVeriyiYukle();
+  const veri = veriYukle(secenek);
   const tumBolgeler = veri.harita.bolgeler.map((b) => b.id);
   const devletSayisi = new Set(veri.harita.bolgeler.map((b) => b.devlet)).size;
   const hedefSayi = secenek.tam
@@ -434,6 +433,7 @@ export function h1Kos(secenek: H1Secenek): HipotezSonucu {
   const bol = (a: SkorBilesenleri, n: number): SkorBilesenleri => ({ hazine: a.hazine / n, stok: a.stok / n, yatirim: a.yatirim / n, israf: a.israf / n });
 
   for (const tohum of secenek.tohumlar) {
+    const veriT = iklimUygula(veri, secenek.iklim, tohum);
     const nb = bolgeler.length;
     const ilkUcSay = new Array<number>(ns).fill(0);
     const ilkUcToplamSay = new Array<number>(ns).fill(0);
@@ -461,9 +461,9 @@ export function h1Kos(secenek: H1Secenek): HipotezSonucu {
 
     bolgeler.forEach((bolge, bi) => {
       const kume = kumeler[bi] as string[];
-      const pasif = tekKosu(veri, tohum, kume, PASIF_ONAYAR, gun);
+      const pasif = tekKosu(veriT, tohum, kume, PASIF_ONAYAR, gun);
       ozetler.push(pasif.ozet);
-      const kosular = onayarlar.map((o) => tekKosu(veri, tohum, kume, o, gun));
+      const kosular = onayarlar.map((o) => tekKosu(veriT, tohum, kume, o, gun));
       const pasifAkis = pencereSkoru(pasif.anliklar, pencereBas, gun);
       const pasifToplam = pencereSkoru(pasif.anliklar, 0, gun);
       for (const k of kosular) {
@@ -730,6 +730,7 @@ export function h1Kos(secenek: H1Secenek): HipotezSonucu {
       sira: "yalniz anlamli onayarlar; esit gruplar konum paylasir (ortalama sira); ilk uc = ortalama sira <= 3",
       hizli: secenek.hizli === true,
       tam: secenek.tam === true,
+      ...olcumBaglami(secenek, veri, secenek.tohumlar),
     },
     sureMs: Date.now() - basla,
   };

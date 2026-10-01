@@ -12,10 +12,9 @@ import { GUN, SAAT, prngAralik, prngOlustur } from "@bolge/cekirdek";
 import type { PrngDurumu } from "@bolge/cekirdek";
 import { botOlustur, kos } from "@bolge/botlar";
 import type { KosuOyuncusu } from "@bolge/botlar";
-import { varsayilanVeriyiYukle } from "@bolge/veri";
 import type { VeriPaketi } from "@bolge/veri";
 import { bolgeUretimDegeri, medyan } from "./metrik";
-import { DORT_BOT, devletSirasi, baskent, bfsSirasi, devletBolgeleri, komsuluk, say } from "./ortak";
+import { botArketibi, devletKimlikleri, devletSirasi, baskent, bfsSirasi, devletBolgeleri, iklimUygula, komsuluk, olcumBaglami, say, veriYukle } from "./ortak";
 import { genelVerdict } from "./tipler";
 import type { HipotezSecenek, HipotezSonucu, TohumSonucu, Verdict } from "./tipler";
 
@@ -63,13 +62,13 @@ function kumeSec(veri: VeriPaketi, serbest: string[], yerlesik: string[], n: num
 
 export function h6Kos(secenek: H6Secenek): HipotezSonucu {
   const basla = Date.now();
-  const veri = secenek.veri ?? varsayilanVeriyiYukle();
+  const veri = veriYukle(secenek);
   const katilimGunleri = secenek.katilimGunleri ?? (secenek.kisa ? [2, 4] : [10, 20]);
   const olcumGunu = secenek.olcumGunu ?? (secenek.kisa ? 3 : 14);
   const kumeBoyu = secenek.bolgeSayisi ?? 3;
   const ilerleme = secenek.ilerleme ?? (() => {});
   const devletler = devletBolgeleri(veri.harita);
-  const tumDevletler = Object.keys(devletler).slice(0, DORT_BOT.length);
+  const tumDevletler = devletKimlikleri(veri.harita);
   const sureGun = Math.max(...katilimGunleri) + olcumGunu;
 
   const tohumBasina: TohumSonucu[] = [];
@@ -92,7 +91,7 @@ export function h6Kos(secenek: H6Secenek): HipotezSonucu {
     const oyuncular: KosuOyuncusu[] = devletIds.map((_, i) => ({
       id: `o${i}`,
       bolgeler: (duzen[i] as { yerlesik: string[] }).yerlesik,
-      bot: botOlustur(DORT_BOT[i] as (typeof DORT_BOT)[number], `o${i}`, tohum),
+      bot: botOlustur(botArketibi(i), `o${i}`, tohum),
       katilmaMs: 0,
     }));
     for (const g of gecler) {
@@ -107,7 +106,7 @@ export function h6Kos(secenek: H6Secenek): HipotezSonucu {
     }
     const goruntu = new Map<number, number[]>();
     const sonuc = kos({
-      veri,
+      veri: iklimUygula(veri, secenek.iklim, tohum),
       tohum,
       oyuncular,
       sureMs: sureGun * GUN,
@@ -181,11 +180,12 @@ export function h6Kos(secenek: H6Secenek): HipotezSonucu {
       katilimGunleri,
       olcumGunu,
       geceKatilanBolgeSayisi: kumeBoyu,
-      yerlesikOyuncular: DORT_BOT,
+      yerlesikOyuncular: tumDevletler.map((_, i) => botArketibi(i)),
       gecKatilanBot: "sanayici",
       yerlesikBolgeOrani: 0.5,
       bolgeDagitimi: "baskentten BFS sirasinda cift indeks yerlesik, tek indeks sahipsiz",
       hizli: secenek.hizli === true,
+      ...olcumBaglami(secenek, veri, secenek.tohumlar),
     },
     sureMs: Date.now() - basla,
   };
