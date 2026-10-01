@@ -123,6 +123,8 @@ Kodlar kılavuz [§5.3](insan-testi-kilavuzu.md) ile aynıdır (`AD KM OK TK YA 
 
 Eşik → kişi sayısı kuralı: k = ⌈oran × 5⌉; **1 kişi eksik = belirsiz, ≥2 = kaldı** (kılavuz [§0.2](insan-testi-kilavuzu.md)). Hepsi **hipotezdir, kapı değildir**; çıktı `Geçti / Belirsiz / Kaldı / Ölçülmedi`.
 
+> **Kılavuzla ilişki (lider kararı):** bu bölümdeki **A0-11 satırı**, kılavuz §6.2 tablosundaki A0-11 satırının (ve "dükkân kurulum `t`" ifadesinin) **yerine geçer**: süre = `ilkSatisT − katılım`, ara kırılımlar raporda. Kılavuz dalı ayrıca değiştirilmez; sonuç raporu bu paketin tanımını kullanır.
+
 | Ölçüt | Tanım | Eşik | n=5 karşılığı | Veri | Pilotta durum |
 |---|---|---|---|---|---|
 | **Y1** | `oyuncu_katil` ile ilk **kabul edilen** yapı komutu ≤10 dk | ≥%75 | **≥4/5**; 3/5 belirsiz | Günlük + oynatma (İ1); gözlem uçtan uca süre | Ölçülür; kabul bilgisi **İ1** olmadan yok |
