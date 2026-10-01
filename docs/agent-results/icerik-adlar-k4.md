@@ -29,3 +29,11 @@ Yok (yalniz gorunen ad degisimi; kimlikler ve sayilar degismedi, `kuralSurumu` v
 
 - `packages/veri/icerik/kimlik-listesi.json` icinde `parca` icin "Makine Parcasi" adi var (yama bu dosyaya dokunmuyor; `ad` alani istege bagli ve icerikle karsilastirilmiyor). Tutarlilik icin lider karar versin.
 - `istemci/src/harita/yapi.ts:273` yorumu ve `istemci/src/harita/yerles.ts` yapi adlari (yetki disi dosyalar) K1'e not.
+
+## Ikinci commit: ad-degisim-2 (teknoloji 6 ve birlik 2 adi)
+
+`SP/t3/ad-degisim-2.patch` (sha256 on 12 hane `583490f32c7b`, uygulamadan once dogrulandi) DEGISTIRILMEDEN uygulandi: `packages/veri/icerik/icerik.json` yalniz 8 `ad` alani, yalniz harf buyuklugu (Mekanize Tarim -> Mekanize tarim, Sulama sistemi, Derin madencilik, Elektrik ark ocagi, Konteyner limani, Mekanize ordu, Piyade tumeni, Zirhli tumen). Kural surumu d9e89c6 ile ayni pakette degisiyor, ek artis yok.
+
+- Eski adlarin `packages/*/src` ve `packages/*/test` kullanimi (dondurulmus `fikstur-*` haric): yok; hicbir test degismedi.
+- Hedefli koşu (1 isci): `esik-budama-kanit`, `pazar-regresyon`, `sanayi-regresyon`, `mal-izdusumu-kanit`, `mulk-yapilar`, `teknoloji*`, `askeri*`, `packages/veri/test`, `harita-f4-yapi`: 20 dosya, 313 test gecti. Bolge altinlari birebir.
+- Not (T3'un etki notu, yamada degil): teknoloji adi "Mekanize tarim" ile yontem adi "Makineli tarim" tutarsiz; ayri karar.

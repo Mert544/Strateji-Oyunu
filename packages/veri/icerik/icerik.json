@@ -263,25 +263,25 @@
   ],
   "teknolojiler": [
     {
-      "id": "mekanize_tarim", "ad": "Mekanize Tarım",
+      "id": "mekanize_tarim", "ad": "Mekanize tarım",
       "aciklama": "Çiftliklerde mekanize tarım yöntemini açar: daha çok tahıl, daha az işçi; yakıt ve parça tüketir.",
       "maliyet": 15000000, "sureGun": 2, "onKosullar": [],
       "acar": { "yontemler": ["mekanize_tarim"] }
     },
     {
-      "id": "sulama_sistemi", "ad": "Sulama Sistemi",
+      "id": "sulama_sistemi", "ad": "Sulama sistemi",
       "aciklama": "Sulama kanalı tesisini açar: hasat oranının diplerini yumuşatır ve kuraklık şiddetini azaltır; elektrik tüketir.",
       "maliyet": 20000000, "sureGun": 2, "onKosullar": [],
       "acar": { "tesisTurleri": ["sulama_kanali"] }
     },
     {
-      "id": "derin_madencilik", "ad": "Derin Madencilik",
+      "id": "derin_madencilik", "ad": "Derin madencilik",
       "aciklama": "Cevher ve kömür için derin ocak yöntemlerini açar: çok daha fazla çıktı, yakıt girdisi ister.",
       "maliyet": 25000000, "sureGun": 3, "onKosullar": [],
       "acar": { "yontemler": ["derin_cevher", "derin_komur"] }
     },
     {
-      "id": "elektrik_ark_ocagi", "ad": "Elektrik Ark Ocağı",
+      "id": "elektrik_ark_ocagi", "ad": "Elektrik ark ocağı",
       "aciklama": "Çelikhanelerde kömür yerine yakıt kullanan, daha az cevher isteyen yöntemi açar (ikame kararı).",
       "maliyet": 30000000, "sureGun": 3, "onKosullar": ["derin_madencilik"],
       "acar": { "yontemler": ["elektrik_ark"] }
@@ -293,13 +293,13 @@
       "acar": { "yontemler": ["otomatik_hat"] }
     },
     {
-      "id": "konteyner_limani", "ad": "Konteyner Limanı",
+      "id": "konteyner_limani", "ad": "Konteyner limanı",
       "aciklama": "Deniz kenarlarını geliştirme kararını açar (kapasite artışı).",
       "maliyet": 30000000, "sureGun": 4, "onKosullar": ["otomasyon"],
       "acar": { "kararlar": ["deniz_kenar_gelistir"] }
     },
     {
-      "id": "mekanize_ordu", "ad": "Mekanize Ordu",
+      "id": "mekanize_ordu", "ad": "Mekanize ordu",
       "aciklama": "Zırhlı tümen üretimini açar (birlik tanımındaki gerekliTeknoloji ile).",
       "maliyet": 40000000, "sureGun": 5, "onKosullar": ["elektrik_ark_ocagi"],
       "acar": {}
@@ -307,12 +307,12 @@
   ],
   "birlikler": [
     {
-      "id": "piyade_tumeni", "ad": "Piyade Tümeni",
+      "id": "piyade_tumeni", "ad": "Piyade tümeni",
       "maliyet": { "celik": 30000, "muhimmat": 20000, "gida": 30000 }, "partiSuresiSaat": 12, "guc": 100,
       "ikmal": { "gida": 2000, "muhimmat": 800 }
     },
     {
-      "id": "zirhli_tumen", "ad": "Zırhlı Tümen",
+      "id": "zirhli_tumen", "ad": "Zırhlı tümen",
       "maliyet": { "celik": 80000, "parca": 30000, "yakit": 20000 }, "partiSuresiSaat": 18, "guc": 260,
       "ikmal": { "yakit": 3000, "muhimmat": 1200, "parca": 500 }, "gerekliTeknoloji": "mekanize_ordu"
     }
