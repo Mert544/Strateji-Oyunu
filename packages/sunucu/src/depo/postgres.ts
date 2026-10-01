@@ -118,6 +118,10 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
           [s.dunya, g.seq, g.simZamani, g.kuralSurumu, g.semaSurumu, g.durumOzeti, JSON.stringify(g.ek), gzipSync(g.metin)],
         );
       },
+      async yedekle(): Promise<string> {
+        // `snapshots` birincil anahtarı (dunya, seq, sim_t) göç görüntüsünün eskisiyle AYNI seq/zamanda yazılmasını da reddeder.
+        throw new Error("pg deposunda icerik gocu henuz desteklenmiyor (snapshots birincil anahtari ayni seq/zamandaki goc goruntusune izin vermez); goc icin dosya deposu kullanin");
+      },
       async sonuncu(): Promise<AnlikGoruntuKaydi | null> {
         const r = await havuz.query<{ seq: string; sim_t: string; kural_sur: string; sema_sur: number; durum_ozeti: string; ek: GoruntuEki; sikistirma: string; blob: Buffer }>(
           "SELECT seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob FROM snapshots WHERE dunya = $1 ORDER BY seq DESC, sim_t DESC LIMIT 1",

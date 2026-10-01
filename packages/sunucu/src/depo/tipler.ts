@@ -75,6 +75,12 @@ export interface GoruntuDeposu {
   kaydet(g: AnlikGoruntuKaydi): Promise<void>;
   /** En büyük seq'li (eşitlikte en son kaydedilen) geçerli görüntü; yoksa null. */
   sonuncu(): Promise<AnlikGoruntuKaydi | null>;
+  /**
+   * İsteğe bağlı (içerik göçü için ZORUNLU): `g` görüntüsünü (şu an `sonuncu()`) `etiket` adıyla AYRI ve KALICI bir yere
+   * kopyalar (fsync); üzerine yazılmaz, `sonuncu()`a girmez, saklama sınırından etkilenmez. Göç yeni görüntüyü eskisiyle AYNI
+   * seq ve sim zamanında yazar; yedek alınmadan üzerine yazılmaz. Dönen dize yedeğin yeri/etiketidir. Başarısızsa fırlatır.
+   */
+  yedekle?(g: AnlikGoruntuKaydi, etiket: string): Promise<string>;
   kapat(): Promise<void>;
 }
 

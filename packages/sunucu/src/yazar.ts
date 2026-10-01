@@ -38,6 +38,8 @@
  * sürümüyle yazılmıştır (açılış hep görüntü + kuyruk; yeni kuralla hiç açılmamıştır) ve günlük kural sürümleri arasında
  * yeniden oynatılamaz (`ekim_plani.ekimPpm` gibi komutlar indeks sırasına bağlıdır): bu yüzden göç REDDEDİLİR, günlük
  * oynatılmaz. Kural: kayıtta kural sürümü alanı olmasa da görüntü seq'inden sonra kayıt sayısı > 0 ise ret yeterlidir.
+ * Göç yeni görüntüyü eskisiyle AYNI seq/sim zamanında yazar: bu yüzden eski görüntü ÖNCE `depo.goruntu.yedekle` ile ayrı ve kalıcı
+ * saklanır (yoksa/alınamazsa göç durur; pg deposu şimdilik göçü açıkça reddeder). `kurtarma.goc.yedek` yedeğin yeridir.
  * `yalnizEkleZorunlu` varsayılan AÇIK (içeriğe araya ekleme/yeniden sıralama üretimde reddedilir).
  *
  * Kurtarma: son anlık görüntü (`anlikGoruntudenYukle`: kural sürümü + zarf özeti denetimi; ek olarak üst verideki
@@ -45,7 +47,7 @@
  * görüntü zamanının büyüğüdür; canlı dünyayla karşılaştırma AYNI t'de yapılmalıdır (`calistirKadar(t)`, docs/06 §14).
  */
 import { SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikGoruntuOlustur, kuralSurumuHesapla } from "@bolge/cekirdek";
-import type { CekirdekVeriPaketi, Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
+import type { CekirdekVeriPaketi, IcerikKimlikTablosu, Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
 import type { Bot } from "@bolge/botlar";
 import type { Dizin } from "@bolge/protokol";
 import { SEMA_SURUMU } from "./depo/tipler";
@@ -95,6 +97,11 @@ export interface YazarSecenekleri {
    * sonra günlük kaydı yokken çalışır; bkz. dosya başlığı.
    */
   gocIzni?: boolean;
+  /**
+   * Yalnız zarf SÜRÜM 1 (tablosuz) bir görüntü başka kural sürümüyle göçürülürken: görüntünün yazıldığı içeriğin kimlik
+   * tablosu (`icerikKimlikTablosuOlustur` çıktısı; CLI `--goc-eski-tablo`). Sürüm 2 görüntüler tablosunu kendisi taşır.
+   */
+  gocEskiTablo?: IcerikKimlikTablosu;
   /** Göçte içerik yalnız SONA eklenebilir (araya ekleme/taşıma hata). Varsayılan true (üretim); yalnız geliştirmede false. */
   yalnizEkleZorunlu?: boolean;
   /** Yetişirken her adımdan sonra çağrılır (test/enstrümantasyon: söz döndürerek yetişmeyi bekletebilir). */
@@ -112,6 +119,8 @@ export interface GocOzeti {
   /** Eklenen kimlikler (uzay -> kimlikler) ve toplam sayısı. */
   eklenen: Record<string, string[]>;
   eklenenSayisi: number;
+  /** Göç öncesi görüntünün yedeği (depo `yedekle`'sinin döndürdüğü yer/etiket); üzerine yazılmadan ÖNCE alınır. */
+  yedek: string;
   /** Yalnız-ekle ihlali sayısı (`yalnizEkleZorunlu` kapalıyken > 0 olabilir). */
   ihlalSayisi: number;
 }
@@ -296,11 +305,21 @@ export class DunyaYazari {
               "once eski kural surumuyle acip goruntu alin (duzgun kapanista kuyruk bosalir), sonra goc edin; gunluk yeniden oynatilmadi",
           );
         }
-        const r = Simulasyon.anlikGoruntudenYukleSonuclu(s.veri, g.metin, [], { gocIzni: true, yalnizEkleZorunlu: s.yalnizEkleZorunlu ?? true });
+        const r = Simulasyon.anlikGoruntudenYukleSonuclu(s.veri, g.metin, [], { gocIzni: true, yalnizEkleZorunlu: s.yalnizEkleZorunlu ?? true, ...(s.gocEskiTablo ? { eskiTablo: s.gocEskiTablo } : {}) });
         sim = r.sim;
         // Üst verideki özet YAZILDIĞI HALİYLE dünyanındır: göçte `goc.eskiDurumOzeti`ne karşı denetlenir.
         if (r.goc.eskiDurumOzeti !== g.durumOzeti) throw new Error(`goruntu ust verisindeki ozet uyusmuyor (goc): ${g.durumOzeti} != ${r.goc.eskiDurumOzeti}`);
         if (!r.goc.yenidenIndekslendi && sim.durumOzeti() !== g.durumOzeti) throw new Error(`goruntu ust verisindeki ozet uyusmuyor: ${g.durumOzeti} != ${sim.durumOzeti()}`);
+        // Yeni görüntü eskisiyle AYNI seq/sim zamanında yazılacağından önce göç öncesi görüntü AYRI ve KALICI yedeklenir
+        // (doğrulama bittikten sonra, hiçbir şey değişmeden): yedek yoksa/alınamazsa göç durur, depo ve dünya değişmez.
+        const yedekle = s.depo.goruntu.yedekle;
+        if (!yedekle) throw new Error("goc reddedildi: depo goruntu yedegi (goruntu.yedekle) desteklemiyor; goc yedek almadan eski goruntunun uzerine yazmaz");
+        let yedek: string;
+        try {
+          yedek = await yedekle.call(s.depo.goruntu, g, `goc-${g.kuralSurumu}`);
+        } catch (e) {
+          throw new Error(`goc yedegi alinamadi (${e instanceof Error ? e.message : String(e)}); goc durdu, depo ve dunya degismedi`);
+        }
         goc = {
           yenidenIndekslendi: r.goc.yenidenIndekslendi,
           eskiKuralSurumu: r.goc.eskiKuralSurumu,
@@ -308,6 +327,7 @@ export class DunyaYazari {
           yalnizEkle: r.goc.yalnizEkle,
           eklenen: { ...r.goc.eklenen },
           eklenenSayisi: Object.values(r.goc.eklenen).reduce((n, l) => n + l.length, 0),
+          yedek,
           ihlalSayisi: r.goc.ihlaller.length,
         };
       } else {

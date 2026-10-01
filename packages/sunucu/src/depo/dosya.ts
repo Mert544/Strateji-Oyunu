@@ -6,10 +6,13 @@
  *   kesilir. Ortadaki bozuk satır ya da seq boşluğu ise açılışı durdurur (sessizce veri atılmaz).
  * - `goruntu/<seq>-<simZamani>.goruntu`: ilk satır üst veri JSON'u, ikinci satır çekirdeğin anlık görüntü zarfı.
  *   Geçici dosyaya yazılır, fsync, `rename` (atomik), dizin fsync. Son `TUTULAN_GORUNTU` dosya saklanır.
+ * - Göç yedeği: `yedekle(g, etiket)` görüntü dosyasını `<ad>.goruntu.<etiket>.yedek` olarak kopyalar (geçici dosya, fsync, `rename`,
+ *   dizin fsync). `.goruntu` ile bitmediği için `sonuncu()`a girmez ve saklama sınırıyla silinmez. Geri dönüş: sunucuyu durdurup yedeği
+ *   `<ad>.goruntu` üzerine kopyalayın (yeni kural sürümüyle komut kabul edilmediyse eski içerikle açılır).
  * - `yazar.kilit`: tek yazar kilidi (içinde süreç kimliği). Kilit varsa ve sahibi yaşıyorsa açılış reddedilir; sahibi
  *   ölmüşse (kill -9 sonrası) kilit devralınır.
  */
-import { mkdir, open, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, open, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { join } from "node:path";
 import { seqSurekliligiDenetle } from "./tipler";
@@ -174,6 +177,23 @@ export class DosyaGoruntuDeposu implements GoruntuDeposu {
     await dizinFsync(this.dizin);
     const hepsi = (await readdir(this.dizin)).filter((x) => x.endsWith(".goruntu")).sort();
     for (const eski of hepsi.slice(0, Math.max(0, hepsi.length - TUTULAN_GORUNTU))) await rm(join(this.dizin, eski), { force: true });
+  }
+
+  async yedekle(g: AnlikGoruntuKaydi, etiket: string): Promise<string> {
+    const guvenli = etiket.replace(/[^A-Za-z0-9._-]/g, "_");
+    const kaynak = join(this.dizin, goruntuAdi(g.seq, g.simZamani));
+    const hedef = `${kaynak}.${guvenli}.yedek`;
+    const gecici = `${hedef}.tmp`;
+    await copyFile(kaynak, gecici); // kaynak yoksa fırlatır: yedek alınamadı
+    const h = await open(gecici, "r+");
+    try {
+      await h.sync();
+    } finally {
+      await h.close();
+    }
+    await rename(gecici, hedef);
+    await dizinFsync(this.dizin);
+    return hedef;
   }
 
   async sonuncu(): Promise<AnlikGoruntuKaydi | null> {

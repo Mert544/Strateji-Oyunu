@@ -3,6 +3,7 @@
  * Olayları stdout'a satır başına bir JSON olarak yazar (`{"olay":"hazir",...}`); SIGINT/SIGTERM'de düzgün kapanır
  * (kuyruk yazılır, kapanış görüntüsü alınır). Seçenekler için `--yardim`.
  */
+import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { gercekVeriyiYukle, miniVeriyiYukle, parselFiksturuYukle, varsayilanVeriyiYukle } from "@bolge/veri";
@@ -10,7 +11,7 @@ import type { VeriPaketi } from "@bolge/veri";
 import { ARKETIPLER, botOlustur } from "@bolge/botlar";
 import type { ArketipAdi } from "@bolge/botlar";
 import { SAAT } from "@bolge/cekirdek";
-import type { CekirdekVeriPaketi } from "@bolge/cekirdek";
+import type { CekirdekVeriPaketi, IcerikKimlikTablosu } from "@bolge/cekirdek";
 import { bellekDeposu } from "./depo/bellek";
 import { dosyaDeposu } from "./depo/dosya";
 import { postgresDeposu } from "./depo/postgres";
@@ -38,6 +39,8 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --goc                icerik gocune izin (varsayilan KAPALI: kural surumu degismisse hata). Yalniz donem sinirinda,
                        goruntuden sonra gunluk kaydi yokken; icerik yalniz SONA eklenebilir. Oncesinde veri dizinini yedekleyin
                        (yeni goruntu ayni seq/zamanda eskisinin uzerine yazilir)
+  --goc-eski-tablo YOL zarf SURUM 1 goruntuyu gocururken goruntunun yazildigi icerigin kimlik tablosu (JSON; surum 2 goruntu
+                       tablosunu kendisi tasir)
   --goc-esnek          (yalniz gelistirme) gocte araya ekleme/siralama degisimine de izin
   --birikimli          kapaliyken duran eski saat (hiz 1 ile bile); mutlak saat degil
   --dunya-epoch T      yalniz yeni dunyada: duvar saati epoch'u (ISO, ornek 2026-09-30T21:00:00Z, ya da epoch ms);
@@ -101,6 +104,7 @@ async function ana(): Promise<void> {
       birikimli: { type: "boolean", default: false },
       goc: { type: "boolean", default: false },
       "goc-esnek": { type: "boolean", default: false },
+      "goc-eski-tablo": { type: "string" },
       "dunya-epoch": { type: "string" },
       "commit-ms": { type: "string", default: "75" },
       "goruntu-saat": { type: "string", default: "6" },
@@ -165,6 +169,7 @@ async function ana(): Promise<void> {
     botlar: botlarKur(veri, a.botlar as string),
     ...(dunyaEpochMs !== undefined ? { dunyaEpochMs } : {}),
     gocIzni: a.goc as boolean,
+    ...(a["goc-eski-tablo"] !== undefined ? { gocEskiTablo: JSON.parse(readFileSync(resolve(a["goc-eski-tablo"]), "utf8")) as IcerikKimlikTablosu } : {}),
     yalnizEkleZorunlu: !(a["goc-esnek"] as boolean),
   });
   yazar.olumculHata((e) => {

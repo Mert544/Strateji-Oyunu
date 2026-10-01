@@ -30,6 +30,14 @@ export class BellekGoruntuDeposu implements GoruntuDeposu {
     return en ? structuredClone(en) : null;
   }
 
+  /** Göç yedekleri (etiket -> kayıt; yapısal kopya). */
+  readonly yedekler = new Map<string, AnlikGoruntuKaydi>();
+
+  async yedekle(g: AnlikGoruntuKaydi, etiket: string): Promise<string> {
+    this.yedekler.set(etiket, structuredClone(g));
+    return `bellek:${etiket}`;
+  }
+
   get sayi(): number {
     return this.goruntuler.length;
   }
