@@ -181,6 +181,8 @@ export interface MaliyetGirdisi {
   parcaAdet: number;
   /** Pencere: gereken adet ve depodaki stok (yoksa satır yazılmaz). */
   pencere?: { gereken: number; var: number; tutarMili: number };
+  /** Eksik çelik ya da makine parçası (birim; pencere kendi satırındadır): `stok-eksik` durumunda `D3.stok_yetmiyor` uyarısı. */
+  stokEksik?: { ad: string; var: number; gereken: number };
   /** G8 açık (`etkin.ts` `g8Acik`: içerikte pencere üreten yöntem var): eksik pencerede "üretebilirsin" metni (`pencere_yok_g8`). */
   g8Acik?: boolean;
   sureSaat: number;
@@ -215,6 +217,7 @@ export function maliyetSatirlariHtml(g: MaliyetGirdisi): string {
   s += `<dt>${enc("dukkan.D3.satir_toplam")}</dt><dd>${yukari(g.toplamMili)}</dd><dt>${enc("dukkan.D3.satir_hazine")}</dt><dd>${paraMili(g.hazineMili, "asagi")}</dd></dl>`;
   if (g.indirim) s += `<p class="dk-not">${enc("dukkan.D3.indirim_notu", { n: g.indirim.n, yuzde: g.indirim.yuzde })}</p>`;
   if (g.durum === "pencere-bekliyor") s += `<p class="dk-not">${enc("dukkan.D3.pencere_bekleme")}</p>`;
+  if (g.durum === "stok-eksik" && g.stokEksik) s += `<div class="yk-uyari" role="status">${enc("dukkan.D3.stok_yetmiyor", { mal: g.stokEksik.ad, var: g.stokEksik.var, gereken: g.stokEksik.gereken })}</div>`;
   if (g.durum === "hazine-yetmiyor") s += `<div class="yk-uyari" role="status">${enc("dukkan.D3.hazine_yetmiyor", { n: yukari(g.toplamMili), m: paraMili(g.hazineMili, "asagi") })}</div>`;
   if (g.durum === "insaat-siniri") s += `<div class="yk-uyari" role="status">${enc("dukkan.D3.insaat_siniri", { n: g.esZamanliInsaat })}</div>`;
   s += `<div class="dk-tahmin"${g.yatirim ? "" : " hidden"}><b>${enc("dukkan.D3.yatirim_baslik")}</b> ${g.yatirim ? ("gun" in g.yatirim ? enc("dukkan.D3.yatirim_kirsal", { n: g.yatirim.gun }) : enc("dukkan.D3.yatirim_genel", { sure: saatDakika(g.yatirim.saat) })) : ""}</div>`;

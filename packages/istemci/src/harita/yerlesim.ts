@@ -14,6 +14,11 @@ import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import { geriSeridiGorunur } from "./gorunurluk";
 import { dugmeBasili, KartDurumu, kapaliDugmeOznitelikleri } from "./kart-durum";
 import type { AyrilmisHakki } from "./fiyat";
+import { dukkanMaliyetDurumu, dukkanMaliyetGirdisi } from "./dukkan-kaynak";
+import type { DukkanKurBilgisi } from "./dukkan-kaynak";
+import { maliyetSatirlariHtml, turSecimiHtml } from "./dukkan-html";
+import { dukkanMetni } from "./dukkan-metin";
+import type { DukkanTuru } from "./dukkan-veri";
 import { hucreSiniri, noktadanHucre } from "./hucre";
 import type { Izgara } from "./hucre";
 import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yapiRengiCss, yerlesimPlani } from "./yapi";
@@ -53,6 +58,8 @@ export interface YerlesimGirdisi {
   ayrilmisHakki?: () => AyrilmisHakki | undefined;
   /** İlk-yapı indirimi: oran (ppm) ve kalan hak; bilinmiyorsa tanımsız (indirim uygulanmaz). */
   indirim?: () => { ppm: number; kalan: number } | undefined;
+  /** Dükkân kurma bilgisi (D2 tür seçimi, D3 satırları); dünyada dükkân yoksa tanımsız: `dukkan` yapısı düz yapı kartıyla çıkar. */
+  dukkan?: () => DukkanKurBilgisi | undefined;
 }
 
 const BOS: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -77,6 +84,8 @@ export class YerlesimKipi {
   private plan: YerlesimPlani | null = null;
   private uygulaniyor = false;
   private oneriId: string | null = null;
+  /** Dükkân kurulurken seçilen tür (D2); `sec` her yapı seçiminde sıfırlar. */
+  private dukkanTuru: DukkanTuru | null = null;
   /** İmlecin son hücresi (sabitlenmeden R'ye basılırsa hayalet burada döner). */
   private sonHover: { x: number; y: number } | null = null;
   /** Son başarılı işlem: 5 dk içinde "Geri al" (bağdaştırıcı `yapiGeriAl` sunuyorsa). */
@@ -134,7 +143,17 @@ export class YerlesimKipi {
       if (b?.dataset["yapi"]) this.sec(b.dataset["yapi"]);
     });
     this.kart.addEventListener("click", (e) => {
-      const b = (e.target as HTMLElement).closest("button[data-yk]") as HTMLButtonElement | null;
+      const hedef = e.target as HTMLElement;
+      const tur = hedef.closest("button[data-tur]") as HTMLButtonElement | null;
+      if (tur) {
+        if (tur.getAttribute("aria-disabled") !== "true") this.turSec(tur.dataset["tur"] as DukkanTuru);
+        return;
+      }
+      if (hedef.closest("button[data-eylem='pazardan-al']")) {
+        this.pazarHatirlat();
+        return;
+      }
+      const b = hedef.closest("button[data-yk]") as HTMLButtonElement | null;
       const ey = b?.dataset["yk"];
       if (b?.getAttribute("aria-disabled") === "true") return; // kapalı onay düğmesi: tıklama/Enter etkisiz (neden bölgede okunur)
       if (ey === "don") this.dondur();
@@ -333,6 +352,7 @@ export class YerlesimKipi {
     if (!y || !this.g.izgara()) return false;
     this.g.basliyor?.();
     this.yapi = y;
+    this.dukkanTuru = null;
     this.donus = 0;
     this.sabit = null;
     this.sonHover = null;
@@ -350,6 +370,7 @@ export class YerlesimKipi {
   iptal(): void {
     if (!this.yapi) return;
     this.yapi = null;
+    this.dukkanTuru = null;
     this.sabit = null;
     this.plan = null;
     this.g.kap.classList.remove("yapi-kipi");
@@ -466,24 +487,83 @@ export class YerlesimKipi {
     const oz = this.g.baglanti.ozet?.() ?? null;
     const sabit = this.sabit !== null && p !== null;
     const baslik = `<div class="yk-baslik"><div><b>${esc(y.ad)}</b><small>${esc(y.grup)} · ${y.yuva} hücre${y.ek ? "" : ""}</small></div><button type="button" data-yk="vazgec" aria-label="Vazgeç (Esc)" title="Vazgeç (Esc)">${ikon("x", 18)}</button></div>`;
-    let govde: string;
-    if (!p) {
-      govde = `<p class="yk-ipucu">${window.matchMedia("(pointer: coarse)").matches ? "Yerleştirmek için haritaya dokun." : "Haritada yeri seç: tıkla. R: döndür · Esc: vazgeç."}</p>`;
-    } else {
-      const arsa = p.alinacak.length > 0 ? `${fmt(p.alinacak.length)} hücre alınacak · <b>${paraMili(p.arsaMili, "yukari")}</b>` : `Kendi arsan · <b>${para(0)}</b>`;
-      const sure = `${sureMetni(y.sureSaat)}${y.ilkGunSureSaat < y.sureSaat ? ` <small>(yeni oyuncuya ilk gün ≈ ${sureMetni(y.ilkGunSureSaat)})</small>` : ""}`;
-      const malzeme = malzemeMetni({ malzeme: p.malzeme });
-      govde = `<dl class="yk-satirlar">
+    const dk = y.id === "dukkan" ? this.g.dukkan?.() : undefined;
+    if (dk) {
+      this.dukkanKartiYaz(y, p, sabit, baslik, dk, oz);
+      return;
+    }
+    const govde = this.govde(y, p, sabit, oz);
+    this.nedenBolgesi.yaz(p?.neden ?? null);
+    const kur = this.uygulaniyor ? "Kuruluyor…" : `${esc(y.ad)} kur`;
+    this.kart.innerHTML = `${baslik}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(!!p?.gecerli && sabit && !this.uygulaniyor, !!p?.neden)}>${kur}</button></div>`;
+    this.nedenBolgesi.yerlestir(this.kart);
+    this.kart.hidden = false;
+  }
+
+  /** Standart maliyet gövdesi: ipucu (yer seçilmedi) ya da arsa/yapı/süre/toplam satırları ve neden yeri. */
+  private govde(y: YapiTanimi, p: YerlesimPlani | null, sabit: boolean, oz: ReturnType<NonNullable<MulkBaglantisi["ozet"]>> | null): string {
+    if (!p) return `<p class="yk-ipucu">${window.matchMedia("(pointer: coarse)").matches ? "Yerleştirmek için haritaya dokun." : "Haritada yeri seç: tıkla. R: döndür · Esc: vazgeç."}</p>`;
+    const arsa = p.alinacak.length > 0 ? `${fmt(p.alinacak.length)} hücre alınacak · <b>${paraMili(p.arsaMili, "yukari")}</b>` : `Kendi arsan · <b>${para(0)}</b>`;
+    const sure = `${sureMetni(y.sureSaat)}${y.ilkGunSureSaat < y.sureSaat ? ` <small>(yeni oyuncuya ilk gün ≈ ${sureMetni(y.ilkGunSureSaat)})</small>` : ""}`;
+    const malzeme = malzemeMetni({ malzeme: p.malzeme });
+    return `<dl class="yk-satirlar">
         <dt>Arsa</dt><dd data-yk-alan="arsa">${arsa}</dd>
         <dt>Yapı</dt><dd data-yk-alan="yapi"><b>${paraMili(p.yapiMili, "yukari")}</b>${malzeme ? ` <small>+ ${esc(malzeme)}</small>` : ""}${p.indirimli ? " <small>ilk yapı indirimli</small>" : ""}</dd>
         <dt>Süre</dt><dd data-yk-alan="sure">${sure}</dd>
         <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${paraMili(p.toplamMili, "yukari")}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili, "asagi")}</small>` : ""}</dd>
       </dl>
       ${p.neden ? `<span data-yk-neden-yer></span>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için tıkla.</p>`}`;
+  }
+
+  /** Dükkân seçimi (D2): tür seçilince kart yenilenir (maliyet satırları D3). */
+  private turSec(tur: DukkanTuru): void {
+    if (this.yapi?.id !== "dukkan" || this.uygulaniyor) return;
+    this.dukkanTuru = tur;
+    this.kartiYaz();
+  }
+
+  /** "Pazar'dan al" (eksik pencere): Pazar yüzeyi bu ekranda açılmaz; eksik malzeme ve yol söylenir. */
+  private pazarHatirlat(): void {
+    const dk = this.g.dukkan?.();
+    const pen = dk?.pencere;
+    if (pen) bildir(dukkanMetni(dk?.g8Acik ? "dukkan.D3.pencere_yok_g8" : "dukkan.D3.pencere_yok", { n: pen.gereken, var: pen.var, tutar: paraMili(pen.tutarMili, "yukari") }), "bilgi");
+  }
+
+  /**
+   * Dükkân kartı: tür seçimi (D2) + maliyet satırları (D3; tür seçilince, kendi düğmeleriyle). Tür yokken standart yapı satırları ve kapalı "Dükkânı kur";
+   * kapalı düğme `aria-disabled` + neden (`p.dk-neden`). Döndür yalnız dükkân birden çok hücre kaplıyorsa.
+   */
+  private dukkanKartiYaz(y: YapiTanimi, p: YerlesimPlani | null, sabit: boolean, baslik: string, dk: DukkanKurBilgisi, oz: ReturnType<NonNullable<MulkBaglantisi["ozet"]>> | null): void {
+    const stokMili = (m: string): number => this.g.baglanti.isletme?.()?.mallar.find((x) => x.mal === m)?.stokMili ?? 0;
+    const sinirDolu = dk.ilceSayi >= dk.ilceSinir || dk.ilSayi >= dk.ilSinir;
+    const turNeden = !sinirDolu && this.dukkanTuru === null && p?.gecerli === true && sabit;
+    let html = baslik + turSecimiHtml({ secili: this.dukkanTuru, hucre: dk.hucre, turler: dk.turler, ilceSayi: dk.ilceSayi, ilceSinir: dk.ilceSinir, ilSayi: dk.ilSayi, ilSinir: dk.ilSinir, uyum: dk.uyum, ...(turNeden ? { neden: "dukkan.D2.tur_gerekli" as const } : {}) });
+    const don = dk.hucre > 1 ? `<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button></div>` : "";
+    let neden: string | null = p?.neden ?? null;
+    const d3 =
+      p && this.dukkanTuru !== null
+        ? dukkanMaliyetGirdisi({
+            tur: this.dukkanTuru,
+            bilgi: dk,
+            plan: { gecerli: p.gecerli, hazineYetmez: p.hazineYetmez, arsaMili: p.arsaMili, yapiMili: p.yapiMili, toplamMili: p.toplamMili, indirimli: p.indirimli, malzeme: p.malzeme.map((m) => ({ id: m.id, ad: m.ad, miktar: m.miktar })) },
+            yapi: y,
+            hazineMili: oz?.hazineMili ?? null,
+            surenInsaat: oz?.surenInsaat ?? 0,
+            stokMili,
+            gonderiyor: this.uygulaniyor,
+          })
+        : null;
+    if (d3 && p) {
+      // Plan başka nedenle geçersizse (sahibi başkası, kamu arsası...) düğme kapalı; D3'ün kendi uyarıları nedeni zaten söyleyenleri yinelemez
+      if (!p.gecerli && d3.durum === "uygun") d3.durum = "hazirlaniyor";
+      if (d3.durum === "hazine-yetmiyor" || d3.durum === "insaat-siniri") neden = null;
+      html += don + maliyetSatirlariHtml(d3) + (neden ? `<span data-yk-neden-yer></span>` : "");
+    } else {
+      const kapali = `aria-disabled="true" aria-describedby="dk-neden"`;
+      html += this.govde(y, p, sabit, oz) + `<div class="yk-dugmeler">${dk.hucre > 1 ? `<button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button>` : ""}<button type="button" data-yk="vazgec">${esc(dukkanMetni("dukkan.D3.dugme_vazgec"))}</button><button type="button" class="birincil" data-yk="onayla" ${kapali}>${esc(dukkanMetni("dukkan.D3.dugme_kur"))}</button></div>`;
     }
-    this.nedenBolgesi.yaz(p?.neden ?? null);
-    const kur = this.uygulaniyor ? "Kuruluyor…" : `${esc(y.ad)} kur`;
-    this.kart.innerHTML = `${baslik}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(!!p?.gecerli && sabit && !this.uygulaniyor, !!p?.neden)}>${kur}</button></div>`;
+    this.nedenBolgesi.yaz(neden);
+    this.kart.innerHTML = html;
     this.nedenBolgesi.yerlestir(this.kart);
     this.kart.hidden = false;
   }
@@ -492,10 +572,19 @@ export class YerlesimKipi {
     const p = this.plan;
     const ilce = this.g.ilce();
     if (!p || !p.gecerli || !this.sabit || !ilce || this.uygulaniyor) return false;
+    // Dükkân: tür seçilmeden ve sınırlar/malzeme uygun değilken kurulmaz (kapalı düğme ile aynı koşul; Enter de buradan geçer)
+    const dk = p.yapi.id === "dukkan" ? this.g.dukkan?.() : undefined;
+    if (dk) {
+      if (this.dukkanTuru === null) return false;
+      const oz = this.g.baglanti.ozet?.() ?? null;
+      const stokMili = (m: string): number => this.g.baglanti.isletme?.()?.mallar.find((x) => x.mal === m)?.stokMili ?? 0;
+      const durum = dukkanMaliyetDurumu({ tur: this.dukkanTuru, bilgi: dk, plan: { gecerli: p.gecerli, hazineYetmez: p.hazineYetmez, arsaMili: p.arsaMili, yapiMili: p.yapiMili, toplamMili: p.toplamMili, indirimli: p.indirimli, malzeme: p.malzeme }, yapi: p.yapi, hazineMili: oz?.hazineMili ?? null, surenInsaat: oz?.surenInsaat ?? 0, stokMili, gonderiyor: false });
+      if (durum !== "uygun") return false;
+    }
     this.uygulaniyor = true;
     this.kartiYaz();
     try {
-      const r = await yerlesimiUygula(this.g.baglanti, ilce, p);
+      const r = await yerlesimiUygula(this.g.baglanti, ilce, p, this.dukkanTuru ?? undefined);
       // "… kuruluyor": iş bitmedi, bilgi (başarı simgesi yalnız biten işin bildirimidir)
       bildir(r.mesaj, r.tamam ? "bilgi" : "hata");
       await this.g.yenile();

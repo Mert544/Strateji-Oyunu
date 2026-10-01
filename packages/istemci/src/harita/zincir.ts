@@ -8,6 +8,7 @@
  */
 import { fmt, paraMili } from "../arayuz/bicim";
 import type { MulkBaglantisi, ParselSonucu } from "./baglanti";
+import { dukkanMetni } from "./dukkan-metin";
 import type { ParselAdimi, YerlesimPlani } from "./yapi";
 import type { ArsaSinifi, HucreId } from "@bolge/cekirdek";
 
@@ -47,8 +48,11 @@ export async function parselZinciri(b: MulkBaglantisi, ilce: string, adimlar: re
 }
 
 /** Yerleşim planını uygular: arsa + yapı TEK `yapi_yerlestir` komutu (çok sınıfta `siniflar`); arsasız yerleşim atomik komut yoksa `tesis_insa_hucre`. */
-export async function yerlesimiUygula(b: MulkBaglantisi, ilce: string, plan: YerlesimPlani): Promise<ZincirSonucu> {
+export async function yerlesimiUygula(b: MulkBaglantisi, ilce: string, plan: YerlesimPlani, dukkanTuru?: string): Promise<ZincirSonucu> {
   const ad = plan.yapi.ad;
+  // Dükkân: tür yapı kurarken seçilir ve komuta girer (yalnız `dukkan` yapısında; tür yoksa hiçbir şey gönderilmez)
+  const tur = plan.yapi.id === "dukkan" && dukkanTuru ? { dukkanTuru } : {};
+  if (plan.yapi.id === "dukkan" && !dukkanTuru) return { tamam: false, asama: "insa", yol: "atomik", alinan: [], odenenMili: 0, gonderilen: 0, mesaj: `${dukkanMetni("dukkan.D2.tur_gerekli")} Hiçbir şey değişmedi.`, neden: "tur_gerekli" };
   if (b.yapiYerlestir && b.atomikYerlestirme?.() === true) {
     const sinif = plan.parseller[0]?.sinif ?? "kirsal";
     // Hücre başına sınıf yalnız birden çok sınıfta gider; sahip olunan hücrenin sınıfı denetlenmez (komutta `sinif` değeri kullanılır)
@@ -56,16 +60,16 @@ export async function yerlesimiUygula(b: MulkBaglantisi, ilce: string, plan: Yer
     for (const p of plan.parseller) for (const id of p.hucreler) sinifOf.set(id, p.sinif);
     const hucreler = plan.hucreler.map((h) => h.id);
     const siniflar = plan.parseller.length > 1 ? hucreler.map((id) => sinifOf.get(id) ?? sinif) : undefined;
-    const r = await b.yapiYerlestir({ ilce, tesisTuru: plan.yapi.id, hucreler, sinif, ...(siniflar ? { siniflar } : {}) });
+    const r = await b.yapiYerlestir({ ilce, tesisTuru: plan.yapi.id, hucreler, sinif, ...(siniflar ? { siniflar } : {}), ...tur });
     if (!r.tamam) return { tamam: false, asama: "insa", yol: "atomik", alinan: [], odenenMili: 0, gonderilen: 1, neden: r.mesaj, mesaj: `${ad} kurulamadı: ${nokta(r.mesaj)} Hiçbir şey değişmedi.` };
-    const arsa = plan.alinacak.length > 0 ? `arsa ${fmt(plan.alinacak.length)} hücre, ${paraMili(plan.arsaMili, "yakin")} + ` : "";
-    return { tamam: true, yol: "atomik", alinan: [...plan.alinacak], odenenMili: plan.arsaMili, gonderilen: 1, mesaj: `${ad} kuruluyor: ${arsa}yapı ${paraMili(plan.yapiMili, "yakin")}.` };
+    const arsa = plan.alinacak.length > 0 ? `arsa ${fmt(plan.alinacak.length)} hücre, ${paraMili(plan.arsaMili, "yukari")} + ` : "";
+    return { tamam: true, yol: "atomik", alinan: [...plan.alinacak], odenenMili: plan.arsaMili, gonderilen: 1, mesaj: `${ad} kuruluyor: ${arsa}yapı ${paraMili(plan.yapiMili, "yukari")}.` };
   }
   // Atomik komut yok: arsa alan yerleşim yapılmaz (yarım alım olmasın); arsasız yerleşim (yurt) yalnız inşaat komutudur
   if (plan.alinacak.length > 0 || !b.tesisInsa) {
     return { tamam: false, asama: "insa", yol: "atomik", alinan: [], odenenMili: 0, gonderilen: 0, mesaj: "Bu bağlantı yapı yerleştirmeyi desteklemiyor. Hiçbir şey değişmedi.", neden: "desteklenmiyor" };
   }
-  const r = await b.tesisInsa({ tur: "tesis_insa_hucre", ilce, tesisTuru: plan.yapi.id, hucreler: plan.hucreler.map((h) => h.id) });
+  const r = await b.tesisInsa({ tur: "tesis_insa_hucre", ilce, tesisTuru: plan.yapi.id, hucreler: plan.hucreler.map((h) => h.id), ...tur });
   if (!r.tamam) return { tamam: false, asama: "insa", yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 1, neden: r.mesaj, mesaj: `${ad} kurulamadı: ${nokta(r.mesaj)}` };
-  return { tamam: true, yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 1, mesaj: `${ad} kuruluyor: yapı ${paraMili(plan.yapiMili, "yakin")}.` };
+  return { tamam: true, yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 1, mesaj: `${ad} kuruluyor: yapı ${paraMili(plan.yapiMili, "yukari")}.` };
 }

@@ -247,7 +247,7 @@ export class WsBaglanti implements MulkBaglantisi {
   async yapiYerlestir(i: YerlestirIstegi): Promise<TesisSonucu> {
     try {
       // Çekirdek tipinde henüz olmayan komut: şema sürümüne göre sunucu kabul eder (`atomikYerlestirme`).
-      const r = await this.komutGonder({ tur: "yapi_yerlestir", ilce: i.ilce, tesisTuru: i.tesisTuru, hucreler: i.hucreler, sinif: i.sinif, ...(i.siniflar ? { siniflar: i.siniflar } : {}) } as unknown as Komut);
+      const r = await this.komutGonder({ tur: "yapi_yerlestir", ilce: i.ilce, tesisTuru: i.tesisTuru, hucreler: i.hucreler, sinif: i.sinif, ...(i.siniflar ? { siniflar: i.siniflar } : {}), ...(i.dukkanTuru ? { dukkanTuru: i.dukkanTuru } : {}) } as unknown as Komut);
       if (r.tamam) {
         for (const h of i.hucreler) this.insaBaslangic.set(h, r.t);
         return { tamam: true, t: r.t };

@@ -56,6 +56,8 @@ export interface YerlestirIstegi {
   hucreler: HucreId[];
   sinif: ArsaSinifi;
   siniflar?: ArsaSinifi[];
+  /** Dükkân türü kimliği (`tesisTuru` `dukkan` iken zorunlu; başka yapıda verilmez). */
+  dukkanTuru?: string;
 }
 
 /**

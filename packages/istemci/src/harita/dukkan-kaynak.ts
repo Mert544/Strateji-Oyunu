@@ -6,12 +6,14 @@
  * - `dukkan` ek yapısı katalogda yoksa (dünyada G7 kapalı) `kapali: true`: panel hiç çıkmaz.
  * - Referans fiyat R: karedeki dünya fiyatı (`fiyat[malIndeksi]`); yoksa taban fiyat ve `yaklasik` (sayılar "yaklaşık" etiketlenir).
  */
+import { yuzde } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import type { DukkanKaresi } from "./baglanti";
 import { g8Acik, turUyumlari } from "./etkin";
 import { dukkanGorunumuKur, ithNetPpm } from "./dukkan-kopru";
 import type { KopruParam, KopruSonucu, ReferansFiyati } from "./dukkan-kopru";
 import { DUKKAN_TURLERI } from "./dukkan-veri";
+import type { MaliyetDurumu, MaliyetGirdisi } from "./dukkan-html";
 import type { DukkanGorunumu, DukkanKaynagi, DukkanTuru } from "./dukkan-veri";
 import { indirimliTutar } from "./yapi";
 import type { YapiTanimi } from "./yapi";
@@ -99,6 +101,10 @@ export interface DukkanKurBilgisi {
   uyum: Partial<Record<DukkanTuru, boolean>>;
   /** G8 açık (D3 pencere metni). */
   g8Acik: boolean;
+  /** Aynı anda en çok inşaat (`param.mulk.esZamanliInsaat`; yoksa 2). */
+  esZamanliInsaat: number;
+  /** İlk yapı indirimi notu: kaç yapı, yüzde (ppm'den); parametre yoksa tanımsız. */
+  indirim?: { n: number; ppm: number };
   /** Maliyet kartında pencere satırı: gereken (indirimli), depo stoğu, eksik pencerenin yaklaşık bedeli; malzemede pencere yoksa tanımsız. */
   pencere?: { gereken: number; var: number; tutarMili: number };
 }
@@ -151,6 +157,77 @@ export function dukkanKurBilgisi(g: DukkanKurBilgisiGirdisi): DukkanKurBilgisi |
     ilSinir: yapi.enFazlaIlBasina ?? Number.MAX_SAFE_INTEGER,
     uyum: turUyumlari(g.ic, (m) => g.stokMili(m) > 0),
     g8Acik: g8Acik(g.ic),
+    esZamanliInsaat: g.ic.param.mulk?.esZamanliInsaat ?? 2,
+    ...(g.ic.param.mulk?.yeniOyuncu?.ilkYapiIndirimPpm ? { indirim: { n: g.ic.param.mulk.yeniOyuncu.indirimliYapiSayisi, ppm: g.ic.param.mulk.yeniOyuncu.ilkYapiIndirimPpm } } : {}),
     ...(pencere !== undefined ? { pencere } : {}),
+  };
+}
+
+// --- maliyet kartı (D3): durum ve girdi ------------------------------------------------------------------------------------------------------------------------------
+
+export interface DukkanKartPlani {
+  gecerli: boolean;
+  hazineYetmez: boolean;
+  arsaMili: number;
+  yapiMili: number;
+  toplamMili: number;
+  /** İlk yapı indirimi bu yapıya uygulanıyor mu. */
+  indirimli: boolean;
+  /** İndirimli malzeme (mili-birim); `ad` uyarı metni için. */
+  malzeme: ReadonlyArray<{ id: string; ad?: string; miktar: number }>;
+}
+
+export interface DukkanKartGirdisi {
+  tur: DukkanTuru | null;
+  bilgi: DukkanKurBilgisi;
+  plan: DukkanKartPlani;
+  yapi: Pick<YapiTanimi, "sureSaat">;
+  hazineMili: number | null;
+  surenInsaat: number;
+  stokMili: (mal: string) => number;
+  gonderiyor: boolean;
+  hata?: string;
+}
+
+/** Maliyet kartı durumu (düğmenin açık/kapalı kararı): önce gönderim, sonra tür, sınırlar, inşaat sayısı, hazine, malzeme ve pencere stoğu. */
+export function dukkanMaliyetDurumu(g: DukkanKartGirdisi): MaliyetDurumu {
+  if (g.gonderiyor) return "gonderiliyor";
+  if (g.tur === null) return "tur-secilmedi";
+  if (g.bilgi.ilceSayi >= g.bilgi.ilceSinir || g.bilgi.ilSayi >= g.bilgi.ilSinir) return "sinir-dolu";
+  if (g.surenInsaat >= g.bilgi.esZamanliInsaat) return "insaat-siniri";
+  if (g.plan.hazineYetmez) return "hazine-yetmiyor";
+  if (g.plan.malzeme.some((m) => m.id !== "pencere" && g.stokMili(m.id) < m.miktar)) return "stok-eksik";
+  if (g.bilgi.pencere !== undefined && g.bilgi.pencere.var < g.bilgi.pencere.gereken) return "stok-eksik";
+  return "uygun";
+}
+
+/** İlk eksik malzeme (çelik, makine parçası; pencere kendi satırındadır): ad `ad` ile, gereken ve depodaki birim. */
+export function dukkanEksikMalzeme(plan: Pick<DukkanKartPlani, "malzeme">, stokMili: (mal: string) => number): { mal: string; ad: string; var: number; gereken: number } | null {
+  const m = plan.malzeme.find((x) => x.id !== "pencere" && stokMili(x.id) < x.miktar);
+  return m ? { mal: m.id, ad: m.ad ?? m.id, var: Math.floor(stokMili(m.id) / 1000), gereken: Math.ceil(m.miktar / 1000) } : null;
+}
+
+/** D-3 girdisi (`maliyetSatirlariHtml`); tür seçilmemişse null (kart standart yapı satırlarını gösterir). */
+export function dukkanMaliyetGirdisi(g: DukkanKartGirdisi): MaliyetGirdisi | null {
+  if (g.tur === null) return null;
+  const eksik = g.plan.malzeme.length > 0 ? dukkanEksikMalzeme(g.plan, g.stokMili) : null;
+  const birim = (id: string): number => Math.ceil((g.plan.malzeme.find((m) => m.id === id)?.miktar ?? 0) / 1000);
+  return {
+    tur: g.tur,
+    hucre: g.bilgi.hucre,
+    durum: dukkanMaliyetDurumu(g),
+    arsaMili: g.plan.arsaMili,
+    dukkanMili: g.plan.yapiMili,
+    celikAdet: birim("celik"),
+    parcaAdet: birim("parca"),
+    ...(g.bilgi.pencere !== undefined ? { pencere: g.bilgi.pencere } : {}),
+    ...(eksik !== null ? { stokEksik: { ad: eksik.ad, var: eksik.var, gereken: eksik.gereken } } : {}),
+    g8Acik: g.bilgi.g8Acik,
+    sureSaat: g.yapi.sureSaat,
+    toplamMili: g.plan.toplamMili,
+    hazineMili: g.hazineMili ?? 0,
+    ...(g.plan.indirimli && g.bilgi.indirim !== undefined ? { indirim: { n: g.bilgi.indirim.n, yuzde: yuzde(g.bilgi.indirim.ppm / 10_000) } } : {}),
+    esZamanliInsaat: g.bilgi.esZamanliInsaat,
+    ...(g.hata !== undefined ? { hata: g.hata } : {}),
   };
 }

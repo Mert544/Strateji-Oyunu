@@ -37,6 +37,8 @@ import { ASAMA_ADI, yapiAsamasi, yapiKatalogu, yapiKatmani, yapiRengiCss } from 
 import { altlikKatmanlari, boyalar, IZGARA_CIZGI_ZOOM, L3_ZOOM, oyunKatmanlari, sahiplikBoyasi, SERIT_ONCESI, seritRengi, sinirKatmanlari, zeminKatmanlari } from "./stil";
 import { ikon } from "../tasarim/ikon";
 import type { YapiTanimi } from "./yapi";
+import { dukkanKaynagiKur, dukkanKurBilgisi, referansFiyati } from "./dukkan-kaynak";
+import type { DukkanKurBilgisi } from "./dukkan-kaynak";
 import { YerlesimKipi } from "./yerlesim";
 import { yapiCizimi } from "./gorunurluk";
 import { OlcekKipi } from "./olcek-kipi";
@@ -379,6 +381,7 @@ export class HaritaGorunumu {
       basliyor: () => this.olcek?.iptal(),
       ayrilmisHakki: () => this.ayrilmisHakki(),
       indirim: () => this.ilkYapiIndirimi(),
+      dukkan: () => this.dukkanKurBilgisi(),
     });
     this.yerlesim = y;
     // Alt arsa şeridi açıkken "Yapı kur" düğmesi basılı/tonlu (tek birincil kuralı); `hidden` değişimini izle
@@ -1310,6 +1313,27 @@ export class HaritaGorunumu {
    */
   dukkanKurBaslat(): boolean {
     return this.dukkanKurulabilir() && (this.yerlesim?.sec("dukkan") ?? false);
+  }
+
+  /**
+   * Yapı kurma kartı için dükkân bilgisi (D2 tür seçimi, D3 pencere satırı, sayaçlar): kare köprüden görünüme çevrilir; kare ya da dünyada dükkân yoksa tanımsız
+   * (`dukkan` yapısı düz yapı kartıyla çıkar). Bu ilçedeki ve ilindeki dükkân sayısı kendi dükkânlarındır.
+   */
+  private dukkanKurBilgisi(): DukkanKurBilgisi | undefined {
+    const stokMili = (mal: string): number => this.baglanti.isletme?.()?.mallar.find((x) => x.mal === mal)?.stokMili ?? 0;
+    const kare = this.baglanti.dukkanKaresi?.() ?? null;
+    const indirim = this.ilkYapiIndirimi();
+    const kaynak = dukkanKaynagiKur({ kare: () => kare, ic: this.tablo, katalog: this.katalog, hazineMili: () => this.baglanti.ozet?.()?.hazineMili ?? null, stokMili, indirim: () => indirim });
+    return dukkanKurBilgisi({
+      ic: this.tablo,
+      katalog: this.katalog,
+      gorunum: kaynak.gorunum(),
+      ilce: this.ilceKimlik,
+      ilceIl: (i) => this.s.hiyerarsi.ilceler.get(i)?.il ?? null,
+      stokMili,
+      indirim,
+      referans: referansFiyati(this.tablo, kare),
+    });
   }
 
   /** Yapı menüsünde "Önerilen" rozeti (Yerleş açılış önerisi). */

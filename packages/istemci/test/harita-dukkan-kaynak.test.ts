@@ -2,7 +2,9 @@
 import { describe, expect, it } from "vitest";
 import type { Icerik } from "../src/komut/tablo";
 import type { DukkanKaresi } from "../src/harita/baglanti";
-import { dukkanKaynagiKur, dukkanKurmaKarsilaniyor, kopruParam, referansFiyati } from "../src/harita/dukkan-kaynak";
+import { dukkanEksikMalzeme, dukkanKaynagiKur, dukkanKurBilgisi, dukkanKurmaKarsilaniyor, dukkanMaliyetDurumu, dukkanMaliyetGirdisi, kopruParam, referansFiyati } from "../src/harita/dukkan-kaynak";
+import type { DukkanKartGirdisi } from "../src/harita/dukkan-kaynak";
+import type { DukkanGorunumu, DukkanKaydi } from "../src/harita/dukkan-veri";
 import { mulkHatasiTurkce } from "../src/harita/hata-mulk";
 import type { YapiTanimi } from "../src/harita/yapi";
 
@@ -166,5 +168,116 @@ describe("dükkân komutu ret çevirisi (DUK-xx / MRK-xx → metin tablosu)", ()
     expect(t("hucre bos degil")).toBe("Hücrede zaten yapı ya da inşaat var.");
     expect(t("ilde en cok 2 Ambar (biten + suren)")).toBe("Bu ilde en çok 2 Ambar olabilir (biten + süren).");
     expect(t("tamamen bilinmeyen")).toBe("Sunucu isteği reddetti: tamamen bilinmeyen");
+  });
+});
+
+// --- yapı kurma akışında dükkân bilgisi (D2/D3) --------------------------------------------------------------------------------------------------------------------
+
+const PENCERELI: YapiTanimi = { ...DUKKAN, malzeme: [...DUKKAN.malzeme, { id: "pencere", ad: "Pencere", miktar: 4_000 }], enFazlaIlBasina: 6 };
+
+function icerikKurma(): Icerik {
+  const ic = icerik();
+  const mulk = (ic.param as unknown as { mulk: { perakende: { ilceBasinaEnFazla: number; dukkanTurleri: unknown[] }; esZamanliInsaat: number; yeniOyuncu: { ilkYapiIndirimPpm: number; indirimliYapiSayisi: number } } }).mulk;
+  mulk.perakende.ilceBasinaEnFazla = 2;
+  mulk.perakende.dukkanTurleri = [
+    { id: "bakkal", mallar: ["gida"] },
+    { id: "sekerci", mallar: ["tahil"] },
+  ];
+  mulk.esZamanliInsaat = 2;
+  mulk.yeniOyuncu = { ilkYapiIndirimPpm: 300_000, indirimliYapiSayisi: 2 };
+  return ic;
+}
+
+const kayit = (ilce: string | undefined): DukkanKaydi => ({ id: 1, tur: "bakkal", durum: "acik", ...(ilce !== undefined ? { ilce } : {}), markaAd: "", yuvalar: [], kasaPpm: 0, karsilanmaPpm: 0, gelirMiliSa: 0, giderMiliSa: 0, kampanya: { bitis: 0, kalanSaat: 0, kalanGun: 0 } });
+const gorunum = (dukkanlar: DukkanKaydi[], kapali = false): DukkanGorunumu => ({ kapali, dukkanlar, markalar: [], ilkSatisT: null, satilabilirMallar: new Set(), kurmaKarsilaniyor: true, kampanyaAcik: false });
+const ILCE_IL: Record<string, string> = { a: "il1", b: "il1", c: "il2" };
+
+describe("dukkanKurBilgisi", () => {
+  const g = (o: Partial<Parameters<typeof dukkanKurBilgisi>[0]> = {}) =>
+    dukkanKurBilgisi({ ic: icerikKurma(), katalog: [PENCERELI], gorunum: gorunum([kayit("a"), kayit("b"), kayit("c")]), ilce: "a", ilceIl: (i) => ILCE_IL[i] ?? null, stokMili: () => 0, indirim: undefined, referans: referansFiyati(icerikKurma(), { fiyat: [0, 0] }), ...o });
+
+  it("dükkân yoksa (katalog, perakende bloğu, kapalı görünüm, görünüm yok) tanımsız", () => {
+    expect(g({ katalog: [] })).toBeUndefined();
+    expect(g({ ic: icerik(false) })).toBeUndefined();
+    expect(g({ gorunum: gorunum([], true) })).toBeUndefined();
+    expect(g({ gorunum: null })).toBeUndefined();
+  });
+
+  it("ilçe ve il sayaçları görünümden; ilçesi bilinmeyen dükkân sayılmaz; sınırlar içerikten", () => {
+    const b = g({ gorunum: gorunum([kayit("a"), kayit("b"), kayit("c"), kayit(undefined)]) })!;
+    expect(b.ilceSayi).toBe(1);
+    expect(b.ilSayi).toBe(2); // a ve b aynı ilde
+    expect(b.ilceSinir).toBe(2);
+    expect(b.ilSinir).toBe(6);
+    expect(b.hucre).toBe(1);
+    expect(b.esZamanliInsaat).toBe(2);
+    expect(b.indirim).toEqual({ n: 2, ppm: 300_000 });
+    expect(b.turler).toEqual(["bakkal", "sekerci"]);
+  });
+
+  it("tür uyumu depodaki mala bakar; pencere satırı indirimli gereken, stok ve eksik bedeli (R x eksik x ithalat net)", () => {
+    const stok = (m: string): number => (m === "gida" ? 5_000 : m === "pencere" ? 1_500 : 0);
+    const b = g({ stokMili: stok, referans: () => ({ mili: 30_000, yaklasik: false }) })!;
+    expect(b.uyum).toEqual({ bakkal: true, sekerci: false });
+    // indirimsiz: gereken 4, depoda 1 (1,5 aşağı), eksik 2,5 birim x 30.000 x ithalat net çarpanı yukarı yuvarlı
+    expect(b.pencere?.gereken).toBe(4);
+    expect(b.pencere?.var).toBe(1);
+    expect(b.pencere?.tutarMili).toBeGreaterThan(2.5 * 30_000);
+    // %30 indirim: gereken 2,8 -> 3 (yukarı); depo 1,5 -> eksik 1,3
+    const i = g({ stokMili: stok, indirim: { ppm: 300_000, kalan: 2 }, referans: () => ({ mili: 30_000, yaklasik: false }) })!;
+    expect(i.pencere?.gereken).toBe(3);
+    // stok yeterse eksik bedel yok
+    expect(g({ stokMili: () => 9_000 })!.pencere?.tutarMili).toBe(0);
+  });
+
+  it("katalogda pencere malzemesi yoksa pencere satırı tanımsız", () => {
+    expect(g({ katalog: [DUKKAN] })!.pencere).toBeUndefined();
+  });
+});
+
+describe("dukkanMaliyetDurumu / dukkanMaliyetGirdisi", () => {
+  const bilgi = () => dukkanKurBilgisi({ ic: icerikKurma(), katalog: [PENCERELI], gorunum: gorunum([]), ilce: "a", ilceIl: (i) => ILCE_IL[i] ?? null, stokMili: () => 99_000, indirim: undefined, referans: () => ({ mili: 30_000, yaklasik: false }) })!;
+  const stok99 = (): number => 99_000;
+  const girdi = (o: Partial<DukkanKartGirdisi> = {}): DukkanKartGirdisi => ({
+    tur: "bakkal",
+    bilgi: bilgi(),
+    plan: { gecerli: true, hazineYetmez: false, arsaMili: 0, yapiMili: 12_000_000, toplamMili: 12_000_000, indirimli: false, malzeme: PENCERELI.malzeme },
+    yapi: PENCERELI,
+    hazineMili: 50_000_000,
+    surenInsaat: 0,
+    stokMili: stok99,
+    gonderiyor: false,
+    ...o,
+  });
+
+  it("öncelik: gönderim, tür, sınır, inşaat sayısı, hazine, malzeme, pencere; hepsi tamamsa uygun", () => {
+    expect(dukkanMaliyetDurumu(girdi())).toBe("uygun");
+    expect(dukkanMaliyetDurumu(girdi({ gonderiyor: true, tur: null }))).toBe("gonderiliyor");
+    expect(dukkanMaliyetDurumu(girdi({ tur: null }))).toBe("tur-secilmedi");
+    expect(dukkanMaliyetDurumu(girdi({ bilgi: { ...bilgi(), ilceSayi: 2 } }))).toBe("sinir-dolu");
+    expect(dukkanMaliyetDurumu(girdi({ bilgi: { ...bilgi(), ilSayi: 6 } }))).toBe("sinir-dolu");
+    expect(dukkanMaliyetDurumu(girdi({ surenInsaat: 2 }))).toBe("insaat-siniri");
+    expect(dukkanMaliyetDurumu(girdi({ plan: { ...girdi().plan, hazineYetmez: true } }))).toBe("hazine-yetmiyor");
+    expect(dukkanMaliyetDurumu(girdi({ stokMili: (m) => (m === "celik" ? 0 : 99_000) }))).toBe("stok-eksik");
+    expect(dukkanMaliyetDurumu(girdi({ bilgi: { ...bilgi(), pencere: { gereken: 4, var: 1, tutarMili: 100 } } }))).toBe("stok-eksik");
+  });
+
+  it("girdi: tür yoksa null; adet birim (yukarı), indirim notu yalnız indirimli planda, hazine bilinmiyorsa 0", () => {
+    expect(dukkanMaliyetGirdisi(girdi({ tur: null }))).toBeNull();
+    const g = dukkanMaliyetGirdisi(girdi())!;
+    expect(g).toMatchObject({ tur: "bakkal", hucre: 1, durum: "uygun", celikAdet: 8, parcaAdet: 2, dukkanMili: 12_000_000, toplamMili: 12_000_000, hazineMili: 50_000_000, esZamanliInsaat: 2 });
+    expect(g.indirim).toBeUndefined();
+    expect(g.stokEksik).toBeUndefined();
+    const i = dukkanMaliyetGirdisi(girdi({ plan: { ...girdi().plan, indirimli: true }, hazineMili: null }))!;
+    expect(i.indirim).toEqual({ n: 2, yuzde: "%30" });
+    expect(i.hazineMili).toBe(0);
+  });
+
+  it("eksik malzeme: çelik ve parça (pencere hariç), birim aşağı/yukarı", () => {
+    expect(dukkanEksikMalzeme({ malzeme: PENCERELI.malzeme }, stok99)).toBeNull();
+    expect(dukkanEksikMalzeme({ malzeme: PENCERELI.malzeme }, (m) => (m === "parca" ? 1_500 : 99_000))).toEqual({ mal: "parca", ad: "Makine parçası", var: 1, gereken: 2 });
+    expect(dukkanEksikMalzeme({ malzeme: [{ id: "celik", ad: "Çelik", miktar: 8_000 }] }, () => 3_000)).toEqual({ mal: "celik", ad: "Çelik", var: 3, gereken: 8 });
+    expect(dukkanMaliyetGirdisi(girdi({ plan: { ...girdi().plan, malzeme: [{ id: "celik", ad: "Çelik", miktar: 8_000 }] }, stokMili: () => 3_000 }))!.stokEksik).toEqual({ ad: "Çelik", var: 3, gereken: 8 });
+    expect(dukkanEksikMalzeme({ malzeme: [{ id: "pencere", miktar: 4_000 }] }, () => 0)).toBeNull();
   });
 });
