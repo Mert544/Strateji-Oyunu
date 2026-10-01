@@ -236,16 +236,16 @@ function baslat(): void {
           const h = p.simSaat();
           return h === null ? null : p.epochMs() + h * 3_600_000;
         };
-      // Küredeki mülk işaretleri: oyuncunun hücresi olan ilçelerin merkezleri (hiyerarşi bellekte; yalnız mülk kipinde)
+      // Küredeki mülk işaretleri: oyuncunun hücresi olan ilçelerin merkezleri; veri değişince yenilenir (hiyerarşi bellekte)
       const isaretle = (): void => {
-        const oz = document.hidden ? null : window.__harita?.baglanti()?.ozet?.();
+        const oz = document.hidden ? null : haritaDenetci?.mulkBaglantisi()?.ozet?.();
         if (!oz) return;
         void import("./harita/veri").then(({ hiyerarsiYukle }) =>
           hiyerarsiYukle().then((h) => s.mulkIsaretleriAyarla(oz.ilceHucre.flatMap(([k, n]) => (n > 0 && h.ilceler.get(k) ? [h.ilceler.get(k)!.merkez] : [])))),
         );
       };
       isaretle();
-      window.setInterval(isaretle, 1500);
+      p.dinle(isaretle);
     },
   });
 

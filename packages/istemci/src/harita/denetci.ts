@@ -200,6 +200,11 @@ export class HaritaDenetci {
     this.gorunum?.temaUygula();
   }
 
+  /** Mülk bağlantısı (görünüm yüklenmediyse null): küredeki mülk işaretleri için (main.ts). */
+  mulkBaglantisi(): MulkBaglantisi | null {
+    return this.gorunum?.baglanti ?? null;
+  }
+
   // --- gezinme --------------------------------------------------------------------------------------
 
   async ilAc(il: string): Promise<void> {
