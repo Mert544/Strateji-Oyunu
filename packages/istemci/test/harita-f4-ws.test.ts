@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { parselFiksturuYukle } from "@bolge/veri";
 import { SAAT, SISTEM_OYUNCUSU } from "@bolge/cekirdek";
-import { katil, mulkVerisi, testSunucusu, token } from "../../sunucu/test/yardimci";
+import { kamuKumesi, katil, mulkVerisi, testSunucusu, token } from "../../sunucu/test/yardimci";
 import type { TestSunucusu } from "../../sunucu/test/yardimci";
 import { WsBaglanti } from "../src/harita/baglanti-ws";
 import type { MulkBaglantisi, TesisKomutu } from "../src/harita/baglanti";
@@ -15,17 +15,23 @@ import type { YapiTanimi, YerlesimPlani } from "../src/harita/yapi";
 
 const ILCE = "sn_m_ova_merkez";
 const fiks = parselFiksturuYukle("mini-6").ilceler.find((c) => c.id === ILCE)!;
-/** Satır başına ilk uygun, kırsal ve yatay komşusu da uygun hücre çiftleri. */
-const SATIRLAR: string[][] = [];
-{
-  const uygun = new Set(fiks.hucreler.filter((h) => h.uygun && h.sinif === "kirsal").map((h) => h.id));
+/** Uygun, kırsal, kamu dışı (satılabilir) ve yatay komşusu da öyle olan hücre çiftleri; kamu kümesi çekirdek API'sinden. */
+let CIFT_A: string[] = [];
+let CIFT_B: string[] = [];
+/** İlçenin satılabilir hücre sayısı (kamu düşülmüş). */
+let SATILABILIR = 0;
+function ciftleriSec(): void {
+  const kamu = kamuKumesi(ts!.yazar.sim, ILCE);
+  const uygun = new Set(fiks.hucreler.filter((h) => h.uygun && h.sinif === "kirsal" && !kamu.has(h.id)).map((h) => h.id));
+  const satirlar: string[][] = [];
   for (const h of fiks.hucreler) {
     const [x, y] = h.id.split(":").map(Number) as [number, number];
-    if (uygun.has(h.id) && uygun.has(`${x + 1}:${y}`)) SATIRLAR.push([h.id, `${x + 1}:${y}`]);
+    if (uygun.has(h.id) && uygun.has(`${x + 1}:${y}`)) satirlar.push([h.id, `${x + 1}:${y}`]);
   }
+  CIFT_A = satirlar[0]!;
+  CIFT_B = satirlar[20]!;
+  SATILABILIR = fiks.uygunHucre - kamu.size;
 }
-const CIFT_A = SATIRLAR[0]!;
-const CIFT_B = SATIRLAR[20]!;
 
 let ts: TestSunucusu | null = null;
 const acilanlar: WsBaglanti[] = [];
@@ -58,6 +64,7 @@ function yurtsuzVeri(): ReturnType<typeof mulkVerisi> {
 
 async function hazirla(): Promise<void> {
   ts = await testSunucusu({ veri: yurtsuzVeri() });
+  ciftleriSec();
   const y = await ts.baglan(SISTEM_OYUNCUSU);
   await katil(y, "ali", []);
   await katil(y, "veli", []);
@@ -73,7 +80,7 @@ describe("WsBaglanti: gerçek sunucu", () => {
     expect(a.tesisTurleri).toContain("ciftlik");
     const sa = await a.sahiplikAl(ILCE);
     expect(sa).not.toBeNull();
-    expect(sa!.uygun).toBe(fiks.uygunHucre);
+    expect(sa!.uygun).toBe(SATILABILIR);
     expect(sa!.hucreler.size).toBe(0);
     await v.sahiplikAl(ILCE);
 
@@ -168,7 +175,7 @@ describe("WsBaglanti: gerçek sunucu", () => {
     expect(a.ilceVarMi("tr_41_gebze")).toBeNull();
     expect(await a.sahiplikAl("tr_41_gebze")).toBeNull();
     expect(a.ilceVarMi("tr_41_gebze")).toBe(false);
-    expect((await a.sahiplikAl(ILCE))?.uygun).toBe(fiks.uygunHucre);
+    expect((await a.sahiplikAl(ILCE))?.uygun).toBe(SATILABILIR);
     expect(a.ilceVarMi(ILCE)).toBe(true);
     await expect(WsBaglanti.ac({ url: ts!.url, token: "gel1.ali.sahte", acZamanAsimiMs: 3000 })).rejects.toThrow(/Oturum doğrulanamadı/);
   });
