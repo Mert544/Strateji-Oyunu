@@ -77,6 +77,11 @@ export interface ParselKosuSecenek {
   bakimYonetimi?: boolean;
   /** Yaşlı spekülatörün alıma başladığı yaş (gün; vars. 15 = ayrılmış hücre süresi 14 gün bittikten sonra). */
   spekulatorGun?: number;
+  /**
+   * Yerleşik botlar da ilçeyi `ilceSec` ile seçsin (yurt verebilen + açılışa uygun; uygun ilçe yoksa katılmaz). Vars. KAPALI: yerleşik
+   * botlar eski davranışı korur (önayarın ilçe sıralaması, olmazsa çekirdeğin yedeği). Geç katılanlar HER ZAMAN `ilceSec` kullanır.
+   */
+  yerlesikIlceSec?: boolean;
   /** Hazır veri paketi (test); verilmezse harita seçeneğine göre. */
   veri?: CekirdekVeriPaketi;
   ilerleme?: (mesaj: string) => void;
@@ -158,8 +163,10 @@ export interface ParselTohumSonucu {
   };
   /** Ayrılmış hücre garantisi: geç katılımdan hemen ÖNCE ve koşu SONUNDA (ihlal + kalan pay). */
   ayrilmis: { gecOncesi: AyrilmisGarantisi; sonda: AyrilmisGarantisi };
-  /** Katılamayan oyuncular (katılım reddedildi); ölçüm dışı. Çekirdek normalde yurtsuz katılım verir (aşağıdaki `yurtsuz`). */
+  /** Katılamayan oyuncular (çekirdek katılımı reddetti); ölçüm dışı. Çekirdek normalde yurtsuz katılım verir (aşağıdaki `yurtsuz`). */
   katilamayan: string[];
+  /** "Uygun ilçe yok": ilçe seçimi (`ilceSec`) hiçbir ilçeyi yurt verebilen + açılışa uygun bulmadı; oyuncu KATILMADI (ölçüm dışı), neden kayıtlı. */
+  uygunIlceYok: Array<{ oyuncu: string; neden: string }>;
   /** Yurtsuz oyuncu sayısı: katıldı ama hiçbir ilçe yurt veremedi (kalabalık dünya) ve hiç hücre alamadı. */
   yurtsuz: number;
   /** Bot komut başarısızlıkları (neden -> adet). */
@@ -316,6 +323,7 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
       ...(o.acilis === null ? {} : { acilis: o.acilis }),
       ...(secenek.tarimYonetimi === true ? { tarimYonetimi: true } : {}),
       ...(secenek.bakimYonetimi === true ? { bakimYonetimi: true } : {}),
+      ...(secenek.yerlesikIlceSec === true && o.onayar !== "gec_katilan" ? { ilceSec: true } : {}),
       ...(o.baslangicGun > 0 ? { baslangicGun: o.baslangicGun } : {}),
     }),
     katilmaMs: o.katilmaGun * GUN,
@@ -373,7 +381,8 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
   });
   const sim = sonuc.sim;
   // Katılamayan oyuncular (kalabalık dünyada yurt verilemedi) ölçüm dışıdır; ayrıca listelenir.
-  const katilamayan = duzen.oyuncular.filter((o) => sonuc.katilimlar[o.id]?.reddedildi !== undefined).map((o) => o.id);
+  const katilamayan = duzen.oyuncular.filter((o) => sonuc.katilimlar[o.id]?.reddedildi !== undefined && sonuc.katilimlar[o.id]?.uygunIlceYok !== true).map((o) => o.id);
+  const uygunIlceYok = duzen.oyuncular.filter((o) => sonuc.katilimlar[o.id]?.uygunIlceYok === true).map((o) => ({ oyuncu: o.id, neden: sonuc.katilimlar[o.id]?.ilceNedeni ?? "" }));
   const uyeler = duzen.oyuncular.filter((o) => sonuc.katilimlar[o.id]?.reddedildi === undefined);
   const pk = hibeKitDegeri(sim);
   const T = (gecGun + olcumGunu) * GUN;
@@ -494,6 +503,7 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
     h8,
     ayrilmis: { gecOncesi: ayrilmisGarantisi(ayrilmisOnce, sim.ic.mulk!.ayrilmisSureMs), sonda: ayrilmisGarantisi(ayrilmisKayitlari(sim), sim.ic.mulk!.ayrilmisSureMs) },
     katilamayan,
+    uygunIlceYok,
     yurtsuz: ozetler.filter((o) => o.hucre === 0).length,
     y: {
       y1: y1IlkYapi(ilkYapi),

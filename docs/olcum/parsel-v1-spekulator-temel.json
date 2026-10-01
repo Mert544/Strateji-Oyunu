@@ -4,6 +4,7 @@
   "harita": "mini-6",
   "tarimYonetimi": false,
   "bakimYonetimi": false,
+  "yerlesikIlceSec": false,
   "spekulatorGun": 15,
   "etiket": "v1-spekulator-temel",
   "bulgular": "parsel-v1-bulgular.md",
@@ -17,7 +18,7 @@
   "olcumGunu": 10,
   "iklim": "hizli",
   "agir": false,
-  "sureMs": 2490,
+  "sureMs": 3260,
   "duzen": {
     "yerlesik": {
       "ciftci": 3,
@@ -589,6 +590,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -660,7 +662,7 @@
         "yapi_yerlestir": 34,
         "ticaret_emri": 47
       },
-      "sureMs": 1262
+      "sureMs": 1417
     },
     {
       "tohum": 2,
@@ -1191,6 +1193,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -1262,7 +1265,7 @@
         "yapi_yerlestir": 34,
         "ticaret_emri": 47
       },
-      "sureMs": 771
+      "sureMs": 1071
     },
     {
       "tohum": 3,
@@ -1793,6 +1796,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -1864,7 +1868,7 @@
         "yapi_yerlestir": 34,
         "ticaret_emri": 47
       },
-      "sureMs": 457
+      "sureMs": 771
     }
   ]
 }

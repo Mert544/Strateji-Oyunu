@@ -3,10 +3,10 @@
  * deterministiktir, durum değiştirmez, komutları reddedilmez.
  */
 import { describe, expect, it } from "vitest";
-import { GUN, SAAT, Simulasyon, anlikHazine, anlikMiktar, kamuHucreMi, mulkOyuncuBul } from "@bolge/cekirdek";
+import { GUN, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikHazine, anlikMiktar, kamuHucreMi, mulkOyuncuBul, yurtPlanla } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi } from "@bolge/cekirdek";
 import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
-import { GEC_ACILISLARI, PARSEL_ONAYARLARI, parselBotuOlustur, parselKos } from "../src";
+import { ACILIS_ESLEMESI, GEC_ACILISLARI, PARSEL_ONAYARLARI, ilceSec, parselBotuOlustur, parselKos } from "../src";
 import type { ParselBotu, ParselKosuOyuncusu, ParselOnayari } from "../src";
 
 function veri(): CekirdekVeriPaketi {
@@ -298,5 +298,146 @@ describe("parsel botları: spekülatör", () => {
     // Yurtsuz oyuncuya bot komut vermez (hücresi yok); reddedilen komut da yok
     for (const o of yurtsuz) expect(r.komutSayisi[o.id]).toBe(0);
     expect(Object.values(r.basarisizSayisi).every((x) => x === 0)).toBe(true);
+  });
+});
+
+describe("ilceSec: yurt verebilen + açılışa uygun ilçe", () => {
+  const taze = () => Simulasyon.olustur(veri(), 1);
+  const katil = (sim: Simulasyon, id: string, ilce?: string) =>
+    sim.uygula({ t: sim.dunya.zaman, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: id, bolgeler: [], ...(ilce !== undefined ? { ilce } : {}) } });
+  /** Ilçe dolana kadar pasif oyuncu katar. */
+  const doldur = (sim: Simulasyon, ilceler: readonly string[]) => {
+    for (const c of ilceler) for (let i = 0; i < 30 && typeof yurtPlanla(sim.dunya, sim.ic, c) !== "string"; i++) katil(sim, `dolgu_${c}_${i}`, c);
+  };
+
+  it("açılış eşlemesi VERİ: her geç açılışı için ilk yapı türleri içerikte vardır; ova / dağ / kıyı+ova tercihi", () => {
+    expect(Object.keys(ACILIS_ESLEMESI).sort()).toEqual([...GEC_ACILISLARI].sort());
+    const s = taze();
+    for (const a of GEC_ACILISLARI) {
+      for (const t of ACILIS_ESLEMESI[a].ilkYapiTurleri) expect(s.ic.tesisTuruIndeks[t], `${a}:${t}`).toBeDefined();
+      for (const t of ACILIS_ESLEMESI[a].ekYapilar) expect(s.ic.mulk!.ekYapiIndeks.has(t), `${a}:${t}`).toBe(true);
+    }
+    // Boş dünyada: çiftçi ova ilinde, sanayici dağ ilinde, pazar kıyı+ova ilinde (mini-6)
+    expect(ilceSec(s, "ciftci").ilce).toMatch(/^sn_m_ova_/);
+    expect(ilceSec(s, "sanayici").ilce).toMatch(/^sn_m_dag_/);
+    expect(ilceSec(s, "pazar").ilce).toMatch(/^sn_m_sehir_/);
+    expect(ilceSec(s, "ciftci").neden).toContain("yurt verebilen");
+  });
+
+  it("açılış koşulu: ek yapı tanımsızsa (pazar için ticaret_ofisi) uygun ilçe yok ve neden yazılı", () => {
+    const v = veri();
+    delete (v.param.mulk!.ekYapilar as Record<string, unknown>)["ticaret_ofisi"];
+    const r = ilceSec(Simulasyon.olustur(v, 1), "pazar");
+    expect(r.ilce).toBeNull();
+    expect(r.neden).toContain("ek yapisi tanimli degil");
+    expect(ilceSec(Simulasyon.olustur(v, 1), "ciftci").ilce).not.toBeNull(); // diğer açılışlar etkilenmez
+  });
+
+  it("ÇEKİRDEKLE TUTARLILIK: seçilen ilçede oyuncu_katil gerçekten yurt verir; yurt veremeyen ilçede reddedilir (örneklem)", () => {
+    const s = taze();
+    doldur(s, ["sn_m_ova_merkez", "sn_m_ova_tasra", "sn_m_dag_tasra"]);
+    const mk = s.ic.mulk!;
+    let verebilen = 0;
+    let veremeyen = 0;
+    for (const c of [...mk.ilceler.keys()]) {
+      const plan = yurtPlanla(s.dunya, s.ic, c);
+      const k = s.klonla();
+      const r = katil(k, "deneme", c);
+      if (typeof plan === "string") {
+        veremeyen++;
+        expect(r.tamam, `${c} yurt veremez`).toBe(false);
+      } else {
+        verebilen++;
+        expect(r.tamam, `${c} yurt verebilir`).toBe(true);
+        expect(k.dunya.mulk!.hucreler.filter((h) => h.sahip === "deneme" && h.ilce === c)).toHaveLength(mk.p.yeniOyuncu.yurtHucre);
+      }
+    }
+    expect(verebilen).toBeGreaterThan(0);
+    expect(veremeyen).toBeGreaterThan(0);
+    // Her açılış için seçilen ilçe yurt verebilenlerden biridir ve gerçekten yurt verir
+    for (const a of GEC_ACILISLARI) {
+      const sec = ilceSec(s, a);
+      if (sec.ilce === null) continue;
+      expect(typeof yurtPlanla(s.dunya, s.ic, sec.ilce)).not.toBe("string");
+      const k = s.klonla();
+      expect(katil(k, "deneme", sec.ilce).tamam).toBe(true);
+    }
+    // Seçim dolu ilçeleri atlar: ova ilçeleri doluyken çiftçi başka ilçeye gider
+    expect(["sn_m_ova_merkez", "sn_m_ova_tasra"]).not.toContain(ilceSec(s, "ciftci").ilce);
+  });
+
+  it("yurt verebilen ilçe var ama açılışa uygun yok: neden aşamayı söyler (sanayici, dağ ilçeleri dolu)", () => {
+    const s = taze();
+    doldur(s, ["sn_m_dag_merkez", "sn_m_dag_tasra"]);
+    const r = ilceSec(s, "sanayici");
+    expect(r.ilce).toBeNull();
+    expect(r.yurtVerebilen).toBeGreaterThan(0);
+    expect(r.acilisaUygun).toBe(0);
+    expect(r.neden).toContain("hicbirinde acilisin ilk yapisi");
+  });
+
+  it("DOYGUN dünya: hiçbir ilçe yurt veremez → 'uygun ilçe yok' kararı; koşucu geç katılanı KATMAZ ve ayrı sayaçta tutar (çekirdek yedeğine bırakmaz)", () => {
+    const yerlesik = Array.from({ length: 120 }, (_, i) => ({ id: `p${i}`, bot: parselBotuOlustur("pasif", `p${i}`), katilmaMs: 0 }));
+    const gec = GEC_ACILISLARI.map((a) => ({ id: `gec_${a}`, bot: parselBotuOlustur("gec_katilan", `gec_${a}`, { acilis: a }), katilmaMs: 3 * GUN }));
+    const r = parselKos({ veri: veri(), tohum: 1, oyuncular: [...yerlesik, ...gec], sureMs: 4 * GUN, katilimRedDevam: true });
+    for (const o of gec) {
+      const k = r.katilimlar[o.id]!;
+      expect(k.uygunIlceYok, o.id).toBe(true);
+      expect(k.reddedildi).toContain("uygun ilce yok");
+      expect(k.ilceNedeni).toContain("yurt verebilen ilce yok");
+      expect(r.sim.dunya.oyuncular.some((x) => x.id === o.id)).toBe(false);
+      expect(r.komutSayisi[o.id]).toBe(0);
+    }
+    // Yerleşik (eski davranış) botlar çekirdek yedeğiyle katılmaya devam eder (yurtsuz): davranış değişmedi
+    expect(r.sim.dunya.oyuncular.filter((x) => x.id.startsWith("p"))).toHaveLength(120);
+  });
+
+  it("geç katılan açılışa uygun ilçeye katılır ve yapı kurar (ova dolu olsa bile dağda Mera); ilceKarari nedenini kaydeder", () => {
+    const yerlesik = Array.from({ length: 40 }, (_, i) => ({ id: `c${i}`, bot: parselBotuOlustur("ciftci", `c${i}`), katilmaMs: 0 }));
+    const gec = { id: "gec", bot: parselBotuOlustur("gec_katilan", "gec", { acilis: "ciftci" }), katilmaMs: 2 * GUN };
+    const r = parselKos({ veri: veri(), tohum: 1, oyuncular: [...yerlesik, gec], sureMs: 4 * GUN, katilimRedDevam: true });
+    const k = r.katilimlar["gec"]!;
+    if (k.uygunIlceYok === true) {
+      expect(k.reddedildi).toContain("uygun ilce yok");
+    } else {
+      expect(k.ilceNedeni).toContain("acilisa uygun");
+      expect(k.ilceGeriDusuldu).toBe(false);
+      expect(r.komutGunlugu.some((x) => x.oyuncu === "gec" && x.tur === "yapi_yerlestir" && x.tamam)).toBe(true);
+    }
+  });
+
+  it("siralama: 'doluluk' en boş ilçe; 'emsal' yerleşik sahibi olan ilçeyi tercih eder; dünya değişmez; deterministik", () => {
+    const s = taze();
+    katil(s, "yerlesik", "sn_m_ova_tasra");
+    const once = s.durumOzeti();
+    const dol = ilceSec(s, "ciftci", { siralama: "doluluk" });
+    const ems = ilceSec(s, "ciftci", { siralama: "emsal" });
+    expect(ems.ilce).toBe("sn_m_ova_tasra");
+    expect(dol.ilce).not.toBe("sn_m_ova_tasra");
+    expect(s.durumOzeti()).toBe(once); // salt okunur
+    expect(JSON.stringify(ilceSec(s, "ciftci", { siralama: "emsal" }))).toBe(JSON.stringify(ems));
+    const s2 = taze();
+    katil(s2, "yerlesik", "sn_m_ova_tasra");
+    expect(JSON.stringify(ilceSec(s2, "sanayici"))).toBe(JSON.stringify(ilceSec(s, "sanayici")));
+  });
+
+  it("emsal sıralaması ÜRETEN sahibi (yapısı olan) önce sayar: yapısız sahipli ilçe (kimlik sırasında önde) yerine yapılı ilçe seçilir", () => {
+    const s = taze();
+    katil(s, "yapisiz", "sn_m_ova_merkez");
+    katil(s, "ureten", "sn_m_ova_tasra");
+    for (const k of parselBotuOlustur("ciftci", "ureten").karar(s)) s.uygula({ t: s.dunya.zaman, oyuncu: "ureten", komut: k });
+    expect(s.dunya.mulk!.hucreler.some((h) => h.sahip === "ureten" && (h.tesis !== undefined || h.insaat !== undefined))).toBe(true);
+    expect(ilceSec(s, "ciftci", { siralama: "emsal" }).ilce).toBe("sn_m_ova_tasra");
+  });
+
+  it("bölge kipinde (mülk yok) ilçe seçimi 'mulk kipi kapali' döner; yerleşik botlar ilceSec seçeneğiyle açık ilçe kararı verir", () => {
+    const b = Simulasyon.olustur(miniVeriyiYukle(), 1);
+    expect(ilceSec(b, "ciftci")).toMatchObject({ ilce: null, neden: "mulk kipi kapali" });
+    const bot = parselBotuOlustur("ciftci", "x", { ilceSec: true });
+    expect(bot.ilceKarari).toBeDefined();
+    expect(parselBotuOlustur("ciftci", "x").ilceKarari).toBeUndefined(); // vars. kapalı: eski davranış
+    expect(parselBotuOlustur("gec_katilan", "x").ilceKarari).toBeDefined(); // geç katılan vars. açık
+    const s = taze();
+    expect(bot.ilceKarari!(s).ilce).toMatch(/^sn_m_ova_/);
   });
 });

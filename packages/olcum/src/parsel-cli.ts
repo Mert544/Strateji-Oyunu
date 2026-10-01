@@ -1,6 +1,6 @@
 /**
  * Parsel kısa ölçüm komutu (mülk kipi): `pnpm olcum --kip parsel [--tohum 1-3] [--gun 24] [--gec-gun 10] [--olcum-gunu 14]
- * [--bot ciftci=3,sanayici=2,tuccar=2,pasif=1] [--gec ciftci,sanayici,pazar] [--iklim hizli|gercek] [--cikti raporlar] [--ad kosu] [--bulgular dosya.md] [--tarim-yonetimi] [--bakim-yonetimi] [--spekulator-gun 15] [--kalabalik] [--harita mini-6|sentetik-50] [--karsilastir onceki.json] [--agir]`.
+ * [--bot ciftci=3,sanayici=2,tuccar=2,pasif=1] [--gec ciftci,sanayici,pazar] [--iklim hizli|gercek] [--cikti raporlar] [--ad kosu] [--bulgular dosya.md] [--tarim-yonetimi] [--bakim-yonetimi] [--ilce-sec] [--spekulator-gun 15] [--kalabalik] [--harita mini-6|sentetik-50] [--karsilastir onceki.json] [--agir]`.
  *
  * Varsayılan KISA koşudur (mini-6 parsel fikstürü, 8 yerleşik + 3 geç katılan bot, 24 sim günü, tohum 1–3; tohum başına ~2–4 sn).
  * AĞIR koşu (`--agir`): H6 tanımındaki gerçek 60. gün katılımı (74 sim günü) ve tohum 1–10; varsayılanda çalıştırılmaz.
@@ -34,6 +34,7 @@ export interface ParselArguman {
   harita: ParselHaritasi;
   tarimYonetimi: boolean;
   bakimYonetimi: boolean;
+  yerlesikIlceSec: boolean;
   spekulatorGun: number | undefined;
   kalabalik: boolean;
   karsilastir: string | undefined;
@@ -76,7 +77,7 @@ function gecAyristir(v: string): GecAcilis[] {
 }
 
 export function parselArgumanAyristir(argv: readonly string[]): ParselArguman {
-  const a: ParselArguman = { tohum: PARSEL_VARSAYILAN_TOHUM, cikti: "raporlar", ad: undefined, bulgular: undefined, gun: undefined, gecGun: undefined, olcumGunu: undefined, bot: {}, gec: undefined, iklim: "hizli", agir: false, harita: "mini-6", tarimYonetimi: false, bakimYonetimi: false, spekulatorGun: undefined, kalabalik: false, karsilastir: undefined, yardim: false };
+  const a: ParselArguman = { tohum: PARSEL_VARSAYILAN_TOHUM, cikti: "raporlar", ad: undefined, bulgular: undefined, gun: undefined, gecGun: undefined, olcumGunu: undefined, bot: {}, gec: undefined, iklim: "hizli", agir: false, harita: "mini-6", tarimYonetimi: false, bakimYonetimi: false, yerlesikIlceSec: false, spekulatorGun: undefined, kalabalik: false, karsilastir: undefined, yardim: false };
   let tohumVerildi = false;
   for (let i = 0; i < argv.length; i++) {
     const x = argv[i] as string;
@@ -135,6 +136,9 @@ export function parselArgumanAyristir(argv: readonly string[]): ParselArguman {
       case "--tarim-yonetimi":
         a.tarimYonetimi = true;
         break;
+      case "--ilce-sec":
+        a.yerlesikIlceSec = true;
+        break;
       case "--bakim-yonetimi":
         a.bakimYonetimi = true;
         break;
@@ -163,7 +167,7 @@ export function parselArgumanAyristir(argv: readonly string[]): ParselArguman {
   return a;
 }
 
-const YARDIM = `Kullanim: pnpm olcum --kip parsel [--tohum 1-3] [--gun 24] [--gec-gun 10] [--olcum-gunu 14] [--bot ciftci=3,sanayici=2,tuccar=2,pasif=1] [--gec ciftci,sanayici,pazar] [--iklim hizli|gercek] [--cikti raporlar] [--ad kosu] [--bulgular dosya.md] [--tarim-yonetimi] [--bakim-yonetimi] [--spekulator-gun 15] [--kalabalik] [--harita mini-6|sentetik-50] [--karsilastir onceki.json] [--agir]
+const YARDIM = `Kullanim: pnpm olcum --kip parsel [--tohum 1-3] [--gun 24] [--gec-gun 10] [--olcum-gunu 14] [--bot ciftci=3,sanayici=2,tuccar=2,pasif=1] [--gec ciftci,sanayici,pazar] [--iklim hizli|gercek] [--cikti raporlar] [--ad kosu] [--bulgular dosya.md] [--tarim-yonetimi] [--bakim-yonetimi] [--ilce-sec] [--spekulator-gun 15] [--kalabalik] [--harita mini-6|sentetik-50] [--karsilastir onceki.json] [--agir]
   Kisa parsel olcumu (mini-6 parsel fikstur; varsayilan 8 yerlesik + 3 gec katilan bot, 24 sim gunu, tohum 1-3): H6 (birincil Y7 + ucuz hucre; ikincil servet), H8, Y olcutleri.
   --tohum        Tohum araligi/listesi (vars. 1-3; --agir ile 1-10)
   --gun          Toplam sim gunu (vars. gec-gun + olcum-gunu = 24; verilirse en az gec-gun + olcum-gunu olmali)
@@ -179,6 +183,7 @@ const YARDIM = `Kullanim: pnpm olcum --kip parsel [--tohum 1-3] [--gun 24] [--ge
   --harita       mini-6 (vars.) | sentetik-50 (10.000 hucre; uzun surer)
   --tarim-yonetimi  Botlar ekim_plani + gubre_dozu ile toprak yonetir (pasif/spekulator haric)
   --bakim-yonetimi  Botlar bakim parcasi ithal eder ve asinma esiginde genel_onarim yapar (pasif/spekulator haric)
+  --ilce-sec     Yerlesik botlar da ilceyi ilceSec ile secsin (yurt verebilen + acilisa uygun; uygun yoksa katilmaz). Gec katilanlar HER ZAMAN ilceSec kullanir
   --spekulator-gun  Yasli spekulatorun arsa almaya basladigi yas, gun (vars. 15)
   --karsilastir  Onceki parsel olcum JSON'u: rapora yan yana Y7/servet oranlari ekler
   --agir         AGIR koşu: gec-gun 60 (74 sim gunu), tohum 1-10. Varsayilanda calistirilmaz.`;
@@ -203,7 +208,7 @@ export function parselAna(argv: readonly string[]): void {
   console.log(`Parsel olcumu | tohum ${tohumlar.join(",")} | ${toplamBot} bot | gec-gun ${gecGun} + olcum ${olcumGunu} -> ${sureGun} gun | iklim ${arg.iklim} | harita ${arg.harita}${arg.tarimYonetimi ? " | TARIM-YONETIMI" : ""}${arg.bakimYonetimi ? " | BAKIM-YONETIMI" : ""}${arg.kalabalik ? " | KALABALIK" : ""}${arg.agir ? " | AGIR" : ""}${arg.ad ? ` | etiket ${arg.ad}` : ""}`);
   const basla = Date.now();
   const sonuclar = tohumlar.map((t) => {
-    const r = parselTohumKos({ tohumlar, gecGun, olcumGunu, gun: sureGun, yerlesik: yerlesikDagilim, harita: arg.harita, tarimYonetimi: arg.tarimYonetimi, bakimYonetimi: arg.bakimYonetimi, spekulatorGun, gecAcilislari, iklim: arg.iklim, ilerleme: (m) => console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] ${m}`) }, t);
+    const r = parselTohumKos({ tohumlar, gecGun, olcumGunu, gun: sureGun, yerlesik: yerlesikDagilim, harita: arg.harita, tarimYonetimi: arg.tarimYonetimi, bakimYonetimi: arg.bakimYonetimi, yerlesikIlceSec: arg.yerlesikIlceSec, spekulatorGun, gecAcilislari, iklim: arg.iklim, ilerleme: (m) => console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] ${m}`) }, t);
     console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] tohum ${t} bitti: H6 (Y7+ucuz) ${r.h6.karar.birincil.verdict}, servet(ikincil) ${r.h6.karar.ikincil.ham.verdict}, H8 ${r.h8.verdict}`);
     return r;
   });
@@ -220,6 +225,7 @@ export function parselAna(argv: readonly string[]): void {
     harita: arg.harita,
     tarimYonetimi: arg.tarimYonetimi,
     bakimYonetimi: arg.bakimYonetimi,
+    yerlesikIlceSec: arg.yerlesikIlceSec,
     spekulatorGun,
     ...(karsilastirma !== undefined ? { karsilastirma } : {}), etiket: arg.ad, bulgular: arg.bulgular ?? `${ad}-bulgular.md`, tohumlar, gun: sureGun, gecGun, olcumGunu, iklim: arg.iklim, agir: arg.agir, sureMs, duzen: { yerlesik, gec: gecAcilislari } };
   const { karsilastirma: _onceki, ...jsonMeta } = meta; // karşılaştırılan koşunun tamamı JSON'a kopyalanmaz

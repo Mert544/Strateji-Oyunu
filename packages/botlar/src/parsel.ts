@@ -18,7 +18,7 @@
  *  - gec_katilan: `acilis` ∈ ciftci | sanayici | pazar (tuccar); aynı paket, farklı açılış (Ar-Ge `gec_ciftci/gec_sanayici/gec_pazar`).
  *    Yerleşiklerin bulunduğu (en çok sahipli) ilçeye katılır: ilçe medyanı ile karşılaştırılabilsin.
  */
-import { anlikHazine, anlikMiktar, isletmeBul, kamuHucreMi, mulkOyuncuBul, parselFiyati, ticaretEmirYuvasi } from "@bolge/cekirdek";
+import { anlikHazine, anlikMiktar, isletmeBul, kamuHucreMi, mulkOyuncuBul, parselFiyati, ticaretEmirYuvasi, yurtPlanla } from "@bolge/cekirdek";
 import type { ArsaSinifi, BolgeDurumu, DerlenmisMulk, Dunya, HucreDurumu, Komut, OyuncuId, Simulasyon } from "@bolge/cekirdek";
 import { icerikBilgisi } from "./tablo";
 import type { IcerikBilgisi } from "./tablo";
@@ -40,6 +40,12 @@ export interface ParselBotu {
    * Tanımsız dönerse çekirdek ilçeyi seçer.
    */
   katilimIlcesi(sim: Simulasyon): string | undefined;
+  /**
+   * Açık ilçe kararı (yalnız `ilceSec` açık botlarda: geç katılan, ya da `ilceSec` seçeneği): ilçe + nedeni ya da "uygun ilçe yok"
+   * (`ilce: null`). Koşucu `ilce: null` ise oyuncuyu KATMAZ ve ayrı sayaca ("uygun ilçe yok") yazar; çekirdeğin yedek ilçe seçimine
+   * bırakmaz. Tanımsızsa bot eski davranışı (`katilimIlcesi` + çekirdek yedeği) kullanır.
+   */
+  readonly ilceKarari?: (sim: Simulasyon) => IlceSecimi;
   /** O anki dünya durumuna göre komut listesi; durum değiştirmez. */
   karar(sim: Simulasyon): Komut[];
 }
@@ -58,6 +64,11 @@ export interface ParselBotSecenegi {
    * Etkisiz: `pasif`, `spekulator`. Vars. kapalı. (Kural: stok < 24 saatlik bakım ihtiyacıysa 72 saatliğe tamamlanır.)
    */
   bakimYonetimi?: boolean;
+  /**
+   * İlçeyi `ilceSec` ile seç (yurt verebilen + açılışa uygun; bkz. `ilceSec`). `gec_katilan` için vars. AÇIK; diğer önayarlarda vars. kapalı
+   * (eski davranış: önayarın ilçe sıralaması, olmazsa çekirdeğin yedeği). Açıkken "uygun ilçe yok" ise oyuncu katılmaz.
+   */
+  ilceSec?: boolean;
   /** `spekulator`: arsa alımına başlama yaşı (gün; katılımdan itibaren). Vars. 0. 15 ⇒ ayrılmış hücre süresi (14 gün) bittikten sonra. */
   baslangicGun?: number;
 }
@@ -103,7 +114,7 @@ function tanimSec(onayar: ParselOnayari, acilis: GecAcilis): Tanim {
       return PASIF;
     case "gec_katilan": {
       const t = acilis === "sanayici" ? SANAYICI : acilis === "pazar" ? TUCCAR : CIFTCI;
-      return { ...t, yerlesikIlce: true };
+      return { ...t, acilisTurleri: ACILIS_ESLEMESI[acilis].ilkYapiTurleri, ilSirasi: ACILIS_ESLEMESI[acilis].ilTercihi, yerlesikIlce: true };
     }
   }
 }
@@ -407,6 +418,13 @@ function dahaBos(g: Gorunum, a: string, b: string): number {
   return x < y ? -1 : x > y ? 1 : dizgeSirala(a, b);
 }
 
+/** İlçede, üzerinde yapı (biten ya da süren inşaat) olan hücresi bulunan farklı oyuncu sayısı (kendisi hariç): ÜRETEN emsal adayları. */
+function ureticiSahipSayisi(g: Gorunum, ilce: string): number {
+  const s = new Set<string>();
+  for (const h of g.d.mulk!.hucreler) if (h.ilce === ilce && h.sahip !== g.oyuncu && (h.tesis !== undefined || h.insaat !== undefined)) s.add(h.sahip);
+  return s.size;
+}
+
 /** İlçede kaç farklı oyuncu hücre sahibi (kendisi hariç). */
 function sahipSayisi(g: Gorunum, ilce: string): number {
   const s = new Set<string>();
@@ -609,6 +627,77 @@ function spekAdaylari(g: Gorunum, yeniOyuncu: boolean): SpekAday[] {
 }
 
 // ---------------------------------------------------------------------------
+// Açılış eşlemesi ve ilçe seçimi (`ilceSec`)
+// ---------------------------------------------------------------------------
+
+/**
+ * Geç katılan açılışı -> açılışın İLK yapısını kurabilen il koşulu (VERİ: tek kaynak; `tanimSec` de buradan okur).
+ * `ilkYapiTurleri`: bunlardan en az biri ilde kurulabilmeli (etiket + rezerv; `ilIcinUygunMu`); `ekYapilar`: ek yapı türleri mülk
+ * parametrelerinde tanımlı olmalı (il koşulu yoktur). `ilTercihi`: uygun ilçeler arasında il etiketi önceliği (ova / dağ / kıyı+ova).
+ */
+export const ACILIS_ESLEMESI: Readonly<Record<GecAcilis, { ilkYapiTurleri: readonly string[]; ekYapilar: readonly string[]; ilTercihi: "ova" | "dag" | "kiyi_ova" }>> = {
+  ciftci: { ilkYapiTurleri: ["ciftlik", "mera"], ekYapilar: [], ilTercihi: "ova" },
+  sanayici: { ilkYapiTurleri: ["hidro_santrali"], ekYapilar: [], ilTercihi: "dag" },
+  pazar: { ilkYapiTurleri: ["ciftlik", "mera"], ekYapilar: ["ticaret_ofisi"], ilTercihi: "kiyi_ova" },
+};
+
+export interface IlceSecimi {
+  /** Seçilen ilçe; hiçbiri uygun değilse null ("uygun ilçe yok"). */
+  ilce: string | null;
+  /** Karar nedeni (başarıda seçim özeti, başarısızlıkta hangi aşamada elendiği). */
+  neden: string;
+  /** a) yurt verebilen ilçe sayısı. */
+  yurtVerebilen: number;
+  /** b) bunlardan açılışa uygun olanların sayısı. */
+  acilisaUygun: number;
+}
+
+export interface IlceSecimSecenegi {
+  /** Aday ilçeleri değerlendirilen oyuncu (yalnız il/işletme bağlamı için; katılmamış olabilir). Vars. "aday". */
+  oyuncu?: OyuncuId;
+  /**
+   * Sıralama: "doluluk" (vars.): il tercihi, en düşük doluluk, kimlik. "emsal": il tercihi, EN ÇOK ÜRETEN diğer sahibi (üzerinde yapı olan
+   * hücresi bulunan; Y7 emsali ölçülebilsin), sonra en çok diğer sahip, doluluk, kimlik. Geç katılan botu "emsal" kullanır.
+   */
+  siralama?: "doluluk" | "emsal";
+}
+
+/**
+ * Saf ve deterministik ilçe seçimi (çekirdeği yalnız okur; dünyayı değiştirmez). Aşamalar:
+ *  a) YURT VEREBİLEN ilçeler: çekirdeğin herkese açık `yurtPlanla(dunya, ic, ilce)` yardımcısı (kamu dışı, uygun, sahipsiz, kenar-bitişik
+ *     yeterli hücre; %25 ilçe payı; ayrılmış hücre kuralından muaf) — kendi kopyamız YOKTUR, çekirdekle birebir aynı kural.
+ *  b) AÇILIŞA UYGUN ilçeler: `ACILIS_ESLEMESI` (açılışın ilk yapısı ilin etiket ve rezervine uyar; ek yapılar tanımlı).
+ *  c) Sıralama: il tercihi (açılışın ova/dağ/kıyı önceliği), (emsal seçeneğinde) çok sahipli, en düşük doluluk, kimlik sırası.
+ *  d) a ∩ b boşsa `ilce: null` ve nedeni (hangi aşamada elendiği): "uygun ilçe yok".
+ */
+export function ilceSec(sim: Simulasyon, acilis: GecAcilis, secenek: IlceSecimSecenegi = {}): IlceSecimi {
+  const g = gorunumKur(sim, secenek.oyuncu ?? "aday");
+  if (g === null) return { ilce: null, neden: "mulk kipi kapali", yurtVerebilen: 0, acilisaUygun: 0 };
+  const e = ACILIS_ESLEMESI[acilis];
+  const tanim: Tanim = { ...CIFTCI, acilisTurleri: e.ilkYapiTurleri, ilSirasi: e.ilTercihi };
+  const ilOf = (c: string): string => (g.mk.ilceler.get(c) as { il: string }).il;
+  const yurtVerebilir = [...g.mk.ilceler.keys()].sort(dizgeSirala).filter((c) => {
+    const plan = yurtPlanla(g.d, sim.ic, c);
+    return plan === null || typeof plan !== "string"; // null: yurt kuralı kapalı (yurtHucre 0): her ilçe uygun
+  });
+  const ekTamam = e.ekYapilar.every((t) => g.mk.ekYapiIndeks.has(t));
+  const uygun = ekTamam ? yurtVerebilir.filter((c) => e.ilkYapiTurleri.some((t) => ilIcinUygunMu(g, ilOf(c), t))) : [];
+  if (uygun.length === 0) {
+    const neden = yurtVerebilir.length === 0
+      ? "yurt verebilen ilce yok (ilceler dolu / bitisik bos alan yok)"
+      : !ekTamam
+        ? `acilis ek yapisi tanimli degil: ${e.ekYapilar.join(",")}`
+        : `yurt verebilen ${yurtVerebilir.length} ilcenin hicbirinde acilisin ilk yapisi (${e.ilkYapiTurleri.join("|")}) kurulamaz`;
+    return { ilce: null, neden, yurtVerebilen: yurtVerebilir.length, acilisaUygun: 0 };
+  }
+  const emsal = secenek.siralama === "emsal";
+  const sirali = [...uygun].sort(
+    (a, b) => ilOnceligi(g, tanim, ilOf(a)) - ilOnceligi(g, tanim, ilOf(b)) || (emsal ? ureticiSahipSayisi(g, b) - ureticiSahipSayisi(g, a) || sahipSayisi(g, b) - sahipSayisi(g, a) : 0) || dahaBos(g, a, b),
+  );
+  return { ilce: sirali[0] as string, neden: `yurt verebilen ${yurtVerebilir.length}, acilisa uygun ${uygun.length}; ${emsal ? "il tercihi, emsal, doluluk" : "il tercihi, doluluk"} sirasiyla`, yurtVerebilen: yurtVerebilir.length, acilisaUygun: uygun.length };
+}
+
+// ---------------------------------------------------------------------------
 // Bot
 // ---------------------------------------------------------------------------
 
@@ -618,6 +707,9 @@ class Bot implements ParselBotu {
   private readonly tarim: boolean;
   private readonly bakim: boolean;
   private readonly baslangicMs: number;
+  /** Açık ilçe kararı (`ilceSec`) kullanılıyor mu. */
+  private readonly ilceSecAcik: boolean;
+  readonly ilceKarari?: (sim: Simulasyon) => IlceSecimi;
 
   constructor(
     readonly oyuncu: OyuncuId,
@@ -628,6 +720,11 @@ class Bot implements ParselBotu {
     this.acilis = onayar === "gec_katilan" ? acilis : undefined;
     this.tanim = tanimSec(onayar, acilis);
     this.tarim = onayar === "ciftci_tarim" || (secenek.tarimYonetimi === true && onayar !== "pasif" && onayar !== "spekulator");
+    this.ilceSecAcik = secenek.ilceSec ?? onayar === "gec_katilan";
+    if (this.ilceSecAcik && onayar !== "spekulator") {
+      const acilisAnahtari: GecAcilis = onayar === "gec_katilan" ? acilis : onayar === "sanayici" ? "sanayici" : onayar === "tuccar" ? "pazar" : "ciftci";
+      this.ilceKarari = (sim: Simulasyon): IlceSecimi => ilceSec(sim, acilisAnahtari, { oyuncu, siralama: onayar === "gec_katilan" ? "emsal" : "doluluk" });
+    }
     this.bakim = secenek.bakimYonetimi === true && onayar !== "pasif" && onayar !== "spekulator";
     const gun = secenek.baslangicGun ?? 0;
     if (!Number.isSafeInteger(gun) || gun < 0) throw new Error(`parsel bot: baslangicGun negatif olmayan tamsayi olmali: ${String(secenek.baslangicGun)}`);
@@ -645,6 +742,7 @@ class Bot implements ParselBotu {
       };
       return [...g.mk.ilceler.keys()].sort(dizgeSirala).filter((c) => yurtVerebilir(g, c)).sort((a, b) => bos(b) - bos(a) || dizgeSirala(a, b))[0];
     }
+    if (this.ilceKarari !== undefined) return this.ilceKarari(sim).ilce ?? undefined;
     return adayIlceler(g, this.tanim)[0];
   }
 

@@ -4,6 +4,7 @@
   "harita": "mini-6",
   "tarimYonetimi": true,
   "bakimYonetimi": true,
+  "yerlesikIlceSec": false,
   "spekulatorGun": 15,
   "etiket": "v1-kisa-tarim-bakim",
   "bulgular": "parsel-v1-bulgular.md",
@@ -17,7 +18,7 @@
   "olcumGunu": 14,
   "iklim": "hizli",
   "agir": false,
-  "sureMs": 2398,
+  "sureMs": 3001,
   "duzen": {
     "yerlesik": {
       "ciftci": 3,
@@ -589,6 +590,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -662,7 +664,7 @@
         "gubre_dozu": 38,
         "ekim_plani": 19
       },
-      "sureMs": 1185
+      "sureMs": 1248
     },
     {
       "tohum": 2,
@@ -1193,6 +1195,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -1266,7 +1269,7 @@
         "gubre_dozu": 32,
         "ekim_plani": 19
       },
-      "sureMs": 777
+      "sureMs": 1153
     },
     {
       "tohum": 3,
@@ -1797,6 +1800,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -1870,7 +1874,7 @@
         "gubre_dozu": 36,
         "ekim_plani": 17
       },
-      "sureMs": 430
+      "sureMs": 599
     }
   ]
 }

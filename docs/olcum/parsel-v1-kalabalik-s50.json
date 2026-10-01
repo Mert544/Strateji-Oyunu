@@ -4,6 +4,7 @@
   "harita": "sentetik-50",
   "tarimYonetimi": false,
   "bakimYonetimi": false,
+  "yerlesikIlceSec": false,
   "spekulatorGun": 15,
   "etiket": "v1-kalabalik-s50",
   "bulgular": "parsel-v1-bulgular.md",
@@ -15,7 +16,7 @@
   "olcumGunu": 14,
   "iklim": "hizli",
   "agir": false,
-  "sureMs": 74742,
+  "sureMs": 84160,
   "duzen": {
     "yerlesik": {
       "ciftci": 100,
@@ -36,31 +37,31 @@
     "h6": {
       "verdict": "kaldi",
       "servetVerdict": "kaldi",
-      "servetBasariPpm": 333333,
-      "y7PayiPpm": 1000000,
-      "y7Verdict": "gecti",
+      "servetBasariPpm": 1000000,
+      "y7PayiPpm": null,
+      "y7Verdict": "belirsiz",
       "ucuzPayPpm": 0,
       "genelUcuzPayPpm": 0,
-      "hibePayiPpm": 677351
+      "hibePayiPpm": 401954
     },
     "h8": {
       "verdict": "belirsiz",
-      "giniPpm": 446202,
+      "giniPpm": 446473,
       "enBuyukIlcePayiPpm": 250000
     },
     "y": {
-      "y1Ppm": 645367,
-      "y2Dk60Ppm": 699680,
+      "y1Ppm": 648562,
+      "y2Dk60Ppm": 706070,
       "y2Dk10Ppm": 0,
-      "y5EnBuyukPayPpm": 578947,
-      "y5HibritPpm": 473684,
+      "y5EnBuyukPayPpm": 578125,
+      "y5HibritPpm": 473958,
       "y6Ppm": 0
     }
   },
   "tohumBasina": [
     {
       "tohum": 1,
-      "durumOzeti": "f4ea83771548d1fc",
+      "durumOzeti": "dce46d013d40fff5",
       "sureGun": 24,
       "gecGun": 10,
       "olcumGunu": 14,
@@ -76,12 +77,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2848540266,
+            "hazine": 2840641409,
             "stok": 5654890,
             "arazi": 5208333,
             "yapi": 26810000
           },
-          "gelir7Gun": 909773729
+          "gelir7Gun": 905393435
         },
         {
           "id": "ciftci_2",
@@ -94,12 +95,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2853925299,
+            "hazine": 2846026442,
             "stok": 5654890,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 909825809
+          "gelir7Gun": 905445515
         },
         {
           "id": "ciftci_3",
@@ -112,12 +113,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2841397450,
+            "hazine": 2833532613,
             "stok": 5654890,
             "arazi": 5541666,
             "yapi": 26810000
           },
-          "gelir7Gun": 902971892
+          "gelir7Gun": 898625618
         },
         {
           "id": "ciftci_4",
@@ -130,12 +131,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2844688356,
+            "hazine": 2836823519,
             "stok": 5654890,
             "arazi": 2358490,
             "yapi": 26810000
           },
-          "gelir7Gun": 903003644
+          "gelir7Gun": 898657370
         },
         {
           "id": "ciftci_5",
@@ -148,12 +149,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2853057984,
+            "hazine": 2845151456,
             "stok": 5654890,
             "arazi": 2250000,
             "yapi": 26810000
           },
-          "gelir7Gun": 909803305
+          "gelir7Gun": 905423011
         },
         {
           "id": "ciftci_6",
@@ -166,12 +167,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2852826320,
+            "hazine": 2844919792,
             "stok": 5654890,
             "arazi": 2473684,
             "yapi": 26810000
           },
-          "gelir7Gun": 909800953
+          "gelir7Gun": 905420659
         },
         {
           "id": "ciftci_7",
@@ -184,12 +185,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2848261648,
+            "hazine": 2840373138,
             "stok": 5654400,
             "arazi": 2250000,
             "yapi": 26810000
           },
-          "gelir7Gun": 765432920
+          "gelir7Gun": 761250252
         },
         {
           "id": "ciftci_8",
@@ -202,12 +203,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2847812618,
+            "hazine": 2839924108,
             "stok": 5654400,
             "arazi": 2684210,
             "yapi": 26810000
           },
-          "gelir7Gun": 765428552
+          "gelir7Gun": 761245884
         },
         {
           "id": "ciftci_9",
@@ -220,12 +221,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2536139121,
+            "hazine": 2529233450,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_10",
@@ -238,12 +239,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2533581655,
+            "hazine": 2526675984,
             "stok": 5654400,
             "arazi": 2473684,
             "yapi": 26810000
           },
-          "gelir7Gun": 903576692
+          "gelir7Gun": 899190003
         },
         {
           "id": "ciftci_11",
@@ -256,12 +257,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2848147351,
+            "hazine": 2840253007,
             "stok": 5654400,
             "arazi": 4541666,
             "yapi": 26810000
           },
-          "gelir7Gun": 766518694
+          "gelir7Gun": 762330192
         },
         {
           "id": "ciftci_12",
@@ -274,12 +275,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2850525728,
+            "hazine": 2842631384,
             "stok": 5654400,
             "arazi": 2241379,
             "yapi": 26810000
           },
-          "gelir7Gun": 766541710
+          "gelir7Gun": 762353208
         },
         {
           "id": "ciftci_13",
@@ -292,12 +293,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2847023732,
+            "hazine": 2839126613,
             "stok": 5654890,
             "arazi": 5041666,
             "yapi": 26810000
           },
-          "gelir7Gun": 909775544
+          "gelir7Gun": 905395250
         },
         {
           "id": "ciftci_14",
@@ -310,12 +311,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2849461558,
+            "hazine": 2841564439,
             "stok": 5654890,
             "arazi": 2684210,
             "yapi": 26810000
           },
-          "gelir7Gun": 909799232
+          "gelir7Gun": 905418938
         },
         {
           "id": "ciftci_15",
@@ -328,12 +329,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2530926463,
+            "hazine": 2524020792,
             "stok": 5654400,
             "arazi": 5041666,
             "yapi": 26810000
           },
-          "gelir7Gun": 903550988
+          "gelir7Gun": 899164299
         },
         {
           "id": "ciftci_16",
@@ -346,12 +347,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2531223103,
+            "hazine": 2524317432,
             "stok": 5654400,
             "arazi": 4754716,
             "yapi": 26810000
           },
-          "gelir7Gun": 903553844
+          "gelir7Gun": 899167155
         },
         {
           "id": "ciftci_17",
@@ -364,12 +365,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2534727951,
+            "hazine": 2527822280,
             "stok": 5654400,
             "arazi": 2500000,
             "yapi": 26810000
           },
-          "gelir7Gun": 903576524
+          "gelir7Gun": 899189835
         },
         {
           "id": "ciftci_18",
@@ -382,12 +383,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2534754837,
+            "hazine": 2527849166,
             "stok": 5654400,
             "arazi": 2473684,
             "yapi": 26810000
           },
-          "gelir7Gun": 903576692
+          "gelir7Gun": 899190003
         },
         {
           "id": "ciftci_19",
@@ -400,12 +401,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2199374770,
+            "hazine": 2192922049,
             "stok": 5654400,
             "arazi": 2250000,
             "yapi": 26810000
           },
-          "gelir7Gun": 595497770
+          "gelir7Gun": 592207235
         },
         {
           "id": "ciftci_20",
@@ -418,12 +419,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2198925740,
+            "hazine": 2192473019,
             "stok": 5654400,
             "arazi": 2684210,
             "yapi": 26810000
           },
-          "gelir7Gun": 595493402
+          "gelir7Gun": 592202867
         },
         {
           "id": "ciftci_21",
@@ -436,12 +437,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2537312311,
+            "hazine": 2530406640,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_22",
@@ -454,12 +455,12 @@
           "komut": 5,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1578847101,
+            "hazine": 1574561801,
             "stok": 8175290,
             "arazi": 0,
             "yapi": 18830000
           },
-          "gelir7Gun": 553814026
+          "gelir7Gun": 550795731
         },
         {
           "id": "ciftci_23",
@@ -472,12 +473,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2850160172,
+            "hazine": 2842253644,
             "stok": 5654890,
             "arazi": 5052630,
             "yapi": 26810000
           },
-          "gelir7Gun": 909775249
+          "gelir7Gun": 905394955
         },
         {
           "id": "ciftci_24",
@@ -490,12 +491,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2844928525,
+            "hazine": 2837040015,
             "stok": 5654400,
             "arazi": 5473683,
             "yapi": 26810000
           },
-          "gelir7Gun": 765400664
+          "gelir7Gun": 761217996
         },
         {
           "id": "ciftci_25",
@@ -508,12 +509,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2530915499,
+            "hazine": 2524009828,
             "stok": 5654400,
             "arazi": 5052630,
             "yapi": 26810000
           },
-          "gelir7Gun": 903550988
+          "gelir7Gun": 899164299
         },
         {
           "id": "ciftci_26",
@@ -526,12 +527,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2846577465,
+            "hazine": 2838680346,
             "stok": 5654890,
             "arazi": 5473683,
             "yapi": 26810000
           },
-          "gelir7Gun": 909771344
+          "gelir7Gun": 905391050
         },
         {
           "id": "ciftci_27",
@@ -544,12 +545,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2532088673,
+            "hazine": 2525183002,
             "stok": 5654400,
             "arazi": 5052630,
             "yapi": 26810000
           },
-          "gelir7Gun": 903550988
+          "gelir7Gun": 899164299
         },
         {
           "id": "ciftci_28",
@@ -562,12 +563,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2196041647,
+            "hazine": 2189588926,
             "stok": 5654400,
             "arazi": 5473683,
             "yapi": 26810000
           },
-          "gelir7Gun": 595465514
+          "gelir7Gun": 592174979
         },
         {
           "id": "ciftci_29",
@@ -580,12 +581,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2842132868,
+            "hazine": 2834268031,
             "stok": 5654890,
             "arazi": 4830188,
             "yapi": 26810000
           },
-          "gelir7Gun": 902978948
+          "gelir7Gun": 898632674
         },
         {
           "id": "ciftci_30",
@@ -598,12 +599,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2531067021,
+            "hazine": 2524161350,
             "stok": 5654400,
             "arazi": 4905660,
             "yapi": 26810000
           },
-          "gelir7Gun": 903552332
+          "gelir7Gun": 899165643
         },
         {
           "id": "ciftci_31",
@@ -616,12 +617,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2851340931,
+            "hazine": 2843442074,
             "stok": 5654890,
             "arazi": 2500000,
             "yapi": 26810000
           },
-          "gelir7Gun": 909800945
+          "gelir7Gun": 905420651
         },
         {
           "id": "ciftci_32",
@@ -634,12 +635,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2844197553,
+            "hazine": 2836332716,
             "stok": 5654890,
             "arazi": 2833333,
             "yapi": 26810000
           },
-          "gelir7Gun": 902998940
+          "gelir7Gun": 898652666
         },
         {
           "id": "ciftci_33",
@@ -652,12 +653,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2853014608,
+            "hazine": 2845108080,
             "stok": 5654890,
             "arazi": 2291666,
             "yapi": 26810000
           },
-          "gelir7Gun": 909802801
+          "gelir7Gun": 905422507
         },
         {
           "id": "ciftci_34",
@@ -670,12 +671,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2850587458,
+            "hazine": 2842698948,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 765455264
+          "gelir7Gun": 761272596
         },
         {
           "id": "ciftci_35",
@@ -688,12 +689,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2533554761,
+            "hazine": 2526649090,
             "stok": 5654400,
             "arazi": 2500000,
             "yapi": 26810000
           },
-          "gelir7Gun": 903576524
+          "gelir7Gun": 899189835
         },
         {
           "id": "ciftci_36",
@@ -706,12 +707,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2847974984,
+            "hazine": 2840080640,
             "stok": 5654400,
             "arazi": 4708333,
             "yapi": 26810000
           },
-          "gelir7Gun": 766517014
+          "gelir7Gun": 762328512
         },
         {
           "id": "ciftci_37",
@@ -724,12 +725,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2849565848,
+            "hazine": 2841668729,
             "stok": 5654890,
             "arazi": 2583333,
             "yapi": 26810000
           },
-          "gelir7Gun": 909800240
+          "gelir7Gun": 905419946
         },
         {
           "id": "ciftci_38",
@@ -742,12 +743,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2530754088,
+            "hazine": 2523848417,
             "stok": 5654400,
             "arazi": 5208333,
             "yapi": 26810000
           },
-          "gelir7Gun": 903549308
+          "gelir7Gun": 899162619
         },
         {
           "id": "ciftci_39",
@@ -760,12 +761,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2534684567,
+            "hazine": 2527778896,
             "stok": 5654400,
             "arazi": 2541666,
             "yapi": 26810000
           },
-          "gelir7Gun": 903576020
+          "gelir7Gun": 899189331
         },
         {
           "id": "ciftci_40",
@@ -778,12 +779,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2196918831,
+            "hazine": 2190466110,
             "stok": 5654400,
             "arazi": 4624999,
             "yapi": 26810000
           },
-          "gelir7Gun": 595473914
+          "gelir7Gun": 592183379
         },
         {
           "id": "ciftci_41",
@@ -796,12 +797,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2532099637,
+            "hazine": 2525193966,
             "stok": 5654400,
             "arazi": 5041666,
             "yapi": 26810000
           },
-          "gelir7Gun": 903550988
+          "gelir7Gun": 899164299
         },
         {
           "id": "ciftci_42",
@@ -814,12 +815,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2850454483,
+            "hazine": 2842560139,
             "stok": 5654400,
             "arazi": 2310344,
             "yapi": 26810000
           },
-          "gelir7Gun": 766541038
+          "gelir7Gun": 762352536
         },
         {
           "id": "ciftci_43",
@@ -832,12 +833,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2537312303,
+            "hazine": 2530406632,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_44",
@@ -850,12 +851,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2855383794,
+            "hazine": 2847477266,
             "stok": 5654890,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 909825649
+          "gelir7Gun": 905445355
         },
         {
           "id": "ciftci_45",
@@ -868,12 +869,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2850587458,
+            "hazine": 2842698948,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 765455264
+          "gelir7Gun": 761272596
         },
         {
           "id": "ciftci_46",
@@ -886,12 +887,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2536139121,
+            "hazine": 2529233450,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_47",
@@ -904,12 +905,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2852236391,
+            "hazine": 2844339272,
             "stok": 5654890,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 909825944
+          "gelir7Gun": 905445650
         },
         {
           "id": "ciftci_48",
@@ -922,12 +923,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2537312303,
+            "hazine": 2530406632,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_49",
@@ -940,12 +941,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2201700580,
+            "hazine": 2195247859,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 595520114
+          "gelir7Gun": 592229579
         },
         {
           "id": "ciftci_50",
@@ -958,12 +959,12 @@
           "komut": 5,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1760472274,
+            "hazine": 1755604846,
             "stok": 8175440,
             "arazi": 0,
             "yapi": 18830000
           },
-          "gelir7Gun": 565217191
+          "gelir7Gun": 562138933
         },
         {
           "id": "ciftci_51",
@@ -976,12 +977,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2841976795,
+            "hazine": 2834111958,
             "stok": 5654890,
             "arazi": 4981131,
             "yapi": 26810000
           },
-          "gelir7Gun": 902977436
+          "gelir7Gun": 898631162
         },
         {
           "id": "ciftci_52",
@@ -994,12 +995,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2536139121,
+            "hazine": 2529233450,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_53",
@@ -1012,12 +1013,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2853925291,
+            "hazine": 2846026434,
             "stok": 5654890,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 909825809
+          "gelir7Gun": 905445515
         },
         {
           "id": "ciftci_54",
@@ -1030,12 +1031,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2844154176,
+            "hazine": 2836289339,
             "stok": 5654890,
             "arazi": 2875000,
             "yapi": 26810000
           },
-          "gelir7Gun": 902998436
+          "gelir7Gun": 898652162
         },
         {
           "id": "ciftci_55",
@@ -1048,12 +1049,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2852971801,
+            "hazine": 2845065273,
             "stok": 5654890,
             "arazi": 2333333,
             "yapi": 26810000
           },
-          "gelir7Gun": 909802465
+          "gelir7Gun": 905422171
         },
         {
           "id": "ciftci_56",
@@ -1066,12 +1067,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2848218272,
+            "hazine": 2840329762,
             "stok": 5654400,
             "arazi": 2291666,
             "yapi": 26810000
           },
-          "gelir7Gun": 765432416
+          "gelir7Gun": 761249748
         },
         {
           "id": "ciftci_57",
@@ -1084,12 +1085,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2536139121,
+            "hazine": 2529233450,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_58",
@@ -1102,12 +1103,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2850344741,
+            "hazine": 2842450397,
             "stok": 5654400,
             "arazi": 2416666,
             "yapi": 26810000
           },
-          "gelir7Gun": 766540030
+          "gelir7Gun": 762351528
         },
         {
           "id": "ciftci_59",
@@ -1120,12 +1121,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2849522471,
+            "hazine": 2841625352,
             "stok": 5654890,
             "arazi": 2625000,
             "yapi": 26810000
           },
-          "gelir7Gun": 909799736
+          "gelir7Gun": 905419442
         },
         {
           "id": "ciftci_60",
@@ -1138,12 +1139,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2533382395,
+            "hazine": 2526476724,
             "stok": 5654400,
             "arazi": 2666666,
             "yapi": 26810000
           },
-          "gelir7Gun": 903574844
+          "gelir7Gun": 899188155
         },
         {
           "id": "ciftci_61",
@@ -1156,12 +1157,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2534641760,
+            "hazine": 2527736089,
             "stok": 5654400,
             "arazi": 2583333,
             "yapi": 26810000
           },
-          "gelir7Gun": 903575684
+          "gelir7Gun": 899188995
         },
         {
           "id": "ciftci_62",
@@ -1174,12 +1175,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2199245210,
+            "hazine": 2192792489,
             "stok": 5654400,
             "arazi": 2375000,
             "yapi": 26810000
           },
-          "gelir7Gun": 595496426
+          "gelir7Gun": 592205891
         },
         {
           "id": "ciftci_63",
@@ -1192,12 +1193,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2531927270,
+            "hazine": 2525021599,
             "stok": 5654400,
             "arazi": 5208333,
             "yapi": 26810000
           },
-          "gelir7Gun": 903549308
+          "gelir7Gun": 899162619
         },
         {
           "id": "ciftci_64",
@@ -1210,12 +1211,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2855383794,
+            "hazine": 2847477266,
             "stok": 5654890,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 909825649
+          "gelir7Gun": 905445355
         },
         {
           "id": "ciftci_65",
@@ -1228,12 +1229,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2847703365,
+            "hazine": 2839814855,
             "stok": 5654400,
             "arazi": 2789473,
             "yapi": 26810000
           },
-          "gelir7Gun": 765427376
+          "gelir7Gun": 761244708
         },
         {
           "id": "ciftci_66",
@@ -1246,12 +1247,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2536139121,
+            "hazine": 2529233450,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_67",
@@ -1264,12 +1265,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2849352298,
+            "hazine": 2841455179,
             "stok": 5654890,
             "arazi": 2789473,
             "yapi": 26810000
           },
-          "gelir7Gun": 909798056
+          "gelir7Gun": 905417762
         },
         {
           "id": "ciftci_68",
@@ -1282,12 +1283,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2537312303,
+            "hazine": 2530406632,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_69",
@@ -1300,12 +1301,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2198816487,
+            "hazine": 2192363766,
             "stok": 5654400,
             "arazi": 2789473,
             "yapi": 26810000
           },
-          "gelir7Gun": 595492226
+          "gelir7Gun": 592201691
         },
         {
           "id": "ciftci_70",
@@ -1318,12 +1319,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2844493407,
+            "hazine": 2836628570,
             "stok": 5654890,
             "arazi": 2547169,
             "yapi": 26810000
           },
-          "gelir7Gun": 903001796
+          "gelir7Gun": 898655522
         },
         {
           "id": "ciftci_71",
@@ -1336,12 +1337,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2536139121,
+            "hazine": 2529233450,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_72",
@@ -1354,12 +1355,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2853925291,
+            "hazine": 2846026434,
             "stok": 5654890,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 909825809
+          "gelir7Gun": 905445515
         },
         {
           "id": "ciftci_73",
@@ -1372,12 +1373,12 @@
           "komut": 5,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1756689955,
+            "hazine": 1751842422,
             "stok": 8175440,
             "arazi": 0,
             "yapi": 18830000
           },
-          "gelir7Gun": 561434872
+          "gelir7Gun": 558376509
         },
         {
           "id": "ciftci_74",
@@ -1390,12 +1391,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2852928424,
+            "hazine": 2845021896,
             "stok": 5654890,
             "arazi": 2375000,
             "yapi": 26810000
           },
-          "gelir7Gun": 909801961
+          "gelir7Gun": 905421667
         },
         {
           "id": "ciftci_75",
@@ -1408,12 +1409,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2848175465,
+            "hazine": 2840286955,
             "stok": 5654400,
             "arazi": 2333333,
             "yapi": 26810000
           },
-          "gelir7Gun": 765432080
+          "gelir7Gun": 761249412
         },
         {
           "id": "ciftci_76",
@@ -1426,12 +1427,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2533511385,
+            "hazine": 2526605714,
             "stok": 5654400,
             "arazi": 2541666,
             "yapi": 26810000
           },
-          "gelir7Gun": 903576020
+          "gelir7Gun": 899189331
         },
         {
           "id": "ciftci_77",
@@ -1444,12 +1445,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2850301364,
+            "hazine": 2842407020,
             "stok": 5654400,
             "arazi": 2458333,
             "yapi": 26810000
           },
-          "gelir7Gun": 766539526
+          "gelir7Gun": 762351024
         },
         {
           "id": "ciftci_78",
@@ -1462,12 +1463,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2852236391,
+            "hazine": 2844339272,
             "stok": 5654890,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 909825944
+          "gelir7Gun": 905445650
         },
         {
           "id": "ciftci_79",
@@ -1480,12 +1481,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2530496108,
+            "hazine": 2523590437,
             "stok": 5654400,
             "arazi": 5458333,
             "yapi": 26810000
           },
-          "gelir7Gun": 903546956
+          "gelir7Gun": 899160267
         },
         {
           "id": "ciftci_80",
@@ -1498,12 +1499,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2534598383,
+            "hazine": 2527692712,
             "stok": 5654400,
             "arazi": 2625000,
             "yapi": 26810000
           },
-          "gelir7Gun": 903575180
+          "gelir7Gun": 899188491
         },
         {
           "id": "ciftci_81",
@@ -1516,12 +1517,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2196660281,
+            "hazine": 2190207560,
             "stok": 5654400,
             "arazi": 4874999,
             "yapi": 26810000
           },
-          "gelir7Gun": 595471394
+          "gelir7Gun": 592180859
         },
         {
           "id": "ciftci_82",
@@ -1534,12 +1535,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2537312303,
+            "hazine": 2530406632,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 903601388
+          "gelir7Gun": 899214699
         },
         {
           "id": "ciftci_83",
@@ -1552,12 +1553,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2852842917,
+            "hazine": 2844948573,
             "stok": 5654400,
             "arazi": 0,
             "yapi": 26810000
           },
-          "gelir7Gun": 766564054
+          "gelir7Gun": 762375552
         },
         {
           "id": "ciftci_84",
@@ -1570,12 +1571,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2534995114,
+            "hazine": 2528089443,
             "stok": 5654400,
             "arazi": 2241379,
             "yapi": 26810000
           },
-          "gelir7Gun": 903579044
+          "gelir7Gun": 899192355
         },
         {
           "id": "ciftci_85",
@@ -1588,12 +1589,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2852717637,
+            "hazine": 2844811109,
             "stok": 5654890,
             "arazi": 2578947,
             "yapi": 26810000
           },
-          "gelir7Gun": 909799945
+          "gelir7Gun": 905419651
         },
         {
           "id": "ciftci_86",
@@ -1606,12 +1607,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2847667137,
+            "hazine": 2839778627,
             "stok": 5654400,
             "arazi": 2824561,
             "yapi": 26810000
           },
-          "gelir7Gun": 765427040
+          "gelir7Gun": 761244372
         },
         {
           "id": "ciftci_87",
@@ -1624,12 +1625,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2533472964,
+            "hazine": 2526567293,
             "stok": 5654400,
             "arazi": 2578947,
             "yapi": 26810000
           },
-          "gelir7Gun": 903575684
+          "gelir7Gun": 899188995
         },
         {
           "id": "ciftci_88",
@@ -1642,12 +1643,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2849316070,
+            "hazine": 2841418951,
             "stok": 5654890,
             "arazi": 2824561,
             "yapi": 26810000
           },
-          "gelir7Gun": 909797720
+          "gelir7Gun": 905417426
         },
         {
           "id": "ciftci_89",
@@ -1660,12 +1661,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2534646146,
+            "hazine": 2527740475,
             "stok": 5654400,
             "arazi": 2578947,
             "yapi": 26810000
           },
-          "gelir7Gun": 903575684
+          "gelir7Gun": 899188995
         },
         {
           "id": "ciftci_90",
@@ -1678,12 +1679,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2198780259,
+            "hazine": 2192327538,
             "stok": 5654400,
             "arazi": 2824561,
             "yapi": 26810000
           },
-          "gelir7Gun": 595491890
+          "gelir7Gun": 592201355
         },
         {
           "id": "ciftci_91",
@@ -1696,12 +1697,12 @@
           "komut": 5,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1760472274,
+            "hazine": 1755604846,
             "stok": 8175440,
             "arazi": 0,
             "yapi": 18830000
           },
-          "gelir7Gun": 565217191
+          "gelir7Gun": 562138933
         },
         {
           "id": "ciftci_92",
@@ -1714,12 +1715,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2844454531,
+            "hazine": 2836589694,
             "stok": 5654890,
             "arazi": 2584905,
             "yapi": 26810000
           },
-          "gelir7Gun": 903001460
+          "gelir7Gun": 898655186
         },
         {
           "id": "ciftci_93",
@@ -1732,12 +1733,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2533544758,
+            "hazine": 2526639087,
             "stok": 5654400,
             "arazi": 2509433,
             "yapi": 26810000
           },
-          "gelir7Gun": 903576356
+          "gelir7Gun": 899189667
         },
         {
           "id": "ciftci_94",
@@ -1750,12 +1751,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2851297555,
+            "hazine": 2843398698,
             "stok": 5654890,
             "arazi": 2541666,
             "yapi": 26810000
           },
-          "gelir7Gun": 909800441
+          "gelir7Gun": 905420147
         },
         {
           "id": "ciftci_95",
@@ -1768,12 +1769,12 @@
           "komut": 5,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1756689955,
+            "hazine": 1751842422,
             "stok": 8175440,
             "arazi": 0,
             "yapi": 18830000
           },
-          "gelir7Gun": 561434872
+          "gelir7Gun": 558376509
         },
         {
           "id": "ciftci_96",
@@ -1786,12 +1787,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2852885618,
+            "hazine": 2844979090,
             "stok": 5654890,
             "arazi": 2416666,
             "yapi": 26810000
           },
-          "gelir7Gun": 909801625
+          "gelir7Gun": 905421331
         },
         {
           "id": "ciftci_97",
@@ -1804,12 +1805,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2848132088,
+            "hazine": 2840243578,
             "stok": 5654400,
             "arazi": 2375000,
             "yapi": 26810000
           },
-          "gelir7Gun": 765431576
+          "gelir7Gun": 761248908
         },
         {
           "id": "ciftci_98",
@@ -1822,12 +1823,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2533468578,
+            "hazine": 2526562907,
             "stok": 5654400,
             "arazi": 2583333,
             "yapi": 26810000
           },
-          "gelir7Gun": 903575684
+          "gelir7Gun": 899188995
         },
         {
           "id": "ciftci_99",
@@ -1840,12 +1841,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2847630251,
+            "hazine": 2839735907,
             "stok": 5654400,
             "arazi": 5041666,
             "yapi": 26810000
           },
-          "gelir7Gun": 766513654
+          "gelir7Gun": 762325152
         },
         {
           "id": "ciftci_100",
@@ -1858,12 +1859,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2849479672,
+            "hazine": 2841582553,
             "stok": 5654890,
             "arazi": 2666666,
             "yapi": 26810000
           },
-          "gelir7Gun": 909799400
+          "gelir7Gun": 905419106
         },
         {
           "id": "sanayici_1",
@@ -1876,12 +1877,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4003934267,
-            "stok": 23005440,
+            "hazine": 4023322618,
+            "stok": 23005510,
             "arazi": 4791666,
             "yapi": 53690000
           },
-          "gelir7Gun": 982959432
+          "gelir7Gun": 992176929
         },
         {
           "id": "sanayici_2",
@@ -1894,12 +1895,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4003761960,
-            "stok": 23005440,
+            "hazine": 4023150311,
+            "stok": 23005510,
             "arazi": 4958333,
             "yapi": 53690000
           },
-          "gelir7Gun": 982957752
+          "gelir7Gun": 992175249
         },
         {
           "id": "sanayici_3",
@@ -1912,12 +1913,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4148887767,
-            "stok": 23005440,
+            "hazine": 4169334435,
+            "stok": 23005510,
             "arazi": 4350876,
             "yapi": 53690000
           },
-          "gelir7Gun": 1050890366
+          "gelir7Gun": 1060731998
         },
         {
           "id": "sanayici_4",
@@ -1930,12 +1931,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4148259442,
-            "stok": 23005440,
+            "hazine": 4168706110,
+            "stok": 23005510,
             "arazi": 4958333,
             "yapi": 53690000
           },
-          "gelir7Gun": 1050884150
+          "gelir7Gun": 1060725782
         },
         {
           "id": "sanayici_5",
@@ -1949,7 +1950,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -1967,7 +1968,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -1985,7 +1986,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2003,7 +2004,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2020,12 +2021,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2707398740,
-            "stok": 23005545,
+            "hazine": 2717302444,
+            "stok": 23005615,
             "arazi": 4842104,
             "yapi": 53690000
           },
-          "gelir7Gun": 376538206
+          "gelir7Gun": 380183673
         },
         {
           "id": "sanayici_10",
@@ -2038,12 +2039,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2707881637,
-            "stok": 23005545,
+            "hazine": 2717785341,
+            "stok": 23005615,
             "arazi": 4374999,
             "yapi": 53690000
           },
-          "gelir7Gun": 376542910
+          "gelir7Gun": 380188377
         },
         {
           "id": "sanayici_11",
@@ -2057,7 +2058,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2075,7 +2076,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2092,12 +2093,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4187764839,
-            "stok": 23005440,
+            "hazine": 4208498931,
+            "stok": 23005510,
             "arazi": 4701754,
             "yapi": 53690000
           },
-          "gelir7Gun": 1069332073
+          "gelir7Gun": 1079343204
         },
         {
           "id": "sanayici_14",
@@ -2110,12 +2111,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4188016156,
-            "stok": 23005440,
+            "hazine": 4208750248,
+            "stok": 23005510,
             "arazi": 4458333,
             "yapi": 53690000
           },
-          "gelir7Gun": 1069334425
+          "gelir7Gun": 1079345556
         },
         {
           "id": "sanayici_15",
@@ -2129,7 +2130,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2147,7 +2148,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2164,12 +2165,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2757739744,
-            "stok": 23005440,
+            "hazine": 2768000608,
+            "stok": 23005510,
             "arazi": 4421052,
             "yapi": 53690000
           },
-          "gelir7Gun": 397610550
+          "gelir7Gun": 401449602
         },
         {
           "id": "sanayici_18",
@@ -2182,12 +2183,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2757787489,
-            "stok": 23005440,
+            "hazine": 2768048353,
+            "stok": 23005510,
             "arazi": 4374999,
             "yapi": 53690000
           },
-          "gelir7Gun": 397611054
+          "gelir7Gun": 401450106
         },
         {
           "id": "sanayici_19",
@@ -2200,12 +2201,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3584293359,
-            "stok": 23005440,
+            "hazine": 3600604598,
+            "stok": 23005510,
             "arazi": 4280701,
             "yapi": 53690000
           },
-          "gelir7Gun": 785445468
+          "gelir7Gun": 792848065
         },
         {
           "id": "sanayici_20",
@@ -2218,12 +2219,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3584195677,
-            "stok": 23005440,
+            "hazine": 3600506916,
+            "stok": 23005510,
             "arazi": 4374999,
             "yapi": 53690000
           },
-          "gelir7Gun": 785444460
+          "gelir7Gun": 792847057
         },
         {
           "id": "sanayici_21",
@@ -2236,12 +2237,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3659574310,
-            "stok": 23005440,
+            "hazine": 3676437921,
+            "stok": 23005510,
             "arazi": 4421052,
             "yapi": 53690000
           },
-          "gelir7Gun": 820902184
+          "gelir7Gun": 828630610
         },
         {
           "id": "sanayici_22",
@@ -2254,12 +2255,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3659277441,
-            "stok": 23005440,
+            "hazine": 3676141052,
+            "stok": 23005510,
             "arazi": 4708333,
             "yapi": 53690000
           },
-          "gelir7Gun": 820899328
+          "gelir7Gun": 828627754
         },
         {
           "id": "sanayici_23",
@@ -2272,12 +2273,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4148742340,
-            "stok": 23005440,
+            "hazine": 4169189008,
+            "stok": 23005510,
             "arazi": 4491227,
             "yapi": 53690000
           },
-          "gelir7Gun": 1050888854
+          "gelir7Gun": 1060730486
         },
         {
           "id": "sanayici_24",
@@ -2291,7 +2292,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 37812550,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 1631578,
             "yapi": 26250000
           },
@@ -2309,7 +2310,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 37812550,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 1631578,
             "yapi": 26250000
           },
@@ -2326,12 +2327,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2707253877,
-            "stok": 23005545,
+            "hazine": 2717157581,
+            "stok": 23005615,
             "arazi": 4982455,
             "yapi": 53690000
           },
-          "gelir7Gun": 376536862
+          "gelir7Gun": 380182329
         },
         {
           "id": "sanayici_27",
@@ -2345,7 +2346,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 37812550,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 1631578,
             "yapi": 26250000
           },
@@ -2362,12 +2363,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4187619413,
-            "stok": 23005440,
+            "hazine": 4208353505,
+            "stok": 23005510,
             "arazi": 4842104,
             "yapi": 53690000
           },
-          "gelir7Gun": 1069330561
+          "gelir7Gun": 1079341692
         },
         {
           "id": "sanayici_29",
@@ -2381,7 +2382,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2398,12 +2399,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2758282945,
-            "stok": 23005440,
+            "hazine": 2768543809,
+            "stok": 23005510,
             "arazi": 3894735,
             "yapi": 53690000
           },
-          "gelir7Gun": 397615926
+          "gelir7Gun": 401454978
         },
         {
           "id": "sanayici_31",
@@ -2416,12 +2417,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3584147932,
-            "stok": 23005440,
+            "hazine": 3600459171,
+            "stok": 23005510,
             "arazi": 4421052,
             "yapi": 53690000
           },
-          "gelir7Gun": 785443956
+          "gelir7Gun": 792846553
         },
         {
           "id": "sanayici_32",
@@ -2434,12 +2435,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3659429448,
-            "stok": 23005440,
+            "hazine": 3676293059,
+            "stok": 23005510,
             "arazi": 4561402,
             "yapi": 53690000
           },
-          "gelir7Gun": 820900840
+          "gelir7Gun": 828629266
         },
         {
           "id": "sanayici_33",
@@ -2452,12 +2453,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4003761960,
-            "stok": 23005440,
+            "hazine": 4023150311,
+            "stok": 23005510,
             "arazi": 4958333,
             "yapi": 53690000
           },
-          "gelir7Gun": 982957752
+          "gelir7Gun": 992175249
         },
         {
           "id": "sanayici_34",
@@ -2470,12 +2471,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4003589654,
-            "stok": 23005440,
+            "hazine": 4022978005,
+            "stok": 23005510,
             "arazi": 5124999,
             "yapi": 53690000
           },
-          "gelir7Gun": 982956072
+          "gelir7Gun": 992173569
         },
         {
           "id": "sanayici_35",
@@ -2488,12 +2489,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4148087136,
-            "stok": 23005440,
+            "hazine": 4168533804,
+            "stok": 23005510,
             "arazi": 5124999,
             "yapi": 53690000
           },
-          "gelir7Gun": 1050882470
+          "gelir7Gun": 1060724102
         },
         {
           "id": "sanayici_36",
@@ -2507,7 +2508,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2525,7 +2526,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2542,12 +2543,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2707709330,
-            "stok": 23005545,
+            "hazine": 2717613034,
+            "stok": 23005615,
             "arazi": 4541666,
             "yapi": 53690000
           },
-          "gelir7Gun": 376541230
+          "gelir7Gun": 380186697
         },
         {
           "id": "sanayici_39",
@@ -2561,7 +2562,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2578,12 +2579,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4187843850,
-            "stok": 23005440,
+            "hazine": 4208577942,
+            "stok": 23005510,
             "arazi": 4624999,
             "yapi": 53690000
           },
-          "gelir7Gun": 1069332745
+          "gelir7Gun": 1079343876
         },
         {
           "id": "sanayici_41",
@@ -2597,7 +2598,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2614,12 +2615,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2757615182,
-            "stok": 23005440,
+            "hazine": 2767876046,
+            "stok": 23005510,
             "arazi": 4541666,
             "yapi": 53690000
           },
-          "gelir7Gun": 397609374
+          "gelir7Gun": 401448426
         },
         {
           "id": "sanayici_43",
@@ -2632,12 +2633,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3584023370,
-            "stok": 23005440,
+            "hazine": 3600334609,
+            "stok": 23005510,
             "arazi": 4541666,
             "yapi": 53690000
           },
-          "gelir7Gun": 785442780
+          "gelir7Gun": 792845377
         },
         {
           "id": "sanayici_44",
@@ -2650,12 +2651,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3659105135,
-            "stok": 23005440,
+            "hazine": 3675968746,
+            "stok": 23005510,
             "arazi": 4874999,
             "yapi": 53690000
           },
-          "gelir7Gun": 820897648
+          "gelir7Gun": 828626074
         },
         {
           "id": "sanayici_45",
@@ -2668,12 +2669,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4148597477,
-            "stok": 23005440,
+            "hazine": 4169044145,
+            "stok": 23005510,
             "arazi": 4631578,
             "yapi": 53690000
           },
-          "gelir7Gun": 1050887510
+          "gelir7Gun": 1060729142
         },
         {
           "id": "sanayici_46",
@@ -2687,7 +2688,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2705,7 +2706,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2722,12 +2723,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2707109014,
-            "stok": 23005545,
+            "hazine": 2717012718,
+            "stok": 23005615,
             "arazi": 5122806,
             "yapi": 53690000
           },
-          "gelir7Gun": 376535518
+          "gelir7Gun": 380180985
         },
         {
           "id": "sanayici_49",
@@ -2741,7 +2742,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 39500000,
-            "stok": 11466420,
+            "stok": 11466490,
             "arazi": 0,
             "yapi": 26250000
           },
@@ -2758,12 +2759,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4187474550,
-            "stok": 23005440,
+            "hazine": 4208208642,
+            "stok": 23005510,
             "arazi": 4982455,
             "yapi": 53690000
           },
-          "gelir7Gun": 1069329217
+          "gelir7Gun": 1079340348
         },
         {
           "id": "tuccar_1",
@@ -2776,12 +2777,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1577671255,
+            "hazine": 1573308169,
             "stok": 7332030,
             "arazi": 5374999,
             "yapi": 23800000
           },
-          "gelir7Gun": 564383968
+          "gelir7Gun": 561309932
         },
         {
           "id": "tuccar_2",
@@ -2938,12 +2939,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1582635355,
+            "hazine": 1578272239,
             "stok": 7332030,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 564437560
+          "gelir7Gun": 561363524
         },
         {
           "id": "tuccar_11",
@@ -2956,12 +2957,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1583228084,
+            "hazine": 1578864998,
             "stok": 7332030,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 564437560
+          "gelir7Gun": 561363524
         },
         {
           "id": "tuccar_12",
@@ -2974,12 +2975,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1176736269,
+            "hazine": 1173431689,
             "stok": 7331860,
             "arazi": 2500000,
             "yapi": 23800000
           },
-          "gelir7Gun": 300564304
+          "gelir7Gun": 298877671
         },
         {
           "id": "tuccar_13",
@@ -2992,12 +2993,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1765888033,
+            "hazine": 1760929118,
             "stok": 7330980,
             "arazi": 2614035,
             "yapi": 23800000
           },
-          "gelir7Gun": 575987454
+          "gelir7Gun": 572852447
         },
         {
           "id": "tuccar_14",
@@ -3010,12 +3011,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1659587004,
+            "hazine": 1655545042,
             "stok": 7330980,
             "arazi": 5754385,
             "yapi": 23800000
           },
-          "gelir7Gun": 387917811
+          "gelir7Gun": 385771540
         },
         {
           "id": "tuccar_15",
@@ -3028,12 +3029,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1579932970,
+            "hazine": 1575569854,
             "stok": 7332030,
             "arazi": 2614035,
             "yapi": 23800000
           },
-          "gelir7Gun": 564411520
+          "gelir7Gun": 561337484
         },
         {
           "id": "tuccar_16",
@@ -3064,12 +3065,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1761035018,
+            "hazine": 1756080906,
             "stok": 7330980,
             "arazi": 5754385,
             "yapi": 23800000
           },
-          "gelir7Gun": 575956160
+          "gelir7Gun": 572821152
         },
         {
           "id": "tuccar_18",
@@ -3082,12 +3083,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1580525699,
+            "hazine": 1576162613,
             "stok": 7332030,
             "arazi": 2614035,
             "yapi": 23800000
           },
-          "gelir7Gun": 564411520
+          "gelir7Gun": 561337484
         },
         {
           "id": "tuccar_19",
@@ -3100,12 +3101,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1173371304,
+            "hazine": 1170066724,
             "stok": 7331860,
             "arazi": 5754385,
             "yapi": 23800000
           },
-          "gelir7Gun": 300531712
+          "gelir7Gun": 298845079
         },
         {
           "id": "tuccar_20",
@@ -3118,12 +3119,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1761280807,
+            "hazine": 1756346082,
             "stok": 7330980,
             "arazi": 2622641,
             "yapi": 23800000
           },
-          "gelir7Gun": 572135112
+          "gelir7Gun": 569020369
         },
         {
           "id": "tuccar_21",
@@ -3136,12 +3137,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1582635355,
+            "hazine": 1578272239,
             "stok": 7332030,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 564437560
+          "gelir7Gun": 561363524
         },
         {
           "id": "tuccar_22",
@@ -3154,12 +3155,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1767844542,
+            "hazine": 1762889553,
             "stok": 7330980,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 576013494
+          "gelir7Gun": 572878487
         },
         {
           "id": "tuccar_23",
@@ -3172,8 +3173,8 @@
           "komut": 3,
           "basarisiz": 0,
           "servet": {
-            "hazine": 591134419,
-            "stok": 18963600,
+            "hazine": 591134407,
+            "stok": 18963670,
             "arazi": 0,
             "yapi": 12950000
           },
@@ -3190,12 +3191,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1582635355,
+            "hazine": 1578272239,
             "stok": 7332030,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 564437560
+          "gelir7Gun": 561363524
         },
         {
           "id": "tuccar_25",
@@ -3208,12 +3209,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1764184240,
+            "hazine": 1759230128,
             "stok": 7330980,
             "arazi": 2708333,
             "yapi": 23800000
           },
-          "gelir7Gun": 575986568
+          "gelir7Gun": 572851560
         },
         {
           "id": "tuccar_26",
@@ -3226,12 +3227,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1579749069,
+            "hazine": 1575385953,
             "stok": 7332030,
             "arazi": 2791666,
             "yapi": 23800000
           },
-          "gelir7Gun": 564409672
+          "gelir7Gun": 561335636
         },
         {
           "id": "tuccar_27",
@@ -3244,12 +3245,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1583228084,
+            "hazine": 1578864998,
             "stok": 7332030,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 564437560
+          "gelir7Gun": 561363524
         },
         {
           "id": "tuccar_28",
@@ -3262,12 +3263,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1583228084,
+            "hazine": 1578864998,
             "stok": 7332030,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 564437560
+          "gelir7Gun": 561363524
         },
         {
           "id": "tuccar_29",
@@ -3280,12 +3281,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1768590418,
+            "hazine": 1763631503,
             "stok": 7330980,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 576013494
+          "gelir7Gun": 572878487
         },
         {
           "id": "tuccar_30",
@@ -3298,12 +3299,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1665536329,
+            "hazine": 1661494367,
             "stok": 7330980,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 387975267
+          "gelir7Gun": 385828996
         },
         {
           "id": "tuccar_31",
@@ -3316,12 +3317,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1582635355,
+            "hazine": 1578272239,
             "stok": 7332030,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 564437560
+          "gelir7Gun": 561363524
         },
         {
           "id": "tuccar_32",
@@ -3352,12 +3353,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1766984343,
+            "hazine": 1762030231,
             "stok": 7330980,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 576013616
+          "gelir7Gun": 572878608
         },
         {
           "id": "tuccar_34",
@@ -3370,12 +3371,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1583228084,
+            "hazine": 1578864998,
             "stok": 7332030,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 564437560
+          "gelir7Gun": 561363524
         },
         {
           "id": "tuccar_35",
@@ -3388,12 +3389,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1179320629,
+            "hazine": 1176016049,
             "stok": 7331860,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 300589168
+          "gelir7Gun": 298902535
         },
         {
           "id": "tuccar_36",
@@ -3406,12 +3407,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1665536329,
+            "hazine": 1661494367,
             "stok": 7330980,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 387975267
+          "gelir7Gun": 385828996
         },
         {
           "id": "tuccar_37",
@@ -3424,12 +3425,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1766984343,
+            "hazine": 1762030231,
             "stok": 7330980,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 576013616
+          "gelir7Gun": 572878608
         },
         {
           "id": "tuccar_38",
@@ -3442,12 +3443,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1179320629,
+            "hazine": 1176016049,
             "stok": 7331860,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 300589168
+          "gelir7Gun": 298902535
         },
         {
           "id": "tuccar_39",
@@ -3460,8 +3461,8 @@
           "komut": 3,
           "basarisiz": 0,
           "servet": {
-            "hazine": 591134419,
-            "stok": 18963600,
+            "hazine": 591134407,
+            "stok": 18963670,
             "arazi": 0,
             "yapi": 12950000
           },
@@ -3479,7 +3480,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3497,7 +3498,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3515,7 +3516,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3533,7 +3534,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3551,7 +3552,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3569,7 +3570,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3587,7 +3588,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3605,7 +3606,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3623,7 +3624,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3641,7 +3642,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3659,7 +3660,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 46500000,
-            "stok": 28052580,
+            "stok": 28052650,
             "arazi": 0,
             "yapi": 4970000
           },
@@ -3677,7 +3678,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3695,7 +3696,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3713,7 +3714,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3731,7 +3732,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3749,7 +3750,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3767,7 +3768,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3785,7 +3786,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3803,7 +3804,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3821,7 +3822,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3839,7 +3840,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3857,7 +3858,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3875,7 +3876,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3893,7 +3894,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3911,7 +3912,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3929,7 +3930,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3947,7 +3948,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3965,7 +3966,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -3983,7 +3984,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4001,7 +4002,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4019,7 +4020,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4037,7 +4038,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4055,7 +4056,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4073,7 +4074,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4091,7 +4092,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4109,7 +4110,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4127,7 +4128,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4145,7 +4146,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4163,7 +4164,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4181,7 +4182,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4199,7 +4200,7 @@
           "basarisiz": 0,
           "servet": {
             "hazine": 50000000,
-            "stok": 29522580,
+            "stok": 29522650,
             "arazi": 0,
             "yapi": 0
           },
@@ -4930,6 +4931,24 @@
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
+          "ilce": "sn_cam_vadisi_tasra",
+          "hucre": 36,
+          "yapi": 0,
+          "komut": 7,
+          "basarisiz": 0,
+          "servet": {
+            "hazine": 1136588,
+            "stok": 0,
+            "arazi": 81087704,
+            "yapi": 0
+          },
+          "gelir7Gun": -810768
+        },
+        {
+          "id": "spekulator_yasli_2",
+          "onayar": "spekulator",
+          "acilis": null,
+          "katilmaGun": 0,
           "ilce": "sn_demir_gecit_tasra",
           "hucre": 36,
           "yapi": 0,
@@ -4944,29 +4963,11 @@
           "gelir7Gun": -800184
         },
         {
-          "id": "spekulator_yasli_2",
-          "onayar": "spekulator",
-          "acilis": null,
-          "katilmaGun": 0,
-          "ilce": "sn_gunes_kumulu_merkez",
-          "hucre": 36,
-          "yapi": 0,
-          "komut": 7,
-          "basarisiz": 0,
-          "servet": {
-            "hazine": 1136588,
-            "stok": 0,
-            "arazi": 81087704,
-            "yapi": 0
-          },
-          "gelir7Gun": -810768
-        },
-        {
           "id": "spekulator_yasli_3",
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_kurt_gecidi_merkez",
+          "ilce": "sn_kum_burnu_merkez",
           "hucre": 36,
           "yapi": 0,
           "komut": 7,
@@ -4984,7 +4985,7 @@
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_orta_col_merkez",
+          "ilce": "sn_kuzey_burun_merkez",
           "hucre": 36,
           "yapi": 0,
           "komut": 7,
@@ -5002,36 +5003,36 @@
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_tas_kapi_merkez",
+          "ilce": "sn_sis_tepeleri_merkez",
           "hucre": 35,
           "yapi": 0,
           "komut": 6,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4121019,
+            "hazine": 4138460,
             "stok": 0,
-            "arazi": 78140017,
+            "arazi": 78122792,
             "yapi": 0
           },
-          "gelir7Gun": -781368
+          "gelir7Gun": -781200
         },
         {
           "id": "spekulator_yasli_6",
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_bereket_dizi_merkez",
-          "hucre": 31,
+          "ilce": "sn_altin_col_tasra",
+          "hucre": 35,
           "yapi": 0,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4164122,
+            "hazine": 4036268,
             "stok": 0,
-            "arazi": 78104156,
+            "arazi": 78224750,
             "yapi": 0
           },
-          "gelir7Gun": -781032
+          "gelir7Gun": -782208
         },
         {
           "id": "spekulator_yasli_7",
@@ -5039,35 +5040,35 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_golge_tepe_tasra",
-          "hucre": 33,
+          "hucre": 30,
           "yapi": 0,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1629843,
+            "hazine": 2372948,
             "stok": 0,
-            "arazi": 80604157,
+            "arazi": 79874990,
             "yapi": 0
           },
-          "gelir7Gun": -805896
+          "gelir7Gun": -798672
         },
         {
           "id": "spekulator_yasli_8",
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_hilal_adasi_merkez",
-          "hucre": 27,
+          "ilce": "sn_gri_tepe_tasra",
+          "hucre": 33,
           "yapi": 0,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2652266,
+            "hazine": 5868858,
             "stok": 0,
-            "arazi": 79604156,
+            "arazi": 76416658,
             "yapi": 0
           },
-          "gelir7Gun": -795984
+          "gelir7Gun": -764064
         },
         {
           "id": "spekulator_yasli_9",
@@ -5075,42 +5076,6 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_kara_zirve_tasra",
-          "hucre": 35,
-          "yapi": 0,
-          "komut": 6,
-          "basarisiz": 0,
-          "servet": {
-            "hazine": 3840923,
-            "stok": 0,
-            "arazi": 78416657,
-            "yapi": 0
-          },
-          "gelir7Gun": -784056
-        },
-        {
-          "id": "spekulator_yasli_10",
-          "onayar": "spekulator",
-          "acilis": null,
-          "katilmaGun": 0,
-          "ilce": "sn_kor_ocak_tasra",
-          "hucre": 30,
-          "yapi": 0,
-          "komut": 7,
-          "basarisiz": 0,
-          "servet": {
-            "hazine": 6126786,
-            "stok": 0,
-            "arazi": 76166656,
-            "yapi": 0
-          },
-          "gelir7Gun": -761544
-        },
-        {
-          "id": "spekulator_yasli_11",
-          "onayar": "spekulator",
-          "acilis": null,
-          "katilmaGun": 0,
-          "ilce": "sn_kuru_tepe_tasra",
           "hucre": 33,
           "yapi": 0,
           "komut": 7,
@@ -5122,6 +5087,42 @@
             "yapi": 0
           },
           "gelir7Gun": -808080
+        },
+        {
+          "id": "spekulator_yasli_10",
+          "onayar": "spekulator",
+          "acilis": null,
+          "katilmaGun": 0,
+          "ilce": "sn_komur_havzasi_merkez",
+          "hucre": 33,
+          "yapi": 0,
+          "komut": 7,
+          "basarisiz": 0,
+          "servet": {
+            "hazine": 5383471,
+            "stok": 0,
+            "arazi": 76895823,
+            "yapi": 0
+          },
+          "gelir7Gun": -768936
+        },
+        {
+          "id": "spekulator_yasli_11",
+          "onayar": "spekulator",
+          "acilis": null,
+          "katilmaGun": 0,
+          "ilce": "sn_kuru_tepe_tasra",
+          "hucre": 35,
+          "yapi": 0,
+          "komut": 6,
+          "basarisiz": 0,
+          "servet": {
+            "hazine": 3629782,
+            "stok": 0,
+            "arazi": 78624990,
+            "yapi": 0
+          },
+          "gelir7Gun": -786240
         },
         {
           "id": "spekulator_yasli_12",
@@ -5147,17 +5148,17 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_altin_col_merkez",
-          "hucre": 34,
+          "hucre": 35,
           "yapi": 0,
-          "komut": 5,
+          "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 5648912,
+            "hazine": 0,
             "stok": 0,
-            "arazi": 76631564,
+            "arazi": 82520817,
             "yapi": 0
           },
-          "gelir7Gun": -766248
+          "gelir7Gun": -511375
         },
         {
           "id": "spekulator_yasli_14",
@@ -5182,7 +5183,7 @@
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_golge_tepe_merkez",
+          "ilce": "sn_demir_gecit_merkez",
           "hucre": 34,
           "yapi": 0,
           "komut": 5,
@@ -5200,7 +5201,7 @@
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_kum_burnu_merkez",
+          "ilce": "sn_komur_havzasi_tasra",
           "hucre": 34,
           "yapi": 0,
           "komut": 5,
@@ -5236,7 +5237,7 @@
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_kuzey_burun_merkez",
+          "ilce": "sn_kuru_tepe_merkez",
           "hucre": 34,
           "yapi": 0,
           "komut": 5,
@@ -5308,18 +5309,18 @@
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_kum_gecidi_tasra",
+          "ilce": "sn_yel_burnu_merkez",
           "hucre": 35,
           "yapi": 0,
           "komut": 6,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3641944,
+            "hazine": 3264976,
             "stok": 0,
-            "arazi": 78613044,
+            "arazi": 78985260,
             "yapi": 0
           },
-          "gelir7Gun": -786072
+          "gelir7Gun": -789768
         },
         {
           "id": "spekulator_yasli_23",
@@ -5332,12 +5333,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1756506,
+            "hazine": 1967361,
             "stok": 0,
-            "arazi": 80479156,
+            "arazi": 80270821,
             "yapi": 0
           },
-          "gelir7Gun": -804720
+          "gelir7Gun": -802704
         },
         {
           "id": "spekulator_yasli_24",
@@ -5386,12 +5387,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 5918328,
+            "hazine": 6340246,
             "stok": 0,
-            "arazi": 76374988,
+            "arazi": 75958320,
             "yapi": 0
           },
-          "gelir7Gun": -763728
+          "gelir7Gun": -759528
         },
         {
           "id": "spekulator_yasli_27",
@@ -5404,12 +5405,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2059292,
+            "hazine": 2586635,
             "stok": 0,
-            "arazi": 80187488,
+            "arazi": 79666655,
             "yapi": 0
           },
-          "gelir7Gun": -801864
+          "gelir7Gun": -796656
         },
         {
           "id": "spekulator_yasli_28",
@@ -5434,7 +5435,7 @@
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_gri_tepe_merkez",
+          "ilce": "sn_gunes_kumulu_merkez",
           "hucre": 33,
           "yapi": 0,
           "komut": 6,
@@ -5473,15 +5474,15 @@
           "ilce": "sn_yelken_limani_merkez",
           "hucre": 26,
           "yapi": 0,
-          "komut": 8,
+          "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1820592,
+            "hazine": 1926017,
             "stok": 0,
-            "arazi": 75496777,
+            "arazi": 75392612,
             "yapi": 0
           },
-          "gelir7Gun": -754824
+          "gelir7Gun": -753816
         },
         {
           "id": "spekulator_yasli_32",
@@ -5494,12 +5495,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2178723,
+            "hazine": 2389575,
             "stok": 0,
-            "arazi": 80062489,
+            "arazi": 79854157,
             "yapi": 0
           },
-          "gelir7Gun": -800520
+          "gelir7Gun": -798504
         },
         {
           "id": "spekulator_yasli_33",
@@ -5512,12 +5513,12 @@
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2032124,
+            "hazine": 2243189,
             "stok": 0,
-            "arazi": 80207222,
+            "arazi": 79998887,
             "yapi": 0
           },
-          "gelir7Gun": -802032
+          "gelir7Gun": -799848
         },
         {
           "id": "spekulator_yasli_34",
@@ -5525,53 +5526,53 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_askan_kenti_tasra",
-          "hucre": 31,
+          "hucre": 29,
           "yapi": 0,
-          "komut": 8,
+          "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 64704,
+            "hazine": 2036793,
             "stok": 0,
-            "arazi": 82152112,
+            "arazi": 80207425,
             "yapi": 0
           },
-          "gelir7Gun": -821520
+          "gelir7Gun": -802032
         },
         {
           "id": "spekulator_yasli_35",
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_cam_vadisi_tasra",
-          "hucre": 32,
+          "ilce": "sn_gri_tepe_merkez",
+          "hucre": 27,
           "yapi": 0,
-          "komut": 7,
+          "komut": 8,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4615204,
+            "hazine": 7095943,
             "stok": 0,
-            "arazi": 77654592,
+            "arazi": 75212709,
             "yapi": 0
           },
-          "gelir7Gun": -776496
+          "gelir7Gun": -751968
         },
         {
           "id": "spekulator_yasli_36",
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_demir_dagi_merkez",
-          "hucre": 24,
+          "ilce": "sn_cam_vadisi_merkez",
+          "hucre": 22,
           "yapi": 0,
           "komut": 9,
           "basarisiz": 0,
           "servet": {
-            "hazine": 10208192,
+            "hazine": 16211518,
             "stok": 0,
-            "arazi": 72142532,
+            "arazi": 66215268,
             "yapi": 0
           },
-          "gelir7Gun": -721392
+          "gelir7Gun": -662088
         },
         {
           "id": "spekulator_yasli_37",
@@ -5579,17 +5580,17 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_cam_vadisi_tasra",
-          "hucre": 21,
+          "hucre": 18,
           "yapi": 0,
           "komut": 9,
           "basarisiz": 0,
           "servet": {
-            "hazine": 13649912,
+            "hazine": 22638350,
             "stok": 0,
-            "arazi": 68747084,
+            "arazi": 59872796,
             "yapi": 0
           },
-          "gelir7Gun": -687456
+          "gelir7Gun": -598584
         },
         {
           "id": "spekulator_yasli_38",
@@ -5597,17 +5598,17 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_demir_dagi_merkez",
-          "hucre": 17,
+          "hucre": 19,
           "yapi": 0,
           "komut": 9,
           "basarisiz": 0,
           "servet": {
-            "hazine": 24811875,
+            "hazine": 14623621,
             "stok": 0,
-            "arazi": 57726967,
+            "arazi": 67788369,
             "yapi": 0
           },
-          "gelir7Gun": -577248
+          "gelir7Gun": -677880
         },
         {
           "id": "spekulator_yasli_39",
@@ -5620,12 +5621,12 @@
           "komut": 9,
           "basarisiz": 0,
           "servet": {
-            "hazine": 48824338,
+            "hazine": 44621279,
             "stok": 0,
-            "arazi": 34012056,
+            "arazi": 38164289,
             "yapi": 0
           },
-          "gelir7Gun": -340032
+          "gelir7Gun": -381528
         },
         {
           "id": "spekulator_yasli_40",
@@ -5633,71 +5634,71 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_demir_gecit_tasra",
-          "hucre": 11,
+          "hucre": 12,
           "yapi": 0,
-          "komut": 7,
+          "komut": 8,
           "basarisiz": 0,
           "servet": {
-            "hazine": 36688598,
+            "hazine": 29200366,
             "stok": 0,
-            "arazi": 45998900,
+            "arazi": 53394732,
             "yapi": 0
           },
-          "gelir7Gun": -459984
+          "gelir7Gun": -533904
         },
         {
           "id": "gec_ciftci",
           "onayar": "gec_katilan",
           "acilis": "ciftci",
           "katilmaGun": 10,
-          "ilce": "sn_cam_vadisi_tasra",
+          "ilce": "sn_gri_tepe_merkez",
           "hucre": 6,
-          "yapi": 0,
-          "komut": 0,
+          "yapi": 2,
+          "komut": 4,
           "basarisiz": 0,
           "servet": {
-            "hazine": 50000000,
-            "stok": 31747130,
+            "hazine": 1400887886,
+            "stok": 10637400,
             "arazi": 0,
-            "yapi": 0
+            "yapi": 10220000
           },
-          "gelir7Gun": 0
+          "gelir7Gun": 1103451759
         },
         {
           "id": "gec_sanayici",
           "onayar": "gec_katilan",
           "acilis": "sanayici",
           "katilmaGun": 10,
-          "ilce": "sn_demir_dagi_merkez",
-          "hucre": 8,
-          "yapi": 4,
-          "komut": 10,
+          "ilce": "sn_kizil_kaya_merkez",
+          "hucre": 6,
+          "yapi": 2,
+          "komut": 2,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2586030543,
-            "stok": 25229810,
-            "arazi": 5403508,
-            "yapi": 53690000
+            "hazine": 39500000,
+            "stok": 13489370,
+            "arazi": 0,
+            "yapi": 26250000
           },
-          "gelir7Gun": 1256961639
+          "gelir7Gun": 0
         },
         {
           "id": "gec_pazar",
           "onayar": "gec_katilan",
           "acilis": "pazar",
           "katilmaGun": 10,
-          "ilce": "sn_demir_gecit_merkez",
+          "ilce": "sn_kizil_kaya_merkez",
           "hucre": 6,
-          "yapi": 1,
-          "komut": 1,
+          "yapi": 2,
+          "komut": 4,
           "basarisiz": 0,
           "servet": {
-            "hazine": 46500000,
-            "stok": 30277130,
+            "hazine": 566133106,
+            "stok": 11476800,
             "arazi": 0,
-            "yapi": 4970000
+            "yapi": 10080000
           },
-          "gelir7Gun": 0
+          "gelir7Gun": 419918311
         }
       ],
       "hibeKitDegeri": 85600000,
@@ -5708,54 +5709,57 @@
           {
             "gec": "gec_ciftci",
             "acilis": "ciftci",
-            "ilce": "sn_cam_vadisi_tasra",
+            "ilce": "sn_gri_tepe_merkez",
             "emsal": [
-              "tuccar_47",
-              "spekulator_11",
-              "spekulator_12",
-              "spekulator_33",
-              "spekulator_35",
-              "spekulator_37",
-              "spekulator_yasli_35",
-              "spekulator_yasli_37"
+              "sanayici_7",
+              "sanayici_25",
+              "sanayici_47",
+              "spekulator_15",
+              "spekulator_22",
+              "spekulator_23",
+              "spekulator_25",
+              "spekulator_29",
+              "spekulator_yasli_35"
             ],
             "servet": {
-              "hazine": 50000000,
-              "stok": 31747130,
+              "hazine": 1400887886,
+              "stok": 10637400,
               "arazi": 0,
-              "yapi": 0
+              "yapi": 10220000
             },
-            "servetHam": 81747130,
-            "servetArindirilmis": -3852870,
+            "servetHam": 1421745286,
+            "servetArindirilmis": 1336145286,
             "oran": {
-              "hamPpm": 999849,
+              "hamPpm": 17444914,
               "arindirilmisPpm": null,
-              "hibePayiPpm": 1000000
+              "hibePayiPpm": 60207
             },
             "emsalHam": [
-              79522580,
-              81866213,
-              82174484,
-              80813581,
-              81652708,
-              81427617,
-              82269796,
-              82396996
+              77216490,
+              77160618,
+              77216490,
+              82017528,
+              82222314,
+              82297473,
+              81053454,
+              81499127,
+              82308652
             ],
-            "emsalMedyanHam": 81759460,
-            "emsalMedyanArindirilmis": -3840540,
-            "ulastiHam": false,
-            "ulastiArindirilmis": false,
-            "gelir": 0,
+            "emsalMedyanHam": 81499127,
+            "emsalMedyanArindirilmis": -4100873,
+            "ulastiHam": true,
+            "ulastiArindirilmis": true,
+            "gelir": 1103451759,
             "emsalGelir": [
               0,
+              -16296,
               0,
               0,
-              -521715,
               0,
               0,
-              -776496,
-              -687456
+              -275860,
+              0,
+              -751968
             ],
             "emsalUretenSayisi": 0,
             "emsalGelirMedyan": null,
@@ -5764,107 +5768,110 @@
           {
             "gec": "gec_sanayici",
             "acilis": "sanayici",
-            "ilce": "sn_demir_dagi_merkez",
+            "ilce": "sn_kizil_kaya_merkez",
             "emsal": [
-              "sanayici_3",
-              "sanayici_23",
-              "sanayici_45",
-              "spekulator_8",
-              "spekulator_35",
-              "spekulator_yasli_36",
-              "spekulator_yasli_38"
+              "sanayici_11",
+              "sanayici_27",
+              "sanayici_49",
+              "spekulator_2",
+              "spekulator_10",
+              "spekulator_14",
+              "spekulator_31",
+              "spekulator_yasli_37"
             ],
             "servet": {
-              "hazine": 2586030543,
-              "stok": 25229810,
-              "arazi": 5403508,
-              "yapi": 53690000
+              "hazine": 39500000,
+              "stok": 13489370,
+              "arazi": 0,
+              "yapi": 26250000
             },
-            "servetHam": 2670353861,
-            "servetArindirilmis": 2584753861,
+            "servetHam": 79239370,
+            "servetArindirilmis": -6360630,
             "oran": {
-              "hamPpm": 32352693,
+              "hamPpm": 1001350,
               "arindirilmisPpm": null,
-              "hibePayiPpm": 32055
+              "hibePayiPpm": 1000000
             },
             "emsalHam": [
-              4229934083,
-              4229929007,
-              4229924495,
-              81533820,
-              81652708,
-              82350724,
-              82538842
+              77216490,
+              77160618,
+              77216490,
+              81048591,
+              81861579,
+              82303244,
+              76684923,
+              82511146
             ],
-            "emsalMedyanHam": 82538842,
-            "emsalMedyanArindirilmis": -3061158,
+            "emsalMedyanHam": 79132540,
+            "emsalMedyanArindirilmis": -6467460,
             "ulastiHam": true,
             "ulastiArindirilmis": true,
-            "gelir": 1256961639,
+            "gelir": 0,
             "emsalGelir": [
-              1050890366,
-              1050888854,
-              1050887510,
+              0,
+              -16296,
+              0,
+              -289225,
               0,
               0,
-              -721392,
-              -577248
+              0,
+              -598584
             ],
-            "emsalUretenSayisi": 3,
-            "emsalGelirMedyan": 1050888854,
+            "emsalUretenSayisi": 0,
+            "emsalGelirMedyan": null,
             "katilmaGun": 10
           },
           {
             "gec": "gec_pazar",
             "acilis": "pazar",
-            "ilce": "sn_demir_gecit_merkez",
+            "ilce": "sn_kizil_kaya_merkez",
             "emsal": [
-              "tuccar_50",
-              "spekulator_12",
+              "sanayici_11",
+              "sanayici_27",
+              "sanayici_49",
+              "spekulator_2",
+              "spekulator_10",
               "spekulator_14",
-              "spekulator_34",
-              "spekulator_36",
-              "spekulator_38",
-              "spekulator_yasli_35",
-              "spekulator_yasli_39"
+              "spekulator_31",
+              "spekulator_yasli_37"
             ],
             "servet": {
-              "hazine": 46500000,
-              "stok": 30277130,
+              "hazine": 566133106,
+              "stok": 11476800,
               "arazi": 0,
-              "yapi": 4970000
+              "yapi": 10080000
             },
-            "servetHam": 81747130,
-            "servetArindirilmis": -3852870,
+            "servetHam": 587689906,
+            "servetArindirilmis": 502089906,
             "oran": {
-              "hamPpm": 997829,
+              "hamPpm": 7426652,
               "arindirilmisPpm": null,
-              "hibePayiPpm": 1000000
+              "hibePayiPpm": 145655
             },
             "emsalHam": [
-              79522580,
-              82174484,
+              77216490,
+              77160618,
+              77216490,
+              81048591,
+              81861579,
               82303244,
-              81515334,
-              81675422,
-              81415363,
-              82269796,
-              82836394
+              76684923,
+              82511146
             ],
-            "emsalMedyanHam": 81924953,
-            "emsalMedyanArindirilmis": -3675047,
-            "ulastiHam": false,
-            "ulastiArindirilmis": false,
-            "gelir": 0,
+            "emsalMedyanHam": 79132540,
+            "emsalMedyanArindirilmis": -6467460,
+            "ulastiHam": true,
+            "ulastiArindirilmis": true,
+            "gelir": 419918311,
             "emsalGelir": [
               0,
+              -16296,
+              0,
+              -289225,
               0,
               0,
               0,
-              0,
-              0,
-              -776496,
-              -340032
+              -598584
             ],
             "emsalUretenSayisi": 0,
             "emsalGelirMedyan": null,
@@ -5876,13 +5883,8 @@
             "verdict": "kaldi",
             "kaynak": "y7_gelir+ucuz_hucre",
             "y7": {
-              "olculebilir": true,
-              "oyuncuPayiPpm": 1000000,
-              "ulasan": 1,
-              "olculebilirOyuncu": 1,
-              "olcumDisi": 2,
-              "olguSayisi": 3,
-              "hedefGecti": true
+              "olculebilir": false,
+              "neden": "uretim yapan (geliri > 0) ilce emsali yok"
             },
             "ucuzHedef": false
           },
@@ -5890,8 +5892,8 @@
             "ham": {
               "verdict": "kaldi",
               "gecKatilan": {
-                "basariPpm": 333333,
-                "ulasan": 1,
+                "basariPpm": 1000000,
+                "ulasan": 3,
                 "olculebilir": 3,
                 "olguSayisi": 3
               },
@@ -5907,8 +5909,8 @@
             "arindirilmisServet": {
               "verdict": "kaldi",
               "gecKatilan": {
-                "basariPpm": 333333,
-                "ulasan": 1,
+                "basariPpm": 1000000,
+                "ulasan": 3,
                 "olculebilir": 3,
                 "olguSayisi": 3
               },
@@ -5923,19 +5925,19 @@
             },
             "oranlar": [
               {
-                "hamPpm": 999849,
+                "hamPpm": 17444914,
+                "arindirilmisPpm": null,
+                "hibePayiPpm": 60207
+              },
+              {
+                "hamPpm": 1001350,
                 "arindirilmisPpm": null,
                 "hibePayiPpm": 1000000
               },
               {
-                "hamPpm": 32352693,
+                "hamPpm": 7426652,
                 "arindirilmisPpm": null,
-                "hibePayiPpm": 32055
-              },
-              {
-                "hamPpm": 997829,
-                "arindirilmisPpm": null,
-                "hibePayiPpm": 1000000
+                "hibePayiPpm": 145655
               }
             ]
           }
@@ -6551,21 +6553,16 @@
           }
         ],
         "y7": {
-          "olculebilir": true,
-          "oyuncuPayiPpm": 1000000,
-          "ulasan": 1,
-          "olculebilirOyuncu": 1,
-          "olcumDisi": 2,
-          "olguSayisi": 3,
-          "hedefGecti": true
+          "olculebilir": false,
+          "neden": "uretim yapan (geliri > 0) ilce emsali yok"
         }
       },
       "h8": {
         "verdict": "belirsiz",
         "gini": {
-          "degerGiniPpm": 446202,
-          "hucreGiniPpm": 445669,
-          "sahiplerDegerGiniPpm": 446202,
+          "degerGiniPpm": 446473,
+          "hucreGiniPpm": 446044,
+          "sahiplerDegerGiniPpm": 446473,
           "oyuncuSayisi": 313,
           "sahipSayisi": 313
         },
@@ -6605,13 +6602,14 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
           "sonuc": {
             "olculebilir": true,
-            "oranPpm": 645367,
-            "esikiGecen": 202,
+            "oranPpm": 648562,
+            "esikiGecen": 203,
             "olculenOyuncu": 313,
             "olcumDisi": 0,
             "medyanSureMs": 0
@@ -6621,8 +6619,8 @@
         "y2": {
           "dk60": {
             "olculebilir": true,
-            "oranPpm": 699680,
-            "esikiGecen": 219,
+            "oranPpm": 706070,
+            "esikiGecen": 221,
             "olculenOyuncu": 313,
             "olcumDisi": 0,
             "medyanSureMs": 3600000
@@ -6635,7 +6633,7 @@
             "olcumDisi": 0,
             "medyanSureMs": 3600000
           },
-          "hedef60Gecti": false,
+          "hedef60Gecti": true,
           "hedef10Gecti": false
         },
         "y3": {
@@ -6648,14 +6646,14 @@
         "y5": {
           "olculebilir": true,
           "katmanPaylariPpm": {
-            "tarim": 578947,
-            "hammadde": 168421,
-            "hizmet": 252631
+            "tarim": 578125,
+            "hammadde": 161458,
+            "hizmet": 260416
           },
           "enBuyukKatman": "tarim",
-          "enBuyukPayPpm": 578947,
-          "hibritPayPpm": 473684,
-          "ikinciYapili": 190,
+          "enBuyukPayPpm": 578125,
+          "hibritPayPpm": 473958,
+          "ikinciYapili": 192,
           "oyuncuSayisi": 313,
           "hedefGecti": true
         },
@@ -6673,11 +6671,11 @@
       },
       "basarisizNedenleri": {},
       "komutTurleri": {
-        "yapi_yerlestir": 578,
-        "ticaret_emri": 957,
-        "parsel_al": 471
+        "yapi_yerlestir": 579,
+        "ticaret_emri": 955,
+        "parsel_al": 473
       },
-      "sureMs": 74740
+      "sureMs": 84159
     }
   ]
 }

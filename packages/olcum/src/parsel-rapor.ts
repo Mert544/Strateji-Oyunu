@@ -26,6 +26,8 @@ export interface ParselRaporMeta {
   harita?: string;
   /** Tarım yönetimi açık mıydı (ekim planı + gübre dozu). */
   tarimYonetimi?: boolean;
+  /** Yerleşik botlar da `ilceSec` kullandı mı (geç katılanlar her zaman). */
+  yerlesikIlceSec?: boolean;
   /** Bakım yönetimi açık mıydı (parça ithalatı + genel onarım). */
   bakimYonetimi?: boolean;
   /** Yaşlı spekülatörün alıma başladığı yaş (gün). */
@@ -191,6 +193,7 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
   k.push(`| Harita | ${meta.harita ?? "mini-6"} |`);
   k.push(`| Tarım yönetimi | ${meta.tarimYonetimi === true ? "AÇIK (ekim planı + gübre dozu; pasif ve spekülatör hariç)" : "kapalı"} |`);
   k.push(`| Bakım yönetimi | ${meta.bakimYonetimi === true ? "AÇIK (parça ithalatı + aşınma eşiğinde genel onarım; pasif ve spekülatör hariç)" : "kapalı"} |`);
+  if (meta.yerlesikIlceSec === true) k.push("| İlçe seçimi | yerleşikler dahil `ilceSec` (yurt verebilen + açılışa uygun); geç katılanlar her zaman `ilceSec` |");
   if ((meta.duzen.yerlesik["spekulatorYasli"] ?? 0) > 0) k.push(`| Yaşlı spekülatör | ${meta.spekulatorGun ?? 15}. günden itibaren arsa alır (ayrılmış hücre süresi sonrası) |`);
   k.push(`| Ağır koşu | ${meta.agir ? "EVET (H6 tanımındaki gerçek 60. gün katılımı)" : "hayır (varsayılan; H6'nın 60. gün katılımı için `--agir`)"} |`);
   k.push("");
@@ -350,6 +353,13 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
     if (ilk.katilamayan.length > 0) {
       k.push(`**Katılamayan oyuncular** (hiçbir ilçe yurt veremedi; ölçüm dışı): ${ilk.katilamayan.length} (${ilk.katilamayan.slice(0, 8).join(", ")}${ilk.katilamayan.length > 8 ? ", …" : ""})`);
       k.push("");
+    }
+    {
+      const toplamYok = sonuclar.reduce((t, x) => t + x.uygunIlceYok.length, 0);
+      if (toplamYok > 0 || ilk.uygunIlceYok.length > 0) {
+        k.push(`**Uygun ilçe yok: ${ilk.uygunIlceYok.length}** (ilçe seçimi hiçbir ilçeyi "yurt verebilen + açılışa uygun" bulmadı; oyuncu katılmadı, ölçüm dışı)${ilk.uygunIlceYok.length > 0 ? ": " + ilk.uygunIlceYok.slice(0, 6).map((x) => `${x.oyuncu} (${x.neden})`).join("; ") : ""}. Tüm tohumlarda toplam: ${toplamYok}.`);
+        k.push("");
+      }
     }
     if (ilk.yurtsuz > 0) {
       k.push(`**Yurtsuz oyuncu:** ${ilk.yurtsuz} / ${ilk.oyuncular.length} (ilçelerde yurt kalmadı: katıldı ama hücresiz; bot komut veremez). Doluluk doygunluğa ulaştı.`);

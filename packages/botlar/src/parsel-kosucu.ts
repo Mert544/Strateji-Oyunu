@@ -69,8 +69,12 @@ export interface ParselKatilimKaydi {
   istenenIlce: string | undefined;
   /** Bot önerisi reddedildi ve ilçesiz yeniden denendi. */
   ilceGeriDusuldu: boolean;
-  /** `katilimRedDevam` ile reddedilen katılımın nedeni; katıldıysa tanımsız. */
+  /** Katılım gerçekleşmedi: `katilimRedDevam` ile çekirdeğin reddi ya da botun "uygun ilçe yok" kararı; nedeni. Katıldıysa tanımsız. */
   reddedildi?: string;
+  /** Bot açık ilçe kararında (`ilceKarari`) hiçbir ilçe uygun bulmadı: oyuncu KATILMADI ("uygun ilçe yok"; `reddedildi` neden). */
+  uygunIlceYok?: boolean;
+  /** Açık ilçe kararının nedeni (yalnız `ilceKarari` olan botlarda). */
+  ilceNedeni?: string;
 }
 
 export interface ParselKosuSonucu {
@@ -127,10 +131,17 @@ export function parselKos(secenek: ParselKosuSecenekleri): ParselKosuSonucu {
     for (const o of oyuncular) {
       if (katildi.has(o.id) || o.katilmaMs > t) continue;
       sim.calistirKadar(t);
-      const ilce = o.bot?.katilimIlcesi(sim);
+      const karar = o.bot?.ilceKarari?.(sim);
+      if (karar !== undefined && karar.ilce === null) {
+        // Açık ilçe kararı: hiçbir ilçe yurt verebilir + açılışa uygun değil; çekirdeğin yedek ilçesine BIRAKILMAZ, oyuncu katılmaz.
+        katildi.add(o.id);
+        katilimlar[o.id] = { t, istenenIlce: undefined, ilceGeriDusuldu: false, reddedildi: `uygun ilce yok: ${karar.neden}`, uygunIlceYok: true, ilceNedeni: karar.neden };
+        continue;
+      }
+      const ilce = karar !== undefined ? (karar.ilce as string) : o.bot?.katilimIlcesi(sim);
       let r = sim.uygula({ t, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: o.id, bolgeler: [], ...(ilce !== undefined ? { ilce } : {}) } });
       let geriDustu = false;
-      if (!r.tamam && ilce !== undefined) {
+      if (!r.tamam && ilce !== undefined && karar === undefined) {
         // Bot önerisi yurt veremedi: çekirdeğin seçimine bırak.
         geriDustu = true;
         r = sim.uygula({ t, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: o.id, bolgeler: [] } });
@@ -139,12 +150,12 @@ export function parselKos(secenek: ParselKosuSecenekleri): ParselKosuSonucu {
         if (secenek.katilimRedDevam !== true) throw new Error(`parselKos: oyuncu katilamadi (${o.id}, t=${t}): ${r.hata}`);
         // Katılamayan oyuncu bir daha denenmez; komut vermez.
         katildi.add(o.id);
-        katilimlar[o.id] = { t, istenenIlce: ilce, ilceGeriDusuldu: geriDustu, reddedildi: r.hata };
+        katilimlar[o.id] = { t, istenenIlce: ilce, ilceGeriDusuldu: geriDustu, reddedildi: r.hata, ...(karar !== undefined ? { ilceNedeni: karar.neden } : {}) };
         continue;
       }
       katildi.add(o.id);
       yeniKatilan.add(o.id);
-      katilimlar[o.id] = { t, istenenIlce: ilce, ilceGeriDusuldu: geriDustu };
+      katilimlar[o.id] = { t, istenenIlce: ilce, ilceGeriDusuldu: geriDustu, ...(karar !== undefined ? { ilceNedeni: karar.neden } : {}) };
     }
 
     // 2. Bot kararları (bitiş anında karar verilmez; yalnız gözlem yapılır)

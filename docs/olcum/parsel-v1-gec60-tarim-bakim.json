@@ -4,6 +4,7 @@
   "harita": "mini-6",
   "tarimYonetimi": true,
   "bakimYonetimi": true,
+  "yerlesikIlceSec": false,
   "spekulatorGun": 15,
   "etiket": "v1-gec60-tarim-bakim",
   "bulgular": "parsel-v1-bulgular.md",
@@ -24,7 +25,7 @@
   "olcumGunu": 14,
   "iklim": "hizli",
   "agir": true,
-  "sureMs": 6678,
+  "sureMs": 9557,
   "duzen": {
     "yerlesik": {
       "ciftci": 3,
@@ -596,6 +597,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -669,7 +671,7 @@
         "gubre_dozu": 84,
         "ekim_plani": 51
       },
-      "sureMs": 1300
+      "sureMs": 1816
     },
     {
       "tohum": 2,
@@ -1200,6 +1202,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -1273,7 +1276,7 @@
         "gubre_dozu": 76,
         "ekim_plani": 52
       },
-      "sureMs": 967
+      "sureMs": 1792
     },
     {
       "tohum": 3,
@@ -1804,6 +1807,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -1877,7 +1881,7 @@
         "gubre_dozu": 78,
         "ekim_plani": 48
       },
-      "sureMs": 580
+      "sureMs": 944
     },
     {
       "tohum": 4,
@@ -2408,6 +2412,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -2481,7 +2486,7 @@
         "gubre_dozu": 83,
         "ekim_plani": 50
       },
-      "sureMs": 643
+      "sureMs": 1049
     },
     {
       "tohum": 5,
@@ -3012,6 +3017,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -3085,7 +3091,7 @@
         "gubre_dozu": 86,
         "ekim_plani": 55
       },
-      "sureMs": 484
+      "sureMs": 811
     },
     {
       "tohum": 6,
@@ -3616,6 +3622,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -3689,7 +3696,7 @@
         "gubre_dozu": 87,
         "ekim_plani": 51
       },
-      "sureMs": 557
+      "sureMs": 827
     },
     {
       "tohum": 7,
@@ -4220,6 +4227,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -4293,7 +4301,7 @@
         "gubre_dozu": 87,
         "ekim_plani": 57
       },
-      "sureMs": 479
+      "sureMs": 548
     },
     {
       "tohum": 8,
@@ -4824,6 +4832,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -4897,7 +4906,7 @@
         "gubre_dozu": 85,
         "ekim_plani": 53
       },
-      "sureMs": 627
+      "sureMs": 546
     },
     {
       "tohum": 9,
@@ -5428,6 +5437,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -5501,7 +5511,7 @@
         "gubre_dozu": 87,
         "ekim_plani": 51
       },
-      "sureMs": 426
+      "sureMs": 656
     },
     {
       "tohum": 10,
@@ -6032,6 +6042,7 @@
         }
       },
       "katilamayan": [],
+      "uygunIlceYok": [],
       "yurtsuz": 0,
       "y": {
         "y1": {
@@ -6105,7 +6116,7 @@
         "gubre_dozu": 87,
         "ekim_plani": 53
       },
-      "sureMs": 613
+      "sureMs": 565
     }
   ]
 }
