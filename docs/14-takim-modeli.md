@@ -18,7 +18,7 @@ Liderler Opus, çalışanlar Sonnet. Orkestra bulut ortamında çalışıyor; sa
 | Operasyon | O2 ölçüm ve yük | Ölçüm ve yük koşuları, kararsız test takibi; ağır koşuların tek sahibi | packages/olcum/**, packages/botlar/**, docs/olcum/** |
 | Operasyon | O3 altyapı, veri hattı ve belge | Arsa ızgarası ve harita verisi üretimi; Postgres, Docker ve yedek provaları; açılış kontrol listesi; belge bakımı | packages/veri-hatti/**, packages/veri/haritalar/**, deploy/**, packages/sunucu/README.md, docs/09–10 |
 | Kod | **Lider** | Kod incelemesi, mimari kararlar, arayüz sözleşmeleri, onay | — |
-| Kod | K1 frontend | İstemci mantığı: bağlantı, harita etkileşimi, komutlar, paneller | packages/istemci/src/{harita,komut,arayuz,isci}/*.ts, packages/istemci/test |
+| Kod | K1 frontend | İstemci mantığı: bağlantı, harita etkileşimi, komutlar, paneller; istemci giriş noktası | packages/istemci/src/{harita,komut,arayuz,isci}/*.ts, packages/istemci/src/main.ts, packages/istemci/test |
 | Kod | K2 backend | Sunucu, protokol, kimlik | packages/sunucu/{src,test,sql}, packages/protokol/** |
 | Kod | K3 oyun motoru | Çekirdek simülasyon ve veri doğrulama (tek yazar) | packages/cekirdek/**, packages/veri/src/**, docs/06 |
 | Tasarım | **Lider** | Görsel kimlik, arayüz tutarlılığı, içerik ve denge kararları | docs/arastirma/gorsel-kimlik-ve-arayuz.md |
@@ -26,7 +26,7 @@ Liderler Opus, çalışanlar Sonnet. Orkestra bulut ortamında çalışıyor; sa
 | Tasarım | T2 görsel ve 3B | Küre, harita stili, yürüyüş sahnesi, binalar, karakter | packages/istemci/src/{kure,yuru}/**, packages/istemci/src/harita/stil.ts |
 | Tasarım | T3 oyun içeriği ve denge verisi | Mallar, tarifler, yapı ve dükkân verisi, kimlik listesi | packages/veri/icerik/**, docs/arastirma/kimlik-listesi-v1.md |
 
-Bir dosyaya iki rol dokunmak zorundaysa iki lider önce sırayı kararlaştırır, baş lidere bildirir. Böyle durumlarda dosyanın sahibi önce teslim eder.
+`main.ts`'e Tasarım yalnız kablolama bloğu ekler (ayrı commit). Bir dosyaya iki rol dokunmak zorundaysa iki lider önce sırayı kararlaştırır, baş lidere bildirir. Böyle durumlarda dosyanın sahibi önce teslim eder.
 
 ## İletişim
 - Çalışan raporunu kendi liderine gönderir.
