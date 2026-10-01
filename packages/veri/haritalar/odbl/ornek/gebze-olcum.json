@@ -1,0 +1,237 @@
+{
+  "ad": "gebze",
+  "osmIliski": "r1211496",
+  "kaynak": {
+    "karo": "Protomaps Basemap (builds.protomaps.com), pmtiles extract --maxzoom=15",
+    "semaSurumu": "4.15.2",
+    "osmZamani": "2026-09-30T04:00:00Z",
+    "karoDosyasiBayt": 9424408,
+    "lisans": "ODbL (c) OpenStreetMap katkıcıları"
+  },
+  "karo": {
+    "butceBayt": 153600,
+    "tumDuzeyKaro": 1832,
+    "duzeyler": [
+      {
+        "z": 12,
+        "karo": 30,
+        "benzersiz": 30,
+        "toplamBayt": 802041,
+        "ortalamaBayt": 26735,
+        "medyanBayt": 19893,
+        "p95Bayt": 82795,
+        "enBuyukBayt": 93789,
+        "enBuyukKaro": "12/2382/1538",
+        "butceAsan": 0
+      },
+      {
+        "z": 13,
+        "karo": 99,
+        "benzersiz": 99,
+        "toplamBayt": 1184865,
+        "ortalamaBayt": 11968,
+        "medyanBayt": 6632,
+        "p95Bayt": 42086,
+        "enBuyukBayt": 54157,
+        "enBuyukKaro": "13/4764/3077",
+        "butceAsan": 0
+      },
+      {
+        "z": 14,
+        "karo": 340,
+        "benzersiz": 340,
+        "toplamBayt": 1797525,
+        "ortalamaBayt": 5287,
+        "medyanBayt": 2588,
+        "p95Bayt": 21446,
+        "enBuyukBayt": 41173,
+        "enBuyukKaro": "14/9528/6155",
+        "butceAsan": 0
+      },
+      {
+        "z": 15,
+        "karo": 1326,
+        "benzersiz": 1297,
+        "toplamBayt": 3225653,
+        "ortalamaBayt": 2433,
+        "medyanBayt": 1016,
+        "p95Bayt": 9752,
+        "enBuyukBayt": 31078,
+        "enBuyukKaro": "15/19062/12308",
+        "butceAsan": 0
+      }
+    ],
+    "z15IlceKaro": {
+      "karo": 601,
+      "ortalamaBayt": 2180,
+      "enBuyukBayt": 31078
+    },
+    "z15Katmanlar": [
+      {
+        "katman": "boundaries",
+        "ozellik": 466,
+        "karoBasinaOrtalama": 0.8,
+        "karoBasinaEnCok": 3
+      },
+      {
+        "katman": "buildings",
+        "ozellik": 19030,
+        "karoBasinaOrtalama": 31.7,
+        "karoBasinaEnCok": 1229
+      },
+      {
+        "katman": "earth",
+        "ozellik": 693,
+        "karoBasinaOrtalama": 1.2,
+        "karoBasinaEnCok": 13
+      },
+      {
+        "katman": "landuse",
+        "ozellik": 5005,
+        "karoBasinaOrtalama": 8.3,
+        "karoBasinaEnCok": 121
+      },
+      {
+        "katman": "places",
+        "ozellik": 71,
+        "karoBasinaOrtalama": 0.1,
+        "karoBasinaEnCok": 2
+      },
+      {
+        "katman": "pois",
+        "ozellik": 3114,
+        "karoBasinaOrtalama": 5.2,
+        "karoBasinaEnCok": 255
+      },
+      {
+        "katman": "roads",
+        "ozellik": 4255,
+        "karoBasinaOrtalama": 7.1,
+        "karoBasinaEnCok": 132
+      },
+      {
+        "katman": "water",
+        "ozellik": 366,
+        "karoBasinaOrtalama": 0.6,
+        "karoBasinaEnCok": 7
+      }
+    ]
+  },
+  "izgara": {
+    "hucreZ": 20,
+    "hucreKenariMetre": 28.89,
+    "cerceve": {
+      "x0": 609744,
+      "y0": 392968,
+      "genislik": 1207,
+      "yukseklik": 1077
+    },
+    "secenekler": {
+      "anaYolTamponM": 12,
+      "digerYolTamponM": 6,
+      "nehirTamponM": 6,
+      "ornek": 8,
+      "yolEsik": 1,
+      "suEsik": 1,
+      "askeriEsik": 1,
+      "sinifOrani": 0.3,
+      "yapiliOrani": 0.1
+    },
+    "istatistik": {
+      "toplam": 508634,
+      "satinAlinabilir": 436599,
+      "engel": {
+        "yol": 68337,
+        "su": 4002,
+        "askeri": 33,
+        "herhangi": 72035
+      },
+      "binaKesisen": 20447,
+      "binaKesisenUygun": 9401,
+      "sinif": {
+        "diger": 167465,
+        "tarla": 30093,
+        "sanayi": 19329,
+        "konut": 7838,
+        "orman": 275441,
+        "yapili": 8468
+      },
+      "sinifUygun": {
+        "diger": 123008,
+        "tarla": 26535,
+        "sanayi": 11893,
+        "konut": 2250,
+        "orman": 269205,
+        "yapili": 3708
+      }
+    },
+    "esikDuyarliligi": {
+      "kesisim": {
+        "uygun": 436599,
+        "kentsel": 21813,
+        "kentselUygun": 9748
+      },
+      "kapsama25": {
+        "uygun": 457686,
+        "kentsel": 21813,
+        "kentselUygun": 13611
+      },
+      "kapsama50": {
+        "uygun": 485877,
+        "kentsel": 21813,
+        "kentselUygun": 18892
+      }
+    },
+    "islenenKaro": 601,
+    "eksikKaro": 0
+  },
+  "ciktilar": {
+    "bhiHamBayt": 2599902,
+    "bhiGzBayt": 92813,
+    "bhiBrBayt": 73460,
+    "bhiYalnizDurumGzBayt": 64451,
+    "geojsonSeq": {
+      "hucre": {
+        "ozellik": 508634,
+        "bayt": 123613333
+      },
+      "serit": {
+        "ozellik": 63456,
+        "bayt": 13894798
+      }
+    },
+    "pmtiles": {
+      "hucre": {
+        "dosyaBayt": 2903407,
+        "z15": {
+          "z": 15,
+          "karo": 609,
+          "benzersiz": 609,
+          "toplamBayt": 2901342,
+          "ortalamaBayt": 4764,
+          "medyanBayt": 5393,
+          "p95Bayt": 6673,
+          "enBuyukBayt": 7430,
+          "enBuyukKaro": "15/19062/12302",
+          "butceAsan": 0
+        }
+      },
+      "serit": {
+        "dosyaBayt": 458505,
+        "z15": {
+          "z": 15,
+          "karo": 609,
+          "benzersiz": 560,
+          "toplamBayt": 465784,
+          "ortalamaBayt": 765,
+          "medyanBayt": 575,
+          "p95Bayt": 2020,
+          "enBuyukBayt": 2639,
+          "enBuyukKaro": "15/19065/12301",
+          "butceAsan": 0
+        }
+      }
+    },
+    "sayacBaytHucreBasina": 8
+  }
+}

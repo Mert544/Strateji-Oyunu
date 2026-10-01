@@ -9,14 +9,18 @@
   },
   "dependencies": {
     "@bolge/veri": "workspace:*",
+    "@mapbox/vector-tile": "^3.0.0",
     "fflate": "^0.8.3",
     "mapshaper": "^0.7.71",
+    "pbf": "^5.1.2",
+    "pmtiles": "^4.5.0",
     "topojson-client": "^3.1.0",
     "undici": "^8.11.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/topojson-client": "^3.1.5",
-    "@types/topojson-specification": "^1.0.5"
+    "@types/topojson-specification": "^1.0.5",
+    "vt-pbf": "^3.1.3"
   }
 }

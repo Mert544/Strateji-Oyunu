@@ -1,0 +1,13 @@
+Bu klasördeki dosyalar OpenStreetMap verisinden türetilmiştir.
+© OpenStreetMap katkıcıları — Open Database License (ODbL) 1.0: https://opendatacommons.org/licenses/odbl/1-0/
+Karo kaynağı: Protomaps Basemap v4 (builds.protomaps.com, 20260930 yapısı; OSM 2026-09-30T04:00Z).
+Idari sınır: OSM ilişkisi r1211496 (Gebze), r223473 (Kocaeli) — Overpass API.
+
+Dosyalar (Sprint 1 / S6 denemesi, bkz. docs/arastirma/karo-ve-izgara-denemesi.md):
+  gebze-hucreler.bhi.gz   z20 hücre ızgarası, BHI1 ikili biçim (gzip): durum baytı + bina yüzdesi
+  gebze-seritler.pmtiles  aynı ızgara, istemci için "serit" vektör katmanı (tippecanoe, z15)
+  gebze-onizleme.png      göz denetimi önizlemesi (1 piksel = 1 hücre)
+  gebze-olcum.json        karo ve ızgara ölçümleri
+  kocaeli-olcum.json      Kocaeli ili ölçümleri (büyük çıktılar yalnız .onbellek'te)
+
+Yeniden üretim: tsx packages/veri-hatti/src/osm/izgara-cli.ts --ad gebze --iliski 1211496 --ornek
