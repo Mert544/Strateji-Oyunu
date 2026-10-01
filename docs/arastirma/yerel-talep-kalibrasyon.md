@@ -77,7 +77,7 @@ Yerleşim **U**: eşit (4–5/ilçe); **N**: nüfusla orantılı (en az 1). ZP8 
 | Z-1 | İlçe başına `nufus` (ya da talep sınıfı) alanının fikstür şemasına girmesi | Fikstür/göç, çekirdek derleme ve canlı durum (seviye, esnaf yoğunluğu) ona bağlanır | İsteğe bağlı alan (yoksa sınıf sabiti yedek); geriye uyum testi |
 | Z-2 | Talep sınıfı kuralı (baskın hücre sınıfı ↔ nüfus) | `ilceSinifi` derlemede bir kez hesaplanır; Q kimliği (GZ-4) ona dayanır | Baskın hücre sınıfı talep için kullanılmaz (üç ölçülü ilçede de kırsal) |
 
-1. **(Baş lider)** Para dengesi bandı (§7): kâğıt modelde yeniden yatırım olmadan R = 0,24–0,26 (bandın altı); banda ancak `yerelOlcek` ≤ 10 ile girer ve dükkân ekonomisi çöker. Yeniden yatırım payı r ≥ %10 ise 40 bantta. Öneri: 40'ta kal, gerçek koşuyla ölç (§8); r ölçülmeden `yerelOlcek` 10'a inilmesin. Onay?
+1. **(Baş lider)** Para dengesi bandı (§7): kâğıt modelde yeniden yatırım olmadan R = 0,24–0,26 (bandın altı); banda ancak `yerelOlcek` ≤ 10 ile girer ve dükkân ekonomisi çöker. Yeniden yatırım payı r ≥ %10 ise 40 bantta. Öneri: 40'ta kal, gerçek koşuyla ölç (§8); r ölçülmeden `yerelOlcek` 10'a inilmesin. **Onaylandı (baş lider): `yerelOlcek` 40'ta kalır.**
 2. **(O3/K3)** Kalan 42 ilçenin hücre sınıf dağılımı ölçülsün (üç ilçede 3/3 kırsal; kent merkezleri doğrulanmadı).
 3. **(T3/O3)** Birincil TÜİK tablosuyla bir kez teyit; lisans için hukuk teyidi.
 4. **(A3)** Şartname §6.5 ve S-6'daki "nüfus verisi yok" ve "sınıf baskın hücre sınıfı" satırları karar sonrası güncellenmeli (`yerelOlcek` 50 kalır).
@@ -109,6 +109,14 @@ Bant (docs/06 §10.5, :253): lavabo / (vergi + ihracat − ithalat) = **0,3–0,
 | P4 | Pazar doyumu: ekmek NPC fiyat/taban ve satış/emilim | Arz/emilim 2,26; fiyat çöküşü | Fiyat ×0,25'e doğru düşerse R ve ihracat düşer |
 | P5 | Dükkân: geri ödeme medyanı, ZP3, ZP8 | A0-12 (≤ 48 sa), ZP8 ≤ %50 | 22–37 sa, %44–52 |
 | P6 | `yerelOlcek` {20, 40, 50} yalnız P1'in bir tohumunda | R ve ZP8 duyarlılığı | 4b tablosuyla uyumlu |
+
+### 8.1 r (yeniden yatırım payı) nasıl ölçülür (O2, P1/P2)
+
+**Tanım.** r = Σ yatırım / Σ net kâr; oyuncu başına gün 7–30 penceresinde, sonra oyuncu medyanı (p10–p90) ve dünya toplamı. **Yatırım (pay):** oyuncunun sermaye komutlarıyla ödediği para: arsa (`parsel_al` ve `yapi_yerlestir`'in arsa kısmı; defterde `lavabo.arsa`, `mulk/komut.ts:216` `alimUygula` → `hazineEkle(…, "arsa")`), yapı bedeli (`yapi_yerlestir`; `mulk/komut.ts:469` `yapiUygula` → `maliyetiDus` → `hazineEkle(-para)`, kalem varsayılanı `harcama`, `ekonomi/maliyet.ts:22`, `paraSayac.ts:89`), **M/L ölçek yükseltme** (`tesis_olcek_yukselt`, `sanayi/komut.ts:57`; bedeli aynı `maliyetiDus`, `harcama`) ve kenar geliştirme (`kenar_gelistir`, `lojistik/cozum.ts:328,343`, `harcama`). **Yatırım sayılmaz:** `genel_onarim` (`sanayi/komut.ts:113`) ve `arama_sondaji` (`:146`) da `lavabo.harcama`ya yazar ama bakım/keşiftir; `arastirma` (teknoloji) ayrı kalemdir. Bu yüzden `lavabo.harcama` tek başına yatırım değildir; komut başına ölçülmelidir. **Payda (net kâr):** Δ(`musluk.ihracatNpc` + `musluk.yerelNpc`) − Δ(`lavabo.ithalatNpc` + `isletme` + `sebeke` + `araziVergisi`) (oyuncu başına saatlik `paraAkisi`; O2 bakım ölçümündeki yöntem). Hibe ve ödül paydaya girmez.
+
+**Bot kararı nereden okunur.** Bot komutları `botlar/src/parsel-kosucu.ts:189` (`o.bot.karar(sim)`); sermaye komutları için koşucu zaten komut başına kayıt tutar: `SERMAYE_KOMUTLARI` (`:102`: `parsel_al`, `yapi_yerlestir`, `tesis_insa_hucre`), hazine farkı `tutar = önce − sonra` ve `yapiPara`, `yapiMalDegeri` (`:190, :199–212`, `ParselSermayeKaydi`). `tesis_olcek_yukselt` ve `kenar_gelistir` bu kümede yoktur: O2 `komutIzle` kancasıyla (`:46, :191`; bakım ölçümündeki `parsel-bakim.ts:340` gibi, komut öncesi/sonrası hazine farkı) ekler. Bot kararlarının kaynağı `botlar/src/parsel.ts`: arsa `:937` (`parsel_al`), yapı `:992` (`yapi_yerlestir`); bugün `tesis_olcek_yukselt` komutu botlarda yoktur (G6 bot önayarında eklenmedikçe M/L katkısı 0'dır ve r yalnız arsa + yapıdan gelir). Malzeme bedeli (çelik/parça) para değil stoktur; bot onu `ticaret_emri` ithalatıyla alır (`lavabo.ithalatNpc`): `r_para` = yukarıdaki tanım, `r_tam` = (yatırım para + `yapiMalDegeri`) / net kâr olarak ikisi birden raporlanır.
+
+**Karar sırası ve sınır (baş lider).** R < 0,3 **ve** r < %10 çıkarsa: önce lavabo kalemleri ayarlanır (M/L bedeli, hücre/arsa fiyatı, şebeke payı, işletme gideri); `yerelOlcek` **en son** kaldıraçtır. A0-12 korunur: dükkân geri ödeme medyanı hedefi ≤ 48 sa'tir ve `yerelOlcek` hiçbir hâlde medyanı 300 sa'in üstüne çıkaracak kadar indirilmez. R ≥ 0,3 ise ya da r ≥ %10 ise `yerelOlcek` 40 aynen kalır.
 
 ## Ek A. Betik
 
