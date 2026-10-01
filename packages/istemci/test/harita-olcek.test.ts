@@ -83,7 +83,7 @@ describe("hedef bedeli: çekirdekle aynı yuvarlama (tür inşa bedeli × insaPp
     expect(sM).toMatchObject({ olcek: 1, ad: "M", hucre: 3, ek: 1, paraMili: 9_000_000 });
     expect(sM.malzeme).toEqual([
       { id: "celik", ad: "Çelik", miktar: 45_000 },
-      { id: "parca", ad: "Makine Parçası", miktar: 15_000 },
+      { id: "parca", ad: "Makine parçası", miktar: 15_000 },
     ]);
     expect(sM.sureSaat).toBe(2); // tür inşa süresi (4 sa; mülk kipi yapı süresi değil) × olcekYukseltmeSureCarpaniPpm 0,5
     expect(sM.ilkGunSureSaat).toBeCloseTo(0.2, 6); // erken oyun çarpanı %10
