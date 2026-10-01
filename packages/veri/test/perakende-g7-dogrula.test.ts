@@ -157,16 +157,32 @@ describe("V12: dukkan ek yapısı inşa malzemeleri içerikte ve depolanabilir",
 });
 
 describe("V13: raf (H) çıkmaz mal sayımında tüketici türüdür", () => {
-  it("bloksuz veride tüketici türü 1 olan raf malları, bloklu pakette (rafta olduğu için) uyarıdan çıkar; blok eklemek başka uyarı üretmez", () => {
-    const bloksuz = dogrulaPerakende(perakendesizPaket()).uyarilar.filter((u) => u.startsWith("icerik: cikmaz mal: "));
-    const rafli = dogrulaPerakende(perakendeliPaket()).uyarilar.filter((u) => u.startsWith("icerik: cikmaz mal: "));
-    const raf = ["gida", "ekmek", "un", "sut", "sut_urunu", "sekerleme"];
-    for (const m of raf) {
+  it("bloksuz veride tüketici türü 1 olan mallar rafa konunca (yeni dükkân türü, talep satırı ve grupla) çıkmaz mal uyarısından çıkar; başka uyarı değişmez (JSON içeriğinden bağımsız: adaylar bellekte bulunur)", () => {
+    const cikmaz = (v: VeriPaketi): string[] => dogrulaPerakende(v).uyarilar.filter((u) => u.startsWith("icerik: cikmaz mal: "));
+    const bloksuz = cikmaz(perakendesizPaket());
+    // adaylar: tüketici türü tam 1 olan, depolanabilir ve NPC pazar kaydı (emilim ve arz > 0) olan mallar
+    const aday = bloksuz
+      .filter((u) => u.endsWith("(tuketici turu 1 < 2)"))
+      .map((u) => u.slice("icerik: cikmaz mal: ".length).split(" ")[0] as string)
+      .filter((m) => {
+        const pz = perakendesizPaket().param.pazar;
+        return (pz.emilimSaat[m] ?? 0) > 0 && (pz.arzSaat[m] ?? 0) > 0;
+      });
+    expect(aday.length).toBeGreaterThan(0);
+    const rafli = cikmaz(
+      perakendeliPaket((p) => {
+        const pr = p.param.mulk!.perakende!;
+        pr.dukkanTurleri = [{ id: "bakkal", ad: "Bakkal", mallar: aday, tamCesit: 1, olcekAraligi: [0] }];
+        pr.talep.talep1000Saat = Object.fromEntries(aday.map((m) => [m, 1_000]));
+        pr.talep.gruplar = { test: { mallar: aday, takvimPpm: Array.from({ length: 12 }, () => 1_000_000) } };
+        pr.talep.bayramGunleri = [];
+      }),
+    );
+    for (const m of aday) {
       expect(bloksuz.some((u) => u.includes(`cikmaz mal: ${m} `)), `bloksuz ${m}`).toBe(true);
       expect(rafli.some((u) => u.includes(`cikmaz mal: ${m} `)), `raflı ${m}`).toBe(false);
     }
-    expect(rafli.length).toBe(bloksuz.length - raf.length);
     // raf dışı hiçbir mal etkilenmedi
-    expect(rafli).toEqual(bloksuz.filter((u) => !raf.some((m) => u.includes(`cikmaz mal: ${m} `))));
+    expect(rafli).toEqual(bloksuz.filter((u) => !aday.some((m) => u.includes(`cikmaz mal: ${m} `))));
   });
 });
