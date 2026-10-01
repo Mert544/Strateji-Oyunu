@@ -12,6 +12,7 @@
  * aynı çıktıyı sınar). Çekirdek (`@bolge/veri`'den çalışma zamanı importu yapmaz) bayt eşlemesinin kendi kopyasını taşır; `cekirdek/test` bu modülle
  * 256 baytın hepsinde eşitliği sınar.
  */
+import { ILCE_NUFUS_ENCOK } from "./parsel";
 import type { ArsaSinifi, HucreEngeli, IlceSeviyesi, ParselMahalleTanimi } from "./parsel";
 
 /** Izgara karo düzeyi (z20). */
@@ -128,6 +129,8 @@ export interface ParselIzgaraIlce {
   izgara: Izgara;
   /** Mahalleler (isteğe bağlı; fikstürdeki `ParselMahalleTanimi` ile aynı biçim). Yoksa kamu mahalle kümelerini kuralla böler. */
   mahalleler?: ParselMahalleTanimi[];
+  /** İlçe nüfusu (isteğe bağlı; fikstürdeki `ParselIlceTanimi.nufus` ile aynı anlam ve sınır: tamsayı 1..`ILCE_NUFUS_ENCOK`). */
+  nufus?: number;
 }
 
 /**
@@ -160,6 +163,7 @@ export function parselIzgaraHatalari(g: ParselIzgaraGirdisi): string[] {
     const b = iller.get(c.il);
     if (b === undefined) hatalar.push(`${yer}: bilinmeyen il "${c.il}"`);
     else if (b !== c.bolge) hatalar.push(`${yer}: bolge "${c.bolge}" ilin bolgesiyle ("${b}") ayni degil`);
+    if (c.nufus !== undefined && (!Number.isSafeInteger(c.nufus) || c.nufus < 1 || c.nufus > ILCE_NUFUS_ENCOK)) hatalar.push(`${yer}: nufus 1 ile ${ILCE_NUFUS_ENCOK} arasinda tamsayi olmali (bulunan ${String(c.nufus)})`);
     const ig = c.izgara;
     if (ig.durum.length !== ig.genislik * ig.yukseklik) hatalar.push(`${yer}: durum duzlemi ${ig.durum.length} bayt, beklenen ${ig.genislik * ig.yukseklik}`);
     if (ig.x0 < 0 || ig.y0 < 0 || ig.x0 + ig.genislik > sinir || ig.y0 + ig.yukseklik > sinir) hatalar.push(`${yer}: cerceve z20 araliginin (0..${sinir - 1}) disinda`);
