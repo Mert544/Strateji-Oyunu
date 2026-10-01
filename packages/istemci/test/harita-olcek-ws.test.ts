@@ -192,6 +192,38 @@ describe("ölçek büyütme: gerçek sunucu", () => {
     expect(a.sunucuHatalari).toEqual([]);
   });
 
+  it("ek hücre zaten kendi arsan (yurt gibi): inşaat grubu yukseltme ve tür taşır, haritada etiket verisi eksiksiz", async () => {
+    const { a, tesis, cift } = await kurulum();
+    // Yapının yanında kendi (boş) hücre: ek hücre arsa parası gerektirmez
+    const kamu = kamuKumesi(ts!.yazar.sim, ILCE);
+    const uygun = new Set(fiks.hucreler.filter((h) => h.uygun && h.sinif === "kirsal" && !kamu.has(h.id) && !ayrilmisKume().has(h.id)).map((h) => h.id));
+    const [x, y] = cift[0].split(":").map(Number) as [number, number];
+    const komsu = [`${x - 1}:${y}`, `${x}:${y - 1}`, `${x}:${y + 1}`, `${x + 1}:${y - 1}`, `${x + 1}:${y + 1}`, `${x + 2}:${y}`].find((id) => uygun.has(id) && !cift.includes(id))!;
+    expect(komsu).toBeTruthy();
+    expect((await a.parselAl({ tur: "parsel_al", ilce: ILCE, hucreler: [komsu], sinif: "kirsal" })).tamam).toBe(true);
+    await bekle(() => a.kare?.ilceler?.some((c) => c.hucreler.some((h) => h[0] === komsu && h[1] === "ali")) === true);
+    const sh = (await a.sahiplikAl(ILCE))!;
+    expect(sh.hucreler.get(komsu)?.sahip).toBe("ali");
+    const kayit = sh.yapilar!.find((k) => k.id === tesis)!;
+    const plan = planla(sh, kayit, 1, a);
+    expect(plan.gecerli).toBe(true);
+    expect(plan.alinacak).toHaveLength(0);
+    expect(plan.ekHucreler).toEqual([komsu]);
+    expect(plan.arsaMili).toBe(0);
+    const r = await a.olcekYukselt({ bolge: `${IL}#ali`, tesis, olcek: 1, ekHucreler: plan.ekHucreler });
+    expect(r).toMatchObject({ tamam: true });
+    await bekle(() => a.ozet()!.surenInsaat === 1);
+    // Harita etiketi `sahiplikAl` yapılarından çizilir: ek hücre grubu büyüyen tesisin türünü ve yükseltmeyi taşımalı ("Çiftlik · Büyütme")
+    await bekle(() => a.kare?.ilceler?.some((c) => c.hucreler.some((h) => h[0] === komsu && h[4] >= 0)) === true);
+    const sh2 = (await a.sahiplikAl(ILCE))!;
+    const ins = sh2.yapilar!.find((k) => k.yukseltme !== undefined);
+    expect(ins).toMatchObject({ durum: "insaat", tur: "ciftlik", sahip: "ali", hucreler: [komsu], yukseltme: { tesis, olcek: 1 } });
+    expect(ins!.bitis).toBeGreaterThan(0);
+    // Tesisin kendi grubu aynı anda tamam (etiket yalnız tür adı); ikisi ayrı yapı kaydıdır
+    expect(sh2.yapilar!.find((k) => k.id === tesis)).toMatchObject({ durum: "tesis", tur: "ciftlik" });
+    expect(a.sunucuHatalari).toEqual([]);
+  });
+
   it("ek hücresiz gönderim reddedilir: okunur ileti, hiçbir şey değişmez", async () => {
     const { a, tesis } = await kurulum();
     const hazineOnce = a.ozet()!.hazineMili!;

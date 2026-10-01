@@ -674,6 +674,8 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.waitForFunction(() => /Ölçek büyütme sürüyor/.test(document.getElementById("sekme-icerik")?.textContent ?? ""), null, { timeout: 15000 }).catch(() => undefined);
   const isl = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
   kontrol(`${e} İşletmem: "Ölçek büyütme sürüyor · M" satırı; bu tesiste "Büyüt" gizli`, /Ölçek büyütme sürüyor · M/.test(isl) && (await sayfa.locator("#sekme-icerik [data-mulk-buyut]").count()) === 0, isl.slice(isl.indexOf("Yapılar"), isl.indexOf("Yapılar") + 220));
+  // Etiketler kareden iki saniyelik tazelemeyle çizilir: büyütme etiketi görünene dek (en çok 10 sn) bekle
+  await sayfa.waitForFunction(() => [...document.querySelectorAll(".yapi-etiket")].some((x) => /Büyütme/.test(x.textContent ?? "")), null, { timeout: 10000 }).catch(() => undefined);
   const etiket = await sayfa.locator(".yapi-etiket").allInnerTexts();
   kontrol(`${e} haritada büyütme etiketi`, etiket.some((x) => /Çiftlik · Büyütme/.test(x)), etiket.join(" | "));
   await ekran("3-buyutuluyor");
