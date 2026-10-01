@@ -231,6 +231,8 @@
   --arsa-orman: #accdb3;
   --arsa-yapili: #c0af9a;
   --arsa-engel: #e8e4db;
+  --arsa-ayrilmis: #89c3ff;
+  --arsa-ayrilmis-kenar: #0465af;
   --sahne-uzay: #f5f2ec;
   --sahne-okyanus: #b9d7e3;
   --sahne-okyanus-derin: #accbda;
@@ -492,6 +494,8 @@
     --arsa-orman: #14331b;
     --arsa-yapili: #615245;
     --arsa-engel: #151a1f;
+    --arsa-ayrilmis: #1a588f;
+    --arsa-ayrilmis-kenar: #6db0f4;
     --sahne-uzay: #0f151a;
     --sahne-okyanus: #051823;
     --sahne-okyanus-derin: #02121d;
@@ -753,6 +757,8 @@
   --arsa-orman: #14331b;
   --arsa-yapili: #615245;
   --arsa-engel: #151a1f;
+  --arsa-ayrilmis: #1a588f;
+  --arsa-ayrilmis-kenar: #6db0f4;
   --sahne-uzay: #0f151a;
   --sahne-okyanus: #051823;
   --sahne-okyanus-derin: #02121d;

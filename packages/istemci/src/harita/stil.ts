@@ -226,6 +226,35 @@ export function seritRengi(r: RenkOku, su: ExpressionSpecification, sahiplikMerc
 }
 
 /**
+ * B3: yeni oyunculara ayrılmış (satılmamış) hücreler. Kaynak `ayrilmis` (gorunum.ts `ayrilmisCiz`; her özellikte `ayrilmis: 1`).
+ * Dolgu zemini ve arsa türü rengini ezmez (alçak alfa, yakınlaşınca söner); anlam renkle birlikte KESİKLİ kenarla taşınır.
+ * Kaynak ancak `map.addSource("ayrilmis", ...)` ile (ya da stil `sources` içinde) varsa eklenir; katmanlar `sahiplik-cizgi` ile `arsa-cizgi`
+ * arasına konur (`oyunKatmanlari` dizisinde ya da `map.addLayer(k, "arsa-cizgi")` ile).
+ */
+export function ayrilmisKatmanlari(r: RenkOku): LayerSpecification[] {
+  const filtre: ExpressionSpecification = ["==", ["get", "ayrilmis"], 1];
+  return [
+    {
+      id: "ayrilmis-dolgu",
+      type: "fill",
+      source: "ayrilmis",
+      minzoom: L3_ZOOM - 0.2,
+      filter: filtre,
+      paint: { "fill-color": r("--arsa-ayrilmis"), "fill-opacity": lin(15, 0.5, 17, 0.2) },
+    },
+    {
+      id: "ayrilmis-cizgi",
+      type: "line",
+      source: "ayrilmis",
+      minzoom: L3_ZOOM - 0.2,
+      filter: filtre,
+      layout: { "line-join": "round" },
+      paint: { "line-color": r("--arsa-ayrilmis-kenar"), "line-width": lin(15, 0.9, 18, 1.8), "line-dasharray": [3, 2], "line-opacity": 0.9 },
+    },
+  ];
+}
+
+/**
  * Dükkân marka rengi (G7): yapı özelliği `m` (marka renk indeksi 0..11) -> oyuncu paleti (`--oyuncu-N`). `m` yoksa yapının
  * kendi rengi (`c`) kalır; markasız dükkân da böyledir.
  */

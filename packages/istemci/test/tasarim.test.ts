@@ -92,6 +92,7 @@ describe("kontrast (WCAG 2.2)", () => {
         ["rozet-bosta", "harita-kara"],
         ["rozet-bitti", "harita-kara"],
         ["harita-sinir-il", "harita-kara"],
+        ["arsa-ayrilmis-kenar", "harita-kara"],
       ];
       OYUNCU.forEach((_, i) => ciftler.push([`oyuncu-${i}-kenar`, "harita-kara"]));
       for (const [a, b] of ciftler) expect(kontrast(r(t, a), r(t, b)), `${a} / ${b}`).toBeGreaterThanOrEqual(3);
@@ -126,6 +127,14 @@ describe("renk körlüğü ayrışması (Machado 2009, ΔE_OK × 100)", () => {
     it(`${ad}: arsa türleri kara'dan ve birbirinden ayrışır (≥ 5)`, () => {
       const k = ["harita-kara", "harita-su", "arsa-tarla", "arsa-sanayi", "arsa-konut", "arsa-orman", "arsa-yapili"].map((x) => r(t, x));
       expect(enKucukAyrim(k).deger).toBeGreaterThanOrEqual(5);
+    });
+    it(`${ad}: ayrılmış hücre (B3) kara, su, arsa türleri, Sen ve soluk oyunculardan ayrışır (her görme türünde ≥ 5)`, () => {
+      const digerleri = ["harita-kara", "harita-su", "arsa-tarla", "arsa-sanayi", "arsa-konut", "arsa-orman", "arsa-yapili", "sen", ...OYUNCU.map((_, i) => `oyuncu-${i}-soluk`)].map((x) => r(t, x));
+      const a = r(t, "arsa-ayrilmis");
+      for (const g of ["normal", ...CVD] as GormeTuru[]) {
+        const en = Math.min(...digerleri.map((x) => deltaE(a, x, g)));
+        expect(en, g).toBeGreaterThanOrEqual(5);
+      }
     });
   }
 });

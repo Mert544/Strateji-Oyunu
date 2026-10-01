@@ -248,6 +248,11 @@ export const ARSA = {
   orman: [[0.817, 0.051, 151], [0.29, 0.057, 149]],
   yapili: [[0.763, 0.035, 73], [0.45, 0.029, 63]],
   engel: [[0.92, 0.013, 87], [0.215, 0.012, 248]],
+  // B3 yeni oyunculara ayrılmış (satılmamış) hücre: mor-mavi ton (hue 250) kara, su, arsa türleri, "Sen" ve soluk oyuncu tonlarından
+  // ayrışır (en küçük ΔE_OK × 100: normal ≈ 6, protan/deutan/tritan ≥ 5,3; taranan 360° × açıklık × kroma kümesinin en iyisi);
+  // kenar çizgisi kara üstünde ≥ 3:1 ve ayrıca kesikli çizilir (renk tek başına anlam taşımaz).
+  ayrilmis: [[0.8, 0.11, 250], [0.45, 0.11, 250]],
+  "ayrilmis-kenar": [[0.5, 0.14, 250], [0.74, 0.12, 250]],
 } as const satisfies Record<string, Cift>;
 
 /** §4.7 küre (L0): uzay = kâğıt; kara ve okyanus haritayla AYNI değerler. */
