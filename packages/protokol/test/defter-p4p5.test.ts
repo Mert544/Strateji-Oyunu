@@ -3,7 +3,7 @@
  * `defter` yükü yeni şemada AYNEN geçerlidir; eski kavramların göreli sırası ve damga indeksleri kaymaz; yeni kavramlar serbest dize olarak taşınır (şema alanı eklenmedi).
  */
 import { describe, expect, it } from "vitest";
-import { DEFTER_DAMGALARI, DEFTER_ODUL_SIRASI, DefterSemasi, defterSablonu, sunucuMesajiCoz } from "../src";
+import { DEFTER_DAMGALARI, DEFTER_ODUL_SIRASI, DEFTER_YER_TUTUCULARI, DefterSemasi, defterSablonu, kavramEtkin, sunucuMesajiCoz } from "../src";
 
 /** Eski sürümün (P4/P5 öncesi) listeleri: DEĞİŞTİRME. */
 const ESKI_SIRA = ["ilk_yapi", "ilk_satis", "ilk_isleme", "zincir_kapandi", "ilk_dukkan", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"] as const;
@@ -63,5 +63,33 @@ describe("Defter P4/P5: yalnız ekleme, geriye uyum", () => {
     // `etkin` alanı değişmedi: yine mantıksal ve zorunlu (istemci içerik dizininden de hesaplar; sunucu yalnız bayrağı yazar).
     expect(sunucuMesajiCoz(JSON.stringify({ ...yeni, siradaki: [{ kavram: "ilk_pencere", sablon: "s", odul: { degerMili: 1 } }] })).tamam).toBe(false);
     expect(defterSablonu("ilk_cam")).toBe("defter.kavram.ilk_cam");
+  });
+});
+
+describe("kavramEtkin (saf; sunucu ve istemci ayni islev)", () => {
+  const bos = { yontemCiktilari: [] as string[], perakende: false };
+  it("yer tutucu ilk_sozlesme HER ZAMAN false (icerik ne olursa olsun); diger eski kavramlar true", () => {
+    expect(DEFTER_YER_TUTUCULARI).toEqual(["ilk_sozlesme"]);
+    expect(kavramEtkin({ yontemCiktilari: ["ekmek", "pencere", "cam"], perakende: true }, "ilk_sozlesme")).toBe(false);
+    for (const k of ["ilk_yapi", "ilk_satis", "ilk_isleme", "zincir_kapandi", "ikinci_ilce", "ilk_arastirma", "bilinmeyen_kavram"]) expect(kavramEtkin(bos, k), k).toBe(true);
+  });
+  it("ekmek/pencere/cam: o malı ÇIKTI veren yöntem varsa; dükkân/raf: perakende varsa; öteki malın varlığı açmaz", () => {
+    expect(kavramEtkin(bos, "ilk_ekmek")).toBe(false);
+    expect(kavramEtkin({ ...bos, yontemCiktilari: ["un", "ekmek"] }, "ilk_ekmek")).toBe(true);
+    expect(kavramEtkin({ ...bos, yontemCiktilari: ["ekmek"] }, "ilk_pencere")).toBe(false);
+    expect(kavramEtkin({ ...bos, yontemCiktilari: ["cam"] }, "ilk_pencere")).toBe(false);
+    expect(kavramEtkin({ ...bos, yontemCiktilari: ["pencere"] }, "ilk_pencere")).toBe(true);
+    expect(kavramEtkin({ ...bos, yontemCiktilari: ["cam"] }, "ilk_cam")).toBe(true);
+    expect(kavramEtkin(bos, "ilk_dukkan")).toBe(false);
+    expect(kavramEtkin(bos, "ilk_raf")).toBe(false);
+    expect(kavramEtkin({ ...bos, perakende: true }, "ilk_dukkan")).toBe(true);
+    expect(kavramEtkin({ ...bos, perakende: true }, "ilk_raf")).toBe(true);
+  });
+  it("tek kullanımlık Iterable (üreteç) ile de çalışır (girdi bir kez gezilir)", () => {
+    function* uret(): Generator<string> {
+      yield "un";
+      yield "pencere";
+    }
+    expect(kavramEtkin({ yontemCiktilari: uret(), perakende: false }, "ilk_pencere")).toBe(true);
   });
 });

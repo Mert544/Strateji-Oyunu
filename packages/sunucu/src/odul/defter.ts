@@ -7,7 +7,7 @@ import type { DerlenmisIcerik, Dunya } from "@bolge/cekirdek";
 import { DEFTER_ODUL_SIRASI, defterSablonu } from "@bolge/protokol";
 import type { Defter, DefterKazanilan, DefterOdulu, DefterSiradaki } from "@bolge/protokol";
 import type { Damga } from "../depo/tipler";
-import { kavramEtkin } from "./dedektor";
+import { kavramEtkin } from "./etkin";
 
 /** Kavramın ödülü çekirdek tablosundan (yoksa null). */
 export function defterOdulu(ic: DerlenmisIcerik, kavram: string): DefterOdulu | null {

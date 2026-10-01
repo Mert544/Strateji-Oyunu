@@ -3,7 +3,7 @@
  * - `ilk_ekmek`: gerçek G6-3 içeriğiyle (değirmen -> fırın) ÜRETİMLE tetiklenir; girdisiz fırın tetiklemez.
  * - `ilk_pencere`: pencere ÜRETİMİYLE tetiklenir; başlangıç kitindeki pencere (`baslangicStok.pencere`, G7 yaması) STOKtur, tetiklemez.
  * - `ilk_raf`: dükkânın bir raf yuvasında mal SEÇİLİ olunca (stok ve satış şartı yok); `ilk_cam`: cam üretimi.
- * - Etkin: tetikleyici yöntem/dükkân içerikte yoksa kavram etkin değil (gerçek içerik bugün: ekmek var; pencere, cam, dükkân yok).
+ * - Etkin: kural `@bolge/protokol` `kavramEtkin`'dedir, sunucu sarmalayıcısı `etkin.ts` içerikten girdiyi kurar; tetikleyici yöntem/dükkân içerikte yoksa kavram etkin değil (gerçek içerik bugün: ekmek var; pencere, cam, dükkân yok).
  * G8-1 verisi (`odul.kavramlar` +2, pencere/cam yöntemleri) gelene kadar FİKSTÜR içerik kullanılır (testte bellekte eklenir; JSON değişmez); gerçek içerik testi G8-1 sonrası.
  */
 import { describe, expect, it } from "vitest";
@@ -12,7 +12,8 @@ import type { CekirdekVeriPaketi, Komut } from "@bolge/cekirdek";
 import { mulkSim } from "../../cekirdek/test/mulk-yardimci";
 import { dukkanEkle, dukkanlariSil, perakendeVeri } from "../../cekirdek/test/perakende-yardimci";
 import { bellekDeposu } from "../src/depo/bellek";
-import { DAMGA_IZGARA_KAVRAMLARI, ODUL_IZGARA_KAVRAMLARI, damgaSaglandi, ilkRaf, kavramEtkin, kavramSaglandi, oyuncuDugumleri } from "../src/odul/dedektor";
+import { DAMGA_IZGARA_KAVRAMLARI, ODUL_IZGARA_KAVRAMLARI, damgaSaglandi, ilkRaf, kavramSaglandi, oyuncuDugumleri } from "../src/odul/dedektor";
+import { kavramEtkin } from "../src/odul/etkin";
 import { ElleSaat } from "../src/saat";
 import { DunyaYazari } from "../src/yazar";
 import { mulkVerisi } from "./yardimci";

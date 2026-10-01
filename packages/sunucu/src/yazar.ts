@@ -60,6 +60,7 @@ import { GoruntuIscisi } from "./goruntu";
 import { IZGARA_MS, DONUS_ESIGI_MS, DAMGA_IZGARA_KAVRAMLARI, ODUL_SIRASI, damgaSaglandi, kavramSaglandi, oyuncuDugumleri, sonEtkinlik } from "./odul/dedektor";
 import type { OdulAday } from "./odul/dedektor";
 import { defterKur } from "./odul/defter";
+import { kavramEtkin } from "./odul/etkin";
 import type { GoruntuIsciSecenekleri } from "./goruntu";
 import { donusOzeti } from "./donus/ozet";
 import type { DonusEsikleri } from "./donus/ozet";
@@ -1193,6 +1194,7 @@ export class DunyaYazari {
     if (tablo === undefined) return false;
     const deger = odulDegeri(ic, kavram);
     if (deger === undefined) return false;
+    if (!kavramEtkin(ic, kavram)) return false; // tetikleyici yöntem/dükkân içerikte yok (protokol kuralı)
     if (o.alinanOdul?.includes(kavram)) return false;
     if (this.idempotans.has(idempotansAnahtari(SISTEM_OYUNCUSU, "sunucu", DunyaYazari.odulAnahtari(o.id, kavram)))) return false;
     if (alinanOdulDegeri(ic, o) + ekDeger + deger > tablo.tavanMili) return false;
@@ -1213,7 +1215,7 @@ export class DunyaYazari {
         if (this.odulUygunMu(o, kavram) && kavramSaglandi(ic, d, o, kavram, g)) adaylar.push({ oyuncu: o.id, kavram });
       }
       for (const damga of DAMGA_IZGARA_KAVRAMLARI) {
-        if (!this.damgaKuyruklandi.has(`${o.id}|${damga}`) && damgaSaglandi(ic, d, o.id, damga, g)) this.damgaKuyrukla(o.id, { kavram: damga, t: g, kaynak: "damga" });
+        if (!this.damgaKuyruklandi.has(`${o.id}|${damga}`) && kavramEtkin(ic, damga) && damgaSaglandi(ic, d, o.id, damga, g)) this.damgaKuyrukla(o.id, { kavram: damga, t: g, kaynak: "damga" });
       }
     }
     const taramaMs = performance.now() - tara0;

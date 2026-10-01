@@ -24,3 +24,8 @@ Taban `bc6087c`, dogrusal, hedef P8. Kaynak: `SP/t3/defter-p4p5.md` (A2 dogrulam
 - `tsc` (gecici tsconfig, yalniz sunucu/protokol src + ilgili testler): temiz.
 - vitest tek isci: `protokol/test/{defter-p4p5,protokol}` 22/22; `sunucu/test/{odul,odul-sureci,odul-yontem,odul-dukkan,odul-p4p5}` 35 gecti 1 atlandi (onceden atlanan); `istemci/test/defter.test.ts` 7/7. pg testi yok (bu dalda pg yolu degismedi).
 - Istemci gzip (`pnpm dunya` esdegeri, ayni makinede once/sonra): `dunya.html` 376.2 -> 376.2 KB (0), `harita.js` 424.0 -> 424.2 KB (+0.2), toplam JS gzip 828.2 -> 828.4 KB (+0.2). Butce 400 KB.
+
+## Ek commit: etkin kurali protokole tasindi (lider sarti)
+- `@bolge/protokol` `defter.ts`: saf `kavramEtkin(girdi: DefterEtkinGirdisi, kavram)` (`girdi = { yontemCiktilari: Iterable<string>; perakende: boolean }`) ve `DEFTER_YER_TUTUCULARI`. Istemci ayni islevi cagirir (K1 baglayacak; `baglanti.ts` degismedi).
+- Sunucu: `src/odul/etkin.ts` ince sarmalayici (`DerlenmisIcerik` -> girdi, `ic` basina onbellekli); `defter.ts` etkin bayragini, `yazar.ts` de kavram/damga degerlendirmesini (`odulUygunMu`, damga dongusu) ayni yoldan gecirir. `dedektor.ts` kurali tasimaz ve protokole BAGLANMAZ (yalniz `@bolge/cekirdek`).
+- Testler: sunucu `kavramEtkin` testleri sarmalayici uzerinden aynen gecer; protokol testine saf islev testleri eklendi (yer tutucu hep false, mal/perakende kosullari, tek kullanimlik Iterable). Dogrulama: tsc (protokol+sunucu) temiz; vitest tek isci 67 gecti 1 atlandi (protokol 2, sunucu 5 odul dosyasi, istemci defter).

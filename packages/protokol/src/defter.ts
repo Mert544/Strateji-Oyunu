@@ -23,6 +23,44 @@ export const DEFTER_ODUL_SIRASI = ["ilk_yapi", "ilk_satis", "ilk_isleme", "ilk_e
  */
 export const DEFTER_DAMGALARI = ["ilk_parsel", "ilk_uretim", "ilk_donus", "ilk_raf", "ilk_cam"] as const;
 
+/** Çekirdekte olayı olmayan yer tutucu kavramlar: her zaman `etkin: false` (sunucu dedektörü de bunları tetiklemez). */
+export const DEFTER_YER_TUTUCULARI = ["ilk_sozlesme"] as const;
+
+/**
+ * `kavramEtkin` girdisi (EN KÜÇÜK içerik görünümü): sunucu `DerlenmisIcerik`'ten, istemci içerik dizininden kurar; kural tek yerde, iki taraf AYNI işlevi çağırır.
+ * - `yontemCiktilari`: içerikteki yöntemlerin çıktı mal kimlikleri (tekrar edebilir; en az bir kez gezilir).
+ * - `perakende`: dükkân verisi (`mulk.perakende`) tanımlı mı.
+ */
+export interface DefterEtkinGirdisi {
+  yontemCiktilari: Iterable<string>;
+  perakende: boolean;
+}
+
+/**
+ * Kavram ETKİN mi (Defter'de gösterilir mi): tetikleyici yöntem/dükkân içerikte yoksa değil. Protokolde alan yoktur; sunucu `siradaki.etkin`'i bununla yazar, istemci aynı işlevi dizininden çağırır.
+ * `ilk_ekmek`/`ilk_pencere`/`ilk_cam` = o malı çıktı veren en az bir yöntem var; `ilk_dukkan`/`ilk_raf` = dükkân verisi var; yer tutucu (`ilk_sozlesme`) her zaman false; diğerleri true.
+ */
+export function kavramEtkin(girdi: DefterEtkinGirdisi, kavram: string): boolean {
+  if ((DEFTER_YER_TUTUCULARI as readonly string[]).includes(kavram)) return false;
+  const uretilen = (mal: string): boolean => {
+    for (const m of girdi.yontemCiktilari) if (m === mal) return true;
+    return false;
+  };
+  switch (kavram) {
+    case "ilk_ekmek":
+      return uretilen("ekmek");
+    case "ilk_pencere":
+      return uretilen("pencere");
+    case "ilk_cam":
+      return uretilen("cam");
+    case "ilk_dukkan":
+    case "ilk_raf":
+      return girdi.perakende;
+    default:
+      return true;
+  }
+}
+
 /** Şablon anahtarı: `defter.kavram.<kavram>`. */
 export const defterSablonu = (kavram: string): string => `defter.kavram.${kavram}`;
 

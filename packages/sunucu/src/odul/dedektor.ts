@@ -19,10 +19,9 @@
  * `ilk_donus` (iki kabul edilen komut arası >= 6 sa; yalnız mülk kipi, `sonEtkinlik`'ten), `ilk_raf` (bir dükkânın en az bir raf yuvasında mal SEÇİLİ; stok ve satış
  * şartı YOK, ızgara), `ilk_cam` (herhangi bir düğümde `cam` kümülatif üretimi > 0, ızgara).
  *
- * ## Etkin kuralı (`kavramEtkin`)
- * Tetikleyici tesis/yöntem/dükkân içerikte YOKSA kavram etkin DEĞİLDİR (Defter'de gizlenir; istemci aynı kuralı içerik dizininden hesaplar, protokolde alan yoktur):
- * `ilk_ekmek`/`ilk_pencere`/`ilk_cam` = o malı ÇIKTI veren en az bir yöntem var; `ilk_dukkan` (ve damga `ilk_raf`) = `mulk.perakende` tanımlı (dükkân türleri var);
- * `ilk_sozlesme` her zaman yer tutucu (etkin değil); diğerleri her zaman etkin.
+ * ## Etkin kuralı
+ * Tetikleyici yöntem/dükkân içerikte YOKSA kavram etkin DEĞİLDİR. Kural `@bolge/protokol` `kavramEtkin`'dedir (istemci de aynı işlevi çağırır); bu dosya protokole BAĞLANMAZ (yalnız
+ * `@bolge/cekirdek`): sunucu sarmalayıcısı `etkin.ts` içerikten girdiyi kurar, `yazar.ts` etkin olmayan kavramı/damgayı değerlendirmez, `defter.ts` aynı işlevle `siradaki.etkin` yazar.
  *
  * Yalnız insan oyuncular (sunucu botları ve sistem hariç) değerlendirilir. Koşullar saf işlevlerdir (aynı durum aynı sonuç).
  */
@@ -247,32 +246,6 @@ export function damgaSaglandi(ic: DerlenmisIcerik, d: Readonly<Dunya>, oyuncu: s
       return malUretildi(ic, d, oyuncu, "cam", t);
     default:
       return false;
-  }
-}
-
-/** İçerikte `mal`ı ÇIKTI veren en az bir yöntem var mı (tetikleyici tesis/yöntem içerikte mi). */
-function malUretenYontemVar(ic: DerlenmisIcerik, mal: string): boolean {
-  return ic.yontemler.some((y) => Object.prototype.hasOwnProperty.call(y.ciktilar, mal));
-}
-
-/**
- * Kavram/damga ETKİN mi (içerik kuralı; protokolde alan yok, istemci aynı kuralı içerik dizininden uygular): tetikleyici tesis/yöntem/dükkân içerikte yoksa false.
- * Yer tutucular (`ilk_sozlesme`) her zaman false; yukarıdakilerin dışındaki kavramlar true.
- */
-export function kavramEtkin(ic: DerlenmisIcerik, kavram: string): boolean {
-  if ((ODUL_YER_TUTUCULARI as readonly string[]).includes(kavram)) return false;
-  switch (kavram) {
-    case "ilk_ekmek":
-      return malUretenYontemVar(ic, "ekmek");
-    case "ilk_pencere":
-      return malUretenYontemVar(ic, "pencere");
-    case "ilk_cam":
-      return malUretenYontemVar(ic, "cam");
-    case "ilk_dukkan":
-    case "ilk_raf":
-      return ic.mulk?.perakende !== undefined;
-    default:
-      return true;
   }
 }
 
