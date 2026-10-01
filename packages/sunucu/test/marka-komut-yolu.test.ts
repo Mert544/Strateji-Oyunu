@@ -3,6 +3,7 @@
  * günlüğe yazılmadan ÖNCE çekirdek `adKanonik` (sözdizimi + küçük harf) ve yasaklı ad süzgecinden geçer: günlüğe KANONİK ad girer, ret `ad_gecersiz` / `ad_yasakli`
  * (kodlar `/giris/ad` ile aynı), reddedilen komut günlüğe girmez. Perakende yolu G7-3'te etkindir; burada komutun kabulü/reddi ve günlük içeriği sınanır.
  */
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { SISTEM_OYUNCUSU, adKanonik } from "@bolge/cekirdek";
 import type { GirisHataKodu, HataKodu } from "@bolge/protokol";
@@ -108,5 +109,55 @@ describe("marka_tanimla.ad: gunluge yazilmadan once suzulur", () => {
   it("ret kodlari /giris/ad ile AYNI dizgelerdir (ortak ad kurali)", () => {
     const ortak: Array<GirisHataKodu & HataKodu> = ["ad_gecersiz", "ad_yasakli"];
     expect(ortak).toEqual(["ad_gecersiz", "ad_yasakli"]);
+  });
+});
+
+describe("ad_gecersiz / ad_yasakli YALNIZ marka_tanimla yanitinda uretilir (enum genislemesinin siniri)", () => {
+  it("DAVRANIS: gecersiz mesaj, yetki, cekirdek reddi ve `ad` alani tasiyan baska komutlar bu iki kodu ASLA uretmez", async () => {
+    const { ts: s, ali } = await kur(true);
+    const kodlar: string[] = [];
+    const sonucAl = async (anahtar: string, komut: unknown): Promise<string> => {
+      const b = ali.bekle((m) => (m.tur === "hata" || m.tur === "komutSonucu") && (m.anahtar === anahtar || m.tur === "hata"));
+      ali.gonder({ tur: "komut", anahtar, komut } as never);
+      const m = await b;
+      if (m.tur === "hata") kodlar.push(m.kod);
+      return m.tur === "hata" ? m.kod : "komutSonucu";
+    };
+    // Yetki ret yollari.
+    expect(await sonucAl("a1", { tur: "oyuncu_katil", oyuncu: "x", bolgeler: [] })).toBe("yetki");
+    expect(await sonucAl("a2", { tur: "sistem_odul", oyuncu: "ali", kavram: "ilk_yapi" })).toBe("yetki");
+    expect(await sonucAl("a3", { tur: "marka_sifirla", oyuncu: "ali", marka: 0 })).toBe("yetki");
+    // Gecersiz mesaj: bilinmeyen komut turu ve yanlis tipli alan (ad dahil).
+    expect(await sonucAl("a4", { tur: "yok_boyle_komut" })).toBe("gecersiz_mesaj");
+    expect(await sonucAl("a5", { tur: "marka_tanimla", marka: 0, ad: 5, simge: 0, renk: 0 })).toBe("gecersiz_mesaj"); // ad metin degil: sema reddi, ad_* DEGIL
+    // `ad` alani tasiyan ama marka_tanimla OLMAYAN komutlar: ad sema tarafindan atilir, yasakli/gecersiz ad hatasi OLUSMAZ (komut calisir ya da cekirdekte reddedilir).
+    expect(await sonucAl("a6", { tur: "vergi_ayarla", oranPpm: 90_000, ad: "Migros" })).toBe("komutSonucu");
+    expect(await sonucAl("a7", { tur: "vergi_ayarla", oranPpm: 90_000, ad: "<<>>" })).toBe("komutSonucu");
+    expect(await sonucAl("a8", { tur: "parsel_al", ilce: "yok", hucreler: ["1:1"], sinif: "kirsal", ad: "bim" })).toBe("komutSonucu");
+    expect(await sonucAl("a9", { tur: "vergi_ayarla", oranPpm: 2_000_000 })).toBe("komutSonucu"); // cekirdek reddi (komutSonucu.tamam=false)
+    expect(kodlar.filter((k) => k.startsWith("ad_"))).toEqual([]);
+    // Karsit kanit: marka_tanimla ile ayni suzgec bu kodu uretir.
+    expect(await sonucAl("a10", marka("bim"))).toBe("ad_yasakli");
+    // Ve reddedilenler arasinda gunluge girenler yalniz sema/yetki gecenlerdir (a6-a9); marka reddi girmedi.
+    const anahtarlar = (await s.depo.gunluk.oku(0)).map((g) => g.anahtar);
+    expect(anahtarlar).not.toContain("a10");
+    expect(anahtarlar).not.toContain("a5");
+  });
+
+  it("STATIK: ad_gecersiz / ad_yasakli hata kodlari sunucu kaynaginda yalniz marka_tanimla dalinda gonderilir (baska src dosyasinda yok)", () => {
+    const src = (ad: string): string => readFileSync(new URL(`../src/${ad}`, import.meta.url), "utf8");
+    const sunucu = src("sunucu.ts");
+    const bas = sunucu.indexOf('if (komut.tur === "marka_tanimla") {');
+    const son = sunucu.indexOf("komut = { ...komut, ad: r.ad };");
+    expect(bas).toBeGreaterThan(0);
+    expect(son).toBeGreaterThan(bas);
+    const gecenler = [...sunucu.matchAll(/hata\(b, "ad_(gecersiz|yasakli)"/g)].map((m) => m.index as number);
+    expect(gecenler).toHaveLength(2);
+    for (const i of gecenler) expect(i > bas && i < son, `ws ad hatasi marka_tanimla dali disinda: ${i}`).toBe(true);
+    // Ws hata mesaji ureten baska yer ad_ kodu kullanmaz (giris/ ve ad-suzgec HTTP kodlari ayri kanaldir).
+    for (const [i, kod] of [...sunucu.matchAll(/hata\(b, "([a-z_]+)"/g)].map((m) => [m.index as number, m[1] as string] as const)) {
+      if (kod.startsWith("ad_")) expect(i > bas && i < son).toBe(true);
+    }
+    expect(src("yazar.ts")).not.toMatch(/"ad_(gecersiz|yasakli)"/);
   });
 });
