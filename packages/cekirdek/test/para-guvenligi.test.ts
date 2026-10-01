@@ -32,7 +32,7 @@ import { dunyaCoz, dunyaIcerikUyumu, dunyaSerilestir, SerilestirmeHatasi } from 
 import { aralik, prngOlustur } from "../src/prng";
 import { anlikHazine, anlikMiktar, hazineEkle, oyuncuBul } from "../src/stok";
 import { DAKIKA, GUN, LAVABO_KALEMLERI, MUSLUK_KALEMLERI, PPM, SAAT } from "../src/tipler";
-import type { CekirdekVeriPaketi, Komut, KomutTuru, ParaDurumu } from "../src/tipler";
+import type { CekirdekVeriPaketi, Komut, KomutTuru, ParaDurumu, ParaSayaci } from "../src/tipler";
 import { bitisikCift, mulkSim, mulkVeriTam, tamam, ver } from "./mulk-yardimci";
 
 const F: ParselFiksturu = parselFiksturuYukle("mini-6");
@@ -91,11 +91,12 @@ function korunumOlc(s: Simulasyon): Korunum {
   }
   let kasa = 0n;
   for (const k of p.kasalar) {
-    for (const kalem of Object.keys(k.giris) as (keyof typeof k.giris)[]) kasa += sayacOlcekli(k.giris[kalem]);
+    for (const kalem of Object.keys(k.giris) as (keyof typeof k.giris)[]) kasa += sayacOlcekli(k.giris[kalem] as ParaSayaci); // isteğe bağlı `sebeke` anahtarı varsa o da toplanır
     kasa -= BigInt(k.cikisOyuncu + k.cikisNpc) * BigInt(SAAT);
   }
   let lavabo = 0n;
   for (const k of LAVABO_KALEMLERI) lavabo += sayacOlcekli(p.lavabo[k]);
+  if (p.lavabo.sebeke !== undefined) lavabo += sayacOlcekli(p.lavabo.sebeke); // isteğe bağlı (şebeke; G6) kalem de toplanır
   let musluk = 0n;
   for (const k of MUSLUK_KALEMLERI) musluk += sayacOlcekli(p.musluk[k]);
   return { hazine, kasa, lavabo, musluk };

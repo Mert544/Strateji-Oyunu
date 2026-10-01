@@ -78,6 +78,9 @@ interface ParaBilesenleri {
   vergi: Mili;
   makasIlce: Map<string, Mili>;
   komisyonIlce: Map<string, Mili>;
+  /** Şebeke bedeli (G6; mili-para/saat): toplam ve ilçe başına (düğümün kamu ilçesi). Şebeke yokken 0 ve boş harita. */
+  sebeke: Mili;
+  sebekeIlce: Map<string, Mili>;
 }
 
 /**
@@ -107,6 +110,9 @@ function hazineKalemleri(
   let ihracatGelir = 0;
   const makasIlce = new Map<string, Mili>();
   const komisyonIlce = new Map<string, Mili>();
+  let sebekeGider = 0;
+  const sebekeIlce = new Map<string, Mili>();
+  const sb = ctx.ic.mulk?.sebeke;
   for (const r of dugumler) {
     const b = d.bolgeler[r] as BolgeDurumu;
     const nv = carpBol(carpBol(b.nufus, p.ekonomi.vergiTabani1000Saat, 1000), o.vergiPpm, PPM);
@@ -155,6 +161,26 @@ function hazineKalemleri(
         }
       }
     }
+    // Şebeke bedeli (G6, §5.2.5): kendi santralden karşılanamayan elektrik + stoksuz mallar (yakıt) TABAN fiyatla; yalnız işletme düğümü ve `mulk.sebeke` varken.
+    // `hesaplar === null` (verim çözümünden önce, ödeme gücü tahmini): bir önceki çözümün kalıcı `b.elektrik.sebekeMili` ve `b.sebekeTuketim` değerleri.
+    if (sb !== undefined && b.merkez !== undefined) {
+      const hs = hesaplar === null ? null : (hesaplar[b.indeks] as BolgeHesabi);
+      let bedel = 0;
+      if (sb.elektrik !== undefined) {
+        const mili = hs === null ? (b.elektrik?.sebekeMili ?? 0) : hs.sebekeMili;
+        if (mili > 0) bedel += carpBol(mili, sb.elektrik.birimFiyatMili, MILI);
+      }
+      for (const k of sb.stoksuz) {
+        const mili = hs === null ? (b.sebekeTuketim?.[(ctx.ic.mallar[k.mal] as { id: string }).id] ?? 0) : (hs.sebekeStoksuz[k.mal] as number);
+        if (mili > 0) bedel += carpBol(mili, k.birimFiyatMili, MILI);
+      }
+      if (bedel > 0) {
+        gider += bedel;
+        sebekeGider += bedel;
+        const ilce = dugumIlcesi(d, ctx.ic, o.id, b.id);
+        if (ilce !== undefined) sebekeIlce.set(ilce, (sebekeIlce.get(ilce) ?? 0) + bedel);
+      }
+    }
     let aktifTesis = 0;
     for (const t of b.tesisler) if (t.aktif) aktifTesis++;
     let birlik = 0;
@@ -173,10 +199,10 @@ function hazineKalemleri(
     }
   }
   // Mülk kipi (S3): tembel arazi vergisi saatlik gider olarak (kapalıyken 0).
-  const isletmeGideri = gider - ithalat;
+  const isletmeGideri = gider - ithalat - sebekeGider; // şebeke `isletme` lavabosuna KARIŞMAZ (ayrı satır: lavabo.sebeke + kasa.giris.sebeke)
   const vergi = d.mulk !== undefined ? araziVergisiSaat(d, ctx.ic, o.id) : 0;
   gider += vergi;
-  const para = parali ? { ihracat: ihracatGelir, nufus: nufusGelir, ithalat, isletme: isletmeGideri, vergi, makasIlce, komisyonIlce } : null;
+  const para = parali ? { ihracat: ihracatGelir, nufus: nufusGelir, ithalat, isletme: isletmeGideri, vergi, makasIlce, komisyonIlce, sebeke: sebekeGider, sebekeIlce } : null;
   return { gelir, gider, ithalat, ticaret: defter, para };
 }
 
@@ -300,7 +326,8 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
         ithalat: k.para.ithalat,
         isletme: k.para.isletme,
         vergi: k.para.vergi,
-        kasa: kasaOranlari(d, ic, o.id, k.para.vergi, k.para.makasIlce, k.para.komisyonIlce),
+        sebeke: k.para.sebeke,
+        kasa: kasaOranlari(d, ic, o.id, k.para.vergi, k.para.makasIlce, k.para.komisyonIlce, k.para.sebekeIlce),
       });
     }
     if (d.mulk !== undefined) araziVergisiOranAyarla(d, ic, o.id);

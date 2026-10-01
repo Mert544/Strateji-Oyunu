@@ -129,6 +129,20 @@ export interface DerlenmisMulk {
    * OLUŞMAZ (çıktı yolu atlanır). Yalnız mülk kipinde ve işletme düğümünde (`b.merkez`) uygulanır; çıktıya uygulanır, girdiye değil (G6-2).
    */
   yontemCiktiPpm?: Record<number, number>;
+  /** Şebeke tedariki (`mulk.sebeke` tanımlıysa; sartname §4.6, §5.2): derlemede kurulur, yoksa alan OLUŞMAZ (şebeke yolu atlanır). */
+  sebeke?: DerlenmisSebeke;
+}
+
+/** Derlenmiş şebeke: birim fiyatlar derleme zamanında TABANDAN sabitlenir (`tabanFiyat x kamuIthalatCarpaniPpm x tavanOraniPpm`); canlı pazar fiyatı yolu YOKTUR. */
+export interface DerlenmisSebeke {
+  /** Elektrik kaydı (anlık denge yolu; depolanamaz) ya da tanımsız (listede yok). `birimFiyatMili`: mili-para / (mili-birim = 1000'e bölünür; bkz. `carpBol(mili, fiyat, MILI)`). */
+  elektrik?: { mal: number; birimFiyatMili: number };
+  /** Stoksuz tüketim anı yolu: depolanabilir mallar (mal indeksine göre sıralı). */
+  stoksuz: { mal: number; birimFiyatMili: number }[];
+  /** Mal indeksi -> `stoksuz` kaydının indeksi ya da -1. */
+  stoksuzIndeks: number[];
+  /** Toplam bedelin ilçe kasasına giden payı (ppm). */
+  kasaPayiPpm: number;
 }
 
 /** Türetilmiş (derleme zamanı) ilçe kamu kümesi: kompakt gruplar ve toplam hücre sayısı. */
@@ -251,6 +265,11 @@ export interface BolgeElektrikDurumu {
   haneKarsilanmaPpm: number;
   /** Santrallerin yükü (ppm): talebi izler; yakıt tüketimi ve kirlilik bununla ölçeklenir. */
   yukPpm: number;
+  /**
+   * Mülk kipi şebeke (G6, sartname §5.2): kendi santralden karşılanamayan ve şebekeden teslim edilen elektrik (mili-birim/saat; kayıpsız). YALNIZ `> 0` iken yazılır
+   * (şebeke bloğu yokken ve açık yokken alan hiç oluşmaz).
+   */
+  sebekeMili?: Mili;
 }
 
 export interface BolgeDurumu {
@@ -286,6 +305,11 @@ export interface BolgeDurumu {
   tarim?: BolgeTarimDurumu;
   /** Elektrik dengesi (B2). Sanayi kapalıysa TANIMSIZDIR. */
   elektrik?: BolgeElektrikDurumu;
+  /**
+   * Mülk kipi şebeke stoksuz tedarik (G6, sartname §5.2.2b): şebekeden alınan depolanabilir malların (Alfa-0: yakıt) son çözümdeki gerçek tüketimi, MAL KİMLİĞİ -> mili-birim/saat
+   * (yalnız `> 0` olanlar; hiç yoksa alan yazılmaz). Kimlik anahtarlıdır: `dunyaYenidenIndeksle` kapsamına girmez.
+   */
+  sebekeTuketim?: Record<string, Mili>;
   /** Kirlilik (B2, 0..PPM): tarım verimini düşürür; B4'te istikrar hedefini düşürecek. Sanayi kapalıysa tanımsızdır. */
   kirlilikPpm?: number;
   /** Kullanılan keşif hakkı (B2), mal indeksine göre. Sanayi kapalıysa tanımsızdır. */
@@ -869,15 +893,24 @@ export const MUSLUK_KALEMLERI: readonly MuslukKalemi[] = ["borcSilme", "diger", 
 export type LavaboKalemi = "arsa" | "harcama" | "arastirma" | "ithalatNpc" | "isletme" | "araziVergisi" | "kamuNpc";
 export const LAVABO_KALEMLERI: readonly LavaboKalemi[] = ["araziVergisi", "arastirma", "arsa", "harcama", "isletme", "ithalatNpc", "kamuNpc"];
 
+/**
+ * İsteğe bağlı lavabo kalemi (G6; sartname §5.2.5, §11.1): şebeke bedelinin kasa payı dışında kalan (yanan) kısmı. Tembel: kalem YALNIZ ilk birikimde doğar (`paraDurumuKur`
+ * yaratmaz; zorunlu `LAVABO_KALEMLERI` değişmez, böylece mevcut mülk dünyalarının özeti ve eski görüntüler aynı kalır).
+ */
+export const LAVABO_ISTEGE_BAGLI: readonly "sebeke"[] = ["sebeke"];
+
 /** Kasa girişi kalemleri (§4.1): arazi vergisi payı, ithalat makası payı, ithalat komisyonu payı. İHRACAT kaynağı YOKTUR. */
-export type KasaGirisKalemi = "vergi" | "ithalatMakas" | "ithalatKomisyon";
-export const KASA_GIRIS_KALEMLERI: readonly KasaGirisKalemi[] = ["ithalatKomisyon", "ithalatMakas", "vergi"];
+export type KasaGirisZorunluKalemi = "vergi" | "ithalatMakas" | "ithalatKomisyon";
+export const KASA_GIRIS_KALEMLERI: readonly KasaGirisZorunluKalemi[] = ["ithalatKomisyon", "ithalatMakas", "vergi"];
+/** İsteğe bağlı kasa girişi kalemi (G6): şebeke bedelinin ilçe kasasına giden payı (`mulk.sebeke.kasaPayiPpm`); tembel (ilk birikimde doğar). */
+export const KASA_GIRIS_ISTEGE_BAGLI: readonly "sebeke"[] = ["sebeke"];
+export type KasaGirisKalemi = KasaGirisZorunluKalemi | "sebeke";
 
 /** Para defteri: kalem bazında kümülatif sayaçlar (açık defter; kayıt kayıt değil) ve kasalar. */
 export interface ParaDurumu {
   surum: 1;
   musluk: Record<MuslukKalemi, ParaSayaci>;
-  lavabo: Record<LavaboKalemi, ParaSayaci>;
+  lavabo: Record<LavaboKalemi, ParaSayaci> & { sebeke?: ParaSayaci };
   /** Sahip kimliğine göre sıralı; ilk gelire kadar yazılmaz. */
   kasalar: KasaDurumu[];
 }
@@ -885,7 +918,7 @@ export interface ParaDurumu {
 /** Kamu kasası (`k:mahalle:*`, `k:ilce:*`, `k:il:*`; Y-39: Muhtar, İlçe Başkanı, Vali; yöneticisiz hâlde NPC Kaymakam). */
 export interface KasaDurumu {
   sahip: string;
-  giris: Record<KasaGirisKalemi, ParaSayaci>;
+  giris: Record<KasaGirisZorunluKalemi, ParaSayaci> & { sebeke?: ParaSayaci };
   /** Kümülatif çıkış (mili-para): oyuncuya ve NPC'ye. */
   cikisOyuncu: Mili;
   cikisNpc: Mili;
@@ -914,6 +947,8 @@ export interface ParaAkisi {
   isletme: Mili;
   /** Arazi vergisi (lavabo; kasa payı dahil). */
   vergi: Mili;
+  /** Şebeke bedeli (G6; lavabo + kasa payı): YALNIZ `> 0` iken yazılır (alan yoksa şebeke yok). */
+  sebeke?: Mili;
   /** Kasalara giden paylar (sahip, kalem sırasıyla): ithalat ve vergi içindeki payı; kalanı yanar. */
   kasa: { sahip: string; kalem: KasaGirisKalemi; oran: Mili }[];
 }

@@ -33,7 +33,7 @@ import type { EkleIhlali, IcerikKimlikTablosu } from "./goc";
 import { durumIlceNo, durumUygunMu } from "./mulk/hucreDizini";
 import { KAMU_ALGORITMA_SURUMU, kamuIndeksiAra, kamuIndeksiKur } from "./mulk/kamu";
 import { fnv1a64 } from "./ozet";
-import { KASA_GIRIS_KALEMLERI, LAVABO_KALEMLERI, MUSLUK_KALEMLERI, OLAY_ONCELIGI, SAAT } from "./tipler";
+import { KASA_GIRIS_ISTEGE_BAGLI, KASA_GIRIS_KALEMLERI, LAVABO_ISTEGE_BAGLI, LAVABO_KALEMLERI, MUSLUK_KALEMLERI, OLAY_ONCELIGI, SAAT } from "./tipler";
 import type { DerlenmisIcerik, Dunya, Ms } from "./tipler";
 
 /** Serileştirme/çözme hatası: `yol` hatalı değerin JSON yolu ($ = kök). */
@@ -307,6 +307,12 @@ export function dunyaDogrula(deger: unknown): Dunya {
     dizi(b.stoklar, `${y}.stoklar`, m).forEach((s, j) => stokDogrula(s, `${y}.stoklar[${j}]`));
     for (const k of ["israf", "uretimToplam", "uretimOrani", "rezervIlk", "rezervKalan"] as const) dizi(b[k], `${y}.${k}`, m);
     if (b.kesifSayisi !== undefined) dizi(b.kesifSayisi, `${y}.kesifSayisi`, m);
+    // Mülk kipi şebeke (G6; sartname §11.1): isteğe bağlı alanlar, yalnız kullanılınca yazılır.
+    if (b.elektrik !== undefined && nesne(b.elektrik, `${y}.elektrik`).sebekeMili !== undefined) tamsayi((b.elektrik as Nesne).sebekeMili, `${y}.elektrik.sebekeMili`, 1);
+    if (b.sebekeTuketim !== undefined) {
+      const st = nesne(b.sebekeTuketim, `${y}.sebekeTuketim`);
+      for (const k of Object.keys(st)) tamsayi(st[k], `${y}.sebekeTuketim.${k}`, 1);
+    }
     tamsayi(b.uretimT0, `${y}.uretimT0`);
     dizi(b.birlikler, `${y}.birlikler`, birlikSayisi).forEach((x, j) => tamsayi(x, `${y}.birlikler[${j}]`, 0));
     dizi(b.tesisler, `${y}.tesisler`).forEach((t, j) => {
@@ -485,15 +491,17 @@ function paraDogrula(v: unknown): void {
   for (const k of Object.keys(musluk)) if (!(MUSLUK_KALEMLERI as readonly string[]).includes(k)) hata(`$.mulk.para.musluk.${k}`, "bilinmeyen musluk kalemi");
   for (const k of MUSLUK_KALEMLERI) sayacDogrula(musluk[k], `$.mulk.para.musluk.${k}`);
   const lavabo = nesne(p.lavabo, "$.mulk.para.lavabo");
-  for (const k of Object.keys(lavabo)) if (!(LAVABO_KALEMLERI as readonly string[]).includes(k)) hata(`$.mulk.para.lavabo.${k}`, "bilinmeyen lavabo kalemi");
+  for (const k of Object.keys(lavabo)) if (!(LAVABO_KALEMLERI as readonly string[]).includes(k) && !(LAVABO_ISTEGE_BAGLI as readonly string[]).includes(k)) hata(`$.mulk.para.lavabo.${k}`, "bilinmeyen lavabo kalemi");
   for (const k of LAVABO_KALEMLERI) sayacDogrula(lavabo[k], `$.mulk.para.lavabo.${k}`);
+  for (const k of LAVABO_ISTEGE_BAGLI) if (lavabo[k] !== undefined) sayacDogrula(lavabo[k], `$.mulk.para.lavabo.${k}`); // isteğe bağlı (tembel) kalem
   kesinArtan(dizi(p.kasalar, "$.mulk.para.kasalar"), "$.mulk.para.kasalar", (k, y) => {
     alanlar(k, y, ["sahip", "giris", "cikisOyuncu", "cikisNpc", "rezervOyuncu", "rezervNpc", "gunler"]);
     const sahip = dize(k.sahip, `${y}.sahip`);
     if (!sahip.startsWith("k:")) hata(`${y}.sahip`, `kasa sahibi 'k:' ile baslamali: ${sahip}`);
     const giris = nesne(k.giris, `${y}.giris`);
-    for (const g of Object.keys(giris)) if (!(KASA_GIRIS_KALEMLERI as readonly string[]).includes(g)) hata(`${y}.giris.${g}`, "bilinmeyen kasa giris kalemi");
+    for (const g of Object.keys(giris)) if (!(KASA_GIRIS_KALEMLERI as readonly string[]).includes(g) && !(KASA_GIRIS_ISTEGE_BAGLI as readonly string[]).includes(g)) hata(`${y}.giris.${g}`, "bilinmeyen kasa giris kalemi");
     for (const g of KASA_GIRIS_KALEMLERI) sayacDogrula(giris[g], `${y}.giris.${g}`);
+    for (const g of KASA_GIRIS_ISTEGE_BAGLI) if (giris[g] !== undefined) sayacDogrula(giris[g], `${y}.giris.${g}`); // isteğe bağlı (tembel) kalem
     for (const f of ["cikisOyuncu", "cikisNpc", "rezervOyuncu", "rezervNpc"] as const) tamsayi(k[f], `${y}.${f}`, 0);
     let oncekiGun = -1;
     dizi(k.gunler, `${y}.gunler`).forEach((g, j) => {
@@ -572,6 +580,7 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
       alanlar(pa, `${y}.paraAkisi`, ["t0", "ihracat", "nufus", "ithalat", "isletme", "vergi", "kasa"]);
       tamsayi(pa.t0, `${y}.paraAkisi.t0`, 0);
       for (const k of ["ihracat", "nufus", "ithalat", "isletme", "vergi"] as const) tamsayi(pa[k], `${y}.paraAkisi.${k}`);
+      if (pa.sebeke !== undefined) tamsayi(pa.sebeke, `${y}.paraAkisi.sebeke`, 1); // isteğe bağlı (şebeke > 0 iken yazılır)
       let oncekiKasa: string | null = null;
       dizi(pa.kasa, `${y}.paraAkisi.kasa`).forEach((e, j) => {
         const ey = `${y}.paraAkisi.kasa[${j}]`;
@@ -580,7 +589,7 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
         const sahip = dize(en.sahip, `${ey}.sahip`);
         if (!sahip.startsWith("k:")) hata(`${ey}.sahip`, `kasa sahibi 'k:' ile baslamali: ${sahip}`);
         const kalem = dize(en.kalem, `${ey}.kalem`);
-        if (!(KASA_GIRIS_KALEMLERI as readonly string[]).includes(kalem)) hata(`${ey}.kalem`, `gecersiz kasa kalemi: ${kalem}`);
+        if (!(KASA_GIRIS_KALEMLERI as readonly string[]).includes(kalem) && !(KASA_GIRIS_ISTEGE_BAGLI as readonly string[]).includes(kalem)) hata(`${ey}.kalem`, `gecersiz kasa kalemi: ${kalem}`);
         tamsayi(en.oran, `${ey}.oran`, 1);
         const anahtar = `${sahip}\u0000${kalem}`;
         if (oncekiKasa !== null && !(oncekiKasa < anahtar)) hata(ey, "kasa oranlari (sahip, kalem) siraliyla kesin artan olmali");
@@ -701,6 +710,8 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     for (const [j, e] of (b.ekYapilar ?? []).entries()) {
       if (ic.mulk?.ekYapiIndeks.has(e.tur) !== true) hata(`${y}.ekYapilar[${j}].tur`, `icerikte olmayan ek yapi: ${e.tur}`);
     }
+    // Şebeke stoksuz tüketimi (G6): mal KİMLİĞİ anahtarları içerikte olmalı.
+    for (const mid of Object.keys(b.sebekeTuketim ?? {})) if (ic.malIndeks[mid] === undefined) hata(`${y}.sebekeTuketim.${mid}`, `icerikte olmayan mal: ${mid}`);
     b.tesisler.forEach((t, j) => {
       indeks(t.tur, `${y}.tesisler[${j}].tur`, ic.tesisTurleri.length);
       indeks(t.yontem, `${y}.tesisler[${j}].yontem`, ic.yontemler.length);

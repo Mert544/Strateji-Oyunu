@@ -43,7 +43,8 @@ export function kasaBul(para: ParaDurumu, sahip: string): KasaDurumu | undefined
 export function kasaAl(para: ParaDurumu, sahip: string): KasaDurumu {
   const i = sirali(para.kasalar, KASA_SAHIP, sahip);
   if (i >= 0) return para.kasalar[i] as KasaDurumu;
-  const giris = {} as Record<KasaGirisKalemi, ReturnType<typeof sayacSifir>>;
+  // Zorunlu kalemler kurulur; `sebeke` (G6) TEMBELDİR: yalnız ilk şebeke payı birikiminde doğar (mevcut kasaların özeti değişmez).
+  const giris = {} as KasaDurumu["giris"];
   for (const k of KASA_GIRIS_KALEMLERI) giris[k] = sayacSifir();
   const yeni: KasaDurumu = { sahip, giris, cikisOyuncu: 0, cikisNpc: 0, rezervOyuncu: 0, rezervNpc: 0, gunler: [] };
   para.kasalar.splice(-i - 1, 0, yeni);
@@ -54,6 +55,7 @@ export function kasaAl(para: ParaDurumu, sahip: string): KasaDurumu {
 export function kasaGirisi(k: KasaDurumu): Mili {
   let t = 0;
   for (const kalem of KASA_GIRIS_KALEMLERI) t += k.giris[kalem].n;
+  if (k.giris.sebeke !== undefined) t += k.giris.sebeke.n; // isteğe bağlı kalem de bakiyeye girer (unutulursa korunum bozulur)
   return t;
 }
 
@@ -108,15 +110,21 @@ export function paraMuhasebesi(d: Dunya, ic: DerlenmisIcerik): void {
       sayacOranEkle(para.lavabo.isletme, a.isletme, dt);
       let ithKasa = 0;
       let vergiKasa = 0;
+      let sebekeKasa = 0;
       for (const e of a.kasa) {
         const k = kasaAl(para, e.sahip);
-        const eklenen = sayacOranEkle(k.giris[e.kalem], e.oran, dt);
+        // `sebeke` kalemi TEMBEL doğar (ilk birikimde); zorunlu kalemler kasa kurulurken vardır.
+        const sayac = e.kalem === "sebeke" ? (k.giris.sebeke ??= sayacSifir()) : k.giris[e.kalem];
+        const eklenen = sayacOranEkle(sayac, e.oran, dt);
         if (eklenen > 0) gunKaydi(k, gun, kp.pencereGun).giris += eklenen;
         if (e.kalem === "vergi") vergiKasa += e.oran;
+        else if (e.kalem === "sebeke") sebekeKasa += e.oran; // ithalat kasa payına KARIŞMAZ (lavabo.ithalatNpc = ithalat - ithKasa)
         else ithKasa += e.oran;
       }
       sayacOranEkle(para.lavabo.ithalatNpc, a.ithalat - ithKasa, dt);
       sayacOranEkle(para.lavabo.araziVergisi, a.vergi - vergiKasa, dt);
+      // Şebeke bedeli (G6): oyuncunun hazinesinden DÜŞEN para; kasa payı kasaya, kalanı lavabo.sebeke'ye (yeni musluk yok). Tembel kalem.
+      if (a.sebeke !== undefined && a.sebeke > 0) sayacOranEkle((para.lavabo.sebeke ??= sayacSifir()), a.sebeke - sebekeKasa, dt);
     }
     a.t0 = t;
   }
@@ -134,7 +142,8 @@ export function paraAkisiYaz(d: Dunya, oyuncu: string, akis: Omit<ParaAkisi, "t0
   const mo = mulkOyuncuBul(d, oyuncu);
   if (mo === undefined) return;
   const kasa = akis.kasa.filter((e) => e.oran > 0);
-  if (mo.paraAkisi === undefined && akis.ihracat === 0 && akis.nufus === 0 && akis.ithalat === 0 && akis.isletme === 0 && akis.vergi === 0 && kasa.length === 0) return;
+  const sebeke = akis.sebeke ?? 0;
+  if (mo.paraAkisi === undefined && akis.ihracat === 0 && akis.nufus === 0 && akis.ithalat === 0 && akis.isletme === 0 && akis.vergi === 0 && sebeke === 0 && kasa.length === 0) return;
   const onceki = mo.paraAkisi;
   if (onceki !== undefined && onceki.kasa.length === kasa.length && kasa.every((e, i) => {
     const x = onceki.kasa[i] as ParaAkisi["kasa"][number];
@@ -147,9 +156,14 @@ export function paraAkisiYaz(d: Dunya, oyuncu: string, akis: Omit<ParaAkisi, "t0
     onceki.ithalat = akis.ithalat;
     onceki.isletme = akis.isletme;
     onceki.vergi = akis.vergi;
+    // `sebeke` > 0 iken yazılır, 0 iken alan SİLİNİR (kanonik özet: şebeke yokken alan yok).
+    if (sebeke > 0) onceki.sebeke = sebeke;
+    else delete onceki.sebeke;
     return;
   }
-  mo.paraAkisi = { t0: d.zaman, ihracat: akis.ihracat, nufus: akis.nufus, ithalat: akis.ithalat, isletme: akis.isletme, vergi: akis.vergi, kasa };
+  const yeni: ParaAkisi = { t0: d.zaman, ihracat: akis.ihracat, nufus: akis.nufus, ithalat: akis.ithalat, isletme: akis.isletme, vergi: akis.vergi, kasa };
+  if (sebeke > 0) yeni.sebeke = sebeke;
+  mo.paraAkisi = yeni;
 }
 
 // ---------------------------------------------------------------------------
@@ -209,26 +223,31 @@ export function kasaOranlari(
   vergi: Mili,
   makasIlce: ReadonlyMap<string, Mili>,
   komisyonIlce: ReadonlyMap<string, Mili>,
+  sebekeIlce: ReadonlyMap<string, Mili> = BOS_ILCE_TUTARLARI,
 ): KasaOrani[] {
   // Önbellek (P3c; docs/06 §15.9): sonuç, girdilerinin (vergi, ilçe hücre sayıları, makas/komisyon ilçe tutarları, içerik) SAF işlevidir; girdi
   // aynıysa önceki sonuç aynen döner. Anahtar girdinin KENDİSİdir (sürüm/imza değil): soğuk önbellek (yeni yükleme) aynı sonucu hesaplar.
   const mo = mulkOyuncuBul(d, oyuncu);
-  if (mo === undefined) return kasaOranlariHesapla(d, ic, oyuncu, vergi, makasIlce, komisyonIlce);
+  if (mo === undefined) return kasaOranlariHesapla(d, ic, oyuncu, vergi, makasIlce, komisyonIlce, sebekeIlce);
   const o = kasaOnbellegi.get(mo);
-  if (o !== undefined && o.ic === ic && o.vergi === vergi && ilceHucreAyni(o.hucre, mo.ilceHucre) && haritaAyni(o.makas, makasIlce) && haritaAyni(o.komisyon, komisyonIlce)) {
+  if (o !== undefined && o.ic === ic && o.vergi === vergi && ilceHucreAyni(o.hucre, mo.ilceHucre) && haritaAyni(o.makas, makasIlce) && haritaAyni(o.komisyon, komisyonIlce) && haritaAyni(o.sebeke, sebekeIlce)) {
     return o.sonuc;
   }
-  const sonuc = kasaOranlariHesapla(d, ic, oyuncu, vergi, makasIlce, komisyonIlce);
+  const sonuc = kasaOranlariHesapla(d, ic, oyuncu, vergi, makasIlce, komisyonIlce, sebekeIlce);
   kasaOnbellegi.set(mo, {
     ic,
     vergi,
     hucre: mo.ilceHucre.map((e) => ({ ilce: e.ilce, hucre: e.hucre })),
     makas: [...makasIlce],
     komisyon: [...komisyonIlce],
+    sebeke: [...sebekeIlce],
     sonuc,
   });
   return sonuc;
 }
+
+/** Şebeke bedeli olmayan çağrılar için paylaşılan boş harita (salt okunur). */
+const BOS_ILCE_TUTARLARI: ReadonlyMap<string, Mili> = new Map();
 
 interface KasaOnbellegi {
   ic: DerlenmisIcerik;
@@ -236,6 +255,8 @@ interface KasaOnbellegi {
   hucre: { ilce: string; hucre: number }[];
   makas: [string, Mili][];
   komisyon: [string, Mili][];
+  /** Şebeke bedeli (ilçe -> saatlik tutar): önbellek anahtarına girer (kasa payı değişimi yanlış sonuç vermesin). */
+  sebeke: [string, Mili][];
   sonuc: KasaOrani[];
 }
 /** Durum metnine GİRMEZ: oyuncu kaydı başına, bellekte; girdi karşılaştırmasıyla doğrulanır. */
@@ -266,6 +287,7 @@ function kasaOranlariHesapla(
   vergi: Mili,
   makasIlce: ReadonlyMap<string, Mili>,
   komisyonIlce: ReadonlyMap<string, Mili>,
+  sebekeIlce: ReadonlyMap<string, Mili>,
 ): KasaOrani[] {
   const mk = ic.mulk;
   const kp = kasaParam(ic);
@@ -301,6 +323,9 @@ function kasaOranlariHesapla(
   }
   for (const [ilce, x] of makasIlce) ekle(kamuIlceKimligi(ilce), "ithalatMakas", carpBol(x, kp.ithalatMakasiIlcePpm, PPM));
   for (const [ilce, x] of komisyonIlce) ekle(kamuIlceKimligi(ilce), "ithalatKomisyon", carpBol(x, kp.ithalatKomisyonuIlcePpm, PPM));
+  // Şebeke bedelinin ilçe kasasına giden payı (G6): kasa = floor(bedel x kasaPayiPpm / PPM); kalanı lavabo.sebeke'de yanar. Pay 0 ise kalem hiç yazılmaz (`ekle` oran <= 0 atlar).
+  const sebekePay = mk.sebeke?.kasaPayiPpm ?? 0;
+  if (sebekePay > 0) for (const [ilce, x] of sebekeIlce) ekle(kamuIlceKimligi(ilce), "sebeke", carpBol(x, sebekePay, PPM));
   const sonuc: KasaOrani[] = [];
   for (const [anahtar, oran] of toplam) {
     const ayrac = anahtar.indexOf("\u0000");

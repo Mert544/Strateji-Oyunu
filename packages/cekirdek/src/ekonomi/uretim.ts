@@ -25,7 +25,7 @@ import { tarimCiktiCarpani } from "../tarim/carpan";
 import { tarimTablosu } from "../tarim/tablo";
 import type { TarimTablosu } from "../tarim/tablo";
 import { PPM, SAAT } from "../tipler";
-import type { Baglam, BolgeDurumu, Dunya, Mili } from "../tipler";
+import type { Baglam, BolgeDurumu, DerlenmisSebeke, Dunya, Mili } from "../tipler";
 
 /** Bir bölgenin tek çözümlük hesabı. Mal dizileri mal indeksine göre, tesis dizileri tesis sırasına göredir. */
 export interface BolgeHesabi {
@@ -78,6 +78,10 @@ export interface BolgeHesabi {
   haneElektrik: Mili;
   /** Sanayi (B2): bu çözümün elektrik dağıtımı; sanayi kapalıysa null. */
   elektrik: ElektrikSonucu | null;
+  /** Mülk kipi şebeke (G6, sartname §5.2.2): kendi santralden karşılanamayıp şebekeden teslim edilen elektrik (mili-birim/saat; geçici, her çözümde sıfırlanır). */
+  sebekeMili: Mili;
+  /** Mülk kipi şebeke stoksuz tedarik (G6, §5.2.2b): mal indeksine göre şebekeden alınan GERÇEK tüketim (mili-birim/saat; geçici; şebekeli olmayan mallar 0). */
+  sebekeStoksuz: Mili[];
 }
 
 /** Stok bu kadar saatlik açığı karşılayabiliyorsa tüketim kısılmaz; altında stok bu ufka yayılarak tüketilir. */
@@ -153,6 +157,8 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
       verimOn: sifirlar(tesisSayisi),
       haneElektrik: 0,
       elektrik: null,
+      sebekeMili: 0,
+      sebekeStoksuz: sifirlar(nm),
     };
     havuz[r] = h;
     return h;
@@ -185,7 +191,24 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
   h.verimOn.fill(0);
   h.haneElektrik = 0;
   h.elektrik = null;
+  h.sebekeMili = 0;
+  h.sebekeStoksuz.fill(0);
   return h;
+}
+
+/**
+ * Şebeke yolları (G6; sartname §5.2.2): YALNIZ mülk kipinde (`ic.mulk`), yalnız işletme düğümünde (`b.merkez`) ve yalnız `mulk.sebeke` tanımlıyken. Blok yoksa ya da
+ * düğüm harita bölgesiyse `null` döner ve hiçbir kod yolu değişmez (bölge kipi altınları bayt bayt aynı).
+ */
+function sebekeElektrikYolu(ctx: Baglam, b: BolgeDurumu): DerlenmisSebeke | null {
+  const sb = ctx.ic.mulk?.sebeke;
+  return sb !== undefined && sb.elektrik !== undefined && b.merkez !== undefined ? sb : null;
+}
+
+/** Stoksuz mal tablosu (mal indeksi -> kayıt indeksi ya da -1); şebeke yoksa/listede stoksuz mal yoksa null. */
+function sebekeStoksuzTablo(ctx: Baglam, b: BolgeDurumu): readonly number[] | null {
+  const sb = ctx.ic.mulk?.sebeke;
+  return sb !== undefined && sb.stoksuz.length > 0 && b.merkez !== undefined ? sb.stoksuzIndeks : null;
 }
 
 /**
@@ -243,6 +266,7 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
   const b = d.bolgeler[r] as BolgeDurumu;
   const t = d.zaman;
   const tesisSayisi = b.tesisler.length;
+  const stoksuz = sebekeStoksuzTablo(ctx, b);
 
   const h = hesapAl(ctx.ic, nm, r, tesisSayisi);
   h.bolge = b;
@@ -340,6 +364,8 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
     const pot = h.potansiyelPpm[i] as number;
     if (pot > 0) {
       for (const [m, q] of y.girdi) {
+        // Şebekeli (stoksuz) mal stoktan talep EDİLMEZ (§5.2.2b Y-a): tüketim anında şebekeden alınır.
+        if (stoksuz !== null && (stoksuz[m] as number) >= 0) continue;
         const qo = olcekCikti === PPM ? q : carpBol(q, olcekCikti, PPM);
         h.girdiPot[m] = (h.girdiPot[m] as number) + carpBol(qo, planPot, PPM);
       }
@@ -382,7 +408,7 @@ function oranPpm(a: number, bolen: number): number {
  * Santraller yüklerine, elektrik girdili tüketici tesisler karşılanma oranına göre ölçeklenir. Sanayi kapalıysa
  * `verimPpm = verimOn` (özgün davranış).
  */
-function elektrikUygula(sn: SanayiTablosu | null, h: BolgeHesabi, tesisSayisi: number): boolean {
+function elektrikUygula(sn: SanayiTablosu | null, h: BolgeHesabi, tesisSayisi: number, sebeke: DerlenmisSebeke | null): boolean {
   if (sn === null) {
     for (let i = 0; i < tesisSayisi; i++) h.verimPpm[i] = h.verimOn[i] as number;
     return false;
@@ -397,7 +423,18 @@ function elektrikUygula(sn: SanayiTablosu | null, h: BolgeHesabi, tesisSayisi: n
     const eg = h.elektrikGirdi[i] as number;
     if (eg > 0) talepTesis += carpBol(eg, v, PPM);
   }
-  const e = elektrikDagit(kapasite, talepTesis, h.haneElektrik, sn.p.iletimKaybiPpm, sn.p.haneOnceligi);
+  let e = elektrikDagit(kapasite, talepTesis, h.haneElektrik, sn.p.iletimKaybiPpm, sn.p.haneOnceligi); // 1. kendi santral
+  h.sebekeMili = 0;
+  if (sebeke !== null) {
+    // 2. Mülk kipi şebekesi (G6, §5.2.2): kendi santralden karşılanamayan açık şebekeden teslim edilir (iletim kaybı yok; kapasite sınırı yok). Santral yükü e'den kalır.
+    const toplam = talepTesis + h.haneElektrik;
+    const arz = carpBol(kapasite, PPM - sn.p.iletimKaybiPpm, PPM); // elektrikDagit içindeki arz ile AYNI ifade
+    const acik = toplam > arz ? toplam - arz : 0;
+    if (acik > 0) {
+      h.sebekeMili = acik;
+      e = { ...e, tesisKarsilanmaPpm: PPM, haneKarsilanmaPpm: PPM };
+    }
+  }
   h.elektrik = e;
   let degisti = false;
   for (let i = 0; i < tesisSayisi; i++) {
@@ -434,10 +471,13 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
 
   // Sanayi (B2): elektrik dengesi verimleri etkiler (brownout); kapalıysa null ve verim özgün davranıştadır.
   const sn = sanayiTablosu(ctx.ic);
+  // Mülk kipi şebekesi (G6): elektrik açığı şebekeden (anlık denge) ve stoksuz mallar (yakıt) tüketim anında; blok yoksa/bölge kipinde null.
+  const sebeke = sn === null ? null : sebekeElektrikYolu(ctx, b);
+  const stoksuz = sebekeStoksuzTablo(ctx, b);
 
   // Başlangıç: verim = potansiyel (sanayi açıksa elektrik dağıtımıyla ölçeklenmiş).
   for (let i = 0; i < tesisSayisi; i++) h.verimOn[i] = h.potansiyelPpm[i] as number;
-  elektrikUygula(sn, h, tesisSayisi);
+  elektrikUygula(sn, h, tesisSayisi, sebeke);
 
   for (let tur = 0; tur < 4; tur++) {
     // Mevcut verimle brüt çıktı
@@ -503,6 +543,7 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
       const y = tb.yontem[(b.tesisler[i] as BolgeDurumu["tesisler"][number]).yontem] as IcerikTablosu["yontem"][number];
       let v = pot;
       for (const [m] of y.girdi) {
+        if (stoksuz !== null && (stoksuz[m] as number) >= 0) continue; // şebekeli mal verimi kısmaz (Y-b)
         const f = h.fr3[m] as number;
         if (f < v) v = f;
       }
@@ -518,7 +559,7 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
       }
     } else {
       // Elektrik: girdi yeterliliğinden sonra brownout/yük uygulanır; verim değişirse tur tekrarlanır.
-      if (elektrikUygula(sn, h, tesisSayisi)) degisti = true;
+      if (elektrikUygula(sn, h, tesisSayisi, sebeke)) degisti = true;
     }
     if (!degisti) break;
   }
@@ -533,6 +574,20 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
   }
   // İhracat 0 ise gerçek ihracat 0 (carpBol(0, x, PPM) = 0): çağrı atlanır.
   for (let m = 0; m < nm; m++) h.ihracatGercek[m] = (h.ihracat[m] as number) === 0 ? 0 : carpBol(h.ihracat[m] as number, h.fr4[m] as number, PPM);
+  // Şebeke stoksuz tüketim (Y-c; G6 §5.2.2b): her şebekeli mal için GERÇEK tüketim = Σ_tesis Σ_(girdi) carpBol(carpBol(q, ölçek, PPM), verim, PPM) (stoktan düşmez; bedel buradan).
+  if (stoksuz !== null) {
+    for (let i = 0; i < tesisSayisi; i++) {
+      const v = h.verimPpm[i] as number;
+      if (v <= 0) continue;
+      const y = tb.yontem[(b.tesisler[i] as BolgeDurumu["tesisler"][number]).yontem] as IcerikTablosu["yontem"][number];
+      const olcek = h.olcekPpm[i] as number;
+      for (const [m, q] of y.girdi) {
+        if ((stoksuz[m] as number) < 0) continue;
+        const qo = olcek === PPM ? q : carpBol(q, olcek, PPM);
+        h.sebekeStoksuz[m] = (h.sebekeStoksuz[m] as number) + carpBol(qo, v, PPM);
+      }
+    }
+  }
 }
 
 /**
@@ -614,6 +669,19 @@ export function bolgeDurumunaYaz(ctx: Baglam, h: BolgeHesabi): void {
       }
     }
     b.bakimKarsilanmaPpm = bakimOran;
+    // Mülk kipi şebeke (G6): yalnız alım VARKEN yazılır (nesne her seferinde baştan kurulur; yoksa alan oluşmaz).
+    if (h.sebekeMili > 0) b.elektrik.sebekeMili = h.sebekeMili;
+  }
+  // Şebeke stoksuz tüketimi (mal KİMLİĞİ anahtarlı; yalnız > 0 olanlar; hiç yoksa alan silinir/oluşmaz).
+  const sbStoksuz = sebekeStoksuzTablo(ctx, b);
+  if (sbStoksuz !== null) {
+    let tuketim: Record<string, Mili> | undefined;
+    for (const kayit of (ctx.ic.mulk as NonNullable<typeof ctx.ic.mulk>).sebeke!.stoksuz) {
+      const x = h.sebekeStoksuz[kayit.mal] as number;
+      if (x > 0) (tuketim ??= {})[(ctx.ic.mallar[kayit.mal] as { id: string }).id] = x;
+    }
+    if (tuketim !== undefined) b.sebekeTuketim = tuketim;
+    else delete b.sebekeTuketim;
   }
   b.gidaKarsilanmaPpm = tb.gidaMal >= 0 ? (h.fr1[tb.gidaMal] as number) : PPM;
   // Pazar v1 (B3): temel ihtiyaç karşılanması (kıtlık kademesinin girdisi): min(gıda, yakıt, hane elektriği).
@@ -641,6 +709,7 @@ export function bolgeOranlariUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi, giden
   const nm = tb.malSayisi;
   const b = h.bolge;
   const tt = tarimTablosu(ctx.ic);
+  const stoksuz = sebekeStoksuzTablo(ctx, b);
   const girdiGercek = sifirlar(nm);
   for (let i = 0; i < b.tesisler.length; i++) {
     const v = h.verimPpm[i] as number;
@@ -648,6 +717,7 @@ export function bolgeOranlariUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi, giden
     const y = tb.yontem[(b.tesisler[i] as BolgeDurumu["tesisler"][number]).yontem] as IcerikTablosu["yontem"][number];
     const olcek = h.olcekPpm[i] as number;
     for (const [m, q] of y.girdi) {
+      if (stoksuz !== null && (stoksuz[m] as number) >= 0) continue; // şebekeli mal stoktan düşmez (Y-d)
       const qo = olcek === PPM ? q : carpBol(q, olcek, PPM);
       girdiGercek[m] = (girdiGercek[m] as number) + carpBol(qo, v, PPM);
     }

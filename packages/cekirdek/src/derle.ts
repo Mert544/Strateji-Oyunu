@@ -8,7 +8,7 @@ import { GUN, PPM } from "./tipler";
 import { HucreDizini } from "./mulk/hucreDizini";
 import { kamuKumeleriHesapla } from "./mulk/kamu";
 import { kamuIthalatCarpaniHesapla } from "./mulk/kamuFiyat";
-import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk } from "./tipler";
+import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, DerlenmisSebeke } from "./tipler";
 
 /** Derleme zamanı anahtarı: bkz. `mulkDerle`. */
 declare const __BOLGE_MULKSUZ__: boolean | undefined;
@@ -218,8 +218,32 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
   const kamu = p.kamu === undefined ? undefined : kamuKumeleriHesapla(hucreDizini, p.kamu);
   const ayrilmisIlceSayisi = hucreDizini.ayrilmisKur(p.yeniOyuncu.ayrilmisHucrePpm, kamu);
   const ayrilmisSureMs = (p.yeniOyuncu.ayrilmisGun ?? AYRILMIS_GUN_VARSAYILAN) * GUN;
-  const sonuc: DerlenmisMulk = { p, fikstur: f, dizin: hucreDizini, ilMerkezi, ilceler, hucreler: hucreDizini.hucreler, yuva, olcekHucre, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis: hucreDizini.ayrilmis, ayrilmisIlceSayisi, ayrilmisSureMs, kamuIthalatCarpaniPpm: kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar) };
+  const kamuIthalatCarpaniPpm = kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar);
+  const sonuc: DerlenmisMulk = { p, fikstur: f, dizin: hucreDizini, ilMerkezi, ilceler, hucreler: hucreDizini.hucreler, yuva, olcekHucre, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis: hucreDizini.ayrilmis, ayrilmisIlceSayisi, ayrilmisSureMs, kamuIthalatCarpaniPpm };
   if (kamu !== undefined) sonuc.kamu = kamu;
+  // Şebeke (sartname §4.6, §5.2.4): blok yoksa alan OLUŞMAZ. Birim fiyat TABANDAN derleme zamanında bir kez sabitlenir:
+  // tabanFiyat x kamuIthalatCarpaniPpm x tavanOraniPpm (canlı pazar fiyatı yolu YOKTUR). Elektrik anlık denge yolu, diğer (depolanabilir) mallar stoksuz tüketim anı yolu.
+  if (p.sebeke !== undefined) {
+    const kayitlar: { mal: number; birimFiyatMili: number; elektrik: boolean }[] = [];
+    const gorulen = new Set<string>();
+    for (const m of p.sebeke.mallar) {
+      const mi = ic.malIndeks[m.mal];
+      if (mi === undefined) throw new Error(`icerikDerle: mulk.sebeke.mallar bilinmeyen mal: ${m.mal}`);
+      if (gorulen.has(m.mal)) throw new Error(`icerikDerle: mulk.sebeke.mallar tekrarlanan mal: ${m.mal}`);
+      gorulen.add(m.mal);
+      if (!Number.isSafeInteger(m.tavanOraniPpm) || m.tavanOraniPpm <= 0 || m.tavanOraniPpm > PPM) throw new Error(`icerikDerle: mulk.sebeke.mallar.${m.mal}.tavanOraniPpm (0, ${PPM}] araliginda tamsayi olmali`);
+      const taban = (ic.mallar[mi] as { tabanFiyat: number }).tabanFiyat;
+      kayitlar.push({ mal: mi, birimFiyatMili: carpBol(carpBol(taban, kamuIthalatCarpaniPpm, PPM), m.tavanOraniPpm, PPM), elektrik: m.mal === "elektrik" });
+    }
+    if (!Number.isSafeInteger(p.sebeke.kasaPayiPpm) || p.sebeke.kasaPayiPpm < 0 || p.sebeke.kasaPayiPpm > PPM) throw new Error(`icerikDerle: mulk.sebeke.kasaPayiPpm [0, ${PPM}] araliginda tamsayi olmali`);
+    const stoksuz = kayitlar.filter((k) => !k.elektrik).sort((a, b) => a.mal - b.mal).map((k) => ({ mal: k.mal, birimFiyatMili: k.birimFiyatMili }));
+    const stoksuzIndeks = ic.mallar.map(() => -1);
+    stoksuz.forEach((k, i) => (stoksuzIndeks[k.mal] = i));
+    const sebeke: DerlenmisSebeke = { stoksuz, stoksuzIndeks, kasaPayiPpm: p.sebeke.kasaPayiPpm };
+    const el = kayitlar.find((k) => k.elektrik);
+    if (el !== undefined) sebeke.elektrik = { mal: el.mal, birimFiyatMili: el.birimFiyatMili };
+    sonuc.sebeke = sebeke;
+  }
   // Yöntem çıktısı yedek geçersiz kılma (sartname §5.9; varsayılan KAPALI): tablo YALNIZ `ciktiPpm !== PPM` satırlarından kurulur; hepsi PPM ise ya da blok yoksa alan
   // HİÇ OLUŞMAZ (çekirdeğin kod yolu atlanır, bit-exact no-op). Çekirdek yolu (`ciktiCarpaniHesapla`) G6-2'dedir.
   const gecersiz = p.yontemGecersizKilma;
