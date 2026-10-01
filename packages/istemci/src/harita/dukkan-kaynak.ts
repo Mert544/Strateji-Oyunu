@@ -8,9 +8,11 @@
  */
 import type { Icerik } from "../komut/tablo";
 import type { DukkanKaresi } from "./baglanti";
-import { dukkanGorunumuKur } from "./dukkan-kopru";
+import { g8Acik, turUyumlari } from "./etkin";
+import { dukkanGorunumuKur, ithNetPpm } from "./dukkan-kopru";
 import type { KopruParam, KopruSonucu, ReferansFiyati } from "./dukkan-kopru";
-import type { DukkanKaynagi } from "./dukkan-veri";
+import { DUKKAN_TURLERI } from "./dukkan-veri";
+import type { DukkanGorunumu, DukkanKaynagi, DukkanTuru } from "./dukkan-veri";
 import { indirimliTutar } from "./yapi";
 import type { YapiTanimi } from "./yapi";
 
@@ -79,4 +81,76 @@ export function dukkanKaynagiKur(g: DukkanKaynakGirdisi): DukkanKaynagiSonucu {
     });
   };
   return { gorunum: () => sonuc()?.gorunum ?? null, sonuc };
+}
+
+// --- yapı kurma akışında dükkân bilgisi (D2 tür seçimi, D3 pencere satırı) ---------------------------------------------------------------------------------------------
+
+export interface DukkanKurBilgisi {
+  /** Dükkânın kapladığı hücre sayısı (katalog). */
+  hucre: number;
+  /** Kurulabilir türler (içerikten; yapı market G8'de varsa). */
+  turler: DukkanTuru[];
+  /** Bu ilçede / ilde kendi dükkân sayın (biten + süren) ve sınırlar (`ilceBasinaEnFazla`, `dukkan.enFazlaIlBasina`). */
+  ilceSayi: number;
+  ilceSinir: number;
+  ilSayi: number;
+  ilSinir: number;
+  /** Tür başına depoda satabileceği mal var mı (D2 tür uyumu). */
+  uyum: Partial<Record<DukkanTuru, boolean>>;
+  /** G8 açık (D3 pencere metni). */
+  g8Acik: boolean;
+  /** Maliyet kartında pencere satırı: gereken (indirimli), depo stoğu, eksik pencerenin yaklaşık bedeli; malzemede pencere yoksa tanımsız. */
+  pencere?: { gereken: number; var: number; tutarMili: number };
+}
+
+export interface DukkanKurBilgisiGirdisi {
+  ic: Icerik;
+  katalog: readonly YapiTanimi[];
+  /** Şimdiki görünüm (köprü); yoksa null. */
+  gorunum: DukkanGorunumu | null;
+  /** Dükkânın bulunduğu ilçeler ve ilçenin ili. */
+  ilce: string | null;
+  ilceIl: (ilce: string) => string | null;
+  stokMili: (mal: string) => number;
+  indirim: { ppm: number; kalan: number } | undefined;
+  referans: ReferansFiyati;
+}
+
+/** Yapı kurma kartı için dükkân bilgisi; dünyada dükkân yoksa tanımsız. Sayaçlar köprü görünümünden (karede hücre yoksa ilçesi bilinmeyen dükkân sayılmaz). */
+export function dukkanKurBilgisi(g: DukkanKurBilgisiGirdisi): DukkanKurBilgisi | undefined {
+  const yapi = g.katalog.find((y) => y.id === "dukkan");
+  const pk = g.ic.param.mulk?.perakende;
+  if (yapi === undefined || pk === undefined || g.gorunum === null || g.gorunum.kapali) return undefined;
+  const turler = pk.dukkanTurleri.map((t) => t.id).filter((id): id is DukkanTuru => (DUKKAN_TURLERI as readonly string[]).includes(id));
+  const il = g.ilce ? g.ilceIl(g.ilce) : null;
+  let ilceSayi = 0;
+  let ilSayi = 0;
+  for (const d of g.gorunum.dukkanlar) {
+    if (d.ilce === undefined) continue;
+    if (d.ilce === g.ilce) ilceSayi++;
+    if (il !== null && g.ilceIl(d.ilce) === il) ilSayi++;
+  }
+  const indirimli = g.indirim !== undefined && g.indirim.ppm > 0 && g.indirim.kalan > 0;
+  const pen = yapi.malzeme.find((m) => m.id === "pencere");
+  let pencere: DukkanKurBilgisi["pencere"];
+  if (pen !== undefined) {
+    const gereken = indirimli ? indirimliTutar(pen.miktar, g.indirim!.ppm) : pen.miktar;
+    const var_ = g.stokMili("pencere");
+    const eksik = Math.max(0, gereken - var_);
+    const R = g.referans("pencere")?.mili ?? 0;
+    // Eksik pencerenin yaklaşık bedeli: R x eksik x ithalat net çarpanı (maliyet: YUKARI yuvarlı birim)
+    const tutar = eksik > 0 ? Math.ceil((eksik / 1000) * R * (ithNetPpm(g.ic.param.pazar) / 1_000_000)) : 0;
+    pencere = { gereken: Math.ceil(gereken / 1000), var: Math.floor(var_ / 1000), tutarMili: tutar };
+  }
+  return {
+    hucre: yapi.yuva,
+    turler,
+    ilceSayi,
+    ilceSinir: pk.ilceBasinaEnFazla,
+    ilSayi,
+    ilSinir: yapi.enFazlaIlBasina ?? Number.MAX_SAFE_INTEGER,
+    uyum: turUyumlari(g.ic, (m) => g.stokMili(m) > 0),
+    g8Acik: g8Acik(g.ic),
+    ...(pencere !== undefined ? { pencere } : {}),
+  };
 }
