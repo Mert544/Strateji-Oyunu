@@ -318,6 +318,8 @@ describe("komut satırı: pnpm olcum --kip cikarma", () => {
   it("bayraklar ayrıştırılır; geçersiz değer ve bilinmeyen seçenek hata", () => {
     const a = cikarmaArgumanAyristir(["--depo", "d", "--oyuncular=o.json", "--cikti", "c.json", "--harita", "mini", "--parsel", "mini", "--epoch", "5", "--bitis-trt", "2026-10-23T12:00:00+03:00", "--baslangic", "goruntu", "--commit", "abc"]);
     expect(a).toMatchObject({ depo: "d", oyuncular: "o.json", cikti: "c.json", harita: "mini", parsel: "mini", epoch: 5, bitisTrt: "2026-10-23T12:00:00+03:00", baslangic: "goruntu", commit: "abc" });
+    expect(a.ekonomi).toBe(false);
+    expect(cikarmaArgumanAyristir(["--ekonomi"]).ekonomi).toBe(true);
     expect(() => cikarmaArgumanAyristir(["--baslangic", "x"])).toThrow(/baslangic/);
     expect(() => cikarmaArgumanAyristir(["--epoch", "-1"])).toThrow(/--epoch/);
     expect(() => cikarmaArgumanAyristir(["--yok"])).toThrow(/bilinmeyen/);

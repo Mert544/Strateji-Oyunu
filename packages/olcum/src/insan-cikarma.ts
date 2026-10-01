@@ -21,12 +21,15 @@ import { ACILIS_ESLEMESI, GEC_ACILISLARI, acilisAyakIzi, ilceAyrilmisBos } from 
 import type { GecAcilis } from "@bolge/botlar";
 import { tamsayiMedyan, uretenEmsal, y7EmsalDuzeyi } from "./parsel";
 import type { Y7EmsalDuzeyi } from "./parsel";
+import { EkonomiToplayici, dukkanKurulusuOku } from "./insan-ekonomi";
+import type { EkonomiCiktisi } from "./insan-ekonomi";
 import { yapiKatmani } from "./parsel/yeni-oyuncu";
 import type { YapiKatmani } from "./parsel/yeni-oyuncu";
 
 const DAKIKA = 60_000;
 const YAPI_KOMUTLARI: ReadonlySet<string> = new Set(["yapi_yerlestir", "tesis_insa_hucre"]);
-const SERMAYE_KOMUTLARI: ReadonlySet<string> = new Set(["parsel_al", "yapi_yerlestir", "tesis_insa_hucre"]);
+/** Sermaye (yatırım) komutları: hazineden çıkan tutar Y7 ve E2 (A2 alfa0-ekonomi-izleme §2) için sermaye sayılır. Ölçek yükseltme ve kenar geliştirme DAHİL (A2 O2-1). */
+export const SERMAYE_KOMUTLARI: ReadonlySet<string> = new Set(["parsel_al", "yapi_yerlestir", "tesis_insa_hucre", "tesis_olcek_yukselt", "kenar_gelistir"]);
 const YON_KOMUTLARI: ReadonlySet<string> = new Set(["parsel_birak", "insaat_iptal"]);
 /** (ii) geniş tanımında üretim yapısı sayılmayan ek yapılar (sunucu `odul/dedektor.ts:8` ile aynı). */
 export const URETIM_DISI_YAPILAR: readonly string[] = ["ambar", "ticaret_ofisi"];
@@ -85,6 +88,11 @@ export interface CikarmaSecenek {
   bitisTMs?: Ms;
   /** Dükkân yapısı tür adları (vars. `DUKKAN_TURLERI`). */
   dukkanTurleri?: readonly string[];
+  /**
+   * Alfa-0 ekonomi izleme (A2 alfa0-ekonomi-izleme; E1–E10): açıksa günde bir dünya düzeyi örnek alınır ve çıktıya `ekonomi` bölümü eklenir (bot ve insan ayrı gruplar,
+   * oyuncu kimliği yok). Vars. KAPALI: kapalıyken çıktı eskisiyle aynıdır (ek alan yok).
+   */
+  ekonomi?: boolean;
 }
 
 /** Sim zamanı + gerçek saat. */
@@ -115,7 +123,10 @@ export interface KatilimciCikti {
   ilkSatis: { emirTMs: Ms; emirTrt: string | null; gerceklesenTMs: Ms | null; gerceklesenTrt: string | null; cozunurlukMs: number | null } | null;
   ikinciYapi: (ZamanDamgasi & { tur: string; katman: YapiKatmani }) | null;
   yonKomutlari: Array<ZamanDamgasi & { tur: string; ilce: string | null }>;
+  /** Dükkân KURULUŞU (`DukkanDurumu.kurulus`; A0-11 "kurulma" anlamı, A2 O2-2). Alan çekirdekte yoksa (P5 öncesi) null. */
   dukkan: ZamanDamgasi | null;
+  /** Dükkân yapı KOMUTU zamanı (kabul edilen ilk dükkân türü yapı komutu; dükkân türü çekirdekte tanımlı olunca). */
+  dukkanKomutu: ZamanDamgasi | null;
   /** İ2 (oturum olayı kaydı) olmadan çıkarılamaz. */
   oturumlar: null;
   y7: { net7gunMili: number; emsalMedyanMili: number | null; emsalDuzeyi: Y7EmsalDuzeyi | null; emsalSayisi: number; uretenEmsalSayisi: number; pencereBasTMs: Ms; pencereBitTMs: Ms } | { olculemez: string };
@@ -156,6 +167,8 @@ export interface InsanTestiCikti {
     goruntuDogrulama: { seq: number; simZamani: Ms; durumOzetiAyni: boolean } | null;
   };
   katilimcilar: KatilimciCikti[];
+  /** `ekonomi` seçeneği açıksa: A2 E1–E10 (bot ve insan ayrı gruplar). */
+  ekonomi?: EkonomiCiktisi;
   notlar: string[];
 }
 
@@ -175,6 +188,7 @@ interface Durum {
   uretimT14: boolean;
   yon: Array<{ t: Ms; tur: string; ilce: string | null }>;
   dukkanT: Ms | null;
+  dukkanKurulus: Ms | null;
   insaat: { id: number; bitis: Ms; durum: "tamam" | "iptal" | "suruyor"; t: Ms | null } | null;
   emirT: Ms | null;
   satisT: Ms | null;
@@ -227,7 +241,7 @@ export function cikar(s: CikarmaSecenek): InsanTestiCikti {
   const kodlar = new Map<OyuncuId, Durum>();
   for (const o of s.oyuncular) {
     if (kodlar.has(o.id)) throw new Error(`oyuncu kimligi tekrar: ${o.kod}`);
-    kodlar.set(o.id, { oyuncu: o, katilmaMs: null, katilmaIlce: null, katilmaKabul: false, ayrilmisBos: null, ayakIzleri: {}, yurtHucre: null, denemeler: [], ilkYapi: null, ikinciYapi: null, ilkUretim: null, uretimT14: false, yon: [], dukkanT: null, insaat: null, emirT: null, satisT: null, kabul: 0, red: 0 });
+    kodlar.set(o.id, { oyuncu: o, katilmaMs: null, katilmaIlce: null, katilmaKabul: false, ayrilmisBos: null, ayakIzleri: {}, yurtHucre: null, denemeler: [], ilkYapi: null, ikinciYapi: null, ilkUretim: null, uretimT14: false, yon: [], dukkanT: null, dukkanKurulus: null, insaat: null, emirT: null, satisT: null, kabul: 0, red: 0 });
   }
   const sistemOyuncusu = SISTEM_OYUNCUSU;
   /** Tüm oyuncuların katılım zamanı (emsal için). */
@@ -249,6 +263,9 @@ export function cikar(s: CikarmaSecenek): InsanTestiCikti {
     hazineAn.set(t, m);
   };
 
+  const ek: EkonomiToplayici | null = s.ekonomi === true ? new EkonomiToplayici(() => sim, new Set(s.oyuncular.map((o) => o.id)), trt, sermaye) : null;
+  if (ek !== null && sim.dunya.zaman % GUN === 0) ek.ornekle(sim.dunya.zaman);
+
   const dakikaAktif = (t: Ms): boolean => {
     for (const d of kodlar.values()) if (d.emirT !== null && d.satisT === null && t >= d.emirT && t < d.emirT + SATIS_DAKIKA_PENCERESI_MS) return true;
     return false;
@@ -256,6 +273,7 @@ export function cikar(s: CikarmaSecenek): InsanTestiCikti {
   const gozlemle = (t: Ms): void => {
     const dunya = sim.dunya;
     for (const [id, d] of kodlar) {
+      if (d.dukkanKurulus === null) d.dukkanKurulus = dukkanKurulusuOku(dunya, id);
       if (d.insaat !== null && d.insaat.durum === "suruyor") {
         const i = dunya.insaatlar.find((x) => x.id === (d.insaat as { id: number }).id);
         if (i !== undefined) d.insaat.bitis = i.bitis;
@@ -281,9 +299,14 @@ export function cikar(s: CikarmaSecenek): InsanTestiCikti {
       let adim = hedef;
       const izgara = dakikaAktif(t) ? DAKIKA : SAAT;
       adim = Math.min(adim, (Math.floor(t / izgara) + 1) * izgara);
+      if (ek !== null) adim = Math.min(adim, (Math.floor(t / GUN) + 1) * GUN);
       for (const z of bekleyenAnlar) if (z > t && z < adim) adim = z;
       sim.calistirKadar(adim);
       gozlemle(adim);
+      if (ek !== null) {
+        ek.adim(adim);
+        if (adim % GUN === 0) ek.ornekle(adim);
+      }
       // Hedefe varmadan durulan zamanlanmış anlar burada alınır; hedefe eşit olan, o andaki komutlar işlendikten sonra alınır.
       if (adim < hedef) bekleyenAnlariAl(adim);
     }
@@ -483,7 +506,8 @@ export function cikar(s: CikarmaSecenek): InsanTestiCikti {
             },
       ikinciYapi: d.ikinciYapi === null ? null : { ...damga(d.ikinciYapi.t), tur: d.ikinciYapi.tur, katman: yapiKatmani(d.ikinciYapi.tur) },
       yonKomutlari: d.yon.map((y) => ({ ...damga(y.t), tur: y.tur, ilce: y.ilce })),
-      dukkan: d.dukkanT === null ? null : damga(d.dukkanT),
+      dukkan: d.dukkanKurulus === null ? null : damga(d.dukkanKurulus),
+      dukkanKomutu: d.dukkanT === null ? null : damga(d.dukkanT),
       oturumlar: null,
       y7,
       h6: {
@@ -508,6 +532,7 @@ export function cikar(s: CikarmaSecenek): InsanTestiCikti {
     surum: 1,
     test: { commit: s.commit ?? null, kuralSurumu, dunya: s.dunya ?? null, dunyaEpochMs: epoch, baslangic, kayitSayisi: kayitlar.length, sonSeq: kayitlar.at(-1)?.seq ?? g?.seq ?? 0, bitisTMs: bitis, goruntuDogrulama },
     katilimcilar,
+    ...(ek === null ? {} : { ekonomi: ek.sonuc() }),
     notlar,
   };
 }

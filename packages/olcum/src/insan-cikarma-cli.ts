@@ -41,6 +41,7 @@ interface Arguman {
   bitisT: number | undefined;
   bitisTrt: string | undefined;
   baslangic: "bastan" | "goruntu" | undefined;
+  ekonomi: boolean;
   yardim: boolean;
 }
 
@@ -51,7 +52,7 @@ const sayi = (v: string, ad: string): number => {
 };
 
 export function cikarmaArgumanAyristir(argv: readonly string[]): Arguman {
-  const a: Arguman = { depo: undefined, oyuncular: undefined, cikti: undefined, harita: "sentetik", parsel: undefined, parselDosya: undefined, tohum: undefined, commit: undefined, dunya: undefined, epoch: undefined, bitisT: undefined, bitisTrt: undefined, baslangic: undefined, yardim: false };
+  const a: Arguman = { depo: undefined, oyuncular: undefined, cikti: undefined, harita: "sentetik", parsel: undefined, parselDosya: undefined, tohum: undefined, commit: undefined, dunya: undefined, epoch: undefined, bitisT: undefined, bitisTrt: undefined, baslangic: undefined, ekonomi: false, yardim: false };
   for (let i = 0; i < argv.length; i++) {
     const x = argv[i] as string;
     const esit = x.indexOf("=");
@@ -81,6 +82,7 @@ export function cikarmaArgumanAyristir(argv: readonly string[]): Arguman {
         a.baslangic = v;
         break;
       }
+      case "--ekonomi": a.ekonomi = true; break;
       case "--yardim":
       case "-h": a.yardim = true; break;
       default: throw new Error(`bilinmeyen secenek: ${x}`);
@@ -97,10 +99,11 @@ function veriYukle(ad: string): CekirdekVeriPaketi {
   throw new Error(`bilinmeyen harita: ${ad}`);
 }
 
-const YARDIM = `Kullanim: pnpm olcum --kip cikarma --depo DIZIN --oyuncular ESLESME.json --cikti CIKTI.json [--harita mini|sentetik|gercek[:ad]] [--parsel mini|sentetik | --parsel-dosya YOL] [--tohum N] [--commit SHA] [--dunya AD] [--epoch MS] [--bitis-t MS | --bitis-trt ISO] [--baslangic bastan|goruntu]
+const YARDIM = `Kullanim: pnpm olcum --kip cikarma --depo DIZIN --oyuncular ESLESME.json --cikti CIKTI.json [--harita mini|sentetik|gercek[:ad]] [--parsel mini|sentetik | --parsel-dosya YOL] [--tohum N] [--commit SHA] [--dunya AD] [--epoch MS] [--bitis-t MS | --bitis-trt ISO] [--baslangic bastan|goruntu] [--ekonomi]
   Insan testi cikarmasi (kilavuz §7.3): dosya deposunun gunlugunu cevrimdisi yeniden oynatir, oyuncu basina H6 (ii), Y1, Y2, Y5, Y6, Y7, A0-11 olgularini cikarir.
   Depo YALNIZ okunur. Eslesme dosyasi [{ id, kod, profil?, acilis? }] repoda tutulmaz; cikti yalniz K1..K5 kodlarini tasir (kisisel veri yok).
-  Sunucuyla AYNI veri paketi (--harita/--parsel[-dosya]) verilmeli: kural surumu eslesmezse durur.`;
+  Sunucuyla AYNI veri paketi (--harita/--parsel[-dosya]) verilmeli: kural surumu eslesmezse durur.
+  --ekonomi: Alfa-0 ekonomi izleme (A2 E1-E10): gunde bir dunya duzeyi ornek; bot ve insan ayri gruplar, oyuncu kimligi cikti disinda.`;
 
 export function cikarmaAna(argv: readonly string[]): void {
   const a = cikarmaArgumanAyristir(argv);
@@ -149,6 +152,7 @@ export function cikarmaAna(argv: readonly string[]): void {
     ...(a.epoch !== undefined ? { dunyaEpochMs: a.epoch } : {}),
     ...(bitisT !== undefined ? { bitisTMs: bitisT } : {}),
     ...(a.baslangic !== undefined ? { baslangic: a.baslangic } : {}),
+    ...(a.ekonomi ? { ekonomi: true } : {}),
   });
   mkdirSync(dirname(resolve(a.cikti)), { recursive: true });
   writeFileSync(a.cikti, JSON.stringify(cikti, null, 2) + "\n", "utf8");
