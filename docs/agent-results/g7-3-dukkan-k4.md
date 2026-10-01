@@ -42,3 +42,18 @@ Taban 8042a58: 1322,6 KB ham / **377,8 KB gzip**; G7-3 ucu: 1330,2 KB / **379,4 
 
 - `perakende-arbitraj` yalniz olculebilir yari (gelir tavani, c alt siniri) sinar; "ithal rafi sebeke ve NPC ithalatiyla etkilesmez" kismi `perakende-para` I5 ile (pazar durumu degismez) kapsanir. K3 karari.
 - `docs/06` dukkan bolumu K3/T3 islerinde; bu islerde docs'a dokunmadim.
+
+## Kabuk paketi ayiklamasi (MULKSUZ_PAKET; ayri commit)
+
+K3'un ortak sabiti `cekirdek/src/mulksuz.ts` (`MULKSUZ_PAKET`, vite `define __BOLGE_MULKSUZ__`; yalniz istemci `vite build`) G7-3 yollarina uygulandi: `mulk/komut.ts` (`dukkan_*` devri `MULKSUZ_PAKET ? hata("perakende kapali") : perakendeKomutu(...)`, `dukkanKurulumDenetimi`, ilce siniri, dukkan ayak izi), `mulk/yapi.ts` (`ekYapiTamamla` dukkan dali), `motor.ts` (`marka_sifirla`), `serilestir.ts` (`insaatlar[].dukkanTuru` ve marka siniri dogrulayicilari). Test, sunucu, olcum ve gelistirme sunucusunda sabit tanimsizdir: davranis ve altinlar degismez.
+
+dunya.html (tek build, kapi bos, ayni makine, yigin 0691310 ustu):
+
+| uc | ham | gzip |
+|---|---|---|
+| 0691310 (G7 yok) | 1345,0 KB | 382,8 KB |
+| c84c0ca (G7-2, K3 ayiklamali) | 1345,5 KB | 383,0 KB |
+| 91b934d (G7-3, ayiklamasiz) | 1354,1 KB | 386,7 KB |
+| G7-3 + MULKSUZ (bu commit) | 1345,7 KB | 383,1 KB |
+
+G7-3'un kabuktaki payi: ayiklamasiz +3,7 KB gzip, ayiklamayla +0,1 KB gzip (dukkanKomut.ts kabuga girmiyor). Butce 400 KB.

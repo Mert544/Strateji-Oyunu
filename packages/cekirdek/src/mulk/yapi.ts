@@ -16,6 +16,7 @@ import { carpBol } from "../sabit";
 import { stokEsikPlanla, stokUzlastir } from "../stok";
 import { PPM } from "../tipler";
 import type { Baglam, BolgeDurumu, DerlenmisEkYapi, DerlenmisIcerik, Dunya, EkYapiDurumu, InsaatDurumu } from "../tipler";
+import { MULKSUZ_PAKET } from "../mulksuz";
 import { dukkanVarsayilani } from "./dukkanKomut";
 import { hucreBul } from "./durum";
 
@@ -63,7 +64,7 @@ export function ekYapiTamamla(d: Dunya, ctx: Baglam, insaat: InsaatDurumu): void
   const tanim = mk.ekYapilar[i] as DerlenmisEkYapi;
   const id = ctx.yeniKimlik(d);
   const yeniYapi: EkYapiDurumu = { id, tur, hucreler: [...hucreler] };
-  if (tur === "dukkan") {
+  if (!MULKSUZ_PAKET && tur === "dukkan") {
     // Dükkân (G7; sartname §7.1, §7.2): boş raf, markasız; `baslangic` = yapı komutunun anı, `kurulus` = tamamlanma anı (bir kez yazılır).
     const dk = dukkanVarsayilani(mk, insaat.dukkanTuru, insaat.olcek ?? 0, insaat.baslangic ?? d.zaman, d.zaman);
     if (dk !== undefined) yeniYapi.dukkan = dk;

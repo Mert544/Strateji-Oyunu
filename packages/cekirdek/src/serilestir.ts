@@ -411,7 +411,7 @@ export function dunyaDogrula(deger: unknown): Dunya {
     if (s.ekYapi !== undefined) dize(s.ekYapi, `$.insaatlar[${i}].ekYapi`);
     if (s.indirimli !== undefined && s.indirimli !== true) hata(`$.insaatlar[${i}].indirimli`, "true ya da tanimsiz olmali");
     if (s.yontem !== undefined) dize(s.yontem, `$.insaatlar[${i}].yontem`);
-    if (s.dukkanTuru !== undefined) dize(s.dukkanTuru, `$.insaatlar[${i}].dukkanTuru`); // dükkân inşaatı türü (G7-3; sartname §7.2, §11.1)
+    if (!MULKSUZ_PAKET && s.dukkanTuru !== undefined) dize(s.dukkanTuru, `$.insaatlar[${i}].dukkanTuru`); // dükkân inşaatı türü (G7-3; sartname §7.2, §11.1)
   });
   dizi(d.partiler, "$.partiler").forEach((v, i) => {
     const s = nesne(v, `$.partiler[${i}]`);
@@ -813,7 +813,7 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
   // Dükkân inşaatı (G7-3; sartname §7.2, §11.2): `dukkanTuru` yalnız `ekYapi === "dukkan"` hücreli inşaatında olabilir ve perakendede tanımlı türdür; ölçek perakendenin ölçeğidir.
   d.insaatlar.forEach((ins, i) => {
     const y = `$.insaatlar[${i}]`;
-    if (ins.dukkanTuru !== undefined) {
+    if (!MULKSUZ_PAKET && ins.dukkanTuru !== undefined) {
       if (ins.ekYapi !== "dukkan") hata(`${y}.dukkanTuru`, "dukkanTuru yalniz dukkan yapisi insaatinda olabilir");
       const pk = ic.mulk?.perakende;
       if (pk === undefined) hata(`${y}.dukkanTuru`, "dukkan insaati var ama perakende (mulk.perakende) tanimli degil");
@@ -830,7 +830,7 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     if (d.mulk.para !== undefined && mk.p.kasa === undefined) hata("$.mulk.para", "para defteri var ama kasa parametresi (mulk.kasa) tanimli degil");
     // Marka sınırları (G7-3; sartname §11.1-11.2): perakende tanımlıyken sayı <= `marka.hesapBasinaEnFazla`, simge < `simgeSayisi`, renk < `renkSayisi`; perakende yokken marka olamaz.
     d.mulk.oyuncular.forEach((o, i) => {
-      if (o.markalar === undefined) return;
+      if (MULKSUZ_PAKET || o.markalar === undefined) return;
       const y = `$.mulk.oyuncular[${i}].markalar`;
       const pk = mk.perakende;
       if (pk === undefined) hata(y, "marka var ama perakende (mulk.perakende) tanimli degil");

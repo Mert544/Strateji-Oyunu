@@ -21,6 +21,7 @@ import { odulVer } from "./odul";
 import { hibeKaydet } from "./paraSayac";
 import { kamuSahibiMi, mulkKomutu, mulkOyuncuAl, mulkOyuncuBul } from "./mulk";
 import { markaSifirla } from "./mulk/dukkanKomut";
+import { MULKSUZ_PAKET } from "./mulksuz";
 import { yurtPlanla, yurtUygula } from "./mulk/yurt";
 import type { YurtPlani } from "./mulk/yurt";
 import { eskimisEsikleriBuda, oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
@@ -185,7 +186,7 @@ export class Simulasyon {
       sonuc = k.oyuncu === SISTEM_OYUNCUSU ? odulVer(d, ctx, komut.oyuncu, komut.kavram) : hata("sistem_odul yalnizca 'sistem' ile verilebilir");
     } else if (komut.tur === "marka_sifirla") {
       // Moderasyon (G7; sartname §9.1): yalnız sistem yolu, tutar taşımaz; adı yer tutucuya çevirir (`mulk/dukkanKomut.ts`). Perakende kapalıysa DUK-00.
-      sonuc = k.oyuncu === SISTEM_OYUNCUSU ? markaSifirla(d, ctx, komut.oyuncu, komut.marka) : hata("marka_sifirla yalnizca 'sistem' ile verilebilir");
+      sonuc = k.oyuncu === SISTEM_OYUNCUSU ? MULKSUZ_PAKET ? hata("perakende kapali") : markaSifirla(d, ctx, komut.oyuncu, komut.marka) : hata("marka_sifirla yalnizca 'sistem' ile verilebilir");
     } else if (k.oyuncu === SISTEM_OYUNCUSU || !oyuncuBul(d, k.oyuncu)) {
       sonuc = hata(`bilinmeyen oyuncu: ${k.oyuncu}`);
     } else {
