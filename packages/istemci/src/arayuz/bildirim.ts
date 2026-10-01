@@ -24,12 +24,18 @@ export function bildir(mesaj: string, tur: BildirimTuru = "bilgi"): void {
   simge.setAttribute("aria-hidden", "true");
   const metin = document.createElement("span");
   metin.textContent = mesaj;
-  d.append(simge, metin);
+  const kapatDugme = document.createElement("button");
+  kapatDugme.type = "button";
+  kapatDugme.className = "bildirim-kapat";
+  kapatDugme.setAttribute("aria-label", "Kapat");
+  kapatDugme.innerHTML = ikon("x", 18);
+  d.append(simge, metin, kapatDugme);
   const kapat = (): void => {
     d.classList.add("gidiyor");
     window.setTimeout(() => d.remove(), 220);
   };
-  d.addEventListener("click", kapat);
+  // Toast haritadaki fare ve dokunma olaylarını yutmaz (CSS: pointer-events none); yalnız bu düğme tıklanır
+  kapatDugme.addEventListener("click", kapat);
   kap.append(d);
   bildirimKonumIzle(kap); // açık kartın/alt çubuğun 12 px üstüne oturur (görsel kimlik §5.3)
   while (kap.childElementCount > EN_COK) kap.firstElementChild?.remove();

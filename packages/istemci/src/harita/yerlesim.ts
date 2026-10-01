@@ -390,7 +390,7 @@ export class YerlesimKipi {
         <dt>Arsa</dt><dd data-yk-alan="arsa">${arsa}</dd>
         <dt>Yapı</dt><dd data-yk-alan="yapi"><b>${paraMili(p.yapiMili, "yukari")}</b>${malzeme ? ` <small>+ ${esc(malzeme)}</small>` : ""}</dd>
         <dt>Süre</dt><dd data-yk-alan="sure">${sure}</dd>
-        <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${paraMili(p.toplamMili, "yukari")}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili, "yukari")}</small>` : ""}</dd>
+        <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${paraMili(p.toplamMili, "yukari")}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili, "asagi")}</small>` : ""}</dd>
       </dl>
       ${p.neden ? `<p class="yk-uyari" role="alert" data-yk-alan="neden">${esc(p.neden)}</p>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için tıkla.</p>`}`;
     }

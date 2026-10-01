@@ -315,10 +315,6 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   kontrol(`${e} R ile döndürme: yatay ↔ dikey`, yatay1 !== null && yatay2 !== null && yatay1 !== yatay2, `önce ${yatay1 ? "yatay" : "dikey"}, sonra ${yatay2 ? "yatay" : "dikey"}`);
   await sayfa.keyboard.press("r"); // yataya dön
   // Geçersiz: yol hücresi (turuncu taralı, neden ipucunda)
-  // Bildirimler artık açık kartın 12 px üstüne oturur (haritanın ortasına denk gelebilir) ve testte 6× uzun kalır (__bildirimCarpan):
-  // fare hareketini yutmasınlar diye önce kapatılır (gerçek oyunda 4,5 sn'de kendiliğinden kapanır).
-  await sayfa.locator("#bildirimler .bildirim").evaluateAll((l) => l.forEach((x) => (x as HTMLElement).click()));
-  await sayfa.waitForTimeout(350);
   const engel = await sayfa.evaluate(() => window.__harita?.gorunum()?.sinamaEngelli() ?? null);
   if (engel) {
     const pe = await hucreNoktasi(sayfa, engel.id);
