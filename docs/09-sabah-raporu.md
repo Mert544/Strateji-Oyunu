@@ -1,6 +1,54 @@
 # 09 — Sabah Raporu (1 Ekim 2026)
 
-> Bu dosya gece boyunca takım lideri tarafından güncellenen ilerleme günlüğüdür; sabah özetle tamamlanır.
+> Gece boyunca takım lideri ve Sonnet ajanlarının yaptıkları, sonuçlar ve sahibin kararını bekleyen konular.
+> Ayrıntılı görev listesi: [10-gorev-listesi.md](10-gorev-listesi.md). Altı katman tasarımı: [08-alti-katman.md](08-alti-katman.md).
+
+## Özet
+
+**3D gerçek dünya çalışıyor.**
+- Tarayıcıda three.js ile stilize bir Dünya küresi; üzerinde gerçek coğrafyadan türetilmiş 53 Türkiye + Balkanlar + Karadeniz bölgesi.
+- İstanbul ve Çanakkale boğazları dar geçit olarak işlendi; limanlar gerçek.
+- Simülasyon tarayıcıda koşuyor (Web Worker); dört bot canlı oynuyor.
+- Mal akışları kürede parçacık olarak görünüyor. Kamerayla dolaşılabiliyor: sürükle, yakınlaş, çift tıkla uç, WASD.
+- Tek dosya 332 KB (gzip) ve 11–12 çizim çağrısı; web'i yormama hedefinin içinde.
+- Yayın: https://claude.ai/artifact/1zs2vXxV3nNrFyVwiosXtt
+
+**6 katman tasarlandı, ilk ikisi oyunda.** Spesifikasyon [08](08-alti-katman.md)'de; Devlet katmanı diğer beşini yasa ve bütçeyle yönetiyor.
+- **Tarım v1** (oyunda):
+  - Gerçek aylara bağlı iklim takvimi ve hasat ritmi, 6 iklim tipi.
+  - Toprak verimliliği ve ekim nöbeti; kuraklık, don, sel ve fırtına olayları (24 saat önceden uyarılı).
+  - Gübre, hayvancılık, sulama.
+- **Sanayi v1** (oyunda): elektrik şebekesi ve kesinti, S/M/L tesis ölçeği, bakım ve aşınma, kirlilik, damar tükenmesi ve keşif sondajı.
+- **Pazar v1:** bu sabah yazılıyor (liman primi, NPC piyasa yapıcı, komisyon/vergi, kıtlık cezası).
+- **Lojistik, Teknoloji, Devlet:** tasarım hazır, sırada.
+
+**Pürüzler giderildi** (v0.2.1):
+- Mühimmat pazarı düzeldi.
+- Yakıt israfı sıfırlandı.
+- Botlar fiyata ve depo doluluğuna göre ticaret yapıyor.
+- Reddedilen savaş ilanı kalmadı.
+
+**Araştırma** ([docs/arastirma](arastirma/)):
+- **3D teknoloji:** three.js şimdi, MapLibre + PMTiles sonraki yakın plan.
+- **Açık kaynak ve açık veri:**
+  - GPL/AGPL kod kopyalanmaz.
+  - Ticari kullanıma kapalı veri kullanılmaz (GADM, FAOSTAT, WorldClim, Comtrade).
+  - OSM verisi ODbL yükümlülüğü getirir.
+- **Altı katmanda rakip gerçekçiliği:** Victoria 3, Workers & Resources, Anno, EVE, Albion, HoI4, Capital Rift.
+
+**Görev listesi:** 17 epik, 136 görev, 25 P0 ve 11 adımlık ilk sprint ([10](10-gorev-listesi.md)).
+
+## Sahibin kararını bekleyen başlıca konular
+1. **Sınır ve isim politikası:**
+   - Taslak [DATA_SOURCES.md](../DATA_SOURCES.md) §6'da.
+   - 4 kurgusal oyun devleti (Korvan, İsvend, Talmera, Zephra) ve 2 blok var; bölge adları nötr coğrafi adlar.
+   - Kırım, Kosova ve Kıbrıs gibi tartışmalı alanlar dilim dışında ya da nötr bırakıldı.
+2. **Yakın plan (Katman B) için OSM verisi:**
+   - Yol ve bina katmanı ODbL gerektirir; türetilmiş veri ayrı bir dosyada ODbL ile yayınlanmalı.
+   - Seçenekler: bu yükümlülük kabul edilir mi, yoksa yalnız kamu malı veri mi kullanılır?
+3. **Teknoloji düğüm sayısı:** PDF 5–8 diyor, tasarım 17 öneriyor (katman başına 2–3 düğüm).
+4. **Devlet yasaları:** 5 mi, 7 mi?
+5. **Ölçüm eşikleri:** gerçek haritada H2 ve H7 kalıyor. Eşikler mi kalibre edilmeli, yoksa tasarım mı değişmeli? Ayrıntı aşağıda.
 
 ## Gece planı
 
