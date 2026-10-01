@@ -814,7 +814,7 @@ const yaptirim = tanim({
 // Kayıt
 // ---------------------------------------------------------------------------------------------
 
-export { GIZLI_KOMUTLAR } from "./gizli";
+export { GIZLI_KOMUTLAR, HARITA_KOMUTLARI } from "./gizli";
 
 /**
  * Sıra, arayüzdeki sıradır. Yeni bir çekirdek komutu eklendiğinde buraya `tanim(...)` ekleyin (ya da bilinçli

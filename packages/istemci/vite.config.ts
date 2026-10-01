@@ -45,12 +45,29 @@ function haritaVerisi(): Plugin {
   };
 }
 
+/**
+ * Geliştirme sunucusunda `/harita-verisi/*` -> packages/veri/haritalar/odbl/* (ODbL harita verisi ilk JS'ye girmez;
+ * harita/veri.ts fetch eder). Derlemede scripts/derle.ts aynı dosyaları çıktının yanına kopyalar.
+ */
+function haritaVerisiSun(): Plugin {
+  const odbl = resolve(HARITALAR, "odbl");
+  return {
+    name: "harita-verisi-sun",
+    configureServer(sunucu) {
+      sunucu.middlewares.use((istek, _yanit, sonraki) => {
+        if (istek.url?.startsWith("/harita-verisi/")) istek.url = "/@fs" + odbl + istek.url.slice("/harita-verisi".length);
+        sonraki();
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const tek = mode === "tek";
   return {
     root: AYRI,
     base: "./",
-    plugins: [haritaVerisi(), ...(tek ? [viteSingleFile()] : [])],
+    plugins: [haritaVerisi(), haritaVerisiSun(), ...(tek ? [viteSingleFile()] : [])],
     worker: { format: "iife" as const },
     server: { fs: { allow: [DEPO] } },
     build: {

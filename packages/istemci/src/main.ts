@@ -16,6 +16,7 @@ import { hataCevir } from "./komut/hata";
 import { komutOzeti } from "./komut/kayit";
 import { icerikTablosu } from "./komut/tablo";
 import type { Komut, OzetBaglami } from "./komut/tipler";
+import { HaritaDenetci } from "./harita/denetci";
 import { Sahne } from "./kure/sahne";
 import type { Mercek } from "./veri/mercek";
 import { ulkeleriCoz } from "./veri/cografya";
@@ -102,7 +103,11 @@ function temaKur(onDegisti: () => void): () => void {
 function baslat(): void {
   const q = new URLSearchParams(location.search);
   const mobil = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 820;
-  const temaDegistir = temaKur(() => sahne?.temaUygula());
+  let haritaDenetci: HaritaDenetci | null = null;
+  const temaDegistir = temaKur(() => {
+    sahne?.temaUygula();
+    haritaDenetci?.temaUygula();
+  });
   const harita = haritaYukle();
   const karalar = ulkeleriCoz(dunyaTopo as unknown as TopoVeri);
   const canvas = document.getElementById("sahne") as HTMLCanvasElement;
@@ -193,7 +198,20 @@ function baslat(): void {
     s.bolgeSec(i);
     panel.bolgeAyarla(i);
     if (uc && i >= 0) s.bolgeyeUc(i);
+    haritaDenetci?.bolgeAyarla(harita.harita.bolgeler[i]?.id ?? null);
   }
+
+  // Strateji haritası (L1–L3, MapLibre tembel yüklenir): kırıntı yolu, arama, küre ↔ harita geçişi.
+  haritaDenetci = new HaritaDenetci(kap, {
+    canvas,
+    bolgeIsin: (x, y) => s.bolgeIsin(x, y),
+    isin: (x, y) => s.kontrol.isin(x, y),
+    bolgeKimligi: (i) => harita.harita.bolgeler[i]?.id ?? null,
+    bolgeyeDon: (kimlik) => olaySec(kimlik ? harita.harita.bolgeler.findIndex((b) => b.id === kimlik) : -1, kimlik !== null),
+    kureyiAskiyaAl: (a) => {
+      s.askida = a;
+    },
+  });
 
   const etiketler = new Etiketler(
     document.getElementById("etiketler") as HTMLElement,

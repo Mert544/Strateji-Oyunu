@@ -5,7 +5,7 @@
 import { Bakis, adayiSec, sivilAdaylar } from "@bolge/botlar";
 import type { Simulasyon } from "@bolge/cekirdek";
 import type { Oneri } from "../isci/protokol";
-import { GIZLI_KOMUTLAR } from "./gizli";
+import { GIZLI_KOMUTLAR, HARITA_KOMUTLARI } from "./gizli";
 
 /**
  * En iyi `n` aday (bütçe ve stok içinde kalarak). Arayüzde formu olmayan (gizli: lojistik) komutların adayları
@@ -13,7 +13,7 @@ import { GIZLI_KOMUTLAR } from "./gizli";
  */
 export function oneriUret(sim: Simulasyon, oyuncu: string, n = 5): Oneri[] {
   const b = new Bakis(sim, oyuncu);
-  const gizli = new Set<string>(GIZLI_KOMUTLAR);
+  const gizli = new Set<string>([...GIZLI_KOMUTLAR, ...HARITA_KOMUTLARI]);
   const adaylar = sivilAdaylar(b).filter((a) => !gizli.has(a.komut.tur));
   return adayiSec(adaylar, b, { n }).map((a) => ({
     komut: a.komut,

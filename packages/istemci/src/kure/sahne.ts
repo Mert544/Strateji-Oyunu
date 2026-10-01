@@ -84,6 +84,8 @@ export class Sahne {
   private cpuMs = 0;
   private sonAdaptif = 0;
   private durdu = false;
+  /** true iken çizim döngüsü kare çizmez (üstte MapLibre haritası açıkken; harita/denetci.ts). */
+  askida = false;
   /** Her çizimden sonra çağrılır (etiketler vb.). */
   cizimSonrasi: ((kameraDegisti: boolean, dt: number) => void) | null = null;
 
@@ -355,7 +357,7 @@ export class Sahne {
     const dongu = (ts: number): void => {
       if (this.durdu) return;
       requestAnimationFrame(dongu);
-      if (document.hidden) {
+      if (document.hidden || this.askida) {
         this.sonZaman = 0;
         return;
       }

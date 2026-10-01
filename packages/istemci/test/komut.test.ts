@@ -14,7 +14,7 @@ import { dizinKur, kareAl } from "../src/isci/kare";
 import { oyuncuKomutu } from "../src/isci/oyuncu";
 import type { IsciMesaji, IsciyeMesaj } from "../src/isci/protokol";
 import { hataCevir } from "../src/komut/hata";
-import { BOLGE_GRUPLARI, DEVLET_GRUPLARI, GIZLI_KOMUTLAR, KOMUT_KAYDI, eylemMetni, komutOzeti, komutTanimi } from "../src/komut/kayit";
+import { BOLGE_GRUPLARI, DEVLET_GRUPLARI, GIZLI_KOMUTLAR, HARITA_KOMUTLARI, KOMUT_KAYDI, eylemMetni, komutOzeti, komutTanimi } from "../src/komut/kayit";
 import { oneriUret } from "../src/komut/oneri";
 import { icerikTablosu } from "../src/komut/tablo";
 import type { Baglam, OzetBaglami } from "../src/komut/tipler";
@@ -89,22 +89,32 @@ describe("hata çevirisi", () => {
 });
 
 describe("komut kaydı", () => {
-  it("çekirdek Komut birleşimindeki her tür ya kayıtta ya da açık GIZLI_KOMUTLAR listesinde", () => {
+  it("çekirdek Komut birleşimindeki her tür ya kayıtta, ya GIZLI_KOMUTLAR'da ya da HARITA_KOMUTLARI'nda", () => {
     const tipler = readFileSync(new URL("../../cekirdek/src/tipler.ts", import.meta.url), "utf8");
     const birlesim = tipler.slice(tipler.indexOf("export type Komut ="), tipler.indexOf("export type KomutTuru"));
     const turler = [...birlesim.matchAll(/tur: "([a-z_]+)"/g)].map((m) => m[1] as string);
+    // Birleşime adıyla katılan alt birleşimler (ör. `| MulkKomutu`) da açılır.
+    for (const m of birlesim.matchAll(/\|\s*([A-Z][A-Za-z]*Komutu)\b/g)) {
+      const bas = tipler.indexOf(`export type ${m[1]} =`);
+      expect(bas, `${m[1]} tanımı`).toBeGreaterThanOrEqual(0);
+      const son = tipler.indexOf("\nexport ", bas + 1);
+      const govde = tipler.slice(bas, son === -1 ? undefined : son);
+      turler.push(...[...govde.matchAll(/tur: "([a-z_]+)"/g)].map((x) => x[1] as string));
+    }
     expect(turler.length).toBeGreaterThanOrEqual(20);
     const kayitli = new Set(KOMUT_KAYDI.map((t) => t.tur as string));
-    const gizli = new Set<string>(GIZLI_KOMUTLAR);
+    const gizli = new Set<string>([...GIZLI_KOMUTLAR, ...HARITA_KOMUTLARI]);
     const eksik = turler.filter((t) => !gizli.has(t) && !kayitli.has(t));
-    // Çekirdeğe yeni bir komut eklendiyse buraya bir form (kayit.ts: tanim) ya da bilinçli olarak GIZLI_KOMUTLAR'a kayıt gerekir.
+    // Çekirdeğe yeni bir komut eklendiyse buraya bir form (kayit.ts: tanim) ya da bilinçli olarak GIZLI_KOMUTLAR'a
+    // (formsuz) veya HARITA_KOMUTLARI'na (haritadan gönderilir) kayıt gerekir.
     expect(eksik, `formu olmayan komutlar: ${eksik.join(", ")}`).toEqual([]);
-    // Gizli liste yalnız gerçekten var olan ve formu OLMAYAN komutları içerir.
-    for (const g of GIZLI_KOMUTLAR) {
+    // Listeler yalnız gerçekten var olan ve formu OLMAYAN komutları içerir.
+    for (const g of [...GIZLI_KOMUTLAR, ...HARITA_KOMUTLARI]) {
       expect(turler, g).toContain(g);
       expect(kayitli.has(g), `${g} hem gizli hem kayıtlı`).toBe(false);
     }
     expect([...GIZLI_KOMUTLAR].sort()).toEqual(["askeri_rezerv", "kenar_gelistir", "oyuncu_katil"]);
+    expect([...HARITA_KOMUTLARI].sort()).toEqual(["insaat_iptal", "parsel_al", "tesis_insa_hucre"]);
   });
   it("lojistik formları arayüzde yok (kenar_gelistir, askeri_rezerv; Darboğaz sekmesi kalktı)", () => {
     expect(komutTanimi("kenar_gelistir")).toBeUndefined();

@@ -1,0 +1,11 @@
+karakter.ykr — yürüyüş karakteri (manken + Idle_Loop ve Jump_Loop ilk kareleri, Walk_Loop, Jog_Fwd_Loop, Sprint_Loop)
+
+Kaynak: Quaternius, "Universal Animation Library" (Standard), UAL1_Standard.glb (kök hareketi kapalı)
+        https://quaternius.itch.io/universal-animation-library · https://quaternius.com
+Lisans: CC0 1.0 Universal (kamu malı adanması)
+        https://creativecommons.org/publicdomain/zero/1.0/
+Atıf gerekmez; nezaketen "Karakter: Quaternius (CC0)" olarak gösterilir.
+
+Dönüştürme: packages/istemci/scripts/yuru-karakter.ts (köşe birleştirme, kemik matrislerinin kare kare
+örneklenmesi ve int16 niceleme; biçim src/yuru/karakter-veri.ts içinde).
+İndirme tarihi: 2026-10-01 (itch.io "Universal Animation Library[Standard].zip", 15,9 MB).
