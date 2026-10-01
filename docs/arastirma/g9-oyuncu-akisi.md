@@ -186,7 +186,7 @@ Hata gövdesi `{ tamam: false, kod, mesaj, beklemeSn? }` (K2). Ekran, sunucunun 
 | **Telefon / masaüstü** | Aynı; onay iletişim kutusu telefonda alt sayfa |
 | **Ölçüt** | KVKK ve güvenlik (oturum yönetimi oyuncuda) |
 | **Sahip** | T1 (metin), K1 |
-| **Ret ve bağımlılık** | `POST /giris/cikis` ve `POST /giris/cikis-tumu`; açık ws bağlantıları 4003 ile kapanır (K2). **Hesap silme HTTP ucu yoktur** (`KIMLIK.md` §9): Ayarlar'da "hesabımı sil" **konmaz**; KVKK talebi yönetici yoluyla (§S6). Ayarlar'da e-posta görünür (`GET /giris/ben`) ve **maskeli** (a***@alan) gösterilir |
+| **Ret ve bağımlılık** | `POST /giris/cikis` ve `POST /giris/cikis-tumu`; açık ws bağlantıları 4003 ile kapanır (K2). **Hesap silme sunucu ucu vardır** (ana dal `0691310`, `packages/protokol/src/giris.ts`: `POST /giris/hesap-sil` e-postaya onay bağlantısı yollar, onay sayfasındaki düğme `POST /giris/hesap-sil-onay` ile siler; `KIMLIK.md` §9'daki "yok" notu eskidi). **Ekranda düğme yoktur**: Ayarlar'da "hesabımı sil" **konmaz**, "Hesabını silmek istersen bize yaz: {destek_eposta}" satırı kalır (§S6). **Giriş ekranları `0691310`'da kodda** (G-1…G-5, G-7, G-8 hesap bölümü; `istemci/giris/`); destek e-postası ve veri kullanımı bağlantısı sahip metni gelene kadar boştur ve o satırlar görünmez. Ayarlar'da e-posta görünür (`GET /giris/ben`) ve **maskeli** (a***@alan) gösterilir |
 
 ---
 
@@ -442,7 +442,7 @@ Gösterilen **birim fiyat `etkin` kademeden** hesaplanır, saklanan `fiyat`'tan 
 | **S3** | ~~Kampanya Alfa-0'da var mı?~~ | **Kapandı (baş lider):** onaylı, parametreyle açılır/kapanır; kapalıyken segment gizli (D-6 a), açıkken başlat ve hak sayaçları (D-6 b) |
 | **S4** | Birim fiyat gösterimi: tam ₺ (aşağı) mı, 1 ondalık mı? Ör. R=70 ₺ × 0,95 = 66,5 ₺ | Tam ₺ aşağı (66 ₺); T1 karar verir |
 | **S5** | Tarayıcıya bağlı bağlantı **varsayılan kapalı**; uygulama içi tarayıcı oyuna uygun mu? | Pilot (Android ve iOS) ile doğrulanır |
-| **S6** | KVKK silme talebi (`hesapSil` ucu yok): Ayarlar'da "hesabımı sil" olmadan nasıl yürür? | Yönetici yolu; destek metni sahip işi |
+| **S6** | KVKK silme talebi: sunucu ucu (`/giris/hesap-sil`) `0691310`'da var, ama ekranda "hesabımı sil" düğmesi **yok** (karar: "bize yaz" satırı kalır). Düğme ileride eklenecek mi? | Şimdilik destek yolu; destek metni sahip işi; düğme bağlama kararı baş lider/sahip |
 | **S7** | ~~Davet/izin listesi~~ | **Kapandı (baş lider):** `--davetli-liste` (ZG-2) |
 | **S8** | Yatırım tahmini bloğu için `IlceKaresi.talep?` (İ-3): G9'a mı, sonraya mı? | Sonra; blok gizli kalır, sayı uydurulmaz |
 | **S9** | ~~A3 Parça 2 sonrası D-9 güncellemesi~~ | **Kapandı:** D-9 A3 8b10e60 §9.3 kesin kodlarıyla yeniden yazıldı; A3 yeniden değişirse A1 günceller |
