@@ -1097,6 +1097,7 @@ lojistikCoz(d, ctx)                                   lojistik/cozum.ts:228
 | d | `bolgeOranlariUygula`: `hareketsiz` koşuluna `h.dukkanGercek[m] === 0`; `yerel` toplamından `− h.dukkanGercek[m]` | `:660-668` |
 | e | `hazineKalemleri`: `gelir += yerelGelir`; `gider += dükkân gideri`; `ParaBilesenleri.yerel` | `lojistik/cozum.ts:73-81`, `:91-181` (`:162` işletme gideri satırı) |
 | f | `paraAkisiYaz` çağrısına `yerel: k.para.yerel` | `lojistik/cozum.ts:297-304`, `mulk/kasa.ts:133-159` |
+| h | **(§7.1b)** `lojistikCoz` adım 6: `yerelSatisYaz` (yuva başına `satisOran`); `paraMuhasebesi`: `yuva.satis` tembel birikim (aynı `dt`) | `lojistik/cozum.ts:293-308`, `mulk/kasa.ts:94-125` |
 | g | `bolgeDurumunaYaz`: `b.yerelKarsilanmaPpm = min(frD[m])` (dükkân isteği olan mallar; PPM ise **yazılmaz**, alan silinir); `paraAkisiYaz`: `akis.yerel > 0` iken `mo.ilkSatisT ??= d.zaman` | `ekonomi/uretim.ts:596-620` (`gidaKarsilanmaPpm` örüntüsü `:621`), `mulk/kasa.ts:133-159` |
 
 **`bolgeVerimCoz` katman 4a (tam kural):**
@@ -1231,7 +1232,7 @@ Sunucu kapalıyken geçen süre açılışta 1 sim-saatlik adımlarla yetiştiri
 
 ### 6.8 Okuma API'si (saf, durumu değiştirmez)
 
-`mulk/perakende.ts`: `yerelPazarGorunumu(d, ic, oyuncu)` → dükkân başına `{ ekYapi, yuvalar: [{ mal, fiyatKademesi, etkinKademe, mevcut, istek, esnafPay, q }], kasaDoluluk, giderMiliSaat, kampanya: { bitis, kalanSaat, kalanGun } }`: arayüz "tahmini satış", "neden satmıyor" (`mevcut`, `kasaDoluluk`), ZP ölçümleri ve K2 `kare` alanları (§10.2) için; çözümle **aynı** `yerelPazarHesapla` çekirdeğini kullanır (`istek` = kasa kırpmalı istek; dükkân başına `gercek` stoğa bağlıdır ve **durumda tutulmaz**: düğüm düzeyinde `BolgeDurumu.yerelKarsilanmaPpm` ve oyuncu düzeyinde `ParaAkisi.yerel` okunur).
+`mulk/perakende.ts`: `yerelPazarGorunumu(d, ic, oyuncu)` → dükkân başına `{ ekYapi, yuvalar: [{ mal, fiyatKademesi, etkinKademe, mevcut, istek, esnafPay, q }], kasaDoluluk, giderMiliSaat, kampanya: { bitis, kalanSaat, kalanGun } }`: arayüz "tahmini satış", "neden satmıyor" (`mevcut`, `kasaDoluluk`), ZP ölçümleri ve K2 `kare` alanları (§10.2) için; çözümle **aynı** `yerelPazarHesapla` çekirdeğini kullanır (`istek` = kasa kırpmalı istek; her yuvaya `satisMili` (`satis.n`) ve dükkâna `satisMili` toplamı (Σ yuva) eklenir (§7.1b); dükkân başına `gercek` stoğa bağlıdır ve **durumda tutulmaz** (tek istisna: yuva başına son oran `RafYuvasi.satisOran`, yalnız kümülatif `satis` sayacını tembel biriktirmek için; §7.1b): düğüm düzeyinde `BolgeDurumu.yerelKarsilanmaPpm` ve oyuncu düzeyinde `ParaAkisi.yerel` okunur).
 
 ### 6.9 Performans ve bundle
 
@@ -1270,6 +1271,7 @@ export interface DukkanDurumu {
   kampanya?: KampanyaDurumu;
   /** Yapı komutunun verildiği an (`InsaatDurumu.baslangic`'ten kopyalanır) ve tamamlanma anı (`ekYapiTamamla`: d.zaman). A0-11 ölçümü ve rehber için durumdan okunur (§15.3). */
   baslangic: Ms;
+  /** Tamamlanma anı (sim zamanı, ms): `ekYapiTamamla`'da `d.zaman` olarak BİR KEZ yazılır, bir daha değişmez (A2 izleme K2-8 bu alanı okur; yeni alan gerekmez). */
   kurulus: Ms;
 }
 
@@ -1292,6 +1294,10 @@ export interface RafYuvasi {
   fiyat: number;
   /** Son fiyat/mal DEĞİŞİMİ (ms; hız sınırı için). İlk doldurma ve boşaltma yazmaz. */
   fiyatT?: Ms;
+  /** Kümülatif SATILAN MİKTAR (mili-birim; kayıpsız `ParaSayaci {n, a}`; para DEĞİL). İlk satış birikiminde doğar; mal değişince SIFIRLANMAZ (§7.1b). A2 izleme K2-8. */
+  satis?: ParaSayaci;
+  /** Son çözümde yazılan gerçekleşen satış ORANI (mili-birim/saat; `satis`'i tembel biriktirmek için; `> 0` iken yazılır, 0 olunca alan silinir). */
+  satisOran?: Mili;
 }
 
 // tipler.ts:773-797 MulkOyuncuDurumu'na
@@ -1308,6 +1314,32 @@ dukkanTuru?: string;
 // karşılanma oranı = min(frD[m]) (stoğun yetmediği durumu panele söyler: "neden satmıyor")
 yerelKarsilanmaPpm?: number;
 ```
+
+### 7.1b Yuva satış sayacı ve kuruluş zamanı (Kod lideri isteği: A2 izleme K2-8)
+
+**Kuruluş zamanı zaten vardır:** `DukkanDurumu.kurulus: Ms` (§7.1) `ekYapiTamamla`'da bir kez `d.zaman` olarak yazılır (zorunlu alan: `DukkanDurumu` ancak dükkân tamamlanınca doğar); `baslangic ≤ kurulus` doğrulanır (§11.1). Ek alan, ek doğrulayıcı ya da göç **gerekmez**; K3 G7-2'de `DukkanDurumu`'nu kurarken zaten yazar.
+
+**Yeni: yuva başına kümülatif satış miktarı.** `RafYuvasi.satis?: ParaSayaci` (mili-birim; `{n, a}` kayıpsız sayaç, `tipler.ts:836`) ve onu tembel biriktiren `RafYuvasi.satisOran?: Mili` (mili-birim/saat). **Dükkân toplamı türetilir, saklanmaz:** `dukkanSatisMili(dukkan) = Σ_yuva (yuva.satis?.n ?? 0)` (okuma API'si §6.8; saf). Para değildir: miktar sayacıdır.
+
+**Neden iki alan (tembel birikim; yeni olay yok):** çekirdekte yuva başına saatlik olay yoktur ve `gercek` (§6.4 Adım 7) çözümler arasında sabit bir **orandır**; tek sıçrama = parçalı sıçrama = günlükten yeniden oynatma değişmezi (§6.7) yalnız **oran × süre** kayıpsız birikimiyle korunur (para için `paraAkisi` aynı kalıpla çalışır). Çözüm sonunda yazılan oran, bir sonraki çözümün muhasebesinde `paraAkisi.t0 → t` aralığına uygulanır:
+
+```ts
+// 1) lojistik/cozum.ts adım 6, hazineKalemleri(hesaplar !== null) sonrası (yeni `yerelSatisYaz(d, yerelSatirlar, hesaplar)`; yalnız `yerel` satırı olan oyuncu):
+//    her YerelSatir için gercek = carpBol(istek, hesaplar[dugum].frD[mal], PPM)  (Adım 7 ile AYNI ifade)
+//    yuva = b.ekYapilar[ekYapi].dukkan.raf[yuva];  gercek > 0 ise yuva.satisOran = gercek, değilse delete yuva.satisOran
+//    satırı olmayan yuvalar (boş, istek 0): delete yuva.satisOran   (her dükkân için tüm yuvalar taranır: eski oran kalmasın)
+// 2) mulk/kasa.ts paraMuhasebesi, `a.yerel` kolunun yanında (aynı dt = t − a.t0):
+for (const yuva of oyuncununDukkanYuvalari(d, o)) if (yuva.satisOran !== undefined) sayacOranEkle((yuva.satis ??= sayacSifir()), yuva.satisOran, dt);   // tembel doğum
+```
+
+Sıra gerekçesi: `paraMuhasebesi` çözümün başında (adım 0) **önceki** çözümün oranlarını `dt` ile işler; komut (`dukkan_raf`, `dukkan_yik`) kendisi `satis`/`satisOran` yazmaz: komuttan hemen sonraki çözümün muhasebesi eski oranı komut anına kadar uygular (eski mal komut anına kadar sattı), yeni oranı o çözüm yazar. Satışı hiç olmamış yuvada alan **hiç oluşmaz** (blok/dükkân yokken ve satış yokken durum özeti bayt bayt aynı).
+
+- **Serileştirme (tembel yazım, eski kayıt, doğrulayıcı):** iki alan da isteğe bağlı ve yalnız satış varken yazılır. Eski kayıt: `DukkanDurumu` G7 ile doğduğundan G7 öncesi görüntüde dükkân yoktur (alan göçü gerekmez); G7 içinde `satis` olmayan dükkân kaydı (ilk satış öncesi) geçerlidir ve ilk birikimde `??=` ile doğar. `dunyaDogrula` ekYapilar/dükkân bloğu (§11.1; `serilestir.ts:327-336` açık doğrulayıcı): `satis` varsa `sayacDogrula` (`n` tamsayı ≥ 0, `a` ∈ [0, `SAAT` − 1]; `serilestir.ts:470`), `satisOran` varsa tamsayı ≥ 1; `satisOran` için `mal` zorunlu **değildir** (komut malı boşalttıktan sonra, sonraki çözümden önce alınan görüntüde oran bir an eski kalabilir). `alanlar()` izinli listesine ikisi eklenir.
+- **Korunum:** yalnız **miktar sayacı**; para defterine, `para-guvenligi` toplayıcılarına (`korunumOlc`), `kasaToplam`a ve `ParaAkisi`'ne **girmez**. Para korunumu etkilenmez. Kendi değişmezleri (test): (i) `n` azalmaz; (ii) tek sıçrama = parçalı = günlükten yeniden oynatma, durum özeti birebir; (iii) `Σ_yuva satis` (`n × SAAT + a`, BigInt) = `Σ_çözüm Σ_yuva satisOran × dt` (bağımsız referans toplayıcı); (iv) tek dükkân ve sabit fiyatta `satis > 0` ⇔ `dukkanGeliri > 0` (aynı çözüm zinciri).
+- **Sıfırlanma (karar):** **mal değişince yuva sayacı SIFIRLANMAZ.** Gerekçe: dükkân toplamı sayaçlardan türetildiği için sıfırlama toplamı geriye götürür (ölçümü ve "toplam satış" göstergesini bozar); mal kimliği yuvada tutulur ama sayaç **yuvanın ömür boyu hacmidir** (karma mal; birimler mal başına farklı olabilir). **Mal bazında kırılım gerekirse** ayrı alan olur (`dukkan.satisMal?: Record<mal kimliği, ParaSayaci>`; kapsam dışı, S-21). Marka değişimi ve fiyat kademesi sayaca dokunmaz. Yuva silinmez (raf uzunluğu ölçekle sabit; M/L açılırsa mevcut yuva sayaçları korunur, yeni yuvalar sayaçsızdır). `dukkan_yik`: dükkân kaydıyla birlikte gider (`ilkSatisT` ve `dukkanGeliri` oyuncu düzeyinde kalır, §7.9; yuva sayacı kalmaz).
+- **Taşma sınırı:** `n` JS `number`, güvenli tamsayı sınırı 2^53 − 1 (`≈ 9,007 × 10^15`); en büyük oran bir dükkânın `kasaMiliSaat` kırpmasıdır (S: 90 000, M: 198 000, L: 324 000 mili-birim/saat **tüm yuvalar toplamı**; yuva başına ≤ bu). En kötü durumda (L, tek yuva 324 000/sa) taşma `≈ 2,8 × 10^10` saat ≈ 3,2 milyon sim yılıdır; **uygulamada sınırsız**; `oranBirikimi` BigInt ara hesaplı (`paraSayac.ts:20-32`), `sayacOlcekli` BigInt. Ek sınır konmaz.
+- **Bölge kipi:** alanlar yalnız `EkYapiDurumu.dukkan.raf[]` içindedir (mülk kipi; `perakende` ve `dukkan` ek yapısı bölge kipinde yoktur); `yerelSatisYaz` ve muhasebe dalı yalnız dükkânı olan oyuncuda koşar. Bölge kipi durum özeti ve altınlar BİREBİR (K-1, K-3: dükkân kurulmamış koşuda hiçbir alan oluşmaz).
+- **Testler (K3, `perakende-serilestir` ve `perakende-para` genişler):** `satis`/`satisOran` tam gidiş-dönüş; bozuk değer ret (`a ≥ SAAT`, negatif `n`, `satisOran` 0 ya da ondalık); satışsız yuvada alan yok; mal değişince `satis` korunur ve `satisOran` yeni çözümde güncellenir; yuva boşaltılınca `satisOran` silinir, `satis` kalır; `dukkan_yik` sonrası dükkân ve sayaç yok; (i)-(iv) değişmezleri; negatif kontrol: sayaç eklenmeden (alan çıkarılınca) önceki koşuyla `durumOzeti` yalnız bu iki alan kadar farklı, para ve diğer alanlar aynı.
 
 ### 7.2 Yerleşim ve inşa (mevcut komutlara `dukkanTuru`)
 
@@ -1661,7 +1693,7 @@ Protokol yalnız **biçim** denetler (docs: `komut-sema.ts` başlığı); sözdi
 
 | Alan | Konum | Ne zaman yazılır | Doğrulayıcı (`serilestir.ts`) |
 |---|---|---|---|
-| `EkYapiDurumu.dukkan?` | `tipler.ts:303` | `ekYapiTamamla` (`tur === "dukkan"`) | `dunyaDogrula` ekYapılar bloğu (`:327-336`) bugün yalnız `{id, tur, hucreler}` doğruluyor, `alanlar()` ek alana izin veriyor → **açık doğrulayıcı şart**: `tur: dize`, `olcek ∈ {0,1,2}`, `marka` tamsayı ≥ 0, `raf` dizi, her yuva `{mal?: dize, fiyat: tamsayı ≥ 0, fiyatT?: tamsayı ≥ 0}`; ek yapı kimliği `dukkan` olmayanda `dukkan` alanı **yasak** |
+| `EkYapiDurumu.dukkan?` | `tipler.ts:303` | `ekYapiTamamla` (`tur === "dukkan"`) | `dunyaDogrula` ekYapılar bloğu (`:327-336`) bugün yalnız `{id, tur, hucreler}` doğruluyor, `alanlar()` ek alana izin veriyor → **açık doğrulayıcı şart**: `tur: dize`, `olcek ∈ {0,1,2}`, `marka` tamsayı ≥ 0, `raf` dizi, her yuva `{mal?: dize, fiyat: tamsayı ≥ 0, fiyatT?: tamsayı ≥ 0, satis?: sayaç {n ≥ 0, a ∈ [0, SAAT−1]}, satisOran?: tamsayı ≥ 1}` (§7.1b); ek yapı kimliği `dukkan` olmayanda `dukkan` alanı **yasak** |
 | `InsaatDurumu.dukkanTuru?` | `tipler.ts:476-503` | dükkân inşaatı sürerken | `$.insaatlar[i]` (`:392`) `dize` |
 | `MulkOyuncuDurumu.markalar?` | `tipler.ts:773-797` | ilk `marka_tanimla` | `mulkDogrula` oyuncular (`:557-585`): ≤ 3 eleman, `ad` = `markaAdiHatasi` sonucu null, `simge`/`renk` ≥ 0 |
 | `MulkOyuncuDurumu.dukkanGeliri?` | aynı | ilk dükkân gelirinde | `sayacDogrula` (`:470-476`) |
@@ -1895,7 +1927,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `cekirdek/test/perakende-komut.test.ts` (yeni) | K3 | **kur-yık döngüsü (baş lider):** oyuncu dükkânı indirimli kurar, tamamlar, `dukkan_yik` ile yıkar, yeniden kurar: ikinci kurulumda `indirimliYapi` sayacı **ilerlemiş**, indirim hakkı **geri gelmemiş** (ikinci kurulum indirimsiz bedel), yıkımda para hareketi 0, korunum tam; DUK-00…DUK-23 ve MRK-01…MRK-14 reddi; **reddedilen komut durumu değiştirmez**; `dukkan_raf`/`dukkan_fiyat`/`dukkan_marka` başarı yolları; hız sınırı (DUK-18); `dukkanTuru` alanı; **`dukkan_yik`** (§7.9 test listesi: iade yok, para korunumu, indirim sayacı geri verilmez, `insaat_iptal` dükkân %50 iadesi); G7'de ölçek 1/2 reddi (DUK-04) |
 | `cekirdek/test/perakende-kampanya.test.ts` (yeni) | K3 | §7.5b (a)-(h): kapalıyken DUK-20; 6 saat sınırı ve tam saat sayımı; gün sonu kesmesi; haftalık gün sınırı DUK-21 ve hafta sıfırlaması; bitişte etkin kademe varsayılana döner (durum değişmez); tek sıçrama = parçalı sıçrama |
 | `cekirdek/test/perakende-para.test.ts` (yeni) | K3 | I1-I6 (§12.4): korunum 3 tohum × rastgele koşu; `Σ dukkanGeliri == musluk.yerelNpc`; hane bütçesi üst sınırı (`≤ Σ Q × R × 1,15 × (1 − taban)`); kasa girişleri yerel satıştan etkilenmez; `d.pazar.fiyat/oyuncuArzi/oyuncuTalebi` değişmez; nötrlük (sık/seyrek `paraUzlastir`) |
-| `cekirdek/test/perakende-serilestir.test.ts` (yeni) | K3 | `dukkan`, `marka`, `kampanya`, `ilkSatisT`, `yerelKarsilanmaPpm`, `ParaAkisi.yerel`, `musluk.yerelNpc` tam gidiş-dönüş; bozuk değer ret; `dunyaIcerikUyumu` (§11.2); `fikstur-goc/mulk-v1.json` yüklenir; eski dünya + yeni kod aynı |
+| `cekirdek/test/perakende-serilestir.test.ts` (yeni) | K3 | `dukkan`, `marka`, `kampanya`, `ilkSatisT`, `yerelKarsilanmaPpm`, `ParaAkisi.yerel`, `musluk.yerelNpc` tam gidiş-dönüş; **yuva `satis`/`satisOran` (§7.1b: mal değişince korunur, boşaltınca oran silinir, (i)-(iv) değişmezleri, negatif kontrol)**; bozuk değer ret; `dunyaIcerikUyumu` (§11.2); `fikstur-goc/mulk-v1.json` yüklenir; eski dünya + yeni kod aynı |
 | `cekirdek/test/perakende-yetisme.test.ts` (yeni) | K3 | tek sıçrama = parçalı sıçrama = günlükten yeniden oynatma (`durumOzeti` birebir); sunucu kapalıyken geçen süre |
 | `cekirdek/test/perakende-arbitraj.test.ts` (yeni) | K3 | ithalat → dükkân zincirinin saatlik net marjı ≤ `(1,15 − 1,035) × R × hacim`; ithal rafı şebeke ve NPC ithalatıyla etkileşmez |
 | `cekirdek/test/perakende-determinizm.test.ts` (yeni) | K3 | aynı tohum + günlük = aynı özet; komut sırası; `Map` sıralı gezilir (permütasyon testi) |
@@ -2064,6 +2096,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | GZ-19 | **G6-3 sonrası ölçüm temel çizgisi yeniden alınır** (`mulk.sebeke` ile mülk kipi kuralı değişir: santralsiz tesis üretir) | `kuralSurumu` artar; mülk altınları tek commit'te yeni değerle; parsel-v1 ve bakım ölçümleri önceki raporlarla birebir karşılaştırılmaz; **bölge kipi altınları birebir** | baş lider (kabul) |
 | GZ-20 | **`dukkan_yik` komutu** (iade yok; arsa oyuncuda; yalnız dükkân) | komut sözleşmesi; "yıkımda iade yok" kuralı para dengesini sabitler; diğer yapılara genelleme sonraki sprint | baş lider kararı |
 | GZ-21 | **`mulk.bakim` blok adı ve alanları** (`asinmaHizCarpaniPpm`, `asinmaVerimKaybiTavaniPpm`, `yontemParcaPpm`; parça çarpanı ayrı blokta, `yontemGecersizKilma` içinde değil) | `MulkParametreleri` alan adı kalıcı (kayıtlı veri paketleri); değerler kolay geri dönüşlü (kural dönemi, `kuralSurumu`) | baş lider (bakım C ve ZA-13 onayı) |
+| GZ-22 | **Yuva satış sayacı:** `RafYuvasi.satis` (`ParaSayaci`, miktar) + `satisOran`; **mal değişince sıfırlanmaz** (yuva ömür boyu hacmi; karma mal) | durum alanı kalıcı (kayıtlı dünyalar); sıfırlama kuralı sonradan değişirse toplam geriye gider; mal kırılımı ayrı alan (S-21) | Kod lideri isteği (A2 K2-8); baş lider bilgisi |
 
 ## 21. Açık sorular
 
@@ -2091,6 +2124,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | S-18 | ~~Kampanya sim haftası~~ **KAPANDI (baş lider):** hafta = sim haftası (`floor(gun/7)`), gün sınırı 00:00 TRT; oyuncuya yalnız "bu hafta kalan gün" gösterilir (§7.5b) | kabul | kapandı |
 | S-19 | ~~Dükkân yıkımı~~ **KAPANDI (baş lider):** `insaat_iptal` (%50) inşa sürerken; tamamlanmış dükkân `dukkan_yik` ile yıkılır, **iade yok**, arsa oyuncuda; yalnız `dukkan` (diğer yapılar sonraki sprint) | `dukkan_yik` (§7.9) | kapandı |
 | S-20 | **`bakim_duzeyi.otomatikParca` komut alanı ve başlangıç kiti 40 → 60 parça** (A2 §2.4 "diğer öneriler"; K3 sorusu 10) | §5.10 kapsamı DIŞI; karar gelene kadar yok | baş lider (A2 önerisi) |
+| S-21 | **Yuva satış sayacında mal bazında kırılım** (`dukkan.satisMal?`) ve K2 `kare` alanı (§10.2) | §7.1b kapsamı DIŞI; A2 izleme yalnız yuva ve dükkân toplamı ister | Kod lideri / A2 (ihtiyaç doğarsa) |
 
 ### 21.B T3 §11'in 16 sorusu (tek tek)
 
@@ -2203,7 +2237,9 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | `mulk/marka.ts` (YENİ), `ad.ts` (YENİ; `cekirdek/src/ad.ts`) | marka komutları; `adSozdizimiHatasi`, `adKanonik` (sabit küçük harf tablosu), `AD_KURALI` (§7.7) |
 | `mulk/komut.ts:262-279`, `:321-382`, `:468-495`, `:497`, `:514`, `:582` | `yapiTuruCoz` (`olcekHucre`, `dukkanTuru`), `yapiPlani` (ek yapı ölçek çarpanı, ilçe sınırı), `yapiUygula` (`ins.dukkanTuru`), `mulkKomutu` switch |
 | `mulk/yapi.ts:54-83` `ekYapiTamamla` | `dukkanVarsayilani` (`baslangic`, `kurulus`) |
-| `mulk/kasa.ts:94-159` | `paraMuhasebesi`: `a.yerel` ⇒ `musluk.yerelNpc` + `dukkanGeliri`; `paraAkisiYaz`: `yerel`, `ilkSatisT` |
+| `mulk/kasa.ts:94-159` | `paraMuhasebesi`: `a.yerel` ⇒ `musluk.yerelNpc` + `dukkanGeliri`; `paraAkisiYaz`: `yerel`, `ilkSatisT`; **(§7.1b)** yuva `satis` tembel birikim (aynı `dt`) |
+| `tipler.ts:303-308` `EkYapiDurumu` / `RafYuvasi`; `serilestir.ts:327-336` | `RafYuvasi.satis?`, `.satisOran?`; açık doğrulayıcı (`sayacDogrula`, `satisOran` tamsayı ≥ 1) (§7.1b) |
+| `lojistik/cozum.ts:293-308` | `yerelSatisYaz` (yuva başına `satisOran`; §7.1b) |
 | `motor.ts:182-185`, `:203-249` | `marka_sifirla` (`sistem_odul` yanına); `yonlendir` kapsayıcılık |
 | `serilestir.ts:327-336`, `:392`, `:478-505`, `:522-585`, `:681-` | `dukkan`, `kampanya`, `markalar`, `yerelNpc`, `ParaAkisi.yerel`, `dunyaIcerikUyumu` (§11) |
 
