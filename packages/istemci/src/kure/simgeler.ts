@@ -5,7 +5,7 @@
  *        8 kuraklık, 9 don, 10 sel, 11 kış fırtınası, 12 bilinmeyen olay (olay simgeleri),
  *        15 etkin olay / yayılım halkası (dolu), 16 olay uyarı halkası (kesikli),
  *        17 ▲ eksik girdi, 18 ◯ boşta, 19 ✓ inşaat bitti (durum rozetleri),
- *        20 oyuncunun mülk işareti (mülk kipi: çini nokta + ince halka); 22..29 yakın işaretlerin kümesi (tür - 20 = ilçe sayısı, en çok 9)
+ *        20 oyuncunun mülk işareti (mülk kipi: çini nokta + ince halka); 21 yakın işaretlerin kümesi (çini daire + iki ince halka; sayı yazılmaz)
  * Sakin görsel: sürekli animasyon yoktur. Rozet yalnız gelişinde tek kısa nabız atar (aNabiz = başlangıç zamanı;
  * hareket azaltma tercihinde hiç atmaz).
  */
@@ -184,7 +184,7 @@ export class SimgeKatmani {
     }
     for (const m of g.mulkIsaretleri ?? []) {
       if (n >= KAPASITE - 4) break;
-      this.yaz(n++, olcekle(m.p, MULK_YARICAP), m.sayi > 1 ? 20 + Math.min(m.sayi, 9) : 20, g.mulkRengi ?? [0, 0.47, 0.51], m.sayi > 1 ? 34 : 30, 1);
+      this.yaz(n++, olcekle(m.p, MULK_YARICAP), m.sayi > 1 ? 21 : 20, g.mulkRengi ?? [0, 0.47, 0.51], m.sayi > 1 ? 38 : 30, 1);
     }
     if (g.secili >= 0 && this.merkezler[g.secili]) {
       this.yaz(n++, olcekle(this.merkezler[g.secili] as Vek3, SIMGE_YARICAP - 0.002), 7, g.secimRengi, 42, 1);
