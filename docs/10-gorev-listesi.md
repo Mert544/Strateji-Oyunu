@@ -551,19 +551,19 @@ Arka planda: **E12-G1** v0.3 bölge kipi ölçümü (worktree `1a7fe08`) sürüy
 
 **Mantık.** Toplantı notu 1 §6'daki yolun 1–3. adımları: istemci kusurları ve yükseltme formu, P4 (ekmek zinciri + dükkân) ve P5 (cam → pencere), gerçek giriş. Askeri 0a sonraki sprintte ([12 §14](12-yon-taslagi.md)). Ar-Ge kodlamadan önce gelir: çekirdek işleri G4 şartnamesi baş lider onayından geçmeden başlamaz. Çekirdekte aynı anda tek yazar (G6 → G7 → G8). Görevler ofis Task Board'unda `SPRINT-A0-02` altında; sonuç raporları `docs/agent-results/`.
 
-| # | Görev | Sahip | Bağımlılık | Kabul | Durum (1 Ekim akşam) |
+| # | Görev | Sahip | Bağımlılık | Kabul | Durum (1 Ekim akşam, P4 sonrası) |
 |---|---|---|---|---|---|
 | G0 | Windows'ta yeşil temel çizgi (`.gitattributes` LF, dizin fsync, `packageManager`) ve kararların kaydı | Baş lider | — | `pnpm kontrol` 0 kırmızı | Tamamlandı (`a07b30e`) |
-| G1 | İstemci kusur turu (toplantı notu §5, 8 madde) ve tek para biçimi `1.234 ₺` | İstemci | G0 | Önce/sonra ekran görüntüleri; e2e yeşil; `dunya.html` ≤ 400 KB | Sürüyor: K1 mantık dalı kapıda (P2); T1 ve T2 dalları yazılıyor |
-| G2 | Ölçek yükseltme formu ek hücre gönderir (`ekHucreler`) | İstemci | G1 | S → M yükseltmesi sunucuda kabul (e2e) | Bekliyor (G1 ve P3'ten sonra, P4) |
-| G3 | Alfa-0 ilçelerinde arsa ızgarası (önce Gemlik, Körfez; sonra 3 il), üretilmiş manifest | Veri | G0 | Boyut raporu; istemci ve sunucu aynı veriyi okur | Ara teslim kapıda (P2, `takim/o3/g3-izgara`): Gemlik, Körfez ve Gebze manifestte; sunucu ve istemci okuma yolu açık (aşağıdaki not) |
-| G4 | Ar-Ge: P4/P5 uygulama şartnamesi (yerel pazar kanalı, `dukkan` S, tarifler, komutlar) | Ar-Ge | G0 | Baş lider onayı | Kısmen: T3 içerik taslağı girdi; A2 ve A3 şartnamesi sürüyor; baş lider onayı bekleniyor |
-| G5 | Sunucu: e-posta bağlantısıyla giriş (KIMLIK.md, Google yok) | Sunucu | G0 | `--uretim`'de geliştirme kimliği kapalı; uçtan uca giriş testi | K2 dalı kapıya hazır; `pg-saglamlik` (P3) girdikten sonra alınır |
-| G6 | Çekirdek P4a: ekmek zinciri (`degirmen` + kepek, `ekmek_firini`) | Çekirdek | G4 | Bot zinciri tamamlar; bölge kipi altınları aynı | Bekliyor (G4 onayı) |
-| G7 | Çekirdek P4b: yerel pazar kanalı + `dukkan` S | Çekirdek | G6 | Determinizm, serileştirme, para korunumu | Bekliyor (G6) |
+| G1 | İstemci kusur turu (toplantı notu §5, 8 madde) ve tek para biçimi `1.234 ₺` | İstemci | G0 | Önce/sonra ekran görüntüleri; e2e yeşil; `dunya.html` ≤ 400 KB | Sürüyor: tek para biçimi, toast ve küre/arsa görseli (T1, T2) P4'te girdi; K1 mantık yığını (G2 dahil) ve kalan T1 dalları P5 kapısında |
+| G2 | Ölçek yükseltme formu ek hücre gönderir (`ekHucreler`) | İstemci | G1 | S → M yükseltmesi sunucuda kabul (e2e) | Bekliyor: K1 `g2-olcek` P5 kapısında |
+| G3 | Alfa-0 ilçelerinde arsa ızgarası (önce Gemlik, Körfez; sonra 3 il), üretilmiş manifest | Veri | G0 | Boyut raporu; istemci ve sunucu aynı veriyi okur | Ara teslim girdi: Gemlik, Körfez ve Gebze manifestte (aşağıdaki not); sunucunun ızgarayı manifestten okuması (`k2/izgara-yukle`, ilçe nüfusu dahil) ve istemcinin tabloyu manifestten okuması (K1) bekliyor |
+| G4 | Ar-Ge: P4/P5 uygulama şartnamesi (yerel pazar kanalı, `dukkan` S, tarifler, komutlar) | Ar-Ge | G0 | Baş lider onayı | Şartname girdi (A3 iki parça, A2 ekonomi; yerel talep kalibrasyonu, `yerelOlcek` 40); G6 şartnameye göre başladı; son düzeltmeler P5 kapısında |
+| G5 | Sunucu: e-posta bağlantısıyla giriş (KIMLIK.md, Google yok) | Sunucu | G0 | `--uretim`'de geliştirme kimliği kapalı; uçtan uca giriş testi | Girdi (P4): e-posta bağlantısı, davet listesi (boş liste açılışı durdurur), görünen ad, `sql/006`, deploy ve kontrol listesi 11-12; Postgres doğrulaması şema 6/6 ve testler geçti (`pg.test.ts` yakalanmamış 57P01 hatası için K2 düzeltmesi `k2/pg-57p01` kapı sırasında). Kalan: hesap silme (K2, P5), gerçek e-posta göndericisi yok |
+| G6 | Çekirdek P4a: ekmek zinciri (`degirmen` + kepek, `ekmek_firini`) | Çekirdek | G4 | Bot zinciri tamamlar; bölge kipi altınları aynı | Sürüyor: G6-1 (yöntem şeması, kimlik kilidi) ve G6-2a (mülk kipi süzgeci, yöntem komut yolu, `yontemGecersizKilma`) girdi; G6-2b (şebeke) ve G6-4 kanıt testleri P5 kapısında |
+| G7 | Çekirdek P4b: yerel pazar kanalı + `dukkan` S | Çekirdek | G6 | Determinizm, serileştirme, para korunumu | Başladı: yerel pazar saf modülü (şartname §6.4-6.6) ve G7-1a veri şeması (V1-V12, ilçe nüfusu alanı) girdi; G7-1b (derle) P5 kapısında |
 | G8 | Çekirdek P5: cam → pencere, yapı market | Çekirdek | G7 | Bot zinciri tamamlar | Bekliyor (G7) |
-| G9 | İstemci: giriş ekranı ve dükkân paneli | İstemci | G2, G5, G7 | Gerçek tıklamayla e2e | Bekliyor (G2, G5, G7) |
-| G10 | Uçtan uca test (A0-6), dogfood, insan testi kılavuzu | Test | G8, G9 | Masaüstü ve telefon e2e; `docs/toplanti/3/` | Kısmen: insan testi kılavuzu (A1) girdi; uçtan uca ve dogfood bekliyor |
+| G9 | İstemci: giriş ekranı ve dükkân paneli | İstemci | G2, G5, G7 | Gerçek tıklamayla e2e | Bekliyor (G2, G7); giriş akışı belgesi (A1), `giris.css` ve dükkân paneli CSS'i (T1) girdi, K1 mantığı (`g9a-giris-mantik`) P5 kapısında |
+| G10 | Uçtan uca test (A0-6), dogfood, insan testi kılavuzu | Test | G8, G9 | Masaüstü ve telefon e2e; `docs/toplanti/3/` | Kısmen: insan testi kılavuzu ve pilot paketi (adım betiği, gözlemci formu, ölçüt tablosu) girdi; uçtan uca ve dogfood bekliyor |
 
 **G10 öncesi kontrol listesi.**
 - Yerleş'teki üç ilçe de oynanabilir (arsa ızgarası ve manifest); taze hesapla doğrulandı. Kaynak: [ilk-saat-ekran-incelemesi](arastirma/ilk-saat-ekran-incelemesi.md) B1 ve insan testi kılavuzu Ö2. Sahipleri: K1'in izgara-manifest dalı ve K2'nin izgara-yukle dalı.
