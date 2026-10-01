@@ -5,7 +5,7 @@ Tek makinede (sunucu + Postgres 16, Docker Compose) açık alfayı işleten kiş
 ## 1. Kurulum
 
 1. `deploy/.env.ornek` → `deploy/.env`; zorunlu değerler: `PG_SIFRE`, `METRIK_TOKEN`, `BILET_SIRRI` (en az 32 karakter), `IZINLI_KOKENLER`, `GENEL_URL` (https). Örnek değerlerle sunucu açılmaz. Ayrıntı: [Kurulum](../packages/sunucu/README.md#kurulum-docker-compose), [Ortam değişkenleri](../packages/sunucu/README.md#ortam-değişkenleri).
-2. `$D up -d --build`, ardından [açılış kontrol listesi](../packages/sunucu/README.md#alfa-0-açılış-kontrol-listesi) sırayla: 1-8 ve 10 sunucu, 11 giriş, 12 davet listesi, 14 yedek; 9 (yük) ve 13 (test dünyası) isteğe bağlıdır. Bir adım geçmezse durun.
+2. `$D up -d --build`, ardından [açılış kontrol listesi](../packages/sunucu/README.md#alfa-0-açılış-kontrol-listesi) sırayla: 1-8 ve 10 sunucu, 11 giriş, 12 davet listesi, 14 yedek; 9 (yük), 13 (test dünyası) ve 15 (hesap silme) isteğe bağlıdır. Bir adım geçmezse durun.
 3. Ters vekil (TLS) sunucunun önünde olmalı: portlar yalnız 127.0.0.1'e yayınlanır, çerezler `Secure`'dır. Gerçek e-posta göndericisi henüz yoktur: giriş bağlantıları `/veri/posta` dosyalarına düşer ve davetliye elle iletilir ([Giriş](../packages/sunucu/README.md#giriş-e-posta-bağlantısı-g5), kontrol listesi adım 11).
 
 ## 2. Davetli ekleme
@@ -14,6 +14,7 @@ Tek makinede (sunucu + Postgres 16, Docker Compose) açık alfayı işleten kiş
 2. `$D restart sunucu`: liste çalışırken yeniden yüklenmez. Liste bozuk, yok ya da boşsa sunucu açılmaz.
 3. Denetim: kontrol listesi adım 12 (`hazir` olayındaki `davetli` adedi). Davetsiz adrese aynı yanıt verilir ama posta gitmez: [KIMLIK.md, kayıt kapısı](../packages/sunucu/KIMLIK.md). Listeden çıkarmak açık oturumu kapatmaz.
 4. Alfa-0 bitince listeyi silin (KVKK).
+5. Hesap silme talebi: oyuncu oyun içinden ister, e-postasına gelen bağlantıyla onaylar; sunucu hesabı, oturumlarını ve adını siler. Mülk devredilmez, oyuncu günlükte anonim kalır (e-posta ve ad günlükte hiç yoktur). Sizin işiniz: silinen kişinin adresini davet listesinden çıkarmak (yukarıdaki madde 1-2). Adım adım denetim: kontrol listesi adım 15 ve [KIMLIK.md](../packages/sunucu/KIMLIK.md) §6. Kendiniz hesap ya da oyuncu satırı silmeyin.
 
 ## 3. Test dünyası silme
 
@@ -50,5 +51,6 @@ Açık alfa sürerken oyun ekonomisinin sağlığı, A2'nin [Alfa-0 canlı ekono
 | Sunucu açılmıyor | `$D logs sunucu`; kontrol listesi adım 4 (ret iletileri) |
 | Sağlık ve metrik | [Sağlık ve metrik](../packages/sunucu/README.md#sağlık-ve-metrik), adım 2-3 |
 | Kimse giriş yapamıyor | adım 11-12 (posta dizini, davet listesi, `GENEL_URL`/Origin) |
+| Hesap silme talebi | bölüm 2 madde 5; adım 15 |
 | Yedek çalışmıyor | `$D ps yedek`, adım 14 |
 | Ekonomi sağlığı, kırmızıda ilk ayar | [Ekonomi izleme](#7-ekonomi-izleme), [A2 listesi](arastirma/alfa0-ekonomi-izleme.md) |

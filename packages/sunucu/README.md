@@ -423,7 +423,7 @@ Gerçek dönem göçünde sıra: SIGTERM ile kapat (kuyruk boş) → döküm (ad
 **7. pg şema sürümü ve yükseltme**
 ```sh
 $D exec -T pg psql -U bolge -d bolge -tAc "SELECT surum, ad FROM sunucu_sema ORDER BY surum"
-#   beklenen: 1 baslangic | 2 goc-profil | 3 defter | 4 hesap | 5 oyun-oturum  (güncel şema sürümü = 5; max(surum) = 5)
+#   beklenen: 1 baslangic | 2 goc-profil | 3 defter | 4 hesap | 5 oyun-oturum | 6 gorunen-ad  (güncel şema sürümü = 6; max(surum) = 6)
 ```
 Yükseltme: eski sürümlü (1 ya da 2; ya da sürüm tablosuz eski kurulum) bir veritabanını yeni imajla açmak eksik adımları kendisi uygular (CLI varsayılanı `semaKur`; adım başına işlem + şema kilidi, veri korunur); sunucu kütüphane olarak `semaKur: false` ile açılır ve eski şemayı reddeder. Prova: adım 5'teki `bolge_geri` kopyasını yeni imajla açın ve yukarıdaki sorguyu o veritabanında koşun. Otomatik: `test/pg.test.ts` (sürümsüz eski şemadan yükseltme, veri korunur, idempotent).
 
@@ -503,7 +503,28 @@ PG_BIN=<pg bin dizini> deploy/geri-yukle.sh deploy/yedekler/<en-yeni>.dump "post
 ```
 Yerelde (unix soketli pg 16) doğrulananlar: iki ardışık yedekte `--sakla 1` en eskisini siler; `--sakla 2` ile 2 çift kalır; var olmayan veritabanında `yedek HATA` ve kod 1, eski yedeklere ve yabancı dosyaya (`notlar.txt`) dokunulmaz; `--sakla 0` kod 2; son yedekten `geri-yukle.sh --olustur` sonrası açılan sunucunun `durumOzeti`'si kaynağınkiyle AYNI; `yedek-dongu.sh` başlangıçta bir yedek alır, sonra zamanlanan saatte (bir sonraki gün hesabı dahil) ikincisini alır ve `.son-basari` güncellenir. Konteyner ve healthcheck (`docker compose up`) daemon olmadığı için koşulamadı: ilk gerçek makinede bu adım ilk kez Docker ile denenecek. Yedek servisinin parola yolu `PGPASSWORD` ortamıdır (URI'de parola yok).
 
-**Sonuç ölçütü:** 1-12 geçtiyse (13 insan testi sonrasıdır; 14 düzenli yedek) ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
+**15. Hesap silme (KVKK; e-posta onaylı)** (G5 hesap silme, K2 `hesap-sil`; DOĞRULAMA: belge yazıldı, gerçek pg provası P6 PG adımından sonra yapılacak, bu satır prova sonucuyla güncellenir)
+Önkoşul: adım 11'deki gibi giriş yapılmış bir TEST hesabı (`cerez.txt` çerezi, `$U`, `$H`); gerçek davetli hesabıyla denemeyin, silme kalıcıdır. Silme iki adımdır: istek yalnız onay postası gönderir, hesabı onay siler.
+```sh
+Q="$D exec -T pg psql -U bolge -d bolge -tAc"
+OZ="SELECT seq||' t='||sim_t||' ozet='||durum_ozeti FROM snapshots WHERE dunya='ana' ORDER BY seq DESC, sim_t DESC, olusturma DESC LIMIT 1"
+$Q "$OZ"                                                                           # ÖNCE: ana'nın son görüntü özeti (kaydedin)
+$Q "SELECT h.id, o.oyuncu_id FROM hesap h JOIN hesap_oyuncu o ON o.hesap_id=h.id WHERE h.eposta='davetli@ornek.org'"   # hesap kimliği ve opak oyuncu kimliği (kaydedin)
+curl -si -b cerez.txt -X POST -H "Origin: <IZINLI_KOKENLER'den biri>" $U/giris/hesap-sil   # beklenen: 202 {"tamam":true,"gecerlilikSn":1800}; HİÇBİR ŞEY silinmez
+$Q "SELECT (SELECT count(*) FROM hesap WHERE eposta='davetli@ornek.org') AS hesap, (SELECT count(*) FROM oturum) AS oturum"   # beklenen: hesap=1 (hâlâ var)
+$D exec sunucu ls /veri/posta                                                      # beklenen: silme postası (içinde /giris/hesap-sil-onay?j=<jeton> bağlantısı); 30 dk geçerli, tek kullanımlık
+curl -s -o /dev/null -w '%{http_code}\n' "$U/giris/hesap-sil-onay?j=<jeton>"        # beklenen: 200 onay sayfası; GET YAN ETKİSİZDİR (hesap hâlâ var)
+curl -si -X POST "${H[@]}" -d '{"j":"<jeton>"}' $U/giris/hesap-sil-onay            # beklenen: 200 {"tamam":true}; bolge_oturum çerezi temizlenir
+$Q "SELECT count(*) FROM hesap WHERE eposta='davetli@ornek.org'"                   # beklenen: 0 (oturum, bağlantı ve hesap_oyuncu satırları da gider: ON DELETE CASCADE)
+curl -s -o /dev/null -w '%{http_code}\n' -b cerez.txt $U/giris/ben                  # beklenen: 401 (oturum düştü; açık ws kod 4003 ile kapanır)
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "${H[@]}" -d '{"j":"<jeton>"}' $U/giris/hesap-sil-onay   # beklenen: 400 baglanti_gecersiz (ikinci kullanım)
+$Q "$OZ"                                                                           # SONRA: ÖNCEKİYLE AYNI (mülk devredilmez, oyuncu günlükte anonim kalır)
+$Q "SELECT count(*) FROM log WHERE dunya='ana' AND hesap='<oyuncu kimliği>'"       # beklenen: silmeden öncekiyle AYNI (günlük satırları silinmez; e-posta ya da ad günlükte hiç yoktur)
+$D logs sunucu | grep -c 'ornek.org'                                               # beklenen: 0
+```
+Davet listesi kullanılıyorsa silinen kişinin adresi liste dosyasında kalır: operatör dosyadan çıkarır (kod dokunmaz; kılavuz bölüm 2). Aynı adresle yeniden kayıt YENİ hesap, yeni opak oyuncu ve yeni otomatik ad verir; eski mülk eskisinin kalır. Hız sınırı: hesap başına saatte 3 istek (4.'sü 429 `hiz_siniri`, posta gitmez), onay IP başına sınırlıdır. Ayrıntı ve hata kodları: [KIMLIK.md](KIMLIK.md) (§2 uçlar, §6 hesap silme, §8 KVKK).
+
+**Sonuç ölçütü:** 1-12 geçtiyse (13 insan testi sonrasıdır; 14 düzenli yedek; 15 hesap silme) ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
 
 ## Testler
 
