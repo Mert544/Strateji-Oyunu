@@ -113,8 +113,8 @@ describe("komut kaydı", () => {
       expect(turler, g).toContain(g);
       expect(kayitli.has(g), `${g} hem gizli hem kayıtlı`).toBe(false);
     }
-    expect([...GIZLI_KOMUTLAR].sort()).toEqual(["askeri_rezerv", "kenar_gelistir", "oyuncu_katil", "sistem_odul"]);
-    expect([...HARITA_KOMUTLARI].sort()).toEqual(["insaat_iptal", "parsel_al", "parsel_birak", "tesis_insa_hucre", "yapi_yerlestir"]);
+    expect([...GIZLI_KOMUTLAR].sort()).toEqual(["askeri_rezerv", "kenar_gelistir", "marka_sifirla", "oyuncu_katil", "sistem_odul"]);
+    expect([...HARITA_KOMUTLARI].sort()).toEqual(["dukkan_fiyat", "dukkan_marka", "dukkan_raf", "dukkan_yik", "insaat_iptal", "marka_tanimla", "parsel_al", "parsel_birak", "tesis_insa_hucre", "yapi_yerlestir"]);
   });
   it("lojistik formları arayüzde yok (kenar_gelistir, askeri_rezerv; Darboğaz sekmesi kalktı)", () => {
     expect(komutTanimi("kenar_gelistir")).toBeUndefined();
