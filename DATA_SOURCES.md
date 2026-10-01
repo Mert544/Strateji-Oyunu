@@ -359,3 +359,10 @@ pnpm test                     # osm-*.test.ts: sayılar, eşleme, boyut, bayt ba
 - Engel kuralı: yol ve su hücrenin ≥ %50'si, askeri alan her kesişim; su hücreleri kota dışı. Kamu kuralı çekirdektedir.
 - ODbL klasör politikası (bölüm 8) aynen geçerlidir: ODbL dışı veri bu klasöre, ODbL verisi bu klasör dışına yazılmaz. Sahiplik ve oyun durumu ızgara dosyalarına yazılmaz.
 - **Depo politikası (baş lider kararı, 1 Ekim):** Git'e yalnız BHI1, manifest ve küçük test verisi girer. Şerit PMTiles gibi büyük dosyalar depoya girmez ve Git LFS kullanılmaz; dağıtımda veri hattından deterministik üretilir ve manifestteki sha256 ile doğrulanır. İstisna: Gemlik ve Körfez şeritleri (~466 KB) bu kez depoda; Gebze şeriti Sprint 1'den `odbl/ornek/` altındadır. Barındırma ve CDN açık sahip kararıdır (A-2, [docs/13](docs/13-toplanti-notu-1.md) §4).
+
+## 10. İlçe nüfusu (G7 yerel talebi)
+
+Veri dosyası: `packages/veri-hatti/yapilandirma/ilce-nufus.json` (elle yazılan veri hattı girdisi; ODbL klasörünün DIŞINDA). Okuyucu ve fikstüre yazım: `packages/veri-hatti/src/osm/ilce-nufus.ts` (`ilceNufusOku`, `ilceNufusu`, `fiksturaNufusYaz`); testler `packages/veri-hatti/test/ilce-nufus.test.ts`.
+
+- **İlçe nüfusu (Kocaeli, Sakarya, Bursa; 45 ilçe):** TÜİK, Adrese Dayalı Nüfus Kayıt Sistemi Sonuçları, 2025 (31 Aralık 2025 durumu; bülten 9 Şubat 2026). Yıl sabit: 2025. Atıf: "TÜİK, ADNKS Sonuçları, 2025 (9 Şubat 2026)". Lisans: TÜİK Yasal Uyarı sayfası kaynak gösterilerek izin gerekmeden yeniden kullanıma izin verir; hukuk teyidi doğrulanmadı (sahip listesinde). İlçe sayıları TÜİK portal tablosundan değil, ikincil derlemelerden alındı (doğrulanmadı; ilçe toplamları il toplamlarıyla birebir uyumlu: Bursa 3.263.011, Kocaeli 2.161.171, Sakarya 1.123.693; testle denetlenir). ODbL harita dosyalarından ayrı tutulur. Kullanım: G7 yerel talebi, ilçe başına isteğe bağlı `ParselIlceTanimi.nufus` alanı (tamsayı 1..20.000.000; yeri A3 §6.5). Kimlikler `odbl/hiyerarsi.json` ile 45/45 eşleşir.
+
