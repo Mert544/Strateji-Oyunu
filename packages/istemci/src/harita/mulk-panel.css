@@ -59,3 +59,13 @@ body.mulk-paneli #harita-hazine .hz-saat { padding-left: 0; border-left: 0; }
 .defter-tutar .dt-deger { font-size: var(--yazi-xs); }
 .defter-odul-satir b { white-space: nowrap; }
 .defter-damga { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--birincil-tint); color: var(--birincil-ink); }
+/* Mülk bakımı (G7-4; sözleşme F. Ek): tesis satırında ve tesis kartında. Durum renk dışında sözcük (kalın), simge şekli ve kritikte sol şeritle de belli olur. */
+.bk-satir { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s-1); row-gap: 2px; margin: 2px 0 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.bk-satir .ikon { align-self: center; margin-right: 2px; }
+.bk-durum { font-weight: 600; }
+.bk-olcu::before { content: "·"; margin-right: var(--s-1); }
+.bk-parca { flex-basis: 100%; margin: 0; }
+.bk-satir[data-durum="iyi"] :is(.ikon, .bk-durum) { color: var(--basari-ink); }
+.bk-satir[data-durum="yipraniyor"] :is(.ikon, .bk-durum) { color: var(--uyari-ink); }
+.bk-satir[data-durum="kritik"] :is(.ikon, .bk-durum, .bk-parca) { color: var(--hata-ink); }
+.bk-satir[data-durum="kritik"] { padding-left: var(--s-2); box-shadow: inset 2px 0 0 var(--hata); }
