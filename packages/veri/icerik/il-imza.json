@@ -1,0 +1,6213 @@
+{
+ "surum": 1,
+ "aciklama": "İl imza ürünleri (ülkeden bağımsız şema; yeni ülke = yeni kayıtlar). Kaynak: docs/arastirma/cesitlilik-uretim-katmanlari.md §3, §4.2, §4.3, §7. Alfa-0 illeri (Kocaeli, Sakarya, Bursa) kapsam='tam' ve kaynaklıdır; diğer iller kapsam='ozet' (ön öneri, dogrulandi=false). ileride: icerik.json'da henüz olmayan mal kimlikleri (planli=true imzalar bunlara bağlanır). imza: ilin +%10 çıktı bonusu taşıyan 2–4 imzası (kademeden bağımsız; ilçe başına en çok 2). aday: bilgi amaçlı, bonus yok (t1 temel ağırlıklar, zanaatlar, kanıtı zayıf ya da elenen adaylar). kademe: t1 temel mal, t2 bölgesel imza, t3a zanaat/lüks. carpanPpm: imza çıktı çarpanı (1_100_000 = +%10). dogrulandi: üretim/sanayi varlığı (coğrafi işaret kaydında: adın ve durumun) kaynakta görüldü; coğrafi işaret BAŞVURUSU imza kanıtı sayılmaz. Coğrafi işaret kayıtları (t3b) stok kalemi açmaz.",
+ "ileride": [
+  {
+   "malId": "alumina",
+   "ad": "Alümina",
+   "kademe": "t1",
+   "oncelik": "A0-ops"
+  },
+  {
+   "malId": "aluminyum",
+   "ad": "Alüminyum",
+   "kademe": "t1",
+   "oncelik": "A0-ops"
+  },
+  {
+   "malId": "arac",
+   "ad": "Araç",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "boksit",
+   "ad": "Boksit",
+   "kademe": "t1",
+   "oncelik": "A0-ops"
+  },
+  {
+   "malId": "cam",
+   "ad": "Cam",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "cimento",
+   "ad": "Çimento",
+   "kademe": "t1",
+   "oncelik": "A0-ops"
+  },
+  {
+   "malId": "ekmek",
+   "ad": "Ekmek",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "et",
+   "ad": "Et ve Kümes",
+   "kademe": "t1",
+   "oncelik": "A0-ops"
+  },
+  {
+   "malId": "hazir_giyim",
+   "ad": "Hazır Giyim",
+   "kademe": "t1",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "iplik",
+   "ad": "İplik",
+   "kademe": "t1",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "kagit",
+   "ad": "Kağıt ve Karton",
+   "kademe": "t1",
+   "oncelik": "A0-ops"
+  },
+  {
+   "malId": "kereste",
+   "ad": "Kereste ve Levha",
+   "kademe": "t1",
+   "oncelik": "A0-ops"
+  },
+  {
+   "malId": "kumas",
+   "ad": "Kumaş",
+   "kademe": "t1",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "misir",
+   "ad": "Mısır",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "mobilya",
+   "ad": "Mobilya",
+   "kademe": "t1",
+   "oncelik": "A0-ops"
+  },
+  {
+   "malId": "odun",
+   "ad": "Odun (tomruk)",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "pencere",
+   "ad": "Pencere",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "petrokimya",
+   "ad": "Petrokimya",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "sekerleme",
+   "ad": "Şekerleme",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "sut",
+   "ad": "Süt",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "sut_urunu",
+   "ad": "Süt Ürünleri",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "taze",
+   "ad": "Taze Meyve-Sebze",
+   "kademe": "t1",
+   "oncelik": "A0-ops"
+  },
+  {
+   "malId": "un",
+   "ad": "Un",
+   "kademe": "t1",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "antep_fistigi",
+   "ad": "Antep Fıstığı",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "aycicegi",
+   "ad": "Ayçiçeği",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "baharat",
+   "ad": "Baharat (pul biber, isot, safran)",
+   "kademe": "t2",
+   "tur": "A",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "bakliyat",
+   "ad": "Bakliyat (nohut, mercimek)",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "bal",
+   "ad": "Bal",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "balik",
+   "ad": "Balık",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "beyaz_esya",
+   "ad": "Beyaz Eşya",
+   "kademe": "t2",
+   "tur": "S",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "bor",
+   "ad": "Bor",
+   "kademe": "t2",
+   "tur": "S",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "cay",
+   "ad": "Kuru Çay",
+   "kademe": "t2",
+   "tur": "A",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "ceviz",
+   "ad": "Ceviz",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "elma",
+   "ad": "Elma",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "findik",
+   "ad": "Fındık (kabuklu)",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "findik_urunu",
+   "ad": "Fındık İçi",
+   "kademe": "t2",
+   "tur": "A",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "gemi",
+   "ad": "Gemi ve Tekne",
+   "kademe": "t2",
+   "tur": "S",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "gul",
+   "ad": "Gül",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "hashas",
+   "ad": "Haşhaş",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "incir",
+   "ad": "İncir",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "ipek",
+   "ad": "İpek İpliği",
+   "kademe": "t2",
+   "tur": "A",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "kayisi",
+   "ad": "Kayısı",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "kestane",
+   "ad": "Kestane",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "kiraz",
+   "ad": "Kiraz",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "kivi",
+   "ad": "Kivi",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "koza",
+   "ad": "İpek Kozası",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "kuru_meyve",
+   "ad": "Kuru Meyve",
+   "kademe": "t2",
+   "tur": "A",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "mermer",
+   "ad": "Mermer ve Doğal Taş",
+   "kademe": "t2",
+   "tur": "S",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "muz",
+   "ad": "Muz",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "narenciye",
+   "ad": "Narenciye",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "pamuk",
+   "ad": "Pamuk",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "patates",
+   "ad": "Patates ve Soğan",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "pirinc",
+   "ad": "Pirinç",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "sarimsak",
+   "ad": "Sarımsak",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "seftali",
+   "ad": "Şeftali",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "seker_pancari",
+   "ad": "Şeker Pancarı",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "sera_sebze",
+   "ad": "Sera Sebzesi",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "seramik",
+   "ad": "Seramik ve Porselen",
+   "kademe": "t2",
+   "tur": "S",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "tutun",
+   "ad": "Tütün",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "tuz",
+   "ad": "Kaya Tuzu",
+   "kademe": "t2",
+   "tur": "S",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "uzum",
+   "ad": "Üzüm",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "yas_cay",
+   "ad": "Yaş Çay",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "yassi_celik",
+   "ad": "Yassı Çelik",
+   "kademe": "t2",
+   "tur": "S",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "yer_fistigi",
+   "ad": "Yer Fıstığı",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "Sonra"
+  },
+  {
+   "malId": "yun",
+   "ad": "Yün, Kıl ve Tiftik",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "zeytin",
+   "ad": "Zeytin",
+   "kademe": "t2",
+   "tur": "H",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "zeytinyagi",
+   "ad": "Zeytinyağı",
+   "kademe": "t2",
+   "tur": "A",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "bicak_demir",
+   "ad": "Bıçak ve Demircilik",
+   "kademe": "t3a",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "cini",
+   "ad": "Çini",
+   "kademe": "t3a",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "dokuma_zanaat",
+   "ad": "El Dokuması (bez, battaniye, ehram, kilim)",
+   "kademe": "t3a",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "hali",
+   "ad": "El Halısı (Hereke tipi)",
+   "kademe": "t3a",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "ipek_kumas",
+   "ad": "İpek Kumaş",
+   "kademe": "t3a",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "sepet_hasir",
+   "ad": "Sepet ve Tel Kırma",
+   "kademe": "t3a",
+   "oncelik": "A0"
+  },
+  {
+   "malId": "tas_isleme",
+   "ad": "Taş İşleme (lületaşı, Oltu, Ahlat)",
+   "kademe": "t3a",
+   "oncelik": "A1"
+  },
+  {
+   "malId": "telkari",
+   "ad": "Telkâri",
+   "kademe": "t3a",
+   "oncelik": "A1"
+  }
+ ],
+ "iller": [
+  {
+   "ulke": "TR",
+   "il": "tr_01",
+   "ad": "Adana",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "narenciye",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "sera_sebze",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "gida",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "misir",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: 2. ürün"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_01_adana_kebabi",
+     "ad": "Adana kebabı",
+     "tur": "mahrec",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_02",
+   "ad": "Adıyaman",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tutun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_02_adiyaman_cig_koftesi",
+     "ad": "Adıyaman çiğ köftesi",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_03",
+   "ad": "Afyonkarahisar",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "sut_urunu",
+     "kademe": "t1",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: şarküteri ürünleri (pastırma, sucuk, peynir) dükkân türüdür; mal olarak sut_urunu"
+    },
+    {
+     "malId": "hashas",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "mermer",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_03_afyon_kaymagi",
+     "ad": "Afyon kaymağı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    },
+    {
+     "kimlik": "ci_tr_03_afyon_sucugu",
+     "ad": "Afyon sucuğu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_04",
+   "ad": "Ağrı",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_04_agri_bali",
+     "ad": "Ağrı balı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_05",
+   "ad": "Amasya",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "elma",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "kiraz",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_05_amasya_misket_elmasi",
+     "ad": "Amasya Misket elması",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_06",
+   "ad": "Ankara",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: tiftik"
+    }
+   ],
+   "aday": [
+    {
+     "malId": "elektronik",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "muhimmat",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_06_ankara_tiftigi",
+     "ad": "Ankara tiftiği",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_07",
+   "ad": "Antalya",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "muz",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "narenciye",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "sera_sebze",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "taze",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_07_finike_portakali",
+     "ad": "Finike portakalı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_08",
+   "ad": "Artvin",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "kestane",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yas_cay",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_08_artvin_karakovan_bali",
+     "ad": "Artvin Karakovan balı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_09",
+   "ad": "Aydın",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "incir",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "kestane",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "zeytin",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_09_aydin_inciri",
+     "ad": "Aydın inciri",
+     "tur": "mensei",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_10",
+   "ad": "Balıkesir",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bor",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "zeytin",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "zeytinyagi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_10_edremit_korfezi_zeytinyagi",
+     "ad": "Edremit körfezi zeytinyağı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_11",
+   "ad": "Bilecik",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "mermer",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "seramik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_11_bilecik_bej_mermeri",
+     "ad": "Bilecik bej mermeri",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_12",
+   "ad": "Bingöl",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_12_bingol_bali",
+     "ad": "Bingöl balı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_13",
+   "ad": "Bitlis",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tutun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "et",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tas_isleme",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Ahlat taşı"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_14",
+   "ad": "Bolu",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "patates",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "et",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: kümes"
+    },
+    {
+     "malId": "kereste",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_15",
+   "ad": "Burdur",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "ceviz",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "hashas",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_15_burdur_ceviz_ezmesi",
+     "ad": "Burdur ceviz ezmesi",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_16",
+   "ad": "Bursa",
+   "iklimTipi": "akdeniz",
+   "iklimTipiEk": "dag_yayla",
+   "kapsam": "tam",
+   "imza": [
+    {
+     "malId": "arac",
+     "kademe": "t1",
+     "ilceler": [
+      "tr_16_nilufer",
+      "tr_16_osmangazi"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.bosb.org.tr/bosb-haber-74-turkiye_otomotiv_bulusmalari_bursa_osbnin_ev_sahipliginde_duzenlenmektedir.html",
+      "https://www.sozcu.com.tr/amp/bursa-otomotiv-ihracatinda-kocaeli-nin-ardindan-ikinci-sirada-p307333",
+      "https://www.trthaber.com/haber/ekonomi/bursada-uretilen-her-iki-otomobilden-biri-ihrac-edildi-941633.html"
+     ],
+     "aciklama": "Oyak Renault (390 bin araç/yıl kapasite), Tofaş, Karsan; Türkiye otomobilinin ≈ yarısı [K23]."
+    },
+    {
+     "malId": "mobilya",
+     "kademe": "t1",
+     "ilceler": [
+      "tr_16_inegol"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://tr.wikipedia.org/wiki/%C4%B0neg%C3%B6l_mobilyas%C4%B1"
+     ],
+     "aciklama": "İnegöl: ≈ 3 000 işyeri; mobilya ihracatında İstanbul'dan sonra."
+    },
+    {
+     "malId": "koza",
+     "kademe": "t2",
+     "ilceler": [
+      "tr_16_osmangazi"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.aa.com.tr/tr/yasam/ipek-yolunun-son-duragi-bursanin-incisi-kozahan/1652607"
+     ],
+     "aciklama": "Koza Han (1491) koza ticareti; Bursa İpeği coğrafi işaretli."
+    },
+    {
+     "malId": "zeytin",
+     "kademe": "t2",
+     "ilceler": [
+      "tr_16_gemlik"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber",
+      "https://yagtakip.com/blog/zeytin-hasadi-ne-zaman-baslar"
+     ],
+     "aciklama": "Gemlik Zeytini menşe adı (2005, tescilli); sofralık Ekim–Kasım, yağlık Kasım–Ocak hasat."
+    }
+   ],
+   "aday": [
+    {
+     "malId": "kumas",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Raporun ön önerisi (genel bilgi), doğrulanmadı; mal kimliği kilidine göre kumas (docs/12 §10)."
+    },
+    {
+     "malId": "parca",
+     "kademe": "t1",
+     "ilceler": [
+      "tr_16_nilufer"
+     ],
+     "planli": false,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.bosb.org.tr/bosb-haber-74-turkiye_otomotiv_bulusmalari_bursa_osbnin_ev_sahipliginde_duzenlenmektedir.html"
+     ],
+     "aciklama": "BOSB'de yüzlerce yan sanayi firması."
+    },
+    {
+     "malId": "kestane",
+     "kademe": "t2",
+     "ilceler": [
+      "tr_16_inegol",
+      "tr_16_orhaneli"
+     ],
+     "planli": true,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.bursahakimiyet.com.tr/bursa/bursa-da-kestane-hasadi-basladi-2026-yili-kestane-ne-zaman-toplanir-hangi-ilcelerde-yetisiyor-1718843"
+     ],
+     "aciklama": "Hasat Eylül ikinci hafta–Ekim; İnegöl, Orhaneli çevresi."
+    },
+    {
+     "malId": "seftali",
+     "kademe": "t2",
+     "ilceler": [
+      "tr_16_karacabey",
+      "tr_16_mustafakemalpasa"
+     ],
+     "planli": true,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ],
+     "aciklama": "Bursa Şeftalisi menşe adı (2019, tescilli); ilçe ataması rapor §4.2 satırından."
+    },
+    {
+     "malId": "bicak_demir",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ],
+     "aciklama": "Bursa Bıçağı mahreç işareti (2018)."
+    },
+    {
+     "malId": "cini",
+     "kademe": "t3a",
+     "ilceler": [
+      "tr_16_iznik"
+     ],
+     "planli": true,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber",
+      "https://www.kulturportali.gov.tr/turkiye/kutahya/nealinir/cn"
+     ],
+     "aciklama": "İznik Çinisi menşe adı (2009)."
+    },
+    {
+     "malId": "ipek_kumas",
+     "kademe": "t3a",
+     "ilceler": [
+      "tr_16_osmangazi"
+     ],
+     "planli": true,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber",
+      "https://www.aa.com.tr/tr/yasam/ipek-yolunun-son-duragi-bursanin-incisi-kozahan/1652607"
+     ],
+     "aciklama": "Bursa İpeği mahreç işareti (2019); koza → ipek → ipek kumaş zinciri."
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_16_bursa_bicagi",
+     "ad": "Bursa Bıçağı",
+     "malId": "bicak_demir",
+     "tur": "mahrec",
+     "yil": 2018,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_cantik",
+     "ad": "Bursa Cantık",
+     "malId": "gida",
+     "tur": "mahrec",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_cevizli_lokum",
+     "ad": "Bursa Cevizli Lokum",
+     "malId": "gida",
+     "tur": "mahrec",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_doner_kebabi",
+     "ad": "Bursa Döner Kebabı",
+     "malId": "gida",
+     "tur": "mahrec",
+     "yil": 2022,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_ipegi",
+     "ad": "Bursa İpeği",
+     "malId": "ipek",
+     "tur": "mahrec",
+     "yil": 2019,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_kestane_sekeri",
+     "ad": "Bursa Kestane Şekeri",
+     "malId": "gida",
+     "tur": "mahrec",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ],
+     "aciklama": "Rapor: AB tescilli; kaynakta doğrulanmadı."
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_pideli_kofte",
+     "ad": "Bursa Pideli Köfte",
+     "malId": "gida",
+     "tur": "mahrec",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_santa_maria_armudu",
+     "ad": "Bursa Santa Maria Armudu",
+     "malId": "taze",
+     "tur": "mensei",
+     "yil": 2022,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_seftalisi",
+     "ad": "Bursa Şeftalisi",
+     "malId": "seftali",
+     "tur": "mensei",
+     "yil": 2019,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_siyah_inciri",
+     "ad": "Bursa Siyah İnciri",
+     "malId": "incir",
+     "tur": "mensei",
+     "yil": 2018,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_sut_helvasi",
+     "ad": "Bursa Süt Helvası",
+     "malId": "gida",
+     "tur": "mahrec",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_tahinli_pide",
+     "ad": "Bursa Tahinli Pide",
+     "malId": "gida",
+     "tur": "mahrec",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_bursa_uzum_sirasi",
+     "ad": "Bursa Üzüm Şırası",
+     "malId": "gida",
+     "tur": "mahrec",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_gedelek_tursusu",
+     "ad": "Gedelek Turşusu",
+     "malId": "gida",
+     "tur": "mahrec",
+     "yil": 2017,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_gemlik_ati",
+     "ad": "Gemlik Atı",
+     "ilceler": [
+      "tr_16_gemlik"
+     ],
+     "tur": "mensei",
+     "yil": 2002,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ],
+     "aciklama": "At ırkı; mal bağlantısı yok."
+    },
+    {
+     "kimlik": "ci_tr_16_gemlik_zeytini",
+     "ad": "Gemlik Zeytini",
+     "malId": "zeytin",
+     "ilceler": [
+      "tr_16_gemlik"
+     ],
+     "tur": "mensei",
+     "yil": 2005,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ],
+     "aciklama": "Rapor: AB tescilli; kaynakta doğrulanmadı."
+    },
+    {
+     "kimlik": "ci_tr_16_gursu_deveci_armudu",
+     "ad": "Gürsu Deveci Armudu",
+     "malId": "taze",
+     "ilceler": [
+      "tr_16_gursu"
+     ],
+     "tur": "mensei",
+     "yil": 2019,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_hasanaga_enginari",
+     "ad": "Hasanağa Enginarı",
+     "malId": "taze",
+     "tur": "mensei",
+     "yil": 2020,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_inegol_cerrah_fasulyesi",
+     "ad": "İnegöl Cerrah Fasulyesi",
+     "malId": "bakliyat",
+     "ilceler": [
+      "tr_16_inegol"
+     ],
+     "tur": "mahrec",
+     "yil": 2023,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_inegol_cibrikasi",
+     "ad": "İnegöl Çıbrıkası",
+     "ilceler": [
+      "tr_16_inegol"
+     ],
+     "tur": "mensei",
+     "yil": 2023,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ],
+     "aciklama": "Kaynakta yalnızca ad var; mal bağlantısı yok."
+    },
+    {
+     "kimlik": "ci_tr_16_inegol_kofte",
+     "ad": "İnegöl Köfte",
+     "malId": "gida",
+     "ilceler": [
+      "tr_16_inegol"
+     ],
+     "tur": "mahrec",
+     "yil": 2006,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_inegol_sutlu_kadayifi",
+     "ad": "İnegöl Sütlü Kadayıfı",
+     "malId": "gida",
+     "ilceler": [
+      "tr_16_inegol"
+     ],
+     "tur": "mahrec",
+     "yil": 2023,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_iznik_cinisi",
+     "ad": "İznik Çinisi",
+     "malId": "cini",
+     "ilceler": [
+      "tr_16_iznik"
+     ],
+     "tur": "mensei",
+     "yil": 2009,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_iznik_derbent_dokumasi",
+     "ad": "İznik Derbent Dokuması",
+     "malId": "dokuma_zanaat",
+     "ilceler": [
+      "tr_16_iznik"
+     ],
+     "tur": "mahrec",
+     "yil": 2023,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_iznik_muskule_uzumu",
+     "ad": "İznik Müşküle Üzümü",
+     "malId": "uzum",
+     "ilceler": [
+      "tr_16_iznik"
+     ],
+     "tur": "mensei",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_karacabey_sogani",
+     "ad": "Karacabey Soğanı",
+     "malId": "patates",
+     "ilceler": [
+      "tr_16_karacabey"
+     ],
+     "tur": "mensei",
+     "yil": 2017,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ],
+     "aciklama": "`patates` malı: Patates ve Soğan."
+    },
+    {
+     "kimlik": "ci_tr_16_kemalpasa_tatlisi",
+     "ad": "Kemalpaşa Tatlısı",
+     "malId": "gida",
+     "ilceler": [
+      "tr_16_mustafakemalpasa"
+     ],
+     "tur": "mahrec",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_muskule_igne_oyasi",
+     "ad": "Müşküle İğne Oyası",
+     "malId": "dokuma_zanaat",
+     "tur": "mahrec",
+     "yil": 2021,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_16_yenisehir_biberi",
+     "ad": "Yenişehir Biberi",
+     "malId": "taze",
+     "ilceler": [
+      "tr_16_yenisehir"
+     ],
+     "tur": "mahrec",
+     "yil": 2022,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://bursa.tarimorman.gov.tr/Sayfalar/GormeEngellilerDetay.aspx?OgeId=1632&Liste=Haber"
+     ]
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_17",
+   "ad": "Çanakkale",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "seramik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "zeytin",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut_urunu",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_17_ezine_peyniri",
+     "ad": "Ezine peyniri",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_18",
+   "ad": "Çankırı",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tuz",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_18_cankiri_kaya_tuzu",
+     "ad": "Çankırı kaya tuzu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_19",
+   "ad": "Çorum",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "aycicegi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_19_corum_leblebisi",
+     "ad": "Çorum leblebisi",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_20",
+   "ad": "Denizli",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "mermer",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "uzum",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "iplik",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "kumas",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: raporun eski genel dokuma kaydı; mal kimliği kumas (docs/12 §10)"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_20_denizli_havlusu",
+     "ad": "Denizli havlusu",
+     "malId": "kumas",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_21",
+   "ad": "Diyarbakır",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "taze",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_21_diyarbakir_karpuzu",
+     "ad": "Diyarbakır karpuzu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_22",
+   "ad": "Edirne",
+   "iklimTipi": "balkan_kita",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "aycicegi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "pirinc",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_22_edirne_badem_ezmesi",
+     "ad": "Edirne badem ezmesi",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_23",
+   "ad": "Elazığ",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "uzum",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_23_okuzgozu_uzumu",
+     "ad": "Öküzgözü üzümü",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_24",
+   "ad": "Erzincan",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut_urunu",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_24_erzincan_tulum_peyniri",
+     "ad": "Erzincan tulum peyniri",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_25",
+   "ad": "Erzurum",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "et",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tas_isleme",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Oltu taşı"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_26",
+   "ad": "Eskişehir",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "beyaz_esya",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "seker_pancari",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "arac",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: raylı"
+    },
+    {
+     "malId": "tas_isleme",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Lületaşı"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_27",
+   "ad": "Gaziantep",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "antep_fistigi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "baharat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "kumas",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: raporun eski genel dokuma kaydı; mal kimliği kumas (docs/12 §10)"
+    },
+    {
+     "malId": "un",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_27_antep_baklavasi",
+     "ad": "Antep baklavası",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_28",
+   "ad": "Giresun",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "findik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "kiraz",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_28_giresun_findigi",
+     "ad": "Giresun fındığı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_29",
+   "ad": "Gümüşhane",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "kuru_meyve",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: pestil, köme"
+    }
+   ],
+   "aday": [
+    {
+     "malId": "et",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_29_gumushane_pestili",
+     "ad": "Gümüşhane pestili",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_30",
+   "ad": "Hakkâri",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_30_hakkari_bali",
+     "ad": "Hakkâri balı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_31",
+   "ad": "Hatay",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "narenciye",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "zeytinyagi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "celik",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_31_antakya_kunefesi",
+     "ad": "Antakya künefesi",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_32",
+   "ad": "Isparta",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "elma",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "gul",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "kumas",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: halı geleneği, genel"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_32_isparta_gul_yagi",
+     "ad": "Isparta gül yağı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_33",
+   "ad": "Mersin",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "narenciye",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "sera_sebze",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "taze",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: liman"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_33_anamur_muzu",
+     "ad": "Anamur muzu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_34",
+   "ad": "İstanbul",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "balik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "gemi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "arac",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: liman"
+    },
+    {
+     "malId": "kumas",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: raporun eski genel dokuma kaydı; mal kimliği kumas (docs/12 §10)"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_34_lokum",
+     "ad": "Lokum",
+     "tur": "gelenek",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_35",
+   "ad": "İzmir",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "incir",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "uzum",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "zeytinyagi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "petrokimya",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Aliağa"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_35_izmir_boyozu",
+     "ad": "İzmir boyozu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_36",
+   "ad": "Kars",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut_urunu",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_36_kars_kasari",
+     "ad": "Kars kaşarı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_37",
+   "ad": "Kastamonu",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "sut_urunu",
+     "kademe": "t1",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: şarküteri ürünleri (pastırma, sucuk, peynir) dükkân türüdür; mal olarak sut_urunu"
+    },
+    {
+     "malId": "sarimsak",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_37_taskopru_sarimsagi",
+     "ad": "Taşköprü sarımsağı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_38",
+   "ad": "Kayseri",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "sut_urunu",
+     "kademe": "t1",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: şarküteri ürünleri (pastırma, sucuk, peynir) dükkân türüdür; mal olarak sut_urunu"
+    },
+    {
+     "malId": "patates",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "mobilya",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_38_kayseri_pastirmasi",
+     "ad": "Kayseri pastırması",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_39",
+   "ad": "Kırklareli",
+   "iklimTipi": "balkan_kita",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "aycicegi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "balik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_39_kirklareli_hardaliyesi",
+     "ad": "Kırklareli hardaliyesi",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_40",
+   "ad": "Kırşehir",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_40_kirsehir_cullamasi",
+     "ad": "Kırşehir çullaması",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_41",
+   "ad": "Kocaeli",
+   "iklimTipi": "akdeniz",
+   "iklimTipiEk": "karadeniz",
+   "kapsam": "tam",
+   "imza": [
+    {
+     "malId": "arac",
+     "kademe": "t1",
+     "ilceler": [
+      "tr_41_cayirova",
+      "tr_41_golcuk",
+      "tr_41_izmit"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.aa.com.tr/tr/ekonomi/kocaeli-turkiyenin-otomotiv-uretimine-damga-vuruyor/2476892",
+      "https://www.sondakika.com/ekonomi/haber-kocaeli-de-otomotiv-uretimi-yuzde-7-artti-19163634/",
+      "https://www.sozcu.com.tr/amp/bursa-otomotiv-ihracatinda-kocaeli-nin-ardindan-ikinci-sirada-p307333"
+     ],
+     "aciklama": "OSD verisini aktaran haberler: Kocaeli 2021'de 523 bin, 2025'in ilk 9 ayında 484 bin araç üretti; Türkiye otomotiv üretiminin ≈ %47'si, ihracatının ≈ %55'i. Ford Otosan (Gölcük, Yeniköy), Hyundai (İzmit), Anadolu Isuzu (Çayırova)."
+    },
+    {
+     "malId": "kagit",
+     "kademe": "t1",
+     "ilceler": [
+      "tr_41_izmit"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.paper-world.com/en/company/kartonsan-karton-sanayi-ve-ticaret-as-izmit-mill-izmit-kocaeli-1442163"
+     ],
+     "aciklama": "Kartonsan (1967, kaplamalı karton) ve SEKA mirası, İzmit."
+    },
+    {
+     "malId": "petrokimya",
+     "kademe": "t1",
+     "ilceler": [
+      "tr_41_korfez"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://en.wikipedia.org/wiki/T%C3%BCpra%C5%9F_%C4%B0zmit_Oil_Refinery"
+     ],
+     "aciklama": "Tüpraş İzmit Rafinerisi (Körfez), yılda ≈ 11,3 milyon ton; rafineri ve petrokimya kümesi."
+    },
+    {
+     "malId": "hali",
+     "kademe": "t3a",
+     "ilceler": [
+      "tr_41_korfez"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html",
+      "https://www.kocaeli.gov.tr/hereke"
+     ],
+     "aciklama": "Hereke yün, yün-ipek ve ipek halısı coğrafi işaretli; Fabrika-i Hümayun 1843."
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "ilceler": [
+      "tr_41_kandira"
+     ],
+     "planli": true,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Kandıra manda sütü: Kandıra Manda Yoğurdu coğrafi işaretli (tescilli); ahır ve mera manda yöntemi."
+    },
+    {
+     "malId": "findik",
+     "kademe": "t2",
+     "ilceler": [
+      "tr_41_golcuk"
+     ],
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Değirmendere Fındığı yalnızca coğrafi işaret başvurusu aşamasında; üretim kanıtı bulunamadı. Değirmendere, Gölcük ilçesindedir."
+    },
+    {
+     "malId": "zeytin",
+     "kademe": "t2",
+     "ilceler": [
+      "tr_41_karamursel"
+     ],
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Karamürsel Samanlı Zeytini yalnızca coğrafi işaret başvurusu aşamasında; üretim kanıtı bulunamadı."
+    },
+    {
+     "malId": "dokuma_zanaat",
+     "kademe": "t3a",
+     "ilceler": [
+      "tr_41_kandira"
+     ],
+     "planli": true,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Kandıra Bezi ve Kandıra Dartısı coğrafi işaretli (tescilli)."
+    },
+    {
+     "malId": "sepet_hasir",
+     "kademe": "t3a",
+     "ilceler": [
+      "tr_41_karamursel"
+     ],
+     "planli": true,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Karamürsel Sepeti coğrafi işaretli (tescilli)."
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_41_degirmendere_findigi",
+     "ad": "Değirmendere Fındığı",
+     "malId": "findik",
+     "ilceler": [
+      "tr_41_golcuk"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "basvuru",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Başvuru aşamasında; dogrulandi yalnızca başvurunun varlığını gösterir (tescil anlamına gelmez)."
+    },
+    {
+     "kimlik": "ci_tr_41_derince_cenesuyu",
+     "ad": "Derince Çenesuyu",
+     "ilceler": [
+      "tr_41_derince"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "basvuru",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Kaynakta yalnızca ad var; mal bağlantısı yok. Başvuru aşamasında; dogrulandi yalnızca başvurunun varlığını gösterir (tescil anlamına gelmez)."
+    },
+    {
+     "kimlik": "ci_tr_41_gebze_bayram_coregi",
+     "ad": "Gebze Bayram Çöreği",
+     "malId": "gida",
+     "ilceler": [
+      "tr_41_gebze"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_hereke_ipek_halisi",
+     "ad": "Hereke İpek Halısı",
+     "malId": "hali",
+     "ilceler": [
+      "tr_41_korfez"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_hereke_yun_el_halisi",
+     "ad": "Hereke Yün El Halısı",
+     "malId": "hali",
+     "ilceler": [
+      "tr_41_korfez"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_hereke_yun_ipek_el_halisi",
+     "ad": "Hereke Yün İpek El Halısı",
+     "malId": "hali",
+     "ilceler": [
+      "tr_41_korfez"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_izmit_pismaniyesi",
+     "ad": "İzmit Pişmaniyesi",
+     "malId": "gida",
+     "ilceler": [
+      "tr_41_izmit"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_izmit_simidi",
+     "ad": "İzmit Simidi",
+     "malId": "gida",
+     "ilceler": [
+      "tr_41_izmit"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_kandira_bezi",
+     "ad": "Kandıra Bezi",
+     "malId": "dokuma_zanaat",
+     "ilceler": [
+      "tr_41_kandira"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_kandira_dartisi",
+     "ad": "Kandıra Dartısı",
+     "ilceler": [
+      "tr_41_kandira"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Hangi mala bağlanacağı belirsiz; kaynakta yalnızca ad var."
+    },
+    {
+     "kimlik": "ci_tr_41_kandira_karpuzu",
+     "ad": "Kandıra Karpuzu",
+     "malId": "taze",
+     "ilceler": [
+      "tr_41_kandira"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_kandira_manda_yogurdu",
+     "ad": "Kandıra Manda Yoğurdu",
+     "malId": "sut_urunu",
+     "ilceler": [
+      "tr_41_kandira"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_karamursel_samanli_zeytini",
+     "ad": "Karamürsel Samanlı Zeytini",
+     "malId": "zeytin",
+     "ilceler": [
+      "tr_41_karamursel"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "basvuru",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Başvuru aşamasında; dogrulandi yalnızca başvurunun varlığını gösterir (tescil anlamına gelmez)."
+    },
+    {
+     "kimlik": "ci_tr_41_karamursel_sepeti",
+     "ad": "Karamürsel Sepeti",
+     "malId": "sepet_hasir",
+     "ilceler": [
+      "tr_41_karamursel"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_karamursel_simit_dolmasi",
+     "ad": "Karamürsel Simit Dolması",
+     "malId": "gida",
+     "ilceler": [
+      "tr_41_karamursel"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_41_korfez_mancarli_pide",
+     "ad": "Körfez Mancarlı Pide",
+     "malId": "gida",
+     "ilceler": [
+      "tr_41_korfez"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "basvuru",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Başvuru aşamasında; dogrulandi yalnızca başvurunun varlığını gösterir (tescil anlamına gelmez)."
+    },
+    {
+     "kimlik": "ci_tr_41_nuzhetiye_bebegi_doseme_bebegi",
+     "ad": "Nüzhetiye Bebeği (Döşeme Bebeği)",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Kaynakta yer belirtilmemiş; mal bağlantısı yok."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_42",
+   "ad": "Konya",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "seker_pancari",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: ≈ %10"
+    },
+    {
+     "malId": "un",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_42_konya_etli_ekmegi",
+     "ad": "Konya etli ekmeği",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_43",
+   "ad": "Kütahya",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "seramik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "komur",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: linyit"
+    },
+    {
+     "malId": "cini",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Kütahya çinisi"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_44",
+   "ad": "Malatya",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "kayisi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "kuru_meyve",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "kumas",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: raporun eski genel dokuma kaydı; mal kimliği kumas (docs/12 §10)"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_44_malatya_kayisisi",
+     "ad": "Malatya kayısısı",
+     "tur": "mensei",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_45",
+   "ad": "Manisa",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "beyaz_esya",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "uzum",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "zeytin",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "elektronik",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_45_manisa_mesir_macunu",
+     "ad": "Manisa mesir macunu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_46",
+   "ad": "Kahramanmaraş",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "baharat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: pul biber"
+    },
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "kumas",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: raporun eski genel dokuma kaydı; mal kimliği kumas (docs/12 §10)"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_46_maras_dondurmasi",
+     "ad": "Maraş dondurması",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_47",
+   "ad": "Mardin",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "uzum",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "telkari",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Mardin telkârisi"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_48",
+   "ad": "Muğla",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: çam"
+    },
+    {
+     "malId": "mermer",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "zeytin",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_48_mugla_cam_bali",
+     "ad": "Muğla çam balı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_49",
+   "ad": "Muş",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_50",
+   "ad": "Nevşehir",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "patates",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "uzum",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_50_nevsehir_testi_kebabi",
+     "ad": "Nevşehir testi kebabı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_51",
+   "ad": "Niğde",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "elma",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "patates",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_51_nigde_elmasi",
+     "ad": "Niğde elması",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_52",
+   "ad": "Ordu",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "findik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_52_ordu_findigi",
+     "ad": "Ordu fındığı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_53",
+   "ad": "Rize",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "kivi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yas_cay",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_53_rize_cayi",
+     "ad": "Rize çayı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_54",
+   "ad": "Sakarya",
+   "iklimTipi": "karadeniz",
+   "kapsam": "tam",
+   "imza": [
+    {
+     "malId": "arac",
+     "kademe": "t1",
+     "ilceler": [
+      "tr_54_adapazari",
+      "tr_54_arifiye"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.aa.com.tr/tr/ekonomi/sakaryada-uretilen-otomobiller-dunya-yollarinda/1745358",
+      "https://www.adapostasi.com/haber/28791728/sakaryada-otomotivde-buyuk-ihracat-atagi"
+     ],
+     "aciklama": "Toyota ve Otokar (Arifiye), TÜVASAŞ (1951, Adapazarı) raylı sistem aracı; 2026'nın ilk 8 ayında ≈ 143 bin araç üretimi [K25]."
+    },
+    {
+     "malId": "misir",
+     "kademe": "t1",
+     "ilceler": [
+      "tr_54_adapazari",
+      "tr_54_hendek"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sakarya.gov.tr/vali-balkanlioglu-misir-uretimi-konusunda-sakarya-cok-onemli-bir-konumda"
+     ],
+     "aciklama": "Vali açıklaması: 400 bin ton üzeri (2018 haberi); Mısır Araştırma Enstitüsü Arifiye'de."
+    },
+    {
+     "malId": "findik",
+     "kademe": "t2",
+     "ilceler": [
+      "tr_54_akyazi",
+      "tr_54_hendek",
+      "tr_54_karasu",
+      "tr_54_kaynarca",
+      "tr_54_kocaali"
+     ],
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.kaynarcahaber.com/haber/findikta-sakarya-siralamasi-karasu-1inci-kaynarca-5inci-12450.html"
+     ],
+     "aciklama": "İlçe tahminleri (bin ton): Karasu 18,8, Hendek 13,7, Kocaali 12,6, Akyazı 6,7, Kaynarca 4,4."
+    }
+   ],
+   "aday": [
+    {
+     "malId": "parca",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Otomotiv yan sanayi; kaynak raporun ön önerisi, doğrulanmadı."
+    },
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Abhaz peyniri coğrafi işaretli [K3]; süt kaydı raporun ön önerisi, doğrulanmadı."
+    },
+    {
+     "malId": "ceviz",
+     "kademe": "t2",
+     "ilceler": [
+      "tr_54_sapanca"
+     ],
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html",
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ],
+     "aciklama": "Sapanca Cevizi yalnızca başvuru aşamasında (kaynak Kocaeli haber sitesi); Pamukova Ceviz Ezmesi tescilli (K3) ama ceviz üretimi kanıtlanmadı."
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_54_adapazari_beyaz_kestane_kabagi",
+     "ad": "Adapazarı Beyaz Kestane Kabağı",
+     "malId": "taze",
+     "ilceler": [
+      "tr_54_adapazari"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_54_adapazari_dartili_keskek",
+     "ad": "Adapazarı Dartılı Keşkek",
+     "malId": "gida",
+     "ilceler": [
+      "tr_54_adapazari"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_54_adapazari_islama_koftesi",
+     "ad": "Adapazarı Islama Köftesi",
+     "malId": "gida",
+     "ilceler": [
+      "tr_54_adapazari"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_54_adapazari_kabak_tatlisi",
+     "ad": "Adapazarı Kabak Tatlısı",
+     "malId": "gida",
+     "ilceler": [
+      "tr_54_adapazari"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_54_geyve_ayvasi",
+     "ad": "Geyve Ayvası",
+     "malId": "taze",
+     "ilceler": [
+      "tr_54_geyve"
+     ],
+     "tur": "mensei",
+     "yil": 2020,
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ],
+     "aciklama": "Menşe adı (2020): rapor §4.2 ve §7.4 üzerinden [K3]."
+    },
+    {
+     "kimlik": "ci_tr_54_kocaali_hurma_kurusu",
+     "ad": "Kocaali Hurma Kurusu",
+     "malId": "kuru_meyve",
+     "ilceler": [
+      "tr_54_kocaali"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_54_pamukova_ceviz_ezmesi",
+     "ad": "Pamukova Ceviz Ezmesi",
+     "malId": "gida",
+     "ilceler": [
+      "tr_54_pamukova"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_54_pamukova_kavunu",
+     "ad": "Pamukova Kavunu",
+     "malId": "taze",
+     "ilceler": [
+      "tr_54_pamukova"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_54_sakarya_abhaz_peyniri",
+     "ad": "Sakarya Abhaz Peyniri",
+     "malId": "sut_urunu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ]
+    },
+    {
+     "kimlik": "ci_tr_54_sapanca_cevizi",
+     "ad": "Sapanca Cevizi",
+     "malId": "ceviz",
+     "ilceler": [
+      "tr_54_sapanca"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "basvuru",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.41havadis.com/haber/kocaelinin-cografi-isaretli-lezzetleri-ve-el-sanatlari-h49614.html"
+     ],
+     "aciklama": "Kocaeli kaynağında [K2] başvuru aşamasında geçer; Sapanca, Sakarya ilçesidir. Başvuru aşamasında; dogrulandi yalnızca başvurunun varlığını gösterir (tescil anlamına gelmez)."
+    },
+    {
+     "kimlik": "ci_tr_54_tarakli_ugut_tatlisi",
+     "ad": "Taraklı Uğut Tatlısı",
+     "malId": "gida",
+     "ilceler": [
+      "tr_54_tarakli"
+     ],
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "tescilli",
+     "dogrulandi": true,
+     "kaynak": [
+      "https://www.sapanca.info/sakaryanin-cografi-isaretli-gastronomi-urunleri/"
+     ]
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_55",
+   "ad": "Samsun",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "aycicegi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "findik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tutun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: liman"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_55_bafra_pidesi",
+     "ad": "Bafra pidesi",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_56",
+   "ad": "Siirt",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "antep_fistigi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "dokuma_zanaat",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Siirt battaniyesi"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_57",
+   "ad": "Sinop",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "balik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "findik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_57_sinop_nokulu",
+     "ad": "Sinop nokulu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_58",
+   "ad": "Sivas",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "seker_pancari",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "cevher",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Divriği"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_59",
+   "ad": "Tekirdağ",
+   "iklimTipi": "balkan_kita",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "aycicegi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "uzum",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "arac",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: liman"
+    },
+    {
+     "malId": "kumas",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: raporun eski genel dokuma kaydı; mal kimliği kumas (docs/12 §10)"
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_59_tekirdag_koftesi",
+     "ad": "Tekirdağ köftesi",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_60",
+   "ad": "Tokat",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "seker_pancari",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tutun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "uzum",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "dokuma_zanaat",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Tokat yazması , genel"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_61",
+   "ad": "Trabzon",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "balik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "findik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yas_cay",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_61_vakfikebir_ekmegi",
+     "ad": "Vakfıkebir ekmeği",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_62",
+   "ad": "Tunceli",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_62_tunceli_dutu",
+     "ad": "Tunceli dutu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_63",
+   "ad": "Şanlıurfa",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "baharat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_63_urfa_isotu",
+     "ad": "Urfa isotu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_64",
+   "ad": "Uşak",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "seker_pancari",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "kumas",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: raporun eski genel dokuma kaydı; mal kimliği kumas (docs/12 §10)"
+    },
+    {
+     "malId": "un",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_64_usak_tarhanasi",
+     "ad": "Uşak tarhanası",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_65",
+   "ad": "Van",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "balik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: inci kefali"
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut_urunu",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_65_van_otlu_peyniri",
+     "ad": "Van otlu peyniri",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_66",
+   "ad": "Yozgat",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_66_yozgat_testi_kebabi",
+     "ad": "Yozgat testi kebabı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_67",
+   "ad": "Zonguldak",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "balik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yassi_celik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Ereğli, Erdemir ≈ 3,5 Mt/yıl"
+    }
+   ],
+   "aday": [
+    {
+     "malId": "celik",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "komur",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: taşkömürü"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_68",
+   "ad": "Aksaray",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "patates",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "tahil",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_69",
+   "ad": "Bayburt",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "dokuma_zanaat",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Bayburt ehramı"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_70",
+   "ad": "Karaman",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bakliyat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "elma",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "un",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_70_karaman_elmasi",
+     "ad": "Karaman elması",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_71",
+   "ad": "Kırıkkale",
+   "iklimTipi": "karasal",
+   "kapsam": "ozet",
+   "imza": [],
+   "aday": [
+    {
+     "malId": "celik",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "muhimmat",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yakit",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: rafineri"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_72",
+   "ad": "Batman",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "petrol",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: damar"
+    },
+    {
+     "malId": "yakit",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_73",
+   "ad": "Şırnak",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "komur",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: asfaltit"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_74",
+   "ad": "Bartın",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "balik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "komur",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Amasra"
+    },
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "sepet_hasir",
+     "kademe": "t3a",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Bartın tel kırması"
+    }
+   ],
+   "cografiIsaretler": []
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_75",
+   "ad": "Ardahan",
+   "iklimTipi": "dag_yayla",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "bal",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yun",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "sut",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "sut_urunu",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_75_ardahan_kasari",
+     "ad": "Ardahan kaşarı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_76",
+   "ad": "Iğdır",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "kayisi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_76_igdir_kayisisi",
+     "ad": "Iğdır kayısısı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_77",
+   "ad": "Yalova",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "gemi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "kivi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "sera_sebze",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_77_yalova_kivisi",
+     "ad": "Yalova kivisi",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_78",
+   "ad": "Karabük",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "baharat",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Safranbolu safranı"
+    }
+   ],
+   "aday": [
+    {
+     "malId": "celik",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Not: Kardemir ≈ 1 Mt/yıl; 1939"
+    },
+    {
+     "malId": "komur",
+     "kademe": "t1",
+     "planli": false,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_78_safranbolu_lokumu",
+     "ad": "Safranbolu lokumu",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_79",
+   "ad": "Kilis",
+   "iklimTipi": "kurak",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "zeytin",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "zeytinyagi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_79_kilis_zeytinyagi",
+     "ad": "Kilis zeytinyağı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_80",
+   "ad": "Osmaniye",
+   "iklimTipi": "akdeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "narenciye",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "pamuk",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "yer_fistigi",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [],
+   "cografiIsaretler": [
+    {
+     "kimlik": "ci_tr_80_osmaniye_yer_fistigi",
+     "ad": "Osmaniye yer fıstığı",
+     "koruma": [
+      "TURKPATENT"
+     ],
+     "durum": "belirsiz",
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ],
+     "aciklama": "Tür ve tescil durumu doğrulanmadı (rapor §4.3 örneği)."
+    }
+   ]
+  },
+  {
+   "ulke": "TR",
+   "il": "tr_81",
+   "ad": "Düzce",
+   "iklimTipi": "karadeniz",
+   "kapsam": "ozet",
+   "imza": [
+    {
+     "malId": "findik",
+     "kademe": "t2",
+     "planli": true,
+     "carpanPpm": 1100000,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "aday": [
+    {
+     "malId": "kereste",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "mobilya",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    },
+    {
+     "malId": "odun",
+     "kademe": "t1",
+     "planli": true,
+     "dogrulandi": false,
+     "kaynak": [
+      "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.3"
+     ]
+    }
+   ],
+   "cografiIsaretler": []
+  }
+ ]
+}

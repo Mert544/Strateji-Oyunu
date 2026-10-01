@@ -1,0 +1,822 @@
+{
+ "surum": 1,
+ "ulke": "TR",
+ "aciklama": "Ürün başına 12 aylık (ilk eleman Ocak) HAM hasat/üretim yoğunluk penceresi, ppm; yıllık toplam 12 000 000 (ortalama 1 000 000). mevsimli: en az bir ay 0; yil_boyu: tüm aylar > 0. Pencerede olmayan mal (sanayi, zanaat) ya da 0 ayı olmayan ürün yıl boyu etkin sayılır. Çekirdeğe giren profil: profil = (PPM − y) + y × pencere / PPM (urunProfiliPpm); y = varsayilanYogunlukPpm (Alfa-0'da 100 000–300 000). Kaynak: docs/arastirma/cesitlilik-uretim-katmanlari.md §4.5.",
+ "varsayilanYogunlukPpm": 200000,
+ "urunler": {
+  "antep_fistigi": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    4500000,
+    6000000,
+    1500000,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Ağustos sonu–Eylül (genel bilgi)."
+  },
+  "aycicegi": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5333334,
+    5333333,
+    1333333,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Ağustos–Eylül (genel bilgi)."
+  },
+  "bakliyat": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    5333334,
+    5333333,
+    1333333,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Nohut ve mercimek hasadı Haziran–Temmuz (genel bilgi)."
+  },
+  "bal": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    1846154,
+    2769231,
+    2769231,
+    2769230,
+    1846154,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Petek hasadı yaz ve sonbahar; çam balı Eylül–Ekim (genel bilgi)."
+  },
+  "balik": {
+   "tur": "yil_boyu",
+   "ppm": [
+    1925806,
+    1383871,
+    841936,
+    570968,
+    300000,
+    300000,
+    300000,
+    300000,
+    841936,
+    1383871,
+    1925806,
+    1925806
+   ],
+   "dogrulandi": true,
+   "kaynak": [
+    "https://www.ekoturk.com/haberler/balikcilar-1-eylulu-bekliyor-yeni-av-sezonu-basliyor/"
+   ],
+   "aciklama": "Hamsi av dönemi Eylül–Nisan, 15 Nisan–1 Eylül av yasağı; yetiştiricilik yıl boyu olduğundan taban üst sınırda."
+  },
+  "ceviz": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5142857,
+    5142857,
+    1714286,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Eylül–Ekim (genel bilgi)."
+  },
+  "elma": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1200000,
+    4800000,
+    4800000,
+    1200000,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Eylül–Ekim (genel bilgi)."
+  },
+  "et": {
+   "tur": "yil_boyu",
+   "ppm": [
+    1000000,
+    1000000,
+    1000000,
+    1000000,
+    1000000,
+    1000000,
+    1000000,
+    1000000,
+    1000000,
+    1000000,
+    1000000,
+    1000000
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Yıl boyu düz akış."
+  },
+  "findik": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    7000000,
+    5000000,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": true,
+   "kaynak": [
+    "https://www.aa.com.tr/tr/ekonomi/tmo-2026-2027-sezonu-kabuklu-findik-alim-fiyatlarini-belirledi/4020256"
+   ],
+   "aciklama": "Hasat Ağustos–Eylül; TMO alımı 24 Ağustos'tan."
+  },
+  "gul": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    6000000,
+    6000000,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Isparta gül hasadı Mayıs–Haziran (genel bilgi)."
+  },
+  "hashas": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    6000000,
+    6000000,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Temmuz–Ağustos (genel bilgi)."
+  },
+  "incir": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1333334,
+    5333333,
+    5333333,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Ağustos–Eylül (genel bilgi)."
+  },
+  "kayisi": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    6000000,
+    6000000,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": true,
+   "kaynak": [
+    "https://www.trthaber.com/haber/turkiye/malatyada-kayisi-hasadi-zamani-596108.html"
+   ],
+   "aciklama": "Hasat 15 Haziran–Temmuz sonu."
+  },
+  "kestane": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3428571,
+    6857143,
+    1714286,
+    0
+   ],
+   "dogrulandi": true,
+   "kaynak": [
+    "https://www.bursahakimiyet.com.tr/bursa/bursa-da-kestane-hasadi-basladi-2026-yili-kestane-ne-zaman-toplanir-hangi-ilcelerde-yetisiyor-1718843"
+   ],
+   "aciklama": "Hasat Eylül ikinci hafta–Ekim."
+  },
+  "kiraz": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    1333333,
+    6666667,
+    4000000,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Mayıs sonu–Temmuz (genel bilgi)."
+  },
+  "kivi": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1333334,
+    5333333,
+    5333333,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Ekim–Kasım (genel bilgi)."
+  },
+  "koza": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    4500000,
+    6000000,
+    1500000,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "İpekböceği kozası Mayıs–Haziran (genel bilgi)."
+  },
+  "misir": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5333334,
+    5333333,
+    1333333,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Tane mısır hasadı Eylül–Ekim (genel bilgi)."
+  },
+  "muz": {
+   "tur": "yil_boyu",
+   "ppm": [
+    1200000,
+    1200000,
+    1200000,
+    1200000,
+    800000,
+    800000,
+    800000,
+    800000,
+    800000,
+    800000,
+    1200000,
+    1200000
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Sera muzu yıl boyu; kış ve ilkbaharda hafif tepe (genel bilgi)."
+  },
+  "narenciye": {
+   "tur": "mevsimli",
+   "ppm": [
+    2571429,
+    2571428,
+    1714286,
+    857143,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1714286,
+    2571428
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Kasım–Nisan (genel bilgi)."
+  },
+  "odun": {
+   "tur": "yil_boyu",
+   "ppm": [
+    800000,
+    800000,
+    800000,
+    800000,
+    800000,
+    1280000,
+    1280000,
+    1280000,
+    1280000,
+    1280000,
+    800000,
+    800000
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Yıl boyu; yaz ve sonbaharda hafif tepe (genel bilgi)."
+  },
+  "pamuk": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5333334,
+    5333333,
+    1333333,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Eylül–Ekim (genel bilgi)."
+  },
+  "patates": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    1090909,
+    2181818,
+    2181818,
+    3272728,
+    3272727,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Patates ve soğan hasadı yaz ve sonbahar (genel bilgi)."
+  },
+  "pirinc": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5333334,
+    5333333,
+    1333333,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Eylül–Ekim (genel bilgi)."
+  },
+  "sarimsak": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    4000000,
+    6666667,
+    1333333,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Haziran–Temmuz (genel bilgi)."
+  },
+  "seftali": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    2181818,
+    4363637,
+    4363636,
+    1090909,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Haziran–Eylül (genel bilgi)."
+  },
+  "seker_pancari": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3272727,
+    4363637,
+    3272727,
+    1090909
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Şeker kampanyası Eylül–Aralık (genel bilgi)."
+  },
+  "sera_sebze": {
+   "tur": "yil_boyu",
+   "ppm": [
+    800000,
+    800000,
+    1142857,
+    1485715,
+    1485714,
+    1142857,
+    800000,
+    800000,
+    800000,
+    1142857,
+    800000,
+    800000
+   ],
+   "dogrulandi": true,
+   "kaynak": [
+    "https://www.tarimorman.gov.tr/Konular/Bitkisel-Uretim/Tarla-Ve-Bahce-Bitkileri/Ortu-Alti-Yetistiricilik"
+   ],
+   "aciklama": "Örtü altı yetiştiricilik yıl boyu."
+  },
+  "sut": {
+   "tur": "yil_boyu",
+   "ppm": [
+    800000,
+    800000,
+    1066667,
+    1333333,
+    1600000,
+    1333333,
+    1066667,
+    800000,
+    800000,
+    800000,
+    800000,
+    800000
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Yıl boyu; baharda tepe (genel bilgi)."
+  },
+  "tahil": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    5333334,
+    5333333,
+    1333333,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": true,
+   "kaynak": [
+    "https://www.bloomberght.com/tmo-2026-yili-hububat-alim-ve-satis-fiyatlarini-acikladi-3778801"
+   ],
+   "aciklama": "Hasat Haziran–Temmuz; TMO hububat alım fiyatı Haziran'da açıklanır."
+  },
+  "taze": {
+   "tur": "yil_boyu",
+   "ppm": [
+    600000,
+    600000,
+    600000,
+    600000,
+    1080000,
+    1560000,
+    1560000,
+    1560000,
+    1560000,
+    1080000,
+    600000,
+    600000
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Meyve-sebze toplamı: yıl boyu, yaz ve sonbaharda tepe (genel bilgi)."
+  },
+  "tutun": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1200000,
+    4800000,
+    4800000,
+    1200000,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Ağustos–Eylül (genel bilgi)."
+  },
+  "uzum": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    4000000,
+    5333333,
+    2666667,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Ağustos–Ekim (genel bilgi)."
+  },
+  "yas_cay": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    2000000,
+    2000000,
+    2000000,
+    2000000,
+    2000000,
+    2000000,
+    0,
+    0
+   ],
+   "dogrulandi": true,
+   "kaynak": [
+    "https://www.rtb.org.tr/en/rize-cayi"
+   ],
+   "aciklama": "Mayıs–Ekim, 3 sürgün; rapor örneği eşit ağırlık."
+  },
+  "yer_fistigi": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5333334,
+    5333333,
+    1333333,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Hasat Eylül–Ekim (genel bilgi)."
+  },
+  "yun": {
+   "tur": "mevsimli",
+   "ppm": [
+    0,
+    0,
+    0,
+    0,
+    5142857,
+    5142857,
+    1714286,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "dogrulandi": false,
+   "kaynak": [
+    "docs/arastirma/cesitlilik-uretim-katmanlari.md#4.5"
+   ],
+   "aciklama": "Kırkım Mayıs–Haziran (genel bilgi)."
+  },
+  "zeytin": {
+   "tur": "mevsimli",
+   "ppm": [
+    2000000,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3000000,
+    4000000,
+    3000000
+   ],
+   "dogrulandi": true,
+   "kaynak": [
+    "https://yagtakip.com/blog/zeytin-hasadi-ne-zaman-baslar"
+   ],
+   "aciklama": "Hasat Ekim–Ocak; Gemlik sofralık Ekim–Kasım, yağlık Kasım–Ocak."
+  }
+ }
+}

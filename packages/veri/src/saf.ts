@@ -6,3 +6,4 @@ export * from "./tipler";
 export * from "./dogrula";
 export * from "./parsel";
 export { HaritaSema, IcerikSema, ParametreSema } from "./sema";
+export * from "./il-imza";
