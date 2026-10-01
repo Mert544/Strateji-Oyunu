@@ -66,3 +66,15 @@
 - **Akış:** ajan raporunu kendi liderine gönderir → lider inceler, gerekirse düzeltme ister → onaylanan iş ve sentez baş lidere gelir → baş lider doğrular, karar verir, GitHub'a gönderir.
 - **Teknik not:** alt ajanlar kendi ajanlarını açamadığı için tüm ajanları baş lider açar; ajanlar raporlarını mesajla doğrudan liderlerine gönderir.
 - **Profesyonel ürün ilkesi:** renkler, bina yapıları ve 3B görselleme amatör görünmemeli; haritada ve arayüzde büyük harf kullanılmaz.
+
+## 10. Baş lider kararları — Ar-Ge dalgası 3 (sentez: [argelider-sentez-1](arastirma/argelider-sentez-1.md))
+Sahip "genel kararları baş lider versin" dedi; aşağıdakiler sentezin önerileri üzerine verildi. Sahip itiraz ederse değişir.
+- **Şimdi kilitlenenler (G1–G7):** kamu arsası çekirdekte zorunlu (satılmaz, `parsel_al`/`yapi_yerlestir` reddeder, yurt atlar); kamu kimliği `k:mahalle` / `k:ilce` / `k:il`; `kamu_karar` v1 günlük şeması + gündem ve zaman aşımı kural yedeği; **para alanı taşıyan sistem ya da ajan komutu yok** (ödüller çekirdek tablosundan); mal kimlikleri ilk içerik sürümünden önce kilitli; oyuncu serbest metni ajana girmez, değerlendirme kör; kural yedeği her zaman açık.
+- **Kamu arsası (S3):** kabul. Mahalle paketi 20 hücre (meydan + pazar yeri + park) + %4 hazine rezervi + ilçe merkezi 8–12 hücre + kıyı şeridi 2 hücre; yoğun ilçede toplam ≈%8–9. Oranlar parametre; rezerv halkanın ilk arsası satılmadan dondurulur.
+- **Perakende (S4, S6):** kendi dükkânın küçük primi (≈%3–16) kabul; asıl değeri pazar doyunca zinciri kurtarması. Üretmeyen dükkânın ithal alıp satması meşru ticaret oyunudur; ZP11 ölçütüyle izlenir, gerekirse raf fiyat tavanı açılır.
+- **Uzmanlaşma (S5):** Alfa-0'da tek oyuncunun kapalı zinciri; ara kademe uzmanlığı Alfa-1'de oyuncular arası sözleşmeyle gelir.
+- **Muhtarlık (S9):** oyuncu ek yapısı olmaktan çıkar, kamu yapısı olur (mülk kipinde oyuncuya kapalı).
+- **Mal kimlikleri:** `tekstil` → `kumas` + `hazir_giyim`; `ekmek` ve `sekerleme` ayrı mal; `findik_urunu` taban 240. Alfa-0 için 4 zincir (ekmek, cam → pencere, süt → şarküteri, fındık → şekerleme) ve 23 mal; tek yeni yapı `dukkan` (tür verisiyle).
+- **Kamu ihalesi ve fiyat tavanı:** tek ihale motoru, ağırlık profilleri (Alfa-0 öncesi profil M = yalnız fiyat; sonra profil Y = %70/%20/%10), sunucu-mühürlü kapalı teklif; tüm kamu/sipariş tavanları ithalat paritesinde (1,10 R). Kamu bütçesi yalnız zaten yanan paradan (ithalat makası ve komisyonu, arazi vergisi, hak bedelleri).
+- **Yapay zekâ (S1, S2):** varsayılan **(b+)**: ajan ihaleyi tasarlar ve gerekçeyi yazar, kör teknik puanı toplamın en çok %10–20'si; kazananı kural seçer. "API anahtarı" = sunucudaki kamu ajanının tek anahtarı (harcama tavanlı). Ajan Alfa-0'ın kritik yolunda değil (gölge kip). Sahibin yanıtıyla değişebilir.
+- **Alfa-0 P0 (sıra):** kamu arsası verisi ve çekirdek reddi → para güvenliği (ödül tablosu, kamu kasası, kamu NPC alıcısı) → mal kimlik kilidi ve 9 yeni mal → ekmek zinciri + dükkân → cam → pencere zinciri → Esnaf Defteri P0 → sabit fiyatlı kamu siparişi v0. Alfa-0'a girmeyenler: ihale, kira ve haklar, canlı ajan.
