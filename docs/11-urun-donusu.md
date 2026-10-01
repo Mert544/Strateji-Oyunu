@@ -662,3 +662,10 @@ Sahip, hücre hücre arsa seçmenin zamanla sıkıcı olacağını belirtti. Kar
 - **Hücre ızgarası:** yalnız ileri düzey araç (Shift) ya da gizli.
 - **Tasarım ilkesi:** arsa edinimi oyunun ilk dakikaları ve ara sıra genişleme; döngünün ağırlığı üretim, ticaret, yönetişim ve rekabette. ≤72 hücre / ≤%25 sınırı ve boş arsa vergisi biriktirmeyi kârsız tutar.
 - **Uygulama:** F4 istemci entegrasyonunda; çekirdek ve sunucu değişmez (yalnız yerleşim + satın alma tek komut zinciri olarak gönderilir).
+
+## Ek karar (1 Ekim, sahip): askeri güç ana eğlence ayaklarından biri
+Döngünün dört ayağına (üretim, ticaret, ilçe/il yönetimi, rekabet) **askeri güç** beşinci ayak olarak eklendi. İlke: **parsel asla el değiştirmez**; savaş toprağı değil, **kontrolü** kazandırır.
+- **Ne için savaşılır:** il/ilçe kontrolü (valilik ve muhtarlık seçimine aday gösterme hakkı, il vergi bandı, liman/ticaret yolu geçiş ücreti), ortak kaynakların (maden damarı, su, enerji hattı) kullanım payı, abluka ile rakibin pazara erişimini geciktirme, sınırlı yağma (depo stoğunun ≤%25'i).
+- **Araçlar:** Ordugâh (birlik üretimi: mühimmat + gıda), il komutanlığında havuzlanan birlikler, savunma yapıları (karakol, sur/barikat), ittifaklar (lonca) ve ortak sefer.
+- **Adalet (H5 korumaları):** savunanın seçtiği 4 saatlik yoğun saat bandı, ≥49 saat ara, binaların ≤%10'u geçici devre dışı, yeni oyuncuya 14 gün kalkan, hareketsiz oyuncuya saldırı ödülsüz.
+- **Takvim:** Alfa-0'da Ordugâh + birlik üretimi + savunma ve **NPC eşkıya baskınları** (PvE; ekonomiye askeri talep yaratır). Alfa-1'de oyuncular arası il kontrol savaşları ve ittifaklar. Mevcut bölge kipi askeri modülü (`cekirdek/src/askeri/`) işletme düğümlerine taşınarak yeniden kullanılır.
