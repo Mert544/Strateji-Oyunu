@@ -11,7 +11,7 @@ import { girisHtml, hesapHtml } from "../src/giris/ekran-html";
 
 const d = (k: Partial<GirisDurumu>): GirisDurumu => ({
   ekran: "g2", eposta: "a@b.co", gonderiyor: false, hata: null, yenidenGonderBitis: 0, gonderimSayisi: 3, tekrarSiniri: false, tekrarGonderildi: false,
-  gecerlilikSn: 600, jetonVar: false, basari: false, oyuncu: null, yeniHesap: false, cikisYapildi: false, ...k,
+  gecerlilikSn: 600, jetonVar: false, basari: false, oyuncu: null, yeniHesap: false, cikisYapildi: false, ad: null, adSecildi: null, adGirdi: "", adSurumu: 0, adYukleniyor: false, adSinirBitis: 0, adSonuc: null, ...k,
 });
 const b = { kalanSn: () => 0, epostaDegeri: "" };
 

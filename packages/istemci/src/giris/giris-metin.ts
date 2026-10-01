@@ -3,8 +3,8 @@
  * Anahtarlar A1'inkiyle birebir: `giris.G1.baslik`, hata anahtarları `giris.G6.<kod>` (kod = K2 `GirisHataKodu` + `ag_hatasi`,
  * `zaman_asimi`). Yer tutucular `{ad}` biçimindedir ve tek yerde doldurulur (`metin`). Metinler HİÇBİR YERDE kod içine yazılmaz.
  *
- * SAHİP METNİ, KOD DIŞINDA TEK YER: `giris.destek_eposta` ve `giris.kvkk_url` (baş lider kararı). İkisi de sahip söyleyene dek
- * BOŞTUR; boşken destek satırları ve veri kullanımı bağlantısı GÖSTERİLMEZ. Sahip söyleyince yalnız bu iki satır değişir.
+ * SAHİP METNİ, KOD DIŞINDA TEK YER: `giris.destek_eposta`, `giris.kvkk_url` ve `giris.riza_metni` (rıza/aydınlatma cümlesi; T1 ve K1 yazmaz,
+ * baş lider kararı). Üçü de sahip söyleyene dek BOŞTUR; boşken destek satırları ve veri kullanımı bağlantısı GÖSTERİLMEZ. Sahip söyleyince yalnız bu iki satır değişir.
  *
  * Sızdırmazlık: hiçbir metinde davetli olup olmama, hesabın varlığı, e-posta sınırı ya da posta sonucu ima edilmez.
  */
@@ -83,6 +83,8 @@ export const GIRIS_METIN = {
   "giris.G3.yeni_iste": "Yeni bağlantı iste",
   "giris.G8.vazgec": "Vazgeç",
   // Sahip metni (boş: ilgili satır gösterilmez)
+  "giris.G4.dugme_oner": "Başka öner",
+  "giris.riza_metni": "",
   "giris.destek_eposta": "",
   "giris.kvkk_url": "",
 } as const;
@@ -122,3 +124,5 @@ export function metinVar(anahtar: string): boolean {
 /** Sahip metni dolu mu (boşsa satır/bağlantı gösterilmez). */
 export const destekEpostasi = (): string => GIRIS_METIN["giris.destek_eposta"];
 export const kvkkAdresi = (): string => GIRIS_METIN["giris.kvkk_url"];
+/** Rıza/aydınlatma cümlesi (sahip metni); boşsa G-1'de satır gösterilmez. */
+export const rizaMetni = (): string => GIRIS_METIN["giris.riza_metni"];

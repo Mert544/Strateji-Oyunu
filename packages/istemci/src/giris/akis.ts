@@ -2,8 +2,8 @@
  * Giriş akışı (G9-a; DOM yok): ekran durumu makinesi. Ekranlar G9-b'dedir (T1 sözleşmesi `data-ekran`: g1…g4, g7); burada YALNIZ
  * hangi ekranın ne zaman göründüğü, gönderim/bekleme/sayaç kuralları ve hata sunumu vardır.
  *
- *   yukleniyor --(?j=<jeton>)--> g3 --giris yap--> [yeni hesap] g4 --tamam--> oyun
- *       |                         |                [dönen]      ------------> oyun
+ *   yukleniyor --(?j=<jeton>)--> g3 --giris yap--> [ad seçilmedi] g4 --tamam--> oyun
+ *       |                         |                [ad seçildi]  ------------> oyun
  *       |--(oturum çerezi var)----+---------------------------------------> oyun
  *       `--(yok)--> g1 --bağlantı gönder--> g2 --(postadaki bağlantı, başka sekme/tarayıcı)--> g3
  *   oyun/yeniden bağlanma sırasında oturum biterse: g7 --giriş yap--> g1
@@ -15,9 +15,13 @@
  *   göremez; bu yüzden sayaç istemcidedir, adres başına, YALNIZ bellektedir (kaydedilmez; sayfa yenilenince sıfırlanır).
  * - `hiz_siniri` (IP/genel) g1/g2/g3'te düğmeyi kapatır, canlı geri sayım `hataBitis` ile (yukarı yuvarlı dakika: `hata.ts`).
  * - g3'te `gecici_eposta` G-1'e döndürür (alan listesi istekten sonra güncellenmiş olabilir).
+ * - g4 (görünen ad): sunucu onay/ben yanıtında `adSecildi === false` derse (yeni hesap ya da adı hiç seçilmemiş): alan sunucunun şimdiki (otomatik) adıyla dolu gelir,
+ *   "Başka öner" `GET /giris/ad-oner` ile yeni bir opak öneri getirir (kaydetmez), "Tamam" `POST /giris/ad` ile seçer. Ad alanı yoksa (sunucuda özellik kapalı) g4 hiç görünmez.
+ *   Ayarlar'da aynı uç adı değiştirir (`adDegistir`): günde bir kez (`ad_sinir`: düğme kapanır, `adSinirBitis`).
  * - Token `localStorage`'a yazılmaz; jeton yalnız bellekte tutulur ve onaydan sonra silinir.
  * - Zaman `simdi()` ile okunur (sınamada sahte); zamanlayıcı yoktur: arayüz geri sayımı `kalanSn()` ile çizer.
  */
+import { adHatasi, adHataAnahtari } from "./ad";
 import { epostaAnahtari, epostaKontrol } from "./eposta";
 import { hataAnahtari, hataEylemi, hizSiniriDakika } from "./hata";
 import type { GirisEkraniAdi, HataEylemi } from "./hata";
@@ -71,6 +75,18 @@ export interface GirisDurumu {
   yeniHesap: boolean;
   /** Çıkıştan sonra g1: `giris.G8.sonuc` gösterilir. */
   cikisYapildi: boolean;
+  /** Hesabın şimdiki görünen adı (sunucu; otomatik ya da seçilen) ve seçilip seçilmediği; sunucuda özellik kapalıysa ikisi de null. */
+  ad: string | null;
+  adSecildi: boolean | null;
+  /** g4: önerilen/doldurulacak alan değeri; `adSurumu` her değişimde artar (görünüm yalnız artınca alanı üzerine yazar, yazarken ezmez). */
+  adGirdi: string;
+  adSurumu: number;
+  /** g4: yeni öneri getiriliyor (`giris.G4.oneri_yukleniyor`). */
+  adYukleniyor: boolean;
+  /** Ayarlar: günlük değişiklik sınırı dolu (`ad_sinir`); sınırın biteceği an (ms, `simdi()` cinsinden), yoksa 0. */
+  adSinirBitis: number;
+  /** Ayarlar: son başarılı değişiklik sonucu (`giris.G4.ayar_sonuc` {ad}); bir sonraki işlemde silinir. */
+  adSonuc: string | null;
 }
 
 function ilkDurum(): GirisDurumu {
@@ -89,11 +105,18 @@ function ilkDurum(): GirisDurumu {
     oyuncu: null,
     yeniHesap: false,
     cikisYapildi: false,
+    ad: null,
+    adSecildi: null,
+    adGirdi: "",
+    adSurumu: 0,
+    adYukleniyor: false,
+    adSinirBitis: 0,
+    adSonuc: null,
   };
 }
 
 export interface GirisAkisiSecenekleri {
-  api: Pick<GirisApi, "istek" | "onayla" | "ben" | "cikis" | "cikisTumu">;
+  api: Pick<GirisApi, "istek" | "onayla" | "ben" | "cikis" | "cikisTumu" | "adOner" | "adKaydet">;
   saglayici: Pick<BiletSaglayici, "onceden" | "temizle" | "oturumYokDinle">;
   /** Yerel saat (ms); sınamada sahte. */
   simdi?: () => number;
@@ -158,6 +181,12 @@ export class GirisAkisi {
     if (!b.tamam) {
       // oturum yok ya da sunucuya ulaşılamadı: giriş ekranı (ağ hatası alan altında)
       this.ayarla({ ekran: "g1", ...(b.kod === "oturum_yok" ? { hata: null } : { hata: this.hataYap(b, "g1") }) });
+      return;
+    }
+    this.adBilgisi(b.veri.ad, b.veri.adSecildi);
+    if (b.veri.adSecildi === false) {
+      this.ayarla({ oyuncu: b.veri.oyuncu });
+      this.adEkraniAc();
       return;
     }
     await this.oturumaGec(b.veri.oyuncu, false);
@@ -238,8 +267,9 @@ export class GirisAkisi {
     }
     this.jeton = null; // tek kullanımlık; bellekten de at
     this.ayarla({ gonderiyor: false, jetonVar: false, basari: true, oyuncu: r.veri.oyuncu, yeniHesap: r.veri.yeniHesap });
-    if (r.veri.yeniHesap) {
-      this.ayarla({ ekran: "g4" });
+    this.adBilgisi(r.veri.ad, r.veri.adSecildi);
+    if (r.veri.adSecildi === false) {
+      this.adEkraniAc();
       return;
     }
     await this.oturumaGec(r.veri.oyuncu, false);
@@ -251,10 +281,85 @@ export class GirisAkisi {
     this.ayarla({ ekran: "g1", jetonVar: false, hata: null, basari: false });
   }
 
-  /** g4 tamam (görünen ad G9-c'de bağlanır): oyuna geç. */
-  async adTamamlandi(): Promise<void> {
-    if (this.d.ekran !== "g4") return;
-    await this.oturumaGec(this.d.oyuncu ?? "", true);
+  // --- görünen ad (g4 ve Ayarlar) -----------------------------------------------------------------------
+
+  private adBilgisi(ad: string | undefined, secildi: boolean | undefined): void {
+    this.ayarla({ ad: ad ?? null, adSecildi: secildi ?? null });
+  }
+
+  /** g4'ü açar: alan sunucunun şimdiki adıyla dolu gelir; ad yoksa hemen öneri istenir. */
+  private adEkraniAc(): void {
+    this.ayarla({ ekran: "g4", gonderiyor: false, hata: null, adGirdi: this.d.ad ?? "", adSurumu: this.d.adSurumu + 1, adYukleniyor: false, basari: false });
+    if (this.d.ad === null) void this.adOner();
+  }
+
+  /** g4 "Başka öner": sunucudan yeni opak öneri (kaydetmez); alan önerilenle dolar. */
+  async adOner(): Promise<void> {
+    if (this.d.adYukleniyor || this.d.gonderiyor) return;
+    this.ayarla({ adYukleniyor: true, hata: null });
+    const r = await this.api.adOner();
+    if (!r.tamam) {
+      this.adHatasiIsle(r, "");
+      this.ayarla({ adYukleniyor: false });
+      return;
+    }
+    this.ayarla({ adYukleniyor: false, adGirdi: r.veri.ad, adSurumu: this.d.adSurumu + 1 });
+  }
+
+  /**
+   * "Tamam" (g4) ya da Ayarlar "Değiştir": yerel denetim, sonra `POST /giris/ad`. g4'te başarıda oyuna geçilir; Ayarlar'da ekran değişmez ve `adSonuc` yazılır.
+   * Dönen değer işlemin başarısıdır (görünüm düzenleyiciyi kapatır).
+   */
+  async adKaydet(girdi: string): Promise<boolean> {
+    if (this.d.gonderiyor || this.d.adYukleniyor) return false;
+    const yerel = adHatasi(girdi);
+    if (yerel !== null) {
+      this.ayarla({ hata: { kod: "ad_gecersiz", anahtar: adHataAnahtari(yerel), eylem: "alanda-kal" }, adSonuc: null });
+      return false;
+    }
+    this.ayarla({ gonderiyor: true, hata: null, adSonuc: null });
+    const r = await this.api.adKaydet(girdi);
+    if (!r.tamam) {
+      this.adHatasiIsle(r, girdi);
+      this.ayarla({ gonderiyor: false });
+      return false;
+    }
+    this.ayarla({ gonderiyor: false, ad: r.veri.ad, adSecildi: true, hata: null, adSinirBitis: 0 });
+    if (this.d.ekran === "g4") {
+      await this.oturumaGec(this.d.oyuncu ?? "", this.d.yeniHesap);
+    } else this.ayarla({ adSonuc: r.veri.ad });
+    return true;
+  }
+
+  /** Ayarlar'da hata/sonucu temizler (düzenleyici açılıp kapanırken). */
+  adHatasiniTemizle(): void {
+    this.ayarla({ hata: null, adSonuc: null });
+  }
+
+  /** Ayarlar: günlük sınır doluyken "Değiştir" kapalıdır. */
+  adSinirDolu(): boolean {
+    return this.d.adSinirBitis > this.simdi();
+  }
+
+  private adHatasiIsle(r: GirisHatasiBilgisi, girdi: string): void {
+    if (r.kod === "oturum_yok") {
+      // oturum bitti: g4'te de G-7 (oturumBitti giriş ekranlarında sessizdir)
+      this.saglayici.temizle();
+      this.ayarla({ ekran: "g7", hata: this.hataYap({ kod: "oturum_yok" }, "g7"), gonderiyor: false });
+      return;
+    }
+    if (r.kod === "ad_gecersiz") {
+      // sunucu reddetti: yerel denetimin türünü kullan; yerel geçerliyse (kural farkı) genel "karakter"
+      const yerel = adHatasi(girdi);
+      this.ayarla({ hata: { kod: "ad_gecersiz", anahtar: yerel !== null ? adHataAnahtari(yerel) : "giris.G4.karakter", eylem: "alanda-kal" } });
+      return;
+    }
+    if (r.kod === "ad_sinir") {
+      const sn = r.beklemeSn !== undefined && r.beklemeSn > 0 ? r.beklemeSn : 3600;
+      this.ayarla({ hata: this.hataYap(r, "g4"), adSinirBitis: this.simdi() + sn * 1000 });
+      return;
+    }
+    this.ayarla({ hata: this.hataYap(r, "g4") });
   }
 
   // --- oyun, oturum -----------------------------------------------------------------------------------

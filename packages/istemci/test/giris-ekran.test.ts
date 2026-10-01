@@ -27,6 +27,13 @@ function durum(k: Partial<GirisDurumu> = {}): GirisDurumu {
     oyuncu: null,
     yeniHesap: false,
     cikisYapildi: false,
+    ad: null,
+    adSecildi: null,
+    adGirdi: "",
+    adSurumu: 0,
+    adYukleniyor: false,
+    adSinirBitis: 0,
+    adSonuc: null,
     ...k,
   };
 }
@@ -48,7 +55,7 @@ describe("metin tablosu", () => {
       expect(k.startsWith("giris."), k).toBe(true);
       expect(BUYUK_SOZCUK.test(v), `${k}: ${v}`).toBe(false);
       expect(v.includes("₺"), k).toBe(false);
-      if (k !== "giris.destek_eposta" && k !== "giris.kvkk_url") expect(v.length, k).toBeGreaterThan(0);
+      if (k !== "giris.destek_eposta" && k !== "giris.kvkk_url" && k !== "giris.riza_metni") expect(v.length, k).toBeGreaterThan(0);
     }
   });
 
@@ -219,7 +226,6 @@ describe("ekranlar: T1 sözleşmesi adları", () => {
 
   it("açılış yükleniyor ve oyun: yükleniyor durumu bekleme metni; oyun ekranında içerik yok", () => {
     expect(girisHtml(durum({ ekran: "yukleniyor" }), b())).toContain("Dünyana bağlanıyoruz.");
-    expect(girisHtml(durum({ ekran: "g4" }), b())).toContain("Dünyana bağlanıyoruz."); // G9-c'ye dek adım atlanır
     expect(girisHtml(durum({ ekran: "oyun" }), b())).toBe("");
   });
 });

@@ -9,7 +9,7 @@
  *   gibi "fırlatan" tüketiciler içindir.
  * - Hesabın var olup olmadığı yanıttan ayrılamaz (K2 sızdırmaz); burada da hiçbir ayrım yapılmaz.
  */
-import type { GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
+import type { GirisAdOneriYaniti, GirisAdYaniti, GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
 
 /*
  * ÖNEMLİ (boyut): bu dosya kabuk paketine (dunya.html) girer. `@bolge/protokol` ÇALIŞMA ZAMANINDA içe aktarılmaz (zod ve bütün ws şemaları
@@ -21,12 +21,14 @@ export const GIRIS_YOLLARI = {
   onay: "/giris/onay",
   bilet: "/giris/bilet",
   ben: "/giris/ben",
+  ad: "/giris/ad",
+  adOner: "/giris/ad-oner",
   cikis: "/giris/cikis",
   cikisTumu: "/giris/cikis-tumu",
 } as const;
 
 /** `GirisHataKodu` (protokol `giris.ts`) değerlerinin kopyası; sınama eşitliği korur. */
-export const GIRIS_HATA_KODLARI: readonly GirisHataKodu[] = ["gecersiz_istek", "gecersiz_eposta", "gecici_eposta", "hiz_siniri", "baglanti_gecersiz", "tarayici_uyumsuz", "oturum_yok", "origin", "yontem", "bulunamadi", "ic_hata"];
+export const GIRIS_HATA_KODLARI: readonly GirisHataKodu[] = ["gecersiz_istek", "gecersiz_eposta", "gecici_eposta", "hiz_siniri", "baglanti_gecersiz", "tarayici_uyumsuz", "ad_gecersiz", "ad_yasakli", "ad_sinir", "oturum_yok", "origin", "yontem", "bulunamadi", "ic_hata"];
 
 type Nesne = Record<string, unknown>;
 const nesneMi = (v: unknown): v is Nesne => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -37,14 +39,28 @@ const dizge = (v: unknown, enAz: number, enCok: number): v is string => typeof v
 type Dogrula<T> = (v: unknown) => T | null;
 
 const dogrulaIstek: Dogrula<GirisIstekYaniti> = (v) => (nesneMi(v) && v["tamam"] === true && tamsayi(v["gecerlilikSn"], 1) ? { tamam: true, gecerlilikSn: v["gecerlilikSn"] } : null);
-const dogrulaOnay: Dogrula<GirisOnayYaniti> = (v) =>
-  nesneMi(v) && v["tamam"] === true && typeof v["yeniHesap"] === "boolean" && dizge(v["oyuncu"], 1, 32) ? { tamam: true, yeniHesap: v["yeniHesap"], oyuncu: v["oyuncu"] } : null;
+/** Görünen ad alanları (isteğe bağlı; sunucuda ad özelliği kapalıysa yok): ad 2-24 karakter, `adSecildi` boolean. Bozuksa bütün yanıt geçersizdir. */
+function adAlanlari(v: Nesne): { ad?: string; adSecildi?: boolean } | null {
+  const ad = v["ad"];
+  const sec = v["adSecildi"];
+  if (ad !== undefined && !dizge(ad, 2, 24)) return null;
+  if (sec !== undefined && typeof sec !== "boolean") return null;
+  return { ...(ad !== undefined ? { ad } : {}), ...(sec !== undefined ? { adSecildi: sec } : {}) };
+}
+const dogrulaOnay: Dogrula<GirisOnayYaniti> = (v) => {
+  if (!(nesneMi(v) && v["tamam"] === true && typeof v["yeniHesap"] === "boolean" && dizge(v["oyuncu"], 1, 32))) return null;
+  const a = adAlanlari(v);
+  return a === null ? null : { tamam: true, yeniHesap: v["yeniHesap"], oyuncu: v["oyuncu"], ...a };
+};
 const dogrulaBilet: Dogrula<GirisBiletYaniti> = (v) =>
   nesneMi(v) && v["tamam"] === true && dizge(v["bilet"], 1, 4096) && tamsayi(v["bitis"], 1) && dizge(v["oyuncu"], 1, 32) ? { tamam: true, bilet: v["bilet"], bitis: v["bitis"], oyuncu: v["oyuncu"] } : null;
-const dogrulaBen: Dogrula<GirisBenYaniti> = (v) =>
-  nesneMi(v) && v["tamam"] === true && typeof v["eposta"] === "string" && dizge(v["oyuncu"], 1, 32) && tamsayi(v["oturumBitis"], 1) && tamsayi(v["oturumMutlakBitis"], 1)
-    ? { tamam: true, eposta: v["eposta"], oyuncu: v["oyuncu"], oturumBitis: v["oturumBitis"], oturumMutlakBitis: v["oturumMutlakBitis"] }
-    : null;
+const dogrulaBen: Dogrula<GirisBenYaniti> = (v) => {
+  if (!(nesneMi(v) && v["tamam"] === true && typeof v["eposta"] === "string" && dizge(v["oyuncu"], 1, 32) && tamsayi(v["oturumBitis"], 1) && tamsayi(v["oturumMutlakBitis"], 1))) return null;
+  const a = adAlanlari(v);
+  return a === null ? null : { tamam: true, eposta: v["eposta"], oyuncu: v["oyuncu"], oturumBitis: v["oturumBitis"], oturumMutlakBitis: v["oturumMutlakBitis"], ...a };
+};
+const dogrulaAd: Dogrula<GirisAdYaniti> = (v) => (nesneMi(v) && v["tamam"] === true && dizge(v["ad"], 2, 24) && v["adSecildi"] === true ? { tamam: true, ad: v["ad"], adSecildi: true } : null);
+const dogrulaAdOneri: Dogrula<GirisAdOneriYaniti> = (v) => (nesneMi(v) && v["tamam"] === true && dizge(v["ad"], 2, 24) ? { tamam: true, ad: v["ad"] } : null);
 const dogrulaTamam: Dogrula<{ tamam: true }> = (v) => (nesneMi(v) && v["tamam"] === true ? { tamam: true } : null);
 
 /** Hata gövdesi `{tamam:false, kod, mesaj, beklemeSn?}`; `mesaj` okunmaz ama biçim denetlenir. */
@@ -125,6 +141,16 @@ export class GirisApi {
   /** `GET /giris/ben`: oturum var mı (yoksa `oturum_yok`). */
   ben(): Promise<GirisSonucu<GirisBenYaniti>> {
     return this.cagir(GIRIS_YOLLARI.ben, "GET", dogrulaBen);
+  }
+
+  /** `GET /giris/ad-oner`: yeni bir opak ad önerisi (KAYDETMEZ; hız sınırlıdır). */
+  adOner(): Promise<GirisSonucu<GirisAdOneriYaniti>> {
+    return this.cagir(GIRIS_YOLLARI.adOner, "GET", dogrulaAdOneri);
+  }
+
+  /** `POST /giris/ad {ad}`: görünen adı seçer ya da değiştirir (sunucu kanonik küçük harfe çevirir; günde bir değişiklik). */
+  adKaydet(ad: string): Promise<GirisSonucu<GirisAdYaniti>> {
+    return this.cagir(GIRIS_YOLLARI.ad, "POST", dogrulaAd, { ad });
   }
 
   /** `POST /giris/cikis`: bu oturumu kapatır (idempotan). */

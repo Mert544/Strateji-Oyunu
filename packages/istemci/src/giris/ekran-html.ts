@@ -9,13 +9,16 @@
 import { ikon } from "../tasarim/ikon";
 import { esc, sureMetni } from "../arayuz/bicim";
 import type { GirisDurumu } from "./akis";
-import { destekEpostasi, kvkkAdresi, metin, metinHam, metinVar } from "./giris-metin";
+import { AD_MAX, adCanliHatasi, adHataAnahtari, adOnizleme } from "./ad";
+import { destekEpostasi, kvkkAdresi, metin, metinHam, metinVar, rizaMetni } from "./giris-metin";
 
 export interface EkranBaglami {
   /** Geri sayım için kalan tam saniye (`GirisAkisi.kalanSn`). */
   kalanSn: (bitis: number) => number;
   /** g1 giriş alanının şimdiki değeri (yeniden çizimde korunur). */
   epostaDegeri: string;
+  /** g4 görünen ad alanının şimdiki değeri (yeniden çizimde korunur; yoksa `durum.adGirdi`). */
+  adDegeri?: string;
 }
 
 const dugmeAdi = (s: string): string => esc(s);
@@ -78,6 +81,7 @@ function g1(d: GirisDurumu, b: EkranBaglami): string {
   const gonderiyor = d.gonderiyor;
   const hataAlan = hata && hata.eylem !== "yenile" ? "true" : "false";
   const kvkk = kvkkAdresi();
+  const riza = rizaMetni();
   const dugmeDurum = gonderiyor ? ' data-durum="yukleniyor"' : "";
   return `<section class="gr-ekran" data-ekran="g1" data-durum="${gonderiyor ? "yukleniyor" : hizda ? "hiz" : hata ? "hata" : "bos"}" aria-labelledby="gr-baslik">
   ${baslik("giris.G1.baslik")}
@@ -95,6 +99,7 @@ function g1(d: GirisDurumu, b: EkranBaglami): string {
     </div>
   </form>
   <p class="gr-kucuk">${esc(metin("giris.G1.kucuk_yazi"))}</p>
+  ${riza !== "" ? `<p class="gr-kucuk" data-kod="riza">${esc(riza)}</p>` : ""}
   ${kvkk !== "" ? `<a class="gr-baglanti" data-eylem="veri-kullanimi" href="${esc(kvkk)}" target="_blank" rel="noopener noreferrer">${esc(metin("giris.G1.veri_baglanti"))}</a>` : ""}
 </section>`;
 }
@@ -149,6 +154,43 @@ function g3(d: GirisDurumu, b: EkranBaglami): string {
 </section>`;
 }
 
+/** Görünen ad alanı parçaları (g4 ve Ayarlar düzenleyicisi ortak): etiket, alan, sayaç, büyük harf notu, önizleme, hata. `ek` kimlik önekidir. */
+export function adAlaniHtml(deger: string, hata: { anahtar: string; kod: string } | null, o: { yukleniyor: boolean; onek: string }): string {
+  const canli = adCanliHatasi(deger);
+  const goster = hata ?? (canli !== null ? { anahtar: adHataAnahtari(canli), kod: "ad_gecersiz" } : null);
+  const onizleme = adOnizleme(deger);
+  const id = `${o.onek}ad`;
+  return `<div class="gr-alan">
+      <label class="gr-etiket" for="${id}">${esc(metin("giris.G4.alan"))}</label>
+      <input id="${id}" class="gr-girdi" type="text" name="ad" maxlength="${AD_MAX}" autocomplete="nickname" autocapitalize="off" spellcheck="false" value="${esc(deger)}" aria-describedby="${o.onek}ad-ipucu ${o.onek}ad-hata"${goster ? ` aria-invalid="true" data-durum="hata"` : ""}${o.yukleniyor ? ` aria-busy="true"` : ""}>
+      <span class="gr-sayac" data-alan="ad-sayac">${esc(metin("giris.G4.sayac", { n: deger.length }))}</span>
+      <p id="${o.onek}ad-ipucu" class="gr-ipucu">${esc(metin("giris.G4.buyuk_harf"))}</p>
+      <p class="gr-onizleme" data-alan="ad-onizleme" aria-live="polite">${onizleme !== null ? esc(metin("giris.G4.onizleme", { ad: onizleme })) : ""}</p>
+      <p id="${o.onek}ad-hata" class="gr-hata" role="alert"${goster ? ` data-kod="${esc(goster.kod)}"` : ""}>${goster ? esc(metin(goster.anahtar)) : ""}</p>
+    </div>`;
+}
+
+/** G-4: görünen ad (yeni hesap ya da adı hiç seçilmemiş hesap). Alan sunucunun şimdiki adıyla dolu gelir; "Başka öner" yeni öneri, "Tamam" seçer. */
+function g4(d: GirisDurumu, b: EkranBaglami): string {
+  const deger = b.adDegeri ?? d.adGirdi;
+  const gonderiyor = d.gonderiyor;
+  const yukleniyor = d.adYukleniyor;
+  const hata = d.hata ? { anahtar: d.hata.anahtar, kod: d.hata.kod } : null;
+  const durum = gonderiyor ? "yukleniyor" : yukleniyor ? "oneri" : hata ? "hata" : "bos";
+  return `<section class="gr-ekran" data-ekran="g4" data-durum="${durum}" aria-labelledby="gr-baslik">
+  ${baslik("giris.G4.baslik")}
+  <p class="gr-govde">${esc(metin("giris.G4.govde"))}</p>
+  <form class="gr-form" novalidate data-eylem="ad-form">
+    ${adAlaniHtml(deger, hata, { yukleniyor, onek: "gr-" })}
+    ${yukleniyor ? `<p class="gr-ipucu" role="status" data-kod="oneri-yukleniyor">${esc(metin("giris.G4.oneri_yukleniyor"))}</p>` : ""}
+    <div class="gr-eylemler">
+      <button class="birincil gr-dugme" type="submit" data-eylem="ad-tamam"${gonderiyor ? ' data-durum="yukleniyor" disabled' : yukleniyor ? ' aria-disabled="true"' : ""}>${dugmeAdi(metin("giris.G4.dugme"))}</button>
+      <button class="eylem gr-dugme" type="button" data-eylem="ad-oner"${gonderiyor ? " disabled" : yukleniyor ? ' aria-disabled="true"' : ""}>${ikon("refresh-cw", 16)} ${esc(metin("giris.G4.dugme_oner"))}</button>
+    </div>
+  </form>
+</section>`;
+}
+
 /** G-7: oturum süresi doldu. */
 function g7(): string {
   const { ilk, kalan } = cumleBol(metin("giris.G7.doldu"));
@@ -183,8 +225,7 @@ export function girisHtml(d: GirisDurumu, b: EkranBaglami): string {
       ekran = g3(d, b);
       break;
     case "g4":
-      // Görünen ad (G9-c): ekran henüz yok, görünüm adım atlanır; burada yalnız bekleme gösterilir
-      ekran = yukleniyor();
+      ekran = g4(d, b);
       break;
     case "g7":
       ekran = g7();
@@ -196,11 +237,44 @@ export function girisHtml(d: GirisDurumu, b: EkranBaglami): string {
 }
 
 /** G-8: Ayarlar'daki hesap bölümü (e-posta maskeli) ve "tüm cihazlardan çık" onayı. */
-export function hesapHtml(o: { eposta: string; onayAcik: boolean; cikiyor: boolean }): string {
+/** Ayarlar'daki görünen ad satırı ve düzenleyicisi (G-4 Ayarlar satırı). */
+export interface HesapAdi {
+  /** Şimdiki ad (yoksa satır yazılmaz: sunucuda özellik kapalı). */
+  ad: string | null;
+  duzenle: boolean;
+  /** Düzenleyici alan değeri ve hata (metin anahtarı). */
+  girdi: string;
+  hata: { anahtar: string; kod: string } | null;
+  /** Günlük sınır dolu: "Değiştir" aria-disabled + `gunluk_sinir`. */
+  sinir: boolean;
+  /** Son başarılı değişiklik (`ayar_sonuc`). */
+  sonuc: string | null;
+  gonderiyor: boolean;
+}
+
+function hesapAdiHtml(a: HesapAdi): string {
+  if (a.ad === null) return "";
+  let s = `<p class="gr-hesap-ad">${esc(metin("giris.G4.ayar_satiri", { ad: a.ad }))}</p>`;
+  if (!a.duzenle) {
+    s += `<button class="eylem mini-dugme" type="button" data-eylem="ad-degistir"${a.sinir ? ' aria-disabled="true" aria-describedby="gr-hesap-ad-sinir"' : ""}>${esc(metin("giris.G4.ayar_degistir"))}</button>`;
+    if (a.sinir) s += `<p id="gr-hesap-ad-sinir" class="gr-ipucu">${esc(metin("giris.G4.gunluk_sinir"))}</p>`;
+    if (a.sonuc !== null) s += `<p class="gr-ipucu" role="status" data-kod="ad-sonuc">${esc(metin("giris.G4.ayar_sonuc", { ad: a.sonuc }))}</p>`;
+    return s;
+  }
+  return (
+    s +
+    `<form class="gr-form" novalidate data-eylem="ad-ayar-form">${adAlaniHtml(a.girdi, a.hata, { yukleniyor: false, onek: "gr-hesap-" })}` +
+    `<div class="gr-eylemler"><button class="birincil gr-dugme" type="submit" data-eylem="ad-kaydet"${a.gonderiyor ? ' data-durum="yukleniyor" disabled' : ""}>${esc(metin("giris.G4.dugme"))}</button>` +
+    `<button class="eylem gr-dugme" type="button" data-eylem="ad-vazgec"${a.gonderiyor ? " disabled" : ""}>${esc(metin("giris.G8.vazgec"))}</button></div></form>`
+  );
+}
+
+export function hesapHtml(o: { eposta: string; onayAcik: boolean; cikiyor: boolean; ad?: HesapAdi }): string {
   const destek = destekEpostasi();
   const dis = o.cikiyor ? " disabled" : "";
   return `<section class="gr-hesap" aria-label="${esc(metin("giris.G8.cikis"))}" data-giris-hesap>
   ${o.eposta !== "" ? `<p class="gr-hesap-eposta">${esc(metin("giris.G8.eposta_satiri", { adres: epostaMaske(o.eposta) }))}</p>` : ""}
+  ${o.ad ? hesapAdiHtml(o.ad) : ""}
   <button class="eylem" type="button" data-eylem="cikis"${dis}>${ikon("log-out", 16)} ${esc(metin("giris.G8.cikis"))}</button>
   <button class="eylem" type="button" data-eylem="cikis-tumu"${dis}>${esc(metin("giris.G8.cikis_tumu"))}</button>
   ${destek !== "" ? `<p class="gr-ipucu">${yerHtml(metinHam("giris.G8.silme_bilgi"), { destek_eposta: `<a class="gr-baglanti" href="mailto:${esc(destek)}">${esc(destek)}</a>` })}</p>` : ""}

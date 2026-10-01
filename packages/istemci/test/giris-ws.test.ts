@@ -14,6 +14,7 @@ import { GirisApi } from "../src/giris/api";
 import { GirisAkisi, YENIDEN_GONDER_MS } from "../src/giris/akis";
 import { BILET_OMRU_MS, BiletSaglayici } from "../src/giris/oturum";
 import { WsBaglanti } from "../src/harita/baglanti-ws";
+import { adKanonik } from "@bolge/cekirdek";
 
 let ortam: GirisOrtami | null = null;
 let ts2: TestSunucusu | null = null;
@@ -79,12 +80,12 @@ async function girisYap(o: GirisOrtami, c: ReturnType<typeof istemci>, eposta: s
   await c.akis.basla(jeton);
   expect(c.akis.durum.ekran).toBe("g3");
   await c.akis.onayla();
-  if (c.akis.durum.ekran === "g4") await c.akis.adTamamlandi(); // yeni hesap: görünen ad (G9-c) şimdilik geçilir
+  if (c.akis.durum.ekran === "g4") await c.akis.adKaydet("deneme oyuncu"); // görünen ad özelliği açıksa (adKurali) yeni hesap g4'ten geçer
 }
 
 describe("giriş mantığı: gerçek sunucu, e-posta kimliği", () => {
   it("tam akış: g1 → g2 → posta → g3 → yeni hesap g4 → oyun; ws bilet işleviyle bağlanır, kimlik biletten gelir", async () => {
-    ortam = await girisOrtami();
+    ortam = await girisOrtami({ hizmet: { adKurali: adKanonik } });
     const o = ortam;
     const c = istemci(o);
     await c.akis.basla();
@@ -106,8 +107,10 @@ describe("giriş mantığı: gerçek sunucu, e-posta kimliği", () => {
     // Çerez httpOnly'dir: kavanoz (tarayıcı) taşır, istemci kodu okumaz; token hiçbir yere yazılmadı
     expect([...c.kavanoz.cerezler.keys()]).toContain("bolge_oturum");
 
-    await c.akis.adTamamlandi();
-    expect(c.akis.durum).toMatchObject({ ekran: "oyun", oyuncu });
+    expect(c.akis.durum).toMatchObject({ adSecildi: false });
+    expect(c.akis.durum.ad).toBeTruthy(); // sunucu opak bir ad üretti; alan onunla dolu
+    await c.akis.adKaydet("Deneme Oyuncu");
+    expect(c.akis.durum).toMatchObject({ ekran: "oyun", oyuncu, ad: "deneme oyuncu", adSecildi: true });
     const ws = await wsAc(o, c.saglayici);
     expect(ws.ben.id).toBe(oyuncu);
     expect(ws.durum).toBe("bagli");
@@ -172,7 +175,6 @@ describe("giriş mantığı: gerçek sunucu, e-posta kimliği", () => {
     const o = ortam;
     const c = istemci(o);
     await girisYap(o, c, "deniz@ornek.org");
-    await c.akis.adTamamlandi();
     const ws = await wsAc(o, c.saglayici);
     expect(c.akis.durum.ekran).toBe("oyun");
     // Başka cihazdan "tüm cihazlardan çık": sunucu bu oturumun ws bağlantısını 4003 ile kapatır
@@ -201,7 +203,7 @@ describe("giriş mantığı: gerçek sunucu, e-posta kimliği", () => {
     const { jeton } = await o.sonPosta();
     await c.akis.basla(jeton);
     await c.akis.onayla();
-    expect(c.akis.durum.ekran).toBe("g4");
+    expect(c.akis.durum.ekran).toBe("oyun"); // görünen ad özelliği kapalı: ad ekranı yok
     const baskasi = istemci(o);
     await baskasi.akis.basla(jeton);
     await baskasi.akis.onayla();
@@ -260,6 +262,91 @@ describe("giriş mantığı: gerçek sunucu, e-posta kimliği", () => {
     expect(akis.durum).toMatchObject({ ekran: "g1", hata: { kod: "ag_hatasi", anahtar: "giris.G6.ag_hatasi", eylem: "yeniden-dene" } });
     await akis.epostaGonder("ali@ornek.org");
     expect(akis.durum).toMatchObject({ ekran: "g1", hata: { kod: "ag_hatasi" } });
+  });
+});
+
+describe("görünen ad (G9-c): gerçek sunucu, adKurali açık", () => {
+  async function adliOrtam(): Promise<GirisOrtami> {
+    ortam = await girisOrtami({ hizmet: { adKurali: adKanonik } });
+    return ortam;
+  }
+
+  async function yeniHesapG4(o: GirisOrtami, eposta: string) {
+    const c = istemci(o);
+    await c.akis.basla();
+    await c.akis.epostaGonder(eposta);
+    await o.hizmet.bosta();
+    const { jeton } = await o.sonPosta();
+    await c.akis.basla(jeton);
+    await c.akis.onayla();
+    expect(c.akis.durum).toMatchObject({ ekran: "g4", adSecildi: false });
+    return c;
+  }
+
+  it("Başka öner opak öneri getirir (kaydetmez); alan sunucunun adıyla dolu gelir; hız sınırı g4'te kalır", async () => {
+    const o = await adliOrtam();
+    const c = await yeniHesapG4(o, "oya@ornek.org");
+    const ilkAd = c.akis.durum.ad!;
+    expect(c.akis.durum.adGirdi).toBe(ilkAd);
+    expect(adKanonik(ilkAd)).toMatchObject({ tamam: true, ad: ilkAd }); // kanonik, küçük harfli
+    const surum = c.akis.durum.adSurumu;
+    await c.akis.adOner();
+    expect(c.akis.durum.adSurumu).toBe(surum + 1);
+    expect(c.akis.durum.adGirdi).not.toBe("");
+    expect(c.akis.durum.ad).toBe(ilkAd); // öneri kaydetmedi
+    expect(await c.api.ben()).toMatchObject({ tamam: true, veri: { ad: ilkAd, adSecildi: false } });
+    // oturum başına sınır (kapasite 10): sınırı aşınca hiz_siniri g4'te alan hatası olarak kalır, oyun açılmaz
+    for (let i = 0; i < 12; i++) await c.akis.adOner();
+    expect(c.akis.durum).toMatchObject({ ekran: "g4", adYukleniyor: false });
+    expect(c.akis.durum.hata).toMatchObject({ kod: "hiz_siniri" });
+  });
+
+  it("adı seçmek: kanonik küçük harf kaydedilir, oyuna geçilir, ws kimlik açar; ben() adSecildi=true", async () => {
+    const o = await adliOrtam();
+    const c = await yeniHesapG4(o, "kaan@ornek.org");
+    const oyuncu = c.akis.durum.oyuncu!;
+    expect(await c.akis.adKaydet("Işık Çiftliği")).toBe(true);
+    expect(c.akis.durum).toMatchObject({ ekran: "oyun", ad: "ışık çiftliği", adSecildi: true, oyuncu });
+    const ben = await c.api.ben();
+    expect(ben).toMatchObject({ tamam: true, veri: { ad: "ışık çiftliği", adSecildi: true } });
+    const ws = await wsAc(o, c.saglayici);
+    expect(ws.ben.id).toBe(oyuncu);
+  });
+
+  it("yerel ret ağa gitmez; sunucu reddi (yasaklı olmayan kural farkı yok) alan hatasıdır; ad değişmez", async () => {
+    const o = await adliOrtam();
+    const c = await yeniHesapG4(o, "naz@ornek.org");
+    const onceki = c.akis.durum.ad;
+    expect(await c.akis.adKaydet("a")).toBe(false);
+    expect(c.akis.durum.hata?.anahtar).toBe("giris.G4.uzunluk");
+    expect(await c.akis.adKaydet("ali@x")).toBe(false);
+    expect(c.akis.durum.hata?.anahtar).toBe("giris.G4.karakter");
+    expect(c.akis.durum).toMatchObject({ ekran: "g4", ad: onceki });
+    expect(await c.api.ben()).toMatchObject({ tamam: true, veri: { ad: onceki, adSecildi: false } });
+  });
+
+  it("dönen hesap adı hiç seçmediyse açılışta g4; seçtiyse doğrudan oyun; Ayarlar değişimi günde bir kez (ad_sinir)", async () => {
+    const o = await adliOrtam();
+    const c = await yeniHesapG4(o, "efe@ornek.org");
+    // adı seçmeden sayfa yenilendi: aynı çerez, yeni sayfa
+    const yenile = istemci(o, c.kavanoz);
+    await yenile.akis.basla();
+    expect(yenile.akis.durum).toMatchObject({ ekran: "g4", oyuncu: c.akis.durum.oyuncu, adSecildi: false });
+    await yenile.akis.adKaydet("efe usta");
+    expect(yenile.akis.durum).toMatchObject({ ekran: "oyun", ad: "efe usta" });
+    const sonra = istemci(o, c.kavanoz);
+    await sonra.akis.basla();
+    expect(sonra.akis.durum).toMatchObject({ ekran: "oyun", ad: "efe usta", adSecildi: true });
+    // otomatik addan ilk seçim günlük sınıra sayılmaz: bugün ilk değişiklik serbest, ikincisi ad_sinir
+    expect(await sonra.akis.adKaydet("efe baba")).toBe(true);
+    expect(sonra.akis.durum).toMatchObject({ ekran: "oyun", ad: "efe baba", adSonuc: "efe baba" });
+    expect(await sonra.akis.adKaydet("efe dede")).toBe(false);
+    expect(sonra.akis.durum.hata).toMatchObject({ kod: "ad_sinir", anahtar: "giris.G4.gunluk_sinir" });
+    expect(sonra.akis.adSinirDolu()).toBe(true);
+    expect(sonra.akis.durum.ad).toBe("efe baba");
+    // bir sonraki gün serbest (saat ilerler)
+    o.saat.ilerlet(25 * 3_600_000);
+    expect(sonra.akis.adSinirDolu()).toBe(false);
   });
 });
 

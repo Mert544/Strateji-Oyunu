@@ -31,6 +31,13 @@ export function hataAnahtari(kod: IstemciHataKodu): string {
     case "bulunamadi":
     case "yanit":
       return "giris.G6.ic_hata";
+    // Görünen ad uçları (G-4): yerel denetim türü bilinmiyorsa sunucunun reddi "karakter" iletisine düşer
+    case "ad_gecersiz":
+      return "giris.G4.karakter";
+    case "ad_yasakli":
+      return "giris.G4.ad_yasakli";
+    case "ad_sinir":
+      return "giris.G4.gunluk_sinir";
     default:
       return `giris.G6.${kod}`;
   }
@@ -40,6 +47,9 @@ export function hataAnahtari(kod: IstemciHataKodu): string {
 export function hataEylemi(kod: IstemciHataKodu, ekran: GirisEkraniAdi): HataEylemi {
   switch (kod) {
     case "gecersiz_eposta":
+    case "ad_gecersiz":
+    case "ad_yasakli":
+    case "ad_sinir":
       return "alanda-kal";
     case "gecici_eposta":
       // g1: alanda kal; g3: onayda çıkabilir (liste istekten sonra güncellenmiş) → G-1'e dön, kalıcı adresle iste

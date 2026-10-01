@@ -296,7 +296,7 @@ describe("BiletSaglayici", () => {
 
 type Api = ConstructorParameters<typeof GirisAkisi>[0]["api"];
 
-function sahteAkis(o: { istek?: Api["istek"]; onayla?: Api["onayla"]; ben?: Api["ben"]; cikis?: Api["cikis"]; cikisTumu?: Api["cikisTumu"]; onceden?: () => Promise<{ tamam: true; bilet: string; bitis: number; oyuncu: string }> } = {}) {
+function sahteAkis(o: { istek?: Api["istek"]; onayla?: Api["onayla"]; ben?: Api["ben"]; cikis?: Api["cikis"]; cikisTumu?: Api["cikisTumu"]; adOner?: Api["adOner"]; adKaydet?: Api["adKaydet"]; onceden?: () => Promise<{ tamam: true; bilet: string; bitis: number; oyuncu: string }> } = {}) {
   const zaman = { t: 5_000_000 };
   const istekler: string[] = [];
   const tamam = <T,>(veri: T): GirisSonucu<T> => ({ tamam: true, veri });
@@ -306,6 +306,8 @@ function sahteAkis(o: { istek?: Api["istek"]; onayla?: Api["onayla"]; ben?: Api[
     ben: o.ben ?? (async () => ({ tamam: false, kod: "oturum_yok", durum: 401 })),
     cikis: o.cikis ?? (async () => tamam({ tamam: true as const })),
     cikisTumu: o.cikisTumu ?? (async () => tamam({ tamam: true as const })),
+    adOner: o.adOner ?? (async () => tamam({ tamam: true as const, ad: "sakin degirmenci 321" })),
+    adKaydet: o.adKaydet ?? (async (ad: string) => tamam({ tamam: true as const, ad: ad.toLocaleLowerCase("tr"), adSecildi: true as const })),
   };
   let yokDinleyici: (() => void) | null = null;
   let temizlendi = 0;
@@ -488,13 +490,110 @@ describe("GirisAkisi: g3, g4, oyun", () => {
     expect(n).toBe(1);
   });
 
-  it("yeni hesap: g4; ad tamamlanınca oyun (yeniHesap bayrağı korunur)", async () => {
+  it("yeni hesap (ad seçilmedi): g4, alan sunucunun adıyla dolu; adı kaydedince oyun (yeniHesap bayrağı korunur)", async () => {
+    const { akis } = sahteAkis({ onayla: async () => ({ tamam: true, veri: { tamam: true, yeniHesap: true, oyuncu: "o_8", ad: "çalışkan çiftçi 427", adSecildi: false } }) });
+    await akis.basla("jtn");
+    await akis.onayla();
+    expect(akis.durum).toMatchObject({ ekran: "g4", yeniHesap: true, oyuncu: "o_8", ad: "çalışkan çiftçi 427", adSecildi: false, adGirdi: "çalışkan çiftçi 427", adYukleniyor: false });
+    expect(await akis.adKaydet("Ali Çiftçi")).toBe(true);
+    expect(akis.durum).toMatchObject({ ekran: "oyun", yeniHesap: true, ad: "ali çiftçi", adSecildi: true });
+  });
+
+  it("ad alanı yoksa (sunucuda özellik kapalı) yeni hesap g4 görmez: doğrudan oyun", async () => {
     const { akis } = sahteAkis({ onayla: async () => ({ tamam: true, veri: { tamam: true, yeniHesap: true, oyuncu: "o_8" } }) });
     await akis.basla("jtn");
     await akis.onayla();
-    expect(akis.durum).toMatchObject({ ekran: "g4", yeniHesap: true, oyuncu: "o_8" });
-    await akis.adTamamlandi();
-    expect(akis.durum).toMatchObject({ ekran: "oyun", yeniHesap: true });
+    expect(akis.durum).toMatchObject({ ekran: "oyun", yeniHesap: true, ad: null, adSecildi: null });
+  });
+
+  it("dönen hesap ama ad hiç seçilmemiş: açılışta (ben) g4; ad seçilmişse doğrudan oyun", async () => {
+    const ben = (adSecildi: boolean): Api["ben"] => async () => ({ tamam: true, veri: { tamam: true, eposta: "a@b.co", oyuncu: "o_9", oturumBitis: 9, oturumMutlakBitis: 9, ad: "sakin degirmenci 100", adSecildi } });
+    const a = sahteAkis({ ben: ben(false) });
+    await a.akis.basla();
+    expect(a.akis.durum).toMatchObject({ ekran: "g4", oyuncu: "o_9", adGirdi: "sakin degirmenci 100" });
+    const b = sahteAkis({ ben: ben(true) });
+    await b.akis.basla();
+    expect(b.akis.durum).toMatchObject({ ekran: "oyun", ad: "sakin degirmenci 100", adSecildi: true });
+  });
+
+  it("Başka öner: yeni öneri alanı doldurur (sürüm artar), kaydetmez; yükleniyor durumu ve çift tıklama yok", async () => {
+    let n = 0;
+    let birak: (() => void) | null = null;
+    const { akis } = sahteAkis({
+      onayla: async () => ({ tamam: true, veri: { tamam: true, yeniHesap: true, oyuncu: "o_8", ad: "çalışkan çiftçi 427", adSecildi: false } }),
+      adOner: () => new Promise((coz) => (n++, (birak = () => coz({ tamam: true, veri: { tamam: true, ad: "neşeli değirmenci 555" } })))),
+    });
+    await akis.basla("jtn");
+    await akis.onayla();
+    const surum = akis.durum.adSurumu;
+    const p = akis.adOner();
+    expect(akis.durum.adYukleniyor).toBe(true);
+    void akis.adOner(); // uçuşta: ikinci istek yok
+    expect(n).toBe(1);
+    birak!();
+    await p;
+    expect(akis.durum).toMatchObject({ adYukleniyor: false, adGirdi: "neşeli değirmenci 555", ekran: "g4" });
+    expect(akis.durum.adSurumu).toBe(surum + 1);
+    expect(akis.durum.ad).toBe("çalışkan çiftçi 427"); // sunucudaki ad değişmedi (öneri kaydetmez)
+  });
+
+  it("ad yoksa (otomatik ad üretilmemiş) g4 hemen öneri ister", async () => {
+    const { akis } = sahteAkis({
+      ben: async () => ({ tamam: true, veri: { tamam: true, eposta: "a@b.co", oyuncu: "o_9", oturumBitis: 9, oturumMutlakBitis: 9, adSecildi: false } }),
+    });
+    await akis.basla();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(akis.durum).toMatchObject({ ekran: "g4", adGirdi: "sakin degirmenci 321", adYukleniyor: false });
+  });
+
+  it("adKaydet: yerel denetim ağa gitmeden hata verir; sunucu ret kodları ilgili metne çevrilir; oturum_yok g7'ye", async () => {
+    let cagri = 0;
+    const kurulum = (adKaydet: Api["adKaydet"]) =>
+      sahteAkis({ onayla: async () => ({ tamam: true, veri: { tamam: true, yeniHesap: true, oyuncu: "o_8", ad: "çalışkan çiftçi 427", adSecildi: false } }), adKaydet: async (ad: string) => (cagri++, adKaydet(ad)) });
+    const a = kurulum(async () => ({ tamam: false, kod: "ad_yasakli", durum: 422 }));
+    await a.akis.basla("j");
+    await a.akis.onayla();
+    expect(await a.akis.adKaydet("a")).toBe(false);
+    expect(cagri).toBe(0);
+    expect(a.akis.durum.hata).toMatchObject({ kod: "ad_gecersiz", anahtar: "giris.G4.uzunluk", eylem: "alanda-kal" });
+    expect(await a.akis.adKaydet('ali "x"')).toBe(false);
+    expect(a.akis.durum.hata?.anahtar).toBe("giris.G4.cift_tirnak_tire");
+    expect(await a.akis.adKaydet("ali")).toBe(false);
+    expect(cagri).toBe(1);
+    expect(a.akis.durum).toMatchObject({ ekran: "g4", gonderiyor: false, hata: { kod: "ad_yasakli", anahtar: "giris.G4.ad_yasakli" } });
+
+    const sinir = kurulum(async () => ({ tamam: false, kod: "ad_sinir", durum: 429, beklemeSn: 7200 }));
+    await sinir.akis.basla("j");
+    await sinir.akis.onayla();
+    await sinir.akis.adKaydet("ali");
+    expect(sinir.akis.durum.hata).toMatchObject({ kod: "ad_sinir", anahtar: "giris.G4.gunluk_sinir" });
+    expect(sinir.akis.adSinirDolu()).toBe(true);
+    sinir.zaman.t += 7_200_001;
+    expect(sinir.akis.adSinirDolu()).toBe(false);
+
+    const sunucuRet = kurulum(async () => ({ tamam: false, kod: "ad_gecersiz", durum: 422 }));
+    await sunucuRet.akis.basla("j");
+    await sunucuRet.akis.onayla();
+    await sunucuRet.akis.adKaydet("ali"); // yerel geçerli, sunucu reddetti: genel "karakter" iletisi
+    expect(sunucuRet.akis.durum.hata?.anahtar).toBe("giris.G4.karakter");
+
+    const bitti = kurulum(async () => ({ tamam: false, kod: "oturum_yok", durum: 401 }));
+    await bitti.akis.basla("j");
+    await bitti.akis.onayla();
+    await bitti.akis.adKaydet("ali");
+    expect(bitti.akis.durum).toMatchObject({ ekran: "g7", hata: { kod: "oturum_yok" } });
+    expect(bitti.temizlendi()).toBeGreaterThan(0);
+  });
+
+  it("Ayarlar: ekran değişmeden ad değişir, sonuç yazılır; hata yazmayı bozmaz", async () => {
+    const { akis } = sahteAkis({ ben: async () => ({ tamam: true, veri: { tamam: true, eposta: "a@b.co", oyuncu: "o_9", oturumBitis: 9, oturumMutlakBitis: 9, ad: "ali", adSecildi: true } }) });
+    await akis.basla();
+    expect(akis.durum).toMatchObject({ ekran: "oyun", ad: "ali" });
+    expect(await akis.adKaydet("Veli Usta")).toBe(true);
+    expect(akis.durum).toMatchObject({ ekran: "oyun", ad: "veli usta", adSonuc: "veli usta", hata: null });
+    akis.adHatasiniTemizle();
+    expect(akis.durum.adSonuc).toBeNull();
   });
 
   it("baglanti_gecersiz: g3'te kalır, 'yeni bağlantı iste' eylemi; yeniden onay jetonsuz G-1'e düşer", async () => {
