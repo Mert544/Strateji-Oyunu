@@ -194,3 +194,19 @@ describe("para biçimi yasağı (T-1)", () => {
     }
   });
 });
+
+/** Toast (B-tost): haritanın fare ve dokunma olaylarını yutmaz; yalnız kapatma düğmesi tıklanır. Gerçek tıklama sınaması f4-uctan-uca'da. */
+describe("toast olay geçirgenliği", () => {
+  const css = readFileSync(join(KOK, "src", "arayuz", "stil.css"), "utf8");
+  const blok = (sec: string): string => new RegExp(`(?:^|\\n)${sec.replace(/[.#]/g, "\\$&")} \\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+  it("#bildirimler ve .bildirim pointer-events: none; .bildirim-kapat auto", () => {
+    expect(blok("#bildirimler")).toMatch(/pointer-events:\s*none/);
+    expect(blok(".bildirim")).toMatch(/pointer-events:\s*none/);
+    expect(blok(".bildirim-kapat")).toMatch(/pointer-events:\s*auto/);
+  });
+  it("masaüstünde sabit sağ üst köşe, telefonda tek satır ve tek toast", () => {
+    expect(css).toMatch(/@media \(min-width: 821px\) \{\s*html body:not\(\.yuru-acik\) #bildirimler \{[^}]*top: 64px;[^}]*right:/);
+    expect(css).toMatch(/\.bildirim:not\(:last-child\) \{ display: none; \}/);
+    expect(css).toMatch(/\.bildirim > span \{[^}]*text-overflow: ellipsis/);
+  });
+});

@@ -270,6 +270,17 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.waitForSelector("#bildirimler .bildirim.tamam", { timeout: 20000 });
   const toast = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
   kontrol(`${e} arsa satın alındı bildirimi (Türkçe)`, /Arsa satın alındı: \d+ hücre, [\d.]+\s₺\./.test(toast), toast);
+  // Toast haritanın fare ve dokunma olaylarını yutmaz: açık toast'ın ORTASINDA elementFromPoint haritanın tuvalini verir (toast kapatılmadan)
+  const toastOrta = await sayfa.evaluate(() => {
+    const t = document.querySelector("#bildirimler .bildirim");
+    if (!t) return null;
+    const r = t.getBoundingClientRect();
+    const x = r.left + r.width / 2;
+    const y = r.top + r.height / 2;
+    const el = document.elementFromPoint(x, y);
+    return { x: Math.round(x), y: Math.round(y), sinif: el?.className?.toString() ?? el?.tagName ?? "yok", kanvas: !!el?.classList.contains("maplibregl-canvas") };
+  });
+  kontrol(`${e} toast açıkken ortasındaki nokta harita tuvaline gider (olay yutmaz; sabit köşe)`, !!toastOrta?.kanvas, JSON.stringify(toastOrta));
   const sunucudaSahip = (): number => {
     const m = ts.yazar.sim.dunya.mulk;
     return m ? m.hucreler.filter((h) => h.sahip === "ali").length : 0;
@@ -616,6 +627,12 @@ async function ayse(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: stri
   await sayfa.waitForTimeout(300);
   const p = await hucreNoktasi(sayfa, arsa.hucreler[1]!);
   if (p) {
+    // Toast açıkken (kapatılmadan) hayaletin sabitleneceği dokunma noktasında harita tuvali olmalı: toast dokunmayı yutmaz
+    const dokunma = await sayfa.evaluate(([x, y]) => {
+      const el = document.elementFromPoint(x as number, y as number);
+      return { toast: document.querySelectorAll("#bildirimler .bildirim").length, sinif: el?.className?.toString() ?? el?.tagName ?? "yok", kanvas: !!el?.classList.contains("maplibregl-canvas") };
+    }, [p.x, p.y] as const);
+    kontrol(`${e} toast açıkken dokunma noktasında harita tuvali (toast dokunmayı yutmaz)`, dokunma.toast > 0 && dokunma.kanvas, JSON.stringify(dokunma));
     await sayfa.touchscreen.tap(p.x, p.y);
     await sayfa.waitForTimeout(400);
     const k = await kart(sayfa);

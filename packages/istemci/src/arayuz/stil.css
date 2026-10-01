@@ -343,6 +343,16 @@ body.oyuncu-kipi .marka { display: none; }
   border: 0; background: var(--yuzey); color: var(--murekkep); box-shadow: var(--golge-2); font-size: var(--yazi-sm); line-height: var(--satir-sm);
   pointer-events: none; overflow: hidden; animation: bildirim-gel var(--sure-orta) var(--ease-cikis);
 }
+/* Masaüstü: toast sabit köşede (üst çubuğun altında sağda, panelin solunda); harita etkileşim alanına ve kartlara inmez. Yığın aşağı büyür.
+   Yürüyüşte kendi düzeni (yuru.css). Parsel kartı sağ üstte açıksa tasarim/toast-konum.ts `top` değerini kartın altına alır. */
+@media (min-width: 821px) {
+  html body:not(.yuru-acik) #bildirimler { top: 64px; right: var(--s-4); left: auto; bottom: auto; transform: none; width: min(360px, calc(100% - 2 * var(--s-4))); }
+}
+/* Telefon: en çok bir toast (en yeni) ve tek satır; tam metin title ve aria-label'da (tasarim/toast-konum.ts) */
+@media (max-width: 820px) {
+  .bildirim:not(:last-child) { display: none; }
+  .bildirim > span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
 /* Toast olayları yutmaz; yalnız kapatma düğmesi tıklanır (telefonda 44 px dokunma alanı, kartı büyütmemek için negatif kenar boşluğuyla) */
 .bildirim-kapat {
   flex: none; display: grid; place-items: center; width: 32px; height: 32px; margin: -6px -10px -6px 0; border: 0; border-radius: var(--r-md);
