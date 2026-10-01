@@ -9,7 +9,17 @@
  * Postadaki bağlantı `<genel>/?j=<jeton>` biçimindedir (baş lider/K2 kararı): istemci `j`yi okur, adresten HEMEN siler
  * (`history.replaceState`; jeton Referer/yer imi/geçmişte kalmasın) ve `POST /giris/onay {j}` çağırır.
  */
-import { httpTabani } from "./api";
+
+/** `ws://host:port` → `http://host:port` (`wss` → `https`); yol ve sorgu atılır. Çözülemezse "". */
+export function httpTabani(wsUrl: string): string {
+  try {
+    const u = new URL(wsUrl);
+    const sema = u.protocol === "wss:" ? "https:" : u.protocol === "ws:" ? "http:" : u.protocol;
+    return `${sema}//${u.host}`;
+  } catch {
+    return "";
+  }
+}
 
 export type GirisKipi = "sahte" | "gelistirme" | "eposta";
 

@@ -6,6 +6,8 @@
  *      ve ../../istemci/harita-verisi/ (ODbL harita verisi). Karar 1 Ekim (seçenek A): tek dosya ≤400 KB gzip;
  *      harita yığını ayrı ölçülür ve yazdırılır (bütçe testi yok).
  *   5) ../../istemci/yazi/      : Inter alt kümesi (woff2, OFL) ve lisanslar; tek dosyaya gömülmez (bütçe), HTTP'de yüklenir.
+ *   6) ../../istemci/giris.js   : giriş yığını (e-posta girişi ekranları + giris.css `?inline`), HTML'in yanında; YALNIZ e-posta kipinde yüklenir
+ *      (giris/yukle.ts). `?token=` geliştirme yolu ve sahte bağdaştırıcı hiç yüklemez; kabuk paketine girmez (bütçe).
  *   4) ../../istemci/yuru.js    : L4 yürüyüş yığını (sahne + karo işçisi + karakter), HTML'in yanında. three.js
  *      yeniden paketlenmez: "three" içe aktarımları kabuğun koyduğu köprü nesnesinden okunur (src/yuru/three-kopru.ts).
  *      Protomaps z15 özütü varsa (veri-hatti önbelleği, gitignore'lu) harita-verisi/karolar/ altına kopyalanır.
@@ -65,6 +67,27 @@ async function main(): Promise<void> {
     },
   });
 
+  console.log("vite build: giris.js");
+  await build({
+    root: AYRI,
+    configFile: false,
+    logLevel: "warn",
+    mode: "tek",
+    build: {
+      outDir: join(AYRI, "dist-tek", "giris-yigini"),
+      emptyOutDir: true,
+      target: "es2022",
+      minify: true,
+      sourcemap: false,
+      // Giriş ekranları ve giris.css (`?inline`) kabuktan ayrı: yalnız e-posta kipinde yüklenir (giris/yukle.ts)
+      rollupOptions: {
+        input: join(AYRI, "src", "giris", "baslat.ts"),
+        preserveEntrySignatures: "strict",
+        output: { format: "es", entryFileNames: "giris.js", inlineDynamicImports: true },
+      },
+    },
+  });
+
   console.log("vite build: yuru.js");
   await build({
     root: AYRI,
@@ -95,6 +118,8 @@ async function main(): Promise<void> {
   copyFileSync(join(AYRI, "dist-tek", "index.html"), hedef);
   const haritaJs = join(hedefKlasor, "harita.js");
   copyFileSync(join(AYRI, "dist-tek", "harita-yigini", "harita.js"), haritaJs);
+  const girisJs = join(hedefKlasor, "giris.js");
+  copyFileSync(join(AYRI, "dist-tek", "giris-yigini", "giris.js"), girisJs);
   const yuruJs = join(hedefKlasor, "yuru.js");
   copyFileSync(join(AYRI, "dist-tek", "yuru-yigini", "yuru.js"), yuruJs);
   // Yazı tipi (Inter alt kümesi, OFL; tek dosyaya gömülmez: bütçe) ve simge lisansı sayfanın yanına
@@ -130,6 +155,8 @@ async function main(): Promise<void> {
   console.log(`  ${hedef}: ${kb(statSync(hedef).size)} / gzip ${kb(htmlGz)} (bütçe 400 KB: ${htmlGz <= 400 * 1024 ? "tamam" : "AŞILDI"})`);
   const hjs = readFileSync(haritaJs);
   console.log(`  ${haritaJs} (harita yığını, ayrı; yalnız harita açılınca): ${kb(hjs.length)} / gzip ${kb(gzipSync(hjs, { level: 9 }).length)}`);
+  const gjs = readFileSync(girisJs);
+  console.log(`  ${girisJs} (giriş yığını, ayrı; yalnız e-posta girişinde): ${kb(gjs.length)} / gzip ${kb(gzipSync(gjs, { level: 9 }).length)}`);
   const yazi = readFileSync(join(hedefKlasor, "yazi", "inter-tr.woff2"));
   console.log(`  ${join(hedefKlasor, "yazi", "inter-tr.woff2")} (yazı tipi, ayrı; yalnız HTTP'de yüklenir): ${kb(yazi.length)}`);
   const yjs = readFileSync(yuruJs);

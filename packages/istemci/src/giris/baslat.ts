@@ -5,8 +5,10 @@
  * - Adreste `?j=<jeton>` varsa HEMEN adresten silinir (`history.replaceState`; Referer/yer imi/geçmişte kalmasın), sonra g3 gösterilir.
  * - Harita yığını (ayrı bundle) bileti `window.__girisBilet` işleviyle alır (`baglanti-kur.ts`): `__katilIste` ile aynı köprü deseni.
  * - Oturum bitip yeniden giriş yapılırsa (ya da çıkıştan sonra) uygulama çalışır durumdadır ama ws "reddedildi"dir: sayfa yenilenir.
+ * - Bu dosya ayrı `giris.js` yığınındadır (yukle.ts); giris.css de onunla gelir.
  * - Ayarlar menüsüne hesap bölümü (G-8: e-posta maskeli, çıkış yap, tüm cihazlardan çık) eklenir.
  */
+import girisCss from "../arayuz/giris.css?inline";
 import { GirisApi } from "./api";
 import { GirisAkisi } from "./akis";
 import { GirisGorunumu, HesapBolumu } from "./gorunum";
@@ -30,7 +32,17 @@ export interface GirisKurulumu {
   oyunHazir: Promise<void>;
 }
 
+/** Giriş CSS'i bu yığınla birlikte gelir (kabuğun CSS'ine girmez); `<style>` olarak bir kez eklenir. */
+function stilEkle(): void {
+  if (document.getElementById("giris-stil")) return;
+  const st = document.createElement("style");
+  st.id = "giris-stil";
+  st.textContent = girisCss;
+  document.head.appendChild(st);
+}
+
 export function girisBaslat(kip: KipBilgisi): GirisKurulumu {
+  stilEkle();
   const api = new GirisApi({ taban: kip.httpTabani ?? "" });
   const saglayici = new BiletSaglayici({ api });
   const akis = new GirisAkisi({ api, saglayici });

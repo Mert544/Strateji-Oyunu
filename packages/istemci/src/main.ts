@@ -5,7 +5,6 @@
 import "./tasarim/tema.css";
 import "./tasarim/temel.css";
 import "./arayuz/stil.css";
-import "./arayuz/giris.css";
 import { ikonlariKur } from "./tasarim/ikon-veri";
 import { ikon } from "./tasarim/ikon";
 import SimIsci from "./isci/sim.worker?worker&inline";
@@ -15,8 +14,8 @@ import param from "../../veri/icerik/parametreler.json";
 import dunyaTopo from "./veri/dunya-ulkeler-kure.topo.json";
 import type { HaritaDosyasi, IcerikDosyasi, Parametreler } from "@bolge/veri";
 import { bildir } from "./arayuz/bildirim";
-import { girisBaslat } from "./giris/baslat";
 import { girisKipi } from "./giris/kip";
+import { girisModulu } from "./giris/yukle";
 import { devletKartlari, devletSecimiHtml, secimBelirteci, secimCoz } from "./arayuz/devlet-sec";
 import { Etiketler } from "./arayuz/etiketler";
 import { Panel } from "./arayuz/panel";
@@ -436,10 +435,16 @@ window.addEventListener("unhandledrejection", (e) => hataGoster("Hata: " + Strin
 function acilis(): void {
   const kip = girisKipi(location.search);
   if (kip.kip !== "eposta") return baslat();
-  girisBaslat(kip).oyunHazir.then(
-    () => baslat(),
-    (e: unknown) => hataGoster("Giriş başlatılamadı: " + String(e)),
-  );
+  // Giriş yığını (giris.js) kip belirlenir belirlenmez yüklenmeye başlar; yüklenemezse kullanıcıya hata metni çıkar
+  girisModulu()
+    .then((m) => m.girisBaslat(kip).oyunHazir)
+    .then(
+      () => baslat(),
+      (e: unknown) => {
+        document.getElementById("yukleme")?.classList.add("bitti"); // yükleme perdesi hata metnini örtmesin
+        hataGoster(e instanceof Error ? e.message : "Giriş başlatılamadı: " + String(e));
+      },
+    );
 }
 
 try {

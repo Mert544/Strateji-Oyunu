@@ -94,16 +94,7 @@ export interface GirisAgSecenekleri {
   zamanAsimiMs?: number;
 }
 
-/** `ws://host:port` → `http://host:port` (`wss` → `https`); yol ve sorgu atılır. Çözülemezse "". */
-export function httpTabani(wsUrl: string): string {
-  try {
-    const u = new URL(wsUrl);
-    const sema = u.protocol === "wss:" ? "https:" : u.protocol === "ws:" ? "http:" : u.protocol;
-    return `${sema}//${u.host}`;
-  } catch {
-    return "";
-  }
-}
+export { httpTabani } from "./kip";
 
 export class GirisApi {
   private readonly taban: string;
