@@ -332,6 +332,20 @@ describe("mulkKipi (YontemTanimi): kurallar", () => {
     expect(dogrulaIcerik(v.icerik)).toEqual({ gecerli: true });
   });
 
+  it("mulkKipi yöntemi içerikte olmayan malı kullanırsa dogrulaIcerik ve dogrulaVeriPaketi REDDEDER (çekirdek ekonomi/tablo.ts'in dondurulmuş eski içerik için gösterdiği boş-satır toleransını gerçek yüklemede kapatır)", () => {
+    const v = kopya(varsayilanVeriyiYukle());
+    const y = v.icerik.yontemler[1]!; // içerikten bağımsız: herhangi bir yöntem mulkKipi yapılır
+    y.mulkKipi = true;
+    y.ciktilar["yok_mal"] = 1_000;
+    expect(hatalar(dogrulaIcerik(v.icerik)).join("\n")).toContain(`ciktilar: bilinmeyen mal "yok_mal"`);
+    expect(dogrulaVeriPaketi(v).gecerli).toBe(false);
+    const w = kopya(varsayilanVeriyiYukle());
+    const z = w.icerik.yontemler[2]!;
+    z.mulkKipi = true;
+    z.girdiler["yok_mal"] = 5;
+    expect(hatalar(dogrulaIcerik(w.icerik)).join("\n")).toContain(`girdiler: bilinmeyen mal "yok_mal"`);
+  });
+
   it("tür varsayılanı (yontemler[0]) olamaz", () => {
     const v = kopya(varsayilanVeriyiYukle());
     const t = v.icerik.tesisTurleri[0]!;

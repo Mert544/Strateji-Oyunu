@@ -77,6 +77,12 @@ export function icerikTablosu(ic: DerlenmisIcerik): IcerikTablosu {
   if (mevcut) return mevcut;
 
   const yontem: YontemSatiri[] = ic.yontemler.map((y) => {
+    // Dondurulmuş ESKİ içerik (yeni mallar henüz yok) `mulkKipi` yöntemi, içerikte olmayan bir mala başvuruyorsa satırı BOŞ kurulur (kısmi satır yok; sartname §5.5,
+    // G6-3): yöntem bölge kipinde seçilemez, mülk kipinde de içerik güncellenene kadar işe yaramaz. Gerçek veride bilinmeyen mal `dogrulaIcerik`te reddedilir (veri testi: "mulkKipi yöntemi içerikte olmayan malı kullanırsa dogrulaIcerik ve dogrulaVeriPaketi REDDEDER").
+    // `mulkKipi` olmayan yöntemde bilinmeyen mal eskisi gibi hata verir.
+    if (y.mulkKipi === true && [y.girdiler, y.ciktilar, y.bakim].some((k) => Object.keys(k).some((m) => ic.malIndeks[m] === undefined))) {
+      return { girdi: [], cikti: [], bakim: [], isci: 0, rezerv: -1 };
+    }
     const rezerv = y.rezerv === undefined ? -1 : (ic.malIndeks[y.rezerv] ?? -1);
     return { girdi: cift(ic, y.girdiler), cikti: cift(ic, y.ciktilar), bakim: cift(ic, y.bakim), isci: y.isci, rezerv };
   });
