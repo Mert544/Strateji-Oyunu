@@ -268,6 +268,17 @@ export function kasaOranlari(
   return sonuc;
 }
 
+/**
+ * "Ödenene ölçekle" (GZ-25, §5.5): hazine 0 iken ve gider > gelir iken oyuncu nominal giderin yalnız `odemeGucuPpm` kadarını ÖDER; kasaya yazılan her
+ * kalem de aynı orana (floor) iner. Ödenmeyen kısım kasaya girmez; `lavabo = nominal - kasa` formülü gereği lavaboda yanar (yeni kalem yok), eksik
+ * kalan `borcSilme` aynen kalır. Oran PPM ise dizi AYNEN döner (önbellek kimliği ve altınlar korunur). Sıra ve (sahip, kalem) anahtarları değişmez;
+ * sıfıra inen oran paraAkisiYaz'da elenir.
+ */
+export function kasaOranlariOdenene(oranlar: KasaOrani[], odemeGucuPpm: number): KasaOrani[] {
+  if (odemeGucuPpm >= PPM) return oranlar;
+  return oranlar.map((e) => ({ sahip: e.sahip, kalem: e.kalem, oran: odemeGucuPpm <= 0 ? 0 : carpBol(e.oran, odemeGucuPpm, PPM) }));
+}
+
 /** Şebeke bedeli olmayan çağrılar için paylaşılan boş harita (salt okunur). */
 const BOS_ILCE_TUTARLARI: ReadonlyMap<string, Mili> = new Map();
 

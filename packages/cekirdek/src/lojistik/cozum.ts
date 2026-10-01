@@ -37,7 +37,7 @@ import {
 import { defterOranYaz, pazarMuhasebesi, sifirKalemler, ticaretCarpanlari, ihracatKirilimi, ithalatKirilimi } from "../pazar";
 import { pazarTablosu } from "../pazar/tablo";
 import { BOS_DUGUMLER, oyuncuDugumleri } from "../dugum";
-import { dugumIlcesi, kasaOranlari, paraAkisiYaz, paraMuhasebesi } from "../mulk/kasa";
+import { dugumIlcesi, kasaOranlari, kasaOranlariOdenene, paraAkisiYaz, paraMuhasebesi } from "../mulk/kasa";
 import { MULKSUZ_PAKET } from "../mulksuz";
 import { yerelPazarCoz, yerelSatisYaz } from "../mulk/perakende";
 import type { YerelCozum } from "../mulk/perakende";
@@ -351,7 +351,8 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
         vergi: k.para.vergi,
         sebeke: k.para.sebeke,
         yerel: k.para.yerel,
-        kasa: kasaOranlari(d, ic, o.id, k.para.vergi, k.para.makasIlce, k.para.komisyonIlce, k.para.sebekeIlce),
+        // GZ-25: kasa girişi ÖDENEN orana bağlıdır (hazine 0 ve gider > gelir iken `odemeGucuPpm`; aksi halde PPM = aynen).
+        kasa: kasaOranlariOdenene(kasaOranlari(d, ic, o.id, k.para.vergi, k.para.makasIlce, k.para.komisyonIlce, k.para.sebekeIlce), odemeGucuPpm(o, k)),
       });
     }
     if (d.mulk !== undefined) araziVergisiOranAyarla(d, ic, o.id);
