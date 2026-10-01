@@ -1,6 +1,7 @@
 /** Tema: CSS özel özelliklerinden (token) sahne paletini okur; açık/koyu tema değişince yeniden okunur. */
 import { hexRgb } from "../veri/renkler";
 import type { Palet, RGB } from "../veri/renkler";
+import type { RozetTuru } from "../veri/rozet";
 import { OLAY_SIMGELERI } from "../veri/tarim";
 import type { TarimPaleti } from "../veri/tarim";
 
@@ -24,9 +25,8 @@ export interface SahnePaleti {
   desen: RGB;
   panel: RGB;
   murekkep: RGB;
-  savas: RGB;
-  kontur: RGB;
-  seritKontur: RGB;
+  /** Durum rozeti renkleri (Okabe-Ito; şekil ayrıca anlam taşır). */
+  rozet: Record<RozetTuru, RGB>;
   zemin: string;
   palet: Palet;
   /** Tarım görünümü: toprak verimliliği paleti. */
@@ -64,7 +64,9 @@ export function paletiOku(): SahnePaleti {
       ilgisiz: hexRgb(t("--k-ilgisiz")),
       sahipsiz: hexRgb(t("--sahipsiz")),
     },
-    kullanim: ["--u0", "--u1", "--u2", "--u3", "--u4"].map((n) => hexRgb(t(n))),
+    notr: hexRgb(t("--genel-notr")),
+    sanayi: ["--s0", "--s1", "--s2", "--s3", "--s4"].map((n) => hexRgb(t(n))),
+    pazar: ["--p0", "--p1", "--p2", "--p3", "--p4"].map((n) => hexRgb(t(n))),
   };
   const olay: Record<string, RGB> = {};
   for (const [tur, sim] of Object.entries(OLAY_SIMGELERI)) olay[tur] = hexRgb(t(sim.renkDegiskeni));
@@ -91,9 +93,7 @@ export function paletiOku(): SahnePaleti {
     desen: hexRgb(t("--desen-rgb")),
     panel: hexRgb(t("--panel")),
     murekkep: hexRgb(t("--ink")),
-    savas: hexRgb(t("--savas")),
-    kontur: hexRgb(t("--kontur")),
-    seritKontur: hexRgb(t("--sahne-serit-kontur")),
+    rozet: { savas: hexRgb(t("--rozet-savas")), eksik: hexRgb(t("--rozet-eksik")), bosta: hexRgb(t("--rozet-bosta")), bitti: hexRgb(t("--rozet-bitti")) },
     zemin: t("--sahne-zemin"),
     palet,
   };

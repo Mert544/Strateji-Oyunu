@@ -19,25 +19,44 @@
       <div class="kart-cubuk marka">Bölge Stratejisi<small>Dünya</small></div>
       <div class="kart-cubuk kart-zaman">
         <span class="zaman" id="zaman" aria-live="off">Gün 1 · 09:00</span>
-        <button type="button" class="ikon-dugme" id="duraklat" aria-pressed="false" title="Duraklat / sürdür (Boşluk)" aria-label="Duraklat">⏸</button>
-        <div class="segment" id="hizlar" role="group" aria-label="Dünya hızı (sim saniyesi / gerçek saniye)"></div>
+        <span class="duraklama-isareti" id="duraklama-isareti" hidden title="Dünya duraklatıldı (Boşluk ile sürdür)">⏸<span class="genis"> duraklatıldı</span></span>
         <span id="geride" hidden>sim geride</span>
-      </div>
-      <div class="kart-cubuk kart-takvim" id="takvim" hidden>
-        <div class="takvim-tarih"><b id="takvim-gun">—</b><small id="takvim-yil"></small></div>
-        <div class="hasat" id="hasat" role="img" aria-label="Aylık hasat ritmi"></div>
-        <div class="hasat-deger"><b id="hasat-yuzde">%100</b><small>hasat</small></div>
+        <span class="kart-takvim" id="takvim" hidden>
+          <span class="takvim-tarih"><b id="takvim-gun">—</b><small id="takvim-yil"></small></span>
+          <span class="hasat" id="hasat" role="img" aria-label="Aylık hasat ritmi"></span>
+          <span class="hasat-deger"><b id="hasat-yuzde">%100</b><small>hasat</small></span>
+        </span>
       </div>
       <div class="bosluk"></div>
       <div class="kart-cubuk kart-sag">
+        <button type="button" class="ikon-dugme acilir-dugme" id="gelen-dugme" aria-haspopup="true" aria-expanded="false" aria-controls="gelen-menu" title="Bildirimler" aria-label="Bildirimler">🔔</button>
         <button type="button" class="ikon-dugme" id="dunya-dugme" title="Tüm dünyayı göster" aria-label="Tüm dünya">🌍</button>
         <button type="button" class="ikon-dugme" id="kuzey" title="Kuzeyi yukarı getir (N)" aria-label="Kuzey yukarı">N</button>
         <button type="button" class="ikon-dugme" id="tema" title="Tema: otomatik / açık / koyu" aria-label="Tema değiştir">◐</button>
+        <button type="button" class="ikon-dugme acilir-dugme" id="ayar-dugme" aria-haspopup="true" aria-expanded="false" aria-controls="ayar-menu" title="Hata ayıklama" aria-label="Hata ayıklama">⚙</button>
       </div>
     </div>
-    <div id="mal-cubugu" role="group" aria-label="Mal seçici"></div>
+    <div id="gelen-menu" class="acilir acilir-sag" hidden></div>
+    <div id="ayar-menu" class="acilir acilir-sag" role="dialog" aria-label="Hata ayıklama" hidden>
+      <div class="acilir-baslik"><b>⚙ Hata ayıklama</b></div>
+      <p class="ipucu-metin">Dünya hızı yalnız deneme içindir (Boşluk: duraklat / sürdür).</p>
+      <div class="ayar-satir">
+        <button type="button" class="eylem" id="duraklat" aria-pressed="false" aria-label="Duraklat">⏸ Duraklat</button>
+        <div class="segment" id="hizlar" role="group" aria-label="Dünya hızı (sim saniyesi / gerçek saniye)"></div>
+      </div>
+    </div>
+    <div id="mercek-kap">
+      <button type="button" class="mercek-dugme acilir-dugme" id="mercek-dugme" aria-haspopup="true" aria-expanded="false" aria-controls="mercek-menu" title="Görünüm (mercek): 1–5">Görünüm</button>
+      <div id="mercek-menu" class="acilir" hidden></div>
+    </div>
     <div id="neden-seridi" aria-live="polite"></div>
-    <div id="yardim">Sürükle: gez · Tekerlek/çimdik: yakınlaş · Çift tık: bölgeye uç · WASD/oklar: gezin · Q/E: döndür · N: kuzey</div>
+    <button type="button" class="bilgi-dugme acilir-dugme" id="bilgi-dugme" aria-haspopup="true" aria-expanded="false" aria-controls="bilgi-kutu" title="Bilgi, kontroller ve kaynaklar" aria-label="Bilgi ve kaynaklar">ⓘ</button>
+    <div id="bilgi-kutu" class="acilir acilir-alt" role="dialog" aria-label="Bilgi ve kaynaklar" hidden>
+      <div class="acilir-baslik"><b>Kontroller</b></div>
+      <p class="ipucu-metin">Sürükle: gez · Tekerlek/çimdik: yakınlaş · Çift tık: bölgeye uç · WASD/oklar: gezin · Q/E: döndür · N: kuzey · 1–5: görünüm</p>
+      <div class="acilir-baslik"><b>Kaynaklar</b></div>
+      <ul class="atif" id="atif"></ul>
+    </div>
     <div id="bildirimler" aria-live="polite"></div>
     <div id="devlet-sec" role="dialog" aria-modal="true" aria-labelledby="devlet-sec-baslik" hidden></div>
     <div id="yukleme"><div><div class="donen"></div><div>Dünya kuruluyor…</div></div></div>
@@ -47,7 +66,6 @@
     <button type="button" id="panel-tutamac" aria-label="Paneli aç/kapat"></button>
     <nav id="sekmeler" role="tablist" aria-label="Panel sekmeleri"></nav>
     <section id="sekme-icerik" role="tabpanel" tabindex="0"></section>
-    <div id="panel-atif"></div>
   </aside>
 </div>
 </body>

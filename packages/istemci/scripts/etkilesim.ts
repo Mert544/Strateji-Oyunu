@@ -1,7 +1,8 @@
 /**
  * Etkileşim doğrulaması (Playwright): sürükleme, tekerlek, çift tıklama uçuşu, klavye gezinme, dokunmatik çift dokunma,
- * hız/duraklat düğmeleri, mal seçici, sekmeler; ardından OYUN KİPİ (devlet seç, tesis kur, ticaret emri, hata mesajları, öneriler;
- * masaüstü ve mobil). Hata olursa süreç kodu 1 ile çıkar.
+ * ⚙ hata ayıklama menüsündeki hız/duraklat, "Görünüm" mercek menüsü (mal seçici dahil), ⓘ bilgi kutusu, sekmeler (Dikkat);
+ * ardından OYUN KİPİ (devlet seç, tesis kur, ticaret emri, hata mesajları, öneriler, Dikkat eylemleri; masaüstü ve mobil).
+ * Hata olursa süreç kodu 1 ile çıkar.
  *
  * Kullanım: tsx scripts/etkilesim.ts [dunya.html] [ekran-klasoru]   (ekran görüntüleri: dunya3-<ad>-<masaustu|mobil>.png)
  * ETKILESIM_SADECE_OYUN=1 yalnızca oyun kipi sınamasını koşar.
@@ -150,20 +151,21 @@ async function oyunKipi(baglam: BrowserContext, html: string, mobil: boolean): P
   const t5 = (await toastlar()).join(" | ");
   kontrol(`${e}: "Tek tıkla uygula" bir bildirim üretir`, /Tamam|Olmadı/.test(t5), `(${t5})`);
 
-  // 5b. Darboğaz listesi: oyun kipinde "Kenarı geliştir" (varsa)
-  await sayfa.locator("#sek-darbogaz").click({ force: true });
+  // 5b. Dikkat sekmesi (Darboğaz yerine): en çok 5 madde, her birinde "Git"; önerilen form/komut düğmesi çalışır
+  await sayfa.locator("#sek-dikkat").click({ force: true });
   await sayfa.waitForTimeout(500);
-  const kenarDugmeleri = await sayfa.locator("[data-komut*='kenar_gelistir']").count();
-  kontrol(`${e}: Darboğaz sekmesi oyun kipinde açılır (geliştirilebilir yol: ${kenarDugmeleri})`, ((await sayfa.locator("#sekme-icerik").textContent()) ?? "").length > 40);
-  if (kenarDugmeleri > 0) {
-    await sayfa.evaluate(() => {
-      const k = document.getElementById("bildirimler");
-      if (k) k.innerHTML = "";
-    });
-    await sayfa.locator("[data-komut*='kenar_gelistir']").first().click();
-    await sayfa.waitForSelector("#bildirimler .bildirim", { timeout: 10000 });
-    const t6 = (await toastlar()).join(" | ");
-    kontrol(`${e}: Kenarı geliştir komutu bildirim üretir`, /Tamam|Olmadı/.test(t6), `(${t6})`);
+  const dikkatSayisi = await sayfa.locator("#sekme-icerik .dikkat-satir").count();
+  const dikkatMetni = (await sayfa.locator("#sekme-icerik").textContent()) ?? "";
+  kontrol(`${e}: Dikkat sekmesi en çok 5 madde, her birinde Git`, dikkatSayisi <= 5 && (await sayfa.locator("#sekme-icerik .dikkat-satir [data-bolge]").count()) === dikkatSayisi && /Rozetler/.test(dikkatMetni), `(${dikkatSayisi})`);
+  kontrol(`${e}: Darboğaz sekmesi ve yol geliştirme formu yok`, (await sayfa.locator("#sek-darbogaz").count()) === 0 && (await sayfa.locator("[data-komut*='kenar_gelistir'], form[data-form='kenar_gelistir'], form[data-form='askeri_rezerv']").count()) === 0);
+  await ekran("dikkat");
+  const formAc = sayfa.locator("#sekme-icerik [data-form-ac]");
+  if ((await formAc.count()) > 0) {
+    const hedef = JSON.parse((await formAc.first().getAttribute("data-form-ac")) ?? "{}") as { id: string; bolge: number };
+    await formAc.first().click();
+    await sayfa.waitForTimeout(500);
+    const acik = await sayfa.locator(`details[data-ac="${hedef.id}"][open] form[data-form="${hedef.id}"]`).count();
+    kontrol(`${e}: Dikkat önerisi bölgeye gider ve formu ön doldurulmuş açar (${hedef.id})`, acik === 1 && (await sayfa.evaluate(() => window.__olcum?.sahne.secili)) === hedef.bolge && (await sayfa.locator("#sek-bolge").getAttribute("aria-selected")) === "true");
   }
 
   // 6. Yalnızca izleme: komut yok
@@ -275,7 +277,10 @@ async function main(): Promise<void> {
     const panelMetni = await sayfa.locator("#sekme-icerik").innerText();
     kontrol(`${etiket}: bölge paneli dolu`, /Nüfus/.test(panelMetni) && /Komutlar/i.test(panelMetni) && /Devlet seç/.test(panelMetni));
 
-    // hız ve duraklat
+    // hız ve duraklat: yalnız ⚙ hata ayıklama menüsünde (varsayılan kapalı)
+    kontrol(`${etiket}: hız düğmeleri ana çubukta görünmez (⚙ menüsü kapalı)`, (await sayfa.locator("#ayar-menu").isHidden()) && !(await sayfa.locator("#hizlar").isVisible()));
+    await sayfa.locator("#ayar-dugme").click();
+    kontrol(`${etiket}: ⚙ menüsü açılır`, await sayfa.locator("#hizlar").isVisible());
     await sayfa.locator('#hizlar button[data-hiz="3600"]').click();
     const hizSecili = await sayfa.locator('#hizlar button[data-hiz="3600"]').getAttribute("aria-pressed");
     kontrol(`${etiket}: hız düğmesi`, hizSecili === "true");
@@ -285,10 +290,27 @@ async function main(): Promise<void> {
     const t2 = await sayfa.evaluate(() => window.__olcum?.simSaat() ?? 0);
     kontrol(`${etiket}: duraklatınca sim saati ilerlemez`, Math.abs(t2 - t1) < 0.15, `(${t1.toFixed(2)} -> ${t2.toFixed(2)})`);
     await sayfa.locator("#duraklat").click();
-    // mal seçici ve sekmeler
-    await sayfa.locator('#mal-cubugu button[data-mal="1"]').click();
-    kontrol(`${etiket}: mal çubuğu seçer`, (await sayfa.evaluate(() => window.__olcum?.sahne.malSecili)) === 1);
-    for (const sek of ["mal", "hazine", "darbogaz", "savas", "olaylar", "bolge"]) {
+    await sayfa.keyboard.press("Escape");
+    kontrol(`${etiket}: Escape ⚙ menüsünü kapatır`, await sayfa.locator("#ayar-menu").isHidden());
+    // ⓘ bilgi kutusu: atıf ve kontroller (yan panelde atıf yok)
+    await sayfa.locator("#bilgi-dugme").click();
+    const bilgi = await sayfa.locator("#bilgi-kutu").innerText();
+    kontrol(`${etiket}: ⓘ kutusunda atıf ve kontroller`, /Natural Earth/.test(bilgi) && /Sürükle/.test(bilgi) && (await sayfa.locator("#panel-atif").count()) === 0);
+    await sayfa.locator("#bilgi-dugme").click();
+    kontrol(`${etiket}: ⓘ kutusu kapanır`, await sayfa.locator("#bilgi-kutu").isHidden());
+    // Görünüm (mercek) menüsü: varsayılan Genel; mal seçici menüde
+    kontrol(`${etiket}: varsayılan mercek Genel`, /Genel/.test(await sayfa.locator("#mercek-dugme").innerText()) && (await sayfa.evaluate(() => window.__olcum?.sahne.mercek)) === "genel");
+    await sayfa.locator("#mercek-dugme").click();
+    await sayfa.locator('#mercek-menu button[data-mal="1"]').click();
+    kontrol(`${etiket}: mercek menüsünden mal seçilir (tek mercek)`, (await sayfa.evaluate(() => window.__olcum?.sahne.malSecili)) === 1 && (await sayfa.evaluate(() => window.__olcum?.sahne.mercek)) === "mal" && (await sayfa.locator("#mercek-menu").isHidden()));
+    await sayfa.locator("#mercek-dugme").click();
+    await sayfa.locator('#mercek-menu button[data-mercek="sanayi"]').click();
+    kontrol(`${etiket}: Sanayi merceği malı bırakır`, (await sayfa.evaluate(() => window.__olcum?.sahne.mercek)) === "sanayi" && (await sayfa.evaluate(() => window.__olcum?.sahne.malSecili)) === -1);
+    await sayfa.keyboard.press("1");
+    kontrol(`${etiket}: 1 tuşu Genel merceği`, (await sayfa.evaluate(() => window.__olcum?.sahne.mercek)) === "genel");
+    kontrol(`${etiket}: çizim çağrısı ≤ 12`, ((await sayfa.evaluate(() => window.__olcum?.bilgi().cizimCagrisi)) ?? 99) <= 12, `(${await sayfa.evaluate(() => window.__olcum?.bilgi().cizimCagrisi)})`);
+    kontrol(`${etiket}: Darboğaz sekmesi yok, Dikkat var`, (await sayfa.locator("#sek-darbogaz").count()) === 0 && (await sayfa.locator("#sek-dikkat").count()) === 1);
+    for (const sek of ["dikkat", "mal", "hazine", "savas", "olaylar", "bolge"]) {
       await sayfa.locator(`#sek-${sek}`).click({ force: true });
       const aria = await sayfa.locator(`#sek-${sek}`).getAttribute("aria-selected");
       kontrol(`${etiket}: sekme ${sek}`, aria === "true" && (await sayfa.locator("#sekme-icerik").innerText()).length > 10);
@@ -312,10 +334,13 @@ async function main(): Promise<void> {
     await sayfa2.waitForFunction(() => (window.__olcum?.kare()?.iklim?.olaylar.length ?? 0) > 0, null, { timeout: 120000 });
     const takvim = await sayfa2.locator("#takvim").innerText();
     kontrol(`${etiket}: üst çubukta iklim takvimi (tarih ve hasat)`, /\d+ (Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)/.test(takvim) && /%\d+/.test(takvim), `(${takvim.replace(/\s+/g, " ")})`);
-    await sayfa2.locator('#mal-cubugu button[data-gorunum="tarim"]').click();
-    kontrol(`${etiket}: Tarım çipi görünümü açar`, (await sayfa2.evaluate(() => window.__olcum?.sahne.tarimGorunumu)) === true && (await sayfa2.locator('#mal-cubugu button[data-gorunum="tarim"]').getAttribute("aria-pressed")) === "true");
-    await sayfa2.locator('#mal-cubugu button[data-mal="1"]').click();
-    kontrol(`${etiket}: mal çipi Tarım görünümünü kapatır`, (await sayfa2.evaluate(() => window.__olcum?.sahne.tarimGorunumu)) === false);
+    await sayfa2.locator("#mercek-dugme").click();
+    kontrol(`${etiket}: mercek menüsünde gübre (içerikten) var`, (await sayfa2.locator("#mercek-menu").innerText()).includes("Gübre"));
+    await sayfa2.locator('#mercek-menu button[data-mercek="tarim"]').click();
+    kontrol(`${etiket}: Tarım merceği açılır`, (await sayfa2.evaluate(() => window.__olcum?.sahne.tarimGorunumu)) === true && /Tarım/.test(await sayfa2.locator("#mercek-dugme").innerText()));
+    await sayfa2.locator("#mercek-dugme").click();
+    await sayfa2.locator('#mercek-menu button[data-mal="1"]').click();
+    kontrol(`${etiket}: mal seçimi Tarım merceğini kapatır`, (await sayfa2.evaluate(() => window.__olcum?.sahne.tarimGorunumu)) === false);
     await sayfa2.locator("#sek-olaylar").click({ force: true });
     const satirlar = sayfa2.locator("#sekme-icerik .olay-satir");
     kontrol(`${etiket}: Olaylar sekmesi olayı listeler`, (await satirlar.count()) > 0);
@@ -326,7 +351,6 @@ async function main(): Promise<void> {
     kontrol(`${etiket}: olay satırına tıklayınca merkez bölge seçilir ve uçuş başlar`, sec === hedef && (await sayfa2.evaluate(() => window.__olcum?.sahne.kontrol.ucuyorMu() === true)), `(seçili=${sec}, hedef=${hedef})`);
     const bolgeMetni = await sayfa2.locator("#sekme-icerik").innerText();
     kontrol(`${etiket}: bölge panelinde Tarım bölümü ve kararlar`, /Toprak durumu/.test(bolgeMetni) && /Ekim karışımı/.test(bolgeMetni) && /Gübre dozu/.test(bolgeMetni));
-    kontrol(`${etiket}: mal çubuğunda gübre (içerikten) var`, (await sayfa2.locator("#mal-cubugu").innerText()).includes("Gübre"));
     kontrol(`${etiket}: tarım sayfasında konsol hatası yok`, konsol2.length === 0, konsol2.join(" | "));
     await oyunKipi(baglam, html, mobil);
     await baglam.close();

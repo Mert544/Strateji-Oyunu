@@ -1,9 +1,10 @@
 /** Güneş yönü (saf): sim saatinden gece/gündüz terminatörü için alt-güneş noktası. */
 import { llVek } from "./matematik";
 import type { Vek3 } from "./matematik";
+import { BASLANGIC_SAAT_UTC } from "../arayuz/bicim";
 
-/** Sim saat 0'ın UTC saati (başlangıçta Türkiye/Karadeniz gündüz olsun diye 09:00). */
-export const BASLANGIC_SAAT_UTC = 9;
+/** Saat metni tek biçimleyicide (arayuz/bicim.ts); eski içe aktarmalar için yeniden dışa aktarılır. */
+export { BASLANGIC_SAAT_UTC, simSaatMetni } from "../arayuz/bicim";
 
 /** Yılın başlangıcı: sim gün 0 = ilkbahar ekinoksu (deklinasyon 0). */
 export function altGunesNoktasi(simSaat: number): { boylam: number; enlem: number } {
@@ -20,12 +21,3 @@ export function gunesYonu(simSaat: number): Vek3 {
   const n = altGunesNoktasi(simSaat);
   return llVek(n.boylam, n.enlem);
 }
-
-/** "Gün N · SS:00" biçiminde sim saati (UTC saat dilimi). */
-export function simSaatMetni(simSaat: number): string {
-  const s = Math.floor(simSaat);
-  const gun = Math.floor(s / 24) + 1;
-  const utc = (((s + BASLANGIC_SAAT_UTC) % 24) + 24) % 24;
-  return `Gün ${gun} · ${String(utc).padStart(2, "0")}:00`;
-}
-

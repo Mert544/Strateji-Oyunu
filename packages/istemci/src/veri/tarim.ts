@@ -6,6 +6,7 @@
  */
 import type { Dizin, DizinTarim, Kare, OlayKaresi } from "./kare-tipleri";
 import { kullanimRengi } from "./renkler";
+import { yuzde } from "../arayuz/bicim";
 import type { BolgeRenkTamponu, RGB } from "./renkler";
 
 // ---------------------------------------------------------------------------------------------
@@ -82,7 +83,7 @@ export function hasatAylikHesapla(egriler: Readonly<Record<string, readonly numb
 
 /** Hasat oranı (binde) -> "%94" metni. */
 export function hasatMetni(binde: number): string {
-  return `%${Math.round(binde / 10)}`;
+  return yuzde(Math.round(binde / 10));
 }
 
 /** Hasat ritmi çubuğu için 0..1 yükseklik (en yüksek aya göre; tek renkli çubuk grafiği). */
@@ -200,14 +201,8 @@ export function olaylariSirala(olaylar: readonly OlayKaresi[], saat: number): Ar
   return l;
 }
 
-/** "3 gün 4 sa" / "5 sa" biçiminde süre (saat girdili). */
-export function sureMetni(saat: number): string {
-  const s = Math.max(0, Math.round(saat));
-  if (s < 24) return `${s} sa`;
-  const g = Math.floor(s / 24);
-  const k = s % 24;
-  return k === 0 ? `${g} gün` : `${g} gün ${k} sa`;
-}
+/** Süre metni tek biçimleyicide (arayuz/bicim.ts). */
+export { sureMetni } from "../arayuz/bicim";
 
 // ---------------------------------------------------------------------------------------------
 // Tarım görünümü: renk ve desen
@@ -259,7 +254,7 @@ export function ekimDeseni(ekimYuzde: readonly number[]): number {
 export function ekimMetni(ekimYuzde: readonly number[], urunler: ReadonlyArray<{ ad: string }>): string {
   const p: string[] = [];
   ekimYuzde.forEach((y, i) => {
-    if (y > 0) p.push(`${urunler[i]?.ad ?? `Ürün ${i + 1}`} %${y}`);
+    if (y > 0) p.push(`${urunler[i]?.ad ?? `Ürün ${i + 1}`} ${yuzde(y)}`);
   });
   return p.length ? p.join(" · ") : "—";
 }

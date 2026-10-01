@@ -14,12 +14,11 @@ import { dizinKur, kareAl } from "../src/isci/kare";
 import { oyuncuKomutu } from "../src/isci/oyuncu";
 import type { IsciMesaji, IsciyeMesaj } from "../src/isci/protokol";
 import { hataCevir } from "../src/komut/hata";
-import { KOMUT_KAYDI, eylemMetni, kenarNedeni, komutOzeti, komutTanimi } from "../src/komut/kayit";
+import { BOLGE_GRUPLARI, DEVLET_GRUPLARI, GIZLI_KOMUTLAR, KOMUT_KAYDI, eylemMetni, komutOzeti, komutTanimi } from "../src/komut/kayit";
 import { oneriUret } from "../src/komut/oneri";
 import { icerikTablosu } from "../src/komut/tablo";
 import type { Baglam, OzetBaglami } from "../src/komut/tipler";
 import { baglamKur, devletPaneli, formDegerleri, formHtml, komutBolumu, yeniOyunDurumu } from "../src/arayuz/komut-govde";
-import { darbogazPaneli } from "../src/arayuz/govde";
 import type { GovdeDurumu } from "../src/arayuz/govde";
 import { devletKartlari, secimBelirteci, secimCoz } from "../src/arayuz/devlet-sec";
 
@@ -90,15 +89,30 @@ describe("hata çevirisi", () => {
 });
 
 describe("komut kaydı", () => {
-  it("çekirdek Komut birleşimindeki her tür kayıtta (oyuncu_katil sistem komutudur)", () => {
+  it("çekirdek Komut birleşimindeki her tür ya kayıtta ya da açık GIZLI_KOMUTLAR listesinde", () => {
     const tipler = readFileSync(new URL("../../cekirdek/src/tipler.ts", import.meta.url), "utf8");
     const birlesim = tipler.slice(tipler.indexOf("export type Komut ="), tipler.indexOf("export type KomutTuru"));
     const turler = [...birlesim.matchAll(/tur: "([a-z_]+)"/g)].map((m) => m[1] as string);
     expect(turler.length).toBeGreaterThanOrEqual(20);
     const kayitli = new Set(KOMUT_KAYDI.map((t) => t.tur as string));
-    const eksik = turler.filter((t) => t !== "oyuncu_katil" && !kayitli.has(t));
-    // Çekirdeğe yeni bir komut eklendiyse buraya bir form (kayit.ts: tanim) eklemek gerekir.
+    const gizli = new Set<string>(GIZLI_KOMUTLAR);
+    const eksik = turler.filter((t) => !gizli.has(t) && !kayitli.has(t));
+    // Çekirdeğe yeni bir komut eklendiyse buraya bir form (kayit.ts: tanim) ya da bilinçli olarak GIZLI_KOMUTLAR'a kayıt gerekir.
     expect(eksik, `formu olmayan komutlar: ${eksik.join(", ")}`).toEqual([]);
+    // Gizli liste yalnız gerçekten var olan ve formu OLMAYAN komutları içerir.
+    for (const g of GIZLI_KOMUTLAR) {
+      expect(turler, g).toContain(g);
+      expect(kayitli.has(g), `${g} hem gizli hem kayıtlı`).toBe(false);
+    }
+    expect([...GIZLI_KOMUTLAR].sort()).toEqual(["askeri_rezerv", "kenar_gelistir", "oyuncu_katil"]);
+  });
+  it("lojistik formları arayüzde yok (kenar_gelistir, askeri_rezerv; Darboğaz sekmesi kalktı)", () => {
+    expect(komutTanimi("kenar_gelistir")).toBeUndefined();
+    expect(komutTanimi("askeri_rezerv")).toBeUndefined();
+    const gruplar = [...BOLGE_GRUPLARI, ...DEVLET_GRUPLARI].flatMap((g) => g.formlar);
+    expect(gruplar).not.toContain("kenar_gelistir");
+    expect(gruplar).not.toContain("askeri_rezerv");
+    for (const id of gruplar) expect(komutTanimi(id), id).toBeDefined();
   });
   it("kimlikler benzersiz ve her kayıt tam", () => {
     expect(new Set(KOMUT_KAYDI.map((t) => t.id)).size).toBe(KOMUT_KAYDI.length);
@@ -165,11 +179,9 @@ describe("form -> komut dönüşümleri (gerçek harita, oyuncu Korvan)", () => 
     expect(form("gubre_dozu", siret, { doz: "2" })).toEqual({ tur: "gubre_dozu", bolge: "siret", doz: 2 });
     expect(typeof form("gubre_dozu", siret, { doz: "99" })).toBe("string");
   });
-  it("vergi, askeri rezerv, bakım düzeyi, birlik, savunma, araştırma dönüşümleri", () => {
+  it("vergi, bakım düzeyi, birlik, savunma, araştırma dönüşümleri", () => {
     expect(form("vergi_ayarla", varna, { oran: "25" })).toEqual({ tur: "vergi_ayarla", oranPpm: 250000 });
     expect(typeof form("vergi_ayarla", varna, { oran: "150" })).toBe("string");
-    expect(form("askeri_rezerv", varna, { oran: "10" })).toEqual({ tur: "askeri_rezerv", oranPpm: 100000 });
-    expect(typeof form("askeri_rezerv", varna, { oran: "80" })).toBe("string");
     expect(form("bakim_duzeyi", varna, { duzey: "2" })).toEqual({ tur: "bakim_duzeyi", duzey: 2 });
     const bir = ic.birlikler.find((b) => b.gerekliTeknoloji === undefined)!;
     expect(form("birlik_uret", varna, { birlik: bir.id, adet: "3" })).toEqual({ tur: "birlik_uret", bolge: "varna", birlik: bir.id, adet: 3 });
@@ -259,14 +271,12 @@ describe("tüm formlar (varsayılan değerlerle) çekirdekte denenir", () => {
     expect(k).toEqual({ tur: "savas_ilan", saldiranBolge: dizin.bolgeler[mine]!.id, hedefBolge: secenek!.deger });
     expect(oyuncuKomutu(g.sim, "o0", k as Komut)).toEqual({ tamam: true });
   });
-  it("yol geliştirme: kendi iki uçlu yol geliştirilebilir; Darboğaz nedenleri açıklanır", () => {
+  it("gizli lojistik komutu çekirdekte durur (formu yok): kendi iki uçlu yol hâlâ geliştirilebilir", () => {
     const b = baglam(sim, idler, "varna");
     const benim = (i: number): boolean => b.kare.bolgeler[i]?.sahip === 0;
-    const iyi = b.dizin.kenarlar.findIndex((e, i) => benim(e.a) && benim(e.b) && e.tur !== "deniz" && kenarNedeni(b, i) === null);
+    const iyi = b.dizin.kenarlar.findIndex((e) => benim(e.a) && benim(e.b) && e.tur !== "deniz");
     expect(iyi).toBeGreaterThanOrEqual(0);
     expect(oyuncuKomutu(sim.klonla(), "o0", { tur: "kenar_gelistir", kenar: iyi })).toEqual({ tamam: true });
-    const yabanci = b.dizin.kenarlar.findIndex((e) => !benim(e.a) && !benim(e.b));
-    expect(kenarNedeni(b, yabanci)).toMatch(/sizin/);
   });
 });
 
@@ -322,6 +332,11 @@ describe("önerilen eylemler", () => {
       expect(oyuncuKomutu(kopya, "o0", o.komut), JSON.stringify(o.komut)).toEqual({ tamam: true });
     }
     expect(JSON.parse(JSON.stringify(liste))).toEqual(liste);
+    // Formu olmayan (gizli lojistik) komutlar önerilmez; her önerinin formu vardır.
+    for (const o of liste) {
+      expect(GIZLI_KOMUTLAR as readonly string[]).not.toContain(o.komut.tur);
+      expect(KOMUT_KAYDI.some((t) => t.tur === o.komut.tur), o.komut.tur).toBe(true);
+    }
     void idler;
   });
   it("oneriler dünyayı değiştirmez (yalnız okur)", () => {
@@ -341,7 +356,8 @@ describe("komut arayüzü HTML'i", () => {
 
   it("kendi bölgemde tüm bölge formları (içerikten) çizilir; gönder düğmesi vardır", () => {
     const h = komutBolumu(g(varnaIdx), varnaIdx);
-    for (const ad of ["Tesis kur", "Yöntem değiştir", "Ticaret emri", "Birlik üret", "Savunma duruşu", "Yolu geliştir"]) expect(h, ad).toContain(ad);
+    for (const ad of ["Tesis kur", "Yöntem değiştir", "Ticaret emri", "Birlik üret", "Savunma duruşu"]) expect(h, ad).toContain(ad);
+    expect(h).not.toContain("Yolu geliştir");
     expect(h).toContain('name="tesisTuru"');
     expect(h).toContain("Çiftlik");
     expect(h).not.toContain("yakında");
@@ -355,18 +371,6 @@ describe("komut arayüzü HTML'i", () => {
     expect(komutBolumu(g(istanbul), istanbul)).toContain("komut veremezsiniz");
     expect(komutBolumu({ ...g(varnaIdx), oyun: undefined }, varnaIdx)).toContain("data-devlet-sec");
     expect(baglamKur({ ...g(varnaIdx), oyun: undefined })).toBeNull();
-  });
-  it("Darboğaz listesi: kendi doygun yolunuz için 'Kenarı geliştir' düğmesi, yabancı yol için neden", () => {
-    const benim = (i: number): boolean => kare.bolgeler[i]?.sahip === 0;
-    const iyi = dizin.kenarlar.findIndex((e) => benim(e.a) && benim(e.b) && e.tur !== "deniz");
-    const yabanci = dizin.kenarlar.findIndex((e) => !benim(e.a) && !benim(e.b));
-    const kenarlar = kare.kenarlar.map((k, i): [number, number, number] => (i === iyi || i === yabanci ? [10, 10, 0] : k));
-    const h = darbogazPaneli({ ...g(-1), kare: { ...kare, kenarlar } });
-    expect(h).toContain(`data-komut='{&quot;tur&quot;:&quot;kenar_gelistir&quot;,&quot;kenar&quot;:${iyi}}'`);
-    expect(h).toContain("Kenarı geliştir");
-    expect(h).toContain("sizin"); // yabancı yol: neden yazılı
-    // izleme kipinde düğme yok
-    expect(darbogazPaneli({ ...g(-1), oyun: undefined, kare: { ...kare, kenarlar } })).not.toContain("Kenarı geliştir");
   });
   it("form çizimi alan değerlerini ve kullanıcının seçimini korur", () => {
     const b = baglamKur(g(varnaIdx))!;

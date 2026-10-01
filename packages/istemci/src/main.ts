@@ -17,8 +17,7 @@ import { komutOzeti } from "./komut/kayit";
 import { icerikTablosu } from "./komut/tablo";
 import type { Komut, OzetBaglami } from "./komut/tipler";
 import { Sahne } from "./kure/sahne";
-import { slerp } from "./kure/matematik";
-import type { Vek3 } from "./kure/matematik";
+import type { Mercek } from "./veri/mercek";
 import { ulkeleriCoz } from "./veri/cografya";
 import type { TopoVeri } from "./veri/cografya";
 import { haritaYukle } from "./veri/yukleyici";
@@ -37,9 +36,12 @@ declare global {
       kare: () => Kare | null;
       simSaat: () => number;
       bolgeSec: (i: number, uc?: boolean) => void;
+      /** "mal" merceği (m < 0: Genel). */
       malSec: (m: number) => void;
-      /** "Tarım" harita görünümünü aç/kapat. */
+      /** "Tarım" merceğini aç/kapat (kapatınca Genel). */
       tarim: (a: boolean) => void;
+      /** Mercek seç (tek mercek etkin). */
+      mercek: (m: Mercek, mal?: number) => void;
       hiz: (h: number) => void;
       duraklat: (d: boolean) => void;
       sekme: (s: string) => void;
@@ -153,20 +155,8 @@ function baslat(): void {
   const bolgeAd = (i: number): string => harita.harita.bolgeler[i]?.ad ?? "?";
   const panel: Panel = new Panel(
     {
-      malSec: (m) => {
-        s.malSec(m);
-        panel.malAyarla(m);
-      },
+      mercekSec: (m, mal) => mercekSec(m, mal),
       bolgeSec: (i, uc) => olaySec(i, uc),
-      tarimGorunum: (a) => tarimSec(a),
-      kenareUc: (k) => {
-        const e = dizin?.kenarlar[k];
-        if (!e) return;
-        const a = s.merkezler[e.a] as Vek3, b = s.merkezler[e.b] as Vek3;
-        const m = slerp(a, b, 0.5);
-        const ac = Math.acos(Math.min(1, Math.max(-1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])));
-        s.kontrol.ucusYap({ p: m, dist: Math.min(1.2, Math.max(0.15, ac * 2.6)) });
-      },
       hiz: (h) => {
         hiz = h;
         isciyeGonder({ tur: "hiz", hiz: h });
@@ -190,10 +180,13 @@ function baslat(): void {
   );
   panel.hizAyarla(hiz, false);
   panel.duraklatAyarla(duraklat, false);
+  s.bitenler = panel.bitenler;
 
-  function tarimSec(a: boolean): void {
-    s.tarimGorunumuAyarla(a);
-    panel.tarimGorunumAyarla(a);
+  /** Tek mercek etkin: sahne ve panel birlikte güncellenir. */
+  function mercekSec(m: Mercek, mal = -1): void {
+    const hedef: Mercek = m === "mal" && mal < 0 ? "genel" : m;
+    s.mercekSec(hedef, mal);
+    panel.mercekAyarla(hedef, mal);
   }
 
   function olaySec(i: number, uc: boolean): void {
@@ -241,8 +234,9 @@ function baslat(): void {
       case "kare":
         sonKare = m.kare;
         if (!ilkKare) simMsAlinan = m.simMs;
-        s.kareUygula(m.kare);
+        // Önce panel: biten inşaat izleyicisi güncellenir, sahne rozetleri aynı haritayı okur.
         panel.kareYaz(m.kare);
+        s.kareUygula(m.kare);
         if (!ilkKare) {
           ilkKare = true;
           if (q.get("acilis") !== "0") {
@@ -287,6 +281,7 @@ function baslat(): void {
   function oyunuBaslat(devlet: number): void {
     benim = devlet;
     if (devlet >= 0) panel.oyunuKur(ic);
+    s.oyuncuAyarla(devlet);
     document.getElementById("yukleme")?.classList.remove("bitti");
     isciyeGonder({ tur: "baslat", veri: veriPaketi, tohum: Number(q.get("tohum")) || 1, botlar: BOTLAR, hiz, duraklat, ileriSaat: Number(q.get("ileri")) || 0, oyuncuDevlet: devlet });
   }
@@ -343,11 +338,9 @@ function baslat(): void {
     kare: () => sonKare,
     simSaat: gorunenSaat,
     bolgeSec: (i, uc) => olaySec(i, uc === true),
-    malSec: (m) => {
-      s.malSec(m);
-      panel.malAyarla(m);
-    },
-    tarim: (a) => tarimSec(a),
+    malSec: (m) => mercekSec("mal", m),
+    tarim: (a) => mercekSec(a ? "tarim" : "genel"),
+    mercek: (m, mal) => mercekSec(m, mal ?? -1),
     hiz: (h) => {
       panel.hizAyarla(h, true);
     },

@@ -262,8 +262,6 @@ const kare: Kare = {
     bolge(), // tarım dışı
     bolge([900, 1100, 0, 3, 100, [40, 30, 30]]), // verim 0,72; karışık
   ],
-  kenarlar: [],
-  akislar: [],
   kapsam: [],
   fiyat: [1000, 1000, 1000],
   savaslar: [],
@@ -332,9 +330,9 @@ describe("tarım panelleri", () => {
     expect(bp).toContain("Tarım");
     expect(bp).toContain("Komutlar"); // izleme kipinde komut bölümü: devlet seçme çağrısı
     const mp = malPaneli(g());
-    expect(mp).toContain('data-gorunum="tarim"');
+    expect(mp).toContain('data-mercek="tarim"');
     expect(mp).toContain("Gübre"); // yeni mal içerikten satır olarak gelir
-    expect(malPaneli(g({ tarimGorunumu: true }))).toContain("İklim tipleri");
+    expect(malPaneli(g({ mercek: "tarim" }))).toContain("İklim tipleri");
   });
 
   it("olaylar sekmesi: etkin ve uyarıdakiler ayrı listelenir, satır merkez bölgeye uçmak için data-bolge taşır", () => {
@@ -370,10 +368,10 @@ describe("tarım panelleri", () => {
   });
 
   it("neden şeridi: tarım görünümünde özet ve seçili bölge ayrıntısı; genel görünümde olay özeti", () => {
-    const ozet = tarimNedenSatiri(g({ tarimGorunumu: true }));
+    const ozet = tarimNedenSatiri(g({ mercek: "tarim" }));
     expect(ozet).toContain("3 tarım bölgesinde");
     expect(ozet).toContain("1 etkin olay, 1 uyarı");
-    const sec = nedenSatiri(g({ tarimGorunumu: true, bolge: 1 }));
+    const sec = nedenSatiri(g({ mercek: "tarim", bolge: 1 }));
     expect(sec).toContain("toprak verimliliği %20");
     expect(sec).toContain("olay kaybı %25");
     expect(nedenSatiri(g())).toContain("İklim:");

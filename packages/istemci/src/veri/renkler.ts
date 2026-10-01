@@ -1,6 +1,6 @@
 /**
- * Renk yardımcıları (saf): palet, viridis benzeri kullanım rampası, mal renkleri ve
- * anlık görüntü -> bölge renk/desen tamponu.
+ * Renk yardımcıları (saf): palet, sıralı rampalar, mal renkleri ve anlık görüntü -> bölge renk/desen tamponu.
+ * Mercek (harita görünümü) renklendirmesi veri/mercek.ts'dedir.
  */
 import type { Dizin, Kare } from "./kare-tipleri";
 import { hucre, kareTuret } from "./kapsam";
@@ -13,8 +13,12 @@ export interface Palet {
   devlet: RGB[];
   sahipsiz: RGB;
   durum: Record<KapsamDurumu, RGB>;
-  /** Kenar kullanım rampası: 5 durak (düşük -> yüksek). */
-  kullanim: RGB[];
+  /** Sakin nötr dolgu ("Genel" merceğinde başkalarının bölgeleri buna doğru soldurulur). */
+  notr: RGB;
+  /** "Sanayi" merceği sıralı rampası: 5 durak (düşük -> yüksek). */
+  sanayi: RGB[];
+  /** "Pazar" merceği sıralı rampası: 5 durak (düşük -> yüksek). */
+  pazar: RGB[];
 }
 
 /** "#rrggbb" / "#rgb" / "rgb(r,g,b)" -> 0-1 RGB. */
@@ -39,7 +43,7 @@ export function karistir(a: RGB, b: RGB, t: number): RGB {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 }
 
-/** Kullanım (0-1) -> rampa rengi (5 duraklı parçalı doğrusal). */
+/** Sıralı rampa: değer (0-1) -> rampa rengi (çok duraklı parçalı doğrusal). */
 export function kullanimRengi(u: number, rampa: readonly RGB[]): RGB {
   const t = Math.min(1, Math.max(0, u)) * (rampa.length - 1);
   const i = Math.min(rampa.length - 2, Math.floor(t));

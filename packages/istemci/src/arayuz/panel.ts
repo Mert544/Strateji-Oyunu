@@ -1,40 +1,47 @@
 /**
- * Arayüz denetleyicisi: üst çubuk (zaman, hız, duraklat, tema), mal çubuğu, panel sekmeleri ve "neden" şeridi.
- * İçerik üreticileri govde.ts'de saftır; burada yalnızca DOM bağlama ve olay yönlendirme vardır.
+ * Arayüz denetleyicisi (sakin HUD): üst çubuk (devlet/hazine, tarih ve hasat, bildirimler, kamera, tema, ⚙),
+ * "Görünüm" mercek menüsü, panel sekmeleri, neden şeridi, ⓘ bilgi kutusu ve gelen kutusu.
+ *   - Dünya hızı ve duraklat yalnız "⚙ Hata ayıklama" menüsündedir (varsayılan kapalı).
+ *   - Atıf metni ve kontrol yardımı köşedeki "ⓘ" kutusundadır.
+ *   - Toast yalnız oyuncunun kendi eyleminin sonucudur; diğer olaylar "Bildirimler" kutusuna düşer.
+ * İçerik üreticileri govde.ts / dikkat.ts / komut-govde.ts'de saftır; burada DOM bağlama ve olay yönlendirme vardır.
  */
 import { HIZ_SECENEKLERI } from "../isci/protokol";
-import { simSaatMetni } from "../kure/gunes";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
-import { bolgePaneli, darbogazPaneli, hazinePaneli, malIkonu, malPaneli, nedenSatiri, savasPaneli, yaprakIkonu } from "./govde";
+import { MERCEKLER, mercekAdi } from "../veri/mercek";
+import type { Mercek } from "../veri/mercek";
+import { InsaatIzleyici } from "../veri/rozet";
+import type { BitenInsaat } from "../veri/rozet";
+import { bolgePaneli, hazinePaneli, malIkonu, malPaneli, nedenSatiri, savasPaneli } from "./govde";
 import type { GovdeDurumu } from "./govde";
+import { dikkatMaddeleri, dikkatPaneli } from "./dikkat";
+import { GelenKutusu, gelenOlaylari } from "./gelen-kutusu";
 import { baglamKur, devletPaneli, yeniOyunDurumu } from "./komut-govde";
 import { komutTanimi } from "../komut/kayit";
 import type { Icerik } from "../komut/tablo";
 import type { Komut } from "../komut/tipler";
 import type { Oneri } from "../isci/protokol";
 import { hasatCubuklari, olayPaneli, olaySayisi } from "./tarim-govde";
-import { esc, kisalt } from "./bicim";
+import { esc, fmt, kisalt, simSaatMetni, yuzde } from "./bicim";
 import { hasatMetni, takvimDurumu, takvimMetni, takvimParametresi } from "../veri/tarim";
 
-export type Sekme = "bolge" | "mal" | "hazine" | "darbogaz" | "savas" | "olaylar" | "devlet";
+export type Sekme = "bolge" | "devlet" | "dikkat" | "mal" | "hazine" | "savas" | "olaylar";
 
-/** "Devlet" sekmesi yalnızca oyuncu kipinde görünür. */
+/** "Devlet" sekmesi yalnızca oyuncu kipinde görünür. "Dikkat", eski "Darboğaz" sekmesinin yerindedir. */
 const SEKMELER: ReadonlyArray<{ id: Sekme; ad: string; oyuncu?: boolean }> = [
   { id: "bolge", ad: "Bölge" },
   { id: "devlet", ad: "Devlet", oyuncu: true },
+  { id: "dikkat", ad: "Dikkat" },
   { id: "mal", ad: "Mal" },
   { id: "hazine", ad: "Hazine" },
-  { id: "darbogaz", ad: "Darboğaz" },
   { id: "savas", ad: "Savaş" },
   { id: "olaylar", ad: "Olaylar" },
 ];
 
 export interface PanelGeriCagrilari {
-  malSec: (m: number) => void;
+  /** Mercek seç (tek mercek etkin); mal yalnız "mal" merceğinde anlamlı. */
+  mercekSec: (m: Mercek, mal: number) => void;
   bolgeSec: (i: number, uc: boolean) => void;
-  kenareUc: (k: number) => void;
-  /** "Tarım" harita görünümünü aç/kapat. */
-  tarimGorunum: (a: boolean) => void;
   hiz: (h: number) => void;
   duraklat: (d: boolean) => void;
   kuzey: () => void;
@@ -52,6 +59,14 @@ export interface PanelGeriCagrilari {
 
 const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
 
+/** Açılır kutular (aynı anda biri açık). */
+const ACILIRLAR = [
+  ["mercek-dugme", "mercek-menu"],
+  ["ayar-dugme", "ayar-menu"],
+  ["bilgi-dugme", "bilgi-kutu"],
+  ["gelen-dugme", "gelen-menu"],
+] as const;
+
 export class Panel {
   sekme: Sekme = "bolge";
   private durum: GovdeDurumu;
@@ -59,8 +74,9 @@ export class Panel {
   private duraklatildi = false;
   private sonIcerik = "";
   private sonNeden = "";
-  private malCubuguDizin: Dizin | null = null;
   private takvimAnahtari = "";
+  private izleyici = new InsaatIzleyici();
+  private gelen: GelenKutusu;
   /** Bir form alanı odaktayken yapılamayan yeniden çizim bekliyor mu. */
   private bekleyen = false;
   /** İşaretçi panel içinde basılı (tıklama bitmeden DOM değiştirilmez; yoksa tıklama kaybolur). */
@@ -72,7 +88,7 @@ export class Panel {
     atif: string[],
     gecici: boolean,
   ) {
-    this.durum = { kare: null, dizin: null, mal: -1, tarimGorunumu: false, bolge: -1, bolgeAd, hazineGecmisi: [] };
+    this.durum = { kare: null, dizin: null, mal: -1, mercek: "genel", bolge: -1, bolgeAd, hazineGecmisi: [], bitenler: this.izleyici.bitenler };
     // sekmeler
     const nav = $("sekmeler");
     this.sekmeleriCiz();
@@ -80,9 +96,9 @@ export class Panel {
       const b = (e.target as HTMLElement).closest("button[data-sekme]") as HTMLElement | null;
       if (b) this.sekmeSec(b.dataset["sekme"] as Sekme);
     });
-    // hız düğmeleri
+    // ⚙ hata ayıklama: hız düğmeleri ve duraklat
     const hizlar = $("hizlar");
-    hizlar.innerHTML = HIZ_SECENEKLERI.map((h) => `<button type="button" data-hiz="${h.hiz}" aria-pressed="${h.hiz === this.hiz}" title="${h.hiz} sim-saniye / sn = ${h.hiz / 3600} sim-saat / sn">${h.ad.replace("×", "<span class=\"x\">×</span>")}</button>`).join("");
+    hizlar.innerHTML = HIZ_SECENEKLERI.map((h) => `<button type="button" data-hiz="${h.hiz}" aria-pressed="${h.hiz === this.hiz}" title="${fmt(h.hiz)} sim-saniye / sn = ${fmt(h.hiz / 3600)} sim-saat / sn">${h.ad.replace("×", "<span class=\"x\">×</span>")}</button>`).join("");
     hizlar.addEventListener("click", (e) => {
       const b = (e.target as HTMLElement).closest("button[data-hiz]") as HTMLElement | null;
       if (b) this.hizAyarla(Number(b.dataset["hiz"]), true);
@@ -92,11 +108,40 @@ export class Panel {
     $("dunya-dugme").addEventListener("click", () => this.g.dunya());
     $("tema").addEventListener("click", () => this.g.tema());
     $("oyuncu-cubuk").addEventListener("click", () => this.sekmeSec("devlet"));
+    // açılır kutular
+    for (const [d, k] of ACILIRLAR) $(d).addEventListener("click", (e) => {
+      if (d === "gelen-dugme") return; // gelen kutusu kendi düğmesini yönetir
+      e.stopPropagation();
+      this.acilirAc(k, $(k).hidden);
+    });
+    this.gelen = new GelenKutusu($("gelen-dugme"), $("gelen-menu"), (i) => this.g.bolgeSec(i, true));
+    $("gelen-dugme").addEventListener("click", () => this.acilirKapat("gelen-menu"));
+    document.addEventListener("pointerdown", (e) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest(".acilir, .acilir-dugme")) this.acilirKapat(null);
+    });
     window.addEventListener("keydown", (e) => {
-      if (e.code === "Space" && !["BUTTON", "INPUT", "SELECT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) {
+      const etiket = (e.target as HTMLElement).tagName;
+      const yazi = ["INPUT", "SELECT", "TEXTAREA"].includes(etiket);
+      if (e.key === "Escape") this.acilirKapat(null);
+      if (e.code === "Space" && !yazi && etiket !== "BUTTON") {
         e.preventDefault();
         this.duraklatAyarla(!this.duraklatildi, true);
       }
+      // 1-5: mercek kısayolları
+      if (!yazi && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const m = MERCEKLER.find((x) => x.tus === e.key);
+        if (m && (m.id !== "tarim" || this.durum.dizin?.tarim)) this.g.mercekSec(m.id, -1);
+      }
+    });
+    $("mercek-menu").addEventListener("click", (e) => {
+      const t = e.target as HTMLElement;
+      const mk = t.closest("[data-mercek]") as HTMLElement | null;
+      const ml = t.closest("[data-mal]") as HTMLElement | null;
+      if (mk) this.g.mercekSec(mk.dataset["mercek"] as Mercek, -1);
+      else if (ml) this.g.mercekSec("mal", Number(ml.dataset["mal"]));
+      else return;
+      this.acilirKapat(null);
     });
     // içerik olayları (temsilci)
     this.komutOlaylariniBagla();
@@ -104,31 +149,49 @@ export class Panel {
       const t = e.target as HTMLElement;
       if (this.komutTikla(t)) return;
       const mal = t.closest("[data-mal]") as HTMLElement | null;
+      const mercek = t.closest("[data-mercek]") as HTMLElement | null;
       const bolge = t.closest("[data-bolge]") as HTMLElement | null;
-      const kenar = t.closest("[data-kenar]") as HTMLElement | null;
-      if (t.closest("[data-gorunum]")) this.g.tarimGorunum(!this.durum.tarimGorunumu);
-      else if (kenar) this.g.kenareUc(Number(kenar.dataset["kenar"]));
+      if (mercek) this.g.mercekSec(mercek.dataset["mercek"] as Mercek, -1);
       else if (bolge) {
-        if (mal) this.g.malSec(Number(mal.dataset["mal"]));
+        if (mal) this.g.mercekSec("mal", Number(mal.dataset["mal"]));
         this.g.bolgeSec(Number(bolge.dataset["bolge"]), true);
-      } else if (mal) this.g.malSec(Number(mal.dataset["mal"]));
+      } else if (mal) this.g.mercekSec("mal", Number(mal.dataset["mal"]));
       else if (t.closest("[data-uc]")) this.g.bolgeSec(this.durum.bolge, true);
-    });
-    $("mal-cubugu").addEventListener("click", (e) => {
-      const el = e.target as HTMLElement;
-      if (el.closest("[data-gorunum]")) {
-        this.g.tarimGorunum(!this.durum.tarimGorunumu);
-        return;
-      }
-      const b = el.closest("[data-mal]") as HTMLElement | null;
-      if (b) this.g.malSec(Number(b.dataset["mal"]));
     });
     // mobil panel tutamacı
     const panel = $("panel");
     $("panel-tutamac").addEventListener("click", () => this.panelKapali(!panel.classList.contains("kapali")));
     if (window.matchMedia("(max-width: 820px)").matches) this.panelKapali(true);
-    $("panel-atif").innerHTML = atif.map(esc).join(" · ") + (gecici ? " · <b>geçici bölge katmanı</b>" : "");
+    $("atif").innerHTML = atif.map((a) => `<li>${esc(a)}</li>`).join("") + (gecici ? "<li><b>Geçici bölge katmanı</b></li>" : "");
+    this.mercekDugmesiYaz();
   }
+
+  // --- açılır kutular --------------------------------------------------------------------------
+
+  private acilirAc(kutu: string, ac: boolean): void {
+    this.acilirKapat(ac ? kutu : null, true);
+    const k = $(kutu);
+    k.hidden = !ac;
+    const d = ACILIRLAR.find((x) => x[1] === kutu)?.[0];
+    if (d) $(d).setAttribute("aria-expanded", String(ac));
+    if (ac && kutu === "mercek-menu") this.mercekMenusuCiz();
+  }
+
+  /** `haric` dışındaki açılır kutuları kapatır. */
+  private acilirKapat(haric: string | null, sessiz = false): void {
+    for (const [d, k] of ACILIRLAR) {
+      if (k === haric) continue;
+      if (k === "gelen-menu") {
+        if (!$(k).hidden) this.gelen.ac(false);
+        continue;
+      }
+      $(k).hidden = true;
+      $(d).setAttribute("aria-expanded", "false");
+    }
+    void sessiz;
+  }
+
+  // --- sekmeler ve oyuncu kipi -----------------------------------------------------------------
 
   private sekmeleriCiz(): void {
     const oyuncu = this.durum.oyun !== undefined;
@@ -159,6 +222,11 @@ export class Panel {
     return this.durum.oyun !== undefined;
   }
 
+  /** Biten inşaatlar (sahne rozetleri aynı haritayı okur). */
+  get bitenler(): ReadonlyMap<number, BitenInsaat> {
+    return this.izleyici.bitenler;
+  }
+
   /** Üst çubuktaki devlet düğmesi: devlet adı ve hazine. */
   private oyuncuCubuguYaz(kare: Kare): void {
     const o = kare.oyuncu;
@@ -170,7 +238,7 @@ export class Panel {
     const k = $("oyuncu-cubuk");
     const metin = `<i class="nokta" style="background:var(--d${o.idx % 4})"></i><span class="ocad">${esc(ad)}</span><b>${kisalt(hazine)}</b>`;
     if (k.innerHTML !== metin) k.innerHTML = metin;
-    k.title = `${dev?.ad ?? ""}: hazine ${hazine.toLocaleString("tr-TR")} para. Devlet sekmesini açmak için dokunun.`;
+    k.title = `${dev?.ad ?? ""}: hazine ${fmt(hazine)} para. Devlet sekmesini açmak için dokunun.`;
   }
 
   private get basili(): boolean {
@@ -191,11 +259,34 @@ export class Panel {
     }
   }
 
+  /**
+   * Dikkat panelindeki önerilen komut: formu ön doldurup bölgenin komut bölümünde açar (değerleri oyuncu onaylar).
+   * `{ id, bolge, degerler }`.
+   */
+  formAc(id: string, bolge: number, degerler: Record<string, string>): void {
+    const oyun = this.durum.oyun;
+    if (!oyun) return;
+    for (const [ad, v] of Object.entries(degerler)) oyun.formlar.set(`${bolge}:${id}:${ad}`, v);
+    oyun.acik.add(id);
+    this.g.bolgeSec(bolge, true);
+    this.sekmeSec("bolge");
+    window.setTimeout(() => {
+      const f = document.querySelector(`#sekme-icerik form[data-form="${id}"]`);
+      f?.closest("details")?.scrollIntoView({ block: "nearest" });
+    }, 0);
+  }
+
   /** Komut düğmelerine (veri öznitelikli) tıklama; işlendiyse true. */
   private komutTikla(t: HTMLElement): boolean {
     const km = t.closest("[data-komut]") as HTMLElement | null;
     if (km) {
       this.g.komutGonder(JSON.parse(km.dataset["komut"] ?? "null") as Komut);
+      return true;
+    }
+    const fa = t.closest("[data-form-ac]") as HTMLElement | null;
+    if (fa) {
+      const f = JSON.parse(fa.dataset["formAc"] ?? "null") as { id: string; bolge: number; degerler: Record<string, string> } | null;
+      if (f) this.formAc(f.id, f.bolge, f.degerler);
       return true;
     }
     const on = t.closest("[data-oneri]") as HTMLElement | null;
@@ -256,7 +347,7 @@ export class Panel {
       const f = el.closest("form.komut-form") as HTMLFormElement | null;
       if (!f) return;
       this.formKaydet(f);
-      if (el.type === "range" && el.nextElementSibling) el.nextElementSibling.textContent = `%${el.value}`;
+      if (el.type === "range" && el.nextElementSibling) el.nextElementSibling.textContent = yuzde(Number(el.value));
     });
     kap.addEventListener("focusout", () => {
       window.setTimeout(() => {
@@ -282,6 +373,8 @@ export class Panel {
     if (window.matchMedia("(max-width: 820px)").matches) this.panelKapali(false);
   }
 
+  // --- zaman (⚙ menüsü) ve takvim --------------------------------------------------------------
+
   hizAyarla(h: number, bildir: boolean): void {
     this.hiz = h;
     for (const b of document.querySelectorAll<HTMLElement>("#hizlar button")) b.setAttribute("aria-pressed", String(Number(b.dataset["hiz"]) === h));
@@ -292,8 +385,9 @@ export class Panel {
     this.duraklatildi = d;
     const b = $("duraklat");
     b.setAttribute("aria-pressed", String(d));
-    b.textContent = d ? "▶" : "⏸";
+    b.textContent = d ? "▶ Sürdür" : "⏸ Duraklat";
     b.setAttribute("aria-label", d ? "Sürdür" : "Duraklat");
+    $("duraklama-isareti").hidden = !d;
     if (bildir) this.g.duraklat(d);
   }
 
@@ -326,25 +420,61 @@ export class Panel {
     kap.title = `İklim takvimi: ${d.ayAdi}. Bu ayın ortalama hasat oranı ${hasatMetni(aylik)} (yıllık ortalama %100). Ayrıntı için Olaylar sekmesi.`;
   }
 
-  /** Dizin gelince mal çubuğunu kurar. */
+  // --- mercek ----------------------------------------------------------------------------------
+
+  /** Dizin gelince mercek menüsünü kurar. */
   dizinKur(d: Dizin): void {
     this.durum.dizin = d;
     this.durum.hazineGecmisi = d.oyuncular.map(() => []);
-    this.malCubuguDizin = d;
-    this.malCubuguCiz();
+    this.mercekDugmesiYaz();
   }
 
-  private malCubuguCiz(): void {
-    const d = this.malCubuguDizin;
-    if (!d) return;
-    const tg = this.durum.tarimGorunumu;
-    const hepsi = `<button type="button" class="mal-cip" data-mal="-1" aria-pressed="${this.durum.mal < 0 && !tg}">Hepsi</button>`;
-    const tarim = d.tarim ? `<button type="button" class="mal-cip tarim-cip" data-gorunum="tarim" aria-pressed="${tg}" title="Tarım görünümü: toprak verimliliği ve ekim deseni">${yaprakIkonu(12)}Tarım</button>` : "";
-    $("mal-cubugu").innerHTML = hepsi + tarim + d.mallar.map((m, i) => `<button type="button" class="mal-cip" data-mal="${i}" aria-pressed="${this.durum.mal === i && !tg}">${malIkonu(d, i, 11)}${esc(m.ad)}</button>`).join("");
+  private mercekDugmesiYaz(): void {
+    const m = this.durum.mercek ?? "genel";
+    const d = this.durum.dizin;
+    const ikon = m === "mal" && d ? malIkonu(d, this.durum.mal, 11) + " " : "";
+    $("mercek-dugme").innerHTML = `<span class="soluk">Görünüm:</span> ${ikon}<b>${esc(mercekAdi(m, d, this.durum.mal))}</b> <span aria-hidden="true">▾</span>`;
+    if (!$("mercek-menu").hidden) this.mercekMenusuCiz();
   }
+
+  private mercekMenusuCiz(): void {
+    const d = this.durum.dizin;
+    const m = this.durum.mercek ?? "genel";
+    let s = `<div class="acilir-baslik"><b>Görünüm</b><span class="soluk">tek mercek · 1–5</span></div><div class="mercek-liste" role="group" aria-label="Mercekler">`;
+    for (const x of MERCEKLER) {
+      if (x.id === "tarim" && !d?.tarim) continue;
+      s += `<button type="button" class="mercek-secenek" data-mercek="${x.id}" aria-pressed="${m === x.id}"><span class="tus" aria-hidden="true">${x.tus}</span><span><b>${esc(x.ad)}</b><br><span class="soluk">${esc(x.aciklama)}</span></span></button>`;
+    }
+    s += `</div>`;
+    if (d) {
+      s += `<div class="acilir-baslik"><b>Mal</b><span class="soluk">tedarik durumu</span></div><div class="mal-izgara" role="group" aria-label="Mal seçici">`;
+      s += d.mallar.map((x, i) => `<button type="button" class="mal-cip" data-mal="${i}" aria-pressed="${m === "mal" && this.durum.mal === i}">${malIkonu(d, i, 11)}${esc(x.ad)}</button>`).join("");
+      s += `</div>`;
+    }
+    $("mercek-menu").innerHTML = s;
+  }
+
+  /** Mercek değişti (sahne zaten güncellendi): düğme, menü ve paneller. */
+  mercekAyarla(m: Mercek, mal: number): void {
+    this.durum.mercek = m;
+    this.durum.mal = m === "mal" ? mal : -1;
+    this.mercekDugmesiYaz();
+    this.sonIcerik = "";
+    this.tazele();
+  }
+
+  get mercek(): Mercek {
+    return this.durum.mercek ?? "genel";
+  }
+
+  // --- kare ------------------------------------------------------------------------------------
 
   kareYaz(kare: Kare): void {
+    const onceki = this.durum.kare;
     this.durum.kare = kare;
+    const yeni = this.izleyici.guncelle(kare);
+    const d = this.durum.dizin;
+    if (d) this.gelen.ekle(gelenOlaylari(onceki, kare, d, this.durum.oyun && kare.oyuncu ? kare.oyuncu.idx : -1, yeni, this.durum.bolgeAd));
     if (this.durum.oyun) this.oyuncuCubuguYaz(kare);
     const gec = this.durum.hazineGecmisi;
     kare.hazine.forEach((h, i) => {
@@ -356,23 +486,6 @@ export class Panel {
     this.tazele();
   }
   private sonKareSaat: number | null = null;
-
-  malAyarla(m: number): void {
-    this.durum.mal = m;
-    this.durum.tarimGorunumu = false;
-    this.malCubuguCiz();
-    this.sonIcerik = "";
-    this.tazele();
-  }
-
-  /** "Tarım" görünümünü açar/kapatır (mal seçimi sıfırlanır). */
-  tarimGorunumAyarla(a: boolean): void {
-    this.durum.tarimGorunumu = a;
-    if (a) this.durum.mal = -1;
-    this.malCubuguCiz();
-    this.sonIcerik = "";
-    this.tazele();
-  }
 
   bolgeAyarla(i: number): void {
     this.durum.bolge = i;
@@ -396,7 +509,7 @@ export class Panel {
 
   private tazele(): void {
     this.icerikCiz();
-    this.olaySayaciniYaz();
+    this.sayaclariYaz();
     const n = nedenSatiri(this.durum);
     if (n !== this.sonNeden) {
       this.sonNeden = n;
@@ -404,13 +517,16 @@ export class Panel {
     }
   }
 
-  /** "Olaylar" sekme etiketindeki sayı rozeti (etkin + uyarıdaki olay). */
-  private olaySayaciniYaz(): void {
-    const b = document.getElementById("sek-olaylar");
-    if (!b) return;
-    const n = olaySayisi(this.durum);
-    const metin = n > 0 ? `Olaylar <span class="sayac">${n}</span>` : "Olaylar";
-    if (b.innerHTML !== metin) b.innerHTML = metin;
+  /** Sekme etiketlerindeki sayı rozetleri: Dikkat (madde) ve Olaylar (etkin + uyarıdaki olay). */
+  private sayaclariYaz(): void {
+    const yaz = (id: string, ad: string, n: number): void => {
+      const b = document.getElementById(id);
+      if (!b) return;
+      const metin = n > 0 ? `${ad} <span class="sayac">${n}</span>` : ad;
+      if (b.innerHTML !== metin) b.innerHTML = metin;
+    };
+    yaz("sek-olaylar", "Olaylar", olaySayisi(this.durum));
+    yaz("sek-dikkat", "Dikkat", Math.min(5, dikkatMaddeleri(this.durum).length));
   }
 
   private icerikCiz(zorla = false): void {
@@ -425,14 +541,14 @@ export class Panel {
       case "bolge":
         h = bolgePaneli(d);
         break;
+      case "dikkat":
+        h = dikkatPaneli(d);
+        break;
       case "mal":
         h = malPaneli(d);
         break;
       case "hazine":
         h = hazinePaneli(d);
-        break;
-      case "darbogaz":
-        h = darbogazPaneli(d);
         break;
       case "savas":
         h = savasPaneli(d);

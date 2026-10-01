@@ -5,9 +5,9 @@
  * buraya bir `tanim(...)` eklemek yeter; form çizimi (arayuz/komut-govde.ts) ve işçi hattı değişmez.
  * Saf modül: DOM yok.
  */
-import { fmt, fmt1 } from "../arayuz/bicim";
+import { fmt, fmt1, sureMetni, yuzde } from "../arayuz/bicim";
 import type { Dizin } from "../veri/kare-tipleri";
-import { kararTeknolojisi, teknolojiAdi } from "./tablo";
+import { teknolojiAdi } from "./tablo";
 import type { Icerik, MalMiktar } from "./tablo";
 import { bolgeAdiId, bolgeIndeksi } from "./tipler";
 import type { Alan, Baglam, Girdi, Komut, KomutTanimi, KomutTuru, OnizlemeSatiri, OzetBaglami, Secenek } from "./tipler";
@@ -19,12 +19,8 @@ import type { Alan, Baglam, Girdi, Komut, KomutTanimi, KomutTuru, OnizlemeSatiri
 const para = (mili: number): string => fmt(mili / 1000);
 const birim = (mili: number): string => fmt1(mili / 1000);
 
-/** Saat -> "40 dk" / "6 sa" / "2 gün 3 sa". */
-export function sureMetni(saat: number): string {
-  if (saat < 1) return `${Math.max(1, Math.round(saat * 60))} dk`;
-  if (saat < 48) return `${fmt1(saat)} sa`;
-  return `${Math.floor(saat / 24)} gün ${Math.round(saat % 24)} sa`;
-}
+/** Süre metni tek biçimleyicide (arayuz/bicim.ts). */
+export { sureMetni } from "../arayuz/bicim";
 
 /** Erken oyun hızlandırmasıyla gerçek süre (saat); en az 1 dakika. */
 function gercekSure(b: Baglam, saat: number): number {
@@ -332,7 +328,7 @@ const genelOnarim = tanim({
     }
     const mal = [...toplam.entries()].sort((x, y) => x[0] - y[0]);
     return [
-      { metin: `${asinan.length} tesis aşınmış (en çok %${Math.max(...asinan.map((t) => t.asinma ?? 0))})` },
+      { metin: `${asinan.length} tesis aşınmış (en çok ${yuzde(Math.max(...asinan.map((t) => t.asinma ?? 0)))})` },
       ...maliyetSatirlari(b, b.bolge, mal, p),
       { metin: `Durma: ${sureMetni(sn.bakim.genelOnarimDurusSaat)} (bu sürede aşınmış tesisler çalışmaz)` },
     ];
@@ -371,7 +367,7 @@ const aramaSondaji = tanim({
     return [
       ...maliyetSatirlari(b, b.bolge, kayitMal(b.ic, dp.kesifMaliyetMal), dp.kesifMaliyetPara),
       sureSatiri(b, dp.kesifSureSaat),
-      { metin: `Başarı olasılığı: %${Math.round(dp.kesifOlasilikPpm / 10000)}` },
+      { metin: `Başarı olasılığı: ${yuzde(Math.round(dp.kesifOlasilikPpm / 10000))}` },
     ];
   },
   ozet: (k, o) => `${bolgeAdiId(o, k.bolge)}: ${o.ic.mallar[o.ic.malIdx[k.mal] ?? -1]?.ad ?? k.mal} için arama sondajı başladı`,
@@ -398,18 +394,18 @@ const ekimPlani = tanim({
     const paylar = b.ic.urunler.map((_, i) => tamSayi(g, `ekim.${i}`));
     if (paylar.some((p) => p === null || p < 0 || p > 100)) return "Paylar 0 ile 100 arasında tamsayı olmalı.";
     const toplam = (paylar as number[]).reduce((a, c) => a + c, 0);
-    if (toplam !== 100) return `Ekim payları toplamı %100 olmalı (şu an %${toplam}).`;
+    if (toplam !== 100) return `Ekim payları toplamı %100 olmalı (şu an ${yuzde(toplam)}).`;
     return { tur: "ekim_plani", bolge: bolgeId(b), ekimPpm: (paylar as number[]).map((p) => p * 10000) };
   },
   onizleme(b, g) {
     const toplam = b.ic.urunler.reduce((a, _, i) => a + (tamSayi(g, `ekim.${i}`) ?? 0), 0);
     return [
-      { metin: `Toplam: %${toplam}${toplam === 100 ? "" : " — %100 olmalı"}`, durum: toplam === 100 ? "iyi" : "kotu" },
-      ...b.ic.urunler.map((u) => ({ metin: `${u.ad}: çıktı %${u.cikti} · toprak ${u.toprak >= 0 ? "+" : "−"}${fmt1(Math.abs(u.toprak) / 10000)} puan/gün` })),
+      { metin: `Toplam: ${yuzde(toplam)}${toplam === 100 ? "" : " — %100 olmalı"}`, durum: toplam === 100 ? "iyi" : "kotu" },
+      ...b.ic.urunler.map((u) => ({ metin: `${u.ad}: çıktı ${yuzde(u.cikti)} · toprak ${u.toprak >= 0 ? "+" : "−"}${fmt1(Math.abs(u.toprak) / 10000)} puan/gün` })),
     ];
   },
-  ozet: (k, o) => `${bolgeAdiId(o, k.bolge)}: ekim planı güncellendi (${o.ic.urunler.map((u, i) => `${u.ad} %${Math.round((k.ekimPpm[i] ?? 0) / 10000)}`).join(" · ")})`,
-  eylem: (k, o) => `${bolgeAdiId(o, k.bolge)}: ekim planını güncelle (${o.ic.urunler.map((u, i) => `${u.ad} %${Math.round((k.ekimPpm[i] ?? 0) / 10000)}`).join(" · ")})`,
+  ozet: (k, o) => `${bolgeAdiId(o, k.bolge)}: ekim planı güncellendi (${o.ic.urunler.map((u, i) => `${u.ad} ${yuzde(Math.round((k.ekimPpm[i] ?? 0) / 10000))}`).join(" · ")})`,
+  eylem: (k, o) => `${bolgeAdiId(o, k.bolge)}: ekim planını güncelle (${o.ic.urunler.map((u, i) => `${u.ad} ${yuzde(Math.round((k.ekimPpm[i] ?? 0) / 10000))}`).join(" · ")})`,
 });
 
 const gubreDozu = tanim({
@@ -435,7 +431,7 @@ const gubreDozu = tanim({
     const tesis = ob(b)?.tarimTesisi ?? 0;
     return [
       { metin: `Gübre girdisi: ~${birim(t.gubreTuketimiSaat * doz * tesis)} birim/sa (${tesis} tarım tesisi)` },
-      { metin: `Çıktı +%${fmt1((t.gubreCiktiEkiPpm * doz) / 10000)} · toprak +${fmt1((t.gubreToprakPpmGun * doz) / 10000)} puan/gün (gübre karşılandıkça)` },
+      { metin: `Çıktı +${yuzde((t.gubreCiktiEkiPpm * doz) / 10000, 1)} · toprak +${fmt1((t.gubreToprakPpmGun * doz) / 10000)} puan/gün (gübre karşılandıkça)` },
     ];
   },
   ozet: (k, o) => `${bolgeAdiId(o, k.bolge)}: gübre dozu ${k.doz}`,
@@ -480,7 +476,7 @@ const ticaretEmri = tanim({
     const stok = b.kare.bolgeler[b.bolge]?.stok[mi] ?? 0;
     const hacim = ((ihr ? b.ic.param.pazar.emilimSaat[mal.id] : b.ic.param.pazar.arzSaat[mal.id]) ?? 0) / 1000;
     const s: OnizlemeSatiri[] = [
-      { metin: `Dünya fiyatı: ${fmt1(fiyat)} para/birim (taban %${Math.round((b.kare.fiyat[mi] ?? 1000) / 10)}) · Dünya Piyasa Yapıcısı (NPC) makası ayrıca düşer` },
+      { metin: `Dünya fiyatı: ${fmt1(fiyat)} para/birim (taban ${yuzde(Math.round((b.kare.fiyat[mi] ?? 1000) / 10))}) · Dünya Piyasa Yapıcısı (NPC) makası ayrıca düşer` },
       { metin: `Saatlik değer ≈ ${fmt(oran * fiyat)} para (makas ve prim öncesi)` },
       { metin: `Dünya pazarı en çok ~${fmt(hacim)} birim/sa ${ihr ? "emer" : "sağlar"}` },
     ];
@@ -611,7 +607,7 @@ const savasIlan = tanim({
   onizleme(b, g) {
     const a = b.ic.param.askeri;
     const h = bolgeIndeksi(b.dizin, g["hedef"] ?? "");
-    const s: OnizlemeSatiri[] = [{ metin: `Hazırlık ${a.ilanHazirlikSaatMin}–${a.ilanHazirlikSaatMax} sa, sonra ${a.pencereSaat} sa savaş penceresi; kayıp tavanı %${Math.round(a.kayipTavaniPpm / 10000)}` }];
+    const s: OnizlemeSatiri[] = [{ metin: `Hazırlık ${a.ilanHazirlikSaatMin}–${a.ilanHazirlikSaatMax} sa, sonra ${a.pencereSaat} sa savaş penceresi; kayıp tavanı ${yuzde(Math.round(a.kayipTavaniPpm / 10000))}` }];
     const ben = b.ben.koruma[b.ben.idx] ?? 0;
     if (ben > b.kare.saat) s.push({ metin: `Sizin korumanız ${sureMetni(ben - b.kare.saat)} sürecek; savaş ilan ederseniz koruma biter`, durum: "uyari" });
     if (h >= 0) {
@@ -623,72 +619,6 @@ const savasIlan = tanim({
   },
   ozet: (k, o) => `${bolgeAdiId(o, k.saldiranBolge)} → ${bolgeAdiId(o, k.hedefBolge)}: savaş ilan edildi`,
   eylem: (k, o) => `${bolgeAdiId(o, k.saldiranBolge)} → ${bolgeAdiId(o, k.hedefBolge)}: savaş ilan et`,
-});
-
-/** Yolun geliştirilememe nedeni (yoksa null). Darboğaz listesi ve bölge formu ortak kullanır. */
-export function kenarNedeni(b: Baglam, k: number): string | null {
-  const e = b.dizin.kenarlar[k];
-  if (!e) return "Böyle bir yol yok";
-  const sa = b.kare.bolgeler[e.a]?.sahip ?? -1;
-  const sb = b.kare.bolgeler[e.b]?.sahip ?? -1;
-  const ortak = new Set(b.ben.anlasmalar.filter((a) => a.tur === "ortak_altyapi" && a.aktif).map((a) => a.karsi));
-  const tamam = (s: number): boolean => s >= 0 && (s === b.ben.idx || ortak.has(s));
-  if (!tamam(sa) || !tamam(sb)) return "Yolun iki ucu da sizin (ya da ortak altyapı anlaşmalı bir devletin) olmalı";
-  if (sa !== b.ben.idx && sb !== b.ben.idx) return "Yolun en az bir ucu sizin olmalı";
-  if (e.tur === "deniz" && !b.ben.kararlar.includes("deniz_kenar_gelistir")) {
-    const t = kararTeknolojisi(b.ic, "deniz_kenar_gelistir");
-    return `Deniz yolu geliştirme kapalı${t ? ` (önce "${t}" araştırın)` : ""}`;
-  }
-  if (b.ben.insaatlar.some((i) => i.tur === "kenar" && i.hedef === k)) return "Bu yolda geliştirme sürüyor";
-  return null;
-}
-
-/** Yol geliştirme maliyeti (maliyet yolun bana ait ilk ucundaki bölge stoğundan düşer). */
-export function kenarMaliyeti(b: Baglam, k: number): { uc: number; mal: MalMiktar; para: number; saat: number } | null {
-  const e = b.dizin.kenarlar[k];
-  if (!e) return null;
-  const uc = (b.kare.bolgeler[e.a]?.sahip ?? -1) === b.ben.idx ? e.a : e.b;
-  const lp = b.ic.param.lojistik;
-  return { uc, mal: kayitMal(b.ic, lp.gelistirmeMaliyeti), para: lp.gelistirmeParasi, saat: lp.gelistirmeSuresiSaat };
-}
-
-export function kenarOnizleme(b: Baglam, k: number): OnizlemeSatiri[] {
-  const m = kenarMaliyeti(b, k);
-  if (!m) return [];
-  return [...maliyetSatirlari(b, m.uc, m.mal, m.para), sureSatiri(b, m.saat), { metin: `Kapasite +%${Math.round(b.ic.param.lojistik.gelistirmeArtisPpm / 10000)}` }];
-}
-
-const kenarKenari = (b: Baglam): number[] => b.dizin.kenarlar.flatMap((e, i) => (e.a === b.bolge || e.b === b.bolge ? [i] : []));
-
-const kenarGelistir = tanim({
-  id: "kenar_gelistir",
-  tur: "kenar_gelistir",
-  ad: "Yolu geliştir",
-  kapsam: "bolge",
-  aciklama: "Bölgeye bağlı bir lojistik yolunun kapasitesini artırır (darboğazları açmanın yolu). Maliyet yolun sizin ucundaki depodan düşer.",
-  gonder: "Geliştir",
-  uygun: (b) => (kenarKenari(b).length ? null : "Bölgenin yolu yok"),
-  alanlar(b) {
-    const sec: Secenek[] = kenarKenari(b).map((k) => {
-      const e = b.dizin.kenarlar[k];
-      const c = b.kare.kenarlar[k];
-      const neden = kenarNedeni(b, k);
-      const diger = e ? (e.a === b.bolge ? e.b : e.a) : 0;
-      return { deger: String(k), etiket: `${b.bolgeAd(diger)} (${e?.tur ?? ""}, ${fmt1(c?.[0] ?? 0)}/sa, kullanım %${c && c[0] > 0 ? Math.round((c[1] / c[0]) * 100) : 0})${neden ? ` — ${neden}` : ""}`, ...(neden ? { devre: neden } : {}) };
-    });
-    return [{ tip: "secim", ad: "kenar", etiket: "Yol", secenekler: sec }];
-  },
-  varsayilan: () => ({}),
-  komut: (_b, g) => (g["kenar"] ? { tur: "kenar_gelistir", kenar: Number(g["kenar"]) } : "Geliştirilebilecek bir yol yok."),
-  onizleme: (b, g) => kenarOnizleme(b, Number(g["kenar"])),
-  ozet: (k, o) => {
-    const e = o.dizin.kenarlar[k.kenar];
-    return e ? `${o.bolgeAd(e.a)} — ${o.bolgeAd(e.b)} yolunun geliştirilmesi başladı` : "Yol geliştirme başladı";
-  },
-  eylem: (k, o) => {
-    const e = o.dizin.kenarlar[k.kenar];
-    return e ? `${o.bolgeAd(e.a)} — ${o.bolgeAd(e.b)} yolunu geliştir (kapasite artar)` : "Yolu geliştir";
-  },
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -717,11 +647,11 @@ const vergiAyarla = tanim({
     const gelir = (nufus / 1000) * (b.ic.param.ekonomi.vergiTabani1000Saat / 1000) * (o / 100);
     return [
       { metin: `Tahmini vergi geliri: ~${fmt(gelir)} para/sa (${fmt(nufus)} nüfus)` },
-      { metin: `Büyüme eşiği %${esik}${o > esik ? " — aştınız: nüfus büyümez" : ""}`, durum: o > esik ? "uyari" : undefined },
+      { metin: `Büyüme eşiği ${yuzde(esik)}${o > esik ? " — aştınız: nüfus büyümez" : ""}`, durum: o > esik ? "uyari" : undefined },
     ];
   },
-  ozet: (k) => `Vergi oranı %${Math.round(k.oranPpm / 10000)} yapıldı`,
-  eylem: (k) => `Vergi oranını %${Math.round(k.oranPpm / 10000)} yap`,
+  ozet: (k) => `Vergi oranı ${yuzde(Math.round(k.oranPpm / 10000))} yapıldı`,
+  eylem: (k) => `Vergi oranını ${yuzde(Math.round(k.oranPpm / 10000))} yap`,
 });
 
 const BAKIM = ["Asgari — ucuz, aşınma hızlı", "Normal", "Yüksek — pahalı, aşınma azalır"];
@@ -736,7 +666,7 @@ const bakimDuzeyi = tanim({
   uygun: (b) => (b.ic.sanayi ? null : "Sanayi katmanı kapalı"),
   alanlar(b) {
     const d = b.ic.param.sanayi?.bakim.duzeyler ?? [];
-    return [{ tip: "secim", ad: "duzey", etiket: "Düzey", secenekler: BAKIM.map((e, i) => ({ deger: String(i), etiket: `${e}${d[i] ? ` (bakım gideri %${Math.round(d[i].girdiPpm / 10000)})` : ""}` })) }];
+    return [{ tip: "secim", ad: "duzey", etiket: "Düzey", secenekler: BAKIM.map((e, i) => ({ deger: String(i), etiket: `${e}${d[i] ? ` (bakım gideri ${yuzde(Math.round(d[i].girdiPpm / 10000))})` : ""}` })) }];
   },
   varsayilan: (b) => ({ duzey: String(b.ben.bakim ?? 1) }),
   komut: (_b, g) => {
@@ -745,24 +675,6 @@ const bakimDuzeyi = tanim({
   },
   ozet: (k) => `Bakım düzeyi: ${BAKIM[k.duzey]?.split(" — ")[0]}`,
   eylem: (k) => `Bakım düzeyini "${BAKIM[k.duzey]?.split(" — ")[0]}" yap`,
-});
-
-const askeriRezerv = tanim({
-  id: "askeri_rezerv",
-  tur: "askeri_rezerv",
-  ad: "Askeri rezerv",
-  kapsam: "devlet",
-  aciklama: "Lojistik kapasitesinin askeri mallara (ikmal) ayrılan öncelikli payı. Yüksek rezerv sivil akışı daraltır.",
-  gonder: "Ayarla",
-  uygun: () => null,
-  alanlar: () => [{ tip: "sayi", ad: "oran", etiket: "Rezerv", min: 0, max: 50, adim: 1, birim: "%" }],
-  varsayilan: (b) => ({ oran: String(Math.round(b.ben.askeriRezervPpm / 10000)) }),
-  komut(_b, g) {
-    const o = tamSayi(g, "oran");
-    return o === null || o < 0 || o > 50 ? "Askeri rezerv %0 ile %50 arasında olmalı." : { tur: "askeri_rezerv", oranPpm: o * 10000 };
-  },
-  ozet: (k) => `Askeri rezerv %${Math.round(k.oranPpm / 10000)} yapıldı`,
-  eylem: (k) => `Askeri rezervi %${Math.round(k.oranPpm / 10000)} yap`,
 });
 
 /** Araştırma maliyeti/süresi (yayılım indirimi ve erken oyun hızlandırması dahil). */
@@ -902,9 +814,11 @@ const yaptirim = tanim({
 // Kayıt
 // ---------------------------------------------------------------------------------------------
 
+export { GIZLI_KOMUTLAR } from "./gizli";
+
 /**
- * Sıra, arayüzdeki sıradır. `oyuncu_katil` bilinçli olarak yoktur (sistem komutu). Yeni bir çekirdek komutu
- * eklendiğinde buraya `tanim(...)` ekleyin; komut-arayüz eşleme testi eksiği bildirir.
+ * Sıra, arayüzdeki sıradır. Yeni bir çekirdek komutu eklendiğinde buraya `tanim(...)` ekleyin (ya da bilinçli
+ * olarak GIZLI_KOMUTLAR'a); komut-arayüz eşleme testi eksiği bildirir.
  */
 export const KOMUT_KAYDI: readonly KomutTanimi[] = [
   tesisInsa,
@@ -919,10 +833,8 @@ export const KOMUT_KAYDI: readonly KomutTanimi[] = [
   birlikUret,
   savunmaEmri,
   savasIlan,
-  kenarGelistir,
   vergiAyarla,
   bakimDuzeyi,
-  askeriRezerv,
   arastir,
   anlasmaTeklif,
   anlasmaFeshet,
@@ -933,13 +845,13 @@ export const KOMUT_KAYDI: readonly KomutTanimi[] = [
 export const BOLGE_GRUPLARI: ReadonlyArray<{ ad: string; formlar: readonly string[] }> = [
   { ad: "İnşa ve üretim", formlar: ["tesis_insa", "yontem_degistir", "tesis_olcek_yukselt", "genel_onarim", "tesis_durum", "arama_sondaji"] },
   { ad: "Tarım", formlar: ["ekim_plani", "gubre_dozu"] },
-  { ad: "Ticaret ve lojistik", formlar: ["ticaret_emri", "kenar_gelistir"] },
+  { ad: "Ticaret", formlar: ["ticaret_emri"] },
   { ad: "Ordu", formlar: ["birlik_uret", "savunma_emri", "savas_ilan"] },
 ];
 
 /** Devlet sekmesinde gösterilen formlar. */
 export const DEVLET_GRUPLARI: ReadonlyArray<{ ad: string; formlar: readonly string[] }> = [
-  { ad: "Ekonomi", formlar: ["vergi_ayarla", "bakim_duzeyi", "askeri_rezerv"] },
+  { ad: "Ekonomi", formlar: ["vergi_ayarla", "bakim_duzeyi"] },
   { ad: "Teknoloji", formlar: ["arastir"] },
   { ad: "Diplomasi", formlar: ["anlasma_teklif", "anlasma_feshet", "yaptirim"] },
 ];

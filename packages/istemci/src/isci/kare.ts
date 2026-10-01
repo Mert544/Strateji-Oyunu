@@ -1,7 +1,8 @@
 /**
  * Anlık görüntü çıkarımı: packages/izleyici/src/disari-aktar.ts'deki `kareAl` ve `dizinKur` mantığının işçiye
  * uyarlanmış kopyası (izleyici paketi node:fs'e bağlı olduğundan tarayıcı işçisine alınamaz). Çekirdeğin
- * genel API'sini kullanır; çekirdek değişmez.
+ * genel API'sini kullanır; çekirdek değişmez. Lojistik ağı (kenar doluluğu, akışlar) istemcide gösterilmediği
+ * için kareye konmaz; tedarik açıkları `kapsam` ile gelir.
  */
 import { MILI, PPM, SAAT, anlikHazine, anlikMiktar, sureCarpaniPpm, tarimTablosu, teknolojiYayilimiPpm } from "@bolge/cekirdek";
 import type { Simulasyon } from "@bolge/cekirdek";
@@ -64,7 +65,7 @@ export function dizinKur(sim: Simulasyon, botlar: readonly string[]): Dizin {
     })),
     kenarlar: sim.dunya.kenarlar.map((k) => ({ a: k.a, b: k.b, tur: k.tur, sure: Math.round(k.sureMs / SAAT) })),
     oyuncular: botlar.map((arketip, i) => ({ id: `o${i}`, devlet: i, arketip })),
-    tesisTurleri: sim.ic.tesisTurleri.map((t) => ({ id: t.id, ad: t.ad })),
+    tesisTurleri: sim.ic.tesisTurleri.map((t) => ({ id: t.id, ad: t.ad, tarim: t.tarimTesisi === true })),
     yontemler: sim.ic.yontemler.map((y) => ({ id: y.id, ad: y.ad })),
     birlikler: sim.ic.birlikler.map((b) => ({ id: b.id, ad: b.ad })),
   };
@@ -166,14 +167,6 @@ export function kareAl(sim: Simulasyon, oyuncuIdleri: readonly string[], oyuncuI
       : {}),
   }));
 
-  const kenarlar = d.kenarlar.map((k): [number, number, number] => [onda1(k.kapasiteSaat), onda1(k.kullanilanSaat), onda1(k.askeriKullanilanSaat)]);
-
-  const akislar: Kare["akislar"] = [];
-  for (const a of d.lojistik.akislar) {
-    if (a.oranSaat <= 0 || a.yol.length === 0) continue;
-    akislar.push([a.mal, onda1(a.oranSaat), a.kaynak, a.hedef, [...a.yol], oyuncuIdx.get(a.sahip) ?? -1]);
-  }
-
   const kapsam: Kare["kapsam"] = [];
   for (const b of d.bolgeler) {
     if (b.sahip === null) continue;
@@ -215,7 +208,7 @@ export function kareAl(sim: Simulasyon, oyuncuIdleri: readonly string[], oyuncuI
     return o ? Math.round((o.hazine.yerelOran + o.hazine.gelenOran) / MILI) : 0;
   });
 
-  const kare: Kare = { saat: Math.round(t / SAAT), bolgeler, kenarlar, akislar, kapsam, fiyat, savaslar, hazine, hazineOrani };
+  const kare: Kare = { saat: Math.round(t / SAAT), bolgeler, kapsam, fiyat, savaslar, hazine, hazineOrani };
   const iklim = d.iklim;
   if (iklim) {
     const turler = Object.keys(sim.ic.param.iklim?.olaylar ?? {});

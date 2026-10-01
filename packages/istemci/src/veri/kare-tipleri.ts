@@ -1,6 +1,8 @@
 /**
- * Anlık görüntü (Kare) ve dizin tipleri. Biçim, packages/izleyici/src/tipler.ts ile AYNIDIR; istemci paketi
- * izleyiciye (node bağımlılıkları) bağlanmamak için tipleri burada yineler. Miktarlar "birim", oranlar birim/saat.
+ * Anlık görüntü (Kare) ve dizin tipleri. Biçim, packages/izleyici/src/tipler.ts'nin bir ALT KÜMESİDİR: istemci
+ * lojistik ağını (kenar doluluğu, akışlar) göstermez, bu yüzden `kenarlar`/`akislar` karede yoktur (F0 sakin görsel;
+ * lojistik arka planda otomatik). İstemci paketi izleyiciye (node bağımlılıkları) bağlanmamak için tipleri burada
+ * yineler. Miktarlar "birim", oranlar birim/saat.
  */
 
 /** Kapsam neden kodları (AciklikNedeni sırasıyla). */
@@ -31,6 +33,7 @@ export interface DizinBolge {
   nufus0: number;
 }
 
+/** Bölgeler arası komşuluk (kara/deniz/hava yolu). Yalnız komşuluk için tutulur (ör. savaş hedefleri); haritada çizilmez. */
 export interface DizinKenar {
   a: number;
   b: number;
@@ -48,6 +51,8 @@ export interface DizinOyuncu {
 export interface DizinTesisTuru {
   id: string;
   ad: string;
+  /** Tarım tesisi mi ("Sanayi" merceği tarım dışı tesisleri sayar); tarım kapalıysa false. */
+  tarim?: boolean;
 }
 
 export interface DizinYontem {
@@ -143,12 +148,6 @@ export interface BolgeKaresi {
   /** Tarım durumu (B1); tarım kapalıysa veya bölge tarım dışıysa tanımsız. */
   tarim?: TarimKaresi;
 }
-
-/** [kapasite, kullanılan, askeri kullanılan] (birim/saat). */
-export type KenarKaresi = [number, number, number];
-
-/** [mal, oran (birim/saat), kaynak bölge, hedef bölge, yol (kenar indeksleri), sahip oyuncu] */
-export type AkisKaresi = [number, number, number, number, number[], number];
 
 /** [bölge, mal, karşılanma %, neden kodu, en yakın kaynağa süre (saat, -1 = yok)] */
 export type KapsamKaresi = [number, number, number, number, number];
@@ -254,8 +253,7 @@ export interface Kare {
   /** Sim-saat. */
   saat: number;
   bolgeler: BolgeKaresi[];
-  kenarlar: KenarKaresi[];
-  akislar: AkisKaresi[];
+  /** Tam karşılanmayan (bölge, mal) tedarik hücreleri; panelde "tedarik" satırı ve rozetler için. */
   kapsam: KapsamKaresi[];
   /** Mal indeksine göre fiyat / taban fiyat (binde). */
   fiyat: number[];

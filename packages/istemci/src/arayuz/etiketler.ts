@@ -1,16 +1,22 @@
 /**
- * Bölge adı etiketleri (HTML yerleşimi, LOD): uzaktayken gizli; yaklaştıkça önce büyük (nüfuslu) bölgeler,
- * sonra hepsi. Arka yarımküredekiler ve çakışanlar gösterilmez; seçili bölge her zaman gösterilir.
+ * Bölge adı etiketleri (HTML yerleşimi, LOD): uzaktayken gizli; yaklaştıkça önce büyük (nüfuslu) bölgeler.
+ * Sakin görsel: aynı anda en çok ETIKET_EN_COK etiket; arka yarımküredekiler ve çakışanlar (geniş bir boşlukla)
+ * gösterilmez; seçili bölge her zaman gösterilir.
  */
 import type { KameraKontrol } from "../kamera/kontrol";
 import type { Vek3 } from "../kure/matematik";
 import { olcekle } from "../kure/matematik";
 
+/** Ekranda aynı anda en çok bu kadar bölge etiketi (yakınlaşma ne olursa olsun). */
+export const ETIKET_EN_COK = 14;
+
+/** Yakınlaşmaya (kamera uzaklığı) göre izin verilen etiket sayısı. */
 export function etiketSayisi(dist: number, toplam: number): number {
-  if (dist > 1.6) return 0;
-  if (dist > 1.0) return Math.min(toplam, 8);
-  if (dist > 0.6) return Math.min(toplam, 18);
-  return toplam;
+  if (dist > 1.4) return 0;
+  if (dist > 0.9) return Math.min(toplam, 4);
+  if (dist > 0.55) return Math.min(toplam, 8);
+  if (dist > 0.3) return Math.min(toplam, 11);
+  return Math.min(toplam, ETIKET_EN_COK);
 }
 
 export class Etiketler {
@@ -65,8 +71,9 @@ export class Etiketler {
       const p = k.ekranaProje(olcekle(c, 1.01));
       if (!p || p.x < -40 || p.y < -20 || p.x > boyut.w + 40 || p.y > boyut.h + 20) continue;
       const e = this.oge[i] as HTMLElement;
-      const gen = (e.textContent?.length ?? 6) * 6.6 + 14;
-      const r: [number, number, number, number] = [p.x - gen / 2, p.y + 10, p.x + gen / 2, p.y + 28];
+      // Geniş çakışma kutusu: etiketler arasında hava kalsın.
+      const gen = (e.textContent?.length ?? 6) * 6.4 + 36;
+      const r: [number, number, number, number] = [p.x - gen / 2, p.y + 4, p.x + gen / 2, p.y + 34];
       if (!zorunlu && dolu.some((d) => r[0] < d[2] && r[2] > d[0] && r[1] < d[3] && r[3] > d[1])) continue;
       dolu.push(r);
       gosterilen++;

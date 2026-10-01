@@ -3,7 +3,7 @@
  * Seçim URL kısmında basit bir belirteçle (#korvan, #izle) hatırlanır; yalnızca düz #anchor kullanılır.
  */
 import type { HaritaDosyasi, IcerikDosyasi } from "@bolge/veri";
-import { esc, fmt1 } from "./bicim";
+import { esc, fmt1, yuzde } from "./bicim";
 
 export interface DevletKarti {
   idx: number;
@@ -60,7 +60,7 @@ export function devletSecimiHtml(kartlar: DevletKarti[], oyunda: boolean): strin
 <span class="ds-ad"><i class="nokta"></i>${esc(d.ad)}</span>
 <span class="ds-satir"><b>${d.bolgeSayisi}</b> bölge · <b>${fmt1(d.nufus / 1e6)} Mn</b> nüfus</span>
 <span class="ds-satir">${d.liman} liman · ${d.dag} dağ bölgesi</span>
-<span class="ds-profil">Kaynaklar: ${d.kaynaklar.length ? d.kaynaklar.map((x) => `${esc(x.ad)} %${x.pay}`).join(" · ") : "dengeli"}</span>
+<span class="ds-profil">Kaynaklar: ${d.kaynaklar.length ? d.kaynaklar.map((x) => `${esc(x.ad)} ${yuzde(x.pay)}`).join(" · ") : "dengeli"}</span>
 <span class="ds-git">Bu devleti yönet</span></button>`,
     )
     .join("");

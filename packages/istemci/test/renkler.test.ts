@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { bolgeRenkleriniHesapla, bolgeTamponuOlustur, hexRgb, karistir, kullanimRengi, malRengiHex, sekilKodu } from "../src/veri/renkler";
 import type { Palet } from "../src/veri/renkler";
-import { darbogazlar, hucre, kareTuret } from "../src/veri/kapsam";
+import { hucre, kareTuret, tedarikOzeti } from "../src/veri/kapsam";
+import { IZLE_SOLUK_PAY, SOLUK_PAY, genelRenkleri, pazarRenkleri, sanayiRenkleri } from "../src/veri/mercek";
 import type { Dizin, Kare } from "../src/veri/kare-tipleri";
 
 const palet: Palet = {
   devlet: [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]],
   sahipsiz: [0.5, 0.5, 0.5],
   durum: { karsilanan: [0, 0.5, 1], kismi: [1, 0.75, 0], acik: [1, 0.25, 0], engelli: [0.5, 0, 0.625], ilgisiz: [0.9, 0.9, 0.9], sahipsiz: [0.5, 0.5, 0.5] },
-  kullanim: [[0, 0, 0], [0.25, 0.25, 0.25], [0.5, 0.5, 0.5], [0.75, 0.75, 0.75], [1, 1, 1]],
+  notr: [1, 1, 1],
+  sanayi: [[0, 0, 0], [0.25, 0.25, 0.25], [0.5, 0.5, 0.5], [0.75, 0.75, 0.75], [1, 1, 1]],
+  pazar: [[0, 0, 0], [0, 0, 0.25], [0, 0, 0.5], [0, 0, 0.75], [0, 0, 1]],
 };
 
 const dizin: Dizin = {
@@ -33,8 +36,6 @@ function bolge(sahip: number, stok: number[] = [0, 0], uretim: number[] = [0, 0]
 const kare: Kare = {
   saat: 10,
   bolgeler: [bolge(0, [5, 0]), bolge(1, [5, 0]), bolge(0, [5, 0]), bolge(1, [5, 0]), bolge(-1), bolge(0)],
-  kenarlar: [[100, 95, 0], [100, 40, 10]],
-  akislar: [[0, 12.5, 0, 2, [0, 1], 0]],
   kapsam: [
     [1, 0, 70, 3, 5], // kısmi, mesafe
     [2, 0, 20, 2, -1], // açık, girdi_eksik
@@ -55,11 +56,11 @@ describe("renk yardımcıları", () => {
   });
 
   it("kullanım rampası uç noktaları ve ara değerleri", () => {
-    expect(kullanimRengi(0, palet.kullanim)).toEqual([0, 0, 0]);
-    expect(kullanimRengi(1, palet.kullanim)).toEqual([1, 1, 1]);
-    expect(kullanimRengi(0.5, palet.kullanim)[0]).toBeCloseTo(0.5, 9);
-    expect(kullanimRengi(0.125, palet.kullanim)[0]).toBeCloseTo(0.125, 9);
-    expect(kullanimRengi(7, palet.kullanim)).toEqual([1, 1, 1]);
+    expect(kullanimRengi(0, palet.sanayi)).toEqual([0, 0, 0]);
+    expect(kullanimRengi(1, palet.sanayi)).toEqual([1, 1, 1]);
+    expect(kullanimRengi(0.5, palet.sanayi)[0]).toBeCloseTo(0.5, 9);
+    expect(kullanimRengi(0.125, palet.sanayi)[0]).toBeCloseTo(0.125, 9);
+    expect(kullanimRengi(7, palet.sanayi)).toEqual([1, 1, 1]);
     expect(karistir([0, 0, 0], [1, 1, 1], 0.25)).toEqual([0.25, 0.25, 0.25]);
   });
 
@@ -83,15 +84,15 @@ describe("kapsam hücreleri", () => {
     expect(hucre(kare, t, 1, 0).neden).toBe("mesafe");
     expect(hucre(kare, t, 1, 0).sure).toBe(5);
   });
-  it("akışa dokunan bölge ilgili sayılır; sahip sayıları", () => {
+  it("stok/üretim yoksa ilgisiz; sahip sayıları", () => {
     expect(hucre(kare, t, 5, 0).d).toBe("ilgisiz");
-    expect(t.giden[0]?.length).toBe(1);
-    expect(t.gelen[2]?.length).toBe(1);
     expect(t.sahipSayisi).toEqual([3, 2]);
   });
-  it("darboğazlar: kullanım >= %90 olan kenarlar", () => {
-    const d = darbogazlar(kare, 0.9);
-    expect(d.map((x) => x.kenar)).toEqual([0]);
+  it("tedarik özeti: ilgili malların ortalaması ve en kötü hücre; sahipsiz bölgede yok", () => {
+    expect(tedarikOzeti(kare, t, 2)).toEqual({ yuzde: 20, ilgili: 1, enKotu: { mal: 0, hucre: hucre(kare, t, 2, 0) } });
+    expect(tedarikOzeti(kare, t, 0)).toEqual({ yuzde: 100, ilgili: 1, enKotu: null });
+    expect(tedarikOzeti(kare, t, 5)).toEqual({ yuzde: 100, ilgili: 0, enKotu: null });
+    expect(tedarikOzeti(kare, t, 4)).toBeNull();
   });
 });
 
@@ -122,5 +123,31 @@ describe("anlık görüntü -> renk tamponu", () => {
     expect(Array.from(tb.desen)).toEqual([0, 1, 2, 3, 0, 0]);
     // glif: mesafe=4, girdi_eksik=3, kapasite=2; diğerleri -1
     expect(Array.from(tb.glif)).toEqual([-1, 4, 3, 2, -1, -1]);
+  });
+});
+
+describe("mercekler", () => {
+  const rgb = (tb: ReturnType<typeof bolgeTamponuOlustur>, i: number): number[] => Array.from(tb.renk.slice(3 * i, 3 * i + 3));
+  it("Genel: oyuncunun bölgeleri doygun, başkalarınınki nötre soldurulur; izlemede hafif soluk", () => {
+    const tb = bolgeTamponuOlustur(6);
+    genelRenkleri(kare, dizin, 0, palet, tb);
+    expect(rgb(tb, 0)).toEqual([1, 0, 0]); // benim (o0)
+    const b1 = rgb(tb, 1); // o1: yeşil -> beyaza SOLUK_PAY kadar
+    expect(b1[0]).toBeCloseTo(SOLUK_PAY, 5);
+    expect(b1[1]).toBeCloseTo(1, 9);
+    genelRenkleri(kare, dizin, -1, palet, tb);
+    expect(rgb(tb, 0)[1]).toBeCloseTo(IZLE_SOLUK_PAY, 5); // izleme: kırmızı da soluk
+    expect(Array.from(tb.desen)).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+  it("Sanayi: tarım dışı çalışan tesis verimi; Pazar: stok değeri; sıfır olan bölge nötr", () => {
+    const d2: Dizin = { ...dizin, tesisTurleri: [{ id: "celikhane", ad: "Çelikhane", tarim: false }, { id: "ciftlik", ad: "Çiftlik", tarim: true }] };
+    const k2: Kare = { ...kare, bolgeler: kare.bolgeler.map((b, i) => (i === 0 ? { ...b, tesis: [[0, 0, 1, 100, 100], [1, 0, 1, 100, 100]] } : i === 2 ? { ...b, tesis: [[1, 0, 1, 100, 100]] } : b)) };
+    const tb = bolgeTamponuOlustur(6);
+    sanayiRenkleri(k2, d2, palet, tb);
+    expect(rgb(tb, 0)).toEqual([1, 1, 1]); // en yüksek -> rampanın sonu
+    expect(rgb(tb, 2)).toEqual(palet.notr); // yalnız tarım tesisi
+    pazarRenkleri(k2, d2, palet, tb);
+    expect(rgb(tb, 0)).toEqual([0, 0, 1]); // stok 5 tahıl: en yüksek değer
+    expect(rgb(tb, 5)).toEqual(palet.notr); // stok yok
   });
 });

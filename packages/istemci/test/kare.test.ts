@@ -21,6 +21,15 @@ function tarimsiz(k: Kare): Kare {
   return { ...geri, bolgeler: k.bolgeler.map(({ tarim: _tarim, ...b }) => b) };
 }
 
+/**
+ * İstemci karesi izleyicininkinin ALT KÜMESİDİR: lojistik ağı (kenar doluluğu `kenarlar`, akışlar `akislar`)
+ * istemcide gösterilmediği için kareye konmaz (F0 sakin görsel). Karşılaştırma için izleyici karesinden atılır.
+ */
+function lojistiksiz(k: ReturnType<typeof izleyiciKareAl>): Kare {
+  const { kenarlar: _k, akislar: _a, ...geri } = k as unknown as Kare & { kenarlar: unknown; akislar: unknown };
+  return geri;
+}
+
 describe("işçi kare çıkarımı", () => {
   const veri = miniVeriyiYukle();
   const botlar: ArketipAdi[] = ["sanayici", "tuccar"];
@@ -37,12 +46,13 @@ describe("işçi kare çıkarımı", () => {
     kos({ veri, tohum: 1, oyuncular, sureMs: 3 * GUN, sim });
     const idler = oyuncular.map((o) => o.id);
     const k = kareAl(sim, idler);
-    expect(tarimsiz(k)).toEqual(izleyiciKareAl(sim, idler));
+    expect(tarimsiz(k)).toEqual(lojistiksiz(izleyiciKareAl(sim, idler)));
+    expect("kenarlar" in k || "akislar" in k).toBe(false);
     expect(k.saat).toBe(72);
     expect(JSON.parse(JSON.stringify(k))).toEqual(k);
     const d = dizinKur(sim, botlar);
     expect(d.bolgeler.length).toBe(k.bolgeler.length);
-    expect(d.kenarlar.length).toBe(k.kenarlar.length);
+    expect(d.kenarlar.length).toBe(sim.dunya.kenarlar.length); // komşuluk (savaş hedefleri) için; çizilmez
     expect(d.mallar.length).toBe(k.fiyat.length);
     expect(d.oyuncular.map((o) => o.arketip)).toEqual(botlar);
   });

@@ -2,12 +2,12 @@
  * Komut arayüzünün içerik üreticileri (saf: durum -> HTML dizgisi). Formlar komut kaydından (komut/kayit.ts)
  * türetilir; burada yalnızca genel çizim vardır, komuta özgü bilgi yoktur.
  */
-import { BOLGE_GRUPLARI, DEVLET_GRUPLARI, anlasmaDurumu, eylemMetni, kenarNedeni, kenarOnizleme, komutTanimi, sureMetni } from "../komut/kayit";
+import { BOLGE_GRUPLARI, DEVLET_GRUPLARI, anlasmaDurumu, eylemMetni, komutTanimi, sureMetni } from "../komut/kayit";
 import { oneriNedeni } from "../komut/oneri-metin";
 import type { Icerik } from "../komut/tablo";
 import type { Alan, Baglam, Girdi, KomutTanimi } from "../komut/tipler";
 import type { Oneri } from "../isci/protokol";
-import { esc, fmt, kisalt } from "./bicim";
+import { esc, fmt, kisalt, yuzde } from "./bicim";
 import type { GovdeDurumu } from "./govde";
 
 /** Arayüzün komutlara ilişkin tuttuğu durum (form değerleri, açık bölümler, öneriler). */
@@ -78,7 +78,7 @@ function alanHtml(a: Alan, g: Girdi, id: string): string {
     const aralik = a.max - a.min <= 100 && a.adim === 1 && a.birim === "%";
     const deger = g[a.ad] ?? "";
     if (aralik) {
-      return `<label class="alan"><span>${esc(a.etiket)}</span><span class="aralik"><input type="range" name="${esc(a.ad)}" min="${a.min}" max="${a.max}" step="${a.adim}" value="${esc(deger)}"><output>%${esc(deger)}</output></span></label>`;
+      return `<label class="alan"><span>${esc(a.etiket)}</span><span class="aralik"><input type="range" name="${esc(a.ad)}" min="${a.min}" max="${a.max}" step="${a.adim}" value="${esc(deger)}"><output>${yuzde(Number(deger) || 0)}</output></span></label>`;
     }
     return `<label class="alan"><span>${esc(a.etiket)}</span><span class="sayi-kutu"><input type="number" inputmode="decimal" name="${esc(a.ad)}" min="${a.min}" max="${a.max}" step="${a.adim}" value="${esc(deger)}">${a.birim ? `<small class="soluk">${esc(a.birim)}</small>` : ""}</span></label>`;
   }
@@ -117,10 +117,8 @@ export function islerHtml(b: Baglam, bolge: number): string {
     if (bolge >= 0 && i.bolge !== bolge) continue;
     let ad = "";
     if (i.tur === "tesis") ad = `${b.ic.turler[i.hedef]?.ad ?? "Tesis"} inşaatı`;
-    else if (i.tur === "kenar") {
-      const e = b.dizin.kenarlar[i.hedef];
-      ad = `Yol geliştirme: ${e ? `${b.bolgeAd(e.a)} — ${b.bolgeAd(e.b)}` : ""}`;
-    } else if (i.tur === "olcek") ad = `Tesis ölçek yükseltme (${["S", "M", "L"][i.olcek ?? 1]})`;
+    else if (i.tur === "kenar") ad = "Yol geliştirme";
+    else if (i.tur === "olcek") ad = `Tesis ölçek yükseltme (${["S", "M", "L"][i.olcek ?? 1]})`;
     else ad = "Genel onarım (tesisler durur)";
     satirlar.push(`<div class="satir is-satir"><span>${esc(ad)}${bolge < 0 ? ` <span class="soluk">· ${esc(b.bolgeAd(i.bolge))}</span>` : ""}</span><span class="sayi">${kalan(i.bitis)} kaldı</span></div>`);
   }
@@ -234,14 +232,4 @@ export function komutBolumu(g: GovdeDurumu, i: number): string {
     }
   }
   return s;
-}
-
-/** Darboğaz listesindeki bir yol için "Kenarı geliştir" düğmesi (oyuncu kipinde). */
-export function kenarGelistirDugmesi(g: GovdeDurumu, kenar: number): string {
-  const b = baglamKur(g);
-  if (!b) return "";
-  const neden = kenarNedeni(b, kenar);
-  if (neden) return `<span class="kenar-not soluk">${esc(neden)}</span>`;
-  const onizleme = kenarOnizleme(b, kenar).map((x) => x.metin).join(" · ");
-  return `<button type="button" class="mini-dugme" data-komut='${esc(JSON.stringify({ tur: "kenar_gelistir", kenar }))}' title="${esc(onizleme)}">Kenarı geliştir</button><span class="kenar-not soluk">${esc(onizleme)}</span>`;
 }

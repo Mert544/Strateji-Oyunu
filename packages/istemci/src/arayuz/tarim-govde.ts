@@ -3,7 +3,7 @@
  * "Tarım" görünümü lejantı ve üst çubuktaki hasat ritmi çubukları. Ürünler, olay türleri ve iklim tipleri dizinden gelir.
  */
 import type { GovdeDurumu } from "./govde";
-import { esc, sinirla } from "./bicim";
+import { esc, sinirla, yuzde } from "./bicim";
 import { AY_ADLARI, AY_KISA, ekimMetni, hasatMetni, hasatYukseklikleri, iklimTipiAdi, olayEvresi, olaySimgesi, olaylariSirala, sureMetni, takvimDurumu, takvimMetni, takvimParametresi, tarimOzeti, toprakVerimi } from "../veri/tarim";
 import type { DizinTarim, OlayKaresi } from "../veri/kare-tipleri";
 
@@ -38,7 +38,7 @@ export function hasatCubuklari(aylik: readonly number[], ay: number, etiket: boo
 /** Ekim karışımı çubuğu: ürün başına bir dilim (desenli; haritadaki ekim desenleriyle aynı). */
 function ekimCubugu(ekim: readonly number[], urunler: ReadonlyArray<{ ad: string }>): string {
   const dilimler = ekim
-    .map((y, i) => (y > 0 ? `<span class="ekim-dilim ekim-${Math.min(3, i)}" style="flex:${y}" title="${esc(urunler[i]?.ad ?? "")} %${y}"></span>` : ""))
+    .map((y, i) => (y > 0 ? `<span class="ekim-dilim ekim-${Math.min(3, i)}" style="flex:${y}" title="${esc(urunler[i]?.ad ?? "")} ${yuzde(y)}"></span>` : ""))
     .join("");
   return `<span class="ekim-cubuk" role="img" aria-label="Ekim karışımı">${dilimler}</span>`;
 }
@@ -58,13 +58,13 @@ export function bolgeTarimBolumu(g: GovdeDurumu, i: number): string {
   const [toprak, iklim, kayip, doz, gubreKars, ekim] = tk;
   const verim = toprakVerimi(tabanBinde, toprak);
   s += `<div class="satir"><span class="ad">İklim tipi</span><span>${esc(iklimTipiAdi(t.iklimTipleri[tip] ?? ""))}</span></div>`;
-  s += `<div class="satir"><span class="ad">Toprak durumu</span><span class="sayi">%${Math.round(toprak / 10)} ${cubuk(toprak / 10)}</span></div>`;
-  s += `<div class="satir"><span class="ad">Toprak verimliliği</span><span class="sayi">%${Math.round(verim * 100)} <span class="soluk">(taban %${Math.round(tabanBinde / 10)})</span></span></div>`;
+  s += `<div class="satir"><span class="ad">Toprak durumu</span><span class="sayi">${yuzde(Math.round(toprak / 10))} ${cubuk(toprak / 10)}</span></div>`;
+  s += `<div class="satir"><span class="ad">Toprak verimliliği</span><span class="sayi">${yuzde(Math.round(verim * 100))} <span class="soluk">(taban ${yuzde(Math.round(tabanBinde / 10))})</span></span></div>`;
   s += `<div class="satir ekim-satir"><span class="ad">Ekim karışımı</span><span class="ekim-sag">${ekimCubugu(ekim, t.urunler)}<span class="soluk ekim-metin">${esc(ekimMetni(ekim, t.urunler))}</span></span></div>`;
-  s += `<div class="satir"><span class="ad">Gübre dozu</span><span class="sayi">${doz} / ${t.azamiGubreDozu}${doz > 0 ? ` <span class="soluk">· karşılanma %${gubreKars}</span> ${cubuk(gubreKars)}` : " <span class='soluk'>(gübre yok)</span>"}</span></div>`;
+  s += `<div class="satir"><span class="ad">Gübre dozu</span><span class="sayi">${doz} / ${t.azamiGubreDozu}${doz > 0 ? ` <span class="soluk">· karşılanma ${yuzde(gubreKars)}</span> ${cubuk(gubreKars)}` : " <span class='soluk'>(gübre yok)</span>"}</span></div>`;
   s += `<div class="satir"><span class="ad">İklim çarpanı</span><span class="sayi">${hasatMetni(iklim)} <span class="soluk">(yıllık ort. %100)</span></span></div>`;
-  s += `<div class="satir"><span class="ad">Olay kaybı</span><span class="sayi ${kayip > 0 ? "asagi" : ""}">${kayip > 0 ? "−" : ""}%${Math.round(kayip / 10)}</span></div>`;
-  s += `<div class="satir"><span class="ad">Tarım tesisi tavanı</span><span class="sayi">${tavan} <span class="soluk">· sulanabilir %${sulanabilir}</span></span></div>`;
+  s += `<div class="satir"><span class="ad">Olay kaybı</span><span class="sayi ${kayip > 0 ? "asagi" : ""}">${kayip > 0 ? "−" : ""}${yuzde(Math.round(kayip / 10))}</span></div>`;
+  s += `<div class="satir"><span class="ad">Tarım tesisi tavanı</span><span class="sayi">${tavan} <span class="soluk">· sulanabilir ${yuzde(sulanabilir)}</span></span></div>`;
   // Bu bölgeyi etkileyen (veya yakında etkileyecek) olaylar
   const olaylar = (kare.iklim?.olaylar ?? []).flatMap((o) => {
     const e = o.etki.find((x) => x[0] === i);
@@ -76,7 +76,7 @@ export function bolgeTarimBolumu(g: GovdeDurumu, i: number): string {
       .map(({ o, evre, siddet }) => {
         const tur = olayTuru(t, o);
         const ad = olaySimgesi(tur).ad;
-        return `<span class="olay-cip">${olayRozeti(tur, 16)} <b>${esc(ad)}</b> ${evre === "uyari" ? `uyarı (${sureMetni(o.baslangic - kare.saat)} sonra)` : `etkin · bu bölgede %${siddet}`}</span>`;
+        return `<span class="olay-cip">${olayRozeti(tur, 16)} <b>${esc(ad)}</b> ${evre === "uyari" ? `uyarı (${sureMetni(o.baslangic - kare.saat)} sonra)` : `etkin · bu bölgede ${yuzde(siddet)}`}</span>`;
       })
       .join("")}</div>`;
   }
@@ -124,14 +124,14 @@ export function tarimNedenSatiri(g: GovdeDurumu): string {
     const tk = kare.bolgeler[bolge]?.tarim;
     const tanim = t.bolgeler[bolge];
     if (!tk || !tanim) return `<b>${ad}</b>: tarım dışı bölge.`;
-    return `<b>${ad}</b> · toprak verimliliği %${Math.round(toprakVerimi(tanim[1], tk[0]) * 100)} · ekim: ${esc(ekimMetni(tk[5], t.urunler))} · iklim hasat ${hasatMetni(tk[1])}${tk[2] > 0 ? ` · olay kaybı %${Math.round(tk[2] / 10)}` : ""}`;
+    return `<b>${ad}</b> · toprak verimliliği ${yuzde(Math.round(toprakVerimi(tanim[1], tk[0]) * 100))} · ekim: ${esc(ekimMetni(tk[5], t.urunler))} · iklim hasat ${hasatMetni(tk[1])}${tk[2] > 0 ? ` · olay kaybı ${yuzde(Math.round(tk[2] / 10))}` : ""}`;
   }
   const oz = tarimOzeti(kare, dizin);
   const ol = olaylariSirala(kare.iklim?.olaylar ?? [], kare.saat);
   const aktif = ol.filter((x) => x.evre === "aktif").length;
   const uyari = ol.length - aktif;
-  let s = `<b>Tarım görünümü</b>: ${oz.tarimBolgesi} tarım bölgesinde ortalama toprak verimliliği %${Math.round(oz.ortVerim * 100)}`;
-  if (oz.enDusuk) s += `; en düşük ${esc(g.bolgeAd(oz.enDusuk.bolge))} (%${Math.round(oz.enDusuk.verim * 100)})`;
+  let s = `<b>Tarım görünümü</b>: ${oz.tarimBolgesi} tarım bölgesinde ortalama toprak verimliliği ${yuzde(Math.round(oz.ortVerim * 100))}`;
+  if (oz.enDusuk) s += `; en düşük ${esc(g.bolgeAd(oz.enDusuk.bolge))} (${yuzde(Math.round(oz.enDusuk.verim * 100))})`;
   s += `. ${aktif} etkin olay, ${uyari} uyarı.`;
   s += `<div class="seri-lejant"><span class="rampa toprak-rampa" aria-hidden="true"></span><span class="soluk">düşük → yüksek verimlilik · desen = baskın ürün</span></div>`;
   return s;
@@ -166,7 +166,7 @@ export function olayPaneli(g: GovdeDurumu): string {
     const kalan = evre === "aktif" ? o.bitis - kare.saat : o.baslangic - kare.saat;
     const alan = o.etki.length;
     return `<button type="button" class="liste-satir olay-satir" data-bolge="${o.merkez}">
-<span class="olay-sol">${olayRozeti(tur, 28)}<span><b>${esc(sim.ad)}</b> — ${esc(g.bolgeAd(o.merkez))}<br><span class="soluk">merkezde %${o.siddet} · ${alan} bölgeye yayılır · ${esc(sim.etki)}</span></span></span>
+<span class="olay-sol">${olayRozeti(tur, 28)}<span><b>${esc(sim.ad)}</b> — ${esc(g.bolgeAd(o.merkez))}<br><span class="soluk">merkezde ${yuzde(o.siddet)} · ${alan} bölgeye yayılır · ${esc(sim.etki)}</span></span></span>
 <span class="olay-sag"><span class="rozet olay-evre ${evre}">${evre === "aktif" ? "ETKİN" : "UYARI"}</span><br><span class="soluk">${evre === "aktif" ? `${sureMetni(kalan)} kaldı` : `${sureMetni(kalan)} sonra başlar`}</span></span></button>`;
   };
   const aktif = liste.filter((x) => x.evre === "aktif");

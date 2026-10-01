@@ -4,6 +4,7 @@
  */
 import { kararTeknolojisi, teknolojiAdi } from "./tablo";
 import type { Icerik } from "./tablo";
+import { yuzde } from "../arayuz/bicim";
 import { bolgeAdiId } from "./tipler";
 import type { OzetBaglami } from "./tipler";
 
@@ -40,7 +41,7 @@ const KURALLAR: Kural[] = [
   [/^bilinmeyen mal: (\S+)/, (m) => `Bilinmeyen mal: ${m[1]}.`],
   [/^gecersiz vergi orani/, () => "Vergi oranı %0 ile %100 arasında olmalı."],
   [/^gecersiz askeri rezerv/, () => "Askeri rezerv %0 ile %50 arasında olmalı."],
-  [/^ekim paylari toplami (\d+) olmali \(bulunan (-?\d+)\)/, (m) => `Ekim payları toplamı %${Math.round(Number(m[1]) / 10000)} olmalı (şu an %${Math.round(Number(m[2]) / 10000)}).`],
+  [/^ekim paylari toplami (\d+) olmali \(bulunan (-?\d+)\)/, (m) => `Ekim payları toplamı ${yuzde(Math.round(Number(m[1]) / 10000))} olmalı (şu an ${yuzde(Math.round(Number(m[2]) / 10000))}).`],
   [/^ekim plani (\d+) urun/, (m) => `Ekim planı ${m[1]} ürünün payını içermeli.`],
   [/^gecersiz ekim payi/, () => "Ekim payları %0 ile %100 arasında olmalı."],
   [/^gecersiz gubre dozu: \S+ \(0\.\.(\d+)\)/, (m) => `Gübre dozu 0 ile ${m[1]} arasında olmalı.`],

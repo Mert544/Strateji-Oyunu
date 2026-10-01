@@ -6,7 +6,6 @@ const NEDEN: Record<string, string> = {
   insa: "Zincirdeki bir açığı kapatır; bölgenin rezervi, etiketi ve işgücü bu tesise uygun.",
   yontem: "Daha verimli bir yöntem açıldı; işgücü ya da girdi açığını azaltır.",
   ticaret: "Fazla stoku satmak ya da açığı ithalatla kapatmak gelir ve karşılanmayı artırır.",
-  kenar: "Doygun bir yol darboğaz yaratıyor; kapasite artınca akış rahatlar.",
   arastir: "Yeni yöntem, tesis ya da karar açar.",
   vergi: "Gıda karşılanması vergi ayarına izin veriyor; gelir ile nüfus dengesi.",
   tarim: "Toprak, iklim ve gübre dengesini iyileştirir; verim artar.",
@@ -16,7 +15,6 @@ const NEDEN: Record<string, string> = {
   sondaj: "Rezerv azalıyor; yeni damar bulmak üretimi sürdürür.",
   birlik: "Orduyu güçlendirir.",
   savunma: "Bölgenin savunmasını sağlamlaştırır.",
-  rezerv: "Askeri ikmal için lojistik payı ayırır.",
   savas: "Planlayıcı saldırıyı kârlı buldu.",
 };
 

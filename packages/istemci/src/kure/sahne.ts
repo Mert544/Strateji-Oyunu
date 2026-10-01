@@ -1,11 +1,11 @@
 /**
  * Sahne: three.js sahnesini, katmanları, kamerayı ve çizim döngüsünü bir araya getirir.
+ * Sakin görsel (F0): lojistik akış şeritleri, parçacıklar ve savaş yayları YOKTUR. Durum, bölge başına en çok
+ * bir rozetle (simge katmanında, ek çizim çağrısı olmadan) ve seçili mercekle gösterilir.
  * Çizim çağrıları: yıldız, okyanus, kara, ülke çizgileri, bölge dolgusu, bölge çizgileri, seçim çizgisi,
- * kenar şeritleri, savaş yayları, parçacıklar, simgeler, atmosfer (yaklaşık 12).
+ * simgeler, atmosfer (yaklaşık 9).
  */
 import { Color, PerspectiveCamera, Scene, WebGLRenderer } from "three";
-import { AkisParcaciklari, malKenarlari } from "../akis/parcaciklar";
-import { KenarSeritleri, SavasYaylari } from "../akis/seritler";
 import { KameraKontrol } from "../kamera/kontrol";
 import { DIKEY_ACI, enUzakMesafe, sigmaMesafesi, yerelBaz } from "../kamera/durum";
 import { BolgeKatmani, BOLGE_YARICAPI } from "./bolge-katmani";
@@ -22,8 +22,12 @@ import type { SahnePaleti } from "./tema";
 import type { DunyaKarasi } from "../veri/cografya";
 import type { DunyaHaritasi } from "../veri/harita-birlestir";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
+import { genelRenkleri, pazarRenkleri, sanayiRenkleri } from "../veri/mercek";
+import type { Mercek } from "../veri/mercek";
 import { bolgeRenkleriniHesapla, bolgeTamponuOlustur } from "../veri/renkler";
 import type { BolgeRenkTamponu } from "../veri/renkler";
+import { rozetleriHesapla } from "../veri/rozet";
+import type { BitenInsaat, RozetTuru } from "../veri/rozet";
 import { olayEvresi, olaySimgesi, olaySonumu, tarimRenkleriniHesapla } from "../veri/tarim";
 
 export interface SahneOlaylari {
@@ -49,16 +53,22 @@ export class Sahne {
   readonly ortak: Ortak = ortakOlustur();
   readonly dunya: DunyaKatmani;
   readonly bolge: BolgeKatmani;
-  serit: KenarSeritleri | null = null;
-  parcacik: AkisParcaciklari | null = null;
-  savas: SavasYaylari | null = null;
   simge: SimgeKatmani | null = null;
   palet: SahnePaleti;
   dizin: Dizin | null = null;
   kare: Kare | null = null;
-  malSecili = -1;
-  /** "Tarım" harita görünümü (bölge dolgusu toprak verimliliği + ekim deseni); mal görünümünü geçersiz kılar. */
-  tarimGorunumu = false;
+  /** Etkin mercek (tek mercek): varsayılan sakin "Genel". */
+  mercek: Mercek = "genel";
+  /** "mal" merceğinde seçili mal. */
+  private mal = -1;
+  /** Oyuncunun indeksi (-1: izleme): "Genel" merceğinde yalnız onun bölgeleri doygun; rozetler yalnız onun bölgelerinde. */
+  ben = -1;
+  /** Biten inşaatlar (panelin izleyicisi; "inşaat bitti" rozetleri). */
+  bitenler: ReadonlyMap<number, BitenInsaat> = new Map();
+  /** Hareket azaltma tercihi: rozet nabzı ve uçuş yumuşatması yok. */
+  hareketAzalt = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  private oncekiRozet: Array<RozetTuru | null> | null = null;
+  private nabiz = new Float32Array(0);
   secili = -1;
   /** Görünen sim saati (kesirli); güneş yönü için. */
   simSaatiKaynagi: () => number = () => 0;
@@ -120,19 +130,27 @@ export class Sahne {
     this.boyutla();
   }
 
-  /** Dizin (kenarlar, mallar) geldiğinde dinamik katmanları kurar. */
+  /** "mal" merceğindeki mal (diğer merceklerde -1). Ölçüm kancası ve eski betikler için. */
+  get malSecili(): number {
+    return this.mercek === "mal" ? this.mal : -1;
+  }
+
+  /** "Tarım" merceği etkin mi. */
+  get tarimGorunumu(): boolean {
+    return this.mercek === "tarim";
+  }
+
+  /** Dizin (mallar, tesis türleri) geldiğinde dinamik katmanları kurar. */
   dizinKur(dizin: Dizin): void {
     this.dizin = dizin;
-    this.serit = new KenarSeritleri(dizin.kenarlar, this.merkezler, this.ortak);
-    this.parcacik = new AkisParcaciklari(dizin, this.merkezler, this.ortak);
-    this.savas = new SavasYaylari(this.merkezler, this.ortak);
+    this.nabiz = new Float32Array(dizin.bolgeler.length).fill(-1e6);
     this.simge = new SimgeKatmani(
       this.harita.bolgeler,
       this.merkezler,
       this.harita.harita.bolgeler.map((b) => b.etiketler),
       this.ortak,
     );
-    for (const k of [this.serit, this.savas, this.parcacik, this.simge]) for (const o of k.nesneler) this.scene.add(o);
+    for (const o of this.simge.nesneler) this.scene.add(o);
     this.temaUygula();
     this.kareUygula(this.kare);
   }
@@ -143,19 +161,47 @@ export class Sahne {
     this.kare = kare;
     this.renkleriYenile();
     if (!kare || !this.dizin) return;
-    this.serit?.guncelle(kare, malKenarlari(kare, this.malSecili));
-    this.parcacik?.guncelle(kare, this.malSecili);
-    // Tarım görünümünde akış parçacıkları gizlenir: dolgu ve desen okunur kalsın.
-    if (this.parcacik) for (const o of this.parcacik.nesneler) o.visible = !this.tarimGorunumu;
-    this.savas?.guncelle(kare.savaslar);
+    this.rozetleriYenile();
     this.simgeleriYenile();
   }
 
   private renkleriYenile(): void {
     const dizin = this.dizin ?? this.onDizin();
-    if (this.tarimGorunumu) tarimRenkleriniHesapla(this.kare, dizin, this.palet.tarim, this.renkler);
-    else bolgeRenkleriniHesapla(this.kare, dizin, this.malSecili, this.palet.palet, this.renkler);
+    const p = this.palet.palet;
+    switch (this.mercek) {
+      case "tarim":
+        tarimRenkleriniHesapla(this.kare, dizin, this.palet.tarim, this.renkler);
+        break;
+      case "sanayi":
+        sanayiRenkleri(this.kare, dizin, p, this.renkler);
+        break;
+      case "pazar":
+        pazarRenkleri(this.kare, dizin, p, this.renkler);
+        break;
+      case "sahiplik":
+        bolgeRenkleriniHesapla(this.kare, dizin, -1, p, this.renkler);
+        break;
+      case "mal":
+        bolgeRenkleriniHesapla(this.kare, dizin, this.mal, p, this.renkler);
+        break;
+      default:
+        genelRenkleri(this.kare, dizin, this.ben, p, this.renkler);
+    }
     this.bolge.renkleriYaz(this.renkler, this.secili, [1, 1, 1]);
+  }
+
+  /** Rozetleri yeniden hesaplar; yeni gelen (ya da türü değişen) rozet için tek nabız başlatır. */
+  private rozetleriYenile(): void {
+    if (!this.dizin) return;
+    const yeni = rozetleriHesapla(this.kare, this.dizin, this.ben, this.bitenler);
+    const once = this.oncekiRozet;
+    if (once && !this.hareketAzalt) {
+      const t = performance.now() / 1000;
+      yeni.forEach((r, i) => {
+        if (r && r !== once[i]) this.nabiz[i] = t;
+      });
+    }
+    this.oncekiRozet = yeni;
   }
 
   /** Dizin gelmeden önce bölge renklendirmesi için asgari bir dizin (harita verisinden). */
@@ -199,24 +245,27 @@ export class Sahne {
 
   private simgeleriYenile(): void {
     this.simge?.guncelle({
-      renkler: this.renkler,
-      savaslar: this.kare?.savaslar ?? [],
+      rozetler: this.oncekiRozet ?? [],
+      nabiz: this.nabiz,
+      rozetRenk: this.palet.rozet,
       olaylar: this.olayGirdileri(),
       secili: this.secili,
-      savasRengi: this.palet.savas,
       secimRengi: this.palet.secimCizgi.slice(0, 3) as [number, number, number],
     });
   }
 
-  malSec(m: number): void {
-    this.malSecili = m;
-    this.tarimGorunumu = false;
-    this.kareUygula(this.kare);
+  /** Mercek seç (tek mercek etkin). `mal` yalnız "mal" merceğinde kullanılır; mal < 0 ise "Genel"e döner. */
+  mercekSec(m: Mercek, mal = -1): void {
+    if (m === "mal" && mal < 0) m = "genel";
+    this.mercek = m;
+    this.mal = m === "mal" ? mal : -1;
+    this.renkleriYenile();
   }
 
-  /** "Tarım" görünümünü aç/kapat. */
-  tarimGorunumuAyarla(a: boolean): void {
-    this.tarimGorunumu = a;
+  /** Oyuncu belirlendi (Genel merceği ve rozetler ona göre). */
+  oyuncuAyarla(ben: number): void {
+    this.ben = ben;
+    this.oncekiRozet = null;
     this.kareUygula(this.kare);
   }
 
@@ -232,9 +281,6 @@ export class Sahne {
     const p = this.palet;
     this.dunya.temaUygula(p);
     this.bolge.temaUygula(p);
-    this.serit?.temaUygula(p);
-    this.savas?.temaUygula(p);
-    this.parcacik?.temaUygula(p);
     this.simge?.temaUygula(p);
     this.renderer.setClearColor(new Color(p.zemin), 1);
     this.renkleriYenile();

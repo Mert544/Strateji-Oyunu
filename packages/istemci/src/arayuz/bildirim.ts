@@ -1,4 +1,8 @@
-/** Kısa bildirimler (toast): komut sonucu gibi geçici iletiler. */
+/**
+ * Kısa bildirimler (toast). Kural: toast YALNIZ oyuncunun kendi eyleminin sonucu içindir (komut sonucu, form
+ * hatası). Başka her olay (savaş ilanı, biten inşaat, iklim uyarısı) "Bildirimler" gelen kutusuna düşer
+ * (arayuz/gelen-kutusu.ts) ve açılır pencere olarak gösterilmez.
+ */
 export type BildirimTuru = "tamam" | "hata" | "bilgi";
 
 const EN_COK = 4;
