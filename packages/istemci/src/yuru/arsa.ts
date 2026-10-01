@@ -1,6 +1,8 @@
 /**
  * Arsa katmanı (yürüyüş): z20 hücre ızgarası yalnız karakterin yakın çevresinde ince çizgilerle; sahip olunan
- * hücreler oyuncu renginde (başkalarınınki soluk gri); inşaat aşamaları için örneklenmiş kutu yer tutucuları.
+ * hücreler ince bir işaretle gösterilir (başkalarınınki soluk gri); inşaat aşamaları için örneklenmiş kutu yer tutucuları.
+ * Oyuncunun arsası zemini boyamaz: çok hafif ton, kenar çizgisi, kenar boyunca içe doğru solan dar bir bant, köşe kazıkları
+ * ve bayrak. Böylece zemin, yol ve bina okunur kalır; "Sen" kısık gözle de bulunur.
  *
  * Geometriler bir "çapa" hücresine göre yerel kurulur (küçük sayılar), ağ konumu = çapa − kayan orijin.
  * Çizim çağrısı: ızgara 1 + sahiplik dolgu 1 + sahiplik kenar 1 + inşaat ve bayraklar 1 (örneklenmiş).
@@ -152,6 +154,12 @@ const IZGARA_R = 3;
 /** Parsel kenar şeridi genişliği (m): kendi arsan kalın, başkalarınınki ince (şerit: kenar çizgisi 1 piksele inip kaybolmasın). */
 const KENAR_GENISLIK = { ben: 0.26, baskasi: 0.12 } as const;
 const SAHIPLIK_R = 45; // hücre (~1,3 km)
+/** Sahiplik dolgusu (tüm hücre): zemini ezmeyen çok hafif ton. Kenardaki bant ayrıca eklenir. */
+const DOLGU_ALFA = { ben: 0.06, baskasi: 0.04 } as const;
+/** Kendi arsanın dış kenarı boyunca içe doğru solan bant: genişlik (m) ve kenardaki alfa. */
+const BANT = { genislik: 2.2, alfa: 0.22 } as const;
+/** Köşe kazığı: gövde boyu ve eni (m); en çok bu kadar kazık (büyük arsalarda kare başına yük sınırı). */
+const KAZIK = { boy: 1.5, en: 0.24, sinir: 160 } as const;
 
 export class ArsaKatmani {
   readonly izgara: LineSegments;
@@ -281,7 +289,7 @@ export class ArsaKatmani {
         const y = 0.05;
         const b = dk.length / 3;
         dk.push(x0, y, z0, x1, y, z0, x1, y, z1, x0, y, z1);
-        const a = ben ? 0.24 : 0.12;
+        const a = ben ? DOLGU_ALFA.ben : DOLGU_ALFA.baskasi;
         for (let q = 0; q < 4; q++) dr.push(renk[0], renk[1], renk[2], a);
         ix.push(b, b + 2, b + 1, b, b + 3, b + 2);
         // Kenar: yalnız komşusu aynı sahipte olmayan kenarlar (birleşik parsel tek çerçeve)
@@ -303,6 +311,20 @@ export class ArsaKatmani {
         if (!ayni(0, 1)) ekle(x0, z1, x1, z1);
         if (!ayni(-1, 0)) ekle(x0, z0, x0, z1);
         if (!ayni(1, 0)) ekle(x1, z0, x1, z1);
+        if (ben) {
+          // Dış kenardan içe doğru solan bant (dolgu yerine: ton yalnız sınırda yoğun, ortası boş)
+          const w = BANT.genislik;
+          const bant = (ax: number, az: number, bx: number, bz: number, ix2: number, iz: number): void => {
+            const t = dk.length / 3;
+            dk.push(ax, y, az, bx, y, bz, bx + ix2 * w, y, bz + iz * w, ax + ix2 * w, y, az + iz * w);
+            dr.push(renk[0], renk[1], renk[2], BANT.alfa, renk[0], renk[1], renk[2], BANT.alfa, renk[0], renk[1], renk[2], 0, renk[0], renk[1], renk[2], 0);
+            ix.push(t, t + 2, t + 1, t, t + 3, t + 2);
+          };
+          if (!ayni(0, -1)) bant(x0, z0, x1, z0, 0, 1);
+          if (!ayni(0, 1)) bant(x0, z1, x1, z1, 0, -1);
+          if (!ayni(-1, 0)) bant(x0, z0, x0, z1, 1, 0);
+          if (!ayni(1, 0)) bant(x1, z0, x1, z1, -1, 0);
+        }
       }
     }
     const g = this.dolgu.geometry;
@@ -355,6 +377,14 @@ export class ArsaKatmani {
       kutu(bx, 0, bz, 0.22, boy, 0.22, this.palet.koyu ? [0.75, 0.78, 0.82] : [0.35, 0.37, 0.4]);
       kutu(bx + 0.22, boy - (ben ? 1.4 : 1.0), bz, ben ? 2.2 : 1.4, ben ? 1.3 : 0.9, 0.1, ben ? this.palet.ben : this.palet.baskasi);
     }
+    // Köşe kazıkları: kendi arsanın köşelerinde (düz kenar ortasında değil); gövde oyuncu renginde, tepesi açık renkli
+    const ust = karis(this.palet.ben, [1, 1, 1], 0.6);
+    for (const [vx, vy] of this.arsaKoseleri()) {
+      const bx = (vx - this.cerceve.X0) * k;
+      const bz = (vy - this.cerceve.Y0) * k;
+      kutu(bx - KAZIK.en / 2, 0, bz - KAZIK.en / 2, KAZIK.en, KAZIK.boy, KAZIK.en, this.palet.ben);
+      kutu(bx - KAZIK.en * 0.7, KAZIK.boy, bz - KAZIK.en * 0.7, KAZIK.en * 1.4, 0.14, KAZIK.en * 1.4, ust);
+    }
     const g = this.insaat.geometry as InstancedBufferGeometry;
     g.setAttribute("aOfset", new InstancedBufferAttribute(Float32Array.from(of), 3));
     g.setAttribute("aOlcek", new InstancedBufferAttribute(Float32Array.from(ol), 3));
@@ -362,6 +392,34 @@ export class ArsaKatmani {
     g.instanceCount = of.length / 3;
     this.insaat.visible = g.instanceCount > 0;
     this.konumla(this.insaat, { x: this.cerceve.X0, y: this.cerceve.Y0 });
+  }
+
+  /**
+   * Oyuncunun arsa köşeleri (hücre köşe koordinatı): köşeyi çevreleyen dört hücreden biri ya da üçü oyuncunun, ya da ikisi
+   * çaprazdaysa. Düz kenar ortası (iki bitişik hücre) ve iç nokta kazık almaz. Sıra ve sınır deterministik.
+   */
+  arsaKoseleri(): Array<[number, number]> {
+    const s = this.sahiplik;
+    if (!s) return [];
+    const benim = (x: number, y: number): boolean => s.hucreler.get(`${x}:${y}`)?.sahip === this.ben;
+    const gorulen = new Set<string>();
+    const l: Array<[number, number]> = [];
+    for (const id of [...s.hucreler.keys()].sort()) {
+      const c = idCoz(id);
+      if (!c || !benim(c.x, c.y)) continue;
+      for (const [vx, vy] of [[c.x, c.y], [c.x + 1, c.y], [c.x, c.y + 1], [c.x + 1, c.y + 1]] as const) {
+        const ad = `${vx}:${vy}`;
+        if (gorulen.has(ad)) continue;
+        gorulen.add(ad);
+        const kb = benim(vx - 1, vy - 1), kd = benim(vx, vy - 1), gb = benim(vx - 1, vy), gd = benim(vx, vy);
+        const sayi = +kb + +kd + +gb + +gd;
+        const duz = sayi === 2 && (kb === kd || kb === gb);
+        if (sayi === 4 || duz) continue;
+        l.push([vx, vy]);
+        if (l.length >= KAZIK.sinir) return l;
+      }
+    }
+    return l;
   }
 
   /** Hücredeki inşaat (kart için). */

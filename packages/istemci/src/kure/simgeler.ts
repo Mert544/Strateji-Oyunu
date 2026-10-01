@@ -4,7 +4,8 @@
  *   tür: 0 liman, 1 dar geçit, 6 savaş rozeti (⚔), 7 seçim halkası,
  *        8 kuraklık, 9 don, 10 sel, 11 kış fırtınası, 12 bilinmeyen olay (olay simgeleri),
  *        15 etkin olay / yayılım halkası (dolu), 16 olay uyarı halkası (kesikli),
- *        17 ▲ eksik girdi, 18 ◯ boşta, 19 ✓ inşaat bitti (durum rozetleri)
+ *        17 ▲ eksik girdi, 18 ◯ boşta, 19 ✓ inşaat bitti (durum rozetleri),
+ *        20 oyuncunun mülk işareti (mülk kipi: çini nokta + ince halka)
  * Sakin görsel: sürekli animasyon yoktur. Rozet yalnız gelişinde tek kısa nabız atar (aNabiz = başlangıç zamanı;
  * hareket azaltma tercihinde hiç atmaz).
  */
@@ -22,6 +23,8 @@ import type { RozetTuru } from "../veri/rozet";
 
 const KAPASITE = 512;
 const SIMGE_YARICAP = 1.014;
+/** Mülk işareti: bölge dolgusunun (1,0045) ve çizgilerinin (1,0052) hemen üstü; yüksekte durup yakın planda kaymasın. */
+const MULK_YARICAP = 1.0058;
 
 /** Küre üzerinde gösterilecek bir iklim olayı (merkez rozeti + nabız halkası + yayılım halkaları). */
 export interface OlayGirdisi {
@@ -48,6 +51,9 @@ export interface SimgeGirdisi {
   olaylar?: readonly OlayGirdisi[];
   secili: number;
   secimRengi: RGB;
+  /** Mülk kipi: oyuncunun ilçe/arsa noktaları (yüzey birim vektörü) ve işaret rengi (`sen`). */
+  mulkIsaretleri?: readonly Vek3[];
+  mulkRengi?: RGB;
 }
 
 export class SimgeKatmani {
@@ -164,6 +170,10 @@ export class SimgeKatmani {
         this.yaz(n++, olcekle(cb, SIMGE_YARICAP + 0.001), 15, o.renk, 28 + 22 * pay, (o.aktif ? 0.3 + 0.5 * o.guc : 0.55) * (0.5 + 0.5 * pay));
       }
       this.yaz(n++, olcekle(c, SIMGE_YARICAP + 0.003), o.glif, o.renk, 30, o.aktif ? 1 : 0.9);
+    }
+    for (const m of g.mulkIsaretleri ?? []) {
+      if (n >= KAPASITE - 4) break;
+      this.yaz(n++, olcekle(m, MULK_YARICAP), 20, g.mulkRengi ?? [0, 0.47, 0.51], 30, 1);
     }
     if (g.secili >= 0 && this.merkezler[g.secili]) {
       this.yaz(n++, olcekle(this.merkezler[g.secili] as Vek3, SIMGE_YARICAP - 0.002), 7, g.secimRengi, 42, 1);

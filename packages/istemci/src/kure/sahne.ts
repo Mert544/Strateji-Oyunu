@@ -2,6 +2,8 @@
  * Sahne: three.js sahnesini, katmanları, kamerayı ve çizim döngüsünü bir araya getirir.
  * Sakin görsel (F0): lojistik akış şeritleri, parçacıklar ve savaş yayları YOKTUR. Durum, bölge başına en çok
  * bir rozetle (simge katmanında, ek çizim çağrısı olmadan) ve seçili mercekle gösterilir.
+ * Mülk kipinde (`mulkKipi`) bölge simülasyonu görünmez: nötr kâğıt dolgu, rozet ve olay yok; oyuncunun ilçeleri tek bir
+ * çini nokta işaretiyle (mulk-kipi.ts). Bölge kipi aynen kalır.
  * Çizim çağrıları: yıldız, okyanus, kara, ülke çizgileri, bölge dolgusu, bölge çizgileri, seçim çizgisi,
  * simgeler, atmosfer (yaklaşık 9).
  */
@@ -13,6 +15,7 @@ import { DunyaKatmani } from "./dunya";
 import { gunesYonu, mutlakGunesYonu } from "./gunes";
 import { DERECE, aci, birim, isinKureKesisimi, llVek, vekLl } from "./matematik";
 import type { Vek3 } from "./matematik";
+import { mulkRenkleri } from "./mulk-kipi";
 import { ortakOlustur } from "./ortak";
 import type { Ortak } from "./ortak";
 import { SimgeKatmani } from "./simgeler";
@@ -25,7 +28,7 @@ import type { Dizin, Kare } from "../veri/kare-tipleri";
 import { genelRenkleri, pazarRenkleri, sahiplikRenkleri, sanayiRenkleri } from "../veri/mercek";
 import type { Mercek } from "../veri/mercek";
 import { bolgeRenkleriniHesapla, bolgeTamponuOlustur } from "../veri/renkler";
-import type { BolgeRenkTamponu } from "../veri/renkler";
+import type { BolgeRenkTamponu, RGB } from "../veri/renkler";
 import { rozetleriHesapla } from "../veri/rozet";
 import type { BitenInsaat, RozetTuru } from "../veri/rozet";
 import { olayEvresi, olaySimgesi, olaySonumu, tarimRenkleriniHesapla } from "../veri/tarim";
@@ -63,6 +66,10 @@ export class Sahne {
   private mal = -1;
   /** Oyuncunun indeksi (-1: izleme): "Genel" merceğinde yalnız onun bölgeleri doygun; rozetler yalnız onun bölgelerinde. */
   ben = -1;
+  /** Mülk kipi (sunucu ya da `?yerles=1`): bölge renkleri, rozetler ve olaylar gösterilmez; oyuncunun mülk işaretleri çizilir. */
+  mulkKipi = false;
+  private mulkNoktalari: Vek3[] = [];
+  private mulkImzasi = "";
   /** Biten inşaatlar (panelin izleyicisi; "inşaat bitti" rozetleri). */
   bitenler: ReadonlyMap<number, BitenInsaat> = new Map();
   /** Hareket azaltma tercihi: rozet nabzı ve uçuş yumuşatması yok. */
@@ -172,6 +179,11 @@ export class Sahne {
   private renkleriYenile(): void {
     const dizin = this.dizin ?? this.onDizin();
     const p = this.palet.palet;
+    if (this.mulkKipi) {
+      mulkRenkleri(dizin.bolgeler.length, p, this.palet.kara, this.palet.panel, this.renkler);
+      this.bolge.renkleriYaz(this.renkler, this.secili, [1, 1, 1]);
+      return;
+    }
     switch (this.mercek) {
       case "tarim":
         tarimRenkleriniHesapla(this.kare, dizin, this.palet.tarim, this.renkler);
@@ -197,7 +209,7 @@ export class Sahne {
   /** Rozetleri yeniden hesaplar; yeni gelen (ya da türü değişen) rozet için tek nabız başlatır. */
   private rozetleriYenile(): void {
     if (!this.dizin) return;
-    const yeni = rozetleriHesapla(this.kare, this.dizin, this.ben, this.bitenler);
+    const yeni: Array<RozetTuru | null> = this.mulkKipi ? [] : rozetleriHesapla(this.kare, this.dizin, this.ben, this.bitenler);
     const once = this.oncekiRozet;
     if (once && !this.hareketAzalt) {
       const t = performance.now() / 1000;
@@ -226,6 +238,7 @@ export class Sahne {
 
   /** Etkin ve uyarıdaki iklim olaylarını simge katmanının girdisine çevirir (türler dizinden, renkler temadan). */
   private olayGirdileri(): OlayGirdisi[] {
+    if (this.mulkKipi) return [];
     const kare = this.kare;
     const tarim = this.dizin?.tarim;
     if (!kare?.iklim || !tarim) return [];
@@ -255,7 +268,26 @@ export class Sahne {
       olaylar: this.olayGirdileri(),
       secili: this.secili,
       secimRengi: this.palet.secimCizgi.slice(0, 3) as [number, number, number],
+      ...(this.mulkKipi ? { mulkIsaretleri: this.mulkNoktalari, mulkRengi: this.palet.palet.sen ?? ([0, 0.47, 0.51] as RGB) } : {}),
     });
+  }
+
+  /** Mülk kipini aç/kapat (main.ts: `?sunucu` ya da `?yerles=1`). Bölge kipinde hiçbir şey değişmez. */
+  mulkKipiAyarla(acik: boolean): void {
+    if (this.mulkKipi === acik) return;
+    this.mulkKipi = acik;
+    this.oncekiRozet = null;
+    this.kareUygula(this.kare);
+    if (!this.kare && this.simge) this.simgeleriYenile();
+  }
+
+  /** Oyuncunun ilçe ya da arsa noktaları ([boylam, enlem]); aynı küme tekrar verilirse hiçbir şey yeniden yazılmaz. */
+  mulkIsaretleriAyarla(noktalar: ReadonlyArray<readonly [number, number]>): void {
+    const imza = noktalar.map((n) => `${n[0].toFixed(4)},${n[1].toFixed(4)}`).join(";");
+    if (imza === this.mulkImzasi) return;
+    this.mulkImzasi = imza;
+    this.mulkNoktalari = noktalar.map((n) => llVek(n[0], n[1]));
+    if (this.mulkKipi && this.simge) this.simgeleriYenile();
   }
 
   /** Mercek seç (tek mercek etkin). `mal` yalnız "mal" merceğinde kullanılır; mal < 0 ise "Genel"e döner. */

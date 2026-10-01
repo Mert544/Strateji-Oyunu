@@ -221,7 +221,7 @@ void main() {
   if (nt >= 0.0 && nt < 0.6) boy *= 1.0 + 0.35 * sin(nt / 0.6 * 3.14159265);
   vec2 off = kose * boy / uEkran;
   // Durum rozetleri (6 savaş, 17-19) merkezin 16 px üstüne kayar (liman simgesi ve ad etiketiyle çakışmasın).
-  if (aTur > 16.5 || (aTur > 5.5 && aTur < 6.5)) off.y += 32.0 / uEkran.y;
+  if ((aTur > 16.5 && aTur < 19.5) || (aTur > 5.5 && aTur < 6.5)) off.y += 32.0 / uEkran.y;
   c.xy += off * c.w;
   gl_Position = c;
   vK = kose;
@@ -310,6 +310,18 @@ float glif(vec2 q, float t) {
 void main() {
   float r = length(vK);
   if (r > 1.0) discard;
+  if (vTur > 19.5) {
+    // Mülk işareti: çini nokta, kâğıt rengi ince çerçeve ve dışta ince halka (tek ve sade; rozet ya da etiket değil)
+    float nokta = 1.0 - smoothstep(0.30, 0.36, r);
+    float cerceve = 1.0 - smoothstep(0.46, 0.52, r);
+    float halka = smoothstep(0.80, 0.86, r) * (1.0 - smoothstep(0.94, 1.0, r));
+    vec3 renk = mix(uPanel, vRenk, nokta);
+    float a = max(cerceve, halka * 0.85);
+    if (a < 0.01) discard;
+    renk = mix(vRenk, renk, step(r, 0.6));
+    gl_FragColor = vec4(renk, a * vAlfa);
+    return;
+  }
   if (vTur > 16.5) {
     // Durum rozetleri: 17 ▲ eksik (dolu üçgen), 18 ◯ boşta (halka), 19 ✓ bitti (dolu daire + onay). Panel renginde dış çerçeve.
     float d = vTur < 17.5 ? ucgen(vec2(vK.x, vK.y + 0.10), 0.74) : r - 0.70;

@@ -201,7 +201,10 @@ export function sahiplikBoyasi(r: RenkOku, mercek: boolean): { dolgu: Boya; cizg
   return {
     dolgu: {
       "fill-color": ["case", ben, r("--sen"), ton(mercek ? "" : "-soluk")],
-      "fill-opacity": ["case", ben, mercek ? 0.5 : 0.42, mercek ? 0.5 : 0.55],
+      // Yakınlaşınca oyuncunun dolgusu söner (z17'de ~0,14): arsa, zemini ve yapıyı boyamaz; sınır çizgisi (2 px) işareti taşır.
+      "fill-opacity": mercek
+        ? ["case", ben, 0.5, 0.5]
+        : (["interpolate", ["linear"], ["zoom"], 15, ["case", ben, 0.42, 0.55], 17, ["case", ben, 0.14, 0.55]] as unknown as ExpressionSpecification),
     },
     cizgi: {
       "line-color": ["case", ben, r("--sen"), ton(mercek ? "-kenar" : "-soluk")],
