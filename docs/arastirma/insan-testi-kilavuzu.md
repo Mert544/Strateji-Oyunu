@@ -229,7 +229,7 @@ Saat **T0 = oyun adresinin açıldığı an** (ilk ekran). Yönetici kronometrey
 |---|---|---|---|---|---|---|
 | **S1.1** | Giriş | Bağlantıyı aç, e-postadaki bağlantıya dokun ya da test kimliği ile gir; takma ad | ≤3 dk | 6 dk | E-posta gecikmesi, spam kutusu, "kod mu istiyor" şaşkınlığı; oturumun açık kalması | süre |
 | **S1.2** | Yerleş | "Nerede başlamak istersin?" ekranı: üç ilçe kartı; açılış önerisi (Tarım, Sanayi, Pazar); "Burada başla" | ≤3 dk | 6 dk | **YA1:** açılış önerisini sınıf ya da kilit sandı mı ("bu bir sınıf değil" cümlesini okudu mu)? "Başka ilçe öner" ve "Şimdilik atla" kullanımı; **kendi ilçesini** bulma çabası | H6 (i) |
-| **S1.3** | Arsa | İlçe haritası, "Arsalarım" (yurt ve ayrılmış hücreler), "Yeni oyuncu kalkanı" ve "Ayrılmış hücre hakkı" kutuları, kamu arsası (satılamaz) | ≤2 dk | 5 dk | **YA2/YA3:** "paramın 10.000 ₺'si nereye gitti" sorusu (hibe 50.000 ₺ iken hazine ilk görüntüde 40.000 ₺: ayrılmış hücre bedeli gibi görünüyor, **doğrulanmadı**); kamu arsasının nedeni; hücre sahipliği | YA3, H6 (i) |
+| **S1.3** | Arsa | İlçe haritası, "Arsalarım" (yurt ve ayrılmış hücreler), "Yeni oyuncu kalkanı" ve "Ayrılmış hücre hakkı" kutuları, kamu arsası (satılamaz) | ≤2 dk | 5 dk | **YA2/YA3:** hazır arsa alınınca hazinenin düşmesi ve "ayrılmış hücre" bedelinin anlaşılması (taze katılımcı ilk anda 50.000 ₺ görmelidir; hibe katılımda hazineye tam yazılır, yurt ücretsizdir: `packages/cekirdek/src/motor.ts:306,336`, `mulk/yurt.ts:2`); kamu arsasının nedeni; hücre sahipliği | YA3, H6 (i) |
 | **S1.4** | İlk yapı | "Yapı kur" → yapı paleti → hayalet yerleştirme → maliyet kartı ("gereken/var", `6.000 ₺`) → "Çiftlik kur" | ≤4 dk | 15 dk | Palette önerilen yapıyı fark etme; "Dönder" kullanımı; maliyet kartı okunuyor mu; yapı türü seçimi **(Gebze'de "Sanayi" önerisine karşın Çiftlik mi?)** | **Y1**, H6 (ii) |
 | **S1.5** | İnşa bekleme | İskele → ... → tamamlanır; Çiftlik **12 dk** (2 sa × %10, ilk 24 saat çarpanı) | 12 dk (sabit) | 12 dk | **Ne yapar?** Ekranı izler mi, başka sekmeye mi geçer, haritayı mı gezer, çıkar mı; sıkılma anı; "kapatsam biter mi" sorusu; bu sırada ilk satışa yönelir mi | **Y10**, YA4, duygu |
 | **S1.6** | İlk satış | Pazar ya da mal paneli → başlangıç gıda stoku (200) → satış emri → nakitin artması | ≤5 dk (yapı onayından) | 25 dk | **YA5:** satışı "tek seferlik" mi sandı, oran emri mi (B-6)? Ödeme gerçekleşme gecikmesi; fiyat makası notu; satışı **yardımsız bulma** | **Y2**, A0-14 |
@@ -474,7 +474,7 @@ Form kağıt ya da tablo olabilir; **ad yazılmaz, yalnız kod** (§8.2). Her sa
 | Kod | Konu | Örnek (ne sandı) |
 |---|---|---|
 | YA1 | Sınıf ya da kilit | Açılış önerisini sınıf seçimi, geri dönülmez seçim sandı |
-| YA2 | Para | Hibe, hazine, maliyet toplamı; "10.000 ₺ nereye gitti"; gerçek para sandı |
+| YA2 | Para | Hibe, hazine, maliyet toplamı; hazır arsa alınınca hazinenin düşmesini (ör. 50.000 ₺ → 40.000 ₺) anlamama; gerçek para sandı |
 | YA3 | Sahiplik ve arsa | Hücre, yurt, ayrılmış hücre, kamu arsası, ilçe |
 | YA4 | Zaman | Gerçek zaman, inşa süresi, "kapatsam biter mi", bekleme |
 | YA5 | Satış ve fiyat | Oran emri ↔ tek seferlik satış; makas; fiyatın anlamı |
@@ -506,7 +506,7 @@ K2 (Android, mobil strateji oyuncusu), S1, Gebze, taze dünya. Süreler T0'dan g
 | 00:05:55 | S1.2 | `YA` | Açılış önerisine bakıp "yani sanayi mi olacağım, sonra değiştiremem mi?" | **YA1** | DU? 2 | L0 | S2 | |
 | 00:06:30 | S1.2 | `AL` | "Altta yazıyor ha, kilit yokmuş, tamam" | | DU+ 1 | L0 | | |
 | 00:07:20 | S1.2 | `KM-KATIL` | "Burada başla" (Gebze); `oyuncu_katil` | | | | | |
-| 00:08:05 | S1.3 | `YA` | "40.000 ₺ mı? 50 verdiler, 10'u nerede?" | **YA2** | DU? 1 | L2 | S1 | |
+| 00:08:05 | S1.3 | `YA` | "Hazır arsayı alınca para azaldı; ayrılmış hücre derken bu para mı gitti, anlamadım" | **YA2** | DU? 1 | L2 | S1 | |
 | 00:09:40 | S1.4 | `TK` | "Yapı kur" düğmesini 40 sn aradı (alt panel açıktı) | T1 | DU- 1 | L1 | S1 | |
 | 00:10:15 | S1.4 | `BK` | Defter bildirimi maliyet kartını örttü | T7 | DU- 2 | L0 | S1 | **BK-3** |
 | 00:12:30 | S1.4 | `KM-YAPI` | "Çiftlik kur" onaylandı; Gebze önerisi Sanayi'ydi | | DU+ 1 | | | |
@@ -944,6 +944,7 @@ Test düzeninin ve kullanılacak sonuçların geri alınması zor olanları. Hep
 | **S9** | **Erişilebilirlik turu** (renk körlüğü, büyük yazı) kim ve ne zaman? | Alfa-0 öncesi ayrı, rızayla; bu testte yok |
 | **S10** | **İ1–İ5** istekleri hangi sprintte (G10, K2, O2)? Test tarihini belirleyen kritik yol budur | İ1 ve İ3 zorunlu, İ2 H6 (ii) ve Y4 için zorunlu |
 | **S11** | Test sunucusu nerede barınacak (GZ-8)? | Sahibin makinesi ya da Türkiye barındırma; hukuki görüşe kadar AB değil |
+| **S13** | Rıza metnindeki **veri sorumlusu** (ad, iletişim) ve **barındırıcı/ülke** bilgisi yer tutucuları (§8.6) | Sahip işi; GZ-2'den önce doldurulur |
 | **S12** | Test **tarihi:** Ö1–Ö13 sağlandıktan sonra bir hafta ek pilot ve rapor için | Öneri: G9 + 3 gün |
 
 ---
@@ -956,7 +957,7 @@ Test düzeninin ve kullanılacak sonuçların geri alınması zor olanları. Hep
 | "5 kullanıcı ≈%85 sorunu bulur" | **Doğrulanmadı** (kaynak okunmadı) |
 | SEQ ölçeği 7 puan | **Doğrulanmadı** (kaynak okunmadı) |
 | KVKK yorumları (ses ve ekran kaydı, takma ad, yurt dışı aktarım, saklama süresi, sağlık verisi) | **Doğrulanmadı;** hukuki görüş yok (K34, A1-6) |
-| "Hibe 50.000 ₺; ilk görüntüde 40.000 ₺: 10 ayrılmış hücre bedeli" | **Doğrulanmadı;** ekran görüntüsünden çıkarım; yurt 6 hücre ve hesap başına ayrılmış 12 hücre tavanı parametrede (`packages/veri/icerik/parametreler.json`, `mulk.yeniOyuncu`: `yurtHucre: 6`, `ayrilmisHucreHesapTavani: 12`); ekranda "16 hücre" görünüyor |
+| Ekran görüntüsündeki "40.000 ₺ ve 16 hücre" ([05b](../toplanti/2/05b-maliyet-karti-acik-masaustu.png)) | Kodla uyumlu **okuma (lider denetimi):** hibe 50.000 ₺ katılımda hazineye tam yazılır ve yurt ücretsizdir (`motor.ts:306,336`, `mulk/yurt.ts:2`); ayrılmış hücre katılımda kendiliğinden alınmaz. Görüntü büyük olasılıkla bir **hazır arsa alımından sonra** alındı (10 hücre × 1.000 ₺ kırsal taban). Pilotta taze katılımcının ilk görüntüdeki hazinesi **50.000 ₺** olarak doğrulanır |
 | Yerleşik ekran kaydının tüm Android ve iOS sürümlerinde çalışması; OBS'nin Windows'ta denenmemesi | **Doğrulanmadı** |
 | `BOLGE_KIMLIK=gelistirme` belirtecinin istemciye bağlantıyla verilebilmesi | **Doğrulanmadı;** K1'e sorulur |
 | Test dünyasının "60. gün" yaşlandırılması için araç | **Doğrulanmadı** |
