@@ -1,6 +1,6 @@
 # İ-1 görünen ad (K2) - sunucu tarafı
 
-Dal: `takim/k2/gorunen-ad`. Taban: `takim/k2/davet` 88de78a (zincir: G5 → i2-i3 → davet; şema sürümü 6 = 005'in üstüne) + K3'ün `adKanonik` commit'inin KOPYASI (`git log`'da `cekirdek: ad kurali ...` 2b9cdb0'ın cherry-pick'i; `takim/k3/ad-kurali` `entegrasyon`a girince yeniden tabanlamada kendiliğinden düşer). Kaynak: şartname §7.7 (4d054e4), Kod lideri kararları. Kapsam: hesap + otomatik ad + `POST /giris/ad` + yasaklı ad süzgeci + CLI. **Kare üzerinden başkalarına gösterim (`IlgiKaresi.adlar`) AYRI dalda** (`takim/k2/kare-adlar`; protokol, bu dalı beklemez).
+Dal: `takim/k2/gorunen-ad`. Taban: `takim/k2/davet-pg-duzelt` 52f6221 (= davet 88de78a + pg hesapOlustur havuz düzeltmesi; zincir: G5 → i2-i3 → davet; şema sürümü 6 = 005'in üstüne) + K3'ün `adKanonik` commit'inin KOPYASI (`git log`'da `cekirdek: ad kurali ...` 2b9cdb0'ın cherry-pick'i; `takim/k3/ad-kurali` `entegrasyon`a girince yeniden tabanlamada kendiliğinden düşer). Kaynak: şartname §7.7 (4d054e4), Kod lideri kararları. Kapsam: hesap + otomatik ad + `POST /giris/ad` + yasaklı ad süzgeci + CLI. **Kare üzerinden başkalarına gösterim (`IlgiKaresi.adlar`) AYRI dalda** (`takim/k2/kare-adlar`; protokol, bu dalı beklemez).
 
 ## Ne yapıldı
 
@@ -23,7 +23,7 @@ Dal: `takim/k2/gorunen-ad`. Taban: `takim/k2/davet` 88de78a (zincir: G5 → i2-i
 
 ## Açık sorular ve notlar
 
-1. **`--uretim` artık yasaklı ad listesi ister** (Kod lideri önerisi); `packages/veri/icerik/yasakli-adlar.json` (T3) henüz depoda YOK: o dosya gelene (ya da `BOLGE_YASAKLI_ADLAR` ile bir dosya verilene) kadar üretim kipi açılmaz. Alfa-0 dağıtımı bunu bekler/bilmelidir (O3 notu).
+1. **`--uretim` yasaklı ad listesi ister** (Kod lideri önerisi). `packages/veri/icerik/yasakli-adlar.json` bu dala T3'ün başlangıç listesiyle (G7 yamasından, blob 37e08a1; içerik: T3) EKLENDİ, böylece üretim kipi varsayılan yolla açılır (hukuk/hassasiyet incelemesi sahip maddesidir). T3 dosyayı G7 yamasından çıkarır; ikisi aynı blob olduğundan çakışmaz.
 2. **Değişiklik sınırı yorumu** (yukarıda): ilk seçimden sonra aynı gün bir değişiklik serbest. "İlk seçimden sonra aynı gün hiç değişiklik yok" istenirse tek satır (ilk seçimde `adDegisimT` yazılır).
 3. **Kare yolu** (`IlgiKaresi.adlar`) ayrı dalda; `donusOzeti` adları kapsam dışı.
 4. Çekirdek iletilerindeki "marka adi" dili K3 ile konuşulabilir (parametreli özne); şimdilik eşleme sunucuda.

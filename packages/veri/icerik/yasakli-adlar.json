@@ -1,0 +1,6 @@
+{
+ "surum": 1,
+ "not": "başlangıç listesi; hukuk ve hassasiyet incelemesi sahip maddesidir; yalnız sunucu süzgecinde kullanılır",
+ "yasakliKelimeler": ["bim", "a101", "sok"],
+ "yasakliIcerik": ["migros", "carrefour", "macrocenter", "koctas", "bauhaus", "teknosa", "mediamarkt", "trendyol", "hepsiburada"]
+}
