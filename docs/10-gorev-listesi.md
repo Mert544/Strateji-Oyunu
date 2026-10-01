@@ -1,40 +1,40 @@
 # 10 — Önceliklendirilmiş Görev Listesi (sabah sunumu)
 
-> **Hazırlanma anı:** 30 Eylül 2026, ≈ 22:05 UTC. Durum sütunu o ana ait git geçmişinden, çalışma ağacından ve gece planından çıkarılmıştır. Gece hâlâ sürdüğü için **"Devam ediyor (gece)" = kesin bilinmiyor / yarım olabilir;** sabah takım lideri günceller. Bu belge kod içermez; sayılar, başka kaynak gösterilmedikçe docs/00–08 ve araştırma raporlarından alınmıştır. Kaynağı olmayan her sayı **(tahmin)** ya da **(hedef)** diye işaretlidir.
+> **Güncelleme anı:** 1 Ekim 2026 sabahı. Durum sütunu git geçmişinden (son commit `7284535`), [docs/09](09-sabah-raporu.md) gece günlüğünden ve [06 §11–12](06-simulasyon-spesifikasyonu.md)'den çıkarılmıştır. **"Devam ediyor (sabah)" = çalışma ağacında yazılıyor, commit'siz.** Bu belge kod içermez; sayılar, başka kaynak gösterilmedikçe docs/00–08 ve araştırma raporlarından alınmıştır. Kaynağı olmayan her sayı **(tahmin)** ya da **(hedef)** diye işaretlidir.
 
 ## 1. Özet
 
-**Nerede duruyoruz.** Aşama 2 çekirdeği (deterministik simülasyon, ekonomi/lojistik/askeri/teknoloji/politika, bot ve ölçüm takımı, 2D izleyici) ve v0.2.1 veri dengesi commit'lidir (son commit `4de23af`). Kapı 2 **geçilmedi:** v0.1 ölçümünde H5 geçiyor, H2/H3/H6 belirsiz, H1 ve H7 kalıyor; H1 ölçüm düzeneği v0.2 tek tohumla %68,8 (eşik %70) verdi ve sağlam değil ([05](05-ilk-olcum-raporu.md)). Gece planının Faz A'sı yürüyor: altı katman spesifikasyonu (docs/08) ve araştırma raporları tamam; gerçek Karadeniz dilimi (53 bölge, 143 kenar, 4 kurgusal devlet) ile 3D küre istemcisinin ilk sürümü **çalışma ağacında, commit'siz**; Tarım (B1) çekirdek uygulaması başladı. Yani "3D küre + gerçek harita + 6 katman" için tasarım ve iskelet var, oynanabilir bütün henüz yok: komut arayüzü, yakın plan (Katman B), çok oyunculu sunucu ve ölçüm kapısı açık.
+**1 Ekim sabahı itibarıyla nerede duruyoruz.** Gece planı büyük ölçüde commit'li: gerçek Karadeniz dilimi (53 bölge, 143 kenar, 4 kurgusal devlet) veri hattı, tarayıcıda koşan 3D küre (stilize Dünya, gerçek bölgeler, GPU akış parçacıkları, gezen kamera, kapsam/neden görünümü, tarım ve iklim görselleştirmesi; tek HTML 332 KB gzip, 11–12 çizim çağrısı), **Tarım v1** (E4: iklim takvimi, toprak ve ekim, iklim olayları, gübre, hayvancılık, sulama) ve **Sanayi v1** (E5: elektrik/brownout, ölçek, bakım/aşınma, kirlilik, damar tükenmesi ve sondaj); ölçüm takımı gerçek harita ve iklim takvimi destekliyor. Toplam **136 görevin 27'si tamamlandı, 6'sı sabah işinde, 103'ü yapılacak.** Sabah işleri: **Pazar v1** (E8-G1…G4) çekirdekte yazılıyor, **komut çubuğu/oynanabilirlik** (E10-G1) istemcide yazılıyor, **v0.3 tam ölçüm** (E12-G1: gerçek harita, 3 tohum) koşuyor. Kapı 2 hâlâ **geçilmedi** (H1 ve H7 v0.1'de kalıyor, H2/H3/H6 belirsiz; [05](05-ilk-olcum-raporu.md)) ve yeni üç katmanla ilk tam ölçüm v0.3'ten gelecek. Henüz yok: Devlet, Lojistik, Teknoloji (B4–B6), oynanabilir komut arayüzü ve onboarding, Katman B (yakın plan) ve çok oyunculu sunucu; sınır/ODbL gibi sahip kararları açık.
 
 **Önümüzdeki 3 hedef.**
-1. **Oynanabilir 3D küre (Katman A) + gerçek dilim:** gece işlerini sağlamlaştır, performans bütçesini ölç, komut ve "neresi açık ve neden" görünümünü ekle (E1, E3, E10, E14).
-2. **Altı katmanın çekirdekte tamamlanması ve ölçülmesi:** Faz B (Tarım → Sanayi → Pazar → Devlet → Lojistik → Teknoloji), her adımda H1/H2/H7 regresyonu; en önemli gizli iş damar tükenmesi (E4–E9, E12).
-3. **Karar kapılarını kapatmak:** sınır/isim politikası, ODbL (yakın plan verisi), teknoloji düğüm sayısı, çok oyunculu zamanlaması (bölüm 4); ardından H4 insan testi.
+1. **Oynanabilir 3D küre:** komut çubuğu ve onboarding (E10), gezen kamera üstüne kalan görsel/erişilebilirlik işleri (E1-G7…G9), performansın gerçek cihazda ölçümü (E14-G3…).
+2. **Kalan üç katmanın çekirdekte tamamlanması ve ölçülmesi:** Pazar'ı bitir ve ölç (E8), ardından Devlet (E9), Lojistik (E6), Teknoloji (E7); her adımda H1/H2/H7 regresyonu (E12).
+3. **Karar kapılarını kapatmak:** sınır/isim politikası, ODbL (yakın plan verisi), teknoloji düğüm sayısı, çok oyunculu zamanlaması (bölüm 4); ardından H4 insan testi ve Katman B spike'ı.
 
 ### 1.1 Sayımlar
 
-| Epik | Görev | P0 | P1 | P2 | Tamamlandı | Devam (gece) | Yapılacak |
+| Epik | Görev | P0 | P1 | P2 | Tamamlandı | Devam (sabah) | Yapılacak |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| E1 3D Dünya (A) | 10 | 4 | 4 | 1 | 1 | 4 | 5 |
+| E1 3D Dünya (A) | 10 | 4 | 4 | 1 | 7 | 0 | 3 |
 | E2 3D Yakın Plan (B) | 9 | 0 | 7 | 2 | 0 | 0 | 9 |
-| E3 Veri hattı | 9 | 2 | 3 | 3 | 1 | 1 | 7 |
-| E4 Tarım | 8 | 4 | 3 | 1 | 0 | 6 | 2 |
-| E5 Sanayi | 8 | 4 | 3 | 1 | 0 | 0 | 8 |
+| E3 Veri hattı | 9 | 2 | 3 | 3 | 3 | 0 | 6 |
+| E4 Tarım | 8 | 4 | 3 | 1 | 6 | 0 | 2 |
+| E5 Sanayi | 8 | 4 | 3 | 1 | 6 | 0 | 2 |
 | E6 Lojistik | 7 | 0 | 5 | 2 | 0 | 0 | 7 |
 | E7 Teknoloji | 6 | 0 | 5 | 1 | 0 | 0 | 6 |
-| E8 Pazar | 8 | 2 | 3 | 3 | 0 | 0 | 8 |
+| E8 Pazar | 8 | 2 | 3 | 3 | 0 | 4 | 4 |
 | E9 Devlet | 10 | 2 | 7 | 1 | 0 | 0 | 10 |
-| E10 Komut arayüzü | 8 | 2 | 5 | 1 | 0 | 0 | 8 |
+| E10 Komut arayüzü | 8 | 2 | 5 | 1 | 0 | 1 | 7 |
 | E11 Çok oyunculu | 8 | 0 | 6 | 2 | 0 | 0 | 8 |
-| E12 Denge ve ölçüm | 11 | 1 | 8 | 1 | 1 | 0 | 10 |
+| E12 Denge ve ölçüm | 11 | 1 | 8 | 1 | 1 | 1 | 9 |
 | E13 Gerçekçilik | 8 | 0 | 4 | 4 | 0 | 0 | 8 |
-| E14 Performans | 8 | 2 | 5 | 1 | 0 | 1 | 7 |
-| E15 Hukuk ve lisans | 7 | 1 | 6 | 0 | 0 | 1 | 6 |
+| E14 Performans | 8 | 2 | 5 | 1 | 2 | 0 | 6 |
+| E15 Hukuk ve lisans | 7 | 1 | 6 | 0 | 0 | 0 | 7 |
 | E16 Gelir ilkeleri | 3 | 0 | 0 | 3 | 0 | 0 | 3 |
-| E17 Pürüzler | 8 | 1 | 5 | 1 | 1 | 1 | 6 |
-| **Toplam (17 epik)** | **136** | **25** | **79** | **28** | **4** | **14** | **118** |
+| E17 Pürüzler | 8 | 1 | 5 | 1 | 2 | 0 | 6 |
+| **Toplam (17 epik)** | **136** | **25** | **79** | **28** | **27** | **6** | **103** |
 
-*Not: Tamamlandı satırlarının önceliği "—" yazılmıştır, P toplamlarına girmez.*
+*Not: yalnız G0 satırlarının (geçmiş iş) önceliği "—" yazılmıştır ve P toplamlarına girmez; sonradan tamamlanan görevler önceliğini korur ve P toplamlarında sayılır. Sayımlar bir betikle satırlardan türetilip doğrulanmıştır.*
 
 ### 1.2 Okuma kılavuzu
 
@@ -42,15 +42,15 @@
 |---|---|
 | **Öncelik** | **P0:** sıradaki işi bloke eden ya da kapı/karar kritiği, ilk sprint adayı. **P1:** prototip v1 için gerekli. **P2:** sonraya bırakılabilir ya da koşullu. |
 | **Boyut (tahmin)** | **S** ≤ 2 gün · **M** 3–5 gün · **L** 1–2 hafta · **XL** > 2 hafta (ajan takımı çalışma günü; ölçülmedi, tahmindir). |
-| **Durum** | **Tamamlandı** (commit'li ya da doğrulanmış) · **Devam ediyor (gece)** (yarım ya da bilinmiyor) · **Yapılacak**. |
+| **Durum** | **Tamamlandı** (commit'li ya da doğrulanmış) · **Devam ediyor (sabah)** (çalışma ağacında yazılıyor, commit'siz) · **Yapılacak**. |
 | **Faz B eşlemesi** | E4 = B1 Tarım · E5 = B2 Sanayi · E8 = B3 Pazar · E9 = B4 Devlet · E6 = B5 Lojistik · E7 = B6 Teknoloji ([08 §7](08-alti-katman.md#7-faz-b-uygulama-sırası)). Uygulama sırası B1→B6'dır; epik numaraları bu sırayı izlemez. |
 | **Çekirdek kuralı** | `packages/cekirdek` aynı anda tek uygulayıcı ajanda; sözleşme (tipler.ts) değişiklikleri takım liderinde (gece planı). |
 
 ### 1.3 Altı katman tek bakışta: oyuncuya gelen yinelenen kararlar
 
-Amaç, 20–25. gündeki tekrar sıkıntısını (H2) her katmanda ayrı bir yinelenen kararla kırmaktır. Ayrıntı ve sayılar [08](08-alti-katman.md) içindedir; sayıların hepsi başlangıç varsayımıdır, kalibre edilmemiştir.
+Amaç, 20–25. gündeki tekrar sıkıntısını (H2) her katmanda ayrı bir yinelenen kararla kırmaktır. Ayrıntı ve sayılar [08](08-alti-katman.md) içindedir; sayıların hepsi başlangıç varsayımıdır, kalibre edilmemiştir. **1 Ekim durumu:** Tarım ve Sanayi v1'de oyundadır (commit'li); Pazar sabah yazılıyor; Devlet, Lojistik ve Teknoloji yapılacak.
 
-| Katman | Epik | Bugün (kod) | v1'de eklenen yinelenen kararlar | Bağlandığı katmanlar |
+| Katman | Epik | v0.2 başlangıcı (kod) | v1'de eklenen yinelenen kararlar | Bağlandığı katmanlar |
 |---|---|---|---|---|
 | Tarım | E4 | `ciftlik` + `gida_fabrikasi`, 3 yöntem | toprak yorgunluğu ve ekim karışımı, iklim takvimi (12 ay hasat eğrisi), yayılan iklim olayları, gübre dozu, hayvancılık, sulama | Sanayi (gübre, kirlilik), Lojistik (gıda), Devlet (sübvansiyon), iklim |
 | Sanayi | E5 | 17 yöntem, 12 tesis türü, tükenmeyen damarlar | elektrik ve brownout, ölçek S/M/L, bakım ve aşınma, kirlilik, damar tükenmesi ve keşif sondajı | Tarım (gübre), Lojistik (yakıt), Devlet (teşvik, kirlilik) |
@@ -89,17 +89,17 @@ Amaç, 20–25. gündeki tekrar sıkıntısını (H2) her katmanda ayrı bir yin
 
 ### E1 — 3D Dünya: Katman A (stilize küre)
 
-**Yığın:** yalnız three.js (185 KB gzip tam paket, MIT); düşük çokgenli küre, birleştirilmiş bölge ağları, shader ile kayan büyük daire yayları, `InstancedMesh`; **hedef** < 40 çizim çağrısı ([arastirma/3d-teknoloji](arastirma/3d-teknoloji.md) §2). Simülasyon tarayıcıda Web Worker'da koşar. **Gece durumu:** `packages/istemci` mevcut (küre, bölge katmanı, şeritler, kamera, panel, worker); commit'siz. Tek dosya derlemesi 1,05 MB (ham; gzip ölçülmedi).
+**Yığın:** yalnız three.js (185 KB gzip tam paket, MIT); düşük çokgenli küre, birleştirilmiş bölge ağları, shader ile kayan büyük daire yayları, `InstancedMesh`; **hedef** < 40 çizim çağrısı ([arastirma/3d-teknoloji](arastirma/3d-teknoloji.md) §2). Simülasyon tarayıcıda Web Worker'da koşar. **Sabah durumu:** `packages/istemci` commit'li (`aa1b8ac`, `04d66ef`): küre, gerçek bölge katmanı, GPU akış şeritleri, kamera, panel, worker, tarım/iklim görünümü. Tek HTML 332 KB gzip, 11–12 çizim çağrısı (docs/09). Komut arayüzü yoktur (yalnız "yakında" yer tutucusu; E10-G1 sabah yazılıyor).
 
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
 | E1-G0 | 2D inceleme sayfası | `pnpm izle` tek dosyalık 2D görünüm, hata ayıklama aracı olarak kalır. | `izleyici.html` üretilir | — | M | — | Tamamlandı |
-| E1-G1 | Küre MVP | Stilize küre, sahip renkli bölge çokgenleri, shader akış yayları, tıkla-seç paneli, zaman kontrolleri; sim Web Worker'da, botlar oynar. | `pnpm dunya` tek HTML üretir; 53 bölge renklenir; bot koşusunda akış yayları görünür; masaüstü ve mobil ekran görüntüsü alınır | E3-G1 | L | P0 | Devam ediyor (gece) |
-| E1-G2 | Gerçek dilimin istemciye bağlanması | Geçici Natural Earth çokgenleri yerine `gercek-karadeniz-sinirlar.topo.json` (nesne `bolgeler`) ve bölge adları; atıf alanı görünür. | Haritadaki 53 bölgenin hepsi kimliğiyle eşleşir; sentetik harita da yüklenir | E3-G1, E1-G1 | S | P0 | Devam ediyor (gece) |
-| E1-G3 | Gezen kamera | Yörünge + serbest uçuş, bölgeye uçuş, dokunmatik; oyuncunun "içinde dolaşması". | Masaüstü ve dokunmatikte iki mod çalışır; bölgeye uçuş sırasında çizim çağrısı bütçe içinde (E14-G2) | E1-G1 | M | P0 | Devam ediyor (gece) |
-| E1-G4 | Kapsam görünümü ("neresi açık ve neden") | 3 boyutta U1–U7: 3–4 durum, kenar genişliği = kapasite, renk = kullanım, neden glifi, tıkla → tek satır neden, darboğaz tırmanışı. | Çekirdeğin neden sınıflarının (`kapasite`, `girdi_eksik`, `mesafe`, `erisim_yok`; B5 sonrası +3) hepsi görünür; renk körü ikinci kanal var; H4 protokolüne hazır 3 senaryo | E1-G1, E12-G6 | L | P0 | Yapılacak |
-| E1-G5 | Görsel dil ve ışık | Gün/gece terminatörü, atmosfer, koyu/açık tema, LOD'lu etiketler, liman ve bölge simgeleri. | Açık ve koyu temada ekran görüntüleri; etiketler yakınlığa göre açılıp kapanır | E1-G1 | M | P1 | Devam ediyor (gece) |
-| E1-G6 | İklim takvimi ve olayların görünümü | Aylık kar/buz örtüsü, kuraklık/don/sel uyarı halkası, uyarı süresi sayacı. | Ay değişince örtü değişir; bir olayın uyarı → etki → bitiş evreleri küre üzerinde izlenir | E4-G1, E4-G3 | M | P1 | Yapılacak |
+| E1-G1 | Küre MVP | Stilize küre, sahip renkli bölge çokgenleri, shader akış yayları, tıkla-seç paneli, zaman kontrolleri; sim Web Worker'da, botlar oynar. **Tamamlandı: commit `aa1b8ac`; tek HTML 332 KB gzip, 11–12 çizim çağrısı ([09](09-sabah-raporu.md)).** | `pnpm dunya` tek HTML üretir; 53 bölge renklenir; bot koşusunda akış yayları görünür; masaüstü ve mobil ekran görüntüsü alınır | E3-G1 | L | P0 | Tamamlandı |
+| E1-G2 | Gerçek dilimin istemciye bağlanması | Geçici Natural Earth çokgenleri yerine `gercek-karadeniz-sinirlar.topo.json` (nesne `bolgeler`) ve bölge adları; atıf alanı görünür. **Tamamlandı: commit `aa1b8ac`.** | Haritadaki 53 bölgenin hepsi kimliğiyle eşleşir; sentetik harita da yüklenir | E3-G1, E1-G1 | S | P0 | Tamamlandı |
+| E1-G3 | Gezen kamera | Yörünge + serbest uçuş, bölgeye uçuş, dokunmatik; oyuncunun "içinde dolaşması". **Tamamlandı: commit `aa1b8ac` (sürükle, yakınlaş, çift tıkla uç, WASD).** | Masaüstü ve dokunmatikte iki mod çalışır; bölgeye uçuş sırasında çizim çağrısı bütçe içinde (E14-G2) | E1-G1 | M | P0 | Tamamlandı |
+| E1-G4 | Kapsam görünümü ("neresi açık ve neden") | 3 boyutta U1–U7: 3–4 durum, kenar genişliği = kapasite, renk = kullanım, neden glifi, tıkla → tek satır neden, darboğaz tırmanışı. **Tamamlandı: istemcide kapsam/neden görünümü var (`aa1b8ac`); B5 neden sınıfları E6-G5'te, H4 senaryoları E12-G6'da eklenecek.** | Çekirdeğin neden sınıflarının (`kapasite`, `girdi_eksik`, `mesafe`, `erisim_yok`; B5 sonrası +3) hepsi görünür; renk körü ikinci kanal var; H4 protokolüne hazır 3 senaryo | E1-G1, E12-G6 | L | P0 | Tamamlandı |
+| E1-G5 | Görsel dil ve ışık | Gün/gece terminatörü, atmosfer, koyu/açık tema, LOD'lu etiketler, liman ve bölge simgeleri. **Tamamlandı (kodda doğrulandı): gün/gece terminatörü, açık/koyu tema belirteçleri, simgeler (`aa1b8ac`).** | Açık ve koyu temada ekran görüntüleri; etiketler yakınlığa göre açılıp kapanır | E1-G1 | M | P1 | Tamamlandı |
+| E1-G6 | İklim takvimi ve olayların görünümü | Aylık kar/buz örtüsü, kuraklık/don/sel uyarı halkası, uyarı süresi sayacı. **Tamamlandı v1: hasat ritmi, iklim olayı simgeleri ve Olaylar sekmesi (`04d66ef`); aylık kar/buz örtüsü yapılmadı (kutup buzulu sabittir).** | Ay değişince örtü değişir; bir olayın uyarı → etki → bitiş evreleri küre üzerinde izlenir | E4-G1, E4-G3 | M | P1 | Tamamlandı |
 | E1-G7 | Devlet ve savaş göstergeleri | Göç okları, savaş penceresinde sınır nabzı, anlaşma bağları, ışık yoğunluğu = nüfus ([08 §6.1](08-alti-katman.md)). | Üç gösterge sim olaylarından beslenir; kapalıyken çizim çağrısı artmaz | E9-G3, E9-G6 | M | P2 | Yapılacak |
 | E1-G8 | Erişilebilirlik ve metin | Renk körü paleti, klavye kontrolü, panel metinleri ekran okuyucuya uygun, tüm metin Türkçe. | Renk körü simülasyonunda durumlar ayırt edilir; tüm panel klavyeyle gezilebilir | E1-G1 | M | P1 | Yapılacak |
 | E1-G9 | Yayın ve sürümleme | Tek HTML / artifact yayını, sürüm etiketi ve atıf ekranına bağlantı. | Her yayın sürüm etiketli ve atıf ekranı bağlı | E15-G2 | S | P1 | Yapılacak |
@@ -122,14 +122,14 @@ Amaç, 20–25. gündeki tekrar sıkıntısını (H2) her katmanda ayrı bir yin
 
 ### E3 — Gerçek Dünya Veri Hattı ve tüm dünyaya genişleme
 
-**Gece durumu:** `packages/veri-hatti` ve `gercek-karadeniz*.json` üretildi, commit'siz. Çıktı: 53 bölge, 143 kenar (101 kara, 38 deniz, 4 hava), 4 kurgusal devlet (2 blok), 27 liman etiketli bölge; İstanbul ve Çanakkale dar geçit; Şipka ve Kafkas dağ geçitleri; `DATA_SOURCES.md`. Kaynaklar: Natural Earth v5.1.2 (kamu malı), USGS MRDS (kamu malı). **Dürüstlük notu:** kömür/petrol/tahıl/silis rezervleri elle, genel bilgiyle yazılmış tasarım değeridir; bölgeler arası denge bilerek tasarlanmıştır.
+**Sabah durumu:** `packages/veri-hatti` ve `gercek-karadeniz*.json` commit'li (`42a3b8e`); doğrulama ve tarım alanı türetme tarayıcı için `@bolge/veri/saf` modülüne ayrıldı (`1f03d4c`). Çıktı: 53 bölge, 143 kenar (101 kara, 38 deniz, 4 hava), 4 kurgusal devlet (2 blok), 27 liman etiketli bölge; İstanbul ve Çanakkale dar geçit; Şipka ve Kafkas dağ geçitleri; `DATA_SOURCES.md`. Kaynaklar: Natural Earth v5.1.2 (kamu malı), USGS MRDS (kamu malı). **Dürüstlük notu:** kömür/petrol/tahıl/silis rezervleri elle, genel bilgiyle yazılmış tasarım değeridir; bölgeler arası denge bilerek tasarlanmıştır.
 
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
 | E3-G0 | Gerçek harita veri sözleşmesi | `BolgeTanimi.konum`, `sinirDosyasi`, `atif` alanları. | Şemadan geçer (commit `f018575`) | — | S | — | Tamamlandı |
-| E3-G1 | Karadeniz dilimi hattı | Natural Earth admin-1 → 53 oyun bölgesi; komşuluk, deniz kenarları, limanlar, rezerv ve nüfus; deterministik ve sha256 kilitli. | `dogrulaVeriPaketi` geçer; ≥ 2 dar geçit; aynı girdi → bayt bayt aynı çıktı (test); `DATA_SOURCES.md` güncel | E15-G1 | L | P0 | Devam ediyor (gece) |
-| E3-G2 | Gerçek haritada sim ve ölçüm sağlığı | Gerçek haritada sim + botlar çalışsın; sentetik haritayla yan yana karşılaştırma. | `pnpm olcum --hip H1,H2,H7 --tohum 1 --hizli` gerçek haritada çalışır; bölgesel sapmalar (ör. çözüm süresi, israf) raporlanır | E3-G1 | M | P0 | Yapılacak |
-| E3-G3 | Tarım alan verisi | `toprakTabanPpm`, `iklimTipi`, `sulanabilirPpm`, `tarimTesisTavani`: GAEZ (CC BY) + CHELSA (CC0) + SoilGrids (CC BY) zonal istatistik. | 53 bölgenin hepsinde alanlar dolu; kaynak ve dönüşüm kuralı DATA_SOURCES'te | E4-G1, E3-G1 | L | P1 | Yapılacak |
+| E3-G1 | Karadeniz dilimi hattı | Natural Earth admin-1 → 53 oyun bölgesi; komşuluk, deniz kenarları, limanlar, rezerv ve nüfus; deterministik ve sha256 kilitli. **Tamamlandı: commit `42a3b8e`.** | `dogrulaVeriPaketi` geçer; ≥ 2 dar geçit; aynı girdi → bayt bayt aynı çıktı (test); `DATA_SOURCES.md` güncel | E15-G1 | L | P0 | Tamamlandı |
+| E3-G2 | Gerçek haritada sim ve ölçüm sağlığı | Gerçek haritada sim + botlar çalışsın; sentetik haritayla yan yana karşılaştırma. **Tamamlandı: `--harita gercek` ve `--iklim hizli|gercek` (`f8fcd45`); bölgesel sapma raporu v0.3 koşusunda (E12-G1).** | `pnpm olcum --hip H1,H2,H7 --tohum 1 --hizli` gerçek haritada çalışır; bölgesel sapmalar (ör. çözüm süresi, israf) raporlanır | E3-G1 | M | P0 | Tamamlandı |
+| E3-G3 | Tarım alan verisi | `toprakTabanPpm`, `iklimTipi`, `sulanabilirPpm`, `tarimTesisTavani`: GAEZ (CC BY) + CHELSA (CC0) + SoilGrids (CC BY) zonal istatistik. **Kısmi: alanlar şimdilik `@bolge/veri/saf` yerel türetmesiyle doluyor (`1f03d4c`); GAEZ/CHELSA/SoilGrids zonal istatistiği yapılmadı.** | 53 bölgenin hepsinde alanlar dolu; kaynak ve dönüşüm kuralı DATA_SOURCES'te | E4-G1, E3-G1 | L | P1 | Yapılacak |
 | E3-G4 | Liman verisi | `LimanTanimi` (dünya kapısı, dünya mesafesi saat, kapasite sınıfı). NGA WPI bu ortamda HTTP 403 verdi; Natural Earth ports + elle eklenen 5 liman kullanıldı. | 2–4 dünya kapısı; her liman bölgesinde `dunyaMesafeSaat` hesaplı; WPI erişimi çözülürse karşılaştırma | E8-G1 | M | P1 | Yapılacak |
 | E3-G5 | Nüfus verisi | Natural Earth `pop_max` ölçekli göstergesi yerine WorldPop veya GHSL (CC BY) zonal toplamı. | Bölge nüfusu raster toplamından gelir; ölçek kuralı belgelenir | E3-G1 | M | P2 | Yapılacak |
 | E3-G6 | Kenar iklim profilleri | Dağ geçitleri ve Karadeniz/Marmara için 12 aylık kenar çarpanı (CHELSA + yükseklik). | Profilli kenarlar yalnız kış aylarında kapanma eğilimi gösterir | E6-G3, E3-G1 | M | P2 | Yapılacak |
@@ -138,31 +138,31 @@ Amaç, 20–25. gündeki tekrar sıkıntısını (H2) her katmanda ayrı bir yin
 
 ### E4 — Tarım (Faz B1)
 
-**Spesifikasyon:** [08 §1, B1](08-alti-katman.md#1-tarım) (tamamlandı; kalibre edilmemiş). **Gece durumu:** B1 çekirdek uygulaması 21:57'de başladı (tek yazar); hangi alt adımların bittiği bilinmiyor, bu yüzden G1–G6 "Devam ediyor (gece)".
+**Spesifikasyon:** [08 §1, B1](08-alti-katman.md#1-tarım) (tamamlandı; kalibre edilmemiş). **Sabah durumu:** B1 çekirdek uygulaması commit'li (`1385465`, kurallar [06 §11](06-simulasyon-spesifikasyonu.md)); G1–G6 tamamlandı, 555 test yeşil, kapalıyken v0.2 ile birebir. Ölçüm ve kalibrasyon (G7, G8) yapılacak.
 
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
-| E4-G1 | İklim takvimi ve olay akışı | `takvimGunu`, 12 ay doğrusal enterpolasyon, `iklim_gunluk` olayı, `gunCarpani`, `olay` PRNG akışı. Takvim sezon değil sürekli zaman eğrisidir (K21). | Her eğrinin 365 gün ortalaması PPM ± 1 000; aynı tohum → aynı özet (30 ve 400 gün); uyuyan bölge iklim/toprak tikinde donar | — | M | P0 | Devam ediyor (gece) |
-| E4-G2 | Toprak verimliliği ve ekim planı | `ekim_plani` (buğday, baklagil, nadas), günlük toprak değişimi. | 30 günlük 4 botlu koşuda toprak ∈ [300 000, 1 000 000] ppm; regresyon kalkanı (`ekimPpm=[PPM,0,0]` → v0.2 birebir) | E4-G1 | M | P0 | Devam ediyor (gece) |
-| E4-G3 | Yayılan iklim olayları | Kuraklık, don, sel, kış fırtınası; uyarı süresi; komşu bölgeye deterministik yayılma. | İki koşu birebir aynı olay listesi; olay olasılığı 0 iken v0.2 birebir | E4-G1 | M | P0 | Devam ediyor (gece) |
-| E4-G4 | Gübre dozu | `gubre` malı, `gubre_dozu` komutu, toprak ve çıktıya etkisi; fabrika B2'de gelir. | Doz 0..azami aralığında; gübre stoku tüketilir; doz = 0 iken v0.2 birebir | E4-G2, E5-G6 | M | P1 | Devam ediyor (gece) |
-| E4-G5 | Hayvancılık | Ahır ve mera tesisleri; gıda ve yem bağı. | Ahır ve mera tesis tavanı (`tarimTesisTavani`) içinde; gıda zinciri testi | E4-G2 | M | P1 | Devam ediyor (gece) |
-| E4-G6 | Sulama | `sulama_kanali` tesisi ve `sulama_sistemi` teknolojisi; kuraklık koruması (yakıtla, B2'de elektriğe). | Sulama açıkken kuraklık kaybı azalır (birim test); teknoloji ağına girer | E4-G3, E7-G1 | M | P1 | Devam ediyor (gece) |
+| E4-G1 | İklim takvimi ve olay akışı | `takvimGunu`, 12 ay doğrusal enterpolasyon, `iklim_gunluk` olayı, `gunCarpani`, `olay` PRNG akışı. Takvim sezon değil sürekli zaman eğrisidir (K21). **Tamamlandı: B1 commit `1385465` (G1–G6); kuralları [06 §11](06-simulasyon-spesifikasyonu.md).** | Her eğrinin 365 gün ortalaması PPM ± 1 000; aynı tohum → aynı özet (30 ve 400 gün); uyuyan bölge iklim/toprak tikinde donar | — | M | P0 | Tamamlandı |
+| E4-G2 | Toprak verimliliği ve ekim planı | `ekim_plani` (buğday, baklagil, nadas), günlük toprak değişimi. **Tamamlandı: `1385465`.** | 30 günlük 4 botlu koşuda toprak ∈ [300 000, 1 000 000] ppm; regresyon kalkanı (`ekimPpm=[PPM,0,0]` → v0.2 birebir) | E4-G1 | M | P0 | Tamamlandı |
+| E4-G3 | Yayılan iklim olayları | Kuraklık, don, sel, kış fırtınası; uyarı süresi; komşu bölgeye deterministik yayılma. **Tamamlandı: `1385465`.** | İki koşu birebir aynı olay listesi; olay olasılığı 0 iken v0.2 birebir | E4-G1 | M | P0 | Tamamlandı |
+| E4-G4 | Gübre dozu | `gubre` malı, `gubre_dozu` komutu, toprak ve çıktıya etkisi; fabrika B2'de gelir. **Tamamlandı: `1385465`.** | Doz 0..azami aralığında; gübre stoku tüketilir; doz = 0 iken v0.2 birebir | E4-G2, E5-G6 | M | P1 | Tamamlandı |
+| E4-G5 | Hayvancılık | Ahır ve mera tesisleri; gıda ve yem bağı. **Tamamlandı: `1385465`.** | Ahır ve mera tesis tavanı (`tarimTesisTavani`) içinde; gıda zinciri testi | E4-G2 | M | P1 | Tamamlandı |
+| E4-G6 | Sulama | `sulama_kanali` tesisi ve `sulama_sistemi` teknolojisi; kuraklık koruması (yakıtla, B2'de elektriğe). **Tamamlandı: `1385465`.** | Sulama açıkken kuraklık kaybı azalır (birim test); teknoloji ağına girer | E4-G3, E7-G1 | M | P1 | Tamamlandı |
 | E4-G7 | Tarım ölçümü ve kalibrasyon | 12 ay için `gunCarpani = 12` ve 12 başlangıç ayı koşuları; H2, H1, lavabo/gelir, H5 kontrolü. | H2 tekrar ≤ %60 ve kalıcı sıfır karar günü yok; H1 ilk üç ≤ %70; lavabo/gelir 0,30–0,63; H5 ≤ %25; 30 günlük koşu ≤ v0.2 × 1,15 | E4-G1…G6, E12-G1 | M | P0 | Yapılacak |
 | E4-G8 | Tahıl bozulması ve kış depolaması | Tahıl %1/gün bozulur; ambarla kışa kadar depolama mümkün mü? ([08 §8-1](08-alti-katman.md#8-açık-sorular-ve-riskler)). | Ölçüm raporu; gerekirse `bozulmaMallari` çarpanı (v0.1 kalibrasyonunu bozma riski not edilir) | E4-G7 | S | P2 | Yapılacak |
 
 ### E5 — Sanayi (Faz B2)
 
-**Spesifikasyon:** [08 §2, B2](08-alti-katman.md#2-sanayi). Çekirdeğe giren yeni komutlar: `tesis_olcek_yukselt`, `genel_onarim`, `bakim_duzeyi`, `arama_sondaji`. **Bağımlılık:** B1.
+**Spesifikasyon:** [08 §2, B2](08-alti-katman.md#2-sanayi). **Sabah durumu:** G1–G6 commit'li (`ee4ee50`; kurallar ve 08'den sapmalar [06 §12](06-simulasyon-spesifikasyonu.md)); ölçüm (G7) yapılacak. Çekirdeğe giren yeni komutlar: `tesis_olcek_yukselt`, `genel_onarim`, `bakim_duzeyi`, `arama_sondaji`. **Bağımlılık:** B1.
 
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
-| E5-G1 | Elektrik malı ve brownout | `enerji` kategorisi, santral, iki geçişli hesap, enerji önceliği; elektrik stoklanmaz, taşınmaz, bölge içidir. | Brownout günü ≤ %5 (bot koşusu); "elektrik stoklanmaz/taşınmaz" invariantı; kapalıyken v0.2 birebir | E4-G1 | L | P0 | Yapılacak |
-| E5-G2 | Çarpan zinciri, bakım ve aşınma | `uretimTabani` (%40) ile birleşik ceza tabanı; bakım düzeyi (asgari/normal/yüksek), genel onarım. | Aşınma sınırları test; 30. günde toplam ceza tabanının altına inmez | E5-G1 | M | P0 | Yapılacak |
-| E5-G3 | Tesis ölçek kademesi | S/M/L: çıktı, işçi, bakım ve inşa oranları, `gerekliTeknoloji` (L için `otomasyon`). | Maliyet/işçi/çıktı orantı testi; L ölçekte brownout riski gözlenir | E5-G1 | M | P1 | Yapılacak |
-| E5-G4 | Kirlilik | Emisyon → bölge kirliliği → tarım çıktısı ve istikrar; komşu yayılım. | Kirlilik dengesi testi; Tarım çarpan zincirine girer | E5-G1, E4-G2 | M | P1 | Yapılacak |
-| E5-G5 | Damar ölçeği, tükenme ve keşif | Damar ölçeği (sentetik `rezervler × 0,4`), görünür tükenme, `arama_sondaji` (07 Ö7). 20–25. gün tekrarını kırması beklenen ana mekanizma. | Tek tesiste 25. günde %25–45 tükenme (hedef); H2 ≤ %60; H7 168. saat ≥ %50; keşif determinizm testi | E5-G2 | L | P0 | Yapılacak |
-| E5-G6 | Gübre fabrikası ve sulama elektriği | `gubre_fabrikasi` ve `santral` içerikleri; Tarım'daki sulama yakıttan elektriğe geçer. | Tarım–Sanayi gübre zinciri 30 günlük koşuda çalışır | E5-G1, E4-G4 | S | P1 | Yapılacak |
+| E5-G1 | Elektrik malı ve brownout | `enerji` kategorisi, santral, iki geçişli hesap, enerji önceliği; elektrik stoklanmaz, taşınmaz, bölge içidir. **Tamamlandı: B2 commit `ee4ee50` (G1–G6); kuralları [06 §12](06-simulasyon-spesifikasyonu.md).** | Brownout günü ≤ %5 (bot koşusu); "elektrik stoklanmaz/taşınmaz" invariantı; kapalıyken v0.2 birebir | E4-G1 | L | P0 | Tamamlandı |
+| E5-G2 | Çarpan zinciri, bakım ve aşınma | `uretimTabani` (%40) ile birleşik ceza tabanı; bakım düzeyi (asgari/normal/yüksek), genel onarım. **Tamamlandı: `ee4ee50`.** | Aşınma sınırları test; 30. günde toplam ceza tabanının altına inmez | E5-G1 | M | P0 | Tamamlandı |
+| E5-G3 | Tesis ölçek kademesi | S/M/L: çıktı, işçi, bakım ve inşa oranları, `gerekliTeknoloji` (L için `otomasyon`). **Tamamlandı: `ee4ee50`.** | Maliyet/işçi/çıktı orantı testi; L ölçekte brownout riski gözlenir | E5-G1 | M | P1 | Tamamlandı |
+| E5-G4 | Kirlilik | Emisyon → bölge kirliliği → tarım çıktısı ve istikrar; komşu yayılım. **Tamamlandı: `ee4ee50`.** | Kirlilik dengesi testi; Tarım çarpan zincirine girer | E5-G1, E4-G2 | M | P1 | Tamamlandı |
+| E5-G5 | Damar ölçeği, tükenme ve keşif | Damar ölçeği (sentetik `rezervler × 0,4`), görünür tükenme, `arama_sondaji` (07 Ö7). 20–25. gün tekrarını kırması beklenen ana mekanizma. **Tamamlandı: `ee4ee50`.** | Tek tesiste 25. günde %25–45 tükenme (hedef); H2 ≤ %60; H7 168. saat ≥ %50; keşif determinizm testi | E5-G2 | L | P0 | Tamamlandı |
+| E5-G6 | Gübre fabrikası ve sulama elektriği | `gubre_fabrikasi` ve `santral` içerikleri; Tarım'daki sulama yakıttan elektriğe geçer. **Tamamlandı: `ee4ee50`.** | Tarım–Sanayi gübre zinciri 30 günlük koşuda çalışır | E5-G1, E4-G4 | S | P1 | Tamamlandı |
 | E5-G7 | Sanayi ölçümü ve kalibrasyon | H1/H2/H7 yeniden koşusu, `elektrik_ark` ölü uç kontrolü. | H2 ≤ %60, karar tükenmesi > 0; H1 tür başına en iyi önayar ≥ 4; ark ocağı ≥ 2 bölgede seçilir; H7 [%50, %85]; lavabo/gelir 0,30–0,63 | E5-G1…G5, E12-G1 | M | P0 | Yapılacak |
 | E5-G8 | Bölge verim çarpanları (Ö4, koşullu) | Ova ×1,25 tarım, dağ ×1,25 çıkarım, kent ×1,30 işleme; yalnızca H1 hâlâ > %70 ise. | Koşul gerçekleşirse: tür başına en iyi önayar ≥ 4; çarpan ≤ +%30 | E12-G1 | M | P2 | Yapılacak |
 
@@ -199,10 +199,10 @@ Amaç, 20–25. gündeki tekrar sıkıntısını (H2) her katmanda ayrı bir yin
 
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
-| E8-G1 | Liman primi ve dünya kapısı | Fiyat farkı = taşıma maliyeti; 2–4 dünya kapısı; bölgesel fiyat. | Arbitraj yok (özellik testi, 40 tohum); prim = 0 iken v0.2 birebir | E3-G4, E5-G1 | L | P0 | Yapılacak |
-| E8-G2 | NPC piyasa yapıcı ve makas | Açık makas (varsayılan 200 000 ppm = eski 1,1×/0,9×), anlaşma/yaptırım makası. | Makas 200 000, prim/komisyon/tarife 0 → v0.2 birebir; arayüz etiketi "Dünya Piyasa Yapıcısı" | E8-G1 | M | P0 | Yapılacak |
-| E8-G3 | Komisyon, tarife ve ihracat vergisi | `TicaretRejimi`; komisyon hazineye yazılır; komut Devlet'te. | Hazine muhasebesi testi; tarife/vergi hazine gelirine düşer | E8-G2, E9-G4 | M | P1 | Yapılacak |
-| E8-G4 | Kıtlık cezası | 3 kademe eşik/ceza, toparlanma süresi; cezanın tabanı vardır. | Kademe ve toparlanma testi; kıtlık + istikrar çift sayımı kalibrasyonda ayrı ölçülür | E8-G2, E9-G2 | M | P1 | Yapılacak |
+| E8-G1 | Liman primi ve dünya kapısı | Fiyat farkı = taşıma maliyeti; 2–4 dünya kapısı; bölgesel fiyat. **Sabah: B3 çekirdekte yazılıyor (commit'siz).** | Arbitraj yok (özellik testi, 40 tohum); prim = 0 iken v0.2 birebir | E3-G4, E5-G1 | L | P0 | Devam ediyor (sabah) |
+| E8-G2 | NPC piyasa yapıcı ve makas | Açık makas (varsayılan 200 000 ppm = eski 1,1×/0,9×), anlaşma/yaptırım makası. **Sabah: B3 çekirdekte yazılıyor.** | Makas 200 000, prim/komisyon/tarife 0 → v0.2 birebir; arayüz etiketi "Dünya Piyasa Yapıcısı" | E8-G1 | M | P0 | Devam ediyor (sabah) |
+| E8-G3 | Komisyon, tarife ve ihracat vergisi | `TicaretRejimi`; komisyon hazineye yazılır; komut Devlet'te. **Sabah: B3 çekirdekte yazılıyor (komut yüzü B4'te).** | Hazine muhasebesi testi; tarife/vergi hazine gelirine düşer | E8-G2, E9-G4 | M | P1 | Devam ediyor (sabah) |
+| E8-G4 | Kıtlık cezası | 3 kademe eşik/ceza, toparlanma süresi; cezanın tabanı vardır. **Sabah: B3 çekirdekte yazılıyor.** | Kademe ve toparlanma testi; kıtlık + istikrar çift sayımı kalibrasyonda ayrı ölçülür | E8-G2, E9-G2 | M | P1 | Devam ediyor (sabah) |
 | E8-G5 | Tedarik sözleşmesi (B3.5, isteğe bağlı) | Sabit vadeli tedarik, teminat %20; çok oyunculu ister. | Sözleşme teklif/kabul/fesih komutları; teminat muhasebesi | E11-G2, E7-G1 | L | P2 | Yapılacak |
 | E8-G6 | Oyuncular arası emir defteri kararı (v1.5 kapısı) | Kapı koşullarının ([08 §5.4](08-alti-katman.md#54-oyuncular-arası-emir-defteri-ne-zaman-v15-kapısı)) değerlendirilmesi; ek olarak NPC makasının kalıcılığı. | Karar notu: hangi oyuncu sayısında ve hangi hile önlemleriyle açılır | E11-G7 | M | P2 | Yapılacak |
 | E8-G7 | Yerel iç pazar geliri (Ö6) | Nüfus tüketimi hazineye gelir yazar; H7 eşitlenme riski var. | Limansız bölgede nakit akışı pozitif; H7 bandı bozulmaz | E8-G2 | M | P2 | Yapılacak |
@@ -231,7 +231,7 @@ Amaç, 20–25. gündeki tekrar sıkıntısını (H2) her katmanda ayrı bir yin
 
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
-| E10-G1 | Komut çubuğu ve bölge paneli (inşa) | Tesis kur/yükselt, kenar geliştir, politika düzeyinde emir, birlik üretimi; Türkçe ret mesajları. | Mevcut çekirdek komut kümesinin tamamı arayüzden gönderilir (komut-arayüz eşleme tablosu); oyuncu botsuz bir bölgeyi yönetir | E1-G1 | L | P0 | Yapılacak |
+| E10-G1 | Komut çubuğu ve bölge paneli (inşa) | Tesis kur/yükselt, kenar geliştir, politika düzeyinde emir, birlik üretimi; Türkçe ret mesajları. **Sabah: istemcide yazılıyor; şu an yalnız "yakında" yer tutucusu commit'li.** | Mevcut çekirdek komut kümesinin tamamı arayüzden gönderilir (komut-arayüz eşleme tablosu); oyuncu botsuz bir bölgeyi yönetir | E1-G1 | L | P0 | Devam ediyor (sabah) |
 | E10-G2 | Ticaret arayüzü | İthalat/ihracat emirleri, fiyat/taban, depo doluluğu uyarısı, "Dünya Piyasa Yapıcısı" etiketi. | Emir verilir, fiyat ve makas görünür; depo %70 uyarısı | E10-G1, E8-G2 | M | P1 | Yapılacak |
 | E10-G3 | Devlet arayüzü | Yasa kartları (bedelleri açık), bütçe kaydırıcıları, vergi ve tarife, istikrar ve göstergeler. | 7 yasa kartı, bedel ve bekleme süresi görünür; bütçe toplamı aşılamaz | E9-G4, E9-G5 | L | P1 | Yapılacak |
 | E10-G4 | Savaş ve diplomasi komutları | Savaş ilanı (hazırlık sayacı, 24 saat pencere, %25 kayıp tavanı gösterimi), savunma duruşu, anlaşma/yaptırım. | İlan → hazırlık → pencere → çözüm akışı arayüzden izlenir | E10-G1 | L | P1 | Yapılacak |
@@ -262,7 +262,7 @@ Amaç, 20–25. gündeki tekrar sıkıntısını (H2) her katmanda ayrı bir yin
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
 | E12-G0 | Ölçüm takımı ve ilk raporlar | Bot arketipleri, H1–H3/H5–H7 koşucuları, CLI; v0, v0.1 ve v0.2-düzenek raporları. | `pnpm olcum --hip H1,H2,H3,H5,H6,H7 --tohum 1-3` rapor üretir | — | XL | — | Tamamlandı |
-| E12-G1 | v0.2 veri sonrası yeniden ölçüm | Ö2+Ö3 sonrası tam H paketi; yeni temel satır (gerçek harita ve B1 sonrası tekrar). | `docs/olcum/v0.3-*` (md+json); `--karsilastir v0.1` özeti; H1 düzeneği ≥ 3 tohumla | E4-G7, E3-G2 | M | P0 | Yapılacak |
+| E12-G1 | v0.2 veri sonrası yeniden ölçüm | Ö2+Ö3 sonrası tam H paketi; yeni temel satır (gerçek harita ve B1 sonrası tekrar). **Sabah: gerçek haritada (3 tohum) tam ölçüm koşuyor.** | `docs/olcum/v0.3-*` (md+json); `--karsilastir v0.1` özeti; H1 düzeneği ≥ 3 tohumla | E4-G7, E3-G2 | M | P0 | Devam ediyor (sabah) |
 | E12-G2 | H1 düzeneği sağlamlaştırma | Pencere duyarlılığı, depo tavanı 3. günde doluyor, 14–21 günlük alt ölçüm (≥ 4 bölge × 4 tohum). | 4–7. gün ve 7 günlük toplam aynı yönde; 14–21 gün ölçümü raporda | E5-G5 | M | P1 | Yapılacak |
 | E12-G3 | Faz B sonu kapı raporu | `--tohum 1-10` tam paket + `gunCarpani = 12` ek koşusu ([08 §7](08-alti-katman.md#faz-b-sonunda-tam-kapı-değerlendirmesi)). | Kapı 2: H1 ≤ %70, H2 ≤ %60, H3 ≥ %10, H5 ≤ %25, H6 ≥ %50, H7 [%50, %85] | E4…E9 | L | P1 | Yapılacak |
 | E12-G4 | Duyarlılık taraması ve güven aralığı | Tek-tek ya da Sobol; ardından ≥ 200 tohumlu koşular. | Sabit başına duyarlılık tablosu; ≥ 200 tohumda güven aralığı | E12-G3 | XL | P1 | Yapılacak |
@@ -294,8 +294,8 @@ Amaç, 20–25. gündeki tekrar sıkıntısını (H2) her katmanda ayrı bir yin
 
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
-| E14-G1 | Performans ölçüm donanımı | Playwright: fps, çizim çağrısı, üçgen, CPU ms; masaüstü 1440×900 ve mobil 390×844, açık/koyu ekran görüntüsü. | Ölçüm betiği tek komutla rapor üretir; raporlar `docs/olcum/` altında | E1-G1 | S | P0 | Devam ediyor (gece) |
-| E14-G2 | Bütçelerin sabitlenmesi | Hedef tablo + gerçek ilk JS gzip ölçümü (şu an yalnız 1,05 MB ham tek HTML). | Ölçülmüş gzip boyutu ve bütçe tablosu; aşım durumunda epik önceliği güncellenir | E14-G1 | S | P0 | Yapılacak |
+| E14-G1 | Performans ölçüm donanımı | Playwright: fps, çizim çağrısı, üçgen, CPU ms; masaüstü 1440×900 ve mobil 390×844, açık/koyu ekran görüntüsü. **Tamamlandı: `packages/istemci/scripts/{ekran,olcum}.ts` (`aa1b8ac`).** | Ölçüm betiği tek komutla rapor üretir; raporlar `docs/olcum/` altında | E1-G1 | S | P0 | Tamamlandı |
+| E14-G2 | Bütçelerin sabitlenmesi | Hedef tablo + gerçek ilk JS gzip ölçümü (şu an yalnız 1,05 MB ham tek HTML). **Tamamlandı: ölçülen tek HTML 332 KB gzip (< 400 KB hedef), 11–12 çizim çağrısı ([09](09-sabah-raporu.md)); gerçek cihaz E14-G3'te.** | Ölçülmüş gzip boyutu ve bütçe tablosu; aşım durumunda epik önceliği güncellenir | E14-G1 | S | P0 | Tamamlandı |
 | E14-G3 | Gerçek cihaz testi | Düşük/orta Android, iOS Safari: fps, ısınma, pil, bellek. | ≥ 3 cihaz sınıfında ölçülmüş fps tablosu | E14-G1 | M | P1 | Yapılacak |
 | E14-G4 | Simülasyon ölçek testi | 53 → 150–300 bölgede çözüm süresi, bellek; worker içi. | 30 günlük koşu süresi ve çözüm süresi raporlanır; hedef < 1 sn aşılırsa önlem listesi | E3-G8 | M | P1 | Yapılacak |
 | E14-G5 | Kalite kademeleri | Piksel oranı, atmosfer/gölge kapatma, örnek tavanı, `prefers-reduced-motion`; otomatik düşürme. | Düşük kademede ölçülen fps artar; kullanıcı kademeyi elle seçebilir | E14-G3 | M | P1 | Yapılacak |
@@ -309,7 +309,7 @@ Not: aşağıdakiler hukuki tavsiye değildir; yayın öncesi avukat incelemesi 
 
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
-| E15-G1 | Sınır ve isim politikasının onayı (A2) | Taslak DATA_SOURCES §6: kurgusal 4 devlet/2 blok, nötr bölge adları, Kırım-Herson-Mykolayiv-Kıbrıs-Kosova vb. dışarıda, güncel çatışma senaryosu yok; yeni dilimler için kontrol listesi. | Sahip onayı docs/00'a işlenir; hiçbir devlet/blok/bölge adında ülke ya da ittifak adı yok (test) | — | S | P0 | Devam ediyor (gece) |
+| E15-G1 | Sınır ve isim politikasının onayı (A2) | Taslak DATA_SOURCES §6: kurgusal 4 devlet/2 blok, nötr bölge adları, Kırım-Herson-Mykolayiv-Kıbrıs-Kosova vb. dışarıda, güncel çatışma senaryosu yok; yeni dilimler için kontrol listesi. **Taslak commit'li (`42a3b8e`); yalnız sahip onayı bekliyor.** | Sahip onayı docs/00'a işlenir; hiçbir devlet/blok/bölge adında ülke ya da ittifak adı yok (test) | — | S | P0 | Yapılacak |
 | E15-G2 | Atıf envanteri ve "Hakkında" ekranı | DATA_SOURCES'ten `CREDITS`/oyun içi atıf ekranı; Natural Earth, USGS, GAEZ, CHELSA, GEM, WorldPop vb. | Her kullanılan veri kaynağının lisansı ve atıf metni ekranda | E3-G1 | M | P1 | Yapılacak |
 | E15-G3 | ODbL kararı (Katman B verisi) | OSM/Overture/Protomaps altlığı (ODbL, Toplu Veri Tabanı Kılavuzu ile ayrı dosya) mı, Natural Earth + prosedürel bina mı? Gece planı "v1'de OSM türevi yok" dedi. | Yazılı karar notu; E2 kapsamı buna göre netleşir | Karar §4-6 | S | P1 | Yapılacak |
 | E15-G4 | Hukuki inceleme (A13) | ODbL, atıf sayfası, hedef pazarlarda harita kuralları, GPL/AGPL temiz oda, isim/marka. | Dış incelemeden yazılı görüş; yayın öncesi kapı | E15-G2, E15-G3 | M | P1 | Yapılacak |
@@ -332,11 +332,11 @@ Not: aşağıdakiler hukuki tavsiye değildir; yayın öncesi avukat incelemesi 
 | ID | Başlık | Açıklama | Kabul ölçütü | Bağ. | Boyut | Ö. | Durum |
 |---|---|---|---|---|---|---|---|
 | E17-G0 | Pürüzler v0.2.1 (A1) | Mühimmat pazarı, fiyata/depoya duyarlı bot ticareti, reddedilmeyen savaş ilanları, güncel ölçüm tanımları. | Mühimmat fiyatı 0,55× → ≈ 1,0×; yakıt israfı 65–84 bin → 0; ret edilen ilan 11–18 → 0 (commit `cdbd0f0`) | — | M | — | Tamamlandı |
-| E17-G1 | Gece işlerinin commit'i ve `pnpm kontrol` | Commit'siz: `packages/veri-hatti`, `packages/istemci`, `gercek-karadeniz*.json`, `DATA_SOURCES.md`, `docs/09`, `docs/10`, `package.json`/lock değişiklikleri. | `pnpm kontrol` yeşil; commit'ler konu başına ayrık | E1-G1, E3-G1, E4-G1 | S | P0 | Devam ediyor (gece) |
+| E17-G1 | Gece işlerinin commit'i ve `pnpm kontrol` | Commit'siz: `packages/veri-hatti`, `packages/istemci`, `gercek-karadeniz*.json`, `DATA_SOURCES.md`, `docs/09`, `docs/10`, `package.json`/lock değişiklikleri. **Tamamlandı: gece işleri konu başına commit'lendi (`42a3b8e`, `aa1b8ac`, `1385465`, `1f03d4c`, `f8fcd45`, `04d66ef`, `ee4ee50`, `7284535`); 555 test yeşil. Sabah commit'siz iş: B3 Pazar ve yan değişiklikler.** | `pnpm kontrol` yeşil; commit'ler konu başına ayrık | E1-G1, E3-G1, E4-G1 | S | P0 | Tamamlandı |
 | E17-G2 | Belge tutarlılığı | docs/06 başlığı "(v0.1)" güncel değil; docs/00 §4 tablosu 6 düğümlü, docs/08 17 düğümlü; 5 yasa / 7 yasa; README paket tablosu yeni paketleri içermiyor. | Çelişkiler tek kaynağa bağlanmış; README paket tablosu güncel | Karar §4-3, §4-4 | S | P1 | Yapılacak |
 | E17-G3 | Elektronik israfı (bilinen sınır) | Limansız üretici bölgede kenar kapasitesi bağlayıcı, ihracat emri yalnız limanda; elektronik emilimi (120) dar ([06 §10.6](06-simulasyon-spesifikasyonu.md)). | Elektronik israfı 42/20/27 bin (tohum 1–3) düşer; aday çözümlerden biri ölçülmüş | E8-G1 | M | P1 | Yapılacak |
 | E17-G4 | Depo tavanı ve H1 penceresi | Depo tavanı 3. günde doluyor; 4–7. gün penceresi ihracat yeteneğini ödüllendiriyor; militarist 7 günden önce savaş açmıyor. | Depo/ölçek ayarı kararı; H1 ölçümünde savaş etkisi raporda ayrı | E12-G2 | S | P1 | Yapılacak |
-| E17-G5 | Faz B onaylı kuralların 06'ya taşınması | docs/08 "tasarım önerisi"dir; onaylanan kurallar 06'ya taşınır (çelişkide 06 kazanır). | Her B adımı sonrası 06 güncellenir | E4-G7 | M | P1 | Yapılacak |
+| E17-G5 | Faz B onaylı kuralların 06'ya taşınması | docs/08 "tasarım önerisi"dir; onaylanan kurallar 06'ya taşınır (çelişkide 06 kazanır). **Kısmi: B1 ve B2 için 06 §11–12 yazıldı; B3–B6 ve onay kaldı.** | Her B adımı sonrası 06 güncellenir | E4-G7 | M | P1 | Yapılacak |
 | E17-G6 | CI ve determinizm | GitHub Actions'ta `pnpm kontrol`; 400 günlük determinizm; Node sürüm matrisi (öneri, [03 §9](03-teknik-mimari.md)). | CI yeşil; farklı Node sürümlerinde aynı `durumOzeti` | — | M | P1 | Yapılacak |
 | E17-G7 | Yerleşik test sayısının izlenmesi | Gece planı 378 test yeşil diyor; tarayıcı ve veri hattı testleri dahil güncel sayım. | Sayı raporda güncel | E17-G1 | S | P2 | Yapılacak |
 
@@ -368,23 +368,35 @@ Kapanmış kararlar (bilgi): kalıcı dünya ve "sezon" sözcüğünün yasağı
 
 ## 5. Önerilen ilk sprint (1–2 hafta)
 
-**Mantık:** önce gece işini sağlam zemine oturt ve veriyi bloke eden kararı kapat; sonra 3D küreyi oynanabilir ve ölçülebilir yap; paralelde çekirdek tek yazarla Faz B'ye devam et. Çekirdek tek yazar olduğundan B1→B2 sıralı, geri kalan işler paralel 3–4 ajanla gider (gece planı).
+**Mantık (1 Ekim sabahı itibarıyla):** gece işi commit'li ve sağlam zemin hazır (küre, gerçek dilim, B1 ve B2). Sıradaki iş, çekirdekte kalan katmanları tek yazarla sırayla bitirip her adımı ölçmek; paralelde istemci komut arayüzü ve onboarding ile oyunu "izlemeden" "oynamaya" geçirmek ve sahip kararlarını kapatmak. Çekirdek tek yazar olduğundan B3→B4→B5→B6 sıralıdır; UI, veri ve ölçüm işleri paralel 3–4 ajanla gider.
+
+### 5.1 Tamamlanan adımlar (önceki sprint taslağı)
+
+| # | Görev(ler) | Durum |
+|---|---|---|
+| 1 | **E17-G1** gece işlerinin commit'i ve kontrol | Tamamlandı (555 test yeşil) |
+| 3 | **E3-G1 + E3-G2** gerçek dilim hattı ve gerçek haritada sim/ölçüm düzeneği | Tamamlandı |
+| 4 | **E14-G1 + E14-G2** ölçüm donanımı ve gzip bütçesi | Tamamlandı (332 KB gzip, 11–12 çizim çağrısı) |
+| 5 | **E1-G1, G2, G3** küre MVP, gerçek dilim, gezen kamera | Tamamlandı ve yayınlandı |
+| 6 | **E4-G1…G3** B1 Tarım çekirdeği (G4–G6 da bitti) | Tamamlandı; ölçüm kısmı (E4-G7) aşağıda 1. adımda |
+| 8 | **E1-G4** 3D kapsam görünümü | Tamamlandı |
+| 10 | **E5-G1 + E5-G5** B2 Sanayi (G1–G6 bitti) | Tamamlandı; ölçüm kısmı (E5-G7) aşağıda 1. adımda |
+
+Taşınan eski adımlar: eski 2 (**E15-G1/G3** kararlar) yeni 6'ya; eski 7 (**E12-G1** v0.3) yeni 1'e; eski 9 (**E10-G1**) yeni 3'e; eski 11 (**E2-G1**) yeni 7'ye.
+
+### 5.2 Kalan adımlar (yeniden sıralı)
 
 | # | Görev(ler) | Gerekçe | Boyut |
 |---|---|---|---|
-| 1 | **E17-G1** gece işlerinin commit'i + `pnpm kontrol` | Tüm sonraki iş commit'siz yarım işe dayanıyor; kayıp riski | S |
-| 2 | **E15-G1** sınır/isim politikası onayı, **E15-G3** ODbL kararı | Veri yayınını ve Katman B kapsamını bloke eden iki karar; ikisi de S | S |
-| 3 | **E3-G1** bitiş + **E3-G2** gerçek haritada sim/ölçüm | "Gerçek harita simülasyonda çalışıyor mu" riskini erken kapatır; 3D ve ölçümün ortak zemini | M |
-| 4 | **E14-G1 + E14-G2** ölçüm donanımı ve gzip bütçesi | Bugünkü 1,05 MB ham tek HTML'in gzip/fps değerleri bilinmiyor; 3D kararlarının kanıtı | S |
-| 5 | **E1-G1, G2, G3** küre MVP, gerçek dilim, gezen kamera (bitir ve yayınla) | Sahibin ana beklentisi: dolaşılabilir 3D; gece işinin kapatılması | M–L |
-| 6 | **E4-G1…G3 + E4-G7** B1 Tarım'ı bitir ve ölç | Sonraki tüm katmanlar iklim altyapısına bağlı; H2 ve regresyon kalkanı | M–L |
-| 7 | **E12-G1** v0.2 veri + gerçek harita sonrası yeniden ölçüm (≥ 3 tohum) | H1 sonucu şu an tek tohum ve "sağlam değil"; yeni temel satır gerekli | M |
-| 8 | **E1-G4** 3D kapsam görünümü | H4 (Kapı 3) insan testinin önkoşulu; lojistik derinliğin görünür kanıtı | L |
-| 9 | **E10-G1** komut çubuğu (inşa, ticaret) | Oyun "izleme"den "oynama"ya ancak bununla geçer | L |
-| 10 | **E5-G1 + E5-G5** B2 başlangıcı: elektrik/brownout ve damar tükenmesi | Damar tükenmesi 20–25. gün tekrarını kırması beklenen ana mekanizma ([07 Ö7](07-tasarim-onerileri.md)); B1 bitince başlar | L |
-| 11 | **E2-G1** Katman B teknik doğrulama (spike) | Yalnız E15-G3 kararı çıkarsa; Capital Rift benzeri yakın plan riskini (MapLibre küre özel katman) erkenden sınar | M |
+| 1 | **Pazar v1'i bitir ve ölç:** **E8-G1…G4** (sabah, çekirdekte) → **E8-G8**; **E12-G1** v0.3 sonucunu işle; ölçüm kapanışları **E4-G7**, **E5-G7**; **E17-G5** (B3 kuralları 06'ya) | Üç katman (Tarım, Sanayi, Pazar) tek ölçümde; Kapı 2 hâlâ açık (H1, H2, H7), B4'ten önce yeni temel satır gerekli; elektronik israfı (E17-G3) liman primiyle çözülebilir | L |
+| 2 | **Devlet v1 (B4):** **E9-G1, G2** (kademe, istikrar) → **G4, G5** (yasa, bütçe) → **G3, G6, G7, G10**; **E8-G3** komut yüzü | Diğer beş katmanı yasa ve bütçe kollarıyla yöneten karma katman; E7-G2 ve E6-G1 buna bağlı. Başlamadan önce §4-4 (yasa sayısı) onayı | XL |
+| 3 | **Komut arayüzü ve onboarding:** **E10-G1** (sabah, bitir) → **E10-G5** onboarding; **E10-G2** ticaret; **E1-G8** erişilebilirlik; **E14-G3, G7** cihaz ve mobil | Oyun "izleme"den "oynama"ya ancak bununla geçer; H4 ve ilk insan gözlemi (E12-G6, E12-G9) buna bağlı. E10-G3 (Devlet arayüzü) adım 2'den sonra | L–XL |
+| 4 | **Lojistik v1 (B5):** **E6-G1…G3, G5, G7**; **E3-G6** kenar iklim profilleri | Derinlik bu katmanda; filo, yakıt, mevsimsel kenar. Kapsam neden sınıfları E1-G4 görünümüne bağlanır | XL |
+| 5 | **Teknoloji v1 (B6):** **E7-G1…G3, G6**; sonra **E7-G2, G5** | Her katmana yöntem açan düğümler; E7-G2 Devlet bütçesine bağlı. Başlamadan önce §4-3 (düğüm sayısı) onayı | L–XL |
+| 6 | **Sınır/isim ve ODbL kararları:** **E15-G1** (taslak commit'li, onay bekliyor), **E15-G3**; ayrıca §4-3 ve §4-4 | Veri yayınını ve Katman B kapsamını bloke eden S boyutlu kararlar; adım 2 ve 5 için karar önkoşulları. Paralel yürür, ilk işlerden biri olarak sahibe sunulur | S |
+| 7 | **Katman B spike:** **E2-G1** (yalnız E15-G3 çıkarsa); ardından **E1-G9** yayın ve sürümleme | MapLibre küre + three.js özel katmanı + PMTiles riskini erkenden sınar | M |
 
-**Sprint sonu beklenen çıktı:** yayınlanmış, gerçek haritalı, dolaşılabilir 3D küre; ölçülmüş performans bütçesi; B1 tamam ve ölçülmüş; yeni H temel satırı; iki kapanmış karar. **Sprint 2 adayları:** E8-G1/G2 (Pazar), E9-G1/G2 (Devlet), E10-G5 (onboarding), E11-G1 (ADR).
+**Sprint sonu beklenen çıktı:** Pazar v1 commit'li ve ölçülmüş (yeni H temel satırı), Devlet v1 çekirdekte, oynanabilir komut çubuğu, kapanmış sınır/ODbL kararları; Lojistik, Teknoloji ve Katman B sonraki sprintlere kalır. **Sprint 2 adayları:** E6, E7, E2-G1, E11-G1 (ADR).
 
 ---
 
@@ -412,4 +424,4 @@ Olasılık/etki değerlendirmeleri takım değerlendirmesidir (**tahmin**); öl�
 
 ---
 
-*Bu liste gece boyunca değişir; sabah takım lideri "Devam ediyor (gece)" satırlarını commit geçmişine göre günceller. Kaynaklar: [README](../README.md), docs/00–08, [araştırma raporları](arastirma/), [ölçüm raporları](olcum/), DATA_SOURCES.md, gece planı.*
+*Bu liste 1 Ekim sabahı itibarıyla güncellenmiştir; "Devam ediyor (sabah)" satırları commit'lendikçe ve v0.3 ölçümü bitince güncellenir. Kaynaklar: [README](../README.md), docs/00–08, [araştırma raporları](arastirma/), [ölçüm raporları](olcum/), DATA_SOURCES.md, gece planı.*
