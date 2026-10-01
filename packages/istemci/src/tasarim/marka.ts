@@ -14,7 +14,7 @@ export function markaRenkBelirteci(renk: number): string {
 }
 
 /** Marka simgeleri (`OyuncuMarka.simge` indeksi -> Lucide adı; yalnız kartta). Öneri: tasarım lideri seçer. */
-export const MARKA_SIMGELERI = ["star", "leaf", "flame", "gem", "anchor", "sun", "mountain", "feather"] as const;
+export const MARKA_SIMGELERI = ["leaf", "flame", "gem", "sun", "mountain", "feather", "flower", "bird"] as const;
 
 /** Dükkân türü (`dukkanTurleri[].id`) -> Lucide adı (haritada ve kartta). */
 export const DUKKAN_SIMGELERI: Readonly<Record<string, string>> = {
