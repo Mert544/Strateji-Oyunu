@@ -283,11 +283,11 @@ function yontemGirdisi(): { liste: KimlikListesi; g: KimlikKilidiGirdisi; v: Ret
 }
 
 describe("yöntem kilidi (Y1-Y8)", () => {
-  it("bugünkü 28 yöntem listeyle uyumlu: hata yok (hidro_santrali hem tür hem yöntem: istisna); liste içerikle aynı sırada ve G6'nın dört yeni yöntemi mulkKipi", () => {
+  it("bugünkü 30 yöntem listeyle uyumlu: hata yok (hidro_santrali hem tür hem yöntem: istisna); liste içerikle aynı sırada ve G6'nın dört + G8'in iki yeni yöntemi mulkKipi", () => {
     const { liste, g, v } = yontemGirdisi();
-    expect(v.icerik.yontemler).toHaveLength(28);
+    expect(v.icerik.yontemler).toHaveLength(30);
     expect(liste.yontemler!.map((y) => y.id)).toEqual(v.icerik.yontemler.map((y) => y.id));
-    expect(liste.yontemler!.filter((y) => y.mulkKipi === true).map((y) => y.id)).toEqual(["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli"]);
+    expect(liste.yontemler!.filter((y) => y.mulkKipi === true).map((y) => y.id)).toEqual(["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma"]);
     expect(kimlikListesiHatalari(liste)).toEqual([]);
     expect(kilit(liste, g)).toBe("");
     expect(v.icerik.tesisTurleri.some((t) => t.id === "hidro_santrali")).toBe(true);

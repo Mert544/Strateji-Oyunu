@@ -166,6 +166,16 @@
       "id": "sut_kepekli", "ad": "Kepekli süt besisi",
       "girdiler": { "tahil": 50000, "kepek": 60000, "elektrik": 5000 }, "ciktilar": { "sut": 82000, "gubre": 4000 }, "isci": 5000,
       "bakim": { "parca": 500 }, "kirlilikPpmSaat": 10, "mulkKipi": true
+    },
+    {
+      "id": "cam_firini", "ad": "Cam fırını",
+      "girdiler": { "silis": 60000, "yakit": 12000, "elektrik": 18000 }, "ciktilar": { "cam": 50000 }, "isci": 5000,
+      "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 60, "mulkKipi": true
+    },
+    {
+      "id": "celik_dograma", "ad": "Çelik doğrama",
+      "girdiler": { "celik": 24000, "cam": 32000, "parca": 5000, "elektrik": 15000 }, "ciktilar": { "pencere": 30000 }, "isci": 7000,
+      "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 20, "mulkKipi": true
     }
   ],
   "tesisTurleri": [
@@ -213,7 +223,7 @@
     {
       "id": "parca_fabrikasi", "ad": "Parça fabrikası",
       "insaMaliyeti": { "celik": 80000, "parca": 30000 }, "insaParasi": 15000000, "insaSuresiSaat": 10,
-      "yontemler": ["standart_parca", "otomatik_hat"]
+      "yontemler": ["standart_parca", "otomatik_hat", "celik_dograma", "cam_firini"]
     },
     {
       "id": "elektronik_fabrikasi", "ad": "Elektronik fabrikası",

@@ -11,7 +11,9 @@
       "ilk_dukkan": { "mal": { "celik": 10000 } },
       "ilk_sozlesme": { "para": 500000 },
       "ikinci_ilce": { "para": 250000 },
-      "ilk_arastirma": { "para": 400000 }
+      "ilk_arastirma": { "para": 400000 },
+      "ilk_ekmek": { "mal": { "ekmek": 5000 } },
+      "ilk_pencere": { "mal": { "parca": 8000 } }
     }
   },
   "dunyaHizi": 1,
@@ -308,12 +310,13 @@
         { "id": "bakkal", "ad": "Bakkal", "mallar": ["gida", "ekmek", "un", "sut", "sut_urunu", "sekerleme", "findik_urunu", "yakit"], "tamCesit": 6, "olcekAraligi": [0] },
         { "id": "firin", "ad": "Fırın", "mallar": ["ekmek", "gida"], "tamCesit": 2, "olcekAraligi": [0] },
         { "id": "sarkuteri", "ad": "Şarküteri", "mallar": ["sut", "sut_urunu", "gida"], "tamCesit": 3, "olcekAraligi": [0] },
-        { "id": "sekerci", "ad": "Şekerci", "mallar": ["sekerleme", "findik_urunu"], "tamCesit": 2, "olcekAraligi": [0] }
+        { "id": "sekerci", "ad": "Şekerci", "mallar": ["sekerleme", "findik_urunu"], "tamCesit": 2, "olcekAraligi": [0] },
+        { "id": "yapi_market", "ad": "Yapı market", "mallar": ["pencere", "celik", "parca", "cam"], "tamCesit": 4, "olcekAraligi": [0] }
       ],
       "talep": {
         "yerelOlcek": 40,
         "ilceSinifiNufus": { "kirsal": 10000, "kasaba": 40000, "sehir": 120000 },
-        "talep1000Saat": { "gida": 90, "ekmek": 60, "un": 10, "sut": 20, "sut_urunu": 20, "sekerleme": 6, "findik_urunu": 3, "yakit": 15 },
+        "talep1000Saat": { "gida": 90, "ekmek": 60, "un": 10, "sut": 20, "sut_urunu": 20, "sekerleme": 6, "findik_urunu": 3, "yakit": 15, "pencere": 8, "cam": 4, "celik": 6, "parca": 5 },
         "gruplar": {
           "gida": {
             "mallar": ["gida", "ekmek", "un", "sut", "sut_urunu"],
@@ -325,7 +328,8 @@
             "takvimPpm": [1100000, 1050000, 980000, 950000, 900000, 850000, 820000, 850000, 950000, 1100000, 1200000, 1250000],
             "bayram": { "oncesiGun": 7, "oncesiPpm": 1800000, "sonrasiGun": 28, "sonrasiPpm": 800000 }
           },
-          "yakit": { "mallar": ["yakit"], "takvimPpm": [1400000, 1400000, 1200000, 950000, 750000, 650000, 600000, 600000, 750000, 950000, 1300000, 1450000] }
+          "yakit": { "mallar": ["yakit"], "takvimPpm": [1400000, 1400000, 1200000, 950000, 750000, 650000, 600000, 600000, 750000, 950000, 1300000, 1450000] },
+          "yapi": { "mallar": ["pencere", "cam", "celik", "parca"], "takvimPpm": [650000, 650000, 900000, 1150000, 1300000, 1250000, 1200000, 1200000, 1200000, 1100000, 800000, 600000] }
         },
         "bayramGunleri": [159, 227, 513, 582]
       },

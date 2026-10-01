@@ -194,7 +194,9 @@
   {"id": "degirmen", "evSahibi": "gida_fabrikasi", "asama": "A0", "mulkKipi": true},
   {"id": "ekmek_firini", "evSahibi": "gida_fabrikasi", "asama": "A0", "mulkKipi": true},
   {"id": "kepek_gubresi", "evSahibi": "ahir", "asama": "A0", "mulkKipi": true},
-  {"id": "sut_kepekli", "evSahibi": "ahir", "asama": "A0", "mulkKipi": true}
+  {"id": "sut_kepekli", "evSahibi": "ahir", "asama": "A0", "mulkKipi": true},
+  {"id": "cam_firini", "evSahibi": "parca_fabrikasi", "asama": "A0", "mulkKipi": true},
+  {"id": "celik_dograma", "evSahibi": "parca_fabrikasi", "asama": "A0", "mulkKipi": true}
  ],
  "yasakli": {
   "mallar": [

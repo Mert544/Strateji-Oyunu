@@ -324,9 +324,9 @@ describe("mulkKipi (YontemTanimi): kurallar", () => {
     throw new Error("aday yontem yok");
   }
 
-  it("varsayılan olmayan ve teknoloji şartsız yöntemde geçerli; alan yokken (eski içerik) aynen geçerli; bugünkü içerikte yalnız G6'nın dört yöntemi mulkKipi", () => {
+  it("varsayılan olmayan ve teknoloji şartsız yöntemde geçerli; alan yokken (eski içerik) aynen geçerli; bugünkü içerikte yalnız G6'nın dört + G8'in iki yöntemi mulkKipi", () => {
     const v = kopya(varsayilanVeriyiYukle());
-    expect(v.icerik.yontemler.filter((y) => y.mulkKipi === true).map((y) => y.id)).toEqual(["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli"]);
+    expect(v.icerik.yontemler.filter((y) => y.mulkKipi === true).map((y) => y.id)).toEqual(["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma"]);
     expect(dogrulaIcerik(v.icerik)).toEqual({ gecerli: true });
     for (const y of v.icerik.yontemler) delete y.mulkKipi; // alan yokken (G6 öncesi içerik) geçerli
     expect(dogrulaIcerik(v.icerik)).toEqual({ gecerli: true });

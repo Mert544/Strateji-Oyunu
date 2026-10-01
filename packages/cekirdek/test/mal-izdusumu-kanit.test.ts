@@ -60,6 +60,11 @@ export function p3Oncesi(v: Veri): Veri {
   // G7-4: gerçek içerik yeni oyuncu başlangıç stoğuna `pencere` (yeni mal) ekler; 14 mallı içerikte yeni mal yoktur (yalnız bu YARDIMCI değişir, iddialar aynı).
   const yo = (c.param.mulk as { yeniOyuncu?: { baslangicStok?: Record<string, number> } } | undefined)?.yeniOyuncu;
   if (yo?.baslangicStok !== undefined) for (const id of YENI_MALLAR) delete yo.baslangicStok[id];
+  // G8-1: ödül tablosu (`odul.kavramlar`) yeni mala başvuran kavramları (ilk_ekmek: ekmek) taşır; 14 mallı içerikte o mal yoktur (yalnız bu YARDIMCI değişir, iddialar aynı).
+  const odulKavramlari = (c.param as { odul?: { kavramlar: Record<string, { mal?: Record<string, number> }> } }).odul?.kavramlar;
+  if (odulKavramlari !== undefined) {
+    for (const [k, o] of Object.entries(odulKavramlari)) if (Object.keys(o.mal ?? {}).some((m) => YENI_MALLAR.includes(m))) delete odulKavramlari[k];
+  }
   // G7-4: dükkân (`mulk.perakende`, `ekYapilar.dukkan`) yeni mallara (pencere, un, ekmek...) başvurur: 14 mallı (P3 öncesi) içerikte yoktur.
   const mulk = c.param.mulk as { perakende?: unknown; ekYapilar?: Record<string, unknown> } | undefined;
   if (mulk !== undefined) {

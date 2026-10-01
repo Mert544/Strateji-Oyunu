@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { SAAT, SISTEM_OYUNCUSU, Simulasyon, alinanOdulDegeri, odulDegeri } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
-import { SunucuMesajiSemasi } from "@bolge/protokol";
+import { DEFTER_ODUL_SIRASI, SunucuMesajiSemasi } from "@bolge/protokol";
 import { bellekDeposu } from "../src/depo/bellek";
 import { kavramEtkin } from "../src/odul/etkin";
 import { postgresDeposu } from "../src/depo/postgres";
@@ -183,14 +183,18 @@ describe("kavram saptama ve odulun gunluge girisi", () => {
       if (k.tur === "odul") expect(k.odul?.degerMili).toBe(odulDegeri(y.sim.ic, k.kavram));
       else expect(k.odul).toBeUndefined();
     }
-    expect(d?.siradaki.map((s) => [s.kavram, s.etkin])).toEqual([["ilk_dukkan", kavramEtkin(y.sim.ic, "ilk_dukkan")], ["ilk_sozlesme", false]]); // etkin kurali (P4/P5): beklenti icerikten turetilir (mulk.perakende); yer tutucu hep false
+    // siradaki: sabit siradan (DEFTER_ODUL_SIRASI), alinmayan ve tabloda olan kavramlar; etkin kurali (P4/P5): beklenti icerikten turetilir (kavramEtkin); yer tutucu (ilk_sozlesme) hep false.
+    const siradaki = DEFTER_ODUL_SIRASI.filter((k) => !KAVRAMLAR_ALI.includes(k as never) && odulDegeri(y.sim.ic, k) !== undefined);
+    expect(siradaki).toEqual(expect.arrayContaining(["ilk_ekmek", "ilk_pencere"])); // G8 tablosu (T3 g8-icerik)
+    expect(d?.siradaki.map((s) => [s.kavram, s.etkin])).toEqual(siradaki.map((k) => [k, k === "ilk_sozlesme" ? false : kavramEtkin(y.sim.ic, k)]));
     expect(kavramEtkin(y.sim.ic, "ilk_dukkan")).toBe(true); // G7-4 sonrasi gercek icerik dukkan verisi tasir: ilk_dukkan etkin
+    expect(kavramEtkin(y.sim.ic, "ilk_pencere")).toBe(true); // G8-1 icerigi (celik_dograma/yapi_market) varken ilk_pencere etkin
     expect(d?.toplamOdulMili).toBe(KAVRAMLAR_ALI.reduce((n, k) => n + (odulDegeri(y.sim.ic, k) ?? 0), 0));
     expect(d?.tavanMili).toBe(y.sim.ic.param.odul?.tavanMili);
-    // Veli: yalniz damga; siradaki 8 kavramin hepsi
+    // Veli: yalniz damga; siradaki 10 kavramin hepsi (8 + G8'in ilk_ekmek ve ilk_pencere'si)
     const v = await y.defter("veli");
     expect(v?.kazanilan.map((k) => [k.kavram, k.tur])).toEqual([["ilk_parsel", "damga"]]);
-    expect(v?.siradaki).toHaveLength(8);
+    expect(v?.siradaki).toHaveLength(10);
     expect(await y.defter("yok")).toBeNull();
     await y.kapat();
   }, 60_000);
@@ -199,13 +203,13 @@ describe("kavram saptama ve odulun gunluge girisi", () => {
     const duvar = new SahteDuvar(E + 2 * SAAT);
     const depo = bellekDeposu();
     const y = await yazarAc(depo, duvar, {}, dunyaVerisi((v) => {
-      if (v.param.odul) v.param.odul.tavanMili = 1_300_000;
+      if (v.param.odul) v.param.odul.tavanMili = 1_500_000; // en büyük tek ödül ilk_pencere 1.440.000: tavan ondan küçük olamaz (icerikDerle reddeder)
     }));
     await yetis(y);
     await oyna(y, duvar);
     await saatleriIlerlet(y, duvar, 100);
     const ali = y.sim.dunya.oyuncular.find((x) => x.id === "ali");
-    expect(alinanOdulDegeri(y.sim.ic, ali as NonNullable<typeof ali>)).toBeLessThanOrEqual(1_300_000);
+    expect(alinanOdulDegeri(y.sim.ic, ali as NonNullable<typeof ali>)).toBeLessThanOrEqual(1_500_000);
     expect(y.metrikler.odulReddedilen).toBe(0);
     const l = await depo.gunluk.oku(0);
     expect(l.filter((k) => k.komut.tur === "sistem_odul").length).toBe(y.metrikler.odulVerilen);
@@ -437,7 +441,8 @@ describe("defterIste (WebSocket)", () => {
     if (m.tur !== "defter") throw new Error("defter bekleniyordu");
     expect(m.istek).toBe(42);
     expect(m.kazanilan).toEqual([]);
-    expect(m.siradaki.map((s) => s.kavram)).toEqual(["ilk_yapi", "ilk_satis", "ilk_isleme", "zincir_kapandi", "ilk_dukkan", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"]);
+    expect(m.siradaki.map((s) => s.kavram)).toEqual(DEFTER_ODUL_SIRASI.filter((k) => odulDegeri(y.sim.ic, k) !== undefined)); // sabit sira; G8 ile ilk_ekmek ve ilk_pencere sirada (10 kavram)
+    expect(m.siradaki).toHaveLength(10);
     expect(m.siradaki.find((s) => s.kavram === "ilk_yapi")?.odul).toEqual({ mal: { celik: 5000 }, degerMili: odulDegeri(y.sim.ic, "ilk_yapi") });
     expect(m.tavanMili).toBe(8_000_000);
     expect(JSON.stringify(m)).not.toMatch(/Kolay gelsin|ilk tarlan/); // metin yok, sablon anahtari var
