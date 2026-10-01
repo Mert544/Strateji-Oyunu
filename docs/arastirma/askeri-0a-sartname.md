@@ -52,6 +52,8 @@ Ek A. Değişen dosya ve fonksiyonlar (`dosya:satır`)
 
 **Kapsam dışı (0b ve sonrası):** baskın planlaması, çözüm, ganimet, revir, yapı devre dışı bırakma; `Dunya.baskinlar` yazımı; olay işleyicileri; `kare` alanı ve sunucu satırları; istemci ve botlar; PvP, koruma sözleşmesi, E1–E3 eğlence artıları; Sur ve Güvenli depo.
 
+**K-A2 yardımcıları (G6'dan hazır):** mülk kipi kanıtı yeni düzenek yazmaz; `cekirdek/test/g6-yardimci.ts` içindeki iki yardımcıyı kullanır: `g6MulkKosusu(veri, tohum, adim, noktaSayisi = 12): string[]` (3 oyunculu mülk tohumlu koşu; her noktada `durumOzeti`; komut akışı `prngOlustur(tohum, "g6-mulk-kosu")` ile veriden bağımsızdır, bu yüzden aynı tohum her veri kopyasında aynı komutları üretir) ve `p4Oncesi(veri)` (P4/G6 öncesi içerik: `mulk.sebeke`, `yontemGecersizKilma`, `perakende`, `ekYapilar.dukkan` ve mülk-yalnız yöntemler çıkarılır). `askeri0aOncesi` bunların YANINA yazılır, `p4Oncesi` ile BİRLEŞTİRİLMEZ: 0a karşılaştırması güncel veri ↔ yalnız askeri girdileri çıkarılmış güncel veridir (P4 öncesi değil). Yardımcıların kendisi komut akışına askeri komut katmaz: K-A2 `g6MulkKosusu` gövdesini (ya da `ortakKomutluKos` kalıbını) askeri komut denemeleriyle genişleten KENDİ koşu işlevini yazar; `g6-yardimci.ts` değiştirilmez (G6 testleri bağımlıdır). (doğrulandı: g6-yardimci.ts bc6087c okundu; yardımcıyı çalıştırmadım)
+
 **Tek cümlelik kabul:** 0a girince, `askeri.eskiya.etkin = false` iken (ve `eskiya` bloğu hiç yokken) **her bölge kipi altını, her mülk kipi `durumOzeti` değerini ve her mevcut testin sonucunu değiştirmeden** (yalnız ek yapı sayımı gibi veri-sayım beklentileri hariç, §13 Parça 2) şema, doğrulayıcı, kimlik kilidi ve bayrak arkasındaki kod yolları yerindedir.
 
 ---
@@ -635,7 +637,7 @@ Bayrak **kapalıyken** davranışın korunduğunun üç kanıtı; her birinin fa
 | Kanıt | Düzenek | Negatif kontrol |
 |---|---|---|
 | **K-A1 bölge kipi** | mini-6, 4 bot (militarist dahil) + bulanık komut, tohum 3, 6 gün; `askeri0aOncesi` ↔ güncel içerik, **12 kontrol noktasında tam `durumOzeti`** (`kanitKaydi`/`esitNoktalar` kalıbı; bulanık komutlar iki dünyada AYNI içerikten: `ortakKomutluKos` kalıbı). Ek: `fikstur-b1/b2/kanit` ve `fikstur-goc/{bolge,mulk}-v1*` dosyalarında `git diff --exit-code` (O1) | aynı koşuda `askeri.birlikMaasiSaat` iki katına çıkarılırsa özet FARKLI (militarist bot birlik üretir: karşılaştırma askeri değişikliği görür) |
-| **K-A2 mülk kipi, bayrak kapalı** | mülk tohumlu koşu (`g6MulkKosusu` kalıbı: 3 oyuncu, rastgele ticaret/yapı/araştırma + her birine `birlik_uret`, `savunma_emri`, askeri ek yapı denemesi), 12 noktada `askeri0aOncesi` ↔ güncel (`etkin: false`) **aynı özet**; her askeri komut `askeri kapali`/`askeri kapali: <yapi>` ile reddedilir ve durum değişmez | aynı koşuda `etkin: true` (sentetik) ile Ordugâh + birlik kurulunca özet FARKLI |
+| **K-A2 mülk kipi, bayrak kapalı** | mülk tohumlu koşu (`g6MulkKosusu` kalıbı, bkz. §0 K-A2 yardımcıları; `g6-yardimci.ts` değişmez, K-A2 kendi koşu işlevini yazar; "önce" tarafı `askeri0aOncesi`: 3 oyuncu, rastgele ticaret/yapı/araştırma + her birine `birlik_uret`, `savunma_emri`, askeri ek yapı denemesi), 12 noktada `askeri0aOncesi` ↔ güncel (`etkin: false`) **aynı özet**; her askeri komut `askeri kapali`/`askeri kapali: <yapi>` ile reddedilir ve durum değişmez | aynı koşuda `etkin: true` (sentetik) ile Ordugâh + birlik kurulunca özet FARKLI |
 | **K-A3 parsel el değiştirmez** | `etkin: true` sentetik veri, 30 sim günü rastgele akış (Ordugâh/Karakol/Kule inşası, `birlik_uret`, `savunma_emri`, `parsel_al`): `d.mulk.hucreler[].sahip` yalnız oyuncunun kendi `parsel_al`/`parsel_birak` komutlarıyla değişir; askeri komut sonrası sahip listesi aynı | akışa bir `parsel_birak` eklenince sahip listesi FARKLI (test duyarlı) |
 
 **Kanıt dışı (mekanik, kapıda):** `pnpm typecheck`, tam vitest, `dunya.html` gzip ≤ 400 KB (0a payı < 0,3 KB: şema + üç sabit + iki küçük işlev; K3 ölçer, **doğrulanmadı**).
@@ -723,26 +725,26 @@ Kural: testler **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedef
 | 0b-4 | **`askeri_rezerv` (mevcut komut; `OyuncuDurumu.askeriRezervPpm`) mülk işletme düğümlerinde nasıl okunur?** | 0a değiştirmez; 0b savunma stoğu/yağma ile etkileşimini tasarlar (doğrulanmadı: `lojistik/cozum.ts:404` düğüm bazlı mı) | 0b tasarımı (K3) |
 | 0b-5 | **Dükkân servette, askeri yapı servet dışında; yapı devre dışı yalnız tesis (§9.4 D3, D4)** onayı | önerilen; A2 servet/kalibrasyon teyidi | A2, baş lider |
 
-## Ek A. Değişen dosya ve fonksiyonlar (Parça 1; `dosya:satır`, taban `7553b55`)
+## Ek A. Değişen dosya ve fonksiyonlar (Parça 1; `dosya:satır`, taban `bc6087c`: G6/G7 sonrası, son tazeleme)
 
 | Dosya:satır | Sahip | Değişiklik |
 |---|---|---|
 | `veri/src/tipler.ts:507` `askeri` | K3 | `ikmalCarpaniPpm?`, `eskiya?: AskeriEskiyaParametreleri` (§4.1) |
 | `veri/src/tipler.ts:583-606` `MulkEkYapiTanimi` | K3 | `birlikKapasitesi?`, `ikmal?` |
-| `veri/src/sema.ts:582` (`askeri`), `:364-377` (`mulkEkYapiSema`) | K3 | şema karşılıkları (`.strict()`) |
+| `veri/src/sema.ts:582` (`askeri`), `:365-379` (`mulkEkYapiSema`) | K3 | şema karşılıkları (`.strict()`) |
 | `veri/src/dogrula.ts` (`dogrulaParametreler`, `:546-595` yanı) | K3 | VA1–VA11, VE1–VE3 |
 | `veri/icerik/parametreler.json` | **T3** | `askeri.eskiya` (`etkin: false`) (`ikmalCarpaniPpm` YOK: S-1), `mulk.ekYapilar.{ordugah,karakol,gozetleme_kulesi}` (§4) |
 | `veri/icerik/kimlik-listesi.json` | **T3** | `nobet_evi` aşaması `A0-ops` |
-| `cekirdek/src/tipler.ts:176-187` `DerlenmisEkYapi` | K3 | `birlikKapasitesi`, `ikmal` |
-| `cekirdek/src/derle.ts:188-221` `mulkDerle` | K3 | iki alan (`ikmal` mal indeksine çevrilir) |
+| `cekirdek/src/tipler.ts:176-188` `DerlenmisEkYapi` | K3 | `birlikKapasitesi`, `ikmal` |
+| `cekirdek/src/derle.ts:188-298` `mulkDerle` (ek yapı döngüsü; işlev `:132`) | K3 | iki alan (`ikmal` mal indeksine çevrilir) |
 | `cekirdek/src/askeri/kimlik.ts` (YENİ) | K3 | sabitler, `askeriMulkAcikMi` |
-| `cekirdek/src/askeri/uretim.ts:21-60` `birlikUret` | K3 | kapı, `bolgeIndeksiBul`, Ordugâh şartı, `birlikKullanimi` |
+| `cekirdek/src/askeri/uretim.ts:21-58` `birlikUret` | K3 | kapı, `bolgeIndeksiBul`, Ordugâh şartı, `birlikKullanimi` |
 | `cekirdek/src/askeri/uretim.ts:98-110` `ikmalTalebi` | K3 | çarpan ve ek yapı ikmali |
-| `cekirdek/src/askeri/savas.ts:73-89` `savunmaEmri`, `:95-101` `savasIlan` | K3 | kapı; `savunmaEmri` `bolgeIndeksiBul` |
+| `cekirdek/src/askeri/savas.ts:73-88` `savunmaEmri`, `:95-168` `savasIlan` | K3 | kapı; `savunmaEmri` `bolgeIndeksiBul` |
 | `cekirdek/src/askeri/nobet.ts` (YENİ), `askeri/index.ts`, `src/index.ts` | K3 | `nobetEviHucresi` ve dışa açma |
 | `cekirdek/src/mulk/yapi.ts:31` `ekYapiToplami` | K3 | alan birliğine `"birlikKapasitesi"` |
 | `cekirdek/src/mulk/komut.ts:284-303` `yapiTuruCoz` | K3 | askeri ek yapı kapısı (§5.3) |
-| `cekirdek/src/tipler.ts:366` `BolgeDurumu` | K3 | `yagmaPenceresi?: { baslangic: Ms; kullanilanPpm: number }` (§9.1) |
+| `cekirdek/src/tipler.ts:295-367` `BolgeDurumu` (yeni alan `ekYapilar?` sonrasına, `:366`) | K3 | `yagmaPenceresi?: { baslangic: Ms; kullanilanPpm: number }` (§9.1) |
 | `cekirdek/src/askeri/yagma.ts` (YENİ), `askeri/index.ts`, `src/index.ts` | K3 | `yagmaTavaniUygula` (§9.2; çağıran yok: 0b) |
 | `cekirdek/src/serilestir.ts:341-` (bölge döngüsü, `ekYapilar` bloğundan sonra) | K3 | `yagmaPenceresi` doğrulayıcısı (§10) |
 | `cekirdek/test/askeri-*.test.ts`, `veri/test/askeri-eskiya-dogrulama.test.ts` (YENİ) | K3 | §13 |
