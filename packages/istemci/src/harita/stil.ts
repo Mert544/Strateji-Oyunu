@@ -226,7 +226,17 @@ export function seritRengi(r: RenkOku, su: ExpressionSpecification, sahiplikMerc
 export function oyunKatmanlari(r: RenkOku, sahiplikMercegi: boolean): LayerSpecification[] {
   const sb = sahiplikBoyasi(r, sahiplikMercegi);
   return [
+    // Kamu arsası: devlet tonu + seyrek nokta dokusu ("kamu-doku", gorunum.ts) + ince kenar; satılmaz, sakin
     { id: "arsa-kamu-dolgu", type: "fill", source: "arsa-kamu", minzoom: L3_ZOOM - 0.2, paint: { "fill-color": r("--katman-devlet-tint"), "fill-opacity": 0.9 } },
+    { id: "arsa-kamu-doku", type: "fill", source: "arsa-kamu", minzoom: L3_ZOOM + 0.6, paint: { "fill-pattern": "kamu-doku", "fill-opacity": 0.8 } },
+    {
+      id: "arsa-kamu-cizgi",
+      type: "line",
+      source: "arsa-kamu",
+      minzoom: L3_ZOOM - 0.2,
+      layout: { "line-join": "miter" },
+      paint: { "line-color": r("--katman-devlet"), "line-width": lin(15, 0.6, 18, 1.2), "line-opacity": 0.55 },
+    },
     { id: "sahiplik-dolgu", type: "fill", source: "sahiplik", minzoom: 13, paint: sb.dolgu },
     { id: "sahiplik-cizgi", type: "line", source: "sahiplik", minzoom: 13, paint: sb.cizgi },
     {

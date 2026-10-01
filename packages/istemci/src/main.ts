@@ -228,6 +228,7 @@ function baslat(): void {
       s.askida = a;
     },
     dunyaTopo,
+    mulkPaneli: (p) => panel.mulkKipiKur(p),
   });
 
   const etiketler = new Etiketler(

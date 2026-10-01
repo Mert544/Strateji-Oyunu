@@ -59,7 +59,7 @@ export async function yerlesAc(g: YerlesGirdisi): Promise<YerlesEkrani> {
   kat.setAttribute("role", "dialog");
   kat.setAttribute("aria-modal", "true");
   kat.setAttribute("aria-labelledby", "yerles-baslik");
-  kat.innerHTML = `<div class="yr-kutu"><h1 id="yerles-baslik">Nerede başlamak istersin?</h1><p class="yr-alt">Yerleşim yerleri hazırlanıyor…</p></div>`;
+  kat.innerHTML = `<div class="yr-kutu gir"><h1 id="yerles-baslik">Nerede başlamak istersin?</h1><p class="yr-alt">Yerleşim yerleri hazırlanıyor…</p></div>`;
   g.kap.append(kat);
   document.body.classList.add("yerles-acik");
 
@@ -94,6 +94,7 @@ export async function yerlesAc(g: YerlesGirdisi): Promise<YerlesEkrani> {
     </button>`;
   };
 
+  // Giriş hareketi yalnız "hazırlanıyor" kutusunda (.gir): seçim değişince kutu yeniden çizilir ama yeniden belirmez
   const ciz = (hata = ""): void => {
     const sd = gorunen.find((d) => d.aday.ilce === secili) ?? gorunen[0];
     const hazir = !!sd?.izgara && sd.sunucuda !== false;

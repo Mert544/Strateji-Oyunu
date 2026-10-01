@@ -166,7 +166,8 @@ export function binaMalzemesi(p: YuruPaleti, s: SisAyari): ShaderMaterial {
         vRenk = r;
         vTente = uTente[int(floor(fract(tf * 3.7) * 3.999))] * aGolge;
         // x: tür (0 düz, 1 cephe, 2 sanayi, 3 kiremit, 5 ayrıntısız cephe), y: dükkân katı (1/0), z: tohum (tamsayı)
-        vBina = vec3(tur, aUst >= 8.9 && fract(tf * 5.3) < 0.55 ? 1.0 : 0.0, t);
+        // z: bina tohumu küçük tamsayı (0–250; mediump'ta da tam): parçada floor(z + 0.5) ile kesin geri alınır
+        vBina = vec3(tur, aUst >= 8.9 && fract(tf * 5.3) < 0.55 ? 1.0 : 0.0, mod(t, 251.0));
         vCephe = vec4(aCephe.xyz, aUst);
         vec4 w = modelMatrix * vec4(position, 1.0);
         vYer = w.xyz;
@@ -211,17 +212,22 @@ export function binaMalzemesi(p: YuruPaleti, s: SisAyari): ShaderMaterial {
           float den = bant(px, 0.23, 0.77, wu) * icerde * bant(ky, 0.25, 0.3, wy);
           r = mix(r, f * 1.08, den * detay);
           if (pen > 0.0) {
-            float pid = karma(vec2(floor(fu + 1e-3) + vBina.z * 0.131, kat * 1.37 + vBina.z * 0.071));
-            vec3 cam = mix(uCam * (0.9 + 0.16 * pid), uCamIsik * (0.85 + 0.25 * pid), step(1.0 - uIsikOran, fract(pid * 7.13)));
-            cam *= mix(0.82, 1.0, clamp((0.79 - ky) * 11.0, 0.0, 1.0));
+            // Pencere kimliği yalnız tamsayılardan (pencere sırası, kat, bina): parça başına sapma yok → karıncalanma yok
+            float pid = karma(vec2(floor(fu) * 1.618 + floor(vBina.z + 0.5) * 0.173, kat * 3.17 + 0.5));
+            float isikli = step(1.0 - uIsikOran, fract(pid * 7.13));
+            // Işıklı pencere: düz, sıcak dolgu; altta hafif daha parlak dikey degrade. Sönük pencere: pencere başına sabit ton.
+            vec3 sonuk = uCam * (0.92 + 0.12 * pid);
+            vec3 isik = uCamIsik * mix(1.08, 0.9, clamp((ky - 0.3) / 0.49, 0.0, 1.0));
+            vec3 cam = mix(sonuk, isik, isikli);
+            cam *= mix(0.82, 1.0, clamp((0.79 - ky) * 11.0, 0.0, 1.0) * (1.0 - isikli) + isikli);
             r = mix(r, cam, pen * detay);
           }
           if (kat >= 1.0 || dukkan > 0.5) r *= 1.0 - 0.07 * (1.0 - smoothstep(0.0, 0.04 + wy, ky)) * detay;
         } else if (dukkan > 0.5 && y < g0) {
           float yw = fwidth(y) + 1e-4;
           float vit = bant(px, 0.07, 0.93, wu) * bant(y, 0.35, 2.68, yw) * icerde;
-          float pid = karma(vec2(floor(fu + 1e-3) + vBina.z * 0.131, vBina.z * 0.071));
-          vec3 vc = mix(uVitrin * (0.88 + 0.22 * pid), uCamIsik, uIsikOran * 1.6);
+          float pid = karma(vec2(floor(fu) * 1.618 + floor(vBina.z + 0.5) * 0.173, 0.25));
+          vec3 vc = mix(uVitrin * (0.9 + 0.16 * pid), uCamIsik * 0.95, min(1.0, uIsikOran * 1.6));
           r *= 0.93;
           r = mix(r, vc, vit * detay);
           r = mix(r, vTente, bant(y, 2.74, 3.12, yw) * icerde * detay);

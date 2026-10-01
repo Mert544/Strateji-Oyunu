@@ -18,7 +18,7 @@
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
 import type { IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
-import type { GeriAlIstegi, HucreSahipligi, IlceSahipligi, MulkBaglantisi, MulkOzeti, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
+import type { GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce } from "./hata-mulk";
 import { parselFiyatiMili } from "./fiyat";
 
@@ -282,6 +282,75 @@ export class WsBaglanti implements MulkBaglantisi {
       ilceHucre: (k.oyuncu.mulk?.ilceHucre ?? []).map(([i, n]) => [i, n]),
       surenInsaat: k.oyuncu.insaatlar.filter((x) => x[1] === "tesis").length,
       yetisiyor: this.yetisme ? { ilerleme: this.yetisme.hedef > this.yetisme.bas ? Math.max(0, Math.min(1, (this.yetisme.simdi - this.yetisme.bas) / (this.yetisme.hedef - this.yetisme.bas))) : 0 } : null,
+    };
+  }
+
+  /** İşletme özeti: oyuncu karesi (hazine, kalkan, inşaatlar, arazi) ve kendi işletme düğümlerinin özel verisi (stok, tesis, emir). */
+  isletme(): IsletmeDurumu | null {
+    const k = this.kare;
+    const o = k?.oyuncu;
+    if (!k || !o) return null;
+    const t = this.simZamani();
+    const turler = this.hos?.dizin.tesisTurleri ?? [];
+    const mallar = this.hos?.dizin.mallar ?? [];
+    // Yapı → ilçe ve hücre sayısı: abone olunan ilçe karelerinden (bilinmiyorsa yalnız il)
+    const yer = new Map<string, { ilce: string; hucre: number }>();
+    for (const c of k.ilceler ?? [])
+      for (const [, sahip, , tesis, insaat] of c.hucreler) {
+        if (sahip !== o.id) continue;
+        const a = insaat >= 0 ? `i${insaat}` : tesis >= 0 ? `t${tesis}` : null;
+        if (!a) continue;
+        const y = yer.get(a);
+        if (y) y.hucre++;
+        else yer.set(a, { ilce: c.id, hucre: 1 });
+      }
+    const ilDugum = (i: number): string | undefined => k.bolgeler.find((b) => b.i === i)?.id.split("#")[0];
+    const yapilar: IsletmeYapisi[] = [];
+    for (const [id, tur, bolge, hedef, bitis, bas, ek] of o.insaatlar) {
+      if (tur !== "tesis") continue;
+      const anahtar = `i${id}`;
+      const il = ilDugum(bolge);
+      yapilar.push({ anahtar, durum: "insaat", tur: ek ?? turler[hedef] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), ...(bas !== undefined && bas >= 0 ? { baslangic: bas } : {}), bitis });
+    }
+    const stok = new Map<number, { stokMili: number; uretimMili: number; satisMili: number; alisMili: number }>();
+    const mal = (m: number): { stokMili: number; uretimMili: number; satisMili: number; alisMili: number } => {
+      let x = stok.get(m);
+      if (!x) stok.set(m, (x = { stokMili: 0, uretimMili: 0, satisMili: 0, alisMili: 0 }));
+      return x;
+    };
+    for (const b of k.bolgeler) {
+      const oz = b.ozel;
+      if (!oz) continue;
+      const il = b.id.split("#")[0];
+      for (const [id, tur, , aktif, verim] of oz.tesisler) {
+        const anahtar = `t${id}`;
+        yapilar.push({ anahtar, durum: "tesis", tur: turler[tur] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), aktif: aktif === 1, verimPpm: verim });
+      }
+      oz.stoklar.forEach((f, m) => {
+        const v = stokAraDeger(f, t);
+        if (v > 0) mal(m).stokMili += v;
+      });
+      oz.uretimOrani.forEach((r, m) => {
+        if (r > 0) mal(m).uretimMili += r;
+      });
+      for (const [m, yon, , gercek] of oz.emirler) {
+        if (yon === 0) mal(m).satisMili += gercek;
+        else mal(m).alisMili += gercek;
+      }
+    }
+    const mk = o.mulk;
+    return {
+      simZamani: t,
+      hazineMili: stokAraDeger(o.hazine, t),
+      hazineOraniMili: o.hazine[1],
+      araziDegeriMili: mk?.araziDegeriMili ?? null,
+      araziVergisiMili: mk ? stokAraDeger(mk.araziVergisi, t) : null,
+      ilceHucre: (mk?.ilceHucre ?? []).map(([i, n]) => [i, n]),
+      korumaBitis: o.korumaBitis > t ? o.korumaBitis : null,
+      ayrilmisBitis: mk?.ayrilmisBitis !== undefined && mk.ayrilmisBitis > t ? mk.ayrilmisBitis : null,
+      indirimliYapiKalan: mk?.indirimliYapiKalan ?? null,
+      yapilar,
+      mallar: [...stok.entries()].sort((a, b) => a[0] - b[0]).map(([m, x]) => ({ mal: mallar[m] ?? String(m), ...x })),
     };
   }
 
@@ -563,7 +632,8 @@ export class WsBaglanti implements MulkBaglantisi {
 
   private aboneGonder(): void {
     const ilceler = this.istenenIlceler();
-    this.gonder({ tur: "abone", ...(ilceler.length ? { ilceler } : {}) });
+    // Kamu arsası blokları (değişmez; ilçe ilk girdiğinde bir kez gelir): haritada doku ve hücre kartı için
+    this.gonder({ tur: "abone", kamu: true, ...(ilceler.length ? { ilceler } : {}) });
   }
 
   private zamanIste(): void {
@@ -664,7 +734,15 @@ export class WsBaglanti implements MulkBaglantisi {
         if (tur) y.tur = tur;
       }
     }
-    return { ilce, hucreler, uygun: c.uygunHucre, satilmis: c.satilmisHucre, yapilar: [...gruplar.values()] };
+    return {
+      ilce,
+      hucreler,
+      uygun: c.uygunHucre,
+      satilmis: c.satilmisHucre,
+      yapilar: [...gruplar.values()],
+      ...(c.kamuAdet !== undefined ? { kamuAdet: c.kamuAdet } : {}),
+      ...(c.kamu ? { kamu: c.kamu } : {}),
+    };
   }
 
   private degisti(): void {

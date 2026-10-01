@@ -27,8 +27,9 @@ describe("güneş ve sim saati", () => {
     expect(Math.abs(b - altGunesNoktasi(123.4).boylam) < 1e-6 || Math.abs(Math.abs(b - altGunesNoktasi(123.4).boylam) - 360) < 1e-6).toBe(true);
   });
   it("saat metni", () => {
-    expect(simSaatMetni(0)).toBe("Gün 1 · 09:00");
-    expect(simSaatMetni(24 * 3 + 5)).toBe("Gün 4 · 14:00");
+    expect(simSaatMetni(0)).toBe("Gün 1 · 00:00");
+    expect(simSaatMetni(24 * 3 + 5)).toBe("Gün 4 · 05:00");
+    expect(simSaatMetni(15.65)).toBe("Gün 1 · 15:39");
   });
 });
 

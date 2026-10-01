@@ -5,7 +5,9 @@
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { ARSA_EN_AZ, ARSA_EN_COK, arsaKimligindenBul, arsalariTuret, arsaSinirlari, hucredenArsa, kamuHucreleri, onerilenArsa, sinifGruplari } from "../src/harita/arsa";
+import type { KamuGrubuKaresi } from "@bolge/protokol";
+import { ARSA_EN_AZ, ARSA_EN_COK, arsaKimligindenBul, arsalariTuret, arsaSinirlari, hucredenArsa, kamuBilgisi, kamuBloklari, onerilenArsa, sinifGruplari } from "../src/harita/arsa";
+import { KAMU_TUR_ADI, kamuAlani, kamuGrubuBul, kamuNedeni, kamuSahibiAdi, ornekKamu } from "../src/harita/kamu";
 import { arsaSinifi } from "../src/harita/fiyat";
 import { bhiCoz, Bit, durumAl, hucreId, idCoz, satinAlinabilir } from "../src/harita/hucre";
 import type { Izgara } from "../src/harita/hucre";
@@ -189,53 +191,74 @@ describe("gerçek Gebze ızgarası", () => {
   });
 });
 
-describe("kamu arsaları (geçici istemci türetmesi; kural parametre)", () => {
-  const iz = izgara(240, 150, (x, y) => (x % 60 === 59 ? KIRSAL | Bit.YOL : y % 50 === 49 ? KIRSAL | Bit.YOL : KIRSAL));
+describe("kamu arsaları (sunucudan dikdörtgen bloklar; docs/06 §15.6)", () => {
+  const iz = izgara(60, 40);
+  const kamu: KamuGrubuKaresi[] = [
+    { sahip: "k:ilce:ilce_a", tur: "hazine", blok: [[1040, 2020, 1047, 2027]] },
+    { sahip: "k:mahalle:ilce_a_1", tur: "meydan", blok: [[1010, 2010, 1012, 2011], [995, 2000, 1001, 2001]] }, // ikincisi ızgaradan taşar
+  ];
 
-  it("varsayılan: ~%4, mahalle başına en az bir; yalnız yeterince arsalı mahallede; kamu arsası meydan = merkeze yakın", () => {
-    const k = arsalariTuret(iz);
-    const kamu = k.arsalar.filter((a) => a.kamu);
-    expect(k.kamuSayisi).toBe(kamu.length);
-    const oran = kamu.length / k.arsalar.length;
-    expect(oran).toBeGreaterThan(0.02);
-    expect(oran).toBeLessThan(0.07);
-    // Mahalle (bileşen ∩ 48 hücrelik mutlak blok) başına ≥ 1 kamu arsası: her bileşenden en az bir
-    const bilesenAnahtar = (a: { cx: number; cy: number }): string => `${Math.floor((a.cx - 1000) / 60)}:${Math.floor((a.cy - 2000) / 50)}`; // yollarla ayrılmış 60×50'lik adalar
-    const adalar = new Map<string, { kamu: number; toplam: number }>();
-    for (const a of k.arsalar) {
-      const e = adalar.get(bilesenAnahtar(a)) ?? { kamu: 0, toplam: 0 };
-      e.toplam++;
-      if (a.kamu) e.kamu++;
-      adalar.set(bilesenAnahtar(a), e);
-    }
-    for (const e of adalar.values()) expect(e.kamu).toBeGreaterThanOrEqual(1);
+  it("kamu hücreleri arsaya girmez (ada sınırı); sayılar kamu düşülmüş; kamuBilgisi O(1)", () => {
+    const k = arsalariTuret(iz, kamu);
+    const bos = arsalariTuret(iz);
+    expect(bos.kamuNo).toBeNull();
+    expect(bos.kamuSayisi).toBe(0);
+    // 64 (hazine) + 6 (meydan) + ızgaraya düşen 2×2 = 74
+    expect(k.kamuSayisi).toBe(64 + 6 + 4);
+    expect(k.uygun).toBe(bos.uygun - k.kamuSayisi);
+    for (const a of k.arsalar)
+      for (const h of a.hucreler) {
+        const c = idCoz(h)!;
+        expect(kamuBilgisi(k, c.x, c.y)).toBeNull();
+      }
+    expect(kamuBilgisi(k, 1044, 2024)?.tur).toBe("hazine");
+    expect(kamuBilgisi(k, 1011, 2011)).toMatchObject({ tur: "meydan", sahip: "k:mahalle:ilce_a_1" });
+    expect(kamuBilgisi(k, 1000, 2001)?.tur).toBe("meydan");
+    expect(kamuBilgisi(k, 1013, 2011)).toBeNull();
+    expect(hucredenArsa(k, 1044, 2024)).toBeNull();
+    expect(hucredenArsa(k, 1013, 2011)).not.toBeNull();
+    // Deterministik
+    expect(arsalariTuret(iz, kamu).arsalar.map((a) => a.kimlik)).toEqual(k.arsalar.map((a) => a.kimlik));
   });
 
-  it("deterministik; kapalıyken sıfır; oran parametresi; küçük adada kamu yok; kamu arsası hücreleri döner", () => {
-    const a = arsalariTuret(iz);
-    const b = arsalariTuret(izgara(240, 150, (x, y) => (x % 60 === 59 ? KIRSAL | Bit.YOL : y % 50 === 49 ? KIRSAL | Bit.YOL : KIRSAL)));
-    expect(a.arsalar.filter((x) => x.kamu).map((x) => x.kimlik)).toEqual(b.arsalar.filter((x) => x.kamu).map((x) => x.kimlik));
-    expect(arsalariTuret(iz, { acik: false }).kamuSayisi).toBe(0);
-    expect(arsalariTuret(iz, { oran: 0 }).kamuSayisi).toBe(0);
-    expect(arsalariTuret(iz, { oran: 0.2 }).kamuSayisi).toBeGreaterThan(a.kamuSayisi * 3);
-    // Tek arsalık küçük ada kamu olmaz (satışa kapanmasın)
-    const kucuk = arsalariTuret(izgara(3, 3));
-    expect(kucuk.kamuSayisi).toBe(0);
-    const hucreler = kamuHucreleri(a, 1000, 2000, 1239, 2149);
-    expect(hucreler.length).toBe(a.arsalar.filter((x) => x.kamu).reduce((t, x) => t + x.hucreler.length, 0));
-    expect(kamuHucreleri(arsalariTuret(iz, { acik: false }), 1000, 2000, 1239, 2149)).toEqual([]);
-  });
-
-  it("Gebze: kamu payı ~%4 ve yalnız ≥6 arsalı mahallelerde; hazır arsa önerisi kamuyu atlar", () => {
-    const gz = bhiCoz(new Uint8Array(gunzipSync(readFileSync(new URL("../../veri/haritalar/odbl/ornek/gebze-hucreler.bhi.gz", import.meta.url)))));
-    const k = arsalariTuret(gz);
-    const oran = k.kamuSayisi / k.arsalar.length;
-    console.log(`Gebze kamu: ${k.kamuSayisi}/${k.arsalar.length} (%${(oran * 100).toFixed(2)})`);
-    expect(oran).toBeGreaterThan(0.025);
-    expect(oran).toBeLessThan(0.07);
-    const merkez = k.arsalar.find((x) => x.kamu)!;
-    const oneri = onerilenArsa(k, () => false, merkez.cx, merkez.cy, "sanayi");
+  it("görünür kutudaki bloklar (çizim) ve önerilen arsa kamuya düşmez", () => {
+    const k = arsalariTuret(iz, kamu);
+    expect(kamuBloklari(k, 1000, 2000, 1020, 2015).map((b) => b.grup.tur)).toEqual(["meydan", "meydan"]);
+    expect(kamuBloklari(k, 1030, 2018, 1059, 2039).map((b) => b.blok)).toEqual([[1040, 2020, 1047, 2027]]);
+    expect(kamuBloklari(k, 1050, 2030, 1059, 2039)).toEqual([]);
+    const oneri = onerilenArsa(k, () => false, 1044, 2024, "tarim");
     expect(oneri).not.toBeNull();
-    expect(oneri!.kamu).toBe(false);
+    expect(oneri!.hucreler.some((h) => kamuBilgisi(k, idCoz(h)!.x, idCoz(h)!.y) !== null)).toBe(false);
+  });
+
+  it("türkçe adlar ve neden; blok alanı; sahip adı", () => {
+    expect(kamuNedeni("meydan")).toBe("Kamu arsası (Meydan): satışa kapalı");
+    expect(KAMU_TUR_ADI.hizmet).toBe("İlçe merkezi");
+    expect(kamuAlani(kamu)).toBe(64 + 6 + 14);
+    expect(kamuSahibiAdi("k:mahalle:x")).toBe("Mahalle");
+    expect(kamuSahibiAdi("k:ilce:x")).toBe("İlçe");
+    expect(kamuGrubuBul(kamu, 1041, 2021)?.tur).toBe("hazine");
+    expect(kamuGrubuBul(undefined, 1041, 2021)).toBeNull();
+  });
+
+  it("Gebze, sunucusuz örnek küme (ornekKamu): bloklar tamamen satın alınabilir, çakışmasız; arsalar ve öneri kamuyu atlar", () => {
+    const gz = bhiCoz(new Uint8Array(gunzipSync(readFileSync(new URL("../../veri/haritalar/odbl/ornek/gebze-hucreler.bhi.gz", import.meta.url)))));
+    const ornek = ornekKamu(gz, "tr_41_gebze");
+    expect(ornek.map((g) => g.tur).sort()).toEqual(["hazine", "hizmet", "meydan", "park", "pazar"]);
+    const gorulen = new Set<string>();
+    for (const g of ornek)
+      for (const [x0, y0, x1, y1] of g.blok)
+        for (let y = y0; y <= y1; y++)
+          for (let x = x0; x <= x1; x++) {
+            expect(satinAlinabilir(durumAl(gz, x, y))).toBe(true);
+            expect(gorulen.has(hucreId(x, y))).toBe(false);
+            gorulen.add(hucreId(x, y));
+          }
+    const k = arsalariTuret(gz, ornek);
+    expect(k.kamuSayisi).toBe(kamuAlani(ornek));
+    const [hx0, hy0] = ornek.find((g) => g.tur === "hizmet")!.blok[0]!;
+    const oneri = onerilenArsa(k, () => false, hx0, hy0, "pazar");
+    expect(oneri).not.toBeNull();
+    expect(oneri!.hucreler.some((h) => gorulen.has(h))).toBe(false);
   });
 });

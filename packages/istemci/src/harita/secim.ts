@@ -16,15 +16,16 @@ export interface SecimBaglami {
   ben: string;
   /** Sahip kimliğinden görünen ad. */
   ad: (sahip: string) => string;
-  /** Hücre kamu arsasında mı (satışa kapalı)? */
-  kamu?: (id: HucreId) => boolean;
+  /** Hücre kamu arsasındaysa Türkçe ret nedeni (türüyle), değilse null. */
+  kamu?: (id: HucreId) => string | null;
 }
 
 /** Hücre seçilebilir mi? Seçilemezse kısa Türkçe neden. */
 export function secilemezNedeni(b: SecimBaglami, x: number, y: number): string | null {
   const n = engelNedeni(durumAl(b.izgara, x, y));
   if (n) return n;
-  if (b.kamu?.(hucreId(x, y))) return "Kamu arsası: satışa kapalı";
+  const kamu = b.kamu?.(hucreId(x, y));
+  if (kamu) return kamu;
   const s = b.sahip(hucreId(x, y));
   if (s === b.ben) return "Zaten senin";
   if (s) return `Sahibi: ${b.ad(s)}`;

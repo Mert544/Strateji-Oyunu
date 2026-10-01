@@ -1,9 +1,10 @@
 /**
  * Yerleş ekranı mantığı (F4; saf): aday skoru, "en az biri yoğun/sakin" çeşitliliği, açılış önerisi, önerilen hazır arsa
- * (bütçe, kamu, tercih), kamu ayarı adres parametreleri, inşaat aşamaları, sunucu adresi ayrıştırma.
+ * (bütçe, kamu, tercih), adres parametreleri, inşaat aşamaları, sunucu adresi ayrıştırma.
  */
 import { describe, expect, it } from "vitest";
-import { arsalariTuret, kamuAyari, KAMU_VARSAYILAN, onerilenArsa } from "../src/harita/arsa";
+import { arsalariTuret, onerilenArsa } from "../src/harita/arsa";
+import { kamuGrubuBul } from "../src/harita/kamu";
 import { sunucuSecenekleri } from "../src/harita/baglanti-ws";
 import { Bit } from "../src/harita/hucre";
 import type { Izgara } from "../src/harita/hucre";
@@ -86,7 +87,7 @@ describe("önerilen hazır arsa", () => {
 
   it("merkeze en yakın boş arsa; açılış önerisinin arazisine uyan öne geçer; sahipli, kamu ve pahalı arsa atlanır", () => {
     // Sol yarı tarla, sağ yarı sanayi
-    const k = arsalariTuret(izgara((x) => (x < 60 ? KIRSAL_TARLA : SANAYI)), { acik: false });
+    const k = arsalariTuret(izgara((x) => (x < 60 ? KIRSAL_TARLA : SANAYI)));
     const merkezX = 3000 + 60;
     const merkezY = 4000 + 30;
     const tarim = onerilenArsa(k, () => false, merkezX, merkezY, "tarim")!;
@@ -102,22 +103,14 @@ describe("önerilen hazır arsa", () => {
     expect(onerilenArsa(k, () => false, merkezX, merkezY, "tarim", { fiyat: () => 100, tavanMili: 50 })).toBeNull();
     const butceli = onerilenArsa(k, () => false, merkezX, merkezY, "sanayi", { fiyat: (a) => (a.arazi === 1 ? 10 : 1000), tavanMili: 100 })!;
     expect(butceli.arazi).toBe(1);
-    // Kamu arsası önerilmez
-    const kk = arsalariTuret(izgara(() => KIRSAL_TARLA), { oran: 0.2 });
+    // Kamu hücresi (sunucu bloğu) önerilen arsaya girmez: merkezdeki blok arsa dışıdır
+    const kk = arsalariTuret(izgara(() => KIRSAL_TARLA), [{ sahip: "k:ilce:a", tur: "hizmet", blok: [[merkezX - 6, merkezY - 6, merkezX + 6, merkezY + 6]] }]);
     const oneri = onerilenArsa(kk, () => false, merkezX, merkezY, "tarim")!;
-    expect(oneri.kamu).toBe(false);
+    expect(oneri.hucreler.every((h) => !kamuGrubuBul(kk.kamuGruplari, Number(h.split(":")[0]), Number(h.split(":")[1])))).toBe(true);
   });
 });
 
-describe("kamu ayarı ve adres parametreleri", () => {
-  it("varsayılan açık %4; ?kamu=0 kapatır; ?kamu-oran= oranı değiştirir (geçersiz oran yok sayılır)", () => {
-    expect(kamuAyari("")).toEqual(KAMU_VARSAYILAN);
-    expect(kamuAyari("?kamu=0").acik).toBe(false);
-    expect(kamuAyari("?kamu-oran=0.1").oran).toBe(0.1);
-    expect(kamuAyari("?kamu-oran=7").oran).toBe(0.04);
-    expect(kamuAyari("?kamu-oran=abc").oran).toBe(0.04);
-  });
-
+describe("adres parametreleri", () => {
   it("?sunucu= ve ?token= ayrıştırılır; sunucu yoksa null (sahte bağdaştırıcı)", () => {
     expect(sunucuSecenekleri("")).toBeNull();
     expect(sunucuSecenekleri("?adaptif=0")).toBeNull();

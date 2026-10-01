@@ -3,8 +3,8 @@
  * "Tarım" görünümü lejantı ve üst çubuktaki hasat ritmi çubukları. Ürünler, olay türleri ve iklim tipleri dizinden gelir.
  */
 import type { GovdeDurumu } from "./govde";
-import { esc, sinirla, yuzde } from "./bicim";
-import { AY_ADLARI, AY_KISA, ekimMetni, hasatMetni, hasatYukseklikleri, iklimTipiAdi, olayEvresi, olaySimgesi, olaylariSirala, sureMetni, takvimDurumu, takvimMetni, takvimParametresi, tarimOzeti, toprakVerimi } from "../veri/tarim";
+import { esc, gercekTarih, sinirla, tamTarihMetni, yuzde } from "./bicim";
+import { AY_ADLARI, AY_KISA, ekimMetni, hasatMetni, hasatYukseklikleri, iklimTipiAdi, olayEvresi, olaySimgesi, olaylariSirala, sureMetni, takvimDurumu, takvimParametresi, tarimOzeti, toprakVerimi } from "../veri/tarim";
 import type { DizinTarim, OlayKaresi } from "../veri/kare-tipleri";
 
 const cubuk = (p: number): string => `<span class="cubuk-iz"><span style="width:${sinirla(p, 0, 100)}%"></span></span>`;
@@ -158,7 +158,9 @@ export function olayPaneli(g: GovdeDurumu): string {
   if (!t) return "<p class='ipucu-metin'>Bu veri paketinde tarım ve iklim katmanı kapalı.</p>";
   const takvim = takvimDurumu(kare.saat, takvimParametresi(t));
   const aylikHasat = t.hasatAylik[takvim.ay] ?? 1000;
-  let s = `<div class="takvim-kutu"><div class="takvim-baslik"><b>${esc(takvimMetni(takvim))}</b> <span class="soluk">· ${takvim.yil}. yıl · bu ay hasat ${hasatMetni(aylikHasat)}</span></div><div class="hasat-buyuk">${hasatCubuklari(t.hasatAylik, takvim.ay, true)}</div><p class="ipucu-metin">Hasat ritmi: tarım bölgelerinin aylık ortalama hasat oranı (çubuk yüksekliği; yıllık ortalama %100). Vurgulu çubuk içinde bulunduğumuz aydır.</p></div>`;
+  const tarih = gercekTarih(kare.saat);
+  const iklimFarkli = tarih.ay !== takvim.ay ? ` · iklim dönemi ${esc(takvim.ayAdi)}` : "";
+  let s = `<div class="takvim-kutu"><div class="takvim-baslik"><b>${esc(tamTarihMetni(tarih))}</b> <span class="soluk">${iklimFarkli} · bu ay hasat ${hasatMetni(aylikHasat)}</span></div><div class="hasat-buyuk">${hasatCubuklari(t.hasatAylik, takvim.ay, true)}</div><p class="ipucu-metin">Hasat ritmi: tarım bölgelerinin aylık ortalama hasat oranı (çubuk yüksekliği; yıllık ortalama %100). Vurgulu çubuk içinde bulunduğumuz aydır.</p></div>`;
   const liste = olaylariSirala(kare.iklim?.olaylar ?? [], kare.saat);
   const satir = ({ olay: o, evre }: (typeof liste)[number]): string => {
     const tur = olayTuru(t, o);

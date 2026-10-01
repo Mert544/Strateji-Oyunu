@@ -22,10 +22,11 @@ import type { Icerik } from "../komut/tablo";
 import type { Komut } from "../komut/tipler";
 import type { Oneri } from "../isci/protokol";
 import { hasatCubuklari, olayPaneli, olaySayisi } from "./tarim-govde";
-import { esc, fmt, kisalt, simSaatMetni, yuzde } from "./bicim";
+import { esc, fmt, gercekTarih, kisalt, simSaatMetni, tamTarihMetni, tarihMetni, yuzde } from "./bicim";
 import { ikon } from "../tasarim/ikon";
 import type { IkonAdi } from "../tasarim/ikon";
-import { hasatMetni, takvimDurumu, takvimMetni, takvimParametresi } from "../veri/tarim";
+import { hasatMetni, takvimDurumu, takvimParametresi } from "../veri/tarim";
+import type { MulkPaneli } from "./mulk-paneli";
 
 export type Sekme = "bolge" | "devlet" | "dikkat" | "mal" | "hazine" | "savas" | "olaylar";
 
@@ -43,7 +44,7 @@ const SEKMELER: ReadonlyArray<{ id: Sekme; ad: string; ikon: IkonAdi; oyuncu?: b
 /** Görünüm menüsündeki mercek simgeleri. */
 const MERCEK_IKON: Record<string, IkonAdi> = { genel: "map", tarim: "wheat", sanayi: "factory", pazar: "store", sahiplik: "layers" };
 
-const sekmeIcerik = (s: (typeof SEKMELER)[number], n = 0): string => `${ikon(s.ikon, 18)}<span>${s.ad}</span>${n > 0 ? `<span class="sayac">${n}</span>` : ""}`;
+const sekmeIcerik = (s: { ad: string; ikon: IkonAdi }, n = 0): string => `${ikon(s.ikon, 18)}<span>${s.ad}</span>${n > 0 ? `<span class="sayac">${n}</span>` : ""}`;
 
 export interface PanelGeriCagrilari {
   /** Mercek seç (tek mercek etkin); mal yalnız "mal" merceğinde anlamlı. */
@@ -75,7 +76,9 @@ const ACILIRLAR = [
 ] as const;
 
 export class Panel {
-  sekme: Sekme = "bolge";
+  sekme: Sekme | string = "bolge";
+  /** Mülk kipi içerik sağlayıcısı (harita yığınından); varsa sekmeler, oyuncu düğmesi ve saat ondan gelir. */
+  private mulk: MulkPaneli | null = null;
   private durum: GovdeDurumu;
   private hiz = 21600;
   private duraklatildi = false;
@@ -114,7 +117,7 @@ export class Panel {
     $("kuzey").addEventListener("click", () => this.g.kuzey());
     $("dunya-dugme").addEventListener("click", () => this.g.dunya());
     $("tema").addEventListener("click", () => this.g.tema());
-    $("oyuncu-cubuk").addEventListener("click", () => this.sekmeSec("devlet"));
+    $("oyuncu-cubuk").addEventListener("click", () => this.sekmeSec(this.mulk ? (this.mulk.sekmeler[0]?.id ?? "") : "devlet"));
     // açılır kutular
     for (const [d, k] of ACILIRLAR) $(d).addEventListener("click", (e) => {
       if (d === "gelen-dugme") return; // gelen kutusu kendi düğmesini yönetir
@@ -154,7 +157,7 @@ export class Panel {
     this.komutOlaylariniBagla();
     $("sekme-icerik").addEventListener("click", (e) => {
       const t = e.target as HTMLElement;
-      if (this.komutTikla(t)) return;
+      if (this.mulk?.tikla(t) || this.komutTikla(t)) return;
       const mal = t.closest("[data-mal]") as HTMLElement | null;
       const mercek = t.closest("[data-mercek]") as HTMLElement | null;
       const bolge = t.closest("[data-bolge]") as HTMLElement | null;
@@ -205,7 +208,7 @@ export class Panel {
 
   private sekmeleriCiz(): void {
     const oyuncu = this.durum.oyun !== undefined;
-    $("sekmeler").innerHTML = SEKMELER.filter((s) => oyuncu || !s.oyuncu)
+    $("sekmeler").innerHTML = (this.mulk?.sekmeler ?? SEKMELER.filter((s) => oyuncu || !s.oyuncu))
       .map((s) => `<button type="button" role="tab" id="sek-${s.id}" data-sekme="${s.id}" aria-selected="${s.id === this.sekme}">${sekmeIcerik(s)}</button>`)
       .join("");
   }
@@ -217,6 +220,26 @@ export class Panel {
     this.sekmeleriCiz();
     $("oyuncu-cubuk").hidden = false;
     document.body.classList.add("oyuncu-kipi");
+    this.sonIcerik = "";
+    this.tazele();
+  }
+
+  /**
+   * Mülk kipi: panel oyuncunun işletmesini gösterir (bölge, devlet ve savaş sekmeleri yok; öneri motoru kapalı). Bölge kipi
+   * bu çağrı olmadan eskisi gibidir.
+   */
+  mulkKipiKur(p: MulkPaneli): void {
+    this.mulk = p;
+    this.sekme = p.sekmeler[0]?.id ?? "";
+    this.sekmeleriCiz();
+    document.body.classList.add("mulk-paneli");
+    $("oyuncu-cubuk").setAttribute("aria-label", "İşletmem");
+    $("neden-seridi").innerHTML = "";
+    this.sonNeden = "";
+    p.dinle(() => {
+      this.sonIcerik = "";
+      this.tazele();
+    });
     this.sonIcerik = "";
     this.tazele();
   }
@@ -375,7 +398,7 @@ export class Panel {
     document.body.classList.toggle("panel-kapali", k);
   }
 
-  sekmeSec(s: Sekme): void {
+  sekmeSec(s: Sekme | string): void {
     this.sekme = s;
     for (const b of document.querySelectorAll<HTMLElement>("#sekmeler button")) b.setAttribute("aria-selected", String(b.dataset["sekme"] === s));
     this.sonIcerik = "";
@@ -402,6 +425,8 @@ export class Panel {
   }
 
   zamanYaz(simSaat: number, gerideMi: boolean): void {
+    // Mülk kipinde saat ve tarih sunucunun dünyasından (mutlak saat); küredeki bölge simülasyonundan değil
+    simSaat = this.mulk?.simSaat() ?? simSaat;
     const t = simSaatMetni(simSaat);
     const z = $("zaman");
     if (z.textContent !== t) z.textContent = t;
@@ -409,7 +434,10 @@ export class Panel {
     this.takvimYaz(simSaat);
   }
 
-  /** Üst çubuktaki iklim takvimi: tarih, ay adı ve hasat ritmi göstergesi (tarım kapalıysa gizli). */
+  /**
+   * Üst çubuk: gerçek tarih (Türkiye saati; dünya duvar saatine bağlı, epoch + t) ve iklim dönemi göstergesi (hasat ritmi;
+   * ay çekirdeğin iklim takviminden). Dini bayramlar burada gösterilmez (yalnız hatırlatma takviminde, istek üzerine).
+   */
   private takvimYaz(simSaat: number): void {
     const tarim = this.durum.dizin?.tarim;
     const kap = $("takvim");
@@ -418,16 +446,17 @@ export class Panel {
       return;
     }
     const d = takvimDurumu(simSaat, takvimParametresi(tarim));
-    const anahtar = `${d.mutlakGun}`;
+    const g = gercekTarih(simSaat);
+    const anahtar = `${d.mutlakGun}|${g.yil}-${g.ay}-${g.gun}`;
     if (anahtar === this.takvimAnahtari) return;
     this.takvimAnahtari = anahtar;
     kap.hidden = false;
     const aylik = tarim.hasatAylik[d.ay] ?? 1000;
-    $("takvim-gun").textContent = takvimMetni(d);
-    $("takvim-yil").textContent = `${d.yil}. yıl`;
+    $("takvim-gun").textContent = tarihMetni(g);
+    $("takvim-yil").textContent = g.gunAdi;
     $("hasat-yuzde").textContent = hasatMetni(aylik);
     $("hasat").innerHTML = hasatCubuklari(tarim.hasatAylik, d.ay, false);
-    kap.title = `İklim takvimi: ${d.ayAdi}. Bu ayın ortalama hasat oranı ${hasatMetni(aylik)} (yıllık ortalama %100). Ayrıntı için Olaylar sekmesi.`;
+    kap.title = `${tamTarihMetni(g)} (Türkiye saati). İklim dönemi: ${d.ayAdi}; bu ayın ortalama hasat oranı ${hasatMetni(aylik)} (yıllık ortalama %100). Ayrıntı için Olaylar sekmesi.`;
   }
 
   // --- mercek ----------------------------------------------------------------------------------
@@ -484,7 +513,8 @@ export class Panel {
     this.durum.kare = kare;
     const yeni = this.izleyici.guncelle(kare);
     const d = this.durum.dizin;
-    if (d) this.gelen.ekle(gelenOlaylari(onceki, kare, d, this.durum.oyun && kare.oyuncu ? kare.oyuncu.idx : -1, yeni, this.durum.bolgeAd));
+    // Mülk kipinde küredeki bölge simülasyonu yalnız arka plandır: olayları bildirim kutusuna düşmez
+    if (d && !this.mulk) this.gelen.ekle(gelenOlaylari(onceki, kare, d, this.durum.oyun && kare.oyuncu ? kare.oyuncu.idx : -1, yeni, this.durum.bolgeAd));
     if (this.durum.oyun) this.oyuncuCubuguYaz(kare);
     const gec = this.durum.hazineGecmisi;
     kare.hazine.forEach((h, i) => {
@@ -499,7 +529,7 @@ export class Panel {
 
   bolgeAyarla(i: number): void {
     this.durum.bolge = i;
-    if (i >= 0 && this.sekme !== "bolge") this.sekmeSec("bolge");
+    if (i >= 0 && this.sekme !== "bolge" && !this.mulk) this.sekmeSec("bolge");
     this.sonIcerik = "";
     this.tazele();
   }
@@ -520,6 +550,16 @@ export class Panel {
   private tazele(): void {
     this.icerikCiz();
     this.sayaclariYaz();
+    if (this.mulk) {
+      // Harita açıkken küre çizilmez (zamanYaz çağrılmaz): saat ve tarih sunucunun zamanından burada tazelenir
+      this.zamanYaz(0, false);
+      const c = this.mulk.cubuk();
+      const k = $("oyuncu-cubuk");
+      k.hidden = !c;
+      if (c && k.innerHTML !== c.html) k.innerHTML = c.html;
+      if (c) k.title = c.baslik;
+      return;
+    }
     const n = nedenSatiri(this.durum);
     if (n !== this.sonNeden) {
       this.sonNeden = n;
@@ -529,6 +569,14 @@ export class Panel {
 
   /** Sekme etiketlerindeki sayı rozetleri: Dikkat (madde) ve Olaylar (etkin + uyarıdaki olay). */
   private sayaclariYaz(): void {
+    if (this.mulk) {
+      for (const s of this.mulk.sekmeler) {
+        const b = document.getElementById(`sek-${s.id}`);
+        const metin = sekmeIcerik(s, this.mulk.sayac(s.id));
+        if (b && b.innerHTML !== metin) b.innerHTML = metin;
+      }
+      return;
+    }
     const yaz = (id: string, ad: string, n: number): void => {
       const b = document.getElementById(id);
       if (!b) return;
@@ -549,7 +597,8 @@ export class Panel {
     }
     const d = this.durum;
     let h = "";
-    switch (this.sekme) {
+    if (this.mulk) h = this.mulk.icerik(this.sekme, d);
+    else switch (this.sekme) {
       case "bolge":
         h = bolgePaneli(d);
         break;

@@ -11,37 +11,15 @@
  *      (bağlı parçalar) adaydır: ≥4 hücreliyse arsa olur, <4 ise en çok paylaştığı komşu parçaya (toplam ≤12) katılır.
  *      Katılabileceği yer yoksa artık hücre kalır.
  *   4. Arsa kimliği `arsa:<x>:<y>`: arsanın (y, x) sırasında ilk hücresi. Aynı ızgara için çıktı her zaman aynıdır.
- *   5. KAMU ARSASI (imza mekanikleri, geçici istemci türetmesi): arsaların ~%4'ü satışa kapalı kamu arsasıdır (meydan, pazar
- *      yeri, muhtarlık için). "Mahalle" = bileşen ∩ 48×48 hücrelik mutlak blok; en az `enAzArsa` (6) arsası olan her mahallede
- *      en az bir kamu arsası vardır: ilki mahalle ağırlık merkezine en yakın arsa (meydan), kalanı kimlik karmasıyla.
- *      Kural parametredir (`KamuAyari`: açık/kapalı, oran); sunucu bunu bilmez (rapor: üretim hattına/çekirdeğe taşınmalı).
+ *   5. KAMU ARSASI (docs/06 §15.6): kamu hücreleri SUNUCUDAN gelir (`IlceSahipligi.kamu`, dikdörtgen bloklar; dünya kurulurken
+ *      donar) ve arsaya girmez: yol ve su gibi ada sınırıdır. Kamu kümesi tüm istemcilerde aynı olduğundan kimlikler de aynıdır.
  * Satın alma durumu (sahiplik) bölmeye girmez: kimlikler tüm istemcilerde aynıdır.
  */
 import type { ArsaSinifi, HucreId } from "@bolge/cekirdek";
+import type { KamuGrubuKaresi } from "@bolge/protokol";
 import { arsaSinifi } from "./fiyat";
 import { durumSinifi, hucreId, satinAlinabilir, xtenBoylam, ytenEnlem } from "./hucre";
 import type { Izgara } from "./hucre";
-
-/** Kamu arsası kuralı (geçici istemci türetmesi). */
-export interface KamuAyari {
-  /** Kamu arsaları işaretlensin mi? */
-  acik: boolean;
-  /** Mahalledeki arsaların kamu payı (0–1). Varsayılan 0,04. */
-  oran: number;
-  /** Bir mahallede kamu arsası olması için en az arsa sayısı (küçük adaların tek arsası satışa kapanmasın). */
-  enAzArsa: number;
-  /** Mahalle blok kenarı (hücre). */
-  mahalle: number;
-}
-
-export const KAMU_VARSAYILAN: Readonly<KamuAyari> = { acik: true, oran: 0.04, enAzArsa: 6, mahalle: 48 };
-
-/** Kamu arsası kuralı sayfa adresinden: varsayılan açık, %4; `?kamu=0` kapatır, `?kamu-oran=0.06` oranı değiştirir. */
-export function kamuAyari(arama: string): KamuAyari {
-  const q = new URLSearchParams(arama);
-  const oran = Number(q.get("kamu-oran"));
-  return { ...KAMU_VARSAYILAN, acik: q.get("kamu") !== "0", ...(q.has("kamu-oran") && oran >= 0 && oran <= 1 ? { oran } : {}) };
-}
 
 export const ARSA_EN_AZ = 4;
 export const ARSA_EN_COK = 12;
@@ -67,8 +45,6 @@ export interface Arsa {
   baskin: ArsaSinifi;
   /** Çoğunluk arazi kullanımı (BHI1 sınıfı 0–5). */
   arazi: number;
-  /** Kamu arsası: satışa ve yerleşime kapalı (meydan, pazar yeri, muhtarlık). */
-  kamu: boolean;
 }
 
 export interface ArsaKumesi {
@@ -79,9 +55,13 @@ export interface ArsaKumesi {
   arsaNo: Int32Array;
   /** Satın alınabilir ama arsası olmayan hücre sayısı (küçük adalar, artıklar). */
   artik: number;
-  /** Satın alınabilir hücre sayısı. */
+  /** Satılabilir hücre sayısı (satın alınabilir, kamu düşülmüş). */
   uygun: number;
-  /** Kamu arsası sayısı. */
+  /** Hücre (satır-sütun sırası) -> kamu grubu no + 1 (0: kamu değil); kamu yoksa null. */
+  kamuNo: Uint16Array | null;
+  /** Kamu grupları (sunucudan; `kamuNo` bunlara bakar). */
+  kamuGruplari: readonly KamuGrubuKaresi[];
+  /** Izgaradaki kamu hücresi sayısı. */
   kamuSayisi: number;
 }
 
@@ -94,22 +74,31 @@ const KOMSU: ReadonlyArray<readonly [number, number]> = [
 
 const SIRA: Record<ArsaSinifi, number> = { kirsal: 0, kasaba: 1, sehir: 2 };
 
-/** FNV-1a 32 bit (kimlik karması; ASCII). */
-function karma(s: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h >>> 0;
-}
-
-/** Izgaradan hazır arsaları türetir (saf, deterministik). `kamu` kamu arsası kuralını geçersiz kılar. */
-export function arsalariTuret(iz: Izgara, kamu: Partial<KamuAyari> = {}): ArsaKumesi {
+/** Izgaradan hazır arsaları türetir (saf, deterministik). `kamu`: sunucunun kamu blokları (bu hücreler arsaya girmez). */
+export function arsalariTuret(iz: Izgara, kamu: readonly KamuGrubuKaresi[] = []): ArsaKumesi {
   const G = iz.genislik;
   const Y = iz.yukseklik;
   const N = G * Y;
-  const uygunMu = (i: number): boolean => satinAlinabilir(iz.durum[i]!);
+  // Kamu hücreleri: blokları ızgaraya kırparak işaretle
+  let kamuNo: Uint16Array | null = null;
+  let kamuSayisi = 0;
+  kamu.forEach((g, gi) => {
+    for (const [bx0, by0, bx1, by1] of g.blok) {
+      const xa = Math.max(bx0 - iz.x0, 0);
+      const ya = Math.max(by0 - iz.y0, 0);
+      const xb = Math.min(bx1 - iz.x0, G - 1);
+      const yb = Math.min(by1 - iz.y0, Y - 1);
+      if (xb < xa || yb < ya) continue;
+      kamuNo ??= new Uint16Array(N);
+      for (let y = ya; y <= yb; y++)
+        for (let x = xa; x <= xb; x++) {
+          if (kamuNo[y * G + x] === 0) kamuSayisi++;
+          kamuNo[y * G + x] = gi + 1;
+        }
+    }
+  });
+  const kn = kamuNo as Uint16Array | null;
+  const uygunMu = (i: number): boolean => satinAlinabilir(iz.durum[i]!) && (kn === null || kn[i] === 0);
 
   // 1. Bağlı bileşenler (yinelemeli taşkın doldurma).
   const bilesen = new Int32Array(N).fill(-1);
@@ -270,52 +259,11 @@ export function arsalariTuret(iz: Izgara, kamu: Partial<KamuAyari> = {}): ArsaKu
     arsaNo[i] = a;
   }
   let artik = uygun;
-  const bolgeAnahtari: string[] = [];
-  const ayar: KamuAyari = { ...KAMU_VARSAYILAN, ...kamu };
   for (const t of toplam) {
     artik -= t.hucreler.length;
-    const a = arsaOlustur(iz, t.hucreler);
-    arsalar.push(a);
-    // Mahalle anahtarı: bileşen + mutlak blok (ağırlık merkezi)
-    bolgeAnahtari.push(`${bilesen[t.hucreler[0]!]!}:${Math.floor(a.cx / ayar.mahalle)}:${Math.floor(a.cy / ayar.mahalle)}`);
+    arsalar.push(arsaOlustur(iz, t.hucreler));
   }
-  let kamuSayisi = 0;
-  if (ayar.acik && ayar.oran > 0) kamuSayisi = kamuIsaretle(arsalar, bolgeAnahtari, ayar);
-  return { izgara: iz, arsalar, arsaNo, artik, uygun, kamuSayisi };
-}
-
-/** Kamu arsalarını işaretler (mahalle başına en az bir; ilki merkeze en yakın). İşaretlenen sayıyı döndürür. */
-function kamuIsaretle(arsalar: Arsa[], bolge: string[], ayar: KamuAyari): number {
-  const gruplar = new Map<string, number[]>();
-  bolge.forEach((k, i) => {
-    let l = gruplar.get(k);
-    if (!l) gruplar.set(k, (l = []));
-    l.push(i);
-  });
-  let toplam = 0;
-  for (const idler of gruplar.values()) {
-    if (idler.length < ayar.enAzArsa) continue;
-    let mx = 0;
-    let my = 0;
-    for (const i of idler) {
-      mx += arsalar[i]!.cx;
-      my += arsalar[i]!.cy;
-    }
-    mx /= idler.length;
-    my /= idler.length;
-    const adet = Math.max(1, Math.round(ayar.oran * idler.length));
-    // Meydan: ağırlık merkezine en yakın arsa (eşitlikte kimlik); kalanlar kimlik karmasıyla
-    const meydan = [...idler].sort((p, q) => Math.hypot(arsalar[p]!.cx - mx, arsalar[p]!.cy - my) - Math.hypot(arsalar[q]!.cx - mx, arsalar[q]!.cy - my) || (arsalar[p]!.kimlik < arsalar[q]!.kimlik ? -1 : 1))[0]!;
-    const secilen = new Set<number>([meydan]);
-    const karmaSirali = [...idler].sort((p, q) => karma(arsalar[p]!.kimlik) - karma(arsalar[q]!.kimlik) || (arsalar[p]!.kimlik < arsalar[q]!.kimlik ? -1 : 1));
-    for (const i of karmaSirali) {
-      if (secilen.size >= adet) break;
-      secilen.add(i);
-    }
-    for (const i of secilen) arsalar[i]!.kamu = true;
-    toplam += secilen.size;
-  }
-  return toplam;
+  return { izgara: iz, arsalar, arsaNo, artik, uygun, kamuNo: kn, kamuGruplari: kamu, kamuSayisi };
 }
 
 function arsaOlustur(iz: Izgara, idler: number[]): Arsa {
@@ -351,7 +299,7 @@ function arsaOlustur(iz: Izgara, idler: number[]): Arsa {
   let enArazi = 0;
   for (let k = 1; k < arazi.length; k++) if (arazi[k]! > arazi[enArazi]!) enArazi = k;
   const ilk = hucreler[0]!.split(":");
-  return { kimlik: `arsa:${ilk[0]}:${ilk[1]}`, hucreler, x0, y0, x1, y1, cx: sx / idler.length, cy: sy / idler.length, siniflar, baskin, arazi: enArazi, kamu: false };
+  return { kimlik: `arsa:${ilk[0]}:${ilk[1]}`, hucreler, x0, y0, x1, y1, cx: sx / idler.length, cy: sy / idler.length, siniflar, baskin, arazi: enArazi };
 }
 
 /** Hücreyi içeren arsa (yoksa null). */
@@ -405,20 +353,20 @@ export function arsaSinirlari(k: ArsaKumesi, xa: number, ya: number, xb: number,
   return kes;
 }
 
-/** Görünür kutudaki kamu arsası hücreleri (`[x, y]`); kutu `enCokHucre`'den büyükse boş. */
-export function kamuHucreleri(k: ArsaKumesi, xa: number, ya: number, xb: number, yb: number, enCokHucre = 60_000): Array<[number, number]> {
+/** Hücrenin kamu grubu (sunucudan; kamu değilse ya da ızgara dışındaysa null). O(1). */
+export function kamuBilgisi(k: ArsaKumesi, x: number, y: number): KamuGrubuKaresi | null {
   const iz = k.izgara;
-  const x0 = Math.max(iz.x0, xa);
-  const y0 = Math.max(iz.y0, ya);
-  const x1 = Math.min(iz.x0 + iz.genislik - 1, xb);
-  const y1 = Math.min(iz.y0 + iz.yukseklik - 1, yb);
-  const l: Array<[number, number]> = [];
-  if (k.kamuSayisi === 0 || x1 < x0 || y1 < y0 || (x1 - x0 + 1) * (y1 - y0 + 1) > enCokHucre) return l;
-  for (let y = y0; y <= y1; y++)
-    for (let x = x0; x <= x1; x++) {
-      const no = k.arsaNo[(y - iz.y0) * iz.genislik + (x - iz.x0)]!;
-      if (no >= 0 && k.arsalar[no]!.kamu) l.push([x, y]);
-    }
+  const dx = x - iz.x0;
+  const dy = y - iz.y0;
+  if (!k.kamuNo || dx < 0 || dy < 0 || dx >= iz.genislik || dy >= iz.yukseklik) return null;
+  const g = k.kamuNo[dy * iz.genislik + dx]!;
+  return g > 0 ? (k.kamuGruplari[g - 1] ?? null) : null;
+}
+
+/** Görünür kutuyla kesişen kamu blokları (grup ve dört uç dahil `[x0, y0, x1, y1]`), çizim için. */
+export function kamuBloklari(k: ArsaKumesi, xa: number, ya: number, xb: number, yb: number): Array<{ grup: KamuGrubuKaresi; blok: readonly [number, number, number, number] }> {
+  const l: Array<{ grup: KamuGrubuKaresi; blok: readonly [number, number, number, number] }> = [];
+  for (const g of k.kamuGruplari) for (const b of g.blok) if (b[2] >= xa && b[0] <= xb && b[3] >= ya && b[1] <= yb) l.push({ grup: g, blok: b });
   return l;
 }
 
@@ -484,7 +432,7 @@ export function onerilenArsa(
   for (const a of k.arsalar) {
     const d = Math.hypot(a.cx - merkezX, a.cy - merkezY);
     if (d > enSkor) continue; // ceza ≥ 0: uzaklık tek başına zaten kötüyse atla
-    if (a.kamu || a.hucreler.some(sahipli)) continue;
+    if (a.hucreler.some(sahipli)) continue;
     if (butce && butce.fiyat(a) > butce.tavanMili) continue;
     const skor = d + (uygunArazi.includes(a.arazi) ? 0 : 14) + (Object.keys(a.siniflar).length > 1 ? 6 : 0) + (a.hucreler.length < 8 ? 4 : 0);
     if (skor < enSkor) {

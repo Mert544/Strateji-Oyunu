@@ -153,14 +153,30 @@ describe("yerleşim planı", () => {
   it("kamu arsasındaki hücre yapıya ve satın almaya kapalı (neden: Kamu arsası); hücre seçimi de reddeder", () => {
     const iz = izgara();
     const kamu = new Set([id(4, 3)]);
-    const b = baglam(iz, [], { kamu: (k) => kamu.has(k) });
+    const b = baglam(iz, [], { kamu: (k) => (kamu.has(k) ? "Kamu arsası (Meydan): satışa kapalı" : null) });
     const p = yerlesimPlani(yapi("ciftlik"), x0 + 3, y0 + 3, 0, b);
-    expect(p).toMatchObject({ gecerli: false, neden: "Kamu arsası: satışa kapalı" });
+    expect(p).toMatchObject({ gecerli: false, neden: "Kamu arsası (Meydan): satışa kapalı" });
     expect(yerlesimPlani(yapi("ciftlik"), x0 + 6, y0 + 3, 0, b).gecerli).toBe(true);
     const s = new Secim();
-    const sb: SecimBaglami = { izgara: iz, sahip: () => null, ben: "ben", ad: (x) => x, kamu: (k) => kamu.has(k) };
-    expect(s.tek(sb, x0 + 4, y0 + 3)).toEqual({ tamam: false, neden: "Kamu arsası: satışa kapalı" });
+    const sb: SecimBaglami = { izgara: iz, sahip: () => null, ben: "ben", ad: (x) => x, kamu: (k) => (kamu.has(k) ? "Kamu arsası (Meydan): satışa kapalı" : null) };
+    expect(s.tek(sb, x0 + 4, y0 + 3)).toEqual({ tamam: false, neden: "Kamu arsası (Meydan): satışa kapalı" });
     expect(s.tek(sb, x0 + 5, y0 + 3)).toEqual({ tamam: true });
+  });
+
+  it("kamu: sahte bağdaştırıcı örnek blokları yayınlar, kamu hücresinde parsel_al ve yapi_yerlestir reddedilir; çeviri; Muhtarlık menüde yok", async () => {
+    const iz = izgara(60, 60);
+    const b = new SahteBaglanti({ izgaraAl: async () => iz, komsular: false, saat: () => 1, kamu: true, yapiBilgisi: () => ({ yuva: 1, paraMili: 0, sureSaat: 1 }) });
+    const sh = (await b.sahiplikAl("i"))!;
+    expect(sh.kamu?.length).toBeGreaterThan(0);
+    expect(sh.uygun).toBe(60 * 60 - sh.kamuAdet!);
+    const g = sh.kamu!.find((k) => k.tur === "hizmet")!;
+    const [bx, by] = g.blok[0]!;
+    const hucre = hucreId(bx, by);
+    expect(await b.parselAl({ tur: "parsel_al", ilce: "i", hucreler: [hucre], sinif: "kirsal" })).toEqual({ tamam: false, hata: "kamu", mesaj: "Kamu arsası (İlçe merkezi): satışa kapalı", hucre });
+    expect(await b.yapiYerlestir({ ilce: "i", tesisTuru: "ciftlik", hucreler: [hucre], sinif: "kirsal" })).toMatchObject({ tamam: false, hata: "kamu" });
+    expect(mulkHatasiTurkce(`hucre kamu arsasi (satilmaz): ${hucre} (pazar, k:mahalle:x_1)`)).toBe("Bu hücre kamu arsası (Pazar yeri): satılmaz.");
+    expect(mulkHatasiTurkce("muhtarlik kamu yapisidir (oyuncuya kapali)")).toBe("Bu yapı kamu yapısıdır: oyunculara kapalı.");
+    expect(katalog.some((y) => y.id === "muhtarlik")).toBe(false);
   });
 
   it("yapılar listesinden (yapilar) gelen hücre de dolu sayılır", () => {

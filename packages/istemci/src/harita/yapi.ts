@@ -133,8 +133,10 @@ export function yapiKatalogu(ic: Icerik): YapiTanimi[] {
     });
   }
   // Ek yapılar (`param.mulk.ekYapilar`): tesis türü değiller, aynı `tesis_insa_hucre` komutuyla kurulurlar.
+  // Kamu yapıları (ör. Muhtarlık; `mulk.kamu.oyuncuyaKapaliYapilar`) oyuncuya kapalıdır: menüde gösterilmez.
+  const kapali = new Set(m.kamu?.oyuncuyaKapaliYapilar ?? []);
   for (const [id, e] of Object.entries(m.ekYapilar ?? {})) {
-    if (e.yuva <= 0 || l.some((y) => y.id === id)) continue;
+    if (e.yuva <= 0 || kapali.has(id) || l.some((y) => y.id === id)) continue;
     l.push({
       id,
       ad: e.ad,
@@ -209,8 +211,8 @@ export interface YerlesimBaglami {
   /** Süren hücreli inşaatlarım. */
   surenInsaat: number;
   esZamanliInsaat?: number;
-  /** Hücre kamu arsasında mı (satışa ve yerleşime kapalı)? */
-  kamu?: (id: HucreId) => boolean;
+  /** Hücre kamu arsasındaysa Türkçe ret nedeni (satışa ve yerleşime kapalı), değilse null. */
+  kamu?: (id: HucreId) => string | null;
 }
 
 /** Yapı çapa hücresine (`cx`, `cy`) ve dönüşe göre yerleştirilirse ne olur? Saf; sunucuya gitmez. */
@@ -224,7 +226,7 @@ export function yerlesimPlani(yapi: YapiTanimi, cx: number, cy: number, donus: n
   for (const [x, y] of hedef) {
     const id = hucreId(x, y);
     let neden: string | null = engelNedeni(durumAl(b.izgara, x, y));
-    if (!neden && b.kamu?.(id)) neden = "Kamu arsası: satışa kapalı";
+    if (!neden) neden = b.kamu?.(id) ?? null;
     const sh = b.sahiplik.hucreler.get(id);
     let benim = false;
     if (!neden && sh) {

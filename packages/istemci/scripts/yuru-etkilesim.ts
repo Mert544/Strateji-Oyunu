@@ -301,10 +301,11 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   if (!mobil) {
     await sayfa.locator(".yuru-tuval").focus();
     await sayfa.keyboard.down("KeyW");
-    // Yazılım GL'de kare hızı yüke göre değişir (dt kare başına 0,05 sn ile sınırlı): en az 1,6 sn, gerekirse 3 m'ye dek (≤ 5 sn)
+    // Yazılım GL'de kare hızı yüke göre değişir (dt kare başına 0,05 sn ile sınırlı; yüklü makinede 2–5 fps): en az 1,6 sn,
+    // gerekirse 4,5 m'ye dek (≤ 12 sn). Denetlenen şey hız değil, ivmesiz yürüyüşün gerçekleşmesidir (hız ayrı ölçülür).
     await sayfa.waitForTimeout(1600);
     await sayfa
-      .waitForFunction((o) => { const p = window.__yuru?.durum().dunya; return !!p && Math.hypot(p[0] - o[0], p[1] - o[1]) >= 3; }, once, { timeout: 3400 })
+      .waitForFunction((o) => { const p = window.__yuru?.durum().dunya; return !!p && Math.hypot(p[0] - o[0], p[1] - o[1]) >= 4.5; }, once, { timeout: 10400 })
       .catch(() => undefined);
     await sayfa.keyboard.up("KeyW");
     await sayfa.keyboard.down("KeyD");

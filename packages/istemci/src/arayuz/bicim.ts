@@ -72,16 +72,51 @@ export function sinirla(x: number, a: number, b: number): number {
 // Zaman
 // ---------------------------------------------------------------------------------------------
 
-/** Sim saat 0'ın UTC saati (başlangıçta Türkiye/Karadeniz gündüz olsun diye 09:00). */
+/**
+ * Küre güneşi için sim saat 0'ın UTC saati (başlangıçta Türkiye/Karadeniz gündüz olsun diye 09:00). Yalnız küredeki
+ * terminatör içindir; saat METNİ Türkiye saatidir (`simSaatMetni`, dünya epoch'u TRT gece yarısı).
+ */
 export const BASLANGIC_SAAT_UTC = 9;
 
-/** "Gün N · SS:00" biçiminde sim saati (UTC saat dilimi). */
+/**
+ * Dünya epoch'u: 2026-09-30T21:00Z = 1 Ekim 2026 00:00 Türkiye saati (sunucunun varsayılanı; mutlak saatte
+ * `t = duvar − epoch`; docs/arastirma/canli-dunya-simulasyonu.md §2.2). Protokol epoch'u taşımaz; değişirse burası da değişir.
+ */
+export const DUNYA_EPOCH_MS = 1_790_802_000_000;
+/** Türkiye kalıcı UTC+3 (yaz saati yok): gün sınırı `(t + 3 sa) mod 24 sa`. */
+export const TURKIYE_OFSETI_MS = 3 * 3_600_000;
+
+/** "Gün N · SS:DD" biçiminde Türkiye saati (sim saat 0 = 1 Ekim 00:00 TRT; gün sınırı gerçek tarihle aynı). */
 export function simSaatMetni(simSaat: number): string {
-  const s = Math.floor(simSaat);
-  const gun = Math.floor(s / 24) + 1;
-  const utc = (((s + BASLANGIC_SAAT_UTC) % 24) + 24) % 24;
-  return `Gün ${gun} · ${String(utc).padStart(2, "0")}:00`;
+  const dk = Math.floor(Math.max(0, simSaat) * 60 + 1e-6);
+  const gun = Math.floor(dk / 1440) + 1;
+  const saat = Math.floor((dk % 1440) / 60);
+  return `Gün ${gun} · ${String(saat).padStart(2, "0")}:${String(dk % 60).padStart(2, "0")}`;
 }
+
+export const AY_ADLARI = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"] as const;
+const GUNLER = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"] as const;
+
+export interface GercekTarih {
+  yil: number;
+  /** 0 = Ocak */
+  ay: number;
+  gun: number;
+  ayAdi: string;
+  gunAdi: string;
+}
+
+/** Sim saatinden gerçek tarih (Europe/Istanbul = sabit UTC+3): epoch + t. Artık yıllar `Date` ile doğru. */
+export function gercekTarih(simSaat: number): GercekTarih {
+  const d = new Date(DUNYA_EPOCH_MS + TURKIYE_OFSETI_MS + Math.floor(Math.max(0, simSaat) * 3_600_000));
+  const ay = d.getUTCMonth();
+  return { yil: d.getUTCFullYear(), ay, gun: d.getUTCDate(), ayAdi: AY_ADLARI[ay] ?? "", gunAdi: GUNLER[d.getUTCDay()] ?? "" };
+}
+
+/** "2 Ekim" */
+export const tarihMetni = (g: GercekTarih): string => `${g.gun} ${g.ayAdi}`;
+/** "2 Ekim 2026 Cuma" */
+export const tamTarihMetni = (g: GercekTarih): string => `${g.gun} ${g.ayAdi} ${g.yil} ${g.gunAdi}`;
 
 /** Süre (saat girdili): "40 dk" / "5 sa" / "1,5 sa" / "1 gün" / "2 gün 3 sa"; negatif -> "0 sa". */
 export function sureMetni(saat: number): string {

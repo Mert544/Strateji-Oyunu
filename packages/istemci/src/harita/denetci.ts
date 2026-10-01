@@ -14,6 +14,7 @@ import type { Vek3 } from "../kure/matematik";
 import { ara, dizinKur } from "./arama";
 import type { AramaDizini, AramaKaydi } from "./arama";
 import type { MulkBaglantisi } from "./baglanti";
+import type { MulkPaneli } from "../arayuz/mulk-paneli";
 import { noktadakiOzellik } from "./geometri";
 import { aramaKayitlari, disKaraCoz, hiyerarsiYukle, illerYukle, izgaraYukle, OSM_ATIF } from "./veri";
 import { yuruAc } from "../yuru/giris";
@@ -35,6 +36,8 @@ export interface KureBaglami {
   kureyiAskiyaAl: (askida: boolean) => void;
   /** Küre ülke TopoJSON'u (haritada komşu ülkeler, "dış kara"; bellekte zaten var). */
   dunyaTopo?: unknown;
+  /** Mülk kipi başlayınca panelin içerik sağlayıcısı (harita yığınından; kabuk paneli ona bağlar). */
+  mulkPaneli?: (p: MulkPaneli) => void;
 }
 
 export type Duzey = 0 | 1 | 2 | 3;
@@ -102,6 +105,7 @@ export class HaritaDenetci {
   private yukleniyor = false;
   private yerlesEkrani: YerlesEkrani | null = null;
   private baglantiSozu: Promise<MulkBaglantisi | undefined> | null = null;
+  private mulkPaneliKuruldu = false;
   // Kürede çift tık algılama (kamera kontrolündeki eşiklerle aynı)
   private sonTik = { t: 0, x: 0, y: 0 };
   private basili: { x: number; y: number; t: number; dugme: number; ek: boolean } | null = null;
@@ -321,6 +325,12 @@ export class HaritaDenetci {
     this.durumYazi.textContent = new URLSearchParams(location.search).has("sunucu") ? "Sunucuya bağlanılıyor…" : "Yerleş hazırlanıyor…";
     try {
       const g = await this.gorunumAl();
+      // Panel: devlet oyunu yerine işletme (harita yığınındaki sağlayıcı; bölge kipinde çağrılmaz)
+      if (this.kure.mulkPaneli && !this.mulkPaneliKuruldu) {
+        this.mulkPaneliKuruldu = true;
+        const [m, h] = await Promise.all([gorunumModulu(), this.hiyerarsiAl()]);
+        this.kure.mulkPaneli(m.mulkPaneliKur({ gorunum: g, hiyerarsi: h, ilceAc: (ilce) => void this.ilceAc(ilce).then(() => this.gorunum?.mulkeUc()) }));
+      }
       await g.baglanti.hazirBekle?.();
       const oz = g.baglanti.ozet?.() ?? null;
       const hucreli = oz?.ilceHucre.find(([, n]) => n > 0)?.[0];

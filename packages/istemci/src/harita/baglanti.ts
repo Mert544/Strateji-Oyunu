@@ -11,9 +11,11 @@
  * `parselAl`/`sahiplikAl` kullanan tüketiciler etkilenmez.
  */
 import type { ArsaSinifi, HucreId, Mili, MulkKomutu, OyuncuId } from "@bolge/cekirdek";
+import type { KamuGrubuKaresi } from "@bolge/protokol";
 import { arsaSinifi, bitisikMi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili } from "./fiyat";
 import { durumAl, engelNedeni, hucreId, idCoz, izgaraSay } from "./hucre";
 import type { Izgara } from "./hucre";
+import { kamuAlani, kamuGrubuBul, kamuNedeni, ornekKamu } from "./kamu";
 
 export type ParselKomutu = Extract<MulkKomutu, { tur: "parsel_al" }>;
 
@@ -28,6 +30,7 @@ export type ParselHatasi =
   | "bos_secim"
   | "gecersiz_hucre"
   | "uygunsuz"
+  | "kamu"
   | "sahipli"
   | "sinif_uyusmuyor"
   | "bitisik_degil"
@@ -93,9 +96,13 @@ export interface IlceSahipligi {
   hucreler: Map<HucreId, HucreSahipligi>;
   /** Hücrelerdeki yapılar (inşaat ve tesis). Bağdaştırıcı vermiyorsa tanımsız. */
   yapilar?: YapiKaydi[];
-  /** Uygun (satın alınabilir, su değil) hücre sayısı: fiyat payının ve %25 sınırının paydası. */
+  /** Satılabilir hücre sayısı (satın alınabilir, kamu düşülmüş): fiyat payının ve %25 sınırının paydası. */
   uygun: number;
   satilmis: number;
+  /** Kamu arsası hücre sayısı (sunucu yayınlıyorsa; kamu kuralı kapalıysa tanımsız). */
+  kamuAdet?: number;
+  /** Kamu arsası grupları (dikdörtgen bloklar, dört uç dahil; dünya kurulurken donar). Satılmaz, yapı kurulmaz. */
+  kamu?: KamuGrubuKaresi[];
 }
 
 export interface Oyuncu {
@@ -121,6 +128,43 @@ export interface MulkOzeti {
   yetisiyor?: { ilerleme: number } | null;
 }
 
+/** İşletme paneli (mülk kipi kabuğu) için oyuncunun yapısı: süren inşaat ya da biten tesis. */
+export interface IsletmeYapisi {
+  /** "i<id>" (inşaat) ya da "t<id>" (tesis). */
+  anahtar: string;
+  durum: "insaat" | "tesis";
+  /** Tesis türü ya da ek yapı kimliği (bilinmiyorsa boş). */
+  tur: string;
+  /** İl (işletme düğümü) ve biliniyorsa ilçe. */
+  il?: string;
+  ilce?: string;
+  hucre?: number;
+  baslangic?: number;
+  bitis?: number;
+  /** Tesis çalışıyor mu (biliniyorsa) ve verim (ppm). */
+  aktif?: boolean;
+  verimPpm?: number;
+}
+
+/** Oyuncunun işletme özeti (mülk kipi kabuğu): hazine, kalkan, arsalar, yapılar, stok ve satış. Yalnız okunur. */
+export interface IsletmeDurumu {
+  simZamani: number;
+  hazineMili: number | null;
+  /** Hazinenin net akışı (mili-₺/saat; biliniyorsa). */
+  hazineOraniMili: number | null;
+  araziDegeriMili: number | null;
+  araziVergisiMili: number | null;
+  ilceHucre: Array<[string, number]>;
+  /** Yeni oyuncu kalkanının bitişi (sim ms; yoksa null). */
+  korumaBitis: number | null;
+  /** Ayrılmış hücreleri alabilme bitişi (sim ms; yoksa null). */
+  ayrilmisBitis: number | null;
+  indirimliYapiKalan: number | null;
+  yapilar: IsletmeYapisi[];
+  /** Mal kimliği başına stok (mili-birim), üretim ve satış/alış oranı (mili-birim/saat). */
+  mallar: Array<{ mal: string; stokMili: number; uretimMili: number; satisMili: number; alisMili: number }>;
+}
+
 /** Harita ile sunucu arasındaki sözleşme. */
 export interface MulkBaglantisi {
   /** Bu istemcinin oyuncusu. */
@@ -139,6 +183,8 @@ export interface MulkBaglantisi {
   yapiGeriAl?(i: GeriAlIstegi): Promise<TesisSonucu>;
   /** Oyuncu özeti (eşzamanlı; son bilinen). */
   ozet?(): MulkOzeti | null;
+  /** İşletme özeti (mülk kipi paneli; eşzamanlı, son bilinen). */
+  isletme?(): IsletmeDurumu | null;
   /** Durum değişince (kare, delta, bağlantı) çağrılır; dönen işlev aboneliği kaldırır. */
   dinle?(f: () => void): () => void;
   /** Haritanın ilgilendiği ilçeleri bildirir (`kaynak` başına küme; sunucuda abone listesinin birleşimi). */
@@ -173,6 +219,8 @@ export interface SahteSecenekler {
   simHizi?: number;
   /** Aynı anda en çok hücreli inşaat (çekirdek `esZamanliInsaat`). Varsayılan 2. */
   esZamanliInsaat?: number;
+  /** Sunucusuz kipte örnek kamu arsası blokları üret (`ornekKamu`). Varsayılan: false. */
+  kamu?: boolean;
 }
 
 const MESAJ: Record<ParselHatasi, string> = {
@@ -180,6 +228,7 @@ const MESAJ: Record<ParselHatasi, string> = {
   bos_secim: "Hücre seçilmedi",
   gecersiz_hucre: "Geçersiz hücre kimliği",
   uygunsuz: "Satın alınamaz hücre",
+  kamu: "Kamu arsası: satışa kapalı",
   sahipli: "Hücre başkasına ait",
   sinif_uyusmuyor: "Hücre sınıfı komuttakiyle uyuşmuyor",
   sunucu: "Sunucu isteği reddetti",
@@ -271,6 +320,21 @@ export class SahteBaglanti implements MulkBaglantisi {
     return { hazineMili: this.hazine, simZamani: this.simZamani(), baglanti: "bagli", ilceHucre, surenInsaat: suren };
   }
 
+  isletme(): IsletmeDurumu {
+    const oz = this.ozet();
+    const simdi = this.simZamani();
+    const yapilar: IsletmeYapisi[] = [];
+    for (const p of this.ilceler.values()) {
+      const k = this.cozulmus.get(p);
+      if (!k) continue;
+      for (const i of k.insaatlar) {
+        const bitti = i.bitis <= simdi;
+        yapilar.push({ anahtar: `${bitti ? "t" : "i"}${i.id}`, durum: bitti ? "tesis" : "insaat", tur: i.tur, ilce: i.ilce, hucre: i.hucreler.length, baslangic: i.baslangic, bitis: i.bitis, ...(bitti ? { aktif: true, verimPpm: 1_000_000 } : {}) });
+      }
+    }
+    return { simZamani: simdi, hazineMili: this.hazine, hazineOraniMili: null, araziDegeriMili: null, araziVergisiMili: null, ilceHucre: oz.ilceHucre, korumaBitis: null, ayrilmisBitis: null, indirimliYapiKalan: null, yapilar, mallar: [] };
+  }
+
   private async bekle(): Promise<void> {
     const g = this.s.gecikme ?? 0;
     if (g > 0) await new Promise((coz) => setTimeout(coz, g));
@@ -284,7 +348,9 @@ export class SahteBaglanti implements MulkBaglantisi {
       p = this.s.izgaraAl(ilce).then((izgara) => {
         if (!izgara) return null;
         const say = izgaraSay(izgara);
-        const sahiplik: IlceSahipligi = { ilce, hucreler: new Map(), uygun: say.uygun, satilmis: 0 };
+        const kamu = this.s.kamu ? ornekKamu(izgara, ilce) : [];
+        const kamuAdet = kamuAlani(kamu);
+        const sahiplik: IlceSahipligi = { ilce, hucreler: new Map(), uygun: say.uygun - kamuAdet, satilmis: 0, ...(kamu.length ? { kamu, kamuAdet } : {}) };
         const k: IlceKaydi = { izgara, sahiplik, insaatlar: [] };
         if (this.s.komsular !== false) this.komsulariSerp(k);
         this.cozulmus.set(p!, k);
@@ -312,7 +378,7 @@ export class SahteBaglanti implements MulkBaglantisi {
           const x = cx + ox + dx;
           const y = cy + oy + dy;
           const d = durumAl(iz, x, y);
-          if (engelNedeni(d)) continue;
+          if (engelNedeni(d) || kamuGrubuBul(k.sahiplik.kamu, x, y)) continue;
           const sinif = arsaSinifi(d);
           k.sahiplik.hucreler.set(hucreId(x, y), { sahip: o.id, sinif, degerMili: parselFiyatiMili(sinif, 0, k.sahiplik.uygun, 1), alinma: 0 });
           k.sahiplik.satilmis++;
@@ -366,6 +432,8 @@ export class SahteBaglanti implements MulkBaglantisi {
       const d = durumAl(k.izgara, h.x, h.y);
       const neden = engelNedeni(d);
       if (neden) return { tamam: false, hata: "uygunsuz", mesaj: `${MESAJ.uygunsuz}: ${neden}`, hucre: id };
+      const kg = kamuGrubuBul(s.kamu, h.x, h.y);
+      if (kg) return { tamam: false, hata: "kamu", mesaj: kamuNedeni(kg.tur), hucre: id };
       if (s.hucreler.has(id)) return red("sahipli", id);
       if (arsaSinifi(d) !== komut.sinif) return red("sinif_uyusmuyor", id);
     }
@@ -418,6 +486,8 @@ export class SahteBaglanti implements MulkBaglantisi {
       } else {
         const neden = engelNedeni(d);
         if (neden) return red("uygunsuz", `${MESAJ.uygunsuz}: ${neden}`, id);
+        const kg = kamuGrubuBul(s_.kamu, h.x, h.y);
+        if (kg) return red("kamu", kamuNedeni(kg.tur), id);
         if (arsaSinifi(d) !== i.sinif) return red("sinif_uyusmuyor", MESAJ.sinif_uyusmuyor, id);
         alinacak.push(id);
       }

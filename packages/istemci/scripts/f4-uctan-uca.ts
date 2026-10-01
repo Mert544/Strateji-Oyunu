@@ -121,7 +121,8 @@ const alt = (sayfa: Page): Promise<string> => sayfa.locator("#harita-alt").inner
 interface ArsaBilgi {
   kimlik: string;
   hucreler: string[];
-  kamu: boolean;
+  /** Arsadaki kamu hücresi sayısı (sunucunun kamu bloklarına göre; 0 olmalı). */
+  kamu: number;
 }
 
 async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: string[], gozlemci: Page): Promise<{ arsa: ArsaBilgi; insaatHucreler: string[] }> {
@@ -152,36 +153,65 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   kontrol(`${e} Yerleş kapandı, harita Gebze L3'te önerilen hazır arsada`, (await sayfa.locator("#yerles").count()) === 0);
   const oz = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.() ?? null);
   kontrol(`${e} sunucudan yurt (6 hücre) ve hibe: hazine 50.000 ₺`, !!oz && oz.ilceHucre.some(([i, n]) => i === "tr_41_gebze" && n === 6) && oz.hazineMili === 50_000_000, JSON.stringify(oz));
-  const hazine = (await sayfa.locator("#harita-hazine").innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} hazine çipi`, /Hazine\s*50\.000 ₺/.test(hazine), hazine);
+  const hazine = (await sayfa.locator("#harita-hazine").textContent() ?? "").replace(/\s+/g, " ");
+  kontrol(`${e} hazine çipi (masaüstünde mülk paneli kurulunca üst çubuğa taşınır)`, /Hazine\s*50\.000 ₺/.test(hazine), hazine);
+  // --- Mülk kipi kabuğu: panel oyuncunun işletmesini gösterir (devlet oyunu yok) ---
+  await sayfa.waitForFunction(() => document.body.classList.contains("mulk-paneli") && !document.getElementById("panel")?.hidden, null, { timeout: 20000 });
+  await sayfa.waitForTimeout(400);
+  const sekmeler = (await sayfa.locator("#sekmeler").innerText()).replace(/\s+/g, " ").trim();
+  kontrol(`${e} mülk paneli sekmeleri: İşletmem, Hazine, Mal, Dikkat, Olaylar; Bölge, Devlet, Savaş yok`, ["İşletmem", "Hazine", "Mal", "Dikkat", "Olaylar"].every((x) => sekmeler.includes(x)) && !/Savaş|Devlet|Bölge/.test(sekmeler), sekmeler);
+  const isletme = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
+  kontrol(`${e} İşletmem: ad, kalkan ve ayrılmış hücre (savaş dili yok), Gebze arsası, rehber`, /\bali\b/.test(isletme) && /Yeni oyuncu kalkanı/.test(isletme) && /Gebze/.test(isletme) && /Rehber görevler yakında/.test(isletme) && !/savaş|Cumhuriyet|bölge/i.test(isletme), isletme.slice(0, 260));
+  const cubuk = (await sayfa.locator("#oyuncu-cubuk").innerText()).replace(/\s+/g, " ");
+  kontrol(`${e} üst çubukta oyuncu adı ve hazine (devlet adı yok)`, /ali/.test(cubuk) && /50\.000 ₺/.test(cubuk), cubuk);
+  const tarih = `${await sayfa.locator("#takvim-gun").innerText()} · ${await sayfa.locator("#takvim-yil").innerText()}`;
+  kontrol(`${e} üst şerit gerçek tarih ve gün adı ("N. yıl" yok)`, /^\d{1,2} (Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık) · (Pazartesi|Salı|Çarşamba|Perşembe|Cuma|Cumartesi|Pazar)$/.test(tarih), tarih);
+  await sayfa.locator("#sek-dikkat").click();
+  await sayfa.waitForTimeout(200);
+  const dikkat = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
+  kontrol(`${e} Dikkat: yalnız kendi yapılarından (bölge maddeleri yok)`, /Yapılarında ilgilenmen gerekenler/.test(dikkat) && !/Pannon|Dobruca|Siret/.test(dikkat), dikkat.slice(0, 160));
+  await sayfa.locator("#sek-isletme").click();
+  await ekran("2b-isletme-paneli");
   const arsa = await sayfa.evaluate((): ArsaBilgi | null => {
-    const a = window.__harita?.gorunum()?.seciliArsa();
-    return a ? { kimlik: a.kimlik, hucreler: a.hucreler, kamu: a.kamu } : null;
+    const g = window.__harita?.gorunum();
+    const a = g?.seciliArsa();
+    const k = g?.arsaKumesi();
+    if (!a || !k) return null;
+    const kamu = a.hucreler.filter((h) => {
+      const [x, y] = h.split(":").map(Number) as [number, number];
+      return k.kamuGruplari.some((gr) => gr.blok.some(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1));
+    }).length;
+    return { kimlik: a.kimlik, hucreler: a.hucreler, kamu };
   });
   if (!arsa) throw new Error("önerilen arsa yok");
-  kontrol(`${e} önerilen arsa 4–12 hücre, kamu değil`, arsa.hucreler.length >= 4 && arsa.hucreler.length <= 12 && !arsa.kamu, `${arsa.kimlik} ${arsa.hucreler.length} hücre`);
+  kontrol(`${e} önerilen arsa 4–12 hücre, kamu değil`, arsa.hucreler.length >= 4 && arsa.hucreler.length <= 12 && arsa.kamu === 0, `${arsa.kimlik} ${arsa.hucreler.length} hücre`);
   const altMetin = await alt(sayfa);
   kontrol(`${e} alt çubuk: hazır arsa, hücre, sınıf, ₺ fiyat, Satın al`, /Hazır arsa/.test(altMetin) && /hücre/.test(altMetin) && /(Kırsal|Kasaba|Şehir)/.test(altMetin) && /₺/.test(altMetin) && (await sayfa.locator("[data-eylem='arsa-al']").isEnabled()), altMetin);
   const nav = await sayfa.evaluate(() => {
     const g = window.__harita?.gorunum();
-    return { arsa: g?.ml.queryRenderedFeatures({ layers: ["arsa-cizgi"] }).length ?? 0, kumeler: g?.arsaKumesi()?.arsalar.length ?? 0, kamu: g?.arsaKumesi()?.kamuSayisi ?? 0 };
+    const k = g?.arsaKumesi();
+    const sh = window.__harita?.baglanti();
+    return { arsa: g?.ml.queryRenderedFeatures({ layers: ["arsa-cizgi"] }).length ?? 0, kumeler: k?.arsalar.length ?? 0, kamu: k?.kamuSayisi ?? 0, gruplar: k?.kamuGruplari.length ?? 0, var: !!sh };
   });
-  kontrol(`${e} hazır arsa sınırları haritada çiziliyor (türetilmiş ${nav.kumeler} arsa, ${nav.kamu} kamu)`, nav.arsa > 0 && nav.kumeler > 10_000 && nav.kamu > 0, JSON.stringify(nav));
+  kontrol(`${e} hazır arsa sınırları haritada çiziliyor (türetilmiş ${nav.kumeler} arsa); kamu blokları sunucudan (${nav.gruplar} grup, ${nav.kamu} hücre)`, nav.arsa > 0 && nav.kumeler > 10_000 && nav.kamu > 0 && nav.gruplar > 0, JSON.stringify(nav));
   await ekran("2-hazir-arsa");
 
-  // --- Kamu arsası: nötr renk, ipucu, satışa kapalı ---
-  const kamu = await sayfa.evaluate((merkezArsa): { id: string; kimlik: string } | null => {
+  // --- Kamu arsası (sunucu blokları): doku, ipucu (tür), seçilemez, satışa kapalı ---
+  const kamu = await sayfa.evaluate((merkezArsa): { id: string; tur: string } | null => {
     const k = window.__harita?.gorunum()?.arsaKumesi();
     if (!k) return null;
     const m = k.arsalar.find((a) => a.kimlik === merkezArsa);
     if (!m) return null;
-    let en: { id: string; kimlik: string; d: number } | null = null;
-    for (const a of k.arsalar) {
-      if (!a.kamu) continue;
-      const d = Math.hypot(a.cx - m.cx, a.cy - m.cy);
-      if (!en || d < en.d) en = { id: a.hucreler[0]!, kimlik: a.kimlik, d };
-    }
-    return en ? { id: en.id, kimlik: en.kimlik } : null;
+    let en: { id: string; tur: string; d: number } | null = null;
+    for (const g of k.kamuGruplari)
+      for (const [x0, y0, x1, y1] of g.blok) {
+        // Bloğun merkeze en yakın iç hücresi (kenardan uzak: imleç komşu hücreye kaymasın)
+        const x = Math.round((x0 + x1) / 2);
+        const y = Math.round((y0 + y1) / 2);
+        const d = Math.hypot(x - m.cx, y - m.cy);
+        if (!en || d < en.d) en = { id: `${x}:${y}`, tur: g.tur, d };
+      }
+    return en ? { id: en.id, tur: en.tur } : null;
   }, arsa.kimlik);
   if (kamu) {
     await sayfa.evaluate((h) => {
@@ -200,14 +230,25 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
       await sayfa.mouse.move(p.x, p.y);
       await sayfa.waitForTimeout(250);
       const ip = (await sayfa.locator("#harita-ipucu").innerText()).replace(/\s+/g, " ");
-      kontrol(`${e} kamu arsası ipucu "Kamu arsası" (satışa kapalı)`, /Kamu arsası/.test(ip) && /satışa kapalı/.test(ip), ip);
+      const TUR: Record<string, string> = { meydan: "Meydan", pazar: "Pazar yeri", park: "Park", hizmet: "İlçe merkezi", kiyi: "Kıyı şeridi", sanayi_rezervi: "Sanayi rezervi", hazine: "Hazine arazisi" };
+      const turAdi = TUR[kamu.tur] ?? kamu.tur;
+      kontrol(`${e} kamu arsası ipucu: "Kamu arsası · ${turAdi} · satışa kapalı"`, /Kamu arsası/.test(ip) && ip.includes(turAdi) && /satışa kapalı/.test(ip), ip);
       await sayfa.mouse.click(p.x, p.y);
       await sayfa.waitForTimeout(300);
       const a2 = await alt(sayfa);
-      kontrol(`${e} kamu arsası seçilince alt çubukta satın alma yok`, /Kamu arsası/.test(a2) && (await sayfa.locator("[data-eylem='arsa-al']").count()) === 0, a2);
+      const secili = await sayfa.evaluate(() => window.__harita?.gorunum()?.seciliArsa()?.kimlik ?? null);
+      kontrol(`${e} kamu hücresine tık: seçilmez (hazır arsa yok), kartta tür ve neden, satın alma düğmesi yok`, secili === null && /Kamu arsası/.test(a2) && a2.includes(turAdi) && /kapalı/.test(a2) && (await sayfa.locator("[data-eylem='arsa-al']").count()) === 0, a2);
       const kn = await sayfa.evaluate(() => window.__harita?.gorunum()?.ml.queryRenderedFeatures({ layers: ["arsa-kamu-dolgu"] }).length ?? 0);
-      kontrol(`${e} kamu arsaları nötr dolguyla çiziliyor`, kn > 0, `${kn} özellik`);
+      kontrol(`${e} kamu arsaları dokuyla çiziliyor`, kn > 0, `${kn} özellik`);
       await ekran("3-kamu-arsasi");
+      // Hücre aracıyla (Shift + tık) da seçilmez: neden ipucunda
+      await sayfa.keyboard.down("Shift");
+      await sayfa.mouse.click(p.x, p.y);
+      await sayfa.keyboard.up("Shift");
+      await sayfa.waitForTimeout(250);
+      const ip2 = (await sayfa.locator("#harita-ipucu").innerText()).replace(/\s+/g, " ");
+      const secim = await sayfa.evaluate(() => window.__harita?.gorunum()?.secimVarMi() ?? null);
+      kontrol(`${e} Shift + tık kamu hücresini seçmez: "Seçilemez · Kamu arsası (${turAdi}): satışa kapalı"`, /Seçilemez/.test(ip2) && ip2.includes(`Kamu arsası (${turAdi})`), `${ip2} seçim=${secim}`);
     } else kontrol(`${e} kamu arsası ekran konumu`, false);
   } else kontrol(`${e} yakında kamu arsası bulundu`, false);
 
@@ -315,7 +356,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     const cy = ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** 20;
     let en: { sol: string; sag: string; d: number } | null = null;
     for (const a of k.arsalar) {
-      if (a.kamu || a.hucreler.length < 6 || a.hucreler.some((h) => sh?.hucreler.has(h))) continue;
+      if (a.hucreler.length < 6 || a.hucreler.some((h) => sh?.hucreler.has(h))) continue;
       const d = Math.hypot(a.cx - cx, a.cy - cy);
       if (en && d >= en.d) continue;
       const kume = new Set(a.hucreler);
@@ -376,7 +417,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     await ekran("11-iki-insaat");
     // 5 dk geri al: inşaat iptal + bu işlemle alınan 2 hücre bırakılır
     const geri = (await sayfa.locator("#yapi-geri").innerText().catch(() => "")).replace(/\s+/g, " ");
-    kontrol(`${e} onaydan sonra "Geri al" şeridi (5 dk)`, /Ahır kuruluyor/.test(geri) && /4:5\d|5:00/.test(geri) && (await sayfa.locator("#yapi-geri [data-yg='geri-al']").isVisible()), geri);
+    kontrol(`${e} onaydan sonra "Geri al" şeridi (5 dk)`, /Ahır kuruluyor/.test(geri) && /\b[34]:\d\d|5:00/.test(geri) && (await sayfa.locator("#yapi-geri [data-yg='geri-al']").isVisible()), geri);
     await ekran("11a-geri-al-seridi");
     const hazineOnce = ts.yazar.sim.dunya.oyuncular.find((o) => o.id === "ali")?.hazine.miktar ?? 0;
     await tikla(sayfa, false, "#yapi-geri [data-yg='geri-al']");

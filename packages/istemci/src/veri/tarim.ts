@@ -6,14 +6,14 @@
  */
 import type { Dizin, DizinTarim, Kare, OlayKaresi } from "./kare-tipleri";
 import { kullanimRengi } from "./renkler";
-import { yuzde } from "../arayuz/bicim";
+import { AY_ADLARI, yuzde } from "../arayuz/bicim";
 import type { BolgeRenkTamponu, RGB } from "./renkler";
 
 // ---------------------------------------------------------------------------------------------
 // İklim takvimi
 // ---------------------------------------------------------------------------------------------
 
-export const AY_ADLARI = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"] as const;
+export { AY_ADLARI };
 export const AY_KISA = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"] as const;
 
 export interface TakvimParametresi {

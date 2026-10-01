@@ -3,7 +3,7 @@
  * tek tr-TR biçimleyici (sahte küçük dünya; DOM yok).
  */
 import { describe, expect, it } from "vitest";
-import { fmt, fmt1, kisalt, sayi, simSaatMetni, sureMetni, yuzde } from "../src/arayuz/bicim";
+import { DUNYA_EPOCH_MS, fmt, fmt1, gercekTarih, kisalt, sayi, simSaatMetni, sureMetni, tamTarihMetni, tarihMetni, yuzde } from "../src/arayuz/bicim";
 import { DIKKAT_EN_COK, dikkatMaddeleri, dikkatPaneli } from "../src/arayuz/dikkat";
 import { gelenOlaylari } from "../src/arayuz/gelen-kutusu";
 import type { GovdeDurumu } from "../src/arayuz/govde";
@@ -192,7 +192,15 @@ describe("tek tr-TR biçimleyici", () => {
     expect(yuzde(1234)).toBe("%1.234");
   });
   it("zaman biçimleri", () => {
-    expect(simSaatMetni(0)).toBe("Gün 1 · 09:00");
+    expect(simSaatMetni(0)).toBe("Gün 1 · 00:00");
+    // Gerçek tarih: epoch (1 Ekim 2026 00:00 TRT) + t; Türkiye sabit UTC+3; artık yıl
+    expect(tamTarihMetni(gercekTarih(0))).toBe("1 Ekim 2026 Perşembe");
+    expect(tarihMetni(gercekTarih(23.99))).toBe("1 Ekim");
+    expect(tamTarihMetni(gercekTarih(24))).toBe("2 Ekim 2026 Cuma");
+    const saat = (iso: string): number => (Date.parse(iso) - DUNYA_EPOCH_MS) / 3_600_000;
+    expect(tamTarihMetni(gercekTarih(saat("2028-02-28T21:00:00Z")))).toBe("29 Şubat 2028 Salı");
+    expect(tarihMetni(gercekTarih(saat("2027-01-01T20:59:00Z")))).toBe("1 Ocak"); // 23:59 TRT
+    expect(simSaatMetni(saat("2026-10-01T12:39:00Z"))).toBe("Gün 1 · 15:39");
     expect(sureMetni(0.5)).toBe("30 dk");
     expect(sureMetni(1.5)).toBe("1,5 sa");
     expect(sureMetni(24)).toBe("1 gün");

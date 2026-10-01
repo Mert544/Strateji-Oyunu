@@ -32,8 +32,8 @@ export interface YerlesimGirdisi {
   izgara: () => Izgara | null;
   sahiplik: () => IlceSahipligi | null;
   ad: (sahip: string) => string;
-  /** Hücre kamu arsasında mı (satışa ve yerleşime kapalı)? */
-  kamu: (id: string) => boolean;
+  /** Hücre kamu arsasındaysa Türkçe ret nedeni (satışa ve yerleşime kapalı), değilse null. */
+  kamu: (id: string) => string | null;
   /** Sahipliği sunucudan/bağdaştırıcıdan tazeler ve çizer. */
   yenile: () => Promise<void>;
   ipucu: (html: string, x: number, y: number, uyari: boolean, sure?: number) => void;
@@ -436,13 +436,21 @@ export class YerlesimKipi {
     const s = this.sonIslem;
     if (!s || Date.now() >= s.bitis) return this.geriGizle();
     const kalan = Math.ceil((s.bitis - Date.now()) / 1000);
-    this.geri.innerHTML = `<span>${esc(s.ad)} kuruluyor · <b>${Math.floor(kalan / 60)}:${String(kalan % 60).padStart(2, "0")}</b> içinde geri alabilirsin</span><button type="button" data-yg="geri-al">${ikon("undo-2", 15)} Geri al</button><button type="button" data-yg="kapat" aria-label="Kapat">${ikon("x", 15)}</button>`;
+    const sure = `${Math.floor(kalan / 60)}:${String(kalan % 60).padStart(2, "0")}`;
+    // Yalnız sayaç güncellenir: düğmeler her saniye yeniden kurulmasın (tıklama ve odak kaybolmasın)
+    const sayac = this.geri.querySelector<HTMLElement>("[data-yg='sure']");
+    if (sayac && this.geri.dataset["islem"] === String(s.bitis)) sayac.textContent = sure;
+    else {
+      this.geri.dataset["islem"] = String(s.bitis);
+      this.geri.innerHTML = `<span>${esc(s.ad)} kuruluyor · <b data-yg="sure">${sure}</b> içinde geri alabilirsin</span><button type="button" data-yg="geri-al">${ikon("undo-2", 15)} Geri al</button><button type="button" data-yg="kapat" aria-label="Kapat">${ikon("x", 15)}</button>`;
+    }
     this.geri.hidden = false;
   }
 
   private geriGizle(): void {
     window.clearInterval(this.geriZamanlayici);
     this.sonIslem = null;
+    delete this.geri.dataset["islem"];
     this.geri.hidden = true;
   }
 

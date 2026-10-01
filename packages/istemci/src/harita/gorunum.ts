@@ -9,18 +9,22 @@
 import maplibregl from "maplibre-gl";
 import type { GeoJSONSource, LayerSpecification, LngLatBoundsLike, Map as MlHarita, MapMouseEvent, StyleSpecification } from "maplibre-gl";
 import maplibreCss from "maplibre-gl/dist/maplibre-gl.css?inline";
+import yiginCss from "./harita-yigin.css?inline";
 import { Protocol } from "pmtiles";
 import type { Feature, FeatureCollection, LineString, MultiPolygon, Polygon } from "geojson";
 import type { IcerikDosyasi, Parametreler } from "@bolge/veri";
 import type { ArsaSinifi, HucreId } from "@bolge/cekirdek";
+import type { KamuGrubuKaresi } from "@bolge/protokol";
 import icerikHam from "../../../veri/icerik/icerik.json";
 import parametreHam from "../../../veri/icerik/parametreler.json";
 import { bildir } from "../arayuz/bildirim";
 import { esc, fmt, simSaatMetni, yuzde } from "../arayuz/bicim";
 import { icerikTablosu } from "../komut/tablo";
-import { arsaKenarlari, arsalariTuret, arsaSinirlari, arsaSiniflari, hucredenArsa, kamuAyari, kamuHucreleri, onerilenArsa, sinifGruplari } from "./arsa";
+import type { Icerik } from "../komut/tablo";
+import { arsaKenarlari, arsalariTuret, arsaSinirlari, arsaSiniflari, hucredenArsa, kamuBilgisi, kamuBloklari, onerilenArsa, sinifGruplari } from "./arsa";
 import type { Arsa, ArsaKumesi, ArsaTercihi } from "./arsa";
 import { SahteBaglanti } from "./baglanti";
+import { KAMU_ACIKLAMA, KAMU_TUR_ADI, kamuGrubuBul, kamuNedeni, kamuSahibiAdi } from "./kamu";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import type { Duzey, HaritaDurumu } from "./denetci";
 import { arsaSinifi, hucreFiyati, ilceTavani, parselFiyatiMili, SINIF_ADI, satinAlmaOzeti } from "./fiyat";
@@ -57,6 +61,7 @@ import type { Hiyerarsi, SinirKatmani } from "./veri";
 
 export { baglantiKur } from "./baglanti-kur";
 export { yerlesAc } from "../arayuz/yerles-ekrani";
+export { mulkPaneliKur } from "./mulk-panel";
 
 export interface GorunumSecenekleri {
   hiyerarsi: Hiyerarsi;
@@ -93,6 +98,13 @@ function hareketAzMi(): boolean {
 
 function hucreCokgeni(x: number, y: number, oz: Record<string, unknown> = {}): Feature<Polygon> {
   const [b, g, d, k] = hucreSiniri(x, y);
+  return { type: "Feature", properties: oz, geometry: { type: "Polygon", coordinates: [[[b, g], [d, g], [d, k], [b, k], [b, g]]] } };
+}
+
+/** Dikdörtgen hücre bloğu (`[x0, y0, x1, y1]`, dört uç dahil) tek çokgen. */
+function blokCokgeni(blok: readonly [number, number, number, number], oz: Record<string, unknown> = {}): Feature<Polygon> {
+  const [b, , , k] = hucreSiniri(blok[0], blok[1]);
+  const [, g, d] = hucreSiniri(blok[2], blok[3]);
   return { type: "Feature", properties: oz, geometry: { type: "Polygon", coordinates: [[[b, g], [d, g], [d, k], [b, k], [b, g]]] } };
 }
 
@@ -136,9 +148,13 @@ export class HaritaGorunumu {
   private arsaHazir: Promise<ArsaKumesi | null> | null = null;
   private arsaSecili: Arsa | null = null;
   private arsaUzerinde: Arsa | null = null;
+  /** Bilgi için seçilen kamu bloğu (satın alınamaz; alt çubukta tür ve neden). */
+  private kamuSecili: { grup: KamuGrubuKaresi; blok: readonly [number, number, number, number] } | null = null;
   private hucreAraci = false;
   private altGizli = false;
   private katalog: YapiTanimi[];
+  /** İçerik tablosu (mal ve yapı adları; mülk paneli de okur). */
+  readonly tablo: Icerik;
   private yerlesim: YerlesimKipi | null = null;
   private yapiEtiketleri: maplibregl.Marker[] = [];
   private canliBirak: (() => void) | null = null;
@@ -153,6 +169,7 @@ export class HaritaGorunumu {
     private s: GorunumSecenekleri,
   ) {
     const tablo = icerikTablosu(icerikHam as unknown as IcerikDosyasi, parametreHam as unknown as Parametreler);
+    this.tablo = tablo;
     this.katalog = yapiKatalogu(tablo);
     this.baglanti =
       s.baglanti ??
@@ -160,14 +177,16 @@ export class HaritaGorunumu {
         izgaraAl: izgaraYukle,
         gecikme: 120,
         hazineMili: 50_000_000,
+        kamu: true,
         yapiBilgisi: (tur) => {
           const y = this.katalog.find((k) => k.id === tur);
           return y ? { yuva: y.yuva, paraMili: y.paraMili, sureSaat: y.sureSaat } : null;
         },
       });
     if (!cssEklendi) {
+      // MapLibre ve harita yığını arayüzü (alt çubuk, kartlar, yapı menüsü, Yerleş): tek dosyaya girmez, harita.js ile gelir
       const st = document.createElement("style");
-      st.textContent = maplibreCss;
+      st.textContent = maplibreCss + "\n" + yiginCss;
       document.head.append(st);
       cssEklendi = true;
     }
@@ -322,6 +341,23 @@ export class HaritaGorunumu {
       }
     if (this.harita.hasImage("tarali")) this.harita.updateImage("tarali", { width: 8, height: 8, data });
     else this.harita.addImage("tarali", { width: 8, height: 8, data });
+    // Kamu arsası dokusu: 12×12 karoda iki yumuşak nokta (şaşırtmalı), devlet katman rengiyle; çizgi ya da hareket yok
+    const kc = /^#([0-9a-f]{6})$/i.exec(renk("--katman-devlet"));
+    const kv = kc ? parseInt(kc[1]!, 16) : 0x5a6b8c;
+    const K = 12;
+    const doku = new Uint8Array(K * K * 4);
+    for (let y = 0; y < K; y++)
+      for (let x = 0; x < K; x++) {
+        const i = (y * K + x) * 4;
+        const u = (px: number, py: number): number => Math.hypot(x + 0.5 - px, y + 0.5 - py);
+        const d = Math.min(u(3, 3), u(9, 9));
+        doku[i] = (kv >> 16) & 255;
+        doku[i + 1] = (kv >> 8) & 255;
+        doku[i + 2] = kv & 255;
+        doku[i + 3] = Math.round(150 * Math.max(0, Math.min(1, 1.6 - d)));
+      }
+    if (this.harita.hasImage("kamu-doku")) this.harita.updateImage("kamu-doku", { width: K, height: K, data: doku });
+    else this.harita.addImage("kamu-doku", { width: K, height: K, data: doku });
   }
 
   private seritKatmanlari(): void {
@@ -374,7 +410,7 @@ export class HaritaGorunumu {
       this.sahiplikBoya();
       this.desenEkle();
       if (h.getLayer("serit-engel") && !window.matchMedia("(prefers-contrast: more)").matches) h.setPaintProperty("serit-engel", "fill-color", renk("--arsa-engel"));
-      this.yapilariCiz();
+      this.yapilariCiz(true);
     });
   }
 
@@ -402,12 +438,13 @@ export class HaritaGorunumu {
   }
 
   secimVarMi(): boolean {
-    return this.secim.boyut > 0 || this.arsaSecili !== null;
+    return this.secim.boyut > 0 || this.arsaSecili !== null || this.kamuSecili !== null;
   }
 
   secimTemizle(): void {
     this.secim.temizle();
     this.arsaSecili = null;
+    this.kamuSecili = null;
     this.arsaVurguCiz();
     this.secimCiz();
   }
@@ -480,6 +517,7 @@ export class HaritaGorunumu {
       this.arsaHazir = null;
       this.arsaSecili = null;
       this.arsaUzerinde = null;
+      this.kamuSecili = null;
       this.yerlesim?.iptal();
       h.setFilter("ilce-secili", ["==", ["get", "kimlik"], hedef.ilce ?? ""]);
       h.setFilter("ortu-ilce", hedef.ilce ? ["!=", ["get", "kimlik"], hedef.ilce] : ["==", ["get", "kimlik"], "__yok__"]);
@@ -659,10 +697,16 @@ export class HaritaGorunumu {
     return k;
   }
 
-  /** Hücre kamu arsasında mı? (hazır arsa kümesi türetilmediyse hayır) */
-  private kamuHucre = (id: HucreId): boolean => {
+  /** Hücrenin kamu grubu (sunucudan; hazır arsa kümesi varsa O(1) dizinle, yoksa bloklardan). */
+  private kamuGrubu(x: number, y: number): KamuGrubuKaresi | null {
+    return this.arsaK && this.arsaK.izgara === this.izgara ? kamuBilgisi(this.arsaK, x, y) : kamuGrubuBul(this.sahiplik?.kamu, x, y);
+  }
+
+  /** Hücre kamu arsasındaysa Türkçe ret nedeni (türüyle), değilse null. */
+  private kamuHucre = (id: HucreId): string | null => {
     const c = idCoz(id);
-    return !!c && !!this.arsaK && hucredenArsa(this.arsaK, c.x, c.y)?.kamu === true;
+    const g = c ? this.kamuGrubu(c.x, c.y) : null;
+    return g ? kamuNedeni(g.tur) : null;
   };
 
   private sinifAl = (id: HucreId): ArsaSinifi => {
@@ -690,19 +734,26 @@ export class HaritaGorunumu {
     const yapiDugme = this.yerlesim ? `<button type="button" data-eylem="yapi-menu">Yapı kur</button>` : "";
     // 1) Hücre seçimi (ileri düzey araç: Shift ya da "Hücre aracı")
     if (this.secim.boyut > 0) return this.hucreBari(sayi, ilceAd, coklu, aracDugme);
-    // 2) Hazır arsa
+    // 2) Kamu arsası (bilgi kartı; seçilemez, satın alınamaz)
+    const ks = this.kamuSecili;
+    if (ks) {
+      const [x0, y0, x1, y1] = ks.blok;
+      this.alt.innerHTML = `
+        <span class="alt-sayi"><small>Kamu arsası</small><b data-alan="kamu-tur">${esc(KAMU_TUR_ADI[ks.grup.tur] ?? ks.grup.tur)}</b></span>
+        <span class="alt-sayi"><small>Blok</small><b>${fmt((x1 - x0 + 1) * (y1 - y0 + 1))} hücre</b></span>
+        <span class="alt-sayi"><small>Sahibi</small><b>${esc(kamuSahibiAdi(ks.grup.sahip))}</b></span>
+        <span class="alt-ipucu">${esc(KAMU_ACIKLAMA[ks.grup.tur] ?? "")} Satışa ve yapı yerleşimine kapalı.</span>
+        <div class="alt-dugmeler"><button type="button" data-eylem="temizle">Temizle</button></div>`;
+      return;
+    }
+    // 3) Hazır arsa
     const a = this.arsaSecili;
     if (a) {
       const d = this.arsaDurumu(a);
       const siniflar = arsaSiniflari(a)
         .map(([k, n]) => `${SINIF_ADI[k]}${arsaSiniflari(a).length > 1 ? ` ${fmt(n)}` : ""}`)
         .join(" · ");
-      if (d.durum === "kamu") {
-        this.alt.innerHTML = `
-          <span class="alt-sayi"><small>Kamu arsası</small><b>${fmt(a.hucreler.length)} hücre</b></span>
-          <span class="alt-ipucu">Meydan, pazar yeri, muhtarlık gibi ortak kullanım için ayrılmıştır: satışa ve yapı yerleşimine kapalı.</span>
-          <div class="alt-dugmeler"><button type="button" data-eylem="temizle">Temizle</button></div>`;
-      } else if (d.durum === "bos") {
+      if (d.durum === "bos") {
         const o = this.arsaFiyati(a, sayi);
         const sinir = o.engel;
         this.alt.innerHTML = `
@@ -726,7 +777,7 @@ export class HaritaGorunumu {
       }
       return;
     }
-    // 3) Boşta
+    // 4) Boşta
     const hazirlaniyor = this.izgara && !this.arsaK ? " Arsalar hazırlanıyor…" : "";
     const ipucu = window.matchMedia("(pointer: coarse)").matches ? "Bir hazır arsaya dokun" : "Bir hazır arsaya tıkla";
     this.alt.innerHTML = `<span class="alt-ipucu">${ipucu} ya da “Yapı kur” ile yapıyı seçip yerleştir.${hazirlaniyor}</span>
@@ -806,7 +857,8 @@ export class HaritaGorunumu {
     this.arsaHazir = new Promise((coz) => {
       window.setTimeout(() => {
         if (iz !== this.izgara) return coz(null);
-        const k = arsalariTuret(iz, kamuAyari(location.search));
+        // Kamu blokları sunucudan (sahiplikle birlikte gelir, dünya kurulurken donar): kamu hücreleri arsaya girmez
+        const k = arsalariTuret(iz, this.sahiplik?.kamu ?? []);
         this.arsaOnbellek.set(ilce, k);
         this.arsaK = k;
         this.arsaCiz();
@@ -818,8 +870,7 @@ export class HaritaGorunumu {
   }
 
   /** Arsanın satış durumu (sahiplikten). */
-  private arsaDurumu(a: Arsa): { durum: "bos" | "benim" | "kismen" | "baskasi" | "kamu"; sahipler: string[] } {
-    if (a.kamu) return { durum: "kamu", sahipler: [] };
+  private arsaDurumu(a: Arsa): { durum: "bos" | "benim" | "kismen" | "baskasi"; sahipler: string[] } {
     const s = this.sahiplik;
     const ben = this.baglanti.ben.id;
     let benim = 0;
@@ -851,8 +902,7 @@ export class HaritaGorunumu {
     const sd = sayi.benim + a.hucreler.length;
     const tavan = ilceTavani(sayi.uygun);
     let engel: string | null = null;
-    if (a.kamu) engel = "Kamu arsası: satışa kapalı";
-    else if (sd > 72) engel = "İlçede en çok 72 hücren olabilir";
+    if (sd > 72) engel = "İlçede en çok 72 hücren olabilir";
     else if (sd > tavan) engel = `İlçenin en çok %25'i senin olabilir (${fmt(tavan)} hücre)`;
     else {
       const hz = this.baglanti.ozet?.()?.hazineMili ?? null;
@@ -874,11 +924,11 @@ export class HaritaGorunumu {
     const [xa, ya, xb, yb] = [Math.floor(boylamdanX(b.getWest())), Math.floor(enlemdenY(b.getNorth())), Math.ceil(boylamdanX(b.getEast())), Math.ceil(enlemdenY(b.getSouth()))];
     const kes = arsaSinirlari(k, xa, ya, xb, yb);
     src.setData(kes.length ? { type: "Feature", properties: {}, geometry: { type: "MultiLineString", coordinates: kes } } : BOS);
-    // Kamu arsaları: sakin nötr dolgu
+    // Kamu arsaları: sakin doku (dikdörtgen bloklar; sunucudan)
     const kamu = this.harita.getSource("arsa-kamu") as GeoJSONSource | undefined;
     if (kamu) {
-      const h = kes.length ? kamuHucreleri(k, xa, ya, xb, yb) : [];
-      kamu.setData(h.length ? { type: "FeatureCollection", features: h.map(([x, y]) => hucreCokgeni(x, y)) } : BOS);
+      const l = kamuBloklari(k, xa, ya, xb, yb);
+      kamu.setData(l.length ? { type: "FeatureCollection", features: l.map(({ grup, blok }) => blokCokgeni(blok, { t: grup.tur })) } : BOS);
     }
   }
 
@@ -901,12 +951,28 @@ export class HaritaGorunumu {
     };
     if (this.arsaUzerinde && this.arsaUzerinde !== this.arsaSecili) ekle(this.arsaUzerinde, 0);
     ekle(this.arsaSecili, 1);
+    if (this.kamuSecili) f.push(blokCokgeni(this.kamuSecili.blok, { s: 1 }));
     src.setData({ type: "FeatureCollection", features: f });
+  }
+
+  /** Kamu bloğunu bilgi için gösterir (seçim değildir: satın alma ve yapı kurma yok). */
+  private kamuSec(grup: KamuGrubuKaresi, x: number, y: number): void {
+    const blok = grup.blok.find(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1);
+    if (!blok) return;
+    this.arsaSecili = null;
+    this.kamuSecili = { grup, blok };
+    this.secim.temizle();
+    this.secimCiz();
+    this.kartHucre = null;
+    this.kart.hidden = true;
+    this.arsaVurguCiz();
+    this.altCiz();
   }
 
   /** Hazır arsayı seçer (alt çubuk satın alma/yapı kurma için); null seçimi kaldırır. */
   arsaSec(a: Arsa | null): void {
     this.arsaSecili = a;
+    if (a) this.kamuSecili = null;
     if (a) {
       this.secim.temizle();
       this.secimCiz();
@@ -979,25 +1045,33 @@ export class HaritaGorunumu {
   }
 
   /** Yapılar: hücre dolgusu aşamaya göre (Temel, İskele, Gövde, Tamam) + "Çiftlik · Gövde" etiketi. */
-  private yapilariCiz(): void {
+  /** Son çizilen yapı imzası (yapı, aşama, düzey, tema): değişmediyse kaynak ve etiketler yeniden kurulmaz. */
+  private yapiImzasi = "";
+
+  private yapilariCiz(zorla = false): void {
     const src = this.harita.getSource("yapilar") as GeoJSONSource | undefined;
     if (!src) return;
+    const yapilar = this.sahiplik?.yapilar ?? [];
+    const simdi = this.baglanti.ozet?.()?.simZamani ?? 0;
+    const ben = this.baglanti.ben.id;
+    const sure = (y: (typeof yapilar)[number]): number => (this.katalog.find((k) => k.id === y.tur)?.ilkGunSureSaat ?? 1) * 3_600_000;
+    // Aşama ancak birkaç saatte bir değişir: iki saniyelik tazelemede aynıysa kaynak yeniden yüklenmez (harita boşta kalsın)
+    const imza = `${this.duzey >= 3 ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${y.bitis === undefined ? 0 : 1}`).join(";")}`;
+    if (!zorla && imza === this.yapiImzasi) return;
+    this.yapiImzasi = imza;
     for (const m of this.yapiEtiketleri) m.remove();
     this.yapiEtiketleri = [];
-    const yapilar = this.sahiplik?.yapilar ?? [];
     if (yapilar.length === 0) {
       src.setData(BOS);
       return;
     }
-    const simdi = this.baglanti.ozet?.()?.simZamani ?? 0;
-    const ben = this.baglanti.ben.id;
     const f: Feature<Polygon>[] = [];
     const katmanRengi = (tur: string | undefined): string => {
       const k = yapiKatmani(tur);
       return renk(k ? `--katman-${k}` : "--murekkep-3");
     };
     for (const y of yapilar) {
-      const a = yapiAsamasi(y, simdi, (this.katalog.find((k) => k.id === y.tur)?.ilkGunSureSaat ?? 1) * 3_600_000);
+      const a = yapiAsamasi(y, simdi, sure(y));
       let sx = 0;
       let sy = 0;
       for (const id of y.hucreler) {
@@ -1117,7 +1191,8 @@ export class HaritaGorunumu {
     const neden = engelNedeni(d);
     if (neden) return { html: `<b>Satın alınamaz</b> · ${esc(neden)}`, uyari: true };
     const id = hucreId(x, y);
-    if (this.kamuHucre(id)) return { html: "<b>Kamu arsası</b> · satışa kapalı", uyari: false };
+    const kg = this.kamuGrubu(x, y);
+    if (kg) return { html: `<b>Kamu arsası</b> · ${esc(KAMU_TUR_ADI[kg.tur] ?? kg.tur)} · satışa kapalı`, uyari: false };
     const sh = this.sahiplik?.hucreler.get(id);
     if (sh) {
       const ben = sh.sahip === this.baglanti.ben.id;
@@ -1132,7 +1207,6 @@ export class HaritaGorunumu {
   /** Hazır arsa üzerinde ipucu: hücre sayısı, sınıf, fiyat ya da durum. */
   private arsaIpucu(a: Arsa): { html: string; uyari: boolean } {
     const d = this.arsaDurumu(a);
-    if (d.durum === "kamu") return { html: "<b>Kamu arsası</b> · meydan, pazar yeri, muhtarlık için · satışa kapalı", uyari: false };
     const sinif = arsaSiniflari(a).map(([k]) => SINIF_ADI[k]).join(" · ");
     const bas = `<b>Hazır arsa</b> · ${fmt(a.hucreler.length)} hücre · ${esc(sinif)}`;
     if (d.durum === "benim") return { html: `${bas} · <b>senin</b>`, uyari: false };
@@ -1334,6 +1408,12 @@ export class HaritaGorunumu {
           this.arsaSec(a);
           return;
         }
+        // Kamu arsası: seçilmez; bilgi kartı (tür, sahip, neden) alt çubukta
+        const kg = this.kamuGrubu(c.x, c.y);
+        if (kg) {
+          this.kamuSec(kg, c.x, c.y);
+          return;
+        }
         const neden = secilemezNedeni(b, c.x, c.y);
         if (neden && !this.sahiplik?.hucreler.has(id)) this.ipucuGoster(`<b>Seçilemez</b> · ${esc(neden)}`, e.point.x, e.point.y, true, 2600);
         else if (this.sahiplik?.hucreler.has(id)) {
@@ -1343,6 +1423,7 @@ export class HaritaGorunumu {
         return;
       }
       this.arsaSecili = null;
+      this.kamuSecili = null;
       this.arsaVurguCiz();
       const coklu = ev.shiftKey || this.cokluSecim;
       const r = coklu ? this.secim.degistir(b, c.x, c.y) : this.secim.tek(b, c.x, c.y);

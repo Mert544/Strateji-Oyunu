@@ -3,6 +3,8 @@
  * Tanınmayan metin ham hâliyle cümleye gömülür: hiçbir hata sessizce yutulmaz. Bölge kipi çevirisi `komut/hata.ts`'dedir.
  */
 import { fmt } from "../arayuz/bicim";
+import { KAMU_TUR_ADI } from "./kamu";
+import type { KamuTuru } from "./kamu";
 import { ETIKET_ADI } from "./yapi";
 
 const ENGEL: Record<string, string> = { su: "su", yol: "yol tamponu", askeri: "askerî alan", koruma: "korunan alan" };
@@ -19,6 +21,8 @@ const KURALLAR: Kural[] = [
   [/^tekrarlanan hucre/, () => "Aynı hücre iki kez seçilmiş."],
   [/^hucre bu ilcede degil/, () => "Hücre bu ilçede değil."],
   [/^hucre satin alinamaz \((\w+)\)/, (m) => `Bu hücre satın alınamaz (${ENGEL[m[1] as string] ?? m[1]}).`],
+  [/^hucre kamu arsasi \(satilmaz\): \S+ \((\w+)/, (m) => `Bu hücre kamu arsası (${KAMU_TUR_ADI[m[1] as KamuTuru] ?? m[1]}): satılmaz.`],
+  [/^\S+ kamu yapisidir/, () => "Bu yapı kamu yapısıdır: oyunculara kapalı."],
   [/^hucre sinifi uyusmuyor/, () => "Hücrenin arsa sınıfı komutla uyuşmuyor."],
   [/^hucre zaten sahipli: \S+ \((.+)\)/, (m, ad) => `Bir hücre az önce ${ad(m[1] as string)} tarafından alındı.`],
   [/^ilcede en cok (\d+) hucre \(mevcut (\d+)\)/, (m) => `İlçede en çok ${m[1]} hücren olabilir (şu an ${m[2]}).`],

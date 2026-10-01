@@ -1,0 +1,25 @@
+/* Mülk kipi paneli (harita.js ile yüklenir; tek dosya bütçesine girmez). Belirteçler tema.css'ten. */
+.mulk-kimlik { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) 0 var(--s-3); }
+.mulk-kimlik > div { display: flex; flex-direction: column; min-width: 0; }
+.mulk-kimlik b { font-size: var(--yazi-lg); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mulk-amblem {
+  display: inline-grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: var(--r-md);
+  background: var(--sen); color: var(--birincil-ustu); font-weight: 700; font-style: normal; font-size: 16px; line-height: 1;
+}
+.mulk-amblem.kucuk { width: 20px; height: 20px; border-radius: 6px; font-size: 11.5px; }
+.mulk-koruma { list-style: none; margin: 0 0 var(--s-2); padding: var(--s-2) var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); border: 1px solid var(--cizgi-ince); border-radius: var(--r-lg); background: var(--yuzey-2); }
+.mulk-koruma li { display: flex; gap: var(--s-2); align-items: flex-start; line-height: 1.4; }
+.mulk-koruma .ikon { flex: none; margin-top: 2px; color: var(--murekkep-3); }
+.mulk-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.mulk-liste li { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) 0; border-bottom: 1px solid var(--cizgi-ince); }
+.mulk-liste li:last-child { border-bottom: 0; }
+.mulk-liste .ml-ad { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mulk-liste .ml-ad b { font-weight: 600; }
+.mulk-liste .eylem { margin: 0; min-height: 32px; font-size: var(--yazi-sm); }
+.mulk-dl { display: grid; grid-template-columns: auto 1fr; gap: var(--s-2) var(--s-4); margin: var(--s-2) 0; }
+.mulk-dl dt { color: var(--murekkep-3); }
+.mulk-dl dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+/* Küredeki bölge simülasyonunun hata ayıklama işaretleri mülk kipinde anlamsız */
+body.mulk-paneli #geride, body.mulk-paneli #duraklama-isareti { display: none !important; }
+/* Masaüstünde hazine ve saat üst çubukta (oyuncu düğmesi ve tarih şeridi): haritadaki çip yalnız bağlantı koptuğunda */
+@media (min-width: 821px) { body.mulk-paneli #harita-hazine:not(.kopuk) { display: none; } }
