@@ -6,6 +6,7 @@ import type { ParselHucreTanimi, ParselIlceTanimi } from "@bolge/veri";
 import { carpBol } from "./sabit";
 import { GUN, PPM } from "./tipler";
 import { kamuGrubuHucreKimlikleri, kamuKumeleriHesapla } from "./mulk/kamu";
+import { kamuIthalatCarpaniHesapla } from "./mulk/kamuFiyat";
 import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, HucreId, KamuKumesi } from "./tipler";
 
 /** Kimlik listesinden kimlik -> indeks eşlemesi; tekrarlanan kimlikte hata. Prototipsiz nesne (örn. "constructor" güvenli). */
@@ -70,9 +71,37 @@ export function icerikDerle(veri: CekirdekVeriPaketi): DerlenmisIcerik {
     lojistikSirasi,
     komsuKenarlar,
   };
+  odulTablosunuDogrula(ic);
   // Mülk kipi (S3): parametre ve parsel fikstürü BİRLİKTE verilirse açılır (tarımdaki iklim + tarim gibi); aksi halde alan yazılmaz.
   if (param.mulk !== undefined && veri.parsel !== undefined) ic.mulk = mulkDerle(veri, ic);
   return ic;
+}
+
+/**
+ * Ödül tablosu (para güvenliği, docs/06 §15.7) ve kasa parametresi anlamsal denetimi: her ödül kavramı en az bir para/mal taşır (yalnız kozmetik/bilgi
+ * kavramları çekirdeğe GİRMEZ), mal kimlikleri içerikte, değerler pozitif; her kavram tek başına tavanı aşmaz; kasa payları PPM'i aşmaz.
+ */
+function odulTablosunuDogrula(ic: DerlenmisIcerik): void {
+  const t = ic.param.odul;
+  if (t !== undefined) {
+    for (const k of Object.keys(t.kavramlar).sort()) {
+      const v = t.kavramlar[k] as NonNullable<typeof t.kavramlar[string]>;
+      let deger = v.para ?? 0;
+      for (const mid of Object.keys(v.mal ?? {}).sort()) {
+        const mi = ic.malIndeks[mid];
+        if (mi === undefined) throw new Error(`icerikDerle: odul.${k} bilinmeyen mal: ${mid}`);
+        const q = (v.mal as Record<string, number>)[mid] as number;
+        if (q <= 0) throw new Error(`icerikDerle: odul.${k}.mal.${mid} pozitif olmali`);
+        deger += carpBol(q, (ic.mallar[mi] as { tabanFiyat: number }).tabanFiyat, 1000);
+      }
+      if (deger <= 0) throw new Error(`icerikDerle: odul kavrami ${k} para ya da mal tasimali (yalniz kozmetik/bilgi kavramlari cekirdege girmez; profilde tutulur)`);
+      if (deger > t.tavanMili) throw new Error(`icerikDerle: odul kavrami ${k} tek basina tavani asiyor (${deger} > ${t.tavanMili})`);
+    }
+  }
+  const kasa = ic.param.mulk?.kasa;
+  if (kasa !== undefined && kasa.vergiPayi.mahallePpm + kasa.vergiPayi.ilcePpm + kasa.vergiPayi.ilPpm > PPM) {
+    throw new Error("icerikDerle: mulk.kasa.vergiPayi toplami PPM'i asiyor");
+  }
 }
 
 /**
@@ -152,7 +181,7 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
   const kamu = p.kamu === undefined ? undefined : kamuKumeleriHesapla(f, p.kamu);
   const ayrilmis = ayrilmisHucreler(f.ilceler, p.yeniOyuncu.ayrilmisHucrePpm, kamu);
   const ayrilmisSureMs = (p.yeniOyuncu.ayrilmisGun ?? AYRILMIS_GUN_VARSAYILAN) * GUN;
-  const sonuc: DerlenmisMulk = { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisSureMs };
+  const sonuc: DerlenmisMulk = { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisSureMs, kamuIthalatCarpaniPpm: kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar) };
   if (kamu !== undefined) sonuc.kamu = kamu;
   return sonuc;
 }

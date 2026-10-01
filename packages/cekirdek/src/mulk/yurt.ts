@@ -116,5 +116,9 @@ export function yurtUygula(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, plan: YurtPl
     hucreEkle(m, h);
   }
   ilce.satilmisHucre += plan.hucreler.length;
+  // Ayrılmış hücre yurdun parçasıysa hesap sayacına girer (hesap başına ayrılmış hücre sınırı; yurt dahil).
+  let ayrilmis = 0;
+  for (const id of plan.hucreler) if (mk.ayrilmis.has(id)) ayrilmis++;
+  if (ayrilmis > 0) mo.ayrilmisHucre = (mo.ayrilmisHucre ?? 0) + ayrilmis;
   ilceHucreEkle(mo, ilce.id, plan.hucreler.length);
 }

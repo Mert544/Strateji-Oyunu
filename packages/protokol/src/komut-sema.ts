@@ -61,6 +61,8 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
   z.object({ tur: z.literal("parsel_birak"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN) }),
   // Sistem (yalnız yönetici kimliğiyle; sunucu "sistem" oyuncusu olarak damgalar; mülk kipinde bolgeler boş; isteğe bağlı `ilce`: bedava yurdun ilçesi)
   z.object({ tur: z.literal("oyuncu_katil"), oyuncu: kimlik, bolgeler: z.array(kimlik).max(DIZI_EN_UZUN), ilce: kimlik.optional() }),
+  // Ödül (docs/06 §15.7): TUTAR TAŞIMAZ (tutar, mal, tavan ve "bir kez" kuralı çekirdek ödül tablosundadır); yalnız "sistem" (yönetici kimliği).
+  z.object({ tur: z.literal("sistem_odul"), oyuncu: kimlik, kavram: kimlik }),
 ]);
 
 // Derleme zamanı denetimi: şemanın çıkarsanan tipi çekirdek `Komut` ile birebir aynı olmalı.

@@ -117,6 +117,8 @@ interface AlimPlani {
   liste: string[];
   sinif: ArsaSinifi;
   fiyat: Mili;
+  /** Listedeki AYRILMIŞ hücre sayısı: taban fiyattan satılır, satış payı çarpanından muaftır (docs/06 §15.7). */
+  ayrilmis: number;
 }
 
 /**
@@ -147,25 +149,43 @@ function alimPlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ilce: IlceDuru
   const payTavani = carpBol(ilce.uygunHucre, p.ilcePayTavaniPpm, PPM);
   if (yeniToplam > payTavani) return `ilcenin en cok %${carpBol(p.ilcePayTavaniPpm, 100, PPM)}'i (${payTavani} hucre; mevcut ${mevcut})`;
   if (ilce.satilmisHucre + liste.length > ilce.uygunHucre) return "ilcede yeterli bos uygun hucre yok";
-  const fiyat = parselFiyati(p.hucreFiyati[sinif], p.satisPayiCarpaniPpm, ilce.satilmisHucre, ilce.uygunHucre, liste.length);
-  return { ilce, liste, sinif, fiyat };
+  // Ayrılmış hücreler (docs/06 §15.7): hesap başına sınır; taban (sınıf) fiyatından, satış payı çarpanından muaf.
+  let ayrilmis = 0;
+  for (const id of liste) if (mk.ayrilmis.has(id)) ayrilmis++;
+  const ayrilmisTavan = p.yeniOyuncu.ayrilmisHucreHesapTavani;
+  if (ayrilmis > 0 && ayrilmisTavan !== undefined) {
+    const sahip = mo0?.ayrilmisHucre ?? 0;
+    if (sahip + ayrilmis > ayrilmisTavan) return `hesap basina en cok ${ayrilmisTavan} ayrilmis hucre (mevcut ${sahip})`;
+  }
+  const taban = p.hucreFiyati[sinif];
+  const fiyat =
+    ayrilmis * taban + parselFiyati(taban, p.satisPayiCarpaniPpm, ilce.satilmisHucre - (ilce.ayrilmisSatilmis ?? 0), ilce.uygunHucre, liste.length - ayrilmis);
+  return { ilce, liste, sinif, fiyat, ayrilmis };
 }
 
 /** Satın almayı uygular: hazineden fiyatı düşer (önceden denetlenmiş olmalı), işletme düğümünü açar, hücreleri ekler. */
 function alimUygula(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, plan: AlimPlani): boolean {
   const m = d.mulk as MulkDurumu;
   const p = mk.p;
-  if (!hazineEkle(d, oyuncu, -plan.fiyat)) return false;
+  if (!hazineEkle(d, oyuncu, -plan.fiyat, "arsa")) return false;
   const mo = mulkOyuncuAl(m, oyuncu, d.zaman);
   isletmeAl(d, ctx.ic, oyuncu, plan.ilce.il);
   const taban = p.hucreFiyati[plan.sinif];
+  const satilmisNormal = plan.ilce.satilmisHucre - (plan.ilce.ayrilmisSatilmis ?? 0);
+  let normal = 0;
   for (let i = 0; i < plan.liste.length; i++) {
-    const deger = parselFiyati(taban, p.satisPayiCarpaniPpm, plan.ilce.satilmisHucre + i, plan.ilce.uygunHucre, 1);
-    const h: HucreDurumu = { id: plan.liste[i] as string, ilce: plan.ilce.id, sinif: plan.sinif, sahip: oyuncu, degerMili: deger, alinma: d.zaman };
+    const id = plan.liste[i] as string;
+    // Ayrılmış hücre taban fiyattan (satış payı çarpanından muaf); diğerleri artımlı (yalnız normal satışlar eğriyi ilerletir).
+    const deger = mk.ayrilmis.has(id) ? taban : parselFiyati(taban, p.satisPayiCarpaniPpm, satilmisNormal + normal++, plan.ilce.uygunHucre, 1);
+    const h: HucreDurumu = { id, ilce: plan.ilce.id, sinif: plan.sinif, sahip: oyuncu, degerMili: deger, alinma: d.zaman };
     hucreEkle(m, h);
     mo.araziDegeriMili += deger;
   }
   plan.ilce.satilmisHucre += plan.liste.length;
+  if (plan.ayrilmis > 0) {
+    plan.ilce.ayrilmisSatilmis = (plan.ilce.ayrilmisSatilmis ?? 0) + plan.ayrilmis;
+    mo.ayrilmisHucre = (mo.ayrilmisHucre ?? 0) + plan.ayrilmis;
+  }
   ilceHucreEkle(mo, plan.ilce.id, plan.liste.length);
   return true;
 }
@@ -394,10 +414,22 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
         deger += h.degerMili;
       }
       const iade = carpBol(deger, mk.p.parselBirakIadePpm ?? PARSEL_BIRAK_IADE_VARSAYILAN, PPM);
-      if (iade > 0 && !hazineEkle(d, oyuncu, iade)) return hata("iade yapilamadi");
+      if (iade > 0 && !hazineEkle(d, oyuncu, iade, "iade")) return hata("iade yapilamadi");
       // Değişiklikler (artık başarısız olamaz): hücreler boşalır; arazi değeri, ilçe hücre sayacı ve ilçe satılmışı düşer.
       const mo = mulkOyuncuAl(m, oyuncu, d.zaman);
-      for (const id of liste) hucreSil(m, id);
+      for (const id of liste) {
+        // Ayrılmış hücre bırakılırsa hesap sayacı düşer; AYRILMIŞ olarak satın alınmışsa (bedeli > 0; yurt bedelsizdir) ilçenin muaf sayacı da düşer.
+        if (mk.ayrilmis.has(id)) {
+          const bos = hucreBul(d, id) as HucreDurumu;
+          mo.ayrilmisHucre = (mo.ayrilmisHucre ?? 0) - 1;
+          if (mo.ayrilmisHucre <= 0) delete mo.ayrilmisHucre;
+          if (bos.degerMili > 0) {
+            ilce.ayrilmisSatilmis = (ilce.ayrilmisSatilmis ?? 0) - 1;
+            if (ilce.ayrilmisSatilmis <= 0) delete ilce.ayrilmisSatilmis;
+          }
+        }
+        hucreSil(m, id);
+      }
       mo.araziDegeriMili -= deger;
       ilceHucreEkle(mo, ilce.id, -liste.length);
       ilce.satilmisHucre -= liste.length;
@@ -410,7 +442,7 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       if (ins === undefined || ins.sahip !== oyuncu || ins.hucreler === undefined) return hata(`oyuncunun suren hucreli insaati yok: ${k.insaat}`);
       const iade = mk.p.insaatIptalIadePpm;
       const para = carpBol(ins.odenenPara ?? 0, iade, PPM);
-      if (para > 0 && !hazineEkle(d, oyuncu, para)) return hata("iade yapilamadi");
+      if (para > 0 && !hazineEkle(d, oyuncu, para, "iade")) return hata("iade yapilamadi");
       for (const [mal, q] of ins.odenenMal ?? []) {
         const geri = carpBol(q, iade, PPM);
         if (geri > 0) stokEkle(d, ctx, ins.bolge, mal, geri);

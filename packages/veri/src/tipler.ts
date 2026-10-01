@@ -436,6 +436,12 @@ export type PazarParametreleri = PazarTemelParametreleri & Partial<PazarEkAlanla
  */
 export interface Parametreler {
   surum: 1;
+  /**
+   * Ödül tablosu (para güvenliği, docs/06 §15.7): `sistem_odul {oyuncu, kavram}` komutu TUTAR TAŞIMAZ; para, mal, tavan ve "kavram başına bir kez"
+   * kuralı buradan okunur. Tablo kural sürümüne girer (sürümlü). Yoksa `sistem_odul` reddedilir. Yalnız para ya da mal taşıyan kavramlar buraya
+   * girer; yalnız kozmetik/bilgi veren kavramlar çekirdeğe GİRMEZ (profilde tutulur).
+   */
+  odul?: OdulTablosu;
   /** Dünya hızı yalnızca duvar saati -> sim zamanı eşlemesidir (1, 6, 24). */
   dunyaHizi: number;
   baslangic: {
@@ -533,6 +539,40 @@ export interface Parametreler {
   mulk?: MulkParametreleri;
 }
 
+/** Ödül kavramı: para (mili-para) ve/ya mal (mal -> mili-birim; oyuncunun ilk işletme düğümünün stoğuna). En az biri > 0 olmalıdır. */
+export interface OdulKavramTanimi {
+  para?: number;
+  mal?: Record<MalId, number>;
+}
+
+/** Sürümlü çekirdek ödül tablosu. `tavanMili`: oyuncu başına toplam ödül DEĞERİ (para + mal x `tabanFiyat`) tavanı (docs: ₺8.000 = 8 000 000). */
+export interface OdulTablosu {
+  surum: 1;
+  tavanMili: number;
+  kavramlar: Record<string, OdulKavramTanimi>;
+}
+
+/**
+ * Kamu kasası parametreleri (para güvenliği, docs/06 §15.7; araştırma kamu-ve-kamu-arazileri §4). Kasalar yalnız ZATEN YANAN paradan beslenir:
+ * arazi vergisi dağılımı ve ithalat makası/komisyonu payı; İHRACAT tarafı ASLA kaynak değildir. Tanımsızsa kasa ve para defteri kapalıdır.
+ */
+export interface MulkKasaParametreleri {
+  /** Arazi vergisi dağılımı (ppm; toplamı ≤ PPM, kalanı yanar): mahalle, ilçe, il. Varsayılan %20 / %40 / %15 / %25 yanar. */
+  vergiPayi: { mahallePpm: number; ilcePpm: number; ilPpm: number };
+  /** İthalat makasının (ref × (ithalatMakasi) − ref) ilçe kasasına giden payı (ppm). Varsayılan %20. */
+  ithalatMakasiIlcePpm: number;
+  /** İthalat işlem komisyonunun ilçe kasasına giden payı (ppm). Varsayılan %50. */
+  ithalatKomisyonuIlcePpm: number;
+  /** Kayan pencere (gün): oyuncu payı ve haftalık bütçe bu pencereden hesaplanır. Varsayılan 28. */
+  pencereGun: number;
+  /** Kasanın oyuncuya akan payı tavanı: pencere girişinin en çok bu kadarı (ppm). Varsayılan %50. */
+  oyuncuPayiTavaniPpm: number;
+  /** Tek alım tavanı: kullanılabilir bakiyenin en çok bu kadarı (ppm). Varsayılan %40. */
+  tekAlimTavaniPpm: number;
+  /** Haftalık bütçe: pencere girişinin haftalık bu payı (ppm; son 7 günde harcanan + rezerv bunu aşamaz). Varsayılan %25. */
+  haftalikButcePpm: number;
+}
+
 /** Ek yapı tanımı (mülk kipi). Para mili-para, malzeme mili-birim, oranlar ppm. Etki alanları yoksa yapı etkisizdir (yer tutucu). */
 export interface MulkEkYapiTanimi {
   ad: string;
@@ -626,6 +666,11 @@ export interface MulkParametreleri {
     ayrilmisHucrePpm: number;
     /** Ayrılmış hücrelerin satın alınabildiği süre (gün, katılımdan itibaren). Yoksa 14. */
     ayrilmisGun?: number;
+    /**
+     * Hesap başına en çok bu kadar AYRILMIŞ hücre (sahip olunan; yurt dahil). Ayrılmış hücreler satış payı çarpanından muaftır ve ilçenin
+     * TABAN (sınıf) fiyatından satılır. Yoksa sınır yoktur.
+     */
+    ayrilmisHucreHesapTavani?: number;
     /** Yeni oyuncu kalkanı (gün): mülk kipinde `korumaBitis` bu değerden okunur (bölge kipi `askeri.yeniOyuncuKorumasiGun`). */
     kalkanGun: number;
   };
@@ -639,6 +684,8 @@ export interface MulkParametreleri {
   temelEmirYuvasi?: number;
   /** Kamu arsası (docs/06 §15.6); yoksa kamu kuralı kapalıdır (dünya `mulk.kamu` taşımaz). */
   kamu?: MulkKamuParametreleri;
+  /** Kamu kasaları ve para defteri (docs/06 §15.7); yoksa kapalıdır (dünya `mulk.para` taşımaz). */
+  kasa?: MulkKasaParametreleri;
   /** Hareketsizlik merdiveni (docs/11 §7.8): yalnız veri yeri; kurallar sonraki iş. */
   hareketsizlik: {
     uykuGun: number;

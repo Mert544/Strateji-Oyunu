@@ -96,6 +96,25 @@ export {
   SerilestirmeHatasi,
 } from "./serilestir";
 export type { AnlikGoruntu, GocRaporu, GocSecenegi } from "./serilestir";
+// Para güvenliği (docs/06 §15.7): komut alan sözlüğü, ödül, para sayaçları, kamu kasaları ve kamu NPC alıcısı
+export { KOMUT_SEMASI, SISTEM_ALAN_TURLERI, sistemKomutuMu } from "./komutSemasi";
+export type { AlanTuru } from "./komutSemasi";
+export { odulDegeri, alinanOdulDegeri } from "./odul";
+export { sayacOlcekli, paraAcikMi } from "./paraSayac";
+export type { HazineKalemi } from "./paraSayac";
+export {
+  kasaBul,
+  kasaBakiyesi,
+  kasaGirisi,
+  kamuAlici,
+  kamuOdenekRezerv,
+  kamuOdenekIptal,
+  kamuOdenekOde,
+  kamuFiyatTavani,
+  kamuFiyatGecerli,
+  paraUzlastir,
+  dugumIlcesi,
+} from "./mulk/kasa";
 // Kalıcı kimlik ve içerik göçü (G8, docs/06 §14): kimlik tablosu, yalnız-ekle denetimi
 export {
   KIMLIK_TABLOSU_ADLARI,

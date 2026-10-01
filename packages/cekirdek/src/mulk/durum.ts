@@ -5,6 +5,7 @@
  * - `hucreler`: hücre kimliği, `ilceler`: ilçe kimliği, `oyuncular`: oyuncu kimliği, `isletmeler`: (oyuncu, il).
  * İşletme düğümünün bölge kimliği `<il>#<oyuncu>`'dur (il kimlikleri "#" içermez).
  */
+import { paraDurumuKur } from "../paraSayac";
 import { KAMU_ALGORITMA_SURUMU } from "./kamu";
 import type { DerlenmisMulk, Dunya, HucreDurumu, IlceDurumu, IsletmeDugumu, MulkDurumu, MulkOyuncuDurumu, Ms, OyuncuId } from "../tipler";
 
@@ -22,6 +23,7 @@ export function mulkDurumuKur(m: DerlenmisMulk): MulkDurumu {
     satilmisHucre: 0,
   }));
   const durum: MulkDurumu = { hucreler: [], ilceler, isletmeler: [], oyuncular: [] };
+  if (m.p.kasa !== undefined) durum.para = paraDurumuKur();
   const kamu = m.kamu;
   if (kamu !== undefined && m.p.kamu !== undefined) {
     durum.kamuParametre = structuredClone(m.p.kamu);

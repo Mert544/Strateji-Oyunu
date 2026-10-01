@@ -74,7 +74,7 @@ export function teknolojiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komu
   // Yayılım maliyeti ve süreyi, erken oyun hızlandırması yalnızca süreyi kısaltır.
   const yayilim = teknolojiYayilimiPpm(d, ctx, oyuncu, ti);
   const maliyet = carpBol(tek.maliyet, yayilim, PPM);
-  if (!hazineEkle(d, oyuncu, -maliyet)) return hata("hazine yetersiz");
+  if (!hazineEkle(d, oyuncu, -maliyet, "arastirma")) return hata("hazine yetersiz");
   const sure = carpliSure(carpBol(tek.sureGun * GUN, yayilim, PPM), sureCarpaniPpm(d, ctx, oyuncu));
   const bitis = d.zaman + sure;
   o.arastirma = { teknoloji: ti, bitis };

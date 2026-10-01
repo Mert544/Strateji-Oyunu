@@ -32,7 +32,7 @@ import {
 import type { EkleIhlali, IcerikKimlikTablosu } from "./goc";
 import { KAMU_ALGORITMA_SURUMU, kamuIndeksiAra, kamuIndeksiKur } from "./mulk/kamu";
 import { fnv1a64 } from "./ozet";
-import { OLAY_ONCELIGI } from "./tipler";
+import { KASA_GIRIS_KALEMLERI, LAVABO_KALEMLERI, MUSLUK_KALEMLERI, OLAY_ONCELIGI, SAAT } from "./tipler";
 import type { DerlenmisIcerik, Dunya, Ms } from "./tipler";
 
 /** Serileştirme/çözme hatası: `yol` hatalı değerin JSON yolu ($ = kök). */
@@ -363,6 +363,14 @@ export function dunyaDogrula(deger: unknown): Dunya {
     dizi(o.teknolojiler, `${y}.teknolojiler`).forEach((t, j) => tamsayi(t, `${y}.teknolojiler[${j}]`, 0));
     if (o.arastirma !== null) alanlar(nesne(o.arastirma, `${y}.arastirma`), `${y}.arastirma`, ["teknoloji", "bitis"]);
     dizi(o.kararlar, `${y}.kararlar`).forEach((k, j) => dize(k, `${y}.kararlar[${j}]`));
+    if (o.alinanOdul !== undefined) {
+      let onceki: string | null = null;
+      dizi(o.alinanOdul, `${y}.alinanOdul`).forEach((k, j) => {
+        const kid = dize(k, `${y}.alinanOdul[${j}]`);
+        if (onceki !== null && !(onceki < kid)) hata(`${y}.alinanOdul[${j}]`, `alinanOdul kimlige gore kesin artan sirali olmali (${onceki} >= ${kid})`);
+        onceki = kid;
+      });
+    }
   });
 
   // Pazar
@@ -458,6 +466,47 @@ export function dunyaDogrula(deger: unknown): Dunya {
   return d as unknown as Dunya;
 }
 
+/** Sayaç: { n, a } tamsayı; a ∈ [0, SAAT). */
+function sayacDogrula(v: unknown, yol: string): void {
+  const s = nesne(v, yol);
+  alanlar(s, yol, ["n", "a"]);
+  tamsayi(s.n, `${yol}.n`, 0);
+  tamsayi(s.a, `${yol}.a`, 0, SAAT - 1);
+}
+
+/** Para defteri (docs/06 §15.7): musluk/lavabo sayaçları ve kasalar. */
+function paraDogrula(v: unknown): void {
+  const p = nesne(v, "$.mulk.para");
+  alanlar(p, "$.mulk.para", ["surum", "musluk", "lavabo", "kasalar"]);
+  if (p.surum !== 1) hata("$.mulk.para.surum", `desteklenmeyen para defteri surumu: ${JSON.stringify(p.surum)}`);
+  const musluk = nesne(p.musluk, "$.mulk.para.musluk");
+  for (const k of Object.keys(musluk)) if (!(MUSLUK_KALEMLERI as readonly string[]).includes(k)) hata(`$.mulk.para.musluk.${k}`, "bilinmeyen musluk kalemi");
+  for (const k of MUSLUK_KALEMLERI) sayacDogrula(musluk[k], `$.mulk.para.musluk.${k}`);
+  const lavabo = nesne(p.lavabo, "$.mulk.para.lavabo");
+  for (const k of Object.keys(lavabo)) if (!(LAVABO_KALEMLERI as readonly string[]).includes(k)) hata(`$.mulk.para.lavabo.${k}`, "bilinmeyen lavabo kalemi");
+  for (const k of LAVABO_KALEMLERI) sayacDogrula(lavabo[k], `$.mulk.para.lavabo.${k}`);
+  kesinArtan(dizi(p.kasalar, "$.mulk.para.kasalar"), "$.mulk.para.kasalar", (k, y) => {
+    alanlar(k, y, ["sahip", "giris", "cikisOyuncu", "cikisNpc", "rezervOyuncu", "rezervNpc", "gunler"]);
+    const sahip = dize(k.sahip, `${y}.sahip`);
+    if (!sahip.startsWith("k:")) hata(`${y}.sahip`, `kasa sahibi 'k:' ile baslamali: ${sahip}`);
+    const giris = nesne(k.giris, `${y}.giris`);
+    for (const g of Object.keys(giris)) if (!(KASA_GIRIS_KALEMLERI as readonly string[]).includes(g)) hata(`${y}.giris.${g}`, "bilinmeyen kasa giris kalemi");
+    for (const g of KASA_GIRIS_KALEMLERI) sayacDogrula(giris[g], `${y}.giris.${g}`);
+    for (const f of ["cikisOyuncu", "cikisNpc", "rezervOyuncu", "rezervNpc"] as const) tamsayi(k[f], `${y}.${f}`, 0);
+    let oncekiGun = -1;
+    dizi(k.gunler, `${y}.gunler`).forEach((g, j) => {
+      const gy = `${y}.gunler[${j}]`;
+      const gn = nesne(g, gy);
+      alanlar(gn, gy, ["gun", "giris", "oyuncu", "npc"]);
+      const gun = tamsayi(gn.gun, `${gy}.gun`, 0);
+      if (gun <= oncekiGun) hata(`${gy}.gun`, "gunler kesin artan olmali");
+      oncekiGun = gun;
+      for (const f of ["giris", "oyuncu", "npc"] as const) tamsayi(gn[f], `${gy}.${f}`, 0);
+    });
+    return sahip;
+  });
+}
+
 /** Dizinin `anahtar`a göre kesin artan (JS dize sırası) olduğunu denetler. */
 function kesinArtan(dizi: unknown[], yol: string, anahtar: (x: Nesne, y: string) => string): void {
   let onceki: string | null = null;
@@ -485,7 +534,8 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
   kesinArtan(dizi(m.ilceler, "$.mulk.ilceler"), "$.mulk.ilceler", (c, y) => {
     alanlar(c, y, ["id", "il", "seviye", "uygunHucre", "satilmisHucre"]);
     const uygun = tamsayi(c.uygunHucre, `${y}.uygunHucre`, 0);
-    tamsayi(c.satilmisHucre, `${y}.satilmisHucre`, 0, uygun);
+    const satilmis = tamsayi(c.satilmisHucre, `${y}.satilmisHucre`, 0, uygun);
+    if (c.ayrilmisSatilmis !== undefined) tamsayi(c.ayrilmisSatilmis, `${y}.ayrilmisSatilmis`, 1, satilmis);
     tamsayi(c.seviye, `${y}.seviye`, 0, 3);
     return dize(c.id, `${y}.id`);
   });
@@ -507,6 +557,27 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
     stokDogrula(o.araziVergisi, `${y}.araziVergisi`);
     tamsayi(o.sonEtkinlik, `${y}.sonEtkinlik`);
     if (o.indirimliYapi !== undefined) tamsayi(o.indirimliYapi, `${y}.indirimliYapi`, 1);
+    if (o.ayrilmisHucre !== undefined) tamsayi(o.ayrilmisHucre, `${y}.ayrilmisHucre`, 1);
+    if (o.paraAkisi !== undefined) {
+      const pa = nesne(o.paraAkisi, `${y}.paraAkisi`);
+      alanlar(pa, `${y}.paraAkisi`, ["t0", "ihracat", "nufus", "ithalat", "isletme", "vergi", "kasa"]);
+      tamsayi(pa.t0, `${y}.paraAkisi.t0`, 0);
+      for (const k of ["ihracat", "nufus", "ithalat", "isletme", "vergi"] as const) tamsayi(pa[k], `${y}.paraAkisi.${k}`);
+      let oncekiKasa: string | null = null;
+      dizi(pa.kasa, `${y}.paraAkisi.kasa`).forEach((e, j) => {
+        const ey = `${y}.paraAkisi.kasa[${j}]`;
+        const en = nesne(e, ey);
+        alanlar(en, ey, ["sahip", "kalem", "oran"]);
+        const sahip = dize(en.sahip, `${ey}.sahip`);
+        if (!sahip.startsWith("k:")) hata(`${ey}.sahip`, `kasa sahibi 'k:' ile baslamali: ${sahip}`);
+        const kalem = dize(en.kalem, `${ey}.kalem`);
+        if (!(KASA_GIRIS_KALEMLERI as readonly string[]).includes(kalem)) hata(`${ey}.kalem`, `gecersiz kasa kalemi: ${kalem}`);
+        tamsayi(en.oran, `${ey}.oran`, 1);
+        const anahtar = `${sahip}\u0000${kalem}`;
+        if (oncekiKasa !== null && !(oncekiKasa < anahtar)) hata(ey, "kasa oranlari (sahip, kalem) siraliyla kesin artan olmali");
+        oncekiKasa = anahtar;
+      });
+    }
     kesinArtan(dizi(o.ilceHucre, `${y}.ilceHucre`), `${y}.ilceHucre`, (k, ky) => {
       tamsayi(k.hucre, `${ky}.hucre`, 1);
       return dize(k.ilce, `${ky}.ilce`);
@@ -573,6 +644,7 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
       return ilce;
     });
   }
+  if (m.para !== undefined) paraDogrula(m.para);
   // Her işletme düğümü kayıtlı olmalı
   let dugum = 0;
   for (const b of bolgeler) if ((b as Nesne).merkez !== undefined) dugum++;
@@ -635,6 +707,7 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
   if (d.mulk !== undefined && ic.mulk !== undefined) {
     const mk = ic.mulk;
     if (d.mulk.ilceler.length !== mk.ilceler.size) hata("$.mulk.ilceler", `ilce sayisi ${d.mulk.ilceler.length}, fiksturde ${mk.ilceler.size}`);
+    if (d.mulk.para !== undefined && mk.p.kasa === undefined) hata("$.mulk.para", "para defteri var ama kasa parametresi (mulk.kasa) tanimli degil");
     const kamuKaydi = new Map((d.mulk.kamu ?? []).map((k) => [k.ilce, k]));
     if (d.mulk.kamu !== undefined && mk.p.kamu === undefined) hata("$.mulk.kamu", "kamu durumu var ama kamu parametresi (mulk.kamu) tanimli degil");
     d.mulk.ilceler.forEach((c, i) => {

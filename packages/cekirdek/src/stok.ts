@@ -19,6 +19,8 @@
  * yapılmaz: surum artmaz, yeni eşik planlanmaz (mevcut eşik hâlâ geçerlidir).
  */
 import { kuyrukSuz } from "./kuyruk";
+import { borcSilmeKaydet, paraKaydet } from "./paraSayac";
+import type { HazineKalemi } from "./paraSayac";
 import { tabanBol } from "./sabit";
 import { SAAT } from "./tipler";
 import type { Baglam, Dunya, Mili, Ms, OyuncuDurumu, OyuncuId, Stok } from "./tipler";
@@ -70,7 +72,7 @@ export function anlikMiktar(s: Stok, t: Ms): Mili {
  * miktar [0, kapasite]'ye kelepçelenir; artik korunur (kelepçede sıfırlanmaz), bu da parçalı ve tek seferlik
  * uzlaştırmanın aynı miktar/israf/artik vermesini sağlar.
  */
-export function stokUzlastirYerel(s: Stok, t: Ms): Mili {
+export function stokUzlastirYerel(s: Stok, t: Ms, kelepce?: { miktar: number }): Mili {
   let israf = 0;
   if (t > s.t0) {
     const oran = s.yerelOran + s.gelenOran;
@@ -82,6 +84,7 @@ export function stokUzlastirYerel(s: Stok, t: Ms): Mili {
         israf = m - s.kapasite;
         m = s.kapasite;
       } else if (m < 0) {
+        if (kelepce !== undefined) kelepce.miktar += -m; // para defteri: kelepçede silinen (ödenmeyen) borç
         m = 0;
       }
       s.miktar = m;
@@ -240,10 +243,21 @@ export function anlikHazine(d: Dunya, oyuncu: OyuncuId): Mili {
   return o ? anlikMiktar(o.hazine, d.zaman) : 0;
 }
 
+/** Hazine stoğunu d.zaman'a uzlaştırır; para defteri açıksa kelepçede silinen borcu musluk kalemine (`borcSilme`) yazar. */
+function hazineIsle(d: Dunya, o: OyuncuDurumu): void {
+  if (d.mulk?.para === undefined) {
+    stokUzlastirYerel(o.hazine, d.zaman);
+    return;
+  }
+  const k = { miktar: 0 };
+  stokUzlastirYerel(o.hazine, d.zaman, k);
+  borcSilmeKaydet(d, k.miktar);
+}
+
 /** Hazineyi d.zaman'a uzlaştırır. Oyuncu yoksa hiçbir şey yapmaz. */
 export function hazineUzlastir(d: Dunya, oyuncu: OyuncuId): void {
   const o = oyuncuBul(d, oyuncu);
-  if (o) stokUzlastirYerel(o.hazine, d.zaman);
+  if (o) hazineIsle(d, o);
 }
 
 /**
@@ -254,7 +268,7 @@ export function hazineUzlastir(d: Dunya, oyuncu: OyuncuId): void {
 export function hazineOranAyarla(d: Dunya, oyuncu: OyuncuId, oran: Mili): void {
   const o = oyuncuBul(d, oyuncu);
   if (!o || o.hazine.yerelOran === oran) return;
-  stokUzlastirYerel(o.hazine, d.zaman);
+  hazineIsle(d, o);
   o.hazine.yerelOran = oran;
   o.hazine.surum++;
 }
@@ -266,14 +280,15 @@ export function hazineOranAyarla(d: Dunya, oyuncu: OyuncuId, oran: Mili): void {
  * de dokunmaz. Böylece başarısız komut (ör. "hazine yetersiz") durum özetini değiştirmez ve yalnız başarılı
  * komutları kaydeden günlüğün yeniden oynatılması her an birebir aynı özeti verir (docs/06 §14).
  */
-export function hazineEkle(d: Dunya, oyuncu: OyuncuId, delta: Mili): boolean {
+export function hazineEkle(d: Dunya, oyuncu: OyuncuId, delta: Mili, kalem: HazineKalemi = delta < 0 ? "harcama" : "diger"): boolean {
   const o = oyuncuBul(d, oyuncu);
   if (!o) return false;
   if (anlikMiktar(o.hazine, d.zaman) + delta < 0) return false;
-  stokUzlastirYerel(o.hazine, d.zaman);
+  hazineIsle(d, o);
   const yeni = o.hazine.miktar + delta;
   if (yeni < 0) return false;
   o.hazine.miktar = yeni > o.hazine.kapasite ? o.hazine.kapasite : yeni;
+  paraKaydet(d, delta, kalem);
   return true;
 }
 

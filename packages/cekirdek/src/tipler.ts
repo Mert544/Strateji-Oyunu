@@ -102,6 +102,11 @@ export interface DerlenmisMulk {
   kamu?: Map<string, KamuKumesi>;
   /** Ayrılmış hücrelerin satıldığı süre (ms, katılımdan itibaren). */
   ayrilmisSureMs: Ms;
+  /**
+   * Kamuya satış fiyat tavanının çarpanı (ppm): oyunda ulaşılabilecek EN DÜŞÜK NPC ithalat nakit çarpanı (anlaşma makası ve en iyi Ticaret ofisi
+   * indirimi dahil); derleme zamanında içerik ve parametrelerden bir kez hesaplanır, oyuncu durumuna bakmaz (docs/06 §15.7).
+   */
+  kamuIthalatCarpaniPpm: number;
 }
 
 /** Türetilmiş (derleme zamanı) ilçe kamu kümesi: kompakt gruplar ve toplam hücre sayısı. */
@@ -375,6 +380,11 @@ export interface OyuncuDurumu {
   ticaretRejimi?: TicaretRejimi;
   /** Ticaret defteri (B3): komisyon, makas, prim, tarife muhasebesi. Pazar v1 kapalıysa TANIMSIZDIR. */
   ticaretDefteri?: TicaretDefteri;
+  /**
+   * Alınmış ödül kavramları (docs/06 §15.7; `sistem_odul`): kimliğe göre sıralı, tekil. "Kavram başına bir kez" kuralı ve ödül tavanı bundan
+   * hesaplanır. Yalnız bir ödül alınınca yazılır (eski anlık görüntüler ve ödülsüz dünyalar etkilenmez).
+   */
+  alinanOdul?: string[];
 }
 
 /** Yayılan bir iklim olayı (B1): yaratılırken bir kez hesaplanır, deterministik. */
@@ -646,6 +656,8 @@ export type Komut =
   // Sistem (oyuncu kaydı; oyuncu kimliği "sistem" ile verilir). Mülk kipinde `bolgeler` boş olmalıdır.
   // Mülk kipinde `ilce` (isteğe bağlı): bedava yurdun verileceği ilçe; yoksa doluluğu en düşük uygun ilçe seçilir.
   | { tur: "oyuncu_katil"; oyuncu: OyuncuId; bolgeler: string[]; ilce?: string }
+  // Ödül (para güvenliği, docs/06 §15.7): TUTAR TAŞIMAZ; tutar, mal, tavan ve "bir kez" kuralı çekirdek ödül tablosundan (`param.odul`). Yalnız "sistem".
+  | { tur: "sistem_odul"; oyuncu: OyuncuId; kavram: string }
   // Mülk kipi (S3)
   | MulkKomutu;
 
@@ -732,6 +744,11 @@ export interface IlceDurumu {
   uygunHucre: number;
   /** Satılmış hücre sayısı; fiyat çarpanı (1 + 2·pay) bundan türetilir. */
   satilmisHucre: number;
+  /**
+   * `satilmisHucre`nin, AYRILMIŞ hücre olarak (taban fiyatla, satış payı çarpanından muaf) satılan kısmı. Fiyat çarpanı
+   * `satilmisHucre − ayrilmisSatilmis`'a bağlıdır (docs/06 §15.7). Yalnız > 0 iken yazılır.
+   */
+  ayrilmisSatilmis?: number;
 }
 
 /** Oyuncunun mülk kaydı: arazi değeri, ilçe başına hücre sayısı, tembel arazi vergisi ve hareketsizlik verisi. */
@@ -750,6 +767,10 @@ export interface MulkOyuncuDurumu {
   sonEtkinlik: Ms;
   /** İlk-yapı indirimiyle başlatılmış (ve iptal edilmemiş) yapı sayısı; yalnız >0 iken yazılır. */
   indirimliYapi?: number;
+  /** Para defteri (docs/06 §15.7): son lojistik çözümde yazılan saatlik para akışları. `mulk.para` açıkken ilk çözümde oluşur. */
+  paraAkisi?: ParaAkisi;
+  /** Sahip olunan AYRILMIŞ hücre sayısı (yurt dahil; hesap başına sınır `yeniOyuncu.ayrilmisHucreHesapTavani`); yalnız > 0 iken yazılır. */
+  ayrilmisHucre?: number;
 }
 
 /** Dünyanın mülk durumu. Diziler deterministik sıralıdır. */
@@ -773,6 +794,99 @@ export interface MulkDurumu {
   kamuParametre?: MulkKamuParametreleri;
   /** Kamu kümesini üreten algoritmanın sürümü (şimdi 1). `kamu` ile birlikte yazılır. */
   kamuSurumu?: number;
+  /**
+   * Para defteri ve kamu kasaları (docs/06 §15.7). `mulk.kasa` parametresiyle kurulan dünyada vardır; yoksa TANIMSIZDIR (eski dünyalar ve
+   * mülksüz kip özeti eskisiyle aynı).
+   */
+  para?: ParaDurumu;
+}
+
+// ---------------------------------------------------------------------------
+// Para güvenliği (docs/06 §15.7): musluk ve lavabo sayaçları, kamu kasaları
+// ---------------------------------------------------------------------------
+
+/**
+ * Kayıpsız birikimli tamsayı sayaç: gerçek değer = `n + a / SAAT` (mili-para); `a` ∈ [0, SAAT) saatlik oranların ms ile çarpımından kalan
+ * kesir (mili-para × ms). Anlık (komut kaynaklı) kalemler `n`'ye tamsayı eklenir. Böylece tembel (oranlı) akışlar da KESİN toplanır ve para
+ * korunumu eşitliği tamsayıda (SAAT ile ölçeklenmiş) tam tutar.
+ */
+export interface ParaSayaci {
+  n: Mili;
+  a: number;
+}
+
+/** Para MUSLUKLARI (oyunculara giren yeni para): hibe, ödül, iade (önceden yanan paranın geri verilmesi), NPC ihracat ödemeleri, nüfus vergisi geliri, kelepçe (silinen borç), diğer. */
+export type MuslukKalemi = "hibe" | "odul" | "iade" | "ihracatNpc" | "nufusGeliri" | "borcSilme" | "diger";
+export const MUSLUK_KALEMLERI: readonly MuslukKalemi[] = ["borcSilme", "diger", "hibe", "ihracatNpc", "iade", "nufusGeliri", "odul"];
+
+/** Para LAVABOLARI (yanan para): arsa alımı, yapı/üretim harcaması, araştırma, NPC ithalat tahsilatı (kasa payı hariç), işletme gideri ve birlik maaşı, arazi vergisinin yanan kısmı, kasanın NPC'ye harcaması. */
+export type LavaboKalemi = "arsa" | "harcama" | "arastirma" | "ithalatNpc" | "isletme" | "araziVergisi" | "kamuNpc";
+export const LAVABO_KALEMLERI: readonly LavaboKalemi[] = ["araziVergisi", "arastirma", "arsa", "harcama", "isletme", "ithalatNpc", "kamuNpc"];
+
+/** Kasa girişi kalemleri (§4.1): arazi vergisi payı, ithalat makası payı, ithalat komisyonu payı. İHRACAT kaynağı YOKTUR. */
+export type KasaGirisKalemi = "vergi" | "ithalatMakas" | "ithalatKomisyon";
+export const KASA_GIRIS_KALEMLERI: readonly KasaGirisKalemi[] = ["ithalatKomisyon", "ithalatMakas", "vergi"];
+
+/** Para defteri: kalem bazında kümülatif sayaçlar (açık defter; kayıt kayıt değil) ve kasalar. */
+export interface ParaDurumu {
+  surum: 1;
+  musluk: Record<MuslukKalemi, ParaSayaci>;
+  lavabo: Record<LavaboKalemi, ParaSayaci>;
+  /** Sahip kimliğine göre sıralı; ilk gelire kadar yazılmaz. */
+  kasalar: KasaDurumu[];
+}
+
+/** Kamu kasası (`k:mahalle:*`, `k:ilce:*`, `k:il:*`; Y-39: Muhtar, İlçe Başkanı, Vali; yöneticisiz hâlde NPC Kaymakam). */
+export interface KasaDurumu {
+  sahip: string;
+  giris: Record<KasaGirisKalemi, ParaSayaci>;
+  /** Kümülatif çıkış (mili-para): oyuncuya ve NPC'ye. */
+  cikisOyuncu: Mili;
+  cikisNpc: Mili;
+  /** Ödenek rezervi (bloke; henüz ödenmemiş): oyuncuya ve NPC'ye. */
+  rezervOyuncu: Mili;
+  rezervNpc: Mili;
+  /** Kayan pencere günleri (gün sırasıyla, en çok `pencereGun` gün): o gün girişi, oyuncuya ve NPC'ye ÖDENEN. */
+  gunler: KasaGunu[];
+}
+
+export interface KasaGunu {
+  gun: number;
+  giris: Mili;
+  oyuncu: Mili;
+  npc: Mili;
+}
+
+/** Oyuncunun son lojistik çözümde yazılan saatlik para akışları (mili-para/saat); tembel birikim `t0`'dan beri işlenmemiştir. */
+export interface ParaAkisi {
+  t0: Ms;
+  /** NPC ihracat nakit geliri (musluk) ve nüfus vergisi geliri (musluk). */
+  ihracat: Mili;
+  nufus: Mili;
+  /** NPC ithalat nakit gideri (lavabo; kasa payı dahil) ve işletme gideri + birlik maaşı (lavabo). */
+  ithalat: Mili;
+  isletme: Mili;
+  /** Arazi vergisi (lavabo; kasa payı dahil). */
+  vergi: Mili;
+  /** Kasalara giden paylar (sahip, kalem sırasıyla): ithalat ve vergi içindeki payı; kalanı yanar. */
+  kasa: { sahip: string; kalem: KasaGirisKalemi; oran: Mili }[];
+}
+
+/** Kamu NPC alıcısı görünümü (kasa kaynaklı; sipariş kancaları için). */
+export interface NpcAlici {
+  tur: "kamu";
+  /** Kaynak kasa (sahip kimliği). */
+  kaynak: string;
+  /** Haftalık bütçe (mili-para): pencere girişinin haftalık payı. */
+  haftalikButce: Mili;
+  /** Son 7 günde harcanan + bekleyen rezerv. */
+  haftalikKullanilan: Mili;
+  /** Kullanılabilir bakiye (giriş − çıkış − rezerv). */
+  bakiye: Mili;
+  /** Pencere (gün) toplamları: giriş, oyuncuya ve NPC'ye ödenen. */
+  pencereGiris: Mili;
+  pencereOyuncu: Mili;
+  pencereNpc: Mili;
 }
 
 /** Kamu sahibi kimliği önekleri: `k:mahalle:<id>`, `k:ilce:<id>`, `k:il:<id>`; oyuncu kimlikleri `k:` ile başlayamaz. */

@@ -1,5 +1,19 @@
 {
   "surum": 1,
+  "odul": {
+    "surum": 1,
+    "tavanMili": 8000000,
+    "kavramlar": {
+      "ilk_yapi": { "mal": { "celik": 5000 } },
+      "ilk_satis": { "para": 500000 },
+      "ilk_isleme": { "mal": { "parca": 5000 } },
+      "zincir_kapandi": { "para": 700000 },
+      "ilk_dukkan": { "mal": { "celik": 10000 } },
+      "ilk_sozlesme": { "para": 500000 },
+      "ikinci_ilce": { "para": 250000 },
+      "ilk_arastirma": { "para": 400000 }
+    }
+  },
   "dunyaHizi": 1,
   "baslangic": {
     "stok": {
@@ -201,9 +215,19 @@
       "indirimliYapiSayisi": 5,
       "ayrilmisHucrePpm": 200000,
       "ayrilmisGun": 14,
+      "ayrilmisHucreHesapTavani": 12,
       "kalkanGun": 14
     },
     "temelEmirYuvasi": 4,
+    "kasa": {
+      "vergiPayi": { "mahallePpm": 200000, "ilcePpm": 400000, "ilPpm": 150000 },
+      "ithalatMakasiIlcePpm": 200000,
+      "ithalatKomisyonuIlcePpm": 500000,
+      "pencereGun": 28,
+      "oyuncuPayiTavaniPpm": 500000,
+      "tekAlimTavaniPpm": 400000,
+      "haftalikButcePpm": 250000
+    },
     "kamu": {
       "mahallePaketi": [
         { "tur": "meydan", "hucre": 5 },

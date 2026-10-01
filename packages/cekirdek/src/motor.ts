@@ -17,6 +17,8 @@ import { ticaretDefteriBaslat } from "./pazar";
 import { politikaKomutu } from "./politika";
 import { sanayiKomutu, sondajBitti } from "./sanayi";
 import { iklimGunluk, tarimKomutu } from "./tarim";
+import { odulVer } from "./odul";
+import { hibeKaydet } from "./paraSayac";
 import { kamuSahibiMi, mulkKomutu, mulkOyuncuAl, mulkOyuncuBul } from "./mulk";
 import { yurtPlanla, yurtUygula } from "./mulk/yurt";
 import type { YurtPlani } from "./mulk/yurt";
@@ -177,6 +179,9 @@ export class Simulasyon {
     let sonuc: KomutSonucu;
     if (komut.tur === "oyuncu_katil") {
       sonuc = k.oyuncu === SISTEM_OYUNCUSU ? this.oyuncuKatil(komut) : hata("oyuncu_katil yalnizca 'sistem' ile verilebilir");
+    } else if (komut.tur === "sistem_odul") {
+      // Para güvenliği (docs/06 §15.7): tutar taşımaz; yalnız sistem yolu (komutSemasi).
+      sonuc = k.oyuncu === SISTEM_OYUNCUSU ? odulVer(d, ctx, komut.oyuncu, komut.kavram) : hata("sistem_odul yalnizca 'sistem' ile verilebilir");
     } else if (k.oyuncu === SISTEM_OYUNCUSU || !oyuncuBul(d, k.oyuncu)) {
       sonuc = hata(`bilinmeyen oyuncu: ${k.oyuncu}`);
     } else {
@@ -234,6 +239,8 @@ export class Simulasyon {
         return mulkKomutu(d, ctx, oyuncu, komut);
       case "oyuncu_katil":
         return hata("oyuncu_katil yonlendirilemez");
+      case "sistem_odul":
+        return hata("sistem_odul yonlendirilemez");
       default: {
         const _tamamlik: never = komut;
         return hata(`bilinmeyen komut: ${JSON.stringify(_tamamlik)}`);
@@ -326,6 +333,7 @@ export class Simulasyon {
       d.oyuncular.splice(konum, 0, yeniOyuncu);
       oyuncu = yeniOyuncu;
       if (mulk) {
+        hibeKaydet(d, yeniOyuncu.hazine.miktar); // para defteri (docs/06 §15.7): hibe musluğu
         mulkOyuncuAl(d.mulk as NonNullable<Dunya["mulk"]>, id, d.zaman);
         if (yurt !== null) yurtUygula(d, this.baglam, id, yurt);
       }

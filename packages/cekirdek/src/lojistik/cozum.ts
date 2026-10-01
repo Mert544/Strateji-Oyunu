@@ -37,6 +37,7 @@ import {
 import { defterOranYaz, pazarMuhasebesi, sifirKalemler, ticaretCarpanlari, ihracatKirilimi, ithalatKirilimi } from "../pazar";
 import { pazarTablosu } from "../pazar/tablo";
 import { BOS_DUGUMLER, oyuncuDugumleri } from "../dugum";
+import { dugumIlcesi, kasaOranlari, paraAkisiYaz, paraMuhasebesi } from "../mulk/kasa";
 import { araziVergisiOranAyarla, araziVergisiSaat } from "../mulk/vergi";
 import { kenarKullanilabilirMi } from "../politika";
 import { bakimCarpani, bakimDuzeyiIndeksi } from "../sanayi/carpan";
@@ -64,6 +65,19 @@ interface HazineKalemleri {
   ithalat: number;
   /** Pazar v1 (B3): ticaret kalemleri (defter için); yalnız `hesaplar` verilen çağrıda ve defter açıkken dolu, aksi halde null. */
   ticaret: TicaretKalemleri | null;
+  /** Para defteri (docs/06 §15.7): akış bileşenleri; yalnız mülk kipinde `mulk.para` açıkken dolu, aksi halde null. */
+  para: ParaBilesenleri | null;
+}
+
+/** Saatlik para akışı bileşenleri (mili-para/saat) ve kasa kaynağı (ilçe başına ithalat makası/komisyonu). */
+interface ParaBilesenleri {
+  ihracat: Mili;
+  nufus: Mili;
+  ithalat: Mili;
+  isletme: Mili;
+  vergi: Mili;
+  makasIlce: Map<string, Mili>;
+  komisyonIlce: Map<string, Mili>;
 }
 
 /**
@@ -88,9 +102,16 @@ function hazineKalemleri(
   let gelir = 0;
   let gider = 0;
   let ithalat = 0;
+  const parali = d.mulk?.para !== undefined;
+  let nufusGelir = 0;
+  let ihracatGelir = 0;
+  const makasIlce = new Map<string, Mili>();
+  const komisyonIlce = new Map<string, Mili>();
   for (const r of dugumler) {
     const b = d.bolgeler[r] as BolgeDurumu;
-    gelir += carpBol(carpBol(b.nufus, p.ekonomi.vergiTabani1000Saat, 1000), o.vergiPpm, PPM);
+    const nv = carpBol(carpBol(b.nufus, p.ekonomi.vergiTabani1000Saat, 1000), o.vergiPpm, PPM);
+    gelir += nv;
+    nufusGelir += nv;
     const fr4 = hesaplar === null ? null : (hesaplar[b.indeks] as BolgeHesabi).fr4;
     // Ticaret çarpanları (makas, liman primi, komisyon, tarife) bölge başına bir kez; emirsiz bölgede hesaplanmaz.
     let carp = null as ReturnType<typeof ticaretCarpanlari> | null;
@@ -104,6 +125,7 @@ function hazineKalemleri(
         const brut = carpBol(gercek, fiyat, MILI);
         const kr = ihracatKirilimi(brut, carp);
         gelir += kr.nakit;
+        ihracatGelir += kr.nakit;
         if (defter !== null) {
           defter.brutIhracat += brut;
           defter.makas += kr.makas;
@@ -116,6 +138,14 @@ function hazineKalemleri(
         const kr = ithalatKirilimi(brut, carp);
         gider += kr.nakit;
         ithalat += kr.nakit;
+        if (parali && b.merkez !== undefined) {
+          // Kasa kaynağı: ithalat makası ve komisyonu (ihracat tarafı ASLA kaynak değildir); düğümün kamu ilçesine.
+          const ilce = dugumIlcesi(d, ctx.ic, o.id, b.id);
+          if (ilce !== undefined) {
+            makasIlce.set(ilce, (makasIlce.get(ilce) ?? 0) + kr.makas);
+            komisyonIlce.set(ilce, (komisyonIlce.get(ilce) ?? 0) + kr.komisyon);
+          }
+        }
         if (defter !== null) {
           defter.brutIthalat += brut;
           defter.makas += kr.makas;
@@ -143,8 +173,11 @@ function hazineKalemleri(
     }
   }
   // Mülk kipi (S3): tembel arazi vergisi saatlik gider olarak (kapalıyken 0).
-  if (d.mulk !== undefined) gider += araziVergisiSaat(d, ctx.ic, o.id);
-  return { gelir, gider, ithalat, ticaret: defter };
+  const isletmeGideri = gider - ithalat;
+  const vergi = d.mulk !== undefined ? araziVergisiSaat(d, ctx.ic, o.id) : 0;
+  gider += vergi;
+  const para = parali ? { ihracat: ihracatGelir, nufus: nufusGelir, ithalat, isletme: isletmeGideri, vergi, makasIlce, komisyonIlce } : null;
+  return { gelir, gider, ithalat, ticaret: defter, para };
 }
 
 /**
@@ -202,6 +235,7 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   // 0. Muhasebe
   uretimMuhasebesi(d, ctx);
   pazarMuhasebesi(d, ctx); // pazar v1 kapalıyken defter yoktur: hiçbir şey yapmaz
+  paraMuhasebesi(d, ic); // para defteri (mülk kipi + mulk.kasa): önceki saatlik akışları kesin işler; kapalıyken hiçbir şey yapmaz
   for (const o of d.oyuncular) hazineUzlastir(d, o.id);
 
   // 1. Potansiyel, talep, arz ve fazla
@@ -257,6 +291,16 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   for (const o of d.oyuncular) {
     const k = hazineKalemleri(d, ctx, o, hesaplar, sahipli.get(o.id) ?? BOS_DUGUMLER);
     hazineOranAyarla(d, o.id, k.gelir - k.gider);
+    if (k.para !== null) {
+      paraAkisiYaz(d, o.id, {
+        ihracat: k.para.ihracat,
+        nufus: k.para.nufus,
+        ithalat: k.para.ithalat,
+        isletme: k.para.isletme,
+        vergi: k.para.vergi,
+        kasa: kasaOranlari(d, ic, o.id, k.para.vergi, k.para.makasIlce, k.para.komisyonIlce),
+      });
+    }
     if (d.mulk !== undefined) araziVergisiOranAyarla(d, ic, o.id);
     if (k.ticaret !== null) defterOranYaz(d, o, k.ticaret);
   }
