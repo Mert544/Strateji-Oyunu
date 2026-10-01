@@ -18,7 +18,7 @@ import { Simulasyon, SISTEM_OYUNCUSU } from "../src/motor";
 import { kuralSurumuHesapla } from "../src/serilestir";
 import { GUN } from "../src/tipler";
 import { esitNoktalar, kanitKaydi, NOKTA_SAYISI } from "./esik-budama-kanit";
-import { G6_YONTEMLER, g6Veri, mulkParam, ortakKomutluKos, p4Oncesi, sebekeMiliOku } from "./g6-yardimci";
+import { G6_YONTEMLER, g6Dugum, g6Dunya, g6MulkVeri, g6Veri, mulkParam, ortakKomutluKos, p4Oncesi, sebekeMiliOku } from "./g6-yardimci";
 
 const SAAT = 3_600_000;
 
@@ -183,5 +183,12 @@ describe("K-4 (bölge kipi, şebeke etkisizliği): `mulk.sebeke` bölge kipinde 
     // aynı koşu P4 öncesi içerikle: tam özet aynı
     const e = kos(p4Oncesi(guncel));
     expect(g.s.durumOzeti()).toBe(e.s.durumOzeti());
+  });
+
+  it("K-4 NEGATİF KONTROL: aynı tesis türü mülk kipinde (şebeke açık, santralsiz) verim kazanır, bölge kipinde 0 kalır: şebeke yolu mülk kipinde gözlenebilir, bölge kipinde okunmaz", () => {
+    const mulk = g6Dunya({ veri: g6MulkVeri(), kur: (y) => y.yerlestir("gida_fabrikasi") });
+    expect(g6Dugum(mulk, "a").tesisler[0]!.verimPpm).toBeGreaterThan(0);
+    expect(sebekeMiliOku(g6Dugum(mulk, "a"))).toBeGreaterThan(0);
+    // bölge kipi karşılığı yukarıdaki testte: verim 0, sebekeMili yok
   });
 });
