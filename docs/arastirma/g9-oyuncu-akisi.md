@@ -2,7 +2,7 @@
 
 > **Durum.** 1 Ekim 2026 gece, Ar-Ge A1. **Yalnız belge**: kod, parametre ve başka belge değiştirilmedi; hiçbir test koşulmadı, hiçbir sunucu başlatılmadı. T1 (metin, düzen, telefon) ve K1 (istemci mantığı, komut) için girdidir. Sayıların hepsi **öneri ya da başka belgenin taslağıdır**; **(doğrulanmadı)** etiketi koddan ya da kaynak belgeden teyit edilemeyen bilgiyi gösterir.
 >
-> **Bağımlılık işareti.** A3'ün şartnamesi (`docs/arastirma/p4-p5-sartname.md`, dal `takim/a3/p4-p5-sartname`, 0bbcdb4) §6–§10 hâlâ **taslaktır (Parça 2)**. Bu belgede o bölümlere dayanan her yer **"A3 Parça 2'ye göre güncellenecek"** diye işaretlidir (ilgili satırda `[A3-P2]`). G5 (e-posta girişi) K2 dalında uygulanmıştır (`takim/k2/g5-eposta-giris`, 23527a0, `docs/agent-results/G5-k2.md`) ve `entegrasyon`'a **henüz girmemiştir**; uç ve hata kodları o dalın sözleşmesindendir.
+> **Bağımlılık işareti.** A3'ün şartnamesi (`docs/arastirma/p4-p5-sartname.md`, dal `takim/a3/p4-p5-sartname`, 4f354c0) §6–§10 hâlâ **taslaktır (Parça 2)**. Bu belgede o bölümlere dayanan her yer **"A3 Parça 2'ye göre güncellenecek"** diye işaretlidir (ilgili satırda `[A3-P2]`). G5 (e-posta girişi) K2 dalında uygulanmıştır (`takim/k2/g5-eposta-giris`, 23527a0, `docs/agent-results/G5-k2.md`) ve `entegrasyon`'a **henüz girmemiştir**; uç ve hata kodları o dalın sözleşmesindendir.
 
 | Alan | Değer |
 |---|---|
@@ -22,7 +22,7 @@
 5. **Giriş sızdırmaz.** Hesabın var olup olmadığı, e-posta başına sınır ve posta sonucu yanıtı değiştirmez (K2); bu yüzden "bağlantı gönderdik" cümlesi **koşulsuzdur** ve "gelmediyse" yardımı ekranın parçasıdır.
 6. **Telefon önceliklidir.** Bağlantı çoğu kez posta uygulamasının **uygulama içi tarayıcısında** açılır; tarayıcıya bağlama varsayılan kapalıdır (K2), ama oturum o tarayıcıda açılır: "oyuna dön" yolu G-3'ün parçasıdır **(doğrulanmadı: tarayıcı davranışı pilotta)**.
 7. **"Kilit yok, seçim var."** Dükkân M/L "henüz açılmadı" (DUK-04) dünyanın açılış zamanlamasıdır, oyuncu kilidi değildir; metin bunu **seviye ya da teknoloji** diliyle söylemez (§D-9).
-8. **Bulunan boşluk (zor):** dükkân **bırakılamaz ve yıkılamaz** (A3 §7.9); oyuncu yanlış türü ya da yeri seçerse 24 dakikalık inşa ve bedel geri alınmaz. Bu, "yanlış seçim kilitlemez" ilkesiyle ([baslangic Y-İ5](baslangic-ve-ustalik.md)) çelişir; açık sorular §S1'de.
+8. **Dükkân kaldırma (karar verildi, baş lider):** inşa sürerken iptal **%50 iadeli**; tamamlanmış dükkân **kaldırılabilir, iade yok**; arsa oyuncuda kalır, raftaki mallar depoya döner. "Dükkânı kaldır" akışı ve **iadesiz** onay metni D-8.1'dedir; komut ve ret kodu `[A3-P2]`.
 9. **Veri isteği (K2):** dükkân panelinin üç göstergesi bugün şartnamede yok: yuva başına "mevcut" (stoksuz yuva çekime girmez), ilçe talebi (`IlceKaresi.talep?`) ve görünen ad alanı (§C: İ-1…İ-5).
 10. **Ölçütler:** giriş [kılavuz S1.1](insan-testi-kilavuzu.md) (≤3 dk) ve A0-6 e2e; dükkân **A0-11** (ilk dükkân ≤36 sa, geri ödeme ≤48 sa), **A0-12** (perakende primi, ilk dükkân, fiyat savaşı), **A0-14** (ilk satış, kart atlama).
 
@@ -81,7 +81,7 @@ Kılavuzla bağ: [S1.1 giriş](insan-testi-kilavuzu.md) hedef ≤3 dk, kabul 6 d
 | **Amaç** | Oyuna girmek için tek adım: e-posta adresini vermek. Parola ve kayıt formu yok ([12 §14 A-1](../12-yon-taslagi.md)) |
 | **Oyuncu kararı** | "Adresimi yazıp bağlantı isterim." Tek alan, tek düğme |
 | **Gösterilen sayılar** | Yok. Geçerlilik süresi G-2'de (`gecerlilikSn` = 600 sn → "10 dakika") |
-| **Metin** | Başlık: **Bölge Stratejisi'ne gir** · Alt: **E-posta adresini yaz; sana bir giriş bağlantısı gönderelim. Parola gerekmez.** · Alan etiketi: **e-posta adresin** · Düğme: **bağlantı gönder** · Küçük yazı: **Adresin yalnız giriş için kullanılır. Başkalarına görünmez.** (+ aydınlatma metnine bağlantı: **veri kullanımı**) |
+| **Metin** | Başlık: **Bölge Stratejisi'ne gir** · Alt: **E-posta adresini yaz; sana bir giriş bağlantısı gönderelim. Parola gerekmez.** · Alan etiketi: **e-posta adresin** · Düğme: **bağlantı gönder** · Küçük yazı: **Adresin yalnız giriş için kullanılır. Başkalarına görünmez. Bölge Stratejisi şu an davetle açıktır.** (+ aydınlatma metnine bağlantı: **veri kullanımı**) |
 | **Telefon / masaüstü** | Telefon: alan `type="email"`, `autocomplete="email"`, tam genişlik düğme; otomatik büyük harf kapalı (`autocapitalize="off"`). Masaüstü: ortalanmış kart 360–420 px; Enter gönderir. Küre arka planda sönük |
 | **Ölçüt** | Kılavuz S1.1; Y10 (giriş sırasında boşta kalma) |
 | **Sahip** | T1 (metin, düzen), K1 (`fetch POST /giris/istek`, `credentials: "include"`, `Origin` aynı site) |
@@ -96,11 +96,11 @@ Kılavuzla bağ: [S1.1 giriş](insan-testi-kilavuzu.md) hedef ≤3 dk, kabul 6 d
 | **Amaç** | Oyuncunun bağlantıyı bulabilmesi; bağlantı gelmezse ne yapacağını bilmesi |
 | **Oyuncu kararı** | "Postamı açarım" ya da "adresi değiştirir / yeniden isterim" |
 | **Gösterilen sayılar** | Geçerlilik: **10 dakika** (`gecerlilikSn`). Yeniden gönder: bekleme geri sayımı |
-| **Metin** | Başlık: **Postanı kontrol et** · Gövde: **{adres} adresine bir giriş bağlantısı gönderdik. Bağlantı 10 dakika geçerli ve yalnız bir kez kullanılır.** · Yardım (daraltılabilir): **Gelmediyse gereksiz ya da spam klasörüne bak. Adresi yanlış yazdıysan değiştir.** · Düğmeler: **adresi değiştir**, **yeniden gönder** (bekleme sırasında: **yeniden gönder (45 sn)**) |
+| **Metin** | Başlık: **Postanı kontrol et** · Gövde: **{adres} adresine bir giriş bağlantısı gönderdik. Bağlantı 10 dakika geçerli ve yalnız bir kez kullanılır.** · Yardım (daraltılabilir): **Gelmediyse gereksiz ya da spam klasörüne bak. Adresi yanlış yazdıysan değiştir. Davet edildiğin adresi kullandığından emin ol.** · Düğmeler: **adresi değiştir**, **yeniden gönder** (bekleme sırasında: **yeniden gönder (45 sn)**) |
 | **Telefon / masaüstü** | Telefon: büyük "posta uygulamasını aç" kısayolu **konmaz** (uygulama seçimi cihaza bağlı, **doğrulanmadı**); iki düğme alt alta. Masaüstü: aynı kart |
 | **Ölçüt** | S1.1 süre; **posta gecikmesi** (T4 takılma: "bağlantı gelmedi") kılavuz örnek satırı |
 | **Sahip** | T1, K1 |
-| **Ret ve bağımlılık** | **Posta hatası kullanıcıya görünmez** (K2 kararı: yalnız sayaç); bu yüzden "gelmedi" yolu burada çözülür. Yeniden gönder `POST /giris/istek` (e-posta başına 3/saat, K2): sınır aşılırsa `hiz_siniri` (G-6). Yeniden gönder bekleme süresi (45 sn) **öneridir**, K2'de parametre değildir **(doğrulanmadı)** |
+| **Ret ve bağımlılık** | **Posta hatası kullanıcıya görünmez** (K2 kararı: yalnız sayaç); bu yüzden "gelmedi" yolu burada çözülür. **Davetli listesi (baş lider kararı):** listede olmayan adres de **aynı ekranı** görür, yanıt aynıdır ama posta gönderilmez (sızdırmama); bu yüzden metin **"davetli misin" demez**, yalnız genel bir yardım satırı taşır ("davet edildiğin adresi kullandığından emin ol"); davetsiz kişi ek bilgi alamaz Yeniden gönder `POST /giris/istek` (e-posta başına 3/saat, K2): sınır aşılırsa `hiz_siniri` (G-6). Yeniden gönder bekleme süresi (45 sn) **öneridir**, K2'de parametre değildir **(doğrulanmadı)** |
 
 **Yeni bağlantı eskileri düşürür** (K2): yeniden gönderince eski e-postadaki bağlantı çalışmaz; ekran bunu söyler: **Yeni bağlantı gönderince eskisi geçersiz olur.**
 
@@ -192,7 +192,7 @@ Hata gövdesi `{ tamam: false, kod, mesaj, beklemeSn? }` (K2). Ekran, sunucunun 
 
 # B. Dükkân akışı
 
-Kaynaklar: A3 §7 (dükkân), §9.3 (kod ve iletiler), §10.2 (kare alanları); A2 §1.9 (sayılar). **Tüm A3 sayıları taslaktır `[A3-P2]`; A2'nin sayıları `afdf29f` sürümündendir.** Dükkân S sabitleri (taslak): raf **4 yuva**, kasa **90 birim/sa**, işletme gideri **132 ₺/sa**, bedel **6.000 ₺ + 20 çelik + 8 makine parçası**, inşa **4 sa (ilk 24 saatte ≈24 dk)**, ilçede ≤2 dükkân, ilde ≤6, ayak izi S = **1 hücre**.
+Kaynaklar: A3 §7 (dükkân), §9.3 (kod ve iletiler), §10.2 (kare alanları); A2 §1.9 (sayılar). **Tüm A3 sayıları taslaktır `[A3-P2]`; A2'nin sayıları `afdf29f` sürümündendir.** Dükkân S sabitleri (taslak): raf **4 yuva**, kasa **90 birim/sa**, işletme gideri **132 ₺/sa**, bedel **6.000 ₺ + 20 çelik + 8 makine parçası + 4 pencere** (P-İthal: baş lider kuralı, G7'den itibaren; A3 4f354c0 §7.4), inşa **4 sa (ilk 24 saatte ≈24 dk)**, ilçede ≤2 dükkân, ilde ≤6, ayak izi S = **1 hücre**.
 
 ```
 D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve ilk açılış
@@ -238,14 +238,14 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 |---|---|
 | **Amaç** | Karar anında **gereken ve var olan**ı göstermek; paranın nereye gittiğini açıklamak |
 | **Oyuncu kararı** | "Kur" ya da "vazgeç" |
-| **Gösterilen sayılar** | Satırlar: **Arsa** (kendi arsan: 0 ₺) · **Dükkân** 6.000 ₺ (ilk 5 yapıda %30 indirimli: örnek 4.200 ₺) · **Çelik** 20 (indirimli 14) · **Makine parçası** 8 (indirimli **6**: gerçek düşüm 5,6, **maliyet yukarı**) · **Süre** 4 sa (yeni oyuncuya ilk gün ≈ 24 dk) · **Toplam** ve **Hazine** (aşağı). **Yatırım tahmini** (isteğe bağlı ikinci blok, aşağıda) |
-| **Metin** | Başlık: **Bakkal · 1 hücre** · Satırlar yukarıdaki gibi · Düğme: **dükkânı kur** · İkincil: **vazgeç** · Uyarı (D-9'dan önleme): **Hazinen bu bedeli karşılamıyor (gereken 4.200 ₺, hazine 3.900 ₺).** |
+| **Gösterilen sayılar** | Satırlar: **Arsa** (kendi arsan: 0 ₺) · **Dükkân** 6.000 ₺ (ilk 5 yapıda %30 indirimli: örnek 4.200 ₺) · **Çelik** 20 (indirimli 14) · **Makine parçası** 8 (indirimli **6**: gerçek düşüm 5,6, **maliyet yukarı**) · **Pencere** 4 (indirimli **3**: gerçek düşüm 2,8, yukarı) · **Süre** 4 sa (yeni oyuncuya ilk gün ≈ 24 dk) · **Toplam** ve **Hazine** (aşağı). **Yatırım tahmini** (isteğe bağlı ikinci blok, aşağıda) |
+| **Metin** | Başlık: **Bakkal · 1 hücre** · Satırlar yukarıdaki gibi · Düğme: **dükkânı kur** · İkincil: **vazgeç** · Uyarı (D-9'dan önleme): **Hazinen bu bedeli karşılamıyor (gereken 4.200 ₺, hazine 3.900 ₺).** · Pencere yoksa: **Pencere 4: stokta 0. Pazar'dan alabilirsin (yaklaşık 2.400 ₺).** (düğme: **Pazar'dan al**) |
 | **Telefon / masaüstü** | Telefon: alt kart, ödül/Defter bildirimi **kartı örtmez** (B5/BK-3 çözümü) ve açıkken sırada bekler. Masaüstü: harita üstü kart (mevcut `Çiftlik` maliyet kartı düzeni) |
 | **Ölçüt** | A0-11 (kurma kararı ≤3 dk), A0-12 (perakende primi: bedel/geri ödeme anlaşılırlığı) |
 | **Sahip** | T1 (düzen, metin), K1 (planlayıcıdan sayılar; **kart ile çip aynı yuvarlama**) |
-| **Ret ve bağımlılık** | **Pencere kuralı (A3 §7.4, baş lider onayı GZ-15 bekler) `[A3-P2]`:** **G8'den önce** dükkân bedelinde **pencere yoktur** (seçenek B: yalnız çelik ve parça); G8 gelince bedele **4 pencere** eklenir (yeni kurulumlar). Kart bu durumda **ek bir satır** gösterir (**Pencere 4: stokta 0**) ve eksikse **Pazar'dan al** kısayolu verir; çekirdek iletisi `yetersiz stok: <düğüm> (mal indeksi <n>)` mal **adını** söylemelidir (A3 §9.3 K1 notu: bugün "çelik ya da makine parçası" der). **İthal yolu:** pencere stoğu yoksa oyuncu NPC'den ithal eder (ticaret emri: oran emri; yeni oyuncu kalkanında komisyon ve tarife yok), A2'nin hesabıyla ≈1.600 ₺ ek nakit |
+| **Ret ve bağımlılık** | **Pencere kuralı (A3 4f354c0 §7.4; baş lider kararı, karar verildi) `[A3-P2]`:** dükkân bedeli **G7'den itibaren ithal pencerelidir (P-İthal)**: **6.000 ₺ + 20 çelik + 8 makine parçası + 4 pencere**. NPC pencere arzı doğrulandı (60/sa, A3 B3). Pencere stoğu yoksa kart **eksik satırı** (**Pencere 4: stokta 0**) ve **Pazar'dan al** kısayolunu verir; çekirdek iletisi `yetersiz stok: <düğüm> (mal indeksi <n>)` mal **adını** söylemelidir (A3 §9.3 K1 notu: bugün "çelik ya da makine parçası" der). **Gerçek maliyet ≈ 2.400 ₺** (4 × 540 × 1,111; A3 kırılganlık notu), A2'nin 1.600 ₺'sinden fazladır: kart rakamı **yaklaşık** der ve yukarı yuvarlar. **Kırılganlık (A3 B3):** ithalat emri kalıcı orandır, gerçekleşme **bir sonraki tam saat tıkında** başlar ve bitince **elle iptal** gerekir; bu yüzden kısayol (a) emri 4 pencere için hazır doldurur, (b) süreyi görünür kılar ("en geç 1 saat içinde gelir"), (c) pencere geldikten sonra **iptal hatırlatması** (Dikkat) bırakır. İlk dükkân zamanı (A0-11) bu bekleme ve unutulan iptale duyarlıdır |
 
-**Yatırım tahmini bloğu (öneri; A2 §1.9 "Yatırım Tahmini kartı").** İlçe sınıfına göre dürüst bir beklenti: **şehir** ≈ 727 ₺/sa net, geri ödeme ≈ 12 sa; **kasaba** ≈ 524 ₺/sa, ≈ 17 sa; **kırsal** ≈ 32 ₺/sa, ≈ 281 sa (A2, tek dükkân, normal fiyat, nakit yatırım, indirimli). Kırsal ilçede metin: **Bu ilçede küçük bir pazar var; dükkân kendini yaklaşık 12 günde öder.** Sonuç, "kilit değil, sonuç"tur ([12 §12](../12-yon-taslagi.md)): kart engellemez, **bilgi verir**. **Veri isteği İ-3:** ilçe talebi bugün kare alanında yok (`IlceKaresi.talep?` A3 §10.2: "G9'da istenirse K2 sonra ekler") `[A3-P2]`; olmadan blok **gizlenir**, sayı uydurulmaz.
+**Yatırım tahmini bloğu (öneri; A2 §1.9 "Yatırım Tahmini kartı").** İlçe sınıfına göre dürüst bir beklenti: **şehir** ≈ 727 ₺/sa net, geri ödeme ≈ 12 sa; **kasaba** ≈ 524 ₺/sa, ≈ 17 sa; **kırsal** ≈ 32 ₺/sa, ≈ 281 sa (A2, tek dükkân, normal fiyat, nakit yatırım, indirimli; A2 pencereyi ≈1.600 ₺ sayar, gerçek ithalat ≈2.400 ₺: geri ödeme **birkaç saat uzar**, kart bunu "yaklaşık" ile söyler). Kırsal ilçede metin: **Bu ilçede küçük bir pazar var; dükkân kendini yaklaşık 12 günde öder.** Sonuç, "kilit değil, sonuç"tur ([12 §12](../12-yon-taslagi.md)): kart engellemez, **bilgi verir**. **Veri isteği İ-3:** ilçe talebi bugün kare alanında yok (`IlceKaresi.talep?` A3 §10.2: "G9'da istenirse K2 sonra ekler") `[A3-P2]`; olmadan blok **gizlenir**, sayı uydurulmaz.
 
 ## D-4. İnşa ve ilk açılış
 
@@ -286,7 +286,7 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Telefon / masaüstü** | Telefon: 4 kademe **segment kontrol** (her biri ≥44 px, yan yana sığmazsa 2×2); hız sınırında kontrol soluk ve süre satırı. Masaüstü: yuva satırında 4 düğme |
 | **Ölçüt** | **A0-12:** perakende primi **1,05–1,20** (alarm **>1,30**), fiyat savaşı (**<0,85 R**) süresi **≤%5**; kademe dağılımı insan testinde gözlenir. A2: rasyonel oyuncu **üst kademeye yığılır** (1,15 R → prim 1,291): arayüz **yüksek**'i öne **çıkarmaz** |
 | **Sahip** | T1 (kontrol, metin, adlar), K1 (`dukkan_fiyat`, geri sayım) |
-| **Ret ve bağımlılık** | `[A3-P2]` **Kademe adları T1 işidir; çekirdek yalnız indeks bilir** (A3 §7.5); **sayı ve sıra kalıcıdır** (GZ-3). Hız sınırı komut öncesi **önlenir** (DUK-18); boş yuvaya fiyat verilemez (DUK-17: önce mal); aynı kademe (DUK-19c). **Kampanya penceresi:** A3 Parça 1 **mekanizmayı içermez** (kampanya kademesi `dukkan_fiyat` ile seçilemez, DUK-20; `kampanyaKademesi` yalnız yer tutar) ve baş lider kararı **pencere kuralını** verir (**günde ≤6 saat, haftada ≤2 gün**): komut ve durum biçimi A3 Parça 2'de belirlenir **(doğrulanmadı)**. Arayüz bu yüzden iki durumu ayırır: (a) pencere mekaniği **yoksa** kampanya segmenti **hiç gösterilmez** (3 kademe); (b) **varsa** "başlat" düğmesi ve hak sayaçları (§S3) |
+| **Ret ve bağımlılık** | **Karar verildi (baş lider):** veride **hep 4 kademe** (0,85 / 0,95 / 1,05 / 1,15; sayı ve sıra kalıcı, GZ-3); **kademe adları T1 işidir, çekirdek yalnız indeks bilir** (A3 §7.5). **Kampanya penceresi** parametreleri G7 şemasındadır (`kampanyaGunlukEnFazlaSaat`, `kampanyaHaftalikEnFazlaGun`; kampanya **varsayılan KAPALI**, açılabilir; A3 4f354c0 §4.3). İki durum: **(a) kampanya kapalı** (parametreler tanımsız ya da 0): kampanya segmenti **gizlenir**, ekranda **3 seçenek** (uygun, normal, yüksek) görünür; kampanya kademesi `dukkan_fiyat` ile seçilemez (DUK-20) ve ekran bunu zaten önler. **(b) kampanya açık:** 4 segment, **"kampanya başlat (6 saat)"** düğmesi ve **hak sayaçları** (bugün kalan saat, bu hafta kalan gün). Hız sınırı komut öncesi **önlenir** (DUK-18); boş yuvaya fiyat verilemez (DUK-17: önce mal); aynı kademe (DUK-19c). **Kampanya komut ve durum biçimi `[A3-P2]`** (ayrı komut mu, kademe 0'ın pencere içinde kabulü mü: belirlenmedi) |
 
 **Dürüstlük kuralı (A2 §1.9):** kampanya kademesi bütün senaryolarda **net eksidir** (örn. −353 ₺/sa şehir, tek dükkân); arayüz kampanyayı **"kâr"** diye pazarlamaz.
 
@@ -298,7 +298,7 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Oyuncu kararı** | Ad, simge ve renk seç; ya da markasız bırak |
 | **Gösterilen sayılar** | Uzunluk sayacı **2–24**; hesap başına **en çok 3 marka**; simge ve renk sayısı (palet T1/T2 işi, AÖ-15) |
 | **Metin** | Başlık: **Marka** · Alan: **marka adı** · Açıklama: **Marka yalnızca tabeladır; satışı ya da fiyatı etkilemez.** · **Uyarı (KVKK, A3 §7.7):** **Marka adın dünyadaki herkese görünür ve kalıcıdır. Kişisel bilgi yazma.** · Düğme: **kaydet** · Markasız: **şimdilik markasız** |
-| **Telefon / masaüstü** | Telefon: **tam ekran form** (klavye açılırken alan görünür kalır); **akıllı tırnak** ve uzun tire iOS/Android'de otomatik gelir: istemci **kaydetmeden önce** `’ ‘ ´` → `'` ve `–` `—` → `-` çevirir (A3 §7.7 madde 2: Unicode kesme işaretleri **reddedilir**, normalleştirme çekirdekte yok; çevirme bu yüzden istemci işidir). Masaüstü: bina panelinde satır içi form |
+| **Telefon / masaüstü** | Telefon: **tam ekran form** (klavye açılırken alan görünür kalır); **akıllı tırnak** ve uzun tire iOS/Android'de otomatik gelir: istemci **kaydetmeden önce** `’` (U+2019) ve benzeri (`‘ ´`) işaretleri `'`, `–` ve `—` işaretlerini `-` ile değiştirir; **sunucu yalnız izinli karakterleri kabul eder** (baş lider kararı; A3 §7.7 madde 2: Unicode kesme işaretleri reddedilir, normalleştirme sunucuda ve çekirdekte yok). Masaüstü: bina panelinde satır içi form |
 | **Ölçüt** | Y8 benzeri (marka adımı atlanabilir mi), KVKK; satış ölçütlerine **etkisi yok** (A3: marka çekimi/fiyatı etkilemez) |
 | **Sahip** | T1 (metin, uyarı), K1 (`marka_tanimla`, `dukkan_marka`, istemci doğrulaması) |
 | **Ret ve bağımlılık** | `[A3-P2]` Kurallar (çekirdek, MRK-03…MRK-08): **2–24** karakter; izinli küme **A–Z a–z Ç Ğ İ Ö Ş Ü ç ğ ı ö ş ü 0–9, boşluk, `.` `'` `-` `&`**; baş/son boşluk yok; ardışık boşluk yok; en az bir harf. Yasak liste **sunucuda** (MRK-12 `marka adi kullanilamaz`): ret **yalnız gönderince** görünür ve neden söylenmez ("Bu ad kullanılamaz; başka bir ad dene."). İstemci **canlı denetim** yapar (aynı düzenli ifade, `^[A-Za-zÇĞİÖŞÜçğıöşü0-9 .'&-]+$`) ve kırpar |
@@ -327,6 +327,19 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **Sahip** | K1 (türetme, Dikkat), T1 (metin, düzen) |
 | **Ret ve bağımlılık** | Gösterge verisi: `OzelBolgeKaresi.dukkanlar` (raf, `istekMiliSaat`) ve `GenelBolgeKaresi.dukkanlar` (tabela) `[A3-P2]`. **`gercek` satış stoğa bağlıdır ve gösterilmez** (A3 §6.8): ekran **tahmin** der ("≈", "tahmini"), kesinlik iddia etmez. Stoksuz yuva (İ-2) görünmezse "satış durdu" nedeni anlatılamaz. **Net sonuç birebirliği** testle korunur (`satis + gider + diger = hazineFarki`; A3 §10.3). **İlk satış anı:** Defter damgası "ilk dükkân" (`ilk_dukkan`) **ilk satışla** gelir; ödül **10 çelik** ([rehber §3.1](rehber-gorevler.md)) |
 
+### D-8.1 İnşa iptali ve "dükkânı kaldır" (baş lider kararı)
+
+| | |
+|---|---|
+| **Amaç** | Yanlış tür ya da yer seçen oyuncuyu **kilitlememek** ("kilit yok, seçim var") ve bunu **dürüst bir bedelle** yapmak |
+| **Oyuncu kararı** | İnşa sürerken: "iptal et". Tamamlanınca: "dükkânı kaldır" |
+| **Gösterilen sayılar** | **İnşa sürerken iptal %50 iadeli:** ödenen paranın ve malzemenin yarısı (para **aşağı** yuvarlı; örnek ödenen 4.200 ₺ → iade 2.100 ₺). **Tamamlanmış dükkân:** iade **yok** (0 ₺). Arsa oyuncuda kalır; raftaki mallar işletme deposuna döner (mal adları ve adetleri onay kartında listelenir) |
+| **Metin** | İnşa sırasında (mevcut geri al şeridiyle **aynı yol**, ayrı etiketle): **iptal et (iade %50)** · onay: **İnşaatı iptal edersen ödediğinin yarısı geri gelir. İptal edilsin mi?** · Tamamlanmış: **dükkânı kaldır** · Onay (iadesiz olduğu **açıkça** söylenir): **Dükkânı kaldırırsan harcadığın para geri gelmez; arsan ve raftaki malların sende kalır. Kaldırılsın mı?** · Düğmeler: **dükkânı kaldır**, **vazgeç** · Sonuç: **Dükkân kaldırıldı. Arsan ve malların sende.** |
+| **Telefon / masaüstü** | Telefon: "dükkânı kaldır" dükkân kartının **ikincil** menüsünde (yanlış dokunma riski; ≥44 px, birincil düğmelerden uzak), onay **alt sayfa**. Masaüstü: bina panelinde menü |
+| **Ölçüt** | YA (kilit sanma), A0-14 (kart atlama), A0-11 (yanlış kuran oyuncunun yeniden kurma süresi) |
+| **Sahip** | T1 (onay metni, yerleşim), K1 (komut, durum) |
+| **Ret ve bağımlılık** | **Komut ve ret kodu `[A3-P2]`** (şartname §7.9 bugün "bırakılamaz/yıkılamaz" der; baş lider kararı bunu değiştirir). İnşa iptali mevcut `insaat_iptal` yoludur (`mulk/komut.ts`, iade `insaatIptalIadePpm`). Kaldırma sonrası ilçe ve il dükkân sayaçları açılır; **yeni dükkân bedeli tam ödenir**; ilk 5 yapı indirimi sayacının kaldırmada geri verilip verilmediği **(doğrulanmadı)**. Marka oyuncunun olduğundan (A3 §7.7) **kalır**, dükkân bağı düşer |
+
 ## D-9. Ret durumları (A3 §9.3 kodlarıyla)
 
 **Kural:** komut gönderilmeden önce önlenebilen her durum **kontrolde** çözülür (soluk düğme + neden satırı). Aşağıdaki ret iletileri yalnız **yarış** (başka sekme, eski durum) ve **sunucu süzgeci** için görünür. Görünen metin K1/T1'in `hata-mulk.ts` tablosundadır; **çekirdek iletisi** kod sütunundaki biçimdedir `[A3-P2]`.
@@ -353,6 +366,7 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | DUK-20 | (kampanya kademesi pencere dışı) `[A3-P2]` | Kampanya segmenti pencere dışında **gösterilmez** | **Kampanya yalnız kampanya penceresinde seçilebilir.** |
 | MRK-01…MRK-14 | bkz. D-7 tablosu | Canlı denetim | bkz. D-7 |
 | MRK-13 / 14 | `bilinmeyen marka` / `zaten bu markada` | Marka yoksa "dükkâna ata" kapalı | **Önce marka tanımlamalısın.** · **Dükkân zaten bu markada.** |
+| kaldırma `[A3-P2]` | dükkân kaldırma ret kodları (A3 Parça 2) | Yalnız tamamlanmış dükkânda "kaldır", inşada "iptal et" | **Bu dükkân artık yok.** (yarış) · diğerleri A3 Parça 2'ye göre |
 | mevcut | `yetersiz hazine (gereken <n>)` | Maliyet kartında kırmızı satır | **Hazinede yeterli para yok (gereken {n} ₺, yukarı yuvarlı).** |
 | mevcut | `yetersiz stok: <düğüm> (mal indeksi <n>)` | Eksik malı kartta **ad ve adetle** göster | **{mal} yetmiyor: {var} / {gereken}. Pazar'dan alabilir ya da üretebilirsin.** |
 | mevcut | `ayni anda en cok <n> insaat` | Kur düğmesi soluk + "bir inşaat bitsin" | **Aynı anda en çok {n} inşaat sürebilir; birinin bitmesini bekle.** |
@@ -367,8 +381,8 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | **İ-1** | **Görünen ad** profil alanı ve ucu (G5'te yok; `KIMLIK.md` §6 "henüz yok") | G-4 ekranı; herkese görünür ad; e-posta önekinin sızmaması | Ad kural ve yasak listesi, değiştirme sınırı, KVKK silme ile uyumlu |
 | **İ-2** | `OzelBolgeKaresi.dukkanlar` yuva başına **`mevcut`** bayrağı ve **kasa doluluğu** | D-5 ve D-8: stoksuz yuva çekime girmez; "satış durdu" nedeni anlatılamaz (`gercek` gösterilmez) | Bayrak, `yerelPazarHesapla` adım 1 ile aynı koşul |
 | **İ-3** | `IlceKaresi.talep?` (ilçe talebi Q) ya da hazır "yatırım tahmini" alanı | D-3 yatırım tahmini bloğu (A3 §10.2: "G9'da istenirse K2 sonra ekler") | Q ve esnaf payı; yoksa blok gizli |
-| **İ-4** | Kampanya penceresi komutu ve durumu (günde ≤6 sa, haftada ≤2 gün) | D-6; A3 Parça 1'de mekanizma yok (DUK-20) | `[A3-P2]`: komut adı, kalan hak alanı, `secim` türü, tutar yok |
-| **İ-5** | `parsel_birak`/yıkım için dükkân politikası (A3 §7.9: bırakılamaz) | Bkz. §S1 | Baş lider kararı sonrası |
+| **İ-4** | Kampanya penceresi **komutu ve kalan hak alanları** (parametreler G7 şemasında; günde ≤6 sa, haftada ≤2 gün) | D-6 (b): başlat düğmesi ve hak sayaçları; komut biçimi A3 Parça 1'de yok | `[A3-P2]`: komut adı, kalan hak alanı, `secim` türü, tutar yok |
+| **İ-5** | Dükkân **kaldırma komutu** ve ret kodları (baş lider kararı: inşada iptal %50 iadeli; tamamlanmışta iade yok, arsa kalır, raf mallar depoya) | D-8.1; A3 §7.9 "bırakılamaz" der | `[A3-P2]`: komut adı, ret kodları, mal iadesi biçimi |
 
 ---
 
@@ -392,24 +406,24 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 | # | Karar | Seçenekler | Neden zor | Öneri |
 |---|---|---|---|---|
 | **ZG-1** | **Görünen ad** kuralı ve kaynağı (G-4) | (a) oyuncu seçer, kural §D-7 gibi; (b) sunucu üretimli opak ad; (c) e-posta öneki | Ad **herkese görünür**, kişisel veri olabilir ve günlükte kalır; e-posta önekinin bir kez yayımlanması geri alınamaz | **(a) ya da (b)**, **(c) asla**; yasak liste ve silme yolu K2'de |
-| **ZG-2** | **Alfa-0 kayıt kapısı:** herkes e-postayla hesap açar mı, davet listesi mi? | Serbest · davet kodu · izin listesi | Hesap = oyuncu bire bir; oyuncu kimliği kalıcıdır; ≤200 davetli hedefi **ilçe doluluğu ve ayrılmış hücre** hesabını bozar. G5'te kayıt kapısı **yoktur** | **(doğrulanmadı)** karar baş lider ve sahip; G5 kapıdan geçmeden **davetsiz açılmaz** |
+| **ZG-2** | **Alfa-0 kayıt kapısı** | **Karar verildi (baş lider): davetli listesi.** `--davetli-liste <dosya>` ile açılır; adresler G5'in **normalleştirilmiş e-posta anahtarı** biçiminde; listede olmayan adres de **aynı yanıtı** alır ama **posta gönderilmez** (sızdırmama); varsayılan **kapalı**, test dünyasında ve Alfa-0'da **açık**; liste dosyası **depoya girmez**; sahibi K2, **listeye kimin gireceği sahip kararı** | Hesap = oyuncu bire bir; davetli sayısı ilçe doluluğunu ve ayrılmış hücre hesabını belirler; liste sızarsa kimlik avı riski | Karar kapandı; G-2 metni davetsizi ele vermez; K2 uygular |
 | **ZG-3** | **Marka adı** serbest metin ve uyarı metni (D-7) | A3 GZ-8 kararı: serbest ama kısıtlı; uyarı metni T1 | Komut günlüğü ekleme-yalnızdır, **silme zordur**; uyarı olmadan kişisel veri yazılabilir | Uyarı **zorunlu** ve ilk marka girişinde görünür; `marka_sifirla` (sistem yolu) hazır |
-| **ZG-4** | **Fiyat kademelerinin sayısı ve sırası** (4, indeks 0 = kampanya) | A3 GZ-3: 4 kademe; ya da 3 kademe (kampanyasız) | Fiyatlar **indeksle** saklanır; araya kademe eklemek anlamı kaydırır. Adlar (kampanya, uygun, normal, yüksek) **kolay** değişir | 4 kademe sabit; adlar T1'in |
-| **ZG-5** | **Dükkân bırakılamaz ve yıkılamaz** (A3 §7.9) | (a) bu hâliyle; (b) `insaat_iptal` benzeri **kısa pişmanlık penceresi** (ör. ilk 72 saat) ; (c) yıkım + iade | "Yanlış seçim kilitlemez" ve [yeniden yatırım merdiveni](baslangic-ve-ustalik.md) §3.3 ile çelişir; şemaya girerse sonradan eklemek **göç** ister | **(b)** en az: ilk saat ve inşa süresince geri al; karar baş lider |
+| **ZG-4** | **Fiyat kademelerinin sayısı ve sırası** (4, indeks 0 = kampanya) | **Karar verildi:** veride hep 4 kademe (A3 GZ-3); kampanya kapalıyken ekranda 3 seçenek (segment gizli) | Fiyatlar **indeksle** saklanır; araya kademe eklemek anlamı kaydırır. Adlar (kampanya, uygun, normal, yüksek) **kolay** değişir | 4 kademe sabit; adlar T1'in |
+| **ZG-5** | **Dükkân kaldırma** | **Karar verildi (baş lider):** inşa sürerken iptal **%50 iadeli**; tamamlanmış dükkân **kaldırılabilir, iade yok**; arsa oyuncuda kalır, raftaki mallar depoya döner | İadesiz onay metni açık olmalı; şemaya yeni komut girer (`[A3-P2]`) | Karar kapandı; metin D-8.1'de |
 | **ZG-6** | **Yuvarlama kuralı** (aşağı/yukarı) tek işlevde mi | Tek `paraMili` işlevi · yerel yardımcılar | Ekran görüntüleri ve oyuncu güveni; kod değişimi **kolay**, kuraldan sapma **güveni** zedeler | Tek işlev (ilk saat incelemesi B4); lint ile yerel biçimleyici yasak |
-| **ZG-7** | **Kampanya penceresi** mekaniği | (a) Alfa-0'da yok (3 kademe); (b) pencere (günde ≤6 sa, haftada ≤2 gün) | Durum alanı ve komut şemaya girer; sonradan çıkarmak göç ister; A2: kampanya **hep net eksi** | **(a)** Alfa-0; (b) ancak A3 Parça 2 tasarımı ve baş lider onayı |
+| **ZG-7** | **Kampanya penceresi** komutu ve durumu | **Karar verildi:** kampanya onaylı (günde ≤6 sa, haftada ≤2 gün); parametreler G7 şemasında, **varsayılan kapalı, açılabilir**; açık sorun **komut biçimi** `[A3-P2]` | Durum alanı ve komut şemaya girer; sonradan çıkarmak göç ister; A2: kampanya **hep net eksi** (arayüz kâr diye sunmaz) | Komut biçimi A3 Parça 2'de; kampanya kapalıyken arayüz segmenti gizler |
 
 # F. Açık sorular
 
 | # | Soru | Önerilen varsayılan |
 |---|---|---|
-| **S1** | Dükkân yanlış türde/yerde kurulduysa **geri dönüş** (ZG-5)? | İlk 72 saat tam iadeli geri al; aksi hâlde "kilit yok" ilkesi bozulur |
+| **S1** | ~~Dükkân yanlış türde/yerde kurulduysa geri dönüş?~~ | **Kapandı (baş lider):** D-8.1 (inşada %50 iade; tamamlanmışta iadesiz kaldırma) |
 | **S2** | **Görünen ad** (İ-1) hangi sprintte? G9'un önkoşulu | G-4'ü ertele; geçici opak ad |
-| **S3** | **Kampanya** kontrolü Alfa-0'da var mı? Hak sayaçları ekranda nasıl? | Alfa-0'da **yok** (3 kademe); A3 Parça 2 gelince eklenir |
+| **S3** | ~~Kampanya Alfa-0'da var mı?~~ | **Kapandı (baş lider):** onaylı, parametreyle açılır/kapanır; kapalıyken segment gizli (D-6 a), açıkken başlat ve hak sayaçları (D-6 b) |
 | **S4** | Birim fiyat gösterimi: tam ₺ (aşağı) mı, 1 ondalık mı? Ör. R=70 ₺ × 0,95 = 66,5 ₺ | Tam ₺ aşağı (66 ₺); T1 karar verir |
 | **S5** | Tarayıcıya bağlı bağlantı **varsayılan kapalı**; uygulama içi tarayıcı oyuna uygun mu? | Pilot (Android ve iOS) ile doğrulanır |
 | **S6** | KVKK silme talebi (`hesapSil` ucu yok): Ayarlar'da "hesabımı sil" olmadan nasıl yürür? | Yönetici yolu; destek metni sahip işi |
-| **S7** | **Davet/izin listesi** (ZG-2) | G5 kapıdan geçmeden davetsiz açılmaz |
+| **S7** | ~~Davet/izin listesi~~ | **Kapandı (baş lider):** `--davetli-liste` (ZG-2) |
 | **S8** | Yatırım tahmini bloğu için `IlceKaresi.talep?` (İ-3): G9'a mı, sonraya mı? | Sonra; blok gizli kalır, sayı uydurulmaz |
 | **S9** | A3 Parça 2: DUK/MRK kodları ve metinler **değişirse** bu belgedeki §D-9 tablosu nasıl güncellenir? | A3 teslim notuyla birlikte A1 tabloyu yeniler |
 | **S10** | Defter `ilk_dukkan` tetiği **ilk satış** (A3 §7.8) ama A0-11 "ilk dükkân" **yapı** zamanını ister: hangisi bağlayıcı? | İkisi ayrı ölçülür; rapor ikisini ayrı satırda verir |
@@ -418,8 +432,8 @@ D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve i
 
 | Konu | Durum |
 |---|---|
-| A3 §6–§10 sayıları, DUK/MRK kodları, kampanya penceresi | **Taslak (Parça 2)**; `[A3-P2]` işaretli yerler değişebilir |
-| Dükkân bedeli ve inşa süresi (6.000 ₺, 4 sa, 20/8) ve pencere kuralı | A3 §7.2 ve §7.4 taslağı, A2 ZA-9; baş lider onayı (GZ-15) bekler |
+| A3 §6–§10 sayıları, DUK/MRK kodları, **kampanya ve kaldırma komut biçimi** | **Taslak (Parça 2);** `[A3-P2]` işaretli yerler değişebilir |
+| Dükkân bedeli ve inşa süresi (6.000 ₺, 4 sa, 20 çelik, 8 parça, **4 pencere**) | A3 4f354c0 §7.2 ve §7.4: **P-İthal baş lider kararı (verildi)**; sayılar A3 Parça 2'de kesinleşir. Gerçek pencere maliyeti ≈2.400 ₺ (A3 B3) |
 | G5 uçları | K2 dalı (`takim/k2/g5-eposta-giris`); `entegrasyon`'a girmemiş olabilir |
 | Uygulama içi tarayıcı çerezi, posta uygulaması, yeniden gönder bekleme süresi (45 sn) | **Doğrulanmadı;** pilot |
 | Görünen ad alanı, stok bayrağı (`mevcut`), ilçe talebi alanı | **Yok;** İ-1, İ-2, İ-3 |
