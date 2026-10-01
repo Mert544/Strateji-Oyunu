@@ -392,6 +392,7 @@ export function dunyaDogrula(deger: unknown): Dunya {
     indeks(s.bolge, `$.insaatlar[${i}].bolge`, n);
     if (s.ekYapi !== undefined) dize(s.ekYapi, `$.insaatlar[${i}].ekYapi`);
     if (s.indirimli !== undefined && s.indirimli !== true) hata(`$.insaatlar[${i}].indirimli`, "true ya da tanimsiz olmali");
+    if (s.yontem !== undefined) dize(s.yontem, `$.insaatlar[${i}].yontem`);
   });
   dizi(d.partiler, "$.partiler").forEach((v, i) => {
     const s = nesne(v, `$.partiler[${i}]`);
@@ -708,6 +709,15 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     if (b.tarim !== undefined && b.tarim.ekimPpm.length !== urunSayisi) hata(`${y}.tarim.ekimPpm`, `tarim urunu sayisi ${b.tarim.ekimPpm.length}, icerikte ${urunSayisi}`);
   });
   if (d.kenarlar.length !== ic.harita.kenarlar.length) hata("$.kenarlar", `kenar sayisi ${d.kenarlar.length}, icerikte ${ic.harita.kenarlar.length}`);
+  // İnşaatta seçilen yöntem (G6, sartname §5.8): içerikte tanımlı, tesis türü inşaatında ve türün yöntem listesinde olmalı (ek yapı ve diğer inşaat türlerinde yazılmaz).
+  d.insaatlar.forEach((ins, i) => {
+    if (ins.yontem === undefined) return;
+    const y = `$.insaatlar[${i}].yontem`;
+    if (ic.yontemIndeks[ins.yontem] === undefined) hata(y, `icerikte olmayan yontem: ${ins.yontem}`);
+    if (ins.tur !== "tesis" || ins.ekYapi !== undefined) hata(y, "yontem yalniz tesis turu insaatinda olabilir");
+    const tur = ic.tesisTurleri[ins.hedef];
+    if (tur === undefined || !tur.yontemler.includes(ins.yontem)) hata(y, `yontem tesis turunde yok: ${ins.yontem}`);
+  });
   d.oyuncular.forEach((o, i) => {
     o.teknolojiler.forEach((t, j) => indeks(t, `$.oyuncular[${i}].teknolojiler[${j}]`, ic.teknolojiler.length));
     if (o.arastirma !== null) indeks(o.arastirma.teknoloji, `$.oyuncular[${i}].arastirma.teknoloji`, ic.teknolojiler.length);

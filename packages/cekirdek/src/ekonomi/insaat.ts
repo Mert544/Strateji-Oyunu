@@ -21,7 +21,8 @@ export function insaatBitti(d: Dunya, ctx: Baglam, insaatId: number): void {
     const tb = icerikTablosu(ctx.ic);
     const bolge = d.bolgeler[insaat.bolge];
     const tur = tb.tur[insaat.hedef];
-    const yontem = tur?.yontemler[0];
+    // Mülk kipi (G6, sartname §5.8): komutta seçilen yöntem (kimlik) varsa o, yoksa tür varsayılanı. Kimlik içerikte olmalıdır; değilse (bozuk durum) tesis kurulmaz.
+    const yontem = insaat.yontem !== undefined ? ctx.ic.yontemIndeks[insaat.yontem] : tur?.yontemler[0];
     if (bolge && tur && yontem !== undefined) {
       const tesis: TesisDurumu = {
         id: ctx.yeniKimlik(d),

@@ -518,6 +518,11 @@ export interface InsaatDurumu {
   ekYapi?: string;
   /** Mülk kipi: inşaat ilk-yapı indirimiyle ödendi (iptalde indirim hakkı geri verilir). */
   indirimli?: true;
+  /**
+   * Mülk kipi (G6; sartname §5.8): tesis inşasında seçilen yöntemin KİMLİĞİ (dize; indeks değil: `dunyaYenidenIndeksle` kapsamına girmez). Yalnız komutta `yontem` verilince
+   * yazılır; yoksa tür varsayılanı (`yontemler[0]`) ile kurulur. Tamamlanınca tesis bu yöntemle başlar.
+   */
+  yontem?: string;
 }
 
 export interface UretimPartisi {
@@ -984,8 +989,7 @@ export interface TesisMulkAlanlari {
 export type MulkKomutu =
   | { tur: "parsel_al"; ilce: string; hucreler: HucreId[]; sinif: ArsaSinifi }
   // `olcek` (0 = S, 1 = M, 2 = L; yoksa S): `hucreler` o ölçeğin ayak izidir (`mulk.olcekHucre`), en çok 5 hücre (docs/06 §15.10).
-  // `yontem` (isteğe bağlı yöntem kimliği; sartname §5.8): yalnız TESİS türü inşasında; inşa bitince tesis o yöntemle başlar. Çekirdek yolu G6-2'dedir; G6-1'de alan yalnız tip ve
-  // şemadır (protokol ve `KOMUT_SEMASI` ile aynı birleştirme) ve çekirdek tarafından işlenmez.
+  // `yontem` (isteğe bağlı yöntem kimliği; sartname §5.8): yalnız TESİS türü inşasında; `yontem_degistir` ile aynı denetimler ve iletiler; inşa bitince tesis o yöntemle başlar.
   | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[]; olcek?: 0 | 1 | 2; yontem?: string }
   | { tur: "insaat_iptal"; insaat: number }
   // Atomik "yapı önce yerleşim": `hucreler` yapının TÜM hücreleri (kenar-bitişik, yuva sayısınca); oyuncunun olmayan (sahipsiz) hücreler

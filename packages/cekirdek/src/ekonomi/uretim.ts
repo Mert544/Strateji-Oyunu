@@ -218,6 +218,10 @@ function ciktiCarpaniHesapla(tt: TarimTablosu | null, sn: SanayiTablosu | null, 
   } else if (kitlik !== PPM) {
     c = carpBol(c, kitlik, PPM);
   }
+  // Yöntem çıktısı yedek geçersiz kılma (G6, sartname §5.9; varsayılan KAPALI): tablo yalnız `ciktiPpm !== PPM` yöntemleri içerir ve hiç yoksa alan oluşmaz (bu satırlar atlanır).
+  // Yalnız mülk kipinde ve işletme düğümünde (`b.merkez`); ÇIKTIYA uygulanır, girdiye değil (girdi, bakım ve işçi aynı kalır).
+  const mc = ic.mulk?.yontemCiktiPpm?.[ts.yontem];
+  if (mc !== undefined && b.merkez !== undefined) c = carpBol(c, mc, PPM);
   return c;
 }
 
@@ -320,8 +324,8 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
           // Santralin yakıt talebi gerçek yükünü izler (tam yük planlamak, kullanılmayan yakıtı depoya yığardı).
           planPot = carpBol(planPot, planYuk, PPM);
         }
-      } else if (tarimsal || kitlikAktif) {
-        // Sanayi kapalı: tarım çıktı çarpanı (varsa) ve pazar v1 kıtlık cezası.
+      } else if (tarimsal || kitlikAktif || ctx.ic.mulk?.yontemCiktiPpm !== undefined) {
+        // Sanayi kapalı: tarım çıktı çarpanı (varsa), pazar v1 kıtlık cezası ve (mülk kipinde, yalnız blok etkinse) yöntem çıktı geçersiz kılma.
         h.ciktiCarpan[i] = ciktiCarpaniHesapla(tt, null, ctx.ic, b, ts, tarimsal, PPM);
       }
       if (tarimsal) {

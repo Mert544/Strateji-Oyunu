@@ -36,7 +36,7 @@ import { hizlandirilmisSure } from "../erkenOyun";
 import { carpBol } from "../sabit";
 import { sanayiTablosu } from "../sanayi/tablo";
 import { anlikHazine, hazineEkle, oyuncuBul, stokEkle } from "../stok";
-import { tesisTuruAcikMi } from "../teknoloji";
+import { tesisTuruAcikMi, yontemAcikMi } from "../teknoloji";
 import { GUN, PPM, SAAT } from "../tipler";
 import type {
   ArsaSinifi,
@@ -279,6 +279,20 @@ function yapiTuruCoz(ctx: Baglam, mk: DerlenmisMulk, tesisTuru: unknown, olcek: 
 }
 
 /**
+ * Komutun `yontem` alanı (G6, sartname §5.8): yok = tür varsayılanı (alan yazılmaz). Verilmişse yalnız TESİS türü inşasında ve `yontem_degistir` ile AYNI denetimler/iletiler:
+ * bilinmeyen yöntem, türün listesinde yok, teknoloji açık değil. Dünyayı değiştirmez; hata iletisi ya da yöntem kimliği (yoksa tanımsız) döner.
+ */
+function yontemCoz(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, tur: YapiTuru, yontem: unknown): string | undefined | { kimlik: string } {
+  if (yontem === undefined) return undefined;
+  if (tur.ek !== undefined) return `yontem yalniz tesis turunde verilebilir: ${tur.ad}`;
+  const yi = typeof yontem === "string" ? ctx.ic.yontemIndeks[yontem] : undefined;
+  if (yi === undefined) return `bilinmeyen yontem: ${String(yontem)}`;
+  if (!(icerikTablosu(ctx.ic).tur[tur.ti as number] as { yontemler: number[] }).yontemler.includes(yi)) return `yontem bu tesis turunde yok: ${String(yontem)}`;
+  if (!yontemAcikMi(d, ctx, oyuncu, yi)) return `yontem acik degil: ${String(yontem)}`;
+  return { kimlik: yontem as string };
+}
+
+/**
  * Yapı hücreleri: S'de 1–3, M/L'de en çok 5 hücre; sayısı o ölçeğin ayak izine eşit; kenar-bitişik (4 komşuluk) tek bağlı küme (I, L, T... her biçim).
  * Sıralı listeyi ya da hatayı döndürür.
  */
@@ -465,7 +479,7 @@ export function olcekEkHucreAl(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu:
 }
 
 /** Yapı inşaatını başlatır (denetlenmiş plan; düğüm artık vardır): bedeli düşer, hücreleri işaretler, bitişi planlar. */
-function yapiUygula(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, plan: YapiPlani, b: BolgeDurumu): boolean {
+function yapiUygula(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, plan: YapiPlani, b: BolgeDurumu, yontem?: string): boolean {
   if (!maliyetiDus(d, ctx, b.indeks, oyuncu, plan.mal, plan.para)) return false;
   const id = ctx.yeniKimlik(d);
   const bitis = d.zaman + hizlandirilmisSure(d, ctx, oyuncu, plan.sureMs);
@@ -483,6 +497,7 @@ function yapiUygula(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, plan: YapiPlani, b:
   };
   if (plan.tur.ek !== undefined) ins.ekYapi = plan.tur.ek.id;
   if (plan.tur.olcek > 0) ins.olcek = plan.tur.olcek as 1 | 2;
+  if (yontem !== undefined) ins.yontem = yontem;
   if (plan.indirimli) {
     ins.indirimli = true;
     const mo = mulkOyuncuAl(d.mulk as MulkDurumu, oyuncu, d.zaman);
@@ -518,6 +533,8 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       if (typeof olcek === "string") return hata(olcek);
       const tur = yapiTuruCoz(ctx, mk, k.tesisTuru, olcek);
       if (typeof tur === "string") return hata(tur);
+      const yontem = yontemCoz(d, ctx, oyuncu, tur, k.yontem);
+      if (typeof yontem === "string") return hata(yontem);
       const liste = yapiHucreleri(tur, k.hucreler);
       if (typeof liste === "string") return hata(liste);
       for (const id of liste) {
@@ -530,7 +547,7 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       if (typeof plan === "string") return hata(plan);
       const eksik = yapiBedeliEksik(d, ctx, mk, oyuncu, plan, 0);
       if (eksik !== null) return hata(eksik);
-      if (!yapiUygula(d, ctx, oyuncu, plan, plan.dugum as BolgeDurumu)) return hata("yetersiz hazine");
+      if (!yapiUygula(d, ctx, oyuncu, plan, plan.dugum as BolgeDurumu, yontem?.kimlik)) return hata("yetersiz hazine");
       return TAMAM;
     }
     case "yapi_yerlestir": {
@@ -543,6 +560,8 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       if (typeof olcek === "string") return hata(olcek);
       const tur = yapiTuruCoz(ctx, mk, k.tesisTuru, olcek);
       if (typeof tur === "string") return hata(tur);
+      const yontem = yontemCoz(d, ctx, oyuncu, tur, k.yontem);
+      if (typeof yontem === "string") return hata(yontem);
       const liste = yapiHucreleri(tur, k.hucreler);
       if (typeof liste === "string") return hata(liste);
       const yeni: string[] = [];
@@ -566,7 +585,7 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       // Değişiklikler (artık başarısız olamaz)
       if (alim !== null && !alimUygula(d, ctx, mk, oyuncu, alim)) return hata("yetersiz hazine");
       const isl = isletmeBul(d, oyuncu, ilce.il) as NonNullable<ReturnType<typeof isletmeBul>>;
-      if (!yapiUygula(d, ctx, oyuncu, plan, d.bolgeler[isl.bolgeIndeksi] as BolgeDurumu)) return hata("yetersiz hazine");
+      if (!yapiUygula(d, ctx, oyuncu, plan, d.bolgeler[isl.bolgeIndeksi] as BolgeDurumu, yontem?.kimlik)) return hata("yetersiz hazine");
       return TAMAM;
     }
     case "parsel_birak": {

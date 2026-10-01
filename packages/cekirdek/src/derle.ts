@@ -26,11 +26,25 @@ function indeksle(tur: string, kimlikler: readonly string[]): Record<string, num
 }
 
 /**
+ * Bölge kipi: `mulkKipi` yöntemleri tesis türü listelerinden süzülür (bölge botları, komutları ve tablolar onları görmez); `icerik.yontemler`, `ic.yontemler` ve
+ * indeks tabloları (`yontemIndeks`, `tesisTuruIndeks`) DEĞİŞMEZ (indeksler sabit; kimlik tablosu tam içerikten kurulur). İçerik nesnesine DOKUNULMAZ (kopya):
+ * hiçbir yöntem `mulkKipi` değilse aynı dizi referansı döner (bugünkü davranış bit bit aynı). Tür varsayılanı (`yontemler[0]`) `mulkKipi` olamaz (veri doğrulayıcı), yani
+ * süzgeç ilk yöntemi hiç değiştirmez.
+ */
+function bolgeKipiTurleri(icerik: CekirdekVeriPaketi["icerik"]): CekirdekVeriPaketi["icerik"]["tesisTurleri"] {
+  const mulkOnly = new Set(icerik.yontemler.filter((y) => y.mulkKipi === true).map((y) => y.id));
+  if (mulkOnly.size === 0) return icerik.tesisTurleri;
+  return icerik.tesisTurleri.map((t) => (t.yontemler.some((y) => mulkOnly.has(y)) ? { ...t, yontemler: t.yontemler.filter((y) => !mulkOnly.has(y)) } : t));
+}
+
+/**
  * İçeriği derler: indeks eşlemeleri, lojistikSirasi (lojistikOnceligi artan, eşitlikte mal indeksi)
  * ve komsuKenarlar (bölge -> kenar indeksleri, artan). Yinelenen kimlik veya bilinmeyen kenar ucu hata verir.
  */
 export function icerikDerle(veri: CekirdekVeriPaketi): DerlenmisIcerik {
   const { harita, icerik, param } = veri;
+  // Mülk kipi açık mı (S3): parametre ve parsel dünyası (fikstür ya da ızgara) BİRLİKTE verilmişse. Bölge kipinde `mulkKipi` yöntemleri tür listelerinden süzülür (G6, §5.5).
+  const mulkAcik = param.mulk !== undefined && (veri.parsel !== undefined || veri.parselIzgara !== undefined);
   const malIndeks = indeksle("mal", icerik.mallar.map((m) => m.id));
   const yontemIndeks = indeksle("yontem", icerik.yontemler.map((y) => y.id));
   const tesisTuruIndeks = indeksle("tesis turu", icerik.tesisTurleri.map((t) => t.id));
@@ -66,7 +80,7 @@ export function icerikDerle(veri: CekirdekVeriPaketi): DerlenmisIcerik {
     malIndeks,
     yontemler: icerik.yontemler,
     yontemIndeks,
-    tesisTurleri: icerik.tesisTurleri,
+    tesisTurleri: mulkAcik ? icerik.tesisTurleri : bolgeKipiTurleri(icerik),
     tesisTuruIndeks,
     teknolojiler: icerik.teknolojiler,
     teknolojiIndeks,
@@ -78,7 +92,7 @@ export function icerikDerle(veri: CekirdekVeriPaketi): DerlenmisIcerik {
   };
   odulTablosunuDogrula(ic);
   // Mülk kipi (S3): parametre ve parsel fikstürü BİRLİKTE verilirse açılır (tarımdaki iklim + tarim gibi); aksi halde alan yazılmaz.
-  if (param.mulk !== undefined && (veri.parsel !== undefined || veri.parselIzgara !== undefined)) ic.mulk = mulkDerle(veri, ic);
+  if (mulkAcik) ic.mulk = mulkDerle(veri, ic);
   // Mal ve yapı KİMLİK KİLİDİ burada DEĞİLDİR (docs/06 §15.8): veri doğrulaması (`dogrulaVeriPaketi`) ve yükleyiciler uygular; çekirdek (istemci
   // paketine girer) `@bolge/veri`den yalnız TİP alır (src'de çalışma zamanı importu yoktur; `veri-importu.test.ts` güvence).
   return ic;
