@@ -129,6 +129,8 @@ export { kuyrukOnce } from "./kuyruk";
 export {
   mulkKomutu,
   parselFiyati,
+  hucreFiyatiMili,
+  parselToplamFiyatiMili,
   isletmeAl,
   araziVergisiSaat,
   INSAAT_ASAMALARI,
@@ -155,7 +157,7 @@ export {
   ticaretEmirYuvasi,
   ticaretIndirimi,
 } from "./mulk";
-export type { InsaatAsamasi, YurtPlani } from "./mulk";
+export type { InsaatAsamasi, YurtPlani, IlceFiyatDurumu } from "./mulk";
 export { bolgeIndeksiBul, haritaIndeksi, komsuKenarlariBul } from "./dugum";
 export { kuyrukSuz } from "./kuyruk";
 export { eskimisEsikleriBuda } from "./stok";

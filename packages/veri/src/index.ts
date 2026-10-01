@@ -5,4 +5,5 @@ export { varsayilanVeriyiYukle, miniVeriyiYukle, gercekVeriyiYukle } from "./yuk
 export { parselFiksturuYukle } from "./parsel-yukle";
 export { HaritaSema, IcerikSema, ParametreSema } from "./sema";
 export * from "./il-imza";
+export * from "./kimlik-listesi";
 export { ilImzaVerisiniYukle, type IlImzaVerisi } from "./il-imza-yukle";

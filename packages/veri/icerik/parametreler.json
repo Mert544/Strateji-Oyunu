@@ -47,12 +47,12 @@
     "emilimSaat": {
       "tahil": 360000, "gida": 300000, "cevher": 360000, "komur": 450000, "celik": 300000,
       "bakir": 200000, "silis": 240000, "parca": 200000, "elektronik": 120000,
-      "petrol": 400000, "yakit": 300000, "muhimmat": 120000, "gubre": 200000
+      "petrol": 400000, "yakit": 300000, "muhimmat": 120000, "gubre": 200000, "un": 300000, "ekmek": 250000, "cam": 140000, "pencere": 100000, "sut": 200000, "sut_urunu": 130000, "findik": 180000, "findik_urunu": 100000, "sekerleme": 80000, "kepek": 120000
     },
     "arzSaat": {
       "tahil": 240000, "gida": 200000, "cevher": 150000, "komur": 150000, "celik": 260000,
       "bakir": 120000, "silis": 100000, "parca": 170000, "elektronik": 100000,
-      "petrol": 240000, "yakit": 260000, "muhimmat": 100000, "gubre": 150000
+      "petrol": 240000, "yakit": 260000, "muhimmat": 100000, "gubre": 150000, "un": 200000, "ekmek": 160000, "cam": 90000, "pencere": 60000, "sut": 130000, "sut_urunu": 90000, "findik": 110000, "findik_urunu": 65000, "sekerleme": 50000, "kepek": 80000
     },
     "ithalatCarpaniPpm": 1100000,
     "ihracatCarpaniPpm": 900000,

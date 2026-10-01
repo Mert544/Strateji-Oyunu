@@ -42,6 +42,7 @@ import type {
   Baglam,
   BolgeDurumu,
   DerlenmisEkYapi,
+  DerlenmisIcerik,
   DerlenmisMulk,
   Dunya,
   HucreDurumu,
@@ -53,6 +54,7 @@ import type {
   MulkKomutu,
   OyuncuId,
 } from "../tipler";
+import type { MulkParametreleri } from "@bolge/veri";
 import {
   dizgeKarsilastir,
   hucreBul,
@@ -106,6 +108,36 @@ export function parselFiyati(taban: Mili, carpanPpm: number, satilmis: number, u
   return toplam;
 }
 
+/** Fiyat için ilçe durumu (dünya `IlceDurumu`sunun fiyatı belirleyen alanları). */
+export type IlceFiyatDurumu = Pick<IlceDurumu, "uygunHucre" | "satilmisHucre" | "ayrilmisSatilmis">;
+
+function hucreFiyatiParametreyle(p: MulkParametreleri, ilce: IlceFiyatDurumu, sinif: ArsaSinifi, k: number, ayrilmis: boolean): Mili {
+  const taban = p.hucreFiyati[sinif];
+  // Ayrılmış hücre (docs/06 §15.7): taban (sınıf) fiyatından, satış payı çarpanından muaf; ilçe eğrisini ilerletmez.
+  if (ayrilmis) return taban;
+  return parselFiyati(taban, p.satisPayiCarpaniPpm, ilce.satilmisHucre - (ilce.ayrilmisSatilmis ?? 0) + k, ilce.uygunHucre, 1);
+}
+
+/**
+ * ARSA (hücre) FİYATI için TEK KAYNAK (mili-para): ilçe şu anki durumundayken (`satilmisHucre`, `ayrilmisSatilmis`, `uygunHucre`) `sinif` sınıfında
+ * k. (0'dan) hücrenin fiyatı. `ayrilmis` ise AYRILMIŞ hücredir: taban fiyat, ilçe eğrisinden muaf (k yok sayılır). Normal hücrede eğri
+ * `satilmisHucre − ayrilmisSatilmis + k` üzerinden ilerler (ayrılmış alımlar eğriyi ilerletmez). Komut yolu (`parsel_al`, `yapi_yerlestir`), botlar,
+ * ölçüm ve istemci tahmini bunu kullanmalıdır. Mülk kipi kapalıysa RangeError.
+ */
+export function hucreFiyatiMili(ic: DerlenmisIcerik, ilce: IlceFiyatDurumu, sinif: ArsaSinifi, k = 0, ayrilmis = false): Mili {
+  const p = ic.mulk?.p;
+  if (p === undefined) throw new RangeError("hucreFiyatiMili: mulk kipi kapali");
+  return hucreFiyatiParametreyle(p, ilce, sinif, k, ayrilmis);
+}
+
+/** `normalAdet` normal + `ayrilmisAdet` ayrılmış hücrenin toplam fiyatı (aynı komutta alınırlarsa): `hucreFiyatiMili` toplamı. */
+export function parselToplamFiyatiMili(ic: DerlenmisIcerik, ilce: IlceFiyatDurumu, sinif: ArsaSinifi, normalAdet: number, ayrilmisAdet = 0): Mili {
+  let t = 0;
+  for (let k = 0; k < normalAdet; k++) t += hucreFiyatiMili(ic, ilce, sinif, k, false);
+  for (let k = 0; k < ayrilmisAdet; k++) t += hucreFiyatiMili(ic, ilce, sinif, k, true);
+  return t;
+}
+
 /** Ayrılmış hücre sahipliği hatası iletisi için gün sayısı. */
 function ayrilmisGun(mk: DerlenmisMulk): number {
   return Math.floor(mk.ayrilmisSureMs / GUN);
@@ -157,9 +189,9 @@ function alimPlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ilce: IlceDuru
     const sahip = mo0?.ayrilmisHucre ?? 0;
     if (sahip + ayrilmis > ayrilmisTavan) return `hesap basina en cok ${ayrilmisTavan} ayrilmis hucre (mevcut ${sahip})`;
   }
-  const taban = p.hucreFiyati[sinif];
-  const fiyat =
-    ayrilmis * taban + parselFiyati(taban, p.satisPayiCarpaniPpm, ilce.satilmisHucre - (ilce.ayrilmisSatilmis ?? 0), ilce.uygunHucre, liste.length - ayrilmis);
+  let fiyat = 0;
+  for (let k = 0; k < liste.length - ayrilmis; k++) fiyat += hucreFiyatiParametreyle(p, ilce, sinif, k, false);
+  fiyat += ayrilmis * hucreFiyatiParametreyle(p, ilce, sinif, 0, true);
   return { ilce, liste, sinif, fiyat, ayrilmis };
 }
 
@@ -170,13 +202,11 @@ function alimUygula(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, 
   if (!hazineEkle(d, oyuncu, -plan.fiyat, "arsa")) return false;
   const mo = mulkOyuncuAl(m, oyuncu, d.zaman);
   isletmeAl(d, ctx.ic, oyuncu, plan.ilce.il);
-  const taban = p.hucreFiyati[plan.sinif];
-  const satilmisNormal = plan.ilce.satilmisHucre - (plan.ilce.ayrilmisSatilmis ?? 0);
   let normal = 0;
   for (let i = 0; i < plan.liste.length; i++) {
     const id = plan.liste[i] as string;
     // Ayrılmış hücre taban fiyattan (satış payı çarpanından muaf); diğerleri artımlı (yalnız normal satışlar eğriyi ilerletir).
-    const deger = mk.ayrilmis.has(id) ? taban : parselFiyati(taban, p.satisPayiCarpaniPpm, satilmisNormal + normal++, plan.ilce.uygunHucre, 1);
+    const deger = mk.ayrilmis.has(id) ? hucreFiyatiParametreyle(p, plan.ilce, plan.sinif, 0, true) : hucreFiyatiParametreyle(p, plan.ilce, plan.sinif, normal++, false);
     const h: HucreDurumu = { id, ilce: plan.ilce.id, sinif: plan.sinif, sahip: oyuncu, degerMili: deger, alinma: d.zaman };
     hucreEkle(m, h);
     mo.araziDegeriMili += deger;

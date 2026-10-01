@@ -7,3 +7,5 @@ export * from "./dogrula";
 export * from "./parsel";
 export { HaritaSema, IcerikSema, ParametreSema } from "./sema";
 export * from "./il-imza";
+// Kimlik kilidi doğrulayıcıları (kimlik-listesi.ts, zod) yalnız Node girişindedir (`@bolge/veri`): tarayıcı/istemci paketi bütçesi. Yalnız TİP:
+export type { KimlikListesi } from "./kimlik-listesi";

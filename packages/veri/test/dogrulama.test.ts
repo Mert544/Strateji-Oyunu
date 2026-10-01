@@ -23,7 +23,8 @@ describe("varsayilan ve mini veri", () => {
     const v = varsayilanVeriyiYukle();
     expect(v.harita.bolgeler).toHaveLength(50);
     // v0.2: 12 mal, 6 teknoloji; B1 (Tarım): + gubre malı, + sulama_sistemi teknolojisi; B2 (Sanayi): + elektrik malı.
-    expect(v.icerik.mallar).toHaveLength(14);
+    // P3 (mal kimlik kilidi, docs/06 §15.8): + Alfa-0'ın 10 yeni malı (un, ekmek, cam, pencere, sut, sut_urunu, findik, findik_urunu, sekerleme, kepek) = 24 (eski değer 14).
+    expect(v.icerik.mallar).toHaveLength(24);
     expect(v.icerik.teknolojiler).toHaveLength(7);
     expect(dogrulaVeriPaketi(v)).toEqual({ gecerli: true });
   });
@@ -45,9 +46,12 @@ describe("varsayilan ve mini veri", () => {
     expect(b.harita.bolgeler[0]!.nufus).not.toBe(1);
   });
 
-  it("icerik sozlesmeye uygun: 14 mal, 18 tesis turu, ham mallarin rezerv yontemi var", () => {
+  it("icerik sozlesmeye uygun: 24 mal (eski 14 + P3'ün 10'u), 18 tesis turu, madenî/tarımsal ham mallarin rezerv yontemi var", () => {
     const { icerik } = varsayilanVeriyiYukle();
-    const ham = icerik.mallar.filter((m) => m.kategori === "ham").map((m) => m.id).sort();
+    const tumHam = icerik.mallar.filter((m) => m.kategori === "ham").map((m) => m.id).sort();
+    // P3: sut ve findik "ham" kategoridedir ama rezerv (maden/petrol/toprak) değil çiftlik ve ahır üretimidir; yöntemleri P4/P5'te gelir.
+    expect(tumHam).toEqual(["bakir", "cevher", "findik", "komur", "petrol", "silis", "sut", "tahil"]);
+    const ham = tumHam.filter((m) => m !== "sut" && m !== "findik");
     expect(ham).toEqual(["bakir", "cevher", "komur", "petrol", "silis", "tahil"]);
     // v0.2: 12 tesis türü; B1: + ahir, mera, gubre_fabrikasi, sulama_kanali; B2: + santral, hidro_santrali.
     expect(icerik.tesisTurleri).toHaveLength(18);

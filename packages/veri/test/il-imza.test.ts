@@ -99,7 +99,7 @@ describe("dosyalar yüklenir ve geçerlidir", () => {
     expect(ilImza.iller.every((k) => k.ulke === "TR")).toBe(true);
   });
 
-  it("mevcut 14 mal 'planli' değildir; içerikte olmayan her imza malı 'ileride' listesindedir", () => {
+  it("içerikteki (24) mal 'planli' değildir; içerikte olmayan her imza malı 'ileride' listesindedir", () => {
     const mevcut = new Set(malKimlikleri());
     const { ilImza } = ilImzaVerisiniYukle();
     const ileride = new Set(ilImza.ileride.map((m) => m.malId));
@@ -111,8 +111,10 @@ describe("dosyalar yüklenir ve geçerlidir", () => {
         expect(ileride.has(m.malId)).toBe(m.planli);
       }
     }
-    // rapor §7 kataloğu 82 mal; mal kimlik kilidi: -tekstil -sarkuteri +9 (ekmek, sekerleme, cam, pencere, boksit, alumina, aluminyum, kumas, hazir_giyim) = 89; 14'ü mevcut
-    expect(ilImza.ileride).toHaveLength(89 - 14);
+    // rapor §7 kataloğu 82 mal; mal kimlik kilidi: -tekstil -sarkuteri +9 (ekmek, sekerleme, cam, pencere, boksit, alumina, aluminyum, kumas, hazir_giyim) = 89; 14'ü mevcut.
+    // P3: Alfa-0'ın 9 'ileride' malı (un, ekmek, cam, pencere, sut, sut_urunu, findik, findik_urunu, sekerleme) içeriğe girdi ve 'ileride'den çıktı (eski değer 89 - 14 = 75);
+    // kepek 'ileride'de hiç yoktu (kimlik listesinde aşamasıyla durur). Kalan: 89 - 14 - 9 = 66.
+    expect(ilImza.ileride).toHaveLength(89 - 14 - 9);
   });
 
   it("mal kimlik kilidi: 17 kimlik 'ileride'de dikey §9.2 adı ve öncelik etiketiyle aynen bulunur (içeriğe girenler hariç)", () => {
@@ -129,8 +131,12 @@ describe("dosyalar yüklenir ve geçerlidir", () => {
       if (mevcut.has(id)) continue;
       expect(ileride.get(id), id).toMatchObject({ ad, oncelik });
     }
-    // kumas ve hazir_giyim Tier 1; ekmek ve sekerleme Tier 1 (A0)
-    for (const id of ["kumas", "hazir_giyim", "ekmek", "sekerleme"]) expect(ileride.get(id)!.kademe).toBe("t1");
+    // kumas ve hazir_giyim Tier 1 (hâlâ 'ileride'); ekmek ve sekerleme Tier 1 idi ve P3'te içeriğe girdi ('ileride'de yok, içerikte var)
+    for (const id of ["kumas", "hazir_giyim"]) expect(ileride.get(id)!.kademe).toBe("t1");
+    for (const id of ["ekmek", "sekerleme"]) {
+      expect(ileride.has(id), id).toBe(false);
+      expect(mevcut.has(id), id).toBe(true);
+    }
     // eş anlamlı ikinci kimlik yok
     for (const yanlis of ["aluminium", "alüminyum", "alumin", "findik_ici", "seker", "giyim", "kumaş"]) expect(ileride.has(yanlis), yanlis).toBe(false);
   });
@@ -586,8 +592,9 @@ describe("doğrulayıcı kötü girdiyi yakalar", () => {
 
   it("tarım (H) ürününün penceresi silinirse paket reddedilir", () => {
     const p = paket();
-    delete p.urunPencere.urunler["findik"];
-    expect(hatalar(dogrula(p)).join("\n")).toMatch(/ileride\.findik: tarim \(H\) urunu icin urun-pencere kaydi yok/);
+    // P3: findik içeriğe girdi (artık 'ileride' değil); hâlâ 'ileride' olan bir H ürünü (antep_fistigi) kullanılır.
+    delete p.urunPencere.urunler["antep_fistigi"];
+    expect(hatalar(dogrula(p)).join("\n")).toMatch(/ileride\.antep_fistigi: tarim \(H\) urunu icin urun-pencere kaydi yok/);
   });
 });
 
@@ -645,7 +652,11 @@ describe("deterministik ve kanonik biçim", () => {
     expect(hatalar(dogrula(p)).join("\n")).toMatch(/anahtarlar alfabetik sirali olmali/);
   });
 
-  it("çekirdek içerik dosyaları değişmemiştir: 14 mal, il-imza malları içeriğe sızmamış", () => {
-    expect(malKimlikleri()).toHaveLength(14);
+  it("içerik dosyası: 24 mal (eski 14 + P3'ün 10'u, sona eklenmiş); 'ileride' kimlikleri içeriğe sızmamış", () => {
+    expect(malKimlikleri()).toHaveLength(24);
+    expect(malKimlikleri().slice(0, 14)).toEqual(["tahil", "gida", "cevher", "komur", "celik", "bakir", "silis", "parca", "elektronik", "petrol", "yakit", "muhimmat", "gubre", "elektrik"]);
+    const { ilImza } = ilImzaVerisiniYukle();
+    const mevcut = new Set(malKimlikleri());
+    for (const m of ilImza.ileride) expect(mevcut.has(m.malId), m.malId).toBe(false);
   });
 });

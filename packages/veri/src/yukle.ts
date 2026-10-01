@@ -11,6 +11,7 @@ import {
   type HaritaSecenekleri,
   type VeriPaketi,
 } from "./dogrula";
+import { dogrulaKimlikKilidi } from "./kimlik-listesi";
 
 // ---------------------------------------------------------------------------
 // Yükleme
@@ -36,11 +37,17 @@ function paketYukle(haritaDosyasi: string, secenek: HaritaSecenekleri): VeriPake
     harita: jsonOku(haritaDosyasi),
     icerik: jsonOku("icerik/icerik.json"),
     param: jsonOku("icerik/parametreler.json"),
+    kimlikListesi: jsonOku("icerik/kimlik-listesi.json"),
   } as VeriPaketi;
   // Çapraz kontroller yapısal olarak geçerli veri ister; önce tek tek, sonra paket.
   const sonucu = dogrulaVeriPaketi(paket, secenek);
   if (!sonucu.gecerli) {
     throw new Error(`Veri paketi gecersiz (${haritaDosyasi}):\n - ${sonucu.hatalar.join("\n - ")}`);
+  }
+  // Mal ve yapı kimlik kilidi (docs/06 §15.8): yalnız Node yükleyicilerinde (tarayıcı paketine girmez).
+  const kilit = dogrulaKimlikKilidi(paket);
+  if (!kilit.gecerli) {
+    throw new Error(`Veri paketi gecersiz (${haritaDosyasi}):\n - ${kilit.hatalar.join("\n - ")}`);
   }
   // Tarım açıksa ve harita tarım alanı taşımıyorsa (ör. gerçek harita) etiket/konumdan varsayılan türet.
   tarimAlanlariniTamamla(paket);

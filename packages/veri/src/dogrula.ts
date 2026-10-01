@@ -11,6 +11,7 @@
  */
 import type { ZodError, ZodErrorMap, ZodTypeAny } from "zod";
 import { HaritaSema, IcerikSema, ParametreSema } from "./sema";
+import type { KimlikListesi } from "./kimlik-listesi";
 import { IKLIM_OLAY_TURLERI, IKLIM_TIPLERI } from "./tipler";
 import type { BolgeTanimi, BolgeTarimTanimi, HaritaDosyasi, IcerikDosyasi, IklimTipi, LimanTanimi, Parametreler } from "./tipler";
 
@@ -18,6 +19,12 @@ export interface VeriPaketi {
   harita: HaritaDosyasi;
   icerik: IcerikDosyasi;
   param: Parametreler;
+  /**
+   * Mal ve yapı kimlik kilidi (`icerik/kimlik-listesi.json`, docs/06 §15.8). Dosyadan yükleyiciler (Node) ekler ve `dogrulaKimlikKilidi` ile
+   * içeriği listeye karşı denetler (üyelik, önek, yasaklılar, ad alanı, biçim, taban fiyat). Verilmezse (dondurulmuş eski fikstürler, tarayıcı paketi)
+   * kilit uygulanmaz. `dogrulaVeriPaketi` ve çekirdek `icerikDerle` kilidi UYGULAMAZ (tarayıcı/istemci paketine doğrulayıcı kodu girmesin).
+   */
+  kimlikListesi?: KimlikListesi;
 }
 
 export type DogrulamaSonucu = { gecerli: true } | { gecerli: false; hatalar: string[] };

@@ -14,7 +14,17 @@
     { "id": "yakit", "ad": "Yakıt", "kategori": "ara", "tabanFiyat": 100000, "lojistikOnceligi": 2, "bozulmaPpmGun": 5000 },
     { "id": "muhimmat", "ad": "Mühimmat", "kategori": "askeri", "tabanFiyat": 150000, "lojistikOnceligi": 0, "bozulmaPpmGun": 2000 },
     { "id": "gubre", "ad": "Gübre", "kategori": "ara", "tabanFiyat": 140000, "lojistikOnceligi": 4, "bozulmaPpmGun": 1000 },
-    { "id": "elektrik", "ad": "Elektrik", "kategori": "enerji", "tabanFiyat": 10000, "lojistikOnceligi": 8, "bozulmaPpmGun": 0, "depolanabilir": false }
+    { "id": "elektrik", "ad": "Elektrik", "kategori": "enerji", "tabanFiyat": 10000, "lojistikOnceligi": 8, "bozulmaPpmGun": 0, "depolanabilir": false },
+    { "id": "un", "ad": "Un", "kategori": "ara", "tabanFiyat": 50000, "lojistikOnceligi": 4, "bozulmaPpmGun": 8000 },
+    { "id": "ekmek", "ad": "Ekmek", "kategori": "tuketim", "tabanFiyat": 60000, "lojistikOnceligi": 1, "bozulmaPpmGun": 250000 },
+    { "id": "cam", "ad": "Cam", "kategori": "ara", "tabanFiyat": 95000, "lojistikOnceligi": 5, "bozulmaPpmGun": 2000 },
+    { "id": "pencere", "ad": "Pencere", "kategori": "tuketim", "tabanFiyat": 360000, "lojistikOnceligi": 5, "bozulmaPpmGun": 2000 },
+    { "id": "sut", "ad": "Süt", "kategori": "ham", "tabanFiyat": 40000, "lojistikOnceligi": 1, "bozulmaPpmGun": 80000 },
+    { "id": "sut_urunu", "ad": "Süt Ürünleri", "kategori": "ara", "tabanFiyat": 120000, "lojistikOnceligi": 1, "bozulmaPpmGun": 15000 },
+    { "id": "findik", "ad": "Fındık (kabuklu)", "kategori": "ham", "tabanFiyat": 85000, "lojistikOnceligi": 4, "bozulmaPpmGun": 3000 },
+    { "id": "findik_urunu", "ad": "Fındık İçi", "kategori": "ara", "tabanFiyat": 240000, "lojistikOnceligi": 4, "bozulmaPpmGun": 4000 },
+    { "id": "sekerleme", "ad": "Şekerleme", "kategori": "tuketim", "tabanFiyat": 180000, "lojistikOnceligi": 3, "bozulmaPpmGun": 5000 },
+    { "id": "kepek", "ad": "Kepek (yan ürün)", "kategori": "ara", "tabanFiyat": 18000, "lojistikOnceligi": 4, "bozulmaPpmGun": 6000 }
   ],
   "yontemler": [
     {

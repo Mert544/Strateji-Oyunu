@@ -11,7 +11,7 @@ import { SISTEM_OYUNCUSU, Simulasyon } from "../src/motor";
 import { miniVeriyiYukle } from "@bolge/veri";
 import { alinanOdulDegeri, odulDegeri } from "../src/odul";
 import { icerikDerle } from "../src/derle";
-import { mulkOyuncuBul } from "../src/mulk";
+import { hucreFiyatiMili, mulkOyuncuBul, parselToplamFiyatiMili } from "../src/mulk";
 import { kamuIlKimligi, kamuIlceKimligi, kamuMahalleKimligi } from "../src/mulk/kamu";
 import {
   dugumIlcesi,
@@ -974,6 +974,32 @@ describe("ayrılmış hücre kuralı (ayrilmisHucreHesapTavani, taban fiyat, il�
     tamam(yurt, "a", al(yurtIlce, bos.slice(0, 2)));
     expect(mulkOyuncuBul(yurt.dunya, "a")!.ayrilmisHucre).toBe(8);
     expect(ilceDurum(yurt, yurtIlce).ayrilmisSatilmis).toBe(2);
+  });
+
+  it("hucreFiyatiMili / parselToplamFiyatiMili arsa fiyatının TEK KAYNAĞIDIR: komut yolunun hazineden düştüğüyle birebir (ayrılmış taban, normal eğri, ayrılmışlar eğriyi ilerletmez)", () => {
+    const s = ayrSim(undefined, ["a", "b"]);
+    const ilce = () => ilceDurum(s, OVA);
+    const kirsal = (ayr: boolean) => sec(s, OVA, "kirsal", ayr);
+    // başlangıç (hiç satış yok): normal k. hücre eğriden, ayrılmış taban
+    expect(hucreFiyatiMili(s.ic, ilce(), "kirsal", 0)).toBe(TABAN);
+    expect(hucreFiyatiMili(s.ic, ilce(), "kirsal", 5, true)).toBe(TABAN);
+    expect(hucreFiyatiMili(s.ic, ilce(), "kirsal", 3)).toBe(Math.floor((TABAN * (PPM + Math.floor((PAY * 3) / ilce().uygunHucre))) / PPM));
+    // a: 4 ayrılmış + 2 normal tek komutta
+    const beklenen = parselToplamFiyatiMili(s.ic, ilce(), "kirsal", 2, 4);
+    const h0 = anlikHazine(s.dunya, "a");
+    tamam(s, "a", al(OVA, [...kirsal(true).slice(0, 4), ...kirsal(false).slice(0, 2)].sort()));
+    expect(h0 - anlikHazine(s.dunya, "a")).toBe(beklenen);
+    // ayrılmış alımlar eğriyi ilerletmedi: şimdi (6 satılmış, 4'ü ayrılmış) sıradaki normal hücre eğrinin 2. noktasındadır
+    expect(ilce().satilmisHucre).toBe(6);
+    expect(ilce().ayrilmisSatilmis).toBe(4);
+    const sonraki = hucreFiyatiMili(s.ic, ilce(), "kirsal", 0);
+    expect(sonraki).toBe(Math.floor((TABAN * (PPM + Math.floor((PAY * 2) / ilce().uygunHucre))) / PPM));
+    const h1 = anlikHazine(s.dunya, "b");
+    tamam(s, "b", al(OVA, kirsal(false).slice(2, 3)));
+    expect(h1 - anlikHazine(s.dunya, "b")).toBe(sonraki);
+    // mülk kipi kapalıysa RangeError
+    const kapali = Simulasyon.olustur(miniVeriyiYukle(), 1);
+    expect(() => hucreFiyatiMili(kapali.ic, { uygunHucre: 10, satilmisHucre: 0 }, "kirsal")).toThrow(RangeError);
   });
 
   it("ayrılmış hücre yalnız katılımın ilk ayrilmisGun gününde alınır (kural değişmedi); 14 gün sonra yalnız serbest hücre", () => {

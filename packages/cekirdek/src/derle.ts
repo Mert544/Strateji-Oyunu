@@ -74,6 +74,8 @@ export function icerikDerle(veri: CekirdekVeriPaketi): DerlenmisIcerik {
   odulTablosunuDogrula(ic);
   // Mülk kipi (S3): parametre ve parsel fikstürü BİRLİKTE verilirse açılır (tarımdaki iklim + tarim gibi); aksi halde alan yazılmaz.
   if (param.mulk !== undefined && veri.parsel !== undefined) ic.mulk = mulkDerle(veri, ic);
+  // Mal ve yapı KİMLİK KİLİDİ burada DEĞİLDİR (docs/06 §15.8): veri doğrulaması (`dogrulaVeriPaketi`) ve yükleyiciler uygular; çekirdek (istemci
+  // paketine girer) `@bolge/veri`den yalnız TİP alır (src'de çalışma zamanı importu yoktur; `veri-importu.test.ts` güvence).
   return ic;
 }
 

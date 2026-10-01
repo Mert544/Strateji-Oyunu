@@ -21,7 +21,8 @@ import type { ArketipAdi } from "../../botlar/src";
 import { Simulasyon } from "../src/motor";
 import { fnv1a64, kanonikSerilestir } from "../src/ozet";
 import { GUN } from "../src/tipler";
-import type { Dunya, Ms, Olay } from "../src/tipler";
+import type { DerlenmisIcerik, Dunya, Ms, Olay } from "../src/tipler";
+import { malIzdusumu } from "./mal-izdusumu";
 import { b2SentetikVeri, b2Veri, pazarSenaryoOzetleri } from "./regresyon-pazar-senaryo";
 import { b1Veri, senaryoOzetleri } from "./regresyon-senaryo";
 import { senaryoKos } from "./serilestir-yardimci";
@@ -54,7 +55,15 @@ function eskimisMi(d: Dunya, o: Olay): boolean {
   return !(s !== undefined && s.surum === v.surum);
 }
 
-function noktaKaydet(d: Dunya, islenen: string): Omit<KontrolNoktasi, "t"> {
+/**
+ * Referans (S2) 14 malla üretilmiştir. Güncel içerik P3'te 24 mala çıktı (docs/06 §14.3, §15.8): mal indeksli diziler uzadığı için tam özet
+ * değişir; davranış eşitliği "ilk 14 malın izdüşümü" ile kanıtlanır (`mal-izdusumu.ts`; yeni malların etkisiz olduğunu da denetler).
+ * İçerik 14 malsa (dondurulmuş fikstürler) izdüşüm no-op'tur.
+ */
+export const REFERANS_MAL_SAYISI = 14;
+
+function noktaKaydet(d0: Dunya, ic: DerlenmisIcerik, islenen: string): Omit<KontrolNoktasi, "t"> {
+  const d = malIzdusumu(d0, ic, Math.min(REFERANS_MAL_SAYISI, ic.mallar.length));
   const durum = fnv1a64(kanonikSerilestir({ ...d, kuyruk: [], sayac: { ...d.sayac, olay: 0 } }));
   const etkin = d.kuyruk.filter((o) => !eskimisMi(d, o)).sort((a, b) => a.sira - b.sira);
   return { durum, etkinKuyruk: fnv1a64(kanonikSerilestir(etkin)), islenen, olaySayaci: d.sayac.olay };
@@ -75,6 +84,7 @@ type Motor = {
   calistirKadar(t: Ms): void;
   olayIsle(o: Olay): void;
   dunya: Dunya;
+  ic: DerlenmisIcerik;
 };
 
 /**
@@ -103,7 +113,7 @@ export function kanitKaydi(noktalar: readonly Ms[], calistir: () => void): Kanit
       const n = k.noktalar[k.sonraki++] as Ms;
       if (n < this.dunya.zaman) continue;
       asilCalistir.call(this, n);
-      k.sonuc.push({ t: n, ...noktaKaydet(this.dunya, zincirle()) });
+      k.sonuc.push({ t: n, ...noktaKaydet(this.dunya, this.ic, zincirle()) });
     }
     asilCalistir.call(this, t);
   };

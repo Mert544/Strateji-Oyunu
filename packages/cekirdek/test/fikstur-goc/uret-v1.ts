@@ -20,7 +20,8 @@
  *
  * ICERIK KILIDI (icerik-kimlik-kilidi.json): icerik.json'daki bugünkü kimlik sırasıdır (`icerikKimlikTablosuOlustur`). İçeriğe
  * kimlik SONA eklenince güncellenmez (test önek denetimi yapar). Kasıtlı kırıcı değişiklikte (silme/yeniden sıralama) kilit
- * bilinçli güncellenir ve görüntü dönüşüm aracı gerekir; güncelleme komutu:
+ * bilinçli güncellenir ve görüntü dönüşüm aracı gerekir. (P3: Alfa-0'ın 10 malı sona eklendi; kilit BİLİNÇLİ olarak 14 → 24 malla yeniden üretildi, önek
+ * denetimi eski 14 malı aynen korur.) Güncelleme komutu:
  *   npx tsx -e 'import {writeFileSync} from "node:fs"; import {miniVeriyiYukle} from "@bolge/veri"; import {Simulasyon} from "./packages/cekirdek/src/motor"; import {icerikKimlikTablosuOlustur as t} from "./packages/cekirdek/src/goc"; writeFileSync("packages/cekirdek/test/fikstur-goc/icerik-kimlik-kilidi.json", JSON.stringify(t(Simulasyon.olustur(miniVeriyiYukle(),1).ic),null,1)+"\n")'
  */
 import { writeFileSync } from "node:fs";
