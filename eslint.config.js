@@ -14,7 +14,7 @@ const yasakMathOzellikleri = [
 }));
 
 export default tseslint.config(
-  { ignores: ["**/node_modules/**", "raporlar/**", "coverage/**"] },
+  { ignores: ["**/node_modules/**", "raporlar/**", "coverage/**", "istemci/**", "packages/istemci/dist/**", "packages/istemci/dist-tek/**", "**/.onbellek/**"] },
   ...tseslint.configs.recommended,
   {
     rules: {
@@ -36,6 +36,19 @@ export default tseslint.config(
         "error",
         { selector: "NewExpression[callee.name='Date']", message: "Çekirdekte Date yasak." },
       ],
+    },
+  },
+  {
+    // 3B istemci: tarayıcı/işçi ortamı. Çekirdekteki deterministik yasaklar burada UYGULANMAZ
+    // (performance.now, requestAnimationFrame, Math.sin/cos vb. serbest).
+    files: ["packages/istemci/**/*.ts"],
+    languageOptions: {
+      globals: {
+        window: "readonly", document: "readonly", navigator: "readonly", location: "readonly", localStorage: "readonly",
+        performance: "readonly", requestAnimationFrame: "readonly", cancelAnimationFrame: "readonly", getComputedStyle: "readonly",
+        ResizeObserver: "readonly", self: "readonly", Worker: "readonly", HTMLElement: "readonly", HTMLCanvasElement: "readonly",
+        URLSearchParams: "readonly", setTimeout: "readonly", setInterval: "readonly", clearInterval: "readonly",
+      },
     },
   },
 );
