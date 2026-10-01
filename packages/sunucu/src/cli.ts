@@ -28,7 +28,7 @@ import { OturumKaydedici, VARSAYILAN_OTURUM_BOSLUGU_MS } from "./oturum-kaydi";
 import { parselDosyasiYukle } from "./parsel-dosya";
 import { DuvarSaati, ElleSaat } from "./saat";
 import { sunucuBaslat } from "./sunucu";
-import { dosyaTestDunyasiSay, dosyaTestDunyasiSil, pgTestDunyasiSay, pgTestDunyasiSil, TEST_DUNYA_ONEKI } from "./test-dunya";
+import { dosyaTestDunyasiSay, dosyaTestDunyasiSil, onekDenetle, pgTestDunyasiSay, pgTestDunyasiSil, silmeyiDenetle, TEST_DUNYA_ONEKI, VARSAYILAN_DOSYA_DIZINI } from "./test-dunya";
 import { DunyaYazari } from "./yazar";
 import type { SunucuBotu } from "./yazar";
 
@@ -88,8 +88,10 @@ const YARDIM = `Bolge Stratejisi sunucusu
                        Ad "test" (ya da --test-dunya-oneki) ile baslamali; baska dunyada da kullanilan hesap korunur; dunyanin yazari aciksa reddedilir.
                        pg: --depo pg --pg-url; dosya: --depo dosya --dizin (dizin adi da test onekiyle baslamali). Sonuc {"olay":"testDunyaSilindi",...} satiri
   --test-dunya-say AD  ayni tablolarda KALAN satirlari sayar (silmeden sonra toplam 0); --oyuncular a,b: silme raporundaki oyuncu listesi (hesap/oturum sayimi icin)
-  --test-dunya-oneki P test dunyasi adi oneki (vars. test; $BOLGE_TEST_DUNYA_ONEKI)
-  --test-hesap-oneki P hesap kimligi bu onekle baslayan test hesaplari da silinir/sayilir (ornek: otomatik testlerin ph...)
+  --test-dunya-oneki P test dunyasi adi oneki (vars. test; $BOLGE_TEST_DUNYA_ONEKI); en az 3 karakter
+  --test-hesap-oneki P hesap kimligi bu onekle baslayan test hesaplari da silinir/sayilir (ornek: otomatik testlerin pgh...); en az 3 karakter
+  --evet-sil AD        --uretim ile --test-dunya-sil icin onay: dunya adinin ikinci kez yazilmasi ($BOLGE_TEST_DUNYA_SIL_ONAY=AD). "ana", bu sunucunun --dunya/BOLGE_DUNYA degeri
+                       ve varsayilan dosya dizini (raporlar/dunya) hicbir onekle silinemez
   --dok DIZIN          depoyu (--depo pg | dosya; kaynak SALT OKUNUR, kilit alinmaz) gunluk + son goruntu olarak dosya deposu bicimine BOS bir dizine doker ve cikar
                        (cevrimdisi oynatma: pg paketi gerekmez). Kaynak dosya deposu icin --dizin, pg icin --pg-url ve --dunya
   --token OYUNCU       bu oyuncu icin gelistirme token'i yaz ve cik ("sistem" = yonetici); --uretim'de kapali
@@ -99,7 +101,7 @@ BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_TOHUM, BOLGE_DEPO, BOLGE_DIZIN, BOLG
 BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT, BOLGE_GORUNTU_ISCI (0|1), BOLGE_ODUL (0|1),
 BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI,
 BOLGE_KIMLIK, BOLGE_POSTA, BOLGE_POSTA_DIZIN, BOLGE_GENEL_URL, BOLGE_GIRIS_BAGLANTISI, BOLGE_GIRIS_SONRASI, BOLGE_IZINLI_KOKENLER, BOLGE_TARAYICI_BAGLI (0|1),
-BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR, BOLGE_OTURUM_KAYDI (0|1), BOLGE_OTURUM_BOSLUK_DK, BOLGE_TEST_DUNYA_ONEKI. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
+BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR, BOLGE_OTURUM_KAYDI (0|1), BOLGE_OTURUM_BOSLUK_DK, BOLGE_TEST_DUNYA_ONEKI, BOLGE_TEST_DUNYA_SIL_ONAY. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
 
 function yaz(olay: string, veri: Record<string, unknown> = {}): void {
   process.stdout.write(JSON.stringify({ olay, ...veri }) + "\n");
@@ -190,6 +192,7 @@ async function ana(): Promise<void> {
       "test-dunya-say": { type: "string" },
       "test-dunya-oneki": { type: "string", default: ev("TEST_DUNYA_ONEKI", TEST_DUNYA_ONEKI) as string },
       "test-hesap-oneki": { type: "string" },
+      "evet-sil": { type: "string" },
       oyuncular: { type: "string" },
       dok: { type: "string" },
       "gelistirme-sirri": { type: "string" },
@@ -247,6 +250,21 @@ async function ana(): Promise<void> {
     const dunya = (silme ? a["test-dunya-sil"] : a["test-dunya-say"]) as string;
     const onek = a["test-dunya-oneki"] as string;
     const hesapOneki = a["test-hesap-oneki"];
+    // Geri donusu olmayan komut: oneki bos/kisa olamaz; ana, bu sunucunun canli dunyasi ve varsayilan dizin silinemez; --uretim'de adin ikinci kez yazilmasi sart.
+    if (silme) {
+      silmeyiDenetle({
+        dunya,
+        onek,
+        hesapOneki,
+        canliDunya: a.dunya as string,
+        ...(a.depo === "dosya" ? { dizin: resolve(a.dizin as string), varsayilanDizin: resolve(VARSAYILAN_DOSYA_DIZINI) } : {}),
+        uretim: a.uretim,
+        onay: a["evet-sil"] ?? process.env.BOLGE_TEST_DUNYA_SIL_ONAY,
+      });
+    } else {
+      onekDenetle(onek, "dunya oneki");
+      if (hesapOneki !== undefined) onekDenetle(hesapOneki, "hesap oneki");
+    }
     if (a.depo === "pg") {
       const pgUrl = a["pg-url"] ?? process.env.BOLGE_PG_URL;
       if (!pgUrl) throw new Error("--test-dunya-* icin --pg-url veya BOLGE_PG_URL gerekli");

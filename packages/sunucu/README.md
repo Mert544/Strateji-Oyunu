@@ -161,7 +161,7 @@ Oyuncu girişi yalnız e-posta bağlantısıyladır (Google yok); tasarım, uçl
 
 ### Test dünyası ve döküm araçları (insan testi)
 
-- `--test-dunya-sil <ad>`: TEST dünyasının günlüğü, görüntüleri (yedekler dahil), profili, oyun oturum kaydı ve yalnız o dünyanın oyuncularının hesap/oturum/bağlantı satırları tek komutla (pg: tek işlem) silinir; çıktı `{"olay":"testDunyaSilindi","silinen":{tablo:sayı},...}`. Ad `test` ile başlamalı (paylaşılan dünya reddedilir), yazar açıksa reddedilir, başka dünyada da kullanılan hesap korunur. `--test-dunya-say <ad>` aynı tabloları sayar (silmeden sonra toplam 0). pg: `--depo pg --pg-url`; dosya: `--depo dosya --dizin` (dizin adı da `test` ile başlamalı).
+- `--test-dunya-sil <ad>`: TEST dünyasının günlüğü, görüntüleri (yedekler dahil), profili, oyun oturum kaydı ve yalnız o dünyanın oyuncularının hesap/oturum/bağlantı satırları tek komutla (pg: tek işlem) silinir; çıktı `{"olay":"testDunyaSilindi","silinen":{tablo:sayı},...}`. Ad `test` ile başlamalı (önekler en az 3 karakter; `ana`, sunucunun `--dunya`/`BOLGE_DUNYA` değeri ve varsayılan dizin `raporlar/dunya` hiçbir önekle silinemez), yazar açıksa reddedilir, başka dünyada da kullanılan hesap korunur; `--uretim`'de dünya adının ikinci kez yazılması şarttır (`--evet-sil <ad>` ya da `BOLGE_TEST_DUNYA_SIL_ONAY=<ad>`). `--test-dunya-say <ad>` aynı tabloları sayar (silmeden sonra toplam 0). pg: `--depo pg --pg-url`; dosya: `--depo dosya --dizin` (dizin adı da `test` ile başlamalı).
 - `--dok <dizin>`: depoyu (pg ya da dosya; kaynak SALT OKUNUR, kilitsiz, çalışan sunucudan da alınır) günlük + son görüntü olarak dosya deposu biçiminde BOŞ bir dizine döker; çevrimdışı oynatma `pg` paketi olmadan yapılır.
 - Şema sürümü 5 (`sql/005-oyun-oturum.sql`): `oyun_oturum`, `oyun_oturum_gunluk`; yalnız ekleme.
 
@@ -192,7 +192,7 @@ Her seçenek `BOLGE_<AD>` ile verilebilir; komut satırı bayrağı ortam deği�
 | `BOLGE_GENEL_URL`, `BOLGE_GIRIS_BAGLANTISI`, `BOLGE_GIRIS_SONRASI` | sunucunun genel adresi (üretimde https, zorunlu); postadaki bağlantı tabanı (varsayılan `<genel>/giris/onay`); onay formu sonrası yönlendirme | `http://127.0.0.1:<port>`, `<genel>/giris/onay`, kısa sayfa |
 | `BOLGE_IZINLI_KOKENLER` | virgüllü Origin izin listesi (üretimde zorunlu); genel adresin kökeni kendiliğinden eklenir | boş (geliştirmede kendi adresi) |
 | `BOLGE_OTURUM_KAYDI`, `BOLGE_OTURUM_BOSLUK_DK` | `1` = oyun bağlantısı oturum olayı kaydı (insan testi; yalnız zaman ve opak oyuncu kimliği, KIMLIK.md §8); kopup yeniden bağlanmanın aynı oturum sayıldığı boşluk (dk) | `0` (kapalı), `5` |
-| `BOLGE_TEST_DUNYA_ONEKI` | `--test-dunya-sil/-say` ve `--dok` yardımcı komutlarında test dünyası adı öneki | `test` |
+| `BOLGE_TEST_DUNYA_ONEKI`, `BOLGE_TEST_DUNYA_SIL_ONAY` | `--test-dunya-sil/-say` komutlarında test dünyası adı öneki (en az 3 karakter); `--uretim`'de silme onayı (dünya adının ikinci kez yazılması) | `test`, yok |
 | `BOLGE_TARAYICI_BAGLI`, `BOLGE_GUVENILIR_PROXY`, `BOLGE_GECICI_ALANLAR` | bağlantı isteği yapan tarayıcıya bağlı olsun (`1` açar); IP `X-Forwarded-For` son öğesi (`1`); geçici e-posta alanı listesi (JSON) | `0` (kapalı), kapalı, `veri/gecici-eposta-alanlari.json` |
 
 Compose düzeyinde (`deploy/.env`): `PG_SIFRE`, `GELISTIRME_SIRRI`, `METRIK_TOKEN` (zorunlu), `SUNUCU_PORT`, `METRIK_YAYIN_PORT` ve yukarıdaki `BOLGE_*` seçimleri.

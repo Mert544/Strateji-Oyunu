@@ -12,7 +12,8 @@ import { SAAT, SISTEM_OYUNCUSU } from "@bolge/cekirdek";
 import { dosyaDeposu, dosyaSaltOkunur } from "../src/depo/dosya";
 import { depoyuDok } from "../src/dok";
 import { ElleSaat } from "../src/saat";
-import { dosyaTestDunyasiSay, dosyaTestDunyasiSil, testDunyaAdiniDenetle } from "../src/test-dunya";
+import { dosyaTestDunyasiSay, dosyaTestDunyasiSil, onekDenetle, pgTestDunyasiSil, silmeyiDenetle, testDunyaAdiniDenetle } from "../src/test-dunya";
+import type { SilmeDenetimi } from "../src/test-dunya";
 import { DunyaYazari } from "../src/yazar";
 import { KUZEY, veri } from "./yardimci";
 
@@ -55,7 +56,38 @@ describe("test dunyasi adi korumasi", () => {
   it("test onekiyle baslamayan dunya reddedilir (paylasilan dunya silinmez)", () => {
     for (const ad of ["ana", "", "prod-test", "Test1"]) expect(() => testDunyaAdiniDenetle(ad), ad).toThrow(/reddedildi/);
     expect(() => testDunyaAdiniDenetle("test-1")).not.toThrow();
-    expect(() => testDunyaAdiniDenetle("ana", "ana")).not.toThrow(); // önek ayarlanabilir (BOLGE_TEST_DUNYA_ONEKI), ama bilinçli
+    expect(() => testDunyaAdiniDenetle("deneme-1", "deneme")).not.toThrow(); // önek ayarlanabilir (BOLGE_TEST_DUNYA_ONEKI), ama bilinçli
+  });
+
+  it("bos ya da kisa onek reddedilir (her adi kapsamasin); ana hicbir onekle silinemez", () => {
+    for (const onek of ["", "t", "te"]) {
+      expect(() => testDunyaAdiniDenetle("test-1", onek), `onek "${onek}"`).toThrow(/en az 3 karakter/);
+      expect(() => onekDenetle(onek, "hesap oneki")).toThrow(/en az 3 karakter/);
+    }
+    expect(() => testDunyaAdiniDenetle("ana", "ana")).toThrow(/hicbir onekle/);
+    expect(() => testDunyaAdiniDenetle("ana", "an")).toThrow(); // kisa onek
+    expect(() => onekDenetle("pgh", "hesap oneki")).not.toThrow();
+  });
+
+  const temel: SilmeDenetimi = { dunya: "test-1", onek: "test", canliDunya: "ana", uretim: false };
+  it("silmeyiDenetle: hesap oneki >= 3; canli (CLI --dunya) dunya ve varsayilan dizin silinemez; uretimde adin ikinci kez yazilmasi sart", () => {
+    expect(() => silmeyiDenetle(temel)).not.toThrow();
+    expect(() => silmeyiDenetle({ ...temel, hesapOneki: "" })).toThrow(/hesap oneki/);
+    expect(() => silmeyiDenetle({ ...temel, hesapOneki: "ab" })).toThrow(/hesap oneki/);
+    expect(() => silmeyiDenetle({ ...temel, hesapOneki: "pgh" })).not.toThrow();
+    expect(() => silmeyiDenetle({ ...temel, canliDunya: "test-1" })).toThrow(/canli dunyasi/); // BOLGE_DUNYA=test-1
+    expect(() => silmeyiDenetle({ ...temel, dunya: "ana", onek: "ana" })).toThrow(/hicbir onekle/);
+    expect(() => silmeyiDenetle({ ...temel, dizin: "/x/raporlar/dunya", varsayilanDizin: "/x/raporlar/dunya" })).toThrow(/varsayilan dosya dizini/);
+    expect(() => silmeyiDenetle({ ...temel, dizin: "/x/test-a", varsayilanDizin: "/x/raporlar/dunya" })).not.toThrow();
+    expect(() => silmeyiDenetle({ ...temel, uretim: true })).toThrow(/ikinci kez/);
+    expect(() => silmeyiDenetle({ ...temel, uretim: true, onay: "test-2" })).toThrow(/ikinci kez/);
+    expect(() => silmeyiDenetle({ ...temel, uretim: true, onay: "test-1" })).not.toThrow();
+  });
+
+  it("pg silme kutuphanesi baglanmadan once boş hesap onekini ve ana'yi reddeder", async () => {
+    await expect(pgTestDunyasiSil("postgres://yok.invalid/x", { dunya: "test-1", hesapOneki: "" })).rejects.toThrow(/hesap oneki/);
+    await expect(pgTestDunyasiSil("postgres://yok.invalid/x", { dunya: "ana", onek: "ana" })).rejects.toThrow(/hicbir onekle/);
+    await expect(pgTestDunyasiSil("postgres://yok.invalid/x", { dunya: "test-1", onek: "" })).rejects.toThrow(/en az 3 karakter/);
   });
 });
 
@@ -87,7 +119,8 @@ describe("dosya deposu: test dunyasi silme ve sayim", () => {
     await dunyaOynat(d);
     await expect(dosyaTestDunyasiSil(d, { dunya: "test-a" })).rejects.toThrow(/dizin adi/);
     const t = await geciciDizin("test-x-");
-    await expect(dosyaTestDunyasiSil(t, { dunya: "ana" })).rejects.toThrow(/dunya adi/);
+    await expect(dosyaTestDunyasiSil(t, { dunya: "ana" })).rejects.toThrow(/hicbir onekle/);
+    await expect(dosyaTestDunyasiSil(t, { dunya: "baska" })).rejects.toThrow(/dunya adi/);
     expect((await dosyaTestDunyasiSay(d, "x")).toplam).toBeGreaterThan(0);
   });
 
@@ -102,6 +135,12 @@ describe("dosya deposu: test dunyasi silme ve sayim", () => {
     expect((await dosyaTestDunyasiSay(d, "test-kilit")).kalan["gunluk.jsonl"]).toBe(1);
     await rm(join(d, "yazar.kilit"));
     expect((await dosyaTestDunyasiSil(d, { dunya: "test-kilit" })).toplam).toBeGreaterThan(0);
+  });
+
+  it("dosya silme: bos onek ve varsayilan dizin (raporlar/dunya) reddedilir", async () => {
+    const d = await geciciDizin("test-onek-");
+    await expect(dosyaTestDunyasiSil(d, { dunya: "test-onek", onek: "" })).rejects.toThrow(/en az 3 karakter/);
+    await expect(dosyaTestDunyasiSil("raporlar/dunya", { dunya: "test-1" })).rejects.toThrow(/dizin adi|varsayilan/);
   });
 
   it("olmayan dizin: sayim 0", async () => {
@@ -201,6 +240,48 @@ describe("CLI", () => {
     expect(r.olaylar[0]).toMatchObject({ olay: "dokuldu", kayit: beklenen.seq, sonSeq: beklenen.seq });
     expect(cli("--depo", "dosya", "--dizin", a, "--dok", b).kod).toBe(1);
   });
+
+  function cliEnv(ortam: Record<string, string>, ...args: string[]): { kod: number | null; olaylar: Array<Record<string, unknown>>; cikti: string } {
+    const r = spawnSync(process.execPath, ["--import", "tsx", CLI, ...args], { cwd: KOK, encoding: "utf8", env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", ...ortam }, timeout: 60_000 });
+    return { kod: r.status, olaylar: r.stdout.split("\n").filter((x) => x.startsWith("{")).map((x) => JSON.parse(x) as Record<string, unknown>), cikti: r.stdout + r.stderr };
+  }
+
+  it("silme sertlestirmesi: bos/kisa onek, ana, canli dunya, varsayilan dizin ve --uretim'de onaysiz silme reddedilir (cikis 1) ve HICBIR SEY silinmez; onayla calisir", async () => {
+    const d = await geciciDizin("test-sert-");
+    await dunyaOynat(d);
+    const boyut = async (): Promise<number> => (await stat(join(d, "gunluk.jsonl"))).size;
+    const once = await boyut();
+    const reddet = (r: { kod: number | null; cikti: string }, desen: RegExp): void => {
+      expect(r.kod, r.cikti).toBe(1);
+      expect(r.cikti).toMatch(desen);
+    };
+    reddet(cli("--depo", "dosya", "--dizin", d, "--test-dunya-oneki", "", "--test-dunya-sil", "test-sert"), /en az 3 karakter/);
+    reddet(cli("--depo", "dosya", "--dizin", d, "--test-dunya-oneki", "te", "--test-dunya-sil", "test-sert"), /en az 3 karakter/);
+    reddet(cli("--depo", "dosya", "--dizin", d, "--test-hesap-oneki", "", "--test-dunya-sil", "test-sert"), /en az 3 karakter/);
+    reddet(cli("--depo", "dosya", "--dizin", d, "--test-dunya-oneki", "ana", "--test-dunya-sil", "ana"), /hicbir onekle/);
+    reddet(cli("--depo", "dosya", "--dizin", d, "--dunya", "test-sert", "--test-dunya-sil", "test-sert"), /canli dunyasi/);
+    reddet(cli("--depo", "dosya", "--dizin", "raporlar/dunya", "--test-dunya-sil", "test-x"), /varsayilan dosya dizini/);
+    // Ortam degiskeniyle bos onek varsayilana duser (silinecek adi her seye uydurmaz); "ab" ise reddedilir.
+    reddet(cliEnv({ BOLGE_TEST_DUNYA_ONEKI: "ab" }, "--depo", "dosya", "--dizin", d, "--test-dunya-sil", "abc"), /en az 3 karakter/);
+    reddet(cliEnv({ BOLGE_TEST_DUNYA_ONEKI: "" }, "--depo", "dosya", "--dizin", d, "--test-dunya-sil", "baska-dunya"), /reddedildi/);
+    expect(await boyut()).toBe(once);
+
+    const URETIM = { BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org", BOLGE_GENEL_URL: "https://sunucu.ornek.org" };
+    reddet(cliEnv(URETIM, "--depo", "dosya", "--dizin", d, "--test-dunya-sil", "test-sert"), /ikinci kez/);
+    reddet(cliEnv(URETIM, "--depo", "dosya", "--dizin", d, "--evet-sil", "test-baska", "--test-dunya-sil", "test-sert"), /ikinci kez/);
+    reddet(cliEnv({ ...URETIM, BOLGE_TEST_DUNYA_SIL_ONAY: "yanlis" }, "--depo", "dosya", "--dizin", d, "--test-dunya-sil", "test-sert"), /ikinci kez/);
+    expect(await boyut()).toBe(once);
+    // Sayim (silmez) uretimde onaysiz calisir; onayli silme calisir (bayrak ya da ortam).
+    expect(cliEnv(URETIM, "--depo", "dosya", "--dizin", d, "--test-dunya-say", "test-sert").kod).toBe(0);
+    const sil = cliEnv({ ...URETIM, BOLGE_TEST_DUNYA_SIL_ONAY: "test-sert" }, "--depo", "dosya", "--dizin", d, "--test-dunya-sil", "test-sert");
+    expect(sil.kod, sil.cikti).toBe(0);
+    expect(sil.olaylar.find((o) => o.olay === "testDunyaSilindi")).toBeDefined();
+
+    const d2 = await geciciDizin("test-sert2-");
+    await dunyaOynat(d2);
+    const sil2 = cliEnv(URETIM, "--depo", "dosya", "--dizin", d2, "--evet-sil", "test-sert2", "--test-dunya-sil", "test-sert2");
+    expect(sil2.kod, sil2.cikti).toBe(0);
+  }, 120_000);
 
   it("--test-dunya-sil ile --test-dunya-say birlikte ve bellek deposu reddedilir", () => {
     expect(cli("--test-dunya-sil", "test-a", "--test-dunya-say", "test-a").kod).toBe(1);

@@ -36,9 +36,48 @@ export interface TestDunyaSecenekleri {
   hesapOneki?: string;
 }
 
-/** Ad test önekiyle başlamıyorsa (örn. `ana`) reddeder. */
+/** Öneklerin en kısa uzunluğu: boş ya da çok kısa önek her dünya/hesap adını "test" sayabilir (geri dönüşü olmayan komut). */
+export const EN_KISA_ONEK = 3;
+/** Hiçbir önekle silinemeyen dünya adı (CLI'nin varsayılan dünyası). */
+export const KORUNAN_DUNYA = "ana";
+/** Dosya deposunun varsayılan dizini (CLI): asla silinemez. */
+export const VARSAYILAN_DOSYA_DIZINI = "raporlar/dunya";
+
+export function onekDenetle(onek: string, ad: string): void {
+  if (onek.length < EN_KISA_ONEK) throw new Error(`test dunyasi silme reddedildi: ${ad} en az ${EN_KISA_ONEK} karakter olmali (bos ya da kisa onek her adi kapsar): "${onek}"`);
+}
+
+/** Ad test önekiyle başlamıyorsa (örn. `ana`) reddeder; `ana` hiçbir önekle silinemez; önek boş/kısa olamaz. */
 export function testDunyaAdiniDenetle(ad: string, onek: string = TEST_DUNYA_ONEKI): void {
+  onekDenetle(onek, "dunya oneki");
+  if (ad === KORUNAN_DUNYA) throw new Error(`test dunyasi silme reddedildi: "${ad}" varsayilan/canli dunyadir ve hicbir onekle silinemez`);
   if (ad === "" || !ad.startsWith(onek)) throw new Error(`test dunyasi silme reddedildi: dunya adi "${ad}" "${onek}" oneki ile baslamiyor (paylasilan dunya silinmez; BOLGE_TEST_DUNYA_ONEKI)`);
+}
+
+export interface SilmeDenetimi {
+  dunya: string;
+  onek: string;
+  hesapOneki?: string | undefined;
+  /** CLI'nin etkin `--dunya` değeri (varsayılan `ana` ya da BOLGE_DUNYA): canlı dünya sayılır. */
+  canliDunya: string;
+  /** Dosya deposu dizini (çözülmüş) ve varsayılan dizin (çözülmüş); pg'de verilmez. */
+  dizin?: string;
+  varsayilanDizin?: string;
+  uretim: boolean;
+  /** `--evet-sil <dünya adı>` ya da BOLGE_TEST_DUNYA_SIL_ONAY: adın ikinci kez yazılması. */
+  onay?: string | undefined;
+}
+
+/**
+ * CLI silme sertleştirmesi (saf): önekler >= 3 karakter; `ana`, CLI'nin etkin dünyası ve varsayılan dosya dizini hiçbir önekle silinemez; `--uretim`'de adın
+ * ikinci kez yazılması (onay) şarttır. Kütüphane işlevleri ayrıca adı/öneki kendileri denetler.
+ */
+export function silmeyiDenetle(d: SilmeDenetimi): void {
+  testDunyaAdiniDenetle(d.dunya, d.onek);
+  if (d.hesapOneki !== undefined) onekDenetle(d.hesapOneki, "hesap oneki");
+  if (d.dunya === d.canliDunya) throw new Error(`test dunyasi silme reddedildi: "${d.dunya}" bu sunucunun varsayilan/canli dunyasidir (--dunya / BOLGE_DUNYA)`);
+  if (d.dizin !== undefined && d.varsayilanDizin !== undefined && d.dizin === d.varsayilanDizin) throw new Error(`test dunyasi silme reddedildi: varsayilan dosya dizini (${VARSAYILAN_DOSYA_DIZINI}) silinemez`);
+  if (d.uretim && d.onay !== d.dunya) throw new Error(`test dunyasi silme reddedildi: --uretim kipinde dunya adi ikinci kez yazilmali: --evet-sil ${d.dunya} (ya da BOLGE_TEST_DUNYA_SIL_ONAY=${d.dunya})`);
 }
 
 const DUNYA_TABLOLARI = ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit", "profil_damga", "oyun_oturum", "oyun_oturum_gunluk"] as const;
@@ -74,6 +113,7 @@ async function mevcutTablolar(c: Sorgulayici): Promise<Set<string>> {
 /** pg: test dünyasını ve (başka dünyada kullanılmayan) hesaplarını tek işlemde siler. */
 export async function pgTestDunyasiSil(baglanti: string, s: TestDunyaSecenekleri): Promise<TestDunyaRaporu> {
   testDunyaAdiniDenetle(s.dunya, s.onek);
+  if (s.hesapOneki !== undefined) onekDenetle(s.hesapOneki, "hesap oneki");
   const pg = (await import("pg")).default;
   const havuz = new pg.Pool({ connectionString: baglanti, max: 2 });
   const c = await havuz.connect();
@@ -191,6 +231,7 @@ export async function dosyaTestDunyasiSil(dizin: string, s: TestDunyaSecenekleri
   const onek = s.onek ?? TEST_DUNYA_ONEKI;
   testDunyaAdiniDenetle(s.dunya, onek);
   dosyaAdiniDenetle(dizin, onek);
+  if (resolve(dizin) === resolve(VARSAYILAN_DOSYA_DIZINI)) throw new Error(`test dunyasi silme reddedildi: varsayilan dosya dizini (${VARSAYILAN_DOSYA_DIZINI}) silinemez`);
   const { kilitAl } = await import("./depo/dosya");
   const birak = await kilitAl(dizin); // yazar çalışıyorsa fırlatır
   try {
