@@ -190,6 +190,8 @@
 .yr-doluluk.yok { color: var(--murekkep-3); }
 .yr-cubuk { display: inline-block; width: 72px; height: 4px; border-radius: var(--r-hap); background: var(--yuzey-3); overflow: hidden; }
 .yr-cubuk i { display: block; height: 100%; background: var(--murekkep-2); border-radius: var(--r-hap); }
+/* Doluluk %0 (ya da ≈ %2'nin altı): dolgu en az 2 % genişlikte yazılıyor (yerles-ekrani.ts); boş çubukta tek nokta görünmesin */
+.yr-cubuk i[style="width:2%"] { display: none; }
 .yr-onerilen { font-size: var(--yazi-sm); color: var(--murekkep-2); }
 .yr-onerilen b { color: var(--murekkep); }
 .yr-durum { display: inline-flex; align-items: center; min-height: 22px; font-size: var(--yazi-xs); font-weight: 600; padding: 0 var(--s-2); border-radius: var(--r-hap); background: var(--yuzey-2); color: var(--murekkep-2); border: 0; }

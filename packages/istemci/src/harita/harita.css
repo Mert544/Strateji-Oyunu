@@ -34,7 +34,10 @@ body.harita-acik #harita-gezgin { top: 64px; }
 .harita-ara input {
   width: 13em; max-width: 46vw; border: 1px solid transparent; border-radius: var(--r-md); background: var(--yuzey-2); color: var(--murekkep);
   padding: 0 var(--s-3) 0 32px; min-height: 34px; font-size: var(--yazi-sm);
+  text-overflow: ellipsis;
 }
+/* Dar telefonda yer tutucu tek satır ve üç noktayla kesilir (harfin ortasında kesilmez); kısa metin istenirse K1 ≤600 px'te "Ara" yazar */
+.harita-ara input::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .harita-ara::before {
   content: ""; position: absolute; left: 10px; top: 50%; width: 15px; height: 15px; margin-top: -7.5px; background: var(--murekkep-3); pointer-events: none; z-index: 1;
   -webkit-mask: var(--ikon-ara) center / 15px no-repeat; mask: var(--ikon-ara) center / 15px no-repeat;
