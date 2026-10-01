@@ -84,6 +84,10 @@ function gorunumModulu(): Promise<GorunumModulu> {
   return import("./gorunum");
 }
 
+/** Arama kutusu yer tutucusu (anahtar `harita.ara.yer_tutucu`; ≤600 px `harita.ara.yer_tutucu_kisa`). */
+const ARA_YER_TUTUCU = "İl ya da ilçe ara";
+const ARA_YER_TUTUCU_KISA = "Ara";
+
 export class HaritaDenetci {
   private durum: HaritaDurumu = { duzey: 0, bolge: null, il: null, ilce: null };
   private hiyerarsi: Hiyerarsi | null = null;
@@ -149,7 +153,7 @@ export class HaritaDenetci {
         <button type="button" class="harita-geri" id="harita-geri" hidden aria-label="Bir üst düzey (Esc)" title="Bir üst düzey (Esc)">‹</button>
         <nav aria-label="Konum"><ol class="kirinti" id="harita-kirinti"></ol></nav>
         <div class="harita-ara" role="search">
-          <input id="harita-ara" type="search" placeholder="İl ya da ilçe ara" aria-label="İl ya da ilçe ara" autocomplete="off" spellcheck="false" aria-controls="harita-ara-sonuc" aria-expanded="false">
+          <input id="harita-ara" type="search" placeholder="${ARA_YER_TUTUCU}" aria-label="${ARA_YER_TUTUCU}" autocomplete="off" spellcheck="false" aria-controls="harita-ara-sonuc" aria-expanded="false">
           <div class="ara-sonuc" id="harita-ara-sonuc" role="listbox" hidden></div>
         </div>
       </div>
@@ -164,6 +168,13 @@ export class HaritaDenetci {
     this.kirinti = $("harita-kirinti");
     this.geri = $("harita-geri");
     this.aramaKutusu = $("harita-ara");
+    // Dar ekranda (≤600 px) yer tutucu kısa ("Ara"); erişilebilir ad (aria-label) tam metin kalır
+    const dar = window.matchMedia("(max-width: 600px)");
+    const yerTutucu = (): void => {
+      this.aramaKutusu.placeholder = dar.matches ? ARA_YER_TUTUCU_KISA : ARA_YER_TUTUCU;
+    };
+    yerTutucu();
+    dar.addEventListener("change", yerTutucu);
     this.sonuc = $("harita-ara-sonuc");
     this.cipler = $("harita-cipler");
     this.durumYazi = $("harita-durum");

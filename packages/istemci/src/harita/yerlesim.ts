@@ -12,6 +12,7 @@ import { bildir } from "../arayuz/bildirim";
 import { esc, fmt, para, paraMili, sureMetni } from "../arayuz/bicim";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import { geriSeridiGorunur } from "./gorunurluk";
+import { dugmeBasili, KartDurumu, kapaliDugmeOznitelikleri } from "./kart-durum";
 import type { AyrilmisHakki } from "./fiyat";
 import { hucreSiniri, noktadanHucre } from "./hucre";
 import type { Izgara } from "./hucre";
@@ -85,10 +86,13 @@ export class YerlesimKipi {
   private duzeyNo = 0;
   private geri: HTMLElement;
   private menuAcik = false;
+  private seritAcik = false;
   private hazir = false;
   readonly dugme: HTMLButtonElement;
   private menu: HTMLElement;
   private kart: HTMLElement;
+  /** Kalıcı neden bölgesi (`role=status`): kart yenilenince yeniden okunmaz (kart-durum.ts). */
+  private readonly nedenBolgesi = new KartDurumu();
 
   constructor(private g: YerlesimGirdisi) {
     this.dugme = document.createElement("button");
@@ -99,6 +103,7 @@ export class YerlesimKipi {
     this.dugme.setAttribute("aria-haspopup", "true");
     this.dugme.setAttribute("aria-expanded", "false");
     this.dugme.setAttribute("aria-controls", "yapi-menu");
+    this.dugme.setAttribute("aria-pressed", "false");
     this.dugme.innerHTML = `${ikon("hammer", 17)}Yapı kur`;
     this.dugme.title = "Önce yapıyı seç, sonra haritada yerleştir; arsa aynı işlemde alınır";
     this.menu = document.createElement("div");
@@ -131,6 +136,7 @@ export class YerlesimKipi {
     this.kart.addEventListener("click", (e) => {
       const b = (e.target as HTMLElement).closest("button[data-yk]") as HTMLButtonElement | null;
       const ey = b?.dataset["yk"];
+      if (b?.getAttribute("aria-disabled") === "true") return; // kapalı onay düğmesi: tıklama/Enter etkisiz (neden bölgede okunur)
       if (ey === "don") this.dondur();
       else if (ey === "vazgec") this.iptal();
       else if (ey === "onayla") void this.onayla();
@@ -298,6 +304,21 @@ export class YerlesimKipi {
     this.menu.innerHTML = html.join("");
   }
 
+  /**
+   * "Yapı kur" düğmesi basılı mı (tek birincil kuralı): yapı kartı ya da arsa şeridi açıkken düğme tonlu (`aria-pressed="true"`; stil T1'in
+   * CSS'inde), böylece ekranda tek dolu birincil kalır (kartta "… kur", şeritte "Satın al"). Kapanınca false.
+   */
+  private basiliGuncelle(): void {
+    this.dugme.setAttribute("aria-pressed", String(dugmeBasili(this.yapi !== null, this.seritAcik)));
+  }
+
+  /** Alt arsa şeridinin açık olup olmadığı (görünüm bildirir). */
+  seritDurumu(acik: boolean): void {
+    if (this.seritAcik === acik) return;
+    this.seritAcik = acik;
+    this.basiliGuncelle();
+  }
+
   menuAc(ac: boolean): void {
     this.menuAcik = ac;
     this.menu.hidden = !ac;
@@ -320,7 +341,7 @@ export class YerlesimKipi {
     this.g.altGizle(true);
     this.g.yakinlas();
     this.g.kap.classList.add("yapi-kipi");
-    this.dugme.setAttribute("aria-pressed", "true");
+    this.basiliGuncelle();
     this.kartiYaz();
     this.hayaletCiz(null);
     return true;
@@ -332,7 +353,7 @@ export class YerlesimKipi {
     this.sabit = null;
     this.plan = null;
     this.g.kap.classList.remove("yapi-kipi");
-    this.dugme.removeAttribute("aria-pressed");
+    this.basiliGuncelle();
     this.g.ipucuGizle();
     this.g.altGizle(false);
     this.hayaletCiz(null);
@@ -458,10 +479,12 @@ export class YerlesimKipi {
         <dt>Süre</dt><dd data-yk-alan="sure">${sure}</dd>
         <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${paraMili(p.toplamMili, "yukari")}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili, "asagi")}</small>` : ""}</dd>
       </dl>
-      ${p.neden ? `<p class="yk-uyari" role="alert" data-yk-alan="neden">${esc(p.neden)}</p>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için tıkla.</p>`}`;
+      ${p.neden ? `<span data-yk-neden-yer></span>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için tıkla.</p>`}`;
     }
+    this.nedenBolgesi.yaz(p?.neden ?? null);
     const kur = this.uygulaniyor ? "Kuruluyor…" : `${esc(y.ad)} kur`;
-    this.kart.innerHTML = `${baslik}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${p?.gecerli && sabit && !this.uygulaniyor ? "" : "disabled"}>${kur}</button></div>`;
+    this.kart.innerHTML = `${baslik}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(!!p?.gecerli && sabit && !this.uygulaniyor, !!p?.neden)}>${kur}</button></div>`;
+    this.nedenBolgesi.yerlestir(this.kart);
     this.kart.hidden = false;
   }
 

@@ -18,6 +18,7 @@ import type { Izgara } from "./hucre";
 import { olcekHedefleri, olcekPlani, olcekTesisi, OLCEK_AD } from "./olcek";
 import type { HedefOlcek, OlcekPlani, OlcekTesisi } from "./olcek";
 import type { YapiMalzemesi } from "./yapi";
+import { KartDurumu, kapaliDugmeOznitelikleri } from "./kart-durum";
 import { SINIF_ADI } from "./fiyat";
 import type { AyrilmisHakki } from "./fiyat";
 
@@ -76,12 +77,15 @@ export class OlcekKipi {
   private tesis: OlcekTesisi | null = null;
   private uygulaniyor = false;
   private hazir = false;
+  /** Kalıcı neden bölgesi (`role=status`; kart-durum.ts). */
+  private readonly nedenBolgesi = new KartDurumu();
 
   constructor(private g: OlcekKipiGirdisi) {
     g.kart.addEventListener("click", (e) => {
       if (!this.aktif) return;
       const b = (e.target as HTMLElement).closest("button[data-ok]") as HTMLButtonElement | null;
       const ey = b?.dataset["ok"];
+      if (b?.getAttribute("aria-disabled") === "true") return; // kapalı onay düğmesi etkisiz (neden bölgede okunur)
       if (ey === "vazgec") this.iptal();
       else if (ey === "onayla") void this.onayla();
       else if (ey === "olcek-1") this.hedefSec(1);
@@ -274,9 +278,11 @@ export class OlcekKipi {
         <dt>Süre</dt><dd data-ok-alan="sure">${sure}</dd>
         <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-ok-alan="toplam"><b>${TL(p.toplamMili)}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili)}</small>` : ""}</dd>
       </dl>
-      ${p.neden ? `<p class="yk-uyari" role="alert" data-ok-alan="neden">${esc(p.neden)}</p>` : ""}`;
+      ${p.neden ? `<span data-yk-neden-yer></span>` : ""}`;
+    this.nedenBolgesi.yaz(p.neden);
     const dugme = this.uygulaniyor ? "Büyütülüyor…" : `${h.ad} ölçeğe büyüt`;
-    this.g.kart.innerHTML = `${baslik}${olcekSatiri}${govde}<div class="yk-dugmeler"><button type="button" data-ok="vazgec">Vazgeç</button><button type="button" class="birincil" data-ok="onayla" ${p.gecerli && !this.uygulaniyor ? "" : "disabled"}>${esc(dugme)}</button></div>`;
+    this.g.kart.innerHTML = `${baslik}${olcekSatiri}${govde}<div class="yk-dugmeler"><button type="button" data-ok="vazgec">Vazgeç</button><button type="button" class="birincil" data-ok="onayla" ${kapaliDugmeOznitelikleri(p.gecerli && !this.uygulaniyor, !!p.neden)}>${esc(dugme)}</button></div>`;
+    this.nedenBolgesi.yerlestir(this.g.kart);
     this.g.kart.hidden = false;
   }
 

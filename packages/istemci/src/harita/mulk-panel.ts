@@ -159,7 +159,7 @@ export function mulkHazinePaneli(d: IsletmeDurumu | null): string {
   const satir = (k: string, v: string, a = ""): string => `<dt>${k}</dt><dd>${v}${a ? `<br><span class="soluk">${a}</span>` : ""}</dd>`;
   let s = `<dl class="mulk-dl">`;
   s += satir("Hazine", d.hazineMili !== null ? `<b data-alan="mulk-hazine">${paraMili(d.hazineMili)}</b>` : "—");
-  if (d.hazineOraniMili !== null && d.hazineOraniMili !== 0) s += satir("Net akış", `${paraIsaretli(d.hazineOraniMili)} / sa`, "Gelir ve giderlerin saatlik toplamı.");
+  if (d.hazineOraniMili !== null && d.hazineOraniMili !== 0) s += satir("Net akış", `${paraIsaretli(d.hazineOraniMili)}/sa`, "Gelir ve giderlerin saatlik toplamı.");
   if (d.araziDegeriMili !== null) s += satir("Arazi değeri", paraMili(d.araziDegeriMili), "Arsalarının satın alma bedeli toplamı.");
   if (d.araziVergisiMili !== null) s += satir("Arazi vergisi", paraMili(d.araziVergisiMili), "Tahakkuk eden, henüz ödenmemiş.");
   s += `</dl>`;

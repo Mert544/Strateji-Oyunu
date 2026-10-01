@@ -380,6 +380,10 @@ export class HaritaGorunumu {
       indirim: () => this.ilkYapiIndirimi(),
     });
     this.yerlesim = y;
+    // Alt arsa şeridi açıkken "Yapı kur" düğmesi basılı/tonlu (tek birincil kuralı); `hidden` değişimini izle
+    const seritIzle = (): void => y.seritDurumu(!this.alt.hidden);
+    new MutationObserver(seritIzle).observe(this.alt, { attributes: true, attributeFilter: ["hidden"] });
+    seritIzle();
     void this.yuklendi.then(() => y.kur());
   }
 

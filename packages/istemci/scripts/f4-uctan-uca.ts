@@ -357,6 +357,15 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const k1 = await kart(sayfa);
   kontrol(`${e} maliyet kartı: arsa + yapı bedeli + süre + toplam`, /Arsa/.test(k1) && /Yapı/.test(k1) && /Süre/.test(k1) && /Toplam/.test(k1) && /4\.200\s₺/.test(k1) && /Kendi arsan/.test(k1), k1);
   await ekran("8-maliyet-karti");
+  // Tek birincil kuralı: kart açıkken "Yapı kur" basılı (aria-pressed=true, tonlu); yalnız karttaki "… kur" dolu birincil kalır
+  const doluBirincil = await sayfa.evaluate(
+    () =>
+      [...document.querySelectorAll<HTMLElement>("#yapi-menu-dugme, #yapi-kart .birincil, #harita-alt .birincil")].filter((x) => {
+        const r = x.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && getComputedStyle(x).visibility !== "hidden" && x.getAttribute("aria-pressed") !== "true";
+      }).length,
+  );
+  kontrol(`${e} maliyet kartı açıkken tek dolu birincil ("Yapı kur" basılı)`, doluBirincil === 1, String(doluBirincil));
   const insaOnce = ts.yazar.sim.dunya.insaatlar.length;
   const sunucuKomut = ts.yazar.seq;
   await tikla(sayfa, false, "#yapi-kart [data-yk='onayla']");
