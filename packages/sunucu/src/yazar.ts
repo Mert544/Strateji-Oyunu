@@ -46,7 +46,7 @@
  * özet karşılaştırılır) + görüntüden sonraki günlük kayıtları. Kurtarılan dünyanın zamanı, son kaydın `t`'si ile
  * görüntü zamanının büyüğüdür; canlı dünyayla karşılaştırma AYNI t'de yapılmalıdır (`calistirKadar(t)`, docs/06 §14).
  */
-import { SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikGoruntuOlustur, kamuHucreleri, kuralSurumuHesapla } from "@bolge/cekirdek";
+import { SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikGoruntuOlustur, icerikKimlikTablosuOlustur, kamuHucreleri, kuralSurumuHesapla } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi, IcerikKimlikTablosu, Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
 import type { Bot } from "@bolge/botlar";
 import type { Dizin } from "@bolge/protokol";
@@ -55,6 +55,8 @@ import type { AnlikGoruntuKaydi, Depo, GunlukKaydi, IdempotansGirdisi, OzetKaydi
 import { oyuncuAnligi } from "./donus/anlik";
 import { OzetIzleyici } from "./donus/izleyici";
 import type { OyuncuKaydi } from "./donus/izleyici";
+import { GoruntuIscisi } from "./goruntu";
+import type { GoruntuIsciSecenekleri } from "./goruntu";
 import { donusOzeti } from "./donus/ozet";
 import type { DonusEsikleri } from "./donus/ozet";
 import type { DonusOzeti } from "@bolge/protokol";
@@ -116,6 +118,20 @@ export interface YazarSecenekleri {
    * `durumOzeti` aynı olmalı). `esikler`: yokluk bant sınırları (parametre).
    */
   donus?: false | { esikler?: DonusEsikleri };
+  /**
+   * Periyodik anlık görüntü işçi iş parçacığında (worker_threads) alınır: ana döngüde yalnız dünyanın yapısal kopyası kalır;
+   * serileştirme, özet ve gzip işçidedir (bkz. `goruntu.ts`). `true` ya da işçi seçenekleri; varsayılan KAPALI (eşzamanlı).
+   * Açılış, kapanış, göç, yetişme sonu ve `goruntuAl()` görüntüleri her zaman eşzamanlıdır (süren işçi işini önce bitirirler).
+   */
+  goruntuIsci?: boolean | GoruntuIsciSecenekleri;
+  /**
+   * Büyük bir komut toplusunu (ör. 361 komut x 3-5 ms çekirdek maliyeti) uygularken olay döngüsüne bu kadar ms'de bir nefes ver (ms; 0 = kapalı).
+   * Uygulama SIRASI, günlük (önce yazılır) ve sonuçlar değişmez; yalnız önceki komutların yanıtları toplunun sonunu beklemeden gider,
+   * ws okumaları/ping/`/saglik` aç kalmaz. Varsayılan 20.
+   */
+  uygulamaDilimiMs?: number;
+  /** İşçi hatasından sonra en erken yeniden deneme (ölçü ms). Varsayılan 5000. */
+  isciYenidenDenemeMs?: number;
   /** Ölçü saati (ms, monoton; commit gecikmesi ve görüntü yaşı için). Varsayılan `performance.now`; testler sahte saat verir. */
   olcuSaati?: () => number;
   /** Yetişirken her adımdan sonra çağrılır (test/enstrümantasyon: söz döndürerek yetişmeyi bekletebilir). */
@@ -301,6 +317,25 @@ export class DunyaYazari {
   private uyariDinleyici: ((m: string) => void) | null = null;
   /** Son başarısız anlık görüntü denemesinin hatası (başarılı görüntüde temizlenir). */
   sonGoruntuHatasi: string | null = null;
+  /** Görüntü işçisinde süren iş var mı (test/tanı). */
+  get goruntuIsiSuruyor(): boolean {
+    return this.goruntuIsi !== null;
+  }
+
+  /** Süren işçi görüntüsünün (varsa) kaydedilmesini bekler; hata yutulur (işçi hatası ölümcül değildir, uyarıdır). */
+  async goruntuIsiBekle(): Promise<void> {
+    await this.goruntuIsi;
+  }
+
+  /** Görüntü işçisi (yalnız `goruntuIsci` açıkken, ilk periyodik görüntüde tembelce kurulur) ve süren iş (en çok bir). */
+  private isci: GoruntuIscisi | null = null;
+  private goruntuIsi: Promise<void> | null = null;
+  /** Bu iş döngüsünde "işçi meşgul" atlaması sayıldı mı (aynı bekleyen görüntü her turda yeniden sayılmasın). */
+  private atlamaSayildi = false;
+  private isciArdisikHata = 0;
+  private isciSonrakiDenemeOlcu = Number.NEGATIVE_INFINITY;
+  private readonly isciYenidenDenemeMs: number;
+  private readonly uygulamaDilimiMs: number;
 
   private constructor(
     readonly sim: Simulasyon,
@@ -320,6 +355,8 @@ export class DunyaYazari {
     this.yetismeEsigiMs = s.yetismeEsigiMs ?? 60_000;
     this.yetismeGoruntuAraligiMs = s.yetismeGoruntuAraligiMs ?? 24 * SAAT;
     this.ilerlemeAraligiMs = s.ilerlemeAraligiMs ?? 1000;
+    this.isciYenidenDenemeMs = s.isciYenidenDenemeMs ?? 5000;
+    this.uygulamaDilimiMs = s.uygulamaDilimiMs ?? 20;
   }
 
   /** Depodan kurtarır (görüntü + kalan günlük) ya da yeni dünya kurar; saati dünyanın zamanından başlatır. */
@@ -655,6 +692,9 @@ export class DunyaYazari {
       while (this.bekleyenler.length > 0) await this.birTur(false);
       await this.goruntuDene();
     }
+    await this.goruntuIsi; // süren işçi işi (hatayı kendi içinde yutar) depo kapanmadan biter
+    await this.isci?.kapat();
+    this.isci = null;
     await this.profilBekle();
     await this.s.depo.profil?.kapat();
     await this.s.depo.gunluk.kapat();
@@ -687,7 +727,13 @@ export class DunyaYazari {
         this.olumculYap(e instanceof Error ? e : new Error(String(e)), toplu);
         return;
       }
+      let dilimBasi = performance.now();
       for (let i = 0; i < toplu.length; i++) {
+        // Dilimleme: günlük zaten yazıldı; sıra ve sonuçlar aynı, yalnız yanıtlar ve ws okumaları toplunun sonunu beklemez.
+        if (this.uygulamaDilimiMs > 0 && i > 0 && performance.now() - dilimBasi >= this.uygulamaDilimiMs) {
+          await new Promise<void>((r) => setImmediate(r));
+          dilimBasi = performance.now();
+        }
         const b = toplu[i] as Bekleyen;
         const k = kayitlar[i] as GunlukKaydi;
         this.donusOnce(k.t);
@@ -728,7 +774,7 @@ export class DunyaYazari {
     // 4. Anlık görüntü.
     const goruntuAraligi = this.yetisiyorDegeri ? Math.max(this.goruntuAraligiMs, this.yetismeGoruntuAraligiMs) : this.goruntuAraligiMs;
     if (this.sim.dunya.zaman - this.sonGoruntuZamani >= goruntuAraligi || this.seqDegeri - this.sonGoruntuSeq >= this.goruntuKomutAraligi) {
-      await this.goruntuDene();
+      await this.goruntuPeriyodik();
     }
     // 4b. Yetişme durumu ve saat geri gitme denetimi.
     await this.yetismeGuncelle();
@@ -998,8 +1044,100 @@ export class DunyaYazari {
     }
   }
 
-  /** Anlık görüntü alır ve kaydeder (bekleyen, henüz günlüğe yazılmamış komut görüntüye girmez; hepsi uygulanmamıştır). */
+  /**
+   * Periyodik görüntü: işçi kipinde ARKA PLANDA (ana döngü yalnız yapısal kopyayı alır, turun geri kalanı beklemez);
+   * işçi kapalıysa eşzamanlı `goruntuDene`.
+   *
+   * Kurallar: (1) en çok bir görüntü işi; işçi meşgulken görüntü ATLANIR (`goruntuAtlanan`) ve koşul sürdüğü için iş biter bitmez
+   * sonraki turda yeniden denenir, hiçbir şey kuyruklanmaz. (2) İşçi/kayıt hatası ölümcül değildir: uyarı verilir, görüntü
+   * zamanı geri alınır ve `isciYenidenDenemeMs` sonra yeniden denenir; ardışık 3 işçi hatasında o görüntü eşzamanlı alınır.
+   * (3) Görüntü yazılmadan çökme, eski görüntü + günlük kuyruğuyla aynı dünyayı verir (günlük görüntüden bağımsız ilerler).
+   */
+  private async goruntuPeriyodik(): Promise<void> {
+    if (!this.s.goruntuIsci) return this.goruntuDene();
+    if (this.goruntuIsi !== null) {
+      if (!this.atlamaSayildi) {
+        this.atlamaSayildi = true;
+        this.metrikler.goruntuAtlanan++;
+      }
+      return;
+    }
+    if (this.olcuFn() < this.isciSonrakiDenemeOlcu) return;
+    if (this.isciArdisikHata >= 3) {
+      // İşçi tekrar tekrar çöküyor: görüntü kaybolmasın, bu seferlik ana iş parçacığında al (yine de ölümcül değil).
+      this.isciArdisikHata = 0;
+      return this.goruntuDene();
+    }
+    const bas = this.olcuFn();
+    this.yerlestir();
+    await this.donusYaz(true); // görüntüden ÖNCE kayıtlar/çapalar kalıcı (eşzamanlı yolla aynı sözleşme)
+    // --- Eşzamanlı kesit: seq, sim zamanı, idempotans ve dünya kopyası AYNI anın görüntüsüdür (await yok). ---
+    const seq = this.seqDegeri;
+    const simZamani = this.sim.dunya.zaman;
+    const ek = this.goruntuEki();
+    const oncekiZaman = this.sonGoruntuZamani;
+    const oncekiSeq = this.sonGoruntuSeq;
+    if (!this.isci) {
+      this.isci = new GoruntuIscisi(icerikKimlikTablosuOlustur(this.sim.ic), this.kuralSurumu, typeof this.s.goruntuIsci === "object" ? this.s.goruntuIsci : {});
+    }
+    const sikistir = this.s.depo.goruntu.sikistirma === "gzip";
+    const is = this.isci.calistir(this.sim.dunya, sikistir, this.olcuFn);
+    if (is === null) return;
+    this.metrikler.sonKopyaMs = is.kopyaMs;
+    this.metrikler.enUzunKopyaMs = Math.max(this.metrikler.enUzunKopyaMs, is.kopyaMs);
+    this.sonGoruntuZamani = simZamani;
+    this.sonGoruntuSeq = seq;
+    this.atlamaSayildi = false;
+    let isciHatasi = true;
+    this.goruntuIsi = (async () => {
+      try {
+        const r = await is.sonuc;
+        isciHatasi = false;
+        const g: AnlikGoruntuKaydi = { seq, simZamani, kuralSurumu: this.kuralSurumu, semaSurumu: SEMA_SURUMU, durumOzeti: r.durumOzeti, metin: r.metin, ek, ...(r.gzip ? { gzip: r.gzip } : {}) };
+        await this.s.depo.goruntu.kaydet(g);
+        this.sonGoruntuHatasi = null;
+        this.isciArdisikHata = 0;
+        this.metrikler.goruntu++;
+        this.metrikler.isciGoruntu++;
+        this.metrikler.sonGoruntuOlcu = this.olcuFn();
+        this.metrikler.sonGoruntuBayt = r.metin.length;
+        this.metrikler.sonIsciMs = r.isciMs;
+        this.metrikler.sonGoruntuSureMs = this.olcuFn() - bas;
+        this.metrikler.enUzunGoruntuSureMs = Math.max(this.metrikler.enUzunGoruntuSureMs, this.metrikler.sonGoruntuSureMs);
+      } catch (e) {
+        this.metrikler.goruntuHatasi++;
+        if (isciHatasi) {
+          this.metrikler.isciHatasi++;
+          this.isciArdisikHata++;
+        }
+        this.sonGoruntuHatasi = e instanceof Error ? e.message : String(e);
+        // Görüntü yazılmadı: zamanı geri al (yalnız bu iş ilerlettiyse), en erken `isciYenidenDenemeMs` sonra yeniden dene.
+        if (this.sonGoruntuZamani === simZamani && this.sonGoruntuSeq === seq) {
+          this.sonGoruntuZamani = oncekiZaman;
+          this.sonGoruntuSeq = oncekiSeq;
+        }
+        this.isciSonrakiDenemeOlcu = this.olcuFn() + this.isciYenidenDenemeMs;
+        this.uyariDinleyici?.(`anlik goruntu (isci) alinamadi: ${this.sonGoruntuHatasi}`);
+      } finally {
+        this.goruntuIsi = null;
+      }
+    })();
+  }
+
+  /** Görüntü üst verisi: idempotans tablosunun şimdiki kopyası (yalnız sonuçlanmış girdiler) + tohum/epoch. */
+  private goruntuEki(): AnlikGoruntuKaydi["ek"] {
+    const idempotans: IdempotansGirdisi[] = [];
+    for (const v of this.idempotans.values()) {
+      if (!v.sonuc) continue;
+      const ortak = { oyuncu: v.oyuncu, istemci: v.istemci, anahtar: v.anahtar, seq: v.seq, t: v.t, komut: v.komut };
+      idempotans.push(v.sonuc.tamam ? { ...ortak, tamam: true } : { ...ortak, tamam: false, hata: v.sonuc.hata });
+    }
+    return { tohum: this.sim.dunya.tohum, ...(this.dunyaEpochMsDegeri !== null ? { dunyaEpochMs: this.dunyaEpochMsDegeri } : {}), idempotans };
+  }
+
+  /** Anlık görüntü alır ve kaydeder (bekleyen, henüz günlüğe yazılmamış komut görüntüye girmez; hepsi uygulanmamıştır). Eşzamanlı yol. */
   async goruntuAl(): Promise<AnlikGoruntuKaydi> {
+    await this.goruntuIsi; // süren işçi görüntüsü önce biter: depoya eski seq yeniden yazılmaz
     const goruntuBasi = this.olcuFn();
     this.yerlestir();
     // Görüntüden ÖNCE kayıtlar/çapalar kalıcı olmalı: görüntü sonrasındaki yeniden oynatma görüntüden önceki olayları türetmez.
@@ -1009,12 +1147,6 @@ export class DunyaYazari {
     const ozetIndeksi = metin.lastIndexOf('"durumOzeti":"');
     const durumOzeti = metin.slice(ozetIndeksi + 14, ozetIndeksi + 30);
     if (!/^[0-9a-f]{16}$/.test(durumOzeti)) throw new Error("anlik goruntu zarfinda durumOzeti bulunamadi");
-    const idempotans: IdempotansGirdisi[] = [];
-    for (const v of this.idempotans.values()) {
-      if (!v.sonuc) continue;
-      const ortak = { oyuncu: v.oyuncu, istemci: v.istemci, anahtar: v.anahtar, seq: v.seq, t: v.t, komut: v.komut };
-      idempotans.push(v.sonuc.tamam ? { ...ortak, tamam: true } : { ...ortak, tamam: false, hata: v.sonuc.hata });
-    }
     const g: AnlikGoruntuKaydi = {
       seq: this.seqDegeri,
       simZamani: this.sim.dunya.zaman,
@@ -1022,7 +1154,7 @@ export class DunyaYazari {
       semaSurumu: SEMA_SURUMU,
       durumOzeti,
       metin,
-      ek: { tohum: this.sim.dunya.tohum, ...(this.dunyaEpochMsDegeri !== null ? { dunyaEpochMs: this.dunyaEpochMsDegeri } : {}), idempotans },
+      ek: this.goruntuEki(),
     };
     await this.s.depo.goruntu.kaydet(g);
     this.sonGoruntuZamani = g.simZamani;

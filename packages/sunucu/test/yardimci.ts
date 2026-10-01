@@ -9,7 +9,7 @@ import { GelistirmeKimligi, gelistirmeTokeni } from "../src/kimlik";
 import { SunucuIstemcisi } from "../src/istemci";
 import { ElleSaat } from "../src/saat";
 import { sunucuBaslat } from "../src/sunucu";
-import type { CalisanSunucu } from "../src/sunucu";
+import type { CalisanSunucu, SunucuSecenekleri } from "../src/sunucu";
 import { DunyaYazari } from "../src/yazar";
 import type { SunucuMesaji } from "@bolge/protokol";
 
@@ -48,7 +48,7 @@ export interface TestSunucusu {
   kapat(): Promise<void>;
 }
 
-export async function testSunucusu(s: { hizSiniri?: HizSiniriSecenekleri; tohum?: number; veri?: CekirdekVeriPaketi } = {}): Promise<TestSunucusu> {
+export async function testSunucusu(s: { hizSiniri?: HizSiniriSecenekleri; tohum?: number; veri?: CekirdekVeriPaketi; sunucu?: Partial<SunucuSecenekleri> } = {}): Promise<TestSunucusu> {
   const depo = bellekDeposu();
   const saat = new ElleSaat();
   const yazar = await DunyaYazari.ac({ veri: s.veri ?? veri(), tohum: s.tohum ?? 1, depo, saat, commitAraligiMs: 15, goruntuAraligiMs: 1e12 });
@@ -58,6 +58,7 @@ export async function testSunucusu(s: { hizSiniri?: HizSiniriSecenekleri; tohum?
     port: 0,
     yayinAraligiMs: 0,
     ...(s.hizSiniri ? { hizSiniri: s.hizSiniri } : {}),
+    ...s.sunucu,
   });
   const url = `ws://127.0.0.1:${sunucu.port}`;
   const istemciler: SunucuIstemcisi[] = [];

@@ -96,6 +96,7 @@ describe("histogram ve metin bicimi (saf)", () => {
     const girdi = {
       baglanti: 2, bagliOyuncu: 1, komutTamam: 5, komutBasarisiz: 2, reddedilen: { hizSiniri: 1, yetisiyor: 3 }, tur: 10, seq: 7, simZamaniMs: 99, bekleyenKomut: 0,
       yetisiyor: true, yetismeKalanMs: 3600000, saatGerideMs: 0, olumcul: false, goruntuSayisi: 2, goruntuHatasi: 0, goruntuYasiSimMs: 5, goruntuYasiSaniye: 1.5, goruntuBayt: 1234, goruntuSureSonMs: 12.5, goruntuSureEnUzunMs: 40,
+      goruntuIsci: { kopyaSonMs: 3.5, kopyaEnUzunMs: 9, isciSonMs: 80, alinan: 4, atlanan: 2, hata: 1 }, yayin: { atlananKare: 6, yavasKopan: 1, sira: 3 }, olayDongusu: { p50Ms: 10.5, p99Ms: 40, maxMs: 120.5 },
       depo: { gunlukBayt: 10, goruntuBayt: 20 }, commit: h, surec: { rssBayt: 1, heapBayt: 2, cpuSaniye: 0.5 }, calismaSaniye: 3,
     };
     const m = metrikMetni(girdi);
@@ -108,6 +109,16 @@ describe("histogram ve metin bicimi (saf)", () => {
     expect(d.get('bolge_commit_gecikme_ms_bucket{le="5"}')).toBe(1);
     expect(d.get('bolge_commit_gecikme_ms_bucket{le="+Inf"}')).toBe(1);
     expect(d.get("bolge_depo_gunluk_bayt")).toBe(10);
+    expect(d.get("bolge_goruntu_kopya_son_ms")).toBe(3.5);
+    expect(d.get("bolge_goruntu_isci_son_ms")).toBe(80);
+    expect(d.get("bolge_goruntu_atlanan_toplam")).toBe(2);
+    expect(d.get("bolge_goruntu_isci_hata_toplam")).toBe(1);
+    expect(d.get("bolge_yayin_atlanan_kare_toplam")).toBe(6);
+    expect(d.get("bolge_yayin_yavas_kopan_toplam")).toBe(1);
+    expect(d.get("bolge_yayin_sira")).toBe(3);
+    expect(d.get("bolge_olay_dongusu_gecikme_p50_ms")).toBe(10.5);
+    expect(d.get("bolge_olay_dongusu_gecikme_p99_ms")).toBe(40);
+    expect(d.get("bolge_olay_dongusu_gecikme_en_buyuk_ms")).toBe(120.5);
     expect(metrikMetni({ ...girdi, depo: null })).not.toContain("bolge_depo_");
     expect(saglikYaniti({ durum: "ok", seq: 1, simZamaniMs: 2 }, "/saglik").kod).toBe(200);
     expect(saglikYaniti({ durum: "yetisiyor", seq: 1, simZamaniMs: 2 }, "/saglik").kod).toBe(200);
@@ -195,6 +206,9 @@ describe("sunucu ucları", () => {
     expect(d.get("bolge_depo_gunluk_bayt")).toBeGreaterThan(0);
     expect(d.get("bolge_depo_goruntu_bayt")).toBeGreaterThan(0);
     expect(d.get("bolge_commit_gecikme_ms_count")).toBe(2);
+    expect(d.get("bolge_goruntu_atlanan_toplam")).toBe(0);
+    expect(d.get("bolge_yayin_yavas_kopan_toplam")).toBe(0);
+    expect(d.get("bolge_olay_dongusu_gecikme_en_buyuk_ms")).toBeGreaterThanOrEqual(0);
     // Kişisel veri yok: oyuncu kimliği, token, istemci kimliği metinde geçmez.
     for (const yasak of ["ali-gizli-kimlik", token("ali-gizli-kimlik"), "ali-ist", "yonetici-ist", SISTEM_OYUNCUSU]) expect(metin).not.toContain(yasak);
     expect(await sunucu.metrikMetni()).toContain("bolge_bagli_oyuncu 1");
@@ -203,6 +217,22 @@ describe("sunucu ucları", () => {
     expect((await fetch(`${mt}/baska`)).status).toBe(404);
     expect((await fetch(`${mt}/metrik`, { method: "POST" })).status).toBe(405);
     await ali.kapat();
+  });
+
+  it("olay dongusu gecikmesi (perf_hooks): ana is parcacigini tutan is metrikte en buyuk gecikme olarak gorulur", async () => {
+    const { sunucu } = await sunucuKur({ metrik: { port: 0 } });
+    await new Promise((r) => setTimeout(r, 250)); // histogram dolsun (10 ms cozunurluk)
+    const once = metinDogrula(await sunucu.metrikMetni());
+    // 120 ms boyunca olay dongusunu tut (senkron is).
+    const bas = performance.now();
+    while (performance.now() - bas < 120) {
+      /* mesgul */
+    }
+    await new Promise((r) => setTimeout(r, 40)); // gecikme ornegi kaydedilsin
+    const sonra = metinDogrula(await sunucu.metrikMetni());
+    expect(sonra.get("bolge_olay_dongusu_gecikme_en_buyuk_ms")).toBeGreaterThanOrEqual(100);
+    expect(sonra.get("bolge_olay_dongusu_gecikme_p99_ms")).toBeGreaterThanOrEqual(sonra.get("bolge_olay_dongusu_gecikme_p50_ms") ?? 0);
+    expect(sonra.get("bolge_olay_dongusu_gecikme_en_buyuk_ms")).toBeGreaterThan(once.get("bolge_olay_dongusu_gecikme_en_buyuk_ms") ?? 0);
   });
 
   it("yetisme: /saglik 200 (yetisiyor), /hazir 503, metrikte yetisiyor=1 ve kalan sure; reddedilen komut sayaci; bitince ok", async () => {

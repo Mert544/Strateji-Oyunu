@@ -61,6 +61,11 @@ export interface AnlikGoruntuKaydi {
   /** `anlikGoruntuOlustur` çıktısı (kanonik JSON zarf). */
   metin: string;
   ek: GoruntuEki;
+  /**
+   * İsteğe bağlı: `metin`in gzip'i (görüntü işçisi ana döngüyü tutmadan üretir). Yalnız deponun `sikistirma = "gzip"` demesi
+   * halinde yazar doldurur; depo yoksa kendisi sıkıştırır. `sonuncu()` bu alanı DÖNDÜRMEZ.
+   */
+  gzip?: Uint8Array;
 }
 
 export interface GunlukDeposu {
@@ -72,6 +77,8 @@ export interface GunlukDeposu {
 }
 
 export interface GoruntuDeposu {
+  /** Depo görüntü gövdesini gzip ile saklıyorsa "gzip": yazar sıkıştırmayı işçide yapıp `AnlikGoruntuKaydi.gzip` ile verir. */
+  readonly sikistirma?: "gzip";
   kaydet(g: AnlikGoruntuKaydi): Promise<void>;
   /** En büyük seq'li (eşitlikte en son kaydedilen) geçerli görüntü; yoksa null. */
   sonuncu(): Promise<AnlikGoruntuKaydi | null>;

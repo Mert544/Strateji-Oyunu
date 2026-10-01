@@ -21,7 +21,7 @@ import {
 } from "@bolge/protokol";
 import type { HataKodu, IlgiKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
 import { HizSiniri, VARSAYILAN_HIZ_SINIRI } from "./hiz-siniri";
-import { metrikMetni, metrikSunucusuBaslat, saglikYaniti } from "./metrik";
+import { OlayDongusuOlcer, metrikMetni, metrikSunucusuBaslat, saglikYaniti } from "./metrik";
 import type { MetrikSecenekleri, MetrikSunucusu, SaglikDurumu } from "./metrik";
 import type { HizSiniriSecenekleri } from "./hiz-siniri";
 import type { Kimlik, KimlikDogrulayici } from "./kimlik";
@@ -59,8 +59,21 @@ export interface SunucuSecenekleri {
    * dışı adres token ister (bkz. `metrik.ts`). `/saglik` ve `/hazir` ana portta da sunulur (konteyner healthcheck).
    */
   metrik?: MetrikSecenekleri;
-  /** Gönderim tamponu bu kadarı aşarsa delta atlanır, sonraki yayında tam kare gider. Varsayılan 4 MiB. */
+  /** Gönderim tamponu bu kadarı aşarsa kare/delta ATLANIR, sonraki yayında tam kare gider. Varsayılan 4 MiB. */
   enCokTampon?: number;
+  /**
+   * Yavaş istemci kopma kuralı: tampon bu kadarı aşarsa (varsayılan 4 x `enCokTampon`) ya da `enCokTampon` üstünde `yavasSureMs`
+   * boyunca kalırsa bağlantı sonlandırılır (istemci yeniden bağlanıp tam kare alır; sunucu belleği bir istemciyle büyümez).
+   */
+  kopmaTamponu?: number;
+  /** `enCokTampon` üstünde bu kadar süre (duvarMs ölçeğinde) kalan istemci kopar. Varsayılan 30 000 ms. */
+  yavasSureMs?: number;
+  /** Bağlantı başına bekleyen tampon (bayt) ölçümü; varsayılan `ws.bufferedAmount`. Testler yavaş istemciyi bununla kurar. */
+  tamponOlcer?: (ws: WebSocket, oyuncu: string | null) => number;
+  /** Kare yayınında bir parçada (setImmediate turu) en çok bağlantı sayısı. Varsayılan 8. */
+  yayinParca?: number;
+  /** Bir yayın parçasının süre bütçesi (ms): aşılınca parça biter, kalanlar sonraki setImmediate'e kalır. Varsayılan 6. */
+  yayinButceMs?: number;
 }
 
 /** `ozetIste` jeton bedeli (dünyanın tamamını özetlemek pahalıdır). */
@@ -85,6 +98,8 @@ interface Baglanti {
   sonKare: IlgiKaresi | null;
   rev: number;
   canli: boolean;
+  /** Tamponu `enCokTampon` üstüne ilk çıktığı an (`duvarMs`); altına inince null. */
+  yavasBasi: number | null;
   /** Mesajlar bağlantı başına sırayla işlenir (merhaba'nın kimlik doğrulaması async'tir). */
   zincir: Promise<void>;
 }
@@ -108,11 +123,23 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   const yayinAraligiMs = s.yayinAraligiMs ?? 1000;
   const enCokIlgi = s.enCokIlgi ?? 256;
   const enCokTampon = s.enCokTampon ?? 4 * 1024 * 1024;
+  const kopmaTamponu = s.kopmaTamponu ?? 4 * enCokTampon;
+  const yavasSureMs = s.yavasSureMs ?? 30_000;
+  const yayinParca = Math.max(1, s.yayinParca ?? 8);
+  const yayinButceMs = s.yayinButceMs ?? 6;
+  const tamponOlcer = s.tamponOlcer ?? ((ws: WebSocket) => ws.bufferedAmount);
+  const tampon = (b: Baglanti): number => tamponOlcer(b.ws, b.kimlik?.oyuncu ?? null);
+  const duvarMs = s.duvarMs ?? (() => performance.now());
+  const olayDongusu = new OlayDongusuOlcer();
   const baglantilar = new Set<Baglanti>();
   let sonYayin = 0;
   let kapaniyor = false;
   const baslangicOlcu = yazar.olcu();
   const reddedilen = { hizSiniri: 0, yetisiyor: 0 };
+  const yayinSayaci = { atlananKare: 0, yavasKopan: 0 };
+  /** Kare bekleyen bağlantılar (yayın sırası): turdan sonra parçalar hâlinde, setImmediate ile boşaltılır. */
+  const yayinSirasi = new Set<Baglanti>();
+  let yayinPlanli = false;
 
   function saglik(): SaglikDurumu {
     const durum = yazar.olumculMu ? "olumcul" : kapaniyor ? "kapaniyor" : yazar.yetisiyor ? "yetisiyor" : "ok";
@@ -170,6 +197,16 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       goruntuBayt: m.sonGoruntuBayt,
       goruntuSureSonMs: Math.round(m.sonGoruntuSureMs * 10) / 10,
       goruntuSureEnUzunMs: Math.round(m.enUzunGoruntuSureMs * 10) / 10,
+      goruntuIsci: {
+        kopyaSonMs: Math.round(m.sonKopyaMs * 10) / 10,
+        kopyaEnUzunMs: Math.round(m.enUzunKopyaMs * 10) / 10,
+        isciSonMs: Math.round(m.sonIsciMs * 10) / 10,
+        alinan: m.isciGoruntu,
+        atlanan: m.goruntuAtlanan,
+        hata: m.isciHatasi,
+      },
+      yayin: { atlananKare: yayinSayaci.atlananKare, yavasKopan: yayinSayaci.yavasKopan, sira: yayinSirasi.size },
+      olayDongusu: olayDongusu.olcum(),
       depo: depoOnbellek.boyut,
       commit: m.commit,
       surec: { rssBayt: bellek.rss, heapBayt: bellek.heapUsed, cpuSaniye: Math.round(((cpu.user + cpu.system) / 1e6) * 1000) / 1000 },
@@ -182,14 +219,51 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     try {
       metrikSunucusu = await metrikSunucusuBaslat(s.metrik, { metin: metrikMetniUret, saglik });
     } catch (e) {
+      olayDongusu.kapat();
       await new Promise<void>((coz) => wss.close(() => coz()));
       await new Promise<void>((coz) => http.close(() => coz()));
       throw e;
     }
   }
 
+  /** Yavaş istemciyi sonlandırır (abnormal kapanış; istemci yeniden bağlanıp tam kare alır). */
+  function yavasKopar(b: Baglanti): void {
+    yayinSayaci.yavasKopan++;
+    yayinSirasi.delete(b);
+    b.ws.terminate();
+  }
+
   function gonder(b: Baglanti, m: SunucuMesaji): void {
-    if (b.ws.readyState === b.ws.OPEN) b.ws.send(JSON.stringify(m));
+    if (b.ws.readyState !== b.ws.OPEN) return;
+    // Sert sınır: tampon bu kadarsa istemci okumuyor demektir; yanıt/yayın biriktirmek yerine koparılır.
+    if (tampon(b) > kopmaTamponu) return yavasKopar(b);
+    b.ws.send(JSON.stringify(m));
+  }
+
+  /**
+   * Yavaş istemci kuralı (kare/delta için): tampon `enCokTampon` üstündeyse kare ATLANIR ve `sonKare` sıfırlanır (yetişince tam kare
+   * gider, delta zinciri bozulmaz); tampon `kopmaTamponu` üstüne çıkarsa ya da `enCokTampon` üstünde `yavasSureMs` kalırsa bağlantı
+   * KOPAR. Dönüş: true = gönderilebilir.
+   */
+  function tamponDenetle(b: Baglanti): boolean {
+    const t = tampon(b);
+    if (t > kopmaTamponu) {
+      yavasKopar(b);
+      return false;
+    }
+    if (t > enCokTampon) {
+      const an = duvarMs();
+      b.yavasBasi ??= an;
+      if (an - b.yavasBasi >= yavasSureMs) {
+        yavasKopar(b);
+        return false;
+      }
+      b.sonKare = null;
+      yayinSayaci.atlananKare++;
+      return false;
+    }
+    b.yavasBasi = null;
+    return true;
   }
 
   function hata(b: Baglanti, kod: HataKodu, mesaj: string, ek: { anahtar?: string; istek?: number } = {}): void {
@@ -203,10 +277,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   /** Bağlantıya tam kare ya da (değişiklik varsa) delta gönderir. */
   function kareGonder(b: Baglanti, tam: boolean): void {
     if (!b.abone || !b.kimlik) return;
-    if (b.ws.bufferedAmount > enCokTampon) {
-      b.sonKare = null; // yavaş istemci: deltayı atla, yetişince tam kare
-      return;
-    }
+    if (!tamponDenetle(b)) return;
     const oyuncu = kareOyuncusu(b);
     const ilgi = ilgiAlaniKur(yazar.sim, b.istenen, oyuncu);
     const ilceIlgisi = ilceIlgisiKur(yazar.sim, b.istenenIlceler, oyuncu);
@@ -223,7 +294,30 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     b.sonKare = kare;
   }
 
-  const duvarMs = s.duvarMs ?? (() => performance.now());
+  /** Yayın parçası: sıradaki bağlantılara en çok `yayinParca` kare / `yayinButceMs` süre, kalanı sonraki setImmediate'e. */
+  function yayinParcasi(): void {
+    yayinPlanli = false;
+    if (kapaniyor) {
+      yayinSirasi.clear();
+      return;
+    }
+    const bas = performance.now();
+    let n = 0;
+    for (const b of yayinSirasi) {
+      yayinSirasi.delete(b);
+      if (!baglantilar.has(b)) continue;
+      kareGonder(b, false);
+      if (++n >= yayinParca || performance.now() - bas >= yayinButceMs) break;
+    }
+    yayinPlanla();
+  }
+
+  function yayinPlanla(): void {
+    if (yayinPlanli || yayinSirasi.size === 0) return;
+    yayinPlanli = true;
+    setImmediate(yayinParcasi);
+  }
+
   const zamanYayinAraligiMs = s.zamanYayinAraligiMs ?? 15_000;
   let sonZamanYayini = duvarMs();
   yazar.dinle((olay) => {
@@ -237,7 +331,10 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     const simdi = performance.now();
     if (olay.basarili === 0 && simdi - sonYayin < yayinAraligiMs) return;
     sonYayin = simdi;
-    for (const b of baglantilar) kareGonder(b, false);
+    // Yayın turu bloklamaz: bağlantılar sıraya girer, parçalar hâlinde gönderilir. Sıradaki bağlantı gönderilmeden yeni tur
+    // gelirse zaten sıradadır (kare, gönderim anındaki en güncel dünyadan çıkarılır; ara kareler birleşir).
+    for (const b of baglantilar) if (b.abone && b.kimlik) yayinSirasi.add(b);
+    yayinPlanla();
   });
 
   // Yetişme (sunucu kapalıyken geçen süreyi işletme) durumu: kimliği doğrulanmış her bağlantıya bildirilir.
@@ -430,7 +527,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   }
 
   wss.on("connection", (ws) => {
-    const b: Baglanti = { ws, kimlik: null, istemci: "", istenen: [], istenenIlceler: [], abone: false, ayrilmis: false, kamu: false, sayildi: false, ozetBekliyor: false, sonKare: null, rev: 0, canli: true, zincir: Promise.resolve() };
+    const b: Baglanti = { ws, kimlik: null, istemci: "", istenen: [], istenenIlceler: [], abone: false, ayrilmis: false, kamu: false, sayildi: false, ozetBekliyor: false, sonKare: null, rev: 0, canli: true, yavasBasi: null, zincir: Promise.resolve() };
     baglantilar.add(b);
     const zamanAsimi = setTimeout(() => {
       if (!b.kimlik) ws.close(KAPANIS.zamanAsimi, "merhaba zaman asimi");
@@ -448,6 +545,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     ws.on("close", () => {
       clearTimeout(zamanAsimi);
       baglantilar.delete(b);
+      yayinSirasi.delete(b);
       if (b.sayildi && b.kimlik) {
         b.sayildi = false;
         const oyuncu = b.kimlik.oyuncu;
@@ -494,7 +592,9 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       for (const oyuncu of [...canli.keys()]) await yazar.cikis(oyuncu).catch(() => undefined);
       canli.clear();
       kapaniyor = true;
+      yayinSirasi.clear();
       clearInterval(bakim);
+      olayDongusu.kapat();
       for (const b of baglantilar) b.ws.close(KAPANIS.kapaniyor, "sunucu kapaniyor");
       await new Promise<void>((coz) => wss.close(() => coz()));
       await new Promise<void>((coz) => http.close(() => coz()));

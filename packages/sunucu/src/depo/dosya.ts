@@ -167,7 +167,7 @@ export class DosyaGoruntuDeposu implements GoruntuDeposu {
   }
 
   async kaydet(g: AnlikGoruntuKaydi): Promise<void> {
-    const { metin, ...ust } = g;
+    const { metin, gzip: _gzip, ...ust } = g;
     const ad = goruntuAdi(g.seq, g.simZamani);
     const gecici = join(this.dizin, `${ad}.tmp`);
     const h = await open(gecici, "w");

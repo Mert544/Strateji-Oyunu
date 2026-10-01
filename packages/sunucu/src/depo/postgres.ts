@@ -174,13 +174,15 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
       },
     },
     goruntu: {
+      /** Gövde gzip'lenir: yazar sıkıştırmayı görüntü işçisine yaptırabilir (`AnlikGoruntuKaydi.gzip`). */
+      sikistirma: "gzip" as const,
       async kaydet(g: AnlikGoruntuKaydi): Promise<void> {
         // Aynı (seq, sim_t, kural_sur) yeniden yazılırsa (ör. kapanış görüntüsü aynı anda) kayıt yenilenir ve en yeni olur.
         await havuz.query(
           `INSERT INTO snapshots (dunya, seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob) VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,'gzip',$8)
            ON CONFLICT (dunya, seq, sim_t, kural_sur) DO UPDATE SET sema_sur = EXCLUDED.sema_sur, durum_ozeti = EXCLUDED.durum_ozeti, ek = EXCLUDED.ek,
              sikistirma = EXCLUDED.sikistirma, blob = EXCLUDED.blob, olusturma = now()`,
-          [s.dunya, g.seq, g.simZamani, g.kuralSurumu, g.semaSurumu, g.durumOzeti, JSON.stringify(g.ek), gzipSync(g.metin)],
+          [s.dunya, g.seq, g.simZamani, g.kuralSurumu, g.semaSurumu, g.durumOzeti, JSON.stringify(g.ek), g.gzip ? Buffer.from(g.gzip.buffer, g.gzip.byteOffset, g.gzip.byteLength) : gzipSync(g.metin)],
         );
       },
       async sonuncu(): Promise<AnlikGoruntuKaydi | null> {

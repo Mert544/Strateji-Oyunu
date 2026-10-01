@@ -48,6 +48,7 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --elle-saat          saat yalniz yoneticinin zamanIlerlet mesajiyla ilerler (test/gelistirme)
   --commit-ms N        grup commit araligi (vars. 75)
   --goruntu-saat N     anlik goruntu araligi, sim-saat (vars. 6)
+  --goruntu-isci 0|1   periyodik goruntu serilestirme/ozet/gzip'i worker_threads isciye tasi (vars. 1; 0 = ana donguda)
   --hiz-siniri K/S     oyuncu basina token-kova: kapasite/saniyede jeton (vars. 20/5)
   --botlar A,B         sunucu botlari (arketip; i. bot haritadaki i. devletin bolgeleriyle katilir)
   --metrik-port N      ayri metrik HTTP portu (/metrik Prometheus metni, /saglik, /hazir); verilmezse metrik ucu kapali.
@@ -60,7 +61,7 @@ const YARDIM = `Bolge Stratejisi sunucusu
 
 Ortam degiskenleri: her secenek BOLGE_<AD> ile de verilir (bayrak ortamdan ustundur): BOLGE_PORT, BOLGE_HOST, BOLGE_HARITA,
 BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_TOHUM, BOLGE_DEPO, BOLGE_DIZIN, BOLGE_PG_URL, BOLGE_DUNYA, BOLGE_HIZ, BOLGE_ELLE_SAAT (1),
-BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT,
+BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT, BOLGE_GORUNTU_ISCI (0|1),
 BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI.`;
 
 function yaz(olay: string, veri: Record<string, unknown> = {}): void {
@@ -127,6 +128,7 @@ async function ana(): Promise<void> {
       "dunya-epoch": { type: "string", ...varsayilan(ev("DUNYA_EPOCH")) },
       "commit-ms": { type: "string", default: ev("COMMIT_MS", "75") as string },
       "goruntu-saat": { type: "string", default: ev("GORUNTU_SAAT", "6") as string },
+      "goruntu-isci": { type: "string", default: ev("GORUNTU_ISCI", "1") as string },
       botlar: { type: "string", default: ev("BOTLAR", "") as string },
       "hiz-siniri": { type: "string", default: ev("HIZ_SINIRI", "20/5") as string },
       "metrik-port": { type: "string", ...varsayilan(ev("METRIK_PORT")) },
@@ -196,6 +198,7 @@ async function ana(): Promise<void> {
     saat,
     commitAraligiMs: sayi("commit-ms", a["commit-ms"]),
     goruntuAraligiMs: Math.round(sayi("goruntu-saat", a["goruntu-saat"]) * SAAT),
+    goruntuIsci: !["0", "hayir", "false"].includes((a["goruntu-isci"] as string).toLowerCase()),
     botlar: botlarKur(veri, a.botlar as string),
     ...(dunyaEpochMs !== undefined ? { dunyaEpochMs } : {}),
     gocIzni: a.goc as boolean,

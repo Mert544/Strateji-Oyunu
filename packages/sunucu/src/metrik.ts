@@ -10,6 +10,7 @@
  */
 import { createServer, type Server } from "node:http";
 import { timingSafeEqual } from "node:crypto";
+import { monitorEventLoopDelay, type IntervalHistogram } from "node:perf_hooks";
 import type { AddressInfo } from "node:net";
 
 /** Gecikme histogramı (ms): küme sınırları sabit; ayrıca son `PENCERE` örnekten p50/p95 hesaplanır. */
@@ -38,6 +39,11 @@ export class Histogram {
     }
   }
 
+  /** Penceredeki ham örnekler (gözlem sırasıyla; `sayi` <= PENCERE iken tümü). Test/tanı içindir. */
+  ornekler(): readonly number[] {
+    return this.ornek;
+  }
+
   /** Son `PENCERE` örnekten q-niceliği (0..1); örnek yoksa 0. */
   nicelik(q: number): number {
     if (this.ornek.length === 0) return 0;
@@ -61,6 +67,58 @@ export class YazarMetrikleri {
   /** Görüntü alma süresi (ms; serileştirme + depo yazımı, olay döngüsünü tutar): son ve en uzun. */
   sonGoruntuSureMs = 0;
   enUzunGoruntuSureMs = 0;
+  /**
+   * Görüntü işçisi (worker_threads): ana iş parçacığında kalan yapısal kopya süresi (son ve en uzun, ms), işçinin kendi süresi
+   * (serileştirme + özet + gzip, son, ms), işçi kipinde alınan, atlanan (işçi meşgulken) görüntü sayısı, işçi hataları.
+   */
+  sonKopyaMs = 0;
+  enUzunKopyaMs = 0;
+  sonIsciMs = 0;
+  isciGoruntu = 0;
+  goruntuAtlanan = 0;
+  isciHatasi = 0;
+}
+
+/** Olay döngüsü gecikmesi (ms): p50, p99 ve en büyük. `perf_hooks.monitorEventLoopDelay` çözünürlüğü (10 ms) tabanı dahildir. */
+export interface OlayDongusuGecikmesi {
+  p50Ms: number;
+  p99Ms: number;
+  maxMs: number;
+}
+
+/**
+ * `monitorEventLoopDelay` sarmalayıcısı: kayan pencere. Histogram `pencereMs`'de bir sıfırlanır; okuma, güncel pencerede yeterli
+ * örnek (>= 100) yoksa bir önceki pencerenin değerini verir (sıfırlamadan hemen sonra metrik boşalmasın). Zamanlayıcı süreci tutmaz.
+ */
+export class OlayDongusuOlcer {
+  private readonly h: IntervalHistogram;
+  private onceki: OlayDongusuGecikmesi | null = null;
+  private readonly zamanlayici: NodeJS.Timeout;
+
+  constructor(cozunurlukMs = 10, pencereMs = 300_000) {
+    this.h = monitorEventLoopDelay({ resolution: cozunurlukMs });
+    this.h.enable();
+    this.zamanlayici = setInterval(() => {
+      this.onceki = this.oku();
+      this.h.reset();
+    }, pencereMs);
+    this.zamanlayici.unref();
+  }
+
+  private oku(): OlayDongusuGecikmesi {
+    const ms = (ns: number): number => Math.round((ns / 1e6) * 10) / 10;
+    return { p50Ms: ms(this.h.percentile(50)), p99Ms: ms(this.h.percentile(99)), maxMs: ms(this.h.max) };
+  }
+
+  olcum(): OlayDongusuGecikmesi {
+    if (this.h.count < 100 && this.onceki) return this.onceki;
+    return this.oku();
+  }
+
+  kapat(): void {
+    clearInterval(this.zamanlayici);
+    this.h.disable();
+  }
 }
 
 export interface MetrikGirdisi {
@@ -86,6 +144,11 @@ export interface MetrikGirdisi {
   goruntuBayt: number;
   goruntuSureSonMs: number;
   goruntuSureEnUzunMs: number;
+  /** Görüntü işçisi: ana iş parçacığında kalan kopya süresi (son/en uzun), işçi süresi (son), işçide alınan, atlanan, hata. */
+  goruntuIsci: { kopyaSonMs: number; kopyaEnUzunMs: number; isciSonMs: number; alinan: number; atlanan: number; hata: number };
+  /** Kare yayını: yavaş istemci nedeniyle atlanan kare, koparılan bağlantı, yayın sırasındaki bağlantı sayısı. */
+  yayin: { atlananKare: number; yavasKopan: number; sira: number };
+  olayDongusu: OlayDongusuGecikmesi;
   depo: { gunlukBayt: number; goruntuBayt: number } | null;
   commit: Histogram;
   surec: { rssBayt: number; heapBayt: number; cpuSaniye: number };
@@ -126,6 +189,18 @@ export function metrikMetni(g: MetrikGirdisi): string {
     satir("bolge_son_goruntu_bayt", "gauge", "Son goruntunun boyutu (bayt, sikistirmasiz metin).", g.goruntuBayt),
     satir("bolge_goruntu_sure_son_ms", "gauge", "Son goruntu alma suresi (ms; serilestirme + depo yazimi).", g.goruntuSureSonMs),
     satir("bolge_goruntu_sure_en_uzun_ms", "gauge", "Bu surecteki en uzun goruntu alma suresi (ms).", g.goruntuSureEnUzunMs),
+    satir("bolge_goruntu_kopya_son_ms", "gauge", "Goruntu isci kipinde ana is parcacigindaki yapisal kopya suresi (ms; son).", g.goruntuIsci.kopyaSonMs),
+    satir("bolge_goruntu_kopya_en_uzun_ms", "gauge", "Ana is parcacigindaki yapisal kopya suresi (ms; en uzun).", g.goruntuIsci.kopyaEnUzunMs),
+    satir("bolge_goruntu_isci_son_ms", "gauge", "Isci icinde serilestirme + ozet + gzip suresi (ms; son).", g.goruntuIsci.isciSonMs),
+    satir("bolge_goruntu_isci_toplam", "counter", "Goruntu iscisinde alinan goruntu sayisi.", g.goruntuIsci.alinan),
+    satir("bolge_goruntu_atlanan_toplam", "counter", "Isci mesgulken atlanan periyodik goruntu sayisi.", g.goruntuIsci.atlanan),
+    satir("bolge_goruntu_isci_hata_toplam", "counter", "Goruntu iscisi hatalari (olumcul degil; yeniden denenir).", g.goruntuIsci.hata),
+    satir("bolge_yayin_atlanan_kare_toplam", "counter", "Yavas istemci (tampon siniri) nedeniyle atlanan kare/delta.", g.yayin.atlananKare),
+    satir("bolge_yayin_yavas_kopan_toplam", "counter", "Cok yavas oldugu icin koparilan baglanti sayisi.", g.yayin.yavasKopan),
+    satir("bolge_yayin_sira", "gauge", "Kare yayini sirasinda bekleyen baglanti sayisi.", g.yayin.sira),
+    satir("bolge_olay_dongusu_gecikme_p50_ms", "gauge", "Olay dongusu gecikmesi p50 (ms; perf_hooks, kayan pencere).", g.olayDongusu.p50Ms),
+    satir("bolge_olay_dongusu_gecikme_p99_ms", "gauge", "Olay dongusu gecikmesi p99 (ms).", g.olayDongusu.p99Ms),
+    satir("bolge_olay_dongusu_gecikme_en_buyuk_ms", "gauge", "Olay dongusu gecikmesi en buyuk (ms).", g.olayDongusu.maxMs),
   );
   if (g.depo) {
     ekle(

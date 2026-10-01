@@ -14,7 +14,7 @@
  */
 import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,10 +46,10 @@ afterAll(async () => {
   else console.log("dizin korundu:", dizinler);
 });
 
-function sunucuSureci(dizin: string, botlar: string): Surec {
+function sunucuSureci(dizin: string, botlar: string, isci = "0"): Surec {
   const p = spawn(
     process.execPath,
-    ["--import", "tsx", CLI, "--port", "0", "--harita", "mini", "--tohum", String(TOHUM), "--depo", "dosya", "--dizin", dizin, "--elle-saat", "--goruntu-saat", "6", "--commit-ms", "20", "--botlar", botlar, "--hiz-siniri", "1000/1000", "--gelistirme-sirri", SIR],
+    ["--import", "tsx", CLI, "--port", "0", "--harita", "mini", "--tohum", String(TOHUM), "--depo", "dosya", "--dizin", dizin, "--elle-saat", "--goruntu-saat", "6", "--goruntu-isci", isci, "--commit-ms", "20", "--botlar", botlar, "--hiz-siniri", "1000/1000", "--gelistirme-sirri", SIR],
     { cwd: KOK, stdio: ["ignore", "pipe", "pipe"] },
   );
   surecler.push(p);
@@ -101,14 +101,33 @@ async function gunlukOku(dizin: string): Promise<GunlukKaydi[]> {
     .map((s) => JSON.parse(s) as GunlukKaydi);
 }
 
-describe("kill -9 ve yeniden baslatma (alt surec, dosya deposu)", () => {
+/** Periyodik görüntünün (seq > 0) diske düşmesini bekler (görüntü işçisi kipinde görüntü eşzamansız yazılır). */
+async function periyodikGoruntuBekle(dizin: string, ms = 20_000): Promise<void> {
+  const son = Date.now() + ms;
+  while (Date.now() < son) {
+    const adlar = await readdir(join(dizin, "goruntu")).catch(() => [] as string[]);
+    if (adlar.some((a) => a.endsWith(".goruntu") && !a.startsWith("000000000000-"))) return;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  throw new Error("periyodik goruntu yazilmadi");
+}
+
+/**
+ * Üç kip: (1) işçi KAPALI (görüntü turda eşzamanlı), (2) işçi AÇIK ve görüntü diske düştükten sonra SIGKILL (görüntü + kuyruk),
+ * (3) işçi AÇIK ve görüntü beklenmeden SIGKILL (iş yarıda olabilir: eski görüntü + TÜM günlük). Üçünde de aynı t'de aynı özet.
+ */
+describe.each([
+  { ad: "isci kapali", isci: "0", goruntuBekle: false, goruntuSart: true },
+  { ad: "isci acik, goruntu diske dustukten sonra kill", isci: "1", goruntuBekle: true, goruntuSart: true },
+  { ad: "isci acik, goruntu beklenmeden kill", isci: "1", goruntuBekle: false, goruntuSart: false },
+])("kill -9 ve yeniden baslatma (alt surec, dosya deposu): $ad", ({ isci, goruntuBekle, goruntuSart }) => {
   it("anlik goruntu + gunluk kuyrugu ayni t'de ayni ozeti verir; onaylanan komut kaybolmaz", async () => {
     const dizin = await mkdtemp(join(tmpdir(), "bolge-kurtarma-"));
     dizinler.push(dizin);
     const T = 30 * SAAT;
 
     // --- 1. koşu: bot + oyuncu ---
-    const s1 = sunucuSureci(dizin, "sanayici");
+    const s1 = sunucuSureci(dizin, "sanayici", isci);
     const h1 = await s1.hazir;
     expect(h1.kurtarma.goruntuSeq).toBeNull();
     const url1 = `ws://127.0.0.1:${h1.port}`;
@@ -131,14 +150,16 @@ describe("kill -9 ve yeniden baslatma (alt surec, dosya deposu)", () => {
     const gunluk1 = await gunlukOku(dizin);
     expect(gunluk1.some((k) => k.oyuncu === "bot0")).toBe(true); // sunucu botu da günlükte
     expect(gunluk1.at(-1)?.seq).toBe(x1.seq);
+    if (goruntuBekle) await periyodikGoruntuBekle(dizin);
     await oldur(s1);
     await y1.kapat();
     await i1.kapat();
 
     // --- 2. koşu: kurtarma; aynı t'de aynı özet ---
-    const s2 = sunucuSureci(dizin, "");
+    const s2 = sunucuSureci(dizin, "", isci);
     const h2 = await s2.hazir;
-    expect(h2.kurtarma.goruntuSeq).toBeGreaterThan(0);
+    if (goruntuSart) expect(h2.kurtarma.goruntuSeq).toBeGreaterThan(0);
+    else expect(h2.kurtarma.goruntuSeq).toBeGreaterThanOrEqual(0); // iş yarıda kaldıysa yalnız açılış görüntüsü (seq 0) + tüm günlük
     expect(h2.kurtarma.seq).toBe(x1.seq);
     expect(h2.kurtarma.simZamani).toBeLessThanOrEqual(T);
     const url2 = `ws://127.0.0.1:${h2.port}`;
@@ -175,7 +196,7 @@ describe("kill -9 ve yeniden baslatma (alt surec, dosya deposu)", () => {
     for (const k of gunluk) referans.uygula({ t: k.t, oyuncu: k.oyuncu, komut: k.komut });
     referans.calistirKadar(T);
 
-    const s3 = sunucuSureci(dizin, "");
+    const s3 = sunucuSureci(dizin, "", isci);
     const h3 = await s3.hazir;
     expect(h3.kurtarma.seq).toBe(gunluk.at(-1)?.seq);
     const y3 = await SunucuIstemcisi.baglan(`ws://127.0.0.1:${h3.port}`, token(SISTEM_OYUNCUSU), "yonetici");
@@ -192,7 +213,7 @@ describe("kill -9 ve yeniden baslatma (alt surec, dosya deposu)", () => {
     await y3.kapat();
 
     // --- 4. koşu: kapanış görüntüsünden, kuyruksuz ---
-    const s4 = sunucuSureci(dizin, "");
+    const s4 = sunucuSureci(dizin, "", isci);
     const h4 = await s4.hazir;
     expect(h4.kurtarma.kalanKayit).toBe(0);
     expect(h4.kurtarma.simZamani).toBe(T);
@@ -202,5 +223,5 @@ describe("kill -9 ve yeniden baslatma (alt surec, dosya deposu)", () => {
     ref4.calistirKadar(T);
     expect(h4.kurtarma.durumOzeti).toBe(ref4.durumOzeti());
     await oldur(s4);
-  });
+  }, 60_000);
 });
