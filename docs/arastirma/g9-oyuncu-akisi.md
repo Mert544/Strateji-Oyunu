@@ -1,13 +1,13 @@
 # G9 oyuncu akışı: giriş ekranı ve dükkân paneli (A1)
 
-> **Durum.** 1 Ekim 2026 gece, Ar-Ge A1. **Yalnız belge**: kod, parametre ve başka belge değiştirilmedi; hiçbir test koşulmadı, hiçbir sunucu başlatılmadı. T1 (metin, düzen, telefon) ve K1 (istemci mantığı, komut) için girdidir. Sayılar **öneri ya da başka belgenin onaylı sürümündendir** (A3 4d054e4); **(doğrulanmadı)** etiketi koddan ya da kaynak belgeden teyit edilemeyen bilgiyi gösterir.
+> **Durum.** 1 Ekim 2026 gece, Ar-Ge A1. **Yalnız belge**: kod, parametre ve başka belge değiştirilmedi; hiçbir test koşulmadı, hiçbir sunucu başlatılmadı. T1 (metin, düzen, telefon) ve K1 (istemci mantığı, komut) için girdidir. Sayılar **öneri ya da başka belgenin onaylı sürümündendir** (A3 8b10e60); **(doğrulanmadı)** etiketi koddan ya da kaynak belgeden teyit edilemeyen bilgiyi gösterir.
 >
-> **Bağımlılık işareti.** A3'ün şartnamesi (`docs/arastirma/p4-p5-sartname.md`, dal `takim/a3/p4-p5-sartname`, **4d054e4, baş lider onaylı**) §6–§10 **kesindir**; bu belgedeki dükkân sayıları, komutlar, kare alanları, DUK/MRK kodları ve metinleri o sürüme göre yazılmıştır (önceki `[A3-P2]` işaretleri kalktı; baş lider S-12 ve S-18 kararları 4d054e4 ile işlendi). 4d054e4'in `entegrasyon`'a girip girmediği ve kodun (G7: K3/K2) henüz yazılıp yazılmadığı **(doğrulanmadı)**: kare alanları, `dukkan_yik` ve ad ucu kod gelene dek **sözleşmedir, çalışan davranış değildir**. G5 (e-posta girişi) K2 dalında uygulanmıştır (`takim/k2/g5-eposta-giris`, 23527a0, `docs/agent-results/G5-k2.md`) ve `entegrasyon`'a **henüz girmemiştir**; uç ve hata kodları o dalın sözleşmesindendir.
+> **Bağımlılık işareti.** A3'ün şartnamesi (`docs/arastirma/p4-p5-sartname.md`, dal `takim/a3/p4-p5-sartname`, **8b10e60, baş lider onaylı**) §6–§10 **kesindir**; bu belgedeki dükkân sayıları, komutlar, kare alanları, DUK/MRK kodları ve metinleri o sürüme göre yazılmıştır (önceki `[A3-P2]` işaretleri kalktı; baş lider S-12 ve S-18 kararları 8b10e60 ile işlendi). 8b10e60'in `entegrasyon`'a girip girmediği ve kodun (G7: K3/K2) henüz yazılıp yazılmadığı **(doğrulanmadı)**: kare alanları, `dukkan_yik` ve ad ucu kod gelene dek **sözleşmedir, çalışan davranış değildir**. G5 (e-posta girişi) K2 dalında uygulanmıştır (`takim/k2/g5-eposta-giris`, 23527a0, `docs/agent-results/G5-k2.md`) ve `entegrasyon`'a **henüz girmemiştir**; uç ve hata kodları o dalın sözleşmesindendir.
 
 | Alan | Değer |
 |---|---|
 | Görev | G9 "giriş ekranı ve dükkân paneli" ([10 §5A](../10-gorev-listesi.md)); bağımlılık G2, G5, G7 |
-| Dayanaklar | A3 `p4-p5-sartname.md` (4d054e4) §7 (dukkan S), §9 (komutlar, ret iletileri), §10 (protokol), §6.8 (okuma API'si) · K2 `G5-k2.md` ve `KIMLIK.md` (K2 dalı sürümü) · A2 `p4-p5-ekonomi.md` §1.9 (dükkân ekonomisi; dal `takim/a2/p4-p5-ekonomi`) · [insan testi kılavuzu](insan-testi-kilavuzu.md) §3.2, §6.2 · ilk saat ekran incelemesi (dal `takim/a1/ilk-saat-inceleme`; B2, B4, B7, B8) · [rehber-gorevler](rehber-gorevler.md) §3.1 · [donus-deneyimi](donus-deneyimi.md) §2.9, §3C · [P4/P5 içerik taslağı](p4-p5-icerik-taslagi.md) §dükkân türleri |
+| Dayanaklar | A3 `p4-p5-sartname.md` (8b10e60) §7 (dukkan S), §9 (komutlar, ret iletileri), §10 (protokol), §6.8 (okuma API'si) · K2 `G5-k2.md` ve `KIMLIK.md` (K2 dalı sürümü) · A2 `p4-p5-ekonomi.md` §1.9 (dükkân ekonomisi; dal `takim/a2/p4-p5-ekonomi`) · [insan testi kılavuzu](insan-testi-kilavuzu.md) §3.2, §6.2 · ilk saat ekran incelemesi (dal `takim/a1/ilk-saat-inceleme`; B2, B4, B7, B8) · [rehber-gorevler](rehber-gorevler.md) §3.1 · [donus-deneyimi](donus-deneyimi.md) §2.9, §3C · [P4/P5 içerik taslağı](p4-p5-icerik-taslagi.md) §dükkân türleri |
 | Sahipler | **T1** (metin, düzen, telefon, erişilebilirlik) · **K1** (akış mantığı, komut gönderimi, durum) · K2 (sunucu uçları ve kare alanları; istek) |
 | Tekrar yok | Giriş sunucu tasarımı `KIMLIK.md`'de, dükkân kuralları A3 ve A2'de; burada yalnız **oyuncunun gördüğü ekran, kararı ve metni** vardır |
 
@@ -192,7 +192,7 @@ Hata gövdesi `{ tamam: false, kod, mesaj, beklemeSn? }` (K2). Ekran, sunucunun 
 
 # B. Dükkân akışı
 
-Kaynaklar: A3 §7 (dükkân), §9.3 (kod ve iletiler), §10.2 (kare alanları), §15.3 (ölçüm); A2 §1.9 (sayılar). **A3 sayıları 4d054e4 (onaylı) sürümündendir; A2'nin sayıları `afdf29f` sürümündendir** (A3 şartnamesi A2'ye `eab8fcc` ile bağlıdır; iki sürüm arasında sayı farkı olup olmadığı **(doğrulanmadı)**). Dükkân S sabitleri (A3 §7.2–§7.6): raf **4 yuva**, kasa **90 birim/sa**, işletme gideri **132 ₺/sa**, bedel **6.000 ₺ + 20 çelik + 8 makine parçası + 4 pencere** (P-İthal: baş lider kuralı, G7'den itibaren; A3 §7.4), inşa **4 sa (ilk 24 saatte ≈24 dk)**, ilçede ≤2 dükkân, ilde ≤6, ayak izi S = **1 hücre**.
+Kaynaklar: A3 §7 (dükkân), §9.3 (kod ve iletiler), §10.2 (kare alanları), §15.3 (ölçüm); A2 §1.9 (sayılar). **A3 sayıları 8b10e60 (onaylı) sürümündendir; A2'nin sayıları `afdf29f` sürümündendir** (A3 şartnamesi A2'ye `eab8fcc` ile bağlıdır; iki sürüm arasında sayı farkı olup olmadığı **(doğrulanmadı)**). Dükkân S sabitleri (A3 §7.2–§7.6): raf **4 yuva**, kasa **90 birim/sa**, işletme gideri **132 ₺/sa**, bedel **6.000 ₺ + 20 çelik + 8 makine parçası + 4 pencere** (P-İthal: baş lider kuralı, G7'den itibaren; A3 §7.4), inşa **4 sa (ilk 24 saatte ≈24 dk)**, ilçede ≤2 dükkân, ilde ≤6, ayak izi S = **1 hücre**.
 
 ```
 D-1 giriş noktaları -> D-2 tür ve yer -> D-3 maliyet kartı -> D-4 inşa ve ilk açılış
@@ -293,7 +293,7 @@ Gösterilen **birim fiyat `etkin` kademeden** hesaplanır, saklanan `fiyat`'tan 
 |---|---|
 | **Amaç** | Her yuvanın **fiyat kademesi**ni seçmek; kampanyayı yalnız pencere içinde kullanmak |
 | **Oyuncu kararı** | Her yuva için **bir kademe** (varsayılan **normal**) |
-| **Gösterilen sayılar** | **4 kademe** (baş lider onaylı): **kampanya 0,85 R**, **uygun 0,95 R**, **normal 1,05 R (varsayılan)**, **yüksek 1,15 R**. Seçili kademenin **birim fiyatı** (R × çarpan, **aşağı yuvarlı tam ₺**; örnek ekmek R=60 ₺: 51 / 57 / 63 / 69) ve yuva başı **tahmini satış ve net**. Hız sınırı: **kalan süre** (6 saat; dakika çözünürlüğü; raf demetindeki **`fiyatT`**'den hesaplanır: İ-6 kabul edildi). Kampanya hakkı (kareden `kampanya: [bitis, kalanSaat, kalanGun]`): **bugün kalan saat** (en çok 6), **bu hafta kalan gün** (en çok 2) |
+| **Gösterilen sayılar** | **4 kademe** (baş lider onaylı): **kampanya 0,85 R**, **uygun 0,95 R**, **normal 1,05 R (varsayılan)**, **yüksek 1,15 R**. Seçili kademenin **birim fiyatı** (R × çarpan, **aşağı yuvarlı tam ₺**; örnek ekmek R=60 ₺: 51 / 57 / 63 / 69) ve yuva başı **tahmini satış ve net**. Hız sınırı: **kalan süre** (6 saat; dakika çözünürlüğü; raf demetindeki **`fiyatT`**'den hesaplanır; `0` ise sınır yok: İ-6 kapandı). Kampanya hakkı (kareden `kampanya: [bitis, kalanSaat, kalanGun]`): **bugün kalan saat** (en çok 6), **bu hafta kalan gün** (en çok 2) |
 | **Metin** | Segment: **kampanya · uygun · normal · yüksek** · Altı: **Normal fiyat, çoğu zaman en iyi dengedir.** (**yüksek** seçilince: **Fiyat yükselince satış payın düşebilir; kasa doluysa gelir artar.**) · Hız sınırı: **Fiyatı en erken 3 saat 20 dk sonra değiştirebilirsin.** · Kampanya düğmesi: **kampanya başlat** (altında: **Bugün en çok {n} saat; en geç gün sonunda biter. Bu hafta {m} gün hakkın var.**) · Kampanya açıkken: **Kampanya sürüyor: 4 saat 10 dk kaldı** · Kampanya uyarısı: **Kampanya fiyatı dünya pazarında satmaktan düşüktür; satış artmayabilir.** |
 | **Telefon / masaüstü** | Telefon: 4 kademe **segment kontrol** (her biri ≥44 px, yan yana sığmazsa 2×2); hız sınırında kontrol soluk ve süre satırı. Masaüstü: yuva satırında 4 düğme |
 | **Ölçüt** | **A0-12:** perakende primi **1,05–1,20** (alarm **>1,30**), fiyat savaşı (**<0,85 R**) süresi **≤%5**; kademe dağılımı insan testinde gözlenir. A2: rasyonel oyuncu **üst kademeye yığılır** (1,15 R → prim 1,291): arayüz **yüksek**'i öne **çıkarmaz** |
@@ -402,7 +402,7 @@ Gösterilen **birim fiyat `etkin` kademeden** hesaplanır, saklanan `fiyat`'tan 
 | **İ-3** | `IlceKaresi.talep?` (ilçe talebi Q) ya da hazır "yatırım tahmini" alanı | D-3 yatırım tahmini bloğu (A3 §10.2: "G9'da istenirse K2 sonra ekler"; G7 kabulünü bağlamaz) | **Açık.** Q ve esnaf payı; yoksa blok gizli |
 | **İ-4** | ~~Kampanya komutu ve kalan hak alanları~~ | D-6 | **Kapandı:** **ayrı komut yok** (`dukkan_fiyat` kademe 0); hak sayaçları kare'de `kampanya: [bitis, kalanSaat, kalanGun]`; tutar alanı yok. Açık/kapalı bilgisi veri paketindedir (D-6) |
 | **İ-5** | ~~Dükkân kaldırma komutu ve ret kodları~~ | D-8.1 | **Kapandı:** `dukkan_yik {dukkan}` (A3 §7.9), ret DUK-10 ve DUK-23; inşada mevcut `insaat_iptal` |
-| **İ-6** | ~~Raf yuvası başına fiyat değişim zamanı (`fiyatT`)~~ | D-6: 6 saatlik hız sınırının geri sayımı ve komut öncesi önleme | **Kapandı (K2 kararı, lider iletisi):** raf demetinde `fiyatT` var; ekran "{n} saat sonra değiştirebilirsin" gösterir, DUK-18 önlenir. A3 4d054e4 §10.2 tuple'ı henüz `fiyatT` içermez: demetteki yer ve tür **(doğrulanmadı: şartname/kod güncellemesi)** |
+| **İ-6** | ~~Raf yuvası başına fiyat değişim zamanı (`fiyatT`)~~ | D-6: 6 saatlik hız sınırının geri sayımı ve komut öncesi önleme | **Kapandı:** A3 8b10e60 §10.2 raf demetinin son öğesi `fiyatT: Ms` (yuvanın son fiyat/mal değişim zamanı; hiç değişmemişse `0` gelir: hız sınırı yok). Ekran "{n} saat sonra değiştirebilirsin" gösterir, DUK-18 önlenir |
 
 ---
 
@@ -445,19 +445,19 @@ Gösterilen **birim fiyat `etkin` kademeden** hesaplanır, saklanan `fiyat`'tan 
 | **S6** | KVKK silme talebi (`hesapSil` ucu yok): Ayarlar'da "hesabımı sil" olmadan nasıl yürür? | Yönetici yolu; destek metni sahip işi |
 | **S7** | ~~Davet/izin listesi~~ | **Kapandı (baş lider):** `--davetli-liste` (ZG-2) |
 | **S8** | Yatırım tahmini bloğu için `IlceKaresi.talep?` (İ-3): G9'a mı, sonraya mı? | Sonra; blok gizli kalır, sayı uydurulmaz |
-| **S9** | ~~A3 Parça 2 sonrası D-9 güncellemesi~~ | **Kapandı:** D-9 A3 4d054e4 §9.3 kesin kodlarıyla yeniden yazıldı; A3 yeniden değişirse A1 günceller |
+| **S9** | ~~A3 Parça 2 sonrası D-9 güncellemesi~~ | **Kapandı:** D-9 A3 8b10e60 §9.3 kesin kodlarıyla yeniden yazıldı; A3 yeniden değişirse A1 günceller |
 | **S10** | ~~`ilk_dukkan` tetiği ile A0-11 zamanı~~ | **Kapandı (A3 §15.3, GZ-14):** tetik **ilk satış**; ölçüm **üç zaman** ayrı satırda (yapı komutu, kurulma, ilk satış) |
-| **S11** | **Büyük harf** (S-12): marka ve görünen ad **küçük harfe çevrilerek saklanır** (baş lider varsayılanı; `adKanonik`, A3 4d054e4 §7.7). Oyuncu büyük harf yazabilir, kayıtta ve ekranda küçük hâli görünür | **Varsayılan küçük harf; sahip ve KVKK teyidi bekler.** Sahip "serbest" derse tek satır değişir (`AD_KURALI.kucukHarf = false`); G-4/D-7 önizleme satırı kalkar |
+| **S11** | **Büyük harf** (S-12): marka ve görünen ad **küçük harfe çevrilerek saklanır** (baş lider varsayılanı; `adKanonik`, A3 8b10e60 §7.7). Oyuncu büyük harf yazabilir, kayıtta ve ekranda küçük hâli görünür | **Varsayılan küçük harf; sahip ve KVKK teyidi bekler.** Sahip "serbest" derse tek satır değişir (`AD_KURALI.kucukHarf = false`); G-4/D-7 önizleme satırı kalkar |
 | **S12** | ~~Kampanya haftası (S-18)~~ | **Kapandı (baş lider):** sim haftası (`floor(gün/7)`), gün sınırı 00:00 TRT; ekran yalnız "bu hafta kalan gün" der; "hakların {n} gün sonra yenilenir" satırı öneri olarak kalır (T1 kararı) |
 
 # G. Doğrulanmayanlar ve sınırlar
 
 | Konu | Durum |
 |---|---|
-| A3 §6–§10 sayıları, DUK/MRK kodları, kampanya ve kaldırma kuralları | **Kesin** (A3 4d054e4, baş lider onaylı); ama **kod henüz yok** olabilir (G7: K3/K2) ve 4d054e4'in `entegrasyon`'a girişi **(doğrulanmadı)** |
+| A3 §6–§10 sayıları, DUK/MRK kodları, kampanya ve kaldırma kuralları | **Kesin** (A3 8b10e60, baş lider onaylı); ama **kod henüz yok** olabilir (G7: K3/K2) ve 8b10e60'in `entegrasyon`'a girişi **(doğrulanmadı)** |
 | Dükkân bedeli ve inşa süresi (6.000 ₺, 4 sa, 20 çelik, 8 parça, **4 pencere**) | A3 §7.2 ve §7.4: **P-İthal baş lider kararı (verildi)**. Gerçek pencere maliyeti ≈2.400 ₺ (A3 B3); A2 1.600 ₺ sayar |
 | G5 uçları | K2 dalı (`takim/k2/g5-eposta-giris`); `entegrasyon`'a girmemiş olabilir |
 | Uygulama içi tarayıcı çerezi, posta uygulaması, yeniden gönder bekleme süresi (45 sn) | **Doğrulanmadı;** pilot |
-| Görünen ad ucu (İ-1), ilçe talebi alanı (İ-3), raf `fiyatT` (İ-6) | **Kareda ve G5'te yok** (`fiyatT` K2 kararıyla kabul edildi ama A3 4d054e4 tuple'ında henüz yazılı değil); `mevcut`, kasa ve kampanya hakları A3 §10.2'de **tanımlıdır** ama uygulaması (K2) bekliyor |
+| Görünen ad ucu (İ-1), ilçe talebi alanı (İ-3) | **Kareda ve G5'te yok**; raf `mevcut`, `fiyatT`, kasa ve kampanya hakları A3 8b10e60 §10.2'de **tanımlıdır** ama uygulaması (K2) bekliyor |
 | Dükkân panelinin ekran düzeni (Dükkânlarım bölümü, bina paneli) | Mevcut İşletmem ve bina paneli düzenine göre **öneri**; görsel tasarım T1'de |
 | Hiçbir test koşulmadı; hiçbir sunucu başlatılmadı | Yalnız belge |

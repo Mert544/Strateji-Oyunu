@@ -4,8 +4,8 @@
 |---|---|
 | Dal ve taban | `takim/a1/g9-akis`, taban `entegrasyon` (de9959c) |
 | Dosyalar | `docs/arastirma/g9-oyuncu-akisi.md` (yeni), `docs/agent-results/G9-akis-a1.md` |
-| Girdi | A3 `p4-p5-sartname.md` (4d054e4, onaylı; §6.8, §7, §9, §10, §15.3), K2 `G5-k2.md` ve `KIMLIK.md` (`takim/k2/g5-eposta-giris`), A2 `p4-p5-ekonomi.md` §1.9 (`takim/a2/p4-p5-ekonomi`), kendi kılavuz ve ekran incelemem |
-| Doğrulama | Yalnız belge; test ve sunucu yok. Göreli bağlantılar denetlendi (kırık 0); `₺1.234` biçimi yok. A3 4d054e4'e göre güncel; açık `[A3-P2]` işareti kalmadı |
+| Girdi | A3 `p4-p5-sartname.md` (8b10e60, onaylı; §6.8, §7, §9, §10, §15.3), K2 `G5-k2.md` ve `KIMLIK.md` (`takim/k2/g5-eposta-giris`), A2 `p4-p5-ekonomi.md` §1.9 (`takim/a2/p4-p5-ekonomi`), kendi kılavuz ve ekran incelemem |
+| Doğrulama | Yalnız belge; test ve sunucu yok. Göreli bağlantılar denetlendi (kırık 0); `₺1.234` biçimi yok. A3 8b10e60'e göre güncel; açık `[A3-P2]` işareti kalmadı |
 
 ## Özet
 - **Giriş 8 ekran (G-1..G-8):** e-posta, "postanı kontrol et", bağlantı onayı, görünen ad, yönlendirme, hata/ret (G5 kodlarıyla), oturum süresi (30/90 gün, sessiz bilet yenileme), çıkış.
@@ -21,7 +21,7 @@
 - Dükkân kaldırma: inşada %50 iade, tamamlanmışta iadesiz, arsa kalır, raf mallar depoya; yeni D-8.1 ve iadesiz onay metni; komut `[A3-P2]`. ZG-5 ve S1 kapandı.
 - Akıllı tırnak: istemci `’` → `'`, sunucu yalnız izinli karakteri kabul eder (D-7).
 
-## A3 turu: 795c370 sonrası 4d054e4 (iki commit)
+## A3 turu: 795c370 sonrası 8b10e60 (iki commit)
 - Tüm `[A3-P2]` işaretleri ve "taslak" ifadeleri kaldırıldı; D-9 A3 §9.3 kesin kodlarıyla yeniden yazıldı (DUK-00…23, MRK-01…14, SIS-01, YON-01; DUK-20/21/22/23 dahil; MRK ret metinleri D-7'den D-9'a taşındı).
 - G-4 görünen ad: karar verildi (oyuncu seçer, sunucu küçük harfli ad üretir, günde 1 değişiklik, hesap kimliği sabit); kural marka adıyla ortak (`adSozdizimiHatasi`), yasak liste yalnız sunucuda. İ-1 K2'ye "uygula" olarak kaldı.
 - D-5: "neden satmıyor" artık kare alanlarından (`mevcut`, `karsilanmaPpm`, `kasaPpm`, `etkin`); eşleme tablosu eklendi. İ-2 kapandı.
@@ -30,7 +30,7 @@
 - A0-11 üç zaman (`baslangic`, `kurulus`, `ilkSatisT`); S9 ve S10 kapandı.
 - **Yeni bulgular:** (1) kare'de `fiyatT` yok: 6 saatlik hız sınırı geri sayımı hesaplanamaz (yeni **İ-6**, K2); (2) `kampanya = [0,0,0]` "kapalı" ile "hak bitti"yi ayırt etmez: açık/kapalı veri paketinden okunur; (3) fırın ve şekerci 2 mal taşır, 4 yuvanın 2'si kalıcı boş: "rafında boş yuva var" uyarısı bu türlerde yanlış alarm olur (Dikkat metni düzeltildi); (4) A3 istemci notu yalnız `’ ‘` çevirir: çift akıllı tırnak ve uzun tire çevrilmez (D-7); (5) "kampanya başlat (6 saat)" düğme metni yanlıştı (pencere tam saat ve gün sonunda biter): düzeltildi.
 - Yeni açık sorular: **S11** büyük harf, **S12** sim haftası.
-- **4d054e4 düzeltmesi (lider kararları):** S-12 varsayılanı **küçük harf** (`adKanonik`, sabit Türkçe tablo; oyuncu büyük harf yazabilir, kayıtta ve ekranda küçük hâli; önizleme küçük hâli gösterir, `toLowerCase` yok; sahip "serbest" derse tek satır). S-18 **kapandı** (ekran yalnız "bu hafta kalan gün"). G-4: gün 00:00 TRT, otomatik addan ilk seçim sınıra sayılmaz (K2). İ-6 `fiyatT` kabul edildi: D-6 geri sayım gösterir, DUK-18 önlenir; A3 tuple'ında henüz yazılı değil (doğrulanmadı).
+- **8b10e60 düzeltmesi (lider kararları):** S-12 varsayılanı **küçük harf** (`adKanonik`, sabit Türkçe tablo; oyuncu büyük harf yazabilir, kayıtta ve ekranda küçük hâli; önizleme küçük hâli gösterir, `toLowerCase` yok; sahip "serbest" derse tek satır). S-18 **kapandı** (ekran yalnız "bu hafta kalan gün"). G-4: gün 00:00 TRT, otomatik addan ilk seçim sınıra sayılmaz (K2). İ-6 `fiyatT` kabul edildi: D-6 geri sayım gösterir, DUK-18 önlenir; A3 8b10e60 §10.2 raf demetine `fiyatT` ilk tanımla ekledi (kalıntı temizlendi).
 
 ## Geri dönüşü zor kararlar
 ZG-1 görünen ad (kapandı; büyük harf S11 açık); ZG-2 kayıt kapısı (kapandı); ZG-3 marka adı serbest metin ve uyarı; ZG-4 kademeler (kapandı: hep 4); ZG-5 dükkân kaldırma (kapandı: `dukkan_yik`); ZG-6 yuvarlama kuralı; ZG-7 kampanya (kapandı: ayrı komut yok, S-18 teyit bekler).
