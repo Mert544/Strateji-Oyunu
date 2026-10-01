@@ -52,6 +52,8 @@ const ihrac = (id, kor) => P(id) * IHR(kor);
 // ---------------------------------------------------------------------------------------------------------------- yöntemler
 // Alan adları icerik.json ile aynı: girdiler, ciktilar (mili-birim/sa), isci (mili), bakim (mili-birim/sa), kirlilikPpmSaat.
 // "oneri": A2 önerisi. "rapor": uretim-agi-genisletme §3.3 ve dikey §2.2 değerleri (karşılaştırma için).
+// Fırın çıktısı (ekmek/sa): tek parametre; baş lider 250 derse yalnız bu satırı değiştir.
+const FIRIN_EKMEK = 240;
 const YEN = {
   degirmen: {
     tesis: "gida_fabrikasi",
@@ -60,7 +62,7 @@ const YEN = {
   },
   ekmek_firini: {
     tesis: "gida_fabrikasi",
-    oneri: { girdiler: { un: 165000, yakit: 20000, elektrik: 15000 }, ciktilar: { ekmek: 250000 }, isci: 8000, bakim: { parca: 800 }, kirlilikPpmSaat: 20 },
+    oneri: { girdiler: { un: 165000, yakit: 20000, elektrik: 15000 }, ciktilar: { ekmek: FIRIN_EKMEK * 1000 }, isci: 8000, bakim: { parca: 800 }, kirlilikPpmSaat: 20 },
     rapor: { girdiler: { un: 150000, yakit: 22000, elektrik: 15000 }, ciktilar: { ekmek: 225000 }, isci: 8000, bakim: { parca: 800 }, kirlilikPpmSaat: 20 },
   },
   cam_firini: {
@@ -854,14 +856,14 @@ yaz();
   };
   const zin = (satisNpc, satisYerel, yerelFiyat) => {
     const birim = satisNpc + satisYerel;
-    const yuk = Math.min(1, birim / 250);
+    const yuk = Math.min(1, birim / FIRIN_EKMEK);
     const gelir = satisNpc * ihrac("ekmek", kor1) + satisYerel * P("ekmek") * yerelFiyat + yuk * 33 * ihrac("kepek", kor1);
     const gider = yuk * 200 * hasatTahil + yuk * 27 * SEB_EL + yuk * 20 * SEB_YK + 2 * sabitStd + (satisYerel > 0 ? GIDER_S : 0);
     return { yuk, net: gelir - gider };
   };
   const A = std(Math.min(160, dilimGida), 0, 1);
   const A2 = std(Math.min(160 - 0, dilimGida), Math.min(160 - dilimGida, bakkalGida), 1.05);
-  const B = zin(Math.min(250, dilimEkmek), 0, 1);
+  const B = zin(Math.min(FIRIN_EKMEK, dilimEkmek), 0, 1);
   const B2 = zin(dilimEkmek, firinEkmek, 1.05);
   yaz(`**Pazar dilimli oyuncu karşılaştırması (n = ${n}, şehir ilçesi, ilçede ${kk} dükkân, 1,05 R; NPC dilimi gıda ${ond(dilimGida, 1)}, ekmek ${ond(dilimEkmek, 1)} birim/sa; ₺/sa, tahıl fırsat maliyeti dahil).**`);
   yaz();
@@ -889,21 +891,21 @@ yaz();
   yaz(baslik("Fırın çıktısı (ekmek/sa)", "Fırın oranı", "Fırın KD ₺/sa (şebeke)", "Zincir net, tahıl tabanı ₺/sa", "Zincir / standart", "Fırın uzmanı net ₺/sa", "B+ (pazar dilimi) ₺/sa", "C = A+ ve B+ ₺/sa", "B+ − D (ikinci tesis karar farkı)"));
   const dNet = 160 * ihrac("gida", kor1) * 0.25 - 200 * hasatTahil - 10 * SEB_EL - sabitStd;
   const uzman0 = (() => {
-    const sat = 250 * ihrac("ekmek", false);
+    const sat = FIRIN_EKMEK * ihrac("ekmek", false);
     return sat;
   })();
   void uzman0;
-  for (const out of [250, 245, 243, 240, 235, 230]) {
-    const dlt = (250 - out) * ihrac("ekmek", false);
+  for (const out of [250, 245, 243, 240, 235, 230]) {  // duyarlılık satırları sabit; öneri = FIRIN_EKMEK
+    const dlt = (FIRIN_EKMEK - out) * ihrac("ekmek", false);
     const zincirNet = zk[2].net - dlt;
     const bp = zinO(out, dilimEkmek, firinEkmek, 1.05);
     // fırın uzmanı: satış çıktı kadar, girdiler ithal/şebeke (§2.4 ile aynı kalemler)
-    const kFirOut = kFir - (250 - out) * P("ekmek");
+    const kFirOut = kFir - (FIRIN_EKMEK - out) * P("ekmek");
     const uzman = out * ihrac("ekmek", false) - (fr.girdiler.un / 1000) * ithal("un", false) - (fr.girdiler.yakit / 1000) * SEB_YK - (fr.girdiler.elektrik / 1000) * SEB_EL - ((fr.bakim.parca / 1000) * ithal("parca", false) + PR.ekonomi.tesisIsletmeParasiSaat / 1000);
     yaz(satir(String(out), ond((out * P("ekmek")) / girFir, 3), tam(kFirOut), tam(zincirNet), `+${ond((zincirNet / zk[0].net - 1) * 100, 1)}%`, tam(uzman), tam(bp.net), tam(A2.net + bp.net), tam(bp.net - dNet)));
   }
   yaz();
-  yaz("Okuma: pazar dilimi bağlayıcıyken (n ≥ 4) fırın tesisinin yükü %50 dolayındadır (sattığı birim sayısı 131/sa < çıktı), bu yüzden çıktıyı 250 → 240'a indirmek B+ ve C'yi çok az etkiler (yük ve girdi payı hafif artar); karar farkı (B+ − D: ikinci tesisi zincire çevirmek) 6.200–6.500 ₺/sa kalır (230–250 arası). Çıktı düşüşü yalnız tahıl tabanında (tam yük) zincirin üstünlüğünü +%33,6'dan indirir.");
+  yaz("Okuma: pazar dilimi bağlayıcıyken (n ≥ 4) fırın tesisinin yükü %50 dolayındadır (sattığı birim sayısı 131/sa < çıktı), bu yüzden çıktıyı 250 → 230 arasında değiştirmek B+ ve C'yi çok az etkiler (yük ve girdi payı hafif değişir); karar farkı (B+ − D: ikinci tesisi zincire çevirmek) 6.200–6.500 ₺/sa kalır. Çıktı değişimi asıl tahıl tabanında (tam yük) zincirin üstünlüğünü etkiler (250'de +%33,6, 240'ta +%21,2). Öneri satırı: betikteki `FIRIN_EKMEK` (240).");
   yaz();
   // Seçenekler
   yaz("**Yine de tesis tabanını garanti etmek istenirse (seçenekler; bandı aşmadan):**");
@@ -1006,9 +1008,9 @@ yaz();
     primToplam += ilceSayisi * top * (P("ekmek") * 1.05 - ihrac("ekmek", false)) * 168;
     satilanBirim += ilceSayisi * top;
   }
-  // Aynı oyuncuların NPC ihracatı: arz 250/sa/oyuncu; NPC emilimi ölçekle sınırlı (pazar doyumu: fiyat ×0,25'e kadar iner).
+  // Aynı oyuncuların NPC ihracatı: arz 240 (FIRIN_EKMEK)/sa/oyuncu; NPC emilimi ölçekle sınırlı (pazar doyumu: fiyat ×0,25'e kadar iner).
   const yerelSaat = satilanBirim; // birim/sa, dünya
-  const arzSaat = OY * 250;
+  const arzSaat = OY * FIRIN_EKMEK;
   const npcEmilim = (PZ.emilimSaat.ekmek / 1000) * olcekN;
   const npcSatilan = Math.min(npcEmilim, Math.max(0, arzSaat - yerelSaat));
   const npcEkmek = npcSatilan * ihrac("ekmek", false) * 168;
@@ -1017,7 +1019,7 @@ yaz();
   yaz(baslik("Kalem", "₺/hafta (dünya)", "Not"));
   yaz(satir("`yerelNpc` (oyuncu yerel satışı)", tam(yerelToplam), `k≈${ond(kOrt, 1)} dükkân/ilçe; %10 kırsal, %30 kasaba, %60 şehir ilçesi varsayımı`));
   yaz(satir("· bunun primi (NPC ihracatına göre ek para)", tam(primToplam), "yeni musluğun gerçek ek kısmı: aynı mal NPC'ye gitseydi `ihracatNpc` olurdu"));
-  yaz(satir("`ihracatNpc` (ekmek, NPC emilimiyle sınırlı)", tam(npcEkmek), `${tam(npcSatilan)} birim/sa × 0,891 R; arz ${tam(arzSaat)} birim/sa (${OY} × 250)`));
+  yaz(satir("`ihracatNpc` (ekmek, NPC emilimiyle sınırlı)", tam(npcEkmek), `${tam(npcSatilan)} birim/sa × 0,891 R; arz ${tam(arzSaat)} birim/sa (${OY} × ${FIRIN_EKMEK})`));
   yaz(satir("Pazar doyumu: arz / (yerel + NPC emilimi)", ond(arzSaat / emer, 2), `emen: yerel ${tam(yerelSaat)} + NPC ${tam(npcEmilim)} = ${tam(emer)} birim/sa; fiyat düşmeden ekmek zinciri kurabilen oyuncu payı ≤ ${yuzde(emer / arzSaat, 0)} (≈${tam(emer / 250)} fırın)`));
   yaz(satir("`yerelNpc` payı (ZP8: ≤ %50)", yuzde(yerelToplam / (yerelToplam + npcEkmek)), "perakende NPC geliri / toplam NPC faucet"));
   yaz(satir("`hibe` (tek seferlik)", tam(tarlaHibe), "200 × 50.000 ₺; haftalık değil, karşılaştırma için"));

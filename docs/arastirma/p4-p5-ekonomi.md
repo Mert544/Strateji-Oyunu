@@ -12,9 +12,9 @@
 
 ## 0. Bir sayfalık özet
 
-1. **Enerji şebekeden; santral ekonomik zorunluluk değil, vaat de tutmuyor.** Şebeke fiyatı kamu tavan kuralından (1,035 R) türediği için elektrik 10,35 ₺, yakıt 103,5 ₺'dir; KD'ye etkisi çoğu yöntemde %2'nin altında (en çok cam fırını −%4,2). Kömür santrali ithal kömürle tam yükte birim maliyeti 9,7–9,8 ₺'dir: şebekeye göre ancak **%5–6** avantaj; başabaş yük %59–67 (küçük oyuncunun yükü %10–25), yakıt jeneratörü hiçbir yükte kazanmaz (28 ₺/birim), yalnız hidro (dağ etiketi) %12–14 yükte kazanır. "Santral kur, ucuz elektrik al" vaadi kömür ve jeneratörde tutmaz; seçenekler §1.3-B1'de (şebeke satış çarpanı 1,25–1,50 R, kömür girdisi ×0,75, ya da vaadi "bağımsızlık ve büyük ölçek" olarak düzeltmek). Karar baş liderindir.
-2. **Ekmek zinciri `standart_gida_isleme`'yi yalnız tahıl tabanında yener.** Tahıl başına net: zincir (öneri tarifleri) +%33,6 (rapor tarifleriyle −%3,3); tesis, işçi ve hücre tabanlarında zincir %29–34 **geridedir** ve tek başına hiçbir kademe standardı geçmez. Erken oyunun bağlayıcı kısıtı tahıl ya da sermaye değil **NPC pazar derinliğidir** (kişi başı gıda dilimi 75 birim/sa, ekmek 62,5); tek ürünle standart yol %53 önde kalır, ama ikinci havuz olarak zincir tamamlayıcıdır (A+ ve B+ birlikte 8.465 ₺/sa, ikinci standart tesis −3.175). Öneri: **güçlendirme zorunlu değil, kapatma gereksiz**; tesis tabanı da kural yapılırsa en az yan etkili yol G2 (mülk kipinde `standart_gida_isleme` ×0,75), tetik M < %30. **Tek tarif önerisi: fırın 240 ekmek** (zincir +%21,2 = K/U ilkesinin içinde; fırın oranı 1,385; M beklentisi ≥ %50 değişmez çünkü ikinci tesis kararı B+ − D ≈ 6.360 ₺/sa'te kalır) (§1.3-B2).
-3. **NPC pazar derinliği zincir sayısını sınırlar.** NPC emilimi oyuncuyla büyür (`max(4, n)/4`); 200 oyuncuda `ekmek` emilimi 12.500 birim/sa (kişi başı 62,5). Bir S fırın 250/sa üretir. Dünya yerel kanalla birlikte 21.278 birim/sa emer: **oyuncuların ancak %43'ü (≈85 fırın) ekmek zinciri kurarsa fiyat düşmez**; hepsi kurarsa arz/emilim 2,35 (§1.3-B3).
+1. **Enerji şebekeden; santral ekonomik zorunluluk değil, vaat düzeltildi (baş lider kararı: O5).** Şebeke fiyatı kamu tavan kuralından (1,035 R) türediği için elektrik 10,35 ₺, yakıt 103,5 ₺'dir; KD'ye etkisi çoğu yöntemde %2'nin altında (en çok cam fırını −%4,2). Kömür santrali ithal kömürle tam yükte birim maliyeti 9,7–9,8 ₺'dir: şebekeye göre ancak **%5–6** avantaj; başabaş yük %59–67 (küçük oyuncunun yükü %10–25), yakıt jeneratörü hiçbir yükte kazanmaz (28 ₺/birim), yalnız hidro (dağ etiketi) %12–14 yükte kazanır. "Santral kur, ucuz elektrik al" vaadi kömür ve jeneratörde tutmaz; **karar (baş lider): O5, vaat "bağımsızlık ve büyük ölçek" olarak düzeltilir**, santral isteğe bağlı kalır. Şebeke satış çarpanı 1,25–1,50 R (O1/O2) ve kömür girdisi ×0,75 (O3) değerlendirildi, seçilmedi (§1.3-B1).
+2. **Ekmek zinciri `standart_gida_isleme`'yi yalnız tahıl tabanında yener.** Tahıl başına net: zincir (öneri tarifleri, fırın 240) +%21,2 (rapor tarifleriyle −%3,3); tesis, işçi ve hücre tabanlarında zincir %35–40 **geridedir** ve tek başına hiçbir kademe standardı geçmez. Erken oyunun bağlayıcı kısıtı tahıl ya da sermaye değil **NPC pazar derinliğidir** (kişi başı gıda dilimi 75 birim/sa, ekmek 62,5); tek ürünle standart yol %61 önde kalır, ama ikinci havuz olarak zincir tamamlayıcıdır (A+ ve B+ birlikte 8.309 ₺/sa, ikinci standart tesis −3.175). Öneri: **güçlendirme zorunlu değil, kapatma gereksiz**; tesis tabanı da kural yapılırsa en az yan etkili yol G2 (mülk kipinde `standart_gida_isleme` ×0,75), tetik M < %30. **Tarif: fırın 240 ekmek** (zincir +%21,2 = K/U ilkesinin içinde; fırın oranı 1,385; M beklentisi ≥ %50 değişmez çünkü ikinci tesis kararı B+ − D ≈ 6.360 ₺/sa'te kalır; betikte tek parametre `FIRIN_EKMEK`) (§1.3-B2). Bu belgenin bütün tabloları 240 ile hesaplıdır.
+3. **NPC pazar derinliği zincir sayısını sınırlar.** NPC emilimi oyuncuyla büyür (`max(4, n)/4`); 200 oyuncuda `ekmek` emilimi 12.500 birim/sa (kişi başı 62,5). Bir S fırın 240/sa üretir. Dünya yerel kanalla birlikte 21.278 birim/sa emer: **oyuncuların ancak %44'ü (≈85 fırın) ekmek zinciri kurarsa fiyat düşmez**; hepsi kurarsa arz/emilim 2,26 (§1.3-B3).
 4. **Kamu fiyat tavanı kodda 1,035 R'dir** (`mulk/kasa.ts:415-424`, `mulk/kamuFiyat.ts:18-22`, `derle.ts:193`); GDD'deki 1,10 R üst sınırdır. İthalat maliyeti 1,100–1,111 R: NPC'den alıp kamuya satmak marj bırakmaz, para korunumu ile çelişki yok. **Kamu siparişi v0 önerisi:** ekmek, gıda, pencere, çelik, parça; fiyat 1,03 R; boyutlar 100/50/10/30/20 birim; ilçe başına haftada ≤ 5 sipariş (§1.9).
 5. **Dükkân S.** Taban fiyatla 11.280 ₺ (GDD'nin 11.440 ₺'si pencereyi ithal fiyatıyla sayar). Kırsal ilçede tek dükkânın neti ≈ gideri karşılar (32 ₺/sa); kasabada 17–21 sa, şehirde 12–15 sa'de geri öder; kasabada 3 dükkânla 56 sa'e uzar (hedef ≤ 48). Fiyat `secim` kademesi önerisi: **4 kademe** (0,85 kampanya, 0,95, **1,05 varsayılan**, 1,15); 0,85 R'de dört senaryonun hepsinde net eksidir (fiyat savaşı kendini cezalandırır) (§1.9).
 6. **Yerel talep** tamsayı/PPM: `Q = taban[sınıf][mal] × takvim[grup][ay] × bayram[grup]`. 13 mal, 3 ilçe sınıfı, 4 takvim grubu (her biri 12 aylık, toplamı tam 12.000.000 ppm), bayram dalgası toplam sabit. Gıda sepeti 200 birim/1000 kişi/sa sabit (gıda 90 + ekmek 60 + un 10 + süt 20 + süt ürünü 20); T3'ün listesinde olmayan yedi malın (un, süt, fındık ürünü, yakıt, çelik, parça, cam) talebi ve gerekçesi §1.9'da.
@@ -61,7 +61,7 @@ Kural, `kamuFiyatTavani`'nın dünyadaki **canlı referans fiyatı** (`d.pazar.f
 | Yöntem | KD taban ₺/sa | KD şebeke ₺/sa | Değişim |
 |---|---|---|---|
 | degirmen | 2.724 | 2.720 | −0,15% |
-| ekmek_firini | 4.600 | 4.525 | −1,64% |
+| ekmek_firini | 4.000 | 3.925 | −1,88% |
 | kepek_gubresi | 670 | 668 | −0,26% |
 | sut_kepekli | 1.210 | 1.208 | −0,14% |
 | cam_firini | 1.470 | 1.408 | −4,24% |
@@ -84,7 +84,7 @@ Kural, `kamuFiyatTavani`'nın dünyadaki **canlı referans fiyatı** (`d.pazar.f
 
 Okuma: (i) P4 oyuncusunun elektrik talebi 28,65 birim/sa'tir (12 + 15 + `kepek_gubresi` 5 × %33); S kömür santralinde yük %13 → tasarruf **−195 ₺/sa** (hiç geri ödemez); P4 + P5 (61,65 birim/sa) yük %27 → −143 ₺/sa. Kömür santralinin başabaş talebi ≈ 152 birim/sa (S) ve tam yükte avantajı %5–6'dır. (ii) Hidro yükü %100'e çıkarmak için 285 birim/sa gerekir (≈ 10 S yöntem); gerçekçi yük P4 + P5'te %22 (tasarruf ≈ 238 ₺/sa, geri ödeme 174 sa). (iii) Kendi kömür ocağıyla (kömürün fırsat maliyeti 26,7 ₺) kömür santralinin tam yük birim maliyeti 8,09 ₺'ye iner (tasarruf 516 ₺/sa) — ama bu ek bir madencilik yatırımıdır. **Sonuç: santral Alfa-0'da ekonomik zorunluluk değil, bağımsızlık ve büyük ölçek (M/L, hidro) tercihidir; "kendi elektriğin ucuz" vaadi kömür ve jeneratörde tutmaz.**
 
-**Vaat tutmuyorsa seçenekler (karar baş liderin).** Başabaş yük üç kaldıraçla (S ölçek, yük %):
+**Vaat tutmuyorsa seçenekler (karar: O5; O0–O4 değerlendirildi, seçilmedi).** Başabaş yük üç kaldıraçla (S ölçek, yük %):
 
 | Seçenek | Şebeke fiyatı ₺/birim | Kömür S başabaş | M | L | Jeneratör S | Hidro S | P4 oyuncusu şebeke gideri ₺/hafta | Not |
 |---|---|---|---|---|---|---|---|---|
@@ -93,9 +93,9 @@ Okuma: (i) P4 oyuncusunun elektrik talebi 28,65 birim/sa'tir (12 + 15 + `kepek_g
 | O2 — şebeke satış çarpanı 1,50 R | 15,00 | %17 | %15 | %15 | hiç | %9 | 72.198 | oyuncu şebeke gideri +%45 |
 | O3 — santral kömür girdisi ×0,75 (mülk kipi; 60 → 45) | 10,35 | %28 | %25 | %25 | hiç | %14 | 49.817 | bölge kipi `komur_santrali` aynı; mülk veri geçersiz kılma (K3) |
 | O4 — O3 + şebeke 1,25 R | 12,50 | %18 | %16 | %16 | hiç | %11 | 60.165 | - |
-| O5 — vaadi düzelt | 10,35 | - | - | - | - | - | 49.817 | santral "bağımsızlık ve büyük ölçek" tercihi; Yatırım Tahmini kartı tasarrufu açık yazar |
+| **O5 — vaadi düzelt (KARAR)** | 10,35 | - | - | - | - | - | 49.817 | santral "bağımsızlık ve büyük ölçek" tercihi; Yatırım Tahmini kartı tasarrufu açık yazar |
 
-O1–O2 oyuncu gideri artışı KD'nin ≤ %3'ü kadardır; O3 yalnız veri geçersiz kılma ister. **Sayısal öneri O5 (+ gerekirse O3):** şebeke kuralı baş liderin kararıyla aynı kalır, santral vaadi düzeltilir; O3 küçük bir veri bayrağıyla kömür santralini orta yükte (%25–28) anlamlı yapar ve gerçek bir "santral kur" kararı doğurur. Bu bir öneridir.
+O1–O2 oyuncu gideri artışı KD'nin ≤ %3'ü kadardır; O3 yalnız veri geçersiz kılma ister. **Karar (baş lider): O5.** Şebeke kuralı aynı kalır, santral vaadi "bağımsızlık ve büyük ölçek" olarak düzeltilir; O1–O4 değerlendirildi, seçilmedi. O3 yalnız bilgi olarak durur (küçük bir veri bayrağıyla kömür santralini %25–28 yükte anlamlı yapardı); ayrı soru §4'te.
 
 **Şebeke ödemesi: haftalık tutar ve para arzı.**
 
@@ -106,7 +106,7 @@ O1–O2 oyuncu gideri artışı KD'nin ≤ %3'ü kadardır; O3 yalnız veri geç
 
 Dünya (200 P4 oyuncusu): elektrik 9.963.324, yakıt 69.552.000 ₺/hafta; karşılaştırma: `yerelNpc` 92.910.226 + `ihracatNpc` 112.266.000 = 205.176.226 ₺/hafta musluk. **Yeni lavabo kalemi `sebeke`** (yanar); yakıt eskiden NPC ithalatı olarak lavabodaydı, şimdi şebekeye geçer ve %6,8 ucuzlar. **Muhasebe (baş lider kararı): şebeke bedelinin `kasaPayiPpm` payı ilçe kamu kasasına gider, kalanı lavaboya (`sebeke`) yanar.** Öneri **`kasaPayiPpm = 120.000` (%12)**: tek P4 oyuncusu olan en ince ilçede bile kamu siparişi v0 çekirdeğini (23.381 ₺/hafta) 1,1× karşılar; kalabalık ilçede kasa kapasitesi 4–10× olur ve sipariş sayısı (≤ 5/hafta) bağlayıcıdır. Tamsayı kuralı: kasa = ⌊ödeme × kasaPayiPpm / 1.000.000⌋, lavabo = ödeme − kasa; korunum her tikte tam kapanır (§1.9). Kasa yalnız zaten yanan paradan beslenir (pay lavabonun parçasıdır); sink payı %88 kalır.
 
-**Öneri (şebeke yöntem tasarımı).** Yöntemlerde yakıt/elektrik girdileri tarifte kalır (üretim hattı değişmez); eksik stok **şebekeden otomatik** tamamlanır: `mulk.sebeke { acik: true; elektrik: bayrak; yakit: bayrak }`. Yöntem `yakit: e/10` ikamesi (önceki Y varyantı) artık gereksizdir (arşiv: betik §2.2).
+**Öneri (şebeke yöntem tasarımı).** Yöntemlerde yakıt/elektrik girdileri tarifte kalır (üretim hattı değişmez); eksik stok **şebekeden otomatik** tamamlanır (blok ve anahtar adları A3 şartnamesindedir). Yöntem `yakit: e/10` ikamesi (önceki Y varyantı) artık gereksizdir (arşiv: betik §2.2).
 
 #### B2. `standart_gida_isleme` ve ekmek zinciri: üç tabanda karşılaştırma
 
@@ -114,31 +114,31 @@ Mevcut yöntem tek tesiste 200 tahıl → 160 gıda (₺70) verir: oran **1,84**
 
 | Taban | `standart_gida_isleme` (1 tesis) | zincir (değirmen + fırın, 2 tesis) | Zincir / standart | Okuma |
 |---|---|---|---|---|
-| tahıl başına KD (200 tahıl/sa) | 5.097 ₺/sa | 7.245 ₺/sa | +42,1% | tahıl kısıtlıysa zincir kazanır |
-| tahıl başına NPC net (komisyonlu) | 4.310 ₺/sa | 5.759 ₺/sa | **+33,6%** | aynı; rapor tarifleriyle 4.167 (**−3,3%**) |
-| tesis başına KD | 5.097 ₺ | 3.622 ₺ (değirmen 2.720, fırın 4.525) | −28,9% | **tesis kısıtlıysa standart kazanır**; tek kademe tek başına standardı geçemez |
-| işçi başına KD | 849 ₺ | 557 ₺ | −34,4% | işçi mülk kipinde bağlayıcı değil (`kalanIsci` sınırsız); Alfa-1 işgücü havuzunda bağlayıcı olabilir |
-| hücre başına KD (her tesis 2 hücre) | 2.548 ₺ | 1.811 ₺ | −28,9% | tesis tabanıyla aynı |
-| sermaye başına KD/sa (S taban değer 20.800 ₺/tesis) | 245 ‰ | 174 ‰ | −28,9% | saatlik getiri binde |
+| tahıl başına KD (200 tahıl/sa) | 5.097 ₺/sa | 6.645 ₺/sa | +30,4% | tahıl kısıtlıysa zincir kazanır |
+| tahıl başına NPC net (komisyonlu) | 4.310 ₺/sa | 5.224 ₺/sa | **+21,2%** | aynı; rapor tarifleriyle 4.167 (**−3,3%**) |
+| tesis başına KD | 5.097 ₺ | 3.322 ₺ (değirmen 2.720, fırın 3.925) | −34,8% | **tesis kısıtlıysa standart kazanır**; tek kademe tek başına standardı geçemez |
+| işçi başına KD | 849 ₺ | 511 ₺ | −39,8% | işçi mülk kipinde bağlayıcı değil (`kalanIsci` sınırsız); Alfa-1 işgücü havuzunda bağlayıcı olabilir |
+| hücre başına KD (her tesis 2 hücre) | 2.548 ₺ | 1.661 ₺ | −34,8% | tesis tabanıyla aynı |
+| sermaye başına KD/sa (S taban değer 20.800 ₺/tesis) | 245 ‰ | 160 ‰ | −34,8% | saatlik getiri binde |
 
-Rapor tarifleri (150/225) bandın alt yarısındadır ve kapalı zinciri standardın %3,3 altına iter; öneri tarifleri (165/33; 250) +%33,6 verir. K/U ilkesi (uretim §2.2: +%10–25) bunun üstündedir. **Fırın çıktısı duyarlılığı** (165 un + 20 yakıt + 15 elektrik → x ekmek):
+Rapor tarifleri (150/225) bandın alt yarısındadır ve kapalı zinciri standardın %3,3 altına iter; öneri tarifleri (165/33; fırın 240) +%21,2 verir (K/U ilkesi, uretim §2.2: +%10–25). Aşağıdaki duyarlılık tablosu 230–250 aralığını gösterir (250: +%33,6, ilkenin üstü). **Fırın çıktısı duyarlılığı** (165 un + 20 yakıt + 15 elektrik → x ekmek):
 
 | Fırın çıktısı (ekmek/sa) | Fırın oranı | Fırın KD ₺/sa (şebeke) | Zincir net, tahıl tabanı ₺/sa | Zincir / standart | Fırın uzmanı net ₺/sa | B+ (pazar dilimi) ₺/sa | C = A+ ve B+ ₺/sa | B+ − D ₺/sa |
 |---|---|---|---|---|---|---|---|---|
 | 250 | 1,442 | 4.525 | 5.759 | +33,6% | 1.754 | 3.342 | 8.465 | 6.516 |
 | 245 | 1,413 | 4.225 | 5.492 | +27,4% | 1.487 | 3.265 | 8.389 | 6.440 |
 | 243 | 1,402 | 4.105 | 5.385 | +24,9% | 1.380 | 3.233 | 8.357 | 6.408 |
-| **240 (öneri)** | **1,385** | 3.925 | **5.224** | **+21,2%** | 1.219 | 3.185 | 8.309 | 6.360 |
+| **240 (öneri; bu belgenin tabanı)** | **1,385** | 3.925 | **5.224** | **+21,2%** | 1.219 | 3.185 | 8.309 | 6.360 |
 | 235 | 1,356 | 3.625 | 4.957 | +15,0% | 952 | 3.101 | 8.225 | 6.276 |
 | 230 | 1,327 | 3.325 | 4.690 | +8,8% | 685 | 3.014 | 8.138 | 6.189 |
 
-**Tek öneri: fırın 240 ekmek** (K/U ilkesinin ortası, +%21,2; fırın oranı 1,385 bandın içinde; fırın uzmanı ithalatla başlasa da +1.219 ₺/sa kazanır). **G2 tetiğiyle birlikte:** pazar dilimi bağlayıcıyken fırın tesisi yaklaşık %50 yükle çalıştığı için çıktıyı 250 → 240'a indirmek stratejiyi pek etkilemez: ikinci tesisi zincire çevirmenin getirisi B+ − D = 6.516 → 6.360 ₺/sa (−%2,4), C 8.465 → 8.309; yani **M beklentisi (≥ %50) ve X = %30 eşiği değişmez**. Çıktı düşüşü yalnız tahıl tabanında (tam yük) zincirin üstünlüğünü azaltır; o tabanda zincir yine standarttan +%21 öndedir. Bu bölümün diğer tabloları (§1.4–§1.12) 250 ile hesaplıdır; 240'ta farklar: tahıl tabanı zincir net −535 ₺/sa, ilk dükkân zincirinde (S1, santralsiz) gün 3 net 285.229 → 272.269 ₺ (−%4,5), gün 7 gün sonu hazine 1.999.456 → 1.909.600 ₺, betikte `ekmek: 250000` → `240000` ile yeniden üretilir.
+**Tarif: fırın 240 ekmek** (K/U ilkesinin ortası, +%21,2; fırın oranı 1,385 bandın içinde; fırın uzmanı ithalatla başlasa da +1.219 ₺/sa kazanır). **G2 tetiğiyle birlikte:** pazar dilimi bağlayıcıyken fırın tesisi yaklaşık %50 yükle çalıştığı için çıktıyı 250 → 240'a indirmek stratejiyi pek etkilemez: ikinci tesisi zincire çevirmenin getirisi B+ − D = 6.516 → 6.360 ₺/sa (−%2,4), C 8.465 → 8.309; yani **M beklentisi (≥ %50) ve X = %30 eşiği değişmez**. Çıktı değişimi yalnız tahıl tabanında (tam yük) zincirin üstünlüğünü etkiler. Baş lider 250 derse betikte `FIRIN_EKMEK = 250` yapılıp tablolar yeniden üretilir (250'de S1 gün 3 net 285.229 ₺, gün 7 sonu hazine 1.999.456 ₺).
 
 **Erken oyunda (0–7 gün) bağlayıcı kısıt: tahıl değil, tesis sermayesi değil; NPC pazar derinliği.**
 
 | Kısıt | Değer | Bağlayıcı mı? |
 |---|---|---|
-| Sermaye (santralsiz S1: hazine ≥ 4 yapının tamamı) | saat 2'de 41.710 ₺ (en düşük), saat 8'de 112.793 ₺ | hayır: 2 saat sonra |
+| Sermaye (santralsiz S1: hazine ≥ 4 yapının tamamı) | saat 2'de 41.494 ₺ (en düşük), saat 8'de 109.337 ₺ | hayır: 2 saat sonra |
 | Tahıl | Tarla 6.000 ₺ (indirimli 4.200 ₺), 12 dk inşa, 200 tahıl/sa; bir Tarla bir standart tesisi ya da zinciri besler | hayır |
 | Eşzamanlı inşaat | 2; ilk 24 saatte 4 yapı 1,0 sa | yalnız ilk saatte |
 | Hücre / ilçe tavanı | yurt 6 + satın alma; ≤ 72 hücre/ilçe, ≤ %25 pay | hayır (S1 7 hücre) |
@@ -151,21 +151,21 @@ Rapor tarifleri (150/225) bandın alt yarısındadır ve kapalı zinciri standar
 |---|---|---|---|
 | A: yalnız `standart_gida_isleme`, NPC dilimi (dükkânsız) | %47 | 1.903 | 75 birim/sa sat |
 | A+: standart + bakkal dükkânı (gıda rafı) | %100 | 5.124 | dükkân 85,0 birim/sa |
-| B: yalnız ekmek zinciri, NPC dilimi (dükkânsız) | %25 | 1.110 | 2 tesis sabit gideri; düşük yük |
-| B+: ekmek zinciri + fırın dükkânı | %53 | 3.342 | dükkân 68,8 birim/sa |
-| **C: A+ ve B+ birlikte (iki tahıl hattı, iki dükkân; ilçe ≤ 2)** | - | **8.465** | iki pazar havuzu: tamamlayıcılık |
+| B: yalnız ekmek zinciri, NPC dilimi (dükkânsız) | %26 | 1.035 | 2 tesis sabit gideri; düşük yük |
+| B+: ekmek zinciri + fırın dükkânı | %55 | 3.185 | dükkân 68,8 birim/sa |
+| **C: A+ ve B+ birlikte (iki tahıl hattı, iki dükkân; ilçe ≤ 2)** | - | **8.309** | iki pazar havuzu: tamamlayıcılık |
 | D: ikinci standart tesis (gıda havuzu zaten doluyken) | - | −3.175 | doymuş havuza ikinci tesis kâr etmez |
 
-Okuma: tek ürünle standart yol %53 önde kalır (gıda ₺70 ve oran 1,84'ün sonucu); ama oyuncu dilimi tek mal havuzunu doldurur ve **ikinci tesis marjinal olarak değersizdir (D)**: asıl karar "ikinci standart mı, zincir mi" ise zincir 3.342 ₺/sa kazandırır. Standart ve zincir ikame değil **tamamlayıcıdır** (C). **Dürüst sınır:** oyuncu yalnız tek mala bağlı kalırsa tesis ve pazar-dilimi tabanlarında standart önde; zincirin erken oyundaki değeri yeni ekmek havuzu ve tahıl tabanıdır.
+Okuma: tek ürünle standart yol %61 önde kalır (gıda ₺70 ve oran 1,84'ün sonucu); ama oyuncu dilimi tek mal havuzunu doldurur ve **ikinci tesis marjinal olarak değersizdir (D)**: asıl karar "ikinci standart mı, zincir mi" ise zincir 3.185 ₺/sa kazandırır. Standart ve zincir ikame değil **tamamlayıcıdır** (C). **Dürüst sınır:** oyuncu yalnız tek mala bağlı kalırsa tesis ve pazar-dilimi tabanlarında standart önde; zincirin erken oyundaki değeri yeni ekmek havuzu ve tahıl tabanıdır.
 
 **Tesis tabanını yine de garanti etmek istenirse** (bant içinde; yan etkiler):
 
 | Seçenek | Değişiklik | Standart KD | Değirmen KD | Fırın KD | Kademe başına > standart? | Yan etki |
 |---|---|---|---|---|---|---|
-| 0 — olduğu gibi | - | 5.097 | 2.720 | 4.525 | hayır | pazar dilimi kısıtında tamamlayıcı |
+| 0 — olduğu gibi | - | 5.097 | 2.720 | 3.925 | hayır | pazar dilimi kısıtında tamamlayıcı |
 | G1 — zincir yoğunluğu ×2 | değirmen 400 tahıl → 330 un + 66 kepek; fırın 330 un + 40 yakıt + 30 elektrik → 500 ekmek | 5.097 | 5.440 | 9.050 | **evet** | Tarla:değirmen 2:1; fırın 500/sa pazar dilimini 2× aşar; doyumu hızlandırır, önerilmez |
-| **G2 — `standart_gida_isleme` mülk kipinde ×0,75** (160 → 120 gıda; oran 1,38) | mülk veri geçersiz kılma (bölge kipi aynı) | 2.297 | 2.720 | 4.525 | **evet** | K3 işi; çiftçi botu gıda fabrikası kurmaz: ölçüm temel çizgisi aynı |
-| G3 — (i) `standart_gida_isleme` mülk kipinde kapat | `yalnizBolge: true` | - | 2.720 | 4.525 | n/a | yeni oyuncunun tek basit gıda işleme yolu kalkar; G6 kapsamı büyür |
+| **G2 — `standart_gida_isleme` mülk kipinde ×0,75** (160 → 120 gıda; oran 1,38) | mülk veri geçersiz kılma (bölge kipi aynı) | 2.297 | 2.720 | 3.925 | **evet** | K3 işi; çiftçi botu gıda fabrikası kurmaz: ölçüm temel çizgisi aynı |
+| G3 — (i) `standart_gida_isleme` mülk kipinde kapat | `yalnizBolge: true` | - | 2.720 | 3.925 | n/a | yeni oyuncunun tek basit gıda işleme yolu kalkar; G6 kapsamı büyür |
 
 Bant içinde başka güçlendirme yok: ekmek tabanını %10 artırmak fırın oranını 1,59'a (bant dışı), fırında yakıtı 20 → 15 yapmak 1,52'ye çıkarır; değirmenin tek başına 5.097 KD'ye ulaşması 6.120 girdide 0,83 oran (bant üstü) gerektirir. **Karar önerisi:** (ii) güçlendirme zorunlu değil, (i) kapatma gereksiz; baş lider tesis tabanını da kural yaparsa G2 en az yan etkili yoldur.
 
@@ -180,7 +180,7 @@ Bant içinde başka güçlendirme yok: ekmek tabanını %10 artırmak fırın or
 | Örneklem | tohum 1–10 (O2'nin mevcut tohum kümesi), tohum başına 100 bot (A0-4 ölçeği) = 1.000 bot-kaydı |
 | Bot dağılımı | yalnız yeni oyuncular (gün 0 katılım); arketipler çiftçi / sanayici / tüccar 1/3'er (`botlar/src/parsel.ts` planları); yerleşik ve geç katılan botlar bu ölçüte girmez |
 
-Gerekçe: (i) rasyonel oyuncunun tek `gida_fabrikasi`'nda standart önde (A+ 5.124 ↔ B+ 3.342 ₺/sa), ikinci tesiste ise standart marjinal olarak değersizdir (D −3.175) ve zincir 3.342 ₺/sa kazandırır; yani **bir fabrikadan fazlasını kuran her bot ikincisini zincire çevirmelidir**. (ii) Sermaye bağlayıcı değildir (S1: saat 8'de hazine 112.793 ₺, bir `gida_fabrikasi` 10.000 ₺), ilk 7 günde botların en az yarısı ≥ 2 fabrika kurar: beklenen M ≥ %50. (iii) Eşik beklenenin %60'ı (%30) seçildi: M için örneklem standart hatası ≤ %1,6 (p = 0,5; n = 1.000), yani %30 yaklaşık 12σ alt sınırdır; asıl belirsizlik bot politikasıdır (mülk botlarında `degirmen` yöntemi bugün yok; bot yöntem seçicisi ancak K3'te yazılır). **(doğrulanmadı):** M, botun yöntem seçme kuralına bağlıdır; kural "marjinal net" ise yukarıdaki beklenti geçerlidir, "varsayılan yöntem" ise M ≈ %0 çıkar ve ölçüt bot ayarı hatasını ekonomik hatadan ayıramaz. Bu yüzden ölçüm yalnız yöntem seçen botlarla (A2 tablosundaki marjinal net kuralı) yapılmalıdır.
+Gerekçe: (i) rasyonel oyuncunun tek `gida_fabrikasi`'nda standart önde (A+ 5.124 ↔ B+ 3.185 ₺/sa), ikinci tesiste ise standart marjinal olarak değersizdir (D −3.175) ve zincir 3.185 ₺/sa kazandırır; yani **bir fabrikadan fazlasını kuran her bot ikincisini zincire çevirmelidir**. (ii) Sermaye bağlayıcı değildir (S1: saat 8'de hazine 109.337 ₺, bir `gida_fabrikasi` 10.000 ₺), ilk 7 günde botların en az yarısı ≥ 2 fabrika kurar: beklenen M ≥ %50. (iii) Eşik beklenenin %60'ı (%30) seçildi: M için örneklem standart hatası ≤ %1,6 (p = 0,5; n = 1.000), yani %30 yaklaşık 12σ alt sınırdır; asıl belirsizlik bot politikasıdır (mülk botlarında `degirmen` yöntemi bugün yok; bot yöntem seçicisi ancak K3'te yazılır). **(doğrulanmadı):** M, botun yöntem seçme kuralına bağlıdır; kural "marjinal net" ise yukarıdaki beklenti geçerlidir, "varsayılan yöntem" ise M ≈ %0 çıkar ve ölçüt bot ayarı hatasını ekonomik hatadan ayıramaz. Bu yüzden ölçüm yalnız yöntem seçen botlarla (A2 tablosundaki marjinal net kuralı) yapılmalıdır.
 
 #### B3. NPC pazar derinliği
 
@@ -191,19 +191,19 @@ Gerekçe: (i) rasyonel oyuncunun tek `gida_fabrikasi`'nda standart önde (A+ 5.1
 | Yerel kanal (k≈4,4 fırın dükkânı/ilçe, 1,05 R) | 8.778 birim/sa |
 | NPC emilimi (ekmek) | 12.500 birim/sa |
 | Fiyat düşmeden emilen | 21.278 birim/sa (≈ 85 S fırın) |
-| Herkes ekmek zinciri kurarsa arz | 50.000 birim/sa; **arz/emilim 2,35** |
-| Fiyat düşmeden zincir kurabilen oyuncu payı | **≤ %43** |
+| Herkes ekmek zinciri kurarsa arz | 48.000 birim/sa; **arz/emilim 2,26** |
+| Fiyat düşmeden zincir kurabilen oyuncu payı | **≤ %44** |
 
 Fiyat formülü (Vic3 türevi, e = 0,75; docs/06 §13) arz emilimin 2 katını aştığında çarpanı tabana (×0,25) iter. Bu bir kabul ölçütü bilgisidir: Alfa-0'ın dört zinciri (ekmek, cam → pencere, süt, fındık) oyuncuları dağıtınca doyum dağılır; bot koşusunda (A0-4, 100 bot) tek zincire yığılmama izlenmeli. Pencere hattı için aynı sorun yok: 28 pencere/sa'e karşı emilim 5.000.
 
 ### 1.4 Yeni yöntemlerin tam satırları (S ölçek)
 
-A2 önerisi, kod birimi (mili). Barındıran tesis, bakım ve kirlilik dahil. Çevrim 1 sa (sürekli). Hepsi `mulkKipi: true`. Elektrik ve yakıt kamu şebekesinden gelir (§1.3-B1); tarifte kalırlar. **Fırın çıktısı için son öneri 240.000 mili** (§1.3-B2); aşağıdaki tablolar 250.000 ile hesaplıdır.
+A2 önerisi, kod birimi (mili). Barındıran tesis, bakım ve kirlilik dahil. Çevrim 1 sa (sürekli). Hepsi `mulkKipi: true`. Elektrik ve yakıt kamu şebekesinden gelir (§1.3-B1); tarifte kalırlar. Fırın çıktısı 240.000 mili (§1.3-B2; betikte `FIRIN_EKMEK`).
 
 | Yöntem | Tesis | Girdiler (mili/sa) | Çıktılar (mili/sa) | İşçi (mili) | Bakım (parça, mili/sa) | Kirlilik (ppm/sa) |
 |---|---|---|---|---|---|---|
 | `degirmen` | gida_fabrikasi | tahil 200.000, elektrik 12.000 | un 165.000, kepek 33.000 | 5.000 | 800 | 20 |
-| `ekmek_firini` | gida_fabrikasi | un 165.000, yakit 20.000, elektrik 15.000 | ekmek 250.000 | 8.000 | 800 | 20 |
+| `ekmek_firini` | gida_fabrikasi | un 165.000, yakit 20.000, elektrik 15.000 | ekmek 240.000 | 8.000 | 800 | 20 |
 | `kepek_gubresi` | ahir | kepek 100.000, elektrik 5.000 | gubre 18.000 | 3.000 | 500 | 10 |
 | `sut_kepekli` (P1) | ahir | tahil 50.000, kepek 60.000, elektrik 5.000 | sut 82.000, gubre 4.000 | 5.000 | 500 | 10 |
 | `cam_firini` | parca_fabrikasi (A3) | silis 60.000, yakit 16.000, elektrik 18.000 | cam 50.000 | 5.000 | 1.000 | 60 |
@@ -214,7 +214,7 @@ Aynı satırlar ₺ olarak (taban fiyat; oran bandı 1,16–1,48 hedefi; KD şeb
 | Yöntem | Girdi ₺/sa | Çıktı ₺/sa | **Oran** | KD ₺/sa (taban / şebeke) | KD/işçi (şebeke) ₺ | Rapor (dikey) oran / KD | Bant |
 |---|---|---|---|---|---|---|---|
 | `degirmen` | 6.120 | 8.844 | **1,445** | 2.724 / 2.720 | 544 | 1,314 / 1.920 | içinde |
-| `ekmek_firini` | 10.400 | 15.000 | **1,442** | 4.600 / 4.525 | 566 | 1,371 / 3.650 | içinde |
+| `ekmek_firini` | 10.400 | 14.400 | **1,385** | 4.000 / 3.925 | 491 | 1,371 / 3.650 | içinde |
 | `kepek_gubresi` | 1.850 | 2.520 | **1,362** | 670 / 668 | 223 | yeni | içinde |
 | `sut_kepekli` | 2.630 | 3.840 | **1,460** | 1.210 / 1.208 | 242 | 1,460 / 1.210 | içinde |
 | `cam_firini` | 3.280 | 4.750 | **1,448** | 1.470 / 1.408 | 282 | 1,357 / 1.250 | içinde |
@@ -227,7 +227,7 @@ Kepek `değirmen` çıktısının %28'i KD'dir (yan ürün ≤ %40 kuralı, uret
 | Yöntem | Dikey rapor | A2 önerisi | Oran (rapor → öneri) | Uzman net ₺/sa (şebeke; ithalatla başla) | Gerekçe |
 |---|---|---|---|---|---|
 | `degirmen` | 150 un + 30 kepek | 165 un + 33 kepek | 1,314 → 1,445 | 153 → 870 | `standart_gida_isleme`'yi tahıl tabanında geçmek (§1.3-B2); rapor tarifiyle zincir −%3,3 |
-| `ekmek_firini` | 150 un + 22 yakıt + 15 elektrik → 225 | 165 un + 20 yakıt + 15 elektrik → 250 | 1,371 → 1,442 | 1.044 → 1.754 | aynı |
+| `ekmek_firini` | 150 un + 22 yakıt + 15 elektrik → 225 | 165 un + 20 yakıt + 15 elektrik → **240** | 1,371 → 1,385 | 1.044 → 1.219 | aynı |
 | `cam_firini` | 60 silis + 18 yakıt + 20 elektrik → 50 | 60 silis + **16 yakıt + 18 elektrik** → 50 | 1,357 → 1,448 | 236 → 463 | uzman kademe ithalatla başlarken zarar etmesin (satış/girdi 1,206); K/U ilkesi |
 | `celik_dograma` | 24 çelik + 32 cam + 6 parça + 15 elektrik → 27 | 24 çelik + 32 cam + **5 parça** + 15 elektrik → **28** | 1,359 → 1,446 | 468 → 989 | aynı; doğrama için kısa yol yok, sapma isteğe bağlı |
 | `kepek_gubresi` | yok | 100 kepek + 5 elektrik → 18 gübre | - | 34 | kepeğin ikinci tüketicisi (§1.6) |
@@ -244,7 +244,7 @@ Cam ve doğrama için mevcut tesis tabanı karşılaştırması (§1.12) rapor t
 |---|---|---|---|---|---|
 | değirmen uzmanı (öneri) | 7.880 | 6.790 | 220 | **870** | 1,160 |
 | değirmen uzmanı (rapor) | 7.164 | 6.790 | 220 | 153 | 1,055 |
-| fırın uzmanı (öneri) | 13.365 | 11.391 | 220 | **1.754** | 1,173 |
+| fırın uzmanı (öneri) | 12.830 | 11.391 | 220 | **1.219** | 1,126 |
 | fırın uzmanı (rapor) | 12.029 | 10.765 | 220 | 1.044 | 1,117 |
 | cam fırını uzmanı (öneri) | 4.232 | 3.509 | 260 | 463 | 1,206 |
 | cam fırını uzmanı (rapor) | - | - | - | 236 | - |
@@ -252,7 +252,7 @@ Cam ve doğrama için mevcut tesis tabanı karşılaştırması (§1.12) rapor t
 | doğrama uzmanı (rapor) | - | - | - | 468 | - |
 | `kepek_gubresi` uzmanı (kepek ithal 20 ₺) | 2.245 | 2.052 | 160 | 34 | 1,094 |
 
-Okuma: NPC'den alıp NPC'ye satan bir kademenin marjı yaklaşık `oran × 0,802 − 1`'dir; bant 1,16–1,48 için −%7…+%19. Şebeke yakıt/elektriği ithalattan %6,8 ucuz olduğu için öneri tariflerinde her kademe pozitiftir. Kapalı zincir yine de belirgin önde: 200 tahıl/sa'lık kapalı zincir 5.759 ₺/sa, aynı iki tesisin ayrı ayrı uzman olarak toplamı 2.624 ₺/sa. Kepek tüketicisi (+34) sıfıra yakındır: Alfa-0'da ara kademe uzmanlığı yok kararıyla (G13) uyumludur. NPC makası altında **kapalı zincir kârlıdır** ve iki ucundan girilebilir.
+Okuma: NPC'den alıp NPC'ye satan bir kademenin marjı yaklaşık `oran × 0,802 − 1`'dir; bant 1,16–1,48 için −%7…+%19. Şebeke yakıt/elektriği ithalattan %6,8 ucuz olduğu için öneri tariflerinde her kademe pozitiftir. Kapalı zincir yine de belirgin önde: 200 tahıl/sa'lık kapalı zincir 5.224 ₺/sa, aynı iki tesisin ayrı ayrı uzman olarak toplamı 2.089 ₺/sa. Kepek tüketicisi (+34) sıfıra yakındır: Alfa-0'da ara kademe uzmanlığı yok kararıyla (G13) uyumludur. NPC makası altında **kapalı zincir kârlıdır** ve iki ucundan girilebilir.
 
 ### 1.6 Kepeğin iki tüketicisi (ahır, komisyonlu) ve güvence alıcı bütçesi
 
@@ -316,7 +316,7 @@ Katılımdan `t0` saat sonra başlatılan zincirin tamamlanma süresi (sa; üret
 | Cam → pencere (cam fırını, doğrama, yapı market) | 1,20 | 1,20 | 1,22 | 3,05 | 4,88 | 6,71 | 12,00 |
 | Cam → pencere + isteğe bağlı santral | 1,60 | 1,60 | 1,64 | 4,10 | 6,56 | 9,02 | 16,00 |
 
-Süre değil **nakit ve emir yuvası** bağlayıcıdır: hibe 50.000 ₺ + kit gıdası satışı 12.600 ₺ ekmek zincirini ilk 2 saatte karşılar (S1: saat 2'de hazine 41.710 ₺); isteğe bağlı santral hücre ve ithal malzeme nedeniyle ≈ +35.000 ₺ ister. Eşzamanlı inşaat 2 olduğundan ilk iki saatte Tarla + değirmen, sonra fırın + dükkân sırası zorunludur. **Bot hedefi önerisi:** ekmek zinciri (4 yapı + ilk ekmek satışı) katılımdan ≤ 3 sim-saat; cam → pencere (gün 3 sonrası) ≤ 6 sim-saat; 7. günden sonra başlayan oyuncuya ≤ 14 sim-saat. Süre baskısı olmadığı için hedefi nakit bozar: bot hazinesi < gerekli iken beklemeli.
+Süre değil **nakit ve emir yuvası** bağlayıcıdır: hibe 50.000 ₺ + kit gıdası satışı 12.600 ₺ ekmek zincirini ilk 2 saatte karşılar (S1: saat 2'de hazine 41.494 ₺); isteğe bağlı santral hücre ve ithal malzeme nedeniyle ≈ +35.000 ₺ ister. Eşzamanlı inşaat 2 olduğundan ilk iki saatte Tarla + değirmen, sonra fırın + dükkân sırası zorunludur. **Bot hedefi önerisi:** ekmek zinciri (4 yapı + ilk ekmek satışı) katılımdan ≤ 3 sim-saat; cam → pencere (gün 3 sonrası) ≤ 6 sim-saat; 7. günden sonra başlayan oyuncuya ≤ 14 sim-saat. Süre baskısı olmadığı için hedefi nakit bozar: bot hazinesi < gerekli iken beklemeli.
 
 ### 1.9 Dükkân S ve yerel pazar kanalı
 
@@ -520,17 +520,17 @@ Varsayımlar: ilçe nüfusu 50.000 (ilçede tek oyuncu), dükkân 1,05 R, yalnı
 | Saat | Hazine ₺ | Önceki satıra göre ₺ | Ekmek (yerel + NPC) birikimli ₺ |
 |---|---|---|---|
 | 1 | 51.850 | +1.850 | 0 |
-| 2 | 41.710 | −10.139 | 6.158 |
-| 3 | 53.557 | +11.847 | 20.416 |
-| 4 | 65.404 | +11.847 | 34.674 |
-| 6 | 89.099 | +23.694 | 63.189 |
-| 8 | 112.793 | +23.694 | 91.705 |
-| 12 | 160.181 | +47.388 | 148.737 |
-| 18 | 231.264 | +71.083 | 234.284 |
-| 24 | 302.346 | +71.083 | 319.831 |
-| 48 | 573.309 | +71.307 /6 sa | 662.021 |
-| 72 | 858.539 | +285.229 /gün | 1.004.210 |
-| 168 | 1.999.456 | +285.229 /gün | 2.372.968 |
+| 2 | 41.494 | −10.355 | 5.942 |
+| 3 | 52.801 | +11.307 | 19.660 |
+| 4 | 64.108 | +11.307 | 33.378 |
+| 6 | 86.723 | +22.614 | 60.813 |
+| 8 | 109.337 | +22.614 | 88.249 |
+| 12 | 154.565 | +45.228 | 143.121 |
+| 18 | 222.408 | +67.843 | 225.428 |
+| 24 | 290.250 | +67.843 | 307.735 |
+| 48 | 548.253 | +68.067 /6 sa | 636.965 |
+| 72 | 820.523 | +272.269 /gün | 966.194 |
+| 168 | 1.909.600 | +272.269 /gün | 2.283.112 |
 
 Gün özeti (24 saatlik fark):
 
@@ -546,13 +546,13 @@ Gün özeti (24 saatlik fark):
 | kit gıdası satışı | 12.600 | - | - |
 | ödüller (`ilk_satis`, `zincir_kapandi`) | 1.200 | - | - |
 | ekmek yerel satış (dükkân) | 122.020 | 127.326 | 127.326 |
-| ekmek NPC ihracatı | 197.811 | 214.864 | 214.864 |
+| ekmek NPC ihracatı | 185.715 | 201.904 | 201.904 |
 | kepek NPC ihracatı (gün 1) / gübre NPC ihracatı (ahırdan sonra) | 12.510 | 17.963 | 17.963 |
 | arazi vergisi | −3 | −11 | −11 |
-| **Net** | **252.346** | **285.229** | **285.229** |
-| **Gün sonu hazine** | 302.346 | 858.539 | 1.999.456 |
+| **Net** | **240.250** | **272.269** | **272.269** |
+| **Gün sonu hazine** | 290.250 | 820.523 | 1.909.600 |
 
-**İsteğe bağlı santralli varyant** (kömür santrali; yakıt şebekeden): saat 0'da Tarla + santral; 1'de değirmen + fırın; 2'de dükkân (ahır indirimsiz). En düşük hazine 30.781 ₺ (saat 3), gün 1 net 225.515 ₺; gün 3 ve gün 7 net 280.662 ₺; gün sonu hazine 275.515 / 816.899 / 1.939.546 ₺. Santralsize göre gün 1'de −26.831 ₺, gün 3+ −4.567 ₺/gün (santral kömürü 5.971 ve bakım 5.703 > şebeke elektrik tasarrufu 7.117): **santral nakit akışını kötüleştirir**, kararlı hâlde bile kazandırmaz (§1.3-B1).
+**İsteğe bağlı santralli varyant** (kömür santrali; yakıt şebekeden): saat 0'da Tarla + santral; 1'de değirmen + fırın; 2'de dükkân (ahır indirimsiz). En düşük hazine 30.025 ₺ (saat 3), gün 1 net 213.419 ₺; gün 3 ve gün 7 net 267.702 ₺; gün sonu hazine 263.419 / 778.883 / 1.849.690 ₺. Santralsize göre gün 1'de −26.831 ₺, gün 3+ −4.567 ₺/gün (santral kömürü 5.971 ve bakım 5.703 > şebeke elektrik tasarrufu 7.117): **santral nakit akışını kötüleştirir**, kararlı hâlde bile kazandırmaz (§1.3-B1).
 
 Okumalar: (i) Gün 3 ve gün 7 aynıdır çünkü kararlı hâle varılmıştır (hasat ve fiyat dinamiği modelde yok). (ii) **Ekonomi hızı:** 50.000 ₺ hibe ≈ 5 saatlik net akıştır; P4'ün tamamı 2–4 saatte kendini öder. Bu bir tek oyunculu, fiyat dinamiksiz sonuçtur: §1.3-B3'e göre dünya doyumu bunu gerçek hayatta bastırır; mutlak ₺ kalibre değildir (dikey R1). (iii) Emir yuvası: ekmek ihracat, kepek ihracat, parça ithalat, çelik/silis ithalat temel dört yuvayı doldurur; **yakıt ve elektrik şebekeden gelir ve yuva harcamaz**; pencere ithalatı (P-İthal) beşinci yuva ister (Ticaret ofisi +4). (iv) Ahır gün 2'de indirimli alınabilir (santralsiz), santrallide değil.
 
@@ -568,13 +568,13 @@ Okumalar: (i) Gün 3 ve gün 7 aynıdır çünkü kararlı hâle varılmıştır
 | şebeke elektrik (kamu) | −14.221 | −15.314 | −15.314 | −15.314 |
 | bakım parçası | −20.592 | −21.859 | −21.859 | −21.859 |
 | işletme gideri | −8.256 | −8.640 | −8.640 | −8.640 |
-| ekmek hattı geliri (yerel 127.326 + NPC 214.864 + gübre 17.963) | 360.153 | 360.153 | 360.153 | 360.153 |
+| ekmek hattı geliri (yerel 127.326 + NPC 201.904 + gübre 17.963) | 347.193 | 347.193 | 347.193 | 347.193 |
 | pencere NPC ihracatı | 188.698 | 217.728 | 217.728 | 217.728 |
 | cam NPC ihracatı (fazla) | 29.275 | 36.936 | 36.936 | 36.936 |
 | arazi vergisi | −25 | −25 | −25 | −25 |
-| **Net (ekmek hattı dahil)** | **257.100** | **340.162** | **340.162** | **340.162** |
+| **Net (ekmek hattı dahil)** | **244.140** | **327.202** | **327.202** | **327.202** |
 
-Pencere hattının artımlı katkısı 72→168 sa **+136.668 ₺** (yatırım dahil; ekmek hattının aynı pencerede neti 1.140.917 ₺). Kararlı hâl marjı (komisyonlu, S ölçek): (a) yalnız doğrama, bütün girdi ithal **1.013 ₺/sa**; (b) cam fırını + doğrama **2.052 ₺/sa** (yatırım ≈ 73.000 ₺; geri ödeme ≈ 36 sa); (c) + kendi silis ocağı 2.158 ₺/sa (silis damarı ister). **Pencere hattı ekmek hattının ≈ %20'si kadar kazandırır**; P5'in "kendi pencere mağazan" vaadi zincir marjından değil yapı market perakendesinden ve kamu/yapı talebinden gelmelidir.
+Pencere hattının artımlı katkısı 72→168 sa **+136.668 ₺** (yatırım dahil; ekmek hattının aynı pencerede neti 1.089.077 ₺). Kararlı hâl marjı (komisyonlu, S ölçek): (a) yalnız doğrama, bütün girdi ithal **1.013 ₺/sa**; (b) cam fırını + doğrama **2.052 ₺/sa** (yatırım ≈ 73.000 ₺; geri ödeme ≈ 36 sa); (c) + kendi silis ocağı 2.158 ₺/sa (silis damarı ister). **Pencere hattı ekmek hattının ≈ %18'i kadar kazandırır** (2.052 ↔ 11.345 ₺/sa); P5'in "kendi pencere mağazan" vaadi zincir marjından değil yapı market perakendesinden ve kamu/yapı talebinden gelmelidir.
 
 **Cam fırınının ev sahibi ve tesis tabanı** (A3 seçti: `parca_fabrikasi`). KD şebeke fiyatıyla:
 
@@ -602,21 +602,21 @@ Yöntemler (`yontemler[]` sonuna; hepsi `mulkKipi: true`; elektrik/yakıt şebek
 { "id": "celik_dograma", "ad": "Çelik Doğrama", "girdiler": { "celik": 24000, "cam": 32000, "parca": 5000, "elektrik": 15000 }, "ciktilar": { "pencere": 28000 }, "isci": 7000, "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 20, "mulkKipi": true }
 ```
 
-(`ekmek_firini` çıktısı 240.000: tek tarif önerisi, §1.3-B2; betik tabloları 250.000 ile.) Tesis türü `yontemler[]` sonları: `gida_fabrikasi += [degirmen, ekmek_firini]`, `ahir += [kepek_gubresi, sut_kepekli]`, `parca_fabrikasi += [celik_dograma, cam_firini]` (A3 seçimi). Dikeyden sapan satırlar (cam, doğrama; üst bant) §1.4'te işaretlidir; rapor (dikey) değerleri alternatif olarak geçerlidir (cam `yakit 18000, elektrik 20000`; doğrama `parca 6000 → pencere 27000`).
+Tesis türü `yontemler[]` sonları: `gida_fabrikasi += [degirmen, ekmek_firini]`, `ahir += [kepek_gubresi, sut_kepekli]`, `parca_fabrikasi += [celik_dograma, cam_firini]` (A3 seçimi). Dikeyden sapan satırlar (cam, doğrama; üst bant) §1.4'te işaretlidir; rapor (dikey) değerleri alternatif olarak geçerlidir (cam `yakit 18000, elektrik 20000`; doğrama `parca 6000 → pencere 27000`).
 
 `mulk.ekYapilar.dukkan`: `{ ad, yuva: 1, insaSaati: 4, insaParasi: 6000000 (P-İthal) | 7440000 (P-Yok), insaMaliyeti: { celik: 20000, parca: 8000, pencere: 4000 (P-İthal) }, enFazlaIlBasina: 6, enFazlaIlcedeBasina: 2 }`; `mulk.olcekHucre.dukkan = [1, 2, 3]`.
 
-`mulk.sebeke` (yeni; yalnız mülk kipi) ve ilgili öneriler:
+**Şema A3 şartnamesindedir; A2'nin verdiği değerler** (alan adları yalnız öneridir; A3 hangi blok ve anahtar adını seçerse o geçerlidir):
 
-```
-sebeke:   { elektrik: true, yakit: true, fiyatKaynagi: "kamuFiyatTavani" /* referans × kamuIthalatCarpaniPpm = 1,035 */, lavaboKalemi: "sebeke",
-            kasaPayiPpm: 120000 /* ödemenin %12'si ilçe kamu kasasına, kalanı lavabo */ }
-kamuSiparisi: { malFiyatPpm: 1030000 /* referans × 1,03 */, boyutMili: { ekmek: 100000, gida: 50000, pencere: 10000, celik: 30000, parca: 20000 },
-                ilcedeHaftalikEnFazla: 5, vadeGun: 3 }                 // öneri (§1.9); parça yedek
-yontemGecersizKilma: { standart_gida_isleme: { ciktiPpm: 1000000 /* kapalı; yedek G2: 750000 */ } }   // §1.3-B2 tetik ölçütü
-```
+| Konu | A2 değeri |
+|---|---|
+| Şebeke kapsamı | elektrik + yakıt |
+| Şebeke fiyat tavanı oranı | `1.000.000` ppm (kamu fiyat tavanı kuralının kendisi: referans × `kamuIthalatCarpaniPpm` = 1,035; ek çarpan yok) |
+| Kasa payı (`kasaPayiPpm`) | `120.000` ppm (şebeke bedelinin %12'si ilçe kamu kasasına, kalanı lavabo `sebeke`; tamsayı kuralı: kasa = ⌊ödeme × pay / 1.000.000⌋, lavabo = kalan) |
+| Kamu siparişi v0 | fiyat referans × `1.030.000` ppm; boyutlar (mili-birim) ekmek 100.000, gida 50.000, pencere 10.000, celik 30.000, parca 20.000; ilçede haftada en çok 5 sipariş; vade 3 gün |
+| Yedek düğme (G2) | `standart_gida_isleme` çıktı çarpanı `1.000.000` (kapalı); yedek `750.000` |
 
-`mulk.perakende` taslağı:
+`mulk.perakende` taslağı (blok adı `perakende`/`yerelPazar` ve anahtarlar öneridir; A3'ün seçtiği ad geçerlidir, A2'nin işi değerlerdir):
 
 ```
 giderMiliSaat: [132000, 204000, 330000]       kasaMiliSaat: [90000, 198000, 324000]       rafYuvasi: [4, 6, 8]
@@ -638,7 +638,7 @@ T3'ün `p4-p5-icerik-taslagi.md` §7.2 tablosu A2'nin **ön** önerisini yansıt
 | Konu | T3 §7.2 yazıyor | A2 son değer | Sapma / not |
 |---|---|---|---|
 | `degirmen`, `kepek_gubresi` | A2 ön önerisi | aynı (165/33; 100 kepek → 18 gübre) | yok |
-| **`ekmek_firini`** | A2 ön önerisi: 165 un + 20 yakıt + 15 elektrik → **250** | → **240** ekmek (zincir +%33,6 → +%21,2; K/U ilkesi) | **sapma** (A2'nin kendi önerisi güncellendi; §1.3-B2) |
+| **`ekmek_firini`** | A2 ön önerisi: 165 un + 20 yakıt + 15 elektrik → **250** | → **240** ekmek (zincir +%33,6 → +%21,2; K/U ilkesi) | **sapma** (A2'nin kendi ön önerisi güncellendi; §1.3-B2) |
 | `sut_kepekli` | rapor = A2 | aynı | yok |
 | **`cam_firini`** | "rapor = A2": 60 silis + **18 yakıt + 20 elektrik** → 50 | 60 silis + **16 yakıt + 18 elektrik** → 50 | **sapma** (üst bant; dikeyden sapma işaretli, §1.4) |
 | **`celik_dograma`** | "rapor = A2": 24 çelik + 32 cam + **6 parça** + 15 elektrik → **27** | 24 çelik + 32 cam + **5 parça** + 15 elektrik → **28** | **sapma** (üst bant; §1.4) |
@@ -738,7 +738,7 @@ C, H-B1 (k = 3: %10 / %30 / %58), H-B4 (k = 2 için 1,47) ve H-B5'i karşılar; 
 | yuksek_firin | 300 | %27 | 1.380 | 240 | 132 |
 | standart_parca | 200 | %18 | 1.480 | 340 | 232 |
 | degirmen | 160 | %31 | 1.904 | 503 | 371 |
-| ekmek_firini | 160 | %31 | 3.340 | 965 | 740 |
+| ekmek_firini | 160 | %28 | 3.200 | 920 | 704 |
 | cam_firini | 200 | %31 | 908 | 156 | 85 |
 | celik_dograma | 200 | %31 | 2.152 | 556 | 405 |
 | kepek_gubresi | 100 | %27 | 488 | 89 | 51 |
@@ -791,11 +791,11 @@ C altında hepsi pozitif (kayıp/maliyet ≥ 1,8: cam fırını 356/200, kepek g
 
 ## 4. Açık sorular
 
-1. **(Baş lider)** Santral vaadi: O5 (düzelt) mi, O3 (kömür girdisi ×0,75, mülk veri geçersiz kılma) mı, O1/O2 (şebeke satış çarpanı 1,25–1,50 R; G4 metninden sapar) mı? Sayısal öneri O5 + gerekirse O3 (§1.3-B1).
+1. **(Baş lider, yeni, kısa)** Santral vaadi O5 ile kapandı. Bilgi sorusu: ileride "santral kur" kararının gerçek bir tercih olması istenirse O3 (kömür girdisi ×0,75, mülk kipi veri geçersiz kılma) bir sonraki sprint adayı olsun mu?
 2. **(Baş lider/A3)** Fırın çıktısı: tek öneri 240 ekmek (zincir +%21,2; K/U ilkesinin içinde; M beklentisi değişmez). Kabul mü, yoksa 250 (+%33,6, ilkenin üstü) mü?
 3. **(Baş lider)** `standart_gida_isleme` yedek düğmesi (G2) tetik eşiği X = %30 ve ölçüm koşulu (§1.3-B2) kabul mü? Mülk botlarına yöntem seçici (marjinal net) eklenecek mi (K3)? Bu olmadan M ölçülemez.
 4. **(A3/T3)** Cam/doğrama tarifleri dikeyden sapıyor (§1.4): üst bant mı rapor değerleri mi? Dükkân bedeli P-İthal (T3 ana) mı P-Yok (A2 sayıca) mı?
-5. **(Baş lider)** `kasaPayiPpm = %12` ve kamu siparişi v0 listesi/fiyatı (1,03 R; 100/50/10/30/20 birim; ≤ 5 sipariş/ilçe/hafta) kabul mü? Şebeke kasa payı yalnız elektrik mi, elektrik + yakıt mı?
+5. **(Baş lider)** `kasaPayiPpm = %12` ve kamu siparişi v0 listesi/fiyatı (1,03 R; 100/50/10/30/20 birim; ≤ 5 sipariş/ilçe/hafta) kabul mü? (Kasa payının uygulandığı taban elektrik + yakıt, yani şebeke bedelinin tamamıdır; baş lider kararıyla kapandı.)
 6. **(K3)** Şebeke fiyatı canlı referans (`d.pazar.fiyat`) mı yoksa taban mı çarpılacak? Elektrik için `pazar.fiyat` dinamiği çekirdekte koşuldu mu (doğrulanmadı).
 7. **(Baş lider/Operasyon)** `yerelOlcek` 50 ve yedi malın `talep1000Saat` değerleri kalibre değil; ilçe nüfusu verisi geldiğinde yeniden kalibre edilmeli. ZP8 payı %45'te: eşik %50 doğru mu?
 8. **(Baş lider)** Fiyat kademelerinde üst sınır 1,15 R ve "kampanya" kademesi (yalnız pencerede) kabul mü, yoksa üç kademe mi? Kamu tavan metninde GDD'deki "1,10 R" 1,035 ile düzeltilsin mi?

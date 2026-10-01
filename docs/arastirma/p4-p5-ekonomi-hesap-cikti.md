@@ -70,7 +70,7 @@ Not: `standart_gida_isleme` oran 1,84, KD 5.100 ₺/sa, işçi başına 850 ₺;
 | Yöntem (tesis) | Girdiler (mili) | Çıktılar (mili) | İşçi | Bakım (mili parça/sa) | Kirlilik ppm/sa |
 |---|---|---|---|---|---|
 | `degirmen` (gida_fabrikasi) | tahil 200.000, elektrik 12.000 | un 165.000, kepek 33.000 | 5.000 | 800 | 20 |
-| `ekmek_firini` (gida_fabrikasi) | un 165.000, yakit 20.000, elektrik 15.000 | ekmek 250.000 | 8.000 | 800 | 20 |
+| `ekmek_firini` (gida_fabrikasi) | un 165.000, yakit 20.000, elektrik 15.000 | ekmek 240.000 | 8.000 | 800 | 20 |
 | `cam_firini` (celikhane) | silis 60.000, yakit 16.000, elektrik 18.000 | cam 50.000 | 5.000 | 1.000 | 60 |
 | `celik_dograma` (parca_fabrikasi) | celik 24.000, cam 32.000, parca 5.000, elektrik 15.000 | pencere 28.000 | 7.000 | 1.000 | 20 |
 | `kepek_gubresi` (ahir) | kepek 100.000, elektrik 5.000 | gubre 18.000 | 3.000 | 500 | 10 |
@@ -82,7 +82,7 @@ Not: `standart_gida_isleme` oran 1,84, KD 5.100 ₺/sa, işçi başına 850 ₺;
 |---|---|---|---|---|---|---|---|
 | degirmen | öneri | 6.120 | 8.844 | 1,445 | 2.724 | 545 | içinde |
 | degirmen | rapor | 6.120 | 8.040 | 1,314 | 1.920 | 384 | içinde |
-| ekmek_firini | öneri | 10.400 | 15.000 | 1,442 | 4.600 | 575 | içinde |
+| ekmek_firini | öneri | 10.400 | 14.400 | 1,385 | 4.000 | 500 | içinde |
 | ekmek_firini | rapor | 9.850 | 13.500 | 1,371 | 3.650 | 456 | içinde |
 | cam_firini | öneri | 3.280 | 4.750 | 1,448 | 1.470 | 294 | içinde |
 | cam_firini | rapor | 3.500 | 4.750 | 1,357 | 1.250 | 250 | içinde |
@@ -97,7 +97,7 @@ Not: `standart_gida_isleme` oran 1,84, KD 5.100 ₺/sa, işçi başına 850 ₺;
 | Yöntem | E: elektrik | Y: ek yakıt | Y oran | Y KD ₺/sa |
 |---|---|---|---|---|
 | degirmen | 12.000 | 1.200 | 1,445 | 2.724 |
-| ekmek_firini | 15.000 | 1.500 | 1,442 | 4.600 |
+| ekmek_firini | 15.000 | 1.500 | 1,385 | 4.000 |
 | cam_firini | 18.000 | 1.800 | 1,448 | 1.470 |
 | celik_dograma | 15.000 | 1.500 | 1,446 | 3.110 |
 | kepek_gubresi | 5.000 | 500 | 1,362 | 670 |
@@ -113,7 +113,7 @@ Not: `standart_gida_isleme` oran 1,84, KD 5.100 ₺/sa, işçi başına 850 ₺;
 |---|---|---|---|---|---|---|---|
 | standart_gida_isleme → gida (1 tesis) | 1 | 9.979 | 5.450 | 220 | 4.310 | 22 ₺ | 0,0% |
 | zincir, rapor değerleri (2 tesis) | 2 | 12.510 | 7.902 | 440 | 4.167 | 21 ₺ | -3,3% |
-| zincir, A2 önerisi (2 tesis) | 2 | 13.894 | 7.695 | 440 | 5.759 | 29 ₺ | 33,6% |
+| zincir, A2 önerisi (2 tesis) | 2 | 13.360 | 7.695 | 440 | 5.224 | 26 ₺ | 21,2% |
 
 **korumada (ilk 14 gün; komisyon yok)**
 
@@ -121,7 +121,7 @@ Not: `standart_gida_isleme` oran 1,84, KD 5.100 ₺/sa, işçi başına 850 ₺;
 |---|---|---|---|---|---|---|---|
 | standart_gida_isleme → gida (1 tesis) | 1 | 10.080 | 5.504 | 218 | 4.358 | 22 ₺ | 0,0% |
 | zincir, rapor değerleri (2 tesis) | 2 | 12.636 | 7.956 | 437 | 4.243 | 21 ₺ | -2,6% |
-| zincir, A2 önerisi (2 tesis) | 2 | 14.035 | 7.749 | 437 | 5.848 | 29 ₺ | 34,2% |
+| zincir, A2 önerisi (2 tesis) | 2 | 13.495 | 7.749 | 437 | 5.308 | 27 ₺ | 21,8% |
 
 ### 2.4 İthalatla ortadan başlamak ↔ kapalı zincir (kademe başına uzman marjı; komisyonlu; ₺/sa; elektrik ve yakıt şebeke fiyatıyla)
 
@@ -129,7 +129,7 @@ Not: `standart_gida_isleme` oran 1,84, KD 5.100 ₺/sa, işçi başına 850 ₺;
 |---|---|---|---|---|---|
 | değirmen uzmanı (tahıl, elektrik ithal) | 7.880 | 6.790 | 220 | 870 | 1,160 |
 | değirmen uzmanı, rapor değerleri | 7.164 | 6.790 | 220 | 153 | 1,055 |
-| fırın uzmanı (un, yakıt ithal) | 13.365 | 11.391 | 220 | 1.754 | 1,173 |
+| fırın uzmanı (un, yakıt ithal) | 12.830 | 11.391 | 220 | 1.219 | 1,126 |
 | fırın uzmanı, rapor değerleri | 12.029 | 10.765 | 220 | 1.044 | 1,117 |
 | cam fırını uzmanı (silis, yakıt ithal) | 4.232 | 3.509 | 260 | 463 | 1,206 |
 | doğrama uzmanı (çelik, cam, parça ithal) | 8.981 | 7.732 | 260 | 989 | 1,162 |
@@ -213,7 +213,7 @@ Mevcut kod: mülk işletme düğümünde santral yoksa elektrik girdili tesis s�
 | Yöntem | Elektrik birim/sa | Elektrik ₺/sa (şebeke) | Yakıt birim/sa | Yakıt ₺/sa (şebeke) | KD taban ₺/sa | KD şebeke ₺/sa | Değişim |
 |---|---|---|---|---|---|---|---|
 | degirmen (öneri) | 12,0 | 124,2 | 0,0 | 0,0 | 2.724 | 2.720 | -0,15% |
-| ekmek_firini (öneri) | 15,0 | 155,3 | 20,0 | 2070,0 | 4.600 | 4.525 | -1,64% |
+| ekmek_firini (öneri) | 15,0 | 155,3 | 20,0 | 2070,0 | 4.000 | 3.925 | -1,88% |
 | kepek_gubresi (öneri) | 5,0 | 51,8 | 0,0 | 0,0 | 670 | 668 | -0,26% |
 | sut_kepekli (öneri) | 5,0 | 51,8 | 0,0 | 0,0 | 1.210 | 1.208 | -0,14% |
 | cam_firini (öneri) | 18,0 | 186,3 | 16,0 | 1656,0 | 1.470 | 1.408 | -4,24% |
@@ -552,14 +552,14 @@ Oyuncu yöntemi tesis başına seçer: iki yöntem de aynı `gida_fabrikasi`'nda
 
 | Taban | `standart_gida_isleme` (1 tesis) | zincir (değirmen + fırın, 2 tesis) | Zincir / standart | Okuma |
 |---|---|---|---|---|
-| tahıl başına KD (200 tahıl/sa) | 5.097 ₺/sa | 7.245 ₺/sa | 42,1% | tahıl kısıtlıysa zincir kazanır |
-| tahıl başına NPC net (§2.3) | 4.310 ₺/sa | 5.759 ₺/sa | +33,6% | aynı |
-| tesis başına KD | 5.097 ₺ | 3.622 ₺ (değirmen 2.720, fırın 4.525) | -28,9% | **tesis kısıtlıysa standart kazanır**; tek kademe de tek başına standardı geçemez (değirmen 2.720 < 5.097) |
-| işçi başına KD | 849 ₺ | 557 ₺ | -34,4% | işçi mülk kipinde bağlayıcı değil (`kalanIsci` sınırsız), Alfa-1 işgücü havuzunda bağlayıcı olabilir |
-| hücre başına KD (her tesis 2 hücre) | 2.548 ₺ | 1.811 ₺ | -28,9% | tesis tabanıyla aynı |
-| sermaye başına KD/sa (S taban değer) | 245 ‰ | 174 ‰ | -28,9% | saatlik getiri binde (taban değer 20.800 ₺/tesis) |
+| tahıl başına KD (200 tahıl/sa) | 5.097 ₺/sa | 6.645 ₺/sa | 30,4% | tahıl kısıtlıysa zincir kazanır |
+| tahıl başına NPC net (§2.3) | 4.310 ₺/sa | 5.224 ₺/sa | +21,2% | aynı |
+| tesis başına KD | 5.097 ₺ | 3.322 ₺ (değirmen 2.720, fırın 3.925) | -34,8% | **tesis kısıtlıysa standart kazanır**; tek kademe de tek başına standardı geçemez (değirmen 2.720 < 5.097) |
+| işçi başına KD | 849 ₺ | 511 ₺ | -39,8% | işçi mülk kipinde bağlayıcı değil (`kalanIsci` sınırsız), Alfa-1 işgücü havuzunda bağlayıcı olabilir |
+| hücre başına KD (her tesis 2 hücre) | 2.548 ₺ | 1.661 ₺ | -34,8% | tesis tabanıyla aynı |
+| sermaye başına KD/sa (S taban değer) | 245 ‰ | 160 ‰ | -34,8% | saatlik getiri binde (taban değer 20.800 ₺/tesis) |
 
-Yani tahıl tabanında zincir +%42,1 (KD) / +%33,6 (NPC net) önde; tesis, işçi ve hücre tabanlarında %29–%34 geridedir. Önemli olan hangi kısıtın erken oyunda bağlayıcı olduğudur.
+Yani tahıl tabanında zincir +%30,4 (KD) / +%21,2 (NPC net) önde; tesis, işçi ve hücre tabanlarında %35–%40 geridedir. Önemli olan hangi kısıtın erken oyunda bağlayıcı olduğudur.
 
 **Erken oyunda (0–7 gün) bağlayıcı kısıt: tahıl değil, tesis sermayesi değil; NPC pazar derinliği.**
 
@@ -578,12 +578,12 @@ Yani tahıl tabanında zincir +%42,1 (KD) / +%33,6 (NPC net) önde; tesis, işç
 |---|---|---|---|
 | A: yalnız `standart_gida_isleme`, NPC dilimi (dükkânsız) | %47 | 1.903 | 75 birim/sa sat |
 | A+: standart + bakkal dükkânı (gıda rafı; NPC dilimi + dükkân) | %100 | 5.124 | dükkân 85,0 birim/sa |
-| B: yalnız ekmek zinciri, NPC dilimi (dükkânsız) | %25 | 1.110 | 2 tesis sabit gideri; düşük yük |
-| B+: ekmek zinciri + fırın dükkânı | %53 | 3.342 | dükkân 68,8 birim/sa |
-| **C: A+ ve B+ birlikte (iki ayrı tahıl hattı, iki dükkân; ilçe ≤ 2)** | - | 8.465 | iki pazar havuzu; tesis tabanı karşılaştırması değil, tamamlayıcılık |
+| B: yalnız ekmek zinciri, NPC dilimi (dükkânsız) | %26 | 1.035 | 2 tesis sabit gideri; düşük yük |
+| B+: ekmek zinciri + fırın dükkânı | %55 | 3.185 | dükkân 68,8 birim/sa |
+| **C: A+ ve B+ birlikte (iki ayrı tahıl hattı, iki dükkân; ilçe ≤ 2)** | - | 8.309 | iki pazar havuzu; tesis tabanı karşılaştırması değil, tamamlayıcılık |
 | D: ikinci standart tesis (gıda havuzu zaten doluyken; fazla gıda fiyat ×0,25'e iner) | - | -3.175 | marjinal gelir negatif: doymuş havuza ikinci tesis kâr etmez |
 
-Okuma: tek ürünle (A+ 5.124 ↔ B+ 3.342) standart yol 53% önde kalır (gıda ₺70 ve oran 1,84'ün sonucu); ama oyuncu dilimi tek mal havuzunu doldurur ve **ikinci tesis marjinal olarak değersizdir (D)**: oyuncunun asıl kararı "ikinci standart mı, zincir mi" ise zincir 3.342 ₺/sa kazandırır, ikinci standart eksiye düşer. Standart ve zincir ikame değil **tamamlayıcıdır** (C = 8.465 ₺/sa). Tesis tabanındaki −%28 kayıp bu yüzden erken oyunda ve n ≥ 4 her dünyada bağlayıcı değildir.
+Okuma: tek ürünle (A+ 5.124 ↔ B+ 3.185) standart yol 61% önde kalır (gıda ₺70 ve oran 1,84'ün sonucu); ama oyuncu dilimi tek mal havuzunu doldurur ve **ikinci tesis marjinal olarak değersizdir (D)**: oyuncunun asıl kararı "ikinci standart mı, zincir mi" ise zincir 3.185 ₺/sa kazandırır, ikinci standart eksiye düşer. Standart ve zincir ikame değil **tamamlayıcıdır** (C = 8.309 ₺/sa). Tesis tabanındaki −%28 kayıp bu yüzden erken oyunda ve n ≥ 4 her dünyada bağlayıcı değildir.
 
 **Fırın çıktısı duyarlılığı (165 un + 20 yakıt + 15 elektrik → x ekmek): zincirin standarda göre üstünlüğü ve strateji kararı.**
 
@@ -596,16 +596,16 @@ Okuma: tek ürünle (A+ 5.124 ↔ B+ 3.342) standart yol 53% önde kalır (gıda
 | 235 | 1,356 | 3.625 | 4.957 | +15,0% | 952 | 3.101 | 8.225 | 6.276 |
 | 230 | 1,327 | 3.325 | 4.690 | +8,8% | 685 | 3.014 | 8.138 | 6.189 |
 
-Okuma: pazar dilimi bağlayıcıyken (n ≥ 4) fırın tesisinin yükü %50 dolayındadır (sattığı birim sayısı 131/sa < çıktı), bu yüzden çıktıyı 250 → 240'a indirmek B+ ve C'yi çok az etkiler (yük ve girdi payı hafif artar); karar farkı (B+ − D: ikinci tesisi zincire çevirmek) 6.200–6.500 ₺/sa kalır (230–250 arası). Çıktı düşüşü yalnız tahıl tabanında (tam yük) zincirin üstünlüğünü +%33,6'dan indirir.
+Okuma: pazar dilimi bağlayıcıyken (n ≥ 4) fırın tesisinin yükü %50 dolayındadır (sattığı birim sayısı 131/sa < çıktı), bu yüzden çıktıyı 250 → 230 arasında değiştirmek B+ ve C'yi çok az etkiler (yük ve girdi payı hafif değişir); karar farkı (B+ − D: ikinci tesisi zincire çevirmek) 6.200–6.500 ₺/sa kalır. Çıktı değişimi asıl tahıl tabanında (tam yük) zincirin üstünlüğünü etkiler (250'de +%33,6, 240'ta +%21,2). Öneri satırı: betikteki `FIRIN_EKMEK` (240).
 
 **Yine de tesis tabanını garanti etmek istenirse (seçenekler; bandı aşmadan):**
 
 | Seçenek | Değişiklik | Standart tesis KD | Değirmen KD | Fırın KD | Kademe başına > standart? | İşçi başına | Yan etki |
 |---|---|---|---|---|---|---|---|
-| 0 — olduğu gibi | - | 5.097 | 2.720 | 4.525 | hayır | standart ≫ | pazar dilimi kısıtında tamamlayıcı (yukarıda) |
+| 0 — olduğu gibi | - | 5.097 | 2.720 | 3.925 | hayır | standart ≫ | pazar dilimi kısıtında tamamlayıcı (yukarıda) |
 | G1 — zincir yoğunluğu ×2 (tesis başına hacim) | değirmen 400 tahıl → 330 un + 66 kepek; fırın 330 un + 40 yakıt + 30 elektrik → 500 ekmek (oranlar aynı) | 5.097 | 5.440 | 9.050 | **evet** (5.440 > 5.097; 9.050 > 5.097) | işçi ×2 ise ≈ 544/566 < 849 | Tarla:değirmen 2:1; fırın 500/sa pazar dilimini 2× aşar; mevcut yöntemlere dokunmaz |
-| G2 — `standart_gida_isleme` mülk kipinde ×0,75 (160 → 120 gıda; oran 1,38 bantta) | mülk kipinde yöntem çıktı geçersiz kılma (bölge kipi aynı) | 2.297 | 2.720 | 4.525 | **evet** (2.720 ve 4.525 > 2.297) | standart 383 < 545/575 ✓ | mülk veri geçersiz kılma mekanizması (K3, M); çiftçi botu gıda fabrikası kurmaz: ölçüm temel çizgisi değişmez |
-| G3 — (i) `standart_gida_isleme` mülk kipinde kapat | `mulkKipi`'nin tersi: `yalnizBolge: true` | - | 2.720 | 4.525 | n/a | n/a | yeni oyuncunun tek basit gıda işleme yolu kalkar; G6 kapsamı büyür (süzgeç); `gida` arzı yalnız ahır/mera |
+| G2 — `standart_gida_isleme` mülk kipinde ×0,75 (160 → 120 gıda; oran 1,38 bantta) | mülk kipinde yöntem çıktı geçersiz kılma (bölge kipi aynı) | 2.297 | 2.720 | 3.925 | **evet** (2.720 ve 3.925 > 2.297) | standart 383 < 545/575 ✓ | mülk veri geçersiz kılma mekanizması (K3, M); çiftçi botu gıda fabrikası kurmaz: ölçüm temel çizgisi değişmez |
+| G3 — (i) `standart_gida_isleme` mülk kipinde kapat | `mulkKipi`'nin tersi: `yalnizBolge: true` | - | 2.720 | 3.925 | n/a | n/a | yeni oyuncunun tek basit gıda işleme yolu kalkar; G6 kapsamı büyür (süzgeç); `gida` arzı yalnız ahır/mera |
 
 Bant içinde başka güçlendirme yok: ekmek tabanını %10 artırmak fırın oranını 1,59'a çıkarır (bant dışı); fırında yakıt 20 → 15 oranı 1,52 yapar (bant dışı); değirmenin tek başına 5.097 KD'ye ulaşması 6.120 girdide 0,83 oran gerektirir (bant üstü). Yani tesis tabanında kademe başına standardı geçmek yalnız hacim (G1) ya da standardı zayıflatmak (G2) ile olur.
 
@@ -666,8 +666,8 @@ Hane bütçesi B = Σ Q·R·1,12 (dikey §5.9; Q §5.5'in yeni taban tablosundan
 |---|---|---|
 | `yerelNpc` (oyuncu yerel satışı) | 92.910.226 | k≈4,4 dükkân/ilçe; %10 kırsal, %30 kasaba, %60 şehir ilçesi varsayımı |
 | · bunun primi (NPC ihracatına göre ek para) | 14.069.263 | yeni musluğun gerçek ek kısmı: aynı mal NPC'ye gitseydi `ihracatNpc` olurdu |
-| `ihracatNpc` (ekmek, NPC emilimiyle sınırlı) | 112.266.000 | 12.500 birim/sa × 0,891 R; arz 50.000 birim/sa (200 × 250) |
-| Pazar doyumu: arz / (yerel + NPC emilimi) | 2,35 | emen: yerel 8.778 + NPC 12.500 = 21.278 birim/sa; fiyat düşmeden ekmek zinciri kurabilen oyuncu payı ≤ %43 (≈85 fırın) |
+| `ihracatNpc` (ekmek, NPC emilimiyle sınırlı) | 112.266.000 | 12.500 birim/sa × 0,891 R; arz 48.000 birim/sa (200 × 240) |
+| Pazar doyumu: arz / (yerel + NPC emilimi) | 2,26 | emen: yerel 8.778 + NPC 12.500 = 21.278 birim/sa; fiyat düşmeden ekmek zinciri kurabilen oyuncu payı ≤ %44 (≈85 fırın) |
 | `yerelNpc` payı (ZP8: ≤ %50) | %45,3 | perakende NPC geliri / toplam NPC faucet |
 | `hibe` (tek seferlik) | 10.000.000 | 200 × 50.000 ₺; haftalık değil, karşılaştırma için |
 | `odul` tavanı (oyuncu başına 8.000 ₺, tek seferlik) | 1.600.000 | ilk_satis, zincir_kapandi, ilk_dukkan ... (docs/06 §15.7) |
@@ -688,23 +688,23 @@ Olaylar: t=0,00 sa Tarla başladı (indirimli, 12 dk); t=0,00 sa Değirmen başl
 | Saat | Hazine ₺ | Önceki satıra göre değişim ₺ | Ekmek (yerel + NPC) birikimli ₺ |
 |---|---|---|---|
 | 1 | 51.850 | 1.850 | 0 |
-| 2 | 41.710 | -10.139 | 6.158 |
-| 3 | 53.557 | 11.847 | 20.416 |
-| 4 | 65.404 | 11.847 | 34.674 |
-| 6 | 89.099 | 23.694 | 63.189 |
-| 8 | 112.793 | 23.694 | 91.705 |
-| 12 | 160.181 | 47.388 | 148.737 |
-| 18 | 231.264 | 71.083 | 234.284 |
-| 24 | 302.346 | 71.083 | 319.831 |
-| 30 | 359.387 | 57.041 | 405.379 |
-| 36 | 430.695 | 71.307 | 490.926 |
-| 42 | 502.002 | 71.307 | 576.473 |
-| 48 | 573.309 | 71.307 | 662.021 |
-| 72 | 858.539 | 285.229 | 1.004.210 |
-| 96 | 1.143.768 | 285.229 | 1.346.400 |
-| 120 | 1.428.997 | 285.229 | 1.688.589 |
-| 144 | 1.714.227 | 285.229 | 2.030.778 |
-| 168 | 1.999.456 | 285.229 | 2.372.968 |
+| 2 | 41.494 | -10.355 | 5.942 |
+| 3 | 52.801 | 11.307 | 19.660 |
+| 4 | 64.108 | 11.307 | 33.378 |
+| 6 | 86.723 | 22.614 | 60.813 |
+| 8 | 109.337 | 22.614 | 88.249 |
+| 12 | 154.565 | 45.228 | 143.121 |
+| 18 | 222.408 | 67.843 | 225.428 |
+| 24 | 290.250 | 67.843 | 307.735 |
+| 30 | 344.051 | 53.801 | 390.043 |
+| 36 | 412.119 | 68.067 | 472.350 |
+| 42 | 480.186 | 68.067 | 554.657 |
+| 48 | 548.253 | 68.067 | 636.965 |
+| 72 | 820.523 | 272.269 | 966.194 |
+| 96 | 1.092.792 | 272.269 | 1.295.424 |
+| 120 | 1.365.061 | 272.269 | 1.624.653 |
+| 144 | 1.637.331 | 272.269 | 1.953.882 |
+| 168 | 1.909.600 | 272.269 | 2.283.112 |
 
 Gün özeti (kalemler o günün 24 saatlik farkı; + gelir, − gider):
 
@@ -721,12 +721,12 @@ Gün özeti (kalemler o günün 24 saatlik farkı; + gelir, − gider):
 | inşaat malzemesi ithalatı | -1.228 | - | - |
 | şebeke yakıt (kamu) | -46.368 | -49.680 | -49.680 |
 | ekmek yerel satış (dükkân) | 122.020 | 127.326 | 127.326 |
-| ekmek NPC ihracatı | 197.811 | 214.864 | 214.864 |
+| ekmek NPC ihracatı | 185.715 | 201.904 | 201.904 |
 | ödül (zincir_kapandi) | 700 | - | - |
 | arazi vergisi | -3 | -11 | -11 |
 | gubre NPC ihracatı | - | 17.963 | 17.963 |
-| **Net** | 252.346 | 285.229 | 285.229 |
-| **Gün sonu hazine** | 302.346 | 858.539 | 1.999.456 |
+| **Net** | 240.250 | 272.269 | 272.269 |
+| **Gün sonu hazine** | 290.250 | 820.523 | 1.909.600 |
 
 ### 7.2 Varyant E: isteğe bağlı santral yatırımı (kendi elektriği; yakıt kamu)
 
@@ -735,23 +735,23 @@ Olaylar: t=0,00 sa Tarla başladı (indirimli, 12 dk); t=0,00 sa Santral (kömü
 | Saat | Hazine ₺ | Önceki satıra göre değişim ₺ | Ekmek (yerel + NPC) birikimli ₺ |
 |---|---|---|---|
 | 1 | 54.693 | 4.693 | 0 |
-| 2 | 31.017 | -23.676 | 5.400 |
-| 3 | 30.781 | -237 | 19.658 |
-| 4 | 42.435 | 11.654 | 33.916 |
-| 6 | 65.743 | 23.308 | 62.432 |
-| 8 | 89.051 | 23.308 | 90.947 |
-| 12 | 135.667 | 46.616 | 147.979 |
-| 18 | 205.591 | 69.924 | 233.526 |
-| 24 | 275.515 | 69.924 | 319.074 |
-| 30 | 325.741 | 50.227 | 404.621 |
-| 36 | 395.907 | 70.165 | 490.168 |
-| 42 | 466.072 | 70.165 | 575.716 |
-| 48 | 536.238 | 70.165 | 661.263 |
-| 72 | 816.899 | 280.662 | 1.003.452 |
-| 96 | 1.097.561 | 280.662 | 1.345.642 |
-| 120 | 1.378.223 | 280.662 | 1.687.831 |
-| 144 | 1.658.884 | 280.662 | 2.030.020 |
-| 168 | 1.939.546 | 280.662 | 2.372.210 |
+| 2 | 30.801 | -23.892 | 5.184 |
+| 3 | 30.025 | -777 | 18.902 |
+| 4 | 41.139 | 11.114 | 32.620 |
+| 6 | 63.367 | 22.228 | 60.056 |
+| 8 | 85.595 | 22.228 | 87.491 |
+| 12 | 130.051 | 44.456 | 142.363 |
+| 18 | 196.735 | 66.684 | 224.670 |
+| 24 | 263.419 | 66.684 | 306.978 |
+| 30 | 310.405 | 46.987 | 389.285 |
+| 36 | 377.331 | 66.925 | 471.592 |
+| 42 | 444.256 | 66.925 | 553.900 |
+| 48 | 511.182 | 66.925 | 636.207 |
+| 72 | 778.883 | 267.702 | 965.436 |
+| 96 | 1.046.585 | 267.702 | 1.294.666 |
+| 120 | 1.314.287 | 267.702 | 1.623.895 |
+| 144 | 1.581.988 | 267.702 | 1.953.124 |
+| 168 | 1.849.690 | 267.702 | 2.282.354 |
 
 Gün özeti (kalemler o günün 24 saatlik farkı; + gelir, − gider):
 
@@ -767,14 +767,14 @@ Gün özeti (kalemler o günün 24 saatlik farkı; + gelir, − gider):
 | inşaat malzemesi ithalatı | -11.062 | - | - |
 | şebeke yakıt (kamu) | -46.368 | -49.680 | -49.680 |
 | santral kömürü | -5.252 | -5.971 | -5.971 |
-| ekmek NPC ihracatı | 202.359 | 214.864 | 214.864 |
+| ekmek NPC ihracatı | 190.263 | 201.904 | 201.904 |
 | ödül (zincir_kapandi) | 700 | - | - |
 | kepek NPC ihracatı | 11.975 | - | - |
 | arazi vergisi | -14 | -21 | -21 |
 | ekmek yerel satış (dükkân) | 116.715 | 127.326 | 127.326 |
 | gubre NPC ihracatı | - | 17.963 | 17.963 |
-| **Net** | 225.515 | 280.662 | 280.662 |
-| **Gün sonu hazine** | 275.515 | 816.899 | 1.939.546 |
+| **Net** | 213.419 | 267.702 | 267.702 |
+| **Gün sonu hazine** | 263.419 | 778.883 | 1.849.690 |
 
 ## 8. Senaryo 2: cam → pencere (gün 3 sonunda; santralsiz, kamu şebekesi)
 
@@ -794,7 +794,7 @@ Aralıklar 24 saatlik bloklardır: 72–96 sa = gün 4, ... 144–168 sa = gün 
 | inşaat malzemesi ithalatı | -33.000 | - | - | - |
 | şebeke yakıt (kamu) | -84.125 | -89.424 | -89.424 | -89.424 |
 | ekmek yerel satış (dükkân) | 127.326 | 127.326 | 127.326 | 127.326 |
-| ekmek NPC ihracatı | 214.864 | 214.864 | 214.864 | 214.864 |
+| ekmek NPC ihracatı | 201.904 | 201.904 | 201.904 | 201.904 |
 | arazi vergisi | -25 | -25 | -25 | -25 |
 | gubre NPC ihracatı | 17.963 | 17.963 | 17.963 | 17.963 |
 | silis ithalatı | -34.320 | -39.600 | -39.600 | -39.600 |
@@ -802,9 +802,9 @@ Aralıklar 24 saatlik bloklardır: 72–96 sa = gün 4, ... 144–168 sa = gün 
 | parca ithalatı | -20.592 | -23.760 | -23.760 | -23.760 |
 | pencere NPC ihracatı | 188.698 | 217.728 | 217.728 | 217.728 |
 | cam NPC ihracatı | 29.275 | 36.936 | 36.936 | 36.936 |
-| **Net** | 257.100 | 340.162 | 340.162 | 340.162 |
+| **Net** | 244.140 | 327.202 | 327.202 | 327.202 |
 
-Pencere hattının 72→168 sa artımlı katkısı (S2 − S1-S): 136.668 ₺ (yatırım ve hücre dahil). Aynı pencerede S1-S net 1.140.917 ₺.
+Pencere hattının 72→168 sa artımlı katkısı (S2 − S1-S): 136.668 ₺ (yatırım ve hücre dahil). Aynı pencerede S1-S net 1.089.077 ₺.
 
 ### 8.1 Pencere hattı kararlı hâl marjı (komisyonlu, ₺/sa; S ölçek, 1 cam fırını : 1 doğrama; A2 önerisi tarifleri)
 
@@ -885,7 +885,7 @@ Bakım maliyeti = bakım parçası × 180 × 1,111 + işletme 60 ₺; aşınma c
 | azotlu_gubre | 5.600 | 2.450 | 260 | %4,6 | 2,3 | %109 |
 | geleneksel_tarim | 6.000 | 6.000 | 160 | %2,7 | 1,0 | yok (girdisiz) |
 | degirmen | 8.844 | 2.724 | 220 | %2,5 | 3,2 | %77 |
-| ekmek_firini | 15.000 | 4.600 | 220 | %1,5 | 3,3 | %77 |
+| ekmek_firini | 14.400 | 4.000 | 220 | %1,5 | 3,6 | %69 |
 | cam_firini | 4.750 | 1.470 | 260 | %5,5 | 3,2 | %77 |
 | celik_dograma | 10.080 | 3.110 | 260 | %2,6 | 3,2 | %77 |
 | kepek_gubresi | 2.520 | 670 | 160 | %6,3 | 3,8 | %66 |
@@ -903,7 +903,7 @@ Bakım maliyeti = bakım parçası × 180 × 1,111 + işletme 60 ₺; aşınma c
 | azotlu_gubre | 200 | %44 | 1.107 | 354 | 288 | 43 | 220 | 136 |
 | geleneksel_tarim | 100 | yok | 1.300 | 494 | 461 | 494 | 350 | 260 |
 | degirmen | 160 | %31 | 1.904 | 716 | 663 | 110 | 503 | 371 |
-| ekmek_firini | 160 | %31 | 3.340 | 1.325 | 1.272 | 295 | 965 | 740 |
+| ekmek_firini | 160 | %28 | 3.200 | 1.266 | 1.213 | 236 | 920 | 704 |
 | cam_firini | 200 | %31 | 908 | 270 | 204 | -54 | 156 | 85 |
 | celik_dograma | 200 | %31 | 2.152 | 798 | 732 | 108 | 556 | 405 |
 | kepek_gubresi | 100 | %27 | 488 | 149 | 116 | -34 | 89 | 51 |
@@ -965,8 +965,8 @@ Okuma: sanayici arketipinde (maden + santral) bakım bugün başabaştır (eşik
 |---|---|---|---|---|---|---|
 | değirmen | mevcut (20000; %40) | 601 | -460 | -814 | 1.634 | -814 |
 | değirmen | A: 11000; %30 | 1.848 | 1.411 | 973 | 2.185 | 71 |
-| ekmek fırını | mevcut (20000; %40) | 1.000 | -800 | -1.400 | 2.760 | -1.400 |
-| ekmek fırını | A: 11000; %30 | 3.115 | 2.373 | 1.630 | 3.689 | 100 |
+| ekmek fırını | mevcut (20000; %40) | 544 | -1.184 | -1.760 | 2.400 | -1.760 |
+| ekmek fırını | A: 11000; %30 | 2.574 | 1.862 | 1.149 | 3.208 | -320 |
 | cam fırını | mevcut (20000; %40) | 330 | -240 | -430 | 882 | -430 |
 | cam fırını | A: 11000; %30 | 1.000 | 765 | 530 | 1.179 | 45 |
 | çelik doğrama | mevcut (20000; %40) | 691 | -519 | -922 | 1.866 | -922 |
