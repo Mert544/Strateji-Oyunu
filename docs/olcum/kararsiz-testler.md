@@ -24,7 +24,7 @@
 | 19:46 | taban-yuru (de9959c, yani K1 yığını YOK) | – | **yuru kırık**: masaüstü koşu/depar 7,0 / 7,0 m/s |
 | 19:53 | p3 (5413811), 12/12 | 2008/2049 geçti | f4 OK |
 | 20:29 | p4 (d13ba4a) | 2201/2244 geçti | f4 OK, yuru OK (mobil 0,45 rad) |
-| 20:52 | p5 (çalışıyor) | 2427/2470 geçti | f4 **HATA** (komut yolu, bkz. §5); yuru çalışmadı |
+| 20:52 (bitiş 21:10) | p5 (81c5474, taban d13ba4a), 28/32 | 2427/2470 geçti | **f4 kırık**: komut yolu beklentisi (bkz. §5); yuru çalışmadı. KAPI KIRIK; p5b 21:11'de başladı |
 
 Atlanan test sayıları (28–43) ortam bayraklı (`BOLGE_AGIR_TEST`, pg) testlerdir ve bu işle ilgisizdir.
 
@@ -62,7 +62,7 @@ Atlanan test sayıları (28–43) ortam bayraklı (`BOLGE_AGIR_TEST`, pg) testle
 - **Kırık koşular 19:17 ve 19:34 (K1 yığını, taban de9959c):** `TimeoutError`: yapı menüsünde "Ahır kur" onay düğmesi (`data-yk="onayla"`) `disabled` kalıyor, "element is not enabled" döngüsü 90 sn sonunda zaman aşımı (112 sn). `+5 dk` satırına hiç gelinmedi (0 satır). Aynı betik sonraki dört koşuda geçti (19:40 p2b, 19:53, 20:29 ve öncesinde 18:28 tabanda): K1 yığınının girdiği uçlarda iki kez, çıkardığımızda yok.
 - **Kök neden tahmini (doğrulanmadı):** onay düğmesinin etkinliği hazine/arsa hesabına ve hayalet doğrulamasına bağlı; K1 yığınının yapı önce yerleşim akışı ilk sürümde ahır için arsa/hazine denetimini düğmeye farklı yansıtıyor olabilir (aynı kartın bedel satırı 19:34 koşusunda 2.001 ₺, 20:52 koşusunda 3.501 ₺ gösteriyor: akış sürümler arasında değişmiş). Yani bu iki kırık **kararsız değil, yığının gerçek hatası** olabilir; p2b'de düzeldi. Zamanlama payı: aynı koşuda "element was detached from the DOM, retrying" satırı var (düğme yeniden çiziliyor): yeniden çizim sırasında tıklama bekleyen düğmeye düşebilir.
 - **"+5 dk aşama İskele" kontrolü (kapıdaki satır):** `+5 dk: ali kendi çiftliğinde aşama İskele …` satırı geçen koşularda (18:28, 19:40, 19:53, 20:29, 20:52) bulunuyor; **etiket sırası koşudan koşuya değişiyor** (20:29: "Çiftlik · İskele | Ahır · Temel", 20:52: "Ahır · Temel | Çiftlik · İskele"; `etiketler` dizisi ["Çiftlik","Ahır"] ↔ ["Ahır","Çiftlik"]). Kontrol sıra bağımsız yazılmışsa sorun yok; sıraya bağlıysa kararsızlık adayıdır (kodu okumadım: doğrulanmadı). Dayanıklılık: etiketleri sıralı kümeyle karşılaştırmak.
-- **20:52 (p5) f4 HATA:** "komut yolu: tek atomik yapi_yerlestir istemci komutları: parsel_al, parsel_al, tesis_insa_hucre": beklenen tek atomik `yapi_yerlestir`, istemci üç komut gönderiyor. Bu **deterministik bir beklenti değişikliği** (K1'in komut yolu ile betiğin beklentisi ayrışmış), kararsızlık değildir; kapı P5 sonucunu verince netleşir.
+- **20:52 (p5) f4 HATA:** "komut yolu: tek atomik yapi_yerlestir istemci komutları: parsel_al, parsel_al, tesis_insa_hucre": beklenen tek atomik `yapi_yerlestir`, istemci üç komut gönderiyor. Bu **deterministik bir beklenti değişikliği** (K1'in komut yolu ile betiğin beklentisi ayrışmış), kararsızlık değildir; kapı P5'i bu nedenle KIRIK kapattı (21:10, `kirik=playwright-f4-uctan-uca`); düzeltme paketin beklenti/komut uyumunu sağlayan commit'idir (p5b sonucu bu belgeye işlenmedi).
 - **Dayanıklılık önerisi:** (1) düğmeyi tıklamadan önce `waitFor({ state: "attached" })` ve `enabled` yoklaması (yeniden çizim bitince), zaman aşımı hatasında düğmenin `disabled` nedeni (neden metni/hazine/arsa) çıktıya yazılsın; (2) etiket karşılaştırması sıra bağımsız; (3) beklenti değişikliklerinde (20:52 satırı) betik ve istemci AYNI pakette birleşsin (kapı aynı paket kuralı).
 
 ## 6. Kapıda görülmeyenler (liste dışı)
