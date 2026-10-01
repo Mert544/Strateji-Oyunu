@@ -6,11 +6,7 @@ import {
   devletKimlikleri,
   dosyaAdi,
   h1Kos,
-  h2Kos,
-  h3Kos,
-  h5Kos,
   h6Kos,
-  h7Kos,
   iklimBaslangicGunu,
   iklimEtkin,
   iklimUygula,
@@ -20,38 +16,7 @@ import {
   veriYukle,
 } from "../src";
 import type { HipotezSonucu } from "../src";
-
-/** Duvar saati alanlarını (sureMs) çıkararak serileştirir. */
-function kararli(x: unknown): string {
-  return JSON.stringify(x, (k, v) => (k === "sureMs" ? undefined : v));
-}
-
-function semaDogru(h: HipotezSonucu, kimlik: string, tohumSayisi: number): void {
-  expect(h.kimlik).toBe(kimlik);
-  expect(typeof h.hipotez).toBe("string");
-  expect(["gecti", "kaldi", "belirsiz"]).toContain(h.verdict);
-  expect(h.tohumBasina).toHaveLength(tohumSayisi);
-  for (const t of h.tohumBasina) {
-    expect(["gecti", "kaldi", "belirsiz"]).toContain(t.verdict);
-    expect(t.durumOzeti).toMatch(/^[0-9a-f]{16}$/);
-  }
-  expect(h.olcum.ad.length).toBeGreaterThan(0);
-  expect(h.esik.aciklama.length).toBeGreaterThan(0);
-  expect(h.tohumBasariOrani).toBeGreaterThanOrEqual(0);
-  expect(h.tohumBasariOrani).toBeLessThanOrEqual(1);
-  expect(() => JSON.parse(JSON.stringify(h))).not.toThrow();
-}
-
-/** Parametreler bloğundaki harita ve iklim özeti beklenen gibi mi. */
-function baglamDogru(h: HipotezSonucu, harita: string, bolge: number, iklim: string, gunCarpani: number): void {
-  const p = h.parametreler as Record<string, unknown> & { iklim: Record<string, unknown> };
-  expect(p["harita"]).toBe(harita);
-  expect(p["haritaBolgeSayisi"]).toBe(bolge);
-  expect(p["haritaDevletSayisi"]).toBe(4);
-  expect(p.iklim["secenek"]).toBe(iklim);
-  expect(p.iklim["etkin"]).toBe(true);
-  expect(p.iklim["gunCarpani"]).toBe(gunCarpani);
-}
+import { baglamDogru, semaDogru } from "./harita-iklim-yardimci";
 
 describe("harita ve iklim: CLI seçenekleri", () => {
   it("--harita ve --iklim ayrıştırılır; varsayılan sentetik + hizli", () => {
@@ -192,7 +157,6 @@ describe("harita seçimi ve devlet türetmesi", () => {
 describe("gerçek haritada hipotez koşucuları (kısa sürüm)", () => {
   const tohumlar = [1];
   const gercek = { tohumlar, kisa: true, harita: "gercek", iklim: "hizli" } as const;
-  const ayri: HipotezSonucu[] = [];
 
   it("H1: gerçek haritada devlet başına 1 bölge örneklenir", () => {
     const h = h1Kos(gercek);
@@ -203,68 +167,6 @@ describe("gerçek haritada hipotez koşucuları (kısa sürüm)", () => {
     const ay = h.ayrinti as { odakKumeleri: Record<string, string[]> };
     const gercekBolgeler = new Set(gercekVeriyiYukle().harita.bolgeler.map((b) => b.id));
     for (const b of Object.keys(ay.odakKumeleri)) expect(gercekBolgeler.has(b)).toBe(true);
-  }, 300_000);
-
-  it("H2: şemaya uygun, 4 devlet ve 3 gün", () => {
-    const h = h2Kos(gercek);
-    semaDogru(h, "H2", 1);
-    baglamDogru(h, "gercek", 53, "hizli", 12);
-    expect((h.ayrinti["tohumlar"] as Array<{ gunler: unknown[] }>)[0]!.gunler).toHaveLength(3);
-    expect(h.parametreler["oyuncular"]).toEqual(["sanayici", "tuccar", "lojistikci", "militarist"]);
-    ayri.push(h);
-  }, 300_000);
-
-  it("H3: şemaya uygun; mal sayısı içerikten", () => {
-    const h = h3Kos(gercek);
-    semaDogru(h, "H3", 1);
-    baglamDogru(h, "gercek", 53, "hizli", 12);
-    expect(h.ayrinti["degisimTablosuIlkTohum"] as unknown[]).toHaveLength(gercekVeriyiYukle().icerik.mallar.length);
-  }, 300_000);
-
-  it("H5: sınır çifti gerçek haritadan türer; kayıp tavanı aşılmaz", () => {
-    const h = h5Kos(gercek);
-    semaDogru(h, "H5", 1);
-    baglamDogru(h, "gercek", 53, "hizli", 12);
-    const devletler = new Set(gercekVeriyiYukle().harita.devletler.map((d) => d.id));
-    for (const c of h.parametreler["ciftler"] as string[]) {
-      for (const d of c.split(/ -> |\+/)) expect(devletler.has(d)).toBe(true);
-    }
-    expect(h.verdict).not.toBe("kaldi");
-    ayri.push(h);
-  }, 300_000);
-
-  it("H6: geç katılanlar gerçek haritanın bölgelerinden", () => {
-    const h = h6Kos(gercek);
-    semaDogru(h, "H6", 1);
-    baglamDogru(h, "gercek", 53, "hizli", 12);
-    const bolgeler = new Set(gercekVeriyiYukle().harita.bolgeler.map((b) => b.id));
-    const gec = (h.ayrinti["tohumlar"] as Array<{ gecKatilanlar: Array<{ bolgeler: string[] }> }>)[0]!.gecKatilanlar;
-    expect(gec.length).toBeGreaterThanOrEqual(8);
-    for (const g of gec) for (const b of g.bolgeler) expect(bolgeler.has(b)).toBe(true);
-    ayri.push(h);
-  }, 300_000);
-
-  it("H7: 24/48/72. saat oranları hesaplanır", () => {
-    const h = h7Kos(gercek);
-    semaDogru(h, "H7", 1);
-    baglamDogru(h, "gercek", 53, "hizli", 12);
-    const satirlar = h.tohumBasina[0]!.ozet["satirlar"] as Array<{ saat: number; oran: number }>;
-    expect(satirlar.map((s) => s.saat)).toEqual([24, 48, 72]);
-    for (const s of satirlar) expect(s.oran).toBeGreaterThan(0);
-    ayri.push(h);
-  }, 300_000);
-
-  it("determinizm: aynı seçeneklerle ikinci koşu birebir aynı (H2, H5, H6, H7)", () => {
-    const yeniler = [h2Kos(gercek), h5Kos(gercek), h6Kos(gercek), h7Kos(gercek)];
-    expect(ayri).toHaveLength(4);
-    yeniler.forEach((y, i) => expect(kararli(y)).toBe(kararli(ayri[i])));
-  }, 600_000);
-
-  it("iklim seçeneği koşuya yansır: gunCarpani=12 ile gerçek takvimin durum izi farklıdır", () => {
-    const hizli = h2Kos(gercek);
-    const takvim = h2Kos({ ...gercek, iklim: "gercek" });
-    baglamDogru(takvim, "gercek", 53, "gercek", 1);
-    expect(hizli.tohumBasina[0]!.durumOzeti).not.toBe(takvim.tohumBasina[0]!.durumOzeti);
   }, 300_000);
 
   it("sentetik harita (vars.): parametrelerde sentetik yazar", () => {

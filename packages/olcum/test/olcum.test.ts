@@ -4,7 +4,6 @@ import { miniVeriyiYukle, varsayilanVeriyiYukle } from "@bolge/veri";
 import {
   TUM_HIPOTEZLER,
   BOLGE_TURLERI,
-  H1_ISLETIMSEL_TANIM,
   anlamliEsik,
   anlamliSiralama,
   enYakinLiman,
@@ -17,9 +16,7 @@ import {
   dosyaAdi,
   canliUretimToplami,
   h1Kos,
-  h2Kos,
   h2Metrikleri,
-  h3Kos,
   h5Kos,
   h6Kos,
   h7Kos,
@@ -28,36 +25,11 @@ import {
   karsilastir,
   kayanKayipOlc,
   ortalamaSira,
-  raporUret,
   stokDegeri,
   tohumAyristir,
   uretimDegeri,
 } from "../src";
-import type { HipotezSonucu } from "../src";
-
-/** Duvar saati alanlarını (sureMs) çıkararak serileştirir. */
-function kararli(x: unknown): string {
-  return JSON.stringify(x, (k, v) => (k === "sureMs" ? undefined : v));
-}
-
-function semaDogru(h: HipotezSonucu, kimlik: string, tohumSayisi: number): void {
-  expect(h.kimlik).toBe(kimlik);
-  expect(typeof h.hipotez).toBe("string");
-  expect(["gecti", "kaldi", "belirsiz"]).toContain(h.verdict);
-  expect(h.tohumBasina).toHaveLength(tohumSayisi);
-  for (const t of h.tohumBasina) {
-    expect(["gecti", "kaldi", "belirsiz"]).toContain(t.verdict);
-    expect(t.durumOzeti).toMatch(/^[0-9a-f]{16}$/);
-    expect(typeof t.tohum).toBe("number");
-  }
-  expect(h.olcum.ad.length).toBeGreaterThan(0);
-  expect(h.esik.aciklama.length).toBeGreaterThan(0);
-  expect(h.tohumBasariOrani).toBeGreaterThanOrEqual(0);
-  expect(h.tohumBasariOrani).toBeLessThanOrEqual(1);
-  expect(typeof h.sureMs).toBe("number");
-  // JSON'a serileştirilebilir ve geri okunabilir
-  expect(() => JSON.parse(JSON.stringify(h))).not.toThrow();
-}
+import { kararli, semaDogru } from "./olcum-yardimci";
 
 describe("tohum ayrıştırıcı", () => {
   it("aralık, liste ve karışık biçimleri", () => {
@@ -326,55 +298,7 @@ describe("yardımcılar", () => {
 });
 
 describe("hipotez koşucuları (kısa sürüm)", () => {
-  const sonuclar: HipotezSonucu[] = [];
   const tohumlar = [1];
-
-  it("H1 v0.2: pasif referans, eklenen değer, bölge+liman odağı (devlet başına 1 bölge × 3 sabit önayar + dengeli × 1 gün)", () => {
-    const veri = varsayilanVeriyiYukle();
-    const h = h1Kos({ tohumlar, kisa: true, veri });
-    semaDogru(h, "H1", 1);
-    expect(h.parametreler["bolgeSayisi"]).toBe(veri.harita.devletler.length);
-    expect(h.parametreler["onayarSayisi"]).toBe(3);
-    expect(h.parametreler["referansOnayar"]).toBe("dengeli");
-    expect(h.parametreler["odakKurulumu"]).toBe("bolge+liman");
-    expect(String(h.parametreler["pasifReferans"])).toContain("evet");
-    const ay = h.ayrinti as {
-      onayarlar: Array<{ ad: string }>;
-      referans: { ad: string };
-      turTablosu: Array<{ hicbiriPayi: number }>;
-      isletimselTanim: string[];
-      bilgiGostergeleri: Record<string, { saglandi: boolean }>;
-      bolgeTablosuIlkTohum: Array<{ bolge: string; kume: string[]; pasifSkor: number; esik: number; ekDegerler: Record<string, number>; bilesenler: Record<string, Record<string, number>>; referans: { ekDeger: number } | null }>;
-    };
-    expect(ay.isletimselTanim).toEqual([...H1_ISLETIMSEL_TANIM]);
-    // dengeli sıralamada DEĞİL, yalnızca referans olarak
-    expect(ay.onayarlar.map((o) => o.ad)).not.toContain("dengeli");
-    expect(ay.referans.ad).toBe("dengeli");
-    expect(ay.turTablosu.length).toBeGreaterThan(0);
-    expect(Object.keys(ay.bilgiGostergeleri).sort()).toEqual(["normalizeEntropi", "regret", "turBasinaFarkliEnIyi"]);
-    for (const b of ay.bolgeTablosuIlkTohum) {
-      // odak kümesi: bölge (+ limansa yalnız o; değilse en yakın liman)
-      const tan = veri.harita.bolgeler.find((x) => x.id === b.bolge)!;
-      expect(b.kume[0]).toBe(b.bolge);
-      expect(b.kume).toEqual(odakKumesi(veri.harita, b.bolge, "bolge_liman"));
-      expect(b.kume.length).toBe(tan.etiketler.includes("liman") ? 1 : 2);
-      expect(b.esik).toBeGreaterThanOrEqual(10_000);
-      expect(Object.keys(b.ekDegerler)).not.toContain("dengeli");
-      expect(b.referans).not.toBeNull();
-      // eklenen değer = bileşenlerin toplamı (hazine + stok + yatırım)
-      for (const [ad, bl] of Object.entries(b.bilesenler)) {
-        expect(bl["skor"]).toBeCloseTo((bl["hazine"] as number) + (bl["stok"] as number) + (bl["yatirim"] as number), 0);
-        expect(b.ekDegerler[ad]).toBeCloseTo(bl["skor"] as number, 0);
-      }
-    }
-    const oz = h.tohumBasina[0]!.ozet as { anlamliIlkUcOrani: Record<string, number>; enIyiOnayarPayi: Record<string, number>; hicbiriAnlamliDegil: number; anlamliBolge: number };
-    expect(Object.keys(oz.anlamliIlkUcOrani)).not.toContain("dengeli");
-    expect(oz.anlamliBolge + oz.hicbiriAnlamliDegil).toBe(veri.harita.devletler.length);
-    // en iyi payı: anlamlı bölge başına toplam 1
-    expect(Object.values(oz.enIyiOnayarPayi).reduce((t, x) => t + x, 0)).toBeCloseTo(oz.anlamliBolge / veri.harita.devletler.length, 3);
-    expect(kararli(h1Kos({ tohumlar, kisa: true, veri }))).toBe(kararli(h));
-    sonuclar.push(h);
-  }, 180_000);
 
   it("H1 v0.2: yalnız bölge odağı ve dengeli referanssız koşu", () => {
     const veri = varsayilanVeriyiYukle();
@@ -386,25 +310,6 @@ describe("hipotez koşucuları (kısa sürüm)", () => {
     for (const b of ay.bolgeTablosuIlkTohum) expect(b.kume).toHaveLength(1);
   }, 120_000);
 
-  it("H2: 3 günlük kısa koşu şemaya uygundur ve determinizm", () => {
-    const h = h2Kos({ tohumlar, kisa: true });
-    semaDogru(h, "H2", 1);
-    const gunler = (h.ayrinti["tohumlar"] as Array<{ gunler: unknown[] }>)[0]!.gunler;
-    expect(gunler).toHaveLength(3);
-    expect(kararli(h2Kos({ tohumlar, kisa: true }))).toBe(kararli(h));
-    sonuclar.push(h);
-  });
-
-  it("H3: müdahaleli ve temel koşu karşılaştırılır", () => {
-    const h = h3Kos({ tohumlar, kisa: true });
-    semaDogru(h, "H3", 1);
-    const tablo = (h.ayrinti["degisimTablosuIlkTohum"] as unknown[]) ?? [];
-    // Satır sayısı = içerikteki mal sayısı (tarım katmanı gübreyi ekledi).
-    expect(tablo).toHaveLength(varsayilanVeriyiYukle().icerik.mallar.length);
-    expect(kararli(h3Kos({ tohumlar, kisa: true }))).toBe(kararli(h));
-    sonuclar.push(h);
-  });
-
   it("H5: kayan pencere ölçülür, ilanlar paralel denenir ve kayıp tavanı aşılmaz", () => {
     const h = h5Kos({ tohumlar, kisa: true });
     semaDogru(h, "H5", 1);
@@ -415,7 +320,6 @@ describe("hipotez koşucuları (kısa sürüm)", () => {
     expect(v.enBuyukKayan24sDeger).toBeGreaterThanOrEqual(0);
     expect(h.verdict).not.toBe("kaldi");
     expect(kararli(h5Kos({ tohumlar, kisa: true }))).toBe(kararli(h));
-    sonuclar.push(h);
   });
 
   it("H6: geç katılanlar ölçülür", () => {
@@ -424,7 +328,6 @@ describe("hipotez koşucuları (kısa sürüm)", () => {
     const gec = (h.ayrinti["tohumlar"] as Array<{ gecKatilanlar: unknown[] }>)[0]!.gecKatilanlar;
     expect(gec.length).toBeGreaterThanOrEqual(8);
     expect(kararli(h6Kos({ tohumlar, kisa: true }))).toBe(kararli(h));
-    sonuclar.push(h);
   });
 
   it("H7: aktif ve kur_ve_unut oranı 24/48/72 saatte hesaplanır", () => {
@@ -441,47 +344,5 @@ describe("hipotez koşucuları (kısa sürüm)", () => {
     expect(h.parametreler["pencereSaat"]).toBe(24);
     expect(() => h7Kos({ tohumlar, kisa: true, pencereSaat: 0 })).toThrow();
     expect(kararli(h7Kos({ tohumlar, kisa: true }))).toBe(kararli(h));
-    sonuclar.push(h);
-  });
-
-  it("rapor Markdown üretir", () => {
-    expect(sonuclar.length).toBe(6);
-    const md = raporUret(sonuclar, { tohumlar, hizli: false, sureMs: 1234, secenekler: {} });
-    expect(md).toContain("## Özet");
-    expect(md).toContain("Determinizm izi");
-    expect(md).toContain("**Sürüm/etiket**: (belirtilmedi)");
-    expect(md).not.toContain("Önceki ölçüm");
-    for (const h of sonuclar) expect(md).toContain(`## ${h.kimlik}`);
-    // H1 v0.2 bölümleri
-    expect(md).toContain("İşletimsel tanım (H1 düzeneği v0.2)");
-    expect(md).toContain("Odak kurulumu: bolge+liman");
-    expect(md).toContain("Ayrıştırma: eklenen değerin bileşenleri");
-    expect(md).toContain("Regret: her sabit önayarın");
-    expect(md).toContain("Bilgi göstergeleri (verdict'e KATILMAZ");
-    expect(md).toContain("Eşitlik kuralının etkisi");
-    expect(md).toContain("Bölge türüne göre en iyi önayar");
-  });
-
-  it("rapor: etiket ve önceki ölçümle karşılaştırma sütunları", () => {
-    const md = raporUret(sonuclar, {
-      tohumlar,
-      hizli: false,
-      sureMs: 1,
-      etiket: "v0.1",
-      secenekler: {},
-      karsilastirma: {
-        kaynak: "docs/olcum/v0-t1-3.json",
-        hipotezler: [
-          { kimlik: "H1", verdict: "kaldi", olcum: { ad: "Eski ölçüm adı", deger: 0.96, birim: "oran" } },
-          { kimlik: "H2", verdict: "gecti", olcum: { ad: sonuclar[1]!.olcum.ad, deger: 0.425, birim: "oran" } },
-        ],
-      },
-    });
-    expect(md).toContain("**Sürüm/etiket**: v0.1");
-    expect(md).toContain("| Önceki ölçüm | Önceki sonuç |");
-    expect(md).toContain("%96.0 (önceki tanım: Eski ölçüm adı) | KALDI |");
-    expect(md).toMatch(/%42\.5 \| GEÇTİ \|/);
-    // önceki ölçümde olmayan hipotez için "—"
-    expect(md).toMatch(/\| — \| — \|\n/);
   });
 });
