@@ -328,17 +328,18 @@ export class EkonomiToplayici {
       const netKar = h1[1] - h0[1] + yat;
       if (netKar > 0 && yat >= 0) rGrup[this.grup(id)].push(yat / netKar);
     }
-    metrikler["E2"] = { durum: "olculmedi", not: "oyuncu basina r: hazine farki + sermaye komutu tutari (7 gun; net kar > 0 olanlar)", gruplar: {} };
+    const e2: EkonomiMetrik = { durum: "olculmedi", not: "oyuncu basina r: hazine farki + sermaye komutu tutari (7 gun; net kar > 0 olanlar)", gruplar: {} };
     for (const gr of EKONOMI_GRUPLARI) {
       const m = medyan(rGrup[gr].map((x) => Math.round(x * 1e6)));
       const r = m === null ? null : m / 1e6;
       const durum: EkonomiDurumu = r === null || rGrup[gr].length < E.enAzOyuncu ? "olculmedi" : bantDurumu(r, E.r.yesilAlt, E.r.yesilUst, E.r.sariAlt, E.r.sariUst);
-      (metrikler["E2"].gruplar as Record<string, unknown>)[gr] = { durum, medyan: r, oyuncu: rGrup[gr].length };
+      (e2.gruplar as Record<string, unknown>)[gr] = { durum, medyan: r, oyuncu: rGrup[gr].length };
     }
-    metrikler["E2"].durum = en(EKONOMI_GRUPLARI.map((gr) => ((metrikler["E2"].gruplar as Record<string, { durum: EkonomiDurumu }>)[gr] as { durum: EkonomiDurumu }).durum));
+    e2.durum = en(EKONOMI_GRUPLARI.map((gr) => ((e2.gruplar as Record<string, { durum: EkonomiDurumu }>)[gr] as { durum: EkonomiDurumu }).durum));
+    metrikler["E2"] = e2;
 
     // ---- E4 ilk dükkân (grup) -----------------------------------------------------------------------------------------------------
-    metrikler["E4"] = { durum: "olculmedi", gruplar: {}, not: "dukkan kurulusu DukkanDurumu.kurulus alanindan okunur (P5 sonrasi); alan yoksa olculmedi" };
+    const e4: EkonomiMetrik = { durum: "olculmedi", gruplar: {}, not: "dukkan kurulusu DukkanDurumu.kurulus alanindan okunur (P5 sonrasi); alan yoksa olculmedi" };
     const bitisT = son?.tMs ?? 0;
     for (const gr of EKONOMI_GRUPLARI) {
       const suredler: number[] = [];
@@ -360,15 +361,16 @@ export class EkonomiToplayici {
         durum = saat <= E.ilkDukkan.yesilUstSaat ? "yesil" : saat <= E.ilkDukkan.sariUstSaat ? "sari" : "kirmizi";
         if (kuranPayi !== null && kuranPayi < E.ilkDukkan.kuranPayiAlt) durum = "kirmizi";
       }
-      (metrikler["E4"].gruplar as Record<string, unknown>)[gr] = { durum, medyanSaat: md === null ? null : md / SAAT, kuran: suredler.length, uygunOyuncu: uygun, kuranPayi48Saat: uygun === 0 ? null : (uygun - bekleyenKurmayan) / uygun };
+      (e4.gruplar as Record<string, unknown>)[gr] = { durum, medyanSaat: md === null ? null : md / SAAT, kuran: suredler.length, uygunOyuncu: uygun, kuranPayi48Saat: uygun === 0 ? null : (uygun - bekleyenKurmayan) / uygun };
     }
-    metrikler["E4"].durum = en(EKONOMI_GRUPLARI.map((gr) => ((metrikler["E4"].gruplar as Record<string, { durum: EkonomiDurumu }>)[gr] as { durum: EkonomiDurumu }).durum));
+    e4.durum = en(EKONOMI_GRUPLARI.map((gr) => ((e4.gruplar as Record<string, { durum: EkonomiDurumu }>)[gr] as { durum: EkonomiDurumu }).durum));
+    metrikler["E4"] = e4;
 
     // ---- E5 geri ödeme ------------------------------------------------------------------------------------------------------------
     metrikler["E5"] = { durum: "olculmedi", not: "dukkan basina kumulatif satis miktari sayaci yok (A2 K2-8); geri odeme olculemez" };
 
     // ---- E6 M (grup) --------------------------------------------------------------------------------------------------------------
-    metrikler["E6"] = { durum: "olculmedi", gruplar: {}, not: "M = pencerede >= 24 sa degirmen tesisi olan / pencerede >= 1 gida fabrikasi kuran; G4 tetigi botta yalniz secici botlardan (burada gruplar bot/insan ayrimidir, secici/rehberli degil)" };
+    const e6: EkonomiMetrik = { durum: "olculmedi", gruplar: {}, not: "M = pencerede >= 24 sa degirmen tesisi olan / pencerede >= 1 gida fabrikasi kuran; G4 tetigi botta yalniz secici botlardan (burada gruplar bot/insan ayrimidir, secici/rehberli degil)" };
     for (const gr of EKONOMI_GRUPLARI) {
       let pay = 0;
       let payda = 0;
@@ -379,9 +381,10 @@ export class EkonomiToplayici {
       }
       const m = payda === 0 ? null : pay / payda;
       const durum: EkonomiDurumu = m === null || payda < E.enAzOyuncu ? "olculmedi" : m >= E.M.yesilAlt ? "yesil" : m >= E.M.sariAlt ? "sari" : "kirmizi";
-      (metrikler["E6"].gruplar as Record<string, unknown>)[gr] = { durum, M: m, degirmenli: pay, fabrikaKuran: payda };
+      (e6.gruplar as Record<string, unknown>)[gr] = { durum, M: m, degirmenli: pay, fabrikaKuran: payda };
     }
-    metrikler["E6"].durum = en(EKONOMI_GRUPLARI.map((gr) => ((metrikler["E6"].gruplar as Record<string, { durum: EkonomiDurumu }>)[gr] as { durum: EkonomiDurumu }).durum));
+    e6.durum = en(EKONOMI_GRUPLARI.map((gr) => ((e6.gruplar as Record<string, { durum: EkonomiDurumu }>)[gr] as { durum: EkonomiDurumu }).durum));
+    metrikler["E6"] = e6;
 
     // ---- E7 kamu kasaları ---------------------------------------------------------------------------------------------------------
     {
@@ -420,7 +423,7 @@ export class EkonomiToplayici {
     }
 
     // ---- E9 bakım / aşınma (grup; oyuncu yaşı gün 14 ve 45) ------------------------------------------------------------------------
-    metrikler["E9"] = { durum: "olculmedi", gruplar: {}, not: "k = 3 zincir cikti kaybi = 1 - (1 - asinma x tavan)^3, oyuncu yasinin 14. ve 45. gununde tesis asinma medyani (grup medyani); tavan param.sanayi.bakim.asinmaVerimKaybiTavaniPpm" };
+    const e9: EkonomiMetrik = { durum: "olculmedi", gruplar: {}, not: "k = 3 zincir cikti kaybi = 1 - (1 - asinma x tavan)^3, oyuncu yasinin 14. ve 45. gununde tesis asinma medyani (grup medyani); tavan param.sanayi.bakim.asinmaVerimKaybiTavaniPpm" };
     const tavan = sn === null ? null : sn.p.bakim.asinmaVerimKaybiTavaniPpm;
     for (const gr of EKONOMI_GRUPLARI) {
       const olc = (gun: number): { medyanAsinmaPpm: number | null; zincirKaybi: number | null; oyuncu: number } => {
@@ -442,9 +445,10 @@ export class EkonomiToplayici {
         const kirmizi = g1 > E.asinma.sari[0] || b.zincirKaybi > E.asinma.sari[1] || (b.medyanAsinmaPpm !== null && b.medyanAsinmaPpm / PPM < E.asinma.hicAsinmaAlt);
         durum = kirmizi ? "kirmizi" : g1 <= E.asinma.yesil[0] && b.zincirKaybi <= E.asinma.yesil[1] ? "yesil" : "sari";
       }
-      (metrikler["E9"].gruplar as Record<string, unknown>)[gr] = { durum, gun14: a, gun45: b };
+      (e9.gruplar as Record<string, unknown>)[gr] = { durum, gun14: a, gun45: b };
     }
-    metrikler["E9"].durum = en(EKONOMI_GRUPLARI.map((gr) => ((metrikler["E9"].gruplar as Record<string, { durum: EkonomiDurumu }>)[gr] as { durum: EkonomiDurumu }).durum));
+    e9.durum = en(EKONOMI_GRUPLARI.map((gr) => ((e9.gruplar as Record<string, { durum: EkonomiDurumu }>)[gr] as { durum: EkonomiDurumu }).durum));
+    metrikler["E9"] = e9;
 
     // ---- E10 ödül -----------------------------------------------------------------------------------------------------------------
     if (son === undefined || son.para === null) metrikler["E10"] = { durum: "olculmedi", not: "para defteri yok" };
