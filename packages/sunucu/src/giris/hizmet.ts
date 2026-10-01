@@ -19,6 +19,7 @@ import type { EpostaBicimi } from "./eposta";
 import { Imzalayici, baglantiJetonuCoz, baglantiJetonuUret, biletUret, oturumBelirteciCoz, oturumBelirteciUret, ozet, rastgele, sabitEsit } from "./jeton";
 import { girisPostasi } from "./posta";
 import type { PostaGonderici } from "./posta";
+import type { Davetliler } from "./davet";
 import { GirisSayaclari } from "./sayac";
 import type { GirisGunlugu } from "./sayac";
 
@@ -78,6 +79,11 @@ export interface GirisHizmetiSecenekleri {
   baglantiTabani: string | (() => string);
   /** Geçici e-posta alanları (`geciciAlanlariYukle`); verilmezse engel yoktur. */
   geciciAlanlar?: ReadonlySet<string>;
+  /**
+   * Davetli listesi (kayıt kapısı; `giris/davet.ts`). Verilirse YALNIZ listedeki adreslere bağlantı gider ve onay geçer. Listede olmayan adrese yanıt
+   * AYNIDIR (202, aynı gövde), yalnız posta gitmez: kimin davetli olduğu dışarıdan anlaşılmaz. Verilmezse (varsayılan) kapı açıktır.
+   */
+  davetliler?: Davetliler;
   /** Bağlantı, isteği yapan tarayıcıya bağlansın mı (KIMLIK.md §1). Varsayılan false: postayı telefonda başka bir tarayıcıda açan oyuncu kilitlenmesin. */
   tarayiciBagli?: boolean;
   sureler?: Partial<GirisSureleri>;
@@ -136,6 +142,7 @@ export class GirisHizmeti {
   private readonly imz: Imzalayici;
   private readonly baglantiTabani: () => string;
   private readonly geciciAlanlar: ReadonlySet<string>;
+  private readonly davetliler: Davetliler | null;
   private readonly tarayiciBagli: boolean;
   private readonly simdi: () => number;
   private readonly gunluk: GirisGunlugu;
@@ -156,6 +163,7 @@ export class GirisHizmeti {
     const taban = s.baglantiTabani;
     this.baglantiTabani = typeof taban === "string" ? () => taban : taban;
     this.geciciAlanlar = s.geciciAlanlar ?? new Set();
+    this.davetliler = s.davetliler ?? null;
     this.tarayiciBagli = s.tarayiciBagli ?? false;
     this.simdi = s.simdi ?? (() => Date.now());
     this.gunluk = s.gunluk ?? (() => undefined);
@@ -204,7 +212,10 @@ export class GirisHizmeti {
     }
     // Aynı tarayıcı yeniden isterse çerez DEĞİŞMEZ (sınırlanan istek, bekleyen geçerli bağlantının tarayıcı bağını bozmasın).
     const tarayici = this.tarayiciBagli ? (mevcutTarayici !== undefined && /^[A-Za-z0-9_-]{43}$/.test(mevcutTarayici) ? mevcutTarayici : rastgele(32)) : null;
-    if (!this.epostaSiniri.al(e.anahtar)) this.sayaclar.artir("istek.eposta_siniri");
+    if (this.davetliler !== null && !this.davetliler.uyeMi(e.anahtar)) {
+      // Davetli değil: yanıt davetliyle BİREBİR aynı (çerez dahil), yalnız arka plan işi (bağlantı kaydı, posta) başlamaz; adres başına sınır kovası da açılmaz.
+      this.sayaclar.artir("istek.davet_disi");
+    } else if (!this.epostaSiniri.al(e.anahtar)) this.sayaclar.artir("istek.eposta_siniri");
     else {
       this.sayaclar.artir("istek.kabul");
       this.isiBaslat(e, tarayici);
@@ -269,6 +280,11 @@ export class GirisHizmeti {
     }
     if (t.durum === "yok") {
       this.sayaclar.artir("onay.baglanti_gecersiz");
+      return { tamam: false, kod: "baglanti_gecersiz" };
+    }
+    // Bağlantı verildikten sonra listeden çıkarılan adres giremez (bağlantı yine de tüketildi).
+    if (this.davetliler !== null && !this.davetliler.uyeMi(t.kayit.anahtar)) {
+      this.sayaclar.artir("onay.davet_disi");
       return { tamam: false, kod: "baglanti_gecersiz" };
     }
     const { hesap, yeni } = await this.hesapBulVeyaAc(t.kayit.eposta, t.kayit.anahtar);

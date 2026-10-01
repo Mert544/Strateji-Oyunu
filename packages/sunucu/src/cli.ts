@@ -16,6 +16,7 @@ import { bellekDeposu } from "./depo/bellek";
 import { dosyaDeposu, dosyaSaltOkunur } from "./depo/dosya";
 import { postgresDeposu } from "./depo/postgres";
 import type { Depo } from "./depo/tipler";
+import { DavetliListesi } from "./giris/davet";
 import { geciciAlanlariYukle } from "./giris/eposta";
 import { GirisHizmeti } from "./giris/hizmet";
 import { GirisUclari } from "./giris/http";
@@ -80,6 +81,9 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --tarayici-bagli 0|1 baglanti, istegi yapan tarayiciya bagli olsun (vars. 0)
   --guvenilir-proxy    istemci IP'si X-Forwarded-For'un son ogesidir (ters vekil arkasinda; vars. kapali)
   --gecici-alanlar YOL gecici e-posta alani listesi (JSON { "alanlar": [...] }; vars. packages/sunucu/veri/gecici-eposta-alanlari.json)
+  --davetli-liste YOL  kayit kapisi (Alfa-0; vars. KAPALI): satir basina bir e-posta adresi (# aciklama), G5 normallestirmesiyle eslesir. Listede olmayan adrese yanit
+                       AYNIDIR ama posta gitmez. Liste kisisel veridir: sunucuda tutulur, depoya girmez (ornek raporlar/davetli.txt). Yok/bozuksa acilis durur;
+                       calisirken SIGHUP listeyi yeniden okur (bozuksa eski liste korunur). Yalniz --kimlik eposta ile
   --gelistirme-sirri S gelistirme token imza sirri (vars. $BOLGE_GELISTIRME_SIRRI; yalniz kimlik = gelistirme)
   --oturum-kaydi 0|1   oyun baglantisi oturum olayi kaydi (insan testi; vars. 0): oyuncunun ilk baglantisi acilinca oturum baslar, son baglantisi kapaninca
                        biter; yalniz zaman ve opak oyuncu kimligi (IP/cihaz/e-posta yok). 90 gunden eski ayrinti gun duzeyinde toplu sayiya cevrilir. Giris oturumu degildir
@@ -101,7 +105,7 @@ BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_TOHUM, BOLGE_DEPO, BOLGE_DIZIN, BOLG
 BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT, BOLGE_GORUNTU_ISCI (0|1), BOLGE_ODUL (0|1),
 BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI,
 BOLGE_KIMLIK, BOLGE_POSTA, BOLGE_POSTA_DIZIN, BOLGE_GENEL_URL, BOLGE_GIRIS_BAGLANTISI, BOLGE_GIRIS_SONRASI, BOLGE_IZINLI_KOKENLER, BOLGE_TARAYICI_BAGLI (0|1),
-BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR, BOLGE_OTURUM_KAYDI (0|1), BOLGE_OTURUM_BOSLUK_DK, BOLGE_TEST_DUNYA_ONEKI, BOLGE_TEST_DUNYA_SIL_ONAY. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
+BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR, BOLGE_DAVETLI_LISTE, BOLGE_OTURUM_KAYDI (0|1), BOLGE_OTURUM_BOSLUK_DK, BOLGE_TEST_DUNYA_ONEKI, BOLGE_TEST_DUNYA_SIL_ONAY. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
 
 function yaz(olay: string, veri: Record<string, unknown> = {}): void {
   process.stdout.write(JSON.stringify({ olay, ...veri }) + "\n");
@@ -186,6 +190,7 @@ async function ana(): Promise<void> {
       "tarayici-bagli": { type: "string", default: ev("TARAYICI_BAGLI", "0") as string },
       "guvenilir-proxy": { type: "boolean", default: evBool("GUVENILIR_PROXY") },
       "gecici-alanlar": { type: "string", ...varsayilan(ev("GECICI_ALANLAR")) },
+      "davetli-liste": { type: "string", ...varsayilan(ev("DAVETLI_LISTE")) },
       "oturum-kaydi": { type: "string", default: ev("OTURUM_KAYDI", "0") as string },
       "oturum-bosluk-dk": { type: "string", default: ev("OTURUM_BOSLUK_DK", String(VARSAYILAN_OTURUM_BOSLUGU_MS / 60_000)) as string },
       "test-dunya-sil": { type: "string" },
@@ -300,6 +305,12 @@ async function ana(): Promise<void> {
     }
     return;
   }
+  // Kayit kapisi (davetli listesi): dunya acilmadan once yuklenir; dosya yok/bozuksa acilis durur (kapi sessizce acik kalmaz).
+  let davetli: DavetliListesi | undefined;
+  if (a["davetli-liste"] !== undefined) {
+    if (kimlikKipi.kip !== "eposta") throw new Error("--davetli-liste yalniz --kimlik eposta ile (gelistirme kimliginde kayit kapisi yoktur)");
+    davetli = DavetliListesi.dosyadan(resolve(a["davetli-liste"]));
+  }
   const sayi = (ad: string, d: string | undefined): number => {
     const n = Number(d);
     if (!Number.isFinite(n) || n < 0) throw new Error(`--${ad} gecersiz: ${d}`);
@@ -373,6 +384,7 @@ async function ana(): Promise<void> {
       sirlar: kimlikKipi.sirlar,
       baglantiTabani: () => a["giris-baglanti"] ?? `${genelUrl ?? yerelUrl()}/giris/onay`,
       geciciAlanlar: gecici,
+      ...(davetli ? { davetliler: davetli } : {}),
       tarayiciBagli: ["1", "evet", "true"].includes((a["tarayici-bagli"] as string).toLowerCase()),
       // Günlük: yalnız olay adı ve maskelenmiş/anonim alanlar (belirteç, tam adres, IP yok).
       gunluk: (olay, veri) => yaz(olay, veri ?? {}),
@@ -429,6 +441,16 @@ async function ana(): Promise<void> {
         process.exit(1);
       });
   };
+  if (davetli && process.platform !== "win32") {
+    // SIGHUP: davetli listesini yeniden oku (sunucuyu yeniden baslatmadan davet eklemek/cikarmak). Bozuk dosyada eski liste korunur; adres yazilmaz.
+    process.on("SIGHUP", () => {
+      try {
+        yaz("davetliListeYenilendi", { adet: (davetli as DavetliListesi).yenile() });
+      } catch (e) {
+        yaz("uyari", { mesaj: `davetli listesi yenilenemedi, eski liste korunuyor: ${e instanceof Error ? e.message : String(e)}` });
+      }
+    });
+  }
   process.on("SIGINT", () => kapat("SIGINT"));
   process.on("SIGTERM", () => kapat("SIGTERM"));
   // Windows'ta SIGTERM yakalanamaz (süreç zorla biter): IPC kanalıyla başlatılan süreç aynı düzgün kapanışı "kapat" mesajıyla alır.
@@ -436,7 +458,7 @@ async function ana(): Promise<void> {
     if (m === "kapat") kapat("ipc");
   });
   // `hazir` sinyal işleyicileri kurulduktan SONRA yazılır: hazir görüldükten hemen sonra gelen SIGTERM düzgün kapanışa gider.
-  yaz("hazir", { port: sunucu.port, metrikPort: sunucu.metrikPort, kimlik: kimlikKipi.kip, pid: process.pid, kuralSurumu: yazar.kuralSurumu, kurtarma: yazar.kurtarma });
+  yaz("hazir", { port: sunucu.port, metrikPort: sunucu.metrikPort, kimlik: kimlikKipi.kip, davetli: davetli ? davetli.boyut : null, pid: process.pid, kuralSurumu: yazar.kuralSurumu, kurtarma: yazar.kurtarma });
 }
 
 ana().catch((e: unknown) => {

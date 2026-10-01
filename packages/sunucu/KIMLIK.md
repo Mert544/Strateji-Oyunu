@@ -75,6 +75,10 @@ Uygulananlar:
 - Yaptırım ölçeği: (1) sistem ödüllerinin dondurulması, (2) yeni hesap açılışının sınırlanması, (3) hesabın askıya alınması (girişi kapatır). **Hiçbir zaman parsel el koyma ya da mülk silme yoktur:** parsel zorla el değiştirmez; mevcut mülk sahibinde kalır. Her yaptırım insan incelemesine ve itiraz yoluna bağlıdır (örn. 14 gün).
 - Cihaz/IP kümeleme sinyalleri (aynı ağdan çok hesap) KVKK ölçülülüğü gereği şimdilik YOKTUR (IP tutulmaz); gerekirse ayrı karar.
 
+### Kayıt kapısı: davetli listesi (Alfa-0)
+
+`--davetli-liste <dosya>` (`BOLGE_DAVETLI_LISTE`; varsayılan KAPALI; yalnız `--kimlik eposta`): satır başına bir adres (`#` açıklama), G5 normalleştirmesiyle (`+takma`, Gmail noktaları, büyük/küçük harf) aynı anahtara eşlenir. Listede olmayan adrese `POST /giris/istek` yanıtı davetliyle BİREBİR aynıdır (202, aynı gövde ve çerezler); yalnız bağlantı kaydı ve posta oluşmaz ve adres başına sınır kovası açılmaz: kimin davetli olduğu dışarıdan anlaşılmaz. Bağlantı verildikten sonra listeden çıkarılan adresin onayı `baglanti_gecersiz` döner (bağlantı tüketilir, hesap açılmaz). Zaten açık oturum ve ws bağlantıları listeden çıkarmayla kapanmaz (kapı yalnız YENİ girişi sınırlar; hesap kapatma ayrı iştir). Dosya yok ya da bozuksa açılış durur (kapı sessizce açık kalmaz); çalışırken `SIGHUP` listeyi yeniden okur, bozuk dosyada eski liste korunur ve uyarı verilir. Sayaçlar: `bolge_giris_olay_toplam{olay="istek.davet_disi"|"onay.davet_disi"}`. Metrikte ve günlükte davetsiz adres yoktur. Kapı varsayılan kapalı olduğundan ve gelistirme kimliğinde bulunmadığından mevcut akışlar değişmez.
+
 ## 8. KVKK: hangi veri, ne kadar süre
 
 | Veri | Amaç | Süre |
@@ -83,6 +87,7 @@ Uygulananlar:
 | Giriş bağlantısı kaydı (özet + e-posta + bitiş) | Tek seferlik giriş | En çok 10 dk; kullanılınca, yeni bağlantı gelince ya da süre dolunca silinir |
 | Oturum kaydı (kimlik, gizli özeti, açılış/son kullanım/bitiş zamanı) | Giriş oturumu | Kayan 30 gün, mutlak 90 gün; çıkışta silinir; bakım süresi geçenleri saatte bir siler |
 | Oyun bağlantısı oturum kaydı (`BOLGE_OTURUM_KAYDI=1`; varsayılan KAPALI; opak oyuncu kimliği, açılış ve kapanış zamanı) | İnsan testi ölçümü: oturum sayısı ve süresi | Ayrıntı 90 gün; sonrası yalnız günlük toplu sayı (oturum, farklı oyuncu, toplam süre; kişi başına iz yok). IP, cihaz, tarayıcı, e-posta YOK; `profil_capa`'ya yazılmaz; test dünyası silinince gider (`--test-dunya-sil`) |
+| Davetli listesi (`--davetli-liste`; Alfa-0 kayıt kapısı; yalnız e-posta adresleri) | Davetsizin girişini engellemek (en çok 200 davetli) | Sunucuda dosya olarak tutulur, DEPOYA, günlüğe, metriğe girmez; Alfa-0 bitince dosya silinir |
 | Hız sınırı kovaları | Kötüye kullanım | Yalnız bellek (IP burada), yeniden başlatmada ve boşalınca düşer; depoya yazılmaz |
 | Günlük ve metrik | İşletim | Yalnız olay adı, sayaç, maskelenmiş adres; belirteç ve IP yok |
 | Oyun verisi (`oyuncuId`, komut günlüğü, dünya) | Sözleşmenin ifası | Dünya boyunca; `oyuncuId` opaktır |
