@@ -10,3 +10,7 @@ Dosyalar (docs/olcum/izgara-boyut-g3.md):
 Gebze dosyaları (Sprint 1) odbl/ornek/ altında kalır; yolları manifestte yazılıdır.
 
 Yeniden üretim: tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --ilce tr_16_gemlik --ilce tr_41_korfez [--dogrula]
+
+Depo politikası: Git'e yalnız BHI1, manifest ve küçük test verisi girer; şerit PMTiles gibi büyük dosyalar depoya girmez
+(LFS yok), dağıtımda veri hattından üretilir ve manifestteki sha256 ile doğrulanır. Gemlik ve Körfez şeritleri bu kez istisnadır.
+Barındırma ve CDN açık sahip kararıdır (A-2, docs/13 §4).
