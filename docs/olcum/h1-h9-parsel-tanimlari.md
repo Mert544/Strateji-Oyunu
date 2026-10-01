@@ -242,3 +242,11 @@ S3, `parametreler.mulk` bayrağı arkasında hücre, işletme düğümü ve `par
 4. **Başlangıç ilçe seviyesi.** Şehir sınıfı hücreli ilçe 3 (Şehir) olarak başlatıldı. Ü6 (Merkez ve Şehir eşikleri) kararı bunu değiştirebilir.
 5. **H1 sınıf skoru.** Sınıftaki ilçelerin medyanı mı, toplamı mı kullanılacak? Medyan öneriliyor. sentetik-50'de bazı sınıflar tek ilçelidir (`sehir_diger`, `kasaba_dag`); bu sınıflar gürültülüdür ve en az 2 ilçe şartı düşünülebilir.
 6. **H9 "1k oyuncuda"** koşulu: sentetik-50 bölge pazarında NPC derinlik hedefi parametresi henüz yok (S3 / Pazar v1.5).
+
+## Takım lideri kararları (1 Ekim, 06:55)
+1. **H2 yeni karar türü eşiği:** oyuncuların ≥%50'si; önerildiği gibi kabul.
+2. **H8 bağlayıcı Gini:** katılmış tüm etkin oyuncular (hücresi olmayanlar dahil). Yalnız sahiplere göre Gini ikincil olarak raporlanır.
+3. **10k bot ölçeği:** sentetik-50 büyütülmez; ölçek testleri gerçek OSM ızgarasıyla (S6 hattı) yapılır.
+4. **Şehir hücreli ilçe seviyesi:** Ü6 kararına kadar seviye 3 kalır.
+5. **H1 sınıf skoru:** medyan. Tek ilçeli sınıflar raporda "gürültülü" diye işaretlenir.
+6. **H9 NPC derinliği:** parametre S3/Pazar v1.5 ile gelir; o zamana kadar H9 yalnız oy katılımı ve emir dolum oranıyla ölçülür.
