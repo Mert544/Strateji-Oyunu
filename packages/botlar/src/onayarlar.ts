@@ -11,6 +11,7 @@ import {
   arastirmaAdaylari,
   insaAdaylari,
   kenarAdaylari,
+  tarimAdaylari,
   ticaretAdaylari,
   vergiAdaylari,
   yontemAdaylari,
@@ -47,6 +48,8 @@ export interface OnayarTanimi {
    */
   taban?: boolean;
   n?: number;
+  /** Tarım (B1) adayları: ekim planı (+ gübre dozu). Tarım kapalıysa etkisizdir. */
+  tarim?: { gubre?: boolean };
 }
 
 /** Ham çıkarım tesis türleri (ortak yerel-ham tabanı; rezerv türü başına bir tür). */
@@ -73,6 +76,7 @@ function onayarOlustur(t: OnayarTanimi): Onayar {
           ...kenarAdaylari(b),
           ...ticaretAdaylari(b, {}),
           ...vergiAdaylari(b),
+          ...tarimAdaylari(b, { ekim: true }),
         ];
       } else {
         adaylar.push(...insaAdaylari(b, { filtre: (x) => turler.has(x.id) }));
@@ -86,6 +90,7 @@ function onayarOlustur(t: OnayarTanimi): Onayar {
           );
         }
         if (t.vergi) adaylar.push(...vergiAdaylari(b));
+        if (t.tarim) adaylar.push(...tarimAdaylari(b, { ekim: true, gubre: t.tarim.gubre === true }));
         if (t.kenar) adaylar.push(...kenarAdaylari(b));
         if (t.askeri) {
           const hedefGuc = Math.max(600, hedefGucKapasiteden(sim, b, t.askeri.oran));
@@ -94,7 +99,7 @@ function onayarOlustur(t: OnayarTanimi): Onayar {
       }
       return adayiSec(adaylar, b, {
         n: t.n ?? 6,
-        kategoriSiniri: { arastir: 1, kenar: 1, vergi: 1, rezerv: 1, ticaret: 3, birlik: 2, savunma: 1 },
+        kategoriSiniri: { arastir: 1, kenar: 1, vergi: 1, rezerv: 1, ticaret: 3, birlik: 2, savunma: 1, tarim: 2 },
       }).map((a) => a.komut);
     },
   };
@@ -109,6 +114,7 @@ export const ONAYARLAR: readonly Onayar[] = [
     teknolojiler: ["mekanize_tarim"],
     ticaretMal: ["tahil", "gida"],
     vergi: true,
+    tarim: { gubre: true },
   }),
   onayarOlustur({
     ad: "agir_sanayi",
@@ -198,6 +204,7 @@ export const H1_ONAYAR_TANIMLARI: readonly OnayarTanimi[] = [
     teknolojiler: ["mekanize_tarim"],
     ticaretMal: ["tahil", "gida"],
     vergi: true,
+    tarim: { gubre: true },
     n: 8,
   },
   {
@@ -280,6 +287,7 @@ export function onayarYetenekleri(t: OnayarTanimi): Set<string> {
   for (const x of t.teknolojiler ?? []) k.add(`teknoloji:${x}`);
   for (const x of t.ticaretMal ?? []) k.add(`ihracat:${x}`);
   for (const f of ["vergi", "kenar", "hepsi"] as const) if (t[f]) k.add(`bayrak:${f}`);
+  if (t.tarim) k.add("bayrak:tarim");
   if (t.askeri) k.add("bayrak:askeri");
   return k;
 }

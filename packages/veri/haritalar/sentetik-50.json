@@ -40,7 +40,13 @@
         "ciftlik"
       ],
       "x": 95,
-      "y": 104
+      "y": 104,
+      "tarim": {
+        "toprakTabanPpm": 1100000,
+        "iklimTipi": "balkan_kita",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "bereket_dizi",
@@ -58,7 +64,13 @@
         "gida_fabrikasi"
       ],
       "x": 210,
-      "y": 100
+      "y": 100,
+      "tarim": {
+        "toprakTabanPpm": 1100000,
+        "iklimTipi": "balkan_kita",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "kuzey_burun",
@@ -75,7 +87,13 @@
         "komur_ocagi"
       ],
       "x": 350,
-      "y": 123
+      "y": 123,
+      "tarim": {
+        "toprakTabanPpm": 880000,
+        "iklimTipi": "karadeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "yelken_limani",
@@ -93,7 +111,13 @@
         "komur_ocagi"
       ],
       "x": 70,
-      "y": 239
+      "y": 239,
+      "tarim": {
+        "toprakTabanPpm": 880000,
+        "iklimTipi": "karadeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "askan_kenti",
@@ -111,7 +135,13 @@
         "gida_fabrikasi"
       ],
       "x": 161,
-      "y": 236
+      "y": 236,
+      "tarim": {
+        "toprakTabanPpm": 1100000,
+        "iklimTipi": "balkan_kita",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "sis_tepeleri",
@@ -130,7 +160,13 @@
         "cevher_madeni"
       ],
       "x": 286,
-      "y": 224
+      "y": 224,
+      "tarim": {
+        "toprakTabanPpm": 440000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "kopuk_limani",
@@ -146,7 +182,13 @@
         "gida_fabrikasi"
       ],
       "x": 393,
-      "y": 236
+      "y": 236,
+      "tarim": {
+        "toprakTabanPpm": 880000,
+        "iklimTipi": "karadeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "duman_koyu",
@@ -164,7 +206,13 @@
         "silis_ocagi"
       ],
       "x": 102,
-      "y": 372
+      "y": 372,
+      "tarim": {
+        "toprakTabanPpm": 1100000,
+        "iklimTipi": "balkan_kita",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "orta_ova",
@@ -181,7 +229,13 @@
         "ciftlik"
       ],
       "x": 239,
-      "y": 359
+      "y": 359,
+      "tarim": {
+        "toprakTabanPpm": 1100000,
+        "iklimTipi": "balkan_kita",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "tas_kapi",
@@ -198,7 +252,13 @@
         "komur_ocagi"
       ],
       "x": 351,
-      "y": 370
+      "y": 370,
+      "tarim": {
+        "toprakTabanPpm": 880000,
+        "iklimTipi": "karadeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "kurt_gecidi",
@@ -232,7 +292,13 @@
         "cevher_madeni"
       ],
       "x": 395,
-      "y": 479
+      "y": 479,
+      "tarim": {
+        "toprakTabanPpm": 440000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "demir_dagi",
@@ -249,7 +315,13 @@
         "cevher_madeni"
       ],
       "x": 105,
-      "y": 628
+      "y": 628,
+      "tarim": {
+        "toprakTabanPpm": 360000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "kor_ocak",
@@ -268,7 +340,13 @@
         "komur_ocagi"
       ],
       "x": 221,
-      "y": 615
+      "y": 615,
+      "tarim": {
+        "toprakTabanPpm": 360000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "cam_vadisi",
@@ -299,7 +377,13 @@
         "celikhane"
       ],
       "x": 70,
-      "y": 746
+      "y": 746,
+      "tarim": {
+        "toprakTabanPpm": 720000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "carvan_kenti",
@@ -318,7 +402,13 @@
         "celikhane"
       ],
       "x": 157,
-      "y": 741
+      "y": 741,
+      "tarim": {
+        "toprakTabanPpm": 900000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "cevre_kalesi",
@@ -335,7 +425,13 @@
         "cevher_madeni"
       ],
       "x": 283,
-      "y": 744
+      "y": 744,
+      "tarim": {
+        "toprakTabanPpm": 360000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "sisli_liman",
@@ -351,7 +447,13 @@
         "parca_fabrikasi"
       ],
       "x": 384,
-      "y": 749
+      "y": 749,
+      "tarim": {
+        "toprakTabanPpm": 720000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "tuz_koyu",
@@ -368,7 +470,13 @@
         "komur_ocagi"
       ],
       "x": 117,
-      "y": 879
+      "y": 879,
+      "tarim": {
+        "toprakTabanPpm": 720000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "gun_batimi",
@@ -387,7 +495,13 @@
         "gida_fabrikasi"
       ],
       "x": 246,
-      "y": 882
+      "y": 882,
+      "tarim": {
+        "toprakTabanPpm": 900000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "kuru_kiyi",
@@ -404,7 +518,13 @@
         "komur_ocagi"
       ],
       "x": 360,
-      "y": 855
+      "y": 855,
+      "tarim": {
+        "toprakTabanPpm": 720000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "demir_gecit",
@@ -438,7 +558,13 @@
         "cevher_madeni"
       ],
       "x": 236,
-      "y": 486
+      "y": 486,
+      "tarim": {
+        "toprakTabanPpm": 360000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "golge_tepe",
@@ -455,7 +581,13 @@
         "bakir_madeni"
       ],
       "x": 49,
-      "y": 529
+      "y": 529,
+      "tarim": {
+        "toprakTabanPpm": 360000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "kum_burnu",
@@ -472,7 +604,13 @@
         "petrol_kuyusu"
       ],
       "x": 641,
-      "y": 113
+      "y": 113,
+      "tarim": {
+        "toprakTabanPpm": 480000,
+        "iklimTipi": "kurak",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "altin_col",
@@ -504,7 +642,13 @@
         "silis_ocagi"
       ],
       "x": 920,
-      "y": 106
+      "y": 106,
+      "tarim": {
+        "toprakTabanPpm": 480000,
+        "iklimTipi": "kurak",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "inci_limani",
@@ -522,7 +666,13 @@
         "rafineri"
       ],
       "x": 609,
-      "y": 242
+      "y": 242,
+      "tarim": {
+        "toprakTabanPpm": 480000,
+        "iklimTipi": "kurak",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "vaha_kenti",
@@ -540,7 +690,13 @@
         "gida_fabrikasi"
       ],
       "x": 716,
-      "y": 235
+      "y": 235,
+      "tarim": {
+        "toprakTabanPpm": 600000,
+        "iklimTipi": "kurak",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "belora_kenti",
@@ -575,7 +731,13 @@
         "rafineri"
       ],
       "x": 947,
-      "y": 248
+      "y": 248,
+      "tarim": {
+        "toprakTabanPpm": 480000,
+        "iklimTipi": "kurak",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "kizil_kaya",
@@ -592,7 +754,13 @@
         "bakir_madeni"
       ],
       "x": 631,
-      "y": 373
+      "y": 373,
+      "tarim": {
+        "toprakTabanPpm": 300000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "orta_col",
@@ -624,7 +792,13 @@
         "silis_ocagi"
       ],
       "x": 884,
-      "y": 374
+      "y": 374,
+      "tarim": {
+        "toprakTabanPpm": 480000,
+        "iklimTipi": "kurak",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "kum_gecidi",
@@ -658,7 +832,13 @@
         "silis_ocagi"
       ],
       "x": 612,
-      "y": 477
+      "y": 477,
+      "tarim": {
+        "toprakTabanPpm": 300000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "sanayi_ovasi",
@@ -676,7 +856,13 @@
         "gida_fabrikasi"
       ],
       "x": 656,
-      "y": 625
+      "y": 625,
+      "tarim": {
+        "toprakTabanPpm": 1000000,
+        "iklimTipi": "karasal",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "komur_havzasi",
@@ -710,7 +896,13 @@
         "petrol_kuyusu"
       ],
       "x": 918,
-      "y": 624
+      "y": 624,
+      "tarim": {
+        "toprakTabanPpm": 800000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "celik_limani",
@@ -726,7 +918,13 @@
         "celikhane"
       ],
       "x": 620,
-      "y": 752
+      "y": 752,
+      "tarim": {
+        "toprakTabanPpm": 800000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "dorsa_kenti",
@@ -745,7 +943,13 @@
         "muhimmat_fabrikasi"
       ],
       "x": 726,
-      "y": 743
+      "y": 743,
+      "tarim": {
+        "toprakTabanPpm": 1000000,
+        "iklimTipi": "karasal",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "tas_ova",
@@ -763,7 +967,13 @@
         "gida_fabrikasi"
       ],
       "x": 838,
-      "y": 737
+      "y": 737,
+      "tarim": {
+        "toprakTabanPpm": 1000000,
+        "iklimTipi": "karasal",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "gundogumu_limani",
@@ -779,7 +989,13 @@
         "rafineri"
       ],
       "x": 935,
-      "y": 732
+      "y": 732,
+      "tarim": {
+        "toprakTabanPpm": 800000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "bati_yamaci",
@@ -796,7 +1012,13 @@
         "silis_ocagi"
       ],
       "x": 652,
-      "y": 877
+      "y": 877,
+      "tarim": {
+        "toprakTabanPpm": 800000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     },
     {
       "id": "yesil_vadi",
@@ -815,7 +1037,13 @@
         "gida_fabrikasi"
       ],
       "x": 770,
-      "y": 874
+      "y": 874,
+      "tarim": {
+        "toprakTabanPpm": 1000000,
+        "iklimTipi": "karasal",
+        "tarimTesisTavani": 3,
+        "sulanabilirPpm": 600000
+      }
     },
     {
       "id": "tas_gecit",
@@ -849,7 +1077,13 @@
         "cevher_madeni"
       ],
       "x": 792,
-      "y": 504
+      "y": 504,
+      "tarim": {
+        "toprakTabanPpm": 400000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "gri_tepe",
@@ -866,7 +1100,13 @@
         "komur_ocagi"
       ],
       "x": 954,
-      "y": 511
+      "y": 511,
+      "tarim": {
+        "toprakTabanPpm": 400000,
+        "iklimTipi": "dag_yayla",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 100000
+      }
     },
     {
       "id": "hilal_adasi",
@@ -884,7 +1124,13 @@
         "petrol_kuyusu"
       ],
       "x": 501,
-      "y": 510
+      "y": 510,
+      "tarim": {
+        "toprakTabanPpm": 800000,
+        "iklimTipi": "akdeniz",
+        "tarimTesisTavani": 2,
+        "sulanabilirPpm": 400000
+      }
     }
   ],
   "kenarlar": [

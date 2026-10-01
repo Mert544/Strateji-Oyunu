@@ -17,6 +17,7 @@ import type {
   Etiket,
   HaritaDosyasi,
   IcerikDosyasi,
+  IklimOlayTuru,
   KenarTuru,
   MalTanimi,
   Parametreler,
@@ -114,6 +115,28 @@ export interface SavunmaEmri {
   durus: SavunmaDurusu;
 }
 
+/**
+ * Bölgenin tarım durumu (B1). Düz veri; tarım kapalıysa veya bölge tarım dışıysa `BolgeDurumu.tarim` tanımsızdır.
+ * Tüm alanlar tamsayıdır.
+ */
+export interface BolgeTarimDurumu {
+  /** Toprak durumu (toprakTabaniPpm..PPM; başlangıç PPM). */
+  toprakPpm: number;
+  /** Ürün payları (icerik.tarimUrunleri sırasıyla, toplam PPM). */
+  ekimPpm: number[];
+  /** Gübre dozu (0..azamiGubreDozu). */
+  gubreDozu: number;
+  /** Son günlük tikte hesaplanan iklim hasat oranı (ppm; sulama dahil; yıllık ortalama PPM). */
+  iklimPpm: number;
+  /**
+   * Son günlük tikte hesaplanan birleşik olay şiddeti (ppm, 0..PPM): bölgeyi etkileyen etkin kuraklik/don/sel
+   * olaylarının (sulama koruması düşülmüş) çarpımsal birleşimi. Çıktı kaybı, ürünün olay duyarlılığıyla çarpılır.
+   */
+  olayKaybiPpm: number;
+  /** Son lojistik çözümde gübre girdisinin karşılanma oranı (ppm); gübre talebi yoksa 0. */
+  gubreKarsilanmaPpm: number;
+}
+
 export interface BolgeDurumu {
   indeks: number;
   id: string;
@@ -143,6 +166,8 @@ export interface BolgeDurumu {
   gidaKarsilanmaPpm: number;
   /** Ordunun ikmal karşılanma oranı (ppm), son çözümden */
   ikmalKarsilanmaPpm: number;
+  /** Tarım durumu (B1). Tarım kapalıysa veya bölge tarım dışıysa TANIMSIZDIR (özet v0.2 ile birebir kalır). */
+  tarim?: BolgeTarimDurumu;
 }
 
 export interface KenarDurumu {
@@ -177,6 +202,31 @@ export interface OyuncuDurumu {
   korumaBitis: Ms;
   /** Açılmış karar kimlikleri (teknolojilerden), sıralı */
   kararlar: string[];
+}
+
+/** Yayılan bir iklim olayı (B1): yaratılırken bir kez hesaplanır, deterministik. */
+export interface IklimOlayi {
+  id: number;
+  tur: IklimOlayTuru;
+  /** Merkez bölge indeksi. */
+  merkez: number;
+  /** Uyarının ilan anı. */
+  uyari: Ms;
+  /** Etki başlangıcı: uyari + uyariSaat (takvim hızına göre). */
+  etkiBaslangic: Ms;
+  bitis: Ms;
+  /** Merkezdeki şiddet (ppm). */
+  siddetPpm: number;
+  /** Yayılma: olay yaratılırken hesaplanmış (bölge indeksi artan sırada); şiddet mesafeyle azalır. */
+  etki: Array<{ bolge: number; siddetPpm: number }>;
+}
+
+/** İklim durumu (B1). Tarım kapalıysa `Dunya.iklim` tanımsızdır. */
+export interface IklimDurumu {
+  /** Uyarıda veya etkide olan olaylar (süresi bitenler silinir). */
+  olaylar: IklimOlayi[];
+  /** Son işlenen takvim günü (mutlak gün sayısı: baslangicGunu + işlenen gün; takvim günü = sonGun mod 365). */
+  sonGun: number;
 }
 
 export interface PazarDurumu {
@@ -308,6 +358,7 @@ export const OLAY_ONCELIGI = {
   savas_pencere_ac: 4,
   savas_pencere_kapa: 4,
   saatlik_tik: 5,
+  iklim_gunluk: 5,
   cozum: 9,
 } as const;
 
@@ -320,6 +371,7 @@ export type OlayVerisi =
   | { tur: "savas_pencere_ac"; savas: number }
   | { tur: "savas_pencere_kapa"; savas: number }
   | { tur: "saatlik_tik" }
+  | { tur: "iklim_gunluk" }
   | { tur: "cozum" };
 
 export type OlayTuru = OlayVerisi["tur"];
@@ -354,6 +406,8 @@ export interface Dunya {
   insaatlar: InsaatDurumu[];
   partiler: UretimPartisi[];
   lojistik: LojistikDurumu;
+  /** İklim takvimi ve olaylar (B1). Tarım kapalıysa TANIMSIZDIR. */
+  iklim?: IklimDurumu;
   rng: Record<PrngAkisi, PrngDurumu>;
   /** Kimlik ve olay sıra sayaçları */
   sayac: { olay: number; kimlik: number };
@@ -372,6 +426,9 @@ export type Komut =
   | { tur: "tesis_durum"; bolge: string; tesis: number; aktif: boolean }
   | { tur: "ticaret_emri"; bolge: string; mal: string; yon: TicaretYonu; oranSaat: Mili }
   | { tur: "vergi_ayarla"; oranPpm: number }
+  // Tarım (B1)
+  | { tur: "ekim_plani"; bolge: string; ekimPpm: number[] }
+  | { tur: "gubre_dozu"; bolge: string; doz: number }
   // Lojistik
   | { tur: "kenar_gelistir"; kenar: number }
   | { tur: "askeri_rezerv"; oranPpm: number }

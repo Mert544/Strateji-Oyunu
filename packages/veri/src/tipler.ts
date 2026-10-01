@@ -22,6 +22,31 @@ export const ETIKETLER: readonly Etiket[] = ["kiyi", "dag", "ova", "liman", "dar
 
 export type KenarTuru = "kara" | "deniz" | "hava";
 
+/** Altı katman (docs/08): yeni mekanikler ilgili katmana bağlanır. */
+export type KatmanId = "tarim" | "sanayi" | "lojistik" | "teknoloji" | "pazar" | "devlet";
+
+/** Bölge iklim tipi (docs/08 §1.3 T2): 12 aylık hasat oranı eğrisi tipe göre seçilir. */
+export type IklimTipi = "akdeniz" | "karasal" | "karadeniz" | "balkan_kita" | "kurak" | "dag_yayla";
+export const IKLIM_TIPLERI: readonly IklimTipi[] = ["akdeniz", "karasal", "karadeniz", "balkan_kita", "kurak", "dag_yayla"];
+
+/** Yayılan iklim olayı türleri (docs/08 §1.3 T3). B1'de tarımı kuraklik/don/sel etkiler; kis_firtinasi Lojistik (B5) içindir. */
+export type IklimOlayTuru = "kuraklik" | "don" | "sel" | "kis_firtinasi";
+export const IKLIM_OLAY_TURLERI: readonly IklimOlayTuru[] = ["kuraklik", "don", "sel", "kis_firtinasi"];
+
+/**
+ * Bölgenin tarım alanı (opsiyonel). Yoksa bölge tarım dışıdır: toprak, iklim ve olay çarpanı uygulanmaz
+ * (yükleyici `tarimAlanlariniTamamla` ile etiket ve konumdan makul bir varsayılan türetebilir).
+ */
+export interface BolgeTarimTanimi {
+  /** GAEZ uygunluğundan türetilir: 300_000..1_200_000; 1_000_000 = referans ova. */
+  toprakTabanPpm: number;
+  iklimTipi: IklimTipi;
+  /** Çiftlik + ahır + mera toplam tesis tavanı (inşa edilen + devam eden). */
+  tarimTesisTavani: number;
+  /** Sulanabilir alan payı (ppm). */
+  sulanabilirPpm: number;
+}
+
 export interface DevletTanimi {
   id: DevletId;
   ad: string;
@@ -48,6 +73,8 @@ export interface BolgeTanimi {
    * Sentetik haritalarda yoktur. 3D istemci küre üzerine yerleştirmek için kullanır.
    */
   konum?: { enlemMikro: number; boylamMikro: number };
+  /** Tarım alanı (B1, opsiyonel). Yoksa bölge tarım dışıdır. */
+  tarim?: BolgeTarimTanimi;
 }
 
 export interface KenarTanimi {
@@ -105,6 +132,13 @@ export interface YontemTanimi {
   gerekliTeknoloji?: string;
   /** Ham çıkarım yöntemleri için tükettiği rezerv (mal kimliği). */
   rezerv?: MalId;
+  /**
+   * Tarımsal yöntem (B1): tarım açıkken çıktı, bölgenin toprak x iklim x olay x gübre çarpanıyla çarpılır ve rezerv
+   * verimi/tükenmesi uygulanmaz. Rezervli (ekili ürün) tarımsal yöntemde ekim karışımı da çarpılır.
+   */
+  tarimsal?: boolean;
+  /** Sulama yöntemi (B1): bölgede çalışırken hasat dipleri yumuşar ve kuraklık şiddeti azalır; çıktısı olmayabilir. */
+  sulama?: boolean;
 }
 
 export interface TesisTuruTanimi {
@@ -121,6 +155,8 @@ export interface TesisTuruTanimi {
   gerekliEtiket?: Etiket;
   gerekliRezerv?: MalId;
   gerekliTeknoloji?: string;
+  /** Tarım tesisi (çiftlik, ahır, mera): bölgenin `tarimTesisTavani` sayımına girer. */
+  tarimTesisi?: boolean;
 }
 
 export interface TeknolojiTanimi {
@@ -154,6 +190,18 @@ export interface BirlikTanimi {
 
 export type AnlasmaTuru = "ticaret" | "ortak_altyapi";
 
+/** Ekim karışımındaki ürün grubu (B1; bugday, baklagil, nadas). Sıra, `ekim_plani` paylarının sırasıdır. */
+export interface TarimUrunTanimi {
+  id: string;
+  ad: string;
+  /** Tesis çıktısına çarpan (ppm). */
+  ciktiPpm: number;
+  /** Günlük toprak değişimi (ppm/gün; negatif = tüketir). */
+  toprakDegisimPpmGun: number;
+  /** Olay şiddetine duyarlılık (ppm; 1_000_000 = tam). */
+  olayDuyarliligiPpm: number;
+}
+
 export interface IcerikDosyasi {
   surum: 1;
   mallar: MalTanimi[];
@@ -161,6 +209,56 @@ export interface IcerikDosyasi {
   tesisTurleri: TesisTuruTanimi[];
   teknolojiler: TeknolojiTanimi[];
   birlikler: BirlikTanimi[];
+  /** Tarım ürün grupları (B1, opsiyonel; en az 1). `parametreler.tarim` ile birlikte verilince tarım mekanikleri açılır. */
+  tarimUrunleri?: TarimUrunTanimi[];
+}
+
+/** Bir iklim olayı türünün profili (docs/08 §1.3 T3). */
+export interface IklimOlayProfili {
+  sureGunMin: number;
+  sureGunMax: number;
+  siddetMinPpm: number;
+  siddetMaxPpm: number;
+  /** Yayılım menzili: kara kenarı sayısı. */
+  menzilKenar: number;
+  /** Her kenarda kalan şiddet payı (ppm; 500_000 = yarıya iner). */
+  yayilimPpm: number;
+  /** 12 ay: ppm/gün/bölge (Ocak..Aralık). */
+  olasilikPpmGun: number[];
+}
+
+/** İklim takvimi ve olay parametreleri (B1, opsiyonel; `tarim` ile birlikte verilir). */
+export interface IklimParametreleri {
+  /** Dünya t = 0 anının takvim günü (0 = 1 Ocak); 273 = 1 Ekim. */
+  baslangicGunu: number;
+  /** Takvim hız çarpanı: sim zamanının 1 günü = gunCarpani takvim günü. Gerçek takvim = 1 (ölçüm için 12). */
+  gunCarpani: number;
+  /** 12 ay, her biri >= 1, toplam 365. */
+  ayGunleri: number[];
+  /** Olay uyarı süresi (saat); uyarı ilan anı ile etki başlangıcı arası. */
+  uyariSaat: number;
+  /** İklim tipi -> 12 aylık hasat oranı (ppm). Her satırın toplamı tam 12 x 1_000_000. */
+  hasatEgrisiPpm: Record<IklimTipi, number[]>;
+  olaylar: Record<IklimOlayTuru, IklimOlayProfili>;
+  /** Olay türü -> iklim tipi -> olasılık çarpanı (ppm; 1_000_000 = x1). */
+  tipOlasilikCarpaniPpm: Record<IklimOlayTuru, Record<IklimTipi, number>>;
+  /** Sulama, kuraklık şiddetini bu oran x sulanabilirPpm kadar azaltır (ppm). */
+  sulamaKuraklikKorumaPpm: number;
+  /** Sulama, hasat oranının 1'in altındaki dipleri bu oran x sulanabilirPpm kadar yumuşatır (ppm). */
+  sulamaDipPpm: number;
+}
+
+/** Tarım katmanı parametreleri (B1, opsiyonel; `iklim` ile birlikte verilir). */
+export interface TarimParametreleri {
+  /** Toprak durumunun alt sınırı (ppm); toprak bunun altına inmez. */
+  toprakTabaniPpm: number;
+  /** Gübre dozu başına tarımsal tesis başına saatlik girdi (mili-birim/saat). */
+  gubreTuketimiSaat: number;
+  /** Doz başına günlük toprak kazancı (ppm/gün; gübre karşılandıkça). */
+  gubreToprakPpmGun: number;
+  /** Doz başına çıktı eki (ppm; gübre karşılandıkça). */
+  gubreCiktiEkiPpm: number;
+  azamiGubreDozu: number;
 }
 
 /**
@@ -260,4 +358,10 @@ export interface Parametreler {
      */
     yayilimIndirimiPpm: number;
   };
+  /**
+   * Tarım katmanı (B1). `iklim` ve `tarim` birlikte verilirse tarım mekanikleri açılır (toprak, ekim planı,
+   * iklim takvimi ve olaylar, gübre); ikisi de yoksa kapalıdır ve çekirdek v0.2 davranışını birebir verir.
+   */
+  iklim?: IklimParametreleri;
+  tarim?: TarimParametreleri;
 }

@@ -43,6 +43,8 @@ export interface TurBilgisi {
   askeri: boolean;
   /** Tüm maliyetin taban fiyatla değeri (para). */
   maliyetDegeri: number;
+  /** Tarım tesisi (çiftlik, ahır, mera): bölgenin tarımTesisTavani sayımına girer (B1). */
+  tarimTesisi: boolean;
 }
 
 export interface BirlikBilgisi {
@@ -71,6 +73,8 @@ export interface IcerikBilgisi {
   yakit: number;
   celik: number;
   parca: number;
+  /** gubre malı (yoksa -1). */
+  gubre: number;
   /** Mal -> o malı çıktılayan tesis türü indeksleri (herhangi bir yöntemle). */
   ureticiTurler: number[][];
 }
@@ -130,6 +134,7 @@ export function icerikBilgisi(ic: DerlenmisIcerik): IcerikBilgisi {
       gerekliTeknoloji: t.gerekliTeknoloji,
       askeri: y0.cikti.some(([m]) => askeri[m] === true),
       maliyetDegeri: deger(maliyet) + t.insaParasi / MILI,
+      tarimTesisi: t.tarimTesisi === true,
     };
   });
   const birlik: BirlikBilgisi[] = ic.birlikler.map((b, indeks) => {
@@ -170,6 +175,7 @@ export function icerikBilgisi(ic: DerlenmisIcerik): IcerikBilgisi {
     yakit: ic.malIndeks["yakit"] ?? -1,
     celik: ic.malIndeks["celik"] ?? -1,
     parca: ic.malIndeks["parca"] ?? -1,
+    gubre: ic.malIndeks["gubre"] ?? -1,
     ureticiTurler,
   };
   onbellek.set(ic, bilgi);

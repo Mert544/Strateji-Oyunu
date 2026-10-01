@@ -33,12 +33,12 @@
     "emilimSaat": {
       "tahil": 360000, "gida": 300000, "cevher": 360000, "komur": 450000, "celik": 300000,
       "bakir": 200000, "silis": 240000, "parca": 200000, "elektronik": 120000,
-      "petrol": 400000, "yakit": 300000, "muhimmat": 120000
+      "petrol": 400000, "yakit": 300000, "muhimmat": 120000, "gubre": 200000
     },
     "arzSaat": {
       "tahil": 240000, "gida": 200000, "cevher": 150000, "komur": 150000, "celik": 260000,
       "bakir": 120000, "silis": 100000, "parca": 170000, "elektronik": 100000,
-      "petrol": 240000, "yakit": 260000, "muhimmat": 100000
+      "petrol": 240000, "yakit": 260000, "muhimmat": 100000, "gubre": 150000
     },
     "ithalatCarpaniPpm": 1100000,
     "ihracatCarpaniPpm": 900000,
@@ -68,5 +68,52 @@
   },
   "teknoloji": {
     "yayilimIndirimiPpm": 500000
+  },
+  "iklim": {
+    "baslangicGunu": 273,
+    "gunCarpani": 1,
+    "ayGunleri": [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
+    "uyariSaat": 24,
+    "hasatEgrisiPpm": {
+      "akdeniz":     [850000, 900000, 1000000, 1150000, 1300000, 1350000, 1100000, 850000, 800000, 900000, 950000, 850000],
+      "karasal":     [300000, 350000, 600000, 1000000, 1500000, 1900000, 1800000, 1400000, 1000000, 1000000, 700000, 450000],
+      "karadeniz":   [600000, 650000, 800000, 1000000, 1250000, 1450000, 1450000, 1350000, 1200000, 1050000, 800000, 400000],
+      "balkan_kita": [500000, 550000, 800000, 1100000, 1450000, 1700000, 1600000, 1250000, 1000000, 850000, 700000, 500000],
+      "kurak":       [700000, 900000, 1300000, 1800000, 1900000, 1400000, 600000, 400000, 500000, 800000, 900000, 800000],
+      "dag_yayla":   [100000, 100000, 300000, 900000, 1400000, 2100000, 2500000, 2100000, 1400000, 700000, 300000, 100000]
+    },
+    "olaylar": {
+      "kuraklik": {
+        "sureGunMin": 10, "sureGunMax": 20, "siddetMinPpm": 250000, "siddetMaxPpm": 500000, "menzilKenar": 2, "yayilimPpm": 500000,
+        "olasilikPpmGun": [0, 0, 0, 100, 400, 800, 1200, 1200, 800, 100, 0, 0]
+      },
+      "don": {
+        "sureGunMin": 3, "sureGunMax": 5, "siddetMinPpm": 300000, "siddetMaxPpm": 600000, "menzilKenar": 2, "yayilimPpm": 500000,
+        "olasilikPpmGun": [0, 0, 400, 800, 400, 0, 0, 0, 0, 100, 0, 0]
+      },
+      "sel": {
+        "sureGunMin": 4, "sureGunMax": 8, "siddetMinPpm": 200000, "siddetMaxPpm": 400000, "menzilKenar": 2, "yayilimPpm": 500000,
+        "olasilikPpmGun": [500, 400, 500, 400, 300, 150, 0, 0, 150, 400, 600, 600]
+      },
+      "kis_firtinasi": {
+        "sureGunMin": 3, "sureGunMax": 6, "siddetMinPpm": 400000, "siddetMaxPpm": 700000, "menzilKenar": 2, "yayilimPpm": 500000,
+        "olasilikPpmGun": [800, 700, 400, 100, 0, 0, 0, 0, 0, 0, 250, 600]
+      }
+    },
+    "tipOlasilikCarpaniPpm": {
+      "kuraklik":      { "akdeniz": 1500000, "karasal": 1000000, "karadeniz": 300000, "balkan_kita": 800000, "kurak": 2000000, "dag_yayla": 300000 },
+      "don":           { "akdeniz": 400000, "karasal": 1200000, "karadeniz": 800000, "balkan_kita": 1200000, "kurak": 500000, "dag_yayla": 1500000 },
+      "sel":           { "akdeniz": 1200000, "karasal": 800000, "karadeniz": 2000000, "balkan_kita": 1000000, "kurak": 400000, "dag_yayla": 1000000 },
+      "kis_firtinasi": { "akdeniz": 300000, "karasal": 1200000, "karadeniz": 1000000, "balkan_kita": 1200000, "kurak": 300000, "dag_yayla": 2000000 }
+    },
+    "sulamaKuraklikKorumaPpm": 600000,
+    "sulamaDipPpm": 400000
+  },
+  "tarim": {
+    "toprakTabaniPpm": 300000,
+    "gubreTuketimiSaat": 4000,
+    "gubreToprakPpmGun": 3000,
+    "gubreCiktiEkiPpm": 60000,
+    "azamiGubreDozu": 3
   }
 }

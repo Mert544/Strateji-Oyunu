@@ -13,11 +13,12 @@ import {
   arastirmaAdaylari,
   insaAdaylari,
   kenarAdaylari,
+  tarimAdaylari,
   ticaretAdaylari,
   vergiAdaylari,
   yontemAdaylari,
 } from "./planlayici";
-import type { Aday, AdayKategori, InsaSecenek, SecimSecenek, TicaretSecenek } from "./planlayici";
+import type { Aday, AdayKategori, InsaSecenek, SecimSecenek, TarimSecenek, TicaretSecenek } from "./planlayici";
 
 interface Profil {
   agirlik: Partial<Record<AdayKategori, number>>;
@@ -33,6 +34,8 @@ interface Profil {
   bekleme: Partial<Record<AdayKategori, Ms>>;
   /** Tepkisel savunma (bana savaş ilan edilince) etkin mi. */
   tepkiSavunma: boolean;
+  /** Tarım (B1) kararları: ekim planı (ve gübre dozu); undefined = tarım adayı yok. */
+  tarim?: TarimSecenek;
 }
 
 const BEKLEME: Partial<Record<AdayKategori, Ms>> = {
@@ -43,6 +46,8 @@ const BEKLEME: Partial<Record<AdayKategori, Ms>> = {
   savunma: 6 * SAAT,
   // Yöntem değişimi bir kez yapılınca 4 gün beklenir (git-gel salınımını önler).
   yontem: 96 * SAAT,
+  // Ekim planı ve gübre dozu: toprak günlük değişir; bölge başına 2 günde bir karar yeter (git-gel salınımını önler).
+  tarim: 48 * SAAT,
 };
 
 const PROFILLER: Record<"sanayici" | "tuccar" | "lojistikci" | "militarist", Profil> = {
@@ -52,6 +57,7 @@ const PROFILLER: Record<"sanayici" | "tuccar" | "lojistikci" | "militarist", Pro
     maxKomut: 4,
     bekleme: BEKLEME,
     tepkiSavunma: true,
+    tarim: { ekim: true },
   },
   tuccar: {
     agirlik: { insa: 0.7, yontem: 0.6, arastir: 0.4, kenar: 0.4, ticaret: 3, vergi: 1 },
@@ -60,6 +66,7 @@ const PROFILLER: Record<"sanayici" | "tuccar" | "lojistikci" | "militarist", Pro
     kategoriSiniri: { ticaret: 3 },
     bekleme: BEKLEME,
     tepkiSavunma: true,
+    tarim: { ekim: true, gubre: true },
   },
   lojistikci: {
     agirlik: { insa: 0.9, yontem: 0.7, arastir: 0.6, kenar: 4, ticaret: 0.4, vergi: 1 },
@@ -106,6 +113,7 @@ function adaylariUret(b: Bakis, p: Profil): Aday[] {
       adaylar.push(...askeriAdaylar(b, s).map((a) => ({ ...a, tahminiFayda: a.tahminiFayda * c })));
     }
   }
+  if (p.tarim) adaylar.push(...tarimAdaylari(b, p.tarim));
   if (p.tepkiSavunma) adaylar.push(...savunmaTepkiAdaylari(b));
   return adaylar;
 }
@@ -204,7 +212,9 @@ class KurVeUnutBotu extends KuralBotu {
     adaylar.push(
       ...ticaretAdaylari(b, tuc.ticaret).map((a) => ({ ...a, tahminiFayda: a.tahminiFayda * (tuc.agirlik.ticaret ?? 1) })),
     );
-    return this.sec(b, adaylar, 10, { ticaret: 4, arastir: 1, vergi: 1 }).map((a) => a.komut);
+    // Ayarla-unut: toprağı koruyan sabit ekim nöbeti bir kez verilir (gübre bağımlılığı yok).
+    adaylar.push(...tarimAdaylari(b, { ekim: true, nobet: true }));
+    return this.sec(b, adaylar, 10, { ticaret: 4, arastir: 1, vergi: 1, tarim: 5 }).map((a) => a.komut);
   }
 }
 

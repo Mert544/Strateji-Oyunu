@@ -22,8 +22,9 @@ describe("varsayilan ve mini veri", () => {
   it("varsayilan veri paketi gecerli yuklenir", () => {
     const v = varsayilanVeriyiYukle();
     expect(v.harita.bolgeler).toHaveLength(50);
-    expect(v.icerik.mallar).toHaveLength(12);
-    expect(v.icerik.teknolojiler).toHaveLength(6);
+    // v0.2: 12 mal, 6 teknoloji; B1 (Tarım): + gubre malı, + sulama_sistemi teknolojisi.
+    expect(v.icerik.mallar).toHaveLength(13);
+    expect(v.icerik.teknolojiler).toHaveLength(7);
     expect(dogrulaVeriPaketi(v)).toEqual({ gecerli: true });
   });
 
@@ -44,11 +45,12 @@ describe("varsayilan ve mini veri", () => {
     expect(b.harita.bolgeler[0]!.nufus).not.toBe(1);
   });
 
-  it("icerik sozlesmeye uygun: 12 mal, 12 tesis turu, ham mallarin rezerv yontemi var", () => {
+  it("icerik sozlesmeye uygun: 13 mal, 16 tesis turu, ham mallarin rezerv yontemi var", () => {
     const { icerik } = varsayilanVeriyiYukle();
     const ham = icerik.mallar.filter((m) => m.kategori === "ham").map((m) => m.id).sort();
     expect(ham).toEqual(["bakir", "cevher", "komur", "petrol", "silis", "tahil"]);
-    expect(icerik.tesisTurleri).toHaveLength(12);
+    // v0.2: 12 tesis türü; B1: + ahir, mera, gubre_fabrikasi, sulama_kanali.
+    expect(icerik.tesisTurleri).toHaveLength(16);
     for (const m of ham) {
       expect(icerik.yontemler.some((y) => y.rezerv === m)).toBe(true);
     }

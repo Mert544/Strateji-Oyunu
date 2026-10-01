@@ -14,6 +14,9 @@ import { icerikTablosu } from "./tablo";
 import type { IcerikTablosu } from "./tablo";
 import { carpBol, tamsayiKarekok } from "../sabit";
 import { anlikMiktar, stokOranAyarla } from "../stok";
+import { tarimCiktiCarpani } from "../tarim/carpan";
+import { tarimTablosu } from "../tarim/tablo";
+import type { TarimTablosu } from "../tarim/tablo";
 import { PPM, SAAT } from "../tipler";
 import type { Baglam, BolgeDurumu, Dunya, Mili } from "../tipler";
 
@@ -47,6 +50,15 @@ export interface BolgeHesabi {
   ihracatGercek: Mili[];
   /** Brüt çıktı oranı: Σ çıktı × verim. */
   ciktiGercek: Mili[];
+  /**
+   * Tarım (B1): tesis başına çıktı çarpanı (ppm; toprak x iklim x olay x gübre). Tarımsal olmayan tesiste ve tarım
+   * kapalıyken PPM'dir (çıktıya hiç uygulanmaz).
+   */
+  ciktiCarpan: number[];
+  /** Tarım (B1): tesis başına tam verimde gübre talebi (mili-birim/saat); gübre dozu yoksa 0. */
+  gubreIstek: number[];
+  /** Tarım (B1): gübre girdisinin bu çözümdeki karşılanma oranı (ppm); talep yoksa PPM. */
+  gubreKarsilanma: number;
 }
 
 /** Stok bu kadar saatlik açığı karşılayabiliyorsa tüketim kısılmaz; altında stok bu ufka yayılarak tüketilir. */
@@ -104,6 +116,9 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
       fr4: new Array<number>(nm).fill(PPM),
       ihracatGercek: sifirlar(nm),
       ciktiGercek: sifirlar(nm),
+      ciktiCarpan: new Array<number>(tesisSayisi).fill(PPM),
+      gubreIstek: sifirlar(tesisSayisi),
+      gubreKarsilanma: PPM,
     };
     havuz[r] = h;
     return h;
@@ -127,7 +142,29 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
   h.fr4.fill(PPM);
   h.ihracatGercek.fill(0);
   h.ciktiGercek.fill(0);
+  h.ciktiCarpan.fill(PPM);
+  h.gubreIstek.fill(0);
+  h.gubreKarsilanma = PPM;
   return h;
+}
+
+/**
+ * Tarım (B1): bir tesisin çıktı kalemini verimle ve (tarımsal ise) çıktı çarpanıyla ölçekler.
+ * Çarpan PPM ise sonuç `carpBol(q, v, PPM)` ile birebir aynıdır (v0.2).
+ */
+function ciktiOlcekle(q: number, v: number, carpan: number): number {
+  const x = carpBol(q, v, PPM);
+  return carpan === PPM ? x : carpBol(x, carpan, PPM);
+}
+
+/** Tarımsal tesislerin çıktı çarpanlarını verilen gübre karşılanma oranıyla yeniler (yalnız tarım açık ve bölge tarımlıysa). */
+function carpanlariYenile(tt: TarimTablosu, ctx: Baglam, h: BolgeHesabi, gubreKarsilanma: number): void {
+  const b = h.bolge;
+  for (let i = 0; i < b.tesisler.length; i++) {
+    const ts = b.tesisler[i] as BolgeDurumu["tesisler"][number];
+    if (!ts.aktif || !(tt.yontemTarimsal[ts.yontem] as boolean)) continue;
+    h.ciktiCarpan[i] = tarimCiktiCarpani(tt, ctx.ic, b, tt.yontemEkili[ts.yontem] as boolean, gubreKarsilanma);
+  }
 }
 
 /** Adım 1: istihdam, potansiyel, talep ve arz. `odemePpm`: sahibin ödeme gücü (para lavaboları), varsayılan %100. */
@@ -140,6 +177,9 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
 
   const h = hesapAl(ctx.ic, nm, r, tesisSayisi);
   h.bolge = b;
+  // Tarım (B1): tarım açıksa ve bölge tarım alanına sahipse tarımsal tesislere çıktı çarpanı ve gübre talebi uygulanır.
+  const tt = tarimTablosu(ctx.ic);
+  const tarimli = tt !== null && b.tarim !== undefined;
 
   for (let m = 0; m < nm; m++) h.stok[m] = anlikMiktar((b.stoklar[m] as BolgeDurumu["stoklar"][number]), t);
 
@@ -153,16 +193,30 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
       kalanIsci -= atanan;
       const isciPpm = y.isci > 0 ? carpBol(atanan, PPM, y.isci) : PPM;
       h.isciPpm[i] = isciPpm;
-      const rv = y.rezerv >= 0 ? rezervVerimi(b.rezervIlk[y.rezerv] as number, b.rezervKalan[y.rezerv] as number) : PPM;
+      const tarimsal = tarimli && (tt as TarimTablosu).yontemTarimsal[ts.yontem] === true;
+      // Tarımsal yöntemde rezerv verimi yerine toprak x iklim x olay x gübre çarpanı (çıktıya) uygulanır.
+      const rv = y.rezerv >= 0 && !tarimsal ? rezervVerimi(b.rezervIlk[y.rezerv] as number, b.rezervKalan[y.rezerv] as number) : PPM;
       // Ödeme gücü (hazine 0 ve net oran negatifken < PPM): tesis verimi "maaş ödenemiyor" oranında kısılır.
       h.potansiyelPpm[i] = carpBol(carpBol(isciPpm, rv, PPM), odemePpm, PPM);
+      if (tarimsal) {
+        const tb2 = tt as TarimTablosu;
+        h.ciktiCarpan[i] = tarimCiktiCarpani(tb2, ctx.ic, b, tb2.yontemEkili[ts.yontem] as boolean, PPM);
+        const ta = b.tarim as NonNullable<BolgeDurumu["tarim"]>;
+        if (ta.gubreDozu > 0) h.gubreIstek[i] = ta.gubreDozu * tb2.tarim.gubreTuketimiSaat;
+      }
     }
     // Bakım aktif olsun olmasın tüketilir (batma).
     for (const [m, q] of y.bakim) h.bakim[m] = (h.bakim[m] as number) + q;
     const pot = h.potansiyelPpm[i] as number;
     if (pot > 0) {
       for (const [m, q] of y.girdi) h.girdiPot[m] = (h.girdiPot[m] as number) + carpBol(q, pot, PPM);
-      for (const [m, q] of y.cikti) h.ciktiPot[m] = (h.ciktiPot[m] as number) + carpBol(q, pot, PPM);
+      const carpan = h.ciktiCarpan[i] as number;
+      for (const [m, q] of y.cikti) h.ciktiPot[m] = (h.ciktiPot[m] as number) + ciktiOlcekle(q, pot, carpan);
+      const gi = h.gubreIstek[i] as number;
+      if (gi > 0) {
+        const gm = (tt as TarimTablosu).gubreMal;
+        h.girdiPot[gm] = (h.girdiPot[gm] as number) + carpBol(gi, pot, PPM);
+      }
     }
   }
 
@@ -201,6 +255,10 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
   const nm = tb.malSayisi;
   const b = h.bolge;
   const tesisSayisi = b.tesisler.length;
+  // Tarım (B1): gübre girdisi verimi sınırlamaz (yalnızca gübre etkisini azaltır); karşılanma oranı fr3'ten okunur.
+  const tt = tarimTablosu(ctx.ic);
+  let gubreTalep = false;
+  for (let i = 0; i < tesisSayisi; i++) if ((h.gubreIstek[i] as number) > 0 && (h.potansiyelPpm[i] as number) > 0) gubreTalep = true;
 
   // Başlangıç: verim = potansiyel.
   for (let i = 0; i < tesisSayisi; i++) h.verimPpm[i] = h.potansiyelPpm[i] as number;
@@ -212,7 +270,8 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
       const v = h.verimPpm[i] as number;
       if (v <= 0) continue;
       const y = tb.yontem[(b.tesisler[i] as BolgeDurumu["tesisler"][number]).yontem] as IcerikTablosu["yontem"][number];
-      for (const [m, q] of y.cikti) h.ciktiGercek[m] = (h.ciktiGercek[m] as number) + carpBol(q, v, PPM);
+      const carpan = h.ciktiCarpan[i] as number;
+      for (const [m, q] of y.cikti) h.ciktiGercek[m] = (h.ciktiGercek[m] as number) + ciktiOlcekle(q, v, carpan);
     }
 
     let paylasim = false;
@@ -250,9 +309,18 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
       h.fr3[m] = oranPpm(p3, d3);
       h.fr4[m] = oranPpm(p4, d4);
     }
-    if (!paylasim) break;
-
+    // Gübre karşılanma oranı (paylaşım yoksa tüm fr'ler PPM'dir); değişirse çıktı çarpanları yenilenir ve tur tekrarlanır.
     let degisti = false;
+    if (gubreTalep && tt !== null) {
+      const gk = h.fr3[tt.gubreMal] as number;
+      if (gk !== h.gubreKarsilanma) {
+        h.gubreKarsilanma = gk;
+        carpanlariYenile(tt, ctx, h, gk);
+        degisti = true;
+      }
+    }
+    if (!paylasim && !degisti) break;
+    if (!paylasim) continue;
     for (let i = 0; i < tesisSayisi; i++) {
       const pot = h.potansiyelPpm[i] as number;
       if (pot <= 0) continue;
@@ -275,7 +343,8 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
     const v = h.verimPpm[i] as number;
     if (v <= 0) continue;
     const y = tb.yontem[(b.tesisler[i] as BolgeDurumu["tesisler"][number]).yontem] as IcerikTablosu["yontem"][number];
-    for (const [m, q] of y.cikti) h.ciktiGercek[m] = (h.ciktiGercek[m] as number) + carpBol(q, v, PPM);
+    const carpan = h.ciktiCarpan[i] as number;
+    for (const [m, q] of y.cikti) h.ciktiGercek[m] = (h.ciktiGercek[m] as number) + ciktiOlcekle(q, v, carpan);
   }
   for (let m = 0; m < nm; m++) h.ihracatGercek[m] = carpBol(h.ihracat[m] as number, h.fr4[m] as number, PPM);
 }
@@ -322,6 +391,11 @@ export function bolgeDurumunaYaz(ctx: Baglam, h: BolgeHesabi): void {
     ts.isciPpm = h.isciPpm[i] as number;
     ts.verimPpm = h.verimPpm[i] as number;
   }
+  // Tarım (B1): gübre karşılanma oranı (talep yoksa 0); toprak günlük tikte bunu okur.
+  const tt = tarimTablosu(ctx.ic);
+  if (tt !== null && b.tarim !== undefined) {
+    b.tarim.gubreKarsilanmaPpm = (h.girdiPot[tt.gubreMal] as number) > 0 && b.tarim.gubreDozu > 0 ? h.gubreKarsilanma : 0;
+  }
   b.gidaKarsilanmaPpm = tb.gidaMal >= 0 ? (h.fr1[tb.gidaMal] as number) : PPM;
   let ikmalOran = PPM;
   for (let m = 0; m < tb.malSayisi; m++) {
@@ -341,12 +415,19 @@ export function bolgeOranlariUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi, giden
   const tb = icerikTablosu(ctx.ic);
   const nm = tb.malSayisi;
   const b = h.bolge;
+  const tt = tarimTablosu(ctx.ic);
   const girdiGercek = sifirlar(nm);
   for (let i = 0; i < b.tesisler.length; i++) {
     const v = h.verimPpm[i] as number;
     if (v <= 0) continue;
     const y = tb.yontem[(b.tesisler[i] as BolgeDurumu["tesisler"][number]).yontem] as IcerikTablosu["yontem"][number];
     for (const [m, q] of y.girdi) girdiGercek[m] = (girdiGercek[m] as number) + carpBol(q, v, PPM);
+    // Tarım (B1): gerçek gübre tüketimi = doz x tüketim x verim x karşılanma.
+    const gi = h.gubreIstek[i] as number;
+    if (gi > 0) {
+      const gm = (tt as TarimTablosu).gubreMal;
+      girdiGercek[gm] = (girdiGercek[gm] as number) + carpBol(carpBol(gi, v, PPM), h.gubreKarsilanma, PPM);
+    }
   }
   for (let m = 0; m < nm; m++) {
     const cikti = h.ciktiGercek[m] as number;
@@ -371,6 +452,7 @@ export function bolgeOranlariUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi, giden
 /** Adım 0: muhasebe. uretimToplam'a ve ham mallar için rezerve eski oranla işler. */
 export function uretimMuhasebesi(d: Dunya, ctx: Baglam): void {
   const tb = icerikTablosu(ctx.ic);
+  const tt = tarimTablosu(ctx.ic);
   const t = d.zaman;
   for (const b of d.bolgeler) {
     const dt = t - b.uretimT0;
@@ -380,7 +462,8 @@ export function uretimMuhasebesi(d: Dunya, ctx: Baglam): void {
         if (oran === 0) continue;
         const artis = carpBol(oran, dt, SAAT);
         b.uretimToplam[m] = (b.uretimToplam[m] as number) + artis;
-        if (tb.ham[m]) {
+        // Tarım açıkken tarım bölgesinde tarımsal yöntemin rezervi (tahıl) tükenmez: verim toprak/iklim çarpanıyla belirlenir.
+        if (tb.ham[m] && !(tt !== null && b.tarim !== undefined && tt.tarimsalRezervMal[m] === true)) {
           const kalan = (b.rezervKalan[m] as number) - artis;
           b.rezervKalan[m] = kalan < 0 ? 0 : kalan;
         }

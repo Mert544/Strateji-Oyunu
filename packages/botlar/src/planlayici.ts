@@ -22,7 +22,8 @@ export type AdayKategori =
   | "rezerv"
   | "birlik"
   | "savunma"
-  | "savas";
+  | "savas"
+  | "tarim";
 
 /** Bir adayın dış kaynak maliyeti: hazine (mili-para) ve bölge stokları. */
 export interface AdayMaliyet {
@@ -190,6 +191,25 @@ export class Bakis {
     return f > 0 ? f : 0;
   }
 
+  /** Tarım katmanı (B1) açık mı: iklim ve tarim parametreleri tanımlı. */
+  get tarimAcik(): boolean {
+    const p = this.sim.ic.param;
+    return p.iklim !== undefined && p.tarim !== undefined;
+  }
+
+  /** Bölgenin tarım tesisi tavanı (inşa edilen + devam eden tarım tesisi sayısı >= tavan ise dolu). Tarım kapalıysa false. */
+  tarimTavaniDolu(b: BolgeDurumu): boolean {
+    if (!this.tarimAcik || b.tarim === undefined) return false;
+    const tavan = this.sim.ic.harita.bolgeler[b.indeks]?.tarim?.tarimTesisTavani;
+    if (tavan === undefined) return false;
+    let n = 0;
+    for (const ts of b.tesisler) if ((this.tb.tur[ts.tur] as TurBilgisi).tarimTesisi) n++;
+    for (const i of this.d.insaatlar) {
+      if (i.tur === "tesis" && i.bolge === b.indeks && (this.tb.tur[i.hedef] as TurBilgisi).tarimTesisi) n++;
+    }
+    return n >= tavan;
+  }
+
   /** Bu türden (bölgede) mevcut + devam eden tesis sayısı. bolge verilmezse tüm bölgeler. */
   tesisSayisi(tur: number, bolge?: number): number {
     let n = 0;
@@ -302,6 +322,7 @@ export function insaAdaylari(b: Bakis, sec: InsaSecenek = {}): Aday[] {
       }
       const mevcut = b.tesisSayisi(T.indeks, r.indeks);
       if (mevcut >= sinir) continue;
+      if (T.tarimTesisi && b.tarimTavaniDolu(r)) continue;
       if (!b.maliyetVar(r.indeks, T.maliyet)) continue;
       const fIsci = y0.isci > 0 ? Math.min(1, b.bosIsci(r) / y0.isci) : 1;
       if (fIsci < 0.4) continue;
@@ -722,6 +743,124 @@ export function ticaretAdaylari(b: Bakis, sec: TicaretSecenek = {}): Aday[] {
 }
 
 // ---------------------------------------------------------------------------
+// Tarım (B1): ekim planı ve gübre dozu
+// ---------------------------------------------------------------------------
+
+export interface TarimSecenek {
+  /** Ekim planı adayları üretilsin mi (vars. true). */
+  ekim?: boolean;
+  /** Gübre dozu (ve gübre ithalatı) adayları üretilsin mi (vars. false). */
+  gubre?: boolean;
+  /** Ekim planı hep ekim nöbeti (toprağı koruyan sabit plan) olsun: ayarla-unut (kur_ve_unut) oyuncusu için. */
+  nobet?: boolean;
+}
+
+/** Ekim planı şablonları (payların toplamı PPM): bugday / baklagil / nadas. */
+const EKIM_A = [1_000_000, 0, 0]; // monokültür: en yüksek çıktı, toprağı tüketir (-9000/gün)
+const EKIM_B = [500_000, 250_000, 250_000]; // ekim nöbeti: toprağı korur (-500/gün), çıktı ~%61
+const EKIM_C = [200_000, 300_000, 500_000]; // toparlanma: toprağı yeniler (+5400/gün)
+
+function ayniPlan(a: readonly number[], b: readonly number[]): boolean {
+  return a.length === b.length && a.every((x, i) => x === b[i]);
+}
+
+/** Toprağa ve mevcut plana göre hedef ekim planı (gübreli monokültür sürdürülebilirse A). Histerezisli, deterministik. */
+function hedefEkim(toprak: number, mevcut: readonly number[], gubreli: boolean): readonly number[] {
+  if (gubreli) return EKIM_A;
+  const cNde = ayniPlan(mevcut, EKIM_C);
+  const aDa = ayniPlan(mevcut, EKIM_A);
+  if (toprak < 500_000) return EKIM_C;
+  if (toprak < 700_000) return cNde && toprak < 650_000 ? EKIM_C : EKIM_B;
+  if (toprak < 900_000) return aDa ? EKIM_A : EKIM_B;
+  return EKIM_A;
+}
+
+/**
+ * (g) Tarım (docs/08 §1.3 T1, T4): ekili (rezervli tarımsal) tesisi olan her tarım bölgesi için ekim planı ve (isteğe
+ * bağlı) gübre dozu. Gübre yalnız erişilebilirse (yurt içi üretim, ≥ 48 saatlik stok ya da limanlı + fiyat ≤ 1,35 x taban)
+ * ve hazine sağlamsa seçilir; gübreli monokültür toprağı korur. Gübre dozu kararında ithal mal açığı mevcut ticaret
+ * mantığıyla kapanır; tarım kapalıyken boş döner. Kilit: bölge başına ekim ve gübre ayrı beklemeye alınır.
+ */
+export function tarimAdaylari(b: Bakis, sec: TarimSecenek = {}): Aday[] {
+  const cikti: Aday[] = [];
+  if (!b.tarimAcik) return cikti;
+  const ic = b.sim.ic;
+  const urunler = ic.icerik.tarimUrunleri ?? [];
+  if (urunler.length !== 3 || urunler[0]?.id !== "bugday" || urunler[1]?.id !== "baklagil" || urunler[2]?.id !== "nadas") return cikti;
+  const tp = ic.param.tarim;
+  if (tp === undefined) return cikti;
+  const gubre = b.tb.gubre;
+  const gubreIste = sec.gubre === true && gubre >= 0 && tp.azamiGubreDozu > 0;
+  const limanVar = b.limanlar().length > 0;
+  for (const r of b.bolgeler) {
+    const ts = r.tarim;
+    if (ts === undefined) continue;
+    // Yalnız ekili (rezervli tarımsal) aktif tesisi olan bölge karar gerektirir.
+    let ciftlik = 0;
+    for (const t of r.tesisler) {
+      const y = ic.yontemler[t.yontem];
+      if (t.aktif && y !== undefined && y.tarimsal === true && y.rezerv !== undefined) ciftlik++;
+    }
+    if (ciftlik === 0) continue;
+
+    // Gübre: erişilebilirlik ve hedef doz.
+    let hedefDoz = 0;
+    if (gubreIste) {
+      const ihtiyac = tp.azamiGubreDozu * tp.gubreTuketimiSaat * ciftlik; // mili-birim/saat
+      const yurtici = (b.uretimSaat[gubre] as number) >= ihtiyac;
+      const stoklu = b.stok(r.indeks, gubre) >= ihtiyac * 48;
+      const ithal = limanVar && b.fiyatOrani(gubre) <= 1.35 && !b.hazineTehlikede() && b.hazine / MILI > 20_000;
+      if (yurtici || stoklu || ithal) hedefDoz = tp.azamiGubreDozu;
+    }
+    const gubreli = hedefDoz >= 2;
+
+    if (sec.ekim !== false) {
+      const hedef = sec.nobet === true ? EKIM_B : hedefEkim(ts.toprakPpm, ts.ekimPpm, gubreli);
+      if (!ayniPlan(hedef, ts.ekimPpm)) {
+        const ad = ayniPlan(hedef, EKIM_A) ? "monokultur" : ayniPlan(hedef, EKIM_B) ? "nobet" : "toparlanma";
+        cikti.push({
+          anahtar: `ekim_plani:${ad}`,
+          komut: { tur: "ekim_plani", bolge: r.id, ekimPpm: [...hedef] },
+          tahminiFayda: 15_000,
+          kategori: "tarim",
+          bolge: r.id,
+          konu: ad,
+          kilit: `ekim|${r.id}`,
+        });
+      }
+    }
+    if (gubreIste && hedefDoz !== ts.gubreDozu) {
+      cikti.push({
+        anahtar: `gubre_dozu:${hedefDoz}`,
+        komut: { tur: "gubre_dozu", bolge: r.id, doz: hedefDoz },
+        tahminiFayda: 12_000,
+        kategori: "tarim",
+        bolge: r.id,
+        konu: `doz${hedefDoz}`,
+        kilit: `gubre|${r.id}`,
+      });
+      // Gübre açığı oluşmadan ithalat emri: ihtiyaç yok sayılan malda net < 0 görülmediği için ticaret mantığı tetiklenmez.
+      if (hedefDoz > 0 && !(b.uretimSaat[gubre] as number) && b.stokToplam[gubre]! < tp.gubreTuketimiSaat * 48 && limanVar) {
+        const port = b.limanlar()[0] as BolgeDurumu;
+        const oran = Math.min(Math.floor(hedefDoz * tp.gubreTuketimiSaat * ciftlik * 1.2), Math.floor((ic.param.pazar.arzSaat["gubre"] ?? 0) * 0.5));
+        if (oran >= 5_000 && mevcutEmir(port, gubre, "ithalat") < oran) {
+          cikti.push({
+            anahtar: "ticaret_emri:ithalat_gubre",
+            komut: { tur: "ticaret_emri", bolge: port.id, mal: "gubre", yon: "ithalat", oranSaat: oran },
+            tahminiFayda: 10_000,
+            kategori: "tarim",
+            bolge: port.id,
+            konu: "ithalat_gubre",
+            kilit: `gubre_ithalat|${port.id}`,
+          });
+        }
+      }
+    }
+  }
+  return cikti;
+}
+
+// ---------------------------------------------------------------------------
 // Vergi
 // ---------------------------------------------------------------------------
 
@@ -824,6 +963,7 @@ export function genisAdaylar(b: Bakis): Aday[] {
     ...kenarAdaylari(b, true).slice(0, 3),
     ...ticaretGenis(b),
     ...vergiGenis(b),
+    ...tarimAdaylari(b, { ekim: true, gubre: true }),
   ];
 }
 
@@ -836,6 +976,7 @@ export function sivilAdaylar(b: Bakis, ticaret: TicaretSecenek = {}): Aday[] {
     ...kenarAdaylari(b),
     ...ticaretAdaylari(b, ticaret),
     ...vergiAdaylari(b),
+    ...tarimAdaylari(b, { ekim: true }),
   ];
 }
 
@@ -859,6 +1000,7 @@ const VARSAYILAN_SINIR: Partial<Record<AdayKategori, number>> = {
   rezerv: 1,
   savas: 1,
   ticaret: 2,
+  tarim: 2,
 };
 
 /**

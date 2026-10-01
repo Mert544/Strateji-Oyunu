@@ -32,3 +32,7 @@ export { tabanBol, carpBolTavan, tamsayiKarekok, kelepce, ppmUygula } from "./sa
 export { kanonikSerilestir, fnv1a64 } from "./ozet";
 export { sureCarpaniPpm, hizlandirilmisSure } from "./erkenOyun";
 export { teknolojiYayilimiPpm } from "./teknoloji";
+
+// --- Tarım katmanı (B1) ---
+export { iklimGunluk, takvimGunu, takvimAyi, mutlakTakvimGunu, hasatEnterpole, hasatGunlukNormallestir, tarimTablosu, tarimCiktiCarpani } from "./tarim";
+export type { TarimTablosu } from "./tarim";

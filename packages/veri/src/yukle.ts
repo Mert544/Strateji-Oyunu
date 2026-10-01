@@ -11,7 +11,8 @@
 import { readFileSync } from "node:fs";
 import type { ZodError, ZodErrorMap, ZodTypeAny } from "zod";
 import { HaritaSema, IcerikSema, ParametreSema } from "./sema";
-import type { HaritaDosyasi, IcerikDosyasi, Parametreler } from "./tipler";
+import { IKLIM_OLAY_TURLERI, IKLIM_TIPLERI } from "./tipler";
+import type { BolgeTanimi, BolgeTarimTanimi, HaritaDosyasi, IcerikDosyasi, IklimTipi, Parametreler } from "./tipler";
 
 export interface VeriPaketi {
   harita: HaritaDosyasi;
@@ -264,7 +265,8 @@ export function dogrulaIcerik(ham: unknown): DogrulamaSonucu {
     malKontrol(`${yol}.girdiler`, y.girdiler);
     malKontrol(`${yol}.ciktilar`, y.ciktilar);
     malKontrol(`${yol}.bakim`, y.bakim);
-    if (Object.keys(y.ciktilar).length === 0) hatalar.push(`${yol}.ciktilar: en az bir cikti gerekli`);
+    if (Object.keys(y.ciktilar).length === 0 && y.sulama !== true) hatalar.push(`${yol}.ciktilar: en az bir cikti gerekli`);
+    if (y.sulama === true && y.rezerv !== undefined) hatalar.push(`${yol}.sulama: sulama yontemi rezerv tuketemez`);
     for (const [m, v] of Object.entries(y.ciktilar)) {
       if (v === 0) hatalar.push(`${yol}.ciktilar.${m}: cikti miktari 0 olamaz`);
     }
@@ -358,6 +360,12 @@ export function dogrulaIcerik(ham: unknown): DogrulamaSonucu {
     if ((renk.get(t.id) ?? 0) === 0) dongu(t.id, [t.id]);
   }
 
+  // Tarım ürün grupları (B1)
+  if (c.tarimUrunleri !== undefined) {
+    if (c.tarimUrunleri.length === 0) hatalar.push("tarimUrunleri: en az bir urun gerekli (alan verilmeyecekse kaldirin)");
+    benzersizlikKontrolu(hatalar, "tarimUrunleri", c.tarimUrunleri.map((x) => x.id));
+  }
+
   // Birlikler
   for (const [i, b] of c.birlikler.entries()) {
     const yol = `birlikler[${i}] ("${b.id}")`;
@@ -383,6 +391,25 @@ export function dogrulaIcerik(ham: unknown): DogrulamaSonucu {
 // Parametreler
 // ---------------------------------------------------------------------------
 
+/** İklim parametrelerinin anlamsal kontrolleri (şema yapıyı denetler): takvim toplamı, eğri toplamları, aralıklar. */
+function iklimKontrolu(hatalar: string[], k: NonNullable<Parametreler["iklim"]>): void {
+  let toplamGun = 0;
+  for (const [i, g] of k.ayGunleri.entries()) {
+    if (g < 1) hatalar.push(`iklim.ayGunleri[${i}]: en az 1 olmali`);
+    toplamGun += g;
+  }
+  if (toplamGun !== 365) hatalar.push(`iklim.ayGunleri: toplam 365 olmali (bulunan ${toplamGun})`);
+  for (const tip of IKLIM_TIPLERI) {
+    const toplam = k.hasatEgrisiPpm[tip].reduce((t, x) => t + x, 0);
+    if (toplam !== 12_000_000) hatalar.push(`iklim.hasatEgrisiPpm.${tip}: 12 ayin toplami tam 12000000 olmali (yillik ortalama 1000000; bulunan ${toplam})`);
+  }
+  for (const tur of IKLIM_OLAY_TURLERI) {
+    const o = k.olaylar[tur];
+    if (o.sureGunMin > o.sureGunMax) hatalar.push(`iklim.olaylar.${tur}.sureGunMin: sureGunMax degerinden buyuk olamaz`);
+    if (o.siddetMinPpm > o.siddetMaxPpm) hatalar.push(`iklim.olaylar.${tur}.siddetMinPpm: siddetMaxPpm degerinden buyuk olamaz`);
+  }
+}
+
 /** Şema + (içerik verilirse) mal ve birlik kimliklerinin geçerliliği. */
 export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): DogrulamaSonucu {
   const s = semaCalistir(ParametreSema, ham);
@@ -402,9 +429,19 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
     hatalar.push("teknoloji.yayilimIndirimiPpm: en fazla 900000 olabilir (maliyet ve sure 0'a inmemeli)");
   }
 
+  // Tarım katmanı (B1): iklim ve tarim birlikte verilir (ikisi de yoksa tarım kapalı).
+  if ((p.iklim === undefined) !== (p.tarim === undefined)) {
+    hatalar.push("iklim ve tarim birlikte verilmeli (yalniz biri tanimli; ikisi de yoksa tarim kapali)");
+  }
+  if (p.iklim !== undefined) iklimKontrolu(hatalar, p.iklim);
+
   if (icerik !== undefined) {
     const mallar = new Set(icerik.mallar.map((m) => m.id));
     const birlikler = new Set(icerik.birlikler.map((b) => b.id));
+    if (p.tarim !== undefined) {
+      if ((icerik.tarimUrunleri ?? []).length === 0) hatalar.push("tarim: icerik.tarimUrunleri (en az 1 urun) gerekli");
+      if (!mallar.has("gubre")) hatalar.push('tarim: icerikte "gubre" mali gerekli');
+    }
     const malKontrol = (yol: string, kayit: Record<string, number>, tamOlmali = false): void => {
       for (const m of Object.keys(kayit)) {
         if (!mallar.has(m)) hatalar.push(`${yol}: bilinmeyen mal "${m}"`);
@@ -478,9 +515,92 @@ export function dogrulaVeriPaketi(paket: VeriPaketi, secenek: HaritaSecenekleri 
           hatalar.push(`${yol}.tesisler[${j}]: baslangic tesisi teknoloji gerektiremez ("${tId}" -> "${t.gerekliTeknoloji}")`);
         }
       }
+      // Tarım alanı (B1): başlangıç tarım tesisleri bölgenin tarım tesisi tavanını aşamaz.
+      if (b.tarim !== undefined) {
+        const tarimTesisi = b.tesisler.filter((tId) => tesisTurleri.get(tId)?.tarimTesisi === true).length;
+        if (tarimTesisi > b.tarim.tarimTesisTavani) {
+          hatalar.push(`${yol}.tarim.tarimTesisTavani: ${b.tarim.tarimTesisTavani}, ama baslangicta ${tarimTesisi} tarim tesisi var`);
+        }
+      }
     }
   }
   return sonuc(hatalar);
+}
+
+// ---------------------------------------------------------------------------
+// Tarım alanı türetme (B1): `bolge.tarim` eksik bölgeler için etiket ve konumdan makul varsayılan
+// ---------------------------------------------------------------------------
+
+/** İklim tipi: Köppen benzeri, enlem/boylam/kıyı/dağ kuralları (konum yoksa yalnız etiketler). Tamsayı mikro derece. */
+function iklimTipiTuret(b: BolgeTanimi): IklimTipi {
+  const kiyi = b.etiketler.includes("kiyi");
+  const dag = b.etiketler.includes("dag");
+  const k = b.konum;
+  if (k === undefined) return dag ? "dag_yayla" : kiyi ? "akdeniz" : "karasal";
+  const enlem = k.enlemMikro;
+  const boylam = k.boylamMikro;
+  // Sıcak-kurak iç bölgeler (Güneydoğu Anadolu benzeri): güneyde ve doğuda, kıyı dışı.
+  if (!kiyi && enlem < 38_500_000 && boylam >= 36_000_000) return "kurak";
+  if (kiyi) {
+    // Karadeniz kıyı şeridi: Türkiye kuzey kıyısı (enlem >= 40,7; boylam >= 28) ile Bulgaristan/Romanya/Ukrayna kıyıları.
+    if (enlem >= 40_700_000 && boylam >= 28_000_000) return "karadeniz";
+    if (enlem >= 41_700_000 && boylam >= 27_000_000) return "karadeniz";
+    return "akdeniz"; // Ege, Akdeniz, Marmara, Adriyatik/İyon kıyıları
+  }
+  if (dag) return "dag_yayla";
+  // Tuna ovası ve Balkan iç bölgeleri: kuzeyde (enlem >= 43) ya da batıda-kuzeyde (boylam < 27, enlem >= 41,5).
+  if (enlem >= 43_000_000 || (boylam < 27_000_000 && enlem >= 41_500_000)) return "balkan_kita";
+  return "karasal";
+}
+
+/**
+ * Bir bölgenin tarım alanını etiket ve konumdan türetir; tarım dışı bölge için undefined döner.
+ * Tarım bölgesi: "ova", "kiyi" veya "dag" etiketli ya da başlangıçta tarım tesisi (`tarimTesisTurleri`) olan bölge.
+ * - toprakTabanPpm: ova 1 000 000, kıyı 800 000, dağ 400 000, diğer 600 000; `kurak` tipte x0,7 (en az 300 000).
+ * - iklimTipi: enlem/boylam/kıyı/dağ kuralları (bkz. iklimTipiTuret); konum yoksa dağ -> dag_yayla, kıyı -> akdeniz, aksi karasal.
+ * - tarimTesisTavani: ova 3, kıyı 2, dağ 2, diğer 1; başlangıç tarım tesisi sayısından az olamaz.
+ * - sulanabilirPpm: ova 600 000, kıyı 400 000, dağ 100 000, diğer 200 000.
+ * Tamamen deterministik ve tamsayıdır (rastgelelik yok).
+ */
+export function varsayilanTarimAlani(
+  b: BolgeTanimi,
+  tarimTesisTurleri: ReadonlySet<string> = new Set(["ciftlik", "ahir", "mera"]),
+): BolgeTarimTanimi | undefined {
+  const ova = b.etiketler.includes("ova");
+  const kiyi = b.etiketler.includes("kiyi");
+  const dag = b.etiketler.includes("dag");
+  const baslangicTarim = b.tesisler.filter((t) => tarimTesisTurleri.has(t)).length;
+  if (!ova && !kiyi && !dag && baslangicTarim === 0) return undefined;
+  const iklimTipi = iklimTipiTuret(b);
+  let toprak = ova ? 1_000_000 : kiyi ? 800_000 : dag ? 400_000 : 600_000;
+  if (iklimTipi === "kurak") toprak = Math.max(300_000, Math.floor((toprak * 7) / 10));
+  const tavan = ova ? 3 : kiyi || dag ? 2 : 1;
+  return {
+    toprakTabanPpm: toprak,
+    iklimTipi,
+    tarimTesisTavani: Math.max(tavan, baslangicTarim),
+    sulanabilirPpm: ova ? 600_000 : kiyi ? 400_000 : dag ? 100_000 : 200_000,
+  };
+}
+
+/**
+ * Tarım açıksa (`param.tarim` tanımlı) `tarim` alanı eksik bölgelere `varsayilanTarimAlani` ile varsayılan yazar
+ * (yerinde; dönen değer doldurulan bölge sayısı). Tarım kapalıysa hiçbir şey yapmaz. Çekirdeğe (ve tarayıcıya)
+ * verilen veri paketi bu işlemden sonra verilmelidir; çekirdek eksik alanı türetmez, tarım dışı sayar.
+ */
+export function tarimAlanlariniTamamla(paket: VeriPaketi): number {
+  if (paket.param.tarim === undefined) return 0;
+  const turler = new Set(paket.icerik.tesisTurleri.filter((t) => t.tarimTesisi === true).map((t) => t.id));
+  let sayi = 0;
+  for (const b of paket.harita.bolgeler) {
+    if (b.tarim !== undefined) continue;
+    const t = varsayilanTarimAlani(b, turler);
+    if (t !== undefined) {
+      b.tarim = t;
+      sayi++;
+    }
+  }
+  return sayi;
 }
 
 // ---------------------------------------------------------------------------
@@ -513,6 +633,8 @@ function paketYukle(haritaDosyasi: string, secenek: HaritaSecenekleri): VeriPake
   if (!sonucu.gecerli) {
     throw new Error(`Veri paketi gecersiz (${haritaDosyasi}):\n - ${sonucu.hatalar.join("\n - ")}`);
   }
+  // Tarım açıksa ve harita tarım alanı taşımıyorsa (ör. gerçek harita) etiket/konumdan varsayılan türet.
+  tarimAlanlariniTamamla(paket);
   return paket;
 }
 
@@ -530,4 +652,25 @@ export function varsayilanVeriyiYukle(): VeriPaketi {
  */
 export function miniVeriyiYukle(): VeriPaketi {
   return paketYukle("haritalar/mini-6.json", MINI_HARITA_SECENEKLERI);
+}
+
+/**
+ * Gerçek dünya haritası: haritalar/<ad>.json (packages/veri-hatti çıktısı; varsayılan "gercek-karadeniz") +
+ * varsayılan içerik ve parametreler. Doğrulama varsayılan aralıklarla yapılır (dogrulaVeriPaketi).
+ * Haritada `sinirDosyasi` varsa dosya okunur ve her bölgenin sınır geometrisi (TopoJSON "bolgeler"
+ * nesnesi, `properties.id`) bulunmalıdır; yoksa ayrıntılı hata fırlatır. Her çağrıda yeni kopya döner.
+ */
+export function gercekVeriyiYukle(ad = "gercek-karadeniz"): VeriPaketi {
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(ad)) throw new Error(`Gecersiz gercek harita adi: "${ad}"`);
+  const paket = paketYukle(`haritalar/${ad}.json`, {});
+  const sinirDosyasi = paket.harita.sinirDosyasi;
+  if (sinirDosyasi !== undefined) {
+    const topo = jsonOku(`haritalar/${sinirDosyasi}`) as { objects?: { bolgeler?: { geometries?: Array<{ properties?: { id?: string } }> } } };
+    const geometriler = topo.objects?.bolgeler?.geometries;
+    if (geometriler === undefined) throw new Error(`Sinir dosyasinda "bolgeler" nesnesi yok (${sinirDosyasi})`);
+    const kimlikler = new Set(geometriler.map((g) => g.properties?.id));
+    const eksik = paket.harita.bolgeler.filter((b) => !kimlikler.has(b.id)).map((b) => b.id);
+    if (eksik.length > 0) throw new Error(`Sinir dosyasinda geometrisi olmayan bolgeler (${sinirDosyasi}): ${eksik.join(", ")}`);
+  }
+  return paket;
 }

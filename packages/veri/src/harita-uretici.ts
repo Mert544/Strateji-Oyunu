@@ -13,13 +13,17 @@
  * - Kaynaklar KASITLI olarak dengesiz: askan tarım ovası, carvan cevher dağları, belora petrol kıyısı
  *   ve bakır/silis çölü, dorsa kömür ve sanayi. Her devletin zinciri tek başına eksiktir.
  *
+ * Tarım alanı (B1) bölge etiketinden ve devletten SABİT kurallarla türetilir (rastgelelik yok; PRNG akışı etkilenmez):
+ * ova 1 000 000 / kıyı 800 000 / dağ 400 000 toprak tabanı (devlet verimlilik çarpanıyla), iklim tipi devletin iklim
+ * kuşağından (dağ etiketi her zaman dag_yayla), tarım tesisi tavanı ova 3 / kıyı, dağ 2, sulanabilir alan 600 000 / 400 000 / 100 000.
+ *
  * Rastgelelik yalnızca küçük sapmalar içindir (koordinat, nüfus, rezerv, kapasite) ve kendi tohumlu
  * PRNG'sinden gelir; Math.random kullanılmaz. Aynı tohum -> bayt bayt aynı çıktı.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { BolgeTanimi, DevletTanimi, Etiket, HaritaDosyasi, KenarTanimi } from "./tipler";
+import type { BolgeTanimi, BolgeTarimTanimi, DevletTanimi, Etiket, HaritaDosyasi, IklimTipi, KenarTanimi } from "./tipler";
 
 export const VARSAYILAN_TOHUM = 20260930;
 
@@ -84,6 +88,40 @@ const DEVLETLER: DevletTanimi[] = [
   { id: "carvan", ad: "Carvan Birliği", blok: "guney_birligi" },
   { id: "dorsa", ad: "Dorsa Federasyonu", blok: "guney_birligi" },
 ];
+
+/**
+ * Devlet -> tarım kuşağı: toprak verimlilik çarpanı (ppm) ve ova / kıyı iklim tipi. Dağ etiketi her devlette dag_yayla.
+ * Askan: bereketli kuzey ovası (Tuna benzeri kıta ikliminde ova, Karadeniz benzeri kıyı); Carvan: Akdeniz kuşağı;
+ * Belora: sıcak-kurak çöl kuşağı (düşük toprak, kurak); Dorsa: karasal ova, Akdeniz kıyı.
+ */
+const TARIM_KUSAGI: Record<string, { toprakPpm: number; ova: IklimTipi; kiyi: IklimTipi }> = {
+  askan: { toprakPpm: 1_100_000, ova: "balkan_kita", kiyi: "karadeniz" },
+  carvan: { toprakPpm: 900_000, ova: "akdeniz", kiyi: "akdeniz" },
+  belora: { toprakPpm: 600_000, ova: "kurak", kiyi: "kurak" },
+  dorsa: { toprakPpm: 1_000_000, ova: "karasal", kiyi: "akdeniz" },
+};
+
+/** Başlangıçta tarım tesisi sayılan türler (tavan alt sınırı için). */
+const TARIM_TESISLERI: readonly string[] = ["ciftlik", "ahir", "mera"];
+
+/** Bölge taslağının tarım alanı; ova, kıyı veya dağ etiketi ya da tarım tesisi yoksa undefined (tarım dışı). */
+function tarimTuret(tk: Taslak): BolgeTarimTanimi | undefined {
+  const ova = tk.etiketler.includes("ova");
+  const kiyi = tk.etiketler.includes("kiyi");
+  const dag = tk.etiketler.includes("dag");
+  const baslangicTarim = tk.tesisler.filter((x) => TARIM_TESISLERI.includes(x)).length;
+  if (!ova && !kiyi && !dag && baslangicTarim === 0) return undefined;
+  const kusak = TARIM_KUSAGI[tk.devlet] ?? { toprakPpm: 1_000_000, ova: "karasal" as IklimTipi, kiyi: "akdeniz" as IklimTipi };
+  const taban = ova ? 1_000_000 : kiyi ? 800_000 : dag ? 400_000 : 600_000;
+  const toprak = kisitla(yuvarla((taban * kusak.toprakPpm) / 1_000_000, 10_000), 300_000, 1_200_000);
+  const iklimTipi: IklimTipi = dag && !kiyi ? "dag_yayla" : ova ? kusak.ova : kiyi ? kusak.kiyi : "karasal";
+  return {
+    toprakTabanPpm: toprak,
+    iklimTipi,
+    tarimTesisTavani: Math.max(ova ? 3 : 2, baslangicTarim),
+    sulanabilirPpm: ova ? 600_000 : kiyi ? 400_000 : 100_000,
+  };
+}
 
 const TASLAKLAR: Taslak[] = [
   // --- ASKAN (batı kara kütlesi, kuzey yarı): tarım ovası, kömür; cevher az, petrol/bakır yok ---
@@ -245,7 +283,7 @@ export function uretSentetikHarita(tohum: number = VARSAYILAN_TOHUM): HaritaDosy
       // bin birim -> mili-birim (x1_000_000); 1000 birimlik adımlara yuvarlanır
       rezervler[mal] = yuvarla(bin * rng.aralik(85, 115) * 10_000, 1_000_000);
     }
-    return {
+    const bolge: BolgeTanimi = {
       id: tk.id,
       ad: tk.ad,
       devlet: tk.devlet,
@@ -256,6 +294,9 @@ export function uretSentetikHarita(tohum: number = VARSAYILAN_TOHUM): HaritaDosy
       x,
       y,
     };
+    const tarim = tarimTuret(tk);
+    if (tarim !== undefined) bolge.tarim = tarim;
+    return bolge;
   });
 
   const indeks = new Map(bolgeler.map((b) => [b.id, b]));

@@ -5,9 +5,11 @@
  */
 import { kelepce } from "./sabit";
 import { prngOlustur } from "./prng";
-import { SAAT } from "./tipler";
+import { tarimTablosu } from "./tarim/tablo";
+import { PPM, SAAT } from "./tipler";
 import type {
   BolgeDurumu,
+  BolgeTarimDurumu,
   DerlenmisIcerik,
   Dunya,
   KapsamHucresi,
@@ -31,6 +33,8 @@ function sifirlar(n: number): number[] {
  * - gidaKarsilanmaPpm ve ikmalKarsilanmaPpm başlangıçta PPM (ilk çözüme kadar sıfır kıtlık varsayılır).
  * - lojistik.sonCozum = 0, cozumSayisi = 0; kapsam hücreleri { 0, -1, "yok" }.
  * - rng: "ekonomi" | "pazar" | "savas" | "olay" akışları (tohum, akış adı)ndan türetilir.
+ * - Tarım (B1, yalnız param.iklim + param.tarim tanımlıysa): tarım alanı olan bölgelere `tarim` durumu (toprak PPM,
+ *   ekim %100 ilk ürün, gübre 0) ve dünyaya `iklim` durumu yazılır. Kapalıysa bu alanlar HİÇ yazılmaz (özet v0.2 ile aynı).
  */
 export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
   const param = ic.param;
@@ -46,6 +50,8 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
     if (mi === undefined) throw new Error(`dunyaKur: baslangic.stok bilinmeyen mal: ${malId}`);
     baslangicStok[mi] = param.baslangic.stok[malId] as number;
   }
+
+  const tarimTb = tarimTablosu(ic);
 
   const bolgeler: BolgeDurumu[] = ic.harita.bolgeler.map((bt, indeks) => {
     const rezervIlk = sifirlar(malSayisi);
@@ -71,7 +77,18 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
       if (yontem === undefined) throw new Error(`dunyaKur: tesis turu ${turId} gecerli yonteme sahip degil`);
       return { id: kimlik++, tur, yontem, aktif: true, verimPpm: 0, isciPpm: 0 };
     });
-    return {
+    let tarim: BolgeTarimDurumu | undefined;
+    if (tarimTb !== null && bt.tarim !== undefined) {
+      tarim = {
+        toprakPpm: PPM,
+        ekimPpm: tarimTb.urun.map((_, i) => (i === 0 ? PPM : 0)),
+        gubreDozu: 0,
+        iklimPpm: PPM,
+        olayKaybiPpm: 0,
+        gubreKarsilanmaPpm: 0,
+      };
+    }
+    const bolge: BolgeDurumu = {
       indeks,
       id: bt.id,
       devlet: bt.devlet,
@@ -92,6 +109,8 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
       gidaKarsilanmaPpm: 1_000_000,
       ikmalKarsilanmaPpm: 1_000_000,
     };
+    if (tarim !== undefined) bolge.tarim = tarim;
+    return bolge;
   });
 
   const kenarlar: KenarDurumu[] = ic.harita.kenarlar.map((kt, indeks) => {
@@ -117,7 +136,7 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
   const rng = {} as Dunya["rng"];
   for (const akis of PRNG_AKISLARI) rng[akis] = prngOlustur(tohum, akis);
 
-  return {
+  const dunya: Dunya = {
     zaman: 0,
     tohum,
     bolgeler,
@@ -138,4 +157,7 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
     sayac: { olay: 0, kimlik },
     kuyruk: [],
   };
+  // İklim durumu yalnız tarım açıkken yazılır. İlk günlük tık (t = 0) Simulasyon.olustur tarafından planlanır.
+  if (tarimTb !== null) dunya.iklim = { olaylar: [], sonGun: tarimTb.iklim.baslangicGunu - 1 };
+  return dunya;
 }

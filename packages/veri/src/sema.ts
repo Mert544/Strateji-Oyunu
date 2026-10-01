@@ -42,12 +42,26 @@ const kayit = z.record(kimlik, negatifOlmayan);
 
 const etiket = z.enum(["kiyi", "dag", "ova", "liman", "dar_gecit"]);
 const kenarTuru = z.enum(["kara", "deniz", "hava"]);
+const iklimTipi = z.enum(["akdeniz", "karasal", "karadeniz", "balkan_kita", "kurak", "dag_yayla"]);
+
+/** İşaretli tamsayı (negatif olabilir). */
+const isaretliTamsayi = tamsayi;
 
 // ---------------------------------------------------------------------------
 // Harita
 // ---------------------------------------------------------------------------
 
 const koordinat = tamsayi.min(0, "0-1000 araliginda olmali").max(1000, "0-1000 araliginda olmali");
+
+/** Bölge tarım alanı (B1, opsiyonel). */
+const bolgeTarimSema = z
+  .object({
+    toprakTabanPpm: tamsayi.min(300_000, "en az 300000 olmali").max(1_200_000, "en fazla 1200000 olabilir"),
+    iklimTipi,
+    tarimTesisTavani: tamsayi.min(0).max(20, "en fazla 20 olabilir"),
+    sulanabilirPpm: negatifOlmayan.max(1_000_000, "ppm en fazla 1_000_000 olabilir"),
+  })
+  .strict();
 
 const devletSema = z
   .object({ id: kimlik, ad: metin, blok: kimlik })
@@ -71,6 +85,7 @@ const bolgeSema = z
       })
       .strict()
       .optional(),
+    tarim: bolgeTarimSema.optional(),
   })
   .strict();
 
@@ -123,6 +138,8 @@ const yontemSema = z
     bakim: kayit,
     gerekliTeknoloji: kimlik.optional(),
     rezerv: kimlik.optional(),
+    tarimsal: z.boolean().optional(),
+    sulama: z.boolean().optional(),
   })
   .strict();
 
@@ -137,6 +154,7 @@ const tesisTuruSema = z
     gerekliEtiket: etiket.optional(),
     gerekliRezerv: kimlik.optional(),
     gerekliTeknoloji: kimlik.optional(),
+    tarimTesisi: z.boolean().optional(),
   })
   .strict();
 
@@ -170,6 +188,16 @@ const birlikSema = z
   })
   .strict();
 
+const tarimUrunSema = z
+  .object({
+    id: kimlik,
+    ad: metin,
+    ciktiPpm: negatifOlmayan.max(3_000_000, "ciktiPpm en fazla 3000000 olabilir"),
+    toprakDegisimPpmGun: isaretliTamsayi.min(-1_000_000).max(1_000_000),
+    olayDuyarliligiPpm: ppmSiniri,
+  })
+  .strict();
+
 export const IcerikSema = z
   .object({
     surum: z.literal(1),
@@ -178,12 +206,69 @@ export const IcerikSema = z
     tesisTurleri: z.array(tesisTuruSema),
     teknolojiler: z.array(teknolojiSema),
     birlikler: z.array(birlikSema),
+    tarimUrunleri: z.array(tarimUrunSema).optional(),
   })
   .strict();
 
 // ---------------------------------------------------------------------------
 // Parametreler
 // ---------------------------------------------------------------------------
+
+/** 12 aylık tamsayı dizisi (ppm veya gün). */
+const onIkiAy = z.array(negatifOlmayan).length(12, "12 eleman (ay) olmali");
+
+/** Anahtarları iklim tipleri olan nesne (z.record Partial üretir; tam sözleşme uyumu için açık nesne). */
+function iklimTipiKaydi<T extends z.ZodTypeAny>(deger: T) {
+  return z
+    .object({
+      akdeniz: deger,
+      karasal: deger,
+      karadeniz: deger,
+      balkan_kita: deger,
+      kurak: deger,
+      dag_yayla: deger,
+    })
+    .strict();
+}
+
+const iklimOlayProfilSema = z
+  .object({
+    sureGunMin: pozitif,
+    sureGunMax: pozitif,
+    siddetMinPpm: ppmSiniri,
+    siddetMaxPpm: ppmSiniri,
+    menzilKenar: negatifOlmayan.max(8, "en fazla 8 olabilir"),
+    yayilimPpm: ppmSiniri,
+    olasilikPpmGun: onIkiAy.refine((a) => a.every((x) => x <= 1_000_000), "ppm en fazla 1_000_000 olabilir"),
+  })
+  .strict();
+
+const iklimOlayKaydi = <T extends z.ZodTypeAny>(deger: T) =>
+  z.object({ kuraklik: deger, don: deger, sel: deger, kis_firtinasi: deger }).strict();
+
+const iklimSema = z
+  .object({
+    baslangicGunu: negatifOlmayan.max(364, "0..364 olmali"),
+    gunCarpani: pozitif.max(365, "en fazla 365 olabilir"),
+    ayGunleri: onIkiAy,
+    uyariSaat: negatifOlmayan,
+    hasatEgrisiPpm: iklimTipiKaydi(onIkiAy),
+    olaylar: iklimOlayKaydi(iklimOlayProfilSema),
+    tipOlasilikCarpaniPpm: iklimOlayKaydi(iklimTipiKaydi(negatifOlmayan.max(100_000_000, "en fazla 100000000 olabilir"))),
+    sulamaKuraklikKorumaPpm: ppmSiniri,
+    sulamaDipPpm: ppmSiniri,
+  })
+  .strict();
+
+const tarimParamSema = z
+  .object({
+    toprakTabaniPpm: ppmSiniri,
+    gubreTuketimiSaat: negatifOlmayan,
+    gubreToprakPpmGun: negatifOlmayan,
+    gubreCiktiEkiPpm: negatifOlmayan,
+    azamiGubreDozu: negatifOlmayan.max(10, "en fazla 10 olabilir"),
+  })
+  .strict();
 
 export const ParametreSema = z
   .object({
@@ -271,6 +356,8 @@ export const ParametreSema = z
         yayilimIndirimiPpm: ppmSiniri,
       })
       .strict(),
+    iklim: iklimSema.optional(),
+    tarim: tarimParamSema.optional(),
   })
   .strict();
 

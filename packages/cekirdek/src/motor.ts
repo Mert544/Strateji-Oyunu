@@ -12,6 +12,7 @@ import { dunyaKur } from "./kurulum";
 import { lojistikCoz, lojistikKomutu } from "./lojistik/cozum";
 import { durumOzeti } from "./ozet";
 import { politikaKomutu } from "./politika";
+import { iklimGunluk, tarimKomutu } from "./tarim";
 import { oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
 import { arastirmaBitti, teknolojiKomutu } from "./teknoloji";
 import { GUN, SAAT } from "./tipler";
@@ -59,6 +60,8 @@ export class Simulasyon {
     const dunya = dunyaKur(ic, tohum);
     const s = new Simulasyon(ic, dunya, []);
     s.baglam.planla(dunya, 0, { tur: "saatlik_tik" });
+    // Tarım açıksa ilk günlük iklim tıkı t = 0'da (dünya iklim durumu varsa); kapalıysa kuyruğa hiçbir şey eklenmez.
+    if (dunya.iklim !== undefined) s.baglam.planla(dunya, 0, { tur: "iklim_gunluk" });
     s.baglam.kirlet(dunya);
     return s;
   }
@@ -116,6 +119,9 @@ export class Simulasyon {
       case "ticaret_emri":
       case "vergi_ayarla":
         return ekonomiKomutu(d, ctx, oyuncu, komut);
+      case "ekim_plani":
+      case "gubre_dozu":
+        return tarimKomutu(d, ctx, oyuncu, komut);
       case "kenar_gelistir":
       case "askeri_rezerv":
         return lojistikKomutu(d, ctx, oyuncu, komut);
@@ -265,6 +271,9 @@ export class Simulasyon {
         ctx.planla(d, (Math.floor(d.zaman / SAAT) + 1) * SAAT, { tur: "saatlik_tik" });
         break;
       }
+      case "iklim_gunluk":
+        iklimGunluk(d, ctx);
+        break;
       case "cozum": {
         const l = d.lojistik;
         // Kirli değilse (aynı anda birden çok çözüm planlanmışsa) fazlalık sessizce yok sayılır.

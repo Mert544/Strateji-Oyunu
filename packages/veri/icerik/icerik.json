@@ -12,18 +12,19 @@
     { "id": "elektronik", "ad": "Elektronik", "kategori": "tuketim", "tabanFiyat": 400000, "lojistikOnceligi": 7, "bozulmaPpmGun": 3000 },
     { "id": "petrol", "ad": "Ham Petrol", "kategori": "ham", "tabanFiyat": 60000, "lojistikOnceligi": 3, "bozulmaPpmGun": 3000 },
     { "id": "yakit", "ad": "Yakıt", "kategori": "ara", "tabanFiyat": 100000, "lojistikOnceligi": 2, "bozulmaPpmGun": 5000 },
-    { "id": "muhimmat", "ad": "Mühimmat", "kategori": "askeri", "tabanFiyat": 150000, "lojistikOnceligi": 0, "bozulmaPpmGun": 2000 }
+    { "id": "muhimmat", "ad": "Mühimmat", "kategori": "askeri", "tabanFiyat": 150000, "lojistikOnceligi": 0, "bozulmaPpmGun": 2000 },
+    { "id": "gubre", "ad": "Gübre", "kategori": "ara", "tabanFiyat": 140000, "lojistikOnceligi": 4, "bozulmaPpmGun": 1000 }
   ],
   "yontemler": [
     {
       "id": "geleneksel_tarim", "ad": "Geleneksel Tarım",
       "girdiler": {}, "ciktilar": { "tahil": 200000 }, "isci": 15000,
-      "bakim": { "parca": 500 }, "rezerv": "tahil"
+      "bakim": { "parca": 500 }, "rezerv": "tahil", "tarimsal": true
     },
     {
       "id": "mekanize_tarim", "ad": "Mekanize Tarım",
       "girdiler": { "yakit": 20000, "parca": 4000 }, "ciktilar": { "tahil": 320000 }, "isci": 8000,
-      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "mekanize_tarim", "rezerv": "tahil"
+      "bakim": { "parca": 1500 }, "gerekliTeknoloji": "mekanize_tarim", "rezerv": "tahil", "tarimsal": true
     },
     {
       "id": "standart_gida_isleme", "ad": "Standart Gıda İşleme",
@@ -99,13 +100,34 @@
       "id": "standart_muhimmat", "ad": "Standart Mühimmat Hattı",
       "girdiler": { "celik": 30000, "yakit": 10000 }, "ciktilar": { "muhimmat": 40000 }, "isci": 5000,
       "bakim": { "parca": 1000 }
+    },
+    {
+      "id": "ahir_besi", "ad": "Ahır Besiciliği",
+      "girdiler": { "tahil": 120000 }, "ciktilar": { "gida": 70000, "gubre": 12000 }, "isci": 5000,
+      "bakim": { "parca": 500 }
+    },
+    {
+      "id": "mera_hayvancilik", "ad": "Mera Hayvancılığı",
+      "girdiler": {}, "ciktilar": { "gida": 70000, "gubre": 6000 }, "isci": 9000,
+      "bakim": { "parca": 500 }, "tarimsal": true
+    },
+    {
+      "id": "azotlu_gubre", "ad": "Azotlu Gübre Üretimi",
+      "girdiler": { "petrol": 50000 }, "ciktilar": { "gubre": 40000 }, "isci": 6000,
+      "bakim": { "parca": 1000 }
+    },
+    {
+      "id": "sulama_pompasi", "ad": "Sulama Pompası",
+      "girdiler": { "yakit": 8000 }, "ciktilar": {}, "isci": 3000,
+      "bakim": { "parca": 500 }, "sulama": true
     }
   ],
   "tesisTurleri": [
     {
       "id": "ciftlik", "ad": "Çiftlik",
       "insaMaliyeti": { "celik": 30000, "parca": 10000 }, "insaParasi": 6000000, "insaSuresiSaat": 4,
-      "yontemler": ["geleneksel_tarim", "mekanize_tarim"], "gerekliEtiket": "ova", "gerekliRezerv": "tahil"
+      "yontemler": ["geleneksel_tarim", "mekanize_tarim"], "gerekliEtiket": "ova", "gerekliRezerv": "tahil",
+      "tarimTesisi": true
     },
     {
       "id": "gida_fabrikasi", "ad": "Gıda Fabrikası",
@@ -161,6 +183,26 @@
       "id": "muhimmat_fabrikasi", "ad": "Mühimmat Fabrikası",
       "insaMaliyeti": { "celik": 80000, "parca": 30000 }, "insaParasi": 15000000, "insaSuresiSaat": 8,
       "yontemler": ["standart_muhimmat"]
+    },
+    {
+      "id": "ahir", "ad": "Ahır",
+      "insaMaliyeti": { "celik": 40000, "parca": 15000 }, "insaParasi": 8000000, "insaSuresiSaat": 6,
+      "yontemler": ["ahir_besi"], "gerekliEtiket": "ova", "tarimTesisi": true
+    },
+    {
+      "id": "mera", "ad": "Mera",
+      "insaMaliyeti": { "celik": 20000, "parca": 5000 }, "insaParasi": 4000000, "insaSuresiSaat": 4,
+      "yontemler": ["mera_hayvancilik"], "gerekliEtiket": "dag", "tarimTesisi": true
+    },
+    {
+      "id": "gubre_fabrikasi", "ad": "Gübre Fabrikası",
+      "insaMaliyeti": { "celik": 80000, "parca": 30000 }, "insaParasi": 15000000, "insaSuresiSaat": 10,
+      "yontemler": ["azotlu_gubre"]
+    },
+    {
+      "id": "sulama_kanali", "ad": "Sulama Kanalı",
+      "insaMaliyeti": { "celik": 50000, "parca": 20000 }, "insaParasi": 8000000, "insaSuresiSaat": 8,
+      "yontemler": ["sulama_pompasi"], "gerekliTeknoloji": "sulama_sistemi"
     }
   ],
   "teknolojiler": [
@@ -169,6 +211,12 @@
       "aciklama": "Çiftliklerde mekanize tarım yöntemini açar: daha çok tahıl, daha az işçi; yakıt ve parça tüketir.",
       "maliyet": 15000000, "sureGun": 2, "onKosullar": [],
       "acar": { "yontemler": ["mekanize_tarim"] }
+    },
+    {
+      "id": "sulama_sistemi", "ad": "Sulama Sistemi",
+      "aciklama": "Sulama kanalı tesisini açar: hasat oranının diplerini yumuşatır ve kuraklık şiddetini azaltır; yakıt tüketir.",
+      "maliyet": 20000000, "sureGun": 2, "onKosullar": [],
+      "acar": { "tesisTurleri": ["sulama_kanali"] }
     },
     {
       "id": "derin_madencilik", "ad": "Derin Madencilik",
@@ -212,5 +260,10 @@
       "maliyet": { "celik": 80000, "parca": 30000, "yakit": 20000 }, "partiSuresiSaat": 18, "guc": 260,
       "ikmal": { "yakit": 3000, "muhimmat": 1200, "parca": 500 }, "gerekliTeknoloji": "mekanize_ordu"
     }
+  ],
+  "tarimUrunleri": [
+    { "id": "bugday", "ad": "Buğday", "ciktiPpm": 1000000, "toprakDegisimPpmGun": -9000, "olayDuyarliligiPpm": 1000000 },
+    { "id": "baklagil", "ad": "Baklagil", "ciktiPpm": 450000, "toprakDegisimPpmGun": 4000, "olayDuyarliligiPpm": 600000 },
+    { "id": "nadas", "ad": "Nadas", "ciktiPpm": 0, "toprakDegisimPpmGun": 12000, "olayDuyarliligiPpm": 0 }
   ]
 }

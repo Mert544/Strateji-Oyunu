@@ -6,6 +6,7 @@
 import { maliyetYeterliMi, maliyetiDus } from "./maliyet";
 import { icerikTablosu } from "./tablo";
 import { hizlandirilmisSure } from "../erkenOyun";
+import { tarimTablosu } from "../tarim/tablo";
 import { tesisTuruAcikMi, yontemAcikMi } from "../teknoloji";
 import { oyuncuBul } from "../stok";
 import { PPM, SAAT } from "../tipler";
@@ -50,6 +51,15 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
       }
       if (tur.gerekliRezerv >= 0 && (b.rezervKalan[tur.gerekliRezerv] as number) <= 0) {
         return hata(`gerekli rezerv yok: ${tanim.gerekliRezerv}`);
+      }
+      // Tarım (B1): çiftlik + ahır + mera toplamı bölgenin tarimTesisTavani'nı (inşa edilen + devam eden) aşamaz.
+      const tt = tarimTablosu(ic);
+      const tarimTanim = ic.harita.bolgeler[b.indeks]?.tarim;
+      if (tt !== null && b.tarim !== undefined && tarimTanim !== undefined && tt.turTarimTesisi[ti] === true) {
+        let sayi = 0;
+        for (const x of b.tesisler) if (tt.turTarimTesisi[x.tur] === true) sayi++;
+        for (const i of d.insaatlar) if (i.tur === "tesis" && i.bolge === b.indeks && tt.turTarimTesisi[i.hedef] === true) sayi++;
+        if (sayi >= tarimTanim.tarimTesisTavani) return hata(`bolgenin tarim tesisi tavani dolu: ${tarimTanim.tarimTesisTavani}`);
       }
       const eksik = maliyetYeterliMi(d, b.indeks, oyuncu, tur.insaMaliyeti, tur.insaParasi);
       if (eksik !== null) return hata(eksik);
