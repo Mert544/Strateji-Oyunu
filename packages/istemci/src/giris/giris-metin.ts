@@ -86,7 +86,7 @@ export const GIRIS_METIN = {
   "giris.G8.vazgec": "Vazgeç",
   // Sahip metni (boş: ilgili satır gösterilmez)
   "giris.G8.hesap_sil": "Hesabı sil",
-  "giris.G8.hesap_sil_onay": "Hesabın silinince geri getirilemez; önce e-postana bir onay bağlantısı göndereceğiz. Devam edilsin mi?",
+  "giris.G8.hesap_sil_onay": "Hesabın silinince geri getirilemez; önce e-postana bir onay bağlantısı göndereceğiz. Devam etmek istiyor musun?",
   "giris.G8.hesap_sil_gonder": "Onay bağlantısı gönder",
   "giris.G8.hesap_sil_bildirim": "Onay bağlantısı e-postana gönderildi.",
   "giris.G8.hesap_sil_sonuc": "Onay bağlantısı e-postana gönderildi. Hesabın silinmedi; silmek için bağlantıdaki sayfada onayla.",
