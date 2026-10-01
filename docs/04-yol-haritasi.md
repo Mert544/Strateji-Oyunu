@@ -6,6 +6,8 @@
 
 > **Güncelleme (30 Eylül gece):** Aşama 3'ün yönü 3D gerçek Dünya + altı katman olarak değişti; bkz. [§8](#8-güncelleme-30-eylül-gece-aşama-3-yönü-3d-gerçek-dünya-ve-altı-katman).
 
+> **Güncelleme (1 Ekim): ürün dönüşü.** Oyun baştan paylaşılan, hesaplı bir parsel dünyasına dönüştü (sahip kararı; [00 K23–K35](00-vizyon-ve-kararlar.md), ADR: [11](11-urun-donusu.md)). Aşama 3–4 yerine **F0–F7 fazları** ve **Alfa-0 / Alfa-1 kapıları** geçerlidir; bkz. [§9](#9-güncelleme-1-ekim-ürün-dönüşü). §1–§8 tarihsel kayıt olarak korunur; Kapı 2 ölçütleri bölge kipinin (v0.3) donmuş temel çizgisi için geçerlidir.
+
 ---
 
 ## 1. Yol haritası: 4 aşama, 3 kapı
@@ -142,3 +144,79 @@ Bu bölüm yukarıdaki planı **bozmaz;** yeni kararların ([00 K17–K22](00-vi
 | A13 | Veri hattı ve hukuki inceleme (ODbL, atıf sayfası) | Yayından önce; [araştırma](arastirma/acik-kaynak-ve-veri.md) §4 |
 
 **Hatırlatma.** Simülasyon dengeyi ölçer, eğlenceyi kanıtlamaz ([00 R5](00-vizyon-ve-kararlar.md)); altı katmanın yinelenen kararları (toprak yorgunluğu, brownout, filo, bütçe, yasa) 20–25. gün sıkılmasına karşı **hipotezdir** ve insan testine kadar kanıtlanmış sayılmaz.
+
+## 9. Güncelleme (1 Ekim): ürün dönüşü
+
+Bu bölüm §1–§8'i silmez; 1 Ekim yön değişikliğinin yol haritasına etkisini toplar. Gerekçe, seçenekler ve v1 tasarımı [11 — Ürün Dönüşü (ADR)](11-urun-donusu.md) içindedir; kararlar [00 K23–K35](00-vizyon-ve-kararlar.md#2-kararlar-tablosu).
+
+**Ne değişti.**
+- **Hedef:** "önce arayüzsüz simülasyon, sonra 2D/3D prototip, en son çok oyunculu" sırası bitti. Yeni hedef **en kısa sürede çevrimiçi, hesaplı bir kapalı alfadır (Alfa-0)**. Döngü: ilçede arsa al → yapı inşa et → üret → sat.
+- **Aşama 3 ve Aşama 4** (§1, §4, §8) F0–F7 fazlarına katıldı. Çok oyunculu sunucu artık sonda değil, **kritik yolun başındadır**.
+- **Kapı 2** (§3) bölge kipinin ölçütü olarak kalır. v0.3 ölçümü (sabit commit `1a7fe08` worktree'sinde) **donmuş temel çizgi** olarak `docs/olcum/` altına arşivlenir. Faz B'nin bölge kipindeki kalan adımları (B4 Devlet, B5 Lojistik, B6 Teknoloji) yeni sıraya göre yeniden konumlandı: Devlet → F6 (il hükümeti), Lojistik → arka plan (ertelendi), Teknoloji → Alfa-1 sonrası.
+- **Hipotezler:** H1–H7 parsel dünyasına göre yeniden ifade edildi; **H8** (arazi yoğunlaşması) ve **H9** (emir dolumu, oy katılımı) eklendi ([11 §8](11-urun-donusu.md#8-ölçüm)).
+- **Değişmeyen ilkeler:** kapılar kanıt sırasıdır, takvim taahhüdü değildir; geçilmeyen kapıda önceki faz yinelenir; `pnpm kontrol` yeşil olmadan adım bitmiş sayılmaz; regresyon kalkanı (bölge kipinde `durumOzeti` birebir); simülasyon dengeyi ölçer, eğlenceyi kanıtlamaz.
+
+### 9.1 Fazlar ve kapılar
+
+**Kritik yol:** F1 serileştirici → F3 mülk modeli → F4 istemci entegrasyonu → F7a Alfa-0. F0, F2 ve F5 bu yolun yanında paralel yürür.
+
+| Faz | İçerik (özet) | Kabul | Kritik yol | Görevler ([10](10-gorev-listesi.md)) |
+|---|---|---|---|---|
+| **F0** Sakin görsel | Akış şeritleri ve parçacıklar kalkar; rozet (▲ ◯ ✓), Dikkat paneli, `tr-TR` biçimleyici; hız düğmeleri hata ayıklama menüsüne | `pnpm kontrol` yeşil; açık/koyu ekran görüntüsü; çizim çağrısı artmıyor | Hayır | E1-G10 |
+| **F1** Sunucu temeli | Serileştirici + `Simulasyon.yukle`; `packages/protokol`; `packages/sunucu` (Node + `ws`, sunucu `t`, idempotans, hız sınırı, Postgres günlük + anlık görüntü, grup commit); ilgi alanı süzgeci; Better Auth | Serileştir/yükle → özet eşit; başarısızlar atılıp yeniden oynatma → özet eşit; kill -9 → aynı özet; iki istemci aynı dünyayı görür | **Evet** | E18 |
+| **F2** Veri | OSM il/ilçe ağacı (TR, BG, RO, GR), il→bölge eşlemesi; z20 hücre ızgarası + uygunluk → PMTiles; Protomaps özütü; ODbL ayrı klasör | 81 il / ~973 ilçe; eşleme testi; bayt bayt determinizm; ilçe başına karo ≤150 KB (hedef) | Kısmen | E19 |
+| **F3** Çekirdek mülk modeli | Büyüyebilen düğüm, işletme (oyuncu, il), `parsel_al`, `tesis_insa {hucreler}`, `insaat_iptal`, arazi vergisi, hareketsizlik; MCF yalnız 53 merkez arası | Bölge kipinde eski testler yeşil; mini-6 parsel özellik testleri; 1k bot 30 gün ≤ bugünkü 21–22 sn (hedef) | **Evet** | E20 |
+| **F4** İstemci | MapLibre L1–L3, kırıntı yolu, arama; hücre seçimi ve satın alma; inşa modu (hayalet, 4 aşama, 2 kuyruk); socket bağdaştırıcısı; Giriş / Yerleş; telefonda alt sayfa | Playwright: giriş → Yerleş → hücre al → Tarla kur → tamamlanır → satış görünür; mobil düzen | **Evet** | E21 |
+| **F5** Yürüyüş (paralel) | Ayrı three.js sahnesi (~2×2 km), PMTiles + DEM, kinematik kontrolcü, CC0 karakter, mini harita, örneklenmiş inşa aşamaları | ≤60 çizim çağrısı; dizüstü 60 fps, orta telefon 30+ fps (hedef; gerçek cihazda) | Hayır | E22 |
+| **F6** Yönetişim + Devlet v1 | D1–D7 il hükümetine; muhtar (14 gün) ve vali (28 gün) seçimi; NPC vali varsayılanı; hafif askeri; H5 korumaları | H5 ve H9 testleri; yasa etki testleri | Hayır (Alfa-1) | E23 |
+| **F7a** Alfa-0 | Hetzner + Postgres + Cloudflare; WAL + gece yedeği + geri yükleme tatbikatı; metrikler; kural dönemi provası; yönetici paneli; atıf ekranı | Geri yükle → kuyruk → özet eşit; 100 botla yük testi; §9.2 | **Evet** | E24 |
+| **F7b** Alfa-1 | Yürüyüş + yönetişim + askeri; %70 doluluğa göre kademeli ilçe açılışı; Balkanlar | §9.3 | — | E24, E12-G12 |
+
+**Çekirdek yazar sırası (aynı anda tek ajan):** F1-a serileştirici → F3-a büyüyebilen düğüm ve işletme → F3-b parsel, yapı, vergi, hareketsizlik → F3-c lojistiğin gizlenmesi → F6 Devlet v1 ve seçim.
+
+### 9.2 Alfa-0 kapısı (davetlilere açmadan önce)
+
+Kapsam: Kocaeli + Sakarya + Bursa (~40 ilçe), ≤200 davetli; askeri, seçim ve yürüyüş yok (NPC vali, varsayılan yasalar).
+
+| # | Ölçüt | Başarısızsa önce bakılacak yer |
+|---|---|---|
+| A0-1 | F0, F1, F2 (Alfa illeri), F3 ve F4 kabul ölçütlerinin hepsi geçti | İlgili faz |
+| A0-2 | Regresyon kalkanı: bölge kipinde `durumOzeti` birebir; `pnpm kontrol` yeşil | F3 değişiklikleri |
+| A0-3 | Geri yükleme tatbikatı: yedekten geri yükle → kuyruğu oynat → özet eşit | Serileştirici, günlük, kural dönemi |
+| A0-4 | 100 botla yük testi; tik gecikmesi, günlük yazma gecikmesi ve çözüm süresi raporlu | Merkez MCF, ilgi alanı süzgeci |
+| A0-5 | Kural dönemi dağıtım provası (24 sa gölge yeniden oynatma, sapma raporu) | `kural_surumu_gec`, göç betikleri |
+| A0-6 | Uçtan uca Playwright akışı masaüstünde ve mobilde geçer | F4 |
+| A0-7 | Atıf ekranı görünür; OSM türevi veri ayrı klasörde (K24) | F2, E24 |
+| A0-8 | Parsel kipinde bot ölçümü (worktree): H5, H6, H7, H8 raporu üretildi ve değerlendirildi | Arazi fiyatı/vergisi, yeni oyuncu paketi |
+
+### 9.3 Alfa-1 kapısı (açık alfadan önce)
+
+| # | Ölçüt | Kaynak |
+|---|---|---|
+| A1-1 | Alfa-0'da veri kaybı yok; en az bir gerçek geri yükleme ya da yeniden başlatma özet eşitliğiyle geçti | Öneri (takım lideri) |
+| A1-2 | F5 kabulü gerçek cihazda ölçüldü (≤60 çizim çağrısı; dizüstü 60 fps; orta telefon 30+ fps) | Plan |
+| A1-3 | F6 kabulü: H5 korumaları özellik testleri (≤%25 yağma, ≤%10 yapı devre dışı, ≥49 sa ara, 0 parsel kaybı), yasa etki testleri, H9 oy katılımı | Plan |
+| A1-4 | Tam ölçüm raporu: H1–H9, 1k ve 10k bot, 90 gün, 10 tohum (worktree) | Plan |
+| A1-5 | H4 insan testi: 5 kişiden ≥4'ü 60 sn içinde "fabrikam neden yavaş?" ve "hangi yasa beni etkiliyor?" sorularını yanıtlar | Plan; A5'i kapatır |
+| A1-6 | ODbL ve kişisel veri için dış hukuki görüş alındı | K34; A13'ü kapatır |
+| A1-7 | Alfa-0 kohortundan D1/D7 gözlemi raporlandı (eşik yok; hipotez olarak sunulur) | Öneri (takım lideri) |
+
+### 9.4 Açık kararların yeni durumu
+
+| # | Karar | Durum (1 Ekim) |
+|---|---|---|
+| A1 | Coğrafya dilimi | Alfa-0 = Kocaeli + Sakarya + Bursa (K32); 53 bölge merkez düğüm (K31); Balkanlar Alfa-1 |
+| A2 | Sınır ve isim politikası | Kısmen kapandı (K33): gerçek il/ilçe adları, NPC ülke çerçevesi; yazılı dışlama listesi açık (E19-G8) |
+| A5 | H4 eşiği | Yeni H4 ifadesi katı eşikle (≥4/5) Alfa-1 kapısında |
+| A7 | Yetişme mekanizmaları | Yeni oyuncu paketi v1 tasarımının parçası (koşullu değil) |
+| A8 | Çok oyunculu sunucu zamanlaması | **Kapandı (K23):** baştan |
+| A11 | Teknoloji düğüm sayısı | Alfa-1 sonrasına ertelendi; Alfa-0'da mevcut 6 düğüm |
+| A13 | Veri hattı ve hukuki inceleme (ODbL) | OSM kabul (K24); dış görüş açık alfadan önce (K34) |
+| Yeni | Ürün dönüşü açık konuları Ü1–Ü14 | [11 §12](11-urun-donusu.md#12-açık-konular) |
+
+### 9.5 Sonraki adımlar
+
+1. **Sprint 1** (S1–S9; [10 §5](10-gorev-listesi.md#5-sprint-1-ürün-dönüşü-1-ekim)): S1, S2, S5, S6 ve S7 paralel → S3, S4, S8, S9. En çok 4–5 eşzamanlı ajan.
+2. **Sprint 2'nin ilk işi:** botların parsel kipine taşınması (E20-G10); ardından F3-b/c ve F4 entegrasyonu.
+3. v0.3 bölge kipi ölçümünü donmuş temel çizgi olarak arşivle (E12-G1).
+4. Alfa-0 kapısı (§9.2) → davetli kohort → Alfa-1 işleri (F5, F6) → Alfa-1 kapısı (§9.3).
