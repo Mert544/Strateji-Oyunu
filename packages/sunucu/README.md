@@ -462,13 +462,13 @@ $D logs sunucu | grep -c 'ornek.org'                                            
 ```
 Yerelde doğrulanan: davetliye 1 posta dosyası, davetsize yok ve aynı yanıt, yanlış Origin 403, onay 200, bilet 200, `/giris/ben` 200, günlükte adres yok. Postadaki bağlantıyı kullanmadan önce dosyayı silmek ya da bağlantıyı davetliye iletmek operatör işidir (SMTP yok). Bağlantı 10 dk geçerlidir, tek kullanımlıktır.
 
-**12. Davet listesi yüklendi**
+**12. Davet listesi yüklendi** (ön koşul: listede en az bir geçerli adres; boş liste açılışı durdurur)
 ```sh
 $D logs sunucu | grep '"olay":"hazir"' | grep -o '"davetli":[0-9a-z]*'           # beklenen: "davetli":<davetli adedi> (liste verildiyse); liste yoksa "davetli":null = kayıt herkese açık
 ls -l deploy/davet/                                                               # beklenen: dosya var ve okunabilir (644); deploy/davet git'e girmez (deploy/.gitignore)
 $D exec sunucu head -c 0 /davet/$(grep ^DAVETLI_LISTE_DOSYA deploy/.env | cut -d= -f2-) && echo okunabilir  # beklenen: okunabilir (konteynerde salt okunur bağlama)
 ```
-Liste yoksa (`davetli listesi okunamadi (ENOENT)`) ya da bozuksa (`davetli listesi satir N gecerli bir e-posta adresi degil`) sunucu AÇILMAZ (kapı sessizce açık kalmaz; ileti satır numarası verir, adres vermez). **BOŞ bir liste açılır** ve `"davetli":0` verir: liste kipi açıktır ama kimse davetli değildir, kimseye bağlantı gitmez (kapı tamamen kapalı); adet 0 ise dosyayı denetleyin. Yerelde üçü de denendi. Listeyi değiştirince `$D restart sunucu` ve `davetli` adedini yeniden denetleyin. Liste dosyası Alfa-0 sonunda silinir.
+Liste yoksa (`davetli listesi okunamadi (ENOENT)`), bozuksa (`davetli listesi satir N gecerli bir e-posta adresi degil`) ya da geçerli satır içermiyorsa (boş) sunucu AÇILMAZ, iki kimlik kipinde de (kapı sessizce açık ya da tamamen kapalı kalmaz; ileti satır numarası verir, adres vermez; boş liste reddi `takim/k2/davet-bos` ile gelir). Listeyi değiştirince `$D restart sunucu` ve `davetli` adedini yeniden denetleyin. Liste dosyası Alfa-0 sonunda silinir.
 
 **Sonuç ölçütü:** 1-12 geçtiyse ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
 
