@@ -3,13 +3,13 @@
  * Hepsi `asamaKutulari` ile aynı ayak izinde ve örneklenmiş kutu çiziminde (ek çizim çağrısı yok; sürekli animasyon yok).
  * Kutu: [x, y, z, sx, sy, sz, renkNo]; renkNo 0..4 `asamaKutulari` ile aynı, ek olarak
  *   10 sıcak ışık (fırın ağzı, tezgâh, baca parıltısı; palet `camIsik`), 11 çuval/bidon bej, 12 metal (silo, çerçeve, palet),
- *   13 tuğla (baca), 14 toprak/gübre. Cephe +z (güney) yüzündedir.
+ *   13 tuğla (baca), 14 toprak/gübre, 15 cam (palet `cam`; koyu temada içeriden ışıklı: `camIsik`). Cephe +z (güney) yüzündedir.
  */
 export type SiluetKutusu = [number, number, number, number, number, number, number];
 
 /** Silüet renk numaraları 10'dan başlar (0..7 genel yapı ve dükkân kutularına ayrılmıştır). */
 export const SILUET_RENK_ILK = 10;
-export const SILUET_RENK = { isik: 10, cuval: 11, metal: 12, tugla: 13, toprak: 14 } as const;
+export const SILUET_RENK = { isik: 10, cuval: 11, metal: 12, tugla: 13, toprak: 14, cam: 15 } as const;
 
 /** Yöntem kimliği (`icerik.yontemler[].id`) -> silüet; kimlik tanımsızsa `null` (genel bitmiş gövde çizilir). */
 export const SILUETLI_YONTEMLER = ["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma"] as const;
@@ -66,6 +66,11 @@ export function siluetKutulari(yontem: SiluetliYontem, c: number): SiluetKutusu[
       const bz = z0 + gen * 0.3;
       k.push([bx, y0 + 5.85, bz, 2.2, 13, 2.2, SILUET_RENK.tugla], [bx - 0.1, y0 + 18.85, bz - 0.1, 2.4, 0.4, 2.4, SILUET_RENK.isik]); // yüksek baca, ağzında sıcak parıltı
       k.push([x0 + gen * 0.3, y0 + 0.6, ze - 0.05, gen * 0.4, 1.8, 0.25, SILUET_RENK.isik]); // fırın ağzı
+      // cam rafı (üretilen cam levhalar): metal taban üzerinde dört dik cam levha (cam yüzey)
+      const rx = x0 + gen * 0.62;
+      const rz = ze - 3.2;
+      k.push([rx - 0.2, y0, rz - 0.2, 4.6, 0.2, 2.2, SILUET_RENK.metal]);
+      for (let i = 0; i < 4; i++) k.push([rx + i * 1.1, y0 + 0.2, rz, 0.08, 2.2, 1.8, SILUET_RENK.cam]);
       break;
     }
     case "celik_dograma": {
@@ -78,6 +83,8 @@ export function siluetKutulari(yontem: SiluetliYontem, c: number): SiluetKutusu[
         const y = y0 + 0.2 + f * 0.18;
         k.push([bx, y, bz, 3.0, 0.14, 0.25, SILUET_RENK.metal], [bx, y, bz + 1.75, 3.0, 0.14, 0.25, SILUET_RENK.metal], [bx, y, bz, 0.25, 0.14, 2.0, SILUET_RENK.metal], [bx + 2.75, y, bz, 0.25, 0.14, 2.0, SILUET_RENK.metal]);
       }
+      k.push([bx + 0.25, y0 + 0.2 + 2 * 0.18 + 0.14, bz + 0.25, 2.5, 0.06, 1.5, SILUET_RENK.cam]); // en üstteki çerçeveye takılı cam: bitmiş pencere
+      k.push([x0 + gen * 0.12, y0 + 2.2, z0 + gen * 0.75, gen * 0.76, 1.1, 0.12, SILUET_RENK.cam]); // cephede pencere şeridi
       break;
     }
   }

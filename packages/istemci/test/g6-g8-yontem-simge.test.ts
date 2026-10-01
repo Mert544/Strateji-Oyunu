@@ -27,6 +27,15 @@ describe("yöntem simgeleri", () => {
     expect(Object.keys(YONTEM_SIMGELERI).sort()).toEqual([...SILUETLI_YONTEMLER].sort());
     expect(yontemSimgesi("standart_gida_isleme")).toBeNull();
   });
+  it("G8: cam_firini glass-water, celik_dograma frame; L3 görüntü adı yontem-<kimlik>", () => {
+    expect([yontemSimgesi("cam_firini"), yontemSimgesi("celik_dograma")]).toEqual(["glass-water", "frame"]);
+    const k = yontemSimgeKatmani(() => "#000000") as unknown as { filter: unknown; layout: Record<string, unknown> };
+    for (const y of ["cam_firini", "celik_dograma"]) {
+      const f = { c: "#123456", a: 3, y };
+      expect(degerle(k.filter, f)).toBe(true);
+      expect(degerle(k.layout["icon-image"], f)).toBe(`yontem-${y}`);
+    }
+  });
   it("katman: yalnız yöntemi bilinen bitmiş yapıda; başkasının yapısında (y yok) hata vermez ve çizilmez", () => {
     const k = yontemSimgeKatmani(() => "#000000") as unknown as { filter: unknown; layout: Record<string, unknown> };
     const baskasi = { c: "#123456", a: 3 }; // `y` hiç yok

@@ -497,6 +497,8 @@ export class ArsaKatmani {
     switch (r) {
       case SILUET_RENK.isik:
         return p.koyu ? p.camIsik : karis(p.camIsik, p.insaat[3], 0.4);
+      case SILUET_RENK.cam:
+        return p.koyu ? karis(p.cam, p.camIsik, 0.7) : p.cam; // koyu temada içeriden ışıklı cam (sabit; animasyon yok)
       case SILUET_RENK.cuval:
         return karis(p.insaat[2], [1, 0.93, 0.78], 0.55);
       case SILUET_RENK.metal:

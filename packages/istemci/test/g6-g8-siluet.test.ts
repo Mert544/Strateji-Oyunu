@@ -38,6 +38,9 @@ describe("yöntem silüetleri", () => {
     expect(say("cam_firini", SILUET_RENK.isik)).toBe(2);
     expect(Math.max(...siluetKutulari("cam_firini", c).map((b) => b[1] + b[4]))).toBeGreaterThan(15); // yüksek baca
     expect(say("celik_dograma", SILUET_RENK.metal)).toBe(1 + 12); // palet + 3 çerçeve × 4 çubuk
+    // G8: cam ve pencere üreten tesislere ayırt edici cam dokunuşu (cam rafı; çerçeveye takılı cam + cephe pencere şeridi)
+    expect([say("cam_firini", SILUET_RENK.cam), say("celik_dograma", SILUET_RENK.cam)]).toEqual([4, 2]);
+    for (const y of SILUETLI_YONTEMLER.filter((x) => x !== "cam_firini" && x !== "celik_dograma")) expect(say(y, SILUET_RENK.cam), y).toBe(0);
   });
   it("yalnız tek tutarlı biçim: gövde ve çatı her yöntemde var; iki yöntemin silüeti aynı değil", () => {
     for (const y of SILUETLI_YONTEMLER) expect([say(y, 3), say(y, 4)].every((n) => n >= 1), y).toBe(true);
@@ -49,7 +52,7 @@ describe("katman ve örnek veri", () => {
   const sahipl = (h: string[]): IlceSahipligi => ({ ilce: "x", uygun: 1000, satilmis: h.length, hucreler: new Map(h.map((id) => [id, { sahip: "bot", sinif: "kirsal" as const, degerMili: 1, alinma: 0 }])) });
   const pal = {
     koyu: true, ben: [0, 0.47, 0.51], baskasi: [0.5, 0.5, 0.5], sinif: new Float32Array(120).fill(0.4), izgara: [0.5, 0.5, 0.5], izgaraAlfa: 0.1,
-    camIsik: [1, 0.7, 0.3], marka: new Float32Array(36).fill(0.5), insaat: [[0.5, 0.5, 0.5], [0.6, 0.5, 0.4], [0.7, 0.7, 0.7], [0.8, 0.8, 0.7]],
+    camIsik: [1, 0.7, 0.3], cam: [0.6, 0.75, 0.8], marka: new Float32Array(36).fill(0.5), insaat: [[0.5, 0.5, 0.5], [0.6, 0.5, 0.4], [0.7, 0.7, 0.7], [0.8, 0.8, 0.7]],
   } as unknown as YuruPaleti;
   const m = (): ShaderMaterial => new ShaderMaterial();
   it("yöntemli Tamam yapı silüet kutuları çizer (örnek sayısı farklı), ek nesne açmaz; inşaatta yöntem görünmez", () => {
