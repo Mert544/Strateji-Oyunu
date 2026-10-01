@@ -82,6 +82,35 @@ services:
       - "127.0.0.1:${METRIK_YAYIN_PORT:-9464}:9464"
     # Dosya deposu istenirse (BOLGE_DEPO=dosya): /veri hacmi imajda tanimlidir; compose'ta pg varsayilandir.
 
+  # Duzenli yedek (Alfa-0): her gun YEDEK_SAAT'te (UTC) deploy/yedek-dondur.sh: pg_dump + sha256, dogrulama, en yeni YEDEK_SAKLA yedek kalir.
+  # Betikler imaja GIRMEZ (salt okunur baglama); yedekler ana makinedeki YEDEK_DIZIN dizinine yazilir (varsayilan deploy/yedekler, git disi).
+  # Yedek yalniz pg'yi kapsar: BILET_SIRRI/.env ve davet listesi AYRICA saklanir. Yedegi baska diske/makineye kopyalayin (ayni disk yedek degildir).
+  yedek:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    depends_on:
+      pg:
+        condition: service_healthy
+    entrypoint: ["bash", "/yedek/yedek-dongu.sh"]
+    environment:
+      YEDEK_PG_URL: postgres://bolge@pg:5432/bolge
+      PGPASSWORD: ${PG_SIFRE:?PG_SIFRE gerekli}
+      YEDEK_HEDEF: /yedekler
+      YEDEK_SAKLA: ${YEDEK_SAKLA:-7}
+      YEDEK_SAAT: ${YEDEK_SAAT:-00:30}
+    volumes:
+      - ./yedek.sh:/yedek/yedek.sh:ro
+      - ./yedek-dondur.sh:/yedek/yedek-dondur.sh:ro
+      - ./yedek-dongu.sh:/yedek/yedek-dongu.sh:ro
+      - ${YEDEK_DIZIN:-./yedekler}:/yedekler
+    healthcheck:
+      # Son BASARILI yedek 26 saatten yeni olmali (gunde bir yedek + pay). Ilk yedek konteyner baslarken alinir.
+      test: ["CMD-SHELL", "test -n \"$$(find /yedekler/.son-basari -mmin -1560 2>/dev/null)\""]
+      interval: 10m
+      timeout: 10s
+      retries: 1
+      start_period: 10m
+
 volumes:
   pgdata:
   veri:

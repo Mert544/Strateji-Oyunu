@@ -219,6 +219,8 @@ BOLGE_PG_URL=".../bolge_yeni" pnpm sunucu -- --depo pg --dunya ana       # sunuc
 
 `PG_BIN=/usr/lib/postgresql/16/bin` ile istemci araçlarının dizini verilebilir. `.sha256` yedeğin yanında varsa geri yükleme önce doğrular, uyuşmazsa durur. **Sağlama:** geri yüklenen veritabanından açılan sunucunun `durumOzeti`'si, aynı sim zamanında canlı dünyanın özetiyle aynıdır (seq ve profil çapaları da). Bu tatbikat `packages/sunucu/test/yedek-geri-yukle.test.ts` içinde gerçek pg ile otomatiktir (`BOLGE_PG_URL` arkasında; kaynak veritabanı + `yedek.sh` + `geri-yukle.sh --olustur` + sunucu açılışı, ayrıca dolu/var olan hedef ve bozuk sha reddi). Yedeği düzenli alın (ör. günlük cron) ve geri yüklemeyi dönemsel olarak deneyin; yedek yalnız pg'yi kapsar, `BOLGE_GELISTIRME_SIRRI`'nı ayrıca güvenle saklayın (kaybolursa oyuncu token'ları geçersiz olur).
 
+**Düzenli yedek (Alfa-0):** compose'taki `yedek` servisi günde bir kez (`YEDEK_SAAT`, UTC; varsayılan 00:30 = 03:30 TRT; ayrıca konteyner başlarken) `deploy/yedek-dondur.sh` çalıştırır: `deploy/yedek.sh` ile sha256'lı döküm, `sha256sum --check` ve `pg_restore --list` doğrulaması, YALNIZ ikisi geçerse eski yedeklerin döndürülmesi (en yeni `YEDEK_SAKLA` tane kalır, varsayılan 7 = 7 gün; yalnız `bolge-<UTC>.dump` ve `.sha256` dosyaları silinir, yedek alınamazsa hiçbir şey silinmez). Yedekler imaja girmez: ana makinedeki `YEDEK_DIZIN` (varsayılan `deploy/yedekler`, git dışı) `/yedekler` olarak bağlanır; betikler salt okunur bağlanır. Servisin `healthcheck`'i son başarılı yedeğin (`.son-basari`) 26 saatten yeni olmasını ister. Konteynersiz host için cron örneği `deploy/yedek-dondur.sh` başlığındadır. **Yedek yalnız pg'yi kapsar** (`.env`, `BILET_SIRRI`, davet listesi ayrıca saklanır) ve aynı diskte durması yedek sayılmaz: dizini başka diske ya da makineye kopyalayın. Geri yükleme: yukarıdaki `deploy/geri-yukle.sh <dump> <hedef-uri> --olustur`; operatör özeti [docs/alfa0-isletim.md](../../docs/alfa0-isletim.md) (varsa).
+
 ### Kural dönemi provası (içerik göçü)
 
 Kural sürümü değişimi (yeni kimlik eklemek, parametre/denge değiştirmek) bir dönem sınırı işidir; ayrıntı yukarıdaki "İçerik göçü" bölümündedir. Prova sırası:
@@ -486,7 +488,18 @@ $Q "$OZ"                                                                  # SONR
 ```
 Üretimde komut yine üretim sırlarını ister (kimlik kipi denetimi önce koşar; compose ortamı bunları verir) ve dünya adının ikinci kez yazılmasını (`BOLGE_TEST_DUNYA_SIL_ONAY` ya da `--evet-sil`). Reddedilenler (yerelde denendi): `ana` ("varsayilan/canli dunyadir"), `test` önekiyle başlamayan ad, 3 karakterden kısa önek, onaysız ya da yanlış onaylı `--uretim`, yazarı AÇIK dünya ("dunya acik, baska bir yazar calisiyor (advisory lock)"). Dosya deposunda aynı komutlar `--depo dosya --dizin <kök>/test_<ad>` ile çalışır (dizin adı da `test` ile başlamalı); silinen dosyalar `gunluk.jsonl`, `profil.jsonl`, `hesap.jsonl`, `oyun-oturum.jsonl`, `goruntu/*`; boş dizin kalır. Test oturumlarında oyun bağlantısı oturum kaydı için `OTURUM_KAYDI=1` (deploy/.env). Döküm (İ1): `$CLI --dok <boş dizin>` (aynı pg'den, açık sunucuyla da); dökümden açılan dünyanın `durumOzeti`'si kaynağın son görüntü özetiyle aynıdır.
 
-**Sonuç ölçütü:** 1-12 geçtiyse (13 insan testi sonrasıdır) ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
+**14. Yedek zamanlaması çalışıyor** (yerelde Docker'sız aynı betiklerle denendi)
+```sh
+$D ps yedek                                                  # beklenen: "Up (healthy)" (ilk yedek konteyner başlarken alınır; healthcheck ilk 10 dk bekler)
+$D logs yedek | tail -5                                      # beklenen: "yedek tamam: bolge-<UTC>.dump (saklanan: N, silinen: M, sakla=7)" ve "sonraki yedek: <yarın YEDEK_SAAT>"
+ls -l deploy/yedekler/ | head                                # beklenen: bolge-<UTC>.dump + .dump.sha256 çiftleri (en çok 7 çift) ve .son-basari
+( cd deploy/yedekler && sha256sum --check bolge-*.dump.sha256 )   # beklenen: hepsi OK
+# geri yükleme tatbikatı: en yeni yedekten YENİ bir veritabanına, açılışta durumOzeti canlıyla aynı (adım 5'in yöntemi)
+PG_BIN=<pg bin dizini> deploy/geri-yukle.sh deploy/yedekler/<en-yeni>.dump "postgres://bolge:<PG_SIFRE>@127.0.0.1:5432/bolge_geri" --olustur   # pg yayınlanmıyorsa adım 5'teki konteyner komutlarıyla
+```
+Yerelde (unix soketli pg 16) doğrulananlar: iki ardışık yedekte `--sakla 1` en eskisini siler; `--sakla 2` ile 2 çift kalır; var olmayan veritabanında `yedek HATA` ve kod 1, eski yedeklere ve yabancı dosyaya (`notlar.txt`) dokunulmaz; `--sakla 0` kod 2; son yedekten `geri-yukle.sh --olustur` sonrası açılan sunucunun `durumOzeti`'si kaynağınkiyle AYNI; `yedek-dongu.sh` başlangıçta bir yedek alır, sonra zamanlanan saatte (bir sonraki gün hesabı dahil) ikincisini alır ve `.son-basari` güncellenir. Konteyner ve healthcheck (`docker compose up`) daemon olmadığı için koşulamadı: ilk gerçek makinede bu adım ilk kez Docker ile denenecek. Yedek servisinin parola yolu `PGPASSWORD` ortamıdır (URI'de parola yok).
+
+**Sonuç ölçütü:** 1-12 geçtiyse (13 insan testi sonrasıdır; 14 düzenli yedek) ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
 
 ## Testler
 
