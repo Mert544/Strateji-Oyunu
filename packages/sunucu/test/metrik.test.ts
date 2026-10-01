@@ -374,7 +374,7 @@ describe("CLI ortam degiskenleri", () => {
       return String(o.hata);
     };
     // Uretimde varsayilan kimlik e-postadir: gelistirme sirri artik istenmez, bilet sirri istenir (ayrintili kip denetimi: giris-birim/giris-cli testleri).
-    const URETIM = { BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org", BOLGE_GENEL_URL: "https://sunucu.ornek.org" };
+    const URETIM = { BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", BOLGE_GUNLUK_TUZU: "uretim-icin-ayri-gunluk-tuzu-9876543210-abcdef", BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org", BOLGE_GENEL_URL: "https://sunucu.ornek.org" };
     expect(await hata({ BOLGE_URETIM: "1" })).toMatch(/BOLGE_BILET_SIRRI/);
     expect(await hata({ BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "kisa" })).toMatch(/32 karakter/);
     expect(await hata({ BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "degistir-uzun-rastgele-imza-sirri-0123456789" })).toMatch(/ornek/);

@@ -3,12 +3,13 @@
  * arayüz ve geliştirme bağdaştırıcıları vardır; hiçbir sır ya da adres gömülü değildir.
  *
  * - `dosya`: her postayı dizine bir JSON dosyası olarak yazar (geliştirme ve ÜRETİM PROVASI; testler okur).
- * - `konsol`: postayı stdout'a yazar (YALNIZ geliştirme: bağlantı günlüğe düşer, `--uretim`'de reddedilir).
+ * - `konsol`: postayı stdout'a yazar (YALNIZ geliştirme: bağlantı günlüğe düşer, `--uretim`'de reddedilir; adres yazılmaz, yalnız HMAC öneki).
  * - `bellek`: testler için.
  */
 import { randomBytes } from "node:crypto";
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { GunlukKimligi } from "./gunluk-kimlik";
 
 export interface Posta {
   kime: string;
@@ -45,12 +46,18 @@ export class DosyaPostaGondericisi implements PostaGonderici {
   }
 }
 
-/** stdout'a satır başına bir JSON (`{"olay":"posta",...}`). Üretimde kullanılmaz. */
+/**
+ * stdout'a satır başına bir JSON (`{"olay":"posta",...}`). Üretimde kullanılmaz. Adres (maskeli hâli de) YAZILMAZ (KVKK): `gunlukKimligi` verilirse yalnız
+ * `eposta_hmac` (8 hex) yazılır; bağlantı geliştirmede okunsun diye yazılır.
+ */
 export class KonsolPostaGondericisi implements PostaGonderici {
-  constructor(private readonly yaz: (satir: string) => void = (s) => void process.stdout.write(s)) {}
+  constructor(
+    private readonly yaz: (satir: string) => void = (s) => void process.stdout.write(s),
+    private readonly gunlukKimligi?: GunlukKimligi,
+  ) {}
 
   async gonder(p: Posta): Promise<void> {
-    this.yaz(JSON.stringify({ olay: "posta", kime: p.kime, konu: p.konu, baglanti: p.baglanti }) + "\n");
+    this.yaz(JSON.stringify({ olay: "posta", ...(this.gunlukKimligi ? { eposta_hmac: this.gunlukKimligi.eposta(p.kime) } : {}), konu: p.konu, baglanti: p.baglanti }) + "\n");
   }
 }
 

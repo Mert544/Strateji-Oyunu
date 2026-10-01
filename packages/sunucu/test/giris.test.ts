@@ -11,9 +11,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import WebSocket from "ws";
 import { SAAT, SISTEM_OYUNCUSU } from "@bolge/cekirdek";
 import { dosyaDeposu } from "../src/depo/dosya";
+import { GunlukKimligi } from "../src/giris/gunluk-kimlik";
 import { Imzalayici, biletUret } from "../src/giris/jeton";
 import { BellekPostaGondericisi } from "../src/giris/posta";
-import { BILET_SIRRI, GUN, IZINLI, biletleBaglan, girisOrtami } from "./giris-yardimci";
+import { BILET_SIRRI, GUN, GUNLUK_TUZU, IZINLI, biletleBaglan, girisOrtami } from "./giris-yardimci";
 import type { GirisOrtami, Tarayici } from "./giris-yardimci";
 import { bitisikSatilabilir } from "./yardimci";
 
@@ -460,9 +461,10 @@ describe("kullanici sizdirmama ve arka plan", () => {
     expect(r.durum).toBe(202);
     await o.hizmet.bosta();
     expect(o.hizmet.sayaclar.al("posta.hata")).toBe(1);
-    expect(JSON.stringify(o.gunluk)).not.toContain("kimse"); // yerel kısım ve tam adres yok; yalnız maskelenmiş adres (alan kalır)
+    expect(JSON.stringify(o.gunluk)).not.toContain("kimse"); // yerel kısım ve tam adres yok
+    expect(JSON.stringify(o.gunluk)).not.toMatch(/gizli|\*\*\*|@/); // alan adı ve maskeli hâl de YOK (KVKK): yalnız HMAC öneki
     expect(JSON.stringify(o.gunluk)).not.toContain("SMTP reddetti"); // hata iletisi yazılmaz
-    expect(o.gunluk.find((g) => g.olay === "giris_posta_hatasi")?.veri).toEqual({ kime: "k***@gizli.org", tur: "Error" });
+    expect(o.gunluk.find((g) => g.olay === "giris_posta_hatasi")?.veri).toEqual({ eposta_hmac: new GunlukKimligi(GUNLUK_TUZU).eposta("kimse@gizli.org"), tur: "Error" });
   });
 });
 
@@ -867,7 +869,8 @@ describe("gizlilik: depo, gunluk, metrik", () => {
       expect(hepsi, sir).not.toContain(sir);
     }
     expect(o.gunluk.map((g) => g.olay)).toEqual(expect.arrayContaining(["giris_posta_gonderildi", "giris_onaylandi", "giris_posta_hatasi"]));
-    expect(o.gunluk.find((g) => g.olay === "giris_posta_gonderildi")?.veri).toEqual({ kime: "g***@gizlialan.org" });
+    expect(o.gunluk.find((g) => g.olay === "giris_posta_gonderildi")?.veri).toEqual({ eposta_hmac: new GunlukKimligi(GUNLUK_TUZU).eposta("gizlikisi@gizlialan.org") });
+    expect(hepsi).not.toMatch(/gizlialan|\*\*\*@/); // alan adı ve maskeli hâl de günlükte/metrikte yok
     // Metrik: yalnız toplu sayılar.
     expect(metrik).toContain('bolge_giris_olay_toplam{olay="onay.tamam"} 1');
     expect(metrik).toContain('bolge_giris_olay_toplam{olay="onay.baglanti_gecersiz"} 1');

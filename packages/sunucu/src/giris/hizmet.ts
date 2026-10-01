@@ -16,7 +16,8 @@ import type { HizSiniriSecenekleri } from "../hiz-siniri";
 import { OyuncuCakismasi } from "../depo/tipler";
 import type { HesapDeposu, HesapKaydi, OturumKaydi } from "../depo/tipler";
 import { AuthKimligi } from "./auth-kimligi";
-import { epostaCoz, epostaMaskele, geciciAlanMi } from "./eposta";
+import { epostaCoz, geciciAlanMi } from "./eposta";
+import type { GunlukKimligi } from "./gunluk-kimlik";
 import type { EpostaBicimi } from "./eposta";
 import { Imzalayici, baglantiJetonuCoz, baglantiJetonuUret, biletUret, oturumBelirteciCoz, oturumBelirteciUret, ozet, rastgele, sabitEsit, silmeJetonuCoz, silmeJetonuUret } from "./jeton";
 import { AdUretici, adIletisi, adKelimeleriniYukle } from "./gorunen-ad";
@@ -121,6 +122,8 @@ export interface GirisHizmetiSecenekleri {
   /** Duvar saati (epoch ms); testler enjekte eder. */
   simdi?: () => number;
   gunluk?: GirisGunlugu;
+  /** Günlükte e-posta kimliği (HMAC öneki; KVKK). Verilmezse günlükte adresle ilgili HİÇBİR alan yazılmaz (maskeli hâli de). */
+  gunlukKimligi?: GunlukKimligi;
   /** Posta gönderimi zaman aşımı (ms). Varsayılan 15 000. */
   postaZamanAsimiMs?: number;
 }
@@ -186,6 +189,7 @@ export class GirisHizmeti {
   private readonly tarayiciBagli: boolean;
   private readonly simdi: () => number;
   private readonly gunluk: GirisGunlugu;
+  private readonly gunlukKimligi: GunlukKimligi | null;
   private readonly postaZamanAsimiMs: number;
   private readonly epostaSiniri: HizSiniri;
   private readonly ipSiniri: HizSiniri;
@@ -205,6 +209,11 @@ export class GirisHizmeti {
   private readonly sira = new Map<string, Promise<void>>();
   private readonly dinleyiciler: Array<(o: IptalOlayi) => void> = [];
 
+  /** Günlük alanı: yalnız adresin HMAC öneki (`eposta_hmac`); kimlik üretici yoksa boş (adres ve maskeli hâli günlüğe ASLA girmez). */
+  private epostaKimligi(kanonikAdres: string): Record<string, string> {
+    return this.gunlukKimligi === null ? {} : { eposta_hmac: this.gunlukKimligi.onek(kanonikAdres) };
+  }
+
   constructor(s: GirisHizmetiSecenekleri) {
     this.depo = s.depo;
     this.posta = s.posta;
@@ -218,6 +227,7 @@ export class GirisHizmeti {
     this.tarayiciBagli = s.tarayiciBagli ?? false;
     this.simdi = s.simdi ?? (() => Date.now());
     this.gunluk = s.gunluk ?? (() => undefined);
+    this.gunlukKimligi = s.gunlukKimligi ?? null;
     this.postaZamanAsimiMs = s.postaZamanAsimiMs ?? 15_000;
     this.sureler = { ...VARSAYILAN_GIRIS_SURELERI, ...s.sureler };
     const sinirlar = { ...VARSAYILAN_GIRIS_SINIRLARI, ...s.sinirlar };
@@ -303,11 +313,11 @@ export class GirisHizmeti {
       const baglanti = `${taban}${taban.includes("?") ? "&" : "?"}j=${encodeURIComponent(jeton)}`;
       await zamanAsimli(this.posta.gonder(girisPostasi(e.eposta, baglanti, Math.round(this.sureler.baglantiOmruMs / 60_000), tarayici !== null)), this.postaZamanAsimiMs);
       this.sayaclar.artir("posta.gonderildi");
-      this.gunluk("giris_posta_gonderildi", { kime: epostaMaskele(e.eposta) });
+      this.gunluk("giris_posta_gonderildi", this.epostaKimligi(e.anahtar));
     } catch (hata) {
       this.sayaclar.artir("posta.hata");
-      // Hata iletisi yazılmaz (adres ya da bağlantı içerebilir): yalnız tür ve maskelenmiş adres.
-      this.gunluk("giris_posta_hatasi", { kime: epostaMaskele(e.eposta), tur: hata instanceof Error ? hata.name : "Hata" });
+      // Hata iletisi yazılmaz (adres ya da bağlantı içerebilir): yalnız tür ve adresin HMAC öneki (adres ve maskeli hâli YAZILMAZ).
+      this.gunluk("giris_posta_hatasi", { ...this.epostaKimligi(e.anahtar), tur: hata instanceof Error ? hata.name : "Hata" });
     }
   }
 

@@ -41,6 +41,8 @@ services:
       # Bilet ve baglanti imza sirri: >= 32 karakter, 'degistir...'/'gelistirme...' ile baslamaz. Rotasyonda eski sir BILET_SIRRI_ESKI'de kalir.
       BOLGE_BILET_SIRRI: ${BILET_SIRRI:?BILET_SIRRI gerekli (>= 32 karakter)}
       BOLGE_BILET_SIRRI_ESKI: ${BILET_SIRRI_ESKI:-}
+      # Gunlukte e-posta kimligi (KVKK: adres ve maskeli hali YAZILMAZ; yalniz HMAC-SHA256 ilk 8 hex): tuz >= 32 karakter, 'degistir...'/'gelistirme...' ile baslamaz, BILET_SIRRI'ndan FARKLI olmali.
+      BOLGE_GUNLUK_TUZU: ${GUNLUK_TUZU:?GUNLUK_TUZU gerekli (>= 32 karakter, BILET_SIRRI'ndan farkli)}
       # Origin izin listesi (virgullu) ve postadaki baglantinin genel adresi (https): ikisi de zorunlu.
       BOLGE_IZINLI_KOKENLER: ${IZINLI_KOKENLER:?IZINLI_KOKENLER gerekli (virgullu Origin listesi, ornek https://oyun.ornek.org)}
       BOLGE_GENEL_URL: ${GENEL_URL:?GENEL_URL gerekli (https://...)}

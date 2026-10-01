@@ -9,6 +9,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { GunlukKimligi } from "../src/giris/gunluk-kimlik";
+import { VARSAYILAN_GUNLUK_TUZU } from "../src/giris/kip";
 import { SunucuIstemcisi } from "../src/istemci";
 import { Tarayici } from "./giris-yardimci";
 
@@ -69,6 +71,7 @@ const URETIM = {
   BOLGE_DEPO: "bellek",
   BOLGE_URETIM: "1",
   BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789",
+  BOLGE_GUNLUK_TUZU: "uretim-icin-ayri-gunluk-tuzu-9876543210-abcdef",
   BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org",
   BOLGE_GENEL_URL: "https://sunucu.ornek.org",
 };
@@ -99,6 +102,10 @@ describe("CLI: --uretim ve kimlik kipi", () => {
     expect(t.cikti()).not.toMatch(/gel1\./);
     // Üretimde konsol postacısı reddedilir.
     expect(await hata({ ...URETIM, BOLGE_POSTA: "konsol" })).toMatch(/konsol postacisi kapali/);
+    // Üretimde günlük tuzu zorunlu (KVKK: günlükte adres yok, tuzlu HMAC öneki) ve bilet sırrından farklı olmalı.
+    const { BOLGE_GUNLUK_TUZU: _t, ...tuzsuz } = URETIM;
+    expect(await hata(tuzsuz)).toMatch(/BOLGE_GUNLUK_TUZU acikca/);
+    expect(await hata({ ...URETIM, BOLGE_GUNLUK_TUZU: URETIM.BOLGE_BILET_SIRRI })).toMatch(/bilet sirrindan.*farkli/);
   }, 180_000);
 
   it("--token geliştirmede çalışır (bugunku gibi): gel1 token'i yazar ve cikar", async () => {
@@ -177,6 +184,10 @@ describe("CLI: e-posta kipi uctan uca (gelistirme, dosya postacisi)", () => {
     expect(s.cikti()).not.toContain(jeton);
     expect(s.cikti()).not.toContain("cli@ornek.org");
     expect(s.cikti()).not.toContain(bilet);
+    // KVKK: günlükte alan adı ve maskeli hâl de yok; ilişkilendirme için yalnız tuzlu HMAC öneki (geliştirmede örnek tuz + uyarı).
+    expect(s.cikti()).not.toMatch(/ornek\.org|\*\*\*@/);
+    expect(s.olaylar.find((o) => o.olay === "giris_posta_gonderildi")).toEqual({ olay: "giris_posta_gonderildi", eposta_hmac: new GunlukKimligi(VARSAYILAN_GUNLUK_TUZU).eposta("cli@ornek.org") });
+    expect(s.olaylar.some((o) => o.olay === "uyari" && String(o.mesaj).includes("BOLGE_GUNLUK_TUZU verilmedi"))).toBe(true);
     // Metrik portu yok; sağlık ucu etkilenmez.
     expect((await fetch(`${taban}/saglik`)).status).toBe(200);
     // Yabancı Origin reddedilir.

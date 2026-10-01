@@ -268,7 +268,7 @@ describe("CLI: --davetli-liste", () => {
     // Uretimde de (ayni kural): bos liste ile acilmaz.
     const bosUretim = join(d, "bos-uretim.txt");
     await writeFile(bosUretim, "# yorum\n");
-    expect((await hata({ ...TEMEL, BOLGE_URETIM: "1", BOLGE_ELLE_SAAT: "", BOLGE_DAVETLI_LISTE: bosUretim, BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org", BOLGE_GENEL_URL: "https://sunucu.ornek.org" })).hata).toMatch(/davetli listesi bos/);
+    expect((await hata({ ...TEMEL, BOLGE_URETIM: "1", BOLGE_ELLE_SAAT: "", BOLGE_DAVETLI_LISTE: bosUretim, BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", BOLGE_GUNLUK_TUZU: "uretim-icin-ayri-gunluk-tuzu-9876543210-abcdef", BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org", BOLGE_GENEL_URL: "https://sunucu.ornek.org" })).hata).toMatch(/davetli listesi bos/);
     // 1 satir: acilir.
     const bir = join(d, "bir.txt");
     await writeFile(bir, "# yorum\n  tek@ornek.org\n");

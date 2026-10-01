@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { Depo, HesapDeposu } from "../src/depo/tipler";
 import { bellekDeposu } from "../src/depo/bellek";
 import { geciciAlanlariYukle } from "../src/giris/eposta";
+import { GunlukKimligi } from "../src/giris/gunluk-kimlik";
 import { GirisHizmeti } from "../src/giris/hizmet";
 import type { GirisHizmetiSecenekleri } from "../src/giris/hizmet";
 import { GirisUclari } from "../src/giris/http";
@@ -16,6 +17,7 @@ import { mulkVerisi, testSunucusu } from "./yardimci";
 import type { TestSunucusu } from "./yardimci";
 
 export const BILET_SIRRI = "test-bilet-sirri-0123456789abcdef";
+export const GUNLUK_TUZU = "test-gunluk-tuzu-0123456789abcdef-ayri";
 export const IZINLI = "https://oyun.ornek.org";
 export const GUN = 24 * 3_600_000;
 
@@ -124,6 +126,7 @@ export async function girisOrtami(s: GirisOrtamiSecenekleri = {}): Promise<Giris
     geciciAlanlar: geciciAlanlariYukle(),
     simdi: saat.simdi,
     gunluk: (olay, veri) => void gunluk.push({ olay, veri: veri ?? {} }),
+    gunlukKimligi: new GunlukKimligi(GUNLUK_TUZU),
     ...s.hizmet,
   });
   const uclar = new GirisUclari({ hizmet, izinliKokenler: [IZINLI], ...s.uclar });

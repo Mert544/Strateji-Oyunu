@@ -1,13 +1,15 @@
 /** E-posta girişi birim testleri: adres ayrıştırma/normalleştirme, geçici alan listesi, belirteçler ve imza rotasyonu, posta bağdaştırıcıları, kip denetimi. */
+import { createHmac } from "node:crypto";
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { AuthKimligi } from "../src/giris/auth-kimligi";
-import { epostaCoz, epostaMaskele, geciciAlanMi, geciciAlanlariYukle } from "../src/giris/eposta";
+import { epostaCoz, geciciAlanMi, geciciAlanlariYukle } from "../src/giris/eposta";
+import { GUNLUK_KIMLIK_AMACI, GunlukKimligi } from "../src/giris/gunluk-kimlik";
 import { oyuncuKimligiUret } from "../src/giris/hizmet";
 import { Imzalayici, baglantiJetonuCoz, baglantiJetonuUret, biletCoz, biletUret, oturumBelirteciCoz, oturumBelirteciUret, ozet } from "../src/giris/jeton";
-import { EN_KISA_URETIM_SIRRI, VARSAYILAN_BILET_SIRRI, kimlikKipiCoz } from "../src/giris/kip";
+import { EN_KISA_URETIM_SIRRI, VARSAYILAN_BILET_SIRRI, VARSAYILAN_GUNLUK_TUZU, kimlikKipiCoz } from "../src/giris/kip";
 import type { KimlikKipiGirdisi } from "../src/giris/kip";
 import { DosyaPostaGondericisi, KonsolPostaGondericisi, girisPostasi } from "../src/giris/posta";
 
@@ -32,12 +34,6 @@ describe("e-posta ayristirma ve normallestirme", () => {
     }
     expect(epostaCoz("a@ornek.org")).not.toBeNull();
     expect(epostaCoz("a@ornek.org\n")?.eposta).toBe("a@ornek.org"); // baştaki/sondaki boşluk ve satır sonu kırpılır (yapıştırma)
-  });
-
-  it("maske: ilk karakter + *** + alan; tam adres ya da yerel kisim yazilmaz", () => {
-    expect(epostaMaskele("gizlikisi@ornek.org")).toBe("g***@ornek.org");
-    expect(epostaMaskele("x")).toBe("***");
-    expect(epostaMaskele("gizlikisi@ornek.org")).not.toContain("izlikisi");
   });
 });
 
@@ -170,7 +166,14 @@ describe("posta bagdastiricilari", () => {
     const satirlar: string[] = [];
     await new KonsolPostaGondericisi((s) => void satirlar.push(s)).gonder(girisPostasi("a@ornek.org", "http://x/giris/onay?j=t", 10, false));
     expect(satirlar).toHaveLength(1);
-    expect(JSON.parse(satirlar[0] as string)).toMatchObject({ olay: "posta", kime: "a@ornek.org", baglanti: "http://x/giris/onay?j=t" });
+    expect(JSON.parse(satirlar[0] as string)).toMatchObject({ olay: "posta", baglanti: "http://x/giris/onay?j=t" });
+    expect(satirlar[0]).not.toMatch(/ornek\.org\b(?!\/)|@|\*\*\*/); // adres, alan adı ve maskeli hâl YOK (bağlantı alanı dışında); kimlik üretici yoksa hiçbir kimlik alanı yok
+    expect(JSON.parse(satirlar[0] as string)).not.toHaveProperty("kime");
+    const kimlikli: string[] = [];
+    const gk = new GunlukKimligi("birim-test-gunluk-tuzu-0123456789");
+    await new KonsolPostaGondericisi((s2) => void kimlikli.push(s2), gk).gonder(girisPostasi("A@Ornek.org", "http://x/giris/onay?j=t", 10, false));
+    expect(JSON.parse(kimlikli[0] as string)).toMatchObject({ olay: "posta", eposta_hmac: gk.eposta("a@ornek.org") });
+    expect(kimlikli[0]).not.toMatch(/@|\*\*\*/);
     const p = girisPostasi("a@ornek.org", "http://x?j=t", 10, true);
     expect(p.metin).toContain("10 dakika");
     expect(p.metin).toContain("http://x?j=t");
@@ -183,6 +186,7 @@ describe("kimlik kipi ve uretim denetimleri", () => {
   const uretim = (ek: Partial<KimlikKipiGirdisi> = {}): KimlikKipiGirdisi => ({
     uretim: true,
     biletSirri: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789",
+    gunlukTuzu: "uretim-icin-ayri-gunluk-tuzu-9876543210-abcdef",
     izinliKokenler: ["https://oyun.ornek.org"],
     genelUrl: "https://sunucu.ornek.org",
     tokenKomutu: false,
@@ -229,5 +233,65 @@ describe("kimlik kipi ve uretim denetimleri", () => {
     expect(() => kimlikKipiCoz(uretim({ posta: "smtp" }))).toThrow(/bilinmeyen posta/);
     // Geliştirmede konsol serbest.
     expect(kimlikKipiCoz(gelistirme({ kimlik: "eposta", posta: "konsol" })).posta).toBe("konsol");
+  });
+});
+
+describe("gunluk e-posta kimligi (KVKK): adres ve maskeli hali yazilmaz, yalniz HMAC onek", () => {
+  const TUZ = "birim-test-gunluk-tuzu-0123456789";
+  const g = new GunlukKimligi(TUZ);
+
+  it("8 hex; ayni adres ayni onek; kanonik denklik (buyuk-kucuk harf, +takma, gmail noktalari); farkli adres farkli onek", () => {
+    const o = g.eposta("ali@ornek.org");
+    expect(o).toMatch(/^[0-9a-f]{8}$/);
+    expect(g.eposta("ali@ornek.org")).toBe(o);
+    expect(g.eposta("  ALI@Ornek.ORG ")).toBe(o);
+    expect(g.eposta("ali+takma@ornek.org")).toBe(o);
+    expect(g.eposta("a.l.i@gmail.com")).toBe(g.eposta("ali@googlemail.com"));
+    expect(g.eposta("veli@ornek.org")).not.toBe(o);
+    expect(g.eposta("ali@baska.org")).not.toBe(o);
+    expect(g.onek("ali@ornek.org")).toBe(o); // kanonik adresle ayni yol (hizmet `e.anahtar` verir)
+  });
+
+  it("tuz degisince onek degisir; ayni tuz yeni ornekte ayni", () => {
+    expect(new GunlukKimligi(TUZ).eposta("ali@ornek.org")).toBe(g.eposta("ali@ornek.org"));
+    expect(new GunlukKimligi(`${TUZ}-baska`).eposta("ali@ornek.org")).not.toBe(g.eposta("ali@ornek.org"));
+    expect(() => new GunlukKimligi("kisa")).toThrow(/en az 16/);
+  });
+
+  it("amaca ozel anahtar: onek, tuzun/bilet sirrinin kendisiyle HMAC'lenmis adres DEGIL; imza amaclariyla (baglanti/oturum) ayni anahtari paylasmaz", () => {
+    const dogrudan = createHmac("sha256", TUZ).update("ali@ornek.org").digest("hex").slice(0, 8);
+    expect(g.eposta("ali@ornek.org")).not.toBe(dogrudan);
+    const turetilmis = createHmac("sha256", createHmac("sha256", TUZ).update(`bolge-kimlik/v1/${GUNLUK_KIMLIK_AMACI}`).digest()).update("ali@ornek.org").digest("hex").slice(0, 8);
+    expect(g.eposta("ali@ornek.org")).toBe(turetilmis);
+    const imz = new Imzalayici([TUZ]);
+    for (const amac of ["baglanti", "oturum", "bilet"]) expect(imz.imzala(amac, "ali@ornek.org")).not.toContain(g.eposta("ali@ornek.org"));
+    expect(GUNLUK_KIMLIK_AMACI).not.toMatch(/^(baglanti|oturum|bilet|hesap-sil)$/);
+  });
+
+  it("onek adres, alan adi ya da maske icermez (regex)", () => {
+    for (const a of ["gizlikisi@gizlialan.org", "p@ornek.org", "x@y.co"]) {
+      const o = g.eposta(a);
+      expect(o).not.toMatch(/@|\*|\./);
+      expect(o).not.toContain("gizli");
+    }
+  });
+
+  it("kip: uretimde tuz ZORUNLU, ornek/kisa tuz ve bilet sirriyla ayni tuz reddedilir; gelistirmede tuz yoksa UYARI + ornek tuz, verilirse uyari yok", () => {
+    const uretim = (ek: Partial<KimlikKipiGirdisi> = {}): KimlikKipiGirdisi => ({ uretim: true, biletSirri: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", gunlukTuzu: "uretim-icin-ayri-gunluk-tuzu-9876543210-abcdef", izinliKokenler: ["https://oyun.ornek.org"], genelUrl: "https://sunucu.ornek.org", tokenKomutu: false, gelistirmeSirriVerildi: false, ...ek });
+    expect(kimlikKipiCoz(uretim()).gunlukTuzu).toBe("uretim-icin-ayri-gunluk-tuzu-9876543210-abcdef");
+    expect(() => kimlikKipiCoz(uretim({ gunlukTuzu: undefined } as unknown as Partial<KimlikKipiGirdisi>))).toThrow(/BOLGE_GUNLUK_TUZU acikca/);
+    expect(() => kimlikKipiCoz(uretim({ gunlukTuzu: "x".repeat(EN_KISA_URETIM_SIRRI - 1) }))).toThrow(/BOLGE_GUNLUK_TUZU en az 32/);
+    for (const kotu of [VARSAYILAN_GUNLUK_TUZU, `degistir-${"x".repeat(40)}`, `gelistirme-${"x".repeat(40)}`]) expect(() => kimlikKipiCoz(uretim({ gunlukTuzu: kotu })), kotu).toThrow(/varsayilan\/ornek/);
+    expect(() => kimlikKipiCoz(uretim({ gunlukTuzu: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789" }))).toThrow(/bilet sirrindan.*farkli/);
+    expect(() => kimlikKipiCoz(uretim({ biletSirriEski: "e".repeat(40), gunlukTuzu: "e".repeat(40) }))).toThrow(/bilet sirrindan.*farkli/);
+    const dev = kimlikKipiCoz({ uretim: false, kimlik: "eposta", izinliKokenler: [], tokenKomutu: false, gelistirmeSirriVerildi: false });
+    expect(dev.gunlukTuzu).toBe(VARSAYILAN_GUNLUK_TUZU);
+    expect(dev.uyarilar.join(" ")).toMatch(/BOLGE_GUNLUK_TUZU verilmedi/);
+    const verilmis = kimlikKipiCoz({ uretim: false, kimlik: "eposta", izinliKokenler: [], tokenKomutu: false, gelistirmeSirriVerildi: false, gunlukTuzu: "gelistirme-icin-baska-tuz-0123456789" });
+    expect(verilmis.gunlukTuzu).toBe("gelistirme-icin-baska-tuz-0123456789");
+    expect(verilmis.uyarilar).toEqual([]);
+    expect(() => kimlikKipiCoz({ uretim: false, kimlik: "eposta", izinliKokenler: [], tokenKomutu: false, gelistirmeSirriVerildi: false, gunlukTuzu: "kisa" })).toThrow(/en az 16/);
+    // gelistirme kimliginde e-posta girisi yok: tuz istenmez
+    expect(kimlikKipiCoz({ uretim: false, izinliKokenler: [], tokenKomutu: false, gelistirmeSirriVerildi: false }).gunlukTuzu).toBeUndefined();
   });
 });

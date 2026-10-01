@@ -3,7 +3,7 @@
  *
  * - `gelistirme`: `GelistirmeKimligi` (`gel1.<oyuncu>.<hmac>`, `--token` ile üretilir). `--uretim`'de REDDEDİLİR; orada hiç kurulmaz.
  * - `eposta`: e-posta bağlantısıyla giriş (ws bileti). Üretimin tek kipi ve üretimde varsayılandır.
- * Üretimde varsayılan/örnek sırlar reddedilir; konsol postacısı reddedilir (bağlantı günlüğe sızmasın); `Origin` izin listesi ve
+ * Üretimde varsayılan/örnek sırlar ve günlük tuzu (`BOLGE_GUNLUK_TUZU`, bilet sırrından farklı) zorunludur/reddedilir; konsol postacısı reddedilir (bağlantı günlüğe sızmasın); `Origin` izin listesi ve
  * https genel adresi zorunludur.
  */
 export type KimlikKipi = "gelistirme" | "eposta";
@@ -12,6 +12,8 @@ export type PostaTuru = "dosya" | "konsol";
 /** Geliştirmede (yalnız) kullanılan örnek bilet sırrı; üretimde reddedilir. */
 export const VARSAYILAN_BILET_SIRRI = "gelistirme-bilet-sirri-degistir-0123456789";
 export const EN_KISA_URETIM_SIRRI = 32;
+/** Geliştirmede (yalnız; uyarıyla) kullanılan örnek günlük tuzu; üretimde reddedilir (`gelistirme...`). */
+export const VARSAYILAN_GUNLUK_TUZU = "gelistirme-gunluk-tuzu-degistir-0123456789";
 
 export interface KimlikKipiGirdisi {
   uretim: boolean;
@@ -20,6 +22,8 @@ export interface KimlikKipiGirdisi {
   /** `BOLGE_BILET_SIRRI` ve rotasyondaki eski sır `BOLGE_BILET_SIRRI_ESKI`. */
   biletSirri?: string;
   biletSirriEski?: string;
+  /** `BOLGE_GUNLUK_TUZU`: günlükte e-posta kimliği (HMAC öneki) tuzu; bilet sırrından FARKLI olmalı. `eposta` kipinde üretimde zorunlu, geliştirmede yoksa uyarı + örnek tuz. */
+  gunlukTuzu?: string;
   /** `--posta` / `BOLGE_POSTA` (dosya | konsol); varsayılan dosya. */
   posta?: string;
   izinliKokenler: readonly string[];
@@ -36,6 +40,8 @@ export interface KimlikKipiSonucu {
   /** İmza sırları: ilki yeni, varsa ikincisi eski. Yalnız `eposta` kipinde. */
   sirlar: string[];
   posta: PostaTuru;
+  /** Günlük kimliği tuzu (yalnız `eposta` kipinde). */
+  gunlukTuzu?: string;
   uyarilar: string[];
 }
 
@@ -77,5 +83,15 @@ export function kimlikKipiCoz(g: KimlikKipiGirdisi): KimlikKipiSonucu {
   }
   const yeni = g.biletSirri ?? VARSAYILAN_BILET_SIRRI;
   if (yeni.length < 16) throw new Error("BOLGE_BILET_SIRRI en az 16 karakter olmali");
-  return { kip, sirlar: g.biletSirriEski !== undefined ? [yeni, g.biletSirriEski] : [yeni], posta, uyarilar };
+  // Günlük kimliği tuzu (KVKK: günlükte adres yok, yalnız HMAC öneki): üretimde zorunlu; imza sırlarından FARKLI (amaç ayrımı anahtar ayrımıyla tamamlanır).
+  let gunlukTuzu = g.gunlukTuzu;
+  if (g.uretim) {
+    if (gunlukTuzu === undefined) throw new Error("uretim kipi: BOLGE_GUNLUK_TUZU acikca verilmeli (gunlukte e-posta kimligi HMAC tuzu; bilet sirrindan farkli)");
+    uretimSirri("BOLGE_GUNLUK_TUZU", gunlukTuzu);
+  } else if (gunlukTuzu === undefined) {
+    gunlukTuzu = VARSAYILAN_GUNLUK_TUZU;
+    uyarilar.push("BOLGE_GUNLUK_TUZU verilmedi: gelistirme icin ornek tuz kullaniliyor (gunlukteki e-posta kimligi onekleri tahmin edilebilir; uretimde tuz zorunludur)");
+  } else if (gunlukTuzu.length < 16) throw new Error("BOLGE_GUNLUK_TUZU en az 16 karakter olmali");
+  if (gunlukTuzu === yeni || gunlukTuzu === g.biletSirriEski) throw new Error("BOLGE_GUNLUK_TUZU bilet sirrindan (BOLGE_BILET_SIRRI/_ESKI) farkli olmali: jeton anahtariyla ayni anahtar kullanilmaz");
+  return { kip, sirlar: g.biletSirriEski !== undefined ? [yeni, g.biletSirriEski] : [yeni], posta, gunlukTuzu, uyarilar };
 }

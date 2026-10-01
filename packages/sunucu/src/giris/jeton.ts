@@ -26,6 +26,11 @@ export function sabitEsit(a: string, b: string): boolean {
 
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 
+/** Sırdan AMAÇ BAŞINA alt anahtar (HMAC deseni): bir amacın anahtarı başka amaçta kullanılmaz. İmzalar ve günlük kimliği (`gunluk-kimlik.ts`) aynı türetimi kullanır. */
+export function amacAnahtari(sir: string, amac: string): Buffer {
+  return createHmac("sha256", sir).update(`bolge-kimlik/v1/${amac}`).digest();
+}
+
 export class Imzalayici {
   private readonly sirlar: readonly string[];
 
@@ -35,7 +40,7 @@ export class Imzalayici {
   }
 
   private anahtar(sir: string, amac: string): Buffer {
-    return createHmac("sha256", sir).update(`bolge-kimlik/v1/${amac}`).digest();
+    return amacAnahtari(sir, amac);
   }
 
   imzala(amac: string, veri: string): string {

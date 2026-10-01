@@ -49,8 +49,8 @@ Tüm yanıtlar `cache-control: no-store`. Hata gövdesi: `{ tamam: false, kod, m
 
 - Bağlantı jetonu `bag1.<32 bayt rastgele>.<bitis>.<imza>`, oturum `ot1.<12 bayt kimlik>.<32 bayt gizli>`, bilet `bil1.<yük>.<imza>`. Rastgelelik `randomBytes`; imza HMAC-SHA256, sırdan amaç başına alt anahtar (bağlantı imzası biletle geçmez).
 - Depoda yalnız SHA-256 özetleri (bağlantı özeti, oturum gizlisinin özeti, tarayıcı çerezinin özeti); açık belirteç hiçbir depoda ve günlükte yoktur. Karşılaştırmalar `timingSafeEqual`.
-- Sırlar: `BOLGE_BILET_SIRRI` (yeni) ve rotasyonda `BOLGE_BILET_SIRRI_ESKI` (yalnız doğrular). Üretimde ≥ 32 karakter, örnek/varsayılan değil.
-- Günlük ve metrik: yalnız olay adı, sayaçlar ve maskelenmiş adres (`a***@alan`); belirteç, tam adres, IP yazılmaz (testle gösterilir). IP yalnız bellekteki hız sınırı kovalarındadır, depoya yazılmaz.
+- Sırlar: `BOLGE_BILET_SIRRI` (yeni) ve rotasyonda `BOLGE_BILET_SIRRI_ESKI` (yalnız doğrular); günlük kimliği tuzu `BOLGE_GUNLUK_TUZU` (imza sırrı DEĞİL, ayrı). Üretimde hepsi ≥ 32 karakter, örnek/varsayılan değil.
+- Günlük ve metrik: yalnız olay adı, sayaçlar ve e-posta kimliği olarak `eposta_hmac` (HMAC-SHA256(kanonik adres)'in ilk 8 hex karakteri; anahtar `BOLGE_GUNLUK_TUZU`'ndan amaca özel türetilir, jeton/bilet anahtarıyla aynı değil). Adres, alan adı ve maskeli hâli (`a***@alan`) günlüğe HİÇ yazılmaz (KVKK: ilk harf + alan adı kısmi kişisel veridir); belirteç ve IP de yazılmaz (testle gösterilir). Tuz üretimde zorunlu (`BOLGE_GUNLUK_TUZU`, ≥ 32 karakter, örnek değer değil, `BOLGE_BILET_SIRRI`'ndan farklı; yoksa açılış durur); geliştirmede yoksa uyarı verilir ve örnek tuz kullanılır. IP yalnız bellekteki hız sınırı kovalarındadır, depoya yazılmaz.
 
 ## 5. Oturum, bilet, iptal
 

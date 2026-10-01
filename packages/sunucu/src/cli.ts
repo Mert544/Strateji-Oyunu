@@ -22,6 +22,7 @@ import { geciciAlanlariYukle } from "./giris/eposta";
 import { GirisHizmeti } from "./giris/hizmet";
 import { GirisUclari } from "./giris/http";
 import { kimlikKipiCoz } from "./giris/kip";
+import { GunlukKimligi } from "./giris/gunluk-kimlik";
 import { DosyaPostaGondericisi, KonsolPostaGondericisi } from "./giris/posta";
 import { GelistirmeKimligi, gelistirmeTokeni } from "./kimlik";
 import type { KimlikDogrulayici } from "./kimlik";
@@ -77,7 +78,7 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --metrik-host H      (vars. 127.0.0.1)
   --metrik-token T     /metrik icin Bearer token ($BOLGE_METRIK_TOKEN)
   --uretim             uretim kipi ($BOLGE_URETIM=1): gelistirme kimligi KAPALI (kimlik = eposta zorunlu), --token kapali, --elle-saat yasak,
-                       BOLGE_BILET_SIRRI (>= 32 karakter, ornek deger degil), BOLGE_IZINLI_KOKENLER ve https BOLGE_GENEL_URL zorunlu, konsol postacisi yasak
+                       BOLGE_BILET_SIRRI ve BOLGE_GUNLUK_TUZU (ikisi >= 32 karakter, ornek deger degil, birbirinden farkli), BOLGE_IZINLI_KOKENLER ve https BOLGE_GENEL_URL zorunlu, konsol postacisi yasak
   --kimlik KIP         gelistirme | eposta (vars. gelistirme; --uretim'de eposta). eposta: e-posta baglantisiyla giris (packages/sunucu/KIMLIK.md):
                        POST /giris/istek, GET|POST /giris/onay, POST /giris/bilet, GET /giris/ben, POST /giris/cikis, POST /giris/cikis-tumu
   --posta TUR          eposta kipinde posta bagdastiricisi: dosya | konsol (vars. dosya; konsol --uretim'de yasak). Gercek SMTP/SES takilabilir arayuzdur
@@ -115,7 +116,7 @@ BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_IZGARA_MANIFEST, BOLGE_IZGARA_KOK, B
 BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT, BOLGE_GORUNTU_ISCI (0|1), BOLGE_ODUL (0|1),
 BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI,
 BOLGE_KIMLIK, BOLGE_POSTA, BOLGE_POSTA_DIZIN, BOLGE_GENEL_URL, BOLGE_GIRIS_BAGLANTISI, BOLGE_GIRIS_SONRASI, BOLGE_IZINLI_KOKENLER, BOLGE_TARAYICI_BAGLI (0|1),
-BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR, BOLGE_DAVETLI_LISTE, BOLGE_YASAKLI_ADLAR, BOLGE_OTURUM_KAYDI (0|1), BOLGE_OTURUM_BOSLUK_DK, BOLGE_TEST_DUNYA_ONEKI, BOLGE_TEST_DUNYA_SIL_ONAY. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
+BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR, BOLGE_DAVETLI_LISTE, BOLGE_YASAKLI_ADLAR, BOLGE_OTURUM_KAYDI (0|1), BOLGE_OTURUM_BOSLUK_DK, BOLGE_TEST_DUNYA_ONEKI, BOLGE_TEST_DUNYA_SIL_ONAY. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI; gunlukte e-posta kimligi (HMAC oneki) tuzu BOLGE_GUNLUK_TUZU.`;
 
 function yaz(olay: string, veri: Record<string, unknown> = {}): void {
   process.stdout.write(JSON.stringify({ olay, ...veri }) + "\n");
@@ -231,6 +232,7 @@ async function ana(): Promise<void> {
     ...(a.kimlik !== undefined ? { kimlik: a.kimlik } : {}),
     ...(ev("BILET_SIRRI") !== undefined ? { biletSirri: ev("BILET_SIRRI") as string } : {}),
     ...(ev("BILET_SIRRI_ESKI") !== undefined ? { biletSirriEski: ev("BILET_SIRRI_ESKI") as string } : {}),
+    ...(ev("GUNLUK_TUZU") !== undefined ? { gunlukTuzu: ev("GUNLUK_TUZU") as string } : {}),
     ...(a.posta !== undefined ? { posta: a.posta } : {}),
     izinliKokenler: izinliListe,
     ...(a["genel-url"] !== undefined ? { genelUrl: a["genel-url"] } : {}),
@@ -411,13 +413,16 @@ async function ana(): Promise<void> {
     if (!depo.hesap) throw new Error("secilen depo hesap deposu sunmuyor (e-posta girisi icin bellek, dosya ya da pg)");
     const genelUrl = a["genel-url"]?.replace(/\/+$/, "");
     const yerelUrl = (): string => `http://127.0.0.1:${calisanPort}`;
+    // Günlükte e-posta adresi YOK (maskeli hâli de): yalnız tuzlu HMAC öneki (`eposta_hmac`); tuz `kimlikKipiCoz`'da (üretimde zorunlu, geliştirmede uyarı).
+    const gunlukKimligi = new GunlukKimligi(kimlikKipi.gunlukTuzu as string);
     const gecici = geciciAlanlariYukle(a["gecici-alanlar"] !== undefined ? resolve(a["gecici-alanlar"]) : undefined);
     const hizmet = new GirisHizmeti({
       depo: depo.hesap,
       // Gorunen ad: sozdizimi + kucuk harf cekirdek adKanonik'ten (marka adiyla ortak kural), yasakli ad suzgeci sunucuda (yukleme yukarida, dunya acilmadan once).
       adKurali: adKanonik,
       adSuzgeci: yasakli.suzgec,
-      posta: kimlikKipi.posta === "konsol" ? new KonsolPostaGondericisi() : new DosyaPostaGondericisi(resolve(a["posta-dizin"] as string)),
+      posta: kimlikKipi.posta === "konsol" ? new KonsolPostaGondericisi(undefined, gunlukKimligi) : new DosyaPostaGondericisi(resolve(a["posta-dizin"] as string)),
+      gunlukKimligi,
       sirlar: kimlikKipi.sirlar,
       baglantiTabani: () => a["giris-baglanti"] ?? `${genelUrl ?? yerelUrl()}/giris/onay`,
       // Hesap silme onayi HER ZAMAN sunucunun kendi sayfasina gider (--giris-baglanti istemci sayfasi giris icindir).
@@ -425,7 +430,7 @@ async function ana(): Promise<void> {
       geciciAlanlar: gecici,
       ...(davetli ? { davetliler: davetli } : {}),
       tarayiciBagli: ["1", "evet", "true"].includes((a["tarayici-bagli"] as string).toLowerCase()),
-      // Günlük: yalnız olay adı ve maskelenmiş/anonim alanlar (belirteç, tam adres, IP yok).
+      // Günlük: yalnız olay adı ve anonim alanlar (belirteç, adres ya da maskeli adres, IP yok; e-posta kimliği = tuzlu HMAC öneki).
       gunluk: (olay, veri) => yaz(olay, veri ?? {}),
     });
     giris = new GirisUclari({

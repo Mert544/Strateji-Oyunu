@@ -288,7 +288,7 @@ describe("CLI", () => {
     reddet(cliEnv({ BOLGE_TEST_DUNYA_ONEKI: "" }, "--depo", "dosya", "--dizin", d, "--test-dunya-sil", "baska-dunya"), /reddedildi/);
     expect(await boyut()).toBe(once);
 
-    const URETIM = { BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org", BOLGE_GENEL_URL: "https://sunucu.ornek.org" };
+    const URETIM = { BOLGE_URETIM: "1", BOLGE_BILET_SIRRI: "uretim-icin-uzun-rastgele-bilet-sirri-0123456789", BOLGE_GUNLUK_TUZU: "uretim-icin-ayri-gunluk-tuzu-9876543210-abcdef", BOLGE_IZINLI_KOKENLER: "https://oyun.ornek.org", BOLGE_GENEL_URL: "https://sunucu.ornek.org" };
     reddet(cliEnv(URETIM, "--depo", "dosya", "--dizin", d, "--test-dunya-sil", "test-sert"), /ikinci kez/);
     reddet(cliEnv(URETIM, "--depo", "dosya", "--dizin", d, "--evet-sil", "test-baska", "--test-dunya-sil", "test-sert"), /ikinci kez/);
     reddet(cliEnv({ ...URETIM, BOLGE_TEST_DUNYA_SIL_ONAY: "yanlis" }, "--depo", "dosya", "--dizin", d, "--test-dunya-sil", "test-sert"), /ikinci kez/);

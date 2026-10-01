@@ -42,13 +42,6 @@ export function epostaCoz(girdi: string): EpostaBicimi | null {
   return { eposta, anahtar: `${anahtarYerel}@${anahtarAlan}`, alan };
 }
 
-/** Günlük ve metrik için maskelenmiş adres (`a***@alan`); adres günlüğe ASLA tam yazılmaz. */
-export function epostaMaskele(eposta: string): string {
-  const at = eposta.indexOf("@");
-  if (at < 1) return "***";
-  return `${eposta.slice(0, 1)}***${eposta.slice(at)}`;
-}
-
 /** Geçici alan listesini dosyadan yükler (`{ "alanlar": ["a.com", ...] }`); küçük harfe çevrilir. */
 export function geciciAlanlariYukle(yol: URL | string = new URL("../../veri/gecici-eposta-alanlari.json", import.meta.url)): Set<string> {
   const ham = JSON.parse(readFileSync(yol, "utf8")) as { alanlar?: unknown };
