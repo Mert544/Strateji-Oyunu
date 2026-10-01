@@ -78,3 +78,19 @@ export {
 } from "./pazar";
 export type { PazarTablosu, TicaretCarpanlari, TicaretKirilimi } from "./pazar";
 export { pazarCarpanlari, oyuncuMakasPpm } from "./politika";
+
+// --- Serileştirme ve anlık görüntü (F1, docs/06 §14) ---
+export {
+  dunyaSerilestir,
+  dunyaCoz,
+  dunyaDogrula,
+  dunyaIcerikUyumu,
+  kuralSurumuHesapla,
+  anlikGoruntuOlustur,
+  anlikGoruntuCoz,
+  ANLIK_GORUNTU_SURUMU,
+  SerilestirmeHatasi,
+} from "./serilestir";
+export type { AnlikGoruntu } from "./serilestir";
+export { PRNG_AKISLARI } from "./kurulum";
+export { kuyrukOnce } from "./kuyruk";

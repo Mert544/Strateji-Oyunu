@@ -11,6 +11,7 @@ import { kuyrukBas, kuyrukCikar } from "./kuyruk";
 import { dunyaKur } from "./kurulum";
 import { lojistikCoz, lojistikKomutu } from "./lojistik/cozum";
 import { durumOzeti } from "./ozet";
+import { anlikGoruntuCoz, dunyaIcerikUyumu, kuralSurumuHesapla } from "./serilestir";
 import { pazarTablosu } from "./pazar/tablo";
 import { ticaretDefteriBaslat } from "./pazar";
 import { politikaKomutu } from "./politika";
@@ -66,6 +67,35 @@ export class Simulasyon {
     // Tarım açıksa ilk günlük iklim tıkı t = 0'da (dünya iklim durumu varsa); kapalıysa kuyruğa hiçbir şey eklenmez.
     if (dunya.iklim !== undefined) s.baglam.planla(dunya, 0, { tur: "iklim_gunluk" });
     s.baglam.kirlet(dunya);
+    return s;
+  }
+
+  /**
+   * Verilen dünyadan devam eden simülasyon (anlık görüntüden yükleme, docs/06 §14). İçerik `veri`den yeniden derlenir;
+   * dünya içerikle uyumlu olmalıdır (`dunyaIcerikUyumu`: bölge kimlikleri, mal/birlik/kenar sayıları...), aksi halde
+   * `SerilestirmeHatasi`. Dünya KOPYALANMAZ (sahipliği simülasyona geçer; `dunyaCoz` zaten bağımsız bir nesne verir).
+   * `gunluk` yalnız geçmiş kaydıdır (sim.gunluk'e kopyalanır, YENİDEN UYGULANMAZ); verilmezse boş başlar.
+   * Kuyruk, PRNG ve sayaçlar dünyanın içinde olduğundan ek planlama yapılmaz. Modül önbellekleri (WeakMap, `ic`
+   * anahtarlı) yeni `ic` için tembelce yeniden kurulur; sonuçları yalnız içeriğe bağlıdır.
+   */
+  static yukle(veri: VeriPaketi, dunya: Dunya, gunluk?: readonly DamgaliKomut[]): Simulasyon {
+    const ic = icerikDerle(veri);
+    dunyaIcerikUyumu(ic, dunya);
+    return new Simulasyon(ic, dunya, gunluk ? structuredClone([...gunluk]) : []);
+  }
+
+  /**
+   * Kurtarma (kill -9 sonrası): anlık görüntü metnini çözer (kural sürümü `veri`den hesaplanıp denetlenir), dünyayı
+   * yükler ve görüntüden SONRA kaydedilmiş başarılı komutları (`kalanGunluk`, günlük sırasıyla) uygular. Kalan
+   * komutlardan biri uygulanamazsa hata fırlatır (yenidenOynat gibi). Dönen simülasyonun günlüğü = kalanGunluk.
+   */
+  static anlikGoruntudenYukle(veri: VeriPaketi, goruntu: string, kalanGunluk: readonly DamgaliKomut[] = []): Simulasyon {
+    const g = anlikGoruntuCoz(goruntu, kuralSurumuHesapla(veri));
+    const s = Simulasyon.yukle(veri, g.dunya);
+    for (const k of kalanGunluk) {
+      const r = s.uygula(k);
+      if (!r.tamam) throw new Error(`anlikGoruntudenYukle: kalan gunluk komutu uygulanamadi (t=${k.t}, ${k.komut.tur}): ${r.hata}`);
+    }
     return s;
   }
 

@@ -21,7 +21,7 @@ import type {
   TesisDurumu,
 } from "./tipler";
 
-const PRNG_AKISLARI: readonly PrngAkisi[] = ["ekonomi", "pazar", "savas", "olay"];
+export const PRNG_AKISLARI: readonly PrngAkisi[] = ["ekonomi", "pazar", "savas", "olay"];
 
 function sifirlar(n: number): number[] {
   return new Array<number>(n).fill(0);

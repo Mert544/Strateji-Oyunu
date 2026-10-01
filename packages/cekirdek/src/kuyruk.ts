@@ -5,8 +5,8 @@
  */
 import type { Olay } from "./tipler";
 
-/** a, b'den önce mi işlenmeli? */
-function once(a: Olay, b: Olay): boolean {
+/** a, b'den önce mi işlenmeli? (Serileştirici yığın düzenini doğrularken de kullanır.) */
+export function kuyrukOnce(a: Olay, b: Olay): boolean {
   if (a.t !== b.t) return a.t < b.t;
   if (a.oncelik !== b.oncelik) return a.oncelik < b.oncelik;
   return a.sira < b.sira;
@@ -19,7 +19,7 @@ export function kuyrukEkle(kuyruk: Olay[], olay: Olay): void {
   while (i > 0) {
     const ebeveyn = (i - 1) >> 1;
     const e = kuyruk[ebeveyn] as Olay;
-    if (!once(olay, e)) break;
+    if (!kuyrukOnce(olay, e)) break;
     kuyruk[i] = e;
     i = ebeveyn;
   }
@@ -38,9 +38,9 @@ export function kuyrukCikar(kuyruk: Olay[]): Olay | undefined {
   while (i < yarim) {
     let k = 2 * i + 1;
     const sag = k + 1;
-    if (sag < n - 1 && once(kuyruk[sag] as Olay, kuyruk[k] as Olay)) k = sag;
+    if (sag < n - 1 && kuyrukOnce(kuyruk[sag] as Olay, kuyruk[k] as Olay)) k = sag;
     const c = kuyruk[k] as Olay;
-    if (!once(c, son)) break;
+    if (!kuyrukOnce(c, son)) break;
     kuyruk[i] = c;
     i = k;
   }

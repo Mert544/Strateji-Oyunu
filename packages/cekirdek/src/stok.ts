@@ -237,10 +237,14 @@ export function hazineOranAyarla(d: Dunya, oyuncu: OyuncuId, oran: Mili): void {
 /**
  * Hazineye anında para ekler/çıkarır (mili-para, negatif = harcama). Önce uzlaştırır.
  * Sonuç negatif olacaksa (veya oyuncu yoksa) hiçbir şeyi değiştirmeden false döner; başarılıysa true.
+ * Yeterlilik UZLAŞTIRMADAN ÖNCE anlık miktarla denetlenir: başarısız çağrı hazinenin temsiline (miktar/t0/artik)
+ * de dokunmaz. Böylece başarısız komut (ör. "hazine yetersiz") durum özetini değiştirmez ve yalnız başarılı
+ * komutları kaydeden günlüğün yeniden oynatılması her an birebir aynı özeti verir (docs/06 §14).
  */
 export function hazineEkle(d: Dunya, oyuncu: OyuncuId, delta: Mili): boolean {
   const o = oyuncuBul(d, oyuncu);
   if (!o) return false;
+  if (anlikMiktar(o.hazine, d.zaman) + delta < 0) return false;
   stokUzlastirYerel(o.hazine, d.zaman);
   const yeni = o.hazine.miktar + delta;
   if (yeni < 0) return false;
