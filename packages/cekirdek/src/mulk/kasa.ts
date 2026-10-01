@@ -135,6 +135,20 @@ export function paraAkisiYaz(d: Dunya, oyuncu: string, akis: Omit<ParaAkisi, "t0
   if (mo === undefined) return;
   const kasa = akis.kasa.filter((e) => e.oran > 0);
   if (mo.paraAkisi === undefined && akis.ihracat === 0 && akis.nufus === 0 && akis.ithalat === 0 && akis.isletme === 0 && akis.vergi === 0 && kasa.length === 0) return;
+  const onceki = mo.paraAkisi;
+  if (onceki !== undefined && onceki.kasa.length === kasa.length && kasa.every((e, i) => {
+    const x = onceki.kasa[i] as ParaAkisi["kasa"][number];
+    return x.sahip === e.sahip && x.kalem === e.kalem && x.oran === e.oran;
+  })) {
+    // Aynı oranlar: kayıt YERİNDE güncellenir (çıktı aynı; her çözümde yeni nesne ve dizi üretilmez).
+    onceki.t0 = d.zaman;
+    onceki.ihracat = akis.ihracat;
+    onceki.nufus = akis.nufus;
+    onceki.ithalat = akis.ithalat;
+    onceki.isletme = akis.isletme;
+    onceki.vergi = akis.vergi;
+    return;
+  }
   mo.paraAkisi = { t0: d.zaman, ihracat: akis.ihracat, nufus: akis.nufus, ithalat: akis.ithalat, isletme: akis.isletme, vergi: akis.vergi, kasa };
 }
 
@@ -189,6 +203,63 @@ type KasaOrani = { sahip: string; kalem: KasaGirisKalemi; oran: Mili };
  * (`makasIlce`/`komisyonIlce`: ilçe → saatlik tutar). Kalan yanar. Sonuç (sahip, kalem) sırasıyla birleştirilmiş ve sıralıdır.
  */
 export function kasaOranlari(
+  d: Dunya,
+  ic: DerlenmisIcerik,
+  oyuncu: string,
+  vergi: Mili,
+  makasIlce: ReadonlyMap<string, Mili>,
+  komisyonIlce: ReadonlyMap<string, Mili>,
+): KasaOrani[] {
+  // Önbellek (P3c; docs/06 §15.9): sonuç, girdilerinin (vergi, ilçe hücre sayıları, makas/komisyon ilçe tutarları, içerik) SAF işlevidir; girdi
+  // aynıysa önceki sonuç aynen döner. Anahtar girdinin KENDİSİdir (sürüm/imza değil): soğuk önbellek (yeni yükleme) aynı sonucu hesaplar.
+  const mo = mulkOyuncuBul(d, oyuncu);
+  if (mo === undefined) return kasaOranlariHesapla(d, ic, oyuncu, vergi, makasIlce, komisyonIlce);
+  const o = kasaOnbellegi.get(mo);
+  if (o !== undefined && o.ic === ic && o.vergi === vergi && ilceHucreAyni(o.hucre, mo.ilceHucre) && haritaAyni(o.makas, makasIlce) && haritaAyni(o.komisyon, komisyonIlce)) {
+    return o.sonuc;
+  }
+  const sonuc = kasaOranlariHesapla(d, ic, oyuncu, vergi, makasIlce, komisyonIlce);
+  kasaOnbellegi.set(mo, {
+    ic,
+    vergi,
+    hucre: mo.ilceHucre.map((e) => ({ ilce: e.ilce, hucre: e.hucre })),
+    makas: [...makasIlce],
+    komisyon: [...komisyonIlce],
+    sonuc,
+  });
+  return sonuc;
+}
+
+interface KasaOnbellegi {
+  ic: DerlenmisIcerik;
+  vergi: Mili;
+  hucre: { ilce: string; hucre: number }[];
+  makas: [string, Mili][];
+  komisyon: [string, Mili][];
+  sonuc: KasaOrani[];
+}
+/** Durum metnine GİRMEZ: oyuncu kaydı başına, bellekte; girdi karşılaştırmasıyla doğrulanır. */
+const kasaOnbellegi = new WeakMap<object, KasaOnbellegi>();
+
+function ilceHucreAyni(a: readonly { ilce: string; hucre: number }[], b: readonly { ilce: string; hucre: number }[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if ((a[i] as { ilce: string }).ilce !== (b[i] as { ilce: string }).ilce || (a[i] as { hucre: number }).hucre !== (b[i] as { hucre: number }).hucre) return false;
+  }
+  return true;
+}
+
+function haritaAyni(a: readonly [string, Mili][], b: ReadonlyMap<string, Mili>): boolean {
+  if (a.length !== b.size) return false;
+  let i = 0;
+  for (const [k, v] of b) {
+    const e = a[i++] as [string, Mili];
+    if (e[0] !== k || e[1] !== v) return false;
+  }
+  return true;
+}
+
+function kasaOranlariHesapla(
   d: Dunya,
   ic: DerlenmisIcerik,
   oyuncu: string,

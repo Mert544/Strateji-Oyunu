@@ -527,7 +527,8 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
     const carpan = h.ciktiCarpan[i] as number;
     for (const [m, q] of y.cikti) h.ciktiGercek[m] = (h.ciktiGercek[m] as number) + ciktiOlcekle(q, v, carpan);
   }
-  for (let m = 0; m < nm; m++) h.ihracatGercek[m] = carpBol(h.ihracat[m] as number, h.fr4[m] as number, PPM);
+  // İhracat 0 ise gerçek ihracat 0 (carpBol(0, x, PPM) = 0): çağrı atlanır.
+  for (let m = 0; m < nm; m++) h.ihracatGercek[m] = (h.ihracat[m] as number) === 0 ? 0 : carpBol(h.ihracat[m] as number, h.fr4[m] as number, PPM);
 }
 
 /**
@@ -655,12 +656,17 @@ export function bolgeOranlariUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi, giden
   }
   for (let m = 0; m < nm; m++) {
     const cikti = h.ciktiGercek[m] as number;
-    const tuketim = carpBol(h.nufusTuketim[m] as number, h.fr1[m] as number, PPM) + carpBol(h.ikmal[m] as number, h.fr1[m] as number, PPM);
-    const bakim = carpBol(h.bakim[m] as number, h.fr2[m] as number, PPM);
-    const bozulmaPpmGun = (ctx.ic.mallar[m] as { bozulmaPpmGun: number }).bozulmaPpmGun;
-    const bozulma = bozulmaPpmGun > 0 ? carpBol(h.stok[m] as number, bozulmaPpmGun, 24 * PPM) : 0;
-    const yerel =
-      cikti - (girdiGercek[m] as number) - tuketim - bakim - (h.ihracatGercek[m] as number) + (h.ithalat[m] as number) - (giden[m] as number) - bozulma;
+    // Hareketsiz mal (hiçbir girdi/çıktı/tüketim/stok/akış yok): yerel oran 0 (tüm terimler 0; carpBol(0, ...) = 0); hesap atlanır, sonuç aynı.
+    const hareketsiz =
+      cikti === 0 && girdiGercek[m] === 0 && h.nufusTuketim[m] === 0 && h.ikmal[m] === 0 && h.bakim[m] === 0 && h.ihracatGercek[m] === 0 && h.ithalat[m] === 0 && giden[m] === 0 && h.stok[m] === 0;
+    let yerel = 0;
+    if (!hareketsiz) {
+      const tuketim = carpBol(h.nufusTuketim[m] as number, h.fr1[m] as number, PPM) + carpBol(h.ikmal[m] as number, h.fr1[m] as number, PPM);
+      const bakim = carpBol(h.bakim[m] as number, h.fr2[m] as number, PPM);
+      const bozulmaPpmGun = (ctx.ic.mallar[m] as { bozulmaPpmGun: number }).bozulmaPpmGun;
+      const bozulma = bozulmaPpmGun > 0 ? carpBol(h.stok[m] as number, bozulmaPpmGun, 24 * PPM) : 0;
+      yerel = cikti - (girdiGercek[m] as number) - tuketim - bakim - (h.ihracatGercek[m] as number) + (h.ithalat[m] as number) - (giden[m] as number) - bozulma;
+    }
     // Bozulma yalnızca stok varken işler; stok 0 iken yerel oran ≥ 0 kalır.
     b.uretimOrani[m] = cikti;
     // Küçük (~%0,4 veya 4 mili-birim/saat) oran değişimleri uygulanmaz: her çözümde yüzlerce yeni eşik olayı

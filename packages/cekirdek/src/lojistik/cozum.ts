@@ -262,6 +262,8 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
     const r = h.indeks;
     for (let m = 0; m < nm; m++) {
       const talep = h.talep[m] as number;
+      // Hareketsiz mal (talep, arz, stok 0): fazla ve askeri talep 0'dır (talep ikmali de içerir; matrisler sıfırla kurulur): atla.
+      if (talep === 0 && h.arz[m] === 0 && h.stok[m] === 0) continue;
       const tampon = talep * tamponSaat;
       (fazla[r] as number[])[m] = (h.arz[m] as number) - talep + tabanBol((h.stok[m] as number) - tampon, tamponSaat);
       (askeriTalep[r] as number[])[m] = tb.askeri[m] ? talep : (h.ikmal[m] as number);

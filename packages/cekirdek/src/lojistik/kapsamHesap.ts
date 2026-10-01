@@ -16,6 +16,21 @@ function hucre(karsilanma: number, mesafe: number, neden: KapsamHucresi["neden"]
   return { karsilanmaPpm: karsilanma, enYakinKaynakMs: mesafe, neden };
 }
 
+/**
+ * Kapsam satırı hücresini yazar. Hücre varsa YERİNDE güncellenir (çıktı aynı; her çözümde bölge × mal nesne üretilmez: GC yükü); yoksa oluşturulur.
+ * Durum metni değişmez (hücre içeriği aynı alanlardır). Satır nesneleri çözüm dışında paylaşılmaz (anlık görüntü ve klon derin kopyadır).
+ */
+function yaz(satir: KapsamHucresi[], m: number, karsilanma: number, mesafe: number, neden: KapsamHucresi["neden"]): void {
+  const c = satir[m];
+  if (c === undefined) {
+    satir[m] = hucre(karsilanma, mesafe, neden);
+    return;
+  }
+  c.karsilanmaPpm = karsilanma;
+  c.enYakinKaynakMs = mesafe;
+  c.neden = neden;
+}
+
 /** Yerel karşılanan miktar: yerel arz + gelen akış (+ stok). Stok en az 1 saatlik talebi karşılıyorsa tam karşılanır. */
 function karsilanan(h: BolgeHesabi, m: number, gelenAkis: number): number {
   const talep = h.talep[m] as number;
@@ -44,12 +59,12 @@ export function kapsamiHesapla(
     for (let m = 0; m < nm; m++) {
       const talep = h.talep[m] as number;
       if (talep <= 0) {
-        satir[m] = hucre(1_000_000, -1, "yok");
+        yaz(satir, m, 1_000_000, -1, "yok");
         continue;
       }
       const k = karsilanan(h, m, 0);
       const arzVar = (h.arz[m] as number) > 0;
-      satir[m] = hucre(karsilanmaPpm(talep, k), arzVar ? 0 : -1, aciklikNedeni({
+      yaz(satir, m, karsilanmaPpm(talep, k), arzVar ? 0 : -1, aciklikNedeni({
         talep,
         karsilanan: k,
         arzVarMi: arzVar,
@@ -77,6 +92,18 @@ export function kapsamiHesapla(
     }
     const nd = ag.dugumler.length;
     for (let m = 0; m < nm; m++) {
+      // Hızlı yol: ağda bu mala TALEP eden bölge yoksa her satır "yok" (kaynak/Dijkstra/akış gerekmez; sonuç aynı).
+      let talepVar = false;
+      for (const r of ag.bolgeler) {
+        if (((hesaplar[r] as BolgeHesabi).talep[m] as number) > 0) {
+          talepVar = true;
+          break;
+        }
+      }
+      if (!talepVar) {
+        for (const r of ag.bolgeler) yaz(kapsam[r] as KapsamHucresi[], m, 1_000_000, -1, "yok");
+        continue;
+      }
       // Hücreler ve ihtiyaç: yerelde tam karşılanmayan var mı?
       const karsilananlar: number[] = [];
       let dijkstraGerek = false;
@@ -120,7 +147,7 @@ export function kapsamiHesapla(
         const talep = h.talep[m] as number;
         const satir = kapsam[r] as KapsamHucresi[];
         if (talep <= 0) {
-          satir[m] = hucre(1_000_000, -1, "yok");
+          yaz(satir, m, 1_000_000, -1, "yok");
           continue;
         }
         const k = karsilananlar[i] as number;
@@ -128,7 +155,7 @@ export function kapsamiHesapla(
         const dn = ag.dugumIndeks[r] as number;
         const ms = mesafe ? (mesafe[dn] as number) : (fazla[r] as readonly Mili[])[m]! > 0 ? 0 : -1;
         const msKap = mesafeKap ? (mesafeKap[dn] as number) : ms;
-        satir[m] = hucre(ppm, ms, aciklikNedeni({
+        yaz(satir, m, ppm, ms, aciklikNedeni({
           talep,
           karsilanan: k,
           arzVarMi: arzVar,
