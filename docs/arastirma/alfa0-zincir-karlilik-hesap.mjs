@@ -419,9 +419,143 @@ yaz(satir("Bot (G7 gecikmesi U(3, 24) sa; %25 ilk 24 sa kurmaz)", `ortalama ≈ 
 yaz();
 yaz("Geri ödeme medyanı (b: ilçe başına gerçek nüfus, `yerelOlcek` 40; 45 ilçe): 37 sa (oyuncular ilçelere eşit) / 22 sa (nüfusla orantılı) (`yerel-talep-kalibrasyon.md` §4); kârlı ilçe 36 / 42 (nüfusu ≥ 30 bin).");
 
+// ---------------------------------------------------------------------------------------------------------------- 8 ilk 2 saatin para akışı (Defter: ilk satış = tahıl, kit gıdası rafta)
+yaz();
+yaz("## 7. İlk 2 saatin para akışı (Defter `ilk_satis` = Çiftliğin tahılını sat; kit gıdası dükkân rafında; kasaba 40 bin)");
+yaz();
+yaz("Adım 0,01 sa; kararlı hâl akışlı kâğıt model (dakikalık çözüm, emirler önceden verilmiş). Erken oyun: Tarla 0,2 sa, fabrika 0,6 sa, dükkân 0,4 sa. Tarla bitince tahıl emri NPC dilimiyle (90 birim/sa) açılır, değirmen çalışınca kapanır (tüketim önceliği). Kit gıdası (200) dükkân rafında yerel kanaldan 1,05 R'de satılır (kasa 90 birim/sa, kasaba 40 bin: gıda ≈ 81 birim/sa); ekmek rafı fırın bitince. Ödül: `ilk_satis` 500 ₺ (ızgara: ilk tam sim-saat sınırı), `zincir_kapandi` 700 ₺ (ilk ekmeğin sonraki sınırı). İşletme 60 ₺/sa/tesis, dükkân 132 ₺/sa; enerji şebekeden.");
+yaz();
+const ILK = {
+  tarla: 2 * 0.1,
+  fab: 6 * 0.1,
+  dukkan: 4 * 0.1,
+};
+function ikiSaat(sira) {
+  const dt = 0.01;
+  const SON = 2.0;
+  const gidaFiy = P("gida") * KADEME.normal; // yerel
+  const gidaHiz = Math.min(KASA_DUKKAN, PAY(1) * 90 * 40 * 40000 / 1e6); // birim/sa (Q gıda = 90 × nüfus × 40 / 1e6)
+  const baslat = [];
+  // sıra A: Tarla + fab#1 @0; fab#2 @ Tarla bitişi; dükkân @ fab#1 bitişi. sıra B: Tarla + fab#1 @0; dükkân @ Tarla bitişi; fab#2 @ dükkân bitişi
+  const tTarla = ILK.tarla;
+  const tFab1 = ILK.fab;
+  let tFab2;
+  let tDuk;
+  let bFab2;
+  let bDuk;
+  if (sira === "A") {
+    bFab2 = tTarla;
+    tFab2 = bFab2 + ILK.fab;
+    bDuk = tFab1;
+    tDuk = bDuk + ILK.dukkan;
+  } else {
+    bDuk = tTarla;
+    tDuk = bDuk + ILK.dukkan;
+    bFab2 = tDuk;
+    tFab2 = bFab2 + ILK.fab;
+  }
+  const ind = ILK_INDIRIM;
+  const tarlaBedel = 6000 * ind;
+  const fabBedel = 10000 * ind;
+  const dukBedel = 6000 * ind + HUCRE.kasaba * TICARI + 0.6 * PARCA_ITH; // ilk 5 yapı: parça 40,6 (kit 40) ⇒ 0,6 parça ithal
+  baslat.push([0, "Tarla", tarlaBedel], [0, "Fabrika #1", fabBedel], [bFab2, "Fabrika #2", fabBedel], [bDuk, "Dükkân + ticari hücre", dukBedel]);
+  let hazine = MULK.yeniOyuncu.hibe / 1000;
+  let tahil = 0;
+  let un = 0;
+  let ekmek = 0;
+  let gida = 200;
+  let ilkTahilSatis = null;
+  let ilkDukSatis = null;
+  let ilkEkmek = null;
+  let odulSatis = false;
+  let odulZincir = false;
+  let minH = hazine;
+  const kayit = { 0: hazine };
+  const gelir = { tahil: 0, gida: 0, ekmek: 0, odul: 0 };
+  const bas = new Set();
+  for (let t = 0; t < SON - 1e-9; t += dt) {
+    for (const [tb, , bd] of baslat) {
+      const k = `${tb}`;
+      if (t >= tb - 1e-9 && !bas.has(k + bd)) {
+        bas.add(k + bd);
+        hazine -= bd;
+      }
+    }
+    const tamTarla = t >= tTarla - 1e-9;
+    const tamFab1 = t >= tFab1 - 1e-9;
+    const tamFab2 = t >= tFab2 - 1e-9;
+    const tamDuk = t >= tDuk - 1e-9;
+    let gider = ISLETME * (tamTarla + tamFab1 + tamFab2) + (tamDuk ? GIDER_DUKKAN : 0);
+    if (tamTarla) tahil += 200 * dt;
+    if (tamTarla && !tamFab1) {
+      const sat = Math.min(tahil, 90 * dt);
+      tahil -= sat;
+      const g = sat * P("tahil") * IHR;
+      hazine += g;
+      gelir.tahil += g;
+      if (sat > 0 && ilkTahilSatis === null) ilkTahilSatis = t;
+    }
+    if (tamFab1) {
+      const k = Math.min(tahil, 200 * dt);
+      tahil -= k;
+      un += (165 / 200) * k;
+      gider += (12 / 200) * k * SEB.elektrik / dt;
+    }
+    if (tamFab2) {
+      const k = Math.min(un, 165 * dt);
+      un -= k;
+      const e = (240 / 165) * k;
+      ekmek += e;
+      gider += (20 / 165) * k * SEB.yakit / dt + (15 / 165) * k * SEB.elektrik / dt;
+      if (e > 0 && ilkEkmek === null) ilkEkmek = t;
+    }
+    let kasa = KASA_DUKKAN * dt;
+    if (tamDuk) {
+      const g = Math.min(gida, gidaHiz * dt, kasa);
+      gida -= g;
+      kasa -= g;
+      const gl = g * gidaFiy;
+      hazine += gl;
+      gelir.gida += gl;
+      if (g > 0 && ilkDukSatis === null) ilkDukSatis = t;
+    }
+    if (tamFab2 && ekmek > 0) {
+      const dk = tamDuk ? Math.min(ekmek, 40 * dt, kasa) : 0; // yerel ekmek ≈ 40 birim/sa
+      ekmek -= dk;
+      const nk = Math.min(ekmek, 62.5 * dt);
+      ekmek -= nk;
+      const g = dk * P("ekmek") * KADEME.normal + nk * P("ekmek") * IHR;
+      hazine += g;
+      gelir.ekmek += g;
+    }
+    hazine -= gider * dt;
+    const saatSiniri = Math.abs(t + dt - Math.round(t + dt)) < 1e-9 && Math.round(t + dt) >= 1;
+    if (saatSiniri && ilkTahilSatis !== null && !odulSatis) {
+      odulSatis = true;
+      hazine += 500;
+      gelir.odul += 500;
+    }
+    if (saatSiniri && ilkEkmek !== null && !odulZincir) {
+      odulZincir = true;
+      hazine += 700;
+      gelir.odul += 700;
+    }
+    minH = Math.min(minH, hazine);
+    for (const tk of [0.25, 0.5, 1, 1.5, 2]) if (Math.abs(t + dt - tk) < 1e-9) kayit[tk] = hazine;
+  }
+  return { hazine, minH, kayit, gelir, ilkTahilSatis, ilkDukSatis, ilkEkmek, tDuk, tFab2, gidaHiz };
+}
+yaz(baslik("Sıra", "İlk tahıl satışı (ilk_satis)", "Dükkân bitişi", "İlk dükkân satışı (kâğıt)", "Fabrika #2 bitişi", "İlk ekmek", "Hazine 0,25 / 0,5 / 1 / 1,5 / 2 sa ₺", "Hazine en düşük ₺", "2 sa gelir: tahıl / kit gıdası / ekmek / ödül ₺"));
+for (const [ad, sira] of [["A (Tarla+fab; fab #2; dükkân)", "A"], ["B (dükkân önce)", "B"]]) {
+  const r = ikiSaat(sira);
+  yaz(satir(ad, `${ond(r.ilkTahilSatis, 2)} sa (${tam(r.ilkTahilSatis * 60)} dk)`, `${ond(r.tDuk, 1)} sa`, `${ond(r.ilkDukSatis, 2)} sa`, `${ond(r.tFab2, 1)} sa`, `${ond(r.ilkEkmek, 2)} sa`, [0.25, 0.5, 1, 1.5, 2].map((k) => tam(r.kayit[k])).join(" / "), tam(r.minH), `${tam(r.gelir.tahil)} / ${tam(r.gelir.gida)} / ${tam(r.gelir.ekmek)} / ${tam(r.gelir.odul)}`));
+}
+yaz();
+yaz("Önceki akış (A2 S1; `ilk_satis` kit gıdasının NPC'ye satışı): hazine saat 2'de 41.494 ₺ (kit gıdası 12.600 ₺ NPC satışı dahil). Yeni akışta kit gıdası dükkân rafında yerel kanaldan satılır (200 × 73,5 = 14.700 ₺, ≈ 2,5 sa'e yayılı) ve ilk satış tahıldır (≈ 962 ₺ + 500 ₺ ödül).");
+
 // ---------------------------------------------------------------------------------------------------------------- 7 parametre duyarlılığı (öneri adayları)
 yaz();
-yaz("## 7. Parametre duyarlılığı (öneri adayları; N = 200, bakımlı, son ürün satılır)");
+yaz("## 8. Parametre duyarlılığı (öneri adayları; N = 200, bakımlı, son ürün satılır)");
 yaz();
 yaz(baslik("Aday", "Zincir", "Önce net ₺/sa", "Sonra net ₺/sa", "Değişim", "Geri ödeme sa (önce → sonra)"));
 const ADAY = [

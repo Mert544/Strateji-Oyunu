@@ -2,7 +2,9 @@
 
 > **Durum.** Yalnız belge; kod ve veri değişmedi. Taban 7553b55, dal `takim/a2/zincir-karlilik`. Alıcı: Ar-Ge lideri (baş lider isteği). Sayıların kaynağı: `p4-p5-ekonomi.md` (G4: ekmek, cam → pencere, `sut_kepekli`, dükkân S, şebeke, kasa), `yerel-talep-kalibrasyon.md` (`yerelOlcek` 40), A3 `p4-p5-sartname.md` §5.10 (bakım C), `bot-kurallari-g6-g8.md` §1.1. Hesap betiği `alfa0-zincir-karlilik-hesap.mjs` (çıktı `alfa0-zincir-karlilik-hesap-cikti.md`; node ile deterministik, `eslint` temiz, iki koşu `cmp` aynı).
 >
-> **Süt ve fındık G4'ün dışındadır.** G4 yalnız ekmek, cam → pencere ve `sut_kepekli` yöntemini sayılandırdı. Süt ürünü ve fındık zincirinin tarifleri `dikey-zincirler-ve-perakende.md` §3.6 ve §3.8'dendir (`peynir_mandira`, `findik_kavurma`, `findik_ezme_sekerleme`); `findik_bahcesi` yöntemi **hiçbir belgede sayısal değildir**: bu belgede 80 fındık/sa ve tarla bakımı **A2 varsayımıdır** (doğrulanmadı). Her ikisi P1 işidir (A3: hiçbir yöntem `sut_urunu`, `findik_urunu`, `sekerleme` üretmez). Süt ve fındık sonuçları bu yüzden **iki kat belirsizdir** (tarif ve varsayım).
+> **Baş lider kararları (işlendi).** (1) **Evet:** `celik_dograma` pencere çıktısı 28 → 30, `cam_firini` yakıt 16 → 12 (T3 G8 yamasına girer; eski/yeni değerler ve etkileri `SP/takim/a2/g8-pencere-degerleri.md`). (2) Yön onaylı; **süt ve fındık Alfa-0 sonrasıdır**, bu turda iş açılmaz (belgede "Alfa-0 sonrası" işaretli). (3) **Bakım C sabit**; ilk canlı haftada bakımlı/bakımsız oranı ölçülür, **< 1,1 ise baş lider karar verir** (`alfa0-ekonomi-izleme.md` E9'a işlendi). (4) **Boş raf kararı yalnız metinle** çözüldü (Defter `ilk_satis` = "Çiftliğinin tahılını sat.", öneri kartı "Kitteki gıdayı rafın için sakla.", kit değişmez): ilk 2 saatin para akışı §4.3'te yeniden hesaplandı.
+>
+> **Süt ve fındık G4'ün dışındadır ve Alfa-0 sonrasıdır.** G4 yalnız ekmek, cam → pencere ve `sut_kepekli` yöntemini sayılandırdı. Süt ürünü ve fındık zincirinin tarifleri `dikey-zincirler-ve-perakende.md` §3.6 ve §3.8'dendir (`peynir_mandira`, `findik_kavurma`, `findik_ezme_sekerleme`); `findik_bahcesi` yöntemi **hiçbir belgede sayısal değildir**: bu belgede 80 fındık/sa ve tarla bakımı **A2 varsayımıdır** (doğrulanmadı). Her ikisi P1 işidir (A3: hiçbir yöntem `sut_urunu`, `findik_urunu`, `sekerleme` üretmez). Süt ve fındık sonuçları bu yüzden **iki kat belirsizdir** (tarif ve varsayım).
 
 ## 0. Cevaplar ve öneriler
 
@@ -10,8 +12,8 @@
 
 | Zincir | Net ₺/sa | Yatırım ₺ (kasaba) | Geri ödeme sa | Not |
 |---|---|---|---|---|
-| Fındık → iç → şekerleme (P1 tarifi, varsayım) | **7.765** | 49.772 | **6,4** | en yüksek; tarif ve mevsim varsayımına bağlı |
-| Süt → süt ürünü (P1) | 4.933 | 62.206 | 12,6 | kepek ithal (2.400 ₺/sa) en büyük kalem |
+| Fındık → iç → şekerleme (P1 tarifi, varsayım; **Alfa-0 sonrası**) | **7.765** | 49.772 | **6,4** | en yüksek; tarif ve mevsim varsayımına bağlı |
+| Süt → süt ürünü (P1; **Alfa-0 sonrası**) | 4.933 | 62.206 | 12,6 | kepek ithal (2.400 ₺/sa) en büyük kalem |
 | Ekmek (G4) | 4.492 | 49.772 | 11,1 | G4 S1'in (4.877 ₺/sa) %8 altında (bakım parçası dahil) |
 | Cam → pencere (G4, P5) | **2.335** | 88.433 | **37,9** | en zayıf; yatırım pahalı, indirimsiz |
 
@@ -25,6 +27,7 @@
 | Ölçüt | Eşik | Kâğıt | Durum |
 |---|---|---|---|
 | İlk dükkân süresi (kit 3 pencere, ilk 5 yapı indirimi) | ≤ 36 sa | dükkân bitişi 0,6–1,0 sa (kâğıt, gecikmesiz); insan ≈ 1,2 sa (A1 karar 49 dk + 0,4 sa); bot (U(3, 24) sa gecikme) ortalama ≈ 13,9 sa | **tutar** (≥ 10× pay) |
+| İlk dükkân satışı (kit gıdası rafta; yeni akış, §4.3) | — (A0-11 "ilk dükkân" ile aynı sınır) | dükkân bitişiyle birlikte: sıra A 1,0 sa, sıra B (dükkân önce) 0,6 sa; çözüm tikiyle ≤ +1 sa | **tutar** |
 | Dükkân geri ödemesi, medyan | ≤ 48 sa | 22 sa (nüfusla orantılı) / 37 sa (eşit yerleşim); tek ilçe örnekleri 14,8–28 sa (nüfus ≥ 40 bin) | **tutar** |
 | İstisna 1: küçük ilçe | ≤ 48 sa | nüfus 20 bin: 86 sa; < 10 bin: hiç (net < 0) | tutmaz |
 | İstisna 2: kasabada 3 oyuncu aynı ilçede | ≤ 48 sa | nüfus 40 bin, k = 3: 111 sa | tutmaz |
@@ -33,11 +36,11 @@
 
 | # | Parametre | Yön | Etki (kâğıt) | Gerekçe |
 |---|---|---|---|---|
-| 1 | `celik_dograma` pencere çıktısı (`mulkKipi` yöntemi) | **28 → 30 pencere/sa** | pencere zinciri +27,5% (2.335 → 2.976 ₺/sa), geri ödeme 37,9 → 29,7 sa | pazar kapasitesi 30,3 (NPC 25 + yerel 5,3): 30 kapasiteyi pazara eşitler, doyma riski artmaz; yalnız mülk yöntemi (bölge altınları aynı) |
-| 2 | `cam_firini` yakıt girdisi (`mulkKipi`) | **16 → 12 birim/sa** | pencere zinciri +17,7%; #1 ile birlikte **+45,2%** (3.390 ₺/sa, geri ödeme 26,1 sa); cam marjı %12 → ≈ %26 | cam fırını en ince basamak (iç marj %12, uzman %12); yakıt şebekeden 103,5 ₺ ve girdi giderinin %50'si |
-| 3 | `findik_bahcesi` çıktısı (P1 tarifi yazılırken) | **80 → ≤ 60 fındık/sa** (+ mevsim/ambar kuralı) | fındık zinciri 7.765 → 6.358 ₺/sa (−18%); 50'de 5.414 | tek baskın zinciri ekmeğe yaklaştırır (ekmek 4.492); tarif henüz yok, sınır koymak ucuz |
+| 1 | `celik_dograma` pencere çıktısı (`mulkKipi` yöntemi) | **28 → 30 pencere/sa (karar: EVET)** | pencere zinciri +27,5% (2.335 → 2.976 ₺/sa), geri ödeme 37,9 → 29,7 sa | pazar kapasitesi 30,3 (NPC 25 + yerel 5,3): 30 kapasiteyi pazara eşitler, doyma riski artmaz; yalnız mülk yöntemi (bölge altınları aynı) |
+| 2 | `cam_firini` yakıt girdisi (`mulkKipi`) | **16 → 12 birim/sa (karar: EVET)** | pencere zinciri +17,7%; #1 ile birlikte **+45,2%** (3.390 ₺/sa, geri ödeme 26,1 sa); cam marjı %12 → ≈ %26 | cam fırını en ince basamak (iç marj %12, uzman %12); yakıt şebekeden 103,5 ₺ ve girdi giderinin %50'si |
+| 3 | `findik_bahcesi` çıktısı (P1 tarifi yazılırken; **Alfa-0 sonrası**) | **80 → ≤ 60 fındık/sa** (+ mevsim/ambar kuralı) | fındık zinciri 7.765 → 6.358 ₺/sa (−18%); 50'de 5.414 | tek baskın zinciri ekmeğe yaklaştırır (ekmek 4.492); tarif henüz yok, sınır koymak ucuz |
 | 4 | `yerelOlcek` | **değişmez, 40** | dükkân geri ödemesi 22–37 sa | A0-11 tutuyor; ölçek ↓ geri ödemeyi bozar (35'te 27–46 sa) |
-| 5 | `mulk.bakim` (C) | **bu analizden değişiklik önerilmez; karar gerekli (§5)** | bakımlı/bakımsız 0,93–1,35 | tavanı yükseltmek yeni oyuncu korumasını (gün 14 kaybı ≤ %10) bozar |
+| 5 | `mulk.bakim` (C) | **sabit (karar); ilk canlı hafta oran < 1,1 ise baş lider** | bakımlı/bakımsız 0,93–1,35 | tavanı yükseltmek yeni oyuncu korumasını (gün 14 kaybı ≤ %10) bozar |
 
 Değişmeyenler: `kasaPayiPpm` 120.000 (oyuncu net'ini etkilemez, yalnız ödemenin %12'sini kasaya yönlendirir), kamu şebeke tavanı 1,035 R, kit 3 pencere, `ilk_pencere` 8 parça.
 
@@ -138,6 +141,20 @@ Tarla 0,2 sa, fabrika 0,6 sa (ikinci yuva), dükkân 0,4 sa (yuva Tarla bitince 
 - Medyan (b, `yerelOlcek` 40, 45 ilçe): 37 sa (eşit yerleşim) / 22 sa (nüfusla orantılı); kârlı ilçe 36 / 42 (nüfusu ≥ 30 bin; `yerel-talep-kalibrasyon.md` §4). **Tutmayanlar:** nüfusu < 20 bin ilçeler ve k ≥ 3 dükkânlı kasaba ilçesi.
 - **Kit 3 pencere** ilk dükkân yatırımını 11.891 → 10.782 ₺ (−1.109 ₺, −%9) düşürür ve ithalat adımını kaldırır; kasaba (40 bin) geri ödemesi 31,1 → 28,2 sa (−2,9). **`ilk_pencere` ödülü** 8 bakım parçası = 1.440 ₺ taban: pencere zinciri yatırımının %1,6'sı, geri ödemeyi yalnız 0,6 sa kısaltır; asıl işlevi bakım stoğudur (pencere zinciri 2 parça/sa tüketir ⇒ **8 parça ≈ 4 saatlik bakım**; kit 40 parça inşaatta biter, O2 §7).
 
+### 4.3 İlk 2 saatin para akışı: Defter `ilk_satis` = tahıl, kit gıdası rafta
+
+Yeni akış: ilk satış **Çiftliğin tahılıdır** (NPC ihracat, ızgara `brutIhracat > 0`, 500 ₺ ödül); kit gıdası (200) satılmaz, **dükkân rafında** yerel kanaldan satılır. Çiftlik ilk tahılını **Tarla bitince** verir (erken oyun çarpanıyla 2 sa × %10 = **12 dk**; üretim sürekli akış), yani kâğıtta ilk satış ≈ 12 dk (A1 pilotu insan için 20–25 dk; fark emir verme süresidir). Hesap betiği §7 (kasaba 40 bin; adım 0,01 sa):
+
+| Sıra | İlk tahıl satışı | Dükkân bitişi = ilk dükkân satışı (kâğıt) | Fab #2 bitişi / ilk ekmek | Hazine 0,25 / 0,5 / 1 / 1,5 / 2 sa ₺ | En düşük hazine ₺ | 2 sa gelir: tahıl / kit gıdası / ekmek / ödül ₺ |
+|---|---|---|---|---|---|---|
+| A (Tarla + fab; fab #2; dükkân) | 12 dk | 1,0 sa | 0,8 sa | 31.917 / 32.504 / 26.107 / 29.706 / 33.305 | 24.744 | 962 / 5.942 / 4.586 / 1.200 |
+| B (dükkân önce) | 12 dk | **0,6 sa** | 1,2 sa | 30.972 / 31.559 / 27.520 / 30.792 / 35.092 | 24.849 | 962 / 8.319 / 3.135 / 1.200 |
+
+- **Para güvenli:** hazine hiçbir anda 24.700 ₺'nin altına inmez (hibe 50.000 − Tarla 4.200 − iki fabrika 14.000 − dükkân 4.200 − ticari hücre 3.625); ek ithalat yalnız 0,6 parça (≈ 120 ₺).
+- **2. saat hazinesi eskisinden düşük** (33–35 bin ↔ A2 S1 41.494 ₺): kit gıdasının NPC'ye tek seferlik satışı (12.600 ₺) yok; yerine aynı gıda dükkânda **200 × 73,5 = 14.700 ₺** (NPC'den %18 yüksek) ama ≈ 2,5 sa'e yayılı satılır. Tahıl satışı yalnız ≈ 962 ₺ ve hemen biter (değirmen tahılı tüketir); asıl ilk saat geliri kit gıdası ve ilk ekmektir.
+- **A0-11 yeni akışta:** ilk dükkân 0,6–1,0 sa (≤ 36 sa **tutar**, ≥ 36× pay); ilk dükkân satışı dükkânla birlikte (kit gıdası hemen raftadır; raf komutu bot/insan işi: A1 pilotunda ilk oturum boşluğu); geri ödeme etkilenmez (kararlı hâl 28 sa kasaba 40 bin, §4.2). Sıra B (dükkân önce) ilk dükkân satışını 0,4 sa öne alır ama ilk ekmeği 0,4 sa geciktirir (`ilk_ekmek`, `zincir_kapandi` 700 ₺ ödülü): fark küçük.
+- **Raf kararı etkisi:** `ilk_satis` ödülü (500 ₺) artık **dükkâna bağlı değil** (tahıl ihracatı); dükkân satışı ayrı bir olay (`ilk_dukkan` tetiği `dukkanGeliri > 0`). Kit gıdası artık `ihracatNpc` yerine `yerelNpc` musluğuna girer: oyuncu başına tek seferlik ≈ 14.700 ₺ (NPC satışı 12.474 ₺ olurdu, +2.226 ₺ yerel prim); 200 oyuncuda ≈ 2,9 M ₺ tek sefer, haftalık `yerelNpc` (≈ 92,9 M ₺) içinde ≈ %3 ⇒ ZP8 ve R'ye etkisi ihmal edilebilir (ilk günün oranı biraz `yerelNpc` lehine kayar). Gün 1 hazine eğrisi (yerel-talep §7, 141.894 ₺) kit gıdasının NPC satışına dayanıyordu; fark ≈ +2.200 ₺ (dükkân satışı) ama ilk 2,5 saate yayılı.
+
 ## 5. Bakım ve aşınma (A3 §5.10: aşınma ×0,5, tavan %25)
 
 Bakımlı: parça ithal (ekmek 420, pencere 400, süt 460, fındık 420 ₺/sa, tüm aşamalar). Bakımsız: parça yok, her aşamada çıktı kaybı (gün 14 %3,5, gün 45 %11,3, gün 70 %17,5; tavan %25 100. günde). Net ₺/sa:
@@ -160,7 +177,7 @@ Bakımlı: parça ithal (ekmek 420, pencere 400, süt 460, fındık 420 ₺/sa, 
 | Süt | 1,06 | 1,19 | 1,70 | 1,02 |
 | Fındık | 1,08 | 1,22 | 1,65 | 1,04 |
 
-Tavanı %40'a çıkarmak oranı yükseltir (0,95–2,01) ama **gün 14 kaybını da yükseltir** (k = 3 için %10,1 → ≈ %16; yeni oyuncu koruması H-B5 bozulur). C'nin iki hedefi (yumuşak başlangıç, bakımın değeri) **pazar sınırlı dünyada birlikte sağlanamıyor**; O2'nin Y7 sonucu (bakımlı/bakımsız çiftçi 1,455) pazar sınırı olmadan (botun tüm üretimi satması) ölçülmüştü. **Öneri:** C'yi şimdi değiştirmeyin; K-1/ilk canlı haftada bakımlı/bakımsız farkı **NPC dilimi sınırı altında** (gerçek oyuncu satışıyla) ölçülsün; fark < 1,1 çıkarsa karar baş liderindir: (a) bakım ikincil (genel onarım ucuz ikamedir) kabul, (b) bakıma "kapasite" yerine "kalite/fiyat" bağlamak (tasarım işi). `yuzey_cevher` ve `hidro_santrali` parça ×0,2 bu zincirlerde kullanılmaz (çelik ithal, elektrik şebekeden); etkisi §6'da.
+Tavanı %40'a çıkarmak oranı yükseltir (0,95–2,01) ama **gün 14 kaybını da yükseltir** (k = 3 için %10,1 → ≈ %16; yeni oyuncu koruması H-B5 bozulur). C'nin iki hedefi (yumuşak başlangıç, bakımın değeri) **pazar sınırlı dünyada birlikte sağlanamıyor**; O2'nin Y7 sonucu (bakımlı/bakımsız çiftçi 1,455) pazar sınırı olmadan (botun tüm üretimi satması) ölçülmüştü. **Karar (baş lider): C sabit.** İlk canlı haftada bakımlı/bakımsız farkı **NPC dilimi sınırı altında** (gerçek oyuncu satışıyla) ölçülür; oran < 1,1 çıkarsa karar baş liderindedir (eşik `alfa0-ekonomi-izleme.md` E9'da): (a) bakım ikincil (genel onarım ucuz ikamedir) kabul, (b) bakıma "kapasite" yerine "kalite/fiyat" bağlamak (tasarım işi). `yuzey_cevher` ve `hidro_santrali` parça ×0,2 bu zincirlerde kullanılmaz (çelik ithal, elektrik şebekeden); etkisi §6'da.
 
 ## 6. Şebeke, kasa payı ve isteğe bağlı santral
 
@@ -184,7 +201,7 @@ Tavanı %40'a çıkarmak oranı yükseltir (0,95–2,01) ama **gün 14 kaybını
 
 | # | Karar | Neden zor | Öneri |
 |---|---|---|---|
-| Z-1 | `celik_dograma` ve `cam_firini` tarifi (öneri #1, #2) | Yöntem kimliği ve çıktı miktarı yayımlanınca A3 şartnamesi, T3 içeriği, O2 ön ayarları ve bot ölçümleri bağlanır; değer sonradan değişse de her değişiklik ölçüm temel çizgilerini yeniler | P5 kapısından önce tek değer seçilsin (28 ya da 30), ikinci değişiklik yapılmasın |
+| Z-1 | `celik_dograma` ve `cam_firini` tarifi (öneri #1, #2; **karar: 30 ve 12**) | Yöntem kimliği ve çıktı miktarı yayımlanınca A3 şartnamesi, T3 içeriği, O2 ön ayarları ve bot ölçümleri bağlanır; değer sonradan değişse de her değişiklik ölçüm temel çizgilerini yeniler | Karar verildi (30 pencere, yakıt 12); G8 yamasında tek seferde girsin, ikinci değişiklik yapılmasın |
 | Z-2 | `findik_bahcesi` ve fındık/süt tarifleri (P1) | Bu belge varsayım: 80 fındık/sa ve mevsim kuralı yoktur; kimlikler kalıcıdır (00 K11) | Tarif yazılırken çıktı ≤ 60 ve ambar/mevsim kuralı birlikte karar verilsin |
 | Z-3 | NPC dilimi (`pazar.emilimSaat`, `max(4, N)/4`) global parametredir | Yeni mallar bölge kipinde de pazar fiyatı hesabına girdiğinden değişirse bölge kipi altınlarının özeti değişebilir; mülk kipi ayrımı gerekir | Dilim değeri bu analizden değiştirilmesin; mülk-yalnız ek parametre gerekirse ayrı karar |
 | Z-4 | Bakım C (`mulk.bakim`) | Pazar sınırlı dünyada bakımın değeri ≈ 1: parametreyi sıkılaştırmak yeni oyuncu korumasını bozar, gevşetmek bakımı anlamsız bırakır | Şimdi sabit tut; ilk canlı hafta ölçümü sonrası tek karar |

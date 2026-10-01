@@ -141,7 +141,18 @@ Kit ve ödül: kit pencere 3 ≥ 2,8 (ilk dükkân ithalatsız; ithal pencere ka
 
 Geri ödeme medyanı (b: ilçe başına gerçek nüfus, `yerelOlcek` 40; 45 ilçe): 37 sa (oyuncular ilçelere eşit) / 22 sa (nüfusla orantılı) (`yerel-talep-kalibrasyon.md` §4); kârlı ilçe 36 / 42 (nüfusu ≥ 30 bin).
 
-## 7. Parametre duyarlılığı (öneri adayları; N = 200, bakımlı, son ürün satılır)
+## 7. İlk 2 saatin para akışı (Defter `ilk_satis` = Çiftliğin tahılını sat; kit gıdası dükkân rafında; kasaba 40 bin)
+
+Adım 0,01 sa; kararlı hâl akışlı kâğıt model (dakikalık çözüm, emirler önceden verilmiş). Erken oyun: Tarla 0,2 sa, fabrika 0,6 sa, dükkân 0,4 sa. Tarla bitince tahıl emri NPC dilimiyle (90 birim/sa) açılır, değirmen çalışınca kapanır (tüketim önceliği). Kit gıdası (200) dükkân rafında yerel kanaldan 1,05 R'de satılır (kasa 90 birim/sa, kasaba 40 bin: gıda ≈ 81 birim/sa); ekmek rafı fırın bitince. Ödül: `ilk_satis` 500 ₺ (ızgara: ilk tam sim-saat sınırı), `zincir_kapandi` 700 ₺ (ilk ekmeğin sonraki sınırı). İşletme 60 ₺/sa/tesis, dükkân 132 ₺/sa; enerji şebekeden.
+
+| Sıra | İlk tahıl satışı (ilk_satis) | Dükkân bitişi | İlk dükkân satışı (kâğıt) | Fabrika #2 bitişi | İlk ekmek | Hazine 0,25 / 0,5 / 1 / 1,5 / 2 sa ₺ | Hazine en düşük ₺ | 2 sa gelir: tahıl / kit gıdası / ekmek / ödül ₺ |
+|---|---|---|---|---|---|---|---|---|
+| A (Tarla+fab; fab #2; dükkân) | 0,20 sa (12 dk) | 1,0 sa | 1,00 sa | 0,8 sa | 0,80 sa | 31.917 / 32.504 / 26.107 / 29.706 / 33.305 | 24.744 | 962 / 5.942 / 4.586 / 1.200 |
+| B (dükkân önce) | 0,20 sa (12 dk) | 0,6 sa | 0,60 sa | 1,2 sa | 1,20 sa | 30.972 / 31.559 / 27.520 / 30.792 / 35.092 | 24.849 | 962 / 8.319 / 3.135 / 1.200 |
+
+Önceki akış (A2 S1; `ilk_satis` kit gıdasının NPC'ye satışı): hazine saat 2'de 41.494 ₺ (kit gıdası 12.600 ₺ NPC satışı dahil). Yeni akışta kit gıdası dükkân rafında yerel kanaldan satılır (200 × 73,5 = 14.700 ₺, ≈ 2,5 sa'e yayılı) ve ilk satış tahıldır (≈ 962 ₺ + 500 ₺ ödül).
+
+## 8. Parametre duyarlılığı (öneri adayları; N = 200, bakımlı, son ürün satılır)
 
 | Aday | Zincir | Önce net ₺/sa | Sonra net ₺/sa | Değişim | Geri ödeme sa (önce → sonra) |
 |---|---|---|---|---|---|
