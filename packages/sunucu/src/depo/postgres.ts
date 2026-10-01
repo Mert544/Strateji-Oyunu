@@ -29,6 +29,8 @@ export interface PostgresSecenekleri {
   dunya: string;
   /** true ise `sql/001-baslangic.sql` çalıştırılır (CREATE ... IF NOT EXISTS). */
   semaKur?: boolean;
+  /** Yalnız testler: `pg.Pool` yerine kullanılacak (sahte) havuz; verilirse `baglanti` yok sayılır. */
+  havuz?: Pool;
 }
 
 /** SQL şema göç adımları (sıralı; `surum` = bu adım uygulanınca ulaşılan şema sürümü). */
@@ -98,9 +100,29 @@ interface LogSatiri {
   sema_sur: number;
 }
 
-export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { havuz: Pool; yedektenDon(etiket: string): Promise<AnlikGoruntuKaydi> }> {
-  const pg = (await import("pg")).default;
-  const havuz = new pg.Pool({ connectionString: s.baglanti, max: 4 });
+/** `yedektenDon` sonucu: geri dönen görüntü + temizlik özeti. */
+export interface GeriDonusSonucu extends AnlikGoruntuKaydi {
+  /** Yedekle aynı seq'te olan, farklı kural sürümlü (göçten sonra alınmış) ve `snapshot_yedek`'e taşınarak `snapshots`'tan çıkarılan görüntü sayısı. */
+  temizlenenGoruntu: number;
+  /** Göçten sonra komut kabul edilmiş (günlük yedeğin seq'inden ilerlemiş): yeni kural görüntülerine DOKUNULMAZ ve eski içerikle açılış yine reddedilir. */
+  gocSonrasiKomut: boolean;
+}
+
+export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { havuz: Pool; yedektenDon(etiket: string): Promise<GeriDonusSonucu> }> {
+  const havuz: Pool = s.havuz ?? new (await import("pg")).default.Pool({ connectionString: s.baglanti, max: 4 });
+  // Asenkron ölümcül hatalar: pg bağlantı kopmasında boştaki havuz bağlantısı (havuz `error`) ve dünya kilidini tutan bağlantı (istemci `error`)
+  // olay yayar; dinleyici yoksa Node işlenmemiş `error` olayıyla süreci çökertir (`olumcul` olayı ve `/saglik` 503 olmadan). Burada dinlenir ve
+  // `Depo.hataDinle` ile yazara iletilir (yazar ölümcül olur; fail-stop). Kapanıştan sonraki hatalar yok sayılır.
+  let kapali = false;
+  let bekleyenHata: Error | null = null;
+  const hataDinleyicileri: Array<(e: Error) => void> = [];
+  const hataBildir = (e: unknown): void => {
+    if (kapali) return;
+    const hata = e instanceof Error ? e : new Error(String(e));
+    if (hataDinleyicileri.length === 0) bekleyenHata ??= hata;
+    else for (const f of hataDinleyicileri) f(hata);
+  };
+  havuz.on("error", hataBildir);
   let kilitBaglantisi: PoolClient | null = null;
   const kilitAnahtari = fnv1a32(`bolge-dunya:${s.dunya}`) | 0;
   try {
@@ -110,9 +132,11 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
       throw new Error(`pg sema surumu eski: ${surum} < ${SQL_SEMA_SURUMU}; semaKur: true (CLI varsayilani) ile acin (eksik gocler uygulanir, veri korunur)`);
     }
     kilitBaglantisi = await havuz.connect();
+    kilitBaglantisi.on("error", hataBildir);
     const r = await kilitBaglantisi.query<{ alindi: boolean }>("SELECT pg_try_advisory_lock($1) AS alindi", [kilitAnahtari]);
     if (r.rows[0]?.alindi !== true) throw new Error(`dunya baska bir yazar tarafindan kilitli (advisory lock): ${s.dunya}`);
   } catch (e) {
+    kapali = true;
     kilitBaglantisi?.release();
     await havuz.end();
     throw e;
@@ -124,6 +148,14 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
 
   return {
     havuz,
+    hataDinle(f: (e: Error) => void): void {
+      hataDinleyicileri.push(f);
+      if (bekleyenHata) {
+        const e = bekleyenHata;
+        bekleyenHata = null;
+        f(e);
+      }
+    },
     gunluk: {
       async ekle(toplu: readonly GunlukKaydi[]): Promise<void> {
         if (toplu.length === 0) return;
@@ -168,6 +200,7 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
         return kayitlar;
       },
       async kapat(): Promise<void> {
+        kapali = true;
         // Kilit açıkça bırakılır: bağlantının sunucuda kapanması gecikse bile hemen yeniden açılış mümkün olur (kill -9'da bağlantı düşünce kendiliğinden).
         await kilit.query("SELECT pg_advisory_unlock($1)", [kilitAnahtari]).catch(() => undefined);
         kilit.release();
@@ -223,18 +256,50 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
     /**
      * Geri dönüş: `etiket` yedeğini en yeni görüntü yapar (aynı (seq, sim_t, kural_sur) satırı yenilenir ve `olusturma = now()`); sonraki
      * açılış eski içerik/kural sürümüyle yeniden başlar. Yalnız yeni kural sürümüyle HİÇ komut kabul edilmediyse geçerlidir.
+     *
+     * Mutlak saatte göç açılışının normal kapanışı, yedekle AYNI seq'te ama DAHA GEÇ `sim_t`'li yeni-kural görüntüleri bırakır; en son görüntü
+     * `ORDER BY seq DESC, sim_t DESC` seçildiğinden bunlar yedeğin üstünde kalırdı (eski içerikle açılış "kural surumu uyusmuyor" ile reddedilirdi).
+     * Bu yüzden, günlük yedeğin seq'inden ilerlemediyse (`max(log.seq) = yedek seq`), aynı seq'teki FARKLI kural sürümlü görüntüler tek işlemde
+     * `snapshot_yedek`'e (etiket `yedektenDon:<kural_sur>:<sim_t>`) taşınır ve `snapshots`'tan çıkarılır (silinmez: geri alınabilir). Günlük
+     * ilerlemişse (göçten sonra komut kabul edilmiş) yeni-kural görüntülerine DOKUNULMAZ: bugünkü davranış aynen kalır (eski içerikle açılış reddedilir).
      */
-    async yedektenDon(etiket: string): Promise<AnlikGoruntuKaydi> {
-      const r = await havuz.query<GoruntuSatiri>(
-        `INSERT INTO snapshots (dunya, seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob)
-         SELECT dunya, seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob FROM snapshot_yedek WHERE dunya = $1 AND etiket = $2
-         ON CONFLICT (dunya, seq, sim_t, kural_sur) DO UPDATE SET olusturma = now()
-         RETURNING seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob`,
-        [s.dunya, etiket],
-      );
-      const x = r.rows[0];
-      if (!x) throw new Error(`goc yedegi yok: ${etiket}`);
-      return goruntuKaydi(x);
+    async yedektenDon(etiket: string): Promise<GeriDonusSonucu> {
+      const c = await havuz.connect();
+      try {
+        await c.query("BEGIN");
+        const r = await c.query<GoruntuSatiri>(
+          `INSERT INTO snapshots (dunya, seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob)
+           SELECT dunya, seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob FROM snapshot_yedek WHERE dunya = $1 AND etiket = $2
+           ON CONFLICT (dunya, seq, sim_t, kural_sur) DO UPDATE SET olusturma = now()
+           RETURNING seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob`,
+          [s.dunya, etiket],
+        );
+        const x = r.rows[0];
+        if (!x) throw new Error(`goc yedegi yok: ${etiket}`);
+        const kayit = goruntuKaydi(x);
+        const son = await c.query<{ seq: string | null }>("SELECT max(seq) AS seq FROM log WHERE dunya = $1", [s.dunya]);
+        const gocSonrasiKomut = Number(son.rows[0]?.seq ?? 0) > kayit.seq;
+        let temizlenenGoruntu = 0;
+        if (!gocSonrasiKomut) {
+          await c.query(
+            `INSERT INTO snapshot_yedek (dunya, etiket, seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob)
+             SELECT dunya, 'yedektenDon:' || kural_sur || ':' || sim_t, seq, sim_t, kural_sur, sema_sur, durum_ozeti, ek, sikistirma, blob FROM snapshots
+              WHERE dunya = $1 AND seq = $2 AND kural_sur <> $3
+             ON CONFLICT (dunya, etiket) DO UPDATE SET seq = EXCLUDED.seq, sim_t = EXCLUDED.sim_t, kural_sur = EXCLUDED.kural_sur, sema_sur = EXCLUDED.sema_sur,
+               durum_ozeti = EXCLUDED.durum_ozeti, ek = EXCLUDED.ek, sikistirma = EXCLUDED.sikistirma, blob = EXCLUDED.blob, olusturma = now()`,
+            [s.dunya, kayit.seq, kayit.kuralSurumu],
+          );
+          const sil = await c.query("DELETE FROM snapshots WHERE dunya = $1 AND seq = $2 AND kural_sur <> $3", [s.dunya, kayit.seq, kayit.kuralSurumu]);
+          temizlenenGoruntu = sil.rowCount ?? 0;
+        }
+        await c.query("COMMIT");
+        return { ...kayit, temizlenenGoruntu, gocSonrasiKomut };
+      } catch (e) {
+        await c.query("ROLLBACK").catch(() => undefined);
+        throw e;
+      } finally {
+        c.release();
+      }
     },
   };
 }

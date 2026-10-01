@@ -170,7 +170,8 @@ async function ana(): Promise<void> {
     const d = await postgresDeposu({ baglanti: pgUrl, dunya: a.dunya as string, semaKur: false });
     try {
       const g = await d.yedektenDon(a["yedekten-don"]);
-      yaz("yedektenDon", { dunya: a.dunya, etiket: a["yedekten-don"], seq: g.seq, simZamani: g.simZamani, kuralSurumu: g.kuralSurumu, durumOzeti: g.durumOzeti });
+      yaz("yedektenDon", { dunya: a.dunya, etiket: a["yedekten-don"], seq: g.seq, simZamani: g.simZamani, kuralSurumu: g.kuralSurumu, durumOzeti: g.durumOzeti, temizlenenGoruntu: g.temizlenenGoruntu, gocSonrasiKomut: g.gocSonrasiKomut });
+      if (g.gocSonrasiKomut) yaz("uyari", { mesaj: "gocten sonra komut kabul edilmis (gunluk yedegin seq'inden ilerlemis): yeni kural goruntulerine dokunulmadi; eski icerikle acilis reddedilebilir (geri donus yalniz hic komut kabul edilmediyse gecerlidir)" });
     } finally {
       await d.gunluk.kapat();
     }

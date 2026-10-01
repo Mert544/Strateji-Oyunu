@@ -188,6 +188,12 @@ export interface Depo {
   boyut?(): Promise<DepoBoyutu>;
   /** İsteğe bağlı: yoksa (özel/eski bir depo) "sen yokken" özeti ve özet kayıtları kapalıdır. */
   profil?: ProfilDeposu;
+  /**
+   * İsteğe bağlı: depodan ASENKRON gelen ölümcül altyapı hatası (örn. pg'de boştaki ya da dünya kilidini tutan bağlantı koptu). Hiçbir isteğe
+   * bağlı olmayan bu hata dinlenmezse süreç işlenmemiş `error` olayıyla çöker; `DunyaYazari` bunu dinler ve ölümcül olur (günlük yazılamaz
+   * demektir; fail-stop). Dinleyici eklenmeden önce oluşmuş hata, dinleyici eklenince bir kez iletilir. Depo kapatıldıktan sonraki hatalar yok sayılır.
+   */
+  hataDinle?(f: (e: Error) => void): void;
 }
 
 /** Ekleme öncesi ortak süreklilik denetimi: toplu içinde ve son seq'e göre +1 artış. */

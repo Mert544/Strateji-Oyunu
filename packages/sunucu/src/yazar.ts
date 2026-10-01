@@ -322,6 +322,8 @@ export class DunyaYazari {
   private calisiyor = false;
   private dongu: Promise<void> | null = null;
   private olumcul: Error | null = null;
+  /** `kapat()` başladı: kapanış sırasındaki depo hataları ölümcül sayılmaz. */
+  private kapatiliyor = false;
   private olumculDinleyici: ((e: Error) => void) | null = null;
   private uyariDinleyici: ((m: string) => void) | null = null;
   /** Son başarısız anlık görüntü denemesinin hatası (başarılı görüntüde temizlenir). */
@@ -456,6 +458,8 @@ export class DunyaYazari {
       yetisecekMs: 0,
       saatGeriMs: 0,
     });
+    // Depodan gelen asenkron ölümcül hata (pg bağlantısı koptu...): işlenmeyen olayla çökmek yerine yazar ölümcül olur (günlük + /saglik 503).
+    s.depo.hataDinle?.((e) => y.depoHatasi(e));
     for (const e of idempotansGirdileri) {
       y.idempotans.set(idempotansAnahtari(e.oyuncu, e.istemci, e.anahtar), { oyuncu: e.oyuncu, istemci: e.istemci, anahtar: e.anahtar, seq: e.seq, t: e.t, komut: e.komut, sonuc: e.tamam ? { tamam: true } : { tamam: false, hata: e.hata ?? "" }, bekleyenler: [] });
     }
@@ -666,6 +670,8 @@ export class DunyaYazari {
   /** Ölümcül hata (günlük yazılamadı vb.) dinleyicisi; yazar bundan sonra komut kabul etmez. */
   olumculHata(f: (e: Error) => void): void {
     this.olumculDinleyici = f;
+    // Dinleyici gelmeden ölümcül olduysa (açılış sırasında kopan depo bağlantısı) hemen bildirilir.
+    if (this.olumcul) f(this.olumcul);
   }
 
   /**
@@ -708,6 +714,7 @@ export class DunyaYazari {
 
   /** Döngüyü durdurur, kuyruğu son kez yazar ve uygular, kapanış görüntüsünü alır, depoyu kapatır. */
   async kapat(): Promise<void> {
+    this.kapatiliyor = true;
     this.calisiyor = false;
     await this.dongu;
     this.dongu = null;
@@ -1404,8 +1411,18 @@ export class DunyaYazari {
     return g;
   }
 
-  private olumculYap(e: Error, toplu: Bekleyen[]): void {
-    this.olumcul = new Error(`gunluk yazilamadi; yazar durdu: ${e.message}`);
+  /**
+   * Depodan gelen asenkron ölümcül hata (bkz. `Depo.hataDinle`): pg bağlantısı koptu ya da dünya kilidi düştü. Günlük artık güvenle yazılamaz
+   * (kilit gittiyse tek yazar garantisi de yoktur): yazar ölümcül olur, `olumculHata` dinleyicisi çağrılır (CLI: `olumcul` olayı + çıkış),
+   * `/saglik` 503 verir. Kapanış sırasında ya da zaten ölümcülken yok sayılır.
+   */
+  private depoHatasi(e: Error): void {
+    if (this.kapatiliyor || this.olumcul) return;
+    this.olumculYap(e, [], "depo baglantisi koptu");
+  }
+
+  private olumculYap(e: Error, toplu: Bekleyen[], neden = "gunluk yazilamadi"): void {
+    this.olumcul = new Error(`${neden}; yazar durdu: ${e.message}`);
     this.calisiyor = false;
     for (const b of [...toplu, ...this.bekleyenler]) for (const w of b.girdi.bekleyenler.splice(0)) w.reddet(this.olumcul);
     this.bekleyenler = [];

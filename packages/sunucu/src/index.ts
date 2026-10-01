@@ -13,6 +13,7 @@ export type { DuvarSaatiSecenekleri, Saat } from "./saat";
 export { bellekDeposu, BellekGunlukDeposu, BellekGoruntuDeposu } from "./depo/bellek";
 export { dosyaDeposu, DosyaGunlukDeposu, DosyaGoruntuDeposu } from "./depo/dosya";
 export { postgresDeposu, postgresSemasiKur, postgresSemaSurumu, SQL_SEMA_SURUMU } from "./depo/postgres";
+export type { GeriDonusSonucu } from "./depo/postgres";
 export type { PostgresSecenekleri } from "./depo/postgres";
 export { SEMA_SURUMU } from "./depo/tipler";
 export type { AnlikGoruntuKaydi, Depo, GoruntuDeposu, GoruntuEki, GunlukDeposu, GunlukKaydi, IdempotansGirdisi } from "./depo/tipler";

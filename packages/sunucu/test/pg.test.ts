@@ -8,16 +8,20 @@ import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import pg from "pg";
 import { SAAT, SISTEM_OYUNCUSU, kamuBloklari, kuralSurumuHesapla } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
 import { postgresDeposu, postgresSemaSurumu, postgresSemasiKur, SQL_SEMA_SURUMU } from "../src/depo/postgres";
 import type { AnlikGoruntuKaydi } from "../src/depo/tipler";
+import { GelistirmeKimligi } from "../src/kimlik";
 import { ElleSaat } from "../src/saat";
+import { sunucuBaslat } from "../src/sunucu";
+import type { CalisanSunucu } from "../src/sunucu";
+import { DunyaYazari } from "../src/yazar";
 import { ac, arayaMal, eskiDunya, sonaMal } from "./goc-yardimci";
 import { profilSozlesmesi } from "./profil-sozlesmesi";
-import { KUZEY, mulkVerisi, veri } from "./yardimci";
+import { KUZEY, SIR, mulkVerisi, veri } from "./yardimci";
 
 const PG = process.env.BOLGE_PG_URL;
 const ON = "pgt";
@@ -254,6 +258,66 @@ describe.skipIf(!PG)("postgres: icerik gocu (--goc), yedek ve geri donus", () =>
     expect(yok.cikti).toContain("goc yedegi yok");
   }, 180_000);
 
+  it("geri donus, gocten sonra DAHA GEC sim_t'li kapanis goruntusu varken de calisir (mutlak saat tuzagi): yedek en yeni olur, yeni-kural goruntuleri snapshot_yedek'e tasinir, eski icerikle acilis ozeti yedekle ayni", async () => {
+    const dunya = yeniDunya("geri-saat");
+    const e = await eskiDunya(await pgAc(dunya));
+    const eskiKural = kuralSurumuHesapla(veri());
+    const yeniKural = kuralSurumuHesapla(sonaMal());
+    // Göç açılışı ElleSaat'le (0'dan) aynı sim_t'de kapanırdı ve tuzağı gizlerdi: gerçek (mutlak) saatte olduğu gibi dünya göçten sonra ilerler.
+    const saat = new ElleSaat();
+    const y = await ac(await pgAc(dunya, false), sonaMal(), saat, { gocIzni: true });
+    saat.ilerlet(e.t + 6 * SAAT);
+    await y.birTur();
+    expect(y.ozet().t).toBeGreaterThan(e.t);
+    await y.kapat(); // normal kapanış: AYNI seq, DAHA GEÇ sim_t, yeni kural sürümü
+    const once = await sorgu<{ kural_sur: string; sim_t: string }>("SELECT kural_sur, sim_t FROM snapshots WHERE dunya = $1 AND seq = $2 ORDER BY sim_t DESC, olusturma DESC", [dunya, e.seq]);
+    expect(once[0]?.kural_sur, "tuzak kurulmadi: kapanis goruntusu yeni kural ve daha gec sim_t'de olmali").toBe(yeniKural);
+    expect(Number(once[0]?.sim_t)).toBeGreaterThan(e.t);
+    await acReddet(dunya, veri(), {}, /kural surumu uyusmuyor/); // yedekten dönmeden eski içerik açılmaz
+    const depo = await pgAc(dunya, false);
+    const geri = await depo.yedektenDon(`goc-${eskiKural}`);
+    expect(geri).toMatchObject({ kuralSurumu: eskiKural, seq: e.seq, simZamani: e.t, durumOzeti: e.ozet, gocSonrasiKomut: false });
+    expect(geri.temizlenenGoruntu).toBeGreaterThanOrEqual(1);
+    await depo.gunluk.kapat();
+    // Bu seq'te yalnız eski kural kaldı; yeni-kural görüntüleri silinmedi, snapshot_yedek'e taşındı.
+    expect((await sorgu<{ kural_sur: string }>("SELECT DISTINCT kural_sur FROM snapshots WHERE dunya = $1 AND seq = $2", [dunya, e.seq])).map((r) => r.kural_sur)).toEqual([eskiKural]);
+    const tasinan = await sorgu<{ etiket: string; kural_sur: string }>("SELECT etiket, kural_sur FROM snapshot_yedek WHERE dunya = $1 AND etiket LIKE 'yedektenDon:%'", [dunya]);
+    expect(tasinan).toHaveLength(geri.temizlenenGoruntu);
+    expect(tasinan.every((t) => t.kural_sur === yeniKural)).toBe(true);
+    // Eski içerikle açılış yedeğin özetini verir (CLI yolu aynı işlevi çağırır).
+    const eski = await ac(await pgAc(dunya, false), veri(), new ElleSaat());
+    expect(eski.kurtarma.goc).toBeNull();
+    expect(eski.kurtarma.durumOzeti).toBe(e.ozet);
+    await eski.kapat();
+    // İdempotent: ikinci geri dönüş bir şey taşımaz.
+    const d2 = await pgAc(dunya, false);
+    expect((await d2.yedektenDon(`goc-${eskiKural}`)).temizlenenGoruntu).toBeGreaterThanOrEqual(0);
+    await d2.gunluk.kapat();
+  });
+
+  it("gocten sonra KOMUT kabul edildiyse yedektenDon yeni-kural goruntulerine DOKUNMAZ (bugunku davranis aynen): gocSonrasiKomut true, eski icerikle acilis reddedilir", async () => {
+    const dunya = yeniDunya("geri-komut");
+    const e = await eskiDunya(await pgAc(dunya));
+    const eskiKural = kuralSurumuHesapla(veri());
+    const yeniKural = kuralSurumuHesapla(sonaMal());
+    const saat = new ElleSaat();
+    const y = await ac(await pgAc(dunya, false), sonaMal(), saat, { gocIzni: true });
+    saat.ilerlet(e.t + SAAT);
+    const p = y.komutGonder("ali", "test", "gocsonrasi", { tur: "vergi_ayarla", oranPpm: 91_000 });
+    await y.birTur();
+    expect((await p).sonuc.tamam).toBe(true);
+    await y.kapat();
+    const say = async (): Promise<number> => (await sorgu<{ n: number }>("SELECT count(*)::int AS n FROM snapshots WHERE dunya = $1 AND kural_sur = $2", [dunya, yeniKural]))[0]?.n ?? 0;
+    const once = await say();
+    expect(once).toBeGreaterThanOrEqual(1);
+    const depo = await pgAc(dunya, false);
+    const geri = await depo.yedektenDon(`goc-${eskiKural}`);
+    expect(geri).toMatchObject({ kuralSurumu: eskiKural, seq: e.seq, gocSonrasiKomut: true, temizlenenGoruntu: 0 });
+    await depo.gunluk.kapat();
+    expect(await say()).toBe(once); // yeni-kural görüntülerine dokunulmadı
+    await acReddet(dunya, veri(), {}, /kural surumu uyusmuyor/); // geri dönüş yalnız hiç komut kabul edilmediyse geçerlidir (README)
+  });
+
   it("yedekleme basarisizsa goc durur: goruntu satirlari degismez", async () => {
     const dunya = yeniDunya("yedeksiz");
     await eskiDunya(await pgAc(dunya));
@@ -406,4 +470,38 @@ describe.skipIf(!PG)("postgres: CLI (--depo pg)", () => {
     const ikinci = await kos();
     expect((ikinci.find((o) => o.olay === "hazir") as { kurtarma: { goruntuSeq: number | null } }).kurtarma.goruntuSeq).not.toBeNull();
   }, 180_000);
+});
+
+describe.skipIf(!PG)("postgres: baglanti kopmasi (fail-stop)", () => {
+  it("pg baglantilari zorla kesilince surec cokmez: yazar olumcul olur (olumculHata), /saglik 503, bolge_olumcul 1", async () => {
+    const ad = `bolge_kes_${process.pid}_${Date.now()}`;
+    const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
+    await yonetici.query(`CREATE DATABASE ${ad}`);
+    const u = new URL(PG as string);
+    u.pathname = `/${ad}`;
+    const baglanti = u.toString();
+    let sunucu: CalisanSunucu | undefined;
+    try {
+      const depo = await postgresDeposu({ baglanti, dunya: "kes", semaKur: true });
+      const yazar = await DunyaYazari.ac({ veri: veri(), tohum: 1, depo, saat: new ElleSaat(), commitAraligiMs: 15, goruntuAraligiMs: 1e12 });
+      const olumculler: Error[] = [];
+      yazar.olumculHata((e) => olumculler.push(e));
+      sunucu = await sunucuBaslat({ yazar, kimlik: new GelistirmeKimligi(SIR), port: 0, yayinAraligiMs: 0 });
+      expect((await fetch(`http://127.0.0.1:${sunucu.port}/saglik`)).status).toBe(200);
+      // Boştaki havuz bağlantısı ve dünya kilidini tutan bağlantı sunucu tarafında sonlandırılır. Dinleyici olmasaydı süreç işlenmemiş
+      // `error` olayıyla çökerdi (vitest "Unhandled Error" ile bu dosyayı kırardı).
+      const kes = await yonetici.query<{ n: number }>("SELECT count(pg_terminate_backend(pid))::int AS n FROM pg_stat_activity WHERE datname = $1", [ad]);
+      expect(kes.rows[0]?.n).toBeGreaterThan(0);
+      await vi.waitFor(() => expect(yazar.olumculMu).toBe(true), { timeout: 10_000, interval: 50 });
+      expect(olumculler[0]?.message).toMatch(/depo baglantisi koptu; yazar durdu/);
+      const r = await fetch(`http://127.0.0.1:${sunucu.port}/saglik`);
+      expect(r.status).toBe(503);
+      expect(((await r.json()) as { durum: string }).durum).toBe("olumcul");
+      expect(await sunucu.metrikMetni()).toContain("bolge_olumcul 1");
+    } finally {
+      await sunucu?.kapat().catch(() => undefined);
+      await yonetici.query(`DROP DATABASE ${ad} WITH (FORCE)`);
+      await yonetici.end();
+    }
+  }, 60_000);
 });
