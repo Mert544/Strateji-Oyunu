@@ -310,6 +310,27 @@ float glif(vec2 q, float t) {
 void main() {
   float r = length(vK);
   if (r > 1.0) discard;
+  if (vTur > 21.5) {
+    // Mülk işareti kümesi (yakın ilçeler): çini daire, kâğıt çerçeve ve içinde ilçe sayısı (tür - 20; en çok 9; 7 parçalı rakam)
+    float dis = 1.0 - smoothstep(0.78, 0.84, r);
+    if (dis < 0.01) discard;
+    float disk = 1.0 - smoothstep(0.64, 0.70, r);
+    int d = int(vTur - 20.0 + 0.5);
+    // parça maskesi (a üst, b sağ üst, c sağ alt, d alt, e sol alt, f sol üst, g orta): 2 3 4 5 6 7 8 9
+    int m = d == 2 ? 91 : d == 3 ? 79 : d == 4 ? 102 : d == 5 ? 109 : d == 6 ? 125 : d == 7 ? 7 : d == 8 ? 127 : 111;
+    float g = 10.0;
+    if ((m & 1) != 0) g = min(g, seg(vK, vec2(-0.17, 0.32), vec2(0.17, 0.32)));
+    if ((m & 2) != 0) g = min(g, seg(vK, vec2(0.17, 0.32), vec2(0.17, 0.0)));
+    if ((m & 4) != 0) g = min(g, seg(vK, vec2(0.17, 0.0), vec2(0.17, -0.32)));
+    if ((m & 8) != 0) g = min(g, seg(vK, vec2(-0.17, -0.32), vec2(0.17, -0.32)));
+    if ((m & 16) != 0) g = min(g, seg(vK, vec2(-0.17, 0.0), vec2(-0.17, -0.32)));
+    if ((m & 32) != 0) g = min(g, seg(vK, vec2(-0.17, 0.32), vec2(-0.17, 0.0)));
+    if ((m & 64) != 0) g = min(g, seg(vK, vec2(-0.17, 0.0), vec2(0.17, 0.0)));
+    vec3 renk = mix(uPanel, vRenk, disk);
+    renk = mix(renk, vec3(1.0), (1.0 - smoothstep(0.07, 0.12, g)) * disk);
+    gl_FragColor = vec4(renk, dis * vAlfa);
+    return;
+  }
   if (vTur > 19.5) {
     // Mülk işareti: çini nokta, kâğıt rengi ince çerçeve ve dışta ince halka (tek ve sade; rozet ya da etiket değil)
     float nokta = 1.0 - smoothstep(0.30, 0.36, r);

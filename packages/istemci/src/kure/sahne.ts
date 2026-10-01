@@ -7,7 +7,7 @@
  * Çizim çağrıları: yıldız, okyanus, kara, ülke çizgileri, bölge dolgusu, bölge çizgileri, seçim çizgisi,
  * simgeler, atmosfer (yaklaşık 9).
  */
-import { Color, PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import { Color, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from "three";
 import { KameraKontrol } from "../kamera/kontrol";
 import { DIKEY_ACI, enUzakMesafe, sigmaMesafesi, yerelBaz } from "../kamera/durum";
 import { BolgeKatmani, BOLGE_YARICAPI } from "./bolge-katmani";
@@ -15,7 +15,8 @@ import { DunyaKatmani } from "./dunya";
 import { gunesYonu, mutlakGunesYonu } from "./gunes";
 import { DERECE, aci, birim, isinKureKesisimi, llVek, vekLl } from "./matematik";
 import type { Vek3 } from "./matematik";
-import { mulkRenkleri } from "./mulk-kipi";
+import { isaretleriKumele, mulkRenkleri } from "./mulk-kipi";
+import type { MulkIsareti } from "./mulk-kipi";
 import { ortakOlustur } from "./ortak";
 import type { Ortak } from "./ortak";
 import { SimgeKatmani } from "./simgeler";
@@ -70,6 +71,11 @@ export class Sahne {
   mulkKipi = false;
   private mulkNoktalari: Vek3[] = [];
   private mulkImzasi = "";
+  /** Ekran uzayında kümelenmiş mülk işaretleri ve imzası (kamera değişince yeniden hesaplanır). */
+  private mulkKumeleri: MulkIsareti[] = [];
+  private mulkKumeImzasi = "";
+  private mulkKirli = false;
+  private readonly gecici = new Vector3();
   /** Biten inşaatlar (panelin izleyicisi; "inşaat bitti" rozetleri). */
   bitenler: ReadonlyMap<number, BitenInsaat> = new Map();
   /** Hareket azaltma tercihi: rozet nabzı ve uçuş yumuşatması yok. */
@@ -268,7 +274,7 @@ export class Sahne {
       olaylar: this.olayGirdileri(),
       secili: this.secili,
       secimRengi: this.palet.secimCizgi.slice(0, 3) as [number, number, number],
-      ...(this.mulkKipi ? { mulkIsaretleri: this.mulkNoktalari, mulkRengi: this.palet.palet.sen ?? ([0, 0.47, 0.51] as RGB) } : {}),
+      ...(this.mulkKipi ? { mulkIsaretleri: this.mulkKumeleri, statikGizli: true, mulkRengi: this.palet.palet.sen ?? ([0, 0.47, 0.51] as RGB) } : {}),
     });
   }
 
@@ -277,6 +283,8 @@ export class Sahne {
     if (this.mulkKipi === acik) return;
     this.mulkKipi = acik;
     this.oncekiRozet = null;
+    this.mulkKumeImzasi = "";
+    if (acik) this.mulkKumeleriniYenile();
     this.kareUygula(this.kare);
     if (!this.kare && this.simge) this.simgeleriYenile();
   }
@@ -287,7 +295,30 @@ export class Sahne {
     if (imza === this.mulkImzasi) return;
     this.mulkImzasi = imza;
     this.mulkNoktalari = noktalar.map((n) => llVek(n[0], n[1]));
-    if (this.mulkKipi && this.simge) this.simgeleriYenile();
+    this.mulkKumeImzasi = "";
+    this.mulkKirli = true;
+    if (this.mulkKipi) this.mulkKumeleriniYenile();
+  }
+
+  /** Mülk işaretlerini ekran uzayında kümeler; küme kümesi değiştiyse simgeleri yeniden yazar. */
+  private mulkKumeleriniYenile(): void {
+    this.mulkKirli = false;
+    const k = this.kamera;
+    k.updateMatrixWorld();
+    const w = this.ortak.uEkran.value.x;
+    const h = this.ortak.uEkran.value.y;
+    const c = k.position;
+    const kume = isaretleriKumele(this.mulkNoktalari, (p) => {
+      // Kürenin görünen yüzü: yüzey noktası p, kamera konumu c için p·c > 1
+      if (p[0] * c.x + p[1] * c.y + p[2] * c.z <= 1) return null;
+      const v = this.gecici.set(p[0], p[1], p[2]).project(k);
+      return [(v.x * 0.5 + 0.5) * w, (0.5 - v.y * 0.5) * h];
+    });
+    const imza = kume.map((m) => `${m.sayi}:${m.p[0].toFixed(3)},${m.p[1].toFixed(3)}`).join(";");
+    if (imza === this.mulkKumeImzasi) return;
+    this.mulkKumeImzasi = imza;
+    this.mulkKumeleri = kume;
+    if (this.simge) this.simgeleriYenile();
   }
 
   /** Mercek seç (tek mercek etkin). `mal` yalnız "mal" merceğinde kullanılır; mal < 0 ise "Genel"e döner. */
@@ -332,6 +363,7 @@ export class Sahne {
     this.renderer.setSize(w, h, false);
     this.kontrol.boyutla(w, h);
     this.ortak.uEkran.value.set(w, h);
+    this.mulkKirli = true;
     this.ortak.uPikselOran.value = this.pikselOrani;
     this.ortak.uOdak.value = (h * this.pikselOrani) / (2 * Math.tan((DIKEY_ACI * DERECE) / 2));
   }
@@ -418,6 +450,7 @@ export class Sahne {
     const dist = this.kontrol.durum.dist;
     o.uGenislikOlcek.value = Math.min(1.3, Math.max(0.12, dist * 0.5));
     o.uYakin.value = Math.min(1, Math.max(0, (1.5 - dist) / 0.6));
+    if (this.mulkKipi && (degisti || this.mulkKirli) && this.mulkNoktalari.length > 1) this.mulkKumeleriniYenile();
     this.renderer.render(this.scene, this.kamera);
     this.cizimSonrasi?.(degisti, dt);
     this.cpuMs = this.cpuMs * 0.95 + (performance.now() - cpuBas) * 0.05;

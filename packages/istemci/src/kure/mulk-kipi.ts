@@ -5,6 +5,47 @@
  */
 import type { BolgeRenkTamponu, Palet, RGB } from "../veri/renkler";
 import { karistir } from "../veri/renkler";
+import { birim, topla } from "./matematik";
+import type { Vek3 } from "./matematik";
+
+/** Mülk işaretlerinin ekran uzayında birleştirildiği uzaklık (CSS px). */
+export const KUME_ESIGI_PX = 18;
+
+/** Bir küre işareti: yüzey birim vektörü ve temsil ettiği ilçe sayısı (1: tek nokta). */
+export interface MulkIsareti {
+  p: Vek3;
+  sayi: number;
+}
+
+/**
+ * Ekran uzayında kümeleme (saf; açgözlü, sıra deterministik): birbirine `esik` pikselden yakın görünür noktalar tek işarette
+ * birleşir (konum: üyelerin ortalama yönü). Görünmeyen (kürenin arka yüzü) noktalar kümelenmez. Yakınlaşınca noktalar
+ * ekranda açılır, kümeler kendiliğinden çözülür.
+ * `ekran`: nokta -> [x, y] piksel ya da null (görünmüyor).
+ */
+export function isaretleriKumele(noktalar: readonly Vek3[], ekran: (p: Vek3) => readonly [number, number] | null, esik = KUME_ESIGI_PX): MulkIsareti[] {
+  const e = noktalar.map(ekran);
+  const alindi = new Array<boolean>(noktalar.length).fill(false);
+  const cikti: MulkIsareti[] = [];
+  for (let i = 0; i < noktalar.length; i++) {
+    if (alindi[i]) continue;
+    alindi[i] = true;
+    const a = e[i];
+    let toplam: Vek3 = noktalar[i] as Vek3;
+    let sayi = 1;
+    if (a) {
+      for (let j = i + 1; j < noktalar.length; j++) {
+        const b = e[j];
+        if (alindi[j] || !b || Math.hypot(a[0] - b[0], a[1] - b[1]) >= esik) continue;
+        alindi[j] = true;
+        toplam = topla(toplam, noktalar[j] as Vek3);
+        sayi++;
+      }
+    }
+    cikti.push({ p: sayi > 1 ? birim(toplam) : toplam, sayi });
+  }
+  return cikti;
+}
 
 /** Bölge dolgusu: kara ile kâğıt arasında, kara zemininden belli belirsiz ayrılan sakin ton. */
 export const MULK_DOLGU_PAYI = 0.55;

@@ -5,7 +5,7 @@
  *        8 kuraklık, 9 don, 10 sel, 11 kış fırtınası, 12 bilinmeyen olay (olay simgeleri),
  *        15 etkin olay / yayılım halkası (dolu), 16 olay uyarı halkası (kesikli),
  *        17 ▲ eksik girdi, 18 ◯ boşta, 19 ✓ inşaat bitti (durum rozetleri),
- *        20 oyuncunun mülk işareti (mülk kipi: çini nokta + ince halka)
+ *        20 oyuncunun mülk işareti (mülk kipi: çini nokta + ince halka); 22..29 yakın işaretlerin kümesi (tür - 20 = ilçe sayısı, en çok 9)
  * Sakin görsel: sürekli animasyon yoktur. Rozet yalnız gelişinde tek kısa nabız atar (aNabiz = başlangıç zamanı;
  * hareket azaltma tercihinde hiç atmaz).
  */
@@ -20,6 +20,7 @@ import type { Vek3 } from "./matematik";
 import type { BolgeGeo } from "../veri/harita-birlestir";
 import type { RGB } from "../veri/renkler";
 import type { RozetTuru } from "../veri/rozet";
+import type { MulkIsareti } from "./mulk-kipi";
 
 const KAPASITE = 512;
 const SIMGE_YARICAP = 1.014;
@@ -52,8 +53,10 @@ export interface SimgeGirdisi {
   secili: number;
   secimRengi: RGB;
   /** Mülk kipi: oyuncunun ilçe/arsa noktaları (yüzey birim vektörü) ve işaret rengi (`sen`). */
-  mulkIsaretleri?: readonly Vek3[];
+  mulkIsaretleri?: readonly MulkIsareti[];
   mulkRengi?: RGB;
+  /** Mülk kipi: liman ve dar geçit gibi statik glifler gizlenir (küre sakin kalır). */
+  statikGizli?: boolean;
 }
 
 export class SimgeKatmani {
@@ -67,6 +70,7 @@ export class SimgeKatmani {
   private alfa: InstancedBufferAttribute;
   private nabiz: InstancedBufferAttribute;
   private statikSayi = 0;
+  private statikler: Array<{ p: Vek3; tur: number }> = [];
   private merkezler: Vek3[];
   /** Bölge başına rozet konumu (merkez, yüzeyin hemen üstü; ekranda gölgelendiricide 16 px yukarı kaydırılır). */
   private rozetKonumu: Vek3[];
@@ -121,7 +125,6 @@ export class SimgeKatmani {
     this.nesneler.push(m);
 
     // Statik: liman ve dar geçit simgeleri (etiketlerden)
-    let n = 0;
     bolgeler.forEach((_b, i) => {
       const et = etiketler[i] ?? [];
       const c = this.merkezler[i] as Vek3;
@@ -132,11 +135,11 @@ export class SimgeKatmani {
       liste.forEach((t, j) => {
         const kayma = (j - (liste.length - 1) / 2) * 0.011;
         const p = birim(topla(c, dogu, kayma));
-        this.yaz(n++, olcekle(p, SIMGE_YARICAP), t, [1, 1, 1], 17, 1);
+        this.statikler.push({ p: olcekle(p, SIMGE_YARICAP), tur: t });
       });
     });
-    this.statikSayi = n;
-    this.geo.instanceCount = n;
+    this.statikYaz();
+    this.geo.instanceCount = this.statikSayi;
   }
 
   private yaz(i: number, p: Vek3, tur: number, renk: RGB, boyut: number, alfa: number, nabiz = -1e6): void {
@@ -148,8 +151,16 @@ export class SimgeKatmani {
     (this.nabiz.array as Float32Array)[i] = nabiz;
   }
 
+  /** Statik simgeleri başa yazar (gizliyse hiç): dinamikler hemen ardından gelir. */
+  private statikYaz(gizli = false): void {
+    let n = 0;
+    if (!gizli) for (const s of this.statikler) this.yaz(n++, s.p, s.tur, [1, 1, 1], 17, 1);
+    this.statikSayi = n;
+  }
+
   /** Dinamik simgeleri (durum rozetleri, iklim olayları, seçim halkası) yeniden yaz. */
   guncelle(g: SimgeGirdisi): void {
+    this.statikYaz(g.statikGizli === true);
     let n = this.statikSayi;
     const nb = this.bolgeler.length;
     for (let i = 0; i < nb && n < KAPASITE - 40; i++) {
@@ -173,7 +184,7 @@ export class SimgeKatmani {
     }
     for (const m of g.mulkIsaretleri ?? []) {
       if (n >= KAPASITE - 4) break;
-      this.yaz(n++, olcekle(m, MULK_YARICAP), 20, g.mulkRengi ?? [0, 0.47, 0.51], 30, 1);
+      this.yaz(n++, olcekle(m.p, MULK_YARICAP), m.sayi > 1 ? 20 + Math.min(m.sayi, 9) : 20, g.mulkRengi ?? [0, 0.47, 0.51], m.sayi > 1 ? 34 : 30, 1);
     }
     if (g.secili >= 0 && this.merkezler[g.secili]) {
       this.yaz(n++, olcekle(this.merkezler[g.secili] as Vek3, SIMGE_YARICAP - 0.002), 7, g.secimRengi, 42, 1);
