@@ -7,6 +7,7 @@
  */
 import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
 import type { ParselFiksturu, VeriPaketi } from "@bolge/veri";
+import { readFileSync } from "node:fs";
 import { expect } from "vitest";
 import { botOlustur } from "../../botlar/src/api";
 import type { ArketipAdi, Bot } from "../../botlar/src/api";
@@ -82,10 +83,14 @@ export function g6Veri<V extends VeriPaketi>(v: V, sec: G6Secenek = {}): V {
     if (tur === undefined) throw new Error(`ev sahibi tur yok: ${ev}`);
     tur.yontemler.push(y.id);
   }
+  // Seçenekler veride parça ZATEN VARSA da uygulanır (gerçek G6-3 içeriği bayraklı yöntemler, `mulk.sebeke` ve `mulk.yontemGecersizKilma` taşır): `false` = o parça yok.
+  if (sec.bayrak === false) for (const y of ic.yontemler) if ((G6_YONTEMLER as readonly string[]).includes(y.id)) delete (y as { mulkKipi?: true }).mulkKipi;
   const m = mulkParam(c);
   if (m !== undefined) {
-    if (sec.sebeke !== false && m["sebeke"] === undefined) m["sebeke"] = structuredClone(SEBEKE_VARSAYILAN);
-    if (sec.kilma !== false && m["yontemGecersizKilma"] === undefined) m["yontemGecersizKilma"] = { standart_gida_isleme: { ciktiPpm: 1_000_000 } };
+    if (sec.sebeke === false) delete m["sebeke"];
+    else if (m["sebeke"] === undefined) m["sebeke"] = structuredClone(SEBEKE_VARSAYILAN);
+    if (sec.kilma === false) delete m["yontemGecersizKilma"];
+    else if (m["yontemGecersizKilma"] === undefined) m["yontemGecersizKilma"] = { standart_gida_isleme: { ciktiPpm: 1_000_000 } };
   }
   return c;
 }
@@ -112,9 +117,18 @@ export function p4Oncesi<V extends VeriPaketi>(v: V): V {
     delete m["perakende"];
     const ek = m["ekYapilar"] as Gevsek | undefined;
     if (ek !== undefined) delete ek["dukkan"];
+    const atolye = (ek?.["atolye_lab"] as { ad?: string } | undefined);
+    if (atolye !== undefined) atolye.ad = ESKI_ADLAR.parametreler["mulk.ekYapilar.atolye_lab.ad"];
+  }
+  // icerik-adlar (T3 ad-degisim 1-3) ÖNCESİ görünen adlar: kural sürümü (içerik özeti adı da kapsar) dondurulmuş P4 öncesi görüntüyle aynı kalsın.
+  const icerik = c.icerik as unknown as Record<string, { id: string; ad?: string; aciklama?: string }[]>;
+  for (const [koleksiyon, kayitlar] of Object.entries(ESKI_ADLAR.icerik)) {
+    for (const k of icerik[koleksiyon] ?? []) Object.assign(k, kayitlar[k.id] ?? {});
   }
   return c;
 }
+
+const ESKI_ADLAR = JSON.parse(readFileSync(new URL("./g6-eski-adlar.json", import.meta.url), "utf8")) as { icerik: Record<string, Record<string, { ad?: string; aciklama?: string }>>; parametreler: Record<string, string> };
 
 /**
  * `senaryoKos`un (serilestir-yardimci.ts) bire bir kopyası, tek farkla: bulanık komutlar HER İKİ dünya için aynı (`bulanikVeri`) içerikten

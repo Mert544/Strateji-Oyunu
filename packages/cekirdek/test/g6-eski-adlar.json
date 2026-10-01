@@ -1,0 +1,181 @@
+{
+ "_not": "icerik-adlar (T3 ad-degisim 1-3) oncesi gorunen adlar: g6-yardimci p4Oncesi bunlari geri alir; P4 oncesi icerik kural surumu fikstur .ust.json ile ayni kalsin diye. Uretim: git show 2eb4289 (G6-3) icerik.json ile guncel icerik.json karsilastirmasi.",
+ "icerik": {
+  "mallar": {
+   "cevher": {
+    "ad": "Demir Cevheri"
+   },
+   "parca": {
+    "ad": "Makine Parçası"
+   },
+   "petrol": {
+    "ad": "Ham Petrol"
+   },
+   "sut_urunu": {
+    "ad": "Süt Ürünleri"
+   },
+   "findik": {
+    "ad": "Fındık (kabuklu)"
+   },
+   "findik_urunu": {
+    "ad": "Fındık İçi"
+   },
+   "kepek": {
+    "ad": "Kepek (yan ürün)"
+   }
+  },
+  "yontemler": {
+   "geleneksel_tarim": {
+    "ad": "Geleneksel Tarım"
+   },
+   "mekanize_tarim": {
+    "ad": "Mekanize Tarım"
+   },
+   "standart_gida_isleme": {
+    "ad": "Standart Gıda İşleme"
+   },
+   "yuzey_cevher": {
+    "ad": "Yüzey Cevher Ocağı"
+   },
+   "derin_cevher": {
+    "ad": "Derin Cevher Madenciliği"
+   },
+   "yuzey_komur": {
+    "ad": "Açık Ocak Kömür"
+   },
+   "derin_komur": {
+    "ad": "Derin Kömür Madenciliği"
+   },
+   "bakir_cikarim": {
+    "ad": "Bakır Çıkarımı"
+   },
+   "silis_cikarim": {
+    "ad": "Silis Çıkarımı"
+   },
+   "petrol_cikarim": {
+    "ad": "Petrol Çıkarımı"
+   },
+   "yuksek_firin": {
+    "ad": "Yüksek Fırın"
+   },
+   "elektrik_ark": {
+    "ad": "Elektrik Ark Ocağı"
+   },
+   "standart_parca": {
+    "ad": "Standart Parça Hattı"
+   },
+   "otomatik_hat": {
+    "ad": "Otomatik Üretim Hattı"
+   },
+   "standart_elektronik": {
+    "ad": "Standart Elektronik Hattı"
+   },
+   "standart_rafineri": {
+    "ad": "Standart Rafineri"
+   },
+   "standart_muhimmat": {
+    "ad": "Standart Mühimmat Hattı"
+   },
+   "ahir_besi": {
+    "ad": "Ahır Besiciliği"
+   },
+   "mera_hayvancilik": {
+    "ad": "Mera Hayvancılığı"
+   },
+   "azotlu_gubre": {
+    "ad": "Azotlu Gübre Üretimi"
+   },
+   "komur_santrali": {
+    "ad": "Kömür Santrali"
+   },
+   "yakit_jeneratoru": {
+    "ad": "Yakıt Jeneratörü"
+   },
+   "hidro_santrali": {
+    "ad": "Hidroelektrik Santrali"
+   },
+   "sulama_pompasi": {
+    "ad": "Sulama Pompası"
+   },
+   "ekmek_firini": {
+    "ad": "Ekmek Fırını"
+   },
+   "kepek_gubresi": {
+    "ad": "Kepekten Gübre"
+   },
+   "sut_kepekli": {
+    "ad": "Kepekli Süt Besisi"
+   }
+  },
+  "tesisTurleri": {
+   "gida_fabrikasi": {
+    "ad": "Gıda Fabrikası"
+   },
+   "cevher_madeni": {
+    "ad": "Cevher Madeni"
+   },
+   "komur_ocagi": {
+    "ad": "Kömür Ocağı"
+   },
+   "bakir_madeni": {
+    "ad": "Bakır Madeni"
+   },
+   "silis_ocagi": {
+    "ad": "Silis Ocağı"
+   },
+   "petrol_kuyusu": {
+    "ad": "Petrol Kuyusu"
+   },
+   "parca_fabrikasi": {
+    "ad": "Parça Fabrikası"
+   },
+   "elektronik_fabrikasi": {
+    "ad": "Elektronik Fabrikası"
+   },
+   "muhimmat_fabrikasi": {
+    "ad": "Mühimmat Fabrikası"
+   },
+   "gubre_fabrikasi": {
+    "ad": "Gübre Fabrikası"
+   },
+   "hidro_santrali": {
+    "ad": "Hidroelektrik Santrali"
+   },
+   "sulama_kanali": {
+    "ad": "Sulama Kanalı"
+   }
+  },
+  "teknolojiler": {
+   "mekanize_tarim": {
+    "ad": "Mekanize Tarım",
+    "aciklama": "Çiftliklerde mekanize tarım yöntemini açar: daha çok tahıl, daha az işçi; yakıt ve parça tüketir."
+   },
+   "sulama_sistemi": {
+    "ad": "Sulama Sistemi"
+   },
+   "derin_madencilik": {
+    "ad": "Derin Madencilik"
+   },
+   "elektrik_ark_ocagi": {
+    "ad": "Elektrik Ark Ocağı"
+   },
+   "konteyner_limani": {
+    "ad": "Konteyner Limanı"
+   },
+   "mekanize_ordu": {
+    "ad": "Mekanize Ordu"
+   }
+  },
+  "birlikler": {
+   "piyade_tumeni": {
+    "ad": "Piyade Tümeni"
+   },
+   "zirhli_tumen": {
+    "ad": "Zırhlı Tümen"
+   }
+  }
+ },
+ "parametreler": {
+  "mulk.ekYapilar.atolye_lab.ad": "Atölye-Lab"
+ }
+}

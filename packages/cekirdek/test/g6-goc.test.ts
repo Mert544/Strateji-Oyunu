@@ -114,7 +114,7 @@ describe("mulk-v2-g6oncesi: G6 öncesi çekirdekle üretilmiş para defterli gö
   const ust = JSON.parse(oku("mulk-v2-g6oncesi.ust.json")) as { kural: string; ozet: string; zaman: number; kasaSayisi: number };
   /** `uret-mulk-v2.ts` ile AYNI veri (görüntü bu veriyle yazıldı). */
   const fiksturVeri = () =>
-    mulkVeriTam((x) => {
+    p4Oncesi(mulkVeriTam((x) => {
       const m = x.param.mulk!;
       m.yeniOyuncu.hibe = 2_000_000_000;
       m.yeniOyuncu.baslangicStok = { celik: 5_000_000, parca: 5_000_000, gida: 200_000, tahil: 200_000 };
@@ -123,7 +123,7 @@ describe("mulk-v2-g6oncesi: G6 öncesi çekirdekle üretilmiş para defterli gö
       m.esZamanliInsaat = 10;
       m.araziVergisiHaftalikPpm = 100_000;
       m.kamu = structuredClone(KAMU_KUCUK);
-    });
+    }));
   const SEC = { gocIzni: true, yalnizEkleZorunlu: true } as const;
 
   it("koruma: fikstür verisi P4 öncesi içerikle birebir (kural sürümü fikstürdekiyle aynı), görüntü para defterli ve 7 kasalı", () => {
