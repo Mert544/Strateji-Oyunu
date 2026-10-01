@@ -14,7 +14,7 @@ import { Protocol } from "pmtiles";
 import type { Feature, FeatureCollection, LineString, MultiPolygon, Polygon } from "geojson";
 import type { IcerikDosyasi, Parametreler } from "@bolge/veri";
 import type { ArsaSinifi, HucreId } from "@bolge/cekirdek";
-import type { KamuGrubuKaresi } from "@bolge/protokol";
+import type { DefterOdulu, KamuGrubuKaresi } from "@bolge/protokol";
 import icerikHam from "../../../veri/icerik/icerik.json";
 import parametreHam from "../../../veri/icerik/parametreler.json";
 import { bildir } from "../arayuz/bildirim";
@@ -104,6 +104,18 @@ function hucreCokgeni(x: number, y: number, oz: Record<string, unknown> = {}): F
   return { type: "Feature", properties: oz, geometry: { type: "Polygon", coordinates: [[[b, g], [d, g], [d, k], [b, k], [b, g]]] } };
 }
 
+/** Sunucusuz örnek defter için ödül tablosu: değer = para + mal × taban fiyat (çekirdeğin `odulDegeri` kuralı). */
+function defterOdulleri(ic: Icerik): { tavanMili: number; kavramlar: Record<string, DefterOdulu> } {
+  const t = ic.param.odul!;
+  const kavramlar: Record<string, DefterOdulu> = {};
+  for (const [k, v] of Object.entries(t.kavramlar)) {
+    let deger = v.para ?? 0;
+    for (const [m, mili] of Object.entries(v.mal ?? {})) deger += Math.floor((mili * (ic.mallar[ic.malIdx[m] ?? -1]?.taban ?? 0)) / 1000);
+    kavramlar[k] = { ...(v.para ? { paraMili: v.para } : {}), ...(v.mal ? { mal: { ...v.mal } } : {}), degerMili: deger };
+  }
+  return { tavanMili: t.tavanMili, kavramlar };
+}
+
 /** Dikdörtgen hücre bloğu (`[x0, y0, x1, y1]`, dört uç dahil) tek çokgen. */
 function blokCokgeni(blok: readonly [number, number, number, number], oz: Record<string, unknown> = {}): Feature<Polygon> {
   const [b, , , k] = hucreSiniri(blok[0], blok[1]);
@@ -181,6 +193,7 @@ export class HaritaGorunumu {
         gecikme: 120,
         hazineMili: 50_000_000,
         kamu: true,
+        ...(tablo.param.odul ? { defterOdulleri: defterOdulleri(tablo) } : {}),
         ...(new URLSearchParams(location.search).get("donus") === "ornek" ? { donusOrnegi: DONUS_ORNEGI } : {}),
         yapiBilgisi: (tur) => {
           const y = this.katalog.find((k) => k.id === tur);

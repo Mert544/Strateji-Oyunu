@@ -17,7 +17,7 @@
  */
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
-import type { DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
+import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
 import type { GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce } from "./hata-mulk";
 import { parselFiyatiMili } from "./fiyat";
@@ -310,6 +310,21 @@ export class WsBaglanti implements MulkBaglantisi {
   }
 
   private donus: DonusOzeti | null = null;
+  private defterBekleyen = new Map<number, { coz: (d: Defter | null) => void; zamanlayici: ReturnType<typeof setTimeout> }>();
+
+  /** Esnaf Defteri: `defterIste` (istek numarasıyla) → `defter`; 10 sn'de yanıt yoksa ya da bağlı değilse null. */
+  defterAl(): Promise<Defter | null> {
+    if (this.durum !== "bagli") return Promise.resolve(null);
+    const istek = ++this.sayac;
+    return new Promise((coz) => {
+      const zamanlayici = setTimeout(() => {
+        this.defterBekleyen.delete(istek);
+        coz(null);
+      }, 10_000);
+      this.defterBekleyen.set(istek, { coz, zamanlayici });
+      this.gonder({ tur: "defterIste", istek });
+    });
+  }
 
   /** Gösterilmemiş "Sen yokken" özeti (hosgeldin ya da yetişme sonrası `donusOzeti` mesajı). */
   donusOzeti(): DonusOzeti | null {
@@ -573,6 +588,14 @@ export class WsBaglanti implements MulkBaglantisi {
         return this.durumAl(m);
       case "ozet":
         return;
+      case "defter": {
+        const b = this.defterBekleyen.get(m.istek ?? -1);
+        if (!b) return;
+        this.defterBekleyen.delete(m.istek ?? -1);
+        clearTimeout(b.zamanlayici);
+        b.coz({ kazanilan: m.kazanilan, siradaki: m.siradaki, toplamOdulMili: m.toplamOdulMili, tavanMili: m.tavanMili });
+        return;
+      }
       case "donusOzeti":
         this.donus = m.ozet;
         return this.degisti();

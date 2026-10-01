@@ -104,9 +104,10 @@ export async function f4SunucuBaslat(s: F4SunucuSecenekleri = {}): Promise<F4Sun
   const veri: CekirdekVeriPaketi = miniVeriyiYukle();
   veri.parsel = s.fikstur ?? gebzeFiksturu();
   if (s.yurtsuz && veri.param.mulk) veri.param.mulk.yeniOyuncu.yurtHucre = 0;
+  // Esnaf Defteri ödül dedektörü açık (CLI varsayılanı gibi): kavramlar sim-saat sınırında saptanır.
   // Gerçek saat: birikimli kip (açıkken akar; kapalıyken durur). Mutlak duvar saati (varsayılan DuvarSaati(1)) kapalı süreyi yetiştirir.
   const saat = s.gercekSaat ? new DuvarSaati(1, { birikimli: true }) : new ElleSaat();
-  const yazar = await DunyaYazari.ac({ veri, tohum: 1, depo: bellekDeposu(), saat, commitAraligiMs: 15, goruntuAraligiMs: 1e12 });
+  const yazar = await DunyaYazari.ac({ veri, tohum: 1, depo: bellekDeposu(), saat, commitAraligiMs: 15, goruntuAraligiMs: 1e12, odul: true });
   const sunucu: CalisanSunucu = await sunucuBaslat({ yazar, kimlik: new GelistirmeKimligi(SIR), port: s.port ?? 0, host: "127.0.0.1", yayinAraligiMs: 0 });
   const url = `ws://127.0.0.1:${sunucu.port}`;
   const token = (oyuncu: string): string => gelistirmeTokeni(SIR, oyuncu);

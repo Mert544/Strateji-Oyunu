@@ -34,3 +34,12 @@ body.mulk-paneli #geride, body.mulk-paneli #duraklama-isareti { display: none !i
   body.harita-acik.mulk-paneli.isletme-acik #panel { display: flex; height: 62vh; max-height: none; }
   body.harita-acik.isletme-acik :is(#harita-alt, #yapi-kart, #parsel-kart) { visibility: hidden; }
 }
+/* Esnaf Defteri (İşletmem'in sonunda): ödül çubuğu, sıradaki adımlar, defterine işlenenler (damga) */
+.defter-odul { display: flex; flex-direction: column; gap: 6px; margin: 0 0 var(--s-2); }
+.defter-odul-satir { display: flex; justify-content: space-between; gap: var(--s-2); font-size: var(--yazi-sm); color: var(--murekkep-2); }
+.defter-odul-satir b { color: var(--murekkep); font-variant-numeric: tabular-nums; font-weight: 600; }
+.defter-cubuk { display: block; height: 6px; border-radius: var(--r-hap); background: var(--yuzey-3); overflow: hidden; }
+.defter-cubuk i { display: block; height: 100%; background: var(--birincil); border-radius: var(--r-hap); }
+.defter-baslik { margin: var(--s-3) 0 0; font-size: var(--yazi-xs); font-weight: 600; color: var(--murekkep-3); }
+.defter-liste .defter-tutar { flex: none; font-size: var(--yazi-sm); color: var(--murekkep-2); font-variant-numeric: tabular-nums; text-align: right; max-width: 45%; }
+.defter-damga { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--birincil-tint); color: var(--birincil-ink); }

@@ -6,7 +6,9 @@
  *   - Mal: stok, üretim ve satış/alış;
  *   - Dikkat: yalnız oyuncunun kendi yapılarından: eksik girdi, boşta, inşaat bitti;
  *   - Olaylar: gerçek tarih ve iklim dönemi (hasat ritmi).
- * Bölge, Devlet ve Savaş sekmeleri yoktur; öneri motoru bölge kipine özgüdür (yerine "Rehber görevler yakında").
+ * Bölge, Devlet ve Savaş sekmeleri yoktur; öneri motoru bölge kipine özgüdür. Onun yerine İşletmem'in sonunda Esnaf Defteri
+ * bölümü durur (`defter.ts`: sıradaki adımlar ödül tutarıyla, defterine işlenenler tarihle); bağdaştırıcı defter vermiyorsa
+ * "Rehber görevler yakında".
  * Veri bağdaştırıcının `isletme()` özetinden okunur (sunucu karesi ya da sahte bağdaştırıcı); burada hesap yoktur.
  */
 import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, sureMetni, tamTarihMetni, yuzde } from "../arayuz/bicim";
@@ -20,6 +22,9 @@ import type { IsletmeDurumu, IsletmeYapisi } from "./baglanti";
 import type { HaritaGorunumu } from "./gorunum";
 import type { Hiyerarsi } from "./veri";
 import { ASAMA_ADI, yapiAsamasi } from "./yapi";
+import { defterHtml, kazanimBildirimleri, yeniKazanilanlar } from "./defter";
+import type { Defter } from "@bolge/protokol";
+import { bildir } from "../arayuz/bildirim";
 import mulkCss from "./mulk-panel.css?inline";
 
 const SAAT = 3_600_000;
@@ -113,7 +118,7 @@ function yapiDurumu(y: IsletmeYapisi, t: number): string {
   return "Tamam";
 }
 
-export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: MulkAdlari): string {
+export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: MulkAdlari, defterBolumu?: string): string {
   if (!d) return `<p class="ipucu-metin">İşletme bilgisi yükleniyor…</p>`;
   const toplam = d.ilceHucre.reduce((s, [, n]) => s + n, 0);
   const ilk = [...ben.ad.trim()][0] ?? "?";
@@ -140,7 +145,7 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
     }
     s += `</ul>`;
   }
-  s += `<h3>Rehber</h3><div class="bos-durum">${ikon("compass", 28)}<p class="ipucu-metin">Rehber görevler yakında.</p></div>`;
+  s += defterBolumu ?? `<h3>Rehber</h3><div class="bos-durum">${ikon("compass", 28)}<p class="ipucu-metin">Rehber görevler yakında.</p></div>`;
   return s;
 }
 
@@ -251,6 +256,25 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   const insaatlar = new Map<string, { tur: string; ilce?: string; bitis: number }>();
   const bitenler = new Map<string, { tur: string; ilce?: string; bitis: number }>();
   let son: IsletmeDurumu | null = null;
+  // Esnaf Defteri: açılışta, yirmi saniyede bir ve yapı/hücre değişince okunur; yeni kazanılan için sakin bildirim
+  let defter: Defter | null = null;
+  let defterImza = "";
+  let defterOkunuyor = false;
+  let defterSonT = 0;
+  const defterOku = async (f?: () => void): Promise<void> => {
+    if (!b.defterAl || defterOkunuyor) return;
+    defterOkunuyor = true;
+    defterSonT = Date.now();
+    try {
+      const d = await b.defterAl();
+      if (!d) return;
+      for (const m of kazanimBildirimleri(yeniKazanilanlar(defter, d), ad.mal)) bildir(m, "bilgi");
+      defter = d;
+      f?.();
+    } finally {
+      defterOkunuyor = false;
+    }
+  };
   const epoch = (): number => b.dunyaEpochMs?.() ?? DUNYA_EPOCH_MS;
   const oku = (): IsletmeDurumu | null => {
     const d = b.isletme?.() ?? null;
@@ -277,7 +301,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       const d = oku();
       switch (sekme) {
         case "isletme":
-          return isletmePaneli(d, b.ben, ad);
+          return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch()) : undefined);
         case "hazine":
           return mulkHazinePaneli(d);
         case "mal":
@@ -315,9 +339,18 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       return true;
     },
     dinle(f) {
-      // Bağdaştırıcı değişince (kare, delta) ve inşaat aşamaları için iki saniyede bir
+      // Bağdaştırıcı değişince (kare, delta) ve inşaat aşamaları için iki saniyede bir; defter yapı/hücre değişince ya da 20 sn'de bir
       const birak = b.dinle?.(f);
-      const z = window.setInterval(f, 2000);
+      void defterOku(f);
+      const z = window.setInterval(() => {
+        const d = oku();
+        const imza = d ? `${d.yapilar.filter((y) => y.durum === "tesis").length}|${d.yapilar.length}|${d.ilceHucre.map(([i, n]) => `${i}:${n}`).join(",")}` : "";
+        if (imza !== defterImza || Date.now() - defterSonT > 20_000) {
+          defterImza = imza;
+          void defterOku(f);
+        }
+        f();
+      }, 2000);
       return () => {
         birak?.();
         window.clearInterval(z);

@@ -11,7 +11,8 @@
  * `parselAl`/`sahiplikAl` kullanan tüketiciler etkilenmez.
  */
 import type { ArsaSinifi, HucreId, Mili, MulkKomutu, OyuncuId } from "@bolge/cekirdek";
-import type { DonusOzeti, KamuGrubuKaresi } from "@bolge/protokol";
+import { DEFTER_DAMGALARI, DEFTER_ODUL_SIRASI, defterSablonu } from "@bolge/protokol";
+import type { Defter, DefterKazanilan, DefterOdulu, DonusOzeti, KamuGrubuKaresi } from "@bolge/protokol";
 import { arsaSinifi, bitisikMi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili } from "./fiyat";
 import { durumAl, engelNedeni, hucreId, idCoz, izgaraSay } from "./hucre";
 import type { Izgara } from "./hucre";
@@ -187,6 +188,8 @@ export interface MulkBaglantisi {
   yapiGeriAl?(i: GeriAlIstegi): Promise<TesisSonucu>;
   /** Oyuncu özeti (eşzamanlı; son bilinen). */
   ozet?(): MulkOzeti | null;
+  /** Esnaf Defteri (`defterIste` → `defter`); okunamazsa null. */
+  defterAl?(): Promise<Defter | null>;
   /** Gösterilmemiş "Sen yokken" özeti (`hosgeldin.donusOzeti` ya da `donusOzeti` mesajı); yoksa null. */
   donusOzeti?(): DonusOzeti | null;
   /** Özet gösterildi/onaylandı (`ozetOkundu`): çapa ilerler, özet bir daha gösterilmez. */
@@ -231,6 +234,8 @@ export interface SahteSecenekler {
   esZamanliInsaat?: number;
   /** Sunucusuz kipte örnek kamu arsası blokları üret (`ornekKamu`). Varsayılan: false. */
   kamu?: boolean;
+  /** Sunucusuz kipte örnek defter için ödül tablosu (kavram → ödül; `parametreler.odul`'dan, değer hesaplanmış) ve tavan. */
+  defterOdulleri?: { tavanMili: number; kavramlar: Record<string, DefterOdulu> };
   /** Sunucusuz kipte örnek "Sen yokken" özeti (gösterim ve sınama; `?donus=ornek`). */
   donusOrnegi?: DonusOzeti;
 }
@@ -336,6 +341,8 @@ export class SahteBaglanti implements MulkBaglantisi {
   }
 
   private donus: DonusOzeti | null | undefined;
+  /** İlk satın alma anı (sim ms; örnek defterin ilk arsa damgası). */
+  private ilkParselT: number | null = null;
 
   donusOzeti(): DonusOzeti | null {
     if (this.donus === undefined) this.donus = this.s.donusOrnegi ?? null;
@@ -344,6 +351,31 @@ export class SahteBaglanti implements MulkBaglantisi {
 
   ozetOkundu(): void {
     this.donus = null;
+  }
+
+  /**
+   * Örnek defter (sunucusuz): ilk arsa damgası (hücre varsa), ilk yapı ödülü (biten yapı varsa); sıradakiler ödül tablosundan
+   * kritik yol sırasıyla (ilk_dukkan ve ilk_sozlesme yer tutucu: `etkin: false`).
+   */
+  async defterAl(): Promise<Defter | null> {
+    const t = this.s.defterOdulleri;
+    if (!t) return null;
+    const simdi = this.simZamani();
+    let hucre = 0;
+    let bitenT: number | null = null;
+    for (const p of this.ilceler.values()) {
+      const k = this.cozulmus.get(p);
+      if (!k) continue;
+      for (const h of k.sahiplik.hucreler.values()) if (h.sahip === this.ben.id) hucre++;
+      for (const i of k.insaatlar) if (i.bitis <= simdi) bitenT = bitenT === null ? i.bitis : Math.min(bitenT, i.bitis);
+    }
+    const kazanilan: DefterKazanilan[] = [];
+    if (hucre > 0) kazanilan.push({ kavram: DEFTER_DAMGALARI[0], sablon: defterSablonu(DEFTER_DAMGALARI[0]), tur: "damga", t: this.ilkParselT ?? simdi });
+    if (bitenT !== null) kazanilan.push({ kavram: "ilk_yapi", sablon: defterSablonu("ilk_yapi"), tur: "odul", t: bitenT, ...(t.kavramlar["ilk_yapi"] ? { odul: t.kavramlar["ilk_yapi"] } : {}) });
+    const alinan = new Set(kazanilan.map((k) => k.kavram));
+    const siradaki = DEFTER_ODUL_SIRASI.filter((k) => !alinan.has(k) && t.kavramlar[k]).map((k) => ({ kavram: k, sablon: defterSablonu(k), etkin: k !== "ilk_dukkan" && k !== "ilk_sozlesme", odul: t.kavramlar[k]! }));
+    const toplam = kazanilan.reduce((s, k) => s + (k.odul?.degerMili ?? 0), 0);
+    return { kazanilan, siradaki, toplamOdulMili: toplam, tavanMili: t.tavanMili };
   }
 
   isletme(): IsletmeDurumu {
@@ -480,6 +512,7 @@ export class SahteBaglanti implements MulkBaglantisi {
       s.hucreler.set(id, { sahip: this.ben.id, sinif: komut.sinif, degerMili: deger, alinma: t });
     });
     s.satilmis += adet;
+    this.ilkParselT ??= this.simZamani();
     if (this.hazine !== null) this.hazine -= toplam;
     this.degisti();
     return { tamam: true, hucreler: [...komut.hucreler], toplamMili: toplam, t };
@@ -532,6 +565,7 @@ export class SahteBaglanti implements MulkBaglantisi {
     const t = this.saat();
     alinacak.forEach((id, n) => s_.hucreler.set(id, { sahip: this.ben.id, sinif: i.sinif, degerMili: parselFiyatiMili(i.sinif, s_.satilmis + n, s_.uygun, 1), alinma: t }));
     s_.satilmis += alinacak.length;
+    if (alinacak.length) this.ilkParselT ??= simdi;
     if (this.hazine !== null) this.hazine -= arsa + yapi.paraMili;
     k.insaatlar.push({ id: ++this.sonInsaat, ilce: i.ilce, tur: i.tesisTuru, hucreler: [...i.hucreler], baslangic: simdi, bitis: simdi + yapi.sureSaat * 3_600_000, odenenMili: yapi.paraMili, alinan: alinacak, arsaMili: arsa });
     this.degisti();

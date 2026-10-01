@@ -163,8 +163,11 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.waitForTimeout(400);
   const sekmeler = (await sayfa.locator("#sekmeler").innerText()).replace(/\s+/g, " ").trim();
   kontrol(`${e} mülk paneli sekmeleri: İşletmem, Hazine, Mal, Dikkat, Olaylar; Bölge, Devlet, Savaş yok`, ["İşletmem", "Hazine", "Mal", "Dikkat", "Olaylar"].every((x) => sekmeler.includes(x)) && !/Savaş|Devlet|Bölge/.test(sekmeler), sekmeler);
+  // Esnaf Defteri bölümü sunucudan (defterIste) gelir: ödül çubuğu ve sıradaki adımlar
+  await sayfa.waitForSelector("#sekme-icerik [data-alan='defter-odul']", { timeout: 20000 }).catch(() => undefined);
   const isletme = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} İşletmem: ad, kalkan ve ayrılmış hücre (savaş dili yok), Gebze arsası, rehber`, /\bali\b/.test(isletme) && /Yeni oyuncu kalkanı/.test(isletme) && /Gebze/.test(isletme) && /Rehber görevler yakında/.test(isletme) && !/savaş|Cumhuriyet|bölge/i.test(isletme), isletme.slice(0, 260));
+  kontrol(`${e} İşletmem: ad, kalkan ve ayrılmış hücre (savaş dili yok), Gebze arsası`, /\bali\b/.test(isletme) && /Yeni oyuncu kalkanı/.test(isletme) && /Gebze/.test(isletme) && !/savaş|Cumhuriyet|bölge/i.test(isletme), isletme.slice(0, 260));
+  kontrol(`${e} Esnaf Defteri: ödül çubuğu (₺ / ₺8.000 tavan), sıradaki adımlar ödül tutarıyla (ilk yapı: çelik); yer tutucular gizli`, /Defter ödülleri/.test(isletme) && /\/ ₺8\.000/.test(isletme) && /İlk yapını kur/.test(isletme) && /çelik/.test(isletme) && /İlk satışını yap/.test(isletme) && !/dükkânını aç|sözleşmeni yap/.test(isletme) && (await sayfa.locator("#sekme-icerik .defter-cubuk").count()) === 1, isletme.slice(isletme.indexOf("Defter"), isletme.indexOf("Defter") + 240));
   const cubuk = (await sayfa.locator("#oyuncu-cubuk").innerText()).replace(/\s+/g, " ");
   kontrol(`${e} üst çubukta oyuncu adı ve hazine (devlet adı yok)`, /ali/.test(cubuk) && /50\.000 ₺/.test(cubuk), cubuk);
   const tarih = `${await sayfa.locator("#takvim-gun").innerText()} · ${await sayfa.locator("#takvim-yil").innerText()}`;
@@ -469,7 +472,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   kontrol(`${e} Esc yapı kipinden çıkar`, !(await sayfa.evaluate(() => window.__harita?.gorunum()?.yerlesimKipi?.aktif ?? true)));
 
   // --- Gözlemci (Veli) canlı görür; sim saati ilerler ---
-  const gorunum = async (sayfa2: Page): Promise<{ ali: number; insaat: number; tesis: number; etiketler: string[] }> =>
+  const gorunum = async (sayfa2: Page): Promise<{ ali: number; insaat: number; tesis: number; etiketler: string[]; sim: number; yapilar: string[] }> =>
     sayfa2.evaluate(async () => {
       const b = window.__harita?.baglanti();
       const sh = await b?.sahiplikAl("tr_41_gebze");
@@ -480,6 +483,8 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
         insaat: (sh?.yapilar ?? []).filter((y) => y.durum === "insaat" && y.sahip === "ali").length,
         tesis: (sh?.yapilar ?? []).filter((y) => y.durum === "tesis" && y.sahip === "ali").length,
         etiketler: [...document.querySelectorAll(".yapi-etiket")].map((x) => x.textContent ?? ""),
+        sim: b?.ozet?.()?.simZamani ?? -1,
+        yapilar: (sh?.yapilar ?? []).filter((y) => y.sahip === "ali").map((y) => `${y.tur}:${y.durum}:${y.baslangic ?? "?"}-${y.bitis ?? "?"}`),
       };
     });
   await gozlemci.waitForFunction(async () => {
@@ -511,7 +516,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     .waitForFunction(() => [...document.querySelectorAll(".yapi-etiket")].some((x) => /Çiftlik · İskele/.test(x.textContent ?? "")), null, { timeout: 12000 })
     .catch(() => undefined);
   const asamaIskele = await gorunum(sayfa);
-  kontrol(`${e} +5 dk: ali kendi çiftliğinde aşama İskele`, asamaIskele.etiketler.some((x) => /Çiftlik · İskele/.test(x)), asamaIskele.etiketler.join(" | "));
+  kontrol(`${e} +5 dk: ali kendi çiftliğinde aşama İskele`, asamaIskele.etiketler.some((x) => /Çiftlik · İskele/.test(x)), `${asamaIskele.etiketler.join(" | ")} · sim ${asamaIskele.sim} · ${asamaIskele.yapilar.join(" ")}`);
   await ts.yonetici.zamanIlerlet(t0 + 30 * 60_000);
   await sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { zamanEsitle?: () => Promise<void> }).zamanEsitle?.());
   await sayfa.waitForTimeout(2600);
@@ -519,6 +524,22 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const ali2 = await gorunum(sayfa);
   const veli2 = await gorunum(gozlemci);
   kontrol(`${e} +30 dk: iki inşaat da tamam; ali'de tesis`, ali2.tesis === 2 && ali2.insaat === 0, JSON.stringify(ali2));
+  // Esnaf Defteri: ilk yapı bitince defterine işlenir (tarih ve ödülle) ve sakin bir bildirim gelir. Dedektör sim-saat sınırında
+  // çalışır: bir sonraki saat sınırının ötesine geç.
+  {
+    const SA = 3_600_000;
+    const simdiT = ts.yazar.sim.dunya.zaman;
+    await ts.yonetici.zamanIlerlet((Math.floor(simdiT / SA) + 1) * SA + 60_000);
+    await sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { zamanEsitle?: () => Promise<void> }).zamanEsitle?.());
+  }
+  await sayfa.locator("#sek-isletme").click();
+  await sayfa
+    .waitForFunction(() => /İlk yapın kuruldu/.test(document.getElementById("sekme-icerik")?.textContent ?? ""), null, { timeout: 30000 })
+    .catch(() => undefined);
+  const defterM = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
+  const bildirimler = (await sayfa.locator("#bildirimler").textContent()) ?? "";
+  kontrol(`${e} Defter: ilk yapı defterine işlendi (tarih ve çelik ödülü), sıradakilerden düştü; bildirim geldi`, /Defterine işlenenler/.test(defterM) && /İlk yapın kuruldu; kolay gelsin\. \d{1,2} (Ekim|Kasım) · 5 çelik/.test(defterM) && !/İlk yapını kur/.test(defterM) && /Defter: İlk yapın kuruldu|Defterine \d+ yeni satır işlendi/.test(bildirimler), defterM.slice(defterM.indexOf("Defter"), defterM.indexOf("Defter") + 320));
+  await ekran("13b-defter");
   kontrol(`${e}/[veli] veli de tamamlananı görüyor (delta)`, veli2.tesis === 2 && veli2.insaat === 0, JSON.stringify(veli2));
   await sayfa.evaluate((h) => {
     const c = h.split(":").map(Number) as [number, number];
@@ -650,6 +671,14 @@ async function sahteYerles(tarayici: Browser, adres: string, konsol: string[]): 
   await tikla(sayfa, false, "[data-eylem='arsa-al']");
   await sayfa.waitForSelector("#bildirimler .bildirim.tamam", { timeout: 20000 });
   await sayfa.waitForTimeout(500);
+  // Sahte bağdaştırıcının örnek defteri: ilk arsa damgası defterine işlenir (≤ 20 sn'lik tazeleme ya da hücre değişimiyle)
+  await sayfa.locator("#sek-isletme").click();
+  await sayfa
+    .waitForFunction(() => /İlk arsan; hayırlı olsun/.test(document.getElementById("sekme-icerik")?.textContent ?? ""), null, { timeout: 25000 })
+    .catch(() => undefined);
+  const sd = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
+  kontrol(`${e} örnek defter: ilk arsa damgası, sıradaki ilk yapı (çelik), ödül çubuğu`, /İlk arsan; hayırlı olsun/.test(sd) && /damga/.test(sd) && /İlk yapını kur/.test(sd) && /Defter ödülleri/.test(sd), sd.slice(sd.indexOf("Defter"), sd.indexOf("Defter") + 200));
+  await sayfa.screenshot({ path: join(EKRAN, "f4-sahte-1b-defter-koyu.png") });
   await tikla(sayfa, false, "#yapi-menu-dugme");
   const menu = (await sayfa.locator("#yapi-menu").innerText()).replace(/\s+/g, " ");
   kontrol(`${e} Pazar önerisi: menüde Gıda Fabrikası "Önerilen"`, /Gıda Fabrikası\s+Önerilen/.test(menu), menu.slice(0, 120));
