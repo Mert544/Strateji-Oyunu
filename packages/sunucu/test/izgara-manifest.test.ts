@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { IzgaraHatasi, ilBolgeEslemesiCoz, izgaraGirdisiKur, izgaraManifestiCoz, izgaraManifestiOku, izgaralariYukle, varsayilanIzgaraKoku } from "../src/izgara/manifest";
+import { IzgaraHatasi, hiyerarsiCoz, hiyerarsiOku, izgaraGirdisiKur, izgaraManifestiCoz, izgaraManifestiOku, izgaralariYukle, varsayilanIzgaraKoku } from "../src/izgara/manifest";
 import { ILCELER, bhiBaytlari, izgaraDizini, sentetikDurum, testCozucusu } from "./izgara-yardimci";
 import type { IzgaraDizini } from "./izgara-yardimci";
 
@@ -165,22 +165,47 @@ describe("izgaralariYukle: gz bayt, sha256, ham bayt, çerçeve, hücre sayılar
   });
 });
 
-describe("çekirdek girdisi: il-bölge eşlemesi", () => {
-  it("ilçeler manifest sırasıyla, iller ilk görülme sırasıyla; bölge eşlemeden; eşleme yoksa okunur hata", async () => {
+/** `hiyerarsi.json` yapısı (O3 veri hattı çıktısı; fazladan alanlar gerçek dosyadaki gibi var). */
+const HIYERARSI = {
+  surum: 1,
+  bolgeler: [
+    { kimlik: "kuzey", ad: "Kuzey", devlet: "x", iller: [{ kimlik: "tr_16", ad: "Bursa", ebeveyn: "kuzey", ilceler: [{ kimlik: "tr_16_gemlik", ad: "Gemlik", ebeveyn: "tr_16", osm: 1 }, { kimlik: "tr_16_orhangazi", ad: "Orhangazi" }] }] },
+    { kimlik: "guney", ad: "Guney", iller: [{ kimlik: "tr_41", ad: "Kocaeli", ilceler: [{ kimlik: "tr_41_korfez", ad: "Körfez" }] }] },
+  ],
+};
+
+describe("çekirdek girdisi: il, bölge ve adlar hiyerarşiden", () => {
+  it("ilçeler manifest sırasıyla, iller ilk görülme sırasıyla; il/bölge/ilçe/il adları hiyerarşiden; tohum sabit", async () => {
     d = await izgaraDizini();
     const y = izgaralariYukle(izgaraManifestiOku(d.manifestYolu), d.kok, bag);
-    const g = izgaraGirdisiKur(y, { ad: "izgara-manifest", harita: "mini-6", ilBolge: (il) => ({ tr_16: "bursa", tr_41: "kocaeli" })[il] });
-    expect(g.iller).toEqual([{ id: "tr_16", ad: "tr_16", bolge: "bursa" }, { id: "tr_41", ad: "tr_41", bolge: "kocaeli" }]);
-    expect(g.ilceler.map((c) => [c.id, c.il, c.bolge])).toEqual([["tr_16_gemlik", "tr_16", "bursa"], ["tr_41_korfez", "tr_41", "kocaeli"]]);
+    const g = izgaraGirdisiKur(y, { ad: "izgara-manifest", harita: "mini-6", hiyerarsi: hiyerarsiCoz(HIYERARSI), haritaBolgeleri: new Set(["kuzey", "guney", "baska"]) });
+    expect(g.iller).toEqual([{ id: "tr_16", ad: "Bursa", bolge: "kuzey" }, { id: "tr_41", ad: "Kocaeli", bolge: "guney" }]);
+    expect(g.ilceler.map((c) => [c.id, c.ad, c.il, c.bolge])).toEqual([["tr_16_gemlik", "Gemlik", "tr_16", "kuzey"], ["tr_41_korfez", "Körfez", "tr_41", "guney"]]);
     expect(g.ilceler[0]?.izgara).toBe(y[0]?.izgara);
     expect(g.tohum).toBe(1);
-    expect(() => izgaraGirdisiKur(y, { ad: "x", harita: "h", ilBolge: (il) => (il === "tr_16" ? "bursa" : undefined) })).toThrow(/il icin bolge eslemesi yok: tr_41 \(--izgara-il-bolge/);
   });
 
-  it("--izgara-il-bolge ayrıştırma", () => {
-    expect([...ilBolgeEslemesiCoz("tr_16=bursa, tr_41 = kocaeli,")]).toEqual([["tr_16", "bursa"], ["tr_41", "kocaeli"]]);
-    expect(ilBolgeEslemesiCoz(undefined).size).toBe(0);
-    for (const kotu of ["tr_16", "=bursa", "tr_16="]) expect(() => ilBolgeEslemesiCoz(kotu)).toThrow(/il=bolge bekleniyordu/);
+  it("ilçe hiyerarşide yok, ilçenin ili manifestle uyuşmuyor ya da bölge haritada yok: açılış okunur hatayla durur", async () => {
+    d = await izgaraDizini();
+    const y = izgaralariYukle(izgaraManifestiOku(d.manifestYolu), d.kok, bag);
+    const kur = (h: unknown, bolgeler: string[]) => izgaraGirdisiKur(y, { ad: "x", harita: "mini-6", hiyerarsi: hiyerarsiCoz(h), haritaBolgeleri: new Set(bolgeler) });
+    const eksik = { bolgeler: [HIYERARSI.bolgeler[0]] };
+    expect(() => kur(eksik, ["kuzey"])).toThrow(/ilce hiyerarsi dosyasinda yok: tr_41_korfez/);
+    expect(() => kur(HIYERARSI, ["kuzey"])).toThrow(/ilcenin bolgesi haritada yok: tr_41_korfez -> bolge guney \(harita mini-6\)/);
+    const yanlisIl = { bolgeler: [{ kimlik: "kuzey", iller: [{ kimlik: "tr_99", ad: "X", ilceler: [{ kimlik: "tr_16_gemlik", ad: "G" }, { kimlik: "tr_41_korfez", ad: "K" }] }] }] };
+    expect(() => kur(yanlisIl, ["kuzey"])).toThrow(/ilinin hiyerarsiyle uyusmuyor: tr_16_gemlik manifest tr_16, hiyerarsi tr_99/);
+    expect(() => kur(HIYERARSI, [])).toThrow(IzgaraHatasi);
+  });
+
+  it("hiyerarşi biçimi ve dosya okuma: bozuk yapı, eksik dosya, geçerli dosya", async () => {
+    for (const kotu of [null, {}, { bolgeler: [{}] }, { bolgeler: [{ kimlik: "b", iller: [{ kimlik: "i" }] }] }, { bolgeler: [{ kimlik: "b", iller: [{ kimlik: "i", ad: "I", ilceler: [{ kimlik: 1 }] }] }] }]) {
+      expect(() => hiyerarsiCoz(kotu), JSON.stringify(kotu)).toThrow(/hiyerarsi gecersiz/);
+    }
+    expect(hiyerarsiCoz(HIYERARSI).get("tr_16_orhangazi")).toEqual({ ilceAd: "Orhangazi", il: "tr_16", ilAd: "Bursa", bolge: "kuzey" });
+    d = await izgaraDizini();
+    expect(() => hiyerarsiOku(join(d?.kok ?? "", "yok.json"))).toThrow(/hiyerarsi okunamadi/);
+    await writeFile(join(d.kok, "hiyerarsi.json"), JSON.stringify(HIYERARSI));
+    expect(hiyerarsiOku(join(d.kok, "hiyerarsi.json")).size).toBe(3);
   });
 
   it("test yardımcısı: sentetik BHI1 küçük (tek dosya < 1 MB) ve deterministik", () => {

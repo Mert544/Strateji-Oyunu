@@ -195,40 +195,62 @@ export interface IzgaraGirdisi {
   ilceler: { id: string; ad: string; il: string; bolge: string; izgara: CozulmusIzgara }[];
 }
 
-/** İl kimliğinden bölge kimliği (manifestte yok); bulunamazsa `undefined`. */
-export type IlBolgeEslemesi = (il: string) => string | undefined;
-
 /** Izgara dünyasının tohumu: sabit (hücre dizini ve kamu türetmesi için; JSON fikstüründeki `tohum` alanının karşılığı). */
 export const IZGARA_TOHUMU = 1;
 
-/** Yüklenen ilçelerden çekirdek girdisini kurar (ilçe sırası manifest sırasıdır; iller ilk görülme sırasıyla). */
-export function izgaraGirdisiKur(yuklenen: readonly YuklenenIlce[], s: { ad: string; harita: string; tohum?: number; ilBolge: IlBolgeEslemesi }): IzgaraGirdisi {
+/** İlçe hiyerarşisi (`hiyerarsi.json`, O3 veri hattı çıktısı; istemcinin kullandığı kaynakla aynı): ilçe kimliği -> ilçe/il adı, il kimliği, bölge kimliği. */
+export interface HiyerarsiIlcesi {
+  ilceAd: string;
+  il: string;
+  ilAd: string;
+  bolge: string;
+}
+export type HiyerarsiIndeksi = ReadonlyMap<string, HiyerarsiIlcesi>;
+
+/** `hiyerarsi.json` yapısı: `bolgeler[].kimlik` > `iller[].{kimlik, ad}` > `ilceler[].{kimlik, ad}`; diğer alanlar yok sayılır. */
+export function hiyerarsiCoz(ham: unknown, kaynak = "hiyerarsi"): HiyerarsiIndeksi {
+  const m = new Map<string, HiyerarsiIlcesi>();
+  if (!nesne(ham) || !Array.isArray(ham.bolgeler)) throw new IzgaraHatasi(`hiyerarsi gecersiz (${kaynak}): bolgeler dizisi bekleniyordu`);
+  for (const b of ham.bolgeler as unknown[]) {
+    if (!nesne(b) || typeof b.kimlik !== "string" || !Array.isArray(b.iller)) throw new IzgaraHatasi(`hiyerarsi gecersiz (${kaynak}): bolge {kimlik, iller} bekleniyordu`);
+    for (const il of b.iller as unknown[]) {
+      if (!nesne(il) || typeof il.kimlik !== "string" || typeof il.ad !== "string" || !Array.isArray(il.ilceler)) throw new IzgaraHatasi(`hiyerarsi gecersiz (${kaynak}): il {kimlik, ad, ilceler} bekleniyordu (bolge ${b.kimlik})`);
+      for (const c of il.ilceler as unknown[]) {
+        if (!nesne(c) || typeof c.kimlik !== "string" || typeof c.ad !== "string") throw new IzgaraHatasi(`hiyerarsi gecersiz (${kaynak}): ilce {kimlik, ad} bekleniyordu (il ${il.kimlik})`);
+        m.set(c.kimlik, { ilceAd: c.ad, il: il.kimlik, ilAd: il.ad, bolge: b.kimlik });
+      }
+    }
+  }
+  return m;
+}
+
+export function hiyerarsiOku(yol: string): HiyerarsiIndeksi {
+  let ham: unknown;
+  try {
+    ham = JSON.parse(readFileSync(yol, "utf8"));
+  } catch (e) {
+    throw new IzgaraHatasi(`hiyerarsi okunamadi (${yol}): ${e instanceof Error ? e.message : String(e)}`);
+  }
+  return hiyerarsiCoz(ham, yol);
+}
+
+/**
+ * Yüklenen ilçelerden çekirdek girdisini kurar. İl, bölge, ilçe ve il adları HİYERARŞİDEN çözülür (elle eşleme yoktur); ilçe hiyerarşide yoksa,
+ * manifestteki il hiyerarşidekiyle uyuşmuyorsa ya da bölge haritada yoksa `IzgaraHatasi`. İlçe sırası manifest sırasıdır; iller ilk görülme sırasıyla.
+ */
+export function izgaraGirdisiKur(yuklenen: readonly YuklenenIlce[], s: { ad: string; harita: string; tohum?: number; hiyerarsi: HiyerarsiIndeksi; haritaBolgeleri: ReadonlySet<string> }): IzgaraGirdisi {
   const iller = new Map<string, { id: string; ad: string; bolge: string }>();
   const ilceler: IzgaraGirdisi["ilceler"] = [];
   for (const { ilce, izgara } of yuklenen) {
-    let il = iller.get(ilce.il);
-    if (!il) {
-      const bolge = s.ilBolge(ilce.il);
-      if (bolge === undefined) throw new IzgaraHatasi(`il icin bolge eslemesi yok: ${ilce.il} (--izgara-il-bolge ${ilce.il}=<bolge kimligi>; ya da haritada ayni kimlikli bolge olmali)`);
-      il = { id: ilce.il, ad: ilce.il, bolge };
-      iller.set(ilce.il, il);
-    }
-    ilceler.push({ id: ilce.kimlik, ad: ilce.ad, il: il.id, bolge: il.bolge, izgara });
+    const h = s.hiyerarsi.get(ilce.kimlik);
+    if (!h) throw new IzgaraHatasi(`ilce hiyerarsi dosyasinda yok: ${ilce.kimlik} (--hiyerarsi)`);
+    if (h.il !== ilce.il) throw new IzgaraHatasi(`ilce ilinin hiyerarsiyle uyusmuyor: ${ilce.kimlik} manifest ${ilce.il}, hiyerarsi ${h.il}`);
+    if (!s.haritaBolgeleri.has(h.bolge)) throw new IzgaraHatasi(`ilcenin bolgesi haritada yok: ${ilce.kimlik} -> bolge ${h.bolge} (harita ${s.harita})`);
+    if (!iller.has(h.il)) iller.set(h.il, { id: h.il, ad: h.ilAd, bolge: h.bolge });
+    else if (iller.get(h.il)?.bolge !== h.bolge) throw new IzgaraHatasi(`il birden cok bolgede: ${h.il}`);
+    ilceler.push({ id: ilce.kimlik, ad: h.ilceAd, il: h.il, bolge: h.bolge, izgara });
   }
   return { ad: s.ad, harita: s.harita, tohum: s.tohum ?? IZGARA_TOHUMU, iller: [...iller.values()], ilceler };
-}
-
-/** `--izgara-il-bolge tr_16=bursa,tr_41=kocaeli` biçimini ayrıştırır. */
-export function ilBolgeEslemesiCoz(metin: string | undefined): Map<string, string> {
-  const m = new Map<string, string>();
-  for (const parca of (metin ?? "").split(",")) {
-    const p = parca.trim();
-    if (p === "") continue;
-    const i = p.indexOf("=");
-    if (i <= 0 || i === p.length - 1) throw new IzgaraHatasi(`--izgara-il-bolge gecersiz: "${p}" (il=bolge bekleniyordu)`);
-    m.set(p.slice(0, i).trim(), p.slice(i + 1).trim());
-  }
-  return m;
 }
 
 /** Çekirdek veri paketine bağlar (`CekirdekVeriPaketi.parselIzgara`; K3 hücre dizini dalıyla gelir). */

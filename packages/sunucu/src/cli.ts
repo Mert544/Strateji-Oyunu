@@ -27,7 +27,7 @@ import { GelistirmeKimligi, gelistirmeTokeni } from "./kimlik";
 import type { KimlikDogrulayici } from "./kimlik";
 import { depoyuDok } from "./dok";
 import { OturumKaydedici, VARSAYILAN_OTURUM_BOSLUGU_MS } from "./oturum-kaydi";
-import { ilBolgeEslemesiCoz, izgaraGirdisiKur, izgaraManifestiOku, izgaralariYukle, izgarayiVeriyeBagla, varsayilanIzgaraBagimliliklari, varsayilanIzgaraKoku } from "./izgara/manifest";
+import { hiyerarsiOku, izgaraGirdisiKur, izgaraManifestiOku, izgaralariYukle, izgarayiVeriyeBagla, varsayilanIzgaraBagimliliklari, varsayilanIzgaraKoku } from "./izgara/manifest";
 import { parselDosyasiYukle } from "./parsel-dosya";
 import { DuvarSaati, ElleSaat } from "./saat";
 import { sunucuBaslat } from "./sunucu";
@@ -46,7 +46,8 @@ const YARDIM = `Bolge Stratejisi sunucusu
                        sha256/bayt (gz uzerinde), ham bayt, cerceve ve hucre sayilari denetlenir; uyusmazlikta ya da eksik dosyada acilis durur.
                        --parsel / --parsel-dosya ile birlikte verilmez (JSON fikstur yolu yalniz test/gelistirme icin)
   --izgara-kok YOL     manifestteki dosya yollarinin koku (vars. manifestin UST dizini: odbl/)
-  --izgara-il-bolge L  il=bolge eslemeleri (tr_16=bursa,tr_41=kocaeli); yoksa haritada ilin kimligiyle ayni bolge aranir
+  --hiyerarsi YOL      il/ilce hiyerarsisi (hiyerarsi.json): izgara ilcelerinin il, bolge ve adlari buradan cozulur; ilce yoksa ya da bolgesi haritada
+                       yoksa acilis durur (vars. <izgara-kok>/hiyerarsi.json = packages/veri/haritalar/odbl/hiyerarsi.json)
   --tohum N            yalniz ilk acilista (vars. 1)
   --depo TUR           bellek | dosya | pg (vars. dosya)
   --dizin YOL          dosya deposu dizini (vars. raporlar/dunya; git disi)
@@ -110,7 +111,7 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --token OYUNCU       bu oyuncu icin gelistirme token'i yaz ve cik ("sistem" = yonetici); --uretim'de kapali
 
 Ortam degiskenleri: her secenek BOLGE_<AD> ile de verilir (bayrak ortamdan ustundur): BOLGE_PORT, BOLGE_HOST, BOLGE_HARITA,
-BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_IZGARA_MANIFEST, BOLGE_IZGARA_KOK, BOLGE_IZGARA_IL_BOLGE, BOLGE_TOHUM, BOLGE_DEPO, BOLGE_DIZIN, BOLGE_PG_URL, BOLGE_DUNYA, BOLGE_HIZ, BOLGE_ELLE_SAAT (1),
+BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_IZGARA_MANIFEST, BOLGE_IZGARA_KOK, BOLGE_HIYERARSI, BOLGE_TOHUM, BOLGE_DEPO, BOLGE_DIZIN, BOLGE_PG_URL, BOLGE_DUNYA, BOLGE_HIZ, BOLGE_ELLE_SAAT (1),
 BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT, BOLGE_GORUNTU_ISCI (0|1), BOLGE_ODUL (0|1),
 BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI,
 BOLGE_KIMLIK, BOLGE_POSTA, BOLGE_POSTA_DIZIN, BOLGE_GENEL_URL, BOLGE_GIRIS_BAGLANTISI, BOLGE_GIRIS_SONRASI, BOLGE_IZINLI_KOKENLER, BOLGE_TARAYICI_BAGLI (0|1),
@@ -168,7 +169,7 @@ async function ana(): Promise<void> {
       "parsel-dosya": { type: "string", ...varsayilan(ev("PARSEL_DOSYA")) },
       "izgara-manifest": { type: "string", ...varsayilan(ev("IZGARA_MANIFEST")) },
       "izgara-kok": { type: "string", ...varsayilan(ev("IZGARA_KOK")) },
-      "izgara-il-bolge": { type: "string", ...varsayilan(ev("IZGARA_IL_BOLGE")) },
+      hiyerarsi: { type: "string", ...varsayilan(ev("HIYERARSI")) },
       tohum: { type: "string", default: ev("TOHUM", "1") as string },
       depo: { type: "string", default: ev("DEPO", "dosya") as string },
       dizin: { type: "string", default: ev("DIZIN", "raporlar/dunya") as string },
@@ -356,9 +357,8 @@ async function ana(): Promise<void> {
     const manifest = izgaraManifestiOku(manifestYolu);
     const kok = a["izgara-kok"] !== undefined ? resolve(a["izgara-kok"]) : varsayilanIzgaraKoku(manifestYolu);
     const yuklenen = izgaralariYukle(manifest, kok, varsayilanIzgaraBagimliliklari);
-    const esleme = ilBolgeEslemesiCoz(a["izgara-il-bolge"]);
-    const bolgeler = new Set(veri.harita.bolgeler.map((b) => b.id));
-    izgarayiVeriyeBagla(veri, izgaraGirdisiKur(yuklenen, { ad: "izgara-manifest", harita: veri.harita.ad, ilBolge: (il) => esleme.get(il) ?? (bolgeler.has(il) ? il : undefined) }));
+    const hiyerarsi = hiyerarsiOku(a.hiyerarsi !== undefined ? resolve(a.hiyerarsi) : resolve(kok, "hiyerarsi.json"));
+    izgarayiVeriyeBagla(veri, izgaraGirdisiKur(yuklenen, { ad: "izgara-manifest", harita: veri.harita.ad, hiyerarsi, haritaBolgeleri: new Set(veri.harita.bolgeler.map((b) => b.id)) }));
     yaz("izgara", { manifest: manifestYolu, ilce: yuklenen.length, hucre: yuklenen.reduce((n, y) => n + y.ilce.hucre.icerde, 0) });
   }
   let depo: Depo;
