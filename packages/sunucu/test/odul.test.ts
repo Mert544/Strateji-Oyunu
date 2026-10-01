@@ -182,7 +182,7 @@ describe("kavram saptama ve odulun gunluge girisi", () => {
       if (k.tur === "odul") expect(k.odul?.degerMili).toBe(odulDegeri(y.sim.ic, k.kavram));
       else expect(k.odul).toBeUndefined();
     }
-    expect(d?.siradaki.map((s) => [s.kavram, s.etkin])).toEqual([["ilk_dukkan", true], ["ilk_sozlesme", false]]);
+    expect(d?.siradaki.map((s) => [s.kavram, s.etkin])).toEqual([["ilk_dukkan", false], ["ilk_sozlesme", false]]); // etkin kurali (P4/P5): bu icerikte mulk.perakende (dukkan) yok -> ilk_dukkan etkin degil; dukkanli icerikte etkin: odul-p4p5.test.ts
     expect(d?.toplamOdulMili).toBe(KAVRAMLAR_ALI.reduce((n, k) => n + (odulDegeri(y.sim.ic, k) ?? 0), 0));
     expect(d?.tavanMili).toBe(y.sim.ic.param.odul?.tavanMili);
     // Veli: yalniz damga; siradaki 8 kavramin hepsi

@@ -201,7 +201,7 @@ describe("Esnaf Defteri (defterIste / defter, yalniz ekleme)", () => {
     const c = sunucuMesajiCoz(JSON.stringify(defter));
     expect(c.tamam).toBe(true);
     expect(c.tamam && c.mesaj.tur === "defter" ? c.mesaj.kazanilan[1]?.odul?.degerMili : null).toBe(600_000);
-    expect(DEFTER_ODUL_SIRASI).toEqual(["ilk_yapi", "ilk_satis", "ilk_isleme", "zincir_kapandi", "ilk_dukkan", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"]);
+    expect(DEFTER_ODUL_SIRASI).toEqual(["ilk_yapi", "ilk_satis", "ilk_isleme", "ilk_ekmek", "zincir_kapandi", "ilk_dukkan", "ilk_pencere", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"]); // eski sira: defter-p4p5.test.ts (donmus)
     expect(defterSablonu("ilk_yapi")).toBe("defter.kavram.ilk_yapi");
   });
 

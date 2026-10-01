@@ -7,7 +7,7 @@ import type { DerlenmisIcerik, Dunya } from "@bolge/cekirdek";
 import { DEFTER_ODUL_SIRASI, defterSablonu } from "@bolge/protokol";
 import type { Defter, DefterKazanilan, DefterOdulu, DefterSiradaki } from "@bolge/protokol";
 import type { Damga } from "../depo/tipler";
-import { ODUL_YER_TUTUCULARI } from "./dedektor";
+import { kavramEtkin } from "./dedektor";
 
 /** Kavramın ödülü çekirdek tablosundan (yoksa null). */
 export function defterOdulu(ic: DerlenmisIcerik, kavram: string): DefterOdulu | null {
@@ -43,12 +43,11 @@ export function defterKur(ic: DerlenmisIcerik, d: Readonly<Dunya>, oyuncu: strin
   if (tablo !== undefined) {
     const bilinen = new Set<string>(DEFTER_ODUL_SIRASI);
     const sira = [...DEFTER_ODUL_SIRASI, ...Object.keys(tablo.kavramlar).filter((k) => !bilinen.has(k)).sort()];
-    const yerTutucu = new Set<string>(ODUL_YER_TUTUCULARI);
     for (const kavram of sira) {
       if (alinan.has(kavram)) continue;
       const odul = defterOdulu(ic, kavram);
       if (!odul) continue; // tabloda yok
-      siradaki.push({ kavram, sablon: defterSablonu(kavram), etkin: !yerTutucu.has(kavram), odul });
+      siradaki.push({ kavram, sablon: defterSablonu(kavram), etkin: kavramEtkin(ic, kavram), odul });
     }
   }
   return { kazanilan, siradaki, toplamOdulMili: alinanOdulDegeri(ic, o), tavanMili: tablo?.tavanMili ?? 0 };

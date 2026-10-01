@@ -12,9 +12,17 @@
  * | `ikinci_ilce` | ızgara | tamamlanmış üretim yapıları EN AZ İKİ FARKLI ilçede (`ilk_yapi` ile aynı yapı tanımı; yalnız hücre sahipliği DEĞİL: al-bırak arbitrajı olmasın) |
  * | `ilk_arastirma` | ızgara | `teknolojiler.length > 0` (araştırma TAMAMLANDI; başlatma değil: iptal/iade arbitrajına kapalı) |
  * | `ilk_dukkan` | ızgara | **İLK SATIŞ** (yapı bitişi DEĞİL; GZ-14): oyuncunun düğümlerinden birinde TAMAMLANMIŞ `dukkan` ek yapısı VE kümülatif dükkân geliri (`MulkOyuncuDurumu.dukkanGeliri` + tembel `paraAkisi.yerel`) > 0. Ödül bir kez verilir (`alinanOdul`): yıkım geri almaz, yeniden kurulum tekrar vermez |
+ * | `ilk_ekmek` | ızgara | herhangi bir düğümde `ekmek` kümülatif ÜRETİMİ (tembel) > 0 (stok değil: üretim çevrimi) |
+ * | `ilk_pencere` | ızgara | herhangi bir düğümde `pencere` kümülatif ÜRETİMİ (tembel) > 0. Başlangıç kitindeki pencere (`baslangicStok.pencere`) STOKtur, üretim sayacına girmez: tetiklemez |
  * | `ilk_sozlesme` | YER TUTUCU | çekirdekte olayı yok (sözleşme sonra); TETİKLENMEZ |
  * Damgalar (para/mal yok; profilde): `ilk_parsel` (başarılı `parsel_al`), `ilk_uretim` (herhangi bir düğümde kümülatif üretim > 0, ızgara),
- * `ilk_donus` (iki kabul edilen komut arası >= 6 sa; yalnız mülk kipi, `sonEtkinlik`'ten).
+ * `ilk_donus` (iki kabul edilen komut arası >= 6 sa; yalnız mülk kipi, `sonEtkinlik`'ten), `ilk_raf` (bir dükkânın en az bir raf yuvasında mal SEÇİLİ; stok ve satış
+ * şartı YOK, ızgara), `ilk_cam` (herhangi bir düğümde `cam` kümülatif üretimi > 0, ızgara).
+ *
+ * ## Etkin kuralı (`kavramEtkin`)
+ * Tetikleyici tesis/yöntem/dükkân içerikte YOKSA kavram etkin DEĞİLDİR (Defter'de gizlenir; istemci aynı kuralı içerik dizininden hesaplar, protokolde alan yoktur):
+ * `ilk_ekmek`/`ilk_pencere`/`ilk_cam` = o malı ÇIKTI veren en az bir yöntem var; `ilk_dukkan` (ve damga `ilk_raf`) = `mulk.perakende` tanımlı (dükkân türleri var);
+ * `ilk_sozlesme` her zaman yer tutucu (etkin değil); diğerleri her zaman etkin.
  *
  * Yalnız insan oyuncular (sunucu botları ve sistem hariç) değerlendirilir. Koşullar saf işlevlerdir (aynı durum aynı sonuç).
  */
@@ -25,9 +33,11 @@ import type { BolgeDurumu, DerlenmisIcerik, Dunya, Ms, OyuncuDurumu } from "@bol
  * Sunucunun saptadığı ödüllü kavramlar: HEPSİ her sim-saat sınırında değerlendirilir (ödül bedelden ucuz alınamasın: koşullar tamamlanmış
  * yapı/araştırma/üretim ister, komutla tek adımda sağlanamaz).
  */
-export const ODUL_IZGARA_KAVRAMLARI = ["ilk_yapi", "ilk_satis", "ilk_isleme", "zincir_kapandi", "ilk_dukkan", "ikinci_ilce", "ilk_arastirma"] as const;
+export const ODUL_IZGARA_KAVRAMLARI = ["ilk_yapi", "ilk_satis", "ilk_isleme", "ilk_ekmek", "zincir_kapandi", "ilk_dukkan", "ilk_pencere", "ikinci_ilce", "ilk_arastirma"] as const;
 /** Çekirdekte olayı olmayan kavramlar: dedektörde yer tutucudur, tetiklenmez. */
 export const ODUL_YER_TUTUCULARI = ["ilk_sozlesme"] as const;
+/** Izgarada saptanan damgalar (para/mal yok; profilde): her sim-saat sınırında `damgaSaglandi` ile değerlendirilir. */
+export const DAMGA_IZGARA_KAVRAMLARI = ["ilk_uretim", "ilk_raf", "ilk_cam"] as const;
 /** Sabit değerlendirme sırası (deterministik: aynı anda birden çok kavram doğarsa bu sırayla günlüğe girer). */
 export const ODUL_SIRASI = ODUL_IZGARA_KAVRAMLARI;
 
@@ -157,6 +167,14 @@ function ilkDukkan(d: Readonly<Dunya>, o: Readonly<OyuncuDurumu>, t: Ms): boolea
   return var_ && dukkanGeliriTembel(d, o.id, t) > 0;
 }
 
+/** Mal kimliğinin kümülatif üretimi (herhangi bir düğümde, tembel) > 0; mal içerikte yoksa false. Başlangıç/hibe STOKU üretim sayacına girmez. */
+function malUretildi(ic: DerlenmisIcerik, d: Readonly<Dunya>, oyuncu: string, mal: string, t: Ms): boolean {
+  const mi = ic.malIndeks[mal];
+  if (mi === undefined) return false;
+  for (const b of oyuncuDugumleri(d, oyuncu)) if (uretimTembel(b, mi, t) > 0) return true;
+  return false;
+}
+
 /** Tamamlanmış üretim yapılarının bulunduğu FARKLI ilçe sayısı >= 2 (yapı hücresinin ilçesi; ilçe bilinmeyen yapı sayılmaz). */
 function ikinciIlce(ic: DerlenmisIcerik, d: Readonly<Dunya>, o: Readonly<OyuncuDurumu>): boolean {
   const ilceler = new Set<string>();
@@ -185,8 +203,12 @@ export function kavramSaglandi(ic: DerlenmisIcerik, d: Readonly<Dunya>, o: Reado
       return ilkIsleme(ic, d, o, t);
     case "zincir_kapandi":
       return zincirKapandi(ic, d, o, t);
+    case "ilk_ekmek":
+      return malUretildi(ic, d, o.id, "ekmek", t);
     case "ilk_dukkan":
       return ilkDukkan(d, o, t);
+    case "ilk_pencere":
+      return malUretildi(ic, d, o.id, "pencere", t);
     case "ikinci_ilce":
       return ikinciIlce(ic, d, o);
     case "ilk_arastirma":
@@ -202,6 +224,56 @@ export function ilkUretim(d: Readonly<Dunya>, oyuncu: string, t: Ms): boolean {
     for (let m = 0; m < b.uretimToplam.length; m++) if (uretimTembel(b, m, t) > 0) return true;
   }
   return false;
+}
+
+/** `ilk_raf` damgası: oyuncunun tamamlanmış bir dükkânının en az bir raf yuvasında mal SEÇİLİ (`mal` tanımlı ve boş değil). Stok ve satış şartı yok. */
+export function ilkRaf(d: Readonly<Dunya>, oyuncu: string): boolean {
+  for (const b of oyuncuDugumleri(d, oyuncu)) {
+    for (const e of b.ekYapilar ?? []) {
+      if (e.dukkan !== undefined && e.dukkan.raf.some((y) => y.mal !== undefined && y.mal !== "")) return true;
+    }
+  }
+  return false;
+}
+
+/** Izgara damgasının koşulu `t` anında sağlanıyor mu (bilinmeyen kavram için false). */
+export function damgaSaglandi(ic: DerlenmisIcerik, d: Readonly<Dunya>, oyuncu: string, kavram: string, t: Ms): boolean {
+  switch (kavram) {
+    case "ilk_uretim":
+      return ilkUretim(d, oyuncu, t);
+    case "ilk_raf":
+      return ilkRaf(d, oyuncu);
+    case "ilk_cam":
+      return malUretildi(ic, d, oyuncu, "cam", t);
+    default:
+      return false;
+  }
+}
+
+/** İçerikte `mal`ı ÇIKTI veren en az bir yöntem var mı (tetikleyici tesis/yöntem içerikte mi). */
+function malUretenYontemVar(ic: DerlenmisIcerik, mal: string): boolean {
+  return ic.yontemler.some((y) => Object.prototype.hasOwnProperty.call(y.ciktilar, mal));
+}
+
+/**
+ * Kavram/damga ETKİN mi (içerik kuralı; protokolde alan yok, istemci aynı kuralı içerik dizininden uygular): tetikleyici tesis/yöntem/dükkân içerikte yoksa false.
+ * Yer tutucular (`ilk_sozlesme`) her zaman false; yukarıdakilerin dışındaki kavramlar true.
+ */
+export function kavramEtkin(ic: DerlenmisIcerik, kavram: string): boolean {
+  if ((ODUL_YER_TUTUCULARI as readonly string[]).includes(kavram)) return false;
+  switch (kavram) {
+    case "ilk_ekmek":
+      return malUretenYontemVar(ic, "ekmek");
+    case "ilk_pencere":
+      return malUretenYontemVar(ic, "pencere");
+    case "ilk_cam":
+      return malUretenYontemVar(ic, "cam");
+    case "ilk_dukkan":
+    case "ilk_raf":
+      return ic.mulk?.perakende !== undefined;
+    default:
+      return true;
+  }
 }
 
 /** Oyuncunun `sonEtkinlik`'i (mülk kipi; yoksa null): `ilk_donus` için komut ÖNCESİ okunur. */

@@ -103,7 +103,7 @@ describe("dedektor ve G6 yontemleri (mulk kipi, gercek G6-3 icerigi)", () => {
     expect(tesisler(sim).map((t) => t.yontem).sort()).toEqual([DEGIRMEN, FIRIN].sort());
     expect(uretim(sim, "un")).toBeGreaterThan(0);
     expect(uretim(sim, "ekmek")).toBeGreaterThan(0); // firin degirmenin unuyla (ayni dugum stogu) calisti
-    expect(saglanan(sim)).toEqual(["ilk_isleme", "ilk_yapi", "zincir_kapandi"]);
+    expect(saglanan(sim)).toEqual(["ilk_ekmek", "ilk_isleme", "ilk_yapi", "zincir_kapandi"]); // firin ekmek uretti: ilk_ekmek (P4/P5) de saglanir
   });
 
   it("yontem degistirme: dedektor tesisin O ANKI yontemini okur; ciftlik(tahil) -> gida fabrikasi zinciri yontem degisince kapanir/acilir (standart: tahil girdisi var; firin: un ister; degirmen: tahil)", () => {

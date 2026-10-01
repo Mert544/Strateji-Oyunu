@@ -12,10 +12,16 @@
  */
 import { z } from "zod";
 
-/** Ödüllü kavramların kritik yol sırası (rehber §3.1: ilk_yapi → ilk_satis → ilk_isleme → zincir → ilk_dukkan → ilk_sozlesme; sonra yön/yayılma). */
-export const DEFTER_ODUL_SIRASI = ["ilk_yapi", "ilk_satis", "ilk_isleme", "zincir_kapandi", "ilk_dukkan", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"] as const;
-/** Para ve mal taşımayan (yalnız profilde damga olarak tutulan) kavramlar. */
-export const DEFTER_DAMGALARI = ["ilk_parsel", "ilk_uretim", "ilk_donus"] as const;
+/**
+ * Ödüllü kavramların kritik yol sırası (rehber §3.1: ilk_yapi → ilk_satis → ilk_isleme → ilk_ekmek → zincir → ilk_dukkan → ilk_pencere → ilk_sozlesme; sonra yön/yayılma).
+ * YALNIZ EKLEME: eski kavramların göreli sırası değişmez (`ilk_ekmek` ve `ilk_pencere` araya girer); eski istemci bilmediği kavramı atlar (`kavram` serbest dizedir).
+ */
+export const DEFTER_ODUL_SIRASI = ["ilk_yapi", "ilk_satis", "ilk_isleme", "ilk_ekmek", "zincir_kapandi", "ilk_dukkan", "ilk_pencere", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"] as const;
+/**
+ * Para ve mal taşımayan (yalnız profilde damga olarak tutulan) kavramlar. YALNIZ EKLEME, SONA: mevcut indeksler (istemci `DEFTER_DAMGALARI[0]` = `ilk_parsel`) kaymaz;
+ * `ilk_raf` (dükkân rafında mal seçili) ve `ilk_cam` (ilk cam üretimi) isteğe bağlı yeni damgalardır, `kazanilan[].kavram` serbest dize olduğundan şema DEĞİŞMEZ.
+ */
+export const DEFTER_DAMGALARI = ["ilk_parsel", "ilk_uretim", "ilk_donus", "ilk_raf", "ilk_cam"] as const;
 
 /** Şablon anahtarı: `defter.kavram.<kavram>`. */
 export const defterSablonu = (kavram: string): string => `defter.kavram.${kavram}`;

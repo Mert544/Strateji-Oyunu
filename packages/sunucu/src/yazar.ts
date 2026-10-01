@@ -57,7 +57,7 @@ import { SERMAYE_KOMUTLARI, SERMAYE_OLCUM_ILERI_SINIRI } from "./ekonomi-metrik"
 import { OzetIzleyici } from "./donus/izleyici";
 import type { OyuncuKaydi } from "./donus/izleyici";
 import { GoruntuIscisi } from "./goruntu";
-import { IZGARA_MS, DONUS_ESIGI_MS, ODUL_SIRASI, ilkUretim, kavramSaglandi, oyuncuDugumleri, sonEtkinlik } from "./odul/dedektor";
+import { IZGARA_MS, DONUS_ESIGI_MS, DAMGA_IZGARA_KAVRAMLARI, ODUL_SIRASI, damgaSaglandi, kavramSaglandi, oyuncuDugumleri, sonEtkinlik } from "./odul/dedektor";
 import type { OdulAday } from "./odul/dedektor";
 import { defterKur } from "./odul/defter";
 import type { GoruntuIsciSecenekleri } from "./goruntu";
@@ -1201,7 +1201,7 @@ export class DunyaYazari {
     return true;
   }
 
-  /** Izgara noktası `g`: zamanla oluşan kavramlar (ve komut kavramları için yedek değerlendirme), `ilk_uretim` damgası. */
+  /** Izgara noktası `g`: zamanla oluşan kavramlar (ve komut kavramları için yedek değerlendirme), ızgara damgaları (`ilk_uretim`, `ilk_raf`, `ilk_cam`). */
   private async odulIzgara(g: Ms): Promise<boolean> {
     const tara0 = performance.now();
     const d = this.sim.dunya;
@@ -1212,7 +1212,9 @@ export class DunyaYazari {
       for (const kavram of ODUL_SIRASI) {
         if (this.odulUygunMu(o, kavram) && kavramSaglandi(ic, d, o, kavram, g)) adaylar.push({ oyuncu: o.id, kavram });
       }
-      if (!this.damgaKuyruklandi.has(`${o.id}|ilk_uretim`) && ilkUretim(d, o.id, g)) this.damgaKuyrukla(o.id, { kavram: "ilk_uretim", t: g, kaynak: "damga" });
+      for (const damga of DAMGA_IZGARA_KAVRAMLARI) {
+        if (!this.damgaKuyruklandi.has(`${o.id}|${damga}`) && damgaSaglandi(ic, d, o.id, damga, g)) this.damgaKuyrukla(o.id, { kavram: damga, t: g, kaynak: "damga" });
+      }
     }
     const taramaMs = performance.now() - tara0;
     const m = this.metrikler;
