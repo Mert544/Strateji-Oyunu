@@ -172,8 +172,10 @@ export function perakendeKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Pera
       const y = dk.raf[k.yuva] as RafYuvasi;
       if (k.mal === null) {
         if (y.mal === undefined) return hata("yuva zaten bos");
-        // Boşaltma `fiyatT`'yi SİLMEZ: fiyat değiştir -> boşalt -> doldur -> fiyat değiştir döngüsü hız sınırını atlayamaz (hız sınırı doldurmada denetlenir).
+        // Boşaltma `fiyatT`'yi SİLMEZ: fiyat değiştir -> boşalt -> doldur -> fiyat değiştir döngüsü hız sınırını atlayamaz (hız sınırı doldurmada denetlenir). `fiyatT` hiç yazılmamışsa
+        // boşaltma anı yazılır: doldur -> boşalt -> doldur -> boşalt ile mal rotasyonu da sınırsız dönemez (yuvanın İLK doldurulması muaf kalır; dolu yuvada doğrudan A -> B bir kez serbesttir).
         delete y.mal;
+        if (y.fiyatT === undefined) y.fiyatT = d.zaman;
         y.fiyat = pk.p.varsayilanFiyatKademesi;
         return TAMAM;
       }
