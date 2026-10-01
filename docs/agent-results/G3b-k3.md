@@ -1,6 +1,6 @@
 # G3b (K3): kompakt hücre dizini, BHI1'den dünya
 
-Dal: `takim/k3/hucre-dizini` (taban 8064ded). Tasarım: docs/06 §15.11. Boyut: M (L'ye yakın).
+Dal: `takim/k3/hucre-dizini` (G3 sonrası taban 7553b55; ilk yazım 8064ded üzerindeydi). Tasarım: docs/06 §15.11. Boyut: M (L'ye yakın).
 
 ## 1. Ne değişti
 - `@bolge/veri`: `izgara.ts` (saf BHI1 okuyucusu: `bhiCoz`, `Bit`, `arsaSinifi`, `engelAdi`, `ilceSinifiTuret`, `ParselIzgaraGirdisi`, `parselIzgaraHatalari`); girdi açılmış `Uint8Array`, Node bağımlılığı yok. `veri/saf`'tan da dışa açık.
@@ -33,7 +33,7 @@ Betik: `packages/cekirdek/bench/hucre-dizini-olcum.ts` (kullanım dosya başlı�
 node --expose-gc --max-old-space-size=6144 --import tsx packages/cekirdek/bench/hucre-dizini-olcum.ts --bicim json   [--uc-ilce] [--oyuncu 20]
 node --expose-gc --max-old-space-size=6144 --import tsx packages/cekirdek/bench/hucre-dizini-olcum.ts --bicim izgara [--uc-ilce] [--oyuncu 20]
 ```
-- "Önce" = 8064ded çıkışında `--bicim json` (betik dosyası oraya kopyalanır; yalnız `Simulasyon` ve `miniVeriyiYukle` kullanır). "Sonra" = 701e938 `--bicim izgara`. İki biçimin `OZET` (durumOzeti) satırı AYNI olmalıdır.
+- "Önce" = 8064ded çıkışında `--bicim json` (betik dosyası oraya kopyalanır; yalnız `Simulasyon` ve `miniVeriyiYukle` kullanır). "Sonra" = bu dalın ucu (bd4dbca + sonrası) `--bicim izgara`. İki biçimin `OZET` (durumOzeti) satırı AYNI olmalıdır.
 - `--uc-ilce`: Gebze + Körfez + Gemlik (`packages/veri/haritalar/odbl/izgara/` altında; G3 girdisi; `IZGARA_DIZINI` ile başka klasör).
 - Ölçüm O2 AĞIR satırında koşar (ÖNCE ve SONRA, 3'er tekrar; Kod lideri istedi). Kapı koşarken koşturulmaz. Süreler iş parçacığı CPU süresidir; bellek `gc()` sonrası `memoryUsage` + `resourceUsage().maxRSS`.
 
@@ -51,7 +51,7 @@ Ara sonuç (K3, tek koşu, Gebze, BHI1 yolu, 508 634 hücre; makine yükü ~16, 
 Önce (JSON, 8064ded) ve üç ilçe (BHI1) sonuçları: **O2 AĞIR satırında; sonuç gelince bu tabloya eklenir (yer tutucu).** Yurt süresi dizinle değişmez (algoritma aynı); yurt halka dalı ayrı (aşağıda).
 
 ## 5. `pnpm dunya` önce / sonra (aynı ağaç, tek koşu) ve istemci boyutu düzeltmesi
-| | önce (8064ded) | ilk teslim (701e938) | düzeltme (bu uç) |
+| | önce (8064ded) | ilk teslim (bd4dbca; eski 701e938) | düzeltme (bu uç) |
 |---|---|---|---|
 | `istemci/dunya.html` | 1304,6 KB / gzip 372,5 KB | 1315,1 KB / gzip 376,1 KB (+3,6) | 1292,6 KB / gzip 367,6 KB (-4,9) |
 | `dist/assets/index-*.js` | 1241,5 KB / 359,0 KB | 1252,1 KB / 362,7 KB | 1229,5 KB / 354,3 KB |
