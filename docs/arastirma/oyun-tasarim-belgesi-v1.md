@@ -1085,7 +1085,7 @@ Her biri: **neden geri dönüşü zor**, **kimde**, **durum**. Sıra, davetli al
 |---|---|---|---|
 | A0-9 | **Kamu arsası:** `parsel_al` ve `yapi_yerlestir` kamu hücresini reddeder; kamu hücreleri ≤72/%25 tavanına sayılmaz; oran halka açılışında donmuş | özellik testi; yeniden oynatma | G1 |
 | A0-10 | **Para güvenliği:** görev ödülü toplamı ≤₺8.000 ve kavram başına bir kez; ödül tutarı komutta yok; kamu/sipariş tavanı ≤ ×1,10; ekonomi hiçbir yerde görev durumunu okumaz (test); para arzı panosunda ayrı satırlar | test + pano | G4, G9; rehber Gİ-5 |
-| A0-11 | **Zincirler:** her Alfa-0 zinciri bot tarafından uçtan uca tamamlanabilir (ekmek, cam → pencere, süt, fındık); çıkmaz mal 0 (derleme uyarısı); ilk dükkân medyan ≤36 saat, geri ödeme medyanı ≤48 saat | bot + insan | ZP1, PK1; uretim UA1/UA8 |
+| A0-11 | **Zincirler:** her Alfa-0 zinciri bot tarafından uçtan uca tamamlanabilir (ekmek, cam → pencere; süt, fındık Alfa-0 sonrası (baş lider kararı, 1 Ekim gece)); çıkmaz mal 0 (derleme uyarısı); ilk dükkân medyan ≤36 saat, geri ödeme medyanı ≤48 saat | bot + insan | ZP1, PK1; uretim UA1/UA8 |
 | A0-12 | **Perakende dengesi:** perakende primi 1,05–1,20 (>1,30 alarm); ilk dükkân medyan ≤36 saat; fiyat savaşı <0,85 R süre ≤%5; (Alfa-1: bakkal sayısı 60. günde başlangıcın ≥%40'ı, iş modeli çeşitliliği: hiçbir model >%60) | defter | ZP1, ZP3, PK1, PK5, PK7 |
 | A0-13 | **Dönüş:** özet 12 sn ortanca okuma, atlama ≤%50, öneri tıklama ≥%30, yapılamaz öneri ≤%2; çapa yeniden türetme ≤%1; kamusal veri sınırı testi geçti | insan + bot | Dö2–Dö5, Dö9; donus §5.6 |
 | A0-14 | **Defter:** ilk saatte ilk satış ≥%70; kart atlama ≤%30 | insan | Gö1, Gö4 |
