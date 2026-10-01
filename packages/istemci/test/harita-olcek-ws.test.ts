@@ -250,7 +250,7 @@ describe("hata çevirisi (çekirdek metni → Türkçe)", () => {
     expect(t("tesiste olcek yukseltmesi suruyor: 4")).toBe("Bu tesiste büyütme zaten sürüyor.");
     expect(t("hucre zaten sahipli: 1:2 (veli)", (x) => (x === "veli" ? "Veli" : x))).toBe("Bir hücre az önce Veli tarafından alındı.");
     expect(t("hucre bos degil: 1:2")).toBe("Hücrede zaten yapı ya da inşaat var.");
-    expect(t("yetersiz hazine (gereken 12500000)")).toBe("Hazinede yeterli para yok (gereken 12.500 ₺).");
+    expect(t("yetersiz hazine (gereken 12500000)")).toBe("Hazinede yeterli para yok (gereken 12.500\u00a0₺).");
     expect(t("ayni anda en cok 2 insaat")).toBe("Aynı anda en çok 2 inşaat sürebilir; birinin bitmesini bekle.");
     expect(t("bolgede boyle bir tesis yok: 9")).toBe("Bu tesis artık yok.");
     expect(t("tesis turu mulk kipinde olceklenemez")).toBe("Bu yapı büyütülemez.");

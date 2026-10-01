@@ -275,7 +275,7 @@ describe("olcekPlani: bedel ve sınırlar", () => {
   it("hazine yetmezse neden (arsa + yükseltme toplamı), maliyet yine gösterilir", () => {
     const p = plan(1, { hazineMili: 9_000_000 });
     expect(p.gecerli).toBe(false);
-    expect(p.neden).toMatch(/^Hazinede yeterli para yok \(gereken 10\.\d{3} ₺\)$/);
+    expect(p.neden).toMatch(/^Hazinede yeterli para yok \(gereken 10\.\d{3}\u00a0₺\)$/);
     expect(p.toplamMili).toBeGreaterThan(9_000_000);
   });
 

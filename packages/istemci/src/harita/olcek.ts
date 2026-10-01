@@ -12,7 +12,7 @@
  * sınırlarla tam planı kurar (maliyet kartı ve onay). Aynı girdi her zaman aynı çıktıyı verir.
  */
 import type { ArsaSinifi, HucreId, OyuncuId } from "@bolge/cekirdek";
-import { fmt } from "../arayuz/bicim";
+import { fmt, paraMili } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import type { IlceSahipligi, IsletmeYapisi, YapiKaydi } from "./baglanti";
 import { arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili, sinirDenetle } from "./fiyat";
@@ -350,7 +350,7 @@ export function olcekPlani(g: OlcekGirdisi): OlcekPlani {
   }
   const esz = g.esZamanliInsaat ?? 2;
   if (!neden && g.surenInsaat >= esz) neden = `Aynı anda en çok ${esz} inşaat sürebilir`;
-  if (!neden && g.hazineMili !== null && toplamMili > g.hazineMili) neden = `Hazinede yeterli para yok (gereken ${fmt(Math.ceil(toplamMili / 1000))} ₺)`;
+  if (!neden && g.hazineMili !== null && toplamMili > g.hazineMili) neden = `Hazinede yeterli para yok (gereken ${paraMili(toplamMili, "yukari")})`;
   if (!neden && g.stok) {
     for (const m of hedef.malzeme) {
       const var_ = g.stok(m.id);

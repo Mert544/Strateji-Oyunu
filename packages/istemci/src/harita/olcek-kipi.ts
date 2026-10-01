@@ -9,7 +9,7 @@
 import type { Feature, FeatureCollection, Polygon } from "geojson";
 import type { GeoJSONSource, Map as MlHarita } from "maplibre-gl";
 import { bildir } from "../arayuz/bildirim";
-import { esc, fmt, sureMetni } from "../arayuz/bicim";
+import { esc, fmt, paraMili, para, sureMetni } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import { ikon } from "../tasarim/ikon";
 import type { IlceSahipligi, MulkBaglantisi, YapiKaydi } from "./baglanti";
@@ -47,7 +47,8 @@ export interface OlcekKipiGirdisi {
 }
 
 const BOS: FeatureCollection = { type: "FeatureCollection", features: [] };
-const TL = (mili: number): string => `${fmt(Math.ceil(mili / 1000))} ₺`;
+/** Gereken tutar: yukarı yuvarlanır (hazine ise aşağı; `paraMili` varsayılanı). */
+const TL = (mili: number): string => paraMili(mili, "yukari");
 
 function renk(ad: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(ad).trim() || "#888";
@@ -257,8 +258,8 @@ export class OlcekKipi {
     const h = p.hedef;
     let arsa: string;
     if (p.alinacak.length > 0) arsa = `${fmt(p.alinacak.length)} hücre alınacak${p.sinif ? ` (${esc(SINIF_ADI[p.sinif])})` : ""} · <b>${TL(p.arsaMili)}</b>`;
-    else if (p.ekHucreler.length > 0) arsa = `${fmt(p.ekHucreler.length)} hücre kendi arsan · <b>0 ₺</b>`;
-    else arsa = `Ek hücre gerekmiyor · <b>0 ₺</b>`;
+    else if (p.ekHucreler.length > 0) arsa = `${fmt(p.ekHucreler.length)} hücre kendi arsan · <b>${para(0)}</b>`;
+    else arsa = `Ek hücre gerekmiyor · <b>${para(0)}</b>`;
     const malzeme = malzemeSatiri(h.malzeme);
     const sure = `${sureMetni(h.sureSaat)}${h.ilkGunSureSaat < h.sureSaat ? ` <small>(yeni oyuncuya ilk gün ≈ ${sureMetni(h.ilkGunSureSaat)})</small>` : ""}`;
     const ek = p.ekHucreler.length > 0 ? `<dt>Ek hücre</dt><dd data-ok-alan="ek">${fmt(p.ekHucreler.length)} bitişik hücre</dd>` : "";
@@ -267,7 +268,7 @@ export class OlcekKipi {
         <dt>Arsa</dt><dd data-ok-alan="arsa">${arsa}</dd>
         <dt>Büyütme</dt><dd data-ok-alan="yapi"><b>${TL(p.yapiMili)}</b>${malzeme ? ` <small>+ ${esc(malzeme)}</small>` : ""}</dd>
         <dt>Süre</dt><dd data-ok-alan="sure">${sure}</dd>
-        <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-ok-alan="toplam"><b>${TL(p.toplamMili)}</b>${oz?.hazineMili != null ? ` <small>Hazine ${TL(oz.hazineMili)}</small>` : ""}</dd>
+        <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-ok-alan="toplam"><b>${TL(p.toplamMili)}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili)}</small>` : ""}</dd>
       </dl>
       ${p.neden ? `<p class="yk-uyari" role="alert" data-ok-alan="neden">${esc(p.neden)}</p>` : ""}`;
     const dugme = this.uygulaniyor ? "Büyütülüyor…" : `${h.ad} ölçeğe büyüt`;
@@ -287,8 +288,8 @@ export class OlcekKipi {
     try {
       const r = await this.g.baglanti.olcekYukselt({ bolge: `${il}#${this.g.baglanti.ben.id}`, tesis: t.id, olcek: p.hedef.olcek, ekHucreler: p.ekHucreler, ...(p.sinif && p.alinacak.length > 0 ? { sinif: p.sinif } : {}) });
       if (r.tamam) {
-        const arsa = p.alinacak.length > 0 ? `arsa ${fmt(p.alinacak.length)} hücre, ${fmt(p.arsaMili / 1000)} ₺ + ` : "";
-        bildir(`${ad} ${p.hedef.ad} ölçeğe büyütülüyor: ${arsa}büyütme ${fmt(p.yapiMili / 1000)} ₺.`, "tamam");
+        const arsa = p.alinacak.length > 0 ? `arsa ${fmt(p.alinacak.length)} hücre, ${TL(p.arsaMili)} + ` : "";
+        bildir(`${ad} ${p.hedef.ad} ölçeğe büyütülüyor: ${arsa}büyütme ${TL(p.yapiMili)}.`, "tamam");
         await this.g.yenile();
         this.uygulaniyor = false;
         this.iptal();
