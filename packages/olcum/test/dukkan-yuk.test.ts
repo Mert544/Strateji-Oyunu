@@ -60,7 +60,13 @@ describe("dükkân yükü yardımcıları", () => {
   });
 
   it("perakende bloğu yoksa açık hata", () => {
-    const sim = Simulasyon.olustur({ ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") }, 1);
+    // Gerçek içerikte perakende bloğu (G7-4) VAR: blok ve dükkân ek yapısı fikstürden silinir (blok yok dünyası).
+    const v = { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") };
+    const mulk = v.param.mulk!;
+    delete (mulk as { perakende?: unknown }).perakende;
+    if (mulk.ekYapilar !== undefined) delete (mulk.ekYapilar as Record<string, unknown>)["dukkan"];
+    const sim = Simulasyon.olustur(v, 1);
+    expect(sim.ic.mulk!.perakende).toBeUndefined();
     expect(() => dukkanlariEkle(sim)).toThrow(/perakende/);
   });
 });
