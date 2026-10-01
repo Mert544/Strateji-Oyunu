@@ -6,7 +6,10 @@
  *    - Yuva: `mal ""` -> null; `fiyat`/`etkin` kademe indeksi; `mevcut` -> `stokVar`; `fiyatT` BOŞ yuvada da taşınır; `beklemeSaat` = `fiyatT + fiyatDegisimEnAzSaat` penceresinden kalan
  *      saat, YUKARI yuvarlanır (çekirdek `hizSiniri` ile aynı; `fiyatT` 0 = hiç değişmedi = serbest).
  *    - Biten dükkân `ozel.dukkanlar`'dan (ek yapı kimliği = komutların `dukkan` alanı), tabela `genel.dukkanlar`'dan (tür, ölçek, marka); süren dükkân inşaatı `oyuncu.insaatlar`'dan
- *      (`ekYapi === "dukkan"`): `durum: "insaat"`, `id` = -inşaat kimliği (NEGATİF: ek yapı kimliğiyle çakışmaz, komutta kullanılmaz), tür karede yok -> `bilinmeyenTur`.
+ *      (`ekYapi === "dukkan"`): `durum: "insaat"`, `id` = -inşaat kimliği (NEGATİF: ek yapı kimliğiyle çakışmaz, komutta kullanılmaz). Süren inşaatta tür karede YOKTUR: `tur: null`
+ *      (TAHMİN EDİLMEZ; görünüm türsüz "Dükkân (inşaatta)" çizer). Tür bilinmeyen/tanımsız tabela için de null.
+ *    - Hücre/ilçe: `ilceler[].hucreler` içinde biten dükkân `tesis` alanı = ek yapı kimliği (çekirdek `ekYapiTamamla`: `h.tesis = id`), süren inşaat `insaat` alanı = inşaat kimliği
+ *      (tür `dukkan`); bulunan hücre kimlikleri `hucreler`e, ilçesi `ilce`ye yazılır. Karede hücre yoksa ikisi de boş kalır (ilçe uydurulmaz).
  * 2) §6.8b (A3 6beb93a; A2 §1.9): yuva neti FIRSAT MALİYETLİDİR = dükkân geliri - aynı birim NPC'ye ihraç edilseydi alınacak para; dükkân neti = Σ yuva neti - ölçek gideri;
  *    ödeme süresi = ceil(yatırım / net) (net <= 0: yok = "geri ödemez"). 0,891 SABİT DEĞİL: `ihrNetPpm = ihracatCarpaniPpm x (PPM - islemKomisyonuPpm) / PPM` param.pazar'dan.
  *    Net AŞAĞI, süre YUKARI yuvarlanır. Tutarlar mili-₺; ekranda tam ₺ gerekirse `asagiTL`.
@@ -17,6 +20,19 @@ import type { Komut } from "@bolge/cekirdek";
 import type { BolgeKaresi, IlgiKaresi, SahipDukkan } from "@bolge/protokol";
 import { DUKKAN_TURLERI } from "./dukkan-veri";
 import type { DukkanGorunumu, DukkanKaydi, DukkanTuru, DukkanYuvasi, Kademe } from "./dukkan-veri";
+
+/**
+ * Köprünün dükkân kaydı: `DukkanKaydi`'ndan iki fark. `tur` null olabilir (süren inşaatta türü karede yok; TAHMİN EDİLMEZ) ve `hucreler` (dükkânın hücre kimlikleri; karede yoksa boş).
+ * `DukkanKaydi.tur` zorunlu olduğundan bağlamada K1 tipi `DukkanTuru | null` yapar ve türsüz çizer (bu dosya K1 dosyalarına dokunmaz).
+ */
+export interface KopruDukkanKaydi extends Omit<DukkanKaydi, "tur"> {
+  tur: DukkanTuru | null;
+  hucreler: string[];
+}
+
+export interface KopruGorunumu extends Omit<DukkanGorunumu, "dukkanlar"> {
+  dukkanlar: KopruDukkanKaydi[];
+}
 
 // --- param görünümü (yapısal: `MulkPerakendeParametreleri` ve `Parametreler.pazar` doğrudan uyar; değer içe aktarılmaz) --------------------------------------------
 
@@ -147,13 +163,11 @@ export interface KopruGirdisi {
   referans: ReferansFiyati;
   /** Dükkân kurma maliyet planlayıcısı (K1) S bedelinin tamamını karşılıyor mu. */
   kurmaKarsilaniyor: boolean;
-  /** Süren dükkân inşaatının türü karede olmadığı için gösterimde kullanılacak tür (varsayılan `bakkal`). */
-  bilinmeyenTur?: DukkanTuru;
 }
 
 /** Köprü çıktısı: görünüm + görünüme sığmayan türetilmiş değerler. */
 export interface KopruSonucu {
-  gorunum: DukkanGorunumu;
+  gorunum: KopruGorunumu;
   /** Referans fiyatı taban fiyattan geldi (ya da bilinmiyor) -> sayılar "yaklaşık" etiketlenmeli. */
   yaklasik: boolean;
   /** Dükkân kimliği -> fırsat maliyetli net (mili-₺/saat; Σ yuva neti - ölçek gideri; §6.8b). */
@@ -210,12 +224,28 @@ export function dukkanGorunumuKur(g: KopruGirdisi): KopruSonucu | null {
   }
   let yaklasik = false;
   const net: Record<number, number> = {};
-  const kayitlar: DukkanKaydi[] = [];
+  const kayitlar: KopruDukkanKaydi[] = [];
+  // Hücre dizini: biten dükkân (`tesis` = ek yapı kimliği) ve süren inşaat (`insaat` = inşaat kimliği); yalnız tür `dukkan` hücreleri.
+  const tesisHucre = new Map<number, { ilce: string; hucreler: string[] }>();
+  const insaatHucre = new Map<number, { ilce: string; hucreler: string[] }>();
+  const ekle = (m: Map<number, { ilce: string; hucreler: string[] }>, anahtar: number, ilce: string, hucre: string): void => {
+    const x = m.get(anahtar);
+    if (x === undefined) m.set(anahtar, { ilce, hucreler: [hucre] });
+    else x.hucreler.push(hucre);
+  };
+  for (const ic of kare.ilceler ?? []) {
+    for (const h of ic.hucreler) {
+      if (h[5] !== "dukkan") continue;
+      if (h[3] >= 0) ekle(tesisHucre, h[3], ic.id, h[0]);
+      if (h[4] >= 0) ekle(insaatHucre, h[4], ic.id, h[0]);
+    }
+  }
   for (const { b, d } of [...acik].sort((x, y) => x.d[0] - y.d[0])) {
     const [id, raf, kasaPpm, kamp, karsilanmaPpm] = d;
     const tb = tabela.get(id);
     const olcek = tb?.[1] ?? 0;
-    const tur = tb !== undefined && turMu(tb[0]) ? tb[0] : (g.bilinmeyenTur ?? "bakkal");
+    const tur = tb !== undefined && turMu(tb[0]) ? tb[0] : null;
+    const hc = tesisHucre.get(id);
     let gelir = 0;
     const netler: number[] = [];
     const yuvalar = raf.map((r): DukkanYuvasi => {
@@ -242,10 +272,11 @@ export function dukkanGorunumuKur(g: KopruGirdisi): KopruSonucu | null {
     });
     const gider = pk.olcekler[olcek]?.giderMiliSaat ?? 0;
     net[id] = dukkanNetMili(netler, gider);
-    const k: DukkanKaydi = {
+    const k: KopruDukkanKaydi = {
       id,
       tur,
       durum: "acik",
+      hucreler: hc?.hucreler ?? [],
       markaAd: tb?.[2] ?? "",
       yuvalar,
       kasaPpm,
@@ -254,6 +285,7 @@ export function dukkanGorunumuKur(g: KopruGirdisi): KopruSonucu | null {
       giderMiliSa: gider,
       kampanya: { bitis: kamp[0], kalanSaat: kamp[1], kalanGun: kamp[2] },
     };
+    if (hc !== undefined) k.ilce = hc.ilce;
     if (tb !== undefined && tb[2] !== "") {
       k.simge = tb[3];
       k.renk = tb[4];
@@ -261,12 +293,15 @@ export function dukkanGorunumuKur(g: KopruGirdisi): KopruSonucu | null {
     void b;
     kayitlar.push(k);
   }
-  // Süren dükkân inşaatları (tür karede yok).
+  // Süren dükkân inşaatları (tür karede yok: null).
   for (const ins of [...o.insaatlar].filter((x) => x[6] === "dukkan").sort((x, y) => x[0] - y[0])) {
+    const hc = insaatHucre.get(ins[0]);
     kayitlar.push({
       id: -ins[0],
-      tur: g.bilinmeyenTur ?? "bakkal",
+      tur: null,
       durum: "insaat",
+      hucreler: hc?.hucreler ?? [],
+      ...(hc !== undefined ? { ilce: hc.ilce } : {}),
       markaAd: "",
       bitis: ins[4],
       yuvalar: [],

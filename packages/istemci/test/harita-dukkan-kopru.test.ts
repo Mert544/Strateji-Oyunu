@@ -237,15 +237,40 @@ describe("kare -> DukkanGorunumu (gerçek sunucu karesi)", () => {
     expect(bos.talep).toEqual([]);
   });
 
-  it("süren dükkân inşaatı (oyuncu.insaatlar, ekYapi 'dukkan'): durum insaat, bitis, id = -inşaat kimliği (ek yapı kimliğiyle çakışmaz); dükkân olmayan inşaat sayılmaz", () => {
+  it("süren dükkân inşaatı (oyuncu.insaatlar, ekYapi 'dukkan'): durum insaat, bitis, id = -inşaat kimliği; TÜR TAHMİN EDİLMEZ (null); dükkân olmayan inşaat sayılmaz; hücre karede yoksa ilçe/hücre boş", () => {
     const s = dunya();
     const k = kare(s, "a");
     k.oyuncu!.insaatlar.push([42, "tesis", 0, 3, 99 * SAAT, 12 * SAAT, "dukkan"], [43, "tesis", 0, 1, 50 * SAAT, 12 * SAAT]);
     const sonuc = dukkanGorunumuKur({ kare: k, param: paramOku(s), referans: referansOku(s, k), kurmaKarsilaniyor: true })!;
     expect(sonuc.gorunum.dukkanlar).toHaveLength(1);
-    expect(sonuc.gorunum.dukkanlar[0]).toMatchObject({ id: -42, durum: "insaat", bitis: 99 * SAAT, yuvalar: [], tur: "bakkal" });
-    const tur = dukkanGorunumuKur({ kare: k, param: paramOku(s), referans: referansOku(s, k), kurmaKarsilaniyor: true, bilinmeyenTur: "firin" })!;
-    expect(tur.gorunum.dukkanlar[0]!.tur).toBe("firin");
+    expect(sonuc.gorunum.dukkanlar[0]).toMatchObject({ id: -42, durum: "insaat", bitis: 99 * SAAT, yuvalar: [], tur: null, hucreler: [] });
+    expect(sonuc.gorunum.dukkanlar[0]).not.toHaveProperty("ilce");
+  });
+
+  it("hücre ve ilçe: süren inşaat hücresi (`insaat` = inşaat kimliği) ve biten dükkân hücresi (`tesis` = ek yapı kimliği) ilçeler[].hucreler'den bulunur; başka türdeki hücre sayılmaz", () => {
+    const s = dunya();
+    const e = dukkanEkle(s, "a", [{ mal: "gida" }]);
+    const hid = e.hucreler[0]!;
+    const h = s.dunya.mulk!.hucreler.find((x) => x.id === hid)!;
+    h.tesis = e.id; // `ekYapiTamamla`: h.tesis = ek yapı kimliği
+    const k = kare(s, "a");
+    const ilce = (k.ilceler ?? []).find((c) => c.hucreler.some((x) => x[0] === hid))!;
+    // Süren inşaat hücreleri (sentetik): iki hücre, aynı ilçe; bir de başka türde hücre (sayılmaz).
+    ilce.hucreler.push(["900:1", "a", "kirsal", -1, 42, "dukkan", 0], ["901:1", "a", "kirsal", -1, 42, "dukkan", 0], ["902:1", "a", "kirsal", -1, 77, "ciftlik", 0]);
+    k.oyuncu!.insaatlar.push([42, "tesis", 0, 3, 99 * SAAT, 12 * SAAT, "dukkan"]);
+    const sonuc = dukkanGorunumuKur({ kare: k, param: paramOku(s), referans: referansOku(s, k), kurmaKarsilaniyor: true })!;
+    const [acik, insaat] = sonuc.gorunum.dukkanlar;
+    expect(acik).toMatchObject({ id: e.id, durum: "acik", tur: "bakkal", hucreler: [hid], ilce: ilce.id });
+    expect(insaat).toMatchObject({ id: -42, durum: "insaat", tur: null, hucreler: ["900:1", "901:1"], ilce: ilce.id });
+  });
+
+  it("tabelada tanımsız tür (tanınmayan dize) de null: tahmin yok", () => {
+    const s = dunya();
+    const e = dukkanEkle(s, "a", [{ mal: "gida" }], "bakkal");
+    const k = kare(s, "a");
+    for (const b of k.bolgeler) for (const x of b.genel.dukkanlar ?? []) if (x[0] === e.id) x[1] = "bilinmeyen_tur";
+    const sonuc = dukkanGorunumuKur({ kare: k, param: paramOku(s), referans: referansOku(s, k), kurmaKarsilaniyor: true })!;
+    expect(sonuc.gorunum.dukkanlar[0]!.tur).toBeNull();
   });
 
   it("dükkân kuralı kapalı (perakende bloğu yok): kapali true, liste boş, null değil; kare ESKİ KARE ile aynı (dükkân alanı yok)", () => {

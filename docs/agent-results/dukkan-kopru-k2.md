@@ -9,12 +9,13 @@ Taban `6e4b227` (K1 dukkan-duzelt), YALNIZ yeni dosyalar: `packages/istemci/src/
 
 ## K1 icin notlar (uyusmazliklar ve kararlar)
 - **727 ₺/sa yuvarlama:** A2 ornegi 726,6 ₺/sa (90 x 60 x 1,05 - 90 x 60 x 0,891 - 132); A2 tablosu EN YAKIN'a yuvarlayip 727 yazar. Kod mili tutar verir (726 600); `Math.round` 727, `asagiTL` 726. Ekranda "aşağı" kurali istenirse 726 gorunur. Negatif kampanya ornegi -353,4 (A2 "-353"), `asagiTL` -354.
-- **Surmekte olan dukkan:** karede tur ve ilce YOK; `tur` = `bilinmeyenTur` (varsayilan "bakkal"), `id` = -insaat kimligi (ek yapi kimligiyle cakismaz; komutta kullanilmaz). Biten dukkanin `ilce` alani da kareden turetilemiyor (ek yapi -> ilce eslesmesi yok): `DukkanKaydi.ilce` bos birakildi.
+- **Surmekte olan dukkan (guncel, ek commit):** karede tur YOK ve TAHMIN EDILMEZ: `tur: null` (`bilinmeyenTur` secenegi kaldirildi; tabelada taninmayan tur de null), `id` = -insaat kimligi. Tip: `KopruDukkanKaydi` = `DukkanKaydi` - `tur` + `tur: DukkanTuru | null` + `hucreler: string[]`; `KopruGorunumu` buna gore. `DukkanKaydi.tur` K1 dosyasinda zorunlu: baglamada K1 tipi `DukkanTuru | null` yapip `turAdi`/`TUR_IKONU`'nu turSuz ("Dukkan (insaatta)") cizdirmeli (K1 dosyalarina dokunmadim).
+- **Hucre ve ilce:** KAREDE VAR, protokol alani gerekmiyor: `ilceler[].hucreler` icinde biten dukkanin hucresinde `tesis` = ek yapi kimligi (cekirdek `ekYapiTamamla`: `h.tesis = id`), suren insaatta `insaat` = insaat kimligi, tur `dukkan` (hucre demetinin 6. ogesi, yalniz sahibine gelir). Koprunun `hucreler`i hucre kimliklerini, `ilce`si o hucrenin ilcesini tasir (karede hucre yoksa ikisi bos; ilce uydurulmaz). K1 isterse ilceyi kendi hucre dizininden de turetebilir.
 - `gelirMiliSa` = Σ yuva geliri (nakit; `net = gelir - gider` K1 html'inin kullandigi tanim), `netMiliSaat` (yuva) ve `dukkanNetMili[id]` firsat maliyetli (§6.8b). `yaklasik` true ise referans fiyat taban fiyattan (ya da bilinmiyor): sayilar "yaklasik" etiketlenmeli.
 - `referans(mal)` K1'in: `{ mili, yaklasik }` (kare `fiyat[malIndeksi]`, yoksa tabanFiyat + yaklasik). `kurmaKarsilaniyor` K1 planlayicisindan gecer.
 - `talep` DukkanGorunumu'na sigmadigi icin ayri alan (`{ ilce, mal, qMiliSaat }[]`).
 
 ## Dogrulama
 - `tsc` (gecici tsconfig, yalniz iki yeni dosya + .d.ts) temiz.
-- vitest tek dosya, tek isci: `harita-dukkan-kopru.test.ts` 17/17 (gercek `ilgiKaresiCikar` karesi, A2 ornegi birebir: 726,6/727, 8.945 ₺ -> 13 sa, kademe 0,85 negatif; komutlar sema + cekirdek kabulu).
+- vitest tek dosya, tek isci: `harita-dukkan-kopru.test.ts` 19/19 (gercek `ilgiKaresiCikar` karesi, A2 ornegi birebir: 726,6/727, 8.945 ₺ -> 13 sa, kademe 0,85 negatif; komutlar sema + cekirdek kabulu).
 - harita.js / dunya.html gzip: 0 (hicbir modul bu dosyayi import etmiyor; olcum yapilmadi, kapi kosarken build yok).
