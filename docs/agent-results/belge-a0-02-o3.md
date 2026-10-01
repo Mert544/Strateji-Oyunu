@@ -7,3 +7,7 @@ Dal `takim/o3/belge-a0-02`, taban `entegrasyon` (8064ded). Yalnız belge; kod ve
 - Durumlar yalnız bilinen kaynaklardan yazıldı: git dalları, kuyruk ve liderlerin bildirimleri. §1.1 sayımları yeniden hesaplanmadı (öğleden sonra görüntüsü; not düşüldü).
 
 Açık: G1–G10 durumları dallar kapıdan geçtikçe güncellenmeli (O3, ayrı küçük commitler).
+
+## İkinci güncelleme (P1 girdikten sonra, `takim/o3/belge-durum-2`)
+
+docs/10 §5A durum sütunu kuyruk ve kapı durumuna göre güncellendi: G1 kapıda (P2), G2 P4 sırasında, G3 ara teslim kapıda (P2), G4 T3 taslağı girdi, G5 K2 dalı kapıya hazır (P3 sonrası), G10 kılavuz girdi; G3b zinciri (K3 → K2 → K1) eklendi. Yalnız belge.
