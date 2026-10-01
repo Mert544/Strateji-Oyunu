@@ -7,6 +7,7 @@ import type { IcerikDosyasi, Parametreler } from "@bolge/veri";
 import icerikHam from "../../veri/icerik/icerik.json";
 import paramHam from "../../veri/icerik/parametreler.json";
 import { icerikTablosu } from "../src/komut/tablo";
+import { SahteBaglanti } from "../src/harita/baglanti";
 import type { HucreSahipligi, IlceSahipligi, IsletmeYapisi, YapiKaydi } from "../src/harita/baglanti";
 import { bitisikMi, parselFiyatiMili } from "../src/harita/fiyat";
 import { Bit, hucreId } from "../src/harita/hucre";
@@ -333,5 +334,83 @@ describe("olcekBuyutulebilir: İşletmem satırında \"Büyüt\"", () => {
     expect(olcekBuyutulebilir(ic, satir(), [satir(), buyuyor])).toBe(false);
     // başka tesisin büyütmesi bunu etkilemez
     expect(olcekBuyutulebilir(ic, satir({ anahtar: "t4" }), [satir(), buyuyor])).toBe(true);
+  });
+});
+
+describe("sahte bağdaştırıcı: ölçek büyütme (sunucusuz kip)", () => {
+  const ILCE = "sahte_ilce";
+  function kur(hazineMili = 100_000_000): { b: SahteBaglanti; ilerle: (saat: number) => void } {
+    let simdi = Date.now();
+    const b = new SahteBaglanti({
+      izgaraAl: async () => izgara(),
+      gecikme: 0,
+      komsular: false,
+      hazineMili,
+      saat: () => simdi,
+      simHizi: 3600, // 1 gerçek saniye = 1 sim saati
+      yapiBilgisi: (tur) => (tur === "ciftlik" ? { yuva: 2, paraMili: 6_000_000, sureSaat: 2 } : null),
+      olcekBilgisi: (tur, hedef, hucreSayisi) => {
+        const izi = olcekAyakIzi(ic, tur);
+        if (!izi) return null;
+        const h = olcekHedefi(ic, { tur, olcek: mevcutOlcek(izi, hucreSayisi), hucreler: Array.from({ length: hucreSayisi }, () => "") }, hedef);
+        return h ? { ek: h.ek, paraMili: h.paraMili, sureSaat: h.sureSaat } : null;
+      },
+    });
+    return { b, ilerle: (saat) => (simdi += saat * 1000) };
+  }
+  const BOLGE = `il#${"ben"}`;
+
+  it("S → M: arsa + büyütme tek işlemde; süren büyütme görünür; bitince tesis M ayak izi", async () => {
+    const { b, ilerle } = kur();
+    const cift = [id(10, 10), id(11, 10)];
+    expect((await b.parselAl({ tur: "parsel_al", ilce: ILCE, hucreler: cift, sinif: "kirsal" })).tamam).toBe(true);
+    expect((await b.tesisInsa({ tur: "tesis_insa_hucre", ilce: ILCE, tesisTuru: "ciftlik", hucreler: cift })).tamam).toBe(true);
+    ilerle(10);
+    let sh = (await b.sahiplikAl(ILCE))!;
+    const kayit = sh.yapilar!.find((y) => y.durum === "tesis")!;
+    const plan = olcekPlani({ ic, tesis: olcekTesisi(ic, kayit, () => "Çiftlik")!, hedef: 1, izgara: izgara(), sahiplik: sh, ben: "ben", ad: (x) => x, hazineMili: b.ozet().hazineMili, surenInsaat: 0 });
+    expect(plan.gecerli).toBe(true);
+    const hazineOnce = b.ozet().hazineMili!;
+    const r = await b.olcekYukselt({ bolge: BOLGE, tesis: kayit.id, olcek: 1, ekHucreler: plan.ekHucreler, ...(plan.sinif ? { sinif: plan.sinif } : {}) });
+    expect(r.tamam).toBe(true);
+    expect(hazineOnce - b.ozet().hazineMili!).toBe(plan.toplamMili);
+    // süren büyütme: işletmede ve sahiplikte satır; tesis hâlâ S
+    expect(b.isletme().yapilar.find((y) => y.yukseltme)).toMatchObject({ durum: "insaat", tur: "ciftlik", hucre: 1, yukseltme: { tesis: kayit.id, olcek: 1 } });
+    sh = (await b.sahiplikAl(ILCE))!;
+    expect(sh.yapilar!.find((y) => y.yukseltme)).toMatchObject({ durum: "insaat", hucreler: plan.ekHucreler, yukseltme: { tesis: kayit.id, olcek: 1 } });
+    expect(sh.yapilar!.find((y) => y.id === kayit.id)!.hucreler).toHaveLength(2);
+    // ikinci istek: süren büyütme reddedilir
+    expect(await b.olcekYukselt({ bolge: BOLGE, tesis: kayit.id, olcek: 2, ekHucreler: [], sinif: "kirsal" })).toMatchObject({ tamam: false });
+    // biter: tesis M ayak izi (3 hücre), ölçek 1; büyütme satırı kalkar
+    ilerle(10);
+    sh = (await b.sahiplikAl(ILCE))!;
+    const bitmis = sh.yapilar!.find((y) => y.id === kayit.id)!;
+    expect(bitmis).toMatchObject({ durum: "tesis", olcek: 1 });
+    expect(bitmis.hucreler).toHaveLength(3);
+    expect(sh.yapilar!.some((y) => y.yukseltme)).toBe(false);
+    expect(b.isletme().yapilar.find((y) => y.anahtar === `t${kayit.id}`)).toMatchObject({ olcek: 1, hucre: 3 });
+    expect(olcekTesisi(ic, bitmis, () => "Çiftlik")!.olcek).toBe(1);
+  });
+
+  it("ek hücresiz, bitişik olmayan ve yetersiz hazineli istek reddedilir; hiçbir şey değişmez", async () => {
+    const { b, ilerle } = kur(15_000_000);
+    const cift = [id(10, 10), id(11, 10)];
+    await b.parselAl({ tur: "parsel_al", ilce: ILCE, hucreler: cift, sinif: "kirsal" });
+    await b.tesisInsa({ tur: "tesis_insa_hucre", ilce: ILCE, tesisTuru: "ciftlik", hucreler: cift });
+    ilerle(10);
+    const sh = (await b.sahiplikAl(ILCE))!;
+    const tesis = sh.yapilar!.find((y) => y.durum === "tesis")!.id;
+    const hazine = b.ozet().hazineMili;
+    const hicbiri = (r: Awaited<ReturnType<typeof b.olcekYukselt>>, mesaj: RegExp): void => {
+      expect(r.tamam).toBe(false);
+      expect(r.tamam ? "" : r.mesaj).toMatch(mesaj);
+      expect(b.ozet().hazineMili).toBe(hazine);
+    };
+    hicbiri(await b.olcekYukselt({ bolge: BOLGE, tesis, olcek: 1, ekHucreler: [] }), /1 ek hücre ister \(seçilen 0\)/);
+    hicbiri(await b.olcekYukselt({ bolge: BOLGE, tesis, olcek: 1, ekHucreler: [id(20, 10)], sinif: "kirsal" }), /bitişik/);
+    hicbiri(await b.olcekYukselt({ bolge: BOLGE, tesis, olcek: 1, ekHucreler: [id(12, 10)] }), /sınıfı belirtilmedi/);
+    hicbiri(await b.olcekYukselt({ bolge: BOLGE, tesis, olcek: 1, ekHucreler: [id(12, 10)], sinif: "kirsal" }), /Hazinede yeterli para yok/);
+    hicbiri(await b.olcekYukselt({ bolge: BOLGE, tesis: 99, olcek: 1, ekHucreler: [] }), /artık yok/);
+    expect((await b.sahiplikAl(ILCE))!.yapilar!.some((y) => y.yukseltme)).toBe(false);
   });
 });
