@@ -84,4 +84,26 @@ describe("mülk kipi paneli", () => {
     expect(m).toMatch(/<td class="sayi">13<\/td><td class="sayi">3<\/td><td class="sayi">2<\/td>/);
     expect(mulkMalPaneli(durum({ mallar: [] }), ad)).toContain("Deponda henüz mal yok");
   });
+
+  it("Büyüt: tesis satırında düğme (ilçe ve anahtar veri öznitelikleri), süren büyütme satırı ve bitiş dili", () => {
+    const d = durum({
+      yapilar: [
+        { anahtar: "t3", durum: "tesis", tur: "ciftlik", ilce: "tr_41_gebze", hucre: 2, aktif: true, verimPpm: 1_000_000 },
+        { anahtar: "t5", durum: "tesis", tur: "ciftlik", ilce: "tr_41_gebze", hucre: 2, aktif: true, verimPpm: 1_000_000 },
+        { anahtar: "i9", durum: "insaat", tur: "ciftlik", ilce: "tr_41_gebze", baslangic: 99 * SA, bitis: 101 * SA, yukseltme: { tesis: 5, olcek: 1 } },
+      ],
+    });
+    const buyut = (y: { anahtar: string }, tumu: readonly { yukseltme?: { tesis: number } }[]): boolean => y.anahtar === "t3" || !tumu.some((x) => x.yukseltme?.tesis === Number(y.anahtar.slice(1)));
+    const h = isletmePaneli(d, { ad: "Ali" }, { ...ad, buyut });
+    expect(h).toContain('data-mulk-buyut="t3"');
+    expect(h).toContain('data-mulk-buyut-ilce="tr_41_gebze"');
+    expect(h).not.toContain('data-mulk-buyut="t5"'); // büyütmesi sürüyor
+    expect(h).toMatch(/Çiftlik<\/b><span class="soluk">Ölçek büyütme sürüyor · M · 1 sa kaldı · Gebze/);
+    expect(h).toContain("Büyüt</button>");
+    // buyut tanımsızsa (bağdaştırıcı desteklemiyor) düğme yok
+    expect(isletmePaneli(d, { ad: "Ali" }, ad)).not.toContain("data-mulk-buyut");
+    // biten büyütme: "inşaatı" değil "büyütmesi bitti"
+    const dikkat = mulkDikkatMaddeleri(durum({ yapilar: [] }), ad, new Map([["9", { tur: "ciftlik", ilce: "tr_41_gebze", bitis: 99 * SA, yukseltme: true }]]));
+    expect(dikkat[0]?.baslik).toBe("Gebze: Çiftlik büyütmesi bitti");
+  });
 });

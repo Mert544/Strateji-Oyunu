@@ -43,6 +43,8 @@ export interface YerlesimGirdisi {
   yakinlas: () => void;
   /** Hayalet etkinken alt çubuğu gizle/göster. */
   altGizle: (gizle: boolean) => void;
+  /** Yapı seçilip yerleşim başlarken (ör. ölçek büyütme kipini kapatmak için). */
+  basliyor?: () => void;
 }
 
 const BOS: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -133,6 +135,11 @@ export class YerlesimKipi {
 
   get aktif(): boolean {
     return this.yapi !== null;
+  }
+
+  /** Maliyet kartının kabı (ölçek büyütme kipi aynı kabı kullanır; aynı anda yalnız biri açıktır). */
+  get kartKabi(): HTMLElement {
+    return this.kart;
   }
 
   get seciliYapi(): string | null {
@@ -255,6 +262,7 @@ export class YerlesimKipi {
   sec(yapiId: string): boolean {
     const y = this.g.katalog.find((k) => k.id === yapiId);
     if (!y || !this.g.izgara()) return false;
+    this.g.basliyor?.();
     this.yapi = y;
     this.donus = 0;
     this.sabit = null;

@@ -14,8 +14,8 @@
 import type { ArsaSinifi, HucreId, OyuncuId } from "@bolge/cekirdek";
 import { fmt } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
-import type { IlceSahipligi, YapiKaydi } from "./baglanti";
-import { arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili, SINIF_ADI, sinirDenetle } from "./fiyat";
+import type { IlceSahipligi, IsletmeYapisi, YapiKaydi } from "./baglanti";
+import { arsaSinifi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili, sinirDenetle } from "./fiyat";
 import { durumAl, engelNedeni, hucreId, idCoz } from "./hucre";
 import type { Izgara } from "./hucre";
 import type { YapiMalzemesi } from "./yapi";
@@ -85,6 +85,18 @@ export function olcekTesisi(ic: Icerik, y: Pick<YapiKaydi, "anahtar" | "id" | "d
   const olcek = mevcutOlcek(izi, y.hucreler.length, y.olcek);
   if (olcek >= 2) return null;
   return { anahtar: y.anahtar, id: y.id, tur: y.tur, ad: ad(y.tur), hucreler: [...y.hucreler], olcek };
+}
+
+/**
+ * İşletmem satırında "Büyüt" gösterilsin mi? Biten tesis, ilçesi ve hücre sayısı biliniyor, tür ölçeklenebilir, L değil ve bu
+ * tesiste süren büyütme yok. `tumu`: işletmenin bütün yapı satırları (süren büyütmeler `yukseltme` taşır).
+ */
+export function olcekBuyutulebilir(ic: Icerik, y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]): boolean {
+  if (y.durum !== "tesis" || !y.ilce || y.hucre === undefined || !y.tur) return false;
+  const izi = olcekAyakIzi(ic, y.tur);
+  if (!izi || mevcutOlcek(izi, y.hucre, y.olcek) >= 2) return false;
+  const id = Number(y.anahtar.slice(1));
+  return !tumu.some((x) => x.yukseltme?.tesis === id);
 }
 
 /** Bir hedef ölçeğin gereği: ek hücre sayısı, bedel (çekirdekle birebir), süre. */
@@ -350,6 +362,3 @@ export function olcekPlani(g: OlcekGirdisi): OlcekPlani {
   }
   return { ...taban, gecerli: neden === null, neden };
 }
-
-/** Sınıf adı (kart metni için). */
-export const sinifAdi = (s: ArsaSinifi): string => SINIF_ADI[s];

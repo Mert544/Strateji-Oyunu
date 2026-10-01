@@ -7,11 +7,11 @@ import type { IcerikDosyasi, Parametreler } from "@bolge/veri";
 import icerikHam from "../../veri/icerik/icerik.json";
 import paramHam from "../../veri/icerik/parametreler.json";
 import { icerikTablosu } from "../src/komut/tablo";
-import type { HucreSahipligi, IlceSahipligi, YapiKaydi } from "../src/harita/baglanti";
+import type { HucreSahipligi, IlceSahipligi, IsletmeYapisi, YapiKaydi } from "../src/harita/baglanti";
 import { bitisikMi, parselFiyatiMili } from "../src/harita/fiyat";
 import { Bit, hucreId } from "../src/harita/hucre";
 import type { Izgara } from "../src/harita/hucre";
-import { carpBol, ekHucrePlani, mevcutOlcek, olcekAyakIzi, olcekHedefi, olcekHedefleri, olcekPlani, olcekTesisi } from "../src/harita/olcek";
+import { carpBol, ekHucrePlani, mevcutOlcek, olcekAyakIzi, olcekBuyutulebilir, olcekHedefi, olcekHedefleri, olcekPlani, olcekTesisi } from "../src/harita/olcek";
 import type { EkHucreGirdisi, OlcekGirdisi, OlcekTesisi } from "../src/harita/olcek";
 
 const ic = icerikTablosu(icerikHam as unknown as IcerikDosyasi, paramHam as unknown as Parametreler);
@@ -311,5 +311,27 @@ describe("olcekPlani: bedel ve sınırlar", () => {
 
   it("determinizm: aynı girdi aynı plan", () => {
     expect(plan(2)).toEqual(plan(2));
+  });
+});
+
+describe("olcekBuyutulebilir: İşletmem satırında \"Büyüt\"", () => {
+  const satir = (o: Partial<IsletmeYapisi> = {}): IsletmeYapisi => ({ anahtar: "t3", durum: "tesis", tur: "ciftlik", ilce: "i", hucre: 2, aktif: true, verimPpm: 1_000_000, ...o });
+
+  it("biten, ilçesi ve hücre sayısı bilinen, ölçeklenebilir, L olmayan tesiste görünür", () => {
+    expect(olcekBuyutulebilir(ic, satir(), [])).toBe(true);
+    expect(olcekBuyutulebilir(ic, satir({ hucre: 3 }), [])).toBe(true); // M → L
+    expect(olcekBuyutulebilir(ic, satir({ hucre: 4 }), [])).toBe(false); // L
+    expect(olcekBuyutulebilir(ic, satir({ hucre: 2, olcek: 2 }), [])).toBe(false); // karedeki ölçek üstün
+  });
+
+  it("inşaat, ilçesiz/hücre sayısız satır, ek yapı ve süren büyütmesi olan tesiste görünmez", () => {
+    expect(olcekBuyutulebilir(ic, satir({ durum: "insaat", anahtar: "i3" }), [])).toBe(false);
+    expect(olcekBuyutulebilir(ic, satir({ ilce: undefined }), [])).toBe(false);
+    expect(olcekBuyutulebilir(ic, satir({ hucre: undefined }), [])).toBe(false);
+    expect(olcekBuyutulebilir(ic, satir({ tur: "ambar" }), [])).toBe(false);
+    const buyuyor = satir({ anahtar: "i9", durum: "insaat", yukseltme: { tesis: 3, olcek: 1 } });
+    expect(olcekBuyutulebilir(ic, satir(), [satir(), buyuyor])).toBe(false);
+    // başka tesisin büyütmesi bunu etkilemez
+    expect(olcekBuyutulebilir(ic, satir({ anahtar: "t4" }), [satir(), buyuyor])).toBe(true);
   });
 });

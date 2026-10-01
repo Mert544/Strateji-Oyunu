@@ -355,7 +355,7 @@ export class HaritaDenetci {
       if (this.kure.mulkPaneli && !this.mulkPaneliKuruldu) {
         this.mulkPaneliKuruldu = true;
         const [m, h] = await Promise.all([gorunumModulu(), this.hiyerarsiAl()]);
-        this.kure.mulkPaneli(m.mulkPaneliKur({ gorunum: g, hiyerarsi: h, ilceAc: (ilce) => void this.ilceAc(ilce).then(() => this.gorunum?.mulkeUc()) }));
+        this.kure.mulkPaneli(m.mulkPaneliKur({ gorunum: g, hiyerarsi: h, ilceAc: (ilce) => this.ilceAc(ilce).then(() => this.gorunum?.mulkeUc()) }));
       }
       await g.baglanti.hazirBekle?.();
       // "Sen yokken": gösterilmemiş dönüş özeti varsa önce o (kapanınca devam); ilk girişte özet yoktur. Yetişme bitince

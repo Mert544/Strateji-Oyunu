@@ -37,6 +37,8 @@ import { ikon } from "../tasarim/ikon";
 import type { YapiTanimi } from "./yapi";
 import { YerlesimKipi } from "./yerlesim";
 import { yapiCizimi } from "./gorunurluk";
+import { OlcekKipi } from "./olcek-kipi";
+import { olcekAyakIzi, olcekHedefi, mevcutOlcek } from "./olcek";
 import { cerceveBirlestir } from "./geometri";
 import {
   ARAZI_ADLARI,
@@ -172,6 +174,7 @@ export class HaritaGorunumu {
   /** İçerik tablosu (mal ve yapı adları; mülk paneli de okur). */
   readonly tablo: Icerik;
   private yerlesim: YerlesimKipi | null = null;
+  private olcek: OlcekKipi | null = null;
   private yapiEtiketleri: maplibregl.Marker[] = [];
   private canliBirak: (() => void) | null = null;
   private canliBekliyor = false;
@@ -199,6 +202,13 @@ export class HaritaGorunumu {
         yapiBilgisi: (tur) => {
           const y = this.katalog.find((k) => k.id === tur);
           return y ? { yuva: y.yuva, paraMili: y.paraMili, sureSaat: y.sureSaat } : null;
+        },
+        // Sunucusuz kipte ölçek büyütme bedeli: çekirdekle aynı hesap (`olcek.ts`)
+        olcekBilgisi: (tur, hedef, hucreSayisi) => {
+          const izi = olcekAyakIzi(tablo, tur);
+          if (!izi) return null;
+          const h = olcekHedefi(tablo, { tur, olcek: mevcutOlcek(izi, hucreSayisi), hucreler: Array.from({ length: hucreSayisi }, () => "") }, hedef);
+          return h ? { ek: h.ek, paraMili: h.paraMili, sureSaat: h.sureSaat } : null;
         },
       });
     if (!cssEklendi) {
@@ -272,6 +282,63 @@ export class HaritaGorunumu {
     document.getElementById("harita-gezgin")?.append(this.yetismeSeridi);
     this.olaylar();
     this.yerlesimKur(sahneKap);
+    this.olcekKur();
+  }
+
+  /** Ölçek büyütme kipi (İşletmem'deki "Büyüt"ten açılır); yalnız büyütmeyi destekleyen bağdaştırıcıda. */
+  private olcekKur(): void {
+    const y = this.yerlesim;
+    if (!y || !this.baglanti.olcekYukselt) return;
+    const o = new OlcekKipi({
+      ml: this.harita,
+      kart: y.kartKabi,
+      baglanti: this.baglanti,
+      ic: this.tablo,
+      ilce: () => this.ilceKimlik,
+      il: (ilce) => this.s.hiyerarsi.ilceler.get(ilce)?.il ?? null,
+      izgara: () => this.izgara,
+      sahiplik: () => this.sahiplik,
+      ad: (k) => this.baglanti.oyuncuAdi(k),
+      yapiAdi: (tur) => this.katalog.find((k) => k.id === tur)?.ad ?? this.tablo.turler[this.tablo.turIdx[tur] ?? -1]?.ad ?? tur,
+      kamu: this.kamuHucre,
+      yenile: () => this.sahiplikYenile(),
+      yakinlas: (hucreler) => this.hucrelereYakinlas(hucreler),
+      altGizle: (g) => {
+        this.altGizli = g;
+        this.arsaVurguCiz();
+        this.altCiz();
+      },
+      yerlesimIptal: () => this.yerlesim?.iptal(),
+    });
+    this.olcek = o;
+    void this.yuklendi.then(() => o.kur());
+  }
+
+  /** Hücre kümesini L3'te çerçeveler (ölçek büyütme: tesis ve ek hücreler görünsün). */
+  private hucrelereYakinlas(hucreler: readonly string[]): void {
+    let c: Sinir | null = null;
+    for (const id of hucreler) {
+      const x = idCoz(id);
+      if (!x) continue;
+      const b = hucreSiniri(x.x, x.y);
+      c = c ? cerceveBirlestir(c, b) : b;
+    }
+    if (!c) return;
+    const pad = Math.min(160, Math.round(Math.min(this.kap.clientWidth, this.kap.clientHeight) * 0.22));
+    this.harita.fitBounds(sinirdanKutu(c), { padding: { top: pad + 40, bottom: pad + 60, left: pad, right: pad }, maxZoom: 17.4, duration: hareketAzMi() ? 0 : 600 });
+  }
+
+  /**
+   * İşletmem'deki "Büyüt": tesis açık ilçedeyse (izgara ve sahiplik yüklü) ölçek büyütme kipini başlatır. Başlayamazsa false.
+   * Başka ilçedeyse çağıran önce ilçeyi açar (`mulk-panel.ts`).
+   */
+  olcekBaslat(anahtar: string): boolean {
+    return this.olcek?.baslat(anahtar) ?? false;
+  }
+
+  /** Sınama kancası: ölçek büyütme kipi. */
+  get olcekKipi(): OlcekKipi | null {
+    return this.olcek;
   }
 
   /** Yapı yerleşim kipi (menü + hayalet + maliyet kartı); yalnız yapı kurabilen bağdaştırıcıda. */
@@ -301,6 +368,7 @@ export class HaritaGorunumu {
         this.arsaVurguCiz();
         this.altCiz();
       },
+      basliyor: () => this.olcek?.iptal(),
     });
     this.yerlesim = y;
     void this.yuklendi.then(() => y.kur());
@@ -425,6 +493,7 @@ export class HaritaGorunumu {
         for (const [p, v] of Object.entries(boyalar(l))) h.setPaintProperty(l.id, p, v);
       }
       this.yerlesim?.temaUygula();
+      this.olcek?.temaUygula();
       this.sahiplikBoya();
       this.desenEkle();
       if (h.getLayer("serit-engel") && !window.matchMedia("(prefers-contrast: more)").matches) h.setPaintProperty("serit-engel", "fill-color", renk("--arsa-engel"));
@@ -469,7 +538,7 @@ export class HaritaGorunumu {
 
   /** Klavye: yapı yerleşiminde R, Enter, Esc. İşlendiyse true. */
   tusIsle(e: KeyboardEvent): boolean {
-    return this.yerlesim?.tus(e) ?? false;
+    return this.olcek?.tus(e) || (this.yerlesim?.tus(e) ?? false);
   }
 
   mercekSec(sahiplik: boolean): void {
@@ -506,6 +575,7 @@ export class HaritaGorunumu {
   /** Harita gizlenince: ipucu, kart ve alt çubuk kapanır. */
   uyut(): void {
     this.yerlesim?.iptal();
+    this.olcek?.iptal();
     this.yerlesim?.menuAc(false);
     // Küre düzeyi: "Geri al" şeridi gizlenir (sayaç sürer; ilçeye dönülünce yeniden görünür)
     this.yerlesim?.gorunurluk(0);
@@ -539,6 +609,7 @@ export class HaritaGorunumu {
       this.arsaUzerinde = null;
       this.kamuSecili = null;
       this.yerlesim?.iptal();
+      this.olcek?.iptal();
       h.setFilter("ilce-secili", ["==", ["get", "kimlik"], hedef.ilce ?? ""]);
       h.setFilter("ortu-ilce", hedef.ilce ? ["!=", ["get", "kimlik"], hedef.ilce] : ["==", ["get", "kimlik"], "__yok__"]);
       if (hedef.ilce && this.izgaraVar(hedef.ilce)) {
@@ -959,7 +1030,7 @@ export class HaritaGorunumu {
     const src = this.harita.getSource("arsa-vurgu") as GeoJSONSource | undefined;
     if (!src) return;
     // Yapı yerleşimi sürerken arsa vurgusu gizlenir (hayaletin mavi/turuncu renkleriyle karışmasın).
-    if (this.yerlesim?.aktif) {
+    if (this.yerlesim?.aktif || this.olcek?.aktif) {
       src.setData(BOS);
       return;
     }
@@ -1113,7 +1184,7 @@ export class HaritaGorunumu {
       e.dataset["yapi"] = y.anahtar;
       e.setAttribute("aria-hidden", "true");
       const ad = y.tur ? (this.katalog.find((k) => k.id === y.tur)?.ad ?? y.tur) : "Yapı";
-      e.textContent = a === 3 ? ad : `${ad} · ${y.bitis === undefined ? "İnşaat" : ASAMA_ADI[a]}`;
+      e.textContent = y.yukseltme ? `${ad} · Büyütme` : a === 3 ? ad : `${ad} · ${y.bitis === undefined ? "İnşaat" : ASAMA_ADI[a]}`;
       this.yapiEtiketleri.push(new maplibregl.Marker({ element: e, anchor: "center" }).setLngLat([xtenBoylam(sx / y.hucreler.length), ytenEnlem(sy / y.hucreler.length)]).addTo(this.harita));
     }
     src.setData({ type: "FeatureCollection", features: f });
@@ -1374,6 +1445,7 @@ export class HaritaGorunumu {
     const p = e.point;
     if (this.duzey === 3 && this.izgara) {
       this.uzerindeAyarla(null);
+      if (this.olcek?.aktif) return;
       if (this.yerlesim?.aktif) {
         this.yerlesim.uzerinde(e);
         return;
@@ -1418,6 +1490,7 @@ export class HaritaGorunumu {
     }
     const ev = e.originalEvent as MouseEvent;
     if (this.duzey === 3 && this.izgara) {
+      if (this.olcek?.aktif) return; // hayalet otomatik: hücre seçimi yok
       if (this.yerlesim?.aktif) {
         this.yerlesim.tikla(e);
         return;
@@ -1516,6 +1589,7 @@ export class HaritaGorunumu {
     this.arsaVurguCiz();
     this.altCiz();
     this.yerlesim?.tazele();
+    this.olcek?.tazele();
     this.durumYaz();
   }
 

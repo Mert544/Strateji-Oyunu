@@ -8,6 +8,8 @@
  *     onay; sonra yapı önce yerleşim: boş hücreler + yapı tek işlemde (Ahır).
  *   - VELİ (masaüstü): önceden katılmış (bedava yurt): doğrudan haritada; Ali'nin sahipliğini ve inşaatını canlı (delta) görür;
  *     sim saati ilerleyince inşaat aşamaları (Temel → İskele → Gövde → Tamam).
+ *   - CAN (masaüstü): ölçek büyütme (G2): İşletmem → Büyüt → ek hücre hayaleti, maliyet kartı (arsa + büyütme tek toplam) → onay →
+ *     sunucu kabul eder, hazine düşüşü önizlemeyle birebir; inşaat bitince M ayak izi; M → L kartı.
  *   - AYŞE (mobil 390×844, dokunma): Yerleş → arsa → Yapı kur → hayalet → kur.
  * Ekran görüntüleri: scratchpad/f4/ (ya da ilk argüman / F4_EKRAN). Hata olursa süreç kodu 1 ile çıkar.
  *
@@ -567,6 +569,105 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   return { arsa, insaatHucreler };
 }
 
+/**
+ * Ölçek büyütme (G2): İşletmem → "Büyüt" → harita tesisin ilçesine gider, ek hücre hayaleti ve maliyet kartı (arsa + büyütme tek toplam)
+ * → onay → sunucu kabul eder → hazine düşüşü önizlemeyle birebir → inşaat bitince M ayak izi. M → L kartı yalnız L sunar.
+ * CAN: önceden katılmış (yurt Gebze'de); çiftliği doğrudan komutla kurulur (malzeme stoğu ali'nin akışından ayrı).
+ */
+async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: string[]): Promise<void> {
+  const e = "[can/masaüstü]";
+  const baglam = await tarayici.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, colorScheme: "light" });
+  const sayfa = await sayfaAc(baglam, adres, ts, "can", konsol);
+  const ekran = (ad: string): Promise<Buffer> => sayfa.screenshot({ path: join(EKRAN, `f4-masaustu-buyut-${ad}.png`) });
+  await sayfa.waitForFunction(() => window.__harita?.durum().ilce === "tr_41_gebze", null, { timeout: 120000 });
+  await haritaHazir(sayfa);
+  await sayfa.evaluate(() => window.__olcum?.duraklat(true));
+  const SA = 3_600_000;
+  const esitle = (): Promise<void> => sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { zamanEsitle?: () => Promise<void> }).zamanEsitle?.());
+  // S çiftlik: yurdun iki bitişik hücresi (doğrudan komut; kurulum bu adımın konusu değil)
+  const cift = await sayfa.evaluate(async (): Promise<string[] | null> => {
+    const b = window.__harita?.baglanti();
+    const sh = await b?.sahiplikAl("tr_41_gebze");
+    if (!b || !sh) return null;
+    for (const [id, h] of sh.hucreler) {
+      if (h.sahip !== b.ben.id || h.tesis !== undefined || h.insaat !== undefined) continue;
+      const [x, y] = id.split(":").map(Number) as [number, number];
+      const sag = `${x + 1}:${y}`;
+      if (sh.hucreler.get(sag)?.sahip === b.ben.id) return [id, sag];
+    }
+    return null;
+  });
+  if (!cift) throw new Error("can: bitişik iki yurt hücresi yok");
+  const kur = await sayfa.evaluate((c) => window.__harita?.baglanti()?.tesisInsa?.({ tur: "tesis_insa_hucre", ilce: "tr_41_gebze", tesisTuru: "ciftlik", hucreler: c }), cift);
+  kontrol(`${e} S çiftlik kuruldu (yurtta)`, kur?.tamam === true, JSON.stringify(kur));
+  await ts.yonetici.zamanIlerlet(ts.yazar.sim.dunya.zaman + 24 * SA);
+  await esitle();
+  // İşletmem: tesis satırında "Büyüt"
+  await sayfa.locator("#sek-isletme").click();
+  const satir = sayfa.locator("#sekme-icerik li[data-yapi-durum='tesis']", { hasText: "Çiftlik" });
+  await satir.locator("[data-mulk-buyut]").waitFor({ timeout: 30000 });
+  kontrol(`${e} İşletmem: biten S çiftlikte "Büyüt" eylemi`, (await satir.locator("[data-mulk-buyut]").count()) === 1, (await satir.innerText()).replace(/\s+/g, " "));
+  await ekran("1-isletme-buyut");
+  const tesisAnahtari = (await satir.locator("[data-mulk-buyut]").getAttribute("data-mulk-buyut")) ?? "";
+  const tesisId = Number(tesisAnahtari.slice(1));
+  await satir.locator("[data-mulk-buyut]").click();
+  await sayfa.waitForSelector("#yapi-kart:not([hidden])", { timeout: 30000 });
+  await haritaHazir(sayfa);
+  await sayfa.waitForTimeout(500);
+  const plan = await sayfa.evaluate(() => {
+    const p = window.__harita?.gorunum()?.olcekKipi?.gecerliPlan;
+    return p ? { gecerli: p.gecerli, neden: p.neden, ek: p.ekHucreler, alinacak: p.alinacak.length, arsaMili: p.arsaMili, yapiMili: p.yapiMili, toplamMili: p.toplamMili, hedef: p.hedef.ad } : null;
+  });
+  const k1 = (await kart(sayfa)).replace(/\s+/g, " ");
+  const tl = (mili: number): string => `${new Intl.NumberFormat("tr-TR").format(Math.ceil(mili / 1000))} ₺`;
+  kontrol(`${e} Büyüt: harita Gebze'de, kart: ek hücre, arsa, büyütme, süre, tek toplam`, !!plan && plan.gecerli && plan.ek.length === 1 && plan.hedef === "M" && /Çiftlik büyüt/.test(k1) && /S ölçek/.test(k1) && /M ölçek · 3 hücre/.test(k1) && /L ölçek · 4 hücre/.test(k1) && /Arsa/.test(k1) && /Büyütme/.test(k1) && /Süre/.test(k1) && /Toplam/.test(k1), `${JSON.stringify(plan)} | ${k1}`);
+  kontrol(`${e} kartta büyütme ${plan ? tl(plan.yapiMili) : "?"} (S → M ×1,5 çekirdek bedeli) ve toplam ${plan ? tl(plan.toplamMili) : "?"} (arsa + büyütme)`, !!plan && plan.yapiMili === 9_000_000 && k1.includes("9.000 ₺") && k1.includes(`Toplam ${tl(plan.toplamMili)}`) && plan.toplamMili === plan.arsaMili + plan.yapiMili, k1);
+  const hayalet = await sayfa.evaluate(() => window.__harita?.gorunum()?.ml.queryRenderedFeatures({ layers: ["olcek-hayalet-dolgu"] }).length ?? 0);
+  kontrol(`${e} hayalet haritada: büyüyen tesis + ek hücre`, hayalet >= 3, `${hayalet} özellik`);
+  const kamuMetin = await alt(sayfa).catch(() => "");
+  kontrol(`${e} büyütme açıkken alt çubuk gizli, "Büyüt" düğmesi etkin`, !(await sayfa.locator("#harita-alt").isVisible()) && (await sayfa.locator("#yapi-kart [data-ok='onayla']").isEnabled()), kamuMetin);
+  await ekran("2-maliyet-karti");
+  const hazineOnce = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
+  const insaOnce = ts.yazar.sim.dunya.insaatlar.length;
+  await tikla(sayfa, false, "#yapi-kart [data-ok='onayla']");
+  await sayfa.waitForSelector("#bildirimler .bildirim.tamam >> text=ölçeğe büyütülüyor", { timeout: 20000 });
+  const t1 = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
+  kontrol(`${e} onay: sunucu kabul etti, bildirim Türkçe`, /Çiftlik M ölçeğe büyütülüyor: .*büyütme 9\.000 ₺\./.test(t1), t1);
+  kontrol(`${e} sunucuda ölçek inşaatı başladı (tek komut, hedef M)`, ts.yazar.sim.dunya.insaatlar.length === insaOnce + 1 && ts.yazar.sim.dunya.insaatlar.some((i) => i.tur === "olcek" && i.hedef === tesisId && i.olcek === 1), `${ts.yazar.sim.dunya.insaatlar.length} inşaat`);
+  await sayfa.waitForFunction(() => (window.__harita?.baglanti()?.ozet?.()?.surenInsaat ?? 0) >= 1, null, { timeout: 15000 });
+  const hazineSonra = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
+  kontrol(`${e} hazine düşüşü önizlemeyle (arsa + büyütme) birebir`, !!plan && hazineOnce - hazineSonra === plan.toplamMili, `${hazineOnce} - ${hazineSonra} = ${hazineOnce - hazineSonra}, önizleme ${plan?.toplamMili}`);
+  kontrol(`${e} onaydan sonra kip kapandı (kart gizli)`, await sayfa.locator("#yapi-kart").isHidden());
+  await sayfa.waitForFunction(() => /Ölçek büyütme sürüyor/.test(document.getElementById("sekme-icerik")?.textContent ?? ""), null, { timeout: 15000 }).catch(() => undefined);
+  const isl = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
+  kontrol(`${e} İşletmem: "Ölçek büyütme sürüyor · M" satırı; bu tesiste "Büyüt" gizli`, /Ölçek büyütme sürüyor · M/.test(isl) && (await sayfa.locator("#sekme-icerik [data-mulk-buyut]").count()) === 0, isl.slice(isl.indexOf("Yapılar"), isl.indexOf("Yapılar") + 220));
+  const etiket = await sayfa.locator(".yapi-etiket").allInnerTexts();
+  kontrol(`${e} haritada büyütme etiketi`, etiket.some((x) => /Çiftlik · Büyütme/.test(x)), etiket.join(" | "));
+  await ekran("3-buyutuluyor");
+  // Büyütme biter: M ayak izi (3 hücre), ölçek 1; aynı tesis M → L için yeniden önerilir
+  await ts.yonetici.zamanIlerlet(ts.yazar.sim.dunya.zaman + 24 * SA);
+  await esitle();
+  await sayfa.waitForFunction(() => (window.__harita?.baglanti()?.ozet?.()?.surenInsaat ?? 1) === 0, null, { timeout: 20000 });
+  const tesisSunucu = ts.yazar.sim.dunya.bolgeler.flatMap((b) => b.tesisler).find((t) => t.id === tesisId);
+  const hucreSunucu = ts.yazar.sim.dunya.mulk?.hucreler.filter((h) => h.tesis === tesisId).length ?? 0;
+  kontrol(`${e} inşaat bitti: sunucuda ölçek 1 (M) ve 3 hücre`, tesisSunucu?.olcek === 1 && hucreSunucu === 3, `olcek ${tesisSunucu?.olcek}, ${hucreSunucu} hücre`);
+  await satir.locator("[data-mulk-buyut]").waitFor({ timeout: 30000 });
+  await satir.locator("[data-mulk-buyut]").click();
+  await sayfa.waitForSelector("#yapi-kart:not([hidden])", { timeout: 30000 });
+  await sayfa.waitForTimeout(500);
+  const k2 = (await kart(sayfa)).replace(/\s+/g, " ");
+  const plan2 = await sayfa.evaluate(() => {
+    const p = window.__harita?.gorunum()?.olcekKipi?.gecerliPlan;
+    return p ? { gecerli: p.gecerli, neden: p.neden, ek: p.ekHucreler.length, hedef: p.hedef.ad, yapiMili: p.yapiMili } : null;
+  });
+  kontrol(`${e} M tesis için kart yalnız L sunar (seçim düğmesi yok), M → L ×2 bedeli`, /M ölçek · 3 hücre/.test(k2) && !/data-ok="olcek-1"/.test(await sayfa.locator("#yapi-kart").innerHTML()) && plan2?.hedef === "L" && plan2.ek === 1 && plan2.yapiMili === 12_000_000, `${JSON.stringify(plan2)} | ${k2}`);
+  await ekran("4-m-den-l-karti");
+  await sayfa.keyboard.press("Escape");
+  kontrol(`${e} Esc büyütme kipinden çıkar`, await sayfa.locator("#yapi-kart").isHidden());
+  kontrol(`${e} konsol hatası yok`, konsol.filter((x) => x.includes("[can]")).length === 0, konsol.filter((x) => x.includes("[can]")).slice(0, 3).join(" | "));
+  await baglam.close();
+}
+
 async function ayse(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: string[]): Promise<void> {
   const e = "[ayşe/mobil]";
   const baglam = await tarayici.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, colorScheme: "light" });
@@ -728,6 +829,7 @@ async function main(): Promise<void> {
   console.log(`sunucu hazır (${Date.now() - t0} ms): ${ts.url}`);
   // Veli önceden katılmış: bedava yurt Gebze'de
   await ts.katil("veli", GEBZE);
+  await ts.katil("can", GEBZE);
   const { sunucu, adres } = await statikSunucu();
   const tarayici = await chromium.launch({
     executablePath: chromeBul(),
@@ -744,6 +846,7 @@ async function main(): Promise<void> {
     const vz = await veli.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.ilceHucre ?? []);
     kontrol("[veli] yurdu olan oyuncu Yerleş görmeden doğrudan haritada (Gebze)", (await veli.locator("#yerles").count()) === 0 && vz.some(([i, n]) => i === "tr_41_gebze" && n === 6), JSON.stringify(vz));
     await ali(tarayici, adres, ts, konsol, veli);
+    await can(tarayici, adres, ts, konsol);
     // Sunucu yetişme durumu (protokol `durum` mesajı): sakin bilgi şeridi. Gerçek yetişme için mutlak saatli sunucu kapalı
     // kalmalıdır; burada aynı iletiyi bağdaştırıcıya vererek arayüz bağlantısı doğrulanır (bağdaştırıcı mantığı birim testlerde).
     await veli.evaluate(() => {
@@ -764,7 +867,7 @@ async function main(): Promise<void> {
     await ayse(tarayici, adres, ts, konsol);
     await gBaglam.close();
     await sahteYerles(tarayici, adres, konsol);
-    const k = konsol.filter((x) => !x.includes("[ali]") && !x.includes("[ayse]") && !x.includes("[sahte]"));
+    const k = konsol.filter((x) => !x.includes("[ali]") && !x.includes("[can]") && !x.includes("[ayse]") && !x.includes("[sahte]"));
     kontrol("[veli] konsol hatası yok", k.length === 0, k.slice(0, 3).join(" | "));
     const sunucuSorun = ts.yazar.sim.dunya.mulk ? "" : "mülk kipi kapalı";
     kontrol("sunucu mülk kipinde", sunucuSorun === "", sunucuSorun);
