@@ -30,10 +30,20 @@
 /* D-2 tür seçimi */
 .dk-tur-liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
 .dk-tur { display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 0 var(--s-2); min-height: 56px; padding: var(--s-2) var(--s-3); text-align: left; border: 1px solid var(--cizgi); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); font-size: var(--yazi-sm); font-weight: 600; }
-.dk-tur .ikon { grid-row: span 2; color: var(--katman-pazar-ink); }
+.dk-tur .ikon { grid-row: span 3; color: var(--katman-pazar-ink); }
 .dk-tur[aria-pressed="true"] { border-color: var(--birincil); background: var(--birincil-tint); color: var(--birincil-ink); }
 .dk-tur[aria-disabled="true"] { background: var(--yuzey-2); color: var(--murekkep-3); border-color: var(--cizgi-ince); }
 .dk-tur-sayi { font-size: var(--yazi-xs); font-weight: 400; color: var(--murekkep-2); }
+/* K1 iskeleti (dukkan-html.ts): tür adı ve tür uyumu işareti. Uyum renk dışında SİMGE ŞEKLİYLE de ayrışır: var = onay, yok = uyarı, ithal = ok (Pazar'dan alınır); metin her durumda yazılıdır */
+.dk-tur-ad { font-size: var(--yazi-sm); font-weight: 600; overflow-wrap: anywhere; }
+.dk-tur-uyum { display: inline-flex; align-items: center; gap: 4px; font-size: var(--yazi-xs); font-weight: 500; line-height: var(--satir-xs); }
+.dk-tur-uyum::before { content: ""; flex: none; width: 12px; height: 12px; background: currentColor; -webkit-mask: var(--ikon-chevron) center / 12px no-repeat; mask: var(--ikon-chevron) center / 12px no-repeat; }
+.dk-tur-uyum[data-uyum="var"] { color: var(--basari-ink); }
+.dk-tur-uyum[data-uyum="var"]::before { -webkit-mask-image: var(--ikon-check); mask-image: var(--ikon-check); }
+.dk-tur-uyum[data-uyum="yok"] { color: var(--uyari-ink); }
+.dk-tur-uyum[data-uyum="yok"]::before { -webkit-mask-image: var(--ikon-alert); mask-image: var(--ikon-alert); }
+.dk-tur-uyum[data-uyum="ithal"] { color: var(--bilgi-ink); }
+.dk-tur-uyum[data-uyum="ithal"]::before { -webkit-mask-image: var(--ikon-chevron); mask-image: var(--ikon-chevron); }
 .dk-tahmin { padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--bilgi-tint); color: var(--bilgi-ink); font-size: var(--yazi-sm); }
 .dk-tahmin[hidden] { display: none; }
 /* D-5 raf: masaüstü 4 satır, telefon 2×2 */
@@ -47,6 +57,9 @@
 .dk-yuva[data-durum="dolu-kampanya-bitti"] { box-shadow: inset 3px 0 0 var(--ikincil); }
 .dk-yuva[data-durum="gonderiliyor"], .dk-yuva[data-durum="yukleniyor"] { border-style: dotted; color: var(--murekkep-3); cursor: progress; }
 .dk-yuva b { font-weight: 600; }
+/* K1 iskeleti: yuva ana satırı ("{mal} · {kademe} · {fiyat}", boşken "Boş: mal koy") ve gizli tam cümle (aria-describedby / title) */
+.dk-yuva-satir { display: block; max-width: 100%; font-size: var(--yazi-sm); line-height: var(--satir-sm); overflow-wrap: anywhere; }
+.dk-yuva-tam[hidden] { display: none; }
 /* Neden satırları: yuva düzeyi (stoksuz, kampanya bitti) yuva içinde `.dk-yuva-neden`; dükkân düzeyi (karşılanmıyor, kasa dolu) raf altında `p.dk-neden` */
 .dk-yuva-neden { font-size: var(--yazi-xs); line-height: var(--satir-xs); color: var(--uyari-ink); }
 .dk-yuva[data-durum="dolu-kampanya-bitti"] .dk-yuva-neden { color: var(--ikincil-ink); }
@@ -114,3 +127,12 @@
 .dk-oneri .mini-dugme { align-self: flex-start; min-height: 44px; }
 /* D0 kartında Defter adımı: tek soluk satır (A1 akış okuması 3; metin `dukkan.D0.defter_adim`) */
 .dk-oneri-defter-satir { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); }
+/* K1 iskeleti: maliyet kartı sarmalayıcısı (#yapi-kart içindeki dükkân satırları; durum öznitelikleri A1 g9-dukkan-durum §2) ve D-8.1 menü listesi */
+.dk-maliyet { min-width: 0; }
+.dk-maliyet[data-durum="gonderiliyor"] .birincil { cursor: progress; }
+.dk-maliyet .yk-dugmeler button { min-height: 44px; }
+.dk-menu-liste { display: flex; flex-direction: column; align-self: flex-end; gap: var(--s-1); min-width: min(220px, 100%); margin-top: var(--s-1); padding: var(--s-1); border-radius: var(--r-lg); background: var(--yuzey); box-shadow: var(--golge-2); }
+.dk-menu-liste .eylem { width: 100%; min-height: 44px; justify-content: flex-start; white-space: normal; text-align: left; }
+/* Defter kartı satırı (B7): ödül sütunu sağda, metin kırılır, ödül kırılmaz */
+.dk-oneri-satir { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
+.dk-oneri-satir > p { margin: 0; min-width: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); }

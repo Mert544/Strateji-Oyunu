@@ -40,6 +40,12 @@ describe("kontrast (WCAG 2.2)", () => {
         ["birincil-ustu", "birincil"],
         ["birincil-ustu", "birincil-hover"],
         ["birincil", "yuzey"],
+        ["basari-ink", "birincil-tint"], // .dk-tur-uyum[data-uyum=var] seçili tür kartında
+        ["uyari-ink", "birincil-tint"], // .dk-tur-uyum[data-uyum=yok]
+        ["bilgi-ink", "birincil-tint"], // .dk-tur-uyum[data-uyum=ithal]
+        ["basari-ink", "yuzey-2"], // aria-disabled tür kartı zemini
+        ["uyari-ink", "yuzey-2"],
+        ["bilgi-ink", "yuzey-2"],
         ["birincil-ink", "birincil-tint"], // .yapi-dugme[aria-pressed] tonlu basılı hâl (tek birincil kuralı)
       ];
       for (const aile of ["birincil", "ikincil", "basari", "uyari", "hata", "bilgi"]) {
