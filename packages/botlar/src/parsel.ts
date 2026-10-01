@@ -224,7 +224,7 @@ function yapiSayilari(g: Gorunum): Map<string, number> {
   for (const i of g.d.insaatlar) {
     if (i.sahip !== g.oyuncu || i.hucreler === undefined) continue;
     if (i.ekYapi !== undefined) ekle(i.ekYapi);
-    else if (i.hedef >= 0) ekle((g.sim.ic.tesisTurleri[i.hedef] as { id: string }).id);
+    else if (i.tur === "tesis" && i.hedef >= 0) ekle((g.sim.ic.tesisTurleri[i.hedef] as { id: string }).id); // `hedef` yalnız tesis inşaatında tür indeksidir (olcek: tesis kimliği, kenar: kenar indeksi)
   }
   return s;
 }
@@ -425,7 +425,7 @@ function netCikti(g: Gorunum, ekTurler: readonly string[], gubreAyir = 0): Map<n
   };
   for (const b of dugumleri(g)) for (const t of b.tesisler) ekle(t.yontem);
   for (const i of g.d.insaatlar) {
-    if (i.sahip !== g.oyuncu || i.hucreler === undefined || i.hedef < 0) continue;
+    if (i.sahip !== g.oyuncu || i.tur !== "tesis" || i.hucreler === undefined || i.hedef < 0) continue;
     ekle((g.bilgi.tur[i.hedef] as { yontemler: number[] }).yontemler[0] as number);
   }
   for (const tur of ekTurler) {
