@@ -135,6 +135,8 @@ runuser -u postgres -- $B/pg_ctl -D $S/veri -m fast stop && rm -rf $S   # işini
 
   Testler `pgt-*` dünyalarını kullanır ve sonunda siler; şema göç testleri geçici veritabanları (`bolge_eski_*`, `bolge_yeni_*`) açıp kaldırır. Postgres 16 ile doğrulandı.
 
+  **Tek komutla doğrulama:** `deploy/pg-dogrula.sh <sha | worktree-yolu>` geçici kümeyi açar, `pg.test.ts` ve `yedek-geri-yukle.test.ts` ile uçta değişmiş `BOLGE_PG_URL`'li test dosyalarını koşar, şema sürümünü `sql/` dosya sayısıyla karşılaştırır, özet satırı ve `SP/takim/kapi-sonuclari/pg-<sha>.json` yazar; küme her koşulda silinir (ayrıntı betiğin başlığında).
+
 ## Alfa-0 işletim
 
 Bu bölüm tek makinede (sunucu + Postgres 16) açık alfa için gerekenleri toplar. Gerçek kimlik doğrulama (e-posta sihirli bağlantı + Google, oturum, çok hesap, KVKK) tasarım notu: [KIMLIK.md](KIMLIK.md). Hiçbir sır depoda yoktur; yapılandırma yalnız ortam değişkenleriyle yapılır. Dosyalar kökteki `deploy/` altındadır. İlk gerçek kurulumda sırayla koşulacak adımlar: "Alfa-0 açılış kontrol listesi" (bu bölümün sonunda).
