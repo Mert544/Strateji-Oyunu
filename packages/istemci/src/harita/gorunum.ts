@@ -32,6 +32,7 @@ import { alimTuru, arsaSinifi, ayrilmisHakki, hucreFiyatiMili, ilceTavani, SINIF
 import type { AyrilmisHakki } from "./fiyat";
 import type { IlceSayilari } from "./fiyat";
 import { parselZinciri } from "./zincir";
+import { kavramEtkin } from "./etkin";
 import { ASAMA_ADI, yapiAsamasi, yapiKatalogu, yapiKatmani, yapiRengiCss } from "./yapi";
 import { altlikKatmanlari, boyalar, IZGARA_CIZGI_ZOOM, L3_ZOOM, oyunKatmanlari, sahiplikBoyasi, SERIT_ONCESI, seritRengi, sinirKatmanlari, zeminKatmanlari } from "./stil";
 import { ikon } from "../tasarim/ikon";
@@ -202,7 +203,7 @@ export class HaritaGorunumu {
         gecikme: 120,
         hazineMili: 50_000_000,
         kamu: true,
-        ...(tablo.param.odul ? { defterOdulleri: defterOdulleri(tablo) } : {}),
+        ...(tablo.param.odul ? { defterOdulleri: defterOdulleri(tablo), defterEtkin: (k: string) => kavramEtkin(tablo, k) } : {}),
         ...(new URLSearchParams(location.search).get("donus") === "ornek" ? { donusOrnegi: DONUS_ORNEGI } : {}),
         yapiBilgisi: (tur) => {
           const y = this.katalog.find((k) => k.id === tur);

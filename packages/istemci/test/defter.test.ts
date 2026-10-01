@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFTER_DAMGALARI, DEFTER_ODUL_SIRASI, defterSablonu } from "@bolge/protokol";
 import type { Defter } from "@bolge/protokol";
-import { DEFTER_CERCEVE, DEFTER_METINLERI, defterBirlesikMetni, defterHtml, kazanimBildirimi, kazanimBildirimleri, odulMetni, odulSutunu, yeniKazanilanlar } from "../src/harita/defter";
+import { DEFTER_CERCEVE, DEFTER_METINLERI, defterBirlesikMetni, defterMetni, defterHtml, kazanimBildirimi, kazanimBildirimleri, odulMetni, odulSutunu, yeniKazanilanlar } from "../src/harita/defter";
 import { SahteBaglanti } from "../src/harita/baglanti";
 import { Bit, hucreId } from "../src/harita/hucre";
 
@@ -107,5 +107,16 @@ describe("Esnaf Defteri", () => {
     expect(d.siradaki.map((k) => [k.kavram, k.etkin])).toEqual([["ilk_yapi", true], ["ilk_satis", true], ["ilk_dukkan", false]]);
     expect(d.tavanMili).toBe(8_000_000);
     expect(await new SahteBaglanti({ izgaraAl: async () => iz }).defterAl()).toBeNull();
+  });
+
+  it("sahte defterde etkin kuralı protokol işleviyle: içerik verilirse G8/dükkân kavramları açılır, verilmezse boş içerik kuralı; ilk_pencere metni cam yolunu söyler", async () => {
+    const G = 20;
+    const iz = { x0: 1000, y0: 2000, genislik: G, yukseklik: G, durum: new Uint8Array(G * G).fill(Bit.ICERIDE | (1 << 5)) };
+    const odul = { tavanMili: 1, kavramlar: { ilk_dukkan: { paraMili: 1, degerMili: 1 }, ilk_pencere: { paraMili: 1, degerMili: 1 }, ilk_sozlesme: { paraMili: 1, degerMili: 1 } } };
+    const bos = await new SahteBaglanti({ izgaraAl: async () => iz, komsular: false, saat: () => 1, defterOdulleri: odul }).defterAl();
+    expect(bos?.siradaki.map((k) => [k.kavram, k.etkin])).toEqual([["ilk_dukkan", false], ["ilk_pencere", false], ["ilk_sozlesme", false]]);
+    const acik = await new SahteBaglanti({ izgaraAl: async () => iz, komsular: false, saat: () => 1, defterOdulleri: odul, defterEtkin: (k) => k !== "ilk_sozlesme" }).defterAl();
+    expect(acik?.siradaki.map((k) => [k.kavram, k.etkin])).toEqual([["ilk_dukkan", true], ["ilk_pencere", true], ["ilk_sozlesme", false]]);
+    expect(defterMetni("defter.kavram.ilk_pencere", "ilk_pencere").siradaki).toBe("Çelik ve camdan pencere yap; camı önce silisten üret.");
   });
 });

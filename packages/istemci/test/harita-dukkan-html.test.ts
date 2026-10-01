@@ -202,6 +202,15 @@ describe("D-3 maliyet satırları", () => {
     expect(az).toContain(`data-yk="onayla" aria-disabled="true"`);
   });
 
+  it("G8 açıkken eksik pencere 'üretebilirsin' metniyle (pencere_yok_g8); kapalıyken eski metin", () => {
+    const eksik = { ...temel, durum: "stok-eksik" as const, pencere: { gereken: 3, var: 1, tutarMili: 900_000 } };
+    expect(maliyetSatirlariHtml({ ...eksik, g8Acik: true })).toContain("Pencere 3: stokta 1. Pazar&#39;dan alabilir ya da üretebilirsin (yaklaşık 900\u00a0₺).");
+    expect(maliyetSatirlariHtml(eksik)).toContain("Pazar&#39;dan alabilirsin (yaklaşık 900\u00a0₺).");
+    expect(maliyetSatirlariHtml({ ...eksik, g8Acik: true })).not.toMatch(/\{[a-z_]+\}/);
+    // yeterliyse G8 durumundan bağımsız aynı metin
+    expect(maliyetSatirlariHtml({ ...temel, g8Acik: true, pencere: { gereken: 3, var: 5, tutarMili: 900_000 } })).toContain("depondaki pencere yetiyor.");
+  });
+
   it("yatırım tahmini veri varsa görünür (kırsal gün, genel süre); ret ayrı satırda", () => {
     expect(maliyetSatirlariHtml({ ...temel, yatirim: { gun: 9 } })).toContain("kendini yaklaşık 9 günde öder");
     const g = maliyetSatirlariHtml({ ...temel, yatirim: { saat: 30 } });

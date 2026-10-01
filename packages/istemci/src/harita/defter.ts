@@ -27,7 +27,7 @@ export const DEFTER_METINLERI: Readonly<Record<string, DefterMetni>> = {
   "defter.kavram.ilk_ekmek": { kazanildi: "İlk ekmeğin fırından çıktı; sıcağı sıcağına.", siradaki: "Unu fırında ekmeğe çevir." },
   "defter.kavram.zincir_kapandi": { kazanildi: "Zincir kapandı: bir yapının çıktısı öbürünün girdisi oldu.", siradaki: "Zinciri kapat: bir yapının çıktısını öbürüne girdi yap" },
   "defter.kavram.ilk_dukkan": { kazanildi: "İlk satışını dükkânından yaptın.", siradaki: "Kendi tezgâhın: bir dükkân kur ve oradan ilk satışını yap." },
-  "defter.kavram.ilk_pencere": { kazanildi: "İlk pencerenin hazır; çelik, cam ve emek.", siradaki: "Çelik ve camdan pencere yap." },
+  "defter.kavram.ilk_pencere": { kazanildi: "İlk pencerenin hazır; çelik, cam ve emek.", siradaki: "Çelik ve camdan pencere yap; camı önce silisten üret." },
   "defter.kavram.ilk_sozlesme": { kazanildi: "İlk sözleşmen imzalandı; hayırlı olsun.", siradaki: "İlk sözleşmeni yap" },
   "defter.kavram.ikinci_ilce": { kazanildi: "Komşu ilçeye selam: ikinci ilçende de yerin var.", siradaki: "Komşu bir ilçede yer edin" },
   "defter.kavram.ilk_arastirma": { kazanildi: "İlk araştırman tamamlandı.", siradaki: "İlk araştırmanı yap" },
