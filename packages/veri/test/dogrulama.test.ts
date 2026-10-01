@@ -534,3 +534,34 @@ describe("mulk.bakim (bakım C, sartname §5.10): V18 şema ve türev sınır, V
     expect(dogrulaPerakende(w).uyarilar.join("\n")).not.toContain("mulk.bakim: sanayi");
   });
 });
+
+describe("V20: mulk.hucreFiyati.{kirsal, kasaba, sehir} > 0 (para sızıntısı taraması B8)", () => {
+  const sinifler = ["kirsal", "kasaba", "sehir"] as const;
+
+  it("gerçek parametreler geçer; her sınıf için 0 ve negatif değer `mulk.hucreFiyati.<sinif>: 0'dan buyuk olmali` hatası verir; 1 (en küçük pozitif) geçer; kesirli ret", () => {
+    const v = miniVeriyiYukle();
+    expect(dogrulaParametreler(v.param, v.icerik)).toEqual({ gecerli: true });
+    for (const s of sinifler) {
+      for (const kotu of [0, -1, -1_000_000]) {
+        const p = kopya(v.param);
+        p.mulk!.hucreFiyati[s] = kotu;
+        const r = hatalar(dogrulaParametreler(p, v.icerik));
+        expect(r.some((x) => x.includes(`mulk.hucreFiyati.${s}`) && x.includes("0'dan buyuk olmali")), `${s}=${kotu}: ${r.join(" | ")}`).toBe(true);
+      }
+      const q = kopya(v.param);
+      q.mulk!.hucreFiyati[s] = 1;
+      expect(dogrulaParametreler(q, v.icerik)).toEqual({ gecerli: true }); // karşıt kontrol: pozitif geçer
+      const k = kopya(v.param);
+      k.mulk!.hucreFiyati[s] = 1.5;
+      expect(dogrulaParametreler(k, v.icerik).gecerli).toBe(false);
+    }
+  });
+
+  it("birleşik denetim: tüm sınıfları 0 yapan parametre üç ayrı hata verir (sıfır fiyat = bedava arsa)", () => {
+    const v = miniVeriyiYukle();
+    const p = kopya(v.param);
+    p.mulk!.hucreFiyati = { kirsal: 0, kasaba: 0, sehir: 0 };
+    const r = hatalar(dogrulaParametreler(p, v.icerik)).filter((x) => x.includes("hucreFiyati"));
+    expect(r).toHaveLength(3);
+  });
+});

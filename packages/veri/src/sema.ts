@@ -448,9 +448,13 @@ const perakendeSema = z
   })
   .strict();
 
+/** > 0 tamsayı arsa taban fiyatı (mili-₺; V20). */
+const hucreFiyatiPozitif = tamsayi.positive("0'dan buyuk olmali");
+
 const mulkSema = z
   .object({
-    hucreFiyati: z.object({ kirsal: negatifOlmayan, kasaba: negatifOlmayan, sehir: negatifOlmayan }).strict(),
+    // V20 (para sızıntısı taraması B8): sıfır fiyat bedava arsa demektir; her sınıf > 0 (`parselBirakIadePpm` ve `insaatIptalIadePpm` zaten <= %100: al-bırak kâr bırakmaz).
+    hucreFiyati: z.object({ kirsal: hucreFiyatiPozitif, kasaba: hucreFiyatiPozitif, sehir: hucreFiyatiPozitif }).strict(),
     satisPayiCarpaniPpm: negatifOlmayan.max(100_000_000, "en fazla 100000000 olabilir"),
     ilceHucreTavani: pozitif,
     ilcePayTavaniPpm: ppmSiniri,
