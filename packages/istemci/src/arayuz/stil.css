@@ -462,7 +462,7 @@ body.oyuncu-kipi .marka { display: none; }
 }
 @media (max-width: 440px) {
   .hasat { display: none; }
-  .hasat-deger small { display: none; }
+  /* A3 (P4 denetimi): telefonda "%90" etiketsiz kalıyordu; "hasat" sözcüğü yüzdenin altında kalır (iki satır, genişlik artmaz) */
   #ust .kart-zaman { padding: 2px var(--s-2); gap: 6px; }
 }
 @media (max-width: 380px) {

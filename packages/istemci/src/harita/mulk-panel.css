@@ -10,6 +10,13 @@
 .mulk-koruma { list-style: none; margin: 0 0 var(--s-2); padding: var(--s-2) var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); border: 1px solid var(--cizgi-ince); border-radius: var(--r-lg); background: var(--yuzey-2); }
 .mulk-koruma li { display: flex; gap: var(--s-2); align-items: flex-start; line-height: 1.4; }
 .mulk-koruma .ikon { flex: none; margin-top: 2px; color: var(--murekkep-3); }
+/* A6 (P4 denetimi): telefonda kalkan, ayrılmış hücre ve ilk yapı indirimi tek özet satırına iner ("Yeni oyuncu hakların · 3"), dokununca açılır; masaüstünde liste her zaman açık, özet gizli (K1 ≥ 821 px'te `open` verir). Defter kartı bu bloğun üstündedir. */
+.mk-ozet > summary { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-3); border: 1px solid var(--cizgi-ince); border-radius: var(--r-lg); background: var(--yuzey-2); color: var(--murekkep); font-size: var(--yazi-sm); font-weight: 600; cursor: pointer; list-style: none; }
+.mk-ozet > summary::-webkit-details-marker { display: none; }
+.mk-ozet > summary::after { content: ""; flex: none; margin-left: auto; width: 14px; height: 14px; background: var(--murekkep-3); -webkit-mask: var(--ikon-chevron) center / 14px no-repeat; mask: var(--ikon-chevron) center / 14px no-repeat; transition: transform var(--sure-hizli) var(--ease-standart); }
+.mk-ozet[open] > summary::after { transform: rotate(90deg); }
+.mk-ozet > .mulk-koruma { margin-top: var(--s-2); }
+@media (min-width: 821px) { .mk-ozet > summary { display: none; } .mk-ozet > .mulk-koruma { margin-top: 0; } }
 .mulk-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .mulk-liste li { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) 0; border-bottom: 1px solid var(--cizgi-ince); }
 .mulk-liste li:last-child { border-bottom: 0; }
