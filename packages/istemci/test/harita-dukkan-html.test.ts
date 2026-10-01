@@ -15,6 +15,8 @@ import {
   rafHtml,
   saatDakika,
   seciciHtml,
+  bosaltBeklemesi,
+  bosaltOnayHtml,
   turAdi,
   turEtiketi,
   turSecimiHtml,
@@ -518,12 +520,33 @@ describe("dukkan-duzelt 5-9", () => {
     expect(retMetni("YOK-99")).toBeNull();
   });
 
-  it("Yuvayı boşalt uyarısı: bekleme süresi parametreden; verilmezse düğme ve uyarı yok", () => {
+  it("Yuvayı boşalt: yuvada yalnız düğme (uyarı sürekli görünmez); onay adımında uyarı onay düğmesinin üstünde", () => {
     const kamp = { bitis: 0, kalanSaat: 4, kalanGun: 3 };
-    const h = kademeHtml(yuva(), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0, bosaltBeklemeSaat: 6 });
-    expect(h).toContain("Boşaltırsan bu yuvaya en erken 6 sa sonra mal koyabilirsin.");
+    const h = kademeHtml(yuva(), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0 });
     expect(h).toContain(`data-eylem="yuva-bosalt">Yuvayı boşalt</button>`);
-    expect(kademeHtml(yuva(), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0 })).not.toContain("yuva-bosalt");
+    expect(h).not.toContain("Boşaltırsan");
+    expect(kademeHtml(yuva({ mal: null }), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0 })).toBe("");
+    expect(kademeHtml(yuva(), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0, gonderiyor: true })).toContain(`data-eylem="yuva-bosalt" aria-disabled="true"`);
+  });
+
+  it("boşaltma beklemesi üç durum: fiyatT 0 → tam pencere; pencere sürüyor → kalan; pencere dolmuş → 0 ve uyarı gizli", () => {
+    const P = 6; // fiyatDegisimEnAzSaat (parametreden)
+    expect(bosaltBeklemesi(0, 10 * SAAT, P)).toBe(6);
+    expect(bosaltBeklemesi(10 * SAAT, 12 * SAAT, P)).toBeCloseTo(4, 9);
+    expect(bosaltBeklemesi(10 * SAAT, 16 * SAAT, P)).toBe(0);
+    expect(bosaltBeklemesi(10 * SAAT, 20 * SAAT, P)).toBe(0);
+
+    const onay = (fiyatT: number, simdi: number): string => bosaltOnayHtml({ fiyatT }, { simdi, pencereSaat: P, yuva: 2 });
+    const a = onay(0, 10 * SAAT);
+    expect(a).toContain(`role="alertdialog"`);
+    expect(a).toContain("Boşaltırsan bu yuvaya en erken 6 sa sonra mal koyabilirsin.");
+    expect(a.indexOf("Boşaltırsan")).toBeLessThan(a.indexOf(`data-eylem="yuva-bosalt-onayla"`)); // uyarı onay düğmesinin üstünde
+    expect(a).toContain(`data-eylem="onay-vazgec" data-varsayilan-odak="1">Vazgeç`);
+    expect(onay(10 * SAAT, 12 * SAAT)).toContain("en erken 4 sa sonra");
+    const dolmus = onay(10 * SAAT, 17 * SAAT);
+    expect(dolmus).not.toContain("Boşaltırsan");
+    expect(dolmus).toContain(`data-eylem="yuva-bosalt-onayla" data-yuva="2">Yuvayı boşalt</button>`);
+    expect(a).not.toMatch(/\{[a-z_]+\}/);
   });
 });
 

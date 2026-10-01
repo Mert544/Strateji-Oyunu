@@ -356,8 +356,6 @@ export interface KademeSecenegi {
   ilceDukkanSayisi?: number;
   /** Esnaf payı ("%20"; `param.mulk.perakende.esnaf.tabanPayPpm`ten `yuzde()`); verilmezse esnaf payı ipucu yazılmaz. */
   esnafPayiYuzde?: string;
-  /** Yuvayı boşaltırsa yeniden mal koyabilmek için beklemesi gereken süre (saat; `fiyatDegisimEnAzSaat`). Verilirse "Yuvayı boşalt" ve uyarısı yazılır. */
-  bosaltBeklemeSaat?: number;
 }
 
 /** D-6 fiyat kademesi ve kampanya satırları (seçili yuva için). */
@@ -395,8 +393,8 @@ export function kademeHtml(y: DukkanYuvasi, o: KademeSecenegi): string {
     const dugmeKapali = suruyor || k.kalanGun <= 0 || k.kalanSaat <= 0 || o.gonderiyor;
     s += `<button type="button" class="eylem" data-eylem="kampanya"${dugmeKapali ? ` aria-disabled="true"` : ""}>${enc("dukkan.D6.kampanya_dugme")}</button>`;
   }
-  if (o.bosaltBeklemeSaat !== undefined && o.bosaltBeklemeSaat > 0)
-    s += `<p class="dk-not">${enc("dukkan.D5.bosalt_uyari", { sure: saatDakika(o.bosaltBeklemeSaat) })}</p><button type="button" class="eylem" data-eylem="yuva-bosalt"${y.beklemeSaat > 0 || o.gonderiyor ? ` aria-disabled="true"` : ""}>${enc("dukkan.D5.dugme_bosalt")}</button>`;
+  // "Yuvayı boşalt": uyarı yuvalarda sürekli görünmez; yalnız basınca açılan onay adımında (`bosaltOnayHtml`)
+  s += `<button type="button" class="eylem" data-eylem="yuva-bosalt"${o.gonderiyor ? ` aria-disabled="true"` : ""}>${enc("dukkan.D5.dugme_bosalt")}</button>`;
   if (o.hata) s += `<p class="dk-hata" role="alert">${esc(o.hata)}</p>`;
   return s;
 }
@@ -445,6 +443,28 @@ export function markaFormuHtml(g: MarkaFormuGirdisi): string {
     `<div class="dk-palet" role="radiogroup" aria-label="${enc("dukkan.D7.renk_grup")}">${renkler}</div>` +
     `<div class="yk-dugmeler"><button type="button" class="birincil" data-eylem="marka-kaydet"${g.gonderiyor ? ` disabled data-durum="yukleniyor"` : ""}>${enc("dukkan.D7.dugme_kaydet")}</button>` +
     `<button type="button" class="eylem" data-eylem="marka-yok">${enc("dukkan.D7.markasiz_dugme")}</button></div></div>`
+  );
+}
+
+/**
+ * Boşaltma sonrası yeniden mal koyma beklemesi (saat): boşaltma `fiyatT`yi silmez (tanımsızsa şimdiye yazar). `fiyatT` 0 ise tam pencere (`fiyatDegisimEnAzSaat`);
+ * değilse pencerenin kalanı; kalan 0 (pencere dolmuş) ise 0 ve uyarı gizlenir. Süre yukarı yuvarlanmaz burada (gösterimde `saatDakika` yukarı yuvarlar).
+ */
+export function bosaltBeklemesi(fiyatT: number, simdi: number, pencereSaat: number): number {
+  if (!(fiyatT > 0)) return pencereSaat;
+  return Math.max(0, pencereSaat - (simdi - fiyatT) / SAAT_MS);
+}
+
+/**
+ * "Yuvayı boşalt" onay adımı (basınca açılır): onay düğmesinin ÜSTÜNDE `D5.bosalt_uyari` ({sure}); bekleme 0 ise uyarı yazılmaz. Vazgeç varsayılan odak.
+ */
+export function bosaltOnayHtml(y: Pick<DukkanYuvasi, "fiyatT">, o: { simdi: number; pencereSaat: number; yuva: number }): string {
+  const kalan = bosaltBeklemesi(y.fiyatT, o.simdi, o.pencereSaat);
+  return (
+    `<div class="dk-onay" role="alertdialog" aria-modal="true" aria-label="${enc("dukkan.D5.dugme_bosalt")}" data-yuva="${o.yuva}">` +
+    (kalan > 0 ? `<p class="dk-not" data-alan="bosalt-uyari">${enc("dukkan.D5.bosalt_uyari", { sure: saatDakika(kalan) })}</p>` : "") +
+    `<button type="button" class="eylem" data-eylem="yuva-bosalt-onayla" data-yuva="${o.yuva}">${enc("dukkan.D5.dugme_bosalt")}</button>` +
+    `<button type="button" class="eylem" data-eylem="onay-vazgec" data-varsayilan-odak="1">${enc("dukkan.D3.dugme_vazgec")}</button></div>`
   );
 }
 
