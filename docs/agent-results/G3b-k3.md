@@ -72,6 +72,6 @@ Kaynak: artışın TAMAMI çekirdekteki `HucreDizini` sınıfından (tek başın
 (b) Öneri (docs/06 §15.11 sonundaki "Yurt halka araması"): merkezden dışa yarıçapı ikiye katlayan halkalarla tohumları (uzaklık², kimlik dizesi) sırasıyla üret; bileşen kararını n'de kesen taşkın doldurmayla ver; üyelik yüklemini doğrudan dizinden/dünyadan sor; sonuç eski `kumeSec` ile birebir aynı (tümevarım kanıtı + eski işlev test içinde kâhin + geniş fark testi). Beklenen: katılım başına 10-30 ms CPU, geçici bellek < 5 MB; 20 eşzamanlı (ardışık işlenen) katılımda p95 ≤ 300 ms hedefinin çok altında. Dal: `takim/k3/yurt-halka` (Kod lideri/baş lider onayladı; sıra: hücre dizini → yurt-halka → test-bol → G6).
 
 ## 7. Başka
-- `izgara-manifest.test.ts` içe aktarması (yalnız `bhiCoz` satırı → `@bolge/veri`) G3 `entegrasyon`a girince yeniden tabanlamada yapılır (şu an O3 dosyası taban ağaçta yok). İstemci `bhiCoz` değişmedi (eşdeğerlik testi bağlar).
+- `veri-hatti/test/izgara-manifest.test.ts`: `bhiCoz` içe aktarması `@bolge/veri`'ye çevrildi (G3 entegrasyonda; yeniden tabanlandı, başka satır değişmedi; `izgaraSay` istemciden kalır). İstemci `bhiCoz` değişmedi (eşdeğerlik testi bağlar).
 - T3 sinyalleri (keşifte): `mal-izdusumu-kanit` "bilinmeyen mal: un" ve `mulk-yapilar.test.ts:50` G6 şema dalında ele alınır; bu dalda DEĞİŞMEDİ.
 - Satır sonu LF; test verisi bellekte üretilir (depoda ikili dosya yok, tüm dosyalar < 1 MB).
