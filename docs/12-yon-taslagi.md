@@ -41,3 +41,11 @@
 | İl imza ürünleri (veri), askeri ayak, performans | Kod | Çekirdek işi bitince ve Ar-Ge kararlarıyla |
 | Harita ve arayüzün görsel yenilenmesi | Kod | Görsel kimlik raporu ve karar sonrası |
 | Genel resim incelemesi ve uçtan uca hata ayıklama | İnceleme | Dalga sonunda |
+
+## 7. Sahip kararları (1 Ekim, Ar-Ge sonrası)
+- **Zaman:** dünya sunucu kapalıyken de akar; mutlak duvar saati, 1:1 tek takvim. Sunucu yeniden açılınca kaçan süreyi işleterek yetişir. (Önceki "kapalıyken durur" kararının yerine geçer.)
+- **NPC arsa sahibi yok:** boş arsa boş kalabilir; her oyuncu gelip alabilir. Arsalar NPC'lere verilmez, NPC rakip firma yoktur.
+- **Oyuncular arası arsa pazarlığı:** oyuncular arsaları kendi aralarında gönüllü olarak alıp satabilir, pazarlık yapabilir. "Parsel asla **zorla** el değiştirmez" ilkesi korunur (savaş ve yağma arsa almaz).
+- **Hassas içerik:** deprem olayı yok. Dini bayramlar talep eğrisinde görünür ve oyun içi **hatırlatma takvimi** olarak gösterilir.
+- **Görsel ve tasarım:** bina modellemeleri daha detaylı, renk tonlamaları ve paneller daha güzel olacak; tasarım işi daha güçlü modelli ayrı bir tasarım ajanına verilir. Karakter binaların yanında küçük kalıyor; bir tık büyütülür.
+- **Ürün yaklaşımı:** prototipten sonra sürekli güncelleme ve yatırım; tasarım kararları buna göre genişletilebilir kurulur.
