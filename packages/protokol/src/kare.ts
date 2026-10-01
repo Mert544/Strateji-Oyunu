@@ -127,6 +127,12 @@ export interface OzelBolgeKaresi {
    * Demete öğe eklenmez; eski istemci (z.object bilinmeyen anahtarı atar) alanı sessizce yok sayar.
    */
   tesisAsinma?: Array<[id: number, asinmaPpm: number]>;
+  /**
+   * Yalnız ekleme (isteğe bağlı, yalnız sahibine; G6 şebeke, G9 faturası için): düğümün şebekeden SON ÇÖZÜMDE aldığı miktar `[mal kimliği, mili-birim/saat]`: önce elektrik
+   * (`b.elektrik.sebekeMili`, depolanamaz anlık denge yolu), sonra stoksuz tüketim anı yolundaki depolanabilir mallar (`b.sebekeTuketim`; mal kimliğine göre sıralı). Yalnız `> 0`
+   * olanlar yazılır; şebeke bloğu yokken/alım yokken alan YAZILMAZ. Birim fiyat kareye girmez (veri paketinden `param.mulk.sebeke`); bedel = miktar x fiyat istemcide.
+   */
+  sebeke?: Array<[mal: string, miliSaat: Mili]>;
   /** `[mal, yön (0 ihracat, 1 ithalat), istenen oran, gerçekleşen oran]` (mili-birim/saat) */
   emirler: Array<[mal: number, yon: 0 | 1, oranSaat: Mili, gerceklesenSaat: Mili]>;
   /** Birlik indeksine göre adet. */
@@ -493,6 +499,13 @@ export function ilgiKaresiCikar(
       }
       const asinmalar = b.tesisler.flatMap((x): Array<[number, number]> => ((x.asinmaPpm ?? 0) > 0 ? [[x.id, x.asinmaPpm as number]] : []));
       if (asinmalar.length > 0) girdi.ozel.tesisAsinma = asinmalar;
+      const sebeke: Array<[string, Mili]> = [];
+      if ((b.elektrik?.sebekeMili ?? 0) > 0) sebeke.push([kaynak.ic.mulk?.sebeke?.elektrik !== undefined ? (kaynak.ic.mallar[kaynak.ic.mulk.sebeke.elektrik.mal]?.id ?? "elektrik") : "elektrik", b.elektrik?.sebekeMili as Mili]);
+      for (const mal of Object.keys(b.sebekeTuketim ?? {}).sort()) {
+        const m = (b.sebekeTuketim as Record<string, Mili>)[mal] as Mili;
+        if (m > 0) sebeke.push([mal, m]);
+      }
+      if (sebeke.length > 0) girdi.ozel.sebeke = sebeke;
     }
     bolgeler.push(girdi);
   }
