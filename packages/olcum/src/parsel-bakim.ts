@@ -92,6 +92,8 @@ export interface ParselBakimOyuncu {
   anlar: BakimAni[];
   /** Ölçüm anındaki parça stoğu serisi (ilk 15 gün, gün sonu; mili). */
   parcaStokSerisi: Array<{ gun: number; stok: number }>;
+  /** Her gün için [parça ithalatı nakit bedeli (mili-₺; o günün saatlik örnekleri), gün sonu parça stoğu (mili)]; indeks = gün − 1 (katılımdan önceki günler [0, 0]). */
+  gunluk: Array<[number, number]>;
 }
 
 /** Parça piyasası: bir günün saatlik ortalamaları (sim, 1–30. gün). Mili-birim/saat ve ppm. */
@@ -158,6 +160,8 @@ interface OyuncuIzi {
   pencere: DonemBirikimi;
   anlar: BakimAni[];
   parcaStokSerisi: Array<{ gun: number; stok: number }>;
+  gunlukIthalat: number[];
+  gunlukStok: number[];
 }
 
 export interface BakimIzleyiciGirdisi {
@@ -168,6 +172,12 @@ export interface BakimIzleyiciGirdisi {
 }
 
 /** Çekirdeğe yalnız bakan ölçüm izleyicisi: `saatlik` gözlem geri çağrısında, `komutIzle` koşucunun komut kancasında çağrılır. */
+function gunlukBirlestir(i: { gunlukIthalat: number[]; gunlukStok: number[] }, gunSayisi: number): Array<[number, number]> {
+  const s: Array<[number, number]> = [];
+  for (let g = 0; g < gunSayisi; g++) s.push([i.gunlukIthalat[g] ?? 0, i.gunlukStok[g] ?? 0]);
+  return s;
+}
+
 export class BakimIzleyici {
   private readonly iz = new Map<string, OyuncuIzi>();
   private readonly olcumMs: number;
@@ -183,7 +193,7 @@ export class BakimIzleyici {
     this.pencereMs = g.pencereMs;
     this.anGunleri = new Set<number>([...BAKIM_OLCUM_GUNLERI.filter((x) => x * GUN <= g.olcumMs), g.olcumMs / GUN]);
     for (const o of g.oyuncular) {
-      this.iz.set(o.id, { id: o.id, onayar: o.onayar, acilis: o.acilis, katilmaGun: o.katilmaGun, toplam: bos(), pencere: bos(), anlar: [], parcaStokSerisi: [] });
+      this.iz.set(o.id, { id: o.id, onayar: o.onayar, acilis: o.acilis, katilmaGun: o.katilmaGun, toplam: bos(), pencere: bos(), anlar: [], parcaStokSerisi: [], gunlukIthalat: [], gunlukStok: [] });
     }
   }
 
@@ -314,8 +324,19 @@ export class BakimIzleyici {
           bk.akis.parcaIthalat += parcaNakit;
           bk.akis.asinmaKaybiTahmin += kayipTahmin;
         }
+        if (parcaNakit > 0) {
+          const gi = Math.ceil(t / GUN) - 1;
+          if (gi >= 0) {
+            while (iz.gunlukIthalat.length <= gi) iz.gunlukIthalat.push(0);
+            iz.gunlukIthalat[gi] = (iz.gunlukIthalat[gi] as number) + parcaNakit;
+          }
+        }
       }
       if (gunSonu && gun <= PARCA_STOK_SERISI_GUN) iz.parcaStokSerisi.push({ gun, stok: parcaStok });
+      if (gunSonu) {
+        while (iz.gunlukStok.length < gun - 1) iz.gunlukStok.push(0);
+        iz.gunlukStok[gun - 1] = parcaStok;
+      }
       if (anAni) {
         iz.anlar.push({ gun, tesisler: tesisIzleri, karsilanma: karsilanmalar, parcaStok, hazine: o === undefined ? 0 : anlikHazine(d, iz.id), hazineOran: o === undefined ? 0 : o.hazine.yerelOran });
       }
@@ -375,7 +396,7 @@ export class BakimIzleyici {
       olcumGunu,
       pencereGun: this.pencereMs / GUN,
       turAdlari: this.turAdlari,
-      oyuncular: [...this.iz.values()].map((i) => ({ id: i.id, onayar: i.onayar, acilis: i.acilis, katilmaGun: i.katilmaGun, toplam: donemeCevir(i.toplam), pencere: donemeCevir(i.pencere), anlar: i.anlar, parcaStokSerisi: i.parcaStokSerisi })),
+      oyuncular: [...this.iz.values()].map((i) => ({ id: i.id, onayar: i.onayar, acilis: i.acilis, katilmaGun: i.katilmaGun, toplam: donemeCevir(i.toplam), pencere: donemeCevir(i.pencere), anlar: i.anlar, parcaStokSerisi: i.parcaStokSerisi, gunluk: gunlukBirlestir(i, this.olcumMs / GUN) })),
       esikler: [...this.esikler.values()],
       parcaPiyasasi: [...this.piyasaToplam.entries()]
         .sort((a, b) => a[0] - b[0])

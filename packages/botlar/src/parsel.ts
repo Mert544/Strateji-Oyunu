@@ -65,6 +65,12 @@ export interface ParselBotSecenegi {
    */
   bakimYonetimi?: boolean;
   /**
+   * Yalnız ONARIM yönetimi (ölçüm senaryosu R8): `bakimYonetimi` gibi aşınma eşiğinde `genel_onarim` verir ve onarımın malzeme açığını ithalatla
+   * kapatır, AMA tesislerin süregiden bakım parçası ihtiyacı için parça ithalatı YAPMAZ (aşınma kıtlıkla artar, eşik aşılınca onarılır).
+   * `bakimYonetimi` ile birlikte verilirse `bakimYonetimi` önceliklidir (tam bakım). Etkisiz: `pasif`, `spekulator`. Vars. kapalı.
+   */
+  onarimYonetimi?: boolean;
+  /**
    * İlçeyi `ilceSec` ile seç (yurt verebilen + açılışa uygun; bkz. `ilceSec`). `gec_katilan` için vars. AÇIK; diğer önayarlarda vars. kapalı
    * (eski davranış: önayarın ilçe sıralaması, olmazsa çekirdeğin yedeği). Açıkken "uygun ilçe yok" ise oyuncu katılmaz.
    */
@@ -619,16 +625,19 @@ const GENEL_ONARIM_MALIYET_PPM = 200_000;
  * (`acik`: ithalat emriyle kapatılır); (b) aşınma eşiği aşıldıysa ve onarım maliyeti (inşa maliyetinin %20'si) karşılanıyorsa `genel_onarim`
  * (karşılanmıyorsa eksik malzeme `acik`a eklenir).
  */
-function bakimKomutlari(g: Gorunum, dugum: BolgeDurumu): { komutlar: Komut[]; acik: Map<number, number> } {
+function bakimKomutlari(g: Gorunum, dugum: BolgeDurumu, parcaIthalati = true): { komutlar: Komut[]; acik: Map<number, number> } {
   const komutlar: Komut[] = [];
   const acik = new Map<number, number>();
   const saatlik = new Map<number, number>();
   for (const t of dugum.tesisler) {
     for (const [m, q] of g.bilgi.yontem[t.yontem]?.bakim ?? []) saatlik.set(m, (saatlik.get(m) ?? 0) + q);
   }
-  for (const [m, q] of saatlik) {
-    const elde = stok(g, dugum, m);
-    if (elde < q * 24) acik.set(m, q * 72 - elde);
+  // Süregiden bakım parçası ithalatı yalnız tam bakım yönetiminde (yalnız onarım yönetiminde yok: onarımın kendi malzeme açığı aşağıda)
+  if (parcaIthalati) {
+    for (const [m, q] of saatlik) {
+      const elde = stok(g, dugum, m);
+      if (elde < q * 24) acik.set(m, q * 72 - elde);
+    }
   }
   let hizmetVar = false;
   for (const i of g.d.insaatlar) if (i.tur === "onarim" && i.bolge === dugum.indeks) hizmetVar = true;
@@ -847,6 +856,8 @@ class Bot implements ParselBotu {
   private readonly tanim: Tanim;
   private readonly tarim: boolean;
   private readonly bakim: boolean;
+  /** Tam bakım yönetimi (süregiden parça ithalatı dahil); yalnız onarım yönetiminde false. */
+  private readonly bakimIthalati: boolean;
   private readonly baslangicMs: number;
   /** Açık ilçe kararı (`ilceSec`) kullanılıyor mu. */
   private readonly ilceSecAcik: boolean;
@@ -868,7 +879,8 @@ class Bot implements ParselBotu {
       const acilisAnahtari: GecAcilis = onayar === "gec_katilan" ? acilis : onayar === "sanayici" ? "sanayici" : onayar === "tuccar" ? "pazar" : "ciftci";
       this.ilceKarari = (sim: Simulasyon): IlceSecimi => ilceSec(sim, acilisAnahtari, { oyuncu, siralama: onayar === "gec_katilan" ? "emsal" : "doluluk", ayrilmisOnceligi: secenek.ayrilmisOnceligi !== false, ...(secenek.tohum !== undefined ? { tohum: secenek.tohum } : {}) });
     }
-    this.bakim = secenek.bakimYonetimi === true && onayar !== "pasif" && onayar !== "spekulator";
+    this.bakim = (secenek.bakimYonetimi === true || secenek.onarimYonetimi === true) && onayar !== "pasif" && onayar !== "spekulator";
+    this.bakimIthalati = secenek.bakimYonetimi === true;
     const gun = secenek.baslangicGun ?? 0;
     if (!Number.isSafeInteger(gun) || gun < 0) throw new Error(`parsel bot: baslangicGun negatif olmayan tamsayi olmali: ${String(secenek.baslangicGun)}`);
     this.baslangicMs = gun * 86_400_000;
@@ -1004,7 +1016,7 @@ class Bot implements ParselBotu {
     if (dugum !== undefined) {
       const tarim = this.tarim ? tarimKomutlari(g, dugum) : { komutlar: [] as Komut[], gubreAyir: 0 };
       komutlar.push(...tarim.komutlar);
-      const bakim = this.bakim ? bakimKomutlari(g, dugum) : { komutlar: [] as Komut[], acik: new Map<number, number>() };
+      const bakim = this.bakim ? bakimKomutlari(g, dugum, this.bakimIthalati) : { komutlar: [] as Komut[], acik: new Map<number, number>() };
       komutlar.push(...bakim.komutlar);
       komutlar.push(...ihracatEmirleri(g, dugum, ekTurler, tarim.gubreAyir));
       if (this.tanim.ithalat || this.bakim) {

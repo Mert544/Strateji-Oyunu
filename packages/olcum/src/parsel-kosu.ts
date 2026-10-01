@@ -79,6 +79,13 @@ export interface ParselKosuSecenek {
   tarimYonetimi?: boolean;
   /** Bakım yönetimi (parça ithalatı + genel onarım) açık botlar; pasif/spekülatör etkilenmez. Vars. kapalı. */
   bakimYonetimi?: boolean;
+  /** Yalnız onarım yönetimi (parça ithalatı yok; aşınma eşiğinde genel onarım + onarımın malzeme ithalatı). Vars. kapalı; `bakimYonetimi` önceliklidir. */
+  onarimYonetimi?: boolean;
+  /**
+   * Parametre ayarı (ölçüm duyarlılığı; VERİ KOPYASIYLA, `parametreler.json` değişmez): noktalı yol -> sayı (ör. `sanayi.bakim.kitlikAsinmaPpmGun`,
+   * dizi indeksi sayı: `sanayi.bakim.duzeyler.0.asinmaPpmGun`). Yol param'da mevcut ve sayı olmalı; yoksa koşu başlamadan hata verir. Vars. yok.
+   */
+  paramAyar?: Readonly<Record<string, number>>;
   /** Yaşlı spekülatörün alıma başladığı yaş (gün; vars. 15 = ayrılmış hücre süresi 14 gün bittikten sonra). */
   spekulatorGun?: number;
   /**
@@ -354,6 +361,29 @@ export function yurtKapat(veri: CekirdekVeriPaketi, kapali: boolean): CekirdekVe
   return { ...veri, param: { ...veri.param, mulk: { ...mulk, yeniOyuncu: { ...mulk.yeniOyuncu, yurtAyrilmisSonra: false } } } };
 }
 
+/**
+ * `paramAyar` noktalı yol -> sayı ayarlarını veri paketinin `param` KOPYASINA uygular (girdi paketi ve `parametreler.json` değişmez; yalnız `param` derin kopyalanır).
+ * Yol mevcut ve sayı olmalı (yazım hatası sessizce yutulmaz); dizi indeksi yol parçası olarak yazılır.
+ */
+export function paramAyarla(veri: CekirdekVeriPaketi, ayar: Readonly<Record<string, number>> | undefined): CekirdekVeriPaketi {
+  if (ayar === undefined || Object.keys(ayar).length === 0) return veri;
+  const param = structuredClone(veri.param) as unknown as Record<string, unknown>;
+  for (const [yol, deger] of Object.entries(ayar)) {
+    if (!Number.isSafeInteger(deger)) throw new Error(`paramAyar: ${yol} tamsayi olmali: ${String(deger)}`);
+    const parcalar = yol.split(".");
+    let dugum: unknown = param;
+    for (const p of parcalar.slice(0, -1)) {
+      dugum = typeof dugum === "object" && dugum !== null ? (dugum as Record<string, unknown>)[p] : undefined;
+      if (dugum === undefined || dugum === null) throw new Error(`paramAyar: yol param'da yok: ${yol} ('${p}')`);
+    }
+    const son = parcalar[parcalar.length - 1] as string;
+    const kap = dugum as Record<string, unknown>;
+    if (typeof kap !== "object" || typeof kap[son] !== "number") throw new Error(`paramAyar: ${yol} param'da sayi degil ya da yok`);
+    kap[son] = deger;
+  }
+  return { ...veri, param: param as unknown as CekirdekVeriPaketi["param"] };
+}
+
 export function p3bKapat(veri: CekirdekVeriPaketi, kapali: boolean): CekirdekVeriPaketi {
   if (!kapali) return veri;
   const mulk = veri.param.mulk;
@@ -392,7 +422,7 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
   const duzen = parselDuzeni(secenek.yerlesik, gecAcilislari, gecGun, secenek.spekulatorGun ?? VARSAYILAN_SPEKULATOR_GUN);
   const harita = secenek.harita ?? "mini-6";
   const temel: CekirdekVeriPaketi = secenek.veri ?? (harita === "sentetik-50" ? { ...varsayilanVeriyiYukle(), parsel: parselFiksturuYukle("sentetik-50") } : { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") });
-  const veri = yurtKapat(p3bKapat(iklimUygula(temel as VeriPaketi, secenek.iklim ?? "hizli", tohum) as CekirdekVeriPaketi, secenek.p3bKapali === true), secenek.yurtKapali === true);
+  const veri = paramAyarla(yurtKapat(p3bKapat(iklimUygula(temel as VeriPaketi, secenek.iklim ?? "hizli", tohum) as CekirdekVeriPaketi, secenek.p3bKapali === true), secenek.yurtKapali === true), secenek.paramAyar);
   const pencereGun = Math.min(7, olcumGunu);
 
   const botTohumu = etkinBotTohumu(secenek.botTohum, tohum);
@@ -402,6 +432,7 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
       ...(o.acilis === null ? {} : { acilis: o.acilis }),
       ...(secenek.tarimYonetimi === true ? { tarimYonetimi: true } : {}),
       ...(secenek.bakimYonetimi === true ? { bakimYonetimi: true } : {}),
+      ...(secenek.onarimYonetimi === true ? { onarimYonetimi: true } : {}),
       ...(secenek.yerlesikIlceSec === true && o.onayar !== "gec_katilan" ? { ilceSec: true } : {}),
       ...(secenek.ayrilmisOnceligi === false ? { ayrilmisOnceligi: false } : {}),
       ...(botTohumu !== undefined ? { tohum: botTohumu } : {}),

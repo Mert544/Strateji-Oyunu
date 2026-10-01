@@ -21,5 +21,5 @@ export { parselAna, parselArgumanAyristir, PARSEL_VARSAYILAN_TOHUM, PARSEL_AGIR_
 export type { ParselArguman } from "./parsel-cli";
 export { BakimIzleyici, BAKIM_OLCUM_GUNLERI } from "./parsel-bakim";
 export type { ParselBakimOlcumu, ParselBakimOyuncu, BakimDonemi } from "./parsel-bakim";
-export { bakimOzetiUret, yuzdelik } from "./parsel-bakim-rapor";
+export { bakimOzetiUret, bakimIzgarasiUret, yuzdelik } from "./parsel-bakim-rapor";
 export type { BakimOzetKosusu } from "./parsel-bakim-rapor";

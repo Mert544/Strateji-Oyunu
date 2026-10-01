@@ -30,6 +30,10 @@ export interface ParselRaporMeta {
   yerlesikIlceSec?: boolean;
   /** Bakım yönetimi açık mıydı (parça ithalatı + genel onarım). */
   bakimYonetimi?: boolean;
+  /** Yalnız onarım yönetimi açık mıydı (parça ithalatı yok). */
+  onarimYonetimi?: boolean;
+  /** Parametre ayarı (veri kopyası; parametreler.json değişmedi). */
+  paramAyar?: Readonly<Record<string, number>>;
   /** Yaşlı spekülatörün alıma başladığı yaş (gün). */
   spekulatorGun?: number;
   /** Ayrıştırma ayarları: ilceSec ayrılmış önceliği (vars. true = AÇIK) ve P3b çok hesap kuralları kapalı mı (vars. false = AÇIK). */
@@ -219,6 +223,8 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
   k.push(`| Harita | ${meta.harita ?? "mini-6"} |`);
   k.push(`| Tarım yönetimi | ${meta.tarimYonetimi === true ? "AÇIK (ekim planı + gübre dozu; pasif ve spekülatör hariç)" : "kapalı"} |`);
   k.push(`| Bakım yönetimi | ${meta.bakimYonetimi === true ? "AÇIK (parça ithalatı + aşınma eşiğinde genel onarım; pasif ve spekülatör hariç)" : "kapalı"} |`);
+  if (meta.onarimYonetimi === true) k.push(`| Onarım yönetimi | AÇIK (yalnız aşınma eşiğinde genel onarım; süregiden bakım parçası ithalatı YOK; onarımın malzeme açığı ithal edilir) |`);
+  if (meta.paramAyar !== undefined && Object.keys(meta.paramAyar).length > 0) k.push(`| PARAMETRE AYARI | ${Object.entries(meta.paramAyar).map(([y, d]) => `\`${y}\`=${d}`).join(", ")} (koşucu seçeneği: veri kopyası; parametreler.json değişmedi) |`);
   if (meta.botTohum !== undefined) k.push(`| BOT TOHUMU (varyans) | ${meta.botTohum} (bot katılım/karar sırası karışık, tam eşit seçimler tohumlu; koşu tohumuyla birleşir) |`);
   if (meta.ayrilmisOnceligi === false) k.push("| AYRIŞTIRMA: ilceSec ayrılmış önceliği | **KAPALI** (ayak izine yeten ilçe öne alınmaz; eski sıra: il tercihi, emsal, doluluk, kimlik) |");
   if (meta.yurtKapali === true) k.push("| AYRIŞTIRMA: P3d yurt kuralı (yurt önce ayrılmış dışından) | **KAPALI** (koşucu seçeneği: yurt ayrılmış hücreleri de kullanabilir; parametreler.json değişmedi) |");

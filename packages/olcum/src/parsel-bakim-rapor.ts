@@ -4,6 +4,7 @@
  * Gruplar: yerleşik çiftçi, sanayici, tüccar (onayar) ve geç katılanlar (açılışa göre); medyanlar tohumlar ve oyuncular üzerinden havuzlanır.
  */
 import { MILI } from "@bolge/cekirdek";
+import { miniVeriyiYukle } from "@bolge/veri";
 import { olguKarsilastirmasi, parselOzetle, tl, verdictAd, yuzde } from "./parsel-rapor";
 import type { ParselTohumSonucu } from "./parsel-kosu";
 import type { BakimDonemi, ParselBakimOlcumu } from "./parsel-bakim";
@@ -14,6 +15,8 @@ export interface BakimOzetKosusu {
     etiket?: string;
     tarimYonetimi?: boolean;
     bakimYonetimi?: boolean;
+    onarimYonetimi?: boolean;
+    paramAyar?: Record<string, number>;
     tohumlar?: number[];
     gun?: number;
     gecGun?: number;
@@ -57,7 +60,8 @@ function ad(k: BakimOzetKosusu): string {
 }
 
 function yonetimAd(k: BakimOzetKosusu): string {
-  return `tarım ${k.json.tarimYonetimi === true ? "AÇIK" : "kapalı"} · bakım ${k.json.bakimYonetimi === true ? "AÇIK" : "kapalı"}`;
+  const ayar = k.json.paramAyar !== undefined && Object.keys(k.json.paramAyar).length > 0 ? ` · ayar ${Object.entries(k.json.paramAyar).map(([y, d]) => `${y.replace(/^sanayi\.bakim\./, "")}=${d}`).join(",")}` : "";
+  return `tarım ${k.json.tarimYonetimi === true ? "AÇIK" : "kapalı"} · bakım ${k.json.bakimYonetimi === true ? "AÇIK" : k.json.onarimYonetimi === true ? "yalnız onarım" : "kapalı"}${ayar}`;
 }
 
 /** Havuzlanmış oyuncu kayıtları: [grup, oyuncu özeti, bakım izi] (tohumlar üzerinden). */
@@ -355,6 +359,115 @@ export function bakimOzetiUret(kosular: readonly BakimOzetKosusu[], meta: { etik
     k.push("");
   }
   k.push("Notlar: saat başına bir örnek; \"gün N sonu\" = N × 24. saat. \"Stoğu 1 parçanın altına inen\": serideki ilk gün sonu ölçümünde parça stoğu 1 parçadan az olan oyuncu sayısı / yalnız gün 0'da katılanlar.");
+
+  // 7. Parça ithalatı zamanlaması
+  const ithalatli = kosular.filter((c) => oyuncular(c).some((x) => x.bakim.toplam.akis.parcaIthalat > 0 && x.grup !== "gec"));
+  if (ithalatli.length > 0) {
+    k.push("## 7. Bakım parçası ithalatının zamanlaması (gün düzeyi; yalnız gün 0'da katılan yerleşik oyuncular)");
+    k.push("");
+    k.push("İthalat günü = o gün saatlik örneklerde parça ithalatı nakit bedeli > 0 olan gün. Dönem payları toplam ithalatın gün 1–30, 31–60 ve 61–son gün paylarıdır. \"Haftalık ort. / Y7 net\" = (toplam parça ithalatı / (gün sayısı / 7)) ÷ son 7 günlük net üretim geliri (Y7 ölçüsü parça giderini görmeyen pencerede ne kadar sapma olduğunu verir: son 7 günlük gerçek ithalat ayrı satırdadır).");
+    k.push("");
+    for (const c of ithalatli) {
+      const o = oyuncular(c).filter((x) => x.grup !== "gec" && x.bakim.katilmaGun === 0 && x.bakim.gunluk.length > 0);
+      k.push(`### ${ad(c)} (${yonetimAd(c)})`);
+      k.push("");
+      const satir: string[][] = [];
+      for (const g of ["ciftci", "sanayici", "tuccar"] as const) {
+        const ayni = o.filter((x) => x.grup === g);
+        const gun = (x: (typeof ayni)[number]): number[] => x.bakim.gunluk.map((d, i) => (d[0] > 0 ? i + 1 : 0)).filter((d) => d > 0);
+        const toplam = (x: (typeof ayni)[number]): number => x.bakim.gunluk.reduce((t, d) => t + d[0], 0);
+        const pay = (x: (typeof ayni)[number], a2: number, b2: number): number => {
+          const t = toplam(x);
+          return t === 0 ? 0 : Math.floor((x.bakim.gunluk.slice(a2 - 1, b2).reduce((u, d) => u + d[0], 0) * 1_000_000) / t);
+        };
+        const aralik = ayni.flatMap((x) => {
+          const gl = gun(x);
+          return gl.slice(1).map((d, i) => d - (gl[i] as number));
+        });
+        const hafta = (x: (typeof ayni)[number]): number => Math.floor(toplam(x) / (x.bakim.gunluk.length / 7));
+        const oran = (x: (typeof ayni)[number]): number => (x.ozet.gelir7Gun <= 0 ? 0 : Math.floor((hafta(x) * 1_000_000) / x.ozet.gelir7Gun));
+        satir.push([
+          GRUP_AD[g],
+          String(ayni.length),
+          medP(ayni.map((x) => gun(x).length), (v) => String(v)),
+          medP(ayni.map((x) => gun(x)[0] ?? 0), (v) => String(v)),
+          medP(ayni.map((x) => gun(x).at(-1) ?? 0), (v) => String(v)),
+          medP(ayni.map((x) => pay(x, 1, 30)), yuzde),
+          medP(ayni.map((x) => pay(x, 31, 60)), yuzde),
+          medP(ayni.map((x) => pay(x, 61, x.bakim.gunluk.length)), yuzde),
+          medP(aralik, (v) => String(v)),
+          medP(ayni.map(toplam), tl),
+          medP(ayni.map((x) => x.bakim.pencere.akis.parcaIthalat), tl),
+          medP(ayni.map(hafta), tl),
+          medP(ayni.map(oran), yuzde),
+        ]);
+      }
+      k.push(tablo(["Grup", "Oyuncu", "İthalat günü sayısı", "İlk ithalat günü", "Son ithalat günü", "Pay gün 1–30", "Pay gün 31–60", "Pay gün 61–son", "İthalat günleri arası (gün)", "Toplam ithalat", "Son 7 gün ithalatı", "Haftalık ortalama ithalat", "Haftalık ort. / Y7 net"], satir));
+      k.push("");
+      // Örnek: tohum 1'in ilk oyuncusu, ithalat olan günler
+      const orn: string[] = [];
+      for (const g of ["ciftci", "sanayici", "tuccar"] as const) {
+        const x = o.find((y) => y.grup === g && y.tohum === (o[0]?.tohum ?? 1));
+        if (x === undefined) continue;
+        const l = x.bakim.gunluk.map((d, i) => (d[0] > 0 ? `g${i + 1}: ${tl(d[0])}` : "")).filter((t) => t !== "");
+        orn.push(`**${GRUP_AD[g]} (örnek oyuncu, ilk tohum)** — ${l.length} ithalat günü: ${l.join("; ") || "yok"}.`);
+      }
+      k.push(...orn.map((t) => `- ${t}`));
+      k.push("");
+    }
+  }
+
+  // 8. Tesis türü başına başabaş (mevcut içerikten)
+  {
+    const turAdlari = new Set<string>();
+    for (const c of kosular) for (const t of c.json.tohumBasina) for (const tur of t.bakim?.turAdlari ?? []) turAdlari.add(tur);
+    const kullanilan = new Set<string>();
+    for (const c of kosular) for (const t of c.json.tohumBasina) for (const b of t.bakim?.oyuncular ?? []) for (const an of b.anlar) for (const ts of an.tesisler) kullanilan.add((t.bakim?.turAdlari ?? [])[ts[0]] ?? "");
+    const veri = miniVeriyiYukle();
+    const fiyat = new Map(veri.icerik.mallar.map((m) => [m.id, m.tabanFiyat] as const));
+    const yontem = new Map(veri.icerik.yontemler.map((y) => [y.id, y] as const));
+    const parcaFiyat = fiyat.get("parca") ?? 0;
+    const ilkKosu = kosular[0];
+    const ayar = ilkKosu?.json.paramAyar ?? {};
+    const tavan = ayar["sanayi.bakim.asinmaVerimKaybiTavaniPpm"] ?? veri.param.sanayi?.bakim.asinmaVerimKaybiTavaniPpm ?? 0;
+    const deger = (kayit: Record<string, number>): number => Object.entries(kayit).reduce((t, [m, q]) => t + Math.floor((q * (fiyat.get(m) ?? 0)) / MILI), 0);
+    k.push("## 8. Tesis türü başına bakım başabaşı (içerik tablosundan; tam verim ve tam kadro, taban fiyat)");
+    k.push("");
+    k.push(`Eşik: T = aşınmanın verim kaybı tavanı = ${yuzde(tavan)}; (1 − T) / T = ${ondalik(tavan === 0 ? 0 : (1_000_000 - tavan) / tavan, 3)}, 1 / T = ${ondalik(tavan === 0 ? 0 : 1_000_000 / tavan, 3)}. **R** = katma değer (çıktı − girdi değeri) / bakım parçası maliyeti (parça/sa × parça taban fiyatı ${tl(parcaFiyat)}); "R ≥ (1−T)/T": bakımsız çıktı baz alındığında bakım kazandırır (A2 tanımı); "R ≥ 1/T": bakımlı çıktı baz alındığında. Değerler ₺/saat ve taban fiyatlıdır (pazar fiyatı ve ithalat çarpanı hariç); girdisi ya da çıktısı pazarda taban fiyatı olmayan mal 0 sayılır. Doğrudan değerdir: santralin elektriği tesislerin girdisidir, dolaylı değeri (zincir) burada yoktur.`);
+    k.push("");
+    const satir: string[][] = [];
+    for (const tur of [...turAdlari].sort()) {
+      if (!kullanilan.has(tur)) continue;
+      const td = veri.icerik.tesisTurleri.find((x) => x.id === tur);
+      const y = td === undefined ? undefined : yontem.get(td.yontemler[0] as string);
+      if (y === undefined) continue;
+      const parca = Object.entries(y.bakim).reduce((t, [m, q]) => t + (m === "parca" ? q : 0), 0);
+      const parcaMal = deger({ parca: parca });
+      const cikti = deger(y.ciktilar);
+      const girdi = deger(y.girdiler);
+      const katma = cikti - girdi;
+      const r = parcaMal === 0 ? null : katma / parcaMal;
+      satir.push([tur, y.id, birim(parca), tl(parcaMal), tl(cikti), tl(girdi), tl(katma), r === null ? "—" : ondalik(r, 2), r === null || tavan === 0 ? "—" : r >= (1_000_000 - tavan) / tavan ? "evet" : "HAYIR", r === null || tavan === 0 ? "—" : r >= 1_000_000 / tavan ? "evet" : "HAYIR"]);
+    }
+    k.push(tablo(["Tesis türü", "İlk yöntem", "Bakım parçası (parça/sa)", "Parça maliyeti (₺/sa)", "Çıktı değeri (₺/sa)", "Girdi değeri (₺/sa)", "Katma değer (₺/sa)", "R", "R ≥ (1−T)/T", "R ≥ 1/T"], satir));
+    k.push("");
+    // Ölçülen verim (bakımsız koşuların son ölçüm anı) — yönetimsiz koşu varsa
+    const yonetimsiz = kosular.find((c) => c.json.bakimYonetimi !== true && c.json.onarimYonetimi !== true);
+    if (yonetimsiz !== undefined) {
+      const o = oyuncular(yonetimsiz).filter((x) => x.grup !== "gec");
+      const son = Math.max(0, ...o.flatMap((x) => x.bakim.anlar.map((a) => a.gun)));
+      const turAd = yonetimsiz.json.tohumBasina.find((t) => t.bakim !== undefined)?.bakim?.turAdlari ?? [];
+      const satir2: string[][] = [];
+      for (const tur of [...turAdlari].sort()) {
+        const v = o.flatMap((x) => x.bakim.anlar.filter((a) => a.gun === son).flatMap((a) => a.tesisler.filter((t) => turAd[t[0]] === tur).map((t) => t[2])));
+        if (v.length > 0) satir2.push([tur, String(v.length), medP(v, yuzde)]);
+      }
+      k.push(`Yönetimsiz koşuda (${ad(yonetimsiz)}) ${son}. günde ölçülen verim (\`verimPpm\`, yerleşik oyuncular, medyan (p10–p90)):`);
+      k.push("");
+      k.push(tablo(["Tesis türü", "n", "Verim"], satir2));
+      k.push("");
+    }
+  }
   k.push("");
   return k.join("\n");
 }
@@ -369,3 +482,65 @@ function k_esikler(c: BakimOzetKosusu, g: Grup): Array<{ saat50: number | null; 
   return s;
 }
 
+
+/**
+ * Duyarlılık ızgarası özeti (`--bakim-izgara`): her (kıtlık aşınması, ceza tavanı) ayarı için bakımsız (yönetim kapalı) ve bakımlı (bakım AÇIK) koşu çiftinin
+ * yerleşik gelirleri (çiftçi, sanayici, tüccar AYRI satır), bakımlı/bakımsız oranı, Y7 oyuncu payı ve geç katılan gelir/emsal oranı. Yorum yoktur.
+ * Girdi: `--bakim-olc` açık olması gerekmez (yalnız oyuncu özetleri ve H6 olguları okunur). Ayar anahtarları `sanayi.bakim.*` JSON `paramAyar`ından okunur;
+ * ayarı olmayan koşu "varsayılan" sayılır.
+ */
+export function bakimIzgarasiUret(kosular: readonly BakimOzetKosusu[], meta: { etiket?: string; bulgular: string }): string {
+  const k: string[] = [];
+  k.push(`# Parsel ölçümü — bakım duyarlılık ızgarası (${meta.etiket ?? "bakim-izgara"})`);
+  k.push("");
+  k.push("Her satır bir (kıtlık aşınması `kitlikAsinmaPpmGun`, ceza tavanı `asinmaVerimKaybiTavaniPpm`) ayarıdır; bakımsız = yönetim kapalı, bakımlı = bakım yönetimi AÇIK. Gelir = yerleşik oyuncunun son 7 gün net üretim geliri, oyuncu başına medyan (tohumlar ve oyuncular üzerinden havuzlanmış). **Yorum yoktur**; kalibrasyon yorumu Ar-Ge'nindir.");
+  k.push("");
+  k.push(`**Bulgular ve yorum (elle yazılmış):** [${meta.bulgular}](${meta.bulgular})`);
+  k.push("");
+  const anahtar = (c: BakimOzetKosusu): string => `${c.json.paramAyar?.["sanayi.bakim.kitlikAsinmaPpmGun"] ?? "vars"}|${c.json.paramAyar?.["sanayi.bakim.asinmaVerimKaybiTavaniPpm"] ?? "vars"}`;
+  const gruplar = new Map<string, { bakimsiz?: BakimOzetKosusu; bakimli?: BakimOzetKosusu }>();
+  for (const c of kosular) {
+    const e = gruplar.get(anahtar(c)) ?? {};
+    if (c.json.bakimYonetimi === true) e.bakimli = c;
+    else e.bakimsiz = c;
+    gruplar.set(anahtar(c), e);
+  }
+  const sirali = [...gruplar.entries()].sort((a, b) => {
+    const [ak, at] = a[0].split("|").map((x) => (x === "vars" ? -1 : Number(x)));
+    const [bk, bt] = b[0].split("|").map((x) => (x === "vars" ? -1 : Number(x)));
+    return (ak as number) - (bk as number) || (at as number) - (bt as number);
+  });
+  const gelirMed = (c: BakimOzetKosusu | undefined, g: Grup): number | null => {
+    if (c === undefined) return null;
+    return medyan(oyuncular(c).filter((x) => x.grup === g).map((x) => x.ozet.gelir7Gun));
+  };
+  const oranG = (a: number | null, b: number | null): string => (a === null || b === null || a <= 0 ? "—" : yuzde(Math.floor((b * 1_000_000) / a)));
+  k.push("## 1. Yerleşik oyuncu geliri (7 gün, ₺): bakımsız | bakımlı | bakımlı/bakımsız");
+  k.push("");
+  const satir1: string[][] = [];
+  for (const [ky, e] of sirali) {
+    const [kit, tav] = ky.split("|");
+    const hucre = (g: Grup): string => {
+      const a = gelirMed(e.bakimsiz, g);
+      const b = gelirMed(e.bakimli, g);
+      return `${a === null ? "—" : tl(a)} | ${b === null ? "—" : tl(b)} | ${oranG(a, b)}`;
+    };
+    satir1.push([kit === "vars" ? "varsayılan" : String(kit), tav === "vars" ? "varsayılan" : String(tav), hucre("ciftci"), hucre("sanayici"), hucre("tuccar")]);
+  }
+  k.push(tablo(["Kıtlık aşınması (ppm/gün)", "Ceza tavanı (ppm)", "Çiftçi", "Sanayici", "Tüccar"], satir1));
+  k.push("");
+  k.push("## 2. Y7 ve geç katılan gelir/emsal (tohum ortalaması): bakımsız | bakımlı");
+  k.push("");
+  const satir2: string[][] = [];
+  for (const [ky, e] of sirali) {
+    const [kit, tav] = ky.split("|");
+    const y = (c: BakimOzetKosusu | undefined): string => (c === undefined ? "—" : yuzdeHucre(parselOzetle(c.json.tohumBasina).h6.y7PayiPpm));
+    const og = (c: BakimOzetKosusu | undefined, a: string): string => (c === undefined ? "—" : yuzdeHucre(olguKarsilastirmasi(c.json.tohumBasina)[a]?.gelirOranPpm ?? null));
+    satir2.push([kit === "vars" ? "varsayılan" : String(kit), tav === "vars" ? "varsayılan" : String(tav), `${y(e.bakimsiz)} | ${y(e.bakimli)}`, ...["ciftci", "sanayici", "pazar"].map((a) => `${og(e.bakimsiz, a)} | ${og(e.bakimli, a)}`)]);
+  }
+  k.push(tablo(["Kıtlık aşınması", "Ceza tavanı", "Y7 oyuncu payı", "Geç çiftçi/emsal", "Geç sanayici/emsal", "Geç pazar/emsal"], satir2));
+  k.push("");
+  k.push("Koşular: " + kosular.map((c) => `${ad(c)} (${yonetimAd(c)}; tohum ${(c.json.tohumlar ?? []).join(",")})`).join("; ") + ".");
+  k.push("");
+  return k.join("\n");
+}
