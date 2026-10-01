@@ -543,7 +543,7 @@ function pazarKontrolu(hatalar: string[], p: Parametreler["pazar"]): void {
 export const MULK_ENCOK_AYAK_IZI = 5;
 
 /** Mülk ölçek tablosu (docs/06 §15.10): her `yapiYuva` türü için `olcekHucre` = [S, M, L]; S = yuva, M >= S, L >= M; süre çarpanları azalmaz. */
-function mulkKontrolu(hatalar: string[], k: NonNullable<Parametreler["mulk"]>): void {
+function mulkKontrolu(hatalar: string[], k: NonNullable<Parametreler["mulk"]>, sanayi?: Parametreler["sanayi"]): void {
   for (const [tur, yuva] of Object.entries(k.yapiYuva)) {
     const o = k.olcekHucre[tur];
     if (o === undefined) {
@@ -580,6 +580,17 @@ function mulkKontrolu(hatalar: string[], k: NonNullable<Parametreler["mulk"]>): 
   for (const [id, v] of Object.entries(k.yontemGecersizKilma ?? {})) {
     if (v.ciktiPpm > 2_000_000) hatalar.push(`mulk.yontemGecersizKilma.${id}.ciktiPpm: en fazla 2000000 olabilir`);
   }
+  // Mülk bakımı C (sartname §5.10, V18): aralıklar şemadadır (çarpan (0, 2 000 000], tavan [0, 1 000 000], parça çarpanı (0, 2 000 000]);
+  // türev sınır: çarpılmış aşınma değerleri sanayi şemasının sınırında [-1 000 000, 1 000 000] kalmalı. Yöntem kimliği ve bakım miktarı kuralları (V19) Node dogrulayıcısındadır.
+  const hiz = k.bakim?.asinmaHizCarpaniPpm;
+  if (hiz !== undefined && sanayi !== undefined) {
+    const sinir = (yol: string, v: number): void => {
+      const c = Math.floor((v * hiz) / 1_000_000);
+      if (c < -1_000_000 || c > 1_000_000) hatalar.push(`mulk.bakim.asinmaHizCarpaniPpm: ${yol} (${v}) carpanla ${c} olur; [-1000000, 1000000] disina cikar`);
+    };
+    sanayi.bakim.duzeyler.forEach((d, i) => sinir(`sanayi.bakim.duzeyler[${i}].asinmaPpmGun`, d.asinmaPpmGun));
+    sinir("sanayi.bakim.kitlikAsinmaPpmGun", sanayi.bakim.kitlikAsinmaPpmGun);
+  }
 }
 
 /** Şema + (içerik verilirse) mal ve birlik kimliklerinin geçerliliği. */
@@ -608,7 +619,7 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
   if (p.iklim !== undefined) iklimKontrolu(hatalar, p.iklim);
   if (p.sanayi !== undefined) sanayiKontrolu(hatalar, p.sanayi);
   pazarKontrolu(hatalar, p.pazar);
-  if (p.mulk !== undefined) mulkKontrolu(hatalar, p.mulk);
+  if (p.mulk !== undefined) mulkKontrolu(hatalar, p.mulk, p.sanayi);
 
   if (icerik !== undefined) {
     const mallar = new Set(icerik.mallar.map((m) => m.id));

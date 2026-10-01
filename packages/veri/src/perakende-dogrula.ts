@@ -124,6 +124,27 @@ export function dogrulaPerakende(paket: Pick<VeriPaketi, "icerik" | "param">, se
   const yontemler = new Set(ic.yontemler.map((y) => y.id));
   for (const id of Object.keys(mulk?.yontemGecersizKilma ?? {})) if (!yontemler.has(id)) hatalar.push(`yontemGecersizKilma: bilinmeyen yontem: ${id}`);
 
+  // V19: mulk.bakim (sartname §5.10; blok yoksa sessiz). `yontemParcaPpm` anahtarları içerik yöntemleridir, yöntemin `bakim` girdisi boş olamaz (ölü ayar) ve her miktar
+  // çarpandan sonra >= 1 kalmalı; sanayi parametresi yoksa aşınma ayarları ölü ayardır (uyarı; aşınma yalnız sanayi açıkken çalışır).
+  const bakimBlogu = mulk?.bakim;
+  if (bakimBlogu !== undefined) {
+    if (paket.param.sanayi === undefined && (bakimBlogu.asinmaHizCarpaniPpm !== undefined || bakimBlogu.asinmaVerimKaybiTavaniPpm !== undefined)) {
+      uyarilar.push("mulk.bakim: sanayi parametresi yok; asinmaHizCarpaniPpm ve asinmaVerimKaybiTavaniPpm olu ayar (asinma yalniz sanayi aciksa calisir)");
+    }
+    const yontemTablosu = new Map(ic.yontemler.map((y) => [y.id, y]));
+    for (const yid of Object.keys(bakimBlogu.yontemParcaPpm ?? {}).sort()) {
+      const ppm = (bakimBlogu.yontemParcaPpm as Record<string, number>)[yid] as number;
+      const y = yontemTablosu.get(yid);
+      if (y === undefined) {
+        hatalar.push(`mulk.bakim.yontemParcaPpm: bilinmeyen yontem: ${yid}`);
+        continue;
+      }
+      const miktarlar = Object.values(y.bakim);
+      if (miktarlar.length === 0) hatalar.push(`mulk.bakim.yontemParcaPpm: bakim bos: ${yid}`);
+      else if (miktarlar.some((q) => Math.floor((q * ppm) / 1_000_000) < 1)) hatalar.push(`mulk.bakim.yontemParcaPpm: miktar 0'a iner: ${yid}`);
+    }
+  }
+
   return hatalar.length === 0 ? { gecerli: true, uyarilar } : { gecerli: false, hatalar, uyarilar };
 }
 

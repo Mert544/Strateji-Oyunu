@@ -3,6 +3,7 @@ import {
   dogrulaHarita,
   dogrulaIcerik,
   dogrulaParametreler,
+  dogrulaPerakende,
   dogrulaVeriPaketi,
   miniVeriyiYukle,
   MINI_HARITA_SECENEKLERI,
@@ -451,5 +452,81 @@ describe("mulk.ekYapilar.<yapı>.olcekHucre (G7 için isteğe bağlı, etkisiz)"
     expect(dene([yuva, yuva + 1])).not.toBe("");
     expect(dene([yuva, yuva + 1, yuva + 2, yuva + 3])).not.toBe("");
     expect(dene("1,2,3")).not.toBe("");
+  });
+});
+
+describe("mulk.bakim (bakım C, sartname §5.10): V18 şema ve türev sınır, V19 içerik çaprazı", () => {
+  const paket = (bakim: unknown) => {
+    const v = miniVeriyiYukle();
+    (v.param.mulk as { bakim?: unknown }).bakim = bakim;
+    return v;
+  };
+  const prm = (bakim: unknown): string => {
+    const v = paket(bakim);
+    return hatalar(dogrulaParametreler(v.param, v.icerik)).join("\n");
+  };
+  const icerik = (bakim: unknown, duzenle?: (v: ReturnType<typeof miniVeriyiYukle>) => void): { hata: string; uyari: string } => {
+    const v = paket(bakim);
+    duzenle?.(v);
+    const r = dogrulaPerakende(v);
+    return { hata: r.gecerli ? "" : r.hatalar.join("\n"), uyari: r.uyarilar.join("\n") };
+  };
+
+  it("blok yok, boş blok ve kimlik değerleri geçerli (no-op)", () => {
+    const v = miniVeriyiYukle();
+    expect(v.param.mulk?.bakim).toBeUndefined();
+    expect(prm(undefined)).toBe("");
+    expect(prm({})).toBe("");
+    expect(prm({ asinmaHizCarpaniPpm: 1_000_000, asinmaVerimKaybiTavaniPpm: 400_000, yontemParcaPpm: {} })).toBe("");
+    expect(icerik({}).hata).toBe("");
+  });
+
+  it("V18 aralıklar: çarpan (0, 2 000 000]; tavan [0, 1 000 000]; parça çarpanı (0, 2 000 000]; her ret için geçerli karşıt değer", () => {
+    expect(prm({ asinmaHizCarpaniPpm: 500_000, asinmaVerimKaybiTavaniPpm: 250_000, yontemParcaPpm: { yuzey_cevher: 200_000 } })).toBe("");
+    expect(prm({ asinmaHizCarpaniPpm: 2_000_000 })).toBe(""); // üst sınır dahil
+    expect(prm({ asinmaVerimKaybiTavaniPpm: 0 })).toBe("");
+    expect(prm({ asinmaVerimKaybiTavaniPpm: 1_000_000 })).toBe("");
+    expect(prm({ asinmaHizCarpaniPpm: 0 })).not.toBe("");
+    expect(prm({ asinmaHizCarpaniPpm: 2_000_001 })).toContain("en fazla 2000000");
+    expect(prm({ asinmaVerimKaybiTavaniPpm: 1_000_001 })).not.toBe("");
+    expect(prm({ asinmaVerimKaybiTavaniPpm: -1 })).not.toBe("");
+    expect(prm({ yontemParcaPpm: { yuzey_cevher: 0 } })).not.toBe("");
+    expect(prm({ yontemParcaPpm: { yuzey_cevher: 2_000_001 } })).toContain("en fazla 2000000");
+    expect(prm({ asinmaHizCarpaniPpm: 0.5 })).toContain("tamsayi");
+    expect(prm({ bilinmeyen: 1 })).not.toBe(""); // .strict()
+  });
+
+  it("V18 türev sınır: çarpılmış aşınma değeri sanayi şemasının sınırını aşamaz (sanayi.bakim değerleri bugünkü: +20000, 0, -15000; kıtlık 20000)", () => {
+    expect(prm({ asinmaHizCarpaniPpm: 50_000_000 })).not.toBe(""); // şema üst sınırı (zaten)
+    const v = paket({ asinmaHizCarpaniPpm: 2_000_000 });
+    expect(hatalar(dogrulaParametreler(v.param, v.icerik))).toEqual([]); // 20000 x 2 = 40000: sınır içinde
+    const w = paket({ asinmaHizCarpaniPpm: 2_000_000 });
+    w.param.sanayi!.bakim.duzeyler[0]!.asinmaPpmGun = 900_000; // x2 = 1 800 000 > 1 000 000
+    expect(hatalar(dogrulaParametreler(w.param, w.icerik)).join("\n")).toContain("mulk.bakim.asinmaHizCarpaniPpm: sanayi.bakim.duzeyler[0].asinmaPpmGun (900000) carpanla 1800000 olur");
+    const z = paket({ asinmaHizCarpaniPpm: 1_000_000 });
+    z.param.sanayi!.bakim.duzeyler[0]!.asinmaPpmGun = 900_000; // çarpan 1: aynı değer sınır içinde
+    expect(hatalar(dogrulaParametreler(z.param, z.icerik))).toEqual([]);
+  });
+
+  it("V19: yontemParcaPpm anahtarı içerik yöntemi olmalı; bakım girdisi boş yöntem ölü ayar; miktar 0'a inmemeli (1000 x 0,2 = 200 ve 2000 x 0,2 = 400 geçer)", () => {
+    expect(icerik({ yontemParcaPpm: { yuzey_cevher: 200_000, hidro_santrali: 200_000 } }).hata).toBe("");
+    expect(icerik({ yontemParcaPpm: { olmayan_yontem: 200_000 } }).hata).toBe("mulk.bakim.yontemParcaPpm: bilinmeyen yontem: olmayan_yontem");
+    // bakım girdisi boş yöntem (bellekte: bakim = {})
+    expect(icerik({ yontemParcaPpm: { standart_gida_isleme: 200_000 } }, (v) => (v.icerik.yontemler.find((y) => y.id === "standart_gida_isleme")!.bakim = {})).hata).toBe("mulk.bakim.yontemParcaPpm: bakim bos: standart_gida_isleme");
+    const bakimli = miniVeriyiYukle().icerik.yontemler.find((y) => Object.keys(y.bakim).length > 0)!;
+    const en = Math.min(...Object.values(bakimli.bakim));
+    const sinir = Math.ceil(1_000_000 / en); // en küçük miktar çarpandan sonra tam 1 kalır
+    expect(icerik({ yontemParcaPpm: { [bakimli.id]: sinir } }).hata).toBe("");
+    expect(icerik({ yontemParcaPpm: { [bakimli.id]: sinir - 1 } }).hata).toBe(`mulk.bakim.yontemParcaPpm: miktar 0'a iner: ${bakimli.id}`);
+  });
+
+  it("V19 uyarı: sanayi parametresi yoksa aşınma ayarları ölü ayardır (hata değil); yontemParcaPpm uyarı üretmez", () => {
+    const v = paket({ asinmaHizCarpaniPpm: 500_000, asinmaVerimKaybiTavaniPpm: 250_000 });
+    delete (v.param as { sanayi?: unknown }).sanayi;
+    const r = dogrulaPerakende(v);
+    expect(r.uyarilar.join("\n")).toContain("mulk.bakim: sanayi parametresi yok");
+    const w = paket({ yontemParcaPpm: { yuzey_cevher: 200_000 } });
+    delete (w.param as { sanayi?: unknown }).sanayi;
+    expect(dogrulaPerakende(w).uyarilar.join("\n")).not.toContain("mulk.bakim: sanayi");
   });
 });

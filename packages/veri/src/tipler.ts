@@ -722,6 +722,19 @@ export interface MulkSebekeParametreleri {
 export type MulkYontemGecersizKilmaParametreleri = Record<string, { ciktiPpm: number }>;
 
 /**
+ * Mülk kipine özel bakım ayarı (sartname §5.10): her alan bağımsız ve isteğe bağlıdır; yoksa `sanayi.bakim` aynen geçerlidir. YALNIZ mülk kipinde ve işletme
+ * düğümünde etkindir; bölge kipi (ve bölge kipi altınları) etkilenmez. Boş blok `{}` ve kimlik değerleri no-op'tur.
+ */
+export interface MulkBakimParametreleri {
+  /** Düzey `asinmaPpmGun` ve `kitlikAsinmaPpmGun` çarpanı (ppm; 0 < değer <= 2 000 000). 1 000 000 = kimlik. Öneri: 500 000. */
+  asinmaHizCarpaniPpm?: number;
+  /** Aşınmanın çıktı kaybı tavanı (ppm; 0 <= değer <= 1 000 000); `sanayi.bakim.asinmaVerimKaybiTavaniPpm` yerine geçer. Aynı değer = kimlik. Öneri: 250 000. */
+  asinmaVerimKaybiTavaniPpm?: number;
+  /** Yöntem kimliği -> bakım parçası (`YontemTanimi.bakim`) çarpanı (ppm; 0 < değer <= 2 000 000). 1 000 000 = kimlik. Yalnız bakım girdisini ölçekler. */
+  yontemParcaPpm?: Record<string, number>;
+}
+
+/**
  * Kamu arsası parametreleri (docs/12 §10, docs/06 §15.6). Tanımlıysa çekirdek mülk dünyasını KURARKEN her ilçenin kamu kümesini
  * hesaplar ve dünya durumuna DONDURUR (satılmaz; sonradan parametre değişse de kayma olmaz). Tanımsızsa kamu kuralı yoktur
  * (eski dünyalar ve testler). Değerler baş liderin kararıdır (docs/12 §10), kalibre edilmedi.
@@ -840,6 +853,8 @@ export interface MulkParametreleri {
   sebeke?: MulkSebekeParametreleri;
   /** Yöntem çıktısı yedek geçersiz kılma (sartname §4.8); yoksa yok. Varsayılan KAPALI (`ciktiPpm: 1000000`). */
   yontemGecersizKilma?: MulkYontemGecersizKilmaParametreleri;
+  /** Mülk kipine özel bakım ayarı (sartname §5.10); yoksa `sanayi.bakim` aynen (bölge kipi her durumda). */
+  bakim?: MulkBakimParametreleri;
   /** Kamu arsası (docs/06 §15.6); yoksa kamu kuralı kapalıdır (dünya `mulk.kamu` taşımaz). */
   kamu?: MulkKamuParametreleri;
   /** Kamu kasaları ve para defteri (docs/06 §15.7); yoksa kapalıdır (dünya `mulk.para` taşımaz). */

@@ -487,6 +487,14 @@ const mulkSema = z
       .strict()
       .optional(),
     yontemGecersizKilma: z.record(kimlik, z.object({ ciktiPpm: pozitif }).strict()).optional(),
+    bakim: z
+      .object({
+        asinmaHizCarpaniPpm: pozitif.max(2_000_000, "en fazla 2000000 olabilir").optional(),
+        asinmaVerimKaybiTavaniPpm: ppmSiniri.optional(),
+        yontemParcaPpm: z.record(kimlik, pozitif.max(2_000_000, "en fazla 2000000 olabilir")).optional(),
+      })
+      .strict()
+      .optional(),
     kamu: mulkKamuSema.optional(),
     kasa: mulkKasaSema.optional(),
     hareketsizlik: z
