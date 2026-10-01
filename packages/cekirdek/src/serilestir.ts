@@ -536,6 +536,12 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
     const uygun = tamsayi(c.uygunHucre, `${y}.uygunHucre`, 0);
     const satilmis = tamsayi(c.satilmisHucre, `${y}.satilmisHucre`, 0, uygun);
     if (c.ayrilmisSatilmis !== undefined) tamsayi(c.ayrilmisSatilmis, `${y}.ayrilmisSatilmis`, 1, satilmis);
+    if (c.ayrilmisGunluk !== undefined) {
+      const g = nesne(c.ayrilmisGunluk, `${y}.ayrilmisGunluk`);
+      alanlar(g, `${y}.ayrilmisGunluk`, ["gun", "adet"]);
+      tamsayi(g.gun, `${y}.ayrilmisGunluk.gun`, 0);
+      tamsayi(g.adet, `${y}.ayrilmisGunluk.adet`, 1, uygun);
+    }
     tamsayi(c.seviye, `${y}.seviye`, 0, 3);
     return dize(c.id, `${y}.id`);
   });
@@ -558,6 +564,7 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
     tamsayi(o.sonEtkinlik, `${y}.sonEtkinlik`);
     if (o.indirimliYapi !== undefined) tamsayi(o.indirimliYapi, `${y}.indirimliYapi`, 1);
     if (o.ayrilmisHucre !== undefined) tamsayi(o.ayrilmisHucre, `${y}.ayrilmisHucre`, 1);
+    if (o.katilimIlcesi !== undefined) dize(o.katilimIlcesi, `${y}.katilimIlcesi`);
     if (o.paraAkisi !== undefined) {
       const pa = nesne(o.paraAkisi, `${y}.paraAkisi`);
       alanlar(pa, `${y}.paraAkisi`, ["t0", "ihracat", "nufus", "ithalat", "isletme", "vergi", "kasa"]);

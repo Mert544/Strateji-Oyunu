@@ -98,6 +98,8 @@ export interface DerlenmisMulk {
   ekYapiIndeks: Map<string, number>;
   /** Yeni oyunculara ayrılmış hücreler (ilçe başına hücre kimliği karmasıyla seçilmiş; durum değil, türetilmiş). Kamu hücreleri girmez. */
   ayrilmis: Set<HucreId>;
+  /** İlçe kimliği -> ayrılmış hücre sayısı (ayrılmış STOK; günlük ilçe tavanının tabanı). Ayrılmışı olmayan ilçe yazılmaz. */
+  ayrilmisIlceSayisi: Map<string, number>;
   /** Kamu arsası (`p.kamu` tanımlıysa): ilçe kimliği -> türetilmiş kamu kümesi (dünya kurulurken donduruluyor); aksi halde tanımsız. */
   kamu?: Map<string, KamuKumesi>;
   /** Ayrılmış hücrelerin satıldığı süre (ms, katılımdan itibaren). */
@@ -749,6 +751,12 @@ export interface IlceDurumu {
    * `satilmisHucre − ayrilmisSatilmis`'a bağlıdır (docs/06 §15.7). Yalnız > 0 iken yazılır.
    */
   ayrilmisSatilmis?: number;
+  /**
+   * İlçe başına GÜNLÜK ayrılmış satış sayacı (docs/06 §15.1): `gun` = sim günü (`floor(zaman / GUN)`), `adet` o gün satılan ayrılmış hücre; gün
+   * dönünce sıfırlanır (bir sonraki ayrılmış satışta `{ gun, adet }` yeniden yazılır). Yalnız `mulk.yeniOyuncu.ayrilmisIlceGunlukPpm` açıkken ve
+   * ayrılmış satış olunca yazılır.
+   */
+  ayrilmisGunluk?: { gun: number; adet: number };
 }
 
 /** Oyuncunun mülk kaydı: arazi değeri, ilçe başına hücre sayısı, tembel arazi vergisi ve hareketsizlik verisi. */
@@ -771,6 +779,11 @@ export interface MulkOyuncuDurumu {
   paraAkisi?: ParaAkisi;
   /** Sahip olunan AYRILMIŞ hücre sayısı (yurt dahil; hesap başına sınır `yeniOyuncu.ayrilmisHucreHesapTavani`); yalnız > 0 iken yazılır. */
   ayrilmisHucre?: number;
+  /**
+   * KATILIM ilçesi (docs/06 §15.1): yurt ilçesi; yurtsuz katılımda `oyuncu_katil.ilce`. Yalnız `mulk.yeniOyuncu.ayrilmisYalnizKatilimIlcesi` açıkken ve
+   * ilçe belirlenebildiğinde yazılır (ayrılmış hücre yalnız burada satılır).
+   */
+  katilimIlcesi?: string;
 }
 
 /** Dünyanın mülk durumu. Diziler deterministik sıralıdır. */

@@ -216,6 +216,9 @@
       "ayrilmisHucrePpm": 200000,
       "ayrilmisGun": 14,
       "ayrilmisHucreHesapTavani": 12,
+      "ayrilmisYalnizKatilimIlcesi": true,
+      "ayrilmisIlceGunlukPpm": 100000,
+      "ayrilmisIlceGunlukEnAz": 6,
       "kalkanGun": 14
     },
     "temelEmirYuvasi": 4,

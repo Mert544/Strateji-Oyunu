@@ -181,9 +181,9 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
   }
   // Kamu arsası (`p.kamu`): her ilçenin kamu kümesi (mülk dünyası kurulurken dondurulur); ayrılmış hücre hesabından düşülür.
   const kamu = p.kamu === undefined ? undefined : kamuKumeleriHesapla(f, p.kamu);
-  const ayrilmis = ayrilmisHucreler(f.ilceler, p.yeniOyuncu.ayrilmisHucrePpm, kamu);
+  const { kume: ayrilmis, sayilar: ayrilmisIlceSayisi } = ayrilmisHucreler(f.ilceler, p.yeniOyuncu.ayrilmisHucrePpm, kamu);
   const ayrilmisSureMs = (p.yeniOyuncu.ayrilmisGun ?? AYRILMIS_GUN_VARSAYILAN) * GUN;
-  const sonuc: DerlenmisMulk = { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisSureMs, kamuIthalatCarpaniPpm: kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar) };
+  const sonuc: DerlenmisMulk = { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisIlceSayisi, ayrilmisSureMs, kamuIthalatCarpaniPpm: kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar) };
   if (kamu !== undefined) sonuc.kamu = kamu;
   return sonuc;
 }
@@ -205,9 +205,14 @@ export function hucreKarmasi(id: string): number {
  * Yeni oyunculara ayrılmış hücreler: her ilçenin uygun hücreleri (karma, kimlik) sırasıyla dizilir ve ilk
  * `floor(uygun × ayrilmisPpm / PPM)` tanesi ayrılır (karma kimlikten türediği için dağılım ilçeye yayılır, seçim deterministiktir).
  */
-function ayrilmisHucreler(ilceler: readonly ParselIlceTanimi[], ayrilmisPpm: number, kamu?: ReadonlyMap<string, KamuKumesi>): Set<HucreId> {
+function ayrilmisHucreler(
+  ilceler: readonly ParselIlceTanimi[],
+  ayrilmisPpm: number,
+  kamu?: ReadonlyMap<string, KamuKumesi>,
+): { kume: Set<HucreId>; sayilar: Map<string, number> } {
   const kume = new Set<HucreId>();
-  if (ayrilmisPpm <= 0) return kume;
+  const sayilar = new Map<string, number>();
+  if (ayrilmisPpm <= 0) return { kume, sayilar };
   for (const c of ilceler) {
     // Kamu arsası (satılmaz) ayrılmış hücre paydasına ve kümesine girmez.
     const kk = kamu?.get(c.id);
@@ -219,6 +224,7 @@ function ayrilmisHucreler(ilceler: readonly ParselIlceTanimi[], ayrilmisPpm: num
     if (adet <= 0) continue;
     uygun.sort((x, y) => x.k - y.k || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
     for (let i = 0; i < adet; i++) kume.add((uygun[i] as { id: string }).id);
+    sayilar.set(c.id, adet);
   }
-  return kume;
+  return { kume, sayilar };
 }

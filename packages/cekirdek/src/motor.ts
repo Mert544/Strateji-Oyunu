@@ -334,7 +334,12 @@ export class Simulasyon {
       oyuncu = yeniOyuncu;
       if (mulk) {
         hibeKaydet(d, yeniOyuncu.hazine.miktar); // para defteri (docs/06 §15.7): hibe musluğu
-        mulkOyuncuAl(d.mulk as NonNullable<Dunya["mulk"]>, id, d.zaman);
+        const mo = mulkOyuncuAl(d.mulk as NonNullable<Dunya["mulk"]>, id, d.zaman);
+        // Katılım ilçesi (docs/06 §15.1; yalnız kural açıkken yazılır): yurt ilçesi, yurtsuz katılımda `ilce`; ikisi de yoksa tanımsız (ayrılmış alınamaz).
+        if ((ic.mulk as NonNullable<typeof ic.mulk>).p.yeniOyuncu.ayrilmisYalnizKatilimIlcesi === true) {
+          const katilim = yurt !== null ? yurt.ilce : typeof komut.ilce === "string" ? komut.ilce : undefined;
+          if (katilim !== undefined) mo.katilimIlcesi = katilim;
+        }
         if (yurt !== null) yurtUygula(d, this.baglam, id, yurt);
       }
     }

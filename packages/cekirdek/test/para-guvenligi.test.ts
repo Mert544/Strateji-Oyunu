@@ -829,14 +829,20 @@ describe("ayrılmış hücre kuralı (ayrilmisHucreHesapTavani, taban fiyat, il�
   const PAY = 2_000_000; // satisPayiCarpaniPpm
 
   function ayrSim(duzenle?: (v: CekirdekVeriPaketi) => void, oyuncular = ["a"]) {
-    return mulkSim(oyuncular, para((v) => {
+    const s = mulkSim([], para((v) => {
       const m = v.param.mulk!;
       m.yeniOyuncu.ayrilmisHucrePpm = 500_000;
       m.ilcePayTavaniPpm = PPM; // yalnız ayrılmış hücre kuralı sınanır
       m.ilceHucreTavani = 72;
       m.yeniOyuncu.hibe = 5_000_000_000;
+      // Çok hesaplı alıcı kuralları (P3b) kendi dosyasında sınanır (mulk-ayrilmis-coklu-hesap.test.ts); burada hesap sınırı ve fiyat kuralı için kapalı.
+      delete m.yeniOyuncu.ayrilmisIlceGunlukPpm;
+      delete m.yeniOyuncu.ayrilmisIlceGunlukEnAz;
       duzenle?.(v);
     }), 41);
+    // katılım ilçesi OVA (yurtsuz katılım: `oyuncu_katil.ilce`)
+    for (const o of oyuncular) tamam(s, SISTEM_OYUNCUSU, { tur: "oyuncu_katil", oyuncu: o, bolgeler: [], ilce: OVA });
+    return s;
   }
 
   /** İlçenin `sinif` hücrelerinden (uygun) ayrılmış ya da serbest olanlar, fikstür sırasıyla. */

@@ -162,6 +162,9 @@ function alimPlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ilce: IlceDuru
   // Ayrılmış hücreler (yeni oyuncu hakkı): yalnız katılımının ilk `ayrilmisGun` gününde olanlara satılır.
   const katilma = oyuncuBul(d, oyuncu)?.katilmaZamani;
   const yeniOyuncuMu = katilma !== undefined && d.zaman < katilma + mk.ayrilmisSureMs;
+  const mo0 = mulkOyuncuBul(d, oyuncu);
+  // Çok hesaplı alıcıya karşı (docs/06 §15.1): ayrılmış hücre yalnız KATILIM ilçesinde satılır (kural parametreyle açıksa).
+  const yalnizKatilimIlcesi = p.yeniOyuncu.ayrilmisYalnizKatilimIlcesi === true;
   for (const id of liste) {
     const f = mk.hucreler.get(id);
     if (f === undefined || f.ilce !== ilce.id) return `hucre bu ilcede degil: ${id}`;
@@ -173,8 +176,10 @@ function alimPlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ilce: IlceDuru
     const sahipli = hucreBul(d, id);
     if (sahipli !== undefined) return `hucre zaten sahipli: ${id} (${sahipli.sahip})`;
     if (!yeniOyuncuMu && mk.ayrilmis.has(id)) return `hucre yeni oyunculara ayrilmis (katilimin ilk ${ayrilmisGun(mk)} gunu): ${id}`;
+    if (yalnizKatilimIlcesi && mk.ayrilmis.has(id) && mo0?.katilimIlcesi !== ilce.id) {
+      return `ayrilmis hucre yalniz katilim ilcesinde satilir (katilim ilcesi: ${mo0?.katilimIlcesi ?? "yok"}): ${id}`;
+    }
   }
-  const mo0 = mulkOyuncuBul(d, oyuncu);
   const mevcut = mo0 === undefined ? 0 : ilceHucreSayisi(mo0, ilce.id);
   const yeniToplam = mevcut + liste.length;
   if (yeniToplam > p.ilceHucreTavani) return `ilcede en cok ${p.ilceHucreTavani} hucre (mevcut ${mevcut})`;
@@ -188,6 +193,13 @@ function alimPlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ilce: IlceDuru
   if (ayrilmis > 0 && ayrilmisTavan !== undefined) {
     const sahip = mo0?.ayrilmisHucre ?? 0;
     if (sahip + ayrilmis > ayrilmisTavan) return `hesap basina en cok ${ayrilmisTavan} ayrilmis hucre (mevcut ${sahip})`;
+  }
+  // Günlük ilçe tavanı (docs/06 §15.1): ilçenin ayrılmış stokunun %'si (en az `ayrilmisIlceGunlukEnAz` hücre), sim günü başına.
+  const gunlukPpm = p.yeniOyuncu.ayrilmisIlceGunlukPpm;
+  if (ayrilmis > 0 && gunlukPpm !== undefined) {
+    const tavan = Math.max(p.yeniOyuncu.ayrilmisIlceGunlukEnAz ?? 0, carpBol(mk.ayrilmisIlceSayisi.get(ilce.id) ?? 0, gunlukPpm, PPM));
+    const bugun = ilce.ayrilmisGunluk !== undefined && ilce.ayrilmisGunluk.gun === Math.floor(d.zaman / GUN) ? ilce.ayrilmisGunluk.adet : 0;
+    if (bugun + ayrilmis > tavan) return `ilcede gunluk ayrilmis satis tavani asildi: ${ilce.id} (tavan ${tavan}, bugun ${bugun}, istenen ${ayrilmis})`;
   }
   let fiyat = 0;
   for (let k = 0; k < liste.length - ayrilmis; k++) fiyat += hucreFiyatiParametreyle(p, ilce, sinif, k, false);
@@ -213,6 +225,11 @@ function alimUygula(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, 
   }
   plan.ilce.satilmisHucre += plan.liste.length;
   if (plan.ayrilmis > 0) {
+    if (p.yeniOyuncu.ayrilmisIlceGunlukPpm !== undefined) {
+      const gun = Math.floor(d.zaman / GUN);
+      const g = plan.ilce.ayrilmisGunluk;
+      plan.ilce.ayrilmisGunluk = { gun, adet: (g !== undefined && g.gun === gun ? g.adet : 0) + plan.ayrilmis };
+    }
     plan.ilce.ayrilmisSatilmis = (plan.ilce.ayrilmisSatilmis ?? 0) + plan.ayrilmis;
     mo.ayrilmisHucre = (mo.ayrilmisHucre ?? 0) + plan.ayrilmis;
   }

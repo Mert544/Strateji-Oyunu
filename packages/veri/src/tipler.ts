@@ -671,6 +671,18 @@ export interface MulkParametreleri {
      * TABAN (sınıf) fiyatından satılır. Yoksa sınır yoktur.
      */
     ayrilmisHucreHesapTavani?: number;
+    /**
+     * Çok hesaplı alıcıya karşı (docs/06 §15.1): true ise ayrılmış hücre yalnız hesabın KATILIM ilçesinde satılır (yurt ilçesi; yurtsuz katılımda
+     * `oyuncu_katil.ilce`; ikisi de yoksa ayrılmış hücre alınamaz). Yoksa/false: ilçe kısıtı yok (eski davranış, yeni alan yazılmaz).
+     */
+    ayrilmisYalnizKatilimIlcesi?: boolean;
+    /**
+     * İlçe başına GÜNLÜK ayrılmış satış tavanı: ilçenin ayrılmış stokunun (derlemedeki toplam ayrılmış hücre sayısı) bu kadarı (ppm; aşağı yuvarlanır),
+     * en az `ayrilmisIlceGunlukEnAz` hücre. Gün = sim günü (`floor(zaman / GUN)`, TRT gece yarısına hizalı sim saati). Yoksa tavan yok.
+     */
+    ayrilmisIlceGunlukPpm?: number;
+    /** `ayrilmisIlceGunlukPpm` açıkken günlük tavanın alt sınırı (hücre). Yoksa 0. */
+    ayrilmisIlceGunlukEnAz?: number;
     /** Yeni oyuncu kalkanı (gün): mülk kipinde `korumaBitis` bu değerden okunur (bölge kipi `askeri.yeniOyuncuKorumasiGun`). */
     kalkanGun: number;
   };

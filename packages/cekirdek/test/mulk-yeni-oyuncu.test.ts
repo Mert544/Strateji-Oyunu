@@ -234,8 +234,9 @@ describe("ayrılmış hücreler (ayrilmisHucrePpm, ayrilmisGun)", () => {
     const ayrilmis = uygun.filter((h) => ayr.ayrilmis.has(h.id)).map((h) => h.id);
     const serbest = uygun.filter((h) => !ayr.ayrilmis.has(h.id)).map((h) => h.id);
     expect(ayrilmis.length).toBeGreaterThan(3);
-    expect(katil(s, "eski", undefined, 0).tamam).toBe(true);
-    expect(katil(s, "yeni", undefined, 10 * GUN).tamam).toBe(true);
+    // ayrılmış hücre yalnız KATILIM ilçesinde satılır (P3b): iki hesap da dag_merkez'e katılır
+    expect(katil(s, "eski", ilce.id, 0).tamam).toBe(true);
+    expect(katil(s, "yeni", ilce.id, 10 * GUN).tamam).toBe(true);
     // 13. günün sonunda: eski oyuncu (13 gün) hâlâ yeni sayılır
     const al = (id: string): Komut => ({ tur: "parsel_al", ilce: ilce.id, hucreler: [id], sinif: "kirsal" });
     expect(ver(s, "eski", al(ayrilmis[0]!), 13 * GUN).tamam).toBe(true);
@@ -256,7 +257,7 @@ describe("ayrılmış hücreler (ayrilmisHucrePpm, ayrilmisGun)", () => {
       v.param.mulk!.yeniOyuncu.ayrilmisGun = 2;
     }));
     const ayrilmis = [...s.ic.mulk!.ayrilmis].filter((i) => s.ic.mulk!.hucreler.get(i)!.hucre.sinif === "kirsal" && s.ic.mulk!.hucreler.get(i)!.ilce === "sn_m_dag_merkez");
-    katil(s, "a", undefined, 0);
+    katil(s, "a", "sn_m_dag_merkez", 0); // katılım ilçesi (P3b)
     const al = (id: string): Komut => ({ tur: "parsel_al", ilce: "sn_m_dag_merkez", hucreler: [id], sinif: "kirsal" });
     expect(ver(s, "a", al(ayrilmis[0]!), 2 * GUN - 1).tamam).toBe(true);
     expect(ver(s, "a", al(ayrilmis[1]!), 2 * GUN).tamam).toBe(false);
