@@ -280,7 +280,7 @@
         "enFazlaIlBasina": 2
       },
       "atolye_lab": {
-        "ad": "Atölye-Lab", "yuva": 1, "insaSaati": 6, "insaParasi": 8000000, "insaMaliyeti": { "celik": 30000, "parca": 15000 },
+        "ad": "Atölye", "yuva": 1, "insaSaati": 6, "insaParasi": 8000000, "insaMaliyeti": { "celik": 30000, "parca": 15000 },
         "enFazlaIlBasina": 1
       }
     },

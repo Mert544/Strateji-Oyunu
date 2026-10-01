@@ -53,7 +53,7 @@ describe("katalog", () => {
     expect(yapi("celikhane").yuva).toBe(3);
     expect(yapi("sulama_kanali")).toMatchObject({ yuva: 1, gerekliTeknoloji: "sulama_sistemi" });
     expect(yapi("ciftlik").ilkGunSureSaat).toBeCloseTo(0.2, 5); // %10 erken oyun çarpanı
-    expect(malzemeMetni(yapi("ciftlik"))).toBe("Çelik 30 · Makine Parçası 10");
+    expect(malzemeMetni(yapi("ciftlik"))).toBe("Çelik 30 · Makine parçası 10");
     const ek = katalog.filter((y) => y.ek);
     if (ek.length) expect(ek.every((y) => y.grup === "Kent ve altyapı" && y.yuva >= 1)).toBe(true);
   });
