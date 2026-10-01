@@ -49,3 +49,16 @@
 - **Hassas içerik:** deprem olayı yok. Dini bayramlar talep eğrisinde görünür ve oyun içi **hatırlatma takvimi** olarak gösterilir.
 - **Görsel ve tasarım:** bina modellemeleri daha detaylı, renk tonlamaları ve paneller daha güzel olacak; tasarım işi daha güçlü modelli ayrı bir tasarım ajanına verilir. Karakter binaların yanında küçük kalıyor; bir tık büyütülür.
 - **Ürün yaklaşımı:** prototipten sonra sürekli güncelleme ve yatırım; tasarım kararları buna göre genişletilebilir kurulur.
+
+## 8. Sahip yönergeleri (1 Ekim, öğle)
+- **Döngüsel zincirler oyunun kalbi:** buğday → un → ekmek → kendi marketin / pazar; maden → cevher → demir, alüminyum → pencere → kendi pencere mağazan. Üretim, lojistik ve satışın birbirini döngü hâlinde beslemesi (Capital Rift'in oyuncuyu içine çeken yanı). Kendi perakende dükkânı ana kanal olur.
+- **Rehber görevler:** yeni oyuncuya rehberlik ve rehber görev zincirleri.
+- **Beğenilenler:** gurbetçi yaz dönüşü, olaylar, zorluk katmanı, kamu ihalesi.
+- **Yapay zekâ ajanlı kamu:** kamu ihalesi ve kamu kararlarını oyuna sunulacak API anahtarıyla yapay zekâ ajanları yürütür (deterministik çekirdeğin dışında; karar doğrulanmış komut olarak girer).
+- **Kamu arazileri ve politikaları:** kamu, oyuncuya hitap eden bir fırsat ve rekabet aracına dönüştürülür; araştırılacak.
+
+## 9. Takım yapısı (sahip önerisi, uygulandı)
+- **Baş lider** (takım lideri) görevleri dağıtır ve kararları sahibe sunar.
+- **Ar-Ge lideri** + 4 araştırmacı: araştırmaları dağıtır, eleştirel inceler, sentez raporu yazar.
+- **Geliştirme lideri** + 4 geliştirici: kod işlerini dosya sahipliği kuralıyla (çekirdekte aynı anda tek yazar) dağıtır, doğrular, baş lidere teslim eder; commit ve push baş liderde kalır.
+- Görsel tasarım işi ayrı, daha güçlü modelli bir tasarım ajanında.
