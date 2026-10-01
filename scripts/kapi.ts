@@ -72,7 +72,7 @@ const PLAYWRIGHT: { ad: string; betik: string; args: string[]; tetik: (yol: stri
       y.startsWith("packages/botlar/") ||
       y === "pnpm-lock.yaml",
   },
-  { ad: "yuru-etkilesim", betik: "yuru-etkilesim.ts", args: ["{ekran}"], tetik: ON(`${IS}src/yuru/`, `${IS}src/harita/stil.ts`), yalnizRapor: true },
+  { ad: "yuru-etkilesim", betik: "yuru-etkilesim.ts", args: ["{ekran}"], tetik: ON(`${IS}src/yuru/`, `${IS}src/harita/stil.ts`), yalnizRapor: true, k1: ON(IS) },
   // çizim çağrısı bütçesini denetler; yalnız küre kodu değişince koşar, --istemci ile koşmaz (--sadece ile istenebilir)
   { ad: "sakin-ekran", betik: "sakin-ekran.ts", args: ["{html}", "{ekran}"], tetik: ON(`${IS}src/kure/`), yalnizTetik: true, kapiDisi: true },
 ];
@@ -185,6 +185,13 @@ function gunlukYaz(ileti: string): void {
 
 const yuvarla1 = (n: number): number => Math.round(n * 10) / 10;
 const kb = (b: number): string => (b / 1024).toFixed(1);
+
+/** Sonuç dosyaları asla üzerine yazılmaz: aynı ad (aynı saniye) varsa -2, -3... eklenir. */
+function benzersizAd(sonucDizin: string, ad: string): string {
+  let aday = ad;
+  for (let n = 2; existsSync(join(sonucDizin, `${aday}.json`)) || existsSync(join(sonucDizin, aday)); n++) aday = `${ad}-${n}`;
+  return aday;
+}
 
 function guvenliAd(s: string): string {
   return s.replace(/[^A-Za-z0-9._-]+/g, "_");
@@ -476,10 +483,12 @@ interface Secenekler {
   onDenetim: boolean;
   /** Kademeli kapı (sahip kararı): 1 = tsc + lint + vitest related (+ çekirdek testleri) + dunya (yol tetiklerse) + f4 (istemci değiştiyse); 2 = tam vitest + dunya + f4 + yuru (yalnız rapor). Varsayılan 1. */
   kademe: 1 | 2;
+  /** Tekrar koşusu işareti: ozet.log satırına `tekrar=evet`, JSON'a `tekrar: true`. İlk resmi sonuç değişmez. */
+  tekrar: boolean;
 }
 
 function seceneklerOku(argv: string[]): Secenekler {
-  const s: Secenekler = { dallar: [], istemci: false, kuru: false, sakla: false, ileriSar: false, ad: null, sadece: null, onDenetim: false, kademe: 1 };
+  const s: Secenekler = { dallar: [], istemci: false, kuru: false, sakla: false, ileriSar: false, ad: null, sadece: null, onDenetim: false, kademe: 1, tekrar: false };
   for (let i = 0; i < argv.length; i++) {
     let a = argv[i] ?? "";
     if (a === "--kademe") a = `--kademe=${argv[++i] ?? ""}`; // "--kademe 2" ve "--kademe=2"
@@ -487,7 +496,8 @@ function seceneklerOku(argv: string[]): Secenekler {
       const k = a.slice("--kademe=".length);
       if (k !== "1" && k !== "2") throw new Kullanim(`--kademe 1 ya da 2 olmalı: ${k}`);
       s.kademe = k === "1" ? 1 : 2;
-    } else if (a === "--istemci") s.istemci = true;
+    } else if (a === "--tekrar") s.tekrar = true;
+    else if (a === "--istemci") s.istemci = true;
     else if (a === "--kuru") s.kuru = true;
     else if (a === "--sakla") s.sakla = true;
     else if (a === "--ileri-sar") s.ileriSar = true;
@@ -503,7 +513,7 @@ function seceneklerOku(argv: string[]): Secenekler {
   return s;
 }
 
-const KULLANIM = `Kullanım: scripts/kapi.sh <dal> [<dal2> ...] [--ad=<paket>] [--istemci] [--kuru] [--sakla] [--sadece=<betik,...>] [--on-denetim] [--kademe=1|2]
+const KULLANIM = `Kullanım: scripts/kapi.sh <dal> [<dal2> ...] [--ad=<paket>] [--istemci] [--kuru] [--sakla] [--sadece=<betik,...>] [--on-denetim] [--kademe=1|2] [--tekrar]
           scripts/kapi.sh --ileri-sar <paket-adı | dal [<dal2> ...]>
   --ad=<paket> paketin adı: sonuç dosyası, günlük dizini ve PG bekleyen uç (refs/kapi/<paket>) bu adla anılır;
                verilmezse dal adları birleştirilir. Sonra: scripts/kapi.sh --ileri-sar <paket>
@@ -517,6 +527,7 @@ const KULLANIM = `Kullanım: scripts/kapi.sh <dal> [<dal2> ...] [--ad=<paket>] [
   --kademe=1|2 kademeli kapı (varsayılan 1). 1: tsc + lint + vitest related <değişen dosyalar> (çekirdek değiştiyse
                packages/cekirdek testleri de) + dunya (yol tetiklerse) + f4 (yalnız istemci değiştiyse). 2: tam vitest + dunya +
                f4 + yuru (yalnız rapor); her 3. pakette, kural sürümü ya da protokol şeması değişince, sabahın son paketinde.
+  --tekrar     tekrar koşusu işareti: özet satırına tekrar=evet, JSON'a tekrar: true (ilk resmi sonuç korunur)
   --on-denetim yalnız ön denetimler (atıf, büyük dosya, dondurulmuş altın, yığılma; dal dal): saniyeler sürer, kilit
                almaz, worktree açmaz, hiçbir şeye dokunmaz. Kuyruğa girmeden önce dalları yoklamak için.
   --kuru       her şeyi koş ama geçse bile entegrasyon dalını ileri sarma (sınama için)
@@ -869,7 +880,7 @@ function tabanBoyutYaz(sonucDizin: string, sha: string, gzipBayt: number): void 
 /** `--ileri-sar <dal>`: PG sonrası ileri sarma. Kilit alınmış olarak çağrılır. */
 async function ileriSarKomutu(dal: string, entegDizin: string, sonucDizin: string, ortam: NodeJS.ProcessEnv): Promise<number> {
   const zaman = zamanDamgasi();
-  const kosuAd = `${guvenliAd(dal)}-${zaman}-ileri-sar`;
+  const kosuAd = benzersizAd(sonucDizin, `${guvenliAd(dal)}-${zaman}-ileri-sar`);
   const jsonYolu = join(sonucDizin, `${kosuAd}.json`);
   const ref = pgRefAdi(dal);
   const uc = git(entegDizin, ["rev-parse", "--verify", `${ref}^{commit}`]);
@@ -912,7 +923,7 @@ async function ileriSarKomutu(dal: string, entegDizin: string, sonucDizin: strin
     if (gzip !== null) tabanBoyutYaz(sonucDizin, ucSha, gzip);
   }
   const ozet = ret === 0 ? `KAPI ILERI-SARILDI dal=${dal} taban=${entegSha.slice(0, 7)} uc=${ucSha.slice(0, 7)} gzip=${gzip !== null ? `${kb(gzip)}KB` : "-"}` : `KAPI ILERI-SAR-REDDEDILDI dal=${dal} taban=${entegSha.slice(0, 7)} uc=${ucSha.slice(0, 7)} neden=${neden}`;
-  writeFileSync(jsonYolu, JSON.stringify({ surum: 1, tur: "ileri-sar", sonuc: ret === 0 ? "ILERI-SARILDI" : "REDDEDILDI", ozet, dal, zaman, ref, taban_sha: entegSha, uc_sha: ucSha, ileri_sarma: sonuc, gzip_bayt: gzip }, null, 2) + "\n");
+  writeFileSync(jsonYolu, JSON.stringify({ surum: 1, tur: "ileri-sar", sonuc: ret === 0 ? "ILERI-SARILDI" : "REDDEDILDI", ozet, dal, zaman, ref, taban_sha: entegSha, uc_sha: ucSha, ileri_sarma: sonuc, gzip_bayt: gzip }, null, 2) + "\n", { flag: "wx" });
   appendFileSync(join(sonucDizin, "ozet.log"), `${new Date().toISOString()} ${ozet}\n`);
   process.stderr.write(`[kapi] json: ${jsonYolu}\n`);
   process.stdout.write(`${ozet}\n`);
@@ -951,7 +962,7 @@ async function main(): Promise<number> {
 
   const zaman = zamanDamgasi();
   const dalAd = guvenliAd(etiket).slice(0, 100);
-  const kosuAd = `${dalAd}-${zaman}`;
+  const kosuAd = benzersizAd(sonucDizin, `${dalAd}-${zaman}`);
   const gunlukDizin = join(sonucDizin, kosuAd);
   mkdirSync(gunlukDizin, { recursive: true });
   const jsonYolu = join(sonucDizin, `${kosuAd}.json`);
@@ -1470,6 +1481,7 @@ async function main(): Promise<number> {
     (paketMiCikti ? ` paket=${dalKayitlari.length - cikarilan.length}/${dalKayitlari.length}` : "") +
     (cikarilan.length > 0 && paketMiCikti ? ` cikarilan=${cikarilan.map((d) => `${d.dal}(${d.cikarma})`).join(",")}` : "") +
     (sec.sadece ? ` sadece=${sec.sadece.join(",")}` : "") +
+    (sec.tekrar ? " tekrar=evet" : "") +
     ` kademe=${sec.kademe}` +
     (sec.kuru ? " kuru=evet" : "");
   const kayit = {
@@ -1477,6 +1489,7 @@ async function main(): Promise<number> {
     sonuc: sonucAd,
     sadece: sec.sadece,
     on_denetim: sec.onDenetim,
+    tekrar: sec.tekrar,
     kademe: sec.kademe,
     sonuc_kodu: gecti ? (sec.sadece ? "gecti_kismi" : pgBekliyor ? "gecti_pg_bekliyor" : "gecti") : duzeltme ? "duzeltme_gerekli" : "kirik",
     atif: { incelenen: dalKayitlari.reduce((t, d) => t + d.atif.incelenen, 0), eksik: atifEksik, ayrinti: dalKayitlari.flatMap((d) => d.atif.ayrinti.map((a) => ({ dal: d.dal, ...a }))) },
@@ -1554,7 +1567,7 @@ async function main(): Promise<number> {
     gunluk_dizini: gunlukDizin,
     makine: { ad: hostname(), yuk_1dk_bitis: yuvarla1(loadavg()[0] ?? 0) },
   };
-  writeFileSync(jsonYolu, JSON.stringify(kayit, null, 2) + "\n");
+  writeFileSync(jsonYolu, JSON.stringify(kayit, null, 2) + "\n", { flag: "wx" });
   appendFileSync(join(sonucDizin, "ozet.log"), `${new Date().toISOString()} ${ozet}\n`);
   // Sonraki koşular için "önce" boyutu: geçen ucun gzip boyutu
   // dunya atlandıysa (yol tetiklemedi) dunya.html değişmemiştir: tabanın boyutu yeni uca taşınır

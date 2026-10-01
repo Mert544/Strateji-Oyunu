@@ -16,7 +16,7 @@ Dal: `takim/o1/kapi-betigi`. Taban: `entegrasyon` (teslim anında `git log -1` r
 ## Kullanım
 
 ```
-scripts/kapi.sh <dal> [<dal2> ...] [--ad=<paket>] [--istemci] [--kuru] [--sakla] [--sadece=<betik,...>] [--kademe=1|2]
+scripts/kapi.sh <dal> [<dal2> ...] [--ad=<paket>] [--istemci] [--kuru] [--sakla] [--sadece=<betik,...>] [--kademe=1|2] [--tekrar]
 scripts/kapi.sh --on-denetim <dal> [<dal2> ...]
 scripts/kapi.sh --ileri-sar <paket-adı | dal [<dal2> ...]>
 ```
@@ -26,6 +26,7 @@ scripts/kapi.sh --ileri-sar <paket-adı | dal [<dal2> ...]>
 - `--kuru`: her şeyi koşar, geçse bile `entegrasyon`'u ileri sarmaz (sınama).
 - `--sakla`: geçici worktree'yi silmez (hata ayıklama).
 - `--kademe=1|2` (sahip kararı, kademeli kapı; varsayılan 1): **1** = tsc + lint + `vitest related <paketin değişen dosyaları>` (çekirdek değiştiyse `packages/cekirdek` testleri de) + dunya (yol tetiklerse) + `f4-uctan-uca` (yalnız `packages/istemci/` değiştiyse). **2** = tam vitest + dunya + `f4-uctan-uca` + `yuru-etkilesim` (yalnız rapor); her 3. pakette, kural sürümü ya da protokol şeması değişince, sabahın son paketinde kullanılır. JSON'da `kademe`. Kademe 1'de belge dosyaları `vitest related` ile eşleşmez (docs'u fs ile okuyan testler yalnız kademe 2'de koşar).
+- `--tekrar`: tekrar koşusu işareti (özet satırına `tekrar=evet`, JSON'a `tekrar: true`); ilk resmi sonuç korunur. Sonuç JSON'ları hiçbir zaman üzerine yazılmaz (`wx`; aynı ad varsa `-2`, `-3` eklenir).
 - `--on-denetim`: yalnız ön denetimler (atıf, büyük dosya, dondurulmuş altın, yığılma; dal dal). 1-2 sn sürer; kilit almaz, worktree açmaz, hiçbir şeye dokunmaz. JSON'da dal başına `dal_dosyalari` (dalın merge-base'e göre getirdiği dosyalar). Kuyruğa girmeden dalları yoklamak içindir.
 - `--ad=<paket>`: paketin adı; sonuç dosyası, günlük dizini ve PG bekleyen uç (`refs/kapi/<paket>`) bu adla anılır. Sonra `--ileri-sar <paket>`.
 - `--sadece=a,b`: kırık arama. Kurulum + dunya + yalnız verilen Playwright betikleri (ör. `f4-uctan-uca,yuru-etkilesim`); tipkontrol, lint, vitest ve ön denetimler koşmaz. Geçse bile ileri sarmaz: uç `refs/kapi/<ad>` altında "GEÇTİ (kısmi)" ile tutulur, ileri sarma açık onayla `--ileri-sar` ile yapılır. Dal yerine tam commit verilirse (daha önce sınanmış uç) aynı uç yeniden sınanır.
@@ -52,7 +53,7 @@ scripts/kapi.sh --ileri-sar <paket-adı | dal [<dal2> ...]>
    | Betik | Durum | Ölçülen süre (yük 5 ile 20) |
    |---|---|---|
    | `f4-uctan-uca` | kapıda, kırabilir | 138-208 sn |
-   | `yuru-etkilesim` | kapıda, yalnız rapor | 100-180 sn |
+   | `yuru-etkilesim` | kapıda, yalnız rapor (kademe 1'de istemci değişince, kademe 2'de her zaman) | 100-180 sn |
    | `harita-etkilesim` | kapı dışı | 45-87 sn |
    | `etkilesim` | kapı dışı | 165-224 sn |
    | `sakin-ekran` | kapı dışı | 86 sn |
@@ -122,6 +123,9 @@ SIGTERM ile kesme gerçek bir koşuda da sınandı: P2'nin ilk başlatışı kes
 - P2 (6 dal, T1-G1 dahil): KIRIK, `f4-uctan-uca` ("Ahır kur" düğmesi disabled; T1-G1'in toast değişikliği) ve `yuru-etkilesim`. Aynı uçta `--sadece` tekrarı da kırıldı; T1'siz 5 dalla (`p2b`) f4 geçti. `yuru-etkilesim` tabanda (de9959c) da kırık çıktı: üç ayrı hata (mobil kamera 0,68 rad, 90 sn zaman aşımı, masaüstü hız denetimi), fps 5-13 (masaüstü, yürürken). P2b ileri sarıldı: `de9959c -> 7553b55` (8 commit). JSON: `p2b-20261001-194008.json`.
 
 - P3 (12 dal, 24 commit, PG bekler): `KAPI GECTI (PG bekliyor) dal=p3 taban=7553b55 uc=5413811 sure=952s gzip=367.6KB test=2008/2049 kirik=-`; tsc 22 sn, lint 12 sn, vitest 515 sn, dunya 376.407 bayt (önce 381.427), sızıntı denetimi temiz, `harita-etkilesim`/`f4-uctan-uca`/`etkilesim` geçti. JSON: `p3-20261001-195338.json`; uç `refs/kapi/p3`.
+
+- P4 (K2 tam kapı, 24/26 dal): `KAPI GECTI (PG bekliyor) ... uc=d13ba4a sure=903s gzip=372.2KB test=2201/2244`; entegrasyon 2819a43 -> d13ba4a. P5 (28/32 dal, kademe 2): KIRIK `playwright-f4-uctan-uca` (K1 yığınının kendi eklediği komut yolu sayımı; yurt-once ve üstündeki g9a paketten çıkarıldı); p5b (26 dal, kademe 1, `--tekrar`) koştu. Rebase'te çakışan dallar ve yığılıları (izgara-yukle/nufus, t1/ilk-saat/b6-b9) paketten çıktı.
+- Yığılı dal hatası P5'in başında yakalandı ve düzeltildi: üstüne kurulduğu dal rebase çakışmasıyla çıkınca yığılı dal da çıkar (önceden yalnız ön denetim çıkarmasında geçerliydi). Git atası olmayan "mantıksal" zincirler (ör. o3/izgara-nufus, k2/izgara-yukle'ye mantıken bağlı ama ata değil) betikçe görülmez; tsc/vitest kırığında `sorumlu=` ile yakalanır.
 
 ## Geri dönüşü zor kararlar
 
