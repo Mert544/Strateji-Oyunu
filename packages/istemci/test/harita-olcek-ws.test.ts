@@ -184,8 +184,11 @@ describe("ölçek büyütme: gerçek sunucu", () => {
     expect(bitmis).toMatchObject({ durum: "tesis", tur: "ciftlik" });
     expect(bitmis.hucreler).toHaveLength(3);
     expect(bitmis.hucreler).toContain(plan.ekHucreler[0]);
-    // Karede ölçek varsa (K2 `kare-olcek`) 1; yoksa ayak izinden çıkarılır: ikisi de M
+    // Karede ölçek (K2 `kare-olcek`: `tesisOlcek`; hiç M/L tesis yoksa alan yazılmaz → S için tanımsız) ya da yoksa ayak izinden: ikisi de M
+    expect([undefined, 0]).toContain(kayit.olcek);
+    expect([undefined, 1]).toContain(bitmis.olcek);
     expect(olcekTesisi(ic, bitmis, (t) => t)).toMatchObject({ olcek: 1 });
+    expect(a.isletme()!.yapilar.find((y) => y.anahtar === `t${tesis}`)).toMatchObject({ hucre: 3 });
     expect(a.sunucuHatalari).toEqual([]);
   });
 
