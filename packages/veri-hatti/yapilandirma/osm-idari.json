@@ -1,0 +1,61 @@
+{
+  "surum": 1,
+  "aciklama": "OSM il/ilçe hiyerarşisi (ODbL). admin_level eşlemesi Overpass sayımlarıyla doğrulandı (2026-10-01); OSM wiki tablosu ile farklar 'not' alanında.",
+  "overpassUclari": ["https://overpass-api.de/api/interpreter", "https://lz4.overpass-api.de/api/interpreter"],
+  "ulkeler": [
+    {
+      "kod": "tr",
+      "ad": "Türkiye",
+      "osmIliski": 174737,
+      "neUlke": "TUR",
+      "isoOnEki": "TR-",
+      "ilSeviyesi": 4,
+      "ilceSeviyesi": 6,
+      "ekIller": [],
+      "beklenenIl": [81, 81],
+      "beklenenIlce": [960, 990],
+      "not": "admin_level 4 = il (81, ISO3166-2 TR-01..TR-81), 6 = ilçe (973 civarı), 8 = mahalle/köy. osadikoglu/turkey-admin-units-osm ile tutarlı."
+    },
+    {
+      "kod": "bg",
+      "ad": "Bulgaristan",
+      "osmIliski": 186382,
+      "neUlke": "BGR",
+      "isoOnEki": "BG-",
+      "ilSeviyesi": 4,
+      "ilceSeviyesi": 5,
+      "ekIller": [],
+      "beklenenIl": [28, 28],
+      "beklenenIlce": [260, 270],
+      "not": "OSM wiki: 4 = oblast (области, NUTS 3), 5 = obshtina (общини, LAU), 6 = Sofya/Plovdiv/Varna semtleri. Veriyle aynı."
+    },
+    {
+      "kod": "ro",
+      "ad": "Romanya",
+      "osmIliski": 90689,
+      "neUlke": "ROU",
+      "isoOnEki": "RO-",
+      "ilSeviyesi": 4,
+      "ilceSeviyesi": 8,
+      "ekIller": [],
+      "beklenenIl": [27, 27],
+      "beklenenIlce": [2000, 2100],
+      "not": "4 = județ (41 + București, ISO RO-xx), 7 = metropol bölgeleri (kapsam dışı), 8 = UAT (comună/oraș/municipiu, ~3180). Yalnızca oyun bölgelerine giren 27 județ alınır (București dahil) (Transilvanya ve kuzey Moldova oyun dışı)."
+    },
+    {
+      "kod": "gr",
+      "ad": "Yunanistan",
+      "osmIliski": 192307,
+      "neUlke": "GRC",
+      "isoOnEki": "GR-",
+      "ilSeviyesi": 5,
+      "ilceSeviyesi": 7,
+      "ekIller": [{ "osmIliski": 2135921, "neden": "Aynoroz (GR-69) admin_level=3 özerk manastır devleti; NE admin-1'de ayrı birim (GRC-2992), selanik bölgesine ait" }],
+      "beklenenIl": [14, 14],
+      "beklenenIlce": [320, 340],
+      "not": "OSM wiki tablosu 4 = periferi, 5 = periferi birimi der; ancak veride periferiler (13, ISO GR-A..GR-M) admin_level=5, ademi merkezî idareler 4, periferi birimleri (74) 6, belediyeler (dimos, 332) 7'dedir. Veri esas alındı. Aynoroz'un ilçesi yoktur (il kendisi tek ilçe)."
+    }
+  ],
+  "isoNeEslemesi": { "GR-I": "GR-A1" },
+  "ilBolgeDuzeltmeleri": {}
+}

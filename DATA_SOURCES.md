@@ -6,7 +6,11 @@ politikası kararlarını** toplar. Oyun içi "Hakkında / Atıflar" ekranı bu 
 
 Tek cümle özet: **bölge şekilleri, limanlar ve nüfus işaretleri Natural Earth'ten (kamu malı); cevher/bakır
 doğrulaması USGS MRDS'ten (kamu malı); kömür, petrol, tahıl ve silis rezervleri elle, genel kamu bilgisiyle yazılmış
-tasarım tablosudur.** OSM türevi, GADM, FAOSTAT, WorldClim ve UN Comtrade KULLANILMADI.
+tasarım tablosudur.** Bu bölge hattında OSM türevi, GADM, FAOSTAT, WorldClim ve UN Comtrade KULLANILMADI.
+
+**Ek (parsel dünyası, F2):** il/ilçe katmanı (bölge → il → ilçe) **OpenStreetMap**'ten türetilir ve **ODbL 1.0**
+lisanslıdır; ayrı klasörde (`packages/veri/haritalar/odbl/`) tutulur ve ayrı hatla (`pnpm harita:osm`) üretilir —
+bkz. **bölüm 8**. Bölge hattının (`gercek-karadeniz*`) kaynakları ve lisansı bundan etkilenmez.
 
 ## 1. Kaynaklar
 
@@ -43,7 +47,7 @@ etiketli sürüm sabitlendi (master ile bayt bayt aynı doğrulandı; etiket de�
 
 | Kaynak | Neden |
 |---|---|
-| OpenStreetMap ve türevleri (Geofabrik, Kontur nüfus vb.) | ODbL share-alike riski; bilerek kullanılmadı |
+| OpenStreetMap ve türevleri (Geofabrik, Kontur nüfus vb.) | Bölge hattında (`gercek-karadeniz*`) kullanılmadı. OSM yalnızca ODbL klasöründeki il/ilçe katmanında kullanılır (bölüm 8; kullanım onaylandı). Geofabrik PBF'leri bu ortamdan indirilemedi (bağlantı sıfırlandı); yerine Overpass API kullanıldı |
 | GADM | Lisans ticari kullanıma kapalı |
 | FAOSTAT, WorldClim | CC BY-NC-SA (ticari değil); ticari sürüm için uygun değil |
 | UN Comtrade | Ticari olmayan ve yeniden dağıtımı yasaklayan şartlar |
@@ -244,3 +248,100 @@ pnpm test                     # hat deterministik mi, çıktı/bu belge güncel 
 
 Yapılandırmayı (`packages/veri-hatti/yapilandirma/karadeniz.json`) veya kuralları (`kurallar.ts`) değiştirdikten sonra
 `pnpm harita:gercek` çalıştırılıp çıktılar commit edilmelidir; aksi halde `deterministik.test.ts` başarısız olur.
+
+## 8. OpenStreetMap il/ilçe katmanı (ODbL)
+
+`pnpm harita:osm` (`packages/veri-hatti/src/osm/idari*.ts`) — deterministik (aynı önbellek + yapılandırma → bayt
+bayt aynı çıktı; `osm-deterministik.test.ts`).
+
+| Kaynak | Sürüm / tarih | Lisans | Hatta kullanımı | İndirme ve bütünlük |
+|---|---|---|---|---|
+| **OpenStreetMap** `boundary=administrative` ilişkileri (Türkiye, Bulgaristan, Romanya, Yunanistan) | Overpass anlık görüntüsü, `timestamp_osm_base` 2026-10-01T06:29Z (tr), 06:30Z (bg, ro), 06:34Z (gr) | **ODbL 1.0** (© OpenStreetMap katkıcıları) | İl ve ilçe sınırları, adları (`name`, `name:tr`), OSM ilişki kimlikleri, `admin_centre` düğümleri | Overpass API (`overpass-api.de`), ülke başına **tek sorgu** (`area` + `admin_level`, `out body` + `>` + `out skel`); ham yanıt `.onbellek/osm/idari-<ülke>.json`; sha256 kilidi `yapilandirma/osm-kaynak-ozetleri.json` (sorgu metniyle birlikte) |
+| Natural Earth admin-1 (bölüm 1) | v5.1.2 | Kamu malı | İl → oyun bölgesi eşlemesi (ISO 3166-2 → `adm1_code` → `karadeniz.json`), uzamsal denetim; OSM'de `name:tr` olmayan illerde Türkçe ad yedeği (`name_tr`) | bölüm 1 |
+
+```
+tr  700c5babdc7d97c6043f38c714c730ad7b7a9592046e13c3141711d81b144e26   79 940 251 bayt
+bg  64f8fbbc5950209d625c5d5efbc07d4b3483638c04c0404e5fca0383390ef0eb   58 152 421 bayt
+ro  c9c773766318e4eb2cd450cf90782926100d0c0d18968343d1900546d085f473   81 341 416 bayt
+gr  ea3227d495acb7032caa0de4198ace6ed8cae7f7c5d4581a7a37756a71a5f1c2  115 319 938 bayt
+```
+
+**Atıf satırı (zorunlu; harita görünümünde ve atıf ekranında):** "© OpenStreetMap katkıcıları" — bağlantı:
+https://www.openstreetmap.org/copyright. Her ODbL dosyası `lisans: "ODbL-1.0"` ve `atif` alanlarını taşır.
+
+### admin_level eşlemesi (`yapilandirma/osm-idari.json`)
+
+| Ülke | il | ilçe | Not |
+|---|---|---|---|
+| Türkiye | 4 (81 il, ISO TR-01…81) | 6 (973 ilçe) | 8 = mahalle/köy. `type=multipolygon` olan "Kara Ada" (Bodrum, adada `admin_level=6`) ilçe sayılmaz |
+| Bulgaristan | 4 (28 oblast) | 5 (265 obshtina) | OSM wiki ile aynı; 6 = Sofya/Plovdiv/Varna semtleri |
+| Romanya | 4 (județ) | 8 (UAT: comună/oraș/municipiu) | Yalnızca oyun bölgelerine giren 27 județ (2046 UAT); Transilvanya/kuzey Moldova'nın 15 județi oyun dışı |
+| Yunanistan | 5 (13 periferi) + Aynoroz (GR-69, `admin_level=3`) | 7 (332 dimos) | OSM wiki tablosu periferiyi 4 der; veride 4 = ademi merkezî idare, 5 = periferi (ISO GR-A…M). Veri esas alındı. Aynoroz'un ilçesi yok: il kendisi tek ilçe |
+
+Toplam: **150 il, 3617 ilçe**, 46 oyun bölgesi. Ukrayna (Bucak), Sırbistan, Arnavutluk, Kuzey Makedonya ve Gürcistan
+bölgeleri (7 bölge) henüz il/ilçe katmanı almadı (`hiyerarsi.json` → `kapsamDisiBolgeler`).
+
+### Dönüşüm kuralları
+
+1. **Halka kurma:** ilişki üye yolları uç uca eklenir (rol `outer`/boş = dış, `inner` = iç; iç halka, içine düştüğü en
+   küçük dış halkaya delik olur). Kapanmayan zincir/eksik üye rapora yazılır (bu anlık görüntüde 0).
+2. **İl seçimi:** `admin_level` + `ISO3166-2` öneki (komşu ülkelerin birimleri elenir). Kimlik: `<ülke>_<ISO soneki>`
+   (ör. `tr_34`, `bg_02`, `ro_ct`, `gr_b`, `gr_69`) — plaka/ISO tabanlı, kararlı.
+3. **İl → oyun bölgesi:** OSM `ISO3166-2` → Natural Earth `iso_3166_2` (fark: `GR-I` → `GR-A1`) → `adm1_code` →
+   `karadeniz.json` admin-1 listesi. Her il tam olarak bir bölgeye düşer (testle denetlenir); il kara çokgeninin
+   iç noktası NE çokgeniyle uzamsal olarak da denetlenir (uyuşmazlık: 0). Elle düzeltme alanı
+   `ilBolgeDuzeltmeleri` (şu an boş).
+4. **İlçe → il:** ilçe iç noktası hangi il ilişkisinin içindeyse onun çocuğu. Kimlik: `<il>_<ASCII ad>`
+   (Türkçe harfler katlanır; Kiril/Yunanca harf çevirisi; "Δήμος", "Община" vb. önekler atılır); çakışmada
+   `_<osm kimliği>` eklenir (yalnız `ro_gr_stoenesti_*`).
+5. **Kara sınırı:** OSM il ilişkileri kıyıda karasularını da kapsar (ör. İstanbul ilişkisi 11 269 km², ilçeleri
+   5 448 km²); ilçeler kıyı çizgisini izler. Bu yüzden **il çokgeni = ilçelerinin birleşimi** (`mapshaper -dissolve2`).
+   Alan km² küresel formülle (R = 6371.0088 km) tam çözünürlükten; merkez = `admin_centre` düğümü (içerdeyse),
+   yoksa `label`, yoksa geometrik iç nokta; mikro derece tamsayı.
+6. **Adlar:** `ad` = OSM `name:tr` (eki atılmış: "(il)", "ili", "Belediyesi"), il için yoksa NE `name_tr`, yoksa Latin
+   yazılı yerel ad ya da harf çevirisi; `yerelAd` = OSM `name` (farklıysa), `latinAd` = Kiril/Yunanca adların harf çevirisi.
+7. **Sadeleştirme (mapshaper, topoloji korunarak):** iller tek katmanda Visvalingam `interval=250` m; ilçeler tüm
+   ülkeler tek katmanda `interval=110` m sonra il başına `-split` — ortak sınırlar bir kez sadeleştiği için komşular
+   arasında boşluk/örtüşme yok (yalnız dosya başına TopoJSON nicemleme farkı, 100 000 ızgara, < birkaç metre).
+
+### Çıktılar ve boyutlar (`packages/veri/haritalar/odbl/`)
+
+| Dosya | İçerik | Boyut |
+|---|---|---|
+| `iller.topo.json` | nesne `iller`; `properties`: `kimlik`, `ad`, `ebeveyn` (bölge) | 464 KB (hedef ≤ 600 KB) |
+| `ilceler/<il>.topo.json` (150 dosya) | nesne `ilceler`; `properties`: `kimlik`, `ad`, `ebeveyn` (il) | ort. 27 KB, en küçük 2 KB (`ro_b`), en büyük 76 KB (`gr_l`, adalar); toplam 4,2 MB |
+| `hiyerarsi.json` | bölge → il → ilçe ağacı: `kimlik`, `ad`, `yerelAd?`, `latinAd?`, `ebeveyn`, `osm`, `merkez{enlemMikro,boylamMikro}`, `alanKm2`; il ayrıca `ulke`, `iso`, `ne` | 948 KB |
+| `osm-raporu.json` | eşleme/denetim raporu (oyun dışı iller, hariç tutulanlar, karasuları farkı, boyutlar) | 6 KB |
+
+### ODbL klasör politikası
+
+- `packages/veri/haritalar/odbl/` altındaki **her dosya ODbL 1.0 lisanslı türetilmiş veritabanıdır** (OSM'den);
+  ODbL'siz (kamu malı / oyun tasarımı) çıktılar bu klasöre konmaz, ODbL verisi de bu klasör dışına yazılmaz.
+  Bölge hattının `gercek-karadeniz*.json` dosyaları ODbL içermez ve bu klasördeki veriyle birleştirilmez
+  (yalnızca `hiyerarsi.json` bölge **kimliklerine** referans verir).
+- Her dosya lisans/atıf alanı taşır; oyunda bu verilerle çizilen her harita görünümünde "© OpenStreetMap
+  katkıcıları" atfı görünür olmalıdır (atıf ekranı + harita köşesi).
+- **Paylaş-benzer (share-alike):** bu klasörün içeriği (ve ondan türetilen veritabanları, ör. parsel ızgarası,
+  PMTiles) dağıtılırsa ODbL altında dağıtılır ve türetme yöntemi (bu belge + `packages/veri-hatti/src/osm/`) açık
+  tutulur. Oyun durumu (oyuncu parselleri, binalar) ayrı bir veritabanıdır; ODbL verisini yalnızca "üretilmiş eser"
+  (görüntü/oyun) olarak kullanır.
+- Ham OSM yanıtları repoya girmez (`.onbellek/`, `.gitignore`); yeniden üretim için sorgu metni ve sha256 kilit
+  dosyasındadır. Overpass canlı veri döndürdüğü için yeniden indirme farklı bayt üretir: güncelleme bilerek
+  yapılır (önbellek silinir → `pnpm harita:osm kilitle` → bu belgedeki tarih/özetler güncellenir).
+
+### Bilinen sınırlamalar
+
+- **București tek ilçedir** (UAT düzeyinde `admin_level=8` tek belediye; 6 sektör bu düzeyde yok). Gerekirse
+  sektör ilişkileri yapılandırmayla eklenebilir.
+- Yunanca ilçe adları OSM'de tamlama hâlindedir ("Δήμος Αθηναίων" → `latinAd` "Athinaion"); Türkçe karşılığı
+  yalnız OSM'de `name:tr` olanlarda var (ör. "Dedeağaç", "Karacaova").
+- Romanya'nın oyun dışındaki 15 județi (1134 UAT) ve 7 oyun bölgesinin ülkeleri (UA, RS, AL, MK, GE) kapsam dışı.
+
+### Yeniden üretme
+
+```
+pnpm harita:osm               # önbellek yoksa Overpass'tan indir (ülke başına tek sorgu) → üret → odbl/ yaz
+pnpm harita:osm uret tr       # yalnız verilen ülkeler (kimlik/çıktı yalnız bunları kapsar)
+pnpm harita:osm kilitle       # önbellek özetlerini bilerek yeniden kilitler (OSM verisi güncellendiyse)
+pnpm test                     # osm-*.test.ts: sayılar, eşleme, boyut, bayt bayt determinizm (önbellek varsa)
+```

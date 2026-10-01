@@ -1,0 +1,362 @@
+{
+ "surum": 1,
+ "lisans": "ODbL-1.0",
+ "atif": "© OpenStreetMap katkıcıları",
+ "sadelestirme": {
+  "ilMetre": 250,
+  "ilceMetre": 110,
+  "nicemleme": 100000
+ },
+ "boyutlar": {
+  "illerBayt": 475082,
+  "hiyerarsiBayt": 970368,
+  "ilceDosyaSayisi": 150,
+  "ilceEnKucukBayt": 2271,
+  "ilceEnBuyukBayt": 78150,
+  "ilceOrtalamaBayt": 27717,
+  "ilceToplamBayt": 4157555
+ },
+ "ulkeler": [
+  {
+   "ulke": "tr",
+   "ilSayisi": 81,
+   "ilceSayisi": 973,
+   "oyunDisiIller": [],
+   "uzamsalUyusmazliklar": [],
+   "elleDuzeltilen": [],
+   "haricTutulanlar": [
+    "19258534 Kara Ada (type=multipolygon)"
+   ],
+   "yabanciIlceAdaylari": [
+    "5324202 Περιφερειακή Ενότητα Καλύμνου"
+   ],
+   "oyunDisiIlce": 0,
+   "geometriSorunlari": [],
+   "kimlikCakismalari": [],
+   "denizUzantili": [
+    {
+     "il": "tr_01",
+     "osmIliskiKm2": 16518.8,
+     "karaKm2": 13700.3
+    },
+    {
+     "il": "tr_07",
+     "osmIliskiKm2": 29147.8,
+     "karaKm2": 20596.5
+    },
+    {
+     "il": "tr_08",
+     "osmIliskiKm2": 7959.5,
+     "karaKm2": 7260.8
+    },
+    {
+     "il": "tr_09",
+     "osmIliskiKm2": 8961.8,
+     "karaKm2": 8099.9
+    },
+    {
+     "il": "tr_10",
+     "osmIliskiKm2": 18339.5,
+     "karaKm2": 14563.3
+    },
+    {
+     "il": "tr_16",
+     "osmIliskiKm2": 12471.1,
+     "karaKm2": 10748.5
+    },
+    {
+     "il": "tr_17",
+     "osmIliskiKm2": 14003.1,
+     "karaKm2": 9787.6
+    },
+    {
+     "il": "tr_22",
+     "osmIliskiKm2": 6696.7,
+     "karaKm2": 6148.4
+    },
+    {
+     "il": "tr_28",
+     "osmIliskiKm2": 9055.5,
+     "karaKm2": 6961
+    },
+    {
+     "il": "tr_31",
+     "osmIliskiKm2": 8068.2,
+     "karaKm2": 5589.3
+    },
+    {
+     "il": "tr_33",
+     "osmIliskiKm2": 21983.9,
+     "karaKm2": 16005.8
+    },
+    {
+     "il": "tr_34",
+     "osmIliskiKm2": 11268.9,
+     "karaKm2": 5447.8
+    },
+    {
+     "il": "tr_35",
+     "osmIliskiKm2": 15613.1,
+     "karaKm2": 11929.2
+    },
+    {
+     "il": "tr_37",
+     "osmIliskiKm2": 16058.8,
+     "karaKm2": 13075.8
+    },
+    {
+     "il": "tr_39",
+     "osmIliskiKm2": 7417.3,
+     "karaKm2": 6405.3
+    },
+    {
+     "il": "tr_41",
+     "osmIliskiKm2": 4768.9,
+     "karaKm2": 3427.2
+    },
+    {
+     "il": "tr_48",
+     "osmIliskiKm2": 17668.6,
+     "karaKm2": 12334.5
+    },
+    {
+     "il": "tr_52",
+     "osmIliskiKm2": 7999.2,
+     "karaKm2": 5893.9
+    },
+    {
+     "il": "tr_53",
+     "osmIliskiKm2": 5863.9,
+     "karaKm2": 3922.6
+    },
+    {
+     "il": "tr_54",
+     "osmIliskiKm2": 5796.8,
+     "karaKm2": 4797.8
+    },
+    {
+     "il": "tr_55",
+     "osmIliskiKm2": 13941.7,
+     "karaKm2": 9618.2
+    },
+    {
+     "il": "tr_57",
+     "osmIliskiKm2": 9063.9,
+     "karaKm2": 5624.6
+    },
+    {
+     "il": "tr_59",
+     "osmIliskiKm2": 8286.9,
+     "karaKm2": 6222.2
+    },
+    {
+     "il": "tr_61",
+     "osmIliskiKm2": 6884.9,
+     "karaKm2": 4662.6
+    },
+    {
+     "il": "tr_67",
+     "osmIliskiKm2": 5570,
+     "karaKm2": 3351.9
+    },
+    {
+     "il": "tr_74",
+     "osmIliskiKm2": 3727.5,
+     "karaKm2": 2366.1
+    },
+    {
+     "il": "tr_77",
+     "osmIliskiKm2": 1923.6,
+     "karaKm2": 786.7
+    },
+    {
+     "il": "tr_81",
+     "osmIliskiKm2": 3012.1,
+     "karaKm2": 2528.4
+    }
+   ]
+  },
+  {
+   "ulke": "bg",
+   "ilSayisi": 28,
+   "ilceSayisi": 265,
+   "oyunDisiIller": [],
+   "uzamsalUyusmazliklar": [],
+   "elleDuzeltilen": [],
+   "haricTutulanlar": [],
+   "yabanciIlceAdaylari": [],
+   "oyunDisiIlce": 0,
+   "geometriSorunlari": [],
+   "kimlikCakismalari": [],
+   "denizUzantili": []
+  },
+  {
+   "ulke": "ro",
+   "ilSayisi": 27,
+   "ilceSayisi": 2046,
+   "oyunDisiIller": [
+    {
+     "iso": "RO-BN",
+     "ad": "Bistrița-Năsăud",
+     "osm": 55466
+    },
+    {
+     "iso": "RO-MM",
+     "ad": "Maramureș",
+     "osm": 72481
+    },
+    {
+     "iso": "RO-SM",
+     "ad": "Satu Mare",
+     "osm": 72482
+    },
+    {
+     "iso": "RO-SJ",
+     "ad": "Sălaj",
+     "osm": 91685
+    },
+    {
+     "iso": "RO-BH",
+     "ad": "Bihor",
+     "osm": 91731
+    },
+    {
+     "iso": "RO-CJ",
+     "ad": "Cluj",
+     "osm": 91733
+    },
+    {
+     "iso": "RO-AB",
+     "ad": "Alba",
+     "osm": 194271
+    },
+    {
+     "iso": "RO-SV",
+     "ad": "Suceava",
+     "osm": 2077868
+    },
+    {
+     "iso": "RO-MS",
+     "ad": "Mureș",
+     "osm": 2248573
+    },
+    {
+     "iso": "RO-SB",
+     "ad": "Sibiu",
+     "osm": 2248586
+    },
+    {
+     "iso": "RO-BV",
+     "ad": "Brașov",
+     "osm": 2248612
+    },
+    {
+     "iso": "RO-CV",
+     "ad": "Covasna",
+     "osm": 2248621
+    },
+    {
+     "iso": "RO-HR",
+     "ad": "Harghita",
+     "osm": 2248660
+    },
+    {
+     "iso": "RO-NT",
+     "ad": "Neamț",
+     "osm": 2248675
+    },
+    {
+     "iso": "RO-BT",
+     "ad": "Botoșani",
+     "osm": 2256729
+    }
+   ],
+   "uzamsalUyusmazliklar": [],
+   "elleDuzeltilen": [],
+   "haricTutulanlar": [],
+   "yabanciIlceAdaylari": [],
+   "oyunDisiIlce": 1134,
+   "geometriSorunlari": [],
+   "kimlikCakismalari": [
+    "ro_gr_stoenesti_13799794",
+    "ro_gr_stoenesti_13799978"
+   ],
+   "denizUzantili": []
+  },
+  {
+   "ulke": "gr",
+   "ilSayisi": 14,
+   "ilceSayisi": 333,
+   "oyunDisiIller": [],
+   "uzamsalUyusmazliklar": [],
+   "elleDuzeltilen": [],
+   "haricTutulanlar": [],
+   "yabanciIlceAdaylari": [],
+   "oyunDisiIlce": 0,
+   "geometriSorunlari": [],
+   "kimlikCakismalari": [],
+   "denizUzantili": [
+    {
+     "il": "gr_a",
+     "osmIliskiKm2": 17499.2,
+     "karaKm2": 14149.5
+    },
+    {
+     "il": "gr_b",
+     "osmIliskiKm2": 23118.3,
+     "karaKm2": 18801.9
+    },
+    {
+     "il": "gr_d",
+     "osmIliskiKm2": 10563.5,
+     "karaKm2": 9202.5
+    },
+    {
+     "il": "gr_e",
+     "osmIliskiKm2": 18735.5,
+     "karaKm2": 14033.5
+    },
+    {
+     "il": "gr_f",
+     "osmIliskiKm2": 17749.3,
+     "karaKm2": 2296.3
+    },
+    {
+     "il": "gr_g",
+     "osmIliskiKm2": 15560.4,
+     "karaKm2": 11454.4
+    },
+    {
+     "il": "gr_h",
+     "osmIliskiKm2": 22421.6,
+     "karaKm2": 15545.2
+    },
+    {
+     "il": "gr_i",
+     "osmIliskiKm2": 10863.8,
+     "karaKm2": 3811.4
+    },
+    {
+     "il": "gr_j",
+     "osmIliskiKm2": 26053.9,
+     "karaKm2": 15491.7
+    },
+    {
+     "il": "gr_k",
+     "osmIliskiKm2": 12673.2,
+     "karaKm2": 3829.3
+    },
+    {
+     "il": "gr_l",
+     "osmIliskiKm2": 36192.7,
+     "karaKm2": 5291.6
+    },
+    {
+     "il": "gr_m",
+     "osmIliskiKm2": 17613.5,
+     "karaKm2": 8333
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,26 @@
+{
+  "bg": {
+    "sorgu": "[out:json][timeout:600][maxsize:536870912];area(id:3600186382)->.ulke;(rel(area.ulke)[\"boundary\"=\"administrative\"][\"admin_level\"~\"^(4|5)$\"];)->.r;.r out body qt;.r >->.alt;.alt out skel qt;",
+    "sha256": "64f8fbbc5950209d625c5d5efbc07d4b3483638c04c0404e5fca0383390ef0eb",
+    "bayt": 58152421,
+    "osmZamani": "2026-10-01T06:30:35Z"
+  },
+  "gr": {
+    "sorgu": "[out:json][timeout:600][maxsize:536870912];area(id:3600192307)->.ulke;(rel(area.ulke)[\"boundary\"=\"administrative\"][\"admin_level\"~\"^(5|7)$\"];rel(2135921);)->.r;.r out body qt;.r >->.alt;.alt out skel qt;",
+    "sha256": "ea3227d495acb7032caa0de4198ace6ed8cae7f7c5d4581a7a37756a71a5f1c2",
+    "bayt": 115319938,
+    "osmZamani": "2026-10-01T06:34:44Z"
+  },
+  "ro": {
+    "sorgu": "[out:json][timeout:600][maxsize:536870912];area(id:3600090689)->.ulke;(rel(area.ulke)[\"boundary\"=\"administrative\"][\"admin_level\"~\"^(4|8)$\"];)->.r;.r out body qt;.r >->.alt;.alt out skel qt;",
+    "sha256": "c9c773766318e4eb2cd450cf90782926100d0c0d18968343d1900546d085f473",
+    "bayt": 81341416,
+    "osmZamani": "2026-10-01T06:30:35Z"
+  },
+  "tr": {
+    "sorgu": "[out:json][timeout:600][maxsize:536870912];area(id:3600174737)->.ulke;(rel(area.ulke)[\"boundary\"=\"administrative\"][\"admin_level\"~\"^(4|6)$\"];)->.r;.r out body qt;.r >->.alt;.alt out skel qt;",
+    "sha256": "700c5babdc7d97c6043f38c714c730ad7b7a9592046e13c3141711d81b144e26",
+    "bayt": 79940251,
+    "osmZamani": "2026-10-01T06:29:34Z"
+  }
+}

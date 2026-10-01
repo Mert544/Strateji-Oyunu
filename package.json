@@ -16,7 +16,8 @@
     "harita:uret": "tsx packages/veri/src/harita-uretici.ts",
     "izle": "tsx packages/izleyici/src/cli.ts",
     "dunya": "pnpm --filter @bolge/istemci build",
-    "harita:gercek": "tsx packages/veri-hatti/src/cli.ts"
+    "harita:gercek": "tsx packages/veri-hatti/src/cli.ts",
+    "harita:osm": "tsx packages/veri-hatti/src/osm/idari-cli.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
