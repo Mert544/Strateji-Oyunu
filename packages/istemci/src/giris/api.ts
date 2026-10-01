@@ -159,7 +159,8 @@ export class GirisApi {
    * bağlantı açılıp düğmeye basılınca olur). Yanıt `{tamam, gecerlilikSn}`; hata: `oturum_yok`, `hiz_siniri` (`beklemeSn`), `origin`.
    */
   hesapSil(): Promise<GirisSonucu<GirisHesapSilIstekYaniti>> {
-    return this.cagir(GIRIS_YOLLARI.hesapSil, "POST", dogrulaIstek);
+    // Çerezin başka kökene gitmesi gerekmez (sunucuyla aynı site): `same-origin` (K2 notu)
+    return this.cagir(GIRIS_YOLLARI.hesapSil, "POST", dogrulaIstek, undefined, "same-origin");
   }
 
   /** `POST /giris/cikis`: bu oturumu kapatır (idempotan). */
@@ -173,7 +174,7 @@ export class GirisApi {
   }
 
   /** Ortak çağrı: asla fırlatmaz. */
-  private async cagir<T>(yol: string, yontem: "GET" | "POST", dogrula: Dogrula<T>, govde?: object): Promise<GirisSonucu<T>> {
+  private async cagir<T>(yol: string, yontem: "GET" | "POST", dogrula: Dogrula<T>, govde?: object, kimlik: RequestCredentials = "include"): Promise<GirisSonucu<T>> {
     const kontrol = new AbortController();
     const zamanlayici = setTimeout(() => kontrol.abort(), this.zamanAsimiMs);
     try {
@@ -181,7 +182,7 @@ export class GirisApi {
       if (govde !== undefined) baslik["content-type"] = "application/json";
       const r = await this.fetchFn(`${this.taban}${yol}`, {
         method: yontem,
-        credentials: "include",
+        credentials: kimlik,
         cache: "no-store",
         redirect: "manual",
         headers: baslik,

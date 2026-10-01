@@ -197,9 +197,11 @@ describe("rıza sahip metni dolu olunca", () => {
 
 describe("API: görünen ad uçları", () => {
   const yanit = (durumKodu: number, govde: unknown, baslik: Record<string, string> = {}) => new Response(JSON.stringify(govde), { status: durumKodu, headers: { "content-type": "application/json", ...baslik } });
+  const kimlikler: string[] = [];
   const api = (cevap: (url: string, init?: RequestInit) => Response): { api: GirisApi; cagrilar: Array<{ url: string; yontem: string; govde: string | null }> } => {
     const cagrilar: Array<{ url: string; yontem: string; govde: string | null }> = [];
     const fetchFn = (async (u: string, init?: RequestInit) => {
+      kimlikler.push(String(init?.credentials));
       cagrilar.push({ url: u, yontem: init?.method ?? "GET", govde: typeof init?.body === "string" ? init.body : null });
       return cevap(u, init);
     }) as unknown as typeof fetch;
@@ -236,6 +238,11 @@ describe("API: görünen ad uçları", () => {
     const t = api(() => yanit(202, { tamam: true, gecerlilikSn: 3600 }));
     expect(await t.api.hesapSil()).toEqual({ tamam: true, veri: { tamam: true, gecerlilikSn: 3600 } });
     expect(t.cagrilar).toEqual([{ url: "http://x/giris/hesap-sil", yontem: "POST", govde: null }]);
+    expect(kimlikler).toEqual(["same-origin"]); // hesap silme: çerez yalnız aynı kökene
+    kimlikler.length = 0;
+    await api(() => yanit(200, { tamam: true, ad: "ali", adSecildi: true })).api.adKaydet("ali");
+    await t.api.ben().catch(() => undefined);
+    expect(kimlikler).toEqual(["include", "include"]); // diğer uçlar değişmedi
     expect(await api(() => yanit(401, { tamam: false, kod: "oturum_yok", mesaj: "x" })).api.hesapSil()).toEqual({ tamam: false, kod: "oturum_yok", durum: 401 });
     expect(await api(() => yanit(429, { tamam: false, kod: "hiz_siniri", mesaj: "x", beklemeSn: 600 })).api.hesapSil()).toEqual({ tamam: false, kod: "hiz_siniri", durum: 429, beklemeSn: 600 });
     expect(await api(() => yanit(202, { tamam: true })).api.hesapSil()).toMatchObject({ tamam: false, kod: "yanit" });

@@ -515,6 +515,8 @@ describe("dukkan-duzelt 5-9", () => {
     expect(h).toContain("Boşaltırsan bu yuvaya en erken 6 sa sonra mal koyabilirsin.");
     expect(h).toContain(`data-eylem="yuva-bosalt">Yuvayı boşalt</button>`);
     expect(kademeHtml(yuva(), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0 })).not.toContain("yuva-bosalt");
+  });
+});
 
 describe("D-7 marka formu", () => {
   const f = (k: Partial<Parameters<typeof markaFormuHtml>[0]> = {}): string => markaFormuHtml({ ad: "", simge: 0, renk: 0, ...k });
