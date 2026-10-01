@@ -414,6 +414,40 @@ const odulSema = z
   })
   .strict();
 
+// Perakende (dükkân) ve yerel pazar (sartname §4.3): biçim denetimi burada, aralık ve içerik çaprazları `perakende-dogrula.ts`te (V1-V12).
+// `.strict()`: seviye/teknoloji/önkoşul gibi kilit alanları şemada YOKTUR (A0-17 kilitsizlik).
+const olcekIndeksi = z.union([z.literal(0), z.literal(1), z.literal(2)]);
+const bayramSema = z.object({ oncesiGun: pozitif, oncesiPpm: pozitif, sonrasiGun: pozitif, sonrasiPpm: pozitif }).strict();
+const dukkanOlcekSema = z.object({ rafYuvasi: pozitif, kasaMiliSaat: pozitif, giderMiliSaat: negatifOlmayan, cekimCarpaniPpm: pozitif }).strict();
+const perakendeSema = z
+  .object({
+    surum: z.literal(1),
+    acikOlcekler: z.array(olcekIndeksi).min(1, "acikOlcekler bos olamaz"),
+    ilceBasinaEnFazla: pozitif,
+    fiyatBandiPpm: z.tuple([pozitif, pozitif]),
+    fiyatKademeleriPpm: z.array(pozitif),
+    varsayilanFiyatKademesi: negatifOlmayan,
+    kampanyaKademesi: negatifOlmayan.optional(),
+    kampanyaGunlukEnFazlaSaat: negatifOlmayan.optional(),
+    kampanyaHaftalikEnFazlaGun: negatifOlmayan.optional(),
+    fiyatDegisimEnAzSaat: negatifOlmayan,
+    cesitKatsayiPpm: negatifOlmayan,
+    esnaf: z.object({ fiyatPpm: pozitif, tabanPayPpm: negatifOlmayan }).strict(),
+    olcekler: z.tuple([dukkanOlcekSema, dukkanOlcekSema, dukkanOlcekSema]),
+    dukkanTurleri: z.array(z.object({ id: kimlik, ad: metin, mallar: z.array(kimlik), tamCesit: pozitif, olcekAraligi: z.array(olcekIndeksi) }).strict()),
+    talep: z
+      .object({
+        yerelOlcek: pozitif,
+        ilceSinifiNufus: z.object({ kirsal: pozitif, kasaba: pozitif, sehir: pozitif }).strict(),
+        talep1000Saat: kayit,
+        gruplar: z.record(kimlik, z.object({ mallar: z.array(kimlik), takvimPpm: z.array(pozitif), bayram: bayramSema.optional() }).strict()),
+        bayramGunleri: z.array(negatifOlmayan),
+      })
+      .strict(),
+    marka: z.object({ hesapBasinaEnFazla: pozitif, simgeSayisi: pozitif, renkSayisi: pozitif }).strict(),
+  })
+  .strict();
+
 const mulkSema = z
   .object({
     hucreFiyati: z.object({ kirsal: negatifOlmayan, kasaba: negatifOlmayan, sehir: negatifOlmayan }).strict(),
@@ -446,6 +480,7 @@ const mulkSema = z
       })
       .strict(),
     ekYapilar: z.record(kimlik, mulkEkYapiSema).optional(),
+    perakende: perakendeSema.optional(),
     temelEmirYuvasi: negatifOlmayan.optional(),
     sebeke: z
       .object({ surum: z.literal(1), mallar: z.array(z.object({ mal: kimlik, tavanOraniPpm: pozitif }).strict()).min(1, "sebeke.mallar bos olamaz"), kasaPayiPpm: ppmSiniri })

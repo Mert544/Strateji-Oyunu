@@ -605,6 +605,90 @@ export interface MulkEkYapiTanimi {
   olcekHucre?: [number, number, number];
 }
 
+/** Dükkân ölçeği sabitleri (`MulkPerakendeParametreleri.olcekler[o]`; indeks 0 = S, 1 = M, 2 = L). */
+export interface DukkanOlcegi {
+  /** Raf yuvası sayısı. */
+  rafYuvasi: number;
+  /** Kasa kapasitesi, mili-birim/saat, TÜM mallar toplamı. */
+  kasaMiliSaat: number;
+  /** İşletme gideri, mili-₺/saat (para-yalnız gider; lavabo `isletme`). */
+  giderMiliSaat: number;
+  /** Çekim çarpanı (ppm). Alfa-0'da yalnız S kullanılır (PPM = etkisiz). */
+  cekimCarpaniPpm: number;
+}
+
+/** Dükkân türü (`kimlik-listesi.json` `dukkanTurleri` üyesi; mal kimlikleriyle kesişmez). */
+export interface DukkanTuruTanimi {
+  id: string;
+  ad: string;
+  /** Rafa konabilen mallar (mal kimlikleri). */
+  mallar: string[];
+  /** Çeşit paydası: tam çeşit için gereken dolu yuva (1 <= tamCesit <= mallar.length). */
+  tamCesit: number;
+  /** Bu türün geçerli ölçekleri (0 = S, 1 = M, 2 = L). */
+  olcekAraligi: (0 | 1 | 2)[];
+}
+
+/** Toplam-sabit bayram dalgası: bayramdan `oncesiGun` gün önce talep x oncesiPpm; bayram günü dahil sonraki `sonrasiGun` gün x sonrasiPpm. */
+export interface BayramDalgasi {
+  oncesiGun: number;
+  oncesiPpm: number;
+  sonrasiGun: number;
+  sonrasiPpm: number;
+}
+
+/** Yerel NPC hane talebi (G7a). Nüfus verisi ve ilçe seviyesi YOKTUR; sınıf = ilçenin baskın hücre sınıfı. */
+export interface YerelTalepParametreleri {
+  /** Talebi ilçe büyüklüğüne çeviren ölçek (kalibre DEĞİL). */
+  yerelOlcek: number;
+  /** İlçe sınıfı başına nüfus eşdeğeri. */
+  ilceSinifiNufus: { kirsal: number; kasaba: number; sehir: number };
+  /** Mal -> talep, mili-birim / 1000 nüfus / saat. Rafa girebilen her mal için satır zorunlu. */
+  talep1000Saat: Record<MalId, number>;
+  /** Talep grubu: her mal TAM BİR grupta. Grup iklim takvimini ve (varsa) bayram dalgasını taşır. */
+  gruplar: Record<string, { mallar: MalId[]; takvimPpm: number[]; bayram?: BayramDalgasi }>;
+  /** Bayram günleri (sim günü indeksi; kesin artan; bayramın ilk günü); boş olabilir. */
+  bayramGunleri: number[];
+}
+
+/**
+ * Perakende (dükkân) kuralları ve yerel pazar (sartname docs/arastirma/p4-p5-sartname.md §4.3). Blok YOKSA dükkân kuralları kapalıdır (davranış bugünküyle aynı);
+ * şemada seviye/teknoloji/önkoşul alanı bulunmaz (A0-17 kilitsizlik; `.strict()`).
+ */
+export interface MulkPerakendeParametreleri {
+  surum: 1;
+  /** Dünyaya AÇIK dükkân ölçekleri (0 = S, 1 = M, 2 = L); boş olamaz. Alfa-0: [0]. Oyuncu kilidi değil, özelliğin dünyaya açılış zamanlaması. */
+  acikOlcekler: (0 | 1 | 2)[];
+  /** Oyuncu başına ilçede en çok dükkân (biten + süren). */
+  ilceBasinaEnFazla: number;
+  /** Fiyat bandı (R çarpanı, ppm) [alt, üst]: kademeler ve esnaf fiyatı bu aralıkta olmalı. */
+  fiyatBandiPpm: [number, number];
+  /** Fiyat kademeleri: dükkân fiyatı = R x kademe (ppm). Kesin artan, hepsi bant içinde, en az 3. SAYI VE SIRA KALICI. */
+  fiyatKademeleriPpm: number[];
+  /** Yeni rafın / yeni malın varsayılan kademesi (indeks). */
+  varsayilanFiyatKademesi: number;
+  /** Kampanya kademesinin indeksi (0 olmalı). Tanımsız = kampanya kademesi yok. */
+  kampanyaKademesi?: number;
+  /** Kampanya: dükkân başına günde en çok saat [0, 24]. Tanımsız ya da 0 = kampanya KAPALI. */
+  kampanyaGunlukEnFazlaSaat?: number;
+  /** Kampanya: dükkân başına sim haftasında en çok gün [0, 7]. Tanımsız ya da 0 = kampanya KAPALI. */
+  kampanyaHaftalikEnFazlaGun?: number;
+  /** Aynı yuvada iki fiyat/mal değişimi arası en az saat (hız sınırı). 0 = sınır yok. */
+  fiyatDegisimEnAzSaat: number;
+  /** Çeşit çarpanı katsayısı (ppm): w x (PPM + cesitKatsayiPpm x cesit / PPM). */
+  cesitKatsayiPpm: number;
+  /** Esnaf (NPC arka plan dükkân): fiyat R'nin katı ve oyuncu havuzunun tabanı (ppm). */
+  esnaf: { fiyatPpm: number; tabanPayPpm: number };
+  /** Ölçeğe göre dükkân sabitleri; indeks 0 = S, 1 = M, 2 = L. */
+  olcekler: [DukkanOlcegi, DukkanOlcegi, DukkanOlcegi];
+  /** Dükkân türleri. */
+  dukkanTurleri: DukkanTuruTanimi[];
+  /** Yerel NPC hane talebi. */
+  talep: YerelTalepParametreleri;
+  /** Marka kuralları (ad uzunluğu ve izinli küme parametre DEĞİL: çekirdek sabiti `AD_KURALI`). */
+  marka: { hesapBasinaEnFazla: number; simgeSayisi: number; renkSayisi: number };
+}
+
 /** Şebekeden otomatik alınan bir mal (`MulkSebekeParametreleri.mallar[]`). */
 export interface SebekeMali {
   /**
@@ -748,6 +832,8 @@ export interface MulkParametreleri {
    * (bu yüzden bölge kipinin durum özeti etkilenmez). Kimlikler tesis türü kimliklerinden farklı olmalıdır.
    */
   ekYapilar?: Record<string, MulkEkYapiTanimi>;
+  /** Perakende ve yerel pazar (sartname §4.3); yoksa dükkân kuralları kapalıdır (`dukkan_*` komutları reddedilir, çözümde iş yapılmaz). */
+  perakende?: MulkPerakendeParametreleri;
   /** İşletme (oyuncu, il) başına temel ticaret emri yuvası; Ticaret ofisi `emirYuvasi` ekler. Yoksa emir sayısı sınırsızdır. */
   temelEmirYuvasi?: number;
   /** Şebeke tedariki (sartname §4.7); yoksa şebeke yoktur (eski dünyalar ve bölge kipi). */

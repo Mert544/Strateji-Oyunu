@@ -211,8 +211,8 @@ export function kimlikKilidiHatalari(ham: unknown, g: KimlikKilidiGirdisi): stri
 export function dogrulaKimlikKilidi(paket: Pick<VeriPaketi, "icerik" | "param" | "kimlikListesi">): DogrulamaSonucu {
   if (paket.kimlikListesi === undefined) return { gecerli: true };
   const ek = paket.param.mulk?.ekYapilar;
-  // `perakende` bloğu (G7) şemaya girene kadar yapısal okunur: dükkân türü kimlikleri aynı çağrıda kilide verilir.
-  const perakende = (paket.param.mulk as { perakende?: { dukkanTurleri?: readonly { id: string }[] } } | undefined)?.perakende;
+  // `mulk.perakende.dukkanTurleri` kimlikleri aynı çağrıda kilide verilir (G7-1a: blok artık şemada).
+  const perakende = paket.param.mulk?.perakende;
   const evSahibi = new Map<string, string>();
   for (const t of paket.icerik.tesisTurleri) for (const y of t.yontemler) if (!evSahibi.has(y)) evSahibi.set(y, t.id);
   const hatalar = kimlikKilidiHatalari(paket.kimlikListesi, {
