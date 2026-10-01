@@ -15,6 +15,7 @@ import {
   saatDakika,
   seciciHtml,
   turSecimiHtml,
+  retMetni,
   ustKartHtml,
   yuvaDurumu,
 } from "../src/harita/dukkan-html";
@@ -387,7 +388,7 @@ describe("dukkan-duzelt: sabit sayı yok, D0 kartında Defter adımı, Dikkat yo
   it("D0 kartı Defter'in sıradaki adımını soluk satır olarak taşır; Defter adımı yoksa satır yok", () => {
     const h = ustKartHtml("dukkan", { metin: "Çiftliğinin tahılını sat.", odulHtml: "" });
     expect(h).toContain(`data-tur="dukkan"`);
-    expect(h).toContain(`<p class="soluk" data-alan="oneri-defter">Sıradaki adım: Çiftliğinin tahılını sat.</p>`);
+    expect(h).toContain(`<p class="dk-oneri-defter-satir" data-alan="oneri-defter">Sıradaki adım: Çiftliğinin tahılını sat.</p>`);
     expect(h).not.toContain(`data-tur="defter"`);
     expect(ustKartHtml("dukkan", null)).not.toContain("oneri-defter");
     expect(oneriKartiHtml()).not.toContain("oneri-defter");
@@ -421,5 +422,82 @@ describe("Dikkat maddeleri", () => {
     expect(dukkanDikkatMaddeleri(null, malAdi)).toEqual([]);
     // rafa konabilir mal yoksa ya da raf doluysa "başka mal var" çıkmaz
     expect(dukkanDikkatMaddeleri(gorunum({ dukkanlar: [dukkan()] }), malAdi, () => false)).toEqual([]);
+  });
+});
+
+describe("dukkan-duzelt 5-9", () => {
+  const bosRaf = (ek: Partial<DukkanKaydi> = {}): DukkanKaydi => dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })], ...ek });
+
+  it("5) rafı boş açık dükkân D1'de 'rafı boş' der (net yok); dolu rafta net; D8'de satis_yok yerine boş raf uyarısı", () => {
+    const g = gorunum({ dukkanlar: [bosRaf({ gelirMiliSa: 0, giderMiliSa: 132_000 }), dukkan({ id: 8 })] });
+    const h = dukkanBolumuHtml(g, { ilceAdi, simdi: 0 });
+    expect(h).toContain("<b>Bakkal · rafı boş</b>");
+    expect(h.split(`data-dukkan="7"`)[1]?.split("</li>")[0]).not.toContain("net");
+    expect(h).toContain("net ≈\u00a0+520\u00a0₺/sa");
+    const o = ozetHtml(bosRaf({ gelirMiliSa: 0, giderMiliSa: 132_000 }), null);
+    expect(o).toContain("Rafın boş: bir yuvaya mal koyunca satış başlar.");
+    expect(o).not.toContain("Henüz satış yok");
+    expect(ozetHtml(dukkan({ gelirMiliSa: 0 }), null)).toContain("Henüz satış yok.");
+  });
+
+  it("6) dolu yuvaların hepsi stoksuzsa tek satır ve Yapı kur mini düğmesi; biri stoklu ya da raf boşsa yok", () => {
+    const hepsi = dukkan({ yuvalar: [yuva({ stokVar: false }), yuva({ mal: "ekmek", stokVar: false }), yuva({ mal: null }), yuva({ mal: null })] });
+    const h = rafHtml(hepsi, { malAdi, simdi: 0, kasaBirimSa: 90 });
+    expect(h).toContain(`data-neden="hepsi_stoksuz">Rafındaki mallar bitti. Üret ya da Pazar&#39;dan al.</p>`);
+    expect(h).toContain(`<button type="button" class="mini-dugme" data-eylem="yapi-kur">Yapı kur</button>`);
+    const karma = rafHtml(dukkan({ yuvalar: [yuva({ stokVar: false }), yuva(), yuva({ mal: null }), yuva({ mal: null })] }), { malAdi, simdi: 0, kasaBirimSa: 90 });
+    expect(karma).not.toContain("hepsi_stoksuz");
+    expect(rafHtml(bosRaf(), { malAdi, simdi: 0, kasaBirimSa: 90 })).not.toContain("hepsi_stoksuz");
+  });
+
+  it("7) seçicide stoklu mallar önce (stok çoktan aza), stoksuzlar sonra", () => {
+    const h = seciciHtml(
+      [
+        { mal: "ekmek", stokMili: 0, fiyatMili: 1_000 },
+        { mal: "tahil", stokMili: 3_000, fiyatMili: 1_000 },
+        { mal: "gida", stokMili: 12_000, fiyatMili: 2_000 },
+      ],
+      malAdi,
+      0,
+      90,
+    );
+    const sira = [...h.matchAll(/data-mal="(\w+)"/g)].map((x) => x[1]);
+    expect(sira).toEqual(["gida", "tahil", "ekmek"]);
+  });
+
+  it("8) B7 Defter kartına 'Dükkân kur' yalnız kur eylemi bağlıyken ve adım ilk_dukkan iken; Atla kalır", () => {
+    const adim = { metin: "Kendi tezgâhın: bir dükkân kur ve oradan ilk satışını yap.", odulHtml: "", kavram: "ilk_dukkan" };
+    const var1 = ustKartHtml("defter", adim, true);
+    expect(var1).toContain(`<button type="button" class="eylem" data-eylem="dukkan-kur">Dükkân kur</button>`);
+    expect(var1).toContain(`data-eylem="defter-atla"`);
+    expect(var1.match(/class="birincil"/g)).toBeNull();
+    expect(ustKartHtml("defter", adim, false)).not.toContain("dukkan-kur");
+    expect(ustKartHtml("defter", { ...adim, kavram: "ilk_satis" }, true)).not.toContain("dukkan-kur");
+    expect(defterKartiHtml("x", "")).not.toContain("dukkan-kur");
+  });
+
+  it("9) boş yuvada da geri sayım: 'mal koy' soluk ve aria-disabled; tüm yuvalar bekliyorsa boş raf süreyi söyler", () => {
+    const bekleyen = bosRaf({ yuvalar: [yuva({ mal: null, beklemeSaat: 3 + 20 / 60 }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })] });
+    const h = rafHtml(bekleyen, { malAdi, simdi: 0, kasaBirimSa: 90 });
+    expect(h).toContain(`data-yuva="0" data-durum="bos" data-mal="" data-bekleme="1" aria-disabled="true"`);
+    expect(h).toContain("değişim: 3 sa 20 dk sonra");
+    expect(h).toContain(`data-yuva="1" data-durum="bos" data-mal="" data-bekleme="0"><`);
+    expect(h).toContain("Rafın boş: bir yuvaya mal koyunca satış başlar."); // bir yuva serbest: normal yönlendirme
+    const hepsi = bosRaf({ yuvalar: [yuva({ mal: null, beklemeSaat: 5 }), yuva({ mal: null, beklemeSaat: 2.5 }), yuva({ mal: null, beklemeSaat: 3 }), yuva({ mal: null, beklemeSaat: 4 })] });
+    expect(rafHtml(hepsi, { malAdi, simdi: 0, kasaBirimSa: 90 })).toContain("Rafın boş. En erken 2 sa 30 dk sonra bir yuvaya mal koyabilirsin.");
+  });
+
+  it("DUK-18 yuva dili: {sure} doldurulur, ham yer tutucu ekrana çıkmaz; bilinmeyen kod null", () => {
+    expect(retMetni("DUK-18", { beklemeSaat: 3 + 20 / 60 })).toBe("Bu yuvaya en erken 3 sa 20 dk sonra mal koyabilirsin.");
+    for (const kod of ["DUK-18", "DUK-06", "DUK-07", "DUK-22", "DUK-21", "DUK-00", "MRK-12"]) expect(retMetni(kod, { beklemeSaat: 2, n: 4 }), kod).not.toMatch(/\{[a-z_]+\}/);
+    expect(retMetni("YOK-99")).toBeNull();
+  });
+
+  it("Yuvayı boşalt uyarısı: bekleme süresi parametreden; verilmezse düğme ve uyarı yok", () => {
+    const kamp = { bitis: 0, kalanSaat: 4, kalanGun: 3 };
+    const h = kademeHtml(yuva(), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0, bosaltBeklemeSaat: 6 });
+    expect(h).toContain("Boşaltırsan bu yuvaya en erken 6 sa sonra mal koyabilirsin.");
+    expect(h).toContain(`data-eylem="yuva-bosalt">Yuvayı boşalt</button>`);
+    expect(kademeHtml(yuva(), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0 })).not.toContain("yuva-bosalt");
   });
 });

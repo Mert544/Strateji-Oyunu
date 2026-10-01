@@ -113,9 +113,9 @@ export function defterBirlesikMetni(n: number, degerMili: number): string {
 }
 
 /** B7 "sıradaki adım" kartı için ilk etkin sıradaki adım (metin ve ödül sütunu); yoksa null. */
-export function defterUstKarti(d: Defter | null, malAdi: (m: string) => string): { metin: string; odulHtml: string } | null {
+export function defterUstKarti(d: Defter | null, malAdi: (m: string) => string): { metin: string; odulHtml: string; kavram: string } | null {
   const x = d?.siradaki.find((y) => y.etkin);
-  return x ? { metin: defterMetni(x.sablon, x.kavram).siradaki, odulHtml: odulSutunu(x.odul, malAdi) } : null;
+  return x ? { metin: defterMetni(x.sablon, x.kavram).siradaki, odulHtml: odulSutunu(x.odul, malAdi), kavram: x.kavram } : null;
 }
 
 /** "Defter" bölümü (İşletmem'de). `epochMs`: tarihleri gerçek takvime çevirmek için. */

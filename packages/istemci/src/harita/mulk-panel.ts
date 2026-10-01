@@ -401,7 +401,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         case "isletme": {
           const durum = ustDurum(d);
           oneriIsareti(durum);
-          const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal));
+          const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal), s.dukkanKur !== undefined);
           const dukkan = dukkanBolumuHtml(dukkanGorunumu(), { ilceAdi: ad.ilce, simdi: d?.simZamani ?? 0 });
           return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch()) : undefined, { ust, dukkan });
         }

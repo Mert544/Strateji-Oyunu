@@ -10,7 +10,7 @@
 import { esc, fmt, paraIsaretli, paraMili } from "../arayuz/bicim";
 import { ikon } from "../tasarim/ikon";
 import type { IkonAdi } from "../tasarim/ikon";
-import { dukkanMetni } from "./dukkan-metin";
+import { DUKKAN_RET_ANAHTARI, dukkanMetni } from "./dukkan-metin";
 import type { DukkanMetinAnahtari } from "./dukkan-metin";
 import { DUKKAN_TURLERI } from "./dukkan-veri";
 import type { DukkanGorunumu, DukkanKaydi, DukkanTuru, DukkanYuvasi, Kademe } from "./dukkan-veri";
@@ -61,7 +61,7 @@ export function oneriKartiHtml(defterAdimi?: string): string {
     `<p>${enc("dukkan.D0.oneri_govde")}</p>` +
     `<p class="dk-oneri-not">${enc("dukkan.D0.oneri_not")}</p>` +
     // Defter'in sıradaki adımı (ör. "Çiftliğinin tahılını sat.") kart varken de görünür kalır: tek soluk satır
-    (defterAdimi ? `<p class="soluk" data-alan="oneri-defter">${enc("defter.ust.baslik")}: ${esc(defterAdimi)}</p>` : "") +
+    (defterAdimi ? `<p class="dk-oneri-defter-satir" data-alan="oneri-defter">${enc("dukkan.D0.defter_adim", { baslik: m("defter.ust.baslik"), adim: defterAdimi })}</p>` : "") +
     `<button type="button" class="eylem ton" data-eylem="dukkan-kur">${enc("dukkan.D0.oneri_dugme")}</button>` +
     `</div>`
   );
@@ -71,11 +71,13 @@ export function oneriKartiHtml(defterAdimi?: string): string {
  * B7 "sıradaki adım" kartı (D0 kartının ikinci durumu): Defter'in ilk etkin sıradaki adımı ve ödülü; tek eylem "Atla" (`.mini-dugme`; kartta birincil yok).
  * `odulHtml` `odulSutunu` çıktısıdır ("ödül: 10 çelik").
  */
-export function defterKartiHtml(siradakiMetin: string, odulHtml: string): string {
+export function defterKartiHtml(siradakiMetin: string, odulHtml: string, dukkanKur = false): string {
   return (
     `<div class="dk-oneri" role="region" aria-labelledby="dk-oneri-baslik" data-tur="defter" data-durum="acik">` +
     `<h4 id="dk-oneri-baslik">${enc("defter.ust.baslik")}</h4>` +
     `<div class="dk-oneri-satir"><p>${esc(siradakiMetin)}</p>${odulHtml ? `<span class="dk-oneri-sag">${odulHtml}</span>` : ""}</div>` +
+    // Sıradaki adım "ilk dükkân" iken tek tıkla yönlendirme (D0 koşulu bozulsa da kart eylemsiz kalmaz); yalnız "Dükkân kur" bağlıyken
+    (dukkanKur ? `<button type="button" class="eylem" data-eylem="dukkan-kur">${enc("dukkan.D0.oneri_dugme")}</button>` : "") +
     `<button type="button" class="mini-dugme" data-eylem="defter-atla" aria-label="${enc("defter.ust.atla_etiket")}">${enc("defter.ust.atla")}</button>` +
     `</div>`
   );
@@ -96,6 +98,8 @@ function gitDugmesi(ilce: string | undefined, ilceAdi: (i: string) => string): s
 /** D-1 satırı: açıkta tek satır "{dükkân} · net ≈ {net}/sa" (ad şablonun içindedir); inşadaki dükkânda ad ve altında "İnşa sürüyor · {kalan}". */
 function satirMetni(d: DukkanKaydi, simdi: number): string {
   if (d.durum === "insaat") return `<b>${esc(dukkanAdi(d))}</b><span class="soluk">${enc("dukkan.D1.satir_insaat", { kalan: saatDakika(Math.max(0, (d.bitis ?? simdi) - simdi) / SAAT_MS) })}</span>`;
+  // Rafı tamamen boş yeni dükkân "net −132 ₺/sa" ile açılmasın: neden söylenir (raf boş), zarar gibi görünmez
+  if (d.yuvalar.every((y) => y.mal === null)) return `<b>${enc("dukkan.D1.satir_bos_raf", { ad: dukkanAdi(d), dukkan: dukkanAdi(d) })}</b>`;
   return `<b>${enc("dukkan.D1.satir_acik", { ad: dukkanAdi(d), net: paraIsaretli(d.gelirMiliSa - d.giderMiliSa) })}</b>`;
 }
 
@@ -111,9 +115,9 @@ export function dukkanBolumuHtml(g: DukkanGorunumu | null, o: DukkanBolumuSecene
 }
 
 /** İşletmem panelinin en üstüne (kimlik satırından sonra) gelecek kart: dükkân önerisi, Defter kartı ya da boş. */
-export function ustKartHtml(durum: "dukkan" | "defter" | null, defter?: { metin: string; odulHtml: string } | null): string {
+export function ustKartHtml(durum: "dukkan" | "defter" | null, defter?: { metin: string; odulHtml: string; kavram?: string } | null, dukkanKur = false): string {
   if (durum === "dukkan") return oneriKartiHtml(defter?.metin);
-  if (durum === "defter" && defter) return defterKartiHtml(defter.metin, defter.odulHtml);
+  if (durum === "defter" && defter) return defterKartiHtml(defter.metin, defter.odulHtml, dukkanKur && defter.kavram === "ilk_dukkan");
   return "";
 }
 
@@ -256,14 +260,15 @@ function yuvaHtml(d: DukkanKaydi, y: DukkanYuvasi, i: number, o: RafSecenegi): s
   } else if (durum === "dolu-kampanya-bitti") {
     kisa = m("dukkan.D5.yuva_kampanya_bitti");
     uzun = m("dukkan.D5.neden_kampanya_bitti");
-  } else if (y.beklemeSaat > 0 && y.mal !== null) kisa = m("dukkan.D5.yuva_bekleme", { sure: saatDakika(y.beklemeSaat) });
+  } else if (y.beklemeSaat > 0) kisa = m("dukkan.D5.yuva_bekleme", { sure: saatDakika(y.beklemeSaat) });
   const neden = kisa ? `<span class="dk-yuva-neden">${esc(kisa)}</span>` : "";
   const nedenKimlik = `dk-yuva-${d.id}-${i}`;
   const icerik =
     y.mal === null
       ? `<span class="dk-yuva-satir">${enc("dukkan.D5.bos_yuva")}</span>`
       : `<span class="dk-yuva-satir"><b>${enc("dukkan.D5.yuva_satiri", { mal, kademe: m(KADEME_ANAHTARI[y.etkinKademe]), fiyat: paraMili(y.fiyatMili, "yukari") })}</b></span><span class="dk-yuva-stok">${enc("dukkan.D5.tahmini_satis", { n: fmt(Math.round(y.istekMiliSaat / 1000)) })}</span>`;
-  const kapali = o.gonderiyor || o.yukleniyor;
+  // Boş yuva pencere sürerken doldurulamaz (boşaltma fiyatT'yi silmez): "mal koy" soluk ve aria-disabled (odak kalır)
+  const kapali = o.gonderiyor || o.yukleniyor || (y.mal === null && y.beklemeSaat > 0);
   return `<button type="button" class="dk-yuva" data-yuva="${i}" data-durum="${durum}" data-mal="${esc(y.mal ?? "")}" data-bekleme="${y.beklemeSaat > 0 ? "1" : "0"}"${kapali ? ` aria-disabled="true"` : ""}${uzun ? ` title="${esc(uzun)}" aria-describedby="${nedenKimlik}"` : ""}${o.seciliYuva === i ? ` aria-pressed="true"` : ""}>${icerik}${neden}${uzun ? `<span class="dk-yuva-tam" id="${nedenKimlik}" hidden>${esc(uzun)}</span>` : ""}</button>`;
 }
 
@@ -278,7 +283,15 @@ export function rafHtml(d: DukkanKaydi, o: RafSecenegi): string {
   let neden: "karsilanmiyor" | "kasa_dolu" | null = null;
   if (!bos) neden = d.kasaPpm >= PPM ? "kasa_dolu" : d.karsilanmaPpm < PPM ? "karsilanmiyor" : null;
   s += `<p class="dk-neden" data-neden="${neden ?? ""}">${neden ? enc(neden === "kasa_dolu" ? "dukkan.D5.neden_kasa_dolu" : "dukkan.D5.neden_karsilanmiyor") : ""}</p>`;
-  if (bos) s += `<p class="dk-not">${enc("dukkan.D5.bos_raf_uyari")}</p>`;
+  if (bos) {
+    // Rafın bütün yuvaları bekleme penceresindeyse (boşaltma fiyatT'yi silmez) süre söylenir; yoksa mal koyma yönlendirmesi
+    const bekleyen = d.yuvalar.filter((y) => y.beklemeSaat > 0).map((y) => y.beklemeSaat);
+    if (bekleyen.length === d.yuvalar.length && bekleyen.length > 0) s += `<p class="dk-not">${enc("dukkan.D5.bos_raf_bekleme", { sure: saatDakika(Math.min(...bekleyen)) })}</p>`;
+    else s += `<p class="dk-not">${enc("dukkan.D5.bos_raf_uyari")}</p>`;
+  }
+  // Dolu yuvaların HEPSİ stoksuzsa: nasıl düzeleceği söylenir ("Üret ya da Pazar'dan al") ve yapı paletine tek mini düğme
+  const dolu = d.yuvalar.filter((y) => y.mal !== null);
+  if (dolu.length > 0 && dolu.every((y) => !y.stokVar)) s += `<p class="dk-not" data-neden="hepsi_stoksuz">${enc("dukkan.D5.raf_hepsi_stoksuz")}</p><button type="button" class="mini-dugme" data-eylem="yapi-kur">${enc("dukkan.D5.secici_stoksuz_yapi")}</button>`;
   return s + `<p class="dk-not soluk">${enc("dukkan.D5.bilgi", { n: fmt(o.kasaBirimSa) })}</p>`;
 }
 
@@ -294,11 +307,24 @@ export function seciciHtml(adaylar: readonly SeciciMali[], malAdi: (mal: string)
   if (!adaylar.length) return s + `<p class="dk-not">${enc("dukkan.D5.secici_bos")}</p></div>`;
   const stoklu = adaylar.filter((a) => a.stokMili > 0);
   if (!stoklu.length) s += `<p class="dk-not">${enc("dukkan.D5.secici_stoksuz")}</p><button type="button" class="mini-dugme" data-eylem="yapi-kur">${enc("dukkan.D5.secici_stoksuz_yapi")}</button>`;
-  for (const a of adaylar) {
+  // Stoklu mallar önce (stok çoktan aza), stoksuzlar sonra (kararlı sıra): oyuncunun tek stoklu malı ilk satırda
+  const sirali = [...adaylar].sort((x, y) => (y.stokMili > 0 ? 1 : 0) - (x.stokMili > 0 ? 1 : 0) || (x.stokMili > 0 && y.stokMili > 0 ? y.stokMili - x.stokMili : 0));
+  for (const a of sirali) {
     const kapali = a.stokMili <= 0;
     s += `<button type="button" class="dk-mal" data-mal="${esc(a.mal)}"${kapali ? ` aria-disabled="true"` : ""}><span>${enc("dukkan.D5.mal_satiri", { mal: malAdi(a.mal), n: fmt(Math.round(Math.max(0, a.stokMili) / 1000)), fiyat: paraMili(a.fiyatMili, "yukari") })}</span>${kapali ? `<span class="soluk">${enc("dukkan.D5.stoksuz_mal")}</span>` : ""}</button>`;
   }
   return s + `<p class="dk-not soluk">${enc("dukkan.D5.bilgi", { n: fmt(kasaBirimSa) })}</p></div>`;
+}
+
+/**
+ * Ret kodundan metin (`DUKKAN_RET_ANAHTARI`): DUK-18 (fiyat/mal değişim penceresi) `{sure}` ister ("Bu yuvaya en erken 3 sa 20 dk sonra mal koyabilirsin."); `{n}` ya da
+ * `{sure}` yer tutucusu ham kalmaz (sunucudan süre gelmediyse genel "yeniden dene" biçimi yerine pencerenin tamamı verilir). Bilinmeyen kod: null.
+ */
+export function retMetni(kod: string, yer: { beklemeSaat?: number; n?: number } = {}): string | null {
+  const a = DUKKAN_RET_ANAHTARI[kod];
+  if (a === undefined) return null;
+  const metin = dukkanMetni(a, { sure: saatDakika(yer.beklemeSaat ?? 1), n: yer.n ?? 1 });
+  return metin;
 }
 
 // --- D-6: kademe ve kampanya ------------------------------------------------------------------------
@@ -316,6 +342,8 @@ export interface KademeSecenegi {
   ilceDukkanSayisi?: number;
   /** Esnaf payı ("%20"; `param.mulk.perakende.esnaf.tabanPayPpm`ten `yuzde()`); verilmezse esnaf payı ipucu yazılmaz. */
   esnafPayiYuzde?: string;
+  /** Yuvayı boşaltırsa yeniden mal koyabilmek için beklemesi gereken süre (saat; `fiyatDegisimEnAzSaat`). Verilirse "Yuvayı boşalt" ve uyarısı yazılır. */
+  bosaltBeklemeSaat?: number;
 }
 
 /** D-6 fiyat kademesi ve kampanya satırları (seçili yuva için). */
@@ -353,6 +381,8 @@ export function kademeHtml(y: DukkanYuvasi, o: KademeSecenegi): string {
     const dugmeKapali = suruyor || k.kalanGun <= 0 || k.kalanSaat <= 0 || o.gonderiyor;
     s += `<button type="button" class="eylem" data-eylem="kampanya"${dugmeKapali ? ` aria-disabled="true"` : ""}>${enc("dukkan.D6.kampanya_dugme")}</button>`;
   }
+  if (o.bosaltBeklemeSaat !== undefined && o.bosaltBeklemeSaat > 0)
+    s += `<p class="dk-not">${enc("dukkan.D5.bosalt_uyari", { sure: saatDakika(o.bosaltBeklemeSaat) })}</p><button type="button" class="eylem" data-eylem="yuva-bosalt"${y.beklemeSaat > 0 || o.gonderiyor ? ` aria-disabled="true"` : ""}>${enc("dukkan.D5.dugme_bosalt")}</button>`;
   if (o.hata) s += `<p class="dk-hata" role="alert">${esc(o.hata)}</p>`;
   return s;
 }
@@ -368,7 +398,8 @@ export function ozetHtml(d: DukkanKaydi, toplamGelirMiliSa: number | null, yukle
   const net = d.gelirMiliSa - d.giderMiliSa;
   const birim = Math.round(d.yuvalar.reduce((t, y) => t + (y.mal !== null ? y.istekMiliSaat : 0), 0) / 1000);
   let s = `<div class="dk-ozet">`;
-  s += birim > 0 && d.gelirMiliSa > 0 ? `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_satis", { n: fmt(birim) })}</p>` : `<p class="dk-ozet-satir">${enc("dukkan.D8.satis_yok")}</p>`;
+  const bosRaf = d.yuvalar.every((y) => y.mal === null);
+  s += birim > 0 && d.gelirMiliSa > 0 ? `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_satis", { n: fmt(birim) })}</p>` : `<p class="dk-ozet-satir">${enc(bosRaf ? "dukkan.D5.bos_raf_uyari" : "dukkan.D8.satis_yok")}</p>`;
   s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_gelir", { gelir: paraMili(d.gelirMiliSa) })}</p>`;
   s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_gider", { g: paraMili(d.giderMiliSa) })}</p>`;
   s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_net", { net: paraIsaretli(net) })}</p>`;
