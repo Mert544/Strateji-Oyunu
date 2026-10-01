@@ -1,6 +1,6 @@
 # Askeri 0a uygulama şartnamesi: bayraklı eşkıya PvE hazırlığı (kimlik, şema, düğüm düzeltmesi, yağma defteri)
 
-> **Durum.** 1 Ekim 2026, Ar-Ge görevi "askeri 0a şartnamesi" (A3). Taban: `entegrasyon` = `7553b55`; bütün `dosya:satır` göndermeleri bu tabana göredir (**doğrulandı: kod okuma**). Bu belge **kod yazmaz**; K3'ün (çekirdek ve `packages/veri/src`, tek yazar) **yorum yapmadan** kodlayabileceği kesinlikte yazılmıştır. Biçim ve ilke `docs/arastirma/p4-p5-sartname.md` ile aynıdır.
+> **Durum.** 1 Ekim 2026, Ar-Ge görevi "askeri 0a şartnamesi" (A3). **Güncelleme (G6/G7 sonrası):** `dosya:satır` göndermeleri **`takim/kod/p6-tam` `bc6087c`** (entegrasyon `f8d72b4` bunun atasıdır) çekirdeğine göre tazelendi; özgün taban `7553b55` idi (**doğrulandı: kod okuma**). §2b G6/G7'nin 0a'ya etkisini, §9.4 dükkân/yağma/servet kararlarını, §2'nin sonundaki tablo eski→yeni satır eşlemesini verir. Bu belge **kod yazmaz**; K3'ün (çekirdek ve `packages/veri/src`, tek yazar) **yorum yapmadan** kodlayabileceği kesinlikte yazılmıştır. Biçim ve ilke `docs/arastirma/p4-p5-sartname.md` ile aynıdır.
 >
 > **Teslim parçaları.** **Parça 1:** §0–§8 (kapsam, kilitler, mevcut kod, kimlikler ve ad kilidi, veri şeması, düğüm düzeltmesi, Ordugâh şartı, ikmal, Nöbet Evi, olay adları). **Parça 2:** yağma defteri durum şeması ve tek nokta, serileştirme ve göç, değişmez tablosu, kanıt planı (negatif kontrollerle), tam test listesi, bot ve ölçüm, sıra, rollere istek, geri dönüşü zor kararlar (GZ) ve açık sorular. **Parça 2** (yağma defteri, serileştirme, değişmez tablosu, kanıt planı, testler, sıra ve roller, GZ, açık sorular): §9–§16 (bu sürümde teslim edildi).
 >
@@ -87,18 +87,80 @@ Ek A. Değişen dosya ve fonksiyonlar (`dosya:satır`)
 | B2 | `savunma_emri` aynı kalıp | `askeri/savas.ts:79` | aynı düzeltme |
 | B3 | `savas_ilan` harita kenarlarına bakar (`komsuKenarlar`); işletme düğümünün kendi kenarı yoktur; mülk kipinde harita bölgeleri sahipsizdir | `askeri/savas.ts:102-118`; `dugum.ts:44-46` | **değişmez** (PvP Alfa-1); yalnız mülk kapısı eklenir |
 | B4 | Düğümü çözen ortak yardımcı hazır: `bolgeIndeksiBul` önce `ic.bolgeIndeks`'e bakar, sonra `<il>#<oyuncu>`'yu `isletmeBul` ile çözer; **bölge kipinde sonuç `ic.bolgeIndeks[id]` ile birebir aynıdır** | `dugum.ts:13-23` | bölge kipi altınları korunur |
-| B5 | İşletme düğümü `birlikler` (tür sayısı kadar sıfır), `savunma: { durus: "normal" }`, `ikmalKarsilanmaPpm: PPM` ile doğar; mülk kipinde `oyuncu_katil` bölge atamaz ⇒ **mülk dünyasında başlangıç birliği yoktur** | `mulk/isletme.ts:50-53`; `motor.ts:243-251` | ikmal çarpanı ve kapasite kuralı kapalı bayrak altında erişilemez |
+| B5 | İşletme düğümü `birlikler` (tür sayısı kadar sıfır), `savunma: { durus: "normal" }`, `ikmalKarsilanmaPpm: PPM` ile doğar; mülk kipinde `oyuncu_katil` bölge atamaz ⇒ **mülk dünyasında başlangıç birliği yoktur** | `mulk/isletme.ts:50-53`; `motor.ts:296-359` | ikmal çarpanı ve kapasite kuralı kapalı bayrak altında erişilemez |
 | B6 | `partiBitti` düğümde de çalışır (`bolge.sahip === parti.sahip`); `UretimPartisi.bolge` bölge indeksidir | `askeri/uretim.ts:63-74` | değişmez |
-| B7 | `ikmalTalebi(d, ctx, bolge)` bölge indeksiyle çalışır ve çarpansızdır; çağrılar `ekonomi/uretim.ts:354` (`bolgeHesapla`) ve `:627` (`ikmalKarsilanmaPpm` yazımı) | `askeri/uretim.ts:98-110` | §7 |
-| B8 | Birlik maaşı saatlik para lavabosudur (`birlik * birlikMaasiSaat`), düğüm başınadır | `lojistik/cozum.ts:162` | değişmez |
-| B9 | Ek yapılar `mulk.ekYapilar` anahtarlarıdır; **ek yapı kimlikleri** `kimlik-listesi.json` `yapilar.ekYapilar` bölümünde kilitlidir ve **`ordugah`, `karakol`, `gozetleme_kulesi` listede zaten `A0-ops` aşamasıyla vardır**; `nobet_evi` `yapilar.kamuYapilari` altında `ileride` aşamasıyla vardır | `veri/icerik/kimlik-listesi.json`; `veri/src/kimlik-listesi.ts:37,72-75,115,133-134` | §3: yeni kimlik EKLENMEZ; yalnız `nobet_evi` aşaması güncellenir |
+| B7 | `ikmalTalebi(d, ctx, bolge)` bölge indeksiyle çalışır ve çarpansızdır; çağrılar `ekonomi/uretim.ts:402` (`bolgeHesapla`) ve `:728` (`ikmalKarsilanmaPpm` yazımı) | `askeri/uretim.ts:98-110` | §7 |
+| B8 | Birlik maaşı saatlik para lavabosudur (`birlik * birlikMaasiSaat`), düğüm başınadır | `lojistik/cozum.ts:209` | değişmez |
+| B9 | Ek yapılar `mulk.ekYapilar` anahtarlarıdır; **ek yapı kimlikleri** `kimlik-listesi.json` `yapilar.ekYapilar` bölümünde kilitlidir ve **`ordugah`, `karakol`, `gozetleme_kulesi` listede zaten `A0-ops` aşamasıyla vardır**; `nobet_evi` `yapilar.kamuYapilari` altında `ileride` aşamasıyla vardır | `veri/icerik/kimlik-listesi.json`; `veri/src/kimlik-listesi.ts:24,49,95-96,113-121,173-174` | §3: yeni kimlik EKLENMEZ; yalnız `nobet_evi` aşaması güncellenir |
 | B10 | `parametreler.json` `mulk.ekYapilar` bugün 6 kayıt (`ambar`, `ticaret_ofisi`, `muhtarlik`, `konut`, `garaj`, `atolye_lab`); `askeri` bloğu: `ilanHazirlikSaatMin/Max`, `pencereSaat`, `kayipTavaniPpm` 250 000, `yagmaOraniPpm` 400 000, `yeniOyuncuKorumasiGun`, `araziSavunmaPpm`, `savunmaDurusuCarpaniPpm`, `birlikMaasiSaat`; **`eskiya` ve `ikmalCarpaniPpm` yok** | `veri/icerik/parametreler.json` | §4 |
-| B11 | `MulkEkYapiTanimi` etki alanları: `depoKapasiteEkiMili`, `komisyonIndirimPpm`, `makasIndirimPpm`, `emirYuvasi`; şema `.strict()`; derleme `DerlenmisEkYapi` (`depoKapasiteEkiMili`, `komisyonIndirimPpm`, `makasIndirimPpm`, `emirYuvasi` sıfır varsayılanlı) | `veri/src/tipler.ts:576-598`; `veri/src/sema.ts:364-377`; `cekirdek/src/derle.ts:162-186`; `tipler.ts:124-136` | §4.2 |
-| B12 | Düğümdeki biten ek yapı toplamı `ekYapiToplami(ic, b, alan)` alan listesi **kapalı birliktir** (4 sayısal alan); yeni sayısal alan bu listeye eklenmelidir | `mulk/yapi.ts:29-38` | §6 |
-| B13 | Ek yapı inşa denetimleri tek yerde: `yapiTuruCoz` (kamu yapısı kapısı `:269`), `yapiPlani` (`enFazlaIlBasina` denetimi `:336`) | `mulk/komut.ts:262-279`, `:321-382` | §5 (ek yapı kapısı) |
-| B14 | Olay önceliği tablosu `OLAY_ONCELIGI` ve birlik `OlayVerisi`; serileştirme olay türlerini bu tablodan doğrular | `tipler.ts:570-589` | §8: 0a'da **eklenmez** (ad rezervi) |
-| B15 | Kamu `hizmet` hücreleri ilçe merkezi alanındadır, `k:ilce:<id>` sahibiyle dondurulmuş dikdörtgen bloklardır; okuma API'si `kamuBloklari(d, ilce)` sahip ve türe göre sıralı (sonra `(y0, x0)`) döndürür; kamu kuralı kapalıysa boş | `mulk/kamu.ts:514`, `:757-768` | §8 (Nöbet Evi hücresi türetilir; durum alanı yok) |
-| B16 | Mülk kipi komut yolu: `birlik_uret`, `savunma_emri`, `savas_ilan` `askeriKomutu`'na yönlenir; mülk komutları `mulkKomutu`'na | `motor.ts:224-233`, `askeri/index.ts:13-24` | §5 |
+| B11 | `MulkEkYapiTanimi` etki alanları: `depoKapasiteEkiMili`, `komisyonIndirimPpm`, `makasIndirimPpm`, `emirYuvasi`; şema `.strict()`; derleme `DerlenmisEkYapi` (`depoKapasiteEkiMili`, `komisyonIndirimPpm`, `makasIndirimPpm`, `emirYuvasi` sıfır varsayılanlı) | `veri/src/tipler.ts:583-606`; `veri/src/sema.ts:365-379`; `cekirdek/src/derle.ts:188-221`; `tipler.ts:176-187` | §4.2 |
+| B12 | Düğümdeki biten ek yapı toplamı `ekYapiToplami(ic, b, alan)` alan listesi **kapalı birliktir** (4 sayısal alan); yeni sayısal alan bu listeye eklenmelidir | `mulk/yapi.ts:31-40` | §6 |
+| B13 | Ek yapı inşa denetimleri tek yerde: `yapiTuruCoz` (kamu yapısı kapısı `:291`), `yapiPlani` (`enFazlaIlBasina` denetimi `:378`) | `mulk/komut.ts:284-303`, `:321-382` | §5 (ek yapı kapısı) |
+| B14 | Olay önceliği tablosu `OLAY_ONCELIGI` ve birlik `OlayVerisi`; serileştirme olay türlerini bu tablodan doğrular | `tipler.ts:695` | §8: 0a'da **eklenmez** (ad rezervi) |
+| B15 | Kamu `hizmet` hücreleri ilçe merkezi alanındadır, `k:ilce:<id>` sahibiyle dondurulmuş dikdörtgen bloklardır; okuma API'si `kamuBloklari(d, ilce)` sahip ve türe göre sıralı (sonra `(y0, x0)`) döndürür; kamu kuralı kapalıysa boş | `mulk/kamu.ts:543`, `:804-815` | §8 (Nöbet Evi hücresi türetilir; durum alanı yok) |
+| B16 | Mülk kipi komut yolu: `birlik_uret`, `savunma_emri`, `savas_ilan` `askeriKomutu`'na yönlenir; mülk komutları `mulkKomutu`'na | `motor.ts:229-232`, `askeri/index.ts:13-24` | §5 |
+
+---
+
+## 2b. Taban kayması: G6/G7 sonrası durum (güncelleme; taban `bc6087c`)
+
+### 2b.1 Ne değişti, ne değişmedi
+
+`7553b55..f8d72b4` 187 commit (G6 şebeke/yöntem, G6-3 verisi, bakım C, G7 perakende/yerel pazar/dükkân, ad kuralı, MULKSUZ_PAKET). **Askeri çekirdek dosyaları bu aralıkta DEĞİŞMEDİ:** `askeri/{uretim,savas,index}.ts`, `dugum.ts`, `mulk/isletme.ts` (**doğrulandı:** `git diff --stat 7553b55 bc6087c` bu dosyaları listelemez). Bu yüzden B1–B6, B8 ve bütün `askeri/*` ile `dugum.ts` satır göndermeleri **aynen geçerlidir**. Kayan yalnız komşu dosyalardır (aşağıdaki eşleme). Bayrak kapalıyken bit-bit korunum ilkesi ve kapı/Ordugâh/ikmal/defter tasarımı **değişmeden** durur; aşağıdaki maddeler yalnız yeni durumlarla etkileşimi ekler.
+
+| Gönderme (eski `7553b55`) | Yeni (`bc6087c`) |
+|---|---|
+| `veri/src/tipler.ts:501` `askeri`; `:576-598` `MulkEkYapiTanimi` | `:507`; `:583-606` (**yeni isteğe bağlı `olcekHucre?`**, yalnız `dukkan` kullanır) |
+| `veri/src/sema.ts:532` `askeri`; `:364-377` `mulkEkYapiSema` | `:582`; `:365-379` (`olcekHucre` eklendi) |
+| `veri/src/dogrula.ts:558` `dogrulaParametreler`; `:537-565` | `:597`; `mulkKontrolu` `:546-595` |
+| `cekirdek/src/tipler.ts:124-136` `DerlenmisEkYapi`; `:299` `BolgeDurumu.ekYapilar`; `:570-589` `OLAY_ONCELIGI` | `:176-187` (alan kümesi aynı); `:366` (`BolgeDurumu` `:295`); `:695` |
+| `derle.ts:162-186` ek yapı derlemesi; `:166` çakışma; `:171-175` mal hatası | `:188-221`; `:193`; `:196-200` |
+| `mulk/yapi.ts:29-38` `ekYapiToplami` | `:31-40` (alan birliği aynı 4 alan) |
+| `mulk/komut.ts:262-279` `yapiTuruCoz` (kamu kapısı `:269`); `:321-382` `yapiPlani` (`:336`); `:468-495` `yapiUygula` | `:284-303` (kamu kapısı `:291`); `:359-432` (`enFazlaIlBasina` `:378`); `:518-547`; `mulkKomutu` `:549` |
+| `ekonomi/uretim.ts:354` `ikmalTalebi` çağrısı; `:627` | `:402`; `:647` (uyku), `:728` (yazım) |
+| `lojistik/cozum.ts:162` birlik maaşı | `:209` |
+| `motor.ts:224-233` yönlendirme; `:243-251` | `:229-232`; `oyuncuKatil` `:296-359` |
+| `mulk/kamu.ts:514`; `:757-768` `kamuBloklari` | `:543`; `:804-815` |
+| `serilestir.ts:244` `DUNYA_ISTEGE_BAGLI`; `:327-337` bölge `ekYapilar` bloğu; `:699-700` ek yapı uyumu | `:247` (hâlâ `["iklim", "mulk"]`); `:341-` (**dükkân doğrulayıcısı bu bloğun içinde**); `:768-769` |
+| `veri/src/kimlik-listesi.ts:22,37,72-75,115,132-136` | `:24,49,95-96,113-121,173-174` (`dogrulaKimlikKilidi` `:211`) |
+| `mulk-yapilar.test.ts:50-60` | `:49-51` |
+
+### 2b.2 Tipler
+
+- **`BolgeDurumu`** (`tipler.ts:295`): isteğe bağlı alanlar eklendi: `elektrik.sebekeMili?` (G6), `sebekeTuketim?` (G6, mal kimliği → mili), `yerelKarsilanmaPpm?` (G7); `ekYapilar?: EkYapiDurumu[]` (`:366`) elemanı artık **`dukkan?: DukkanDurumu`** taşıyabilir. §9.1'deki `yagmaPenceresi?` **aynı yere** (`ekYapilar?` sonrasına) eklenir; alan adı çakışması yoktur. Yeni alanların hepsi "yalnız kullanılınca yazılır" kalıbındadır: 0a'nın "bayrak kapalıyken özet aynı" kanıtı (K-A2) değişmez.
+- **`DukkanDurumu`/`RafYuvasi`/`KampanyaDurumu`/`OyuncuMarka`** ve `MulkOyuncuDurumu.{markalar, dukkanGeliri, ilkSatisT}` yeni (G7). Askeri kod bunlara **dokunmaz**; yağma yalnız düğüm stoğuna uygulanır (§9.4).
+- **Ek yapı derlemesi:** `DerlenmisEkYapi` alan kümesi aynı (`yuva, insaSaati, insaParasi, insaMaliyeti, enFazlaIlBasina, depoKapasiteEkiMili, komisyonIndirimPpm, makasIndirimPpm, emirYuvasi`); §4.2'nin `birlikKapasitesi` ve `ikmal` eklemeleri aynen yapılır. `MulkEkYapiTanimi.olcekHucre?` yalnız `dukkan` içindir: **üç askeri yapı `olcekHucre` TANIMLAMAZ**, bu yüzden M/L ölçek komutu `ek yapi olceklenemez: <id> (yalniz S)` döner (`komut.ts` `yapiTuruCoz`, mevcut davranış; askeri yapılar yalnız S).
+- **`DerlenmisMulk`** yeni isteğe bağlı alanları: `sebeke?`, `yontemCiktiPpm?`, `bakim?`, `perakende?`. `ikmalTalebi`'nin `mulkDugumu` koşulu (`ic.mulk !== undefined && b.merkez !== undefined`) **aynen** yeterlidir.
+- **Kabuk paketi (GZ-24 / `MULKSUZ_PAKET`, `cekirdek/src/mulksuz.ts`):** istemci `vite build`'inde mülk yolları pakete girmez. 0a'nın mülk yolları (kapı, Ordugâh şartı, ikmal çarpanı/ek yapı ikmali, `yagmaTavaniUygula`, `nobetEviHucresi`, `yagmaPenceresi` doğrulayıcısı) **aynı kalıpla** `!MULKSUZ_PAKET` altına alınabilir (öneri; K3/K4 bundle ölçümüne göre karar verir; davranış farkı yok: bölge kipinde zaten `ic.mulk` tanımsız).
+
+### 2b.3 Para defteri
+
+G6/G7 ile `ParaDurumu` isteğe bağlı/tembel kalemler aldı: `musluk.yerelNpc?` (`MUSLUK_ISTEGE_BAGLI`), `lavabo.sebeke?` (`LAVABO_ISTEGE_BAGLI`), `kasa.giris.sebeke?` (`KASA_GIRIS_ISTEGE_BAGLI`); `ParaAkisi.{sebeke?, yerel?}`. **0a para kalemi eklemez; 0b de eklemez:** ganimet **maldır** (stoğa girer), hazine yağmalanmaz, yağma stok kaybıdır; hiçbiri `para` sayaçlarına yazmaz ⇒ `Σ hazine + Σ kasa + Σ lavabo = Σ musluk` eşitliği etkilenmez ve korunum toplayıcıları (`para-guvenligi.test.ts` `korunumOlc`: isteğe bağlı kalemleri zaten toplar) **değişmez**. Birlik maaşı `lavabo.isletme` içindedir (`cozum.ts:209` `gider += … birlik × birlikMaasiSaat`; `isletmeGideri = gider − ithalat − sebekeGider`: şebeke ayrı satır, maaş `isletme`de kalır). Dükkân gideri de `isletme`dir. K-A2 korunum kanıtı mevcut toplayıcıyı kullanır.
+
+### 2b.4 Şebeke etkileşimi
+
+1. **Askeri ikmal şebekeden ALINMAZ (kasıtlı; öneri, A2/baş lider teyidi gerekmez: şebeke yalnız yöntem girdisidir).** `mulk.sebeke.mallar` (`elektrik`, `yakit`) yalnız **yöntem** girdileri için stoksuz alınır (`bolgeHesapla` Y-a: yalnız `y.girdi` döngüsü atlar); birlik ikmali (`ikmalTalebi` → `h.ikmal`) ve Karakol ikmali **stoktan** çekilir. Sonuç: **Zırhlı Tümen** (`ikmal: { yakit: 3000, muhimmat: 1200, parca: 500 }`) için oyuncu yakıt **stoğu** tutmalıdır (NPC ithalat emri); şebeke yakıtı stok vermez. Piyade Tümeni (`gida`, `muhimmat`) şebekeyle ilgisizdir. Bu, A2 eşkıya kalibrasyonundaki haftalık ikmal maliyetini değiştirmez (ikmal mal olarak hesaplanmıştı; yakıt NPC fiyatıyla).
+2. **Ordugâh, Karakol, Gözetleme Kulesi elektrik girdisi taşımaz** (yöntem değildir): şebeke bedeli üretmezler. Birlik **üretimi** (`birlik_uret` maliyeti: `celik`, `muhimmat`, `gida`, `parca`, `yakit`) stoktan düşer, şebeke yok.
+3. **Yapı devre dışı (0b) ve şebeke:** devre dışı tesis `aktif = false` olduğundan elektrik/yakıt talebi ve şebeke bedeli o süre düşer (`elektrikUygula` yalnız aktif tesisleri sayar, `sebekeStoksuz` Y-c verim > 0 şartıyla): yağma/devre dışı bırakma şebeke bedelini **otomatik** azaltır; ek kural gerekmez.
+4. **Yağma ve stoksuz mal:** şebekeli yakıt stoksuzdur (düğüm stoğuna yazılmaz); yağmalanacak "şebeke yakıtı" yoktur. Yağma yalnız düğüm stoğundaki (ithal edilmiş) yakıtı ve diğer malları vurur.
+
+### 2b.5 Komutlar ve para güvenliği
+
+- `komutSemasi.ts`: `birlik_uret { bolge: kimlik, birlik: kimlik, adet: adet }` (`:49`), `savas_ilan` (`:50`), `savunma_emri { bolge: kimlik, durus: secim }` (`:51`), mevcut `askeri_rezerv { oranPpm: oran }` (`:47`; `OyuncuDurumu.askeriRezervPpm`, `lojistik/cozum.ts:404`; **0a değiştirmez**). `birlik_uret.adet` ve `askeri_rezerv.oranPpm` zaten `para-guvenligi.test.ts` "miktar/oran/adet açık listesi"ndedir (oyuncu yolu; `:301`); 0a **yeni komut ve yeni alan eklemez** ⇒ liste ve `SISTEM_ALAN_TURLERI` (`:20`: `kimlik`, `secim`, `bayrak`) değişmez. G7 `AlanTuru += "metin"` (`:17`; yalnız `marka_tanimla.ad`, oyuncu yolu): **askeri komutlarda metin alanı YOKTUR** ve 0b'de de olmamalıdır (oyuncu serbest metni sistem/ajan yoluna girmez, docs/12 §10).
+- Yönlendirme: `motor.ts:229-232` aynı (`askeriKomutu`); mülk komutları `:238-248` (G7 beş dükkân komutu eklendi). Ek yapı kurulum sırası (`mulkKomutu` `tesis_insa_hucre`/`yapi_yerlestir`): `dukkanKurulumDenetimi` → `yapiTuruCoz` (kamu kapısı `:291`, **askeri kapı hemen arkasına**, §5.3) ⇒ askeri yapıya `dukkanTuru` verilirse önce DUK-02 (`dukkanTuru yalniz dukkan yapisinda verilebilir: <tur>`) döner; bu **çakışma değildir** (komut zaten hatalı).
+- **0b için:** sistem yolunda yeni komut yalnız `kimlik/secim/bayrak` alanı taşıyabilir; baskın bildirim/ödül gibi tutar taşıyan yol yoktur (L6). `askeri_rezerv` mülk işletme düğümlerinde nasıl okunduğu **(doğrulanmadı)**: 0b-4.
+
+### 2b.6 H5, eşkıya PvE, yağma ve ikmal: 0b verisi özeti (0a'da veri YOK)
+
+| Kural | Değer | Yer | Not |
+|---|---|---|---|
+| H5 yağma tavanı | `askeri.kayipTavaniPpm` 250 000 (%25) | mevcut (`parametreler.json`) | `yagmaTavaniUygula` (§9.2) tek nokta; ≥ 49 sa ara ve ≤ %10 yapı devre dışı ayrı H5 maddeleridir (docs/04 A1-3) |
+| Bayraklı eşkıya PvE | `askeri.eskiya.etkin` (0b: `true`) | §4.1 | AH1/AH2/AH4 ve parsel H5 kapı ölçütleri (L1) |
+| Eşkıya PvE yağma oranı | `eskiya.yagmaOraniPpm` 250 000 (%25; ilçe payıyla çarpılır) | §4.1 | mevcut bölge kipi `askeri.yagmaOraniPpm` 400 000 **ayrı ve değişmez** |
+| Yapı devre dışı | `eskiya.yapiDevreDisiPpm` 250 000, 24 sa | §4.1 | hedef: yalnız `b.tesisler` (§9.4 D4) |
+| PvP yağma iletimi | `askeri.yagmaIletimPpm` 600 000 (%60 saldırana, %40 yok olur) | **rezerv** (şemada alan yok; Alfa-1) | Y-36 |
+| Birlik kaybı | %60 kalıcı / %40 revir (yenilgide %15) | 0b parametresi `yenilgiKayipPpm`, `reviriGeriPpm` | L9 |
+| Mülk kipi ikmal çarpanı | `askeri.ikmalCarpaniPpm` 250 000 (×0,25) | 0b verisi (S-1) | 0a'da yok; çarpan yalnız `ikmalTalebi` birlik kolunda; Karakol ikmali çarpansız |
 
 ---
 
@@ -110,12 +172,12 @@ Ek A. Değişen dosya ve fonksiyonlar (`dosya:satır`)
 
 | Kimlik | Bölüm | Aşama (bugün → 0a) | Yuva (S) | İlde en çok | Not |
 |---|---|---|---|---|---|
-| `ordugah` | `yapilar.ekYapilar` | `A0-ops` → **değişmez** | 3 | 2 | Bayraklı (Y-35); `A0-ops` = "Alfa-0 isteğe bağlı" tanımına uyar (`kimlik-listesi.ts:22`) |
+| `ordugah` | `yapilar.ekYapilar` | `A0-ops` → **değişmez** | 3 | 2 | Bayraklı (Y-35); `A0-ops` = "Alfa-0 isteğe bağlı" tanımına uyar (`kimlik-listesi.ts:24`) |
 | `karakol` | `yapilar.ekYapilar` | `A0-ops` → değişmez | 1 | 2 | |
 | `gozetleme_kulesi` | `yapilar.ekYapilar` | `A0-ops` → değişmez | 1 | 1 | |
-| `nobet_evi` | `yapilar.kamuYapilari` | `ileride` → **`A0-ops`** | — (kamu hücresi) | — | Askeri rapor kimlik vermemişti; kimlik-listesi-v1 §2.3 "öneri `nobet_evi`"; **bu belge kabul önerir** (§16 S-2). Aşama değişimi önek kilidini ihlal etmez (kilit kimliklerin varlığı ve sırasıdır, `asama` meta veridir; **doğrulanmadı: `dogrulaKimlikKilidi` aşamayı denetlemiyor**, `kimlik-listesi.ts:132-136` yalnız üyelik denetler) |
+| `nobet_evi` | `yapilar.kamuYapilari` | `ileride` → **`A0-ops`** | — (kamu hücresi) | — | Askeri rapor kimlik vermemişti; kimlik-listesi-v1 §2.3 "öneri `nobet_evi`"; **bu belge kabul önerir** (§16 S-2). Aşama değişimi önek kilidini ihlal etmez (kilit kimliklerin varlığı ve sırasıdır, `asama` meta veridir; **doğrulanmadı: `dogrulaKimlikKilidi` aşamayı denetlemiyor**, `kimlik-listesi.ts:173-174 (`dogrulaKimlikKilidi` :211)` yalnız üyelik denetler) |
 
-`mulk.ekYapilar` anahtarları `icerik.tesisTurleri` kimlikleriyle çakışamaz (`derle.ts:166`); üç kimlik tesis türü değildir ⇒ çakışma yok (**doğrulandı**: `icerik.json` tesis türü listesi).
+`mulk.ekYapilar` anahtarları `icerik.tesisTurleri` kimlikleriyle çakışamaz (`derle.ts:193`); üç kimlik tesis türü değildir ⇒ çakışma yok (**doğrulandı**: `icerik.json` tesis türü listesi).
 
 ### 3.2 Belge kilitli adlar (makine kilidi yok; K3 `askeri-ad-kilidi.test.ts` bağlar)
 
@@ -140,7 +202,7 @@ Sınır (baş lider; P4 ile aynı): **önce K3 şemayı isteğe bağlı/no-op in
 
 ### 4.1 `param.askeri.eskiya` (yeni isteğe bağlı blok; bayrak kapalı)
 
-`veri/src/tipler.ts:501` `askeri` nesnesine iki isteğe bağlı alan; `veri/src/sema.ts:532` `askeri` şemasına (`.strict()`) karşılıkları:
+`veri/src/tipler.ts:507` `askeri` nesnesine iki isteğe bağlı alan; `veri/src/sema.ts:582` `askeri` şemasına (`.strict()`) karşılıkları:
 
 ```ts
 askeri: {
@@ -237,11 +299,11 @@ export interface AskeriEskiyaParametreleri {
 | VA10 | `yenilgiKayipPpm`, `reviriGeriPpm` ≤ 1 000 000; `kalkanSonrasiYagmaPpm ≤ yagmaOraniPpm` | zod + `askeri.eskiya: kalkan sonrasi yagma genel yagmadan buyuk olamaz` |
 | VA11 | `etkin = true` iken `mulk` bloğu tanımlı ve `ekYapilar` `ordugah` kaydını içermeli (Ordugâh şartı uygulanabilir olsun) | `askeri.eskiya.etkin: mulk.ekYapilar.ordugah tanimsiz` |
 
-`VA9` mal-kimliği denetimi içerik gerektirdiğinden `dogrulaParametreler` (içerik bağlamlı katman, `dogrula.ts:558` yanı) içindedir; zod katmanı yalnız biçimi denetler.
+`VA9` mal-kimliği denetimi içerik gerektirdiğinden `dogrulaParametreler` (içerik bağlamlı katman, `dogrula.ts:597` yanı) içindedir; zod katmanı yalnız biçimi denetler.
 
 ### 4.2 `mulk.ekYapilar`: üç yeni kayıt ve iki yeni isteğe bağlı alan
 
-**Şema (`veri/src/tipler.ts:576-598` `MulkEkYapiTanimi`; `veri/src/sema.ts:364-377` `mulkEkYapiSema`):**
+**Şema (`veri/src/tipler.ts:583-606` `MulkEkYapiTanimi`; `veri/src/sema.ts:365-379` `mulkEkYapiSema`):**
 
 ```ts
 /** Askeri (Ordugâh): biten her yapı, düğümün birlik kapasitesine bu kadar ekler (adet; tüm birlik türlerinin TOPLAMI sınırlanır). Yok = 0. */
@@ -263,17 +325,17 @@ ikmal?: Record<MalId, number>;                // kayit (değerler pozitif tamsay
 
 (Mili-para: ₺1 = 1 000; `insaMaliyeti` mili-birim: çelik 80 birim = 80 000; **doğrulandı**: mevcut `ambar` kaydı `insaParasi: 3000000`, `insaMaliyeti: { celik: 15000, parca: 5000 }`.)
 
-**Derleme (`derle.ts:162-186` `mulkDerle`; `tipler.ts:124-136` `DerlenmisEkYapi`):**
+**Derleme (`derle.ts:188-221` `mulkDerle`; `tipler.ts:176-187` `DerlenmisEkYapi`):**
 
 ```ts
 export interface DerlenmisEkYapi {
   // ... mevcut alanlar ...
   birlikKapasitesi: number;            // t.birlikKapasitesi ?? 0
-  ikmal: [number, Mili][];             // mal indeksi artan; t.ikmal ?? {}; bilinmeyen mal: Error `icerikDerle: mulk.ekYapilar.<id>.ikmal bilinmeyen mal: <mal>` (insaMaliyeti kalıbı, derle.ts:171-175)
+  ikmal: [number, Mili][];             // mal indeksi artan; t.ikmal ?? {}; bilinmeyen mal: Error `icerikDerle: mulk.ekYapilar.<id>.ikmal bilinmeyen mal: <mal>` (insaMaliyeti kalıbı, derle.ts:196-200)
 }
 ```
 
-**Doğrulayıcı (`dogrula.ts:537-551` ek yapı kuralları yanı):**
+**Doğrulayıcı (`dogrula.ts:546-595` (`mulkKontrolu`) ek yapı kuralları yanı):**
 
 | # | Kural | İleti |
 |---|---|---|
@@ -282,7 +344,7 @@ export interface DerlenmisEkYapi {
 | VE3 | Askeri üç kimlik (`ordugah`, `karakol`, `gozetleme_kulesi`) `oyuncuyaKapaliYapilar` listesinde **olamaz** (oyuncu yapısıdır; kamu yapısı değil) | `mulk.kamu.oyuncuyaKapaliYapilar: askeri ek yapi kapatilamaz: <id>` |
 | VE4 | **Kilitsizlik taraması (A0-17 kalıbı):** `ekYapilar.<askeri>` kaydında seviye/teknoloji/önkoşul/sıra anahtarı yok (`.strict()` zaten reddeder); `gerekliTeknoloji` benzeri alan **eklenemez** | zod `.strict()` |
 
-**Uygulanamayan kurallar (§1 sapma 3):** arsa türü ve komşuluk matrisi, "ada başına ≤1": 0a'da **yoktur**; yapı yerleşimi yalnız `yuva` hücrelik kenar-bitişik küme, hücre `uygun` ve sahiplik kurallarına tabidir (`mulk/komut.ts:321-382`).
+**Uygulanamayan kurallar (§1 sapma 3):** arsa türü ve komşuluk matrisi, "ada başına ≤1": 0a'da **yoktur**; yapı yerleşimi yalnız `yuva` hücrelik kenar-bitişik küme, hücre `uygun` ve sahiplik kurallarına tabidir (`mulk/komut.ts:359-432`).
 
 ### 4.3 `kimlik-listesi.json`
 
@@ -330,13 +392,13 @@ Gerisi aynı kalır (`bolge === undefined` ⇒ `bilinmeyen bolge`; `bolge.sahip 
 
 ### 5.3 Askeri ek yapı inşa kapısı
 
-`mulk/komut.ts:262-279` `yapiTuruCoz`, kamu yapısı kapısının (`:269`) hemen sonrasına:
+`mulk/komut.ts:284-303` `yapiTuruCoz`, kamu yapısı kapısının (`:291`) hemen sonrasına:
 
 ```ts
 if (ek !== undefined && ASKERI_EK_YAPILAR.includes(ek.id) && !askeriMulkAcikMi(ctx.ic)) return `askeri kapali: ${ek.id}`;   // import { ASKERI_EK_YAPILAR, askeriMulkAcikMi } from "../askeri/kimlik";
 ```
 
-Ek yapı `tesis_insa_hucre` ve `yapi_yerlestir` komutlarının ikisi de `yapiTuruCoz`'dan geçtiği için tek satır ikisini kapsar (**doğrulandı: kod okuma**, `mulk/komut.ts:468-495` `yapiUygula`, `:497-` `mulkKomutu`). Bayrak açıkken ek yapı **mevcut yolla** kurulur (`enFazlaIlBasina`, `yuva`, bitişiklik, maliyet); özel kural eklenmez. `derle.ts:166` kimlik çakışma denetimi ve `serilestir.ts:699-700` (`icerikte olmayan ek yapi`) üç yeni tür kimliğini otomatik tanır.
+Ek yapı `tesis_insa_hucre` ve `yapi_yerlestir` komutlarının ikisi de `yapiTuruCoz`'dan geçtiği için tek satır ikisini kapsar (**doğrulandı: kod okuma**, `mulk/komut.ts:518-547` `yapiUygula`, `:497-` `mulkKomutu`). Bayrak açıkken ek yapı **mevcut yolla** kurulur (`enFazlaIlBasina`, `yuva`, bitişiklik, maliyet); özel kural eklenmez. `derle.ts:193` kimlik çakışma denetimi ve `serilestir.ts:768-769` (`icerikte olmayan ek yapi`) üç yeni tür kimliğini otomatik tanır.
 
 **Bayrak sonradan kapatılırsa:** kurulmuş askeri yapılar durumda kalır (ek yapı kaydı silinmez); yeni inşa reddedilir; birlik ve savunma komutları reddedilir; `ikmalTalebi` mevcut birlikler için çalışmaya devam eder (§7: çarpan kuralı bayraktan bağımsızdır). Bu, "kapı kapanınca oyuncu mülkü yok olmaz" ilkesidir (kural dönemi göçü gerekmez).
 
@@ -346,7 +408,7 @@ Ek yapı `tesis_insa_hucre` ve `yapi_yerlestir` komutlarının ikisi de `yapiTur
 
 **Kural (yalnız mülk kipi işletme düğümünde ve bayrak açıkken):** `birlik_uret` için düğümde **en az bir biten Ordugâh** bulunur ve `Σ birlikler + Σ üretimdeki partiler + k.adet ≤ Σ biten Ordugâh.birlikKapasitesi`.
 
-**`mulk/yapi.ts:29` `ekYapiToplami` alan birliğine `"birlikKapasitesi"` eklenir** (B12); `DerlenmisEkYapi.birlikKapasitesi` (§4.2) toplanır. Yeni işlevler `askeri/uretim.ts`:
+**`mulk/yapi.ts:31` `ekYapiToplami` alan birliğine `"birlikKapasitesi"` eklenir** (B12); `DerlenmisEkYapi.birlikKapasitesi` (§4.2) toplanır. Yeni işlevler `askeri/uretim.ts`:
 
 ```ts
 /** Düğümdeki toplam birlik: biten birlikler + üretimdeki partilerin adetleri. */
@@ -416,7 +478,7 @@ export function ikmalTalebi(d: Dunya, ctx: Baglam, bolge: number): Mili[] {
 - **Bölge kipinde ve harita bölgelerinde** `c = PPM` ve `ekYapilar` yok ⇒ fonksiyon bugünkü sonucu verir (aynı tamsayılar, aynı sıra; bölge kipi altınları).
 - **Mülk kipinde mevcut dünyalarda** hiçbir düğümde birlik ya da Karakol olamaz (B5; kapı §5): fonksiyon `0` dizisi döndürür. **Ar-Ge lideri kararı (S-1):** `ikmalCarpaniPpm` 0a verisinde **yazılmaz**; 0b'de bayrakla birlikte 250 000 yazılır. Bu yüzden 0a'da çarpan her yerde `PPM`'dir ve `ikmalTalebi` bugünkü sonucu verir (bölge kipi altınları ve mülk özetleri kesin korunur; çarpan yolu yalnız sentetik test verisinde sınanır).
 - Çarpan **bayraktan bağımsızdır**: bayrak sonradan kapatılırsa mevcut birlikler aynı ikmali ister (§5.3 sonu).
-- `ikmalKarsilanmaPpm` (`ekonomi/uretim.ts:627-628`) ve talep birleşimi (`:354`) **değişmez**; birlik maaşı (`lojistik/cozum.ts:162`) çarpana tabi değildir (para lavabosu, AK §3.6 madde 1).
+- `ikmalKarsilanmaPpm` (`ekonomi/uretim.ts:647` (uyku) ve `:728` (yazım)) ve talep birleşimi (`:402`) **değişmez**; birlik maaşı (`lojistik/cozum.ts:209`) çarpana tabi değildir (para lavabosu, AK §3.6 madde 1).
 - `ikmalTablosu` önbelleği (`WeakMap<DerlenmisIcerik>`) içerik başınadır ve çarpan `ic.param`'dan okunduğu için etkilenmez.
 
 ---
@@ -456,7 +518,7 @@ export function nobetEviHucresi(d: Dunya, ilce: string): HucreId | undefined {
 
 ### 9.1 Durum alanı
 
-`tipler.ts:299` `BolgeDurumu.ekYapilar?` alanından sonra:
+`tipler.ts:366` `BolgeDurumu.ekYapilar?` alanından sonra:
 
 ```ts
 /**
@@ -503,7 +565,7 @@ export function yagmaTavaniUygula(d: Dunya, ctx: Baglam, bi: number, oranPpm: nu
 
 ### 9.3 Rezerv: `Dunya.baskinlar` (ad ve şekil; kod 0b)
 
-Aşağıdaki biçim bu belgeyle **ad olarak** kilitlenir, 0a'da koda **girmez** (S-6): `Dunya.baskinlar?: BaskinDurumu[]` (`DUNYA_ISTEGE_BAGLI` birliğine `"baskinlar"` 0b'de eklenir, `serilestir.ts:244`).
+Aşağıdaki biçim bu belgeyle **ad olarak** kilitlenir, 0a'da koda **girmez** (S-6): `Dunya.baskinlar?: BaskinDurumu[]` (`DUNYA_ISTEGE_BAGLI` birliğine `"baskinlar"` 0b'de eklenir, `serilestir.ts:247`).
 
 ```ts
 interface BaskinDurumu {            // AK §3.7 kalem 6; alt alanlar 0b'de kesinleşir, üst düzey adlar kilitlidir
@@ -519,12 +581,28 @@ interface BaskinDurumu {            // AK §3.7 kalem 6; alt alanlar 0b'de kesin
 
 ---
 
+### 9.4 Dükkân, kasa ve servet (G7 sonrası; Ar-Ge isteği)
+
+**Kararlar (öneri; baş lider/A2 onayı 0b'de; 0a'yı bloke etmez; hiçbiri 0a kodunu değiştirmez):**
+
+| # | Soru | Karar | Gerekçe |
+|---|---|---|---|
+| D1 | **Dükkân malı yağmaya açık mı?** | **Evet; özel koruma yok.** Dükkânın rafı **ayrı stok tutmaz** (`RafYuvasi` yalnız mal kimliği, kademe, sayaç); satılan mal **il düğümü stoğundadır** (`yerelPazarCoz`/katman 4a stoktan çeker, perakende sartname §7.1). Yağma düğüm stoğunun her malına `kayipTavaniUygula` ile uygulandığı için raftaki malların stoğu da vurulur. | tek stok kaynağı; "raf stoğu" yeni durum alanı ve korunum karmaşası getirirdi (G7 kararı: ayrı raf stoğu yok) |
+| D2 | **Dükkân kasası yağmalanır mı?** | **Hayır (yağmalanacak nakit yok).** `olcekler[].kasaMiliSaat` birim/saat **satış kapasitesidir**, biriken nakit değildir; satış geliri doğrudan oyuncu hazinesine oran olarak akar (`ParaAkisi.yerel`). **Hazine, `dukkanGeliri`, `ilkSatisT`, para defteri yağmalanmaz** (A2 eşkıya: hazine para olarak yağmalanmaz; L6). İlçe/mahalle/il kamu kasaları (`k:*`) oyuncu mülkü değildir ve yağma hedefi değildir. | L6 (para alanı/para yağması yok); A2 eşkıya kalibrasyonu (hazine karşılaştırma içindir) |
+| D3 | **Servet tanımı (baskın boyu)** | A2 tanımı korunur: **servet = yapı taban değeri + hücre değeri; stok ve hazine HARİÇ.** **Dükkân yapısı servete GİRER** (ekonomik yapıdır): değer = `ekYapilar.dukkan.insaParasi + Σ insaMaliyeti[mal] × tabanFiyat[mal]`, ölçek `olcekKademeleri[olcek].insaPpm` ile çarpılmış (S'de çarpan 1); hücre değeri `HucreDurumu.degerMili` (P4 arsa fiyatı yukarı yuvarlanmış tam lira, p4-p5-sartname §9.4). **Askeri ek yapılar (Ordugâh, Karakol, Gözetleme Kulesi) servet DIŞINDADIR** (savunma yatırımı baskın boyunu artırmasın: aksi halde savunmaya yatırım yapmak kendi boyunu büyütürdü). | A2 E-5 ("servet birimi taban değer, stok hariç"; "değişmesin"); savunma yatırımını cezalandırmama ilkesi (AK K1 "seçim var, kilit yok") |
+| D4 | **Yapı devre dışı hedefi** (`yapiDevreDisiPpm`) | Yalnız `b.tesisler` (`aktif = false`); **ek yapılar (dükkân dahil) devre dışı bırakılmaz.** Dükkân dolaylı etkilenir: devre dışı tesis çıktı vermez ⇒ stok/üretim düşer ⇒ `yerelKarsilanmaPpm` düşer. | yeni durum alanı gerektirmez (`dukkan` için `aktif` yok); dükkân zaten stok yağmasıyla vurulur (D1); karmaşıklık/bundle |
+| D5 | **Yağmanın dükkân durumuna etkisi** | Yok: raf, kademe, kampanya, `satis`/`satisOran`, marka **değişmez**. Satış stok düşünce `frD` (katman 4a) ile otomatik azalır; `yerelKarsilanmaPpm` "neden satmıyor" bilgisini panele taşır. `yerelSatisYaz` normal çalışır. | durum yalnız çözümle türetilir (tembel) |
+| D6 | **Ganimet** | **Mal** (§4.1 `ganimet`: `muhimmat`, `yakit` mili-birim/boy), düğüm stoğuna. Dükkâna etkisi yok; ganimet `yakit`ı **stok** olarak girer (şebekeli tesis kullanmaz; Zırhlı Tümen ikmali kullanabilir, §2b.4). | L6; ganimet para değil |
+| D7 | **H5 payda** | "En yüksek stok" tanımı dükkân malını da içerir (D1): `Σ oran ≤ %25` kuralı (§9.1) değişmez. | tek nokta |
+
+**Kapsam dışı (bilinçli):** raf stoğu koruması, dükkân sigortası, yağmalanan malın dükkân raf sayacına yansıması (yok), dükkân yıkımı baskın sonucu (yok: `dukkan_yik` yalnız oyuncu komutu).
+
 ## 10. Serileştirme ve göç
 
 | Alan | Konum | Ne zaman yazılır | Doğrulayıcı (`serilestir.ts`) |
 |---|---|---|---|
-| `BolgeDurumu.yagmaPenceresi?` | `tipler.ts:299` yanı | ilk `f > 0` yağmada (0b) | bölge döngüsünde (`:327-337` `ekYapilar` bloğunun hemen sonrası): `if (b.yagmaPenceresi !== undefined) { if (b.merkez === undefined) hata(`${y}.yagmaPenceresi`, "yagma defteri yalniz isletme dugumunde olabilir"); const yp = nesne(b.yagmaPenceresi, ...); alanlar(yp, ..., ["baslangic", "kullanilanPpm"]); tamsayi(yp.baslangic, ..., 0); tamsayi(yp.kullanilanPpm, ..., 0, 1_000_000); }` |
-| `mulk.ekYapilar` içerikte yeni türler | `ekYapilar[j].tur` | oyuncu yapınca (bayrak açık) | **değişmez**: `serilestir.ts:699-700` (`icerikte olmayan ek yapi`) üç yeni tür kimliğini `mulk.ekYapilar` kayıtlarından otomatik tanır |
+| `BolgeDurumu.yagmaPenceresi?` | `tipler.ts:366` yanı | ilk `f > 0` yağmada (0b) | bölge döngüsünde (`:341-` (`b.ekYapilar` bloğu; dükkân doğrulayıcısı bloğun içinde) `ekYapilar` bloğunun hemen sonrası): `if (b.yagmaPenceresi !== undefined) { if (b.merkez === undefined) hata(`${y}.yagmaPenceresi`, "yagma defteri yalniz isletme dugumunde olabilir"); const yp = nesne(b.yagmaPenceresi, ...); alanlar(yp, ..., ["baslangic", "kullanilanPpm"]); tamsayi(yp.baslangic, ..., 0); tamsayi(yp.kullanilanPpm, ..., 0, 1_000_000); }` |
+| `mulk.ekYapilar` içerikte yeni türler | `ekYapilar[j].tur` | oyuncu yapınca (bayrak açık) | **değişmez**: `serilestir.ts:768-769` (`icerikte olmayan ek yapi`) üç yeni tür kimliğini `mulk.ekYapilar` kayıtlarından otomatik tanır |
 
 - `Dunya` üst düzeyine alan **eklenmez** (0a). `paraDurumuKur`, `isletmeAl` ve diğer kurucular yeni alanı **yaratmaz** (tembel: yağma olmadıkça yok).
 - **`fikstur-goc/{bolge-v1,mulk-v1,mulk-v2-g6oncesi}.json` yüklenmeye devam eder** ve yüklenen dünyanın özeti, göç anındaki meşru farklar (kural sürümü değişirse bir ek çözüm) dışında değişmez; yeni alanların hepsi isteğe bağlıdır. `kuralSurumu` 0a veri commit'inde değişir (veri); bölge kipi altınları değişmez.
@@ -575,7 +653,7 @@ Bayrak **kapalıyken** davranışın korunduğunun üç kanıtı; her birinin fa
 | `cekirdek/test/askeri-nobet.test.ts` (yeni) | `nobetEviHucresi`: kamu açık mini-6 ilçesinde `hizmet` bloğunun sol-üst hücresi, kamu kapalıyken `undefined`, sonuç tekrarlanabilir ve parametre değişse de aynı (dondurulmuş) |
 | `cekirdek/test/askeri-ad-kilidi.test.ts` (yeni) | `ORDUGAH`, `KARAKOL`, `GOZETLEME_KULESI`, `NOBET_EVI` sabitleri `kimlik-listesi.json` kimlikleriyle eşit; `AskeriEskiyaParametreleri` alan kümesi bu belgenin §4.1 listesiyle birebir (anahtar kümesi sabitlenir); `OLAY_ONCELIGI` anahtarlarında `eskiya_*` YOK (0a) |
 | `cekirdek/test/askeri-0a-kanit.test.ts` (yeni) | K-A1, K-A2, K-A3 (§12) |
-| uyarlama: `mulk-yapilar.test.ts:50-60` | ek yapı listesi 6 → 9 (`ordugah`, `karakol`, `gozetleme_kulesi` eklenir); başka mülk testlerinde ek yapı sayımı varsa güncellenir (**doğrulanmadı: tam liste**, K3 koşarak belirler) |
+| uyarlama: `mulk-yapilar.test.ts:49-51` | ek yapı listesi 6 → 9 (`ordugah`, `karakol`, `gozetleme_kulesi` eklenir; **G7-4 verisi `dukkan` ekyapısını da getirirse 7 → 10**: test beklentisi sıralı kimlik listesidir, sıra yeniden hesaplanır); başka mülk testlerinde ek yapı sayımı varsa güncellenir (**doğrulanmadı: tam liste**, K3 koşarak belirler) |
 | uyarlama: `veri/test/dogrulama.test.ts` | ek yapı sayısı ve `askeri` blok anahtar kümesi |
 
 Kural: testler **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedefli testleri koşulur, tam kapı O1'indir.
@@ -616,6 +694,7 @@ Kural: testler **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedef
 | GZ-A7 | **`nobet_evi` kimliği ve konum türetme kuralı** (ilk `hizmet` bloğunun sol-üst hücresi) | kimlik kilidi; istemci ikonu ve 0b savunma toplamı bu konuma bağlanır | baş lider (S-2 kapandı) |
 | GZ-A8 | **Olay adları** `eskiya_gunluk`, `eskiya_pencere_ac`, `eskiya_pencere_kapa` ve **`Dunya.baskinlar` adı/üst düzey şekli** | kuyrukta ve görüntüde serileştirilince kalıcı | önerilen (S-6) |
 | GZ-A9 | **`param.askeri.yagmaIletimPpm` adı** (Y-36; rezerv, şemada alan YOK) | PvP ekonomisinin kalıcı tanımı (K3 AK); alan çıkarmak değil adı bağlamak | kilitli yön (Y-36) |
+| GZ-A10 | **Servet tanımı: yapı taban değeri + hücre değeri; stok ve hazine HARİÇ; dükkân GİRER, askeri ek yapılar DIŞINDA** (§9.4 D3) | baskın boyu ve oyuncu davranışı (servet dağıtma/yatırım yönü) bu tanıma bağlıdır; sonradan değişirse boy eğrisi ve A2 kalibrasyonu geçersiz olur | önerilen (A2 E-5; baş lider/A2 teyidi 0b'de) |
 
 ---
 
@@ -641,27 +720,29 @@ Kural: testler **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedef
 | 0b-1 | **Bedava binici:** Karakol ve Nöbet Evi kamu malıdır (ilçedeki herkesin savunmasına katkı); yalnız kuranlar öder | Baş lider önerisi: **ilçe kamu kasasından katkı**, mevcut kasa düzenine bağlansın (kasa yalnız yanan paradan beslenir; ödenek/kamu NPC alıcısı kalıbı); **yeni musluk açılmaz** (L6, para korunumu) | 0b tasarımı (A2 + A3) |
 | 0b-2 | **Büyük boyda savunma ödemiyor (boy ≥ 6, A2 kalibrasyonu):** savunma maliyeti beklenen yağma kaybını aşıyor | Ya **boya göre yağma oranı** (`yagmaOraniPpm` ölçeğe bağlı) ya da **savunma bedeli kademesi** gerekir; seçim A2 ölçümüyle (AH3) | A2, baş lider |
 | 0b-3 | E-4: yağma ve yapı devre dışı oranı %25 (yalnız 0b verisi, 0a'da `etkin: false`) | **KAPANDI (baş lider)**: onaylandı | kapandı |
+| 0b-4 | **`askeri_rezerv` (mevcut komut; `OyuncuDurumu.askeriRezervPpm`) mülk işletme düğümlerinde nasıl okunur?** | 0a değiştirmez; 0b savunma stoğu/yağma ile etkileşimini tasarlar (doğrulanmadı: `lojistik/cozum.ts:404` düğüm bazlı mı) | 0b tasarımı (K3) |
+| 0b-5 | **Dükkân servette, askeri yapı servet dışında; yapı devre dışı yalnız tesis (§9.4 D3, D4)** onayı | önerilen; A2 servet/kalibrasyon teyidi | A2, baş lider |
 
 ## Ek A. Değişen dosya ve fonksiyonlar (Parça 1; `dosya:satır`, taban `7553b55`)
 
 | Dosya:satır | Sahip | Değişiklik |
 |---|---|---|
-| `veri/src/tipler.ts:501` `askeri` | K3 | `ikmalCarpaniPpm?`, `eskiya?: AskeriEskiyaParametreleri` (§4.1) |
-| `veri/src/tipler.ts:576-598` `MulkEkYapiTanimi` | K3 | `birlikKapasitesi?`, `ikmal?` |
-| `veri/src/sema.ts:532` (`askeri`), `:364-377` (`mulkEkYapiSema`) | K3 | şema karşılıkları (`.strict()`) |
-| `veri/src/dogrula.ts` (`dogrulaParametreler`, `:537-565` yanı) | K3 | VA1–VA11, VE1–VE3 |
+| `veri/src/tipler.ts:507` `askeri` | K3 | `ikmalCarpaniPpm?`, `eskiya?: AskeriEskiyaParametreleri` (§4.1) |
+| `veri/src/tipler.ts:583-606` `MulkEkYapiTanimi` | K3 | `birlikKapasitesi?`, `ikmal?` |
+| `veri/src/sema.ts:582` (`askeri`), `:364-377` (`mulkEkYapiSema`) | K3 | şema karşılıkları (`.strict()`) |
+| `veri/src/dogrula.ts` (`dogrulaParametreler`, `:546-595` yanı) | K3 | VA1–VA11, VE1–VE3 |
 | `veri/icerik/parametreler.json` | **T3** | `askeri.eskiya` (`etkin: false`) (`ikmalCarpaniPpm` YOK: S-1), `mulk.ekYapilar.{ordugah,karakol,gozetleme_kulesi}` (§4) |
 | `veri/icerik/kimlik-listesi.json` | **T3** | `nobet_evi` aşaması `A0-ops` |
-| `cekirdek/src/tipler.ts:124-136` `DerlenmisEkYapi` | K3 | `birlikKapasitesi`, `ikmal` |
-| `cekirdek/src/derle.ts:162-186` `mulkDerle` | K3 | iki alan (`ikmal` mal indeksine çevrilir) |
+| `cekirdek/src/tipler.ts:176-187` `DerlenmisEkYapi` | K3 | `birlikKapasitesi`, `ikmal` |
+| `cekirdek/src/derle.ts:188-221` `mulkDerle` | K3 | iki alan (`ikmal` mal indeksine çevrilir) |
 | `cekirdek/src/askeri/kimlik.ts` (YENİ) | K3 | sabitler, `askeriMulkAcikMi` |
 | `cekirdek/src/askeri/uretim.ts:21-60` `birlikUret` | K3 | kapı, `bolgeIndeksiBul`, Ordugâh şartı, `birlikKullanimi` |
 | `cekirdek/src/askeri/uretim.ts:98-110` `ikmalTalebi` | K3 | çarpan ve ek yapı ikmali |
 | `cekirdek/src/askeri/savas.ts:73-89` `savunmaEmri`, `:95-101` `savasIlan` | K3 | kapı; `savunmaEmri` `bolgeIndeksiBul` |
 | `cekirdek/src/askeri/nobet.ts` (YENİ), `askeri/index.ts`, `src/index.ts` | K3 | `nobetEviHucresi` ve dışa açma |
-| `cekirdek/src/mulk/yapi.ts:29` `ekYapiToplami` | K3 | alan birliğine `"birlikKapasitesi"` |
-| `cekirdek/src/mulk/komut.ts:262-279` `yapiTuruCoz` | K3 | askeri ek yapı kapısı (§5.3) |
-| `cekirdek/src/tipler.ts:299` `BolgeDurumu` | K3 | `yagmaPenceresi?: { baslangic: Ms; kullanilanPpm: number }` (§9.1) |
+| `cekirdek/src/mulk/yapi.ts:31` `ekYapiToplami` | K3 | alan birliğine `"birlikKapasitesi"` |
+| `cekirdek/src/mulk/komut.ts:284-303` `yapiTuruCoz` | K3 | askeri ek yapı kapısı (§5.3) |
+| `cekirdek/src/tipler.ts:366` `BolgeDurumu` | K3 | `yagmaPenceresi?: { baslangic: Ms; kullanilanPpm: number }` (§9.1) |
 | `cekirdek/src/askeri/yagma.ts` (YENİ), `askeri/index.ts`, `src/index.ts` | K3 | `yagmaTavaniUygula` (§9.2; çağıran yok: 0b) |
-| `cekirdek/src/serilestir.ts:327-337` (bölge döngüsü, `ekYapilar` bloğundan sonra) | K3 | `yagmaPenceresi` doğrulayıcısı (§10) |
+| `cekirdek/src/serilestir.ts:341-` (bölge döngüsü, `ekYapilar` bloğundan sonra) | K3 | `yagmaPenceresi` doğrulayıcısı (§10) |
 | `cekirdek/test/askeri-*.test.ts`, `veri/test/askeri-eskiya-dogrulama.test.ts` (YENİ) | K3 | §13 |

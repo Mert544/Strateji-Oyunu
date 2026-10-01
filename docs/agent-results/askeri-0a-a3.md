@@ -25,3 +25,7 @@ GZ-A1..GZ-A9 §15'te. Açık (§16): S-4 arsa matrisi, S-6 `Dunya.baskinlar` 0b,
 ## Doğrulama
 
 Kod okuma (dosya:satır tabanı `7553b55`); çekirdek koduna dokunulmadı, test koşulmadı (belge işi). Doğrulanmayanlar belgede `(doğrulanmadı)` işaretli.
+
+## Güncelleme (G6/G7 sonrası)
+
+Şartname `takim/kod/p6-tam` bc6087c çekirdeğine göre tazelendi (taban 7553b55 yerine bc6087c; `dosya:satır` göndermeleri yeni satırlarla). Eklenenler: §2b (eski/yeni satır eşlemesi; BolgeDurumu/DukkanDurumu tipleri; para defteri musluk/lavabo ve `kasa.giris.sebeke`; şebeke etkileşimi; komutSemasi ve para güvenliği; H5/eşkıya/yağma %60-%40/ikmal ×0,25 0b veri özeti), §9.4 (dükkân raf stoğu ve kasa: yağmaya kapalı, servet = yapı + hücre; D1-D7), GZ-A10, 0b-4/0b-5. Askeri kaynak dosyaları (`askeri/`, `dugum.ts`, `mulk/isletme.ts`) 7553b55'ten beri değişmedi (doğrulandı: git diff). Kod yok, test koşulmadı.
