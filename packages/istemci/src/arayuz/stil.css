@@ -457,12 +457,20 @@ body.oyuncu-kipi .marka { display: none; }
   .hasat-sutun { width: 3px; }
   #ust .kart-cubuk { padding: 2px var(--s-2); }
   #ust .kart-sag { padding: 0; }
-  #ust .ikon-dugme { width: 40px; height: 40px; }
+  /* Dokunma hedefi 44 × 44 px (WCAG 2.5.5; temel.css dokunmatik kuralıyla aynı): çubuk tek satır kalır, ortadaki tarih çipi daralır */
+  #ust .ikon-dugme { width: 44px; height: 44px; }
 }
 @media (max-width: 440px) {
   .hasat { display: none; }
   .hasat-deger small { display: none; }
   #ust .kart-zaman { padding: 2px var(--s-2); gap: 6px; }
+}
+@media (max-width: 380px) {
+  /* 44 px düğmeler (3 × 44) dar telefonda yer ister: boşluklar kısılır, hasat yüzdesi gizlenir; tarih ve saat kalır, taşma olmaz */
+  #ust { gap: 4px; }
+  #ust .kart-zaman { padding: 2px 6px; gap: 4px; }
+  #ust .kart-cubuk.oyuncu-dugme { padding: 2px 6px; }
+  .hasat-deger { display: none; }
 }
 @media (max-width: 420px) {
   .segment .x { display: none; }
