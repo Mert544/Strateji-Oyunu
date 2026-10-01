@@ -15,18 +15,18 @@
 export type Acilis = "tarim" | "sanayi" | "pazar";
 
 export interface AcilisBilgisi {
-  ad: string;
-  /** Kısa açıklama (kartta). */
-  ozet: string;
-  /** Önerilen ilk yapı (yapı menüsünde "Önerilen" rozeti). */
+  /** Önerilen ilk yapı (yapı menüsünde "Önerilen" rozeti). Üç açılışta da ÇİFTLİK (P4 akışı): açılış yalnız ikinci adımı ve ilçe önerisini etkiler. */
   yapi: string;
-  yapiAd: string;
 }
 
+/**
+ * Açılış önerileri. Görünen ad ve cümleler metin tablolarındadır (`arayuz/yerles-metin.ts`, `tasarim/ilce-metin.ts`); yapının görünen adı
+ * KATALOGDAN okunur (burada sabit ad yok).
+ */
 export const ACILIS: Readonly<Record<Acilis, AcilisBilgisi>> = {
-  tarim: { ad: "Tarım", ozet: "Çiftlik ile tahıl; gıdaya hazır başla", yapi: "ciftlik", yapiAd: "Çiftlik" },
-  sanayi: { ad: "Sanayi", ozet: "Parça fabrikasıyla üretim zinciri", yapi: "parca_fabrikasi", yapiAd: "Parça Fabrikası" },
-  pazar: { ad: "Pazar", ozet: "Gıda fabrikası ile işleyip sat", yapi: "gida_fabrikasi", yapiAd: "Gıda Fabrikası" },
+  tarim: { yapi: "ciftlik" },
+  sanayi: { yapi: "ciftlik" },
+  pazar: { yapi: "ciftlik" },
 };
 
 export const ACILIS_SIRASI: readonly Acilis[] = ["tarim", "sanayi", "pazar"];
@@ -80,6 +80,25 @@ export interface AdayDurumu {
 /** Ayrılmış hücre ilk yapının ayak izine yetiyor mu? (bilinmiyorsa hayır: bilinen ve yeten ilçe öne geçer) */
 export function tabanYeter(d: AdayDurumu): boolean {
   return d.ayrilmis !== null && d.ayrilmis >= (d.ayakIzi ?? 1);
+}
+
+/** "Ayrılmış arsa bol" eşiği (hücre; öneri, tek sabit). */
+export const AYRILMIS_BOL_ESIGI = 100;
+
+/**
+ * Kartın ayrılmış hücre satırı (oyuncu dili, SAYI YOK): bilinmiyorsa null (satır yok); 0 → yok; ilk yapının ayak izine yetmiyorsa az;
+ * yetiyorsa var, `AYRILMIS_BOL_ESIGI` ve üstü bol.
+ */
+export function ayrilmisDurumu(d: Pick<AdayDurumu, "ayrilmis" | "ayakIzi">): "bol" | "var" | "az" | "yok" | null {
+  if (d.ayrilmis === null) return null;
+  if (d.ayrilmis <= 0) return "yok";
+  if (d.ayrilmis < (d.ayakIzi ?? 1)) return "az";
+  return d.ayrilmis >= AYRILMIS_BOL_ESIGI ? "bol" : "var";
+}
+
+/** Kartın durum rozeti: ızgara yoksa "yakında" (zayıf; ızgara gelince kalkar), sunucuda yoksa "açık değil", aksi hâlde "hazır". */
+export function durumRozeti(d: Pick<AdayDurumu, "izgara" | "sunucuda">): "hazir" | "izgara_yakinda" | "sunucuda_yok" {
+  return !d.izgara ? "izgara_yakinda" : d.sunucuda === false ? "sunucuda_yok" : "hazir";
 }
 
 /** Yerleş skoru (0–1,5): formül yukarıda. */

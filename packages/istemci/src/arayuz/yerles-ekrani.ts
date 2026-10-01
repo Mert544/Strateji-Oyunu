@@ -6,12 +6,15 @@
  * Mantık saftır (`harita/yerles.ts`); bu dosya yalnız arayüzdür. Mülk kipinde (sunucu bağlıyken) açılışta gösterilir; eski
  * "Devlet seç" akışı mülk kipinde gösterilmez (bölge kipinde kalır).
  */
-import { esc, fmt, yuzde } from "./bicim";
+import { esc, yuzde } from "./bicim";
 import type { MulkBaglantisi } from "../harita/baglanti";
-import { ACILIS, ACILIS_SIRASI, tabanYeter, YERLES_ADAYLARI, yerlesOner } from "../harita/yerles";
+import { acilisMetni, bilinenYaniSatiri, ilceMetni, ilceNedeni } from "../tasarim/ilce-metin";
+import type { DukkanDuzeyi } from "../tasarim/ilce-metin";
+import { ACILIS, ACILIS_SIRASI, ayrilmisDurumu, durumRozeti, YERLES_ADAYLARI, yerlesOner } from "../harita/yerles";
 import type { Acilis, AdayDurumu } from "../harita/yerles";
 import { izgaraVarMi } from "../harita/veri";
 import type { Hiyerarsi } from "../harita/veri";
+import { yerlesMetni, yerlesMetniHtml } from "./yerles-metin";
 
 export interface YerlesGirdisi {
   /** Ekranın ekleneceği kap (sahne kabı). */
@@ -24,6 +27,8 @@ export interface YerlesGirdisi {
   kapandi?: () => void;
   /** Yapının ayak izi (hücre; kataloğdan). Verilmezse 1. */
   yuva?: (yapi: string) => number;
+  /** Dükkân düzeyi (G7: dükkân açık, G8: cam ve pencere açık); ilçe sözlüğü metinleri buna göre seçilir. Verilmezse G6 (dükkân yok). */
+  dukkanDuzeyi?: () => DukkanDuzeyi;
 }
 
 export interface YerlesEkrani {
@@ -56,13 +61,43 @@ async function durumlariTopla(g: YerlesGirdisi): Promise<AdayDurumu[]> {
   return sonuc;
 }
 
+/** İlçenin açılış önerisi: sözlükteki öneri (T3), yoksa adayın küratörlü açılışı. */
+export const yerlesOnerisi = (d: Pick<AdayDurumu, "aday">): Acilis => ilceMetni(d.aday.ilce)?.oneri ?? d.aday.acilis;
+
+/**
+ * İlçe kartı (sözleşme H.1; SAF dizge). Sıra: ad, neden, bilinen yanı, açılış, doluluk, ayrılmış hücre, rozet. Satır yoksa hiç yazılmaz
+ * (boş yer yok): sözlükte olmayan ilçede neden ve bilinen yanı, ızgarasız ilçede doluluk, bilinmeyen ayrılmışta ayrılmış satırı.
+ */
+export function yerlesKartiHtml(d: AdayDurumu, secili: boolean, duzey: DukkanDuzeyi = {}): string {
+  const yog = d.doluluk;
+  const neden = ilceNedeni(d.aday.ilce, duzey);
+  const bilinen = bilinenYaniSatiri(d.aday.ilce);
+  const oneri = yerlesOnerisi(d);
+  const doluluk = !d.izgara
+    ? ""
+    : yog === null
+      ? `<span class="yr-doluluk yok">${esc(yerlesMetni("yerles.kart.doluluk_yok"))}</span>`
+      : `<span class="yr-doluluk"><span class="yr-cubuk" aria-hidden="true"><i style="width:${yog > 0 ? Math.max(2, Math.round(yog * 100)) : 0}%"></i></span>${yerlesMetniHtml("yerles.kart.doluluk", { yuzde: `<b>${esc(yuzde(yog * 100, yog < 0.1 ? 1 : 0))}</b>` })}</span>`;
+  const ay = ayrilmisDurumu(d);
+  const ayrilmis = ay === null ? "" : `<span class="yr-ayrilmis">${esc(yerlesMetni(`yerles.kart.ayrilmis_${ay}`))}</span>`;
+  const rozet = durumRozeti(d);
+  return `<button type="button" class="yr-kart" role="radio" aria-checked="${secili}" data-ilce="${esc(d.aday.ilce)}">
+      <span class="yr-ad">${esc(d.ad)} <small>${esc(d.il)}</small></span>
+      ${neden ? `<span class="yr-neden">${esc(neden)}</span>` : ""}
+      ${bilinen ? `<span class="yr-imza">${esc(bilinen.etiket)}: ${esc(bilinen.deger)}</span>` : ""}
+      <span class="yr-onerilen">${yerlesMetniHtml("yerles.kart.acilis", { ad: `<b>${esc(yerlesMetni(`yerles.acilis.${oneri}`))}</b>` })}<span> ${esc(acilisMetni(oneri, duzey))}</span></span>
+      ${doluluk}${ayrilmis}
+      <span class="yr-durum ${rozet === "hazir" ? "iyi" : "zayif"}">${esc(yerlesMetni(`yerles.kart.${rozet}`))}</span>
+    </button>`;
+}
+
 export async function yerlesAc(g: YerlesGirdisi): Promise<YerlesEkrani> {
   const kat = document.createElement("div");
   kat.id = "yerles";
   kat.setAttribute("role", "dialog");
   kat.setAttribute("aria-modal", "true");
   kat.setAttribute("aria-labelledby", "yerles-baslik");
-  kat.innerHTML = `<div class="yr-kutu gir"><h1 id="yerles-baslik">Nerede başlamak istersin?</h1><p class="yr-alt">Yerleşim yerleri hazırlanıyor…</p></div>`;
+  kat.innerHTML = `<div class="yr-kutu gir"><h1 id="yerles-baslik">${esc(yerlesMetni("yerles.baslik"))}</h1><p class="yr-alt">${esc(yerlesMetni("yerles.hazirlaniyor"))}</p></div>`;
   g.kap.append(kat);
   document.body.classList.add("yerles-acik");
 
@@ -79,44 +114,29 @@ export async function yerlesAc(g: YerlesGirdisi): Promise<YerlesEkrani> {
     g.kapandi?.();
   };
 
-  const kartHtml = (d: AdayDurumu): string => {
-    const yog = d.doluluk;
-    const doluluk =
-      yog === null
-        ? `<span class="yr-doluluk yok">Doluluk bilinmiyor</span>`
-        : `<span class="yr-doluluk"><span class="yr-cubuk" aria-hidden="true"><i style="width:${Math.max(2, Math.round(yog * 100))}%"></i></span><b>${esc(yuzde(yog * 100, yog < 0.1 ? 1 : 0))}</b> dolu</span>`;
-    const ayrilmis = d.ayrilmis === null ? "" : `<span class="yr-ayrilmis">${fmt(d.ayrilmis)} hücre yeni oyunculara ayrılmış${tabanYeter(d) ? ` · ilk ${esc(ACILIS[d.aday.acilis].yapiAd)} için yeter` : ""}</span>`;
-    const durum = !d.izgara ? `<span class="yr-durum zayif">Arsa ızgarası yakında: yalnız gezebilirsin</span>` : d.sunucuda === false ? `<span class="yr-durum zayif">Bu ilçe sunucuda henüz yok</span>` : `<span class="yr-durum iyi">Hazır arsalar var</span>`;
-    return `<button type="button" class="yr-kart" role="radio" aria-checked="${d.aday.ilce === secili}" data-ilce="${esc(d.aday.ilce)}">
-      <span class="yr-ad">${esc(d.ad)} <small>${esc(d.il)}</small></span>
-      <span class="yr-imza">İmza: ${esc(d.aday.imza)}</span>
-      ${doluluk}${ayrilmis}
-      <span class="yr-neden">${esc(d.aday.neden)}</span>
-      <span class="yr-onerilen">Açılış önerisi: <b>${esc(ACILIS[d.aday.acilis].ad)}</b></span>
-      ${durum}
-    </button>`;
-  };
+  const duzey = (): DukkanDuzeyi => g.dukkanDuzeyi?.() ?? {};
+  const kartHtml = (d: AdayDurumu): string => yerlesKartiHtml(d, d.aday.ilce === secili, duzey());
 
   // Giriş hareketi yalnız "hazırlanıyor" kutusunda (.gir): seçim değişince kutu yeniden çizilir ama yeniden belirmez
   const ciz = (hata = ""): void => {
     const sd = gorunen.find((d) => d.aday.ilce === secili) ?? gorunen[0];
     const hazir = !!sd?.izgara && sd.sunucuda !== false;
     kat.innerHTML = `<div class="yr-kutu">
-      <h1 id="yerles-baslik">Nerede başlamak istersin?</h1>
-      <p class="yr-alt">Mahallende ya da seçtiğin yerde başla. Sana üç ilçe önerdik: doluluğa, imza ürüne ve ayrılmış hücrelere göre.</p>
+      <h1 id="yerles-baslik">${esc(yerlesMetni("yerles.baslik"))}</h1>
+      <p class="yr-alt">${esc(yerlesMetni("yerles.alt"))}</p>
       <div class="yr-kartlar" role="radiogroup" aria-label="Önerilen ilçeler">${gorunen.map(kartHtml).join("")}</div>
       <fieldset class="yr-acilis">
-        <legend>Açılış önerisi</legend>
-        <div class="segment" role="group" aria-label="Açılış önerisi">
-          ${ACILIS_SIRASI.map((a) => `<button type="button" data-acilis="${a}" aria-pressed="${a === acilis}" title="${esc(ACILIS[a].ozet)}">${esc(ACILIS[a].ad)}</button>`).join("")}
+        <legend>${esc(yerlesMetni("yerles.acilis.baslik"))}</legend>
+        <div class="segment" role="group" aria-label="${esc(yerlesMetni("yerles.acilis.baslik"))}">
+          ${ACILIS_SIRASI.map((a) => `<button type="button" data-acilis="${a}" aria-pressed="${a === acilis}" title="${esc(acilisMetni(a, duzey()))}">${esc(yerlesMetni(`yerles.acilis.${a}`))}</button>`).join("")}
         </div>
-        <p class="yr-not"><b>${esc(ACILIS[acilis].ad)}:</b> ${esc(ACILIS[acilis].ozet)}. Bu bir <b>sınıf değil</b>, yalnızca bir açılış önerisi: istediğin zaman fabrika kurar, ticarete geçer, başka yöne dönersin. Kilit yok; geçişin yalnızca ekonomik bir maliyeti olur.</p>
+        <p class="yr-not">${yerlesMetniHtml("yerles.acilis.not", { ad: `<b>${esc(yerlesMetni(`yerles.acilis.${acilis}`))}</b>`, cumle: esc(acilisMetni(acilis, duzey())) })}</p>
       </fieldset>
       ${hata ? `<p class="yr-hata" role="alert">${esc(hata)}</p>` : ""}
       <div class="yr-alt-satir">
-        <button type="button" class="yr-ikincil" data-yr="baska">Başka ilçe öner</button>
-        <button type="button" class="yr-ikincil" data-yr="atla">Şimdilik atla</button>
-        <button type="button" class="yr-birincil" data-yr="basla" ${mesgul ? "disabled" : ""}>${mesgul ? "Hazırlanıyor…" : hazir ? "Burada başla" : "İlçeyi gez"}</button>
+        <button type="button" class="yr-ikincil" data-yr="baska">${esc(yerlesMetni("yerles.dugme.baska"))}</button>
+        <button type="button" class="yr-ikincil" data-yr="atla">${esc(yerlesMetni("yerles.dugme.atla"))}</button>
+        <button type="button" class="yr-birincil" data-yr="basla" ${mesgul ? "disabled" : ""}>${esc(yerlesMetni(mesgul ? "yerles.dugme.hazirlaniyor" : hazir ? "yerles.dugme.basla" : "yerles.dugme.izgara"))}</button>
       </div>
     </div>`;
   };
@@ -124,7 +144,7 @@ export async function yerlesAc(g: YerlesGirdisi): Promise<YerlesEkrani> {
   const sec = (ilce: string): void => {
     secili = ilce;
     const d = gorunen.find((x) => x.aday.ilce === ilce);
-    if (d) acilis = d.aday.acilis;
+    if (d) acilis = yerlesOnerisi(d);
   };
 
   const yenile = (): void => {

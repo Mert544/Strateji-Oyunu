@@ -143,9 +143,9 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   kontrol(`${e} Yerleş ekranı açıldı; 3 önerilen ilçe`, adaylar.length === 3 && adaylar.includes(GEBZE), adaylar.join(", "));
   kontrol(`${e} "Devlet seç" mülk kipinde gösterilmiyor`, await sayfa.locator("#devlet-sec").isHidden());
   const kartlar = (await sayfa.locator(".yr-kartlar").innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} kartlarda doluluk, imza ürün ve ayrılmış hücre`, /dolu/.test(kartlar) && /İmza:/.test(kartlar) && /yeni oyunculara ayrılmış/.test(kartlar), kartlar.slice(0, 160));
+  kontrol(`${e} kartlarda neden, bilinen yanı, doluluk ve ayrılmış arsa (sayı yok)`, /dolu/.test(kartlar) && /Bilinen yanı:/.test(kartlar) && /Yeni oyunculara ayrılmış arsa/.test(kartlar) && !/İmza:/.test(kartlar) && !/hücre yeni oyunculara/.test(kartlar), kartlar.slice(0, 160));
   const not = (await sayfa.locator(".yr-acilis").innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} açılış önerisi: Tarım/Sanayi/Pazar ve "sınıf değil, sonradan değiştirilebilir"`, /Tarım/.test(not) && /Sanayi/.test(not) && /Pazar/.test(not) && /sınıf değil/.test(not) && /istediğin zaman/.test(not), not.slice(0, 200));
+  kontrol(`${e} açılış önerisi: Tarım/Sanayi/Pazar, her biri "Çiftlikle başla" ve "yalnız bir öneri, istediğin zaman dönebilirsin"`, /Tarım/.test(not) && /Sanayi/.test(not) && /Pazar/.test(not) && /Çiftlikle başla/.test(not) && /yalnız bir öneri/.test(not) && /istediğin zaman/.test(not), not.slice(0, 200));
   await sayfa.locator(".yr-kart[data-ilce='tr_41_gebze']").click();
   await sayfa.locator("[data-acilis='tarim']").click();
   await sayfa.waitForTimeout(150);
@@ -840,7 +840,7 @@ async function sahteYerles(tarayici: Browser, adres: string, konsol: string[]): 
   await sayfa.screenshot({ path: join(EKRAN, "f4-sahte-1b-defter-koyu.png") });
   await tikla(sayfa, false, "#yapi-menu-dugme");
   const menu = (await sayfa.locator("#yapi-menu").innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} Pazar önerisi: menüde Gıda Fabrikası "Önerilen"`, /Gıda Fabrikası\s+Önerilen/.test(menu), menu.slice(0, 120));
+  kontrol(`${e} Pazar açılışı: menüde Çiftlik "Önerilen" (üç açılışta da ilk yapı çiftlik)`, /Çiftlik\s+Önerilen/.test(menu), menu.slice(0, 120));
   await sayfa.screenshot({ path: join(EKRAN, "f4-sahte-2-yapi-menusu-koyu.png") });
   kontrol("[sahte/masaüstü] konsol hatası yok", konsol.filter((x) => x.includes("[sahte]")).length === 0, konsol.slice(0, 3).join(" | "));
   await baglam.close();

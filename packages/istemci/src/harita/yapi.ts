@@ -313,7 +313,7 @@ export function yerlesimPlani(yapi: YapiTanimi, cx: number, cy: number, donus: n
   return { yapi, hucreler, gecerli: neden === null, neden, alinacak, parseller, arsaMili, yapiMili, malzeme, indirimli, toplamMili, hazineYetmez };
 }
 
-/** Yapı kartındaki malzeme satırı: "Çelik 30 · Makine Parçası 10" (mili-birim → birim). */
+/** Yapı kartındaki malzeme satırı: "Çelik 30 · Makine parçası 10" (ad içerik tablosundan; mili-birim → birim). */
 export function malzemeMetni(y: Pick<YapiTanimi, "malzeme">): string {
   return y.malzeme.map((m) => `${m.ad} ${fmt(m.miktar / 1000)}`).join(" · ");
 }
