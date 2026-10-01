@@ -2,13 +2,13 @@
 
 > **Bu belge ne.** Yeni bir oyuncunun Alfa-0'da ilk haftasını, oyuncunun gözünden anlatır: ne yapar, ne görür, neye karar verir. Baş liderin sahibe sunacağı ürün raporunun omurgasıdır; bu yüzden sade yazıldı. **Yalnız belge**: hiçbir şey çalıştırılmadı.
 >
-> **Durum işaretleri.** **Bugün kodda var** = **P5 ucunda** (P5 paketi ana dala girince; `k1/yurt-once` 528990a, e-posta girişi ve yurt önce ekranı dahil) çalışan özellik, kaynak kod ve commit okumasıyla (çalıştırılmadı); P5 görüntü seti gelince ekranlar gözle doğrulanacak. **Geliyor** = ekmek zinciri, dükkân, cam ve pencere (P4/P5) ya da giriş ekranı ve ilk saat düzeltmeleri (G1–G9) gibi henüz ana dalda olmayan iş; belgelerde **tanımlıdır, oynanmış değildir**. **(doğrulanmadı)** = kaynaktan teyit edilemeyen bilgi. Süreler **hedeftir**; gerçek oyuncu hızı insan testinde (pilot paketi) ölçülecek.
+> **Durum işaretleri.** **Bugün kodda var** = **ana dalda** (P5c, `0691310`; yurt önce `08b7ee8`, giriş mantığı `c327653` ve giriş ekranları iskeleti `0691310`, yapı yerleşimi dahil) çalışan özellik; **kaynak kod okumasıyla doğrulandı, hiçbir şey çalıştırılmadı**; ekran görüntüsü seti gelince ekranlar gözle de doğrulanacak. **Geliyor** = ekmek zinciri, dükkân, cam ve pencere (P4/P5) ya da ilk saat düzeltmeleri (G1–G9'un kalanı) gibi henüz ana dalda olmayan iş; belgelerde **tanımlıdır, oynanmış değildir**. **(doğrulanmadı)** = kaynaktan teyit edilemeyen bilgi. Süreler **hedeftir**; gerçek oyuncu hızı insan testinde (pilot paketi) ölçülecek.
 
 ## Bu geceki kararlar (belgeye giren)
 
 | Karar | Ne demek oyuncu için |
 |---|---|
-| **Yurt önce** | Yeni oyuncuya ücretsiz yurt arsası (6 hücre) verilir; arsa satın almak zorunda değildir. **P5'te kodda**: yurt çekirdekte verilir ve varışta "Yurdun hazır, yurdunda kur" diye öne çıkar (`k1/yurt-once`, vitest geçti; ekran P5 setinde **doğrulanacak**). P4 görüntü setinde ilk akış hâlâ ücretli "hazır arsa" göstermişti |
+| **Yurt önce** | Yeni oyuncuya ücretsiz yurt arsası (6 hücre) verilir; arsa satın almak zorunda değildir. **Ana dalda kodda** (`0691310`): yurt çekirdekte verilir (`4a7a91b`, 6 hücre, ayrılmış olmayan hücreler önce) ve istemcide varışta "Yurdun hazır" kartı çıkar; birincil düğme "Yurdunda kur · ücretsiz", ikincil "Arsa satın al" (`08b7ee8`, `harita/yurt.ts`). Ekran görüntüsü P5 setinde **doğrulanacak**. P4 görüntü setinde ilk akış hâlâ ücretli "hazır arsa" göstermişti |
 | **Başlangıç kitinde 3 pencere** | İlk dükkân için pencere beklemek gerekmez; ilk dükkân ilk saatte **kurulabilir** (≈49. dakikada hazır; **hesap**, doğrulanmadı). Rafa konacak mal da kitten gelir: **kit gıdası ilk dükkânın rafı için saklanır** (aşağıda "Stok riski": karar verildi) |
 | **İlk satış tahılla** | Defter'in "ilk satış" adımı **"Çiftliğinin tahılını sat."** der: ilk satış çiftliğin kendi ürünüyle yapılır, kitteki gıda satılmaz. İlk dükkân önerisi kartında tek satır: "Kitteki gıdayı rafın için sakla." **Kit verisi değişmedi** (gıda 200); çözüm yalnız metindir (baş lider kararı) |
 | **Ekmek zinciri** | Buğday → un (değirmen) → ekmek (fırın) zinciri; elektrik ve yakıt **şebekeden otomatik** gelir, santral kurmak gerekmez |
@@ -20,11 +20,11 @@
 
 | Zaman | Oyuncu ne yapar | Ne görür | Neye karar verir | Durum |
 |---|---|---|---|---|
-| **0–3 dk** | E-postasını yazar, postadaki bağlantıya dokunur; parola yok | "Postanı kontrol et", "Giriş yapıyorsun", sana önerilen küçük harfli ad | Adı kabul etmek ya da değiştirmek | E-posta girişi **bugün kodda**; ekranların son hâli **geliyor** (G9) |
-| **3–6 dk** | Yerleş ekranında üç ilçeden birini seçer (Gebze, Gemlik, Körfez) | İlçe kartları, önerilen açılış, "başka ilçe öner"; "bu bir sınıf değil" notu | Hangi ilçe | **P5 ucunda yalnız Gebze'de başlanabilir** (kodda). Gemlik ve Körfez kartlarda "arsa ızgarası yakında: yalnız gezebilirsin" der; açılışları **P6'daki ızgara zincirine** bağlı (veri ana dalda, istemciye bağlanması P6'da). Ekran düzeltmeleri de **geliyor** |
-| **6–9 dk** | Arsasına bakar | Hazinede **50.000 ₺** hibe; ücretsiz yurt hücreleri (P5'te varışta "Yurdun hazır" kartı; arsa listesindeki ayrı gösterim **doğrulanacak**); ilk 14 gün ilçende yeni oyunculara "ayrılmış hücreler"; ilk 14 gün ticarette komisyon ve vergi yok | Yapıyı nereye kuracağı | **Bugün kodda** |
+| **0–3 dk** | E-postasını yazar, postadaki bağlantıya dokunur; parola yok | "Postanı kontrol et", "Giriş yapıyorsun", sana önerilen küçük harfli ad | Adı kabul etmek ya da değiştirmek | E-posta girişi ve giriş ekranları (G-1…G-5, G-7, G-8 hesap bölümü) **bugün kodda** (`0691310`, `istemci/giris/`; yalnız e-posta kipinde, geliştirme kipinde giriş ekranı yok). Destek e-postası ve veri kullanımı bağlantısı sahip metni olarak **boş**: sahip söyleyene dek o satırlar görünmez. Ekranlar gözle **doğrulanacak**; hesap silme düğmesi ekranda yok ("bize yaz" satırı), sunucu ucu protokolde var |
+| **3–6 dk** | Yerleş ekranında üç ilçeden birini seçer (Gebze, Gemlik, Körfez) | İlçe kartları, önerilen açılış, "başka ilçe öner"; "bu bir sınıf değil" notu | Hangi ilçe | **Ana dalda yalnız Gebze'de başlanabilir** (kodda: `veri.ts` `IZGARALI_ILCELER` yalnız Gebze). Gemlik ve Körfez kartlarda "arsa ızgarası yakında: yalnız gezebilirsin" der; açılışları **P6'daki ızgara zincirine** bağlı (veri ana dalda, istemciye bağlanması P6'da). Ekran düzeltmeleri de **geliyor** |
+| **6–9 dk** | Arsasına bakar | Hazinede **50.000 ₺** hibe; ücretsiz yurt hücreleri (varışta "Yurdun hazır" kartı kodda; arsa listesindeki ayrı gösterim **doğrulanacak**); ilk 14 gün ilçende yeni oyunculara "ayrılmış hücreler"; ilk 14 gün ticarette komisyon ve vergi yok | Yapıyı nereye kuracağı | **Bugün kodda** |
 | **9–15 dk** | "Yapı kur" der, çiftliği seçip yerleştirir | Maliyet kartı ("gereken / var"); ilk 5 yapıda %30 indirim; yapı iskele olur | Ne kuracağı, nereye | **Bugün kodda**; para biçimi ve kart düzeltmeleri **geliyor** (G1) |
-| **15–27 dk** | Bekler (çiftlik ilk gün 12 dk'da biter) ya da çıkar | İskele ve geri sayım; "kapatsan da biter" | Beklemek, gezmek ya da çıkmak | **Bugün kodda**; haritada kalan süre etiketi **geliyor** |
+| **15–27 dk** | Bekler (çiftlik ilk gün 12 dk'da biter) ya da çıkar | İskele ve "kuruluyor · m:ss içinde geri alabilirsin" geri alma sayacı; inşa sunucuda sürer, oyuncu çıksa da biter (olgu; bunu söyleyen bir metin istemci kodunda **bulunamadı**, rehber metni) | Beklemek, gezmek ya da çıkmak | Geri alma sayacı **bugün kodda**; "kapatsan da biter" metni ve haritada kalan süre etiketi **geliyor** |
 | **≈25–30 dk** | **Çiftliğinin tahılını** Pazar'da satar (satış emri verir); **kit gıdasını (200) rafa saklar** | Nakit artar; "ilk satış" (Defter damgası ve ₺500 ödülü **saat sınırında** gelir: satıştan sonra en çok bir saat içinde, ≈25–90 dk arası) | Ne kadar tahıl, hangi fiyata | **Bugün kodda**; "Çiftliğinin tahılını sat." metni **geliyor** |
 | **sürekli** | Esnaf Defteri'ne bakar | Sıradaki adımlar ve işlenenler; ödüller (ilk yapı 5 çelik, ilk satış 500 ₺) | Defteri izlemek, sıradaki adımı "Atla" ile gizlemek ya da yok saymak (zorunlu değil; atlayınca ödül hakkı ve Defter yerinde kalır) | **Bugün kodda**; "Atla" düğmesi ve dükkân kartı **geliyor** |
 | **≈25–50 dk** | İkinci karar: **ekmek zinciri** ve/ya da **dükkân** | Gıda fabrikasında "değirmen" ve "fırın" seçimi; maliyet kartında eksik malzeme | Zinciri uzatmak mı, dükkân mı, ikisi mi (ikisi de zorunlu değil) | **Geliyor** (P4/P5) |
@@ -33,7 +33,7 @@
 | **≈49. dk** | Dükkân hazır; rafına kit gıdasını koyar | "Dükkânın hazır; hayırlı olsun"; **boş rafta satış olmaz** uyarısı ("bir yuvaya mal koyunca satış başlar") | Hangi mallar (4 yuva; ilk satış için **1 yuva** yeter) | **Geliyor**; ≈49. dk bir **hesap** |
 | **≈50–60 dk** (kit gıdası rafta) | İlk dükkân satışını görür | Defter: "ilk satışını dükkânından yaptın", **10 çelik**; ilk satış zamanı **(doğrulanmadı: ilk çözüm anı)** | Fiyat kademesine bakmak (normal varsayılan) | **Geliyor** |
 | **≈1–1,5 sa** (**kalan küçük durum:** oyuncu metne uymayıp kit gıdasını da sattıysa) | Ekmek zinciri (değirmen + fırın) kurulunca rafa ekmek koyar; ilk dükkân satışı o zaman olur | Rafta "stoğun yok" ya da "Rafa koyacak malın yok. Gıda ya da ekmek üret." görünür | Zinciri kurmak mı, gıda üretmek mi | **Geliyor** (P4/P5); süre A2'nin kâğıt modeli |
-| **60. dk** | Çıkar | "Çıkabilirsin, dönünce özet gösteririz" | Çıkmak | **Bugün kodda** |
+| **60. dk** | Çıkar | "Çıkabilirsin, dönünce özet gösteririz" notu (rehber ve test kılavuzu metni; istemci kodunda **bulunamadı**) | Çıkmak | Not **geliyor** (doğrulanmadı); dönüşte "Sen yokken" kartı **bugün kodda** |
 
 ## 2. İlk gün (ilk 24 saat)
 
@@ -45,7 +45,7 @@
 | **Zincirin ilk ürünleri** | Ekmeği satar ya da dükkâna koyar | Defter: "ilk ekmek" (5 ekmek); zincir kapanınca Defter ödülü | Ekmeği nerede satacağı | **Geliyor** (P4) |
 | **İkinci yapı** | Ahır ya da bir başka yapı kurabilir | Maliyet kartı, Dikkat paneli önerileri | Hangi yön (zorunlu yol yok) | **Bugün kodda**; ahırın kepek yöntemi **geliyor** |
 | **Yanlış kurdum** | Yapıyı iptal eder ya da kaldırır | İnşadaysa iptal (ödenenin yarısı geri); bitmiş dükkân için "dükkânı kaldır" (iade yok, arsa ve mallar kalır, açık uyarıyla) | Vazgeçmek | İnşa iptali **bugün kodda**; dükkân kaldırma **geliyor** (G7) |
-| **Dönüş** | Birkaç saat sonra döner | 1–6 saatte tek satırlık şerit; 6–48 saatte "Gün Sayfası" (suçlayan dil yok) | Neye devam edeceği | **Bugün kodda** (kısa kart ve Gün Sayfası; şerit tasarımı **geliyor**) |
+| **Dönüş** | Birkaç saat sonra döner | "Sen yokken" kartı: 1–6 saatte kısa kart, 6 saatten sonra tam kart (en çok 8 satır, tek düğme "Devam", suçlayan dil yok) | Neye devam edeceği | **Bugün kodda** (`harita/donus-ekrani.ts`, "en küçük hâl"); tasarımdaki tek satırlık şerit ve "Gün Sayfası" düzeni **geliyor** |
 
 ## 3. İlk hafta (ilk 7 gün)
 
