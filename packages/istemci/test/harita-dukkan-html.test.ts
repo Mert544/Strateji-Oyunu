@@ -14,6 +14,8 @@ import {
   rafHtml,
   saatDakika,
   seciciHtml,
+  turAdi,
+  turEtiketi,
   turSecimiHtml,
   retMetni,
   ustKartHtml,
@@ -57,8 +59,8 @@ describe("D0 öneri kartı ve B7 Defter kartı", () => {
     expect(dukkanMenusuHtml({ id: 8, durum: "insaat" }, true, "%40")).toContain("İptal et (iade %40)");
     expect(kaldirOnayHtml({ id: 8, durum: "insaat" }, "%40")).toContain("%40 kadarı geri gelir");
     expect(rafHtml(dukkan(), { malAdi, simdi: 0, kasaBirimSa: 120 })).toContain("Kasa saatte en çok 120 birim satar.");
-    expect(maliyetSatirlariHtml({ tur: "bakkal", esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9, indirim: { n: 3, yuzde: "%25" } })).toContain("İlk 3 yapında %25 indirim var.");
-    expect(maliyetSatirlariHtml({ tur: "bakkal", esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9 })).not.toContain("indirim var");
+    expect(maliyetSatirlariHtml({ tur: "bakkal", hucre: 1, esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9, indirim: { n: 3, yuzde: "%25" } })).toContain("İlk 3 yapında %25 indirim var.");
+    expect(maliyetSatirlariHtml({ tur: "bakkal", hucre: 1, esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9 })).not.toContain("indirim var");
   });
 
   it("D0: bölge, başlık bağı, kapat yalnız simgeli (aria-label), tek eylem 'Dükkân kur', boş raf notu", () => {
@@ -123,7 +125,7 @@ describe("D-1 Dükkânlarım", () => {
 
 describe("D-2 tür seçimi", () => {
   it("tür kartları: aria-pressed, simge, sayı ('bu ilçede 1 / 2'), tür uyumu işareti", () => {
-    const h = turSecimiHtml({ secili: "firin", ilceSayi: 1, ilceSinir: 2, ilSayi: 1, ilSinir: 6, uyum: { bakkal: true, firin: false, sekerci: false } });
+    const h = turSecimiHtml({ hucre: 1, secili: "firin", ilceSayi: 1, ilceSinir: 2, ilSayi: 1, ilSinir: 6, uyum: { bakkal: true, firin: false, sekerci: false } });
     expect(h).toContain(`<button type="button" class="dk-tur" data-tur="firin" aria-pressed="true">`);
     expect(h).toContain(`data-tur="bakkal" aria-pressed="false"`);
     expect(h).toContain("Bakkal · gündelik mallar");
@@ -137,29 +139,42 @@ describe("D-2 tür seçimi", () => {
   });
 
   it("ilçe sınırı doluyken kartlar aria-disabled + neden satırı bağlı; ret ayrı satırda role=alert", () => {
-    const h = turSecimiHtml({ secili: null, ilceSayi: 2, ilceSinir: 2, ilSayi: 2, ilSinir: 6, hata: "Dükkân türünü seçmelisin." });
+    const h = turSecimiHtml({ hucre: 1, secili: null, ilceSayi: 2, ilceSinir: 2, ilSayi: 2, ilSinir: 6, hata: "Dükkân türünü seçmelisin." });
     expect(h.match(/aria-disabled="true" aria-describedby="dk-neden"/g)?.length).toBe(5);
     expect(h).toContain(`role="status">Bu ilçede en çok 2 dükkânın olabilir.</p>`);
     expect(h).toContain(`<p class="dk-hata" role="alert">Dükkân türünü seçmelisin.</p>`);
   });
 
   it("şekerci kartında ithal gerekir ipucu (tür uyumu yok): diğer türlerde 'malın yok'", () => {
-    const h = turSecimiHtml({ secili: null, ilceSayi: 0, ilceSinir: 2, ilSayi: 0, ilSinir: 6, uyum: { sekerci: false, bakkal: false } });
+    const h = turSecimiHtml({ hucre: 1, secili: null, ilceSayi: 0, ilceSinir: 2, ilSayi: 0, ilSinir: 6, uyum: { sekerci: false, bakkal: false } });
     expect(h).toContain(`data-uyum="ithal">malın yok; Pazar&#39;dan alabilirsin`);
     expect(h).toContain(`data-uyum="yok">malın yok</span>`);
     // şekerci için yok değeri hiç yazılmaz; stoğu olan şekerci "var" kalır
     expect(h.match(/data-uyum="yok"/g)?.length).toBe(1);
-    expect(turSecimiHtml({ secili: null, ilceSayi: 0, ilceSinir: 2, ilSayi: 0, ilSinir: 6, uyum: { sekerci: true } })).toContain(`data-uyum="var">depondaki malla satabilirsin`);
+    expect(turSecimiHtml({ hucre: 1, secili: null, ilceSayi: 0, ilceSinir: 2, ilSayi: 0, ilSinir: 6, uyum: { sekerci: true } })).toContain(`data-uyum="var">depondaki malla satabilirsin`);
+  });
+
+  it("yapı market etiketi diğer dört tür gibi tek metin: ad + malları ('Yapı market · cam, pencere, çelik, parça'); yer ipucu ve sayaçlar parametreden", () => {
+    const h = turSecimiHtml({ hucre: 2, secili: null, ilceSayi: 1, ilceSinir: 3, ilSayi: 2, ilSinir: 7 });
+    expect(h).toContain("Yapı market · cam, pencere, çelik, parça");
+    expect(h).toContain("Bakkal · gündelik mallar");
+    expect(turEtiketi("yapi_market")).toBe("Yapı market · cam, pencere, çelik, parça");
+    expect(turAdi("yapi_market")).toBe("Yapı market");
+    expect(turAdi("bakkal")).toBe("Bakkal");
+    expect(h).toContain("Dükkân 2 hücre kaplar. Sahip olduğun boş bir hücreyi seç.");
+    expect(h).toContain("Bu ilçede dükkânın: 1 / 3");
+    expect(h).toContain("Bu ilde dükkânın: 2 / 7");
+    expect(h).not.toMatch(/\{[a-z_]+\}/);
   });
 
   it("G8 yoksa yapı market kartı yok", () => {
-    const h = turSecimiHtml({ secili: null, turler: ["bakkal", "firin", "sarkuteri", "sekerci"], ilceSayi: 0, ilceSinir: 2, ilSayi: 0, ilSinir: 6 });
+    const h = turSecimiHtml({ hucre: 1, secili: null, turler: ["bakkal", "firin", "sarkuteri", "sekerci"], ilceSayi: 0, ilceSinir: 2, ilSayi: 0, ilSinir: 6 });
     expect(h).not.toContain(`data-tur="yapi_market"`);
   });
 });
 
 describe("D-3 maliyet satırları", () => {
-  const temel = { tur: "bakkal" as const, esZamanliInsaat: 2, durum: "uygun" as const, arsaMili: 0, dukkanMili: 12_000_000, celikAdet: 8, parcaAdet: 2, sureSaat: 1.2, toplamMili: 12_000_001, hazineMili: 50_000_000, indirim: { n: 5, yuzde: "%30" } };
+  const temel = { tur: "bakkal" as const, hucre: 1, esZamanliInsaat: 2, durum: "uygun" as const, arsaMili: 0, dukkanMili: 12_000_000, celikAdet: 8, parcaAdet: 2, sureSaat: 1.2, toplamMili: 12_000_001, hazineMili: 50_000_000, indirim: { n: 5, yuzde: "%30" } };
 
   it("etiket/değer satırları, bedel yukarı yuvarlı, hazine aşağı; birincil 'Dükkânı kur'", () => {
     const h = maliyetSatirlariHtml(temel);
@@ -168,7 +183,7 @@ describe("D-3 maliyet satırları", () => {
     expect(h).toContain("<dt>Arsa</dt><dd>kendi arsan: 0\u00a0₺</dd>");
     expect(h).toContain("<dt>Dükkân</dt><dd>12.000\u00a0₺</dd>");
     expect(h).toContain("<dt>Toplam</dt><dd>12.001\u00a0₺</dd>");
-    expect(h).toContain("<dt>Süre</dt><dd>2 saat</dd>");
+    expect(h).toContain("<dt>Süre</dt><dd>1 sa 12 dk</dd>");
     expect(h).toContain("İlk 5 yapında %30 indirim var.");
     expect(h).toContain(`<button type="button" class="birincil" data-yk="onayla">Dükkânı kur</button>`);
     expect(h).toContain(`class="dk-tahmin" hidden`);
@@ -378,7 +393,7 @@ describe("D-8 özet ve menü", () => {
 });
 
 describe("dukkan-duzelt: sabit sayı yok, D0 kartında Defter adımı, Dikkat yol göstermesi", () => {
-  const temel = { tur: "bakkal" as const, durum: "insaat-siniri" as const, arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9 };
+  const temel = { tur: "bakkal" as const, hucre: 1, durum: "insaat-siniri" as const, arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9 };
 
   it("inşaat sınırı uyarısı parametreden ('en çok 2'), sabit 3 değil", () => {
     expect(maliyetSatirlariHtml({ ...temel, esZamanliInsaat: 2 })).toContain("Aynı anda en çok 2 inşaat sürebilir; birinin bitmesini bekle.");

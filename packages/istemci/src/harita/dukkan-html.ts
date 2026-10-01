@@ -26,9 +26,15 @@ export const TUR_IKONU: Readonly<Record<DukkanTuru, IkonAdi>> = { bakkal: "shopp
 const m = dukkanMetni;
 const enc = (a: DukkanMetinAnahtari, yer: Readonly<Record<string, string | number>> = {}): string => esc(dukkanMetni(a, yer));
 
-/** Tür adı ("Bakkal"): `D2.tur_*` satırının "·" öncesi. */
+/** Tür adı ("Bakkal"): `D2.tur_*` satırının "·" öncesi (yapı marketin satırı yalnız addır). */
 export function turAdi(tur: DukkanTuru): string {
   return (m(`dukkan.D2.tur_${tur}`).split(" · ")[0] ?? tur).trim();
+}
+
+/** Tür kartı etiketi, dört türde tek anahtar ("Bakkal · gündelik mallar"); yapı marketin malları ayrı anahtardır: "Yapı market · cam, pencere, çelik, parça". */
+export function turEtiketi(tur: DukkanTuru): string {
+  const satir = m(`dukkan.D2.tur_${tur}`);
+  return tur === "yapi_market" ? `${satir} · ${m("dukkan.D2.tur_mallar.yapi_market")}` : satir;
 }
 
 /** "3 sa 20 dk" (yukarı yuvarlı dakika; 1 dakikanın altı 1 dk). */
@@ -125,6 +131,8 @@ export function ustKartHtml(durum: "dukkan" | "defter" | null, defter?: { metin:
 
 export interface TurSecimiGirdisi {
   secili: DukkanTuru | null;
+  /** Dükkânın kapladığı hücre sayısı (`param.mulk.ekYapilar.dukkan.olcekHucre[olcek]`; sabit yazılmaz). */
+  hucre: number;
   /** Gösterilecek türler (`yapi_market` G8 yoksa yok). */
   turler?: readonly DukkanTuru[];
   /** Bu ilçede / ilde kendi dükkân sayın ve sınırlar. */
@@ -142,12 +150,12 @@ export interface TurSecimiGirdisi {
 
 export function turSecimiHtml(g: TurSecimiGirdisi): string {
   const doluIlce = g.ilceSayi >= g.ilceSinir;
-  let s = `<h4 class="dk-baslik">${enc("dukkan.D2.baslik")}</h4><p class="dk-ipucu">${enc("dukkan.D2.yer_ipucu")}</p><div class="dk-tur-liste">`;
+  let s = `<h4 class="dk-baslik">${enc("dukkan.D2.baslik")}</h4><p class="dk-ipucu">${enc("dukkan.D2.yer_ipucu", { hucre: g.hucre })}</p><div class="dk-tur-liste">`;
   for (const t of g.turler ?? DUKKAN_TURLERI) {
     const u = g.uyum?.[t];
-    s += `<button type="button" class="dk-tur" data-tur="${t}" aria-pressed="${g.secili === t}"${doluIlce ? ` aria-disabled="true" aria-describedby="dk-neden"` : ""}>${ikon(TUR_IKONU[t], 20)}<span class="dk-tur-ad">${esc(m(`dukkan.D2.tur_${t}`))}</span><span class="dk-tur-sayi">${enc("dukkan.D2.tur_sayi", { n: g.ilceSayi, m: g.ilceSinir })}</span>${u === undefined ? "" : `<span class="dk-tur-uyum soluk" data-uyum="${u ? "var" : t === "sekerci" ? "ithal" : "yok"}">${enc(u ? "dukkan.D2.tur_uyum.var" : t === "sekerci" ? "dukkan.D2.tur_uyum.yok_ithal" : "dukkan.D2.tur_uyum.yok")}</span>`}</button>`;
+    s += `<button type="button" class="dk-tur" data-tur="${t}" aria-pressed="${g.secili === t}"${doluIlce ? ` aria-disabled="true" aria-describedby="dk-neden"` : ""}>${ikon(TUR_IKONU[t], 20)}<span class="dk-tur-ad">${esc(turEtiketi(t))}</span><span class="dk-tur-sayi">${enc("dukkan.D2.tur_sayi", { n: g.ilceSayi, m: g.ilceSinir })}</span>${u === undefined ? "" : `<span class="dk-tur-uyum soluk" data-uyum="${u ? "var" : t === "sekerci" ? "ithal" : "yok"}">${enc(u ? "dukkan.D2.tur_uyum.var" : t === "sekerci" ? "dukkan.D2.tur_uyum.yok_ithal" : "dukkan.D2.tur_uyum.yok")}</span>`}</button>`;
   }
-  s += `</div><p class="dk-sinir">${enc("dukkan.D2.ilce_sayac", { n: g.ilceSayi })}</p><p class="dk-sinir">${enc("dukkan.D2.il_sayac", { n: g.ilSayi })}</p>`;
+  s += `</div><p class="dk-sinir">${enc("dukkan.D2.ilce_sayac", { n: g.ilceSayi, ilce_enfazla: g.ilceSinir })}</p><p class="dk-sinir">${enc("dukkan.D2.il_sayac", { n: g.ilSayi, il_enfazla: g.ilSinir })}</p>`;
   const neden = g.neden ?? (doluIlce ? "dukkan.D2.ilce_siniri" : g.ilSayi >= g.ilSinir ? "dukkan.D2.il_siniri" : null);
   const nedenYer = g.nedenYer ?? { n: neden === "dukkan.D2.il_siniri" ? g.ilSinir : g.ilceSinir };
   s += `<p class="dk-neden" id="dk-neden" role="status">${neden ? enc(neden, nedenYer) : ""}</p>`;
@@ -161,6 +169,8 @@ export type MaliyetDurumu = "tur-secilmedi" | "hazirlaniyor" | "uygun" | "hazine
 
 export interface MaliyetGirdisi {
   tur: DukkanTuru;
+  /** Kapladığı hücre sayısı (`olcekHucre[olcek]`). */
+  hucre: number;
   durum: MaliyetDurumu;
   /** mili-₺ (bedel yukarı yuvarlanır). */
   arsaMili: number;
@@ -186,7 +196,7 @@ export function maliyetSatirlariHtml(g: MaliyetGirdisi): string {
   const yukari = (x: number): string => paraMili(x, "yukari");
   const kapali = !["uygun", "pencere-bekliyor"].includes(g.durum) && g.durum !== "ret";
   const pencereEksik = g.pencere !== undefined && g.pencere.var < g.pencere.gereken;
-  let s = `<div class="dk-maliyet" data-durum="${g.durum}"><div class="yk-baslik"><b>${enc("dukkan.D3.baslik", { tur: turAdi(g.tur) })}</b></div><dl class="yk-satirlar">`;
+  let s = `<div class="dk-maliyet" data-durum="${g.durum}"><div class="yk-baslik"><b>${enc("dukkan.D3.baslik", { tur: turAdi(g.tur), hucre: g.hucre })}</b></div><dl class="yk-satirlar">`;
   // "Çelik · 3" → etiket ve değer (ilk " · " ayırır)
   const sat = (a: DukkanMetinAnahtari, yer: Record<string, string | number>): string => {
     const [et = "", ...dg] = m(a, yer).split(" · ");
@@ -197,7 +207,7 @@ export function maliyetSatirlariHtml(g: MaliyetGirdisi): string {
   s += sat("dukkan.D3.satir_celik", { n: fmt(g.celikAdet) });
   s += sat("dukkan.D3.satir_parca", { n: fmt(g.parcaAdet) });
   if (g.pencere) s += `<dt>Pencere</dt><dd class="dk-stok" data-durum="${pencereEksik ? "eksik" : "yeter"}">${pencereEksik ? enc("dukkan.D3.pencere_yok", { n: g.pencere.gereken, var: g.pencere.var, tutar: yukari(g.pencere.tutarMili) }) : enc("dukkan.D3.pencere_yeter", { n: g.pencere.gereken })}</dd>`;
-  s += sat("dukkan.D3.satir_sure", { n: fmt(Math.ceil(g.sureSaat)) });
+  s += sat("dukkan.D3.satir_sure", { sure: saatDakika(g.sureSaat) });
   s += `<dt>${enc("dukkan.D3.satir_toplam")}</dt><dd>${yukari(g.toplamMili)}</dd><dt>${enc("dukkan.D3.satir_hazine")}</dt><dd>${paraMili(g.hazineMili, "asagi")}</dd></dl>`;
   if (g.indirim) s += `<p class="dk-not">${enc("dukkan.D3.indirim_notu", { n: g.indirim.n, yuzde: g.indirim.yuzde })}</p>`;
   if (g.durum === "pencere-bekliyor") s += `<p class="dk-not">${enc("dukkan.D3.pencere_bekleme")}</p>`;

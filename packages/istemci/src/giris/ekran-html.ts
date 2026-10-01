@@ -7,7 +7,7 @@
  * `sayimMetni` ile her saniye yerinde güncellenir (görünüm katmanı); tam yeniden çizim yalnız durum değişince olur.
  */
 import { ikon } from "../tasarim/ikon";
-import { esc } from "../arayuz/bicim";
+import { esc, sureMetni } from "../arayuz/bicim";
 import type { GirisDurumu } from "./akis";
 import { destekEpostasi, kvkkAdresi, metin, metinHam, metinVar } from "./giris-metin";
 
@@ -112,7 +112,7 @@ function g2(d: GirisDurumu, b: EkranBaglami): string {
   return `<section class="gr-ekran" data-ekran="g2" data-durum="${hata && !gonderiyor ? "hata" : durum}" aria-labelledby="gr-baslik">
   <span class="gr-simge" aria-hidden="true">${ikon("mail", 28)}</span>
   ${baslik("giris.G2.baslik")}
-  <p class="gr-govde">${yerHtml(metinHam("giris.G2.govde"), { adres: `<b class="gr-adres">${esc(d.eposta)}</b>` })}</p>
+  <p class="gr-govde">${yerHtml(metinHam("giris.G2.govde"), { adres: `<b class="gr-adres">${esc(d.eposta)}</b>`, gecerlilik: esc(sureMetni(d.gecerlilikSn / 3600)) })}</p>
   <p class="gr-ipucu">${esc(metin("giris.G2.yeni_baglanti"))}</p>
   ${d.tekrarGonderildi && !gonderiyor ? `<p class="gr-ipucu" role="status" data-kod="tekrar-gonderildi">${esc(metin("giris.G2.tekrar_gonderildi"))}</p>` : ""}
   ${d.tekrarSiniri ? `<p class="gr-ipucu" data-kod="tekrar-siniri">${esc(metin("giris.G2.tekrar_siniri"))}</p>` : ""}

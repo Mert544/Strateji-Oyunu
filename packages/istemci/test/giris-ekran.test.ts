@@ -147,7 +147,11 @@ describe("ekranlar: T1 sözleşmesi adları", () => {
     const d = durum({ ekran: "g2", eposta: "ali<b>@ornek.org", yenidenGonderBitis: SIMDI + 60_000, gonderimSayisi: 1 });
     const h = girisHtml(d, b());
     expect(h).toContain('data-ekran="g2"');
-    expect(h).toContain('<b class="gr-adres">ali&lt;b&gt;@ornek.org</b> adresine bir giriş bağlantısı gönderdik. Bağlantı 10 dakika geçerli ve yalnız bir kez kullanılır.');
+    expect(h).toContain('<b class="gr-adres">ali&lt;b&gt;@ornek.org</b> adresine bir giriş bağlantısı gönderdik. Bağlantı 10 dk geçerli ve yalnız bir kez kullanılır.');
+    // geçerlilik süresi sunucudan (gecerlilikSn): ham yer tutucu çıkmaz
+    expect(girisHtml(durum({ ekran: "g2", eposta: "a@b.co", gecerlilikSn: 1800 }), b())).toContain("Bağlantı 30 dk geçerli");
+    expect(girisHtml(durum({ ekran: "g2", eposta: "a@b.co", gecerlilikSn: 7200 }), b())).toMatch(/Bağlantı 2(,0)? sa geçerli/);
+    expect(girisHtml(durum({ ekran: "g2", eposta: "a@b.co" }), b())).not.toMatch(/\{[a-z_]+\}/);
     expect(h).toContain("Yeni bağlantı gönderince eskisi geçersiz olur.");
     expect(h).toContain('data-eylem="yeniden-gonder" data-sayim="tekrar" aria-disabled="true">Yeniden gönder (60 sn)</button>');
     expect(h).toContain('data-durum="bekliyor"');
