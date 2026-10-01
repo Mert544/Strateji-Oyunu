@@ -39,6 +39,10 @@ Belirti: `/saglik` 503 (`durum: "olumcul"`) ya da süreç çıkış kodu 1 ile d
 
 Oyun içeriği ya da parametresi değiştiğinde yalnız dönem sınırında, sunucu kapalı ve komut kuyruğu boşken yapılır; içerik yalnız SONA eklenebilir. Sıra: SIGTERM ile kapatın → yedek (bölüm 4) → yeni imajla `BOLGE_GOC=1` → `hazir.kurtarma.goc`'u beklenenle karşılaştırın → `BOLGE_GOC=0` ile yeniden başlatın. Geri dönüş (`--yedekten-don`) yalnız yeni kuralla hiç komut kabul edilmediyse mümkündür. Önce üretime değil yedeğin kopyasına deneyin: [Kural dönemi provası](../packages/sunucu/README.md#kural-dönemi-provası-içerik-göçü), kontrol listesi adım 6, README'deki "İçerik göçü" bölümü.
 
+## 7. Ekonomi izleme
+
+Açık alfa sürerken oyun ekonomisinin sağlığı, A2'nin [Alfa-0 canlı ekonomi izleme listesi](arastirma/alfa0-ekonomi-izleme.md) ile izlenir; değerleri buraya KOPYALAMADIK. Liste 10 metriği (E1-E10: para dengesi R ve r, ZP8, ilk dükkân ve geri ödeme, zincir M, kamu kasaları, fiyat sınırı, bakım, ödül ve kit) her biri için okuma yolu, yeşil/sarı/kırmızı eşik ve **"kırmızıda ilk ayar"** ile verir: [özet tablo](arastirma/alfa0-ekonomi-izleme.md#0-özet-on-metrik-okuma-yolu-eşikler); izleme çizelgesi aynı belgenin 9. bölümündedir. Bir metrik kırmızıysa parametreye kendiniz dokunmayın: tablodaki ilk ayarı ve yönü geliştiriciye iletin (parametre değişimi kural dönemi göçüdür, bölüm 6). Bugün `/metrik` ekonomi değerlerinin çoğunu vermez; bunlar günlük oynatmasından okunur ya da [K2 işi](arastirma/alfa0-ekonomi-izleme.md#82-uçta-olmayan-metrikler-k2-işi-listesi) olarak bekler. Eşikler ilk tahmindir ve ilk canlı haftadan sonra kalibre edilir; 5'ten az oyuncuda renk verilmez, "ölçülmedi" yazılır.
+
 ## Hızlı başvuru
 
 | Durum | Bakılacak yer |
@@ -47,3 +51,4 @@ Oyun içeriği ya da parametresi değiştiğinde yalnız dönem sınırında, su
 | Sağlık ve metrik | [Sağlık ve metrik](../packages/sunucu/README.md#sağlık-ve-metrik), adım 2-3 |
 | Kimse giriş yapamıyor | adım 11-12 (posta dizini, davet listesi, `GENEL_URL`/Origin) |
 | Yedek çalışmıyor | `$D ps yedek`, adım 14 |
+| Ekonomi sağlığı, kırmızıda ilk ayar | [Ekonomi izleme](#7-ekonomi-izleme), [A2 listesi](arastirma/alfa0-ekonomi-izleme.md) |
