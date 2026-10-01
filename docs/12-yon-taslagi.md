@@ -76,5 +76,13 @@ Sahip "genel kararları baş lider versin" dedi; aşağıdakiler sentezin öneri
 - **Muhtarlık (S9):** oyuncu ek yapısı olmaktan çıkar, kamu yapısı olur (mülk kipinde oyuncuya kapalı).
 - **Mal kimlikleri:** `tekstil` → `kumas` + `hazir_giyim`; `ekmek` ve `sekerleme` ayrı mal; `findik_urunu` taban 240. Alfa-0 için 4 zincir (ekmek, cam → pencere, süt → şarküteri, fındık → şekerleme) ve 23 mal; tek yeni yapı `dukkan` (tür verisiyle).
 - **Kamu ihalesi ve fiyat tavanı:** tek ihale motoru, ağırlık profilleri (Alfa-0 öncesi profil M = yalnız fiyat; sonra profil Y = %70/%20/%10), sunucu-mühürlü kapalı teklif; tüm kamu/sipariş tavanları ithalat paritesinde (1,10 R). Kamu bütçesi yalnız zaten yanan paradan (ithalat makası ve komisyonu, arazi vergisi, hak bedelleri).
-- **Yapay zekâ (S1, S2):** varsayılan **(b+)**: ajan ihaleyi tasarlar ve gerekçeyi yazar, kör teknik puanı toplamın en çok %10–20'si; kazananı kural seçer. "API anahtarı" = sunucudaki kamu ajanının tek anahtarı (harcama tavanlı). Ajan Alfa-0'ın kritik yolunda değil (gölge kip). Sahibin yanıtıyla değişebilir.
+- **Yapay zekâ (S1, S2) — sahip kararı (1 Ekim):** ihale yetkisi **(b)**: ajan ihaleyi tasarlar ve gerekçeyi yazar, kazananı kural seçer (kör teknik puan yok). API anahtarı yalnız sunucudaki kamu ajanında; **oyuncunun kendi ajanı ya da oyun API'si yok** (tam otomatik oyun istenmiyor). Tüm işler yapay zekâya verilmez (maliyet); yapay zekâ kamusal alanlarda NPC'lere sınırlı ve tavanlı olarak can verebilir. Ajan Alfa-0'ın kritik yolunda değil.
 - **Alfa-0 P0 (sıra):** kamu arsası verisi ve çekirdek reddi → para güvenliği (ödül tablosu, kamu kasası, kamu NPC alıcısı) → mal kimlik kilidi ve 9 yeni mal → ekmek zinciri + dükkân → cam → pencere zinciri → Esnaf Defteri P0 → sabit fiyatlı kamu siparişi v0. Alfa-0'a girmeyenler: ihale, kira ve haklar, canlı ajan.
+
+## 11. Sahip yönergeleri (1 Ekim, Ar-Ge dalgası 3 sonrası)
+- **Takım:** liderlerin önemli hataları yakalaması takım kurmanın değerini gösterdi; yapı korunur.
+- **Odak:** Ar-Ge sürer ama çalışma yönü kaymamalı; tüm kararlar tek bir oyun tasarım belgesinde toplanır.
+- **Gerçekçilik sınırı:** bu bir oyun; her şey birebir gerçekçi olamaz, oynanabilirlik önce gelir.
+- **Üretim döngüsü genişler:** mal, kaynak ve zincirler artırılır (buğday → un → ekmek; hayvancılık: inek → süt, et, deri → deri ürünleri; madencilik ve fabrikalar); perakende kademeleri: bakkal, market, süpermarket; üretimhaneler ve fabrikalar.
+- **Dönüş deneyimi:** oyun açıldığında "sen yokken neler oldu" açılış ekranı; Esnaf Defteri, ödüller ve kaldığın yer kartı geliştirilir. Takvim beğenildi.
+- **Toplantı:** tüm işler bitince sahip ile baş lider toplantı yapar.
