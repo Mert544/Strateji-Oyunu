@@ -109,11 +109,13 @@ function ortakAltyapiVarMi(d: Dunya, a: OyuncuId, b: OyuncuId): boolean {
 
 /**
  * Oyuncu bu kenarı lojistikte kullanabilir mi? Kural: kenarın iki ucunun sahibi de oyuncu ya da
- * oyuncuyla AKTİF "ortak_altyapi" anlaşması olan bir oyuncu olmalıdır. Sahipsiz uç -> false.
+ * oyuncuyla AKTİF "ortak_altyapi" anlaşması olan bir oyuncu olmalıdır. Sahipsiz uç -> false. Mülk kipinde her kenar kamudur.
  */
 export function kenarKullanilabilirMi(d: Dunya, _ctx: Baglam, oyuncu: OyuncuId, kenar: number): boolean {
   const k = d.kenarlar[kenar];
   if (!k) return false;
+  // Mülk kipi (S3, docs/11 §4.3): merkezler arası kenarlar kamudur (bölge sahipliği yoktur).
+  if (d.mulk !== undefined) return true;
   const a = d.bolgeler[k.a]?.sahip ?? null;
   const b = d.bolgeler[k.b]?.sahip ?? null;
   if (a === null || b === null) return false;

@@ -2,6 +2,7 @@
  * İnşaat tamamlanması: yeni tesis ya da kenar kapasite geliştirmesi.
  */
 import { icerikTablosu } from "./tablo";
+import { hucreBul } from "../mulk/durum";
 import { ppmUygula } from "../sabit";
 import type { Baglam, Dunya, KenarDurumu, TesisDurumu } from "../tipler";
 
@@ -30,6 +31,16 @@ export function insaatBitti(d: Dunya, ctx: Baglam, insaatId: number): void {
       if (ctx.ic.param.sanayi !== undefined) {
         tesis.olcek = 0;
         tesis.asinmaPpm = 0;
+      }
+      // Mülk kipi (S3): hücreli inşaatın tesisi hücrelerini kaplar; hücreler inşaattan tesise geçer.
+      if (insaat.hucreler !== undefined) {
+        tesis.hucreler = [...insaat.hucreler];
+        for (const hid of insaat.hucreler) {
+          const h = hucreBul(d, hid);
+          if (h === undefined) continue;
+          delete h.insaat;
+          h.tesis = tesis.id;
+        }
       }
       bolge.tesisler.push(tesis);
     }

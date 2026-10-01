@@ -104,6 +104,9 @@ function komsuListesi(d: Dunya, ctx: Baglam, i: number): number[] {
     }
     komsuOnbellegi.set(ctx.ic, tum);
   }
-  return (tum[i] as number[]).filter((j) => (d.bolgeler[j] as BolgeDurumu).sahip !== null && (d.bolgeler[j] as BolgeDurumu).kirlilikPpm !== undefined);
+  // Mülk kipinin işletme düğümleri haritada yoktur: komşusuz (kirlilik yalnız kendi düğümünde birikir ve söner).
+  const liste = tum[i];
+  if (liste === undefined) return [];
+  return liste.filter((j) => (d.bolgeler[j] as BolgeDurumu).sahip !== null && (d.bolgeler[j] as BolgeDurumu).kirlilikPpm !== undefined);
 }
 

@@ -8,6 +8,7 @@ import { pazarTablosu } from "./pazar/tablo";
 import { prngOlustur } from "./prng";
 import { sanayiTablosu } from "./sanayi/tablo";
 import { tarimTablosu } from "./tarim/tablo";
+import { mulkDurumuKur } from "./mulk/durum";
 import { PPM, SAAT } from "./tipler";
 import type {
   BolgeDurumu,
@@ -22,6 +23,44 @@ import type {
 } from "./tipler";
 
 export const PRNG_AKISLARI: readonly PrngAkisi[] = ["ekonomi", "pazar", "savas", "olay"];
+
+/**
+ * Bölgeye katman alanlarını yazar (yalnız açık katmanlar): tarım (B1; `tarimVar` ise toprak PPM, ekim %100 ilk ürün,
+ * gübre 0), sanayi (B2; elektrik, kirlilik, keşif, bakım) ve pazar v1 (B3; kıtlık kademesi 0, `kitlikT = t`). Kapalı
+ * katmanın alanı HİÇ yazılmaz. Harita bölgeleri (kurulum) ve mülk kipinin işletme düğümleri ortak kullanır.
+ */
+export function katmanAlanlariniYaz(ic: DerlenmisIcerik, bolge: BolgeDurumu, tarimVar: boolean, t: number): void {
+  const tarimTb = tarimTablosu(ic);
+  if (tarimTb !== null && tarimVar) {
+    const tarim: BolgeTarimDurumu = {
+      toprakPpm: PPM,
+      ekimPpm: tarimTb.urun.map((_, i) => (i === 0 ? PPM : 0)),
+      gubreDozu: 0,
+      iklimPpm: PPM,
+      olayKaybiPpm: 0,
+      gubreKarsilanmaPpm: 0,
+    };
+    bolge.tarim = tarim;
+  }
+  if (sanayiTablosu(ic) !== null) {
+    bolge.elektrik = { uretimMili: 0, talepMili: 0, karsilanmaPpm: PPM, haneKarsilanmaPpm: PPM, yukPpm: PPM };
+    bolge.kirlilikPpm = 0;
+    bolge.kesifSayisi = sifirlar(ic.mallar.length);
+    bolge.bakimKarsilanmaPpm = PPM;
+  }
+  // Pazar v1 (B3): kıtlık kademesi (0), son değişim anı ve temel ihtiyaç karşılanması; kapalıyken HİÇ yazılmaz.
+  if (pazarTablosu(ic) !== null) {
+    bolge.kitlikKademesi = 0;
+    bolge.kitlikT = t;
+    bolge.temelKarsilanmaPpm = PPM;
+  }
+}
+
+/** Başlangıç miktarlarından (mal indeksine göre) stok dizisi: kapasite = ekonomi.depoKapasitesi, t0 = t. */
+export function stokDizisiKur(ic: DerlenmisIcerik, miktarlar: readonly number[], t: number): Stok[] {
+  const kapasite = ic.param.ekonomi.depoKapasitesi;
+  return miktarlar.map((m) => ({ miktar: kelepce(m, 0, kapasite), yerelOran: 0, gelenOran: 0, t0: t, artik: 0, kapasite, surum: 0 }));
+}
 
 function sifirlar(n: number): number[] {
   return new Array<number>(n).fill(0);
@@ -46,7 +85,6 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
   const param = ic.param;
   const malSayisi = ic.mallar.length;
   const birlikSayisi = ic.birlikler.length;
-  const kapasite = param.ekonomi.depoKapasitesi;
   let kimlik = 1;
 
   // Başlangıç stokları (mal kimliği -> miktar) indekse çevrilir; bilinmeyen mal hata.
@@ -72,15 +110,7 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
         rezervIlk[mi] = carpBol(rezervIlk[mi] as number, sanayiTb.p.damar.rezervOlcegiPpm, PPM);
       }
     }
-    const stoklar: Stok[] = baslangicStok.map((m) => ({
-      miktar: kelepce(m, 0, kapasite),
-      yerelOran: 0,
-      gelenOran: 0,
-      t0: 0,
-      artik: 0,
-      kapasite,
-      surum: 0,
-    }));
+    const stoklar: Stok[] = stokDizisiKur(ic, baslangicStok, 0);
     const tesisler: TesisDurumu[] = bt.tesisler.map((turId) => {
       const tur = ic.tesisTuruIndeks[turId];
       if (tur === undefined) throw new Error(`dunyaKur: bolge ${bt.id} bilinmeyen tesis turu: ${turId}`);
@@ -94,17 +124,6 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
       }
       return tesis;
     });
-    let tarim: BolgeTarimDurumu | undefined;
-    if (tarimTb !== null && bt.tarim !== undefined) {
-      tarim = {
-        toprakPpm: PPM,
-        ekimPpm: tarimTb.urun.map((_, i) => (i === 0 ? PPM : 0)),
-        gubreDozu: 0,
-        iklimPpm: PPM,
-        olayKaybiPpm: 0,
-        gubreKarsilanmaPpm: 0,
-      };
-    }
     const bolge: BolgeDurumu = {
       indeks,
       id: bt.id,
@@ -126,19 +145,7 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
       gidaKarsilanmaPpm: 1_000_000,
       ikmalKarsilanmaPpm: 1_000_000,
     };
-    if (tarim !== undefined) bolge.tarim = tarim;
-    if (sanayiTb !== null) {
-      bolge.elektrik = { uretimMili: 0, talepMili: 0, karsilanmaPpm: PPM, haneKarsilanmaPpm: PPM, yukPpm: PPM };
-      bolge.kirlilikPpm = 0;
-      bolge.kesifSayisi = sifirlar(malSayisi);
-      bolge.bakimKarsilanmaPpm = PPM;
-    }
-    // Pazar v1 (B3): kıtlık kademesi (0), son değişim anı ve temel ihtiyaç karşılanması; kapalıyken HİÇ yazılmaz.
-    if (pazarTb !== null) {
-      bolge.kitlikKademesi = 0;
-      bolge.kitlikT = 0;
-      bolge.temelKarsilanmaPpm = PPM;
-    }
+    katmanAlanlariniYaz(ic, bolge, bt.tarim !== undefined, 0);
     return bolge;
   });
 
@@ -190,5 +197,7 @@ export function dunyaKur(ic: DerlenmisIcerik, tohum: number): Dunya {
   if (pazarTb !== null) dunya.pazar.kaynak = "npc";
   // İklim durumu yalnız tarım açıkken yazılır. İlk günlük tık (t = 0) Simulasyon.olustur tarafından planlanır.
   if (tarimTb !== null) dunya.iklim = { olaylar: [], sonGun: tarimTb.iklim.baslangicGunu - 1 };
+  // Mülk kipi (S3): fikstürün tüm ilçeleri (kimliğe göre sıralı), boş hücre/işletme/oyuncu listeleri; kapalıyken alan yazılmaz.
+  if (ic.mulk !== undefined) dunya.mulk = mulkDurumuKur(ic.mulk);
   return dunya;
 }

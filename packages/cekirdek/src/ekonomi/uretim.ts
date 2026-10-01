@@ -261,7 +261,8 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
   for (let m = 0; m < nm; m++) h.stok[m] = anlikMiktar((b.stoklar[m] as BolgeDurumu["stoklar"][number]), t);
 
   // İşgücü: aktif tesislere tesis sırasıyla (id sırası) dağıtılır.
-  let kalanIsci = carpBol(b.nufus, ctx.ic.param.nufus.isgucuPpm, PPM);
+  // Mülk kipi (S3): işletme düğümünün nüfusu yoktur; işgücü il düzeyinde yaklaşık "tam istihdam" sayılır (docs/11 §7.5).
+  let kalanIsci = b.merkez !== undefined ? Number.MAX_SAFE_INTEGER : carpBol(b.nufus, ctx.ic.param.nufus.isgucuPpm, PPM);
   // Sanayi (B2): santraller işgücünde ÖNCELİKLİDİR (şebeke altyapısı; sıra sonunda kalan santral tüm bölgeyi karartmasın);
   // kalan işgücü diğer tesislere id sırasıyla dağıtılır. Kapalıyken özgün sıralı dağıtım.
   let atananDizi: number[] | null = null;

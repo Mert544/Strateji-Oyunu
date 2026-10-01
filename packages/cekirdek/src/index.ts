@@ -10,6 +10,7 @@ export { durumOzeti } from "./ozet";
 
 // --- Çekirdek motor (Ajan B) ---
 export { SISTEM_OYUNCUSU } from "./motor";
+export type { KurtarmaSecenegi } from "./motor";
 export { BaglamUygulamasi } from "./baglam";
 export { icerikDerle } from "./derle";
 export { dunyaKur } from "./kurulum";
@@ -87,6 +88,7 @@ export {
   dunyaIcerikUyumu,
   kuralSurumuHesapla,
   anlikGoruntuOlustur,
+  anlikGoruntuOlusturOzetli,
   anlikGoruntuCoz,
   ANLIK_GORUNTU_SURUMU,
   SerilestirmeHatasi,
@@ -94,3 +96,22 @@ export {
 export type { AnlikGoruntu } from "./serilestir";
 export { PRNG_AKISLARI } from "./kurulum";
 export { kuyrukOnce } from "./kuyruk";
+// Mülk kipi (S3, docs/11 §4.3, §7): parsel komutları, işletme düğümleri, arazi vergisi, inşaat aşaması
+export {
+  mulkKomutu,
+  parselFiyati,
+  isletmeAl,
+  araziVergisiSaat,
+  INSAAT_ASAMALARI,
+  insaatAsamasi,
+  hucreBul,
+  ilceBul,
+  ilceHucreSayisi,
+  isletmeBul,
+  isletmeKimligi,
+  mulkOyuncuBul,
+} from "./mulk";
+export type { InsaatAsamasi } from "./mulk";
+export { bolgeIndeksiBul, haritaIndeksi, komsuKenarlariBul } from "./dugum";
+export { kuyrukSuz } from "./kuyruk";
+export { eskimisEsikleriBuda } from "./stok";

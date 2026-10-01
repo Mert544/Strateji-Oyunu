@@ -109,12 +109,15 @@ export function iklimGunluk(d: Dunya, ctx: Baglam): void {
   const takvim = ((gun % YIL_GUNU) + YIL_GUNU) % YIL_GUNU;
   const ay = tb.gunAyi[takvim] as number;
   const n = d.bolgeler.length;
+  // Olay çekimleri yalnız harita (merkez) bölgelerinde: mülk kipinin işletme düğümleri merkezlerinin iklimini paylaşır
+  // (bölge kipinde nh = n; çekim sayısı ve sırası değişmez).
+  const nh = ctx.ic.harita.bolgeler.length < n ? ctx.ic.harita.bolgeler.length : n;
 
   // (2) Biten olayları sil (bitis <= t).
   if (iklim.olaylar.some((o) => o.bitis <= t)) iklim.olaylar = iklim.olaylar.filter((o) => o.bitis > t);
 
   // (3) Olay çekimleri: bölge indeksi artan, her bölge için olay türü sırasıyla tam bir çekim.
-  for (let bi = 0; bi < n; bi++) {
+  for (let bi = 0; bi < nh; bi++) {
     const tip = ctx.ic.harita.bolgeler[bi]?.tarim?.iklimTipi;
     const tipIndeks = tip === undefined ? -1 : IKLIM_TIPI_SIRASI.indexOf(tip);
     for (const tur of OLAY_TURU_SIRASI) {
@@ -145,23 +148,35 @@ export function iklimGunluk(d: Dunya, ctx: Baglam): void {
   // (4) Bölge başına iklim hasat oranı, olay şiddeti ve toprak.
   // Etkin tarım olaylarının bölge başına birleşimi: kalan = Π (PPM - şiddet) / PPM (kuraklık şiddeti sulamayla azalır).
   const kalan: number[] = new Array<number>(n).fill(PPM);
+  // Mülk kipi: merkez bölge -> o merkeze bağlı işletme düğümleri (olay etkisi merkezle aynı; sulama koruması düğümün kendi sulamasıyla).
+  let bagli: number[][] | null = null;
+  if (nh < n) {
+    bagli = [];
+    for (let i = 0; i < nh; i++) bagli.push([]);
+    for (let i = nh; i < n; i++) {
+      const mz = (d.bolgeler[i] as BolgeDurumu).merkez;
+      if (mz !== undefined) (bagli[mz] as number[]).push(i);
+    }
+  }
   for (const o of iklim.olaylar) {
     if (!TARIMI_ETKILEYEN_OLAY[o.tur]) continue;
     if (t < o.etkiBaslangic || t >= o.bitis) continue;
     const kalanSure = o.bitis - t;
     const toplamSure = o.bitis - o.etkiBaslangic;
     for (const e of o.etki) {
-      const b = d.bolgeler[e.bolge];
-      if (b === undefined || b.tarim === undefined) continue;
-      let s = carpBol(e.siddetPpm, kalanSure, toplamSure);
-      if (o.tur === "kuraklik") {
-        const tarimTanim = ctx.ic.harita.bolgeler[e.bolge]?.tarim;
-        if (tarimTanim !== undefined) {
+      const tarimTanim = ctx.ic.harita.bolgeler[e.bolge]?.tarim;
+      const uygula = (hedef: number): void => {
+        const b = d.bolgeler[hedef];
+        if (b === undefined || b.tarim === undefined) return;
+        let s = carpBol(e.siddetPpm, kalanSure, toplamSure);
+        if (o.tur === "kuraklik" && tarimTanim !== undefined) {
           const koruma = carpBol(carpBol(sulamaDuzeyi(tb, b), ik.sulamaKuraklikKorumaPpm, PPM), tarimTanim.sulanabilirPpm, PPM);
           s = carpBol(s, PPM - koruma, PPM);
         }
-      }
-      kalan[e.bolge] = carpBol(kalan[e.bolge] as number, PPM - s, PPM);
+        kalan[hedef] = carpBol(kalan[hedef] as number, PPM - s, PPM);
+      };
+      uygula(e.bolge);
+      if (bagli !== null) for (const i of bagli[e.bolge] ?? []) uygula(i);
     }
   }
 
@@ -170,7 +185,7 @@ export function iklimGunluk(d: Dunya, ctx: Baglam): void {
     const b = d.bolgeler[bi] as BolgeDurumu;
     const ts = b.tarim;
     if (ts === undefined) continue;
-    const tanim = ctx.ic.harita.bolgeler[bi]?.tarim;
+    const tanim = ctx.ic.harita.bolgeler[b.merkez ?? bi]?.tarim;
     if (tanim === undefined) continue;
     const tipIndeks = IKLIM_TIPI_SIRASI.indexOf(tanim.iklimTipi);
     const hasat = (tb.hasatGunluk[tipIndeks] as number[])[takvim] as number;

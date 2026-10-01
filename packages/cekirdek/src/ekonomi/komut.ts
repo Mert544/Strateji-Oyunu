@@ -3,6 +3,7 @@
  * Komut kimlikleri: Komut.bolge = bölge kimliği, Komut.tesis = TesisDurumu.id (dünya genelinde benzersiz).
  * Yetki: komutu veren oyuncu bölgenin sahibi olmalıdır. Başarısız komut dünyayı değiştirmez.
  */
+import { bolgeIndeksiBul } from "../dugum";
 import { maliyetYeterliMi, maliyetiDus } from "./maliyet";
 import { icerikTablosu } from "./tablo";
 import { hizlandirilmisSure } from "../erkenOyun";
@@ -23,7 +24,7 @@ export const EN_COK_TICARET_ORANI = 1_000_000_000;
 
 /** Bölgeyi kimliğiyle bulur ve sahipliği doğrular. */
 function sahipliBolge(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, bolgeId: string): BolgeDurumu | string {
-  const bi = ctx.ic.bolgeIndeks[bolgeId];
+  const bi = bolgeIndeksiBul(d, ctx.ic, bolgeId);
   if (bi === undefined) return `bilinmeyen bolge: ${bolgeId}`;
   const b = d.bolgeler[bi] as BolgeDurumu;
   if (b.sahip !== oyuncu) return `bolge oyuncunun degil: ${bolgeId}`;
@@ -41,6 +42,8 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
     case "tesis_insa": {
       const b = sahipliBolge(d, ctx, oyuncu, k.bolge);
       if (typeof b === "string") return hata(b);
+      // Mülk kipi (S3): işletme düğümünde tesis hücrelere kurulur (tesis_insa_hucre).
+      if (b.merkez !== undefined) return hata("mulk kipinde tesis_insa_hucre kullanilmali");
       const ti = ic.tesisTuruIndeks[k.tesisTuru];
       if (ti === undefined) return hata(`bilinmeyen tesis turu: ${k.tesisTuru}`);
       const tanim = ic.tesisTurleri[ti]!;

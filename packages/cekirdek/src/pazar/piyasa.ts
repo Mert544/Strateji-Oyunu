@@ -13,7 +13,8 @@ import { icerikTablosu } from "../ekonomi/tablo";
 import { carpBol, kelepce, ppmUygula } from "../sabit";
 import { anlikHazine, anlikMiktar } from "../stok";
 import { PPM } from "../tipler";
-import type { Baglam, Dunya, Stok, TicaretEmri } from "../tipler";
+import { BOS_DUGUMLER, oyuncuDugumleri } from "../dugum";
+import type { Baglam, BolgeDurumu, Dunya, Stok, TicaretEmri } from "../tipler";
 import { npcLikiditeOlcekPpm, pazarTablosu } from "./tablo";
 
 interface Aday {
@@ -59,6 +60,17 @@ export function npcHacimleri(d: Dunya, ctx: Baglam): { emilim: number[]; arz: nu
   };
 }
 
+/** Mülk kipi: oyuncunun herhangi bir işletme düğümünde malın stoğu, üretimi ya da yoldan geleni var mı? */
+function isletmeAgindaMalVarMi(d: Dunya, dugumler: readonly number[], mal: number, t: number): boolean {
+  for (const r of dugumler) {
+    const b = d.bolgeler[r] as BolgeDurumu;
+    if (b.merkez === undefined) continue;
+    const s = b.stoklar[mal] as Stok;
+    if (anlikMiktar(s, t) > 0 || (b.uretimOrani[mal] as number) > 0 || s.gelenOran > 0) return true;
+  }
+  return false;
+}
+
 /** Adım 1: ticaret emirlerini gerçekleştirir ve pazar.oyuncuArzi / oyuncuTalebi'ni yazar. */
 export function pazarEmirleriniGerceklestir(d: Dunya, ctx: Baglam): void {
   const tb = icerikTablosu(ctx.ic);
@@ -73,15 +85,23 @@ export function pazarEmirleriniGerceklestir(d: Dunya, ctx: Baglam): void {
   }
   for (const b of d.bolgeler) for (const e of b.ticaretEmirleri) e.gerceklesenSaat = 0;
 
+  // Oyuncu -> düğümleri (artan), bir kez: oyuncu başına tüm düğümleri taramamak için (mülk kipinde düğümler çoktur).
+  const sahipli = oyuncuDugumleri(d);
   for (const o of d.oyuncular) {
     const hazineVar = anlikHazine(d, o.id) > 0;
-    for (const b of d.bolgeler) {
-      if (b.sahip !== o.id) continue;
+    const dl = sahipli.get(o.id) ?? BOS_DUGUMLER;
+    for (const r of dl) {
+      const b = d.bolgeler[r] as BolgeDurumu;
       for (const e of b.ticaretEmirleri) {
         if (e.oranSaat <= 0) continue;
         if (e.yon === "ihracat") {
           const s = b.stoklar[e.mal] as Stok;
-          const stoksuz = anlikMiktar(s, t) <= 0 && (b.uretimOrani[e.mal] as number) <= 0 && s.gelenOran <= 0;
+          // Mülk kipi (S3): işletme düğümündeki ihracat emri oyuncunun TÜM işletmelerindeki malı çeker (lojistik onu
+          // limana taşır); stoksuzluk oyuncunun işletme ağı genelinde değerlendirilir. Bölge kipinde yalnız bölgenin kendisi.
+          const stoksuz =
+            b.merkez !== undefined
+              ? !isletmeAgindaMalVarMi(d, dl, e.mal, t)
+              : anlikMiktar(s, t) <= 0 && (b.uretimOrani[e.mal] as number) <= 0 && s.gelenOran <= 0;
           if (!stoksuz) (ihracat[e.mal] as Aday[]).push({ emir: e, istenen: e.oranSaat });
         } else if (hazineVar) {
           (ithalat[e.mal] as Aday[]).push({ emir: e, istenen: e.oranSaat });

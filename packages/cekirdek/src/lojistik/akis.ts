@@ -9,10 +9,20 @@
  *       kapasite × (PPM − askeriRezervPpm) / PPM kadar sivil akış taşınır.
  * Aynı bölgenin kaynağı iki geçişte ortaktır. Maliyet = taşıma süresi (ms).
  * Oyuncu ağı kompakttır: yalnızca sahip olunan bölgeler ve kullanılabilir kenarların uç düğümleri.
+ *
+ * Mülk kipi (S3, docs/11 §3.5 (b)): MCF yalnız harita (merkez) bölgeleri arasında çözülür. Oyuncunun işletme düğümleri
+ * merkezlerine sıfır süreli örtük kenarla bağlıdır: önce aynı merkezdeki işletmeler arasında İL İÇİ HAVUZ (yolsuz, süresiz
+ * akış) kurulur, kalan fazla/açık merkez başına toplanıp merkezler arası MCF'ye verilir, MCF yolları merkezin işletmelerine
+ * artan indeks sırasıyla paylaştırılır. Her kenar kamudur. Bölge kipinde her düğümün tek üyesi vardır ve sonuç değişmez.
+ *
+ * MCF sonuç önbelleği `ic`'den bağımsızdır: anahtar, ağ imzasına (düğüm ve kenar listeleri) ek olarak dünyanın kenar
+ * yapısının (uçlar ve süreler) imzasını içerir; böylece büyüyen düğüm kümesi ya da farklı haritalar aynı önbelleği güvenle
+ * paylaşır.
  */
 import { kenarKullanilabilirMi } from "../politika";
 import { ppmUygula } from "../sabit";
-import type { Akis, Baglam, DerlenmisIcerik, Dunya, Mili, OyuncuDurumu, OyuncuId } from "../tipler";
+import type { Akis, Baglam, Dunya, Mili, OyuncuDurumu, OyuncuId } from "../tipler";
+import { BOS_DUGUMLER, oyuncuDugumleri } from "../dugum";
 import { minMaliyetAkis } from "./mcf";
 import type { GrafKenari } from "./graf";
 
@@ -29,6 +39,13 @@ export interface OyuncuAgi {
   kenarlar: number[];
   /** Ağ yapısı imzası (önbellek anahtarı için). */
   imza: string;
+  /**
+   * Mülk kipi: MCF düğümü (merkez) -> oyuncunun o merkeze bağlı işletme düğümleri (artan). Bölge kipinde TANIMSIZ (her
+   * düğümün tek üyesi kendisidir).
+   */
+  uyeler?: (readonly number[])[];
+  /** Mülk kipi: oyuncunun işletmesi olan merkezler (artan). */
+  merkezler?: number[];
 }
 
 /** MCF sonuç önbelleği kaydı: girdi (karşılaştırma için) ve gerçek indekslere çevrilmiş yollar. */
@@ -39,16 +56,22 @@ interface McfKaydi {
 }
 
 const ONBELLEK_TAVANI = 20_000;
-const onbellekler = new WeakMap<DerlenmisIcerik, { tablo: Map<number, McfKaydi[]>; boyut: number }>();
+/**
+ * MCF sonuç önbelleği (modül düzeyi, `ic`'den bağımsız). Sonuç yalnızca girdiye (ağ imzası + kenar yapısı imzası +
+ * kapasiteler + kaynak/hedefler) bağlıdır; dünya durumuna girmez, şeffaftır (isabet ya da ıskalama sonucu değiştirmez).
+ */
+const onbellek: { tablo: Map<number, McfKaydi[]>; boyut: number } = { tablo: new Map(), boyut: 0 };
 
-/** İçerik (harita) başına MCF sonuç önbelleği. Sonuç yalnızca girdiye bağlıdır; dünya durumuna girmez. */
-function mcfOnbellegi(ic: DerlenmisIcerik): { tablo: Map<number, McfKaydi[]>; boyut: number } {
-  let o = onbellekler.get(ic);
-  if (!o) {
-    o = { tablo: new Map(), boyut: 0 };
-    onbellekler.set(ic, o);
+/** Dünyanın kenar yapısı imzası: kenar sayısı, uçlar ve süreler (kapasite girdidedir). */
+function kenarYapisiImzasi(d: Dunya): string {
+  let h = 0x811c9dc5;
+  for (const k of d.kenarlar) {
+    h = Math.imul(h ^ k.a, 0x01000193);
+    h = Math.imul(h ^ k.b, 0x01000193);
+    h = Math.imul(h ^ (k.sureMs | 0), 0x01000193);
+    h = Math.imul(h ^ ((k.sureMs / 4294967296) | 0), 0x01000193);
   }
-  return o;
+  return `${d.kenarlar.length}:${(h >>> 0).toString(16)}`;
 }
 
 /** Tamsayı dizisi için 32 bit FNV benzeri özet. */
@@ -83,8 +106,69 @@ function sifirMatris(n: number, m: number): number[][] {
   return a;
 }
 
-/** Oyuncunun kompakt ağını kurar. */
-export function oyuncuAgiKur(d: Dunya, ctx: Baglam, o: OyuncuDurumu): OyuncuAgi {
+/**
+ * Mülk kipi: oyuncunun işletme düğümleri, düğüm kümesi = tüm merkezler (harita bölgeleri), kenarlar = tüm kenarlar (kamu).
+ * İşletme düğümünün kompakt indeksi merkezinin indeksidir (örtük sıfır süreli kenar).
+ */
+function mulkAgiKur(d: Dunya, ctx: Baglam, o: OyuncuDurumu, dugumler: readonly number[] | undefined, ortak: MulkOrtak): OyuncuAgi {
+  const nh = ortak.nh;
+  const bolgeler: number[] = [];
+  const dugumIndeks = ortak.dugumIndeks;
+  const uyeler: (readonly number[])[] = new Array<readonly number[]>(nh).fill(BOS_DUGUMLER);
+  const merkezler: number[] = [];
+  const liste = dugumler ?? oyuncuDugumleri(d).get(o.id) ?? BOS_DUGUMLER;
+  for (const r of liste) {
+    const b = d.bolgeler[r] as { sahip: OyuncuId | null; merkez?: number };
+    if (b.sahip !== o.id || b.merkez === undefined) continue;
+    bolgeler.push(r);
+    let u = uyeler[b.merkez] as number[];
+    if (u === BOS_DUGUMLER) {
+      u = [];
+      uyeler[b.merkez] = u;
+      merkezler.push(b.merkez);
+    }
+    u.push(r);
+  }
+  merkezler.sort((x, y) => x - y);
+  return { oyuncu: o.id, bolgeler, dugumler: ortak.merkezDugumleri, dugumIndeks, kenarlar: bolgeler.length > 0 ? ortak.kenarlar : [], imza: ortak.imza, uyeler, merkezler };
+}
+
+/**
+ * Mülk kipinde tüm oyuncuların ortak (salt okunur) ağ parçaları: merkez düğümleri, düğüm -> merkez eşlemesi, tüm kenarlar.
+ * Bir çözüm boyunca bir kez kurulur (oyuncu başına O(düğüm) kurulum yerine).
+ */
+interface MulkOrtak {
+  nh: number;
+  merkezDugumleri: number[];
+  dugumIndeks: number[];
+  kenarlar: number[];
+  imza: string;
+}
+
+function mulkOrtakKur(d: Dunya, ctx: Baglam): MulkOrtak {
+  const n = d.bolgeler.length;
+  const nh = ctx.ic.harita.bolgeler.length;
+  const dugumIndeks = new Array<number>(n).fill(-1);
+  const merkezDugumleri: number[] = [];
+  for (let c = 0; c < nh; c++) {
+    merkezDugumleri.push(c);
+    dugumIndeks[c] = c;
+  }
+  for (let r = nh; r < n; r++) {
+    const mz = (d.bolgeler[r] as { merkez?: number }).merkez;
+    if (mz !== undefined) dugumIndeks[r] = mz;
+  }
+  const kenarlar: number[] = [];
+  for (let e = 0; e < d.kenarlar.length; e++) kenarlar.push(e);
+  return { nh, merkezDugumleri, dugumIndeks, kenarlar, imza: `m${nh}/${d.kenarlar.length}` };
+}
+
+/**
+ * Oyuncunun kompakt ağını kurar (mülk kipinde merkez ağı: `mulkAgiKur`). `sahipDugumleri`: oyuncunun düğümleri (artan; verilmezse
+ * taranır), `ortak`: mülk kipinin çözüm başına ortak parçaları.
+ */
+export function oyuncuAgiKur(d: Dunya, ctx: Baglam, o: OyuncuDurumu, sahipDugumleri?: readonly number[], ortak?: MulkOrtak): OyuncuAgi {
+  if (d.mulk !== undefined) return mulkAgiKur(d, ctx, o, sahipDugumleri, ortak ?? mulkOrtakKur(d, ctx));
   const n = d.bolgeler.length;
   const dahil = new Array<boolean>(n).fill(false);
   const bolgeler: number[] = [];
@@ -162,6 +246,7 @@ export function akisCoz(
   fazla: readonly (readonly Mili[])[],
   askeriTalep: readonly (readonly Mili[])[],
   eski: readonly Akis[] = [],
+  sahipli?: ReadonlyMap<OyuncuId, readonly number[]>,
 ): AkisSonucu {
   const ic = ctx.ic;
   const n = d.bolgeler.length;
@@ -174,32 +259,32 @@ export function akisCoz(
   const gelen = sifirMatris(n, nm);
   const tumAkislar: Akis[] = [];
   const agler: OyuncuAgi[] = [];
-  const onbellek = mcfOnbellegi(ic);
+  const grafImza = kenarYapisiImzasi(d);
+  const ortak = d.mulk !== undefined ? mulkOrtakKur(d, ctx) : undefined;
   // Oyuncu başına kaynak kalanı ve hedef isteği (düz dizi, r * nm + mal; her oyuncuda sıfırlanır).
   const kaynakKalan = new Float64Array(n * nm);
   const hedefKalan = new Float64Array(n * nm);
   const girdi: number[] = [];
 
   for (const o of d.oyuncular) {
-    const ag = oyuncuAgiKur(d, ctx, o);
+    const ag = oyuncuAgiKur(d, ctx, o, sahipli?.get(o.id) ?? (sahipli ? BOS_DUGUMLER : undefined), ortak);
     agler.push(ag);
-    if (ag.bolgeler.length === 0 || ag.kenarlar.length === 0) continue;
+    const uyeler = ag.uyeler;
+    if (ag.bolgeler.length === 0 || (uyeler === undefined && ag.kenarlar.length === 0)) continue;
+    const agImza = `${ag.imza}|${grafImza}`;
 
-    kaynakKalan.fill(0);
-    hedefKalan.fill(0);
+    // Yalnız oyuncunun düğüm satırları yazılır ve okunur (düğümün tek sahibi vardır); tüm diziyi sıfırlamak yerine bu
+    // satırlar baştan kurulur (mülk kipinde düğüm sayısı oyuncuyla büyür).
     let kaynakVar = false;
     let hedefVar = false;
     for (const r of ag.bolgeler) {
       const satir = fazla[r] as readonly Mili[];
       for (let m = 0; m < nm; m++) {
         const f = satir[m] as number;
-        if (f > 0) {
-          kaynakKalan[r * nm + m] = f;
-          kaynakVar = true;
-        } else if (f < 0) {
-          hedefKalan[r * nm + m] = -f;
-          hedefVar = true;
-        }
+        kaynakKalan[r * nm + m] = f > 0 ? f : 0;
+        hedefKalan[r * nm + m] = f < 0 ? -f : 0;
+        if (f > 0) kaynakVar = true;
+        else if (f < 0) hedefVar = true;
       }
     }
     if (!kaynakVar || !hedefVar) continue;
@@ -213,20 +298,75 @@ export function akisCoz(
     const kapDizi: number[] = new Array<number>(ag.kenarlar.length).fill(0);
     const oyuncuAkislari: Akis[] = [];
 
+    /** Hedef düğümün bu geçişteki açığı (askeri geçişte askeri talep tavanıyla). */
+    const hedefIstek = (r: number, mal: number, askeri: boolean): number => {
+      let hm = hedefKalan[r * nm + mal] as number;
+      if (askeri) {
+        const at = (askeriTalep[r] as readonly Mili[])[mal] as number;
+        if (at < hm) hm = at;
+      }
+      return hm;
+    };
+    /**
+     * Akış kaydı ve kaynak/hedef kalanı, giden/gelen güncellemesi (kenar kapasitesi çağıranda). `yol` KOPYALANIR: önbellek
+     * kaydının yol dizisi birden çok akışa (aynı girdili iki mal, mülk kipinde bir yolu paylaşan işletmeler) ve önbelleğe
+     * ortak olamaz; dünyada paylaşılan referans serileştirmede reddedilir (docs/06 §14).
+     */
+    const akisEkle = (mal: number, kaynak: number, hedef: number, yol: readonly number[], sureMs: number, miktar: number): void => {
+      oyuncuAkislari.push({ sahip: o.id, mal, kaynak, hedef, yol: [...yol], oranSaat: miktar, sureMs });
+      kaynakKalan[kaynak * nm + mal] = (kaynakKalan[kaynak * nm + mal] as number) - miktar;
+      hedefKalan[hedef * nm + mal] = (hedefKalan[hedef * nm + mal] as number) - miktar;
+      (giden[kaynak] as number[])[mal] = ((giden[kaynak] as number[])[mal] as number) + miktar;
+      (gelen[hedef] as number[])[mal] = ((gelen[hedef] as number[])[mal] as number) + miktar;
+    };
+    /** Mülk kipi: aynı merkezdeki işletmeler arasında il içi havuz (yolsuz, süresiz; nicelenmiş). */
+    const havuzla = (uy: readonly (readonly number[])[], merkezler: readonly number[], mal: number, askeri: boolean): void => {
+      for (const c of merkezler) {
+        const grup = uy[c] as readonly number[];
+        if (grup.length < 2) continue;
+        for (const rk of grup) {
+          for (const rh of grup) {
+            if (rh === rk) continue;
+            const ak = kaynakKalan[rk * nm + mal] as number;
+            if (ak < EN_AZ_AKIS) break;
+            const ah = hedefIstek(rh, mal, askeri);
+            const q = akisNicele(ak < ah ? ak : ah);
+            if (q >= EN_AZ_AKIS) akisEkle(mal, rk, rh, [], 0, q);
+          }
+        }
+      }
+    };
+
     const adim = (mal: number, askeri: boolean): void => {
       kaynaklar.length = 0;
       hedefler.length = 0;
-      for (const r of ag.bolgeler) {
-        // Girdiler de nicelenir (aşağı): sürekli küçük kaymalar aynı MCF girdisini, dolayısıyla önbellek isabetini korur.
-        const ks = akisNicele(kaynakKalan[r * nm + mal] as number);
-        if (ks >= EN_AZ_AKIS) kaynaklar.push({ dugum: ag.dugumIndeks[r] as number, miktar: ks });
-        let hm = hedefKalan[r * nm + mal] as number;
-        if (askeri) {
-          const at = (askeriTalep[r] as readonly Mili[])[mal] as number;
-          if (at < hm) hm = at;
+      if (uyeler === undefined) {
+        for (const r of ag.bolgeler) {
+          // Girdiler de nicelenir (aşağı): sürekli küçük kaymalar aynı MCF girdisini, dolayısıyla önbellek isabetini korur.
+          const ks = akisNicele(kaynakKalan[r * nm + mal] as number);
+          if (ks >= EN_AZ_AKIS) kaynaklar.push({ dugum: ag.dugumIndeks[r] as number, miktar: ks });
+          const hm = akisNicele(hedefIstek(r, mal, askeri));
+          if (hm >= EN_AZ_AKIS) hedefler.push({ dugum: ag.dugumIndeks[r] as number, miktar: hm });
         }
-        hm = akisNicele(hm);
-        if (hm >= EN_AZ_AKIS) hedefler.push({ dugum: ag.dugumIndeks[r] as number, miktar: hm });
+      } else {
+        const merkezler = ag.merkezler as number[];
+        havuzla(uyeler, merkezler, mal, askeri);
+        // Merkez başına toplanmış kalan fazla ve açık (merkez sırasıyla).
+        for (const c of merkezler) {
+          const grup = uyeler[c] as readonly number[];
+          let tk = 0;
+          let th = 0;
+          for (const r of grup) {
+            const k = kaynakKalan[r * nm + mal] as number;
+            if (k > 0) tk += k;
+            const h = hedefIstek(r, mal, askeri);
+            if (h > 0) th += h;
+          }
+          const ks = akisNicele(tk);
+          if (ks >= EN_AZ_AKIS) kaynaklar.push({ dugum: c, miktar: ks });
+          const hm = akisNicele(th);
+          if (hm >= EN_AZ_AKIS) hedefler.push({ dugum: c, miktar: hm });
+        }
       }
       if (kaynaklar.length === 0 || hedefler.length === 0) return;
 
@@ -263,7 +403,7 @@ export function akisCoz(
       let kayit: McfKaydi | undefined;
       if (kova) {
         for (const k of kova) {
-          if (k.imza !== ag.imza || k.girdi.length !== gn) continue;
+          if (k.imza !== agImza || k.girdi.length !== gn) continue;
           let esit = true;
           for (let i = 0; i < gn; i++) {
             if (k.girdi[i] !== girdi[i]) {
@@ -289,7 +429,7 @@ export function akisCoz(
           gr.push(e);
         }
         const sonuc = minMaliyetAkis(ag.dugumler.length, gk, kaynaklar, hedefler);
-        kayit = { imza: ag.imza, girdi: girdi.slice(0, gn), yollar: [] };
+        kayit = { imza: agImza, girdi: girdi.slice(0, gn), yollar: [] };
         for (const y of sonuc.yollar) {
           if (y.kenarlar.length === 0 || y.miktar <= 0) continue;
           const yol = y.kenarlar.map((i) => gr[i] as number);
@@ -313,18 +453,42 @@ export function akisCoz(
       // Yollar aşağı yuvarlanan ~%1,5'lik basamaklara oturtulur: küçük sürekli değişimler yeni akış farkı
       // (oran_delta) ve dolayısıyla yeni çözüm üretmesin.
       for (const y of kayit.yollar) {
-        const miktar = akisNicele(y.miktar);
+        let miktar = akisNicele(y.miktar);
         if (miktar <= 0) continue;
+        if (uyeler === undefined) {
+          akisEkle(mal, y.kaynak, y.hedef, y.yol, y.sureMs, miktar);
+        } else {
+          // Mülk kipi: merkezler arası yol, kaynak merkezin ve hedef merkezin işletmelerine artan indeksle paylaştırılır.
+          const ku = uyeler[y.kaynak] as readonly number[];
+          const hu = uyeler[y.hedef] as readonly number[];
+          let kalanQ = miktar;
+          let i = 0;
+          let j = 0;
+          while (kalanQ > 0 && i < ku.length && j < hu.length) {
+            const rk = ku[i] as number;
+            const rh = hu[j] as number;
+            const ak = kaynakKalan[rk * nm + mal] as number;
+            if (ak <= 0) {
+              i++;
+              continue;
+            }
+            const ah = hedefIstek(rh, mal, askeri);
+            if (ah <= 0) {
+              j++;
+              continue;
+            }
+            const q = kalanQ < ak ? (kalanQ < ah ? kalanQ : ah) : ak < ah ? ak : ah;
+            akisEkle(mal, rk, rh, y.yol, y.sureMs, q);
+            kalanQ -= q;
+          }
+          miktar -= kalanQ;
+          if (miktar <= 0) continue;
+        }
         for (const e of y.yol) {
           kalan[e] = (kalan[e] as number) - miktar;
           if (askeri) askeriKul[e] = (askeriKul[e] as number) + miktar;
           else sivilKul[e] = (sivilKul[e] as number) + miktar;
         }
-        oyuncuAkislari.push({ sahip: o.id, mal, kaynak: y.kaynak, hedef: y.hedef, yol: y.yol, oranSaat: miktar, sureMs: y.sureMs });
-        kaynakKalan[y.kaynak * nm + mal] = (kaynakKalan[y.kaynak * nm + mal] as number) - miktar;
-        hedefKalan[y.hedef * nm + mal] = (hedefKalan[y.hedef * nm + mal] as number) - miktar;
-        (giden[y.kaynak] as number[])[mal] = ((giden[y.kaynak] as number[])[mal] as number) + miktar;
-        (gelen[y.hedef] as number[])[mal] = ((gelen[y.hedef] as number[])[mal] as number) + miktar;
       }
     };
 

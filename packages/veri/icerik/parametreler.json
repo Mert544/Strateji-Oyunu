@@ -171,5 +171,36 @@
       "kesifEkiMaxPpm": 600000,
       "kesifHakkiBolgeMal": 2
     }
+  },
+  "mulk": {
+    "hucreFiyati": { "kirsal": 1000000, "kasaba": 2500000, "sehir": 6500000 },
+    "satisPayiCarpaniPpm": 2000000,
+    "ilceHucreTavani": 72,
+    "ilcePayTavaniPpm": 250000,
+    "araziVergisiHaftalikPpm": 10000,
+    "insaatIptalIadePpm": 500000,
+    "esZamanliInsaat": 2,
+    "yapiYuva": {
+      "ciftlik": 2, "ahir": 2, "mera": 3, "sulama_kanali": 1, "gida_fabrikasi": 2,
+      "cevher_madeni": 2, "komur_ocagi": 2, "bakir_madeni": 2, "silis_ocagi": 2, "petrol_kuyusu": 1,
+      "celikhane": 3, "parca_fabrikasi": 2, "elektronik_fabrikasi": 2, "santral": 3, "hidro_santrali": 3,
+      "gubre_fabrikasi": 2, "muhimmat_fabrikasi": 2
+    },
+    "yapiInsaSaati": {
+      "ciftlik": 2, "ahir": 4, "mera": 2, "sulama_kanali": 6, "gida_fabrikasi": 6,
+      "cevher_madeni": 6, "komur_ocagi": 6, "bakir_madeni": 6, "silis_ocagi": 6, "petrol_kuyusu": 6,
+      "celikhane": 10, "parca_fabrikasi": 8, "elektronik_fabrikasi": 10, "santral": 10, "hidro_santrali": 10,
+      "gubre_fabrikasi": 8, "muhimmat_fabrikasi": 8
+    },
+    "yeniOyuncu": {
+      "hibe": 50000000,
+      "baslangicStok": { "celik": 120000, "parca": 40000, "gida": 200000 },
+      "yurtHucre": 6,
+      "ilkYapiIndirimPpm": 300000,
+      "indirimliYapiSayisi": 5,
+      "ayrilmisHucrePpm": 200000,
+      "kalkanGun": 14
+    },
+    "hareketsizlik": { "uykuGun": 14, "curumeGun": 45, "curumePpmGun": 20000, "acikArtirmaGun": 90, "tatilGunYillik": 30 }
   }
 }

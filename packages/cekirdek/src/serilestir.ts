@@ -225,7 +225,7 @@ const DUNYA_ZORUNLU = [
   "sayac",
   "kuyruk",
 ] as const;
-const DUNYA_ISTEGE_BAGLI = ["iklim"] as const;
+const DUNYA_ISTEGE_BAGLI = ["iklim", "mulk"] as const;
 
 const BOLGE_ZORUNLU = [
   "indeks",
@@ -307,6 +307,12 @@ export function dunyaDogrula(deger: unknown): Dunya {
       if (em.yon !== "ihracat" && em.yon !== "ithalat") hata(`${ey}.yon`, `gecersiz yon: ${JSON.stringify(em.yon)}`);
     });
     alanlar(nesne(b.savunma, `${y}.savunma`), `${y}.savunma`, ["durus"]);
+    if (b.merkez !== undefined) indeks(b.merkez, `${y}.merkez`, n);
+  }
+  // Mülk kipi (S3): işletme düğümünün merkezi harita bölgesi olmalı (merkezin kendi merkezi olmaz).
+  for (let i = 0; i < n; i++) {
+    const mz = (bolgeler[i] as Nesne).merkez;
+    if (mz !== undefined && (bolgeler[mz as number] as Nesne).merkez !== undefined) hata(`$.bolgeler[${i}].merkez`, "merkez bir isletme dugumu olamaz");
   }
   for (let i = 0; i < kSayisi; i++) {
     const y = `$.kenarlar[${i}]`;
@@ -381,6 +387,9 @@ export function dunyaDogrula(deger: unknown): Dunya {
     tamsayi(ik.sonGun, "$.iklim.sonGun");
   }
 
+  // Mülk (isteğe bağlı)
+  if (d.mulk !== undefined) mulkDogrula(d.mulk, bolgeler, n);
+
   // PRNG: tam olarak bilinen akışlar, her biri 4 adet uint32
   const rng = nesne(d.rng, "$.rng");
   const akislar = Object.keys(rng).sort();
@@ -421,6 +430,66 @@ export function dunyaDogrula(deger: unknown): Dunya {
   return d as unknown as Dunya;
 }
 
+/** Dizinin `anahtar`a göre kesin artan (JS dize sırası) olduğunu denetler. */
+function kesinArtan(dizi: unknown[], yol: string, anahtar: (x: Nesne, y: string) => string): void {
+  let onceki: string | null = null;
+  dizi.forEach((v, i) => {
+    const y = `${yol}[${i}]`;
+    const k = anahtar(nesne(v, y), y);
+    if (onceki !== null && !(onceki < k)) hata(y, `kesin artan sirali olmali (${onceki} >= ${k})`);
+    onceki = k;
+  });
+}
+
+/** Mülk durumu biçimi: sıralı listeler, hücre/ilçe/işletme/oyuncu alanları, işletme düğümü indeksleri. */
+function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
+  const m = nesne(v, "$.mulk");
+  alanlar(m, "$.mulk", ["hucreler", "ilceler", "isletmeler", "oyuncular"]);
+  const hucreler = dizi(m.hucreler, "$.mulk.hucreler");
+  kesinArtan(hucreler, "$.mulk.hucreler", (h, y) => {
+    alanlar(h, y, ["id", "ilce", "sinif", "sahip", "degerMili", "alinma"]);
+    if (h.sinif !== "kirsal" && h.sinif !== "kasaba" && h.sinif !== "sehir") hata(`${y}.sinif`, `gecersiz arsa sinifi: ${JSON.stringify(h.sinif)}`);
+    dize(h.ilce, `${y}.ilce`);
+    dize(h.sahip, `${y}.sahip`);
+    tamsayi(h.degerMili, `${y}.degerMili`, 0);
+    return dize(h.id, `${y}.id`);
+  });
+  kesinArtan(dizi(m.ilceler, "$.mulk.ilceler"), "$.mulk.ilceler", (c, y) => {
+    alanlar(c, y, ["id", "il", "seviye", "uygunHucre", "satilmisHucre"]);
+    const uygun = tamsayi(c.uygunHucre, `${y}.uygunHucre`, 0);
+    tamsayi(c.satilmisHucre, `${y}.satilmisHucre`, 0, uygun);
+    tamsayi(c.seviye, `${y}.seviye`, 0, 3);
+    return dize(c.id, `${y}.id`);
+  });
+  kesinArtan(dizi(m.isletmeler, "$.mulk.isletmeler"), "$.mulk.isletmeler", (e, y) => {
+    alanlar(e, y, ["oyuncu", "il", "merkezBolge", "bolgeIndeksi"]);
+    const bi = indeks(e.bolgeIndeksi, `${y}.bolgeIndeksi`, n);
+    const b = bolgeler[bi] as Nesne;
+    const oyuncu = dize(e.oyuncu, `${y}.oyuncu`);
+    const il = dize(e.il, `${y}.il`);
+    if (b.merkez === undefined) hata(`${y}.bolgeIndeksi`, "isletme dugumu degil (merkez yok)");
+    if (b.sahip !== oyuncu) hata(`${y}.oyuncu`, `dugumun sahibi ${String(b.sahip)}`);
+    if (b.id !== `${il}#${oyuncu}`) hata(`${y}.bolgeIndeksi`, `dugum kimligi ${String(b.id)}, beklenen ${il}#${oyuncu}`);
+    // (oyuncu, il) sırası: "\u0000" ayracı dize sırasını korur (kimlikler denetimli ASCII).
+    return `${oyuncu}\u0000${il}`;
+  });
+  kesinArtan(dizi(m.oyuncular, "$.mulk.oyuncular"), "$.mulk.oyuncular", (o, y) => {
+    alanlar(o, y, ["id", "araziDegeriMili", "ilceHucre", "araziVergisi", "sonEtkinlik"]);
+    tamsayi(o.araziDegeriMili, `${y}.araziDegeriMili`, 0);
+    stokDogrula(o.araziVergisi, `${y}.araziVergisi`);
+    tamsayi(o.sonEtkinlik, `${y}.sonEtkinlik`);
+    kesinArtan(dizi(o.ilceHucre, `${y}.ilceHucre`), `${y}.ilceHucre`, (k, ky) => {
+      tamsayi(k.hucre, `${ky}.hucre`, 1);
+      return dize(k.ilce, `${ky}.ilce`);
+    });
+    return dize(o.id, `${y}.id`);
+  });
+  // Her işletme düğümü kayıtlı olmalı
+  let dugum = 0;
+  for (const b of bolgeler) if ((b as Nesne).merkez !== undefined) dugum++;
+  if (dugum !== dizi(m.isletmeler, "$.mulk.isletmeler").length) hata("$.mulk.isletmeler", `isletme kaydi ${dizi(m.isletmeler, "$.mulk.isletmeler").length}, isletme dugumu ${dugum}`);
+}
+
 /**
  * Kanonik JSON metninden dünya: JSON.parse + `dunyaDogrula`. Bozuk JSON veya biçim hatasında `SerilestirmeHatasi`.
  * Dönen nesne bağımsızdır (paylaşılan referans yok).
@@ -442,10 +511,20 @@ export function dunyaCoz(metin: string): Dunya {
  */
 export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
   const hb = ic.harita.bolgeler;
-  if (d.bolgeler.length !== hb.length) hata("$.bolgeler", `bolge sayisi ${d.bolgeler.length}, icerikte ${hb.length}`);
+  const mulkAcik = ic.mulk !== undefined;
+  if (mulkAcik !== (d.mulk !== undefined)) hata("$.mulk", mulkAcik ? "mulk kipi acik ama mulk durumu yok" : "mulk kipi kapali ama mulk durumu var");
+  // Mülk kipinde harita bölgelerinden sonra işletme düğümleri gelir (büyüyebilen düğüm kümesi).
+  if (mulkAcik ? d.bolgeler.length < hb.length : d.bolgeler.length !== hb.length) hata("$.bolgeler", `bolge sayisi ${d.bolgeler.length}, icerikte ${hb.length}`);
   d.bolgeler.forEach((b, i) => {
     const y = `$.bolgeler[${i}]`;
-    if (b.id !== hb[i]?.id) hata(`${y}.id`, `bolge kimligi ${b.id}, icerikte ${hb[i]?.id ?? "-"}`);
+    if (i >= hb.length) {
+      const ayrac = b.id.indexOf("#");
+      const merkez = ayrac > 0 ? ic.mulk?.ilMerkezi.get(b.id.slice(0, ayrac)) : undefined;
+      if (b.merkez === undefined || merkez !== b.merkez) hata(`${y}.merkez`, `isletme dugumu ilin merkezine bagli degil: ${b.id}`);
+    } else {
+      if (b.id !== hb[i]?.id) hata(`${y}.id`, `bolge kimligi ${b.id}, icerikte ${hb[i]?.id ?? "-"}`);
+      if (b.merkez !== undefined) hata(`${y}.merkez`, "harita bolgesi isletme dugumu olamaz");
+    }
     if (b.stoklar.length !== ic.mallar.length) hata(`${y}.stoklar`, `mal sayisi ${b.stoklar.length}, icerikte ${ic.mallar.length}`);
     if (b.birlikler.length !== ic.birlikler.length) hata(`${y}.birlikler`, `birlik sayisi ${b.birlikler.length}, icerikte ${ic.birlikler.length}`);
     b.tesisler.forEach((t, j) => {
@@ -458,6 +537,13 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     o.teknolojiler.forEach((t, j) => indeks(t, `$.oyuncular[${i}].teknolojiler[${j}]`, ic.teknolojiler.length));
     if (o.arastirma !== null) indeks(o.arastirma.teknoloji, `$.oyuncular[${i}].arastirma.teknoloji`, ic.teknolojiler.length);
   });
+  if (d.mulk !== undefined && ic.mulk !== undefined) {
+    const mk = ic.mulk;
+    if (d.mulk.ilceler.length !== mk.ilceler.size) hata("$.mulk.ilceler", `ilce sayisi ${d.mulk.ilceler.length}, fiksturde ${mk.ilceler.size}`);
+    d.mulk.ilceler.forEach((c, i) => {
+      if (!mk.ilceler.has(c.id)) hata(`$.mulk.ilceler[${i}].id`, `fiksturde olmayan ilce: ${c.id}`);
+    });
+  }
   const tarimAcik = ic.param.tarim !== undefined;
   if (tarimAcik !== (d.iklim !== undefined)) hata("$.iklim", tarimAcik ? "tarim acik ama iklim durumu yok" : "tarim kapali ama iklim durumu var");
 }
@@ -543,14 +629,22 @@ export interface AnlikGoruntu {
  * tutulur: görüntüden sonraki başarılı komutlar `anlikGoruntudenYukle`'ye kuyruk olarak verilir).
  */
 export function anlikGoruntuOlustur(sim: Pick<Simulasyon, "dunya">, kuralSurumu: string): string {
+  return anlikGoruntuOlusturOzetli(sim, kuralSurumu).metin;
+}
+
+/**
+ * `anlikGoruntuOlustur` ile aynı metin, ek olarak dünyanın durum özeti (aynı serileştirmeden; `sim.durumOzeti()` ile eşit).
+ * Sunucu özeti ayrıca saklamak için dünyayı ikinci kez serileştirmek zorunda kalmaz.
+ */
+export function anlikGoruntuOlusturOzetli(sim: Pick<Simulasyon, "dunya">, kuralSurumu: string): { metin: string; durumOzeti: string } {
   if (typeof kuralSurumu !== "string" || kuralSurumu === "") hata("$.kuralSurumu", "bos olmayan dize bekleniyordu");
   const dunyaMetni = dunyaSerilestir(sim.dunya);
   const ozet = fnv1a64(dunyaMetni);
   // Anahtarlar sıralı: dunya < durumOzeti < kuralSurumu < simZamani < surum (zarf da kanonik JSON'dur).
-  return (
+  const metin =
     `{"dunya":${dunyaMetni},"durumOzeti":${JSON.stringify(ozet)},"kuralSurumu":${JSON.stringify(kuralSurumu)},` +
-    `"simZamani":${sim.dunya.zaman},"surum":${ANLIK_GORUNTU_SURUMU}}`
-  );
+    `"simZamani":${sim.dunya.zaman},"surum":${ANLIK_GORUNTU_SURUMU}}`;
+  return { metin, durumOzeti: ozet };
 }
 
 /**

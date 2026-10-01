@@ -525,4 +525,56 @@ export interface Parametreler {
    * yoksa kapalıdır ve çekirdek davranışı Tarım v1 ile birebir aynıdır. Elektrik için `nufus.tuketim1000Saat["elektrik"]` kullanılır.
    */
   sanayi?: SanayiParametreleri;
+  /**
+   * Mülk kipi (S3, docs/11 §7.2–§7.9): paylaşılan parsel dünyası. Tanımlıysa VE veri paketiyle bir parsel fikstürü
+   * (`parsel`) verilmişse çekirdek mülk kipinde çalışır (hücre mülkiyeti, işletme düğümleri, parsel komutları); aksi halde
+   * kullanılmaz ve bölge kipi birebir aynı kalır. Değerler başlangıç önerisidir, kalibre edilmedi.
+   */
+  mulk?: MulkParametreleri;
+}
+
+/** Mülk kipi parametreleri (S3). Para alanları mili-para (1 ₺ = 1000), oranlar ppm. */
+export interface MulkParametreleri {
+  /** Hücre başına taban fiyat (mili-para), arsa sınıfına göre. */
+  hucreFiyati: { kirsal: number; kasaba: number; sehir: number };
+  /** Fiyat çarpanı = 1 + satisPayiCarpaniPpm/PPM × (ilçede satılmış hücre / uygun hücre); 2 000 000 = "× (1 + 2·pay)". */
+  satisPayiCarpaniPpm: number;
+  /** Oyuncu başına ilçede en çok hücre. */
+  ilceHucreTavani: number;
+  /** Oyuncu başına ilçenin uygun hücrelerinin en çok payı (ppm). */
+  ilcePayTavaniPpm: number;
+  /** Arazi vergisi: arazi değerinin haftalık payı (ppm; 10 000 = %1). Tembel: hazinenin saatlik oranına işlenir. */
+  araziVergisiHaftalikPpm: number;
+  /** İnşaat iptalinde ödenen para ve malzemenin iade payı (ppm). */
+  insaatIptalIadePpm: number;
+  /** Oyuncu başına aynı anda süren en çok hücreli inşaat. */
+  esZamanliInsaat: number;
+  /** Tesis türü -> kapladığı hücre sayısı (yuva, 1..3). Listede olmayan tür mülk kipinde inşa edilemez. */
+  yapiYuva: Record<string, number>;
+  /** İsteğe bağlı tesis türü -> inşa süresi (saat); yoksa içerikteki `insaSuresiSaat`. */
+  yapiInsaSaati?: Record<string, number>;
+  /** Yeni oyuncu (H6). Bugün yalnız `hibe` ve `baslangicStok` uygulanır; diğerleri parametre yeridir. */
+  yeniOyuncu: {
+    /** Katılım hibesi (mili-para): mülk kipinde başlangıç hazinesi. */
+    hibe: number;
+    /** İlk işletme düğümünün başlangıç stoğu (mal -> mili-birim; başlangıç kiti, kalibre edilmedi). */
+    baslangicStok: Record<MalId, number>;
+    /** Bedava yurt hücresi sayısı (henüz uygulanmıyor). */
+    yurtHucre: number;
+    /** İlk yapılarda inşa indirimi (ppm) ve kaç yapıda (henüz uygulanmıyor). */
+    ilkYapiIndirimPpm: number;
+    indirimliYapiSayisi: number;
+    /** İlçede yeni oyunculara ayrılmış hücre payı (ppm; henüz uygulanmıyor). */
+    ayrilmisHucrePpm: number;
+    /** Yeni oyuncu kalkanı (gün; henüz uygulanmıyor). */
+    kalkanGun: number;
+  };
+  /** Hareketsizlik merdiveni (docs/11 §7.8): yalnız veri yeri; kurallar sonraki iş. */
+  hareketsizlik: {
+    uykuGun: number;
+    curumeGun: number;
+    curumePpmGun: number;
+    acikArtirmaGun: number;
+    tatilGunYillik: number;
+  };
 }

@@ -2,6 +2,7 @@
  * Sanayi komutları (B2): tesis_olcek_yukselt, genel_onarim, bakim_duzeyi, arama_sondaji.
  * Yetki: komutu veren oyuncu bölgenin sahibi olmalıdır. Başarısız komut dünyayı değiştirmez. Sanayi kapalıysa hepsi hata.
  */
+import { bolgeIndeksiBul } from "../dugum";
 import { maliyetYeterliMi, maliyetiDus } from "../ekonomi/maliyet";
 import { icerikTablosu } from "../ekonomi/tablo";
 import type { MalMiktar } from "../ekonomi/tablo";
@@ -31,7 +32,7 @@ function malOlcekle(l: MalMiktar, oran: number): Array<[number, number]> {
 }
 
 function sahipliBolge(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, bolgeId: string): BolgeDurumu | string {
-  const bi = ctx.ic.bolgeIndeks[bolgeId];
+  const bi = bolgeIndeksiBul(d, ctx.ic, bolgeId);
   if (bi === undefined) return `bilinmeyen bolge: ${bolgeId}`;
   const b = d.bolgeler[bi] as BolgeDurumu;
   if (b.sahip !== oyuncu) return `bolge oyuncunun degil: ${bolgeId}`;

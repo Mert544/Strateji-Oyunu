@@ -61,12 +61,19 @@ export function kapsamiHesapla(
   }
 
   // Sahipli bölgeler: oyuncu ağı üzerinden.
+  // Aynı ağ imzalı oyuncular (mülk kipinde hepsi: merkez ağı) aynı graf kenarlarını paylaşır; bir kez kurulur.
+  let sonImza: string | null = null;
+  const mesafeOnbellegi = new Map<string, { mesafe: number[]; kap: number[] }>();
+  let gk: GrafKenari[] = [];
   for (const ag of agler) {
     if (ag.bolgeler.length === 0) continue;
-    const gk: GrafKenari[] = [];
-    for (const e of ag.kenarlar) {
-      const k = d.kenarlar[e]!;
-      gk.push({ u: ag.dugumIndeks[k.a] as number, v: ag.dugumIndeks[k.b] as number, kapasite: k.kapasiteSaat, maliyet: k.sureMs });
+    if (ag.imza !== sonImza) {
+      sonImza = ag.imza;
+      gk = [];
+      for (const e of ag.kenarlar) {
+        const k = d.kenarlar[e]!;
+        gk.push({ u: ag.dugumIndeks[k.a] as number, v: ag.dugumIndeks[k.b] as number, kapasite: k.kapasiteSaat, maliyet: k.sureMs });
+      }
     }
     const nd = ag.dugumler.length;
     for (let m = 0; m < nm; m++) {
@@ -94,8 +101,18 @@ export function kapsamiHesapla(
       let mesafe: number[] | null = null;
       let mesafeKap: number[] | null = null;
       if (dijkstraGerek && kaynaklar.length > 0) {
-        mesafe = cokKaynakliDijkstra(nd, gk, kaynaklar).mesafe;
-        mesafeKap = cokKaynakliDijkstra(nd, gk, kaynaklar, { kapasiteliMi: (i) => ((kalan[ag.kenarlar[i] as number] as number) > 0) }).mesafe;
+        // Mülk kipi: aynı ağ ve aynı kaynak kümesi aynı mesafeleri verir (çok oyuncu aynı merkezlerdedir): çağrı içi önbellek.
+        const anahtar = ag.uyeler === undefined ? null : `${ag.imza}|${kaynaklar.join(",")}`;
+        let m2 = anahtar === null ? undefined : mesafeOnbellegi.get(anahtar);
+        if (m2 === undefined) {
+          m2 = {
+            mesafe: cokKaynakliDijkstra(nd, gk, kaynaklar).mesafe,
+            kap: cokKaynakliDijkstra(nd, gk, kaynaklar, { kapasiteliMi: (i) => ((kalan[ag.kenarlar[i] as number] as number) > 0) }).mesafe,
+          };
+          if (anahtar !== null) mesafeOnbellegi.set(anahtar, m2);
+        }
+        mesafe = m2.mesafe;
+        mesafeKap = m2.kap;
       }
       for (let i = 0; i < ag.bolgeler.length; i++) {
         const r = ag.bolgeler[i] as number;

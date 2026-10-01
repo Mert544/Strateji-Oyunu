@@ -19,7 +19,8 @@ import type { TarimTablosu } from "./tablo";
  */
 export function tarimCiktiCarpani(tb: TarimTablosu, ic: DerlenmisIcerik, b: BolgeDurumu, ekili: boolean, gubreKarsilanma: number): number {
   const ts = b.tarim;
-  const tanim = ic.harita.bolgeler[b.indeks]?.tarim;
+  // Mülk kipi (S3): işletme düğümü merkezinin tarım tanımını (toprak tabanı) kullanır.
+  const tanim = ic.harita.bolgeler[b.merkez ?? b.indeks]?.tarim;
   if (ts === undefined || tanim === undefined) return PPM;
   const toprak = carpBol(tanim.toprakTabanPpm, ts.toprakPpm, PPM);
   const kayip = ts.olayKaybiPpm;

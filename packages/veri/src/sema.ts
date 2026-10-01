@@ -361,6 +361,40 @@ const sanayiSema = z
   })
   .strict();
 
+const mulkSema = z
+  .object({
+    hucreFiyati: z.object({ kirsal: negatifOlmayan, kasaba: negatifOlmayan, sehir: negatifOlmayan }).strict(),
+    satisPayiCarpaniPpm: negatifOlmayan.max(100_000_000, "en fazla 100000000 olabilir"),
+    ilceHucreTavani: pozitif,
+    ilcePayTavaniPpm: ppmSiniri,
+    araziVergisiHaftalikPpm: ppmSiniri,
+    insaatIptalIadePpm: ppmSiniri,
+    esZamanliInsaat: pozitif,
+    yapiYuva: z.record(kimlik, pozitif.max(3, "yuva en fazla 3 olabilir")),
+    yapiInsaSaati: z.record(kimlik, pozitif).optional(),
+    yeniOyuncu: z
+      .object({
+        hibe: negatifOlmayan,
+        baslangicStok: kayit,
+        yurtHucre: negatifOlmayan,
+        ilkYapiIndirimPpm: ppmSiniri,
+        indirimliYapiSayisi: negatifOlmayan,
+        ayrilmisHucrePpm: ppmSiniri,
+        kalkanGun: negatifOlmayan,
+      })
+      .strict(),
+    hareketsizlik: z
+      .object({
+        uykuGun: negatifOlmayan,
+        curumeGun: negatifOlmayan,
+        curumePpmGun: ppmSiniri,
+        acikArtirmaGun: negatifOlmayan,
+        tatilGunYillik: negatifOlmayan,
+      })
+      .strict(),
+  })
+  .strict();
+
 export const ParametreSema = z
   .object({
     surum: z.literal(1),
@@ -460,6 +494,7 @@ export const ParametreSema = z
     iklim: iklimSema.optional(),
     tarim: tarimParamSema.optional(),
     sanayi: sanayiSema.optional(),
+    mulk: mulkSema.optional(),
   })
   .strict();
 

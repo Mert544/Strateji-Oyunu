@@ -2,7 +2,6 @@
  * Simülasyon motoru: olay kuyruğu döngüsü, komut yönlendirme ve oyuncu kaydı.
  * Ekonomi/lojistik/askeri/teknoloji/politika alt sistemleri ayrı modüllerdedir; motor yalnızca çağırır.
  */
-import type { VeriPaketi } from "@bolge/veri";
 import { BaglamUygulamasi } from "./baglam";
 import { icerikDerle } from "./derle";
 import { askeriKomutu, partiBitti, savasPencereAc, savasPencereKapa } from "./askeri";
@@ -17,10 +16,12 @@ import { ticaretDefteriBaslat } from "./pazar";
 import { politikaKomutu } from "./politika";
 import { sanayiKomutu, sondajBitti } from "./sanayi";
 import { iklimGunluk, tarimKomutu } from "./tarim";
+import { mulkKomutu, mulkOyuncuAl, mulkOyuncuBul } from "./mulk";
 import { eskimisEsikleriBuda, oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
 import { arastirmaBitti, teknolojiKomutu } from "./teknoloji";
 import { GUN, SAAT } from "./tipler";
 import type {
+  CekirdekVeriPaketi,
   DamgaliKomut,
   DerlenmisIcerik,
   Dunya,
@@ -42,6 +43,12 @@ export const SISTEM_OYUNCUSU = "sistem";
  */
 export const EN_COK_KOMUT_ILERISI: Ms = 400 * GUN;
 
+/** Kurtarma seçenekleri (`anlikGoruntudenYukle`). */
+export interface KurtarmaSecenegi {
+  /** true: kalan günlükteki başarısız kayıt hata fırlatmaz (yalnız sonucu raporlanır). Varsayılan false. */
+  basarisizlaraIzin?: boolean;
+}
+
 function hata(mesaj: string): KomutSonucu {
   return { tamam: false, hata: mesaj };
 }
@@ -59,7 +66,7 @@ export class Simulasyon {
   }
 
   /** İçeriği derler, dünyayı haritadan kurar, ilk saatlik tıkı (t=0) ve ilk çözümü planlar. */
-  static olustur(veri: VeriPaketi, tohum: number): Simulasyon {
+  static olustur(veri: CekirdekVeriPaketi, tohum: number): Simulasyon {
     const ic = icerikDerle(veri);
     const dunya = dunyaKur(ic, tohum);
     const s = new Simulasyon(ic, dunya, []);
@@ -78,7 +85,7 @@ export class Simulasyon {
    * Kuyruk, PRNG ve sayaçlar dünyanın içinde olduğundan ek planlama yapılmaz. Modül önbellekleri (WeakMap, `ic`
    * anahtarlı) yeni `ic` için tembelce yeniden kurulur; sonuçları yalnız içeriğe bağlıdır.
    */
-  static yukle(veri: VeriPaketi, dunya: Dunya, gunluk?: readonly DamgaliKomut[]): Simulasyon {
+  static yukle(veri: CekirdekVeriPaketi, dunya: Dunya, gunluk?: readonly DamgaliKomut[]): Simulasyon {
     const ic = icerikDerle(veri);
     dunyaIcerikUyumu(ic, dunya);
     return new Simulasyon(ic, dunya, gunluk ? structuredClone([...gunluk]) : []);
@@ -89,18 +96,42 @@ export class Simulasyon {
    * yükler ve görüntüden SONRA kaydedilmiş başarılı komutları (`kalanGunluk`, günlük sırasıyla) uygular. Kalan
    * komutlardan biri uygulanamazsa hata fırlatır (yenidenOynat gibi). Dönen simülasyonun günlüğü = kalanGunluk.
    */
-  static anlikGoruntudenYukle(veri: VeriPaketi, goruntu: string, kalanGunluk: readonly DamgaliKomut[] = []): Simulasyon {
+  static anlikGoruntudenYukle(
+    veri: CekirdekVeriPaketi,
+    goruntu: string,
+    kalanGunluk: readonly DamgaliKomut[] = [],
+    secenek: KurtarmaSecenegi = {},
+  ): Simulasyon {
+    return Simulasyon.anlikGoruntudenYukleSonuclu(veri, goruntu, kalanGunluk, secenek).sim;
+  }
+
+  /**
+   * `anlikGoruntudenYukle` ile aynı; ek olarak kalan günlüğün her kaydı için `KomutSonucu` döndürür (günlük sırasıyla).
+   * `secenek.basarisizlaraIzin` true ise başarısız kayıt hata fırlatmaz (sunucu başarısız komutları da günlüğe yazıyorsa):
+   * başarısız komut zamanı ilerletir ama durumu değiştirmez (docs/06 §14), bu yüzden sonuç kesintisiz koşuyla aynıdır.
+   * Dönen simülasyonun günlüğü yalnız BAŞARILI kayıtları içerir.
+   */
+  static anlikGoruntudenYukleSonuclu(
+    veri: CekirdekVeriPaketi,
+    goruntu: string,
+    kalanGunluk: readonly DamgaliKomut[] = [],
+    secenek: KurtarmaSecenegi = {},
+  ): { sim: Simulasyon; sonuclar: KomutSonucu[] } {
     const g = anlikGoruntuCoz(goruntu, kuralSurumuHesapla(veri));
     const s = Simulasyon.yukle(veri, g.dunya);
+    const sonuclar: KomutSonucu[] = [];
     for (const k of kalanGunluk) {
       const r = s.uygula(k);
-      if (!r.tamam) throw new Error(`anlikGoruntudenYukle: kalan gunluk komutu uygulanamadi (t=${k.t}, ${k.komut.tur}): ${r.hata}`);
+      if (!r.tamam && secenek.basarisizlaraIzin !== true) {
+        throw new Error(`anlikGoruntudenYukle: kalan gunluk komutu uygulanamadi (t=${k.t}, ${k.komut.tur}): ${r.hata}`);
+      }
+      sonuclar.push(r);
     }
-    return s;
+    return { sim: s, sonuclar };
   }
 
   /** Aynı veri + tohum + günlük ile baştan oynatır. */
-  static yenidenOynat(veri: VeriPaketi, tohum: number, gunluk: readonly DamgaliKomut[]): Simulasyon {
+  static yenidenOynat(veri: CekirdekVeriPaketi, tohum: number, gunluk: readonly DamgaliKomut[]): Simulasyon {
     const s = Simulasyon.olustur(veri, tohum);
     for (const k of gunluk) {
       const r = s.uygula(k);
@@ -137,6 +168,11 @@ export class Simulasyon {
     if (!sonuc.tamam) return sonuc;
 
     this.gunluk.push({ t: k.t, oyuncu: k.oyuncu, komut: structuredClone(komut) });
+    // Mülk kipi (S3): hareketsizlik merdiveninin verisi (son başarılı komut anı); kapalıyken d.mulk yoktur.
+    if (d.mulk !== undefined && k.oyuncu !== SISTEM_OYUNCUSU) {
+      const mo = mulkOyuncuBul(d, k.oyuncu);
+      if (mo !== undefined) mo.sonEtkinlik = k.t;
+    }
     ctx.kirlet(d);
     return sonuc;
   }
@@ -173,6 +209,10 @@ export class Simulasyon {
       case "anlasma_feshet":
       case "yaptirim":
         return politikaKomutu(d, ctx, oyuncu, komut);
+      case "parsel_al":
+      case "tesis_insa_hucre":
+      case "insaat_iptal":
+        return mulkKomutu(d, ctx, oyuncu, komut);
       case "oyuncu_katil":
         return hata("oyuncu_katil yonlendirilemez");
       default: {
@@ -193,6 +233,14 @@ export class Simulasyon {
     const ic = this.ic;
     const id = komut.oyuncu;
     if (typeof id !== "string" || id === "" || id === SISTEM_OYUNCUSU) return hata(`gecersiz oyuncu kimligi: ${id}`);
+    if (!Array.isArray(komut.bolgeler)) return hata("bolgeler bir dizi olmali");
+    // Mülk kipi (S3): bölge sahipliği yoktur (merkezler kamudur); oyuncu bölgesiz katılır, hazinesi hibedir.
+    const mulk = ic.mulk !== undefined && d.mulk !== undefined;
+    if (mulk) {
+      if (komut.bolgeler.length > 0) return hata("mulk kipinde bolge sahipligi yok: bolgeler bos olmali");
+      if (id.includes("#")) return hata(`gecersiz oyuncu kimligi ('#' iceremez): ${id}`);
+      if (oyuncuBul(d, id) !== undefined) return hata(`oyuncu zaten katilmis: ${id}`);
+    }
 
     const bolgeIndeksleri: number[] = [];
     for (const bid of komut.bolgeler) {
@@ -217,7 +265,7 @@ export class Simulasyon {
       const yeniOyuncu: OyuncuDurumu = {
         id,
         hazine: {
-          miktar: ic.param.baslangic.hazine,
+          miktar: mulk ? (ic.mulk as NonNullable<typeof ic.mulk>).p.yeniOyuncu.hibe : ic.param.baslangic.hazine,
           yerelOran: 0,
           gelenOran: 0,
           t0: d.zaman,
@@ -245,6 +293,7 @@ export class Simulasyon {
       if (konum < 0) konum = d.oyuncular.length;
       d.oyuncular.splice(konum, 0, yeniOyuncu);
       oyuncu = yeniOyuncu;
+      if (mulk) mulkOyuncuAl(d.mulk as NonNullable<Dunya["mulk"]>, id, d.zaman);
     }
 
     for (const bi of bolgeIndeksleri) (d.bolgeler[bi] as { sahip: OyuncuId | null }).sahip = id;

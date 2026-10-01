@@ -20,9 +20,14 @@ import type {
   IklimOlayTuru,
   KenarTuru,
   MalTanimi,
+  MulkParametreleri,
   Parametreler,
+  ParselFiksturu,
+  ParselHucreTanimi,
+  ParselIlceTanimi,
   TeknolojiTanimi,
   TesisTuruTanimi,
+  VeriPaketi,
   YontemTanimi,
 } from "@bolge/veri";
 
@@ -58,8 +63,34 @@ export interface DerlenmisIcerik {
   bolgeIndeks: Record<string, number>;
   /** Mal indeksleri, lojistik önceliğine göre sıralı (eşitlikte indeks). */
   lojistikSirasi: number[];
-  /** Bölge komşulukları: bolge -> kenar indeksleri (artan sırada). */
+  /**
+   * Bölge komşulukları: bolge -> kenar indeksleri (artan sırada). Yalnız haritanın (merkez) bölgelerini kapsar; mülk
+   * kipinde çalışma anında eklenen işletme düğümleri için `dugum.ts` (`komsuKenarlariBul`) kullanılır.
+   */
   komsuKenarlar: number[][];
+  /** Mülk kipi (S3): `param.mulk` + parsel fikstürü birlikte verilmişse derlenmiş mülk verisi; aksi halde TANIMSIZ. */
+  mulk?: DerlenmisMulk;
+}
+
+/** Veri paketi + isteğe bağlı parsel fikstürü (mülk kipi). Bölge kipinde `parsel` verilmez. */
+export type CekirdekVeriPaketi = VeriPaketi & { parsel?: ParselFiksturu };
+
+/** Derlenmiş mülk verisi (S3): parametreler ve parsel fikstüründen; dünya durumuna girmez. */
+export interface DerlenmisMulk {
+  p: MulkParametreleri;
+  fikstur: ParselFiksturu;
+  /** il kimliği -> merkez bölge indeksi */
+  ilMerkezi: Map<string, number>;
+  /** ilçe kimliği -> ilçe tanımı */
+  ilceler: Map<string, ParselIlceTanimi>;
+  /** hücre kimliği -> (ilçe kimliği, hücre tanımı) */
+  hucreler: Map<HucreId, { ilce: string; hucre: ParselHucreTanimi }>;
+  /** tesis türü indeksi -> yuva (0 = mülk kipinde inşa edilemez) */
+  yuva: number[];
+  /** tesis türü indeksi -> inşa süresi (saat) */
+  insaSaati: number[];
+  /** Yeni oyuncunun ilk işletme stoğu (mal indeksi -> mili-birim). */
+  baslangicStok: number[];
 }
 
 // ---------------------------------------------------------------------------
@@ -101,6 +132,8 @@ export interface TesisDurumu {
   asinmaPpm?: number;
   /** Sanayi (B2): genel onarım durması bitişi (ms); bu ana kadar tesis çalışmaz. Onarım yoksa tanımsızdır. */
   onarimBitis?: Ms;
+  /** Mülk kipi (S3): tesisin kapladığı hücreler (1–3, kimliğe göre sıralı). Bölge kipinde TANIMSIZDIR. */
+  hucreler?: HucreId[];
 }
 
 export type TicaretYonu = "ihracat" | "ithalat";
@@ -212,6 +245,11 @@ export interface BolgeDurumu {
    * santral varsa sayılır (şebekesiz bölge elektrik kıtlığı yaşamaz). Pazar v1 kapalıysa tanımsızdır.
    */
   temelKarsilanmaPpm?: number;
+  /**
+   * Mülk kipi (S3): bu düğüm bir İŞLETME düğümüdür ve bu indeksteki merkez (harita) bölgesine sıfır süreli bağlıdır.
+   * Harita tanımları (tarım, iklim tipi, liman) merkezden okunur. Harita bölgelerinde ve bölge kipinde TANIMSIZDIR.
+   */
+  merkez?: number;
 }
 
 export interface KenarDurumu {
@@ -385,6 +423,13 @@ export interface InsaatDurumu {
   bitis: Ms;
   /** Ölçek yükseltmesinde hedef kademe (1 = M, 2 = L); diğer türlerde tanımsız. */
   olcek?: 1 | 2;
+  /** Mülk kipi (S3): hücreli inşaatın hücreleri (sıralı). Aşama `(şimdi − baslangic) / (bitis − baslangic)`'tan türetilir. */
+  hucreler?: HucreId[];
+  /** Mülk kipi (S3): inşaatın başlangıç anı (aşama hesabı için). */
+  baslangic?: Ms;
+  /** Mülk kipi (S3): ödenen para (mili-para) ve malzeme ([mal, miktar] çiftleri); iptal iadesinin tabanı. */
+  odenenPara?: Mili;
+  odenenMal?: [number, Mili][];
 }
 
 export interface UretimPartisi {
@@ -507,6 +552,8 @@ export interface Dunya {
   lojistik: LojistikDurumu;
   /** İklim takvimi ve olaylar (B1). Tarım kapalıysa TANIMSIZDIR. */
   iklim?: IklimDurumu;
+  /** Mülk kipi (S3): hücreler, ilçeler, işletme düğümleri ve oyuncu mülk kayıtları. Bölge kipinde TANIMSIZDIR. */
+  mulk?: MulkDurumu;
   rng: Record<PrngAkisi, PrngDurumu>;
   /** Kimlik ve olay sıra sayaçları */
   sayac: { olay: number; kimlik: number };
@@ -546,8 +593,10 @@ export type Komut =
   | { tur: "anlasma_teklif"; karsi: OyuncuId; anlasma: AnlasmaTuru }
   | { tur: "anlasma_feshet"; karsi: OyuncuId; anlasma: AnlasmaTuru }
   | { tur: "yaptirim"; hedef: OyuncuId; aktif: boolean }
-  // Sistem (oyuncu kaydı; oyuncu kimliği "sistem" ile verilir)
-  | { tur: "oyuncu_katil"; oyuncu: OyuncuId; bolgeler: string[] };
+  // Sistem (oyuncu kaydı; oyuncu kimliği "sistem" ile verilir). Mülk kipinde `bolgeler` boş olmalıdır.
+  | { tur: "oyuncu_katil"; oyuncu: OyuncuId; bolgeler: string[] }
+  // Mülk kipi (S3)
+  | MulkKomutu;
 
 export type KomutTuru = Komut["tur"];
 
@@ -585,9 +634,8 @@ export interface DunyaGorunumu {
 }
 
 // ---------------------------------------------------------------------------
-// Mülk sözleşmesi TASLAĞI (S1; docs/11). Henüz `Komut` birliğine ve `Dunya`'ya
-// bağlı DEĞİLDİR: S3 bunları bayrak (`parametreler.mulk`) arkasında bağlar.
-// Bölge kipinde hiçbir alan tanımlanmaz; durum özeti birebir aynı kalır.
+// Mülk sözleşmesi (S1 taslağı, S3'te bağlandı; docs/11 §4.3, §7). `parametreler.mulk` + parsel fikstürü verilmedikçe
+// hiçbir alan tanımlanmaz ve mülk komutları reddedilir; bölge kipinin durum özeti birebir aynı kalır.
 // ---------------------------------------------------------------------------
 
 /** z20 kare hücre kimliği: "x:y" (Web Mercator z20 karo koordinatı, ~30 m). */
@@ -609,14 +657,16 @@ export interface HucreDurumu {
   degerMili: Mili;
   /** Üzerindeki tesisin kimliği; boşsa tanımsız. */
   tesis?: number;
+  /** Üzerinde süren hücreli inşaatın kimliği; yoksa tanımsız. */
+  insaat?: number;
   alinma: Ms;
 }
 
-/** Oyuncu-il işletme düğümü: (oyuncu, il) başına bir `BolgeDurumu`, il merkezine sıfır süreli kenarla bağlı. */
+/** Oyuncu-il işletme düğümü: (oyuncu, il) başına bir `BolgeDurumu`, il merkezine sıfır süreli (örtük) bağlı. */
 export interface IsletmeDugumu {
   oyuncu: OyuncuId;
   il: string;
-  /** Bağlı olduğu lojistik/pazar merkezi (53 bölgeden biri). */
+  /** Bağlı olduğu lojistik/pazar merkezi (harita bölgelerinden biri). */
   merkezBolge: string;
   /** Bu düğümün `bolgeler` dizisindeki indeksi. */
   bolgeIndeksi: number;
@@ -633,12 +683,40 @@ export interface IlceDurumu {
   satilmisHucre: number;
 }
 
-/** Tesisin kapladığı hücreler (1–3). Bölge kipinde tanımsız; S3 `TesisDurumu`'na `hucreler?` olarak ekler. */
+/** Oyuncunun mülk kaydı: arazi değeri, ilçe başına hücre sayısı, tembel arazi vergisi ve hareketsizlik verisi. */
+export interface MulkOyuncuDurumu {
+  id: OyuncuId;
+  /** Sahip olunan hücrelerin satın alma bedelleri toplamı (mili-para). */
+  araziDegeriMili: Mili;
+  /** İlçe başına hücre sayısı (ilçe kimliğine göre sıralı; sıfır olan yazılmaz). */
+  ilceHucre: { ilce: string; hucre: number }[];
+  /**
+   * Tahakkuk eden arazi vergisi (tembel stok): `miktar` kümülatif vergi (mili-para), `yerelOran` saatlik oran. Vergi
+   * hazinenin saatlik oranına gider olarak işlenir; bu stok yalnız muhasebe içindir.
+   */
+  araziVergisi: Stok;
+  /** Son başarılı komutun anı (hareketsizlik merdiveni için; kurallar sonraki iş). */
+  sonEtkinlik: Ms;
+}
+
+/** Dünyanın mülk durumu. Diziler deterministik sıralıdır. */
+export interface MulkDurumu {
+  /** Kimliğe göre (JS dize sırası) sıralı. */
+  hucreler: HucreDurumu[];
+  /** Kimliğe göre sıralı (fikstür ilçelerinin tamamı). */
+  ilceler: IlceDurumu[];
+  /** (oyuncu, il) sırasıyla. */
+  isletmeler: IsletmeDugumu[];
+  /** Oyuncu kimliğine göre sıralı. */
+  oyuncular: MulkOyuncuDurumu[];
+}
+
+/** Tesisin kapladığı hücreler (1–3). */
 export interface TesisMulkAlanlari {
   hucreler?: HucreId[];
 }
 
-/** Mülk komutları; S3 bunları `Komut` birliğine katar. Coğrafi geçerliliği (hücre ilçede mi, uygun mu) sunucu doğrular. */
+/** Mülk komutları. Coğrafi geçerliliği (hücre ilçede mi, uygun mu) sunucu doğrular; çekirdek fikstürdeki listeyi de denetler. */
 export type MulkKomutu =
   | { tur: "parsel_al"; ilce: string; hucreler: HucreId[]; sinif: ArsaSinifi }
   | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[] }

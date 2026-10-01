@@ -36,13 +36,15 @@ import {
 } from "../ekonomi/uretim";
 import { defterOranYaz, pazarMuhasebesi, sifirKalemler, ticaretCarpanlari, ihracatKirilimi, ithalatKirilimi } from "../pazar";
 import { pazarTablosu } from "../pazar/tablo";
+import { BOS_DUGUMLER, oyuncuDugumleri } from "../dugum";
+import { araziVergisiOranAyarla, araziVergisiSaat } from "../mulk/vergi";
 import { kenarKullanilabilirMi } from "../politika";
 import { bakimCarpani, bakimDuzeyiIndeksi } from "../sanayi/carpan";
 import { sanayiTablosu } from "../sanayi/tablo";
 import { carpBol, carpBolTavan, tabanBol } from "../sabit";
 import { hazineOranAyarla, hazineUzlastir, oyuncuBul } from "../stok";
 import { MILI, PPM, SAAT } from "../tipler";
-import type { Baglam, Dunya, Komut, KomutSonucu, Mili, OyuncuDurumu, OyuncuId, TicaretKalemleri } from "../tipler";
+import type { Baglam, BolgeDurumu, Dunya, Komut, KomutSonucu, Mili, OyuncuDurumu, OyuncuId, TicaretKalemleri } from "../tipler";
 import { akisCoz, akisGecikmeleriniPlanla } from "./akis";
 import { kapsamiHesapla } from "./kapsamHesap";
 
@@ -72,7 +74,13 @@ interface HazineKalemleri {
  * `hesaplar` verilirse ihracat, çözümün girdi karşılanma oranıyla (fr4) ölçeklenir; verilmezse (verim çözümünden
  * ÖNCE, ödeme gücü tahmini için) ihracat emirlerinin son gerçekleşen oranı kullanılır.
  */
-function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: readonly BolgeHesabi[] | null): HazineKalemleri {
+function hazineKalemleri(
+  d: Dunya,
+  ctx: Baglam,
+  o: OyuncuDurumu,
+  hesaplar: readonly BolgeHesabi[] | null,
+  dugumler: readonly number[],
+): HazineKalemleri {
   const p = ctx.ic.param;
   const sn = sanayiTablosu(ctx.ic);
   const pazarAcik = pazarTablosu(ctx.ic) !== null;
@@ -80,15 +88,16 @@ function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: reado
   let gelir = 0;
   let gider = 0;
   let ithalat = 0;
-  for (const b of d.bolgeler) {
-    if (b.sahip !== o.id) continue;
+  for (const r of dugumler) {
+    const b = d.bolgeler[r] as BolgeDurumu;
     gelir += carpBol(carpBol(b.nufus, p.ekonomi.vergiTabani1000Saat, 1000), o.vergiPpm, PPM);
     const fr4 = hesaplar === null ? null : (hesaplar[b.indeks] as BolgeHesabi).fr4;
     // Ticaret çarpanları (makas, liman primi, komisyon, tarife) bölge başına bir kez; emirsiz bölgede hesaplanmaz.
     let carp = null as ReturnType<typeof ticaretCarpanlari> | null;
     for (const e of b.ticaretEmirleri) {
       if (e.gerceklesenSaat <= 0) continue;
-      carp ??= ticaretCarpanlari(d, ctx, o, b.indeks);
+      // Liman primi merkezin liman tanımından (mülk kipinde işletme düğümü il merkezinin limanını kullanır).
+      carp ??= ticaretCarpanlari(d, ctx, o, b.merkez ?? b.indeks);
       const fiyat = d.pazar.fiyat[e.mal] as number;
       if (e.yon === "ihracat") {
         const gercek = fr4 === null ? e.gerceklesenSaat : carpBol(e.gerceklesenSaat, fr4[e.mal] as number, PPM);
@@ -133,6 +142,8 @@ function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: reado
       }
     }
   }
+  // Mülk kipi (S3): tembel arazi vergisi saatlik gider olarak (kapalıyken 0).
+  if (d.mulk !== undefined) gider += araziVergisiSaat(d, ctx.ic, o.id);
   return { gelir, gider, ithalat, ticaret: defter };
 }
 
@@ -149,7 +160,7 @@ function hazineKalemleri(d: Dunya, ctx: Baglam, o: OyuncuDurumu, hesaplar: reado
  * çözümlenince (değişim yoksa) ölçekleme kendini tekrarlamaz; bir sonraki saatlik tık emirleri yeniden gerçekleştirir.
  * Net oran >= 0 ise bir şey yapılmaz. Ölçeklendiyse true döner.
  */
-function ithalatiHazineyeSigdir(d: Dunya, o: OyuncuDurumu, k: HazineKalemleri): boolean {
+function ithalatiHazineyeSigdir(d: Dunya, o: OyuncuDurumu, k: HazineKalemleri, dugumler: readonly number[]): boolean {
   const net = k.gelir - k.gider;
   if (net >= 0 || k.ithalat <= 0) return false;
   const acik = -net; // mili-para/saat, > 0
@@ -161,8 +172,8 @@ function ithalatiHazineyeSigdir(d: Dunya, o: OyuncuDurumu, k: HazineKalemleri): 
   const dayanir = carpBol(hazine, SAAT, kalanMs);
   const izinli = k.gelir - (k.gider - k.ithalat) + dayanir;
   const hedef = izinli > 0 ? izinli : 0;
-  for (const b of d.bolgeler) {
-    if (b.sahip !== o.id) continue;
+  for (const r of dugumler) {
+    const b = d.bolgeler[r] as BolgeDurumu;
     for (const e of b.ticaretEmirleri) {
       if (e.yon !== "ithalat" || e.gerceklesenSaat <= 0) continue;
       e.gerceklesenSaat = hedef <= 0 ? 0 : carpBol(e.gerceklesenSaat, hedef, k.ithalat);
@@ -196,11 +207,14 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   // 1. Potansiyel, talep, arz ve fazla
   // Ödeme gücü (para lavaboları): hazinesi 0 ve net oranı negatif olan oyuncunun tesis verimi kısılır.
   const odeme = new Map<OyuncuId, number>();
+  // Oyuncu -> düğümleri (artan): oyuncu başına tüm düğümleri taramamak için bir kez (mülk kipinde düğümler çoktur).
+  const sahipli = oyuncuDugumleri(d);
   for (const o of d.oyuncular) {
-    let k = hazineKalemleri(d, ctx, o, null);
+    const dl = sahipli.get(o.id) ?? BOS_DUGUMLER;
+    let k = hazineKalemleri(d, ctx, o, null, dl);
     // Ödenemeyen ithalat gerçekleşmez (tıklar arası hazine tükenmesi): önce ithalat hazineye sığdırılır,
     // ödeme gücü (tesis verimi kısıntısı) ithalat kısıldıktan sonraki gider üzerinden hesaplanır.
-    if (ithalatiHazineyeSigdir(d, o, k)) k = hazineKalemleri(d, ctx, o, null);
+    if (ithalatiHazineyeSigdir(d, o, k, dl)) k = hazineKalemleri(d, ctx, o, null, dl);
     odeme.set(o.id, odemeGucuPpm(o, k));
   }
   // Sahipsiz bölgeler "uykuda": hesap sıfır (üretim/tüketim/bozulma/rezerv tükenmesi yok).
@@ -221,7 +235,7 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
   }
 
   // 2. Akışlar
-  const ak = akisCoz(d, ctx, fazla, askeriTalep, d.lojistik.akislar);
+  const ak = akisCoz(d, ctx, fazla, askeriTalep, d.lojistik.akislar, sahipli);
 
   // 3. Gecikme
   akisGecikmeleriniPlanla(d, ctx, d.lojistik.akislar, ak.akislar);
@@ -241,8 +255,9 @@ export function lojistikCoz(d: Dunya, ctx: Baglam): void {
 
   // 6. Hazine oranları
   for (const o of d.oyuncular) {
-    const k = hazineKalemleri(d, ctx, o, hesaplar);
+    const k = hazineKalemleri(d, ctx, o, hesaplar, sahipli.get(o.id) ?? BOS_DUGUMLER);
     hazineOranAyarla(d, o.id, k.gelir - k.gider);
+    if (d.mulk !== undefined) araziVergisiOranAyarla(d, ic, o.id);
     if (k.ticaret !== null) defterOranYaz(d, o, k.ticaret);
   }
 
