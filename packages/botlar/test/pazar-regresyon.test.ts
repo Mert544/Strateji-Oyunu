@@ -19,8 +19,12 @@ function kosuOzeti(tohum: number, gun: number): string {
   return kos({ veri, tohum, oyuncular, sureMs: gun * GUN }).sim.durumOzeti();
 }
 
-/** B3 öncesi koddan (Sanayi v1 commit'i ee4ee50) üretilmiş altın özetler: 4 botlu koşu, sentetik-50, 6 gün. */
-const ALTIN: Record<number, string> = { 1: "917f853accb02117", 2: "2fd502cf574370c4" };
+/**
+ * B3 öncesi koddan (Sanayi v1 commit'i ee4ee50) üretilmiş altın özetler: 4 botlu koşu, sentetik-50, 6 gün. S3 eşik budamasıyla
+ * (docs/06 §14.1) yeniden üretildi: yalnız kuyruk değişti (kanıt: cekirdek/test/esik-budama-kanit.test.ts, "bot-kalkani").
+ * Budama öncesi: 1 = 917f853accb02117, 2 = 2fd502cf574370c4.
+ */
+const ALTIN: Record<number, string> = { 1: "4a8cdda1319b68f6", 2: "feb934bbc7e87a82" };
 
 describe("regresyon kalkanı: B3 öncesi veri + B3 sonrası kod ve botlar = B3 öncesi özetler", () => {
   it.each([1, 2])("tohum %i: 4 botlu 6 günlük koşu özeti aynıdır", (tohum) => {

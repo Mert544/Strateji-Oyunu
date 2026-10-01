@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { carpBol, carpBolTavan, kelepce, ppmUygula, tabanBol, tamsayiKarekok } from "../src/sabit";
 import { aralik, fnv1a32, prngOlustur, sonraki } from "../src/prng";
-import { kuyrukBas, kuyrukCikar, kuyrukEkle } from "../src/kuyruk";
+import { kuyrukBas, kuyrukCikar, kuyrukEkle, kuyrukOnce, kuyrukSuz } from "../src/kuyruk";
 import { durumOzeti, fnv1a64, kanonikSerilestir } from "../src/ozet";
 import type { Olay } from "../src/tipler";
 
@@ -202,6 +202,26 @@ describe("kuyruk", () => {
       }
       onceki = o;
     }
+  });
+  it("kuyrukSuz: atilanlar cikar, kalanlarin cikis sirasi ayni, yigin duzeni gecerli; hicbiri atilmazsa dizi aynen kalir", () => {
+    const d = prngOlustur(9, "olay");
+    const k: Olay[] = [];
+    for (let i = 0; i < 2000; i++) kuyrukEkle(k, olay(aralik(d, 300), aralik(d, 4), i));
+    for (let i = 0; i < 300; i++) kuyrukCikar(k);
+    const once = [...k];
+    expect(kuyrukSuz(k, () => true)).toBe(0);
+    expect(k).toEqual(once);
+    const tut = (o: Olay): boolean => o.sira % 3 !== 0;
+    const beklenen = [...once].filter(tut);
+    const kopya = [...once];
+    const beklenenSira: number[] = [];
+    for (let o = kuyrukCikar(kopya); o; o = kuyrukCikar(kopya)) if (tut(o)) beklenenSira.push(o.sira);
+    expect(kuyrukSuz(k, tut)).toBe(once.length - beklenen.length);
+    expect(k.length).toBe(beklenen.length);
+    for (let i = 1; i < k.length; i++) expect(kuyrukOnce(k[i] as Olay, k[(i - 1) >> 1] as Olay)).toBe(false);
+    const cikan: number[] = [];
+    for (let o = kuyrukCikar(k); o; o = kuyrukCikar(k)) cikan.push(o.sira);
+    expect(cikan).toEqual(beklenenSira);
   });
 });
 

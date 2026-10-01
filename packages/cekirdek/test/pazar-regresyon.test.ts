@@ -15,11 +15,16 @@ import { durumOzeti } from "../src/ozet";
 import { b2Veri, pazarSenaryoOzetleri } from "./regresyon-pazar-senaryo";
 import { pazarAc, pazarOzetiEkAlansiz } from "./pazar-yardimci";
 
-/** B3 öncesi kodla (Sanayi v1 commit'i ee4ee50) üretilmiş altın özetler: 3., 7., 12. ve 16. gün sonu. */
-const ALTIN_ZENGIN_5 = ["acade93454b659e5", "2eed296a6ab534f1", "2b2a060353fc0c33", "52f18829c5cf3602"];
-const ALTIN_ZENGIN_6 = ["f76273d3864d7ca1", "da989ca54686ddac", "f106bbb019aaffdb", "4011a1a3c295c444"];
-const ALTIN_YOKSUL_5 = ["c08cfb3028937ce8", "310239b38f4fbf2c", "6158a4a2dca0b994", "8a7fa3a64b970fbd"];
-const ALTIN_YOKSUL_6 = ["bc018b5681dffa44", "63b4be99712057e1", "dd0d61ffa4ab2688", "6fcf44855e9a5913"];
+/**
+ * B3 öncesi kodla (Sanayi v1 commit'i ee4ee50) üretilmiş altın özetler: 3., 7., 12. ve 16. gün sonu. S3 eşik budamasıyla
+ * (docs/06 §14.1) yeniden üretildi: yalnız kuyruk değişti, kuyruk hariç durum ve işlenen etkin olaylar 12 noktada aynı
+ * (`esik-budama-kanit.test.ts`). Budama öncesi son (16. gün) değerler: zengin t5 52f18829c5cf3602, t6 4011a1a3c295c444;
+ * yoksul t5 8a7fa3a64b970fbd, t6 6fcf44855e9a5913.
+ */
+const ALTIN_ZENGIN_5 = ["4c632b9e416bcbe2", "716415d7c6571779", "4dbc05924ce43b9b", "567eaf4a10bbca02"];
+const ALTIN_ZENGIN_6 = ["9d28926f0fe7c9ee", "6c69b23f7ab93c24", "88bb31b1b814fa93", "4726b62815531844"];
+const ALTIN_YOKSUL_5 = ["916493114c616e20", "ea548be2336a3340", "51ce1cf5be94049d", "7a837ff7c2fb51c3"];
+const ALTIN_YOKSUL_6 = ["4117a96fe5bf8d6c", "5cb4e98599dc663d", "85f3516f5a1958d5", "a97640b26a28e90d"];
 
 describe("regresyon kalkanı: B3 öncesi veri + B3 sonrası kod = B3 öncesi özetler", () => {
   it("bol hazine: tohum 5 ve 6 özetleri B3 öncesi kodla birebir aynıdır", () => {

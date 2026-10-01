@@ -14,9 +14,14 @@ import { GUN } from "../src/tipler";
 import { b1Veri, senaryoOzetleri } from "./regresyon-senaryo";
 import { sanayiAc, yenilikleriKapat } from "./yenilikler";
 
-/** B2 öncesi kodla (Tarım v1 commit'i, 1f03d4c) üretilmiş altın özetler: 3., 7. ve 12. gün sonu. */
-const ALTIN_TOHUM_5 = ["83a4a45a11022b52", "8444be2c7c7e6df0", "455383caeea1946b"];
-const ALTIN_TOHUM_6 = ["7fbe6c6bbb502dda", "6ea6a025be72b17f", "5c7aae923be40097"];
+/**
+ * B2 öncesi kodla (Tarım v1 commit'i, 1f03d4c) üretilmiş altın özetler: 3., 7. ve 12. gün sonu. S3 eşik budamasıyla
+ * (docs/06 §14.1) yeniden üretildi: yalnız kuyruk değişti, kuyruk hariç durum ve işlenen etkin olaylar 12 noktada aynı
+ * (`esik-budama-kanit.test.ts`). Budama öncesi değerler: t5 [83a4a45a11022b52, 8444be2c7c7e6df0, 455383caeea1946b],
+ * t6 [7fbe6c6bbb502dda, 6ea6a025be72b17f, 5c7aae923be40097].
+ */
+const ALTIN_TOHUM_5 = ["d8181c0ad655bfb8", "4ab66a29da1875e7", "c7be34c8a2484e08"];
+const ALTIN_TOHUM_6 = ["f6f3a88a44b41898", "3aca73511b04df74", "1a97b1a726adfcd0"];
 
 describe("regresyon kalkanı: B2 öncesi veri + B2 sonrası kod = B2 öncesi özetler", () => {
   it("tohum 5 ve 6: 3., 7. ve 12. gün özetleri B2 öncesi kodla birebir aynıdır", () => {

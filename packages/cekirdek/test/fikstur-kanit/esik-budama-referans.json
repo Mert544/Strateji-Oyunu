@@ -1,0 +1,925 @@
+{
+ "kaynak": "budamasiz cekirdek (git 425c9b2)",
+ "senaryolar": {
+  "sanayi-kalkani-t5": {
+   "sonOzet": "455383caeea1946b",
+   "kuyruk": 1610,
+   "eskimis": 1546,
+   "islenenEskimis": 2068,
+   "noktalar": [
+    {
+     "t": 88200000,
+     "durum": "2f0996b842d1f72d",
+     "etkinKuyruk": "5959126cda158e96",
+     "islenen": "99b5968dab06e5fe",
+     "olaySayaci": 1838
+    },
+    {
+     "t": 176400000,
+     "durum": "8ad6c0f219606cdc",
+     "etkinKuyruk": "4664beb61dd11875",
+     "islenen": "f7971fc858fcc3c9",
+     "olaySayaci": 2878
+    },
+    {
+     "t": 264600000,
+     "durum": "cc2fb5ef426893c9",
+     "etkinKuyruk": "e86ac4b1675174e7",
+     "islenen": "2da12e1efad08892",
+     "olaySayaci": 3324
+    },
+    {
+     "t": 352800000,
+     "durum": "e31efa0e03eda35c",
+     "etkinKuyruk": "928a55f273772fa8",
+     "islenen": "0a809fa45f8bbd9f",
+     "olaySayaci": 3866
+    },
+    {
+     "t": 441000000,
+     "durum": "0a3587c6e6f9b858",
+     "etkinKuyruk": "fa6dd4292d0d5a67",
+     "islenen": "baf7f1f503f34116",
+     "olaySayaci": 4126
+    },
+    {
+     "t": 529200000,
+     "durum": "5c761c530b9e65e3",
+     "etkinKuyruk": "5cf0e7021e17477b",
+     "islenen": "c75409238ce0d4bb",
+     "olaySayaci": 4333
+    },
+    {
+     "t": 617400000,
+     "durum": "29516e5a1f099e0e",
+     "etkinKuyruk": "7c7f8d0443508c69",
+     "islenen": "637076d7df117f4a",
+     "olaySayaci": 4583
+    },
+    {
+     "t": 705600000,
+     "durum": "b7f76e35921819b9",
+     "etkinKuyruk": "414052f030c3fd22",
+     "islenen": "29683de96ba00820",
+     "olaySayaci": 4766
+    },
+    {
+     "t": 793800000,
+     "durum": "e032207a9ca61333",
+     "etkinKuyruk": "7e4054e243f761f9",
+     "islenen": "e01216bd0f367cb9",
+     "olaySayaci": 5015
+    },
+    {
+     "t": 882000000,
+     "durum": "5de94d34da47f6d8",
+     "etkinKuyruk": "5c6759981b866357",
+     "islenen": "49894dc242bbc20f",
+     "olaySayaci": 5206
+    },
+    {
+     "t": 970200000,
+     "durum": "a0c92800187c8ce2",
+     "etkinKuyruk": "49fa173a6b1cb689",
+     "islenen": "b63c0863939638d2",
+     "olaySayaci": 5355
+    },
+    {
+     "t": 1058400000,
+     "durum": "2101b9bc2d8e72ee",
+     "etkinKuyruk": "4b04f6b742d8488e",
+     "islenen": "a2010c9367a8b62a",
+     "olaySayaci": 5505
+    }
+   ]
+  },
+  "sanayi-kalkani-t6": {
+   "sonOzet": "5c7aae923be40097",
+   "kuyruk": 1610,
+   "eskimis": 1546,
+   "islenenEskimis": 2068,
+   "noktalar": [
+    {
+     "t": 88200000,
+     "durum": "4b59893cb3b60c24",
+     "etkinKuyruk": "5959126cda158e96",
+     "islenen": "99b5968dab06e5fe",
+     "olaySayaci": 1838
+    },
+    {
+     "t": 176400000,
+     "durum": "cabef14073d317c5",
+     "etkinKuyruk": "4664beb61dd11875",
+     "islenen": "f7971fc858fcc3c9",
+     "olaySayaci": 2878
+    },
+    {
+     "t": 264600000,
+     "durum": "5fc07bd576c7830b",
+     "etkinKuyruk": "e86ac4b1675174e7",
+     "islenen": "2da12e1efad08892",
+     "olaySayaci": 3324
+    },
+    {
+     "t": 352800000,
+     "durum": "208142a5ab7f0301",
+     "etkinKuyruk": "928a55f273772fa8",
+     "islenen": "0a809fa45f8bbd9f",
+     "olaySayaci": 3866
+    },
+    {
+     "t": 441000000,
+     "durum": "6bda174bde03de26",
+     "etkinKuyruk": "fa6dd4292d0d5a67",
+     "islenen": "baf7f1f503f34116",
+     "olaySayaci": 4126
+    },
+    {
+     "t": 529200000,
+     "durum": "dd04507a0b3214e8",
+     "etkinKuyruk": "5cf0e7021e17477b",
+     "islenen": "c75409238ce0d4bb",
+     "olaySayaci": 4333
+    },
+    {
+     "t": 617400000,
+     "durum": "04c59e83ddc2b429",
+     "etkinKuyruk": "7c7f8d0443508c69",
+     "islenen": "637076d7df117f4a",
+     "olaySayaci": 4583
+    },
+    {
+     "t": 705600000,
+     "durum": "bddfbaec5e0e5de8",
+     "etkinKuyruk": "414052f030c3fd22",
+     "islenen": "29683de96ba00820",
+     "olaySayaci": 4766
+    },
+    {
+     "t": 793800000,
+     "durum": "056530c5894b0b64",
+     "etkinKuyruk": "7e4054e243f761f9",
+     "islenen": "e01216bd0f367cb9",
+     "olaySayaci": 5015
+    },
+    {
+     "t": 882000000,
+     "durum": "657b8d333414e4af",
+     "etkinKuyruk": "5c6759981b866357",
+     "islenen": "49894dc242bbc20f",
+     "olaySayaci": 5206
+    },
+    {
+     "t": 970200000,
+     "durum": "1ffcac10b8a026f8",
+     "etkinKuyruk": "49fa173a6b1cb689",
+     "islenen": "b63c0863939638d2",
+     "olaySayaci": 5355
+    },
+    {
+     "t": 1058400000,
+     "durum": "bb44a192fc4f2318",
+     "etkinKuyruk": "4b04f6b742d8488e",
+     "islenen": "a2010c9367a8b62a",
+     "olaySayaci": 5505
+    }
+   ]
+  },
+  "pazar-kalkani-zengin-t5": {
+   "sonOzet": "52f18829c5cf3602",
+   "kuyruk": 2884,
+   "eskimis": 2825,
+   "islenenEskimis": 2950,
+   "noktalar": [
+    {
+     "t": 117000000,
+     "durum": "e6bbadcb561c03b2",
+     "etkinKuyruk": "cefabe28b97ffced",
+     "islenen": "d85959f917511185",
+     "olaySayaci": 2478
+    },
+    {
+     "t": 234000000,
+     "durum": "098c7ca55d4bdee4",
+     "etkinKuyruk": "9dcf235906befcbe",
+     "islenen": "0212ae183e9c3aaa",
+     "olaySayaci": 3418
+    },
+    {
+     "t": 351000000,
+     "durum": "82f2aef0c21a7d98",
+     "etkinKuyruk": "1d5cf474afb3fd93",
+     "islenen": "b40f1f121440a210",
+     "olaySayaci": 4274
+    },
+    {
+     "t": 468000000,
+     "durum": "f544f70487d08ec4",
+     "etkinKuyruk": "6d51a5bd6b962513",
+     "islenen": "cfb2b0315b0f7f2b",
+     "olaySayaci": 5067
+    },
+    {
+     "t": 585000000,
+     "durum": "1200ed07f872359b",
+     "etkinKuyruk": "e816a76683b4bc41",
+     "islenen": "fa3dbbca5ea2e7a3",
+     "olaySayaci": 5590
+    },
+    {
+     "t": 702000000,
+     "durum": "a4c12451f64bb235",
+     "etkinKuyruk": "1bf7e2b351d3f6ee",
+     "islenen": "f0c9c2a41fb1a617",
+     "olaySayaci": 6022
+    },
+    {
+     "t": 819000000,
+     "durum": "564421c8300ce084",
+     "etkinKuyruk": "0e81f415a85b4d88",
+     "islenen": "da30358a91af4021",
+     "olaySayaci": 6370
+    },
+    {
+     "t": 936000000,
+     "durum": "3f8304f447981280",
+     "etkinKuyruk": "cd72e28144db9562",
+     "islenen": "50760425fed86b87",
+     "olaySayaci": 6697
+    },
+    {
+     "t": 1053000000,
+     "durum": "52ce9a209230e45a",
+     "etkinKuyruk": "f7bbcaa1ec269aea",
+     "islenen": "91291e61b77f9ae4",
+     "olaySayaci": 7039
+    },
+    {
+     "t": 1170000000,
+     "durum": "a72fdf6f19fcc63c",
+     "etkinKuyruk": "36d4ca58fbf01d7e",
+     "islenen": "3f1bbda2c4e8c1c6",
+     "olaySayaci": 7412
+    },
+    {
+     "t": 1287000000,
+     "durum": "4f1e8fb8acdb3169",
+     "etkinKuyruk": "c920a6aeb7c764cf",
+     "islenen": "de5c2747f1a7bc65",
+     "olaySayaci": 7756
+    },
+    {
+     "t": 1404000000,
+     "durum": "7f16307621a8f6e3",
+     "etkinKuyruk": "cf0b998eb21bad5e",
+     "islenen": "cd2c15f263fc98c2",
+     "olaySayaci": 8253
+    }
+   ]
+  },
+  "pazar-kalkani-zengin-t6": {
+   "sonOzet": "4011a1a3c295c444",
+   "kuyruk": 2884,
+   "eskimis": 2825,
+   "islenenEskimis": 2950,
+   "noktalar": [
+    {
+     "t": 117000000,
+     "durum": "2f1c91142c06dc61",
+     "etkinKuyruk": "cefabe28b97ffced",
+     "islenen": "d85959f917511185",
+     "olaySayaci": 2478
+    },
+    {
+     "t": 234000000,
+     "durum": "570800c959897929",
+     "etkinKuyruk": "9dcf235906befcbe",
+     "islenen": "0212ae183e9c3aaa",
+     "olaySayaci": 3418
+    },
+    {
+     "t": 351000000,
+     "durum": "9e427fe16cbf95e3",
+     "etkinKuyruk": "1d5cf474afb3fd93",
+     "islenen": "b40f1f121440a210",
+     "olaySayaci": 4274
+    },
+    {
+     "t": 468000000,
+     "durum": "683d8d73132ad3b6",
+     "etkinKuyruk": "6d51a5bd6b962513",
+     "islenen": "cfb2b0315b0f7f2b",
+     "olaySayaci": 5067
+    },
+    {
+     "t": 585000000,
+     "durum": "e6f38e375e55760e",
+     "etkinKuyruk": "e816a76683b4bc41",
+     "islenen": "fa3dbbca5ea2e7a3",
+     "olaySayaci": 5590
+    },
+    {
+     "t": 702000000,
+     "durum": "e5f0cfb810a8995e",
+     "etkinKuyruk": "1bf7e2b351d3f6ee",
+     "islenen": "f0c9c2a41fb1a617",
+     "olaySayaci": 6022
+    },
+    {
+     "t": 819000000,
+     "durum": "d892b4517be37e1f",
+     "etkinKuyruk": "0e81f415a85b4d88",
+     "islenen": "da30358a91af4021",
+     "olaySayaci": 6370
+    },
+    {
+     "t": 936000000,
+     "durum": "1504b024a8e70fef",
+     "etkinKuyruk": "cd72e28144db9562",
+     "islenen": "50760425fed86b87",
+     "olaySayaci": 6697
+    },
+    {
+     "t": 1053000000,
+     "durum": "27cbe3fe1dd39380",
+     "etkinKuyruk": "f7bbcaa1ec269aea",
+     "islenen": "91291e61b77f9ae4",
+     "olaySayaci": 7039
+    },
+    {
+     "t": 1170000000,
+     "durum": "d1a330579010b591",
+     "etkinKuyruk": "36d4ca58fbf01d7e",
+     "islenen": "3f1bbda2c4e8c1c6",
+     "olaySayaci": 7412
+    },
+    {
+     "t": 1287000000,
+     "durum": "0909221cda45ce95",
+     "etkinKuyruk": "c920a6aeb7c764cf",
+     "islenen": "de5c2747f1a7bc65",
+     "olaySayaci": 7756
+    },
+    {
+     "t": 1404000000,
+     "durum": "d6d47e5ad56eca93",
+     "etkinKuyruk": "cf0b998eb21bad5e",
+     "islenen": "cd2c15f263fc98c2",
+     "olaySayaci": 8253
+    }
+   ]
+  },
+  "pazar-kalkani-yoksul-t5": {
+   "sonOzet": "8a7fa3a64b970fbd",
+   "kuyruk": 3047,
+   "eskimis": 2984,
+   "islenenEskimis": 2902,
+   "noktalar": [
+    {
+     "t": 117000000,
+     "durum": "9fd80db6b7430f07",
+     "etkinKuyruk": "6fc0ac2bfde2d241",
+     "islenen": "cd69b075717fdb48",
+     "olaySayaci": 2513
+    },
+    {
+     "t": 234000000,
+     "durum": "0b68f9766c8de226",
+     "etkinKuyruk": "e1cd2c30ccdec147",
+     "islenen": "f8aa1e83764e2567",
+     "olaySayaci": 3533
+    },
+    {
+     "t": 351000000,
+     "durum": "fa9db9187d4f4e43",
+     "etkinKuyruk": "1f4627c710d6dba2",
+     "islenen": "a68c11f9c6ea953e",
+     "olaySayaci": 4392
+    },
+    {
+     "t": 468000000,
+     "durum": "5e4d69059bc29d42",
+     "etkinKuyruk": "c2dd9617e5495ab1",
+     "islenen": "3d8905604f127373",
+     "olaySayaci": 5150
+    },
+    {
+     "t": 585000000,
+     "durum": "ee926d39bdcfff4b",
+     "etkinKuyruk": "60f4c71178bc490a",
+     "islenen": "85eda57937353085",
+     "olaySayaci": 5668
+    },
+    {
+     "t": 702000000,
+     "durum": "e2b2f88de9792678",
+     "etkinKuyruk": "b402f6c5b5eec51b",
+     "islenen": "1b050a6263d852a7",
+     "olaySayaci": 6101
+    },
+    {
+     "t": 819000000,
+     "durum": "246522a275dd3915",
+     "etkinKuyruk": "97ed74ef7990d4a3",
+     "islenen": "665bfc8be6bbdd5a",
+     "olaySayaci": 6506
+    },
+    {
+     "t": 936000000,
+     "durum": "30ef5467e94e78f0",
+     "etkinKuyruk": "64509562e7e8a02e",
+     "islenen": "4673fc0e65914348",
+     "olaySayaci": 6843
+    },
+    {
+     "t": 1053000000,
+     "durum": "9eac660fa571fbe2",
+     "etkinKuyruk": "a21710679c73b376",
+     "islenen": "bf846b8ff047d9ec",
+     "olaySayaci": 7197
+    },
+    {
+     "t": 1170000000,
+     "durum": "192466a6d1b3f9fc",
+     "etkinKuyruk": "f452644e9c42775b",
+     "islenen": "283a94f9bd7fcccd",
+     "olaySayaci": 7550
+    },
+    {
+     "t": 1287000000,
+     "durum": "ee7d5107e770f086",
+     "etkinKuyruk": "1e7a05e37493434a",
+     "islenen": "0069dbfe4f52b01c",
+     "olaySayaci": 7894
+    },
+    {
+     "t": 1404000000,
+     "durum": "aef6c8744be3bf5b",
+     "etkinKuyruk": "810df1977304788f",
+     "islenen": "5028790efb53d329",
+     "olaySayaci": 8396
+    }
+   ]
+  },
+  "pazar-kalkani-yoksul-t6": {
+   "sonOzet": "6fcf44855e9a5913",
+   "kuyruk": 3047,
+   "eskimis": 2984,
+   "islenenEskimis": 2902,
+   "noktalar": [
+    {
+     "t": 117000000,
+     "durum": "938d08c8d86ce410",
+     "etkinKuyruk": "6fc0ac2bfde2d241",
+     "islenen": "cd69b075717fdb48",
+     "olaySayaci": 2513
+    },
+    {
+     "t": 234000000,
+     "durum": "d17c8404c8948423",
+     "etkinKuyruk": "e1cd2c30ccdec147",
+     "islenen": "f8aa1e83764e2567",
+     "olaySayaci": 3533
+    },
+    {
+     "t": 351000000,
+     "durum": "454474bcd8ac2c68",
+     "etkinKuyruk": "1f4627c710d6dba2",
+     "islenen": "a68c11f9c6ea953e",
+     "olaySayaci": 4392
+    },
+    {
+     "t": 468000000,
+     "durum": "ff8efc33ac3074ac",
+     "etkinKuyruk": "c2dd9617e5495ab1",
+     "islenen": "3d8905604f127373",
+     "olaySayaci": 5150
+    },
+    {
+     "t": 585000000,
+     "durum": "64b1139aa979894c",
+     "etkinKuyruk": "60f4c71178bc490a",
+     "islenen": "85eda57937353085",
+     "olaySayaci": 5668
+    },
+    {
+     "t": 702000000,
+     "durum": "c5cc4678ffa7169f",
+     "etkinKuyruk": "b402f6c5b5eec51b",
+     "islenen": "1b050a6263d852a7",
+     "olaySayaci": 6101
+    },
+    {
+     "t": 819000000,
+     "durum": "8803ea1e15422432",
+     "etkinKuyruk": "97ed74ef7990d4a3",
+     "islenen": "665bfc8be6bbdd5a",
+     "olaySayaci": 6506
+    },
+    {
+     "t": 936000000,
+     "durum": "b2a0999ce8632b31",
+     "etkinKuyruk": "64509562e7e8a02e",
+     "islenen": "4673fc0e65914348",
+     "olaySayaci": 6843
+    },
+    {
+     "t": 1053000000,
+     "durum": "5f2f54a8ce189cd8",
+     "etkinKuyruk": "a21710679c73b376",
+     "islenen": "bf846b8ff047d9ec",
+     "olaySayaci": 7197
+    },
+    {
+     "t": 1170000000,
+     "durum": "efba73cfd34a92c9",
+     "etkinKuyruk": "f452644e9c42775b",
+     "islenen": "283a94f9bd7fcccd",
+     "olaySayaci": 7550
+    },
+    {
+     "t": 1287000000,
+     "durum": "e483705ba813878a",
+     "etkinKuyruk": "1e7a05e37493434a",
+     "islenen": "0069dbfe4f52b01c",
+     "olaySayaci": 7894
+    },
+    {
+     "t": 1404000000,
+     "durum": "2fb5afe849c9c05f",
+     "etkinKuyruk": "810df1977304788f",
+     "islenen": "5028790efb53d329",
+     "olaySayaci": 8396
+    }
+   ]
+  },
+  "bot-kalkani-t1": {
+   "sonOzet": "917f853accb02117",
+   "kuyruk": 29830,
+   "eskimis": 28328,
+   "islenenEskimis": 37713,
+   "noktalar": [
+    {
+     "t": 43200000,
+     "durum": "946e77ebe1360585",
+     "etkinKuyruk": "092d94249edb3108",
+     "islenen": "1e81fb7f2de6be01",
+     "olaySayaci": 5434
+    },
+    {
+     "t": 86400000,
+     "durum": "8f10be9899592251",
+     "etkinKuyruk": "098a45fadb4e615a",
+     "islenen": "fcfe311668b3ebfc",
+     "olaySayaci": 12446
+    },
+    {
+     "t": 129600000,
+     "durum": "9ef9835a67e57e8d",
+     "etkinKuyruk": "6f3896851e7a4658",
+     "islenen": "a70c33359544f6f4",
+     "olaySayaci": 19595
+    },
+    {
+     "t": 172800000,
+     "durum": "7ce44137c31b754b",
+     "etkinKuyruk": "63b999df8a6aed71",
+     "islenen": "4bf6de7f90137724",
+     "olaySayaci": 28212
+    },
+    {
+     "t": 216000000,
+     "durum": "aeb3480de920787b",
+     "etkinKuyruk": "5c27bdf334da7ab8",
+     "islenen": "9d98c35585356241",
+     "olaySayaci": 37659
+    },
+    {
+     "t": 259200000,
+     "durum": "fda97befb2393d22",
+     "etkinKuyruk": "c27f444a5537518b",
+     "islenen": "ce2c175a487aef48",
+     "olaySayaci": 45569
+    },
+    {
+     "t": 302400000,
+     "durum": "778d989ea953ade1",
+     "etkinKuyruk": "1ec0d3625e1062c1",
+     "islenen": "65cb2cb428bf869d",
+     "olaySayaci": 52634
+    },
+    {
+     "t": 345600000,
+     "durum": "61cdab9c3864ddc3",
+     "etkinKuyruk": "1187b2549bb2f14b",
+     "islenen": "119c836a9ca7f7f4",
+     "olaySayaci": 59643
+    },
+    {
+     "t": 388800000,
+     "durum": "b3691b70d86f77bb",
+     "etkinKuyruk": "ae898d4d8d35f9b9",
+     "islenen": "725f405c384e2c6e",
+     "olaySayaci": 66831
+    },
+    {
+     "t": 432000000,
+     "durum": "02bc4b355088d9fa",
+     "etkinKuyruk": "18a60ff3e12690a1",
+     "islenen": "10daf7e630ddd410",
+     "olaySayaci": 73631
+    },
+    {
+     "t": 475200000,
+     "durum": "41ac5e9bf24bf1db",
+     "etkinKuyruk": "50bc2f27b39c60c5",
+     "islenen": "214bcfb4fbc642d7",
+     "olaySayaci": 81134
+    },
+    {
+     "t": 518400000,
+     "durum": "e55c59e3381d7f83",
+     "etkinKuyruk": "dac23f4778ffd59d",
+     "islenen": "70794d79142d1609",
+     "olaySayaci": 87587
+    }
+   ]
+  },
+  "bot-kalkani-t2": {
+   "sonOzet": "2fd502cf574370c4",
+   "kuyruk": 26172,
+   "eskimis": 24945,
+   "islenenEskimis": 36780,
+   "noktalar": [
+    {
+     "t": 43200000,
+     "durum": "708795e98f89ac8d",
+     "etkinKuyruk": "cff72988e2dcd076",
+     "islenen": "5769c1bd69f565d6",
+     "olaySayaci": 5461
+    },
+    {
+     "t": 86400000,
+     "durum": "440c4fcec15c9d15",
+     "etkinKuyruk": "9069db4086c7cdac",
+     "islenen": "eac4d7384eb31871",
+     "olaySayaci": 12398
+    },
+    {
+     "t": 129600000,
+     "durum": "a7a5442854997881",
+     "etkinKuyruk": "1d26a47657649103",
+     "islenen": "a86bead56446287c",
+     "olaySayaci": 19772
+    },
+    {
+     "t": 172800000,
+     "durum": "8c6dcd3e9b6c21d6",
+     "etkinKuyruk": "24fc5ed6c0129ac8",
+     "islenen": "12d32901e0441ae9",
+     "olaySayaci": 28163
+    },
+    {
+     "t": 216000000,
+     "durum": "ae3c122b36b96f23",
+     "etkinKuyruk": "aeb1a539e54fe989",
+     "islenen": "a5b937b88baea19b",
+     "olaySayaci": 39854
+    },
+    {
+     "t": 259200000,
+     "durum": "65c23c6af9a499d6",
+     "etkinKuyruk": "fe46acef26ab61d1",
+     "islenen": "179aaeec30d3166d",
+     "olaySayaci": 49348
+    },
+    {
+     "t": 302400000,
+     "durum": "b55be1bcaffa8e6b",
+     "etkinKuyruk": "07eee0dedb4c3c41",
+     "islenen": "56097a3804ca4357",
+     "olaySayaci": 56951
+    },
+    {
+     "t": 345600000,
+     "durum": "57c598cc654c7255",
+     "etkinKuyruk": "4479a80bcac9dd26",
+     "islenen": "c5ffb9100fbe5770",
+     "olaySayaci": 63397
+    },
+    {
+     "t": 388800000,
+     "durum": "354fdf9ba519217a",
+     "etkinKuyruk": "7d25031339ae5726",
+     "islenen": "df7a7f930a4b2bc2",
+     "olaySayaci": 68658
+    },
+    {
+     "t": 432000000,
+     "durum": "73973482a7a3fa89",
+     "etkinKuyruk": "4c4e5cc50bf65332",
+     "islenen": "9e5c4aa35c2adb5e",
+     "olaySayaci": 73773
+    },
+    {
+     "t": 475200000,
+     "durum": "d9591764eafccb00",
+     "etkinKuyruk": "25b57880273c9d55",
+     "islenen": "584a66bf28f61740",
+     "olaySayaci": 78025
+    },
+    {
+     "t": 518400000,
+     "durum": "dc3338a85685b501",
+     "etkinKuyruk": "cbbc2a4133946ac9",
+     "islenen": "aa8ab019965a50de",
+     "olaySayaci": 81707
+    }
+   ]
+  },
+  "guncel-sentetik-4bot-bulanik-t1": {
+   "sonOzet": "0853956ec44e0105",
+   "kuyruk": 23321,
+   "eskimis": 21847,
+   "islenenEskimis": 22255,
+   "noktalar": [
+    {
+     "t": 28800000,
+     "durum": "adca34e4f386d2f8",
+     "etkinKuyruk": "659b9ade46201990",
+     "islenen": "04a2d8f788263396",
+     "olaySayaci": 3579
+    },
+    {
+     "t": 57600000,
+     "durum": "259279e57aad0f88",
+     "etkinKuyruk": "e763072c1f2992b0",
+     "islenen": "4300e16bb528dfdc",
+     "olaySayaci": 7624
+    },
+    {
+     "t": 86400000,
+     "durum": "fe726faa33a745fc",
+     "etkinKuyruk": "b29cfab0b8ec9638",
+     "islenen": "0f9e9c57e6125aeb",
+     "olaySayaci": 11834
+    },
+    {
+     "t": 115200000,
+     "durum": "c88858a06fce0302",
+     "etkinKuyruk": "867720c89e52ace6",
+     "islenen": "4976c324740a487c",
+     "olaySayaci": 16311
+    },
+    {
+     "t": 144000000,
+     "durum": "7990ef5922a66783",
+     "etkinKuyruk": "4ba080a4a5ccf224",
+     "islenen": "e89870b31022b76d",
+     "olaySayaci": 21031
+    },
+    {
+     "t": 172800000,
+     "durum": "f92a6529de55c388",
+     "etkinKuyruk": "296c39545ff87c68",
+     "islenen": "8cb8fd19c4eef76b",
+     "olaySayaci": 26844
+    },
+    {
+     "t": 201600000,
+     "durum": "5a17c33dadf8aba4",
+     "etkinKuyruk": "ee7b65df4032115d",
+     "islenen": "25eddc6f1873bb18",
+     "olaySayaci": 33526
+    },
+    {
+     "t": 230400000,
+     "durum": "95577b499cf691af",
+     "etkinKuyruk": "a49f813492df4fcc",
+     "islenen": "b53a69d557280da6",
+     "olaySayaci": 39565
+    },
+    {
+     "t": 259200000,
+     "durum": "f2c7cf56b2ebc8fe",
+     "etkinKuyruk": "5294e7589ccb56e4",
+     "islenen": "4c14d1009abba9be",
+     "olaySayaci": 44492
+    },
+    {
+     "t": 288000000,
+     "durum": "d8382e1f0b5ad99e",
+     "etkinKuyruk": "1762d0770a64ef7f",
+     "islenen": "61dec7218ac141a6",
+     "olaySayaci": 49170
+    },
+    {
+     "t": 316800000,
+     "durum": "ec9091c07bbf032b",
+     "etkinKuyruk": "1a2ae6e9a4d6e15a",
+     "islenen": "120581654dc856ee",
+     "olaySayaci": 53947
+    },
+    {
+     "t": 345600000,
+     "durum": "5b2920ecacfd6377",
+     "etkinKuyruk": "de10bc81d886aa64",
+     "islenen": "c5ca3bae18cddbc6",
+     "olaySayaci": 58520
+    }
+   ]
+  },
+  "guncel-mini-4bot-bulanik-t3": {
+   "sonOzet": "c163d99e201ef922",
+   "kuyruk": 1538,
+   "eskimis": 1460,
+   "islenenEskimis": 2336,
+   "noktalar": [
+    {
+     "t": 43200000,
+     "durum": "76580a6cd0546ecd",
+     "etkinKuyruk": "2a91e1010105e6cd",
+     "islenen": "efda022b5e814781",
+     "olaySayaci": 544
+    },
+    {
+     "t": 86400000,
+     "durum": "3fee3e4e229fdfde",
+     "etkinKuyruk": "df5240b51900d5b1",
+     "islenen": "914be5acb03950c3",
+     "olaySayaci": 1410
+    },
+    {
+     "t": 129600000,
+     "durum": "4beda286a8a1ca48",
+     "etkinKuyruk": "00859c578d9c57de",
+     "islenen": "3a8770e42c9758d5",
+     "olaySayaci": 2850
+    },
+    {
+     "t": 172800000,
+     "durum": "fc65b38150daa813",
+     "etkinKuyruk": "9ce4672598f0b859",
+     "islenen": "c82da8baac6234d8",
+     "olaySayaci": 3690
+    },
+    {
+     "t": 216000000,
+     "durum": "80e9655eea2ac0d4",
+     "etkinKuyruk": "e2f5bbad5a92873e",
+     "islenen": "6f6f642cbdf1710f",
+     "olaySayaci": 4080
+    },
+    {
+     "t": 259200000,
+     "durum": "98d6574ef9cd38d8",
+     "etkinKuyruk": "e7425abaf25d743e",
+     "islenen": "ffa8cfabd46daa10",
+     "olaySayaci": 4391
+    },
+    {
+     "t": 302400000,
+     "durum": "b421c1eec8962736",
+     "etkinKuyruk": "026714dc64ca4fd2",
+     "islenen": "2073feb6254f2a11",
+     "olaySayaci": 4634
+    },
+    {
+     "t": 345600000,
+     "durum": "629cc36219cec11d",
+     "etkinKuyruk": "37ad78b1ba62b141",
+     "islenen": "a7e3b1567b21088c",
+     "olaySayaci": 4796
+    },
+    {
+     "t": 388800000,
+     "durum": "99d6cf4f19ab01a3",
+     "etkinKuyruk": "afc73119dbf2f8e3",
+     "islenen": "febeed41be9a2a66",
+     "olaySayaci": 4911
+    },
+    {
+     "t": 432000000,
+     "durum": "a588e023a591005d",
+     "etkinKuyruk": "20ab5011d09bdb38",
+     "islenen": "2cec32d6410de87f",
+     "olaySayaci": 5014
+    },
+    {
+     "t": 475200000,
+     "durum": "8e4fc3d2cf8d5edf",
+     "etkinKuyruk": "fa6868c4cf9534ba",
+     "islenen": "e0118c930f105b95",
+     "olaySayaci": 5095
+    },
+    {
+     "t": 518400000,
+     "durum": "798cf1531a85619b",
+     "etkinKuyruk": "5858796a37a11b63",
+     "islenen": "1adce1e695effa01",
+     "olaySayaci": 5220
+    }
+   ]
+  }
+ }
+}

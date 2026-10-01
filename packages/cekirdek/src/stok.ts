@@ -18,6 +18,7 @@
  * Optimizasyon: oran/delta değişmiyorsa (aynı yerelOran, delta = 0, uygulanan miktar 0) hiçbir şey
  * yapılmaz: surum artmaz, yeni eşik planlanmaz (mevcut eşik hâlâ geçerlidir).
  */
+import { kuyrukSuz } from "./kuyruk";
 import { tabanBol } from "./sabit";
 import { SAAT } from "./tipler";
 import type { Baglam, Dunya, Mili, Ms, OyuncuDurumu, OyuncuId, Stok } from "./tipler";
@@ -129,6 +130,30 @@ export function stokEsikPlanla(d: Dunya, ctx: Baglam, bolge: number, mal: number
   const s = (d.bolgeler[bolge] as { stoklar: Stok[] }).stoklar[mal] as Stok;
   const dt = stokEsikMesafesi(s);
   if (dt >= 1) ctx.planla(d, d.zaman + dt, { tur: "esik", bolge, mal, surum: s.surum });
+}
+
+/**
+ * Eşik budaması anahtarı. YALNIZ kanıt testleri içindir (docs/06 §14.1: budamasız koşu = S2 kodu birebir); üretimde
+ * daima açıktır ve kapatılmamalıdır. Dünya durumuna girmez.
+ */
+export const esikBudamasi = { acik: true };
+
+/**
+ * Eskimiş eşik olaylarını kuyruktan atar (docs/06 §14.1). Eşik olayı, stoğun `surum`'u olayınkiyle eşleşmiyorsa
+ * eskimiştir: motor onu işlediğinde zaten yok sayar (hiçbir etkisi yoktur). Atılan olay sayısını döndürür.
+ * Her bölge stoğunun `surum`'u yalnız bu modülde artar ve her artışta yeni eşik planlanır; bu yüzden budamadan sonra
+ * kuyrukta stok başına en çok bir (etkin) eşik kalır. Etkin olayların `sira`'sı ve işlenme sırası değişmez; `sayac.olay`
+ * da değişmez (eşikler yine planlanır, yalnız eskiyince atılır).
+ */
+export function eskimisEsikleriBuda(d: Dunya): number {
+  if (!esikBudamasi.acik) return 0;
+  const bolgeler = d.bolgeler;
+  return kuyrukSuz(d.kuyruk, (o) => {
+    const v = o.veri;
+    if (v.tur !== "esik") return true;
+    const s = bolgeler[v.bolge]?.stoklar[v.mal];
+    return s !== undefined && s.surum === v.surum;
+  });
 }
 
 function bolgeStoku(d: Dunya, bolge: number, mal: number): Stok {

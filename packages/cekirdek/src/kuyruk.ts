@@ -52,3 +52,38 @@ export function kuyrukCikar(kuyruk: Olay[]): Olay | undefined {
 export function kuyrukBas(kuyruk: readonly Olay[]): Olay | undefined {
   return kuyruk[0];
 }
+
+/** i konumundaki olayı yığında aşağı iter (n = etkin boyut). */
+function asagiIt(kuyruk: Olay[], i: number, n: number): void {
+  const olay = kuyruk[i] as Olay;
+  const yarim = n >> 1;
+  while (i < yarim) {
+    let k = 2 * i + 1;
+    const sag = k + 1;
+    if (sag < n && kuyrukOnce(kuyruk[sag] as Olay, kuyruk[k] as Olay)) k = sag;
+    const c = kuyruk[k] as Olay;
+    if (!kuyrukOnce(c, olay)) break;
+    kuyruk[i] = c;
+    i = k;
+  }
+  kuyruk[i] = olay;
+}
+
+/**
+ * Kuyruğu yerinde süzer: `tut(olay)` false dönen olaylar atılır, kalanlar dizideki göreli sıralarını koruyarak sıkıştırılır
+ * ve yığın düzeni (Floyd, O(n)) yeniden kurulur. Atılan olay sayısını döndürür; hiçbiri atılmazsa dizi DOKUNULMADAN kalır.
+ * Olaylar (t, oncelik, sira) ile tam sıralı olduğundan (sira tekil) kalan olayların işlenme sırası değişmez; yalnız yığın
+ * dizisinin düzeni değişir. Deterministiktir: sonuç yalnız diziye ve `tut`'a bağlıdır.
+ */
+export function kuyrukSuz(kuyruk: Olay[], tut: (olay: Olay) => boolean): number {
+  let j = 0;
+  for (let i = 0; i < kuyruk.length; i++) {
+    const o = kuyruk[i] as Olay;
+    if (tut(o)) kuyruk[j++] = o;
+  }
+  const atilan = kuyruk.length - j;
+  if (atilan === 0) return 0;
+  kuyruk.length = j;
+  for (let i = (j >> 1) - 1; i >= 0; i--) asagiIt(kuyruk, i, j);
+  return atilan;
+}

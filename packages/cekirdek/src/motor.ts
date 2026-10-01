@@ -17,7 +17,7 @@ import { ticaretDefteriBaslat } from "./pazar";
 import { politikaKomutu } from "./politika";
 import { sanayiKomutu, sondajBitti } from "./sanayi";
 import { iklimGunluk, tarimKomutu } from "./tarim";
-import { oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
+import { eskimisEsikleriBuda, oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
 import { arastirmaBitti, teknolojiKomutu } from "./teknoloji";
 import { GUN, SAAT } from "./tipler";
 import type {
@@ -332,6 +332,8 @@ export class Simulasyon {
           l.cozumPlanli = false;
           l.sonCozum = d.zaman;
           l.cozumSayisi++;
+          // Tembel yığın temizliği (docs/06 §14.1): çözüm oranları değiştirip eşikleri eskittiği an; eskimiş eşikler atılır.
+          eskimisEsikleriBuda(d);
         }
         break;
       }
