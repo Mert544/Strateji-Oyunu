@@ -40,6 +40,7 @@ describe("kontrast (WCAG 2.2)", () => {
         ["birincil-ustu", "birincil"],
         ["birincil-ustu", "birincil-hover"],
         ["birincil", "yuzey"],
+        ["birincil-ink", "birincil-tint"], // .yapi-dugme[aria-pressed] tonlu basılı hâl (tek birincil kuralı)
       ];
       for (const aile of ["birincil", "ikincil", "basari", "uyari", "hata", "bilgi"]) {
         ciftler.push([`${aile}-ink`, "yuzey"], [`${aile}-ink`, "yuzey-2"], [`${aile}-ink`, `${aile}-tint`]);

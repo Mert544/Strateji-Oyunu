@@ -102,7 +102,8 @@
 }
 .yapi-dugme:hover { background: var(--birincil-hover); }
 .yapi-dugme[hidden] { display: none; }
-.yapi-dugme[aria-pressed="true"] { background: var(--birincil-ink); box-shadow: 0 0 0 3px var(--birincil-cizgi), var(--golge-2); }
+/* Tek birincil kuralı: kart ya da şerit açıkken (aria-pressed) üstteki düğme tonlu, dolu birincil değil; hover dolguya döndürmez */
+.yapi-dugme[aria-pressed="true"], .yapi-dugme[aria-pressed="true"]:hover { background: var(--birincil-tint); color: var(--birincil-ink); box-shadow: 0 0 0 2px var(--birincil-cizgi), var(--golge-2); }
 #yapi-menu {
   width: min(340px, calc(100vw - 24px)); max-height: min(58vh, 460px); overflow-y: auto; background: var(--yuzey); color: var(--murekkep);
   border: 0; border-radius: var(--r-lg); box-shadow: var(--golge-2); padding: var(--s-2);
@@ -190,8 +191,6 @@
 .yr-doluluk.yok { color: var(--murekkep-3); }
 .yr-cubuk { display: inline-block; width: 72px; height: 4px; border-radius: var(--r-hap); background: var(--yuzey-3); overflow: hidden; }
 .yr-cubuk i { display: block; height: 100%; background: var(--murekkep-2); border-radius: var(--r-hap); }
-/* Doluluk %0 (ya da ≈ %2'nin altı): dolgu en az 2 % genişlikte yazılıyor (yerles-ekrani.ts); boş çubukta tek nokta görünmesin */
-.yr-cubuk i[style="width:2%"] { display: none; }
 .yr-onerilen { font-size: var(--yazi-sm); color: var(--murekkep-2); }
 .yr-onerilen b { color: var(--murekkep); }
 .yr-durum { display: inline-flex; align-items: center; min-height: 22px; font-size: var(--yazi-xs); font-weight: 600; padding: 0 var(--s-2); border-radius: var(--r-hap); background: var(--yuzey-2); color: var(--murekkep-2); border: 0; }
