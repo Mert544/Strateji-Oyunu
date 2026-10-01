@@ -361,6 +361,21 @@ const sanayiSema = z
   })
   .strict();
 
+const mulkEkYapiSema = z
+  .object({
+    ad: z.string().min(1),
+    yuva: pozitif.max(3, "yuva en fazla 3 olabilir"),
+    insaSaati: pozitif,
+    insaParasi: negatifOlmayan,
+    insaMaliyeti: kayit,
+    enFazlaIlBasina: pozitif.optional(),
+    depoKapasiteEkiMili: negatifOlmayan.optional(),
+    komisyonIndirimPpm: ppmSiniri.optional(),
+    makasIndirimPpm: ppmSiniri.optional(),
+    emirYuvasi: negatifOlmayan.optional(),
+  })
+  .strict();
+
 const mulkSema = z
   .object({
     hucreFiyati: z.object({ kirsal: negatifOlmayan, kasaba: negatifOlmayan, sehir: negatifOlmayan }).strict(),
@@ -369,6 +384,7 @@ const mulkSema = z
     ilcePayTavaniPpm: ppmSiniri,
     araziVergisiHaftalikPpm: ppmSiniri,
     insaatIptalIadePpm: ppmSiniri,
+    parselBirakIadePpm: ppmSiniri.optional(),
     esZamanliInsaat: pozitif,
     yapiYuva: z.record(kimlik, pozitif.max(3, "yuva en fazla 3 olabilir")),
     yapiInsaSaati: z.record(kimlik, pozitif).optional(),
@@ -380,9 +396,12 @@ const mulkSema = z
         ilkYapiIndirimPpm: ppmSiniri,
         indirimliYapiSayisi: negatifOlmayan,
         ayrilmisHucrePpm: ppmSiniri,
+        ayrilmisGun: negatifOlmayan.optional(),
         kalkanGun: negatifOlmayan,
       })
       .strict(),
+    ekYapilar: z.record(kimlik, mulkEkYapiSema).optional(),
+    temelEmirYuvasi: negatifOlmayan.optional(),
     hareketsizlik: z
       .object({
         uykuGun: negatifOlmayan,

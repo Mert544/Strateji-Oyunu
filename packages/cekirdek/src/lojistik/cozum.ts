@@ -97,7 +97,7 @@ function hazineKalemleri(
     for (const e of b.ticaretEmirleri) {
       if (e.gerceklesenSaat <= 0) continue;
       // Liman primi merkezin liman tanımından (mülk kipinde işletme düğümü il merkezinin limanını kullanır).
-      carp ??= ticaretCarpanlari(d, ctx, o, b.merkez ?? b.indeks);
+      carp ??= ticaretCarpanlari(d, ctx, o, b.merkez ?? b.indeks, b);
       const fiyat = d.pazar.fiyat[e.mal] as number;
       if (e.yon === "ihracat") {
         const gercek = fr4 === null ? e.gerceklesenSaat : carpBol(e.gerceklesenSaat, fr4[e.mal] as number, PPM);

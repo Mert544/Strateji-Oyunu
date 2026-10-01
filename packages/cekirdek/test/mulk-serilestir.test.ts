@@ -18,6 +18,21 @@ function sec<T>(r: PrngDurumu, l: readonly T[]): T {
   return l[aralik(r, l.length)] as T;
 }
 
+/** `baslangic` hücresinden başlayıp `adet` kenar-bitişik hücreye kadar büyüyen küme (bulunamazsa daha küçük kalır: geçersiz komut da senaryonun parçasıdır). */
+function komsuKume(hucreler: readonly string[], baslangic: string, adet: number): string[] {
+  const kume = [baslangic];
+  while (kume.length < adet) {
+    const komsu = hucreler.find((h) => !kume.includes(h) && kume.some((k) => {
+      const [x, y] = k.split(":").map(Number) as [number, number];
+      const [hx, hy] = h.split(":").map(Number) as [number, number];
+      return Math.abs(x - hx) + Math.abs(y - hy) === 1;
+    }));
+    if (komsu === undefined) break;
+    kume.push(komsu);
+  }
+  return kume;
+}
+
 /** Senaryonun komut dizisi (zaman artan); geçerlilik uygulamada belirlenir. Sim'e bakarak (hücre sahipliği) üretilir. */
 function sonrakiKomut(r: PrngDurumu, veri: CekirdekVeriPaketi, s: Simulasyon, oyuncu: string): Komut {
   const f = veri.parsel!;
@@ -37,7 +52,7 @@ function sonrakiKomut(r: PrngDurumu, veri: CekirdekVeriPaketi, s: Simulasyon, oy
     const yapi = sec(r, YAPILAR);
     const adet = aralik(r, 4) === 0 ? 1 + aralik(r, 3) : (veri.param.mulk!.yapiYuva[yapi] ?? 1);
     const bas = aralik(r, ayni.length);
-    return { tur: "tesis_insa_hucre", ilce: h0.ilce, tesisTuru: yapi, hucreler: ayni.slice(bas, bas + adet) };
+    return { tur: "tesis_insa_hucre", ilce: h0.ilce, tesisTuru: yapi, hucreler: komsuKume(ayni, ayni[bas] as string, adet) };
   }
   if (zar === 7) return { tur: "insaat_iptal", insaat: s.dunya.insaatlar.length > 0 && aralik(r, 2) === 0 ? sec(r, s.dunya.insaatlar).id : 999_999 };
   if (zar === 8) {
@@ -94,8 +109,10 @@ describe("mülk kipi: determinizm ve yeniden oynatma", () => {
   const veri = (): CekirdekVeriPaketi => mulkVeri((v) => (v.param.mulk!.yeniOyuncu.hibe = 200_000_000));
 
   it("aynı tohum aynı özet; senaryo hem başarılı hem başarısız mülk komutlarını kapsar", () => {
-    const a = kos(veri(), 11, 6);
-    const b = kos(veri(), 11, 6);
+    // Tohum 15: mülk kipinde limansız işletme emirleri artık kabul edildiği, kalkan 14 gün olduğu ve yapılar kenar-bitişik
+    // hücre istediği için senaryonun yolu değişti (eski tohum 11 artık her komut türünü iki sonuçla kapsamıyor).
+    const a = kos(veri(), 15, 6);
+    const b = kos(veri(), 15, 6);
     expect(a.sim.durumOzeti()).toBe(b.sim.durumOzeti());
     const turler = (tamamMi: boolean) => new Set(a.komutlar.filter((x) => x.tamam === tamamMi).map((x) => x.k.komut.tur));
     for (const tur of ["parsel_al", "tesis_insa_hucre", "insaat_iptal"] as const) {

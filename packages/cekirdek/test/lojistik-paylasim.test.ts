@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { dunyaSerilestir } from "../src/serilestir";
 import { GUN } from "../src/tipler";
 import type { Dunya } from "../src/tipler";
-import { hucreSec, ikinciIlEkle, mulkSim, mulkVeri, tamam } from "./mulk-yardimci";
+import { bitisikGrup, hucreSec, ikinciIlEkle, mulkSim, mulkVeri, tamam } from "./mulk-yardimci";
 import { parselFiksturuYukle } from "@bolge/veri";
 import { senaryoKos } from "./serilestir-yardimci";
 
@@ -45,11 +45,11 @@ describe("akış yolları paylaşılmaz; dünya her an serileştirilebilir", () 
       x.param.mulk!.yeniOyuncu.hibe = 500_000_000;
     });
     const s = mulkSim(["a"], v);
-    tamam(s, "a", { tur: "parsel_al", ilce: "sn_m_ova_merkez", hucreler: hucreSec(parsel, "sn_m_ova_merkez", "kirsal", 4), sinif: "kirsal" });
+    tamam(s, "a", { tur: "parsel_al", ilce: "sn_m_ova_merkez", hucreler: [0, 1].flatMap((k) => bitisikGrup(parsel, "sn_m_ova_merkez", "kirsal", 2, k)), sinif: "kirsal" });
     tamam(s, "a", { tur: "parsel_al", ilce: "sn_m_liman_merkez", hucreler: hucreSec(parsel, "sn_m_liman_merkez", "kirsal", 1), sinif: "kirsal" });
     tamam(s, "a", { tur: "parsel_al", ilce: "sn_m_liman2_merkez", hucreler: hucreSec(parsel, "sn_m_liman2_merkez", "kirsal", 1), sinif: "kirsal" });
-    for (const k of [0, 2]) {
-      tamam(s, "a", { tur: "tesis_insa_hucre", ilce: "sn_m_ova_merkez", tesisTuru: "ciftlik", hucreler: hucreSec(parsel, "sn_m_ova_merkez", "kirsal", 2, k) });
+    for (const k of [0, 1]) {
+      tamam(s, "a", { tur: "tesis_insa_hucre", ilce: "sn_m_ova_merkez", tesisTuru: "ciftlik", hucreler: bitisikGrup(parsel, "sn_m_ova_merkez", "kirsal", 2, k) });
     }
     tamam(s, "a", { tur: "ticaret_emri", bolge: "sn_m_liman#a", mal: "tahil", yon: "ihracat", oranSaat: 100_000 });
     tamam(s, "a", { tur: "ticaret_emri", bolge: "sn_m_liman2#a", mal: "tahil", yon: "ihracat", oranSaat: 100_000 });

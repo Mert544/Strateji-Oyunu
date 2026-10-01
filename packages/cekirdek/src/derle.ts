@@ -3,7 +3,9 @@
  * Başlangıçta bir kez çalışır; sonuç salt okunurdur ve dünya durumuna girmez.
  */
 import type { ParselHucreTanimi, ParselIlceTanimi } from "@bolge/veri";
-import type { CekirdekVeriPaketi, DerlenmisIcerik, DerlenmisMulk, HucreId } from "./tipler";
+import { carpBol } from "./sabit";
+import { GUN, PPM } from "./tipler";
+import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, HucreId } from "./tipler";
 
 /** Kimlik listesinden kimlik -> indeks eşlemesi; tekrarlanan kimlikte hata. Prototipsiz nesne (örn. "constructor" güvenli). */
 function indeksle(tur: string, kimlikler: readonly string[]): Record<string, number> {
@@ -116,5 +118,66 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
     if (mi === undefined) throw new Error(`icerikDerle: mulk.yeniOyuncu.baslangicStok bilinmeyen mal: ${mid}`);
     baslangicStok[mi] = p.yeniOyuncu.baslangicStok[mid] as number;
   }
-  return { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, insaSaati, baslangicStok };
+  // Ek yapılar (Ambar, Ticaret ofisi...): kimliğe göre sıralı; tesis türü kimlikleriyle çakışamaz; malzeme mal indeksine çevrilir.
+  const ekYapilar: DerlenmisEkYapi[] = [];
+  const ekYapiIndeks = new Map<string, number>();
+  const ey = p.ekYapilar ?? {};
+  for (const eid of Object.keys(ey).sort()) {
+    const t = ey[eid] as NonNullable<typeof p.ekYapilar>[string];
+    if (eid in ic.tesisTuruIndeks) throw new Error(`icerikDerle: mulk.ekYapilar kimligi tesis turuyle cakisiyor: ${eid}`);
+    const maliyet: [number, number][] = [];
+    for (const mid of Object.keys(t.insaMaliyeti).sort()) {
+      const mi = ic.malIndeks[mid];
+      if (mi === undefined) throw new Error(`icerikDerle: mulk.ekYapilar.${eid}.insaMaliyeti bilinmeyen mal: ${mid}`);
+      maliyet.push([mi, t.insaMaliyeti[mid] as number]);
+    }
+    maliyet.sort((x, y) => x[0] - y[0]);
+    ekYapiIndeks.set(eid, ekYapilar.length);
+    ekYapilar.push({
+      id: eid,
+      ad: t.ad,
+      yuva: t.yuva,
+      insaSaati: t.insaSaati,
+      insaParasi: t.insaParasi,
+      insaMaliyeti: maliyet,
+      enFazlaIlBasina: t.enFazlaIlBasina ?? Number.MAX_SAFE_INTEGER,
+      depoKapasiteEkiMili: t.depoKapasiteEkiMili ?? 0,
+      komisyonIndirimPpm: t.komisyonIndirimPpm ?? 0,
+      makasIndirimPpm: t.makasIndirimPpm ?? 0,
+      emirYuvasi: t.emirYuvasi ?? 0,
+    });
+  }
+  const ayrilmis = ayrilmisHucreler(f.ilceler, p.yeniOyuncu.ayrilmisHucrePpm);
+  const ayrilmisSureMs = (p.yeniOyuncu.ayrilmisGun ?? AYRILMIS_GUN_VARSAYILAN) * GUN;
+  return { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisSureMs };
+}
+
+/** Ayrılmış hücre süresinin varsayılanı (gün). */
+const AYRILMIS_GUN_VARSAYILAN = 14;
+
+/** 32 bit FNV-1a (yalnız tamsayı işlemleri): hücre kimliği karması. */
+export function hucreKarmasi(id: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/**
+ * Yeni oyunculara ayrılmış hücreler: her ilçenin uygun hücreleri (karma, kimlik) sırasıyla dizilir ve ilk
+ * `floor(uygun × ayrilmisPpm / PPM)` tanesi ayrılır (karma kimlikten türediği için dağılım ilçeye yayılır, seçim deterministiktir).
+ */
+function ayrilmisHucreler(ilceler: readonly ParselIlceTanimi[], ayrilmisPpm: number): Set<HucreId> {
+  const kume = new Set<HucreId>();
+  if (ayrilmisPpm <= 0) return kume;
+  for (const c of ilceler) {
+    const uygun = c.hucreler.filter((h) => h.uygun).map((h) => ({ id: h.id, k: hucreKarmasi(h.id) }));
+    const adet = carpBol(uygun.length, ayrilmisPpm, PPM);
+    if (adet <= 0) continue;
+    uygun.sort((x, y) => x.k - y.k || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
+    for (let i = 0; i < adet; i++) kume.add((uygun[i] as { id: string }).id);
+  }
+  return kume;
 }

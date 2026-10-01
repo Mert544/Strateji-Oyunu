@@ -7,6 +7,7 @@ import { bolgeIndeksiBul } from "../dugum";
 import { maliyetYeterliMi, maliyetiDus } from "./maliyet";
 import { icerikTablosu } from "./tablo";
 import { hizlandirilmisSure } from "../erkenOyun";
+import { ticaretEmirYuvasiHatasi } from "../mulk/yapi";
 import { tarimTablosu } from "../tarim/tablo";
 import { tesisTuruAcikMi, yontemAcikMi } from "../teknoloji";
 import { oyuncuBul } from "../stok";
@@ -98,7 +99,10 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
     case "ticaret_emri": {
       const b = sahipliBolge(d, ctx, oyuncu, k.bolge);
       if (typeof b === "string") return hata(b);
-      if (!b.etiketler.includes("liman")) return hata(`bolge liman degil: ${k.bolge}`);
+      // Mülk kipi (docs/06 §15): işletme düğümü satışı il merkezindeki NPC (yerel) pazarına yapar; liman şartı aranmaz
+      // (liman primi yalnız limanlı merkezlerde, pazar/fiyat.ts). Bölge kipinde liman şartı değişmez.
+      const yerelPazar = b.merkez !== undefined && ic.mulk !== undefined;
+      if (!yerelPazar && !b.etiketler.includes("liman")) return hata(`bolge liman degil: ${k.bolge}`);
       const mi = ic.malIndeks[k.mal];
       if (mi === undefined) return hata(`bilinmeyen mal: ${k.mal}`);
       if (tb.depolanamaz[mi] === true) return hata(`depolanamaz mal ticarete konu olamaz: ${k.mal}`);
@@ -107,6 +111,11 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
         return hata(`gecersiz oran: ${k.oranSaat} (0..${EN_COK_TICARET_ORANI})`);
       }
       const konum = b.ticaretEmirleri.findIndex((e) => e.mal === mi && e.yon === k.yon);
+      // Mülk kipi: yeni emir, işletmenin emir yuvası (temel + Ticaret ofisi) doluysa reddedilir; var olan emir güncellenir/silinir.
+      if (yerelPazar && konum < 0 && k.oranSaat > 0) {
+        const yuvaHatasi = ticaretEmirYuvasiHatasi(ic, b);
+        if (yuvaHatasi !== null) return hata(yuvaHatasi);
+      }
       if (k.oranSaat === 0) {
         if (konum >= 0) b.ticaretEmirleri.splice(konum, 1);
         return TAMAM;

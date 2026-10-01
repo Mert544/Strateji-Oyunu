@@ -27,6 +27,8 @@ export function veri(): VeriPaketi {
 export function mulkVerisi(): CekirdekVeriPaketi {
   const v: CekirdekVeriPaketi = veri();
   v.parsel = parselFiksturuYukle("mini-6");
+  // Bedava yurt kapalı: testler katılan oyuncunun hücresiz başladığını varsayar.
+  if (v.param.mulk) v.param.mulk.yeniOyuncu.yurtHucre = 0;
   return v;
 }
 

@@ -91,6 +91,29 @@ export interface DerlenmisMulk {
   insaSaati: number[];
   /** Yeni oyuncunun ilk işletme stoğu (mal indeksi -> mili-birim). */
   baslangicStok: number[];
+  /** Ek yapılar (kimliğe göre sıralı; `icerik.json`'da olmayan yapılar, yalnız mülk kipinde). */
+  ekYapilar: DerlenmisEkYapi[];
+  /** Ek yapı kimliği -> `ekYapilar` indeksi. */
+  ekYapiIndeks: Map<string, number>;
+  /** Yeni oyunculara ayrılmış hücreler (ilçe başına hücre kimliği karmasıyla seçilmiş; durum değil, türetilmiş). */
+  ayrilmis: Set<HucreId>;
+  /** Ayrılmış hücrelerin satıldığı süre (ms, katılımdan itibaren). */
+  ayrilmisSureMs: Ms;
+}
+
+/** Derlenmiş ek yapı tanımı (`MulkEkYapiTanimi`; maliyet mal indeksine çevrilmiş, sıralı). */
+export interface DerlenmisEkYapi {
+  id: string;
+  ad: string;
+  yuva: number;
+  insaSaati: number;
+  insaParasi: Mili;
+  insaMaliyeti: [number, Mili][];
+  enFazlaIlBasina: number;
+  depoKapasiteEkiMili: Mili;
+  komisyonIndirimPpm: number;
+  makasIndirimPpm: number;
+  emirYuvasi: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -250,6 +273,19 @@ export interface BolgeDurumu {
    * Harita tanımları (tarım, iklim tipi, liman) merkezden okunur. Harita bölgelerinde ve bölge kipinde TANIMSIZDIR.
    */
   merkez?: number;
+  /**
+   * Mülk kipi: biten ek yapılar (Ambar, Ticaret ofisi...; `mulk.ekYapilar`). İlk yapı bitince oluşur; yalnız işletme
+   * düğümlerinde ve mülk kipinde bulunur, aksi halde TANIMSIZDIR.
+   */
+  ekYapilar?: EkYapiDurumu[];
+}
+
+/** Biten bir ek yapı (mülk kipi): kimlik dünya genelinde benzersizdir ve kapladığı hücrelerin `tesis` alanına yazılır. */
+export interface EkYapiDurumu {
+  id: number;
+  /** `mulk.ekYapilar` kimliği. */
+  tur: string;
+  hucreler: HucreId[];
 }
 
 export interface KenarDurumu {
@@ -430,6 +466,10 @@ export interface InsaatDurumu {
   /** Mülk kipi (S3): ödenen para (mili-para) ve malzeme ([mal, miktar] çiftleri); iptal iadesinin tabanı. */
   odenenPara?: Mili;
   odenenMal?: [number, Mili][];
+  /** Mülk kipi: ek yapı kimliği (`mulk.ekYapilar`); `tur` "tesis" ve `hedef` -1 iken. Tanımlıysa tamamlanınca `EkYapiDurumu` oluşur. */
+  ekYapi?: string;
+  /** Mülk kipi: inşaat ilk-yapı indirimiyle ödendi (iptalde indirim hakkı geri verilir). */
+  indirimli?: true;
 }
 
 export interface UretimPartisi {
@@ -594,7 +634,8 @@ export type Komut =
   | { tur: "anlasma_feshet"; karsi: OyuncuId; anlasma: AnlasmaTuru }
   | { tur: "yaptirim"; hedef: OyuncuId; aktif: boolean }
   // Sistem (oyuncu kaydı; oyuncu kimliği "sistem" ile verilir). Mülk kipinde `bolgeler` boş olmalıdır.
-  | { tur: "oyuncu_katil"; oyuncu: OyuncuId; bolgeler: string[] }
+  // Mülk kipinde `ilce` (isteğe bağlı): bedava yurdun verileceği ilçe; yoksa doluluğu en düşük uygun ilçe seçilir.
+  | { tur: "oyuncu_katil"; oyuncu: OyuncuId; bolgeler: string[]; ilce?: string }
   // Mülk kipi (S3)
   | MulkKomutu;
 
@@ -697,6 +738,8 @@ export interface MulkOyuncuDurumu {
   araziVergisi: Stok;
   /** Son başarılı komutun anı (hareketsizlik merdiveni için; kurallar sonraki iş). */
   sonEtkinlik: Ms;
+  /** İlk-yapı indirimiyle başlatılmış (ve iptal edilmemiş) yapı sayısı; yalnız >0 iken yazılır. */
+  indirimliYapi?: number;
 }
 
 /** Dünyanın mülk durumu. Diziler deterministik sıralıdır. */
@@ -720,4 +763,9 @@ export interface TesisMulkAlanlari {
 export type MulkKomutu =
   | { tur: "parsel_al"; ilce: string; hucreler: HucreId[]; sinif: ArsaSinifi }
   | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[] }
-  | { tur: "insaat_iptal"; insaat: number };
+  | { tur: "insaat_iptal"; insaat: number }
+  // Atomik "yapı önce yerleşim": `hucreler` yapının TÜM hücreleri (kenar-bitişik, yuva sayısınca); oyuncunun olmayan (sahipsiz) hücreler
+  // `sinif` sınıfında satın alınır ve inşaat başlar; herhangi bir denetim başarısızsa hiçbir şey değişmez.
+  | { tur: "yapi_yerlestir"; ilce: string; tesisTuru: string; hucreler: HucreId[]; sinif: ArsaSinifi }
+  // Üzerinde yapı/inşaat olmayan kendi hücrelerini bırakır; hücre bedelinin `parselBirakIadePpm`'i (%70) iade edilir.
+  | { tur: "parsel_birak"; ilce: string; hucreler: HucreId[] };

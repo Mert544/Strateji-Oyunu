@@ -51,6 +51,38 @@ export function hucreEkle(m: MulkDurumu, h: HucreDurumu): void {
   m.hucreler.splice(-i - 1, 0, h);
 }
 
+/** Hücreyi kaldırır (varsa) ve kaldırılıp kaldırılmadığını döndürür. */
+export function hucreSil(m: MulkDurumu, id: string): boolean {
+  const i = sirali(m.hucreler, hucreAnahtari, id);
+  if (i < 0) return false;
+  m.hucreler.splice(i, 1);
+  return true;
+}
+
+/** "x:y" -> [x, y] (biçim denetimsiz; hücre kimlikleri fikstür/komut denetiminden geçmiştir). */
+export function hucreXY(id: string): [number, number] {
+  const i = id.indexOf(":");
+  return [Number(id.slice(0, i)), Number(id.slice(i + 1))];
+}
+
+/** Hücre kümesi kenar-bitişik (4 komşuluk) tek bir bağlı küme mi? Boş küme false. Biçimi geçersiz kimlik bağlı sayılmaz. */
+export function kenarBitisikMi(idler: readonly string[]): boolean {
+  if (idler.length === 0) return false;
+  const kume = new Set(idler);
+  const goruldu = new Set<string>([idler[0] as string]);
+  const kuyruk: string[] = [idler[0] as string];
+  while (kuyruk.length > 0) {
+    const [x, y] = hucreXY(kuyruk.pop() as string);
+    for (const k of [`${x + 1}:${y}`, `${x - 1}:${y}`, `${x}:${y + 1}`, `${x}:${y - 1}`]) {
+      if (kume.has(k) && !goruldu.has(k)) {
+        goruldu.add(k);
+        kuyruk.push(k);
+      }
+    }
+  }
+  return goruldu.size === kume.size;
+}
+
 export function ilceBul(d: Dunya, id: string): IlceDurumu | undefined {
   const m = d.mulk;
   if (m === undefined) return undefined;

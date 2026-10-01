@@ -51,8 +51,16 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
   z.object({ tur: z.literal("parsel_al"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN), sinif: z.enum(["kirsal", "kasaba", "sehir"]) }),
   z.object({ tur: z.literal("tesis_insa_hucre"), ilce: kimlik, tesisTuru: kimlik, hucreler: z.array(kimlik).max(3) }),
   z.object({ tur: z.literal("insaat_iptal"), insaat: tamsayi }),
-  // Sistem (yalnız yönetici kimliğiyle; sunucu "sistem" oyuncusu olarak damgalar; mülk kipinde bolgeler boş)
-  z.object({ tur: z.literal("oyuncu_katil"), oyuncu: kimlik, bolgeler: z.array(kimlik).max(DIZI_EN_UZUN) }),
+  z.object({
+    tur: z.literal("yapi_yerlestir"),
+    ilce: kimlik,
+    tesisTuru: kimlik,
+    hucreler: z.array(kimlik).max(3),
+    sinif: z.enum(["kirsal", "kasaba", "sehir"]),
+  }),
+  z.object({ tur: z.literal("parsel_birak"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN) }),
+  // Sistem (yalnız yönetici kimliğiyle; sunucu "sistem" oyuncusu olarak damgalar; mülk kipinde bolgeler boş; isteğe bağlı `ilce`: bedava yurdun ilçesi)
+  z.object({ tur: z.literal("oyuncu_katil"), oyuncu: kimlik, bolgeler: z.array(kimlik).max(DIZI_EN_UZUN), ilce: kimlik.optional() }),
 ]);
 
 // Derleme zamanı denetimi: şemanın çıkarsanan tipi çekirdek `Komut` ile birebir aynı olmalı.

@@ -6,8 +6,25 @@ import type { ParselFiksturu } from "@bolge/veri";
 import { SISTEM_OYUNCUSU, Simulasyon } from "../src/motor";
 import type { ArsaSinifi, CekirdekVeriPaketi, Komut, KomutSonucu, Ms } from "../src/tipler";
 
-/** mini-6 + mini-6 parsel fikstürü; `parametreler.json`'daki `mulk` bloğu ile mülk kipi açık. */
+/**
+ * mini-6 + mini-6 parsel fikstürü; `parametreler.json`'daki `mulk` bloğu ile mülk kipi açık. YENİ OYUNCU PAKETİ KAPALIDIR
+ * (bedava yurt, ilk yapı indirimi, ayrılmış hücre = 0): hücreleri ve maliyetleri elle seçen eski testlerin varsayımları
+ * korunur. Paketin kendisi için `mulkVeriTam` kullanılır (kalkan 14 gün her iki durumda geçerlidir).
+ */
 export function mulkVeri(duzenle?: (v: CekirdekVeriPaketi) => void): CekirdekVeriPaketi {
+  const v = mulkVeriTam((x) => {
+    const yo = (x.param.mulk as NonNullable<typeof x.param.mulk>).yeniOyuncu;
+    yo.yurtHucre = 0;
+    yo.ilkYapiIndirimPpm = 0;
+    yo.indirimliYapiSayisi = 0;
+    yo.ayrilmisHucrePpm = 0;
+  });
+  duzenle?.(v);
+  return v;
+}
+
+/** `mulkVeri` ile aynı, ama `parametreler.json`'daki yeni oyuncu paketi (yurt, indirim, ayrılmış hücre) açık. */
+export function mulkVeriTam(duzenle?: (v: CekirdekVeriPaketi) => void): CekirdekVeriPaketi {
   const v: CekirdekVeriPaketi = { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") };
   duzenle?.(v);
   return v;
@@ -20,6 +37,38 @@ export function hucreSec(f: ParselFiksturu, ilce: string, sinif: ArsaSinifi, ade
   const l = c.hucreler.filter((h) => h.sinif === sinif && h.uygun === uygun).map((h) => h.id);
   if (l.length < atla + adet) throw new Error(`ilcede yeterli ${sinif} hucre yok: ${ilce}`);
   return l.slice(atla, atla + adet);
+}
+
+/**
+ * Yapı yerleşimi için kenar-bitişik grup: ilçenin `sinif` sınıfındaki uygun hücrelerinden, yatayda ardışık `adet` hücrelik, birbirine
+ * ayrık grupların `kume`. (0'dan) sayılanı (fikstür sırasıyla). Yol hücreleri aralarda boşluk bıraktığı için `hucreSec` dilimleri
+ * bitişik olmayabilir; `tesis_insa_hucre` / `yapi_yerlestir` kenar-bitişik küme ister.
+ */
+export function bitisikGrup(f: ParselFiksturu, ilce: string, sinif: ArsaSinifi, adet: number, kume = 0): string[] {
+  const c = f.ilceler.find((x) => x.id === ilce);
+  if (!c) throw new Error(`fiksturde ilce yok: ${ilce}`);
+  const uygun = new Set(c.hucreler.filter((h) => h.uygun && h.sinif === sinif).map((h) => h.id));
+  const kullanildi = new Set<string>();
+  let sayac = 0;
+  for (const h of c.hucreler) {
+    if (!uygun.has(h.id) || kullanildi.has(h.id)) continue;
+    const [x, y] = h.id.split(":").map(Number) as [number, number];
+    const grup = Array.from({ length: adet }, (_, i) => `${x + i}:${y}`);
+    if (!grup.every((g) => uygun.has(g) && !kullanildi.has(g))) continue;
+    for (const g of grup) kullanildi.add(g);
+    if (sayac++ === kume) return grup;
+  }
+  throw new Error(`ilcede yeterli bitisik ${sinif} grup yok: ${ilce}`);
+}
+
+/** Kimlik listesinden kenar-bitişik (4 komşuluk) ilk çift; yoksa hata. */
+export function bitisikCift(idler: readonly string[], atla: readonly string[] = []): [string, string] {
+  const kume = new Set(idler.filter((i) => !atla.includes(i)));
+  for (const id of [...kume].sort()) {
+    const [x, y] = id.split(":").map(Number) as [number, number];
+    for (const k of [`${x + 1}:${y}`, `${x}:${y + 1}`, `${x - 1}:${y}`, `${x}:${y - 1}`]) if (kume.has(k)) return [id, k].sort() as [string, string];
+  }
+  throw new Error("kenar-bitisik cift yok");
 }
 
 /**

@@ -2,6 +2,9 @@
 export { mulkKomutu, parselFiyati } from "./komut";
 export { isletmeAl } from "./isletme";
 export { araziVergisiOranAyarla, araziVergisiSaat } from "./vergi";
+export { yurtPlanla, yurtUygula } from "./yurt";
+export type { YurtPlani } from "./yurt";
+export { ekYapiSayisi, ekYapiToplami, ticaretEmirYuvasi, ticaretIndirimi } from "./yapi";
 export { INSAAT_ASAMALARI, insaatAsamasi } from "./insaat";
 export type { InsaatAsamasi } from "./insaat";
 export {

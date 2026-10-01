@@ -12,7 +12,7 @@ export { durumOzeti } from "./ozet";
 export { SISTEM_OYUNCUSU } from "./motor";
 export type { KurtarmaSecenegi } from "./motor";
 export { BaglamUygulamasi } from "./baglam";
-export { icerikDerle } from "./derle";
+export { icerikDerle, hucreKarmasi } from "./derle";
 export { dunyaKur } from "./kurulum";
 export {
   stokUzlastir,
@@ -110,8 +110,12 @@ export {
   isletmeBul,
   isletmeKimligi,
   mulkOyuncuBul,
+  yurtPlanla,
+  ekYapiSayisi,
+  ticaretEmirYuvasi,
+  ticaretIndirimi,
 } from "./mulk";
-export type { InsaatAsamasi } from "./mulk";
+export type { InsaatAsamasi, YurtPlani } from "./mulk";
 export { bolgeIndeksiBul, haritaIndeksi, komsuKenarlariBul } from "./dugum";
 export { kuyrukSuz } from "./kuyruk";
 export { eskimisEsikleriBuda } from "./stok";

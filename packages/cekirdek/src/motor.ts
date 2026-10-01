@@ -17,6 +17,8 @@ import { politikaKomutu } from "./politika";
 import { sanayiKomutu, sondajBitti } from "./sanayi";
 import { iklimGunluk, tarimKomutu } from "./tarim";
 import { mulkKomutu, mulkOyuncuAl, mulkOyuncuBul } from "./mulk";
+import { yurtPlanla, yurtUygula } from "./mulk/yurt";
+import type { YurtPlani } from "./mulk/yurt";
 import { eskimisEsikleriBuda, oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
 import { arastirmaBitti, teknolojiKomutu } from "./teknoloji";
 import { GUN, SAAT } from "./tipler";
@@ -211,6 +213,8 @@ export class Simulasyon {
         return politikaKomutu(d, ctx, oyuncu, komut);
       case "parsel_al":
       case "tesis_insa_hucre":
+      case "yapi_yerlestir":
+      case "parsel_birak":
       case "insaat_iptal":
         return mulkKomutu(d, ctx, oyuncu, komut);
       case "oyuncu_katil":
@@ -224,7 +228,8 @@ export class Simulasyon {
 
   /**
    * oyuncu_katil: oyuncu yoksa oluşturur (hazine, vergi, koruma, başlangıç birlikleri), listelenen sahipsiz
-   * bölgeleri atar. Sahipli veya bilinmeyen bölge, tekrarlanan bölge, geçersiz kimlik hata verir (atomik:
+   * bölgeleri atar. Mülk kipinde bölge atanmaz; hazine = hibe, koruma = `kalkanGun` ve `yurtHucre` > 0 ise bedava yurt verilir
+   * (`mulk/yurt.ts`; isteğe bağlı `ilce`). Sahipli veya bilinmeyen bölge, tekrarlanan bölge, geçersiz kimlik hata verir (atomik:
    * hata varsa hiçbir değişiklik yapılmaz). Mevcut oyuncuya ek bölge verilebilir (başlangıç birlikleri
    * yalnızca yeni oyuncuya ve listenin ilk bölgesine eklenir).
    */
@@ -236,10 +241,19 @@ export class Simulasyon {
     if (!Array.isArray(komut.bolgeler)) return hata("bolgeler bir dizi olmali");
     // Mülk kipi (S3): bölge sahipliği yoktur (merkezler kamudur); oyuncu bölgesiz katılır, hazinesi hibedir.
     const mulk = ic.mulk !== undefined && d.mulk !== undefined;
+    // Bedava yurt (H6): `mulk.yeniOyuncu.yurtHucre`; ilçe `komut.ilce` ya da doluluğu en düşük ilçe. Plan, dünya değişmeden
+    // önce yapılır (atomik: yurt istenen ilçede verilemiyorsa katılım reddedilir).
+    let yurt: YurtPlani | null = null;
     if (mulk) {
       if (komut.bolgeler.length > 0) return hata("mulk kipinde bolge sahipligi yok: bolgeler bos olmali");
       if (id.includes("#")) return hata(`gecersiz oyuncu kimligi ('#' iceremez): ${id}`);
       if (oyuncuBul(d, id) !== undefined) return hata(`oyuncu zaten katilmis: ${id}`);
+      if (komut.ilce !== undefined && typeof komut.ilce !== "string") return hata(`gecersiz ilce: ${String(komut.ilce)}`);
+      const plan = yurtPlanla(d, ic, komut.ilce);
+      if (typeof plan === "string") return hata(plan);
+      yurt = plan;
+    } else if (komut.ilce !== undefined) {
+      return hata("ilce yalnizca mulk kipinde verilebilir");
     }
 
     const bolgeIndeksleri: number[] = [];
@@ -278,7 +292,8 @@ export class Simulasyon {
         arastirma: null,
         askeriRezervPpm: 0,
         katilmaZamani: d.zaman,
-        korumaBitis: d.zaman + ic.param.askeri.yeniOyuncuKorumasiGun * GUN,
+        // Yeni oyuncu kalkanı: mülk kipinde `mulk.yeniOyuncu.kalkanGun` (14), bölge kipinde `askeri.yeniOyuncuKorumasiGun` (7).
+        korumaBitis: d.zaman + (mulk ? (ic.mulk as NonNullable<typeof ic.mulk>).p.yeniOyuncu.kalkanGun : ic.param.askeri.yeniOyuncuKorumasiGun) * GUN,
         kararlar: [],
       };
       // Sanayi (B2): bakım düzeyi yalnız sanayi açıkken tutulur (normal = 1); kapalıyken alan yazılmaz (özet değişmez).
@@ -293,7 +308,10 @@ export class Simulasyon {
       if (konum < 0) konum = d.oyuncular.length;
       d.oyuncular.splice(konum, 0, yeniOyuncu);
       oyuncu = yeniOyuncu;
-      if (mulk) mulkOyuncuAl(d.mulk as NonNullable<Dunya["mulk"]>, id, d.zaman);
+      if (mulk) {
+        mulkOyuncuAl(d.mulk as NonNullable<Dunya["mulk"]>, id, d.zaman);
+        if (yurt !== null) yurtUygula(d, this.baglam, id, yurt);
+      }
     }
 
     for (const bi of bolgeIndeksleri) (d.bolgeler[bi] as { sahip: OyuncuId | null }).sahip = id;

@@ -15,4 +15,4 @@ export const GIZLI_KOMUTLAR: readonly KomutTuru[] = ["oyuncu_katil", "kenar_geli
  *   - `parsel_al`: L3 arsa ızgarasında seçim + "Satın al" (S8);
  *   - `tesis_insa_hucre`, `insaat_iptal`: inşa modu (sonraki sprint) — yine haritadan.
  */
-export const HARITA_KOMUTLARI: readonly KomutTuru[] = ["parsel_al", "tesis_insa_hucre", "insaat_iptal"];
+export const HARITA_KOMUTLARI: readonly KomutTuru[] = ["parsel_al", "tesis_insa_hucre", "insaat_iptal", "yapi_yerlestir", "parsel_birak"];

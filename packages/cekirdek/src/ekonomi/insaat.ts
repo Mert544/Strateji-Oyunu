@@ -3,6 +3,7 @@
  */
 import { icerikTablosu } from "./tablo";
 import { hucreBul } from "../mulk/durum";
+import { ekYapiTamamla } from "../mulk/yapi";
 import { ppmUygula } from "../sabit";
 import type { Baglam, Dunya, KenarDurumu, TesisDurumu } from "../tipler";
 
@@ -13,7 +14,10 @@ export function insaatBitti(d: Dunya, ctx: Baglam, insaatId: number): void {
   const insaat = d.insaatlar[konum]!;
   d.insaatlar.splice(konum, 1);
 
-  if (insaat.tur === "tesis") {
+  if (insaat.tur === "tesis" && insaat.ekYapi !== undefined) {
+    // Mülk kipi: ek yapı (Ambar, Ticaret ofisi...; tesis türü değildir).
+    ekYapiTamamla(d, ctx, insaat);
+  } else if (insaat.tur === "tesis") {
     const tb = icerikTablosu(ctx.ic);
     const bolge = d.bolgeler[insaat.bolge];
     const tur = tb.tur[insaat.hedef];

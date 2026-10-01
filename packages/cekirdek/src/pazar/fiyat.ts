@@ -14,7 +14,8 @@
 import { pazarCarpanlari } from "../politika";
 import { carpBol } from "../sabit";
 import { PPM } from "../tipler";
-import type { Baglam, Dunya, OyuncuDurumu, TicaretKalemleri } from "../tipler";
+import { hedefeYaklastir, ticaretIndirimi } from "../mulk/yapi";
+import type { Baglam, BolgeDurumu, Dunya, OyuncuDurumu, TicaretKalemleri } from "../tipler";
 import { pazarTablosu } from "./tablo";
 
 /** Bir (oyuncu, liman) için tüm ticaret çarpanları (ppm). */
@@ -51,9 +52,29 @@ export function ticaretKorumasindaMi(d: Dunya, o: OyuncuDurumu): boolean {
 
 /**
  * Oyuncunun bu limandaki ticaret çarpanları. Pazar v1 kapalıysa yalnız eski makas çarpanları (prim/komisyon/tarife 0).
- * `liman`: bölge indeksi (liman primi için).
+ * `liman`: bölge indeksi (liman primi için; mülk kipinde işletme düğümünün merkezi).
+ *
+ * `dugum` verilirse ve bir mülk kipi işletme düğümüyse (`merkez` tanımlı): (1) liman primi yalnız düğümün merkezi `liman`
+ * etiketliyse uygulanır (limansız ilde yerel NPC pazarına satış primsizdir); (2) düğümdeki Ticaret ofisi yapıları komisyonu
+ * ve makası azaltır (`mulk/yapi.ts`). `dugum` yoksa ya da bölge kipindeyse sonuç değişmez.
  */
-export function ticaretCarpanlari(d: Dunya, ctx: Baglam, o: OyuncuDurumu, liman: number): TicaretCarpanlari {
+export function ticaretCarpanlari(d: Dunya, ctx: Baglam, o: OyuncuDurumu, liman: number, dugum?: BolgeDurumu): TicaretCarpanlari {
+  const c = temelTicaretCarpanlari(d, ctx, o, liman);
+  if (dugum === undefined || dugum.merkez === undefined || ctx.ic.mulk === undefined) return c;
+  const ind = ticaretIndirimi(ctx.ic, dugum);
+  const limanli = dugum.etiketler.includes("liman");
+  if (limanli && ind.komisyonIndirimPpm === 0 && ind.makasIndirimPpm === 0) return c;
+  return {
+    ithalatMakasPpm: hedefeYaklastir(c.ithalatMakasPpm, PPM, ind.makasIndirimPpm),
+    ihracatMakasPpm: hedefeYaklastir(c.ihracatMakasPpm, PPM, ind.makasIndirimPpm),
+    primPpm: limanli ? c.primPpm : 0,
+    komisyonPpm: c.komisyonPpm - carpBol(c.komisyonPpm, ind.komisyonIndirimPpm, PPM),
+    tarifePpm: c.tarifePpm,
+    ihracatVergisiPpm: c.ihracatVergisiPpm,
+  };
+}
+
+function temelTicaretCarpanlari(d: Dunya, ctx: Baglam, o: OyuncuDurumu, liman: number): TicaretCarpanlari {
   const m = pazarCarpanlari(d, ctx, o.id);
   const pz = pazarTablosu(ctx.ic);
   if (pz === null) {
@@ -99,8 +120,9 @@ export function ticaretNakitCarpanlari(
   ctx: Baglam,
   o: OyuncuDurumu,
   liman: number,
+  dugum?: BolgeDurumu,
 ): { ithalatPpm: number; ihracatPpm: number; etiketIthalatPpm: number; etiketIhracatPpm: number } {
-  const c = ticaretCarpanlari(d, ctx, o, liman);
+  const c = ticaretCarpanlari(d, ctx, o, liman, dugum);
   // PPM'lik referans değer üzerinden kırılım: sonuç doğrudan ppm çarpanıdır.
   const ith = ithalatKirilimi(PPM, c);
   const ihr = ihracatKirilimi(PPM, c);

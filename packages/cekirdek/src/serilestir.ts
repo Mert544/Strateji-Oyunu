@@ -308,6 +308,16 @@ export function dunyaDogrula(deger: unknown): Dunya {
     });
     alanlar(nesne(b.savunma, `${y}.savunma`), `${y}.savunma`, ["durus"]);
     if (b.merkez !== undefined) indeks(b.merkez, `${y}.merkez`, n);
+    if (b.ekYapilar !== undefined) {
+      if (b.merkez === undefined) hata(`${y}.ekYapilar`, "ek yapi yalniz isletme dugumunde olabilir");
+      dizi(b.ekYapilar, `${y}.ekYapilar`).forEach((e, j) => {
+        const ey = `${y}.ekYapilar[${j}]`;
+        const ek = nesne(e, ey);
+        tamsayi(ek.id, `${ey}.id`, 0);
+        dize(ek.tur, `${ey}.tur`);
+        dizi(ek.hucreler, `${ey}.hucreler`).forEach((h, k) => dize(h, `${ey}.hucreler[${k}]`));
+      });
+    }
   }
   // Mülk kipi (S3): işletme düğümünün merkezi harita bölgesi olmalı (merkezin kendi merkezi olmaz).
   for (let i = 0; i < n; i++) {
@@ -355,6 +365,8 @@ export function dunyaDogrula(deger: unknown): Dunya {
     const s = nesne(v, `$.insaatlar[${i}]`);
     alanlar(s, `$.insaatlar[${i}]`, ["id", "tur", "sahip", "bolge", "hedef", "bitis"]);
     indeks(s.bolge, `$.insaatlar[${i}].bolge`, n);
+    if (s.ekYapi !== undefined) dize(s.ekYapi, `$.insaatlar[${i}].ekYapi`);
+    if (s.indirimli !== undefined && s.indirimli !== true) hata(`$.insaatlar[${i}].indirimli`, "true ya da tanimsiz olmali");
   });
   dizi(d.partiler, "$.partiler").forEach((v, i) => {
     const s = nesne(v, `$.partiler[${i}]`);
@@ -478,6 +490,7 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
     tamsayi(o.araziDegeriMili, `${y}.araziDegeriMili`, 0);
     stokDogrula(o.araziVergisi, `${y}.araziVergisi`);
     tamsayi(o.sonEtkinlik, `${y}.sonEtkinlik`);
+    if (o.indirimliYapi !== undefined) tamsayi(o.indirimliYapi, `${y}.indirimliYapi`, 1);
     kesinArtan(dizi(o.ilceHucre, `${y}.ilceHucre`), `${y}.ilceHucre`, (k, ky) => {
       tamsayi(k.hucre, `${ky}.hucre`, 1);
       return dize(k.ilce, `${ky}.ilce`);
@@ -527,6 +540,9 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     }
     if (b.stoklar.length !== ic.mallar.length) hata(`${y}.stoklar`, `mal sayisi ${b.stoklar.length}, icerikte ${ic.mallar.length}`);
     if (b.birlikler.length !== ic.birlikler.length) hata(`${y}.birlikler`, `birlik sayisi ${b.birlikler.length}, icerikte ${ic.birlikler.length}`);
+    for (const [j, e] of (b.ekYapilar ?? []).entries()) {
+      if (ic.mulk?.ekYapiIndeks.has(e.tur) !== true) hata(`${y}.ekYapilar[${j}].tur`, `icerikte olmayan ek yapi: ${e.tur}`);
+    }
     b.tesisler.forEach((t, j) => {
       indeks(t.tur, `${y}.tesisler[${j}].tur`, ic.tesisTurleri.length);
       indeks(t.yontem, `${y}.tesisler[${j}].yontem`, ic.yontemler.length);

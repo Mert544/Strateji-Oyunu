@@ -10,7 +10,7 @@ import { insaatAsamasi, isletmeBul, mulkOyuncuBul, parselFiyati } from "../src/m
 import { anlikHazine, anlikMiktar } from "../src/stok";
 import { GUN, PPM, SAAT } from "../src/tipler";
 import type { BolgeDurumu, CekirdekVeriPaketi, Komut } from "../src/tipler";
-import { hucreSec, ikinciIlEkle, mulkSim, mulkVeri, tamam, ver } from "./mulk-yardimci";
+import { bitisikGrup, hucreSec, ikinciIlEkle, mulkSim, mulkVeri, tamam, ver } from "./mulk-yardimci";
 
 const F = parselFiksturuYukle("mini-6");
 const OVA = "sn_m_ova_merkez";
@@ -202,25 +202,30 @@ describe("işletme düğümü", () => {
   });
 });
 
+// Yapılar kenar-bitişik hücre ister: yol hücreleri `hucreSec` dilimlerinde boşluk bırakır, bu yüzden bitişik çiftler kullanılır.
+const GRUPLAR_A = [0, 1, 2, 3].flatMap((k) => bitisikGrup(F, OVA, "kirsal", 2, k)); // a: 4 çift (8 hücre)
+const GRUP_B = bitisikGrup(F, OVA, "kirsal", 2, 4); // b: 1 çift
+
 describe("hücreli inşaat: aşamalar, sınırlar, tamamlanma ve iptal iadesi", () => {
   function hazir() {
     const s = mulkSim(["a", "b"]);
-    tamam(s, "a", al(OVA, hucreSec(F, OVA, "kirsal", 8)));
-    tamam(s, "b", al(OVA, hucreSec(F, OVA, "kirsal", 2, 8)));
+    tamam(s, "a", al(OVA, GRUPLAR_A));
+    tamam(s, "b", al(OVA, GRUP_B));
     return s;
   }
 
   it("yuva, sahiplik, ilçe ve boşluk denetimleri; eşzamanlı en çok 2 inşaat", () => {
     const s = hazir();
-    const h = hucreSec(F, OVA, "kirsal", 8);
+    const h = GRUPLAR_A;
     const insa = (hucreler: string[], tesisTuru = "ciftlik"): Komut => ({ tur: "tesis_insa_hucre", ilce: OVA, tesisTuru, hucreler });
     expect(ver(s, "a", insa(h.slice(0, 1))).tamam).toBe(false); // çiftlik 2 yuva
     expect(ver(s, "a", insa(h.slice(0, 3))).tamam).toBe(false);
-    expect(ver(s, "a", insa(hucreSec(F, OVA, "kirsal", 2, 8))).tamam).toBe(false); // b'nin hücreleri
+    expect(ver(s, "a", insa(GRUP_B)).tamam).toBe(false); // b'nin hücreleri
     expect(ver(s, "a", insa(h.slice(0, 1), "rafineri")).tamam).toBe(false); // mülkte yapılamaz
     expect(ver(s, "a", { tur: "tesis_insa", bolge: `${OVA_IL}#a`, tesisTuru: "ciftlik" }).tamam).toBe(false); // eski komut
     tamam(s, "a", insa(h.slice(0, 2)));
-    expect(ver(s, "a", insa([h[1] as string, h[2] as string])).tamam).toBe(false); // dolu hücre
+    expect(ver(s, "a", insa(h.slice(0, 2))).tamam).toBe(false); // dolu hücre
+    expect(ver(s, "a", insa([h[1] as string, h[4] as string])).tamam).toBe(false); // bitişik olmayan hücreler
     tamam(s, "a", insa(h.slice(2, 4)));
     expect(ver(s, "a", insa(h.slice(4, 6))).tamam).toBe(false); // 3. eşzamanlı
     const ins = s.dunya.insaatlar.filter((i) => i.sahip === "a");
@@ -316,10 +321,10 @@ describe("işletme düğümü merkeze bağlanır, üretim pazara ulaşır", () =
     const v = mulkVeri((x) => (x.param.mulk!.yeniOyuncu.hibe = 500_000_000));
     const s = mulkSim(["a"], v);
     const d = s.dunya;
-    tamam(s, "a", al(OVA, hucreSec(F, OVA, "kirsal", 4)));
+    tamam(s, "a", al(OVA, [0, 1].flatMap((k) => bitisikGrup(F, OVA, "kirsal", 2, k))));
     tamam(s, "a", al(LIMAN, hucreSec(F, LIMAN, "kirsal", 1)));
-    tamam(s, "a", { tur: "tesis_insa_hucre", ilce: OVA, tesisTuru: "ciftlik", hucreler: hucreSec(F, OVA, "kirsal", 2) });
-    tamam(s, "a", { tur: "tesis_insa_hucre", ilce: OVA, tesisTuru: "ciftlik", hucreler: hucreSec(F, OVA, "kirsal", 2, 2) });
+    tamam(s, "a", { tur: "tesis_insa_hucre", ilce: OVA, tesisTuru: "ciftlik", hucreler: bitisikGrup(F, OVA, "kirsal", 2, 0) });
+    tamam(s, "a", { tur: "tesis_insa_hucre", ilce: OVA, tesisTuru: "ciftlik", hucreler: bitisikGrup(F, OVA, "kirsal", 2, 1) });
     const tahil = s.ic.malIndeks["tahil"] as number;
     tamam(s, "a", { tur: "ticaret_emri", bolge: `${LIMAN_IL}#a`, mal: "tahil", yon: "ihracat", oranSaat: 100_000 });
     s.calistirKadar(4 * GUN);

@@ -533,6 +533,27 @@ export interface Parametreler {
   mulk?: MulkParametreleri;
 }
 
+/** Ek yapı tanımı (mülk kipi). Para mili-para, malzeme mili-birim, oranlar ppm. Etki alanları yoksa yapı etkisizdir (yer tutucu). */
+export interface MulkEkYapiTanimi {
+  ad: string;
+  /** Kapladığı hücre sayısı (1..3). */
+  yuva: number;
+  /** İnşa süresi (saat; erken oyun çarpanı uygulanır). */
+  insaSaati: number;
+  /** İnşa bedeli: para (mili-para) ve malzeme (stoktan düşer). */
+  insaParasi: number;
+  insaMaliyeti: Record<MalId, number>;
+  /** İşletme (oyuncu, il) başına en çok bu kadar (biten + süren); yoksa sınırsız. */
+  enFazlaIlBasina?: number;
+  /** Ambar: biten her yapı, işletmenin her depolanabilir malının stok kapasitesine bu kadar (mili-birim) ekler. */
+  depoKapasiteEkiMili?: number;
+  /** Ticaret ofisi: işlem komisyonunu (ppm, göreli) ve pazar makasını (ppm; makasın PPM'e doğru kapanan payı) azaltır; toplamlar PPM ile sınırlı. */
+  komisyonIndirimPpm?: number;
+  makasIndirimPpm?: number;
+  /** Ticaret ofisi: işletmenin ticaret emri yuvasına eklenir (`temelEmirYuvasi` ile birlikte). */
+  emirYuvasi?: number;
+}
+
 /** Mülk kipi parametreleri (S3). Para alanları mili-para (1 ₺ = 1000), oranlar ppm. */
 export interface MulkParametreleri {
   /** Hücre başına taban fiyat (mili-para), arsa sınıfına göre. */
@@ -547,6 +568,8 @@ export interface MulkParametreleri {
   araziVergisiHaftalikPpm: number;
   /** İnşaat iptalinde ödenen para ve malzemenin iade payı (ppm). */
   insaatIptalIadePpm: number;
+  /** `parsel_birak` iadesi: bırakılan hücrelerin satın alma bedelinin payı (ppm). Yoksa 700 000 (%70). */
+  parselBirakIadePpm?: number;
   /** Oyuncu başına aynı anda süren en çok hücreli inşaat. */
   esZamanliInsaat: number;
   /** Tesis türü -> kapladığı hücre sayısı (yuva, 1..3). Listede olmayan tür mülk kipinde inşa edilemez. */
@@ -559,16 +582,32 @@ export interface MulkParametreleri {
     hibe: number;
     /** İlk işletme düğümünün başlangıç stoğu (mal -> mili-birim; başlangıç kiti, kalibre edilmedi). */
     baslangicStok: Record<MalId, number>;
-    /** Bedava yurt hücresi sayısı (henüz uygulanmıyor). */
+    /**
+     * Bedava yurt hücresi sayısı: ilk katılımda (`oyuncu_katil`) doluluğu en düşük ilçede (ya da komutta verilen ilçede)
+     * komşu boş uygun hücrelerden ücretsiz verilir; 0 = yurt yok.
+     */
     yurtHucre: number;
-    /** İlk yapılarda inşa indirimi (ppm) ve kaç yapıda (henüz uygulanmıyor). */
+    /** İlk yapılarda inşa indirimi (ppm; hem para hem malzeme) ve kaç yapıda (`tesis_insa_hucre`, ek yapılar dahil). */
     ilkYapiIndirimPpm: number;
     indirimliYapiSayisi: number;
-    /** İlçede yeni oyunculara ayrılmış hücre payı (ppm; henüz uygulanmıyor). */
+    /**
+     * Her ilçenin uygun hücrelerinin bu kadarı (ppm; aşağı yuvarlanır) yalnız katılımının ilk `ayrilmisGun` gününde olan
+     * oyunculara satılır (hücre kimliği karmasıyla deterministik seçilir).
+     */
     ayrilmisHucrePpm: number;
-    /** Yeni oyuncu kalkanı (gün; henüz uygulanmıyor). */
+    /** Ayrılmış hücrelerin satın alınabildiği süre (gün, katılımdan itibaren). Yoksa 14. */
+    ayrilmisGun?: number;
+    /** Yeni oyuncu kalkanı (gün): mülk kipinde `korumaBitis` bu değerden okunur (bölge kipi `askeri.yeniOyuncuKorumasiGun`). */
     kalkanGun: number;
   };
+  /**
+   * Ek yapılar (docs/11 §7.3; `icerik.json`'da tesis türü OLMAYAN yapılar: Ambar, Ticaret ofisi, Muhtarlık, Konut, Garaj,
+   * Atölye-Lab). Yalnız mülk kipinde `tesis_insa_hucre {tesisTuru: <kimlik>}` ile inşa edilir; bölge kipinde ve içerikte yoktur
+   * (bu yüzden bölge kipinin durum özeti etkilenmez). Kimlikler tesis türü kimliklerinden farklı olmalıdır.
+   */
+  ekYapilar?: Record<string, MulkEkYapiTanimi>;
+  /** İşletme (oyuncu, il) başına temel ticaret emri yuvası; Ticaret ofisi `emirYuvasi` ekler. Yoksa emir sayısı sınırsızdır. */
+  temelEmirYuvasi?: number;
   /** Hareketsizlik merdiveni (docs/11 §7.8): yalnız veri yeri; kurallar sonraki iş. */
   hareketsizlik: {
     uykuGun: number;

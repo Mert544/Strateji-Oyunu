@@ -179,6 +179,7 @@
     "ilcePayTavaniPpm": 250000,
     "araziVergisiHaftalikPpm": 10000,
     "insaatIptalIadePpm": 500000,
+    "parselBirakIadePpm": 700000,
     "esZamanliInsaat": 2,
     "yapiYuva": {
       "ciftlik": 2, "ahir": 2, "mera": 3, "sulama_kanali": 1, "gida_fabrikasi": 2,
@@ -199,7 +200,35 @@
       "ilkYapiIndirimPpm": 300000,
       "indirimliYapiSayisi": 5,
       "ayrilmisHucrePpm": 200000,
+      "ayrilmisGun": 14,
       "kalkanGun": 14
+    },
+    "temelEmirYuvasi": 4,
+    "ekYapilar": {
+      "ambar": {
+        "ad": "Ambar", "yuva": 1, "insaSaati": 3, "insaParasi": 3000000, "insaMaliyeti": { "celik": 15000, "parca": 5000 },
+        "enFazlaIlBasina": 4, "depoKapasiteEkiMili": 5000000
+      },
+      "ticaret_ofisi": {
+        "ad": "Ticaret ofisi", "yuva": 1, "insaSaati": 2, "insaParasi": 5000000, "insaMaliyeti": { "celik": 10000, "parca": 5000 },
+        "enFazlaIlBasina": 2, "komisyonIndirimPpm": 250000, "makasIndirimPpm": 150000, "emirYuvasi": 4
+      },
+      "muhtarlik": {
+        "ad": "Muhtarlık", "yuva": 1, "insaSaati": 8, "insaParasi": 8000000, "insaMaliyeti": { "celik": 30000, "parca": 10000 },
+        "enFazlaIlBasina": 1
+      },
+      "konut": {
+        "ad": "Konut", "yuva": 1, "insaSaati": 2, "insaParasi": 3000000, "insaMaliyeti": { "celik": 10000, "parca": 3000 },
+        "enFazlaIlBasina": 4
+      },
+      "garaj": {
+        "ad": "Garaj", "yuva": 1, "insaSaati": 3, "insaParasi": 4000000, "insaMaliyeti": { "celik": 20000, "parca": 8000 },
+        "enFazlaIlBasina": 2
+      },
+      "atolye_lab": {
+        "ad": "Atölye-Lab", "yuva": 1, "insaSaati": 6, "insaParasi": 8000000, "insaMaliyeti": { "celik": 30000, "parca": 15000 },
+        "enFazlaIlBasina": 1
+      }
     },
     "hareketsizlik": { "uykuGun": 14, "curumeGun": 45, "curumePpmGun": 20000, "acikArtirmaGun": 90, "tatilGunYillik": 30 }
   }
