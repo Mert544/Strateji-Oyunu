@@ -1,41 +1,15 @@
 /**
- * Yeniden oynatma doğruluğu (F1): sunucu YALNIZ başarılı komutları günlüğe yazar. Başarılı + başarısız karışık
- * komutlarla (4 bot + bulanık komutlar) koşulan dünyanın son özeti, yalnız başarılı komutların `yenidenOynat` +
- * aynı `calistirKadar(son t)` sonucuyla birebir aynı olmalıdır. Ayrıca başarısız komut ANINDA da özet değişmemelidir
- * (başarısız komut yalnız zamanı ilerletir; durum temsiline dokunmaz).
+ * Başarısız komut yan etkisizdir (F1): başarısız komut ANINDA da özet değişmemelidir (başarısız komut yalnız zamanı ilerletir;
+ * durum temsiline dokunmaz). (Eski `serilestir-yeniden-oynatma.test.ts`'in ikinci betimlemesi; birinci betimleme
+ * `serilestir-yeniden-oynatma-{sentetik,gercek}.test.ts` dosyalarındadır.)
  */
 import { gercekVeriyiYukle, varsayilanVeriyiYukle } from "@bolge/veri";
-import type { VeriPaketi } from "@bolge/veri";
 import { describe, expect, it } from "vitest";
 import { Simulasyon } from "../src/motor";
 import { anlikHazine, hazineEkle, oyuncuBul } from "../src/stok";
 import { GUN, SAAT } from "../src/tipler";
 import { kucukVeri } from "./fikstur";
 import { senaryoKos } from "./serilestir-yardimci";
-
-const HARITALAR: [string, () => VeriPaketi][] = [
-  ["sentetik-50", varsayilanVeriyiYukle],
-  ["gercek harita", gercekVeriyiYukle],
-];
-
-describe("yeniden oynatma: yalniz basarili komutlar", () => {
-  for (const [ad, yukle] of HARITALAR) {
-    it(`${ad}, 4 bot + bulanik komutlar, 10 gun: son ozet = yenidenOynat(basarililar) ozeti`, () => {
-      const sure = 10 * GUN;
-      const sonuc = senaryoKos({ veri: yukle(), tohum: 1, sureMs: sure });
-      // Karışık olmalı: hem başarılı hem başarısız komut var
-      expect(sonuc.basarili).toBeGreaterThan(100);
-      expect(sonuc.basarisiz).toBeGreaterThan(50);
-      const basarililar = sonuc.adimlar.filter((a) => a.tamam).map((a) => a.k);
-      expect(sonuc.sim.gunluk).toEqual(basarililar);
-
-      const r = Simulasyon.yenidenOynat(yukle(), 1, basarililar);
-      r.calistirKadar(sure);
-      expect(r.dunya.zaman).toBe(sonuc.sim.dunya.zaman);
-      expect(r.durumOzeti()).toBe(sonuc.sim.durumOzeti());
-    }, 180_000);
-  }
-});
 
 describe("basarisiz komut yan etkisizdir (ara ozet de esit)", () => {
   // Pahalı (komut başına iki tam özet): kısa koşu, yoğun bulanık komut.
