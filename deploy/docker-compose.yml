@@ -49,6 +49,9 @@ services:
       # baglantisi icerir: erisimi kisitli tutun, isi bitince silin). 'konsol' uretimde yasak.
       BOLGE_POSTA: dosya
       BOLGE_POSTA_DIZIN: /veri/posta
+      # Insan testi: oyun baglantisi oturum olay kaydi (yalniz zaman ve opak oyuncu kimligi; KVKK KIMLIK.md §8). 1 = acik. Test oturumlari
+      # ayri dunyada (BOLGE_DUNYA=test_<ad>) yapilir ve bitince `--test-dunya-sil` ile silinir (README kontrol listesi adim 13).
+      BOLGE_OTURUM_KAYDI: ${OTURUM_KAYDI:-0}
       # Davetli listesi (kayit kapisi; bos = kapali). Dosya IMAJA GIRMEZ: ana makinedeki DAVET_DIZIN dizini /davet olarak salt okunur baglanir;
       # DAVETLI_LISTE_DOSYA bu dizindeki dosya adidir. Liste calisirken yeniden yuklenmez: degisince `docker compose restart sunucu`.
       BOLGE_DAVETLI_LISTE: ${DAVETLI_LISTE_DOSYA:+/davet/${DAVETLI_LISTE_DOSYA}}

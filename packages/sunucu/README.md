@@ -472,7 +472,21 @@ $D exec sunucu head -c 0 /davet/$(grep ^DAVETLI_LISTE_DOSYA deploy/.env | cut -d
 ```
 Liste yoksa (`davetli listesi okunamadi (ENOENT)`), bozuksa (`davetli listesi satir N gecerli bir e-posta adresi degil`) ya da geçerli satır içermiyorsa (boş) sunucu AÇILMAZ, iki kimlik kipinde de (kapı sessizce açık ya da tamamen kapalı kalmaz; ileti satır numarası verir, adres vermez; boş liste reddi `takim/k2/davet-bos` ile gelir). Listeyi değiştirince `$D restart sunucu` ve `davetli` adedini yeniden denetleyin. Liste dosyası Alfa-0 sonunda silinir.
 
-**Sonuç ölçütü:** 1-12 geçtiyse ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
+**13. Test dünyası silme (insan testi sonrası; İ3)**: test oturumları ayrı bir dünyada (`BOLGE_DUNYA=test_<ad>`, `ana` değil) yapılır; bitince o dünyanın günlüğü, görüntüleri, profili, oyun oturum kaydı ve YALNIZ o dünyanın oyuncularının hesap/oturum/bağlantı satırları tek komutla silinir, başka dünya (ve başka dünyada da kullanılan hesap) korunur. Kabul: (a) test dünyasının ve test hesaplarının satır sayısı 0; (b) öbür dünyanın son görüntü özeti silmeden önce ve sonra AYNI.
+```sh
+CLI="node --import tsx packages/sunucu/src/cli.ts"
+Q="$D exec -T pg psql -U bolge -d bolge -tAc"
+OZ="SELECT seq||' t='||sim_t||' ozet='||durum_ozeti FROM snapshots WHERE dunya='ana' ORDER BY seq DESC, sim_t DESC, olusturma DESC LIMIT 1"
+$Q "$OZ"                                                                  # ÖNCE: ana'nın son görüntü özeti (kaydedin)
+$D run --rm --no-deps sunucu $CLI --test-dunya-say test_<ad>              # beklenen: {"olay":"testDunyaSayimi",...,"toplam":N>0}
+$D run --rm --no-deps -e BOLGE_TEST_DUNYA_SIL_ONAY=test_<ad> sunucu $CLI --test-dunya-sil test_<ad>   # test sunucusu KAPALI olmalı
+#   beklenen: {"olay":"testDunyaSilindi","dunya":"test_<ad>","depo":"pg","silinen":{...},"oyuncular":[...],"korunanHesap":K,...}; K = başka dünyada da oyuncu olan hesap sayısı (silinmez)
+$D run --rm --no-deps sunucu $CLI --test-dunya-say test_<ad> --oyuncular <silinen oyuncular>   # beklenen: "toplam":0 (silme raporundaki oyuncu listesiyle)
+$Q "$OZ"                                                                  # SONRA: ÖNCEKİYLE AYNI
+```
+Üretimde komut yine üretim sırlarını ister (kimlik kipi denetimi önce koşar; compose ortamı bunları verir) ve dünya adının ikinci kez yazılmasını (`BOLGE_TEST_DUNYA_SIL_ONAY` ya da `--evet-sil`). Reddedilenler (yerelde denendi): `ana` ("varsayilan/canli dunyadir"), `test` önekiyle başlamayan ad, 3 karakterden kısa önek, onaysız ya da yanlış onaylı `--uretim`, yazarı AÇIK dünya ("dunya acik, baska bir yazar calisiyor (advisory lock)"). Dosya deposunda aynı komutlar `--depo dosya --dizin <kök>/test_<ad>` ile çalışır (dizin adı da `test` ile başlamalı); silinen dosyalar `gunluk.jsonl`, `profil.jsonl`, `hesap.jsonl`, `oyun-oturum.jsonl`, `goruntu/*`; boş dizin kalır. Test oturumlarında oyun bağlantısı oturum kaydı için `OTURUM_KAYDI=1` (deploy/.env). Döküm (İ1): `$CLI --dok <boş dizin>` (aynı pg'den, açık sunucuyla da); dökümden açılan dünyanın `durumOzeti`'si kaynağın son görüntü özetiyle aynıdır.
+
+**Sonuç ölçütü:** 1-12 geçtiyse (13 insan testi sonrasıdır) ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
 
 ## Testler
 
