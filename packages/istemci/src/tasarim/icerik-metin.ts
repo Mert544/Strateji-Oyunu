@@ -97,11 +97,11 @@ export const ICERIK_METIN: Readonly<Record<IcerikTuru, Readonly<Record<string, I
     celik_dograma: { aciklama: "Çelik, cam ve parçadan pencere yapar.", ipucu: "Dükkân ve yapı market pencere ister." },
   },
   dukkan: {
-    bakkal: { aciklama: "Her şeyden azar azar: gıda, ekmek, süt, şekerleme, yakıt.", ipucu: "Raf dolu ve çeşitli tutulursa mahallelinin ilk uğrağı olur." },
-    firin: { aciklama: "Ekmek ve gıda satar.", ipucu: "Fırından çıkanı hemen rafa koy." },
-    sarkuteri: { aciklama: "Süt, süt ürünü ve gıda satar.", ipucu: "Sütü bozulmadan rafa ulaştır." },
-    sekerci: { aciklama: "Şekerleme ve fındık içi satar.", ipucu: "Bayramdan önce rafı doldur." },
-    yapi_market: { aciklama: "Pencere, çelik, parça ve cam satar.", ipucu: "Pencere ve cam üretiyorsan rafını onlarla doldur." },
+    bakkal: { aciklama: "Her şeyden azar azar: gıda, ekmek, süt, şekerleme, yakıt.", ipucu: "Raf dolu ve çeşitli tutulursa mahallelinin ilk uğrağı olur. Kitteki gıdayı rafın için sakla." },
+    firin: { aciklama: "Ekmek ve gıda satar.", ipucu: "Fırından çıkanı hemen rafa koy. Kitteki gıdayı rafın için sakla." },
+    sarkuteri: { aciklama: "Süt, süt ürünü ve gıda satar.", ipucu: "Sütü bozulmadan rafa ulaştır. Kitteki gıdayı rafın için sakla." },
+    sekerci: { aciklama: "Şekerleme ve fındık içi satar.", ipucu: "Şekerleme ve fındık içini üretemezsin; ithal edip satabilirsin, marjı dar." },
+    yapi_market: { aciklama: "Pencere, çelik, parça ve cam satar.", ipucu: "Çelik ve parçayı inşaata ayır; pencere ve cam üretim hattından gelir." },
   },
 };
 
