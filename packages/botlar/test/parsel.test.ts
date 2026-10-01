@@ -563,6 +563,17 @@ describe("ilceSec: ayrılmış boş hücresi açılış ayak izine yeten ilçele
     }
   });
 
+  it("ayrilmisOnceligi=false (ayrıştırma): ayak izine yetmeyen ilçe de eski sırayla seçilir; varsayılan AÇIK", () => {
+    const ilk = ilceSec(taze(), "ciftci").ilce as string;
+    const s = taze();
+    ayarla(s, ilk, acilisAyakIzi(s, "ciftci") - 1);
+    expect(ilceSec(s, "ciftci").ilce).not.toBe(ilk);
+    const kapali = ilceSec(s, "ciftci", { ayrilmisOnceligi: false });
+    expect(kapali.ilce).toBe(ilk);
+    expect(kapali.neden).not.toContain("once taban hucre");
+    expect(ilceSec(s, "ciftci", { ayrilmisOnceligi: true }).ilce).not.toBe(ilk);
+  });
+
   it("hiçbir ilçe ayak izine yetmiyorsa eski sıralama sürer ('uygun ilçe yok' DEĞİL: yedek tercih)", () => {
     const s = taze();
     const mk = s.ic.mulk!;

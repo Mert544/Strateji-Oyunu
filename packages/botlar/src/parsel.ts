@@ -69,6 +69,15 @@ export interface ParselBotSecenegi {
    * (eski davranış: önayarın ilçe sıralaması, olmazsa çekirdeğin yedeği). Açıkken "uygun ilçe yok" ise oyuncu katılmaz.
    */
   ilceSec?: boolean;
+  /**
+   * `ilceSec` sıralamasında ayrılmış boş hücresi açılış ayak izine yeten ilçeler ÖNCE gelsin (vars. AÇIK). Ayrıştırma koşuları için kapatılabilir.
+   */
+  ayrilmisOnceligi?: boolean;
+  /**
+   * Bot tohumu (varyans kaynağı, ayrıştırma koşuları): verilirse YALNIZ tam eşit adaylar arasındaki seçimler (ilçe eşitlikleri, ilk yapı hücresi grubu,
+   * spekülatör ilçe sırası) kimlik sırası yerine (tohum, bot, aday) karmasıyla bozulur. Vars. tanımsız: davranış değişmez.
+   */
+  tohum?: number;
   /** `spekulator`: arsa alımına başlama yaşı (gün; katılımdan itibaren). Vars. 0. 15 ⇒ ayrılmış hücre süresi (14 gün) bittikten sonra. */
   baslangicGun?: number;
 }
@@ -129,17 +138,40 @@ interface Gorunum {
   mk: DerlenmisMulk;
   bilgi: IcerikBilgisi;
   oyuncu: OyuncuId;
+  /** Bot tohumu (ayrıştırma/varyans): tanımsızsa eşitlik bozmalar eskisi gibi kimlik sırasıdır. */
+  tohum: number | undefined;
   /** Hücre kimliği -> sahipli hücre (tüm dünya). */
   sahipli: Map<string, HucreDurumu>;
 }
 
-function gorunumKur(sim: Simulasyon, oyuncu: OyuncuId): Gorunum | null {
+/** FNV-1a 32 bit: dizgeden deterministik işaretsiz tamsayı (bot tohumu varyansı için). */
+function fnv1a(girdi: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < girdi.length; i++) {
+    h ^= girdi.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+
+/**
+ * Bot tohumuna bağlı DETERMİNİSTİK eşitlik bozma: tohum yoksa kimlik (dizge) sırası (eski davranış, bayt bayt aynı); tohum varsa (tohum, bot, anahtar)
+ * karması sırası, eşitlikte kimlik. Yalnız gerçekten eşit adaylar arasında karar verir; diğer sıralama anahtarları değişmez.
+ */
+export function tohumluSira(tohum: number | undefined, bot: OyuncuId, a: string, b: string): number {
+  if (tohum === undefined) return dizgeSirala(a, b);
+  const x = fnv1a(`${tohum}|${bot}|${a}`);
+  const y = fnv1a(`${tohum}|${bot}|${b}`);
+  return x < y ? -1 : x > y ? 1 : dizgeSirala(a, b);
+}
+
+function gorunumKur(sim: Simulasyon, oyuncu: OyuncuId, tohum?: number): Gorunum | null {
   const mk = sim.ic.mulk;
   const d = sim.dunya;
   if (mk === undefined || d.mulk === undefined) return null;
   const sahipli = new Map<string, HucreDurumu>();
   for (const h of d.mulk.hucreler) sahipli.set(h.id, h);
-  return { sim, d, mk, bilgi: icerikBilgisi(sim.ic), oyuncu, sahipli };
+  return { sim, d, mk, bilgi: icerikBilgisi(sim.ic), oyuncu, tohum, sahipli };
 }
 
 function xy(id: string): [number, number] {
@@ -335,7 +367,9 @@ function yerlesimBul(g: Gorunum, ilceId: string, yuva: number, kullanilan: Reado
         const [cx, cy] = xy(id);
         for (const k of [`${cx + 1}:${cy}`, `${cx - 1}:${cy}`, `${cx}:${cy + 1}`, `${cx}:${cy - 1}`]) if (!grup.includes(k) && benimMi(k)) komsu++;
       }
-      if (en === null || arsa < en.arsa || (arsa === en.arsa && komsu > enKomsu)) {
+      const esit = en !== null && arsa === en.arsa && komsu === enKomsu;
+      // Bot tohumu açıksa tam eşit adaylar arasında tohumlu sıra (yoksa ilk görülen kalır: fikstür sırası)
+      if (en === null || arsa < en.arsa || (arsa === en.arsa && komsu > enKomsu) || (esit && g.tohum !== undefined && tohumluSira(g.tohum, g.oyuncu, grup[0] as string, en.hucreler[0] as string) < 0)) {
         en = { hucreler: grup, sinif, yeni: yeniler.length, arsa };
         enKomsu = komsu;
       }
@@ -465,7 +499,7 @@ function dahaBos(g: Gorunum, a: string, b: string): number {
   const ib = g.d.mulk!.ilceler.find((i) => i.id === b)!;
   const x = ia.satilmisHucre * ib.uygunHucre;
   const y = ib.satilmisHucre * ia.uygunHucre;
-  return x < y ? -1 : x > y ? 1 : dizgeSirala(a, b);
+  return x < y ? -1 : x > y ? 1 : tohumluSira(g.tohum, g.oyuncu, a, b);
 }
 
 /** İlçede, üzerinde yapı (biten ya da süren inşaat) olan hücresi bulunan farklı oyuncu sayısı (kendisi hariç): ÜRETEN emsal adayları. */
@@ -687,7 +721,7 @@ function spekAdaylari(g: Gorunum, yeniOyuncu: boolean): SpekAday[] {
     const sb = SINIF_SIRASI.indexOf(b.sinif);
     const x = a.satilmis * b.uygun;
     const y = b.satilmis * a.uygun;
-    return sa - sb || (x < y ? -1 : x > y ? 1 : 0) || dizgeSirala(a.ilce, b.ilce);
+    return sa - sb || (x < y ? -1 : x > y ? 1 : 0) || tohumluSira(g.tohum, g.oyuncu, a.ilce, b.ilce);
   });
 }
 
@@ -758,6 +792,10 @@ export interface IlceSecimSecenegi {
    * hücresi bulunan; Y7 emsali ölçülebilsin), sonra en çok diğer sahip, doluluk, kimlik. Geç katılan botu "emsal" kullanır.
    */
   siralama?: "doluluk" | "emsal";
+  /** Ayrılmış boş hücresi ayak izine yeten ilçeler önce (vars. true). false: eski sıra (il tercihi, emsal, doluluk, kimlik). */
+  ayrilmisOnceligi?: boolean;
+  /** Bot tohumu: yalnız tam eşit adaylar arasında deterministik tohumlu sıra (vars. tanımsız: kimlik sırası). */
+  tohum?: number;
 }
 
 /**
@@ -769,7 +807,7 @@ export interface IlceSecimSecenegi {
  *  d) a ∩ b boşsa `ilce: null` ve nedeni (hangi aşamada elendiği): "uygun ilçe yok".
  */
 export function ilceSec(sim: Simulasyon, acilis: GecAcilis, secenek: IlceSecimSecenegi = {}): IlceSecimi {
-  const g = gorunumKur(sim, secenek.oyuncu ?? "aday");
+  const g = gorunumKur(sim, secenek.oyuncu ?? "aday", secenek.tohum);
   if (g === null) return { ilce: null, neden: "mulk kipi kapali", yurtVerebilen: 0, acilisaUygun: 0 };
   const e = ACILIS_ESLEMESI[acilis];
   const tanim: Tanim = { ...CIFTCI, acilisTurleri: e.ilkYapiTurleri, ilSirasi: e.ilTercihi };
@@ -791,12 +829,13 @@ export function ilceSec(sim: Simulasyon, acilis: GecAcilis, secenek: IlceSecimSe
   const emsal = secenek.siralama === "emsal";
   // 0) ÖNCE: ayrılmış boş hücresi açılış ayak izine yeten ilçeler (gerçek oyuncunun Yerleş ekranı da aynı ölçütle öneri verir; H6 açılış koşulu (i)).
   const ayakIzi = acilisAyakIzi(sim, acilis);
-  const tabanYeter = (c: string): number => (ilceAyrilmisBos(sim, c) >= ayakIzi ? 0 : 1);
+  const oncelik = secenek.ayrilmisOnceligi !== false;
+  const tabanYeter = (c: string): number => (oncelik && ilceAyrilmisBos(sim, c) >= ayakIzi ? 0 : 1);
   const sirali = [...uygun].sort(
     (a, b) => tabanYeter(a) - tabanYeter(b) || ilOnceligi(g, tanim, ilOf(a)) - ilOnceligi(g, tanim, ilOf(b)) || (emsal ? ureticiSahipSayisi(g, b) - ureticiSahipSayisi(g, a) || sahipSayisi(g, b) - sahipSayisi(g, a) : 0) || dahaBos(g, a, b),
   );
-  const yeterli = uygun.filter((c) => tabanYeter(c) === 0).length;
-  return { ilce: sirali[0] as string, neden: `yurt verebilen ${yurtVerebilir.length}, acilisa uygun ${uygun.length}, taban hucre ayak izine yeten ${yeterli}; once taban hucre, ${emsal ? "il tercihi, emsal, doluluk" : "il tercihi, doluluk"} sirasiyla`, yurtVerebilen: yurtVerebilir.length, acilisaUygun: uygun.length };
+  const yeterli = uygun.filter((c) => ilceAyrilmisBos(sim, c) >= ayakIzi).length;
+  return { ilce: sirali[0] as string, neden: `yurt verebilen ${yurtVerebilir.length}, acilisa uygun ${uygun.length}, taban hucre ayak izine yeten ${yeterli}; ${oncelik ? "once taban hucre, " : ""}${emsal ? "il tercihi, emsal, doluluk" : "il tercihi, doluluk"} sirasiyla`, yurtVerebilen: yurtVerebilir.length, acilisaUygun: uygun.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -812,6 +851,7 @@ class Bot implements ParselBotu {
   /** Açık ilçe kararı (`ilceSec`) kullanılıyor mu. */
   private readonly ilceSecAcik: boolean;
   readonly ilceKarari?: (sim: Simulasyon) => IlceSecimi;
+  private readonly tohum: number | undefined;
 
   constructor(
     readonly oyuncu: OyuncuId,
@@ -820,12 +860,13 @@ class Bot implements ParselBotu {
     secenek: ParselBotSecenegi,
   ) {
     this.acilis = onayar === "gec_katilan" ? acilis : undefined;
+    this.tohum = secenek.tohum;
     this.tanim = tanimSec(onayar, acilis);
     this.tarim = onayar === "ciftci_tarim" || (secenek.tarimYonetimi === true && onayar !== "pasif" && onayar !== "spekulator");
     this.ilceSecAcik = secenek.ilceSec ?? onayar === "gec_katilan";
     if (this.ilceSecAcik && onayar !== "spekulator") {
       const acilisAnahtari: GecAcilis = onayar === "gec_katilan" ? acilis : onayar === "sanayici" ? "sanayici" : onayar === "tuccar" ? "pazar" : "ciftci";
-      this.ilceKarari = (sim: Simulasyon): IlceSecimi => ilceSec(sim, acilisAnahtari, { oyuncu, siralama: onayar === "gec_katilan" ? "emsal" : "doluluk" });
+      this.ilceKarari = (sim: Simulasyon): IlceSecimi => ilceSec(sim, acilisAnahtari, { oyuncu, siralama: onayar === "gec_katilan" ? "emsal" : "doluluk", ayrilmisOnceligi: secenek.ayrilmisOnceligi !== false, ...(secenek.tohum !== undefined ? { tohum: secenek.tohum } : {}) });
     }
     this.bakim = secenek.bakimYonetimi === true && onayar !== "pasif" && onayar !== "spekulator";
     const gun = secenek.baslangicGun ?? 0;
@@ -834,7 +875,7 @@ class Bot implements ParselBotu {
   }
 
   katilimIlcesi(sim: Simulasyon): string | undefined {
-    const g = gorunumKur(sim, this.oyuncu);
+    const g = gorunumKur(sim, this.oyuncu, this.tohum);
     if (g === null) return undefined;
     if (this.onayar === "spekulator") {
       // Yurt verebilen, en çok boş uygun hücreli ilçe (alım odası geniş); eşitlikte kimlik sırası.
@@ -901,7 +942,7 @@ class Bot implements ParselBotu {
   }
 
   karar(sim: Simulasyon): Komut[] {
-    const g = gorunumKur(sim, this.oyuncu);
+    const g = gorunumKur(sim, this.oyuncu, this.tohum);
     if (g === null) return [];
     if (!g.d.oyuncular.some((o) => o.id === this.oyuncu)) return [];
     if (this.onayar === "spekulator") return this.spekulatorKarar(g);

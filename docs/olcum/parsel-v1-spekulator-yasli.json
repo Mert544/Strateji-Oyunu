@@ -5,6 +5,9 @@
   "tarimYonetimi": false,
   "bakimYonetimi": false,
   "yerlesikIlceSec": false,
+  "ayrilmisOnceligi": true,
+  "p3bKapali": false,
+  "yurtKapali": false,
   "spekulatorGun": 15,
   "etiket": "v1-spekulator-yasli",
   "bulgular": "parsel-v1-bulgular.md",
@@ -18,7 +21,7 @@
   "olcumGunu": 10,
   "iklim": "hizli",
   "agir": false,
-  "sureMs": 16641,
+  "sureMs": 14821,
   "duzen": {
     "yerlesik": {
       "ciftci": 3,
@@ -39,21 +42,21 @@
     "h6": {
       "verdict": "gecti",
       "servetVerdict": "kaldi",
-      "servetBasariPpm": 1000000,
+      "servetBasariPpm": 777777,
       "y7PayiPpm": 1000000,
       "y7Verdict": "gecti",
-      "ucuzPayPpm": 161234,
-      "genelUcuzPayPpm": 0,
+      "ucuzPayPpm": 193825,
+      "genelUcuzPayPpm": 15437,
       "acilisVerdict": "gecti",
       "tabanYeterPpm": 1000000,
       "tabanYeterYurtDahilPpm": 1000000,
       "yapiKurulduPpm": 1000000,
       "y7IlYedegiPpm": 0,
-      "hibePayiPpm": 54212
+      "hibePayiPpm": 59352
     },
     "h8": {
       "verdict": "belirsiz",
-      "giniPpm": 450407,
+      "giniPpm": 441776,
       "enBuyukIlcePayiPpm": 250000
     },
     "y": {
@@ -68,7 +71,7 @@
   "tohumBasina": [
     {
       "tohum": 1,
-      "durumOzeti": "90b3df0138de6cca",
+      "durumOzeti": "3d8a1662e7f707ea",
       "sureGun": 30,
       "gecGun": 20,
       "olcumGunu": 10,
@@ -99,17 +102,17 @@
           "katilmaGun": 0,
           "ilce": "sn_m_ova_tasra",
           "hucre": 7,
-          "ayrilmisHucre": 3,
+          "ayrilmisHucre": 1,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3235515788,
+            "hazine": 3235954690,
             "stok": 5568560,
-            "arazi": 1421052,
+            "arazi": 1000000,
             "yapi": 26810000
           },
-          "gelir7Gun": 758441957
+          "gelir7Gun": 758446157
         },
         {
           "id": "ciftci_3",
@@ -117,18 +120,18 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_m_sehir_merkez",
-          "hucre": 6,
-          "ayrilmisHucre": 3,
+          "hucre": 7,
+          "ayrilmisHucre": 0,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3615189231,
+            "hazine": 3613625685,
             "stok": 5568000,
-            "arazi": 0,
+            "arazi": 1500000,
             "yapi": 26810000
           },
-          "gelir7Gun": 547736405
+          "gelir7Gun": 547721453
         },
         {
           "id": "sanayici_1",
@@ -142,12 +145,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4444650660,
+            "hazine": 4444650226,
             "stok": 21844480,
             "arazi": 2421052,
             "yapi": 53690000
           },
-          "gelir7Gun": 820401363
+          "gelir7Gun": 820400929
         },
         {
           "id": "sanayici_2",
@@ -161,12 +164,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4444829500,
+            "hazine": 4444829066,
             "stok": 21844480,
             "arazi": 2250000,
             "yapi": 53690000
           },
-          "gelir7Gun": 820403211
+          "gelir7Gun": 820402777
         },
         {
           "id": "tuccar_1",
@@ -174,18 +177,18 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_m_sehir_tasra",
-          "hucre": 7,
-          "ayrilmisHucre": 1,
+          "hucre": 6,
+          "ayrilmisHucre": 0,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2096951568,
+            "hazine": 2098425337,
             "stok": 7245280,
-            "arazi": 1413793,
+            "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 276243824
+          "gelir7Gun": 276257936
         },
         {
           "id": "tuccar_2",
@@ -194,17 +197,17 @@
           "katilmaGun": 0,
           "ilce": "sn_m_sehir_merkez",
           "hucre": 7,
-          "ayrilmisHucre": 2,
+          "ayrilmisHucre": 1,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2096861791,
+            "hazine": 2097383211,
             "stok": 7245280,
-            "arazi": 1500000,
+            "arazi": 1000000,
             "yapi": 23800000
           },
-          "gelir7Gun": 276242984
+          "gelir7Gun": 276248024
         },
         {
           "id": "pasif_1",
@@ -213,7 +216,7 @@
           "katilmaGun": 0,
           "ilce": "sn_m_ova_tasra",
           "hucre": 6,
-          "ayrilmisHucre": 1,
+          "ayrilmisHucre": 0,
           "yapi": 1,
           "komut": 2,
           "basarisiz": 0,
@@ -253,12 +256,12 @@
           "hucre": 55,
           "ayrilmisHucre": 0,
           "yapi": 0,
-          "komut": 9,
+          "komut": 10,
           "basarisiz": 0,
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 83389091,
+            "arazi": 83436384,
             "yapi": 0
           },
           "gelir7Gun": 0
@@ -277,10 +280,10 @@
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 82218077,
+            "arazi": 82436544,
             "yapi": 0
           },
-          "gelir7Gun": -714971
+          "gelir7Gun": -494074
         },
         {
           "id": "spekulator_yasli_4",
@@ -288,7 +291,7 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_m_col_merkez",
-          "hucre": 55,
+          "hucre": 53,
           "ayrilmisHucre": 0,
           "yapi": 0,
           "komut": 8,
@@ -296,26 +299,26 @@
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 83478048,
+            "arazi": 82226386,
             "yapi": 0
           },
-          "gelir7Gun": 0
+          "gelir7Gun": -703368
         },
         {
           "id": "spekulator_yasli_5",
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_m_ova_tasra",
-          "hucre": 52,
-          "ayrilmisHucre": 1,
+          "ilce": "sn_m_dag_merkez",
+          "hucre": 54,
+          "ayrilmisHucre": 0,
           "yapi": 0,
           "komut": 8,
           "basarisiz": 0,
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 83078143,
+            "arazi": 82969853,
             "yapi": 0
           },
           "gelir7Gun": 0
@@ -327,17 +330,17 @@
           "katilmaGun": 0,
           "ilce": "sn_m_gecit_merkez",
           "hucre": 51,
-          "ayrilmisHucre": 1,
+          "ayrilmisHucre": 0,
           "yapi": 0,
           "komut": 8,
           "basarisiz": 0,
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 82310070,
+            "arazi": 82895627,
             "yapi": 0
           },
-          "gelir7Gun": -617272
+          "gelir7Gun": -25997
         },
         {
           "id": "gec_ciftci",
@@ -345,18 +348,18 @@
           "acilis": "ciftci",
           "katilmaGun": 20,
           "ilce": "sn_m_ova_tasra",
-          "hucre": 7,
-          "ayrilmisHucre": 2,
+          "hucre": 8,
+          "ayrilmisHucre": 5,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1976657740,
+            "hazine": 1977315460,
             "stok": 5856000,
-            "arazi": 2649122,
+            "arazi": 2000000,
             "yapi": 26810000
           },
-          "gelir7Gun": 1284069870
+          "gelir7Gun": 1284075960
         },
         {
           "id": "gec_sanayici",
@@ -365,36 +368,36 @@
           "katilmaGun": 20,
           "ilce": "sn_m_dag_merkez",
           "hucre": 8,
-          "ayrilmisHucre": 3,
+          "ayrilmisHucre": 2,
           "yapi": 4,
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1578963236,
+            "hazine": 1578962564,
             "stok": 26233730,
             "arazi": 2000000,
             "yapi": 53690000
           },
-          "gelir7Gun": 1124665535
+          "gelir7Gun": 1124664863
         },
         {
           "id": "gec_pazar",
           "onayar": "gec_katilan",
           "acilis": "pazar",
           "katilmaGun": 20,
-          "ilce": "sn_m_ova_tasra",
+          "ilce": "sn_m_sehir_merkez",
           "hucre": 6,
-          "ayrilmisHucre": 2,
+          "ayrilmisHucre": 4,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1452561756,
-            "stok": 7532930,
+            "hazine": 1101262266,
+            "stok": 7532580,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 943289806
+          "gelir7Gun": 591990316
         }
       ],
       "hibeKitDegeri": 85600000,
@@ -413,37 +416,37 @@
               "spekulator_yasli_5"
             ],
             "servet": {
-              "hazine": 1976657740,
+              "hazine": 1977315460,
               "stok": 5856000,
-              "arazi": 2649122,
+              "arazi": 2000000,
               "yapi": 26810000
             },
-            "servetHam": 2011972862,
-            "servetArindirilmis": 1926372862,
+            "servetHam": 2011981460,
+            "servetArindirilmis": 1926381460,
             "oran": {
-              "hamPpm": 5135573,
-              "arindirilmisPpm": 6291803,
+              "hamPpm": 5138928,
+              "arindirilmisPpm": 6297057,
               "hibePayiPpm": 42545
             },
             "emsalHam": [
-              3269315400,
+              3269333250,
               700064280,
-              83479308,
-              83079403
+              82227646,
+              82971113
             ],
-            "emsalMedyanHam": 391771794,
-            "emsalMedyanArindirilmis": 306171794,
+            "emsalMedyanHam": 391517696,
+            "emsalMedyanArindirilmis": 305917696,
             "ulastiHam": true,
             "ulastiArindirilmis": true,
-            "gelir": 1284069870,
+            "gelir": 1284075960,
             "emsalGelir": [
-              758441957,
+              758446157,
               144310986,
-              0,
+              -703368,
               0
             ],
             "emsalUretenSayisi": 2,
-            "emsalGelirMedyan": 451376471,
+            "emsalGelirMedyan": 451378571,
             "il": "sn_m_ova",
             "ilEmsal": [
               "ciftci_1",
@@ -456,18 +459,18 @@
             ],
             "ilEmsalGelir": [
               758436077,
-              758441957,
+              758446157,
               144310986,
               -233264,
-              -714971,
-              0,
+              -494074,
+              -703368,
               0
             ],
             "ilEmsalUretenSayisi": 3,
             "ilEmsalGelirMedyan": 758436077,
             "emsalDuzeyi": "ilce",
-            "ayrilmisBosKatilim": 7,
-            "ilceNedeni": "yurt verebilen 10, acilisa uygun 4, taban hucre ayak izine yeten 4; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayrilmisBosKatilim": 10,
+            "ilceNedeni": "yurt verebilen 10, acilisa uygun 5, taban hucre ayak izine yeten 5; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
             "ayakIzi": 2,
             "yurtHucre": 6,
             "acilisYapiMs": [
@@ -489,64 +492,74 @@
             "ilce": "sn_m_dag_merkez",
             "emsal": [
               "sanayici_1",
+              "spekulator_yasli_1",
+              "spekulator_yasli_2",
               "spekulator_yasli_4",
               "spekulator_yasli_5",
               "spekulator_yasli_6"
             ],
             "servet": {
-              "hazine": 1578963236,
+              "hazine": 1578962564,
               "stok": 26233730,
               "arazi": 2000000,
               "yapi": 53690000
             },
-            "servetHam": 1660886966,
-            "servetArindirilmis": 1575286966,
+            "servetHam": 1660886294,
+            "servetArindirilmis": 1575286294,
             "oran": {
-              "hamPpm": 19943561,
+              "hamPpm": 20026603,
               "arindirilmisPpm": null,
               "hibePayiPpm": 51538
             },
             "emsalHam": [
-              4522606192,
-              83479308,
-              83079403,
-              82311330
+              4522605758,
+              82686446,
+              83437644,
+              82227646,
+              82971113,
+              82896887
             ],
-            "emsalMedyanHam": 83279355,
-            "emsalMedyanArindirilmis": -2320645,
+            "emsalMedyanHam": 82934000,
+            "emsalMedyanArindirilmis": -2666000,
             "ulastiHam": true,
             "ulastiArindirilmis": true,
-            "gelir": 1124665535,
+            "gelir": 1124664863,
             "emsalGelir": [
-              820401363,
+              820400929,
+              -233264,
               0,
+              -703368,
               0,
-              -617272
+              -25997
             ],
             "emsalUretenSayisi": 1,
-            "emsalGelirMedyan": 820401363,
+            "emsalGelirMedyan": 820400929,
             "il": "sn_m_dag",
             "ilEmsal": [
               "sanayici_1",
               "sanayici_2",
+              "spekulator_yasli_1",
+              "spekulator_yasli_2",
               "spekulator_yasli_3",
               "spekulator_yasli_4",
               "spekulator_yasli_5",
               "spekulator_yasli_6"
             ],
             "ilEmsalGelir": [
-              820401363,
-              820403211,
-              -714971,
+              820400929,
+              820402777,
+              -233264,
               0,
+              -494074,
+              -703368,
               0,
-              -617272
+              -25997
             ],
             "ilEmsalUretenSayisi": 2,
-            "ilEmsalGelirMedyan": 820402287,
+            "ilEmsalGelirMedyan": 820401853,
             "emsalDuzeyi": "ilce",
-            "ayrilmisBosKatilim": 9,
-            "ilceNedeni": "yurt verebilen 10, acilisa uygun 2, taban hucre ayak izine yeten 2; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayrilmisBosKatilim": 10,
+            "ilceNedeni": "yurt verebilen 9, acilisa uygun 2, taban hucre ayak izine yeten 2; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
             "ayakIzi": 3,
             "yurtHucre": 6,
             "acilisYapiMs": [
@@ -564,69 +577,69 @@
           {
             "gec": "gec_pazar",
             "acilis": "pazar",
-            "ilce": "sn_m_ova_tasra",
+            "ilce": "sn_m_sehir_merkez",
             "emsal": [
-              "ciftci_2",
-              "pasif_1",
-              "spekulator_yasli_4",
-              "spekulator_yasli_5"
+              "ciftci_3",
+              "tuccar_2",
+              "spekulator_yasli_1",
+              "spekulator_yasli_2"
             ],
             "servet": {
-              "hazine": 1452561756,
-              "stok": 7532930,
+              "hazine": 1101262266,
+              "stok": 7532580,
               "arazi": 0,
               "yapi": 23800000
             },
-            "servetHam": 1483894686,
-            "servetArindirilmis": 1398294686,
+            "servetHam": 1132594846,
+            "servetArindirilmis": 1046994846,
             "oran": {
-              "hamPpm": 3787650,
-              "arindirilmisPpm": 4567026,
-              "hibePayiPpm": 57686
+              "hamPpm": 1023645,
+              "arindirilmisPpm": 1025627,
+              "hibePayiPpm": 75578
             },
             "emsalHam": [
-              3269315400,
-              700064280,
-              83479308,
-              83079403
+              3647503685,
+              2129428491,
+              82686446,
+              83437644
             ],
-            "emsalMedyanHam": 391771794,
-            "emsalMedyanArindirilmis": 306171794,
+            "emsalMedyanHam": 1106433067,
+            "emsalMedyanArindirilmis": 1020833067,
             "ulastiHam": true,
             "ulastiArindirilmis": true,
-            "gelir": 943289806,
+            "gelir": 591990316,
             "emsalGelir": [
-              758441957,
-              144310986,
-              0,
+              547721453,
+              276248024,
+              -233264,
               0
             ],
             "emsalUretenSayisi": 2,
-            "emsalGelirMedyan": 451376471,
-            "il": "sn_m_ova",
+            "emsalGelirMedyan": 411984738,
+            "il": "sn_m_sehir",
             "ilEmsal": [
-              "ciftci_1",
-              "ciftci_2",
-              "pasif_1",
+              "ciftci_3",
+              "tuccar_1",
+              "tuccar_2",
               "spekulator_yasli_1",
+              "spekulator_yasli_2",
               "spekulator_yasli_3",
-              "spekulator_yasli_4",
-              "spekulator_yasli_5"
+              "spekulator_yasli_4"
             ],
             "ilEmsalGelir": [
-              758436077,
-              758441957,
-              144310986,
+              547721453,
+              276257936,
+              276248024,
               -233264,
-              -714971,
               0,
-              0
+              -494074,
+              -703368
             ],
             "ilEmsalUretenSayisi": 3,
-            "ilEmsalGelirMedyan": 758436077,
+            "ilEmsalGelirMedyan": 276257936,
             "emsalDuzeyi": "ilce",
-            "ayrilmisBosKatilim": 7,
-            "ilceNedeni": "yurt verebilen 9, acilisa uygun 3, taban hucre ayak izine yeten 3; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayrilmisBosKatilim": 8,
+            "ilceNedeni": "yurt verebilen 9, acilisa uygun 4, taban hucre ayak izine yeten 4; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
             "ayakIzi": 2,
             "yurtHucre": 6,
             "acilisYapiMs": [
@@ -678,12 +691,12 @@
                 "olguSayisi": 3
               },
               "ucuzHucre": {
-                "payPpm": 161234,
-                "ucuzHucre": 94,
+                "payPpm": 193825,
+                "ucuzHucre": 113,
                 "uygunHucre": 583,
-                "ayrilmisUcuz": 94,
-                "genelUcuz": 0,
-                "genelPayPpm": 0
+                "ayrilmisUcuz": 104,
+                "genelUcuz": 9,
+                "genelPayPpm": 15437
               }
             },
             "arindirilmisServet": {
@@ -695,62 +708,62 @@
                 "olguSayisi": 3
               },
               "ucuzHucre": {
-                "payPpm": 161234,
-                "ucuzHucre": 94,
+                "payPpm": 193825,
+                "ucuzHucre": 113,
                 "uygunHucre": 583,
-                "ayrilmisUcuz": 94,
-                "genelUcuz": 0,
-                "genelPayPpm": 0
+                "ayrilmisUcuz": 104,
+                "genelUcuz": 9,
+                "genelPayPpm": 15437
               }
             },
             "oranlar": [
               {
-                "hamPpm": 5135573,
-                "arindirilmisPpm": 6291803,
+                "hamPpm": 5138928,
+                "arindirilmisPpm": 6297057,
                 "hibePayiPpm": 42545
               },
               {
-                "hamPpm": 19943561,
+                "hamPpm": 20026603,
                 "arindirilmisPpm": null,
                 "hibePayiPpm": 51538
               },
               {
-                "hamPpm": 3787650,
-                "arindirilmisPpm": 4567026,
-                "hibePayiPpm": 57686
+                "hamPpm": 1023645,
+                "arindirilmisPpm": 1025627,
+                "hibePayiPpm": 75578
               }
             ]
           }
         },
         "ucuz": {
-          "payPpm": 161234,
-          "ucuzHucre": 94,
+          "payPpm": 193825,
+          "ucuzHucre": 113,
           "uygunHucre": 583,
-          "ayrilmisUcuz": 94,
-          "genelUcuz": 0,
-          "genelPayPpm": 0
+          "ayrilmisUcuz": 104,
+          "genelUcuz": 9,
+          "genelPayPpm": 15437
         },
         "ilceler": [
           {
             "ilce": "sn_m_col_merkez",
             "uygunHucre": 57,
-            "satilmisHucre": 40,
+            "satilmisHucre": 42,
             "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 10
+            "ayrilmisBos": 11
           },
           {
             "ilce": "sn_m_col_tasra",
             "uygunHucre": 53,
-            "satilmisHucre": 32,
+            "satilmisHucre": 37,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_dag_merkez",
             "uygunHucre": 57,
-            "satilmisHucre": 39,
+            "satilmisHucre": 37,
             "ayrilmisSatilmis": 1,
-            "ayrilmisBos": 9
+            "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_dag_tasra",
@@ -762,28 +775,28 @@
           {
             "ilce": "sn_m_gecit_merkez",
             "uygunHucre": 57,
-            "satilmisHucre": 34,
+            "satilmisHucre": 29,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 11
           },
           {
             "ilce": "sn_m_gecit_tasra",
             "uygunHucre": 53,
-            "satilmisHucre": 32,
+            "satilmisHucre": 33,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_liman_merkez",
             "uygunHucre": 48,
-            "satilmisHucre": 26,
+            "satilmisHucre": 25,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 9
           },
           {
             "ilce": "sn_m_liman_tasra",
             "uygunHucre": 28,
-            "satilmisHucre": 15,
+            "satilmisHucre": 14,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 5
           },
@@ -797,23 +810,23 @@
           {
             "ilce": "sn_m_ova_tasra",
             "uygunHucre": 57,
-            "satilmisHucre": 35,
-            "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 7
+            "satilmisHucre": 40,
+            "ayrilmisSatilmis": 1,
+            "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_sehir_merkez",
             "uygunHucre": 48,
-            "satilmisHucre": 37,
-            "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 4
+            "satilmisHucre": 36,
+            "ayrilmisSatilmis": 1,
+            "ayrilmisBos": 8
           },
           {
             "ilce": "sn_m_sehir_tasra",
             "uygunHucre": 29,
-            "satilmisHucre": 21,
+            "satilmisHucre": 18,
             "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 4
+            "ayrilmisBos": 5
           }
         ],
         "y7": {
@@ -831,9 +844,9 @@
       "h8": {
         "verdict": "belirsiz",
         "gini": {
-          "degerGiniPpm": 450407,
-          "hucreGiniPpm": 465240,
-          "sahiplerDegerGiniPpm": 450407,
+          "degerGiniPpm": 441776,
+          "hucreGiniPpm": 463179,
+          "sahiplerDegerGiniPpm": 441776,
           "oyuncuSayisi": 17,
           "sahipSayisi": 17
         },
@@ -857,17 +870,17 @@
       "ayrilmis": {
         "gecOncesi": {
           "ayrilmisToplam": 110,
-          "satilan": 16,
-          "bos": 94,
-          "kalanPayPpm": 854545,
+          "satilan": 6,
+          "bos": 104,
+          "kalanPayPpm": 945454,
           "ihlal": 0,
           "guvenceTuttu": true
         },
         "sonda": {
           "ayrilmisToplam": 110,
-          "satilan": 23,
-          "bos": 87,
-          "kalanPayPpm": 790909,
+          "satilan": 17,
+          "bos": 93,
+          "kalanPayPpm": 845454,
           "ihlal": 0,
           "guvenceTuttu": true
         }
@@ -944,13 +957,13 @@
       "komutTurleri": {
         "yapi_yerlestir": 34,
         "ticaret_emri": 65,
-        "parsel_al": 31
+        "parsel_al": 32
       },
-      "sureMs": 5940
+      "sureMs": 6338
     },
     {
       "tohum": 2,
-      "durumOzeti": "925346720018f482",
+      "durumOzeti": "c550b5f0a3a76acf",
       "sureGun": 30,
       "gecGun": 20,
       "olcumGunu": 10,
@@ -981,17 +994,17 @@
           "katilmaGun": 0,
           "ilce": "sn_m_ova_tasra",
           "hucre": 7,
-          "ayrilmisHucre": 3,
+          "ayrilmisHucre": 1,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3217997374,
+            "hazine": 3218436276,
             "stok": 5569370,
-            "arazi": 1421052,
+            "arazi": 1000000,
             "yapi": 26810000
           },
-          "gelir7Gun": 656023583
+          "gelir7Gun": 656027783
         },
         {
           "id": "ciftci_3",
@@ -999,18 +1012,18 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_m_sehir_merkez",
-          "hucre": 6,
-          "ayrilmisHucre": 3,
+          "hucre": 7,
+          "ayrilmisHucre": 0,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3626026445,
+            "hazine": 3624462899,
             "stok": 5568180,
-            "arazi": 0,
+            "arazi": 1500000,
             "yapi": 26810000
           },
-          "gelir7Gun": 497566315
+          "gelir7Gun": 497551363
         },
         {
           "id": "sanayici_1",
@@ -1024,12 +1037,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4444651820,
+            "hazine": 4444652034,
             "stok": 21844480,
             "arazi": 2421052,
             "yapi": 53690000
           },
-          "gelir7Gun": 820401335
+          "gelir7Gun": 820401549
         },
         {
           "id": "sanayici_2",
@@ -1043,12 +1056,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4444830660,
+            "hazine": 4444830874,
             "stok": 21844480,
             "arazi": 2250000,
             "yapi": 53690000
           },
-          "gelir7Gun": 820403183
+          "gelir7Gun": 820403397
         },
         {
           "id": "tuccar_1",
@@ -1056,18 +1069,18 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_m_sehir_tasra",
-          "hucre": 7,
-          "ayrilmisHucre": 1,
+          "hucre": 6,
+          "ayrilmisHucre": 0,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2094475893,
+            "hazine": 2095949662,
             "stok": 7244580,
-            "arazi": 1413793,
+            "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 250492562
+          "gelir7Gun": 250506674
         },
         {
           "id": "tuccar_2",
@@ -1076,17 +1089,17 @@
           "katilmaGun": 0,
           "ilce": "sn_m_sehir_merkez",
           "hucre": 7,
-          "ayrilmisHucre": 2,
+          "ayrilmisHucre": 1,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2094386116,
+            "hazine": 2094907536,
             "stok": 7244580,
-            "arazi": 1500000,
+            "arazi": 1000000,
             "yapi": 23800000
           },
-          "gelir7Gun": 250491722
+          "gelir7Gun": 250496762
         },
         {
           "id": "pasif_1",
@@ -1095,7 +1108,7 @@
           "katilmaGun": 0,
           "ilce": "sn_m_ova_tasra",
           "hucre": 6,
-          "ayrilmisHucre": 1,
+          "ayrilmisHucre": 0,
           "yapi": 1,
           "komut": 2,
           "basarisiz": 0,
@@ -1135,12 +1148,12 @@
           "hucre": 55,
           "ayrilmisHucre": 0,
           "yapi": 0,
-          "komut": 9,
+          "komut": 10,
           "basarisiz": 0,
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 83389091,
+            "arazi": 83436384,
             "yapi": 0
           },
           "gelir7Gun": 0
@@ -1159,10 +1172,10 @@
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 82218077,
+            "arazi": 82436544,
             "yapi": 0
           },
-          "gelir7Gun": -714846
+          "gelir7Gun": -493949
         },
         {
           "id": "spekulator_yasli_4",
@@ -1170,7 +1183,7 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_m_col_merkez",
-          "hucre": 55,
+          "hucre": 53,
           "ayrilmisHucre": 0,
           "yapi": 0,
           "komut": 8,
@@ -1178,26 +1191,26 @@
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 83478048,
+            "arazi": 82226386,
             "yapi": 0
           },
-          "gelir7Gun": 0
+          "gelir7Gun": -703243
         },
         {
           "id": "spekulator_yasli_5",
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_m_ova_tasra",
-          "hucre": 52,
-          "ayrilmisHucre": 1,
+          "ilce": "sn_m_dag_merkez",
+          "hucre": 54,
+          "ayrilmisHucre": 0,
           "yapi": 0,
           "komut": 8,
           "basarisiz": 0,
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 83078143,
+            "arazi": 82969853,
             "yapi": 0
           },
           "gelir7Gun": 0
@@ -1209,17 +1222,17 @@
           "katilmaGun": 0,
           "ilce": "sn_m_gecit_merkez",
           "hucre": 51,
-          "ayrilmisHucre": 1,
+          "ayrilmisHucre": 0,
           "yapi": 0,
           "komut": 8,
           "basarisiz": 0,
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 82310070,
+            "arazi": 82895627,
             "yapi": 0
           },
-          "gelir7Gun": -617147
+          "gelir7Gun": -25872
         },
         {
           "id": "gec_ciftci",
@@ -1227,18 +1240,18 @@
           "acilis": "ciftci",
           "katilmaGun": 20,
           "ilce": "sn_m_ova_tasra",
-          "hucre": 7,
-          "ayrilmisHucre": 2,
+          "hucre": 8,
+          "ayrilmisHucre": 5,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1869816825,
+            "hazine": 1870474839,
             "stok": 5856000,
-            "arazi": 2649122,
+            "arazi": 2000000,
             "yapi": 26810000
           },
-          "gelir7Gun": 1177228955
+          "gelir7Gun": 1177235339
         },
         {
           "id": "gec_sanayici",
@@ -1247,36 +1260,36 @@
           "katilmaGun": 20,
           "ilce": "sn_m_dag_merkez",
           "hucre": 8,
-          "ayrilmisHucre": 3,
+          "ayrilmisHucre": 2,
           "yapi": 4,
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1578963556,
+            "hazine": 1578963946,
             "stok": 26233730,
             "arazi": 2000000,
             "yapi": 53690000
           },
-          "gelir7Gun": 1124665409
+          "gelir7Gun": 1124665799
         },
         {
           "id": "gec_pazar",
           "onayar": "gec_katilan",
           "acilis": "pazar",
           "katilmaGun": 20,
-          "ilce": "sn_m_ova_tasra",
+          "ilce": "sn_m_sehir_merkez",
           "hucre": 6,
-          "ayrilmisHucre": 2,
+          "ayrilmisHucre": 4,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1317835238,
-            "stok": 7533130,
+            "hazine": 1014726090,
+            "stok": 7533140,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 808563288
+          "gelir7Gun": 518811881
         }
       ],
       "hibeKitDegeri": 85600000,
@@ -1295,37 +1308,37 @@
               "spekulator_yasli_5"
             ],
             "servet": {
-              "hazine": 1869816825,
+              "hazine": 1870474839,
               "stok": 5856000,
-              "arazi": 2649122,
+              "arazi": 2000000,
               "yapi": 26810000
             },
-            "servetHam": 1905131947,
-            "servetArindirilmis": 1819531947,
+            "servetHam": 1905140839,
+            "servetArindirilmis": 1819540839,
             "oran": {
-              "hamPpm": 5092649,
-              "arindirilmisPpm": 6306991,
+              "hamPpm": 5096135,
+              "arindirilmisPpm": 6312582,
               "hibePayiPpm": 44931
             },
             "emsalHam": [
-              3251797796,
+              3251815646,
               664709546,
-              83479308,
-              83079403
+              82227646,
+              82971113
             ],
-            "emsalMedyanHam": 374094427,
-            "emsalMedyanArindirilmis": 288494427,
+            "emsalMedyanHam": 373840329,
+            "emsalMedyanArindirilmis": 288240329,
             "ulastiHam": true,
             "ulastiArindirilmis": true,
-            "gelir": 1177228955,
+            "gelir": 1177235339,
             "emsalGelir": [
-              656023583,
+              656027783,
               113654097,
-              0,
+              -703243,
               0
             ],
             "emsalUretenSayisi": 2,
-            "emsalGelirMedyan": 384838840,
+            "emsalGelirMedyan": 384840940,
             "il": "sn_m_ova",
             "ilEmsal": [
               "ciftci_1",
@@ -1338,18 +1351,18 @@
             ],
             "ilEmsalGelir": [
               656017703,
-              656023583,
+              656027783,
               113654097,
               -233139,
-              -714846,
-              0,
+              -493949,
+              -703243,
               0
             ],
             "ilEmsalUretenSayisi": 3,
             "ilEmsalGelirMedyan": 656017703,
             "emsalDuzeyi": "ilce",
-            "ayrilmisBosKatilim": 7,
-            "ilceNedeni": "yurt verebilen 10, acilisa uygun 4, taban hucre ayak izine yeten 4; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayrilmisBosKatilim": 10,
+            "ilceNedeni": "yurt verebilen 10, acilisa uygun 5, taban hucre ayak izine yeten 5; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
             "ayakIzi": 2,
             "yurtHucre": 6,
             "acilisYapiMs": [
@@ -1371,64 +1384,74 @@
             "ilce": "sn_m_dag_merkez",
             "emsal": [
               "sanayici_1",
+              "spekulator_yasli_1",
+              "spekulator_yasli_2",
               "spekulator_yasli_4",
               "spekulator_yasli_5",
               "spekulator_yasli_6"
             ],
             "servet": {
-              "hazine": 1578963556,
+              "hazine": 1578963946,
               "stok": 26233730,
               "arazi": 2000000,
               "yapi": 53690000
             },
-            "servetHam": 1660887286,
-            "servetArindirilmis": 1575287286,
+            "servetHam": 1660887676,
+            "servetArindirilmis": 1575287676,
             "oran": {
-              "hamPpm": 19943565,
+              "hamPpm": 20026619,
               "arindirilmisPpm": null,
               "hibePayiPpm": 51538
             },
             "emsalHam": [
-              4522607352,
-              83479308,
-              83079403,
-              82311330
+              4522607566,
+              82686446,
+              83437644,
+              82227646,
+              82971113,
+              82896887
             ],
-            "emsalMedyanHam": 83279355,
-            "emsalMedyanArindirilmis": -2320645,
+            "emsalMedyanHam": 82934000,
+            "emsalMedyanArindirilmis": -2666000,
             "ulastiHam": true,
             "ulastiArindirilmis": true,
-            "gelir": 1124665409,
+            "gelir": 1124665799,
             "emsalGelir": [
-              820401335,
+              820401549,
+              -233139,
               0,
+              -703243,
               0,
-              -617147
+              -25872
             ],
             "emsalUretenSayisi": 1,
-            "emsalGelirMedyan": 820401335,
+            "emsalGelirMedyan": 820401549,
             "il": "sn_m_dag",
             "ilEmsal": [
               "sanayici_1",
               "sanayici_2",
+              "spekulator_yasli_1",
+              "spekulator_yasli_2",
               "spekulator_yasli_3",
               "spekulator_yasli_4",
               "spekulator_yasli_5",
               "spekulator_yasli_6"
             ],
             "ilEmsalGelir": [
-              820401335,
-              820403183,
-              -714846,
+              820401549,
+              820403397,
+              -233139,
               0,
+              -493949,
+              -703243,
               0,
-              -617147
+              -25872
             ],
             "ilEmsalUretenSayisi": 2,
-            "ilEmsalGelirMedyan": 820402259,
+            "ilEmsalGelirMedyan": 820402473,
             "emsalDuzeyi": "ilce",
-            "ayrilmisBosKatilim": 9,
-            "ilceNedeni": "yurt verebilen 10, acilisa uygun 2, taban hucre ayak izine yeten 2; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayrilmisBosKatilim": 10,
+            "ilceNedeni": "yurt verebilen 9, acilisa uygun 2, taban hucre ayak izine yeten 2; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
             "ayakIzi": 3,
             "yurtHucre": 6,
             "acilisYapiMs": [
@@ -1446,69 +1469,69 @@
           {
             "gec": "gec_pazar",
             "acilis": "pazar",
-            "ilce": "sn_m_ova_tasra",
+            "ilce": "sn_m_sehir_merkez",
             "emsal": [
-              "ciftci_2",
-              "pasif_1",
-              "spekulator_yasli_4",
-              "spekulator_yasli_5"
+              "ciftci_3",
+              "tuccar_2",
+              "spekulator_yasli_1",
+              "spekulator_yasli_2"
             ],
             "servet": {
-              "hazine": 1317835238,
-              "stok": 7533130,
+              "hazine": 1014726090,
+              "stok": 7533140,
               "arazi": 0,
               "yapi": 23800000
             },
-            "servetHam": 1349168368,
-            "servetArindirilmis": 1263568368,
+            "servetHam": 1046059230,
+            "servetArindirilmis": 960459230,
             "oran": {
-              "hamPpm": 3606491,
-              "arindirilmisPpm": 4379870,
-              "hibePayiPpm": 63446
+              "hamPpm": 946493,
+              "arindirilmisPpm": 942000,
+              "hibePayiPpm": 81830
             },
             "emsalHam": [
-              3251797796,
-              664709546,
-              83479308,
-              83079403
+              3658341079,
+              2126952116,
+              82686446,
+              83437644
             ],
-            "emsalMedyanHam": 374094427,
-            "emsalMedyanArindirilmis": 288494427,
-            "ulastiHam": true,
-            "ulastiArindirilmis": true,
-            "gelir": 808563288,
+            "emsalMedyanHam": 1105194880,
+            "emsalMedyanArindirilmis": 1019594880,
+            "ulastiHam": false,
+            "ulastiArindirilmis": false,
+            "gelir": 518811881,
             "emsalGelir": [
-              656023583,
-              113654097,
-              0,
+              497551363,
+              250496762,
+              -233139,
               0
             ],
             "emsalUretenSayisi": 2,
-            "emsalGelirMedyan": 384838840,
-            "il": "sn_m_ova",
+            "emsalGelirMedyan": 374024062,
+            "il": "sn_m_sehir",
             "ilEmsal": [
-              "ciftci_1",
-              "ciftci_2",
-              "pasif_1",
+              "ciftci_3",
+              "tuccar_1",
+              "tuccar_2",
               "spekulator_yasli_1",
+              "spekulator_yasli_2",
               "spekulator_yasli_3",
-              "spekulator_yasli_4",
-              "spekulator_yasli_5"
+              "spekulator_yasli_4"
             ],
             "ilEmsalGelir": [
-              656017703,
-              656023583,
-              113654097,
+              497551363,
+              250506674,
+              250496762,
               -233139,
-              -714846,
               0,
-              0
+              -493949,
+              -703243
             ],
             "ilEmsalUretenSayisi": 3,
-            "ilEmsalGelirMedyan": 656017703,
+            "ilEmsalGelirMedyan": 250506674,
             "emsalDuzeyi": "ilce",
-            "ayrilmisBosKatilim": 7,
-            "ilceNedeni": "yurt verebilen 9, acilisa uygun 3, taban hucre ayak izine yeten 3; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayrilmisBosKatilim": 8,
+            "ilceNedeni": "yurt verebilen 9, acilisa uygun 4, taban hucre ayak izine yeten 4; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
             "ayakIzi": 2,
             "yurtHucre": 6,
             "acilisYapiMs": [
@@ -1554,85 +1577,85 @@
             "ham": {
               "verdict": "kaldi",
               "gecKatilan": {
-                "basariPpm": 1000000,
-                "ulasan": 3,
+                "basariPpm": 666666,
+                "ulasan": 2,
                 "olculebilir": 3,
                 "olguSayisi": 3
               },
               "ucuzHucre": {
-                "payPpm": 161234,
-                "ucuzHucre": 94,
+                "payPpm": 193825,
+                "ucuzHucre": 113,
                 "uygunHucre": 583,
-                "ayrilmisUcuz": 94,
-                "genelUcuz": 0,
-                "genelPayPpm": 0
+                "ayrilmisUcuz": 104,
+                "genelUcuz": 9,
+                "genelPayPpm": 15437
               }
             },
             "arindirilmisServet": {
               "verdict": "kaldi",
               "gecKatilan": {
-                "basariPpm": 1000000,
-                "ulasan": 3,
+                "basariPpm": 666666,
+                "ulasan": 2,
                 "olculebilir": 3,
                 "olguSayisi": 3
               },
               "ucuzHucre": {
-                "payPpm": 161234,
-                "ucuzHucre": 94,
+                "payPpm": 193825,
+                "ucuzHucre": 113,
                 "uygunHucre": 583,
-                "ayrilmisUcuz": 94,
-                "genelUcuz": 0,
-                "genelPayPpm": 0
+                "ayrilmisUcuz": 104,
+                "genelUcuz": 9,
+                "genelPayPpm": 15437
               }
             },
             "oranlar": [
               {
-                "hamPpm": 5092649,
-                "arindirilmisPpm": 6306991,
+                "hamPpm": 5096135,
+                "arindirilmisPpm": 6312582,
                 "hibePayiPpm": 44931
               },
               {
-                "hamPpm": 19943565,
+                "hamPpm": 20026619,
                 "arindirilmisPpm": null,
                 "hibePayiPpm": 51538
               },
               {
-                "hamPpm": 3606491,
-                "arindirilmisPpm": 4379870,
-                "hibePayiPpm": 63446
+                "hamPpm": 946493,
+                "arindirilmisPpm": 942000,
+                "hibePayiPpm": 81830
               }
             ]
           }
         },
         "ucuz": {
-          "payPpm": 161234,
-          "ucuzHucre": 94,
+          "payPpm": 193825,
+          "ucuzHucre": 113,
           "uygunHucre": 583,
-          "ayrilmisUcuz": 94,
-          "genelUcuz": 0,
-          "genelPayPpm": 0
+          "ayrilmisUcuz": 104,
+          "genelUcuz": 9,
+          "genelPayPpm": 15437
         },
         "ilceler": [
           {
             "ilce": "sn_m_col_merkez",
             "uygunHucre": 57,
-            "satilmisHucre": 40,
+            "satilmisHucre": 42,
             "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 10
+            "ayrilmisBos": 11
           },
           {
             "ilce": "sn_m_col_tasra",
             "uygunHucre": 53,
-            "satilmisHucre": 32,
+            "satilmisHucre": 37,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_dag_merkez",
             "uygunHucre": 57,
-            "satilmisHucre": 39,
+            "satilmisHucre": 37,
             "ayrilmisSatilmis": 1,
-            "ayrilmisBos": 9
+            "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_dag_tasra",
@@ -1644,28 +1667,28 @@
           {
             "ilce": "sn_m_gecit_merkez",
             "uygunHucre": 57,
-            "satilmisHucre": 34,
+            "satilmisHucre": 29,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 11
           },
           {
             "ilce": "sn_m_gecit_tasra",
             "uygunHucre": 53,
-            "satilmisHucre": 32,
+            "satilmisHucre": 33,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_liman_merkez",
             "uygunHucre": 48,
-            "satilmisHucre": 26,
+            "satilmisHucre": 25,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 9
           },
           {
             "ilce": "sn_m_liman_tasra",
             "uygunHucre": 28,
-            "satilmisHucre": 15,
+            "satilmisHucre": 14,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 5
           },
@@ -1679,23 +1702,23 @@
           {
             "ilce": "sn_m_ova_tasra",
             "uygunHucre": 57,
-            "satilmisHucre": 35,
-            "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 7
+            "satilmisHucre": 40,
+            "ayrilmisSatilmis": 1,
+            "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_sehir_merkez",
             "uygunHucre": 48,
-            "satilmisHucre": 37,
-            "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 4
+            "satilmisHucre": 36,
+            "ayrilmisSatilmis": 1,
+            "ayrilmisBos": 8
           },
           {
             "ilce": "sn_m_sehir_tasra",
             "uygunHucre": 29,
-            "satilmisHucre": 21,
+            "satilmisHucre": 18,
             "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 4
+            "ayrilmisBos": 5
           }
         ],
         "y7": {
@@ -1713,9 +1736,9 @@
       "h8": {
         "verdict": "belirsiz",
         "gini": {
-          "degerGiniPpm": 450407,
-          "hucreGiniPpm": 465240,
-          "sahiplerDegerGiniPpm": 450407,
+          "degerGiniPpm": 441776,
+          "hucreGiniPpm": 463179,
+          "sahiplerDegerGiniPpm": 441776,
           "oyuncuSayisi": 17,
           "sahipSayisi": 17
         },
@@ -1739,17 +1762,17 @@
       "ayrilmis": {
         "gecOncesi": {
           "ayrilmisToplam": 110,
-          "satilan": 16,
-          "bos": 94,
-          "kalanPayPpm": 854545,
+          "satilan": 6,
+          "bos": 104,
+          "kalanPayPpm": 945454,
           "ihlal": 0,
           "guvenceTuttu": true
         },
         "sonda": {
           "ayrilmisToplam": 110,
-          "satilan": 23,
-          "bos": 87,
-          "kalanPayPpm": 790909,
+          "satilan": 17,
+          "bos": 93,
+          "kalanPayPpm": 845454,
           "ihlal": 0,
           "guvenceTuttu": true
         }
@@ -1826,13 +1849,13 @@
       "komutTurleri": {
         "yapi_yerlestir": 34,
         "ticaret_emri": 65,
-        "parsel_al": 31
+        "parsel_al": 32
       },
-      "sureMs": 5695
+      "sureMs": 4640
     },
     {
       "tohum": 3,
-      "durumOzeti": "967a57e5db75b965",
+      "durumOzeti": "87676ed5363a7e67",
       "sureGun": 30,
       "gecGun": 20,
       "olcumGunu": 10,
@@ -1863,17 +1886,17 @@
           "katilmaGun": 0,
           "ilce": "sn_m_ova_tasra",
           "hucre": 7,
-          "ayrilmisHucre": 3,
+          "ayrilmisHucre": 1,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3222398672,
+            "hazine": 3222837574,
             "stok": 5568000,
-            "arazi": 1421052,
+            "arazi": 1000000,
             "yapi": 26810000
           },
-          "gelir7Gun": 541669304
+          "gelir7Gun": 541673504
         },
         {
           "id": "ciftci_3",
@@ -1881,18 +1904,18 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_m_sehir_merkez",
-          "hucre": 6,
-          "ayrilmisHucre": 3,
+          "hucre": 7,
+          "ayrilmisHucre": 0,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 3625909052,
+            "hazine": 3624345506,
             "stok": 5568000,
-            "arazi": 0,
+            "arazi": 1500000,
             "yapi": 26810000
           },
-          "gelir7Gun": 514428972
+          "gelir7Gun": 514414020
         },
         {
           "id": "sanayici_1",
@@ -1906,12 +1929,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4444650362,
+            "hazine": 4444650101,
             "stok": 21844480,
             "arazi": 2421052,
             "yapi": 53690000
           },
-          "gelir7Gun": 820401481
+          "gelir7Gun": 820401465
         },
         {
           "id": "sanayici_2",
@@ -1925,12 +1948,12 @@
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 4444829202,
+            "hazine": 4444828941,
             "stok": 21844480,
             "arazi": 2250000,
             "yapi": 53690000
           },
-          "gelir7Gun": 820403329
+          "gelir7Gun": 820403313
         },
         {
           "id": "tuccar_1",
@@ -1938,18 +1961,18 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_m_sehir_tasra",
-          "hucre": 7,
-          "ayrilmisHucre": 1,
+          "hucre": 6,
+          "ayrilmisHucre": 0,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2105097842,
+            "hazine": 2106571611,
             "stok": 7244730,
-            "arazi": 1413793,
+            "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 259149133
+          "gelir7Gun": 259163245
         },
         {
           "id": "tuccar_2",
@@ -1958,17 +1981,17 @@
           "katilmaGun": 0,
           "ilce": "sn_m_sehir_merkez",
           "hucre": 7,
-          "ayrilmisHucre": 2,
+          "ayrilmisHucre": 1,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 2105008065,
+            "hazine": 2105529485,
             "stok": 7244730,
-            "arazi": 1500000,
+            "arazi": 1000000,
             "yapi": 23800000
           },
-          "gelir7Gun": 259148293
+          "gelir7Gun": 259153333
         },
         {
           "id": "pasif_1",
@@ -1977,7 +2000,7 @@
           "katilmaGun": 0,
           "ilce": "sn_m_ova_tasra",
           "hucre": 6,
-          "ayrilmisHucre": 1,
+          "ayrilmisHucre": 0,
           "yapi": 1,
           "komut": 2,
           "basarisiz": 0,
@@ -2017,12 +2040,12 @@
           "hucre": 55,
           "ayrilmisHucre": 0,
           "yapi": 0,
-          "komut": 9,
+          "komut": 10,
           "basarisiz": 0,
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 83389091,
+            "arazi": 83436384,
             "yapi": 0
           },
           "gelir7Gun": 0
@@ -2041,10 +2064,10 @@
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 82218077,
+            "arazi": 82436544,
             "yapi": 0
           },
-          "gelir7Gun": -714450
+          "gelir7Gun": -493553
         },
         {
           "id": "spekulator_yasli_4",
@@ -2052,7 +2075,7 @@
           "acilis": null,
           "katilmaGun": 0,
           "ilce": "sn_m_col_merkez",
-          "hucre": 55,
+          "hucre": 53,
           "ayrilmisHucre": 0,
           "yapi": 0,
           "komut": 8,
@@ -2060,26 +2083,26 @@
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 83478048,
+            "arazi": 82226386,
             "yapi": 0
           },
-          "gelir7Gun": 0
+          "gelir7Gun": -702847
         },
         {
           "id": "spekulator_yasli_5",
           "onayar": "spekulator",
           "acilis": null,
           "katilmaGun": 0,
-          "ilce": "sn_m_ova_tasra",
-          "hucre": 52,
-          "ayrilmisHucre": 1,
+          "ilce": "sn_m_dag_merkez",
+          "hucre": 54,
+          "ayrilmisHucre": 0,
           "yapi": 0,
           "komut": 8,
           "basarisiz": 0,
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 83078143,
+            "arazi": 82969853,
             "yapi": 0
           },
           "gelir7Gun": 0
@@ -2091,17 +2114,17 @@
           "katilmaGun": 0,
           "ilce": "sn_m_gecit_merkez",
           "hucre": 51,
-          "ayrilmisHucre": 1,
+          "ayrilmisHucre": 0,
           "yapi": 0,
           "komut": 8,
           "basarisiz": 0,
           "servet": {
             "hazine": 0,
             "stok": 1260,
-            "arazi": 82310070,
+            "arazi": 82895627,
             "yapi": 0
           },
-          "gelir7Gun": -616751
+          "gelir7Gun": -25476
         },
         {
           "id": "gec_ciftci",
@@ -2109,18 +2132,18 @@
           "acilis": "ciftci",
           "katilmaGun": 20,
           "ilce": "sn_m_ova_tasra",
-          "hucre": 7,
-          "ayrilmisHucre": 2,
+          "hucre": 8,
+          "ayrilmisHucre": 5,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1665037828,
+            "hazine": 1665695988,
             "stok": 5856600,
-            "arazi": 2649122,
+            "arazi": 2000000,
             "yapi": 26810000
           },
-          "gelir7Gun": 972449958
+          "gelir7Gun": 972456488
         },
         {
           "id": "gec_sanayici",
@@ -2129,36 +2152,36 @@
           "katilmaGun": 20,
           "ilce": "sn_m_dag_merkez",
           "hucre": 8,
-          "ayrilmisHucre": 3,
+          "ayrilmisHucre": 2,
           "yapi": 4,
           "komut": 10,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1578963705,
+            "hazine": 1578963777,
             "stok": 26233730,
             "arazi": 2000000,
             "yapi": 53690000
           },
-          "gelir7Gun": 1124665595
+          "gelir7Gun": 1124665667
         },
         {
           "id": "gec_pazar",
           "onayar": "gec_katilan",
           "acilis": "pazar",
           "katilmaGun": 20,
-          "ilce": "sn_m_ova_tasra",
+          "ilce": "sn_m_sehir_merkez",
           "hucre": 6,
-          "ayrilmisHucre": 2,
+          "ayrilmisHucre": 4,
           "yapi": 3,
           "komut": 7,
           "basarisiz": 0,
           "servet": {
-            "hazine": 1120042818,
+            "hazine": 983740137,
             "stok": 7532580,
             "arazi": 0,
             "yapi": 23800000
           },
-          "gelir7Gun": 610770868
+          "gelir7Gun": 522554103
         }
       ],
       "hibeKitDegeri": 85600000,
@@ -2177,37 +2200,37 @@
               "spekulator_yasli_5"
             ],
             "servet": {
-              "hazine": 1665037828,
+              "hazine": 1665695988,
               "stok": 5856600,
-              "arazi": 2649122,
+              "arazi": 2000000,
               "yapi": 26810000
             },
-            "servetHam": 1700353550,
-            "servetArindirilmis": 1614753550,
+            "servetHam": 1700362588,
+            "servetArindirilmis": 1614762588,
             "oran": {
-              "hamPpm": 4690025,
-              "arindirilmisPpm": 5830555,
+              "hamPpm": 4693339,
+              "arindirilmisPpm": 5835942,
               "hibePayiPpm": 50342
             },
             "emsalHam": [
-              3256197724,
+              3256215574,
               641614274,
-              83479308,
-              83079403
+              82227646,
+              82971113
             ],
-            "emsalMedyanHam": 362546791,
-            "emsalMedyanArindirilmis": 276946791,
+            "emsalMedyanHam": 362292693,
+            "emsalMedyanArindirilmis": 276692693,
             "ulastiHam": true,
             "ulastiArindirilmis": true,
-            "gelir": 972449958,
+            "gelir": 972456488,
             "emsalGelir": [
-              541669304,
+              541673504,
               90035868,
-              0,
+              -702847,
               0
             ],
             "emsalUretenSayisi": 2,
-            "emsalGelirMedyan": 315852586,
+            "emsalGelirMedyan": 315854686,
             "il": "sn_m_ova",
             "ilEmsal": [
               "ciftci_1",
@@ -2220,18 +2243,18 @@
             ],
             "ilEmsalGelir": [
               541663424,
-              541669304,
+              541673504,
               90035868,
               -232743,
-              -714450,
-              0,
+              -493553,
+              -702847,
               0
             ],
             "ilEmsalUretenSayisi": 3,
             "ilEmsalGelirMedyan": 541663424,
             "emsalDuzeyi": "ilce",
-            "ayrilmisBosKatilim": 7,
-            "ilceNedeni": "yurt verebilen 10, acilisa uygun 4, taban hucre ayak izine yeten 4; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayrilmisBosKatilim": 10,
+            "ilceNedeni": "yurt verebilen 10, acilisa uygun 5, taban hucre ayak izine yeten 5; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
             "ayakIzi": 2,
             "yurtHucre": 6,
             "acilisYapiMs": [
@@ -2253,64 +2276,74 @@
             "ilce": "sn_m_dag_merkez",
             "emsal": [
               "sanayici_1",
+              "spekulator_yasli_1",
+              "spekulator_yasli_2",
               "spekulator_yasli_4",
               "spekulator_yasli_5",
               "spekulator_yasli_6"
             ],
             "servet": {
-              "hazine": 1578963705,
+              "hazine": 1578963777,
               "stok": 26233730,
               "arazi": 2000000,
               "yapi": 53690000
             },
-            "servetHam": 1660887435,
-            "servetArindirilmis": 1575287435,
+            "servetHam": 1660887507,
+            "servetArindirilmis": 1575287507,
             "oran": {
-              "hamPpm": 19943567,
+              "hamPpm": 20026617,
               "arindirilmisPpm": null,
               "hibePayiPpm": 51538
             },
             "emsalHam": [
-              4522605894,
-              83479308,
-              83079403,
-              82311330
+              4522605633,
+              82686446,
+              83437644,
+              82227646,
+              82971113,
+              82896887
             ],
-            "emsalMedyanHam": 83279355,
-            "emsalMedyanArindirilmis": -2320645,
+            "emsalMedyanHam": 82934000,
+            "emsalMedyanArindirilmis": -2666000,
             "ulastiHam": true,
             "ulastiArindirilmis": true,
-            "gelir": 1124665595,
+            "gelir": 1124665667,
             "emsalGelir": [
-              820401481,
+              820401465,
+              -232743,
               0,
+              -702847,
               0,
-              -616751
+              -25476
             ],
             "emsalUretenSayisi": 1,
-            "emsalGelirMedyan": 820401481,
+            "emsalGelirMedyan": 820401465,
             "il": "sn_m_dag",
             "ilEmsal": [
               "sanayici_1",
               "sanayici_2",
+              "spekulator_yasli_1",
+              "spekulator_yasli_2",
               "spekulator_yasli_3",
               "spekulator_yasli_4",
               "spekulator_yasli_5",
               "spekulator_yasli_6"
             ],
             "ilEmsalGelir": [
-              820401481,
-              820403329,
-              -714450,
+              820401465,
+              820403313,
+              -232743,
               0,
+              -493553,
+              -702847,
               0,
-              -616751
+              -25476
             ],
             "ilEmsalUretenSayisi": 2,
-            "ilEmsalGelirMedyan": 820402405,
+            "ilEmsalGelirMedyan": 820402389,
             "emsalDuzeyi": "ilce",
-            "ayrilmisBosKatilim": 9,
-            "ilceNedeni": "yurt verebilen 10, acilisa uygun 2, taban hucre ayak izine yeten 2; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayrilmisBosKatilim": 10,
+            "ilceNedeni": "yurt verebilen 9, acilisa uygun 2, taban hucre ayak izine yeten 2; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
             "ayakIzi": 3,
             "yurtHucre": 6,
             "acilisYapiMs": [
@@ -2328,69 +2361,69 @@
           {
             "gec": "gec_pazar",
             "acilis": "pazar",
-            "ilce": "sn_m_ova_tasra",
+            "ilce": "sn_m_sehir_merkez",
             "emsal": [
-              "ciftci_2",
-              "pasif_1",
-              "spekulator_yasli_4",
-              "spekulator_yasli_5"
+              "ciftci_3",
+              "tuccar_2",
+              "spekulator_yasli_1",
+              "spekulator_yasli_2"
             ],
             "servet": {
-              "hazine": 1120042818,
+              "hazine": 983740137,
               "stok": 7532580,
               "arazi": 0,
               "yapi": 23800000
             },
-            "servetHam": 1151375398,
-            "servetArindirilmis": 1065775398,
+            "servetHam": 1015072717,
+            "servetArindirilmis": 929472717,
             "oran": {
-              "hamPpm": 3175798,
-              "arindirilmisPpm": 3848303,
-              "hibePayiPpm": 74345
+              "hamPpm": 914063,
+              "arindirilmisPpm": 906885,
+              "hibePayiPpm": 84328
             },
             "emsalHam": [
-              3256197724,
-              641614274,
-              83479308,
-              83079403
+              3658223506,
+              2137574215,
+              82686446,
+              83437644
             ],
-            "emsalMedyanHam": 362546791,
-            "emsalMedyanArindirilmis": 276946791,
-            "ulastiHam": true,
-            "ulastiArindirilmis": true,
-            "gelir": 610770868,
+            "emsalMedyanHam": 1110505929,
+            "emsalMedyanArindirilmis": 1024905929,
+            "ulastiHam": false,
+            "ulastiArindirilmis": false,
+            "gelir": 522554103,
             "emsalGelir": [
-              541669304,
-              90035868,
-              0,
+              514414020,
+              259153333,
+              -232743,
               0
             ],
             "emsalUretenSayisi": 2,
-            "emsalGelirMedyan": 315852586,
-            "il": "sn_m_ova",
+            "emsalGelirMedyan": 386783676,
+            "il": "sn_m_sehir",
             "ilEmsal": [
-              "ciftci_1",
-              "ciftci_2",
-              "pasif_1",
+              "ciftci_3",
+              "tuccar_1",
+              "tuccar_2",
               "spekulator_yasli_1",
+              "spekulator_yasli_2",
               "spekulator_yasli_3",
-              "spekulator_yasli_4",
-              "spekulator_yasli_5"
+              "spekulator_yasli_4"
             ],
             "ilEmsalGelir": [
-              541663424,
-              541669304,
-              90035868,
+              514414020,
+              259163245,
+              259153333,
               -232743,
-              -714450,
               0,
-              0
+              -493553,
+              -702847
             ],
             "ilEmsalUretenSayisi": 3,
-            "ilEmsalGelirMedyan": 541663424,
+            "ilEmsalGelirMedyan": 259163245,
             "emsalDuzeyi": "ilce",
-            "ayrilmisBosKatilim": 7,
-            "ilceNedeni": "yurt verebilen 9, acilisa uygun 3, taban hucre ayak izine yeten 3; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
+            "ayrilmisBosKatilim": 8,
+            "ilceNedeni": "yurt verebilen 9, acilisa uygun 4, taban hucre ayak izine yeten 4; once taban hucre, il tercihi, emsal, doluluk sirasiyla",
             "ayakIzi": 2,
             "yurtHucre": 6,
             "acilisYapiMs": [
@@ -2436,85 +2469,85 @@
             "ham": {
               "verdict": "kaldi",
               "gecKatilan": {
-                "basariPpm": 1000000,
-                "ulasan": 3,
+                "basariPpm": 666666,
+                "ulasan": 2,
                 "olculebilir": 3,
                 "olguSayisi": 3
               },
               "ucuzHucre": {
-                "payPpm": 161234,
-                "ucuzHucre": 94,
+                "payPpm": 193825,
+                "ucuzHucre": 113,
                 "uygunHucre": 583,
-                "ayrilmisUcuz": 94,
-                "genelUcuz": 0,
-                "genelPayPpm": 0
+                "ayrilmisUcuz": 104,
+                "genelUcuz": 9,
+                "genelPayPpm": 15437
               }
             },
             "arindirilmisServet": {
               "verdict": "kaldi",
               "gecKatilan": {
-                "basariPpm": 1000000,
-                "ulasan": 3,
+                "basariPpm": 666666,
+                "ulasan": 2,
                 "olculebilir": 3,
                 "olguSayisi": 3
               },
               "ucuzHucre": {
-                "payPpm": 161234,
-                "ucuzHucre": 94,
+                "payPpm": 193825,
+                "ucuzHucre": 113,
                 "uygunHucre": 583,
-                "ayrilmisUcuz": 94,
-                "genelUcuz": 0,
-                "genelPayPpm": 0
+                "ayrilmisUcuz": 104,
+                "genelUcuz": 9,
+                "genelPayPpm": 15437
               }
             },
             "oranlar": [
               {
-                "hamPpm": 4690025,
-                "arindirilmisPpm": 5830555,
+                "hamPpm": 4693339,
+                "arindirilmisPpm": 5835942,
                 "hibePayiPpm": 50342
               },
               {
-                "hamPpm": 19943567,
+                "hamPpm": 20026617,
                 "arindirilmisPpm": null,
                 "hibePayiPpm": 51538
               },
               {
-                "hamPpm": 3175798,
-                "arindirilmisPpm": 3848303,
-                "hibePayiPpm": 74345
+                "hamPpm": 914063,
+                "arindirilmisPpm": 906885,
+                "hibePayiPpm": 84328
               }
             ]
           }
         },
         "ucuz": {
-          "payPpm": 161234,
-          "ucuzHucre": 94,
+          "payPpm": 193825,
+          "ucuzHucre": 113,
           "uygunHucre": 583,
-          "ayrilmisUcuz": 94,
-          "genelUcuz": 0,
-          "genelPayPpm": 0
+          "ayrilmisUcuz": 104,
+          "genelUcuz": 9,
+          "genelPayPpm": 15437
         },
         "ilceler": [
           {
             "ilce": "sn_m_col_merkez",
             "uygunHucre": 57,
-            "satilmisHucre": 40,
+            "satilmisHucre": 42,
             "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 10
+            "ayrilmisBos": 11
           },
           {
             "ilce": "sn_m_col_tasra",
             "uygunHucre": 53,
-            "satilmisHucre": 32,
+            "satilmisHucre": 37,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_dag_merkez",
             "uygunHucre": 57,
-            "satilmisHucre": 39,
+            "satilmisHucre": 37,
             "ayrilmisSatilmis": 1,
-            "ayrilmisBos": 9
+            "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_dag_tasra",
@@ -2526,28 +2559,28 @@
           {
             "ilce": "sn_m_gecit_merkez",
             "uygunHucre": 57,
-            "satilmisHucre": 34,
+            "satilmisHucre": 29,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 11
           },
           {
             "ilce": "sn_m_gecit_tasra",
             "uygunHucre": 53,
-            "satilmisHucre": 32,
+            "satilmisHucre": 33,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_liman_merkez",
             "uygunHucre": 48,
-            "satilmisHucre": 26,
+            "satilmisHucre": 25,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 9
           },
           {
             "ilce": "sn_m_liman_tasra",
             "uygunHucre": 28,
-            "satilmisHucre": 15,
+            "satilmisHucre": 14,
             "ayrilmisSatilmis": 0,
             "ayrilmisBos": 5
           },
@@ -2561,23 +2594,23 @@
           {
             "ilce": "sn_m_ova_tasra",
             "uygunHucre": 57,
-            "satilmisHucre": 35,
-            "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 7
+            "satilmisHucre": 40,
+            "ayrilmisSatilmis": 1,
+            "ayrilmisBos": 10
           },
           {
             "ilce": "sn_m_sehir_merkez",
             "uygunHucre": 48,
-            "satilmisHucre": 37,
-            "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 4
+            "satilmisHucre": 36,
+            "ayrilmisSatilmis": 1,
+            "ayrilmisBos": 8
           },
           {
             "ilce": "sn_m_sehir_tasra",
             "uygunHucre": 29,
-            "satilmisHucre": 21,
+            "satilmisHucre": 18,
             "ayrilmisSatilmis": 0,
-            "ayrilmisBos": 4
+            "ayrilmisBos": 5
           }
         ],
         "y7": {
@@ -2595,9 +2628,9 @@
       "h8": {
         "verdict": "belirsiz",
         "gini": {
-          "degerGiniPpm": 450407,
-          "hucreGiniPpm": 465240,
-          "sahiplerDegerGiniPpm": 450407,
+          "degerGiniPpm": 441776,
+          "hucreGiniPpm": 463179,
+          "sahiplerDegerGiniPpm": 441776,
           "oyuncuSayisi": 17,
           "sahipSayisi": 17
         },
@@ -2621,17 +2654,17 @@
       "ayrilmis": {
         "gecOncesi": {
           "ayrilmisToplam": 110,
-          "satilan": 16,
-          "bos": 94,
-          "kalanPayPpm": 854545,
+          "satilan": 6,
+          "bos": 104,
+          "kalanPayPpm": 945454,
           "ihlal": 0,
           "guvenceTuttu": true
         },
         "sonda": {
           "ayrilmisToplam": 110,
-          "satilan": 23,
-          "bos": 87,
-          "kalanPayPpm": 790909,
+          "satilan": 17,
+          "bos": 93,
+          "kalanPayPpm": 845454,
           "ihlal": 0,
           "guvenceTuttu": true
         }
@@ -2708,9 +2741,9 @@
       "komutTurleri": {
         "yapi_yerlestir": 34,
         "ticaret_emri": 65,
-        "parsel_al": 31
+        "parsel_al": 32
       },
-      "sureMs": 5005
+      "sureMs": 3842
     }
   ]
 }

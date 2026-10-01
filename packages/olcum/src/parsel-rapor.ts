@@ -2,7 +2,7 @@
  * Parsel kısa koşusu raporu (Markdown + JSON özeti). Saf biçimlendirme: tohum sonuçlarından özet çıkarır ve Türkçe metin üretir.
  * Sayılar ppm ya da mili-₺'dir; yüzde/₺ gösterimi yalnız burada yapılır.
  */
-import { Y_OLCUTLERI, y7UretimGeliri } from "./parsel";
+import { PARSEL_H6_UCUZ_HUCRE_ESIK_PPM, Y_OLCUTLERI, kosullardanVerdict, y7UretimGeliri } from "./parsel";
 import type { AcilisKosuluSonucu, H6AcilisSonucu, Olculemez } from "./parsel";
 import { genelVerdict } from "./tipler";
 import type { Verdict } from "./tipler";
@@ -32,6 +32,13 @@ export interface ParselRaporMeta {
   bakimYonetimi?: boolean;
   /** Yaşlı spekülatörün alıma başladığı yaş (gün). */
   spekulatorGun?: number;
+  /** Ayrıştırma ayarları: ilceSec ayrılmış önceliği (vars. true = AÇIK) ve P3b çok hesap kuralları kapalı mı (vars. false = AÇIK). */
+  ayrilmisOnceligi?: boolean;
+  p3bKapali?: boolean;
+  /** P3d yurt kuralı (yurt önce ayrılmış dışından) kapalı mı (vars. false = kural parametredeki gibi AÇIK). */
+  yurtKapali?: boolean;
+  /** Bot tohumu (varyans); tanımsız = bugünkü sıra. */
+  botTohum?: number;
   /** Önceki koşuyla karşılaştırma (aynı geç katılan açılışları; Y7 ve servet oranları yan yana). */
   karsilastirma?: ParselKarsilastirma;
 }
@@ -212,6 +219,10 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
   k.push(`| Harita | ${meta.harita ?? "mini-6"} |`);
   k.push(`| Tarım yönetimi | ${meta.tarimYonetimi === true ? "AÇIK (ekim planı + gübre dozu; pasif ve spekülatör hariç)" : "kapalı"} |`);
   k.push(`| Bakım yönetimi | ${meta.bakimYonetimi === true ? "AÇIK (parça ithalatı + aşınma eşiğinde genel onarım; pasif ve spekülatör hariç)" : "kapalı"} |`);
+  if (meta.botTohum !== undefined) k.push(`| BOT TOHUMU (varyans) | ${meta.botTohum} (bot katılım/karar sırası karışık, tam eşit seçimler tohumlu; koşu tohumuyla birleşir) |`);
+  if (meta.ayrilmisOnceligi === false) k.push("| AYRIŞTIRMA: ilceSec ayrılmış önceliği | **KAPALI** (ayak izine yeten ilçe öne alınmaz; eski sıra: il tercihi, emsal, doluluk, kimlik) |");
+  if (meta.yurtKapali === true) k.push("| AYRIŞTIRMA: P3d yurt kuralı (yurt önce ayrılmış dışından) | **KAPALI** (koşucu seçeneği: yurt ayrılmış hücreleri de kullanabilir; parametreler.json değişmedi) |");
+  if (meta.p3bKapali === true) k.push("| AYRIŞTIRMA: P3b çok hesap kuralları | **KAPALI** (koşucu seçeneği: ayrılmış hücre her ilçede satılır, günlük ilçe tavanı yok; hesap başına 12 ve ilk 14 gün kuralı sürer; parametreler.json değişmedi) |");
   if (meta.yerlesikIlceSec === true) k.push("| İlçe seçimi | yerleşikler dahil `ilceSec` (yurt verebilen + açılışa uygun); geç katılanlar her zaman `ilceSec` |");
   if ((meta.duzen.yerlesik["spekulatorYasli"] ?? 0) > 0) k.push(`| Yaşlı spekülatör | ${meta.spekulatorGun ?? 15}. günden itibaren arsa alır (ayrılmış hücre süresi sonrası) |`);
   k.push(`| Ağır koşu | ${meta.agir ? "EVET (H6 tanımındaki gerçek 60. gün katılımı)" : "hayır (varsayılan; H6'nın 60. gün katılımı için `--agir`)"} |`);
@@ -511,4 +522,120 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
   k.push("- **Y7 geliri** = hazine akışı − sermaye harcaması (arsa + yapı parası); hibe/kit sermaye ve stok olduğundan gelire girmez.");
   k.push("");
   return k.join("\n") + "\n";
+}
+
+// ---------------------------------------------------------------------------
+// Ayrıştırma tablosu (baş lider kararı): bir sonucun hangi ayarın etkisi olduğunu ayrı ayrı gösterir
+// ---------------------------------------------------------------------------
+
+export interface AyristirmaGirdisi {
+  /** JSON dosya adı (yol değil: rapor deterministik kalsın) ve rapor etiketi. */
+  dosya: string;
+  etiket: string;
+  /** Koşunun ayarları: ilceSec ayrılmış önceliği AÇIK mıydı, P3b kuralları KAPALI mıydı. */
+  ayrilmisOnceligi: boolean;
+  p3bKapali: boolean;
+  yurtKapali?: boolean;
+  botTohum?: number | undefined;
+  sonuclar: readonly ParselTohumSonucu[];
+}
+
+function kosuSatiri(t: ParselTohumSonucu): {
+  kalan: number;
+  toplam: number;
+  tabanOlgu: number;
+  olgu: number;
+  y7Olculen: number;
+  h6Yeni: Verdict;
+  h6Eski: Verdict;
+  genc: number;
+  yasli: number;
+  yerlesikYurt: number;
+  gec: number;
+} {
+  const y7 = t.h6.y7;
+  const y7Hedef = y7.olculebilir ? y7.hedefGecti : null;
+  const ucuzHedef = t.h6.ucuz.uygunHucre === 0 ? null : t.h6.ucuz.payPpm >= PARSEL_H6_UCUZ_HUCRE_ESIK_PPM;
+  const topla = (f: (id: string) => boolean): number => t.oyuncular.filter((o) => f(o.id)).reduce((x, o) => x + o.ayrilmisHucre, 0);
+  const yaslimi = (id: string): boolean => id.startsWith("spekulator_yasli");
+  const gencmi = (id: string): boolean => id.startsWith("spekulator") && !yaslimi(id);
+  const gecmi = (id: string): boolean => id.startsWith("gec_");
+  return {
+    kalan: t.ayrilmis.gecOncesi.bos,
+    toplam: t.ayrilmis.gecOncesi.ayrilmisToplam,
+    tabanOlgu: t.h6.olgular.filter((o) => o.acilisKosulu.tabanYeter).length,
+    olgu: t.h6.olgular.length,
+    y7Olculen: y7.olculebilir ? y7.olculebilirOyuncu : 0,
+    h6Yeni: t.h6.karar.birincil.verdict,
+    h6Eski: kosullardanVerdict([y7Hedef, ucuzHedef]),
+    genc: topla(gencmi),
+    yasli: topla(yaslimi),
+    yerlesikYurt: topla((id) => !id.startsWith("spekulator") && !gecmi(id)),
+    gec: topla(gecmi),
+  };
+}
+
+const ayarAd = (g: AyristirmaGirdisi): string => `P3b ${g.p3bKapali ? "KAPALI" : "AÇIK"} · ilceSec önceliği ${g.ayrilmisOnceligi ? "AÇIK" : "KAPALI"} · yurt kuralı ${g.yurtKapali === true ? "KAPALI" : "AÇIK"}`;
+
+function aralik(xs: readonly number[]): string {
+  const mn = Math.min(...xs);
+  const mx = Math.max(...xs);
+  const ort = xs.reduce((t, x) => t + x, 0) / xs.length;
+  return mn === mx ? String(mn) : `${Math.round(ort * 10) / 10} (${mn}–${mx})`;
+}
+
+/** Ayrıştırma raporu: koşu başına özet (tohumlar üzerinden ortalama ve aralık) ve tohum başına döküm. Duvar saati içermez: deterministik. */
+export function ayristirmaRaporuUret(girdiler: readonly AyristirmaGirdisi[], meta: { etiket?: string; bulgular: string }): string {
+  const k: string[] = [];
+  k.push(`# Parsel ölçümü — ayrıştırma (${meta.etiket ?? "ayristirma"})`);
+  k.push("");
+  k.push("Aynı bot dağılımı ve aynı tohumlarla, üç ayarın etkisini ayrı ayrı ölçer: **P3d yurt kuralı** (yurt önce ayrılmış dışından), **P3b çok hesap kuralları** (ayrılmış hücre yalnız katılım ilçesinde + günlük ilçe tavanı) ve **ilceSec ayrılmış önceliği** (ayak izine yeten ilçe önce). P3b kapatma yalnız koşucu seçeneğidir (veri kopyası; parametreler.json değişmez).");
+  k.push("");
+  k.push(`**Bulgular ve yorum (elle yazılmış):** [${meta.bulgular}](${meta.bulgular})`);
+  k.push("");
+  k.push("## 1. Koşular");
+  k.push("");
+  k.push(tablo(["Etiket", "Dosya", "Ayarlar", "Bot tohumu", "Koşu tohumları"], girdiler.map((g) => [g.etiket, g.dosya, ayarAd(g), g.botTohum === undefined ? "yok" : String(g.botTohum), g.sonuclar.map((s) => s.tohum).join(", ")])));
+  k.push("");
+  k.push("## 2. Özet (tohumlar üzerinden ortalama; en düşük–en yüksek parantezde)");
+  k.push("");
+  k.push(
+    tablo(
+      ["Etiket", "Ayrılmış kalan (geç katılımdan önce, boş)", "Açılış (i) tutan olgu", "Y7 ölçülebilen olgu", "H6 yeni (tohum başına)", "H6 eski tanım (tohum başına)", "Genç spekülatör ayrılmış", "Yerleşik + yurt ayrılmış", "Yaşlı spekülatör", "Geç katılan"],
+      girdiler.map((g) => {
+        const r = g.sonuclar.map(kosuSatiri);
+        const topOlgu = r.reduce((t, x) => t + x.olgu, 0);
+        return [
+          g.etiket,
+          `${aralik(r.map((x) => x.kalan))} / ${r[0]?.toplam ?? "—"}`,
+          `${r.reduce((t, x) => t + x.tabanOlgu, 0)} / ${topOlgu} (tohum başına ${Math.min(...r.map((x) => x.tabanOlgu))}–${Math.max(...r.map((x) => x.tabanOlgu))} / ${r[0]?.olgu ?? "—"})`,
+          `${r.reduce((t, x) => t + x.y7Olculen, 0)} / ${topOlgu} (tohum başına ${Math.min(...r.map((x) => x.y7Olculen))}–${Math.max(...r.map((x) => x.y7Olculen))} / ${r[0]?.olgu ?? "—"})`,
+          r.map((x) => verdictAd(x.h6Yeni)).join(" · "),
+          r.map((x) => verdictAd(x.h6Eski)).join(" · "),
+          aralik(r.map((x) => x.genc)),
+          aralik(r.map((x) => x.yerlesikYurt)),
+          aralik(r.map((x) => x.yasli)),
+          aralik(r.map((x) => x.gec)),
+        ];
+      }),
+    ),
+  );
+  k.push("");
+  k.push("## 3. Tohum başına döküm");
+  k.push("");
+  k.push(
+    tablo(
+      ["Etiket", "Tohum", "Ayrılmış kalan", "Açılış (i)", "Y7 ölçülebilen", "H6 yeni", "H6 eski", "Genç spekülatör", "Yerleşik + yurt", "Yaşlı", "Geç"],
+      girdiler.flatMap((g) =>
+        g.sonuclar.map((t) => {
+          const x = kosuSatiri(t);
+          return [g.etiket, String(t.tohum), `${x.kalan} / ${x.toplam}`, `${x.tabanOlgu} / ${x.olgu}`, `${x.y7Olculen} / ${x.olgu}`, verdictAd(x.h6Yeni), verdictAd(x.h6Eski), String(x.genc), String(x.yerlesikYurt), String(x.yasli), String(x.gec)];
+        }),
+      ),
+    ),
+  );
+  k.push("");
+  k.push("Notlar: \"H6 yeni\" = Y7 + açılış koşulu (i) (docs/12 §13); \"H6 eski tanım\" = Y7 + ucuz hücre payı ≥ %20 (bilgi). Ayrılmış hücre sayıları koşu sonundaki sahiplik (yurt dahil). \"Yerleşik + yurt\": spekülatör ve geç katılan dışındaki tüm oyuncular (yurt hücrelerinin ayrılmış payı dahil).");
+  k.push("");
+  return k.join("\n");
 }

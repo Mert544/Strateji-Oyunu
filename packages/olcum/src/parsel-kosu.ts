@@ -84,6 +84,21 @@ export interface ParselKosuSecenek {
    * botlar eski davranışı korur (önayarın ilçe sıralaması, olmazsa çekirdeğin yedeği). Geç katılanlar HER ZAMAN `ilceSec` kullanır.
    */
   yerlesikIlceSec?: boolean;
+  /**
+   * AYRIŞTIRMA koşusu ayarları (baş lider kararı): `ayrilmisOnceligi` false ise `ilceSec` ayrılmış boş hücresi ayak izine yeten ilçeyi öne almaz
+   * (vars. true = AÇIK). `p3bKapali` true ise P3b çok hesap kuralları koşucu seçeneğiyle KAPATILIR: `ayrilmisYalnizKatilimIlcesi` false,
+   * `ayrilmisIlceGunlukPpm` ve `ayrilmisIlceGunlukEnAz` yok (parametreler.json'a dokunulmaz; veri kopyası değiştirilir). Vars. false (kurallar AÇIK).
+   */
+  ayrilmisOnceligi?: boolean;
+  p3bKapali?: boolean;
+  /** P3d yurt kuralı (`yurtAyrilmisSonra`: yurt önce ayrılmış dışından) koşucu seçeneğiyle KAPATILIR (veri kopyası). Vars. false (kural parametredeki gibi). */
+  yurtKapali?: boolean;
+  /**
+   * BOT TOHUMU (varyans kaynağı; baş lider kararı): verilirse her koşu tohumu için etkin bot tohumu = f(botTohum, tohum) olur ve (1) bot katılım/karar sırası
+   * deterministik karıştırılır (yerleşik bot dağılımındaki sıra dahil), (2) botların tam eşit seçimleri (ilçe eşitlikleri, ilk yapı hücresi grubu)
+   * tohumlu sırayla bozulur. Vars. tanımsız: sıra ve kararlar bugünkü gibi (mevcut raporlar bayt bayt aynı). Çekirdek tohumundan bağımsızdır.
+   */
+  botTohum?: number;
   /** Hazır veri paketi (test); verilmezse harita seçeneğine göre. */
   veri?: CekirdekVeriPaketi;
   ilerleme?: (mesaj: string) => void;
@@ -318,26 +333,75 @@ function yapiBedeli(sonuc: ParselKosuSonucu, oyuncu: OyuncuId, bit: number): num
   return t;
 }
 
+/**
+ * P3b çok hesap kurallarını KAPATIR (yalnız koşucu seçeneğiyle; veri kopyası): ayrılmış hücre her ilçede satılır (`ayrilmisYalnizKatilimIlcesi` false)
+ * ve günlük ilçe tavanı yoktur (`ayrilmisIlceGunlukPpm` ve `ayrilmisIlceGunlukEnAz` kaldırılır). Hesap başına 12 tavanı ve ilk 14 gün kuralı sürer.
+ */
+/** P3d yurt kuralını (`yurtAyrilmisSonra`) KAPATIR (yalnız koşucu seçeneğiyle; veri kopyası): yurt eskisi gibi ayrılmış hücreleri de kullanabilir. */
+export function yurtKapat(veri: CekirdekVeriPaketi, kapali: boolean): CekirdekVeriPaketi {
+  if (!kapali) return veri;
+  const mulk = veri.param.mulk;
+  if (mulk === undefined) return veri;
+  return { ...veri, param: { ...veri.param, mulk: { ...mulk, yeniOyuncu: { ...mulk.yeniOyuncu, yurtAyrilmisSonra: false } } } };
+}
+
+export function p3bKapat(veri: CekirdekVeriPaketi, kapali: boolean): CekirdekVeriPaketi {
+  if (!kapali) return veri;
+  const mulk = veri.param.mulk;
+  if (mulk === undefined) return veri;
+  const { ayrilmisIlceGunlukPpm: _p, ayrilmisIlceGunlukEnAz: _e, ...gerisi } = mulk.yeniOyuncu;
+  return { ...veri, param: { ...veri.param, mulk: { ...mulk, yeniOyuncu: { ...gerisi, ayrilmisYalnizKatilimIlcesi: false } } } };
+}
+
+/** Deterministik tohumlu Fisher-Yates karıştırma (mulberry32); girdiyi değiştirmez. */
+export function karistir<T>(dizi: readonly T[], tohum: number): T[] {
+  const a = [...dizi];
+  let t = tohum >>> 0;
+  const rastgele = (): number => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let x = t;
+    x = Math.imul(x ^ (x >>> 15), x | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rastgele() * (i + 1));
+    [a[i], a[j]] = [a[j] as T, a[i] as T];
+  }
+  return a;
+}
+
+/** Etkin bot tohumu: botTohum yoksa tanımsız (varyans yok); varsa (botTohum, koşu tohumu) karması. */
+export function etkinBotTohumu(botTohum: number | undefined, tohum: number): number | undefined {
+  if (botTohum === undefined) return undefined;
+  return (Math.imul(botTohum >>> 0, 2654435761) ^ Math.imul(tohum >>> 0, 40503)) >>> 0;
+}
+
 export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): ParselTohumSonucu {
   const basla = Date.now();
   const { gecGun, olcumGunu, sureGun, gecAcilislari } = ortakSecenekler(secenek);
   const duzen = parselDuzeni(secenek.yerlesik, gecAcilislari, gecGun, secenek.spekulatorGun ?? VARSAYILAN_SPEKULATOR_GUN);
   const harita = secenek.harita ?? "mini-6";
   const temel: CekirdekVeriPaketi = secenek.veri ?? (harita === "sentetik-50" ? { ...varsayilanVeriyiYukle(), parsel: parselFiksturuYukle("sentetik-50") } : { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") });
-  const veri = iklimUygula(temel as VeriPaketi, secenek.iklim ?? "hizli", tohum) as CekirdekVeriPaketi;
+  const veri = yurtKapat(p3bKapat(iklimUygula(temel as VeriPaketi, secenek.iklim ?? "hizli", tohum) as CekirdekVeriPaketi, secenek.p3bKapali === true), secenek.yurtKapali === true);
   const pencereGun = Math.min(7, olcumGunu);
 
-  const oyuncular: ParselKosuOyuncusu[] = duzen.oyuncular.map((o) => ({
+  const botTohumu = etkinBotTohumu(secenek.botTohum, tohum);
+  const oyuncularSirali: ParselKosuOyuncusu[] = duzen.oyuncular.map((o) => ({
     id: o.id,
     bot: parselBotuOlustur(o.onayar, o.id, {
       ...(o.acilis === null ? {} : { acilis: o.acilis }),
       ...(secenek.tarimYonetimi === true ? { tarimYonetimi: true } : {}),
       ...(secenek.bakimYonetimi === true ? { bakimYonetimi: true } : {}),
       ...(secenek.yerlesikIlceSec === true && o.onayar !== "gec_katilan" ? { ilceSec: true } : {}),
+      ...(secenek.ayrilmisOnceligi === false ? { ayrilmisOnceligi: false } : {}),
+      ...(botTohumu !== undefined ? { tohum: botTohumu } : {}),
       ...(o.baslangicGun > 0 ? { baslangicGun: o.baslangicGun } : {}),
     }),
     katilmaMs: o.katilmaGun * GUN,
   }));
+  // Bot tohumu açıksa katılım ve karar sırası deterministik karıştırılır (yerleşik tür dağılımındaki sıra dahil); yoksa bugünkü sıra.
+  const oyuncular = botTohumu === undefined ? oyuncularSirali : karistir(oyuncularSirali, botTohumu);
 
   // Gözlem anları: her geç katılım, +olcumGunu-pencere, +olcumGunu; ilk satış tespiti için saatlik ızgara + katılım + 10/60 dk.
   const hazine = new Map<string, number>(); // `${oyuncu}@${t}` -> hazine

@@ -14,7 +14,7 @@ import type { GecAcilis } from "@bolge/botlar";
 import { tohumAyristir } from "./ortak";
 import { TUM_IKLIM_MODLARI } from "./tipler";
 import type { IklimModu } from "./tipler";
-import { parselOzetle, parselRaporUret } from "./parsel-rapor";
+import { ayristirmaRaporuUret, parselOzetle, parselRaporUret } from "./parsel-rapor";
 import { PARSEL_HARITALARI, VARSAYILAN_SPEKULATOR_GUN, VARSAYILAN_YERLESIK, parselDuzeni, parselTohumKos } from "./parsel-kosu";
 import type { ParselHaritasi, ParselYerlesikDagilimi } from "./parsel-kosu";
 import type { ParselKarsilastirma } from "./parsel-rapor";
@@ -35,6 +35,15 @@ export interface ParselArguman {
   tarimYonetimi: boolean;
   bakimYonetimi: boolean;
   yerlesikIlceSec: boolean;
+  /** Ayrıştırma: ilceSec ayrılmış önceliği (vars. true) ve P3b kapatma (vars. false). */
+  ayrilmisOnceligi: boolean;
+  p3bKapali: boolean;
+  /** P3d yurt kuralını kapat (ayrıştırma). */
+  yurtKapali: boolean;
+  /** Bot tohumu (varyans; vars. tanımsız = bugünkü sıra). */
+  botTohum: number | undefined;
+  /** Ayrıştırma tablosu: koşulmuş parsel JSON'ları (virgülle); koşu yapılmaz. */
+  ayristirma: string[] | undefined;
   spekulatorGun: number | undefined;
   kalabalik: boolean;
   karsilastir: string | undefined;
@@ -77,7 +86,7 @@ function gecAyristir(v: string): GecAcilis[] {
 }
 
 export function parselArgumanAyristir(argv: readonly string[]): ParselArguman {
-  const a: ParselArguman = { tohum: PARSEL_VARSAYILAN_TOHUM, cikti: "raporlar", ad: undefined, bulgular: undefined, gun: undefined, gecGun: undefined, olcumGunu: undefined, bot: {}, gec: undefined, iklim: "hizli", agir: false, harita: "mini-6", tarimYonetimi: false, bakimYonetimi: false, yerlesikIlceSec: false, spekulatorGun: undefined, kalabalik: false, karsilastir: undefined, yardim: false };
+  const a: ParselArguman = { tohum: PARSEL_VARSAYILAN_TOHUM, cikti: "raporlar", ad: undefined, bulgular: undefined, gun: undefined, gecGun: undefined, olcumGunu: undefined, bot: {}, gec: undefined, iklim: "hizli", agir: false, harita: "mini-6", tarimYonetimi: false, bakimYonetimi: false, yerlesikIlceSec: false, ayrilmisOnceligi: true, p3bKapali: false, yurtKapali: false, botTohum: undefined, ayristirma: undefined, spekulatorGun: undefined, kalabalik: false, karsilastir: undefined, yardim: false };
   let tohumVerildi = false;
   for (let i = 0; i < argv.length; i++) {
     const x = argv[i] as string;
@@ -139,6 +148,27 @@ export function parselArgumanAyristir(argv: readonly string[]): ParselArguman {
       case "--ilce-sec":
         a.yerlesikIlceSec = true;
         break;
+      case "--oncelik-kapali":
+        a.ayrilmisOnceligi = false;
+        break;
+      case "--p3b-kapali":
+        a.p3bKapali = true;
+        break;
+      case "--yurt-kurali-kapali":
+        a.yurtKapali = true;
+        break;
+      case "--bot-tohum": {
+        const v = Number(deger());
+        if (!Number.isSafeInteger(v) || v < 0) throw new Error(`--bot-tohum negatif olmayan tamsayi olmali: ${x}`);
+        a.botTohum = v;
+        break;
+      }
+      case "--ayristirma": {
+        const dosyalar = deger().split(",").map((x) => x.trim()).filter((x) => x !== "");
+        if (dosyalar.length < 2) throw new Error("--ayristirma en az iki JSON dosyasi ister (virgulle ayrilmis)");
+        a.ayristirma = dosyalar;
+        break;
+      }
       case "--bakim-yonetimi":
         a.bakimYonetimi = true;
         break;
@@ -184,6 +214,11 @@ const YARDIM = `Kullanim: pnpm olcum --kip parsel [--tohum 1-3] [--gun 24] [--ge
   --tarim-yonetimi  Botlar ekim_plani + gubre_dozu ile toprak yonetir (pasif/spekulator haric)
   --bakim-yonetimi  Botlar bakim parcasi ithal eder ve asinma esiginde genel_onarim yapar (pasif/spekulator haric)
   --ilce-sec     Yerlesik botlar da ilceyi ilceSec ile secsin (yurt verebilen + acilisa uygun; uygun yoksa katilmaz). Gec katilanlar HER ZAMAN ilceSec kullanir
+  --oncelik-kapali  AYRISTIRMA: ilceSec ayrilmis bos hucre onceligini KAPAT (vars. acik: ayak izine yeten ilce once)
+  --p3b-kapali   AYRISTIRMA: P3b cok hesap kurallarini kosucu secenegiyle KAPAT (katilim ilcesi kurali ve gunluk ilce tavani; parametreler.json degismez)
+  --yurt-kurali-kapali  AYRISTIRMA: P3d yurt kuralini (yurt once ayrilmis disindan) kosucu secenegiyle KAPAT (parametreler.json degismez)
+  --bot-tohum    Bot tohumu (varyans): bot katilim/karar sirasi karisir, tam esit secimler tohumlu bozulur; vars. yok (bugunku sira). Cekirdek tohumundan bagimsiz
+  --ayristirma   Kosu yapmaz: virgulle ayrilmis parsel JSON'larindan ayristirma tablosu uretir (parsel-<ad>.md); sirayla a,b,c,...
   --spekulator-gun  Yasli spekulatorun arsa almaya basladigi yas, gun (vars. 15)
   --karsilastir  Onceki parsel olcum JSON'u: rapora yan yana Y7/servet oranlari ekler
   --agir         AGIR koşu: gec-gun 60 (74 sim gunu), tohum 1-10. Varsayilanda calistirilmaz.`;
@@ -192,6 +227,18 @@ export function parselAna(argv: readonly string[]): void {
   const arg = parselArgumanAyristir(argv);
   if (arg.yardim) {
     console.log(YARDIM);
+    return;
+  }
+  if (arg.ayristirma !== undefined) {
+    const girdiler = arg.ayristirma.map((d) => {
+      const j = JSON.parse(readFileSync(d, "utf8")) as { kip?: string; etiket?: string; ayrilmisOnceligi?: boolean; p3bKapali?: boolean; yurtKapali?: boolean; botTohum?: number; tohumBasina?: ParselKarsilastirma["sonuclar"] };
+      if (j.kip !== "parsel" || !Array.isArray(j.tohumBasina)) throw new Error(`--ayristirma: gecerli bir parsel olcum JSON'u degil: ${d}`);
+      return { dosya: basename(d), etiket: j.etiket ?? basename(d), ayrilmisOnceligi: j.ayrilmisOnceligi !== false, p3bKapali: j.p3bKapali === true, yurtKapali: j.yurtKapali === true, botTohum: j.botTohum, sonuclar: j.tohumBasina };
+    });
+    const adA = `parsel-${arg.ad ?? "ayristirma"}`;
+    mkdirSync(arg.cikti, { recursive: true });
+    writeFileSync(join(arg.cikti, `${adA}.md`), ayristirmaRaporuUret(girdiler, { etiket: arg.ad, bulgular: arg.bulgular ?? `${adA}-bulgular.md` }), "utf8");
+    console.log(`Rapor: ${join(arg.cikti, adA)}.md`);
     return;
   }
   const gecGun = arg.gecGun ?? (arg.agir ? PARSEL_AGIR_GEC_GUN : 10);
@@ -208,7 +255,7 @@ export function parselAna(argv: readonly string[]): void {
   console.log(`Parsel olcumu | tohum ${tohumlar.join(",")} | ${toplamBot} bot | gec-gun ${gecGun} + olcum ${olcumGunu} -> ${sureGun} gun | iklim ${arg.iklim} | harita ${arg.harita}${arg.tarimYonetimi ? " | TARIM-YONETIMI" : ""}${arg.bakimYonetimi ? " | BAKIM-YONETIMI" : ""}${arg.kalabalik ? " | KALABALIK" : ""}${arg.agir ? " | AGIR" : ""}${arg.ad ? ` | etiket ${arg.ad}` : ""}`);
   const basla = Date.now();
   const sonuclar = tohumlar.map((t) => {
-    const r = parselTohumKos({ tohumlar, gecGun, olcumGunu, gun: sureGun, yerlesik: yerlesikDagilim, harita: arg.harita, tarimYonetimi: arg.tarimYonetimi, bakimYonetimi: arg.bakimYonetimi, yerlesikIlceSec: arg.yerlesikIlceSec, spekulatorGun, gecAcilislari, iklim: arg.iklim, ilerleme: (m) => console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] ${m}`) }, t);
+    const r = parselTohumKos({ tohumlar, gecGun, olcumGunu, gun: sureGun, yerlesik: yerlesikDagilim, harita: arg.harita, tarimYonetimi: arg.tarimYonetimi, bakimYonetimi: arg.bakimYonetimi, yerlesikIlceSec: arg.yerlesikIlceSec, ayrilmisOnceligi: arg.ayrilmisOnceligi, p3bKapali: arg.p3bKapali, yurtKapali: arg.yurtKapali, ...(arg.botTohum !== undefined ? { botTohum: arg.botTohum } : {}), spekulatorGun, gecAcilislari, iklim: arg.iklim, ilerleme: (m) => console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] ${m}`) }, t);
     console.log(`[${((Date.now() - basla) / 1000).toFixed(1)} sn] tohum ${t} bitti: H6 (Y7+acilis) ${r.h6.karar.birincil.verdict}, servet(ikincil) ${r.h6.karar.ikincil.ham.verdict}, H8 ${r.h8.verdict}`);
     return r;
   });
@@ -226,6 +273,10 @@ export function parselAna(argv: readonly string[]): void {
     tarimYonetimi: arg.tarimYonetimi,
     bakimYonetimi: arg.bakimYonetimi,
     yerlesikIlceSec: arg.yerlesikIlceSec,
+    ayrilmisOnceligi: arg.ayrilmisOnceligi,
+    p3bKapali: arg.p3bKapali,
+    yurtKapali: arg.yurtKapali,
+    ...(arg.botTohum !== undefined ? { botTohum: arg.botTohum } : {}),
     spekulatorGun,
     ...(karsilastirma !== undefined ? { karsilastirma } : {}), etiket: arg.ad, bulgular: arg.bulgular ?? `${ad}-bulgular.md`, tohumlar, gun: sureGun, gecGun, olcumGunu, iklim: arg.iklim, agir: arg.agir, sureMs, duzen: { yerlesik, gec: gecAcilislari } };
   const { karsilastirma: _onceki, ...jsonMeta } = meta; // karşılaştırılan koşunun tamamı JSON'a kopyalanmaz

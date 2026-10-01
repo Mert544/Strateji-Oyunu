@@ -18,6 +18,7 @@ import {
   hibeKitDegeri,
   olguKarsilastirmasi,
   parselAna,
+  ayristirmaRaporuUret,
   parselArgumanAyristir,
   parselDuzeni,
   parselOzetle,
@@ -28,6 +29,8 @@ import {
   yuzde,
 } from "../src";
 import type { ParselKosuSecenek } from "../src";
+import { etkinBotTohumu, karistir, p3bKapat, yurtKapat } from "../src/parsel-kosu";
+import { tohumluSira } from "@bolge/botlar";
 
 const KISA: ParselKosuSecenek = { tohumlar: [1], gecGun: 2, olcumGunu: 4, yerlesik: { ciftci: 2, sanayici: 1, tuccar: 1, pasif: 1 } };
 
@@ -454,6 +457,179 @@ describe("parsel komut satırı", () => {
     expect(j.tohumBasina).toHaveLength(1);
     expect(j.ozet.h6).toBeDefined();
     expect(() => parselAna(["--gun", "3", "--gec-gun", "2", "--olcum-gunu", "4", "--cikti", dizin])).toThrow(/en az/);
+  });
+});
+
+describe("ayrıştırma: P3b kapatma, ilceSec önceliği ve ayrıştırma tablosu", () => {
+  const SPEK: ParselKosuSecenek = { tohumlar: [1], gecGun: 20, olcumGunu: 10, yerlesik: { ciftci: 2, sanayici: 1, tuccar: 1, pasif: 1, spekulator: 3, spekulatorYasli: 3 }, spekulatorGun: 15 };
+
+  it("p3bKapat: yalnız veri kopyasını değiştirir (orijinal ve parametreler.json değişmez); kapalı değilse aynı nesne", () => {
+    const v: CekirdekVeriPaketi = { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") };
+    const yo0 = JSON.stringify(v.param.mulk!.yeniOyuncu);
+    expect(p3bKapat(v, false)).toBe(v);
+    const k = p3bKapat(v, true);
+    expect(k).not.toBe(v);
+    const yo = k.param.mulk!.yeniOyuncu;
+    expect(yo.ayrilmisYalnizKatilimIlcesi).toBe(false);
+    expect(yo.ayrilmisIlceGunlukPpm).toBeUndefined();
+    expect(yo.ayrilmisIlceGunlukEnAz).toBeUndefined();
+    expect(yo.ayrilmisHucreHesapTavani).toBe(v.param.mulk!.yeniOyuncu.ayrilmisHucreHesapTavani); // 12 tavanı sürer
+    expect(JSON.stringify(v.param.mulk!.yeniOyuncu)).toBe(yo0); // orijinal dokunulmadı
+    // Parametre dosyasında kurallar AÇIK olmalı (kapatma gerçekten bir şeyi kapatıyor)
+    expect(v.param.mulk!.yeniOyuncu.ayrilmisYalnizKatilimIlcesi).toBe(true);
+    expect(v.param.mulk!.yeniOyuncu.ayrilmisIlceGunlukPpm).toBeGreaterThan(0);
+  });
+
+  it("p3bKapali koşusu: kapalıyken genç spekülatörler daha çok ayrılmış alır, hesap tavanı (12) sürer, reddedilen komut yok, deterministik", () => {
+    const acik = parselTohumKos(SPEK, 1);
+    const kapali = parselTohumKos({ ...SPEK, p3bKapali: true }, 1);
+    for (const o of acik.oyuncular.filter((x) => x.id.startsWith("spekulator") && !x.id.startsWith("spekulator_yasli"))) expect(o.ayrilmisHucre, o.id).toBeLessThanOrEqual(12);
+    // Kapalıyken genç spekülatörler daha çok ayrılmış alır (kurallar bunu kısıyordu)
+    const genc = (r: typeof acik) => r.oyuncular.filter((x) => x.id.startsWith("spekulator") && !x.id.startsWith("spekulator_yasli")).reduce((t, x) => t + x.ayrilmisHucre, 0);
+    expect(genc(kapali)).toBeGreaterThan(genc(acik));
+    // Hesap tavanı (12/hesap) kapalıyken de sürer; reddedilen komut yok
+    for (const o of kapali.oyuncular) {
+      expect(o.ayrilmisHucre, o.id).toBeLessThanOrEqual(12);
+      expect(o.basarisiz, o.id).toBe(0);
+    }
+    expect(parselTohumKos({ ...SPEK, p3bKapali: true }, 1).ayrilmis.gecOncesi).toEqual(kapali.ayrilmis.gecOncesi); // deterministik
+  });
+
+  it("ilceSec önceliği kapatılabilir (varsayılan AÇIK); aynı koşuda açık ile kapalı olgu alanları tutarlı", () => {
+    const a = parselTohumKos({ ...SPEK, ayrilmisOnceligi: false }, 1);
+    const b = parselTohumKos(SPEK, 1);
+    for (const r of [a, b]) for (const o of r.h6.olgular) expect(o.acilisKosulu.tabanYeter).toBe(o.ayrilmisBosKatilim >= o.ayakIzi);
+    expect(a.h6.olgular.map((o) => o.ilceNedeni).join("|")).not.toContain("once taban hucre");
+    expect(b.h6.olgular.map((o) => o.ilceNedeni).join("|")).toContain("once taban hucre");
+  });
+
+  it("CLI bayrakları: --oncelik-kapali, --p3b-kapali, --ayristirma; ayrıştırma raporu deterministik ve ayarları gösterir", () => {
+    expect(parselArgumanAyristir([])).toMatchObject({ ayrilmisOnceligi: true, p3bKapali: false, ayristirma: undefined });
+    expect(parselArgumanAyristir(["--oncelik-kapali", "--p3b-kapali"])).toMatchObject({ ayrilmisOnceligi: false, p3bKapali: true });
+    expect(parselArgumanAyristir(["--ayristirma", "a.json,b.json"]).ayristirma).toEqual(["a.json", "b.json"]);
+    expect(() => parselArgumanAyristir(["--ayristirma", "a.json"])).toThrow(/en az iki/);
+    const a = parselTohumKos(SPEK, 1);
+    const b = parselTohumKos({ ...SPEK, p3bKapali: true }, 1);
+    const girdiler = [
+      { dosya: "a.json", etiket: "a", ayrilmisOnceligi: true, p3bKapali: false, sonuclar: [a] },
+      { dosya: "b.json", etiket: "b", ayrilmisOnceligi: true, p3bKapali: true, sonuclar: [b] },
+    ];
+    const md = ayristirmaRaporuUret(girdiler, { etiket: "t", bulgular: "x.md" });
+    expect(md).toBe(ayristirmaRaporuUret(girdiler, { etiket: "t", bulgular: "x.md" }));
+    expect(md).toContain("P3b KAPALI · ilceSec önceliği AÇIK");
+    expect(md).toContain("P3b AÇIK · ilceSec önceliği AÇIK");
+    expect(md).not.toMatch(/\d+ ms|sureMs/);
+    // tablodaki genç spekülatör sayıları sonuçlardan türer
+    const gencA = a.oyuncular.filter((x) => x.id.startsWith("spekulator") && !x.id.startsWith("spekulator_yasli")).reduce((t, x) => t + x.ayrilmisHucre, 0);
+    expect(md).toContain(`| a | 1 | ${a.ayrilmis.gecOncesi.bos} / ${a.ayrilmis.gecOncesi.ayrilmisToplam} |`);
+    expect(md).toContain(`| ${gencA} |`);
+  });
+
+  it("--p3b-kapali ve --oncelik-kapali raporda görünür (meta satırları); varsayılanda görünmez", () => {
+    const dizin = mkdtempSync(join(tmpdir(), "parsel-ayr-"));
+    geciciler.push(dizin);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    parselAna(["--tohum", "1", "--gec-gun", "2", "--olcum-gunu", "4", "--bot", "ciftci=2,sanayici=1,tuccar=1,pasif=1", "--cikti", dizin, "--ad", "kapali", "--p3b-kapali", "--oncelik-kapali"]);
+    parselAna(["--tohum", "1", "--gec-gun", "2", "--olcum-gunu", "4", "--bot", "ciftci=2,sanayici=1,tuccar=1,pasif=1", "--cikti", dizin, "--ad", "acik"]);
+    const kapali = readFileSync(join(dizin, "parsel-kapali.md"), "utf8");
+    const acik = readFileSync(join(dizin, "parsel-acik.md"), "utf8");
+    expect(kapali).toContain("AYRIŞTIRMA: P3b çok hesap kuralları");
+    expect(kapali).toContain("AYRIŞTIRMA: ilceSec ayrılmış önceliği");
+    expect(acik).not.toContain("AYRIŞTIRMA");
+    // ayrıştırma modu koşu yapmadan iki JSON'dan tablo üretir
+    parselAna(["--ayristirma", `${join(dizin, "parsel-acik.json")},${join(dizin, "parsel-kapali.json")}`, "--cikti", dizin, "--ad", "tablo"]);
+    const tablo = readFileSync(join(dizin, "parsel-tablo.md"), "utf8");
+    expect(tablo).toContain("P3b KAPALI · ilceSec önceliği KAPALI");
+    expect(tablo).toContain("P3b AÇIK · ilceSec önceliği AÇIK");
+  });
+});
+
+describe("ayrıştırma: P3d yurt kuralı kapatma", () => {
+  it("yurtKapat: yalnız veri kopyası; kural parametrede AÇIKken kapalı koşuda yurt ayrılmış hücre alabilir (sayı ≥), CLI bayrağı ve rapor satırı", () => {
+    const v: CekirdekVeriPaketi = { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") };
+    expect(v.param.mulk!.yeniOyuncu.yurtAyrilmisSonra).toBe(true); // parametrede AÇIK
+    expect(yurtKapat(v, false)).toBe(v);
+    const k = yurtKapat(v, true);
+    expect(k.param.mulk!.yeniOyuncu.yurtAyrilmisSonra).toBe(false);
+    expect(v.param.mulk!.yeniOyuncu.yurtAyrilmisSonra).toBe(true); // orijinal dokunulmadı
+    expect(k.param.mulk!.yeniOyuncu.ayrilmisYalnizKatilimIlcesi).toBe(v.param.mulk!.yeniOyuncu.ayrilmisYalnizKatilimIlcesi); // P3b ayarına dokunmaz
+    const SEC: ParselKosuSecenek = { tohumlar: [1], gecGun: 2, olcumGunu: 4, yerlesik: { ciftci: 4, sanayici: 2, tuccar: 2, pasif: 2 } };
+    const acik = parselTohumKos(SEC, 1);
+    const kapali = parselTohumKos({ ...SEC, yurtKapali: true }, 1);
+    // Yurt kuralı AÇIKken yurt hücrelerinden ayrılmış olan, kapalıdakinden fazla olamaz
+    const yurtAyr = (r: typeof acik) => r.oyuncular.reduce((t, o) => t + o.ayrilmisHucre, 0);
+    expect(yurtAyr(acik)).toBeLessThanOrEqual(yurtAyr(kapali));
+    expect(parselArgumanAyristir(["--yurt-kurali-kapali"]).yurtKapali).toBe(true);
+    expect(parselArgumanAyristir([]).yurtKapali).toBe(false);
+    const dizin = mkdtempSync(join(tmpdir(), "parsel-yurt-"));
+    geciciler.push(dizin);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    parselAna(["--tohum", "1", "--gec-gun", "2", "--olcum-gunu", "4", "--bot", "ciftci=2,sanayici=1,tuccar=1,pasif=1", "--cikti", dizin, "--ad", "yk", "--yurt-kurali-kapali"]);
+    expect(readFileSync(join(dizin, "parsel-yk.md"), "utf8")).toContain("AYRIŞTIRMA: P3d yurt kuralı");
+    const md = ayristirmaRaporuUret([
+      { dosya: "a.json", etiket: "a", ayrilmisOnceligi: true, p3bKapali: false, yurtKapali: false, sonuclar: [acik] },
+      { dosya: "d.json", etiket: "d", ayrilmisOnceligi: true, p3bKapali: false, yurtKapali: true, sonuclar: [kapali] },
+    ], { etiket: "t", bulgular: "x.md" });
+    expect(md).toContain("yurt kuralı AÇIK");
+    expect(md).toContain("yurt kuralı KAPALI");
+  });
+});
+
+describe("bot tohumu: deterministik varyans kaynağı (varsayılan davranış değişmez)", () => {
+  const SPEK: ParselKosuSecenek = { tohumlar: [1], gecGun: 20, olcumGunu: 10, yerlesik: { ciftci: 3, sanayici: 2, tuccar: 2, pasif: 1, spekulator: 3, spekulatorYasli: 3 }, spekulatorGun: 15 };
+
+  it("karistir: deterministik permütasyon, girdiyi değiştirmez; etkinBotTohumu: tanımsızsa tanımsız, aksi halde (bot, koşu) tohumuna bağlı", () => {
+    const g = [1, 2, 3, 4, 5, 6, 7, 8];
+    expect(karistir(g, 5)).toEqual(karistir(g, 5));
+    expect([...karistir(g, 5)].sort((a, b) => a - b)).toEqual(g);
+    expect(g).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(karistir(g, 5)).not.toEqual(karistir(g, 6));
+    expect(etkinBotTohumu(undefined, 3)).toBeUndefined();
+    expect(etkinBotTohumu(7, 1)).not.toBe(etkinBotTohumu(7, 2));
+    expect(etkinBotTohumu(7, 1)).not.toBe(etkinBotTohumu(8, 1));
+    expect(etkinBotTohumu(7, 1)).toBe(etkinBotTohumu(7, 1));
+  });
+
+  it("tohumluSira: tohum yoksa kimlik sırası (eski davranış); tohumluyken eşitlik hariç antisimetrik, deterministik ve tohuma bağlı", () => {
+    expect(tohumluSira(undefined, "b", "x", "y")).toBe(-1);
+    expect(tohumluSira(undefined, "b", "y", "x")).toBe(1);
+    expect(tohumluSira(undefined, "b", "x", "x")).toBe(0);
+    const ids = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    for (const a of ids) for (const b of ids) expect(Math.sign(tohumluSira(3, "bot", a, b)) + Math.sign(tohumluSira(3, "bot", b, a))).toBe(0);
+    const sira = (t: number) => [...ids].sort((a, b) => tohumluSira(t, "bot", a, b)).join("");
+    expect(sira(3)).toBe(sira(3));
+    expect(new Set([1, 2, 3, 4, 5].map(sira)).size).toBeGreaterThan(1); // tohum sırayı değiştirir
+  });
+
+  it("VARSAYILAN DEĞİŞMEZ: botTohum verilmezse sonuç tohumsuz koşuyla bayt bayt aynı; verilince farklı tohumlar farklı sonuç verir, aynı tohum tekrar aynı, reddedilen komut yok", () => {
+    const j = (r: ReturnType<typeof parselTohumKos>) => JSON.stringify({ ...r, sureMs: 0 });
+    const temel = parselTohumKos(SPEK, 1);
+    expect(j(parselTohumKos({ ...SPEK, botTohum: undefined }, 1))).toBe(j(temel));
+    const farkli = [1, 2, 3].map((b) => parselTohumKos({ ...SPEK, botTohum: b }, 1));
+    expect(j(parselTohumKos({ ...SPEK, botTohum: 2 }, 1))).toBe(j(farkli[1] as typeof temel));
+    expect(new Set(farkli.map((r) => r.durumOzeti)).size).toBeGreaterThan(1); // varyans gerçekten var
+    for (const r of farkli) {
+      for (const o of r.oyuncular) expect(o.basarisiz, o.id).toBe(0);
+      expect(r.ayrilmis.gecOncesi.ihlal).toBe(0);
+      expect(r.h6.olgular.map((o) => o.gec)).toEqual(["gec_ciftci", "gec_sanayici", "gec_pazar"]); // rapor sırası sabit
+    }
+  });
+
+  it("CLI: --bot-tohum ayrıştırılır (negatif/kesirli hata); raporda ve JSON'da görünür, varsayılanda görünmez", () => {
+    expect(parselArgumanAyristir([]).botTohum).toBeUndefined();
+    expect(parselArgumanAyristir(["--bot-tohum", "7"]).botTohum).toBe(7);
+    expect(() => parselArgumanAyristir(["--bot-tohum", "-1"])).toThrow(/--bot-tohum/);
+    expect(() => parselArgumanAyristir(["--bot-tohum", "1.5"])).toThrow(/--bot-tohum/);
+    const dizin = mkdtempSync(join(tmpdir(), "parsel-bt-"));
+    geciciler.push(dizin);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const ortak = ["--tohum", "1", "--gec-gun", "2", "--olcum-gunu", "4", "--bot", "ciftci=2,sanayici=1,tuccar=1,pasif=1", "--cikti", dizin];
+    parselAna([...ortak, "--ad", "bt", "--bot-tohum", "7"]);
+    parselAna([...ortak, "--ad", "yok"]);
+    expect(readFileSync(join(dizin, "parsel-bt.md"), "utf8")).toContain("BOT TOHUMU (varyans) | 7");
+    expect(readFileSync(join(dizin, "parsel-yok.md"), "utf8")).not.toContain("BOT TOHUMU");
+    expect((JSON.parse(readFileSync(join(dizin, "parsel-bt.json"), "utf8")) as { botTohum?: number }).botTohum).toBe(7);
+    expect((JSON.parse(readFileSync(join(dizin, "parsel-yok.json"), "utf8")) as { botTohum?: number }).botTohum).toBeUndefined();
   });
 });
 
