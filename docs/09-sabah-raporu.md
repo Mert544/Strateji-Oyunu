@@ -3,6 +3,15 @@
 > Gece boyunca takım lideri ve ajanlarının yaptıkları, sonuçlar ve sahibin kararını bekleyen konular.
 > Ayrıntılı görev listesi: [10-gorev-listesi.md](10-gorev-listesi.md). Altı katman tasarımı: [08-alti-katman.md](08-alti-katman.md).
 
+## Güncel durum (1 Ekim akşam)
+
+Bu rapor sabahın kaydıdır; aşağıdaki özet, sahip kararları ve gece planı tarihseldir. Sonrası:
+- **Sprint 2** (öğleden sonra) bitti ve push'landı: kamu arsası (P1), para güvenliği (P2), mal kimlik kilidi (P3, P3b, P3c, P3d), ölçek kilitsiz (P4a), sunucuda "sen yokken", Esnaf Defteri, Postgres, görüntü işçisi, Alfa-0 açılış kontrol listesi; istemcide "Kâğıt ve Çini" kimliği ve mülk kipi kabuğu. Ayrıntı: [13](13-toplanti-notu-1.md) §1.
+- **Karar belgeleri:** yön taslağı [12](12-yon-taslagi.md) (§14 sahip kararları), oyun tasarım belgesi v1 ([arastirma](arastirma/oyun-tasarim-belgesi-v1.md)).
+- **Takım modeli** ([14](14-takim-modeli.md)): dört takım, 17 ajan; teslim yolu çalışan → lider → entegrasyon kapısı → baş lider push'u.
+- **Sprint A0-02** (Alfa-0 yolunun 1–3. adımları) sürüyor; görev durumları [10 §5A](10-gorev-listesi.md). G0 tamam, G3 (Gemlik ve Körfez arsa ızgarası) kapı kuyruğunda, G1, G4, G5 sürüyor, çekirdek işleri (G6–G8) G4 onayını bekliyor.
+- **Açılış provası** (Docker dışı kontrol listesi adımları, yerel Postgres): O3 yürütüyor; sonuçları sunucu README'sindeki kontrol listesine işlenir.
+
 ## Özet
 
 **3D gerçek dünya çalışıyor.**
@@ -82,3 +91,6 @@ Kaynak: sahibin 30 Eylül akşamı talebi.
 | 07:48 | Kontrol turu. **S4 sunucu bitti** (tek yazar, idempotans, hız sınırı, dosya/pg kalıcılık, kill -9 kurtarma, iki istemci ve mülk kipinde uçtan uca; çekirdekte paylaşılan dizi hatası bulundu, S3'e iletildi). **S8 harita bitti** (küre → il → ilçe → hücre → satın al → sahiplik; harita yığını ayrı `harita.js`, tek dosya 372 KB). İkisi de S3'ün komut birliğine bağlı olduğu için S3 ile birlikte commit'lenecek. **F5 yürüyüş** başladı. Sahip kararları: hücre seçimi gizli, yapı önce yerleşim + OSM adalarından hazır arsalar (ab54454); askeri güç beşinci ayak (b973fe0). |
 | 09:00 | **Sprint 1 tamamlandı.** S3 mülk modeli (80fcd5f), S4 protokol + sunucu (75924c1), S8 harita + F5 yürüyüş ilk dilimi (b25aa83) temiz worktree'de 1120 testle doğrulanıp push'landı. Ar-Ge (5 rapor): Capital Rift mekanikleri, üretim katmanlarında çeşitlilik (Türkiye öncelikli üç kademeli katalog), yönetim/askeri/teknoloji/canlı dünya, oyun kimliği harmanı, başlangıç ve stratejik yönelim. Sahip kararları: strateji tabanlı (MMORPG değil), yürüyüş adaptasyon katmanı, askeri beşinci ayak, hücre seçimi gizli. Bilinen açıklar: yürüyüş kamerası uzak, 1k oyuncu/30 gün 150 sn (hedef 22), yeni oyuncu parametrelerinin yarısı çekirdekte okunmuyor, ilk satış liman etiketine takılıyor. |
 | 09:30 | **Sprint 2 sürüyor.** Commit'lendi: yön taslağı docs/12 (94425cb, c2e6ecd), canlı dünya (2241872), arsa ve inşa (ff2990d), bilim-teknoloji-askeri (51faac4) Ar-Ge raporları, yürüyüş kamera/ölçek/panel düzeltmesi (8197861). Çalışan: çekirdek (yeni oyuncu paketi, limansız ilk satış, eksik yapılar, atomik `yapi_yerlestir`), F4 haritayı sunucuya bağlama, imza mekanikleri ve görsel kimlik Ar-Ge. Sahip isteğiyle yarım saatlik zamanlayıcı kaldırıldı; ajan bitiş bildirimleriyle ilerleniyor. |
+| 1 Ekim, öğleden sonra | **Sprint 2 tamamlandı ve push'landı** (son: `3f1a7c1`): P1 kamu arsası, P2 para güvenliği, P3 mal kimlik kilidi, P3b/P3d ayrılmış hücre kuralları, P3c lojistik hızlandırma (çıktı birebir), P4a ölçek kilitsiz; sunucuda "sen yokken", Esnaf Defteri, pg deposu, görüntü işçisi; istemcide "Kâğıt ve Çini" kimliği. Sahip toplantı notu 1 ([13](13-toplanti-notu-1.md)); dunya.html ≈ 372 KB / 400 KB. |
+| 1 Ekim, akşam | **Sahip kararları ve Sprint A0-02** (`a07b30e`, [12 §14](12-yon-taslagi.md)): para biçimi `1.234 ₺`, e-posta bağlantısıyla giriş (Google yok), süpermarket 3 hücre, birim adı müfreze/bölük; Windows'ta yeşil temel çizgi. **17 ajanlı takım modeli** ([14](14-takim-modeli.md)). |
+| 1 Ekim, akşam | **G3 teslim edildi** (`takim/o3/g3-izgara`, kapı kuyruğunda): Gemlik ve Körfez z20 ızgarası, ilçe parametreli hat, üretilmiş manifest, iki üretim bayt bayt aynı ([izgara-boyut-g3](olcum/izgara-boyut-g3.md)). Bulgu: sunucunun parsel fikstürü JSON yolu 3 ilin tamamına ölçeklenmez (3 ilçe 70 MB, 1,15 GB bellek); ızgarayı manifestten okumak K2/K3 kararı bekliyor. |

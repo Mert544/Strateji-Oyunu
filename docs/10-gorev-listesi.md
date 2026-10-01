@@ -2,6 +2,8 @@
 
 > **Güncelleme anı:** 1 Ekim 2026 sabahı. Durum sütunu git geçmişinden (son commit `7284535`), [docs/09](09-sabah-raporu.md) gece günlüğünden ve [06 §11–12](06-simulasyon-spesifikasyonu.md)'den çıkarılmıştır. **"Devam ediyor (sabah)" = çalışma ağacında yazılıyor, commit'siz.** Bu belge kod içermez; sayılar, başka kaynak gösterilmedikçe docs/00–08 ve araştırma raporlarından alınmıştır. Kaynağı olmayan her sayı **(tahmin)** ya da **(hedef)** diye işaretlidir.
 
+> **Güncelleme (1 Ekim akşam): Sprint A0-02.** Güncel durum yalnız [§5A](#5a-sprint-a0-02-alfa-0-yolu-birinci-dalga-1-ekim-akşam) tablosundaki "Durum" sütunundadır. §1.1 sayımları ve §5.0–5.2 öğleden sonranın görüntüsüdür; yeniden sayılmadı.
+
 > **Güncelleme (1 Ekim öğleden sonra): ürün dönüşü.** Sahip oyunun yönünü değiştirdi: baştan paylaşılan kalıcı dünya, ilçede arsa ile başlangıç, bölge → il → ilçe → arsa derinliği, inşa süreci, 3D yürüyüş, sakin görsel ve arka plan lojistik ([00 K23–K35](00-vizyon-ve-kararlar.md), ADR: [11](11-urun-donusu.md)). Bu belgeye **yedi yeni epik (E18–E24)** ve Sprint 1 görevleri (S1–S9, "Devam ediyor") eklendi. Yeni plana göre geçersiz kalan eski görevlerin durumu **"Değişti"** yapıldı ve açıklamalarına "Değişti: docs/11'e bakın" notu düşüldü. Sabahki "Devam ediyor (sabah)" satırları güncellendi: Pazar v1 (E8-G1…G4, `1a7fe08`) ve komut çubuğu (E10-G1, `be830dc`) tamamlandı; v0.3 ölçümü (E12-G1) worktree'de sürüyor. Aşağıdaki sabah özeti tarihsel kayıttır.
 
 ## 1. Özet
@@ -405,7 +407,7 @@ Not: aşağıdakiler hukuki tavsiye değildir; yayın öncesi avukat incelemesi 
 | E19-G1 | OSM il/ilçe hiyerarşisi ve il→bölge eşlemesi (S5) | Geofabrik PBF (TR, BG, RO, GR) → osmium ile `admin_level` 4 ve 6; ebeveyn kimlikli ağaç bölge → il → ilçe; her il tek bir oyun bölgesine eşlenir. **Sprint 1, veri ajanı.** | 81 il ve ~973 ilçe (TR); eşleme testi (her il tam bir bölgede); aynı girdi → bayt bayt aynı çıktı | E3-G1 | L | P0 | Devam ediyor |
 | E19-G2 | Gebze PMTiles + z20 hücre uygunluk denemesi (S6) | Tek ilçe için Protomaps z15 özütü, z20 hücre ızgarası ve uygunluk kırpması; karo ve dosya boyutu raporu `docs/olcum/` altında. **Sprint 1, veri-2 ajanı.** | Karo boyutu ölçüldü (hedef ilçe başına ≤150 KB); hücre sayısı ve alınamaz pay raporlu | — | M | P0 | Devam ediyor |
 | E19-G3 | İl anahatları ve tembel ilçe TopoJSON | İl sınırları tek küçük dosya; ilçeler il başına tembel; mapshaper ile sadeleştirme; boyutlar ölçülür (tahmin: il dosyası birkaç yüz KB, ilçe 20–60 KB). | Boyutlar ölçüldü ve bütçe belgelendi; ilk JS'ye girmez | E19-G1 | M | P0 | Yapılacak |
-| E19-G4 | Alfa-0 illeri için hücre ızgarası ve uygunluk | Kocaeli, Sakarya, Bursa: z20 quadkey hücreleri; yol tamponu, su, `landuse=military` ve korunan alanlar alınamaz; arazi sınıfı (kırsal / kasaba / şehir) ve izinli yapı türü `landuse`'dan; tippecanoe → PMTiles; sunucu için hücre → ilçe ve sınıf tablosu. | Bayt bayt determinizm; her hücrenin ilçesi ve sınıfı var; alınamaz hücre testleri | E19-G1, E19-G2 | L | P0 | Yapılacak |
+| E19-G4 | Alfa-0 illeri için hücre ızgarası ve uygunluk | Kocaeli, Sakarya, Bursa: z20 quadkey hücreleri; yol tamponu, su, `landuse=military` ve korunan alanlar alınamaz; arazi sınıfı (kırsal / kasaba / şehir) ve izinli yapı türü `landuse`'dan; tippecanoe → PMTiles; sunucu için hücre → ilçe ve sınıf tablosu. | Bayt bayt determinizm; her hücrenin ilçesi ve sınıfı var; alınamaz hücre testleri | E19-G1, E19-G2 | L | P0 | Kısmen (G3: Gebze, Gemlik, Körfez) |
 | E19-G5 | Protomaps ve DEM özütleri, barındırma | Alfa illeri için Protomaps PMTiles (z15) ve Mapterhorn DEM özütü; R2 + CDN; Protomaps derlemelerine doğrudan bağlantı yok; atıf metinleri. | Özütler aralık isteğiyle sunulur; dilim boyutu ölçüldü | E19-G2 | M | P1 | Yapılacak |
 | E19-G6 | ODbL uyumu | OSM türevi veri ayrı klasörde (`veri/haritalar/odbl/`); türetilmiş uygunluk verisinin ODbL ile yayımı; sahiplik verisi hücre kimliğiyle ayrı; "© OpenStreetMap katkıcıları" atfı. E15-G3'ün yerine. | Klasör ayrımı testi; atıf metni ekranda (E24-G6); hukuki görüşe hazır not | E19-G1 | S | P0 | Yapılacak |
 | E19-G7 | Balkan `admin_level` eşlemesi | BG, RO, GR (sonra RS, GE, UA) için il ve ilçe karşılıkları OSM wiki'den tek tek doğrulanır; geoBoundaries yalnız yedek (lisans ülkeye göre). | Ülke başına eşleme tablosu ve birim sayıları; doğrulanmayanlar işaretli | E19-G1 | M | P1 | Yapılacak |
@@ -549,19 +551,21 @@ Arka planda: **E12-G1** v0.3 bölge kipi ölçümü (worktree `1a7fe08`) sürüy
 
 **Mantık.** Toplantı notu 1 §6'daki yolun 1–3. adımları: istemci kusurları ve yükseltme formu, P4 (ekmek zinciri + dükkân) ve P5 (cam → pencere), gerçek giriş. Askeri 0a sonraki sprintte ([12 §14](12-yon-taslagi.md)). Ar-Ge kodlamadan önce gelir: çekirdek işleri G4 şartnamesi baş lider onayından geçmeden başlamaz. Çekirdekte aynı anda tek yazar (G6 → G7 → G8). Görevler ofis Task Board'unda `SPRINT-A0-02` altında; sonuç raporları `docs/agent-results/`.
 
-| # | Görev | Sahip | Bağımlılık | Kabul |
-|---|---|---|---|---|
-| G0 | Windows'ta yeşil temel çizgi (`.gitattributes` LF, dizin fsync, `packageManager`) ve kararların kaydı | Baş lider | — | `pnpm kontrol` 0 kırmızı |
-| G1 | İstemci kusur turu (toplantı notu §5, 8 madde) ve tek para biçimi `1.234 ₺` | İstemci | G0 | Önce/sonra ekran görüntüleri; e2e yeşil; `dunya.html` ≤ 400 KB |
-| G2 | Ölçek yükseltme formu ek hücre gönderir (`ekHucreler`) | İstemci | G1 | S → M yükseltmesi sunucuda kabul (e2e) |
-| G3 | Alfa-0 ilçelerinde arsa ızgarası (önce Gemlik, Körfez; sonra 3 il), üretilmiş manifest | Veri | G0 | Boyut raporu; istemci ve sunucu aynı veriyi okur |
-| G4 | Ar-Ge: P4/P5 uygulama şartnamesi (yerel pazar kanalı, `dukkan` S, tarifler, komutlar) | Ar-Ge | G0 | Baş lider onayı |
-| G5 | Sunucu: e-posta bağlantısıyla giriş (KIMLIK.md, Google yok) | Sunucu | G0 | `--uretim`'de geliştirme kimliği kapalı; uçtan uca giriş testi |
-| G6 | Çekirdek P4a: ekmek zinciri (`degirmen` + kepek, `ekmek_firini`) | Çekirdek | G4 | Bot zinciri tamamlar; bölge kipi altınları aynı |
-| G7 | Çekirdek P4b: yerel pazar kanalı + `dukkan` S | Çekirdek | G6 | Determinizm, serileştirme, para korunumu |
-| G8 | Çekirdek P5: cam → pencere, yapı market | Çekirdek | G7 | Bot zinciri tamamlar |
-| G9 | İstemci: giriş ekranı ve dükkân paneli | İstemci | G2, G5, G7 | Gerçek tıklamayla e2e |
-| G10 | Uçtan uca test (A0-6), dogfood, insan testi kılavuzu | Test | G8, G9 | Masaüstü ve telefon e2e; `docs/toplanti/3/` |
+| # | Görev | Sahip | Bağımlılık | Kabul | Durum (1 Ekim akşam) |
+|---|---|---|---|---|---|
+| G0 | Windows'ta yeşil temel çizgi (`.gitattributes` LF, dizin fsync, `packageManager`) ve kararların kaydı | Baş lider | — | `pnpm kontrol` 0 kırmızı | Tamamlandı (`a07b30e`) |
+| G1 | İstemci kusur turu (toplantı notu §5, 8 madde) ve tek para biçimi `1.234 ₺` | İstemci | G0 | Önce/sonra ekran görüntüleri; e2e yeşil; `dunya.html` ≤ 400 KB | Sürüyor: K1 mantık dalı kapı kuyruğunda; T1 ve T2 dalları yazılıyor |
+| G2 | Ölçek yükseltme formu ek hücre gönderir (`ekHucreler`) | İstemci | G1 | S → M yükseltmesi sunucuda kabul (e2e) | Bekliyor (G1'den sonra kapıya girer) |
+| G3 | Alfa-0 ilçelerinde arsa ızgarası (önce Gemlik, Körfez; sonra 3 il), üretilmiş manifest | Veri | G0 | Boyut raporu; istemci ve sunucu aynı veriyi okur | Teslim edildi (`takim/o3/g3-izgara`), kapı kuyruğunda: Gemlik, Körfez ve Gebze manifestte; sunucu ve istemci okuma yolu açık (aşağıdaki not) |
+| G4 | Ar-Ge: P4/P5 uygulama şartnamesi (yerel pazar kanalı, `dukkan` S, tarifler, komutlar) | Ar-Ge | G0 | Baş lider onayı | Sürüyor (A2, A3, T3); baş lider onayı bekleniyor |
+| G5 | Sunucu: e-posta bağlantısıyla giriş (KIMLIK.md, Google yok) | Sunucu | G0 | `--uretim`'de geliştirme kimliği kapalı; uçtan uca giriş testi | Sürüyor (K2) |
+| G6 | Çekirdek P4a: ekmek zinciri (`degirmen` + kepek, `ekmek_firini`) | Çekirdek | G4 | Bot zinciri tamamlar; bölge kipi altınları aynı | Bekliyor (G4 onayı) |
+| G7 | Çekirdek P4b: yerel pazar kanalı + `dukkan` S | Çekirdek | G6 | Determinizm, serileştirme, para korunumu | Bekliyor (G6) |
+| G8 | Çekirdek P5: cam → pencere, yapı market | Çekirdek | G7 | Bot zinciri tamamlar | Bekliyor (G7) |
+| G9 | İstemci: giriş ekranı ve dükkân paneli | İstemci | G2, G5, G7 | Gerçek tıklamayla e2e | Bekliyor (G2, G5, G7) |
+| G10 | Uçtan uca test (A0-6), dogfood, insan testi kılavuzu | Test | G8, G9 | Masaüstü ve telefon e2e; `docs/toplanti/3/` | Kısmen: insan testi kılavuzu (A1) kapı kuyruğunda; uçtan uca ve dogfood bekliyor |
+
+**G3 notu (O3).** Gemlik ve Körfez z20 ızgarası üretildi; tek kayıt `packages/veri/haritalar/odbl/izgara/manifest.json` (boyutlar: [izgara-boyut-g3](olcum/izgara-boyut-g3.md)). Kalan işler: istemci `IZGARALI_ILCELER` tablosunu manifestten okumalı (K1; yama hazır), yoksa Yerleş ekranı "yakında" demeye devam eder. Sunucu ilçeyi hâlâ parsel fikstürü JSON'uyla alıyor; 3 ilçe 70 MB ve 1,15 GB bellek, 3 ilin ~48 ilçesi bu yolla sığmaz: sunucunun ızgarayı manifestten okuması K2/K3 kararı bekliyor. Üç ilin kalanı (Kocaeli 10, Sakarya 16, Bursa 16 ilçe) ikinci dalga; E19-G4 böylece kısmen tamam.
 
 ### 5.0 Önceki sprint taslağı (1 Ekim sabahı)
 
