@@ -131,55 +131,59 @@
       "digerYolTamponM": 6,
       "nehirTamponM": 6,
       "ornek": 8,
-      "yolEsik": 1,
-      "suEsik": 1,
+      "yolEsik": 32,
+      "suEsik": 32,
       "askeriEsik": 1,
       "sinifOrani": 0.3,
       "yapiliOrani": 0.1
     },
     "istatistik": {
-      "toplam": 5734749,
-      "satinAlinabilir": 3543326,
+      "icerdeTum": 5734749,
+      "suHucre": 1653113,
+      "toplam": 4081636,
+      "satinAlinabilir": 3906771,
       "engel": {
-        "yol": 516759,
-        "su": 1668672,
-        "askeri": 14550,
-        "herhangi": 2191423
+        "yol": 161761,
+        "askeri": 14176,
+        "herhangi": 174865
       },
-      "binaKesisen": 144804,
-      "binaKesisenUygun": 55843,
+      "binaKesisen": 144644,
+      "binaKesisenUygun": 120945,
       "sinif": {
-        "diger": 3337800,
-        "tarla": 308717,
-        "sanayi": 81916,
-        "konut": 251546,
-        "orman": 1727819,
-        "yapili": 26951
+        "diger": 1688238,
+        "tarla": 306804,
+        "sanayi": 81421,
+        "konut": 250844,
+        "orman": 1727423,
+        "yapili": 26906
       },
       "sinifUygun": {
-        "diger": 1450873,
-        "tarla": 279009,
-        "sanayi": 50674,
-        "konut": 89739,
-        "orman": 1662570,
-        "yapili": 10461
+        "diger": 1602980,
+        "tarla": 300459,
+        "sanayi": 73510,
+        "konut": 196733,
+        "orman": 1710127,
+        "yapili": 22962
       }
     },
     "esikDuyarliligi": {
       "kesisim": {
+        "kara": 4066077,
         "uygun": 3543326,
-        "kentsel": 305553,
+        "kentsel": 302528,
         "kentselUygun": 119827
       },
       "kapsama25": {
-        "uygun": 3704909,
-        "kentsel": 305553,
-        "kentselUygun": 170167
+        "kara": 4074066,
+        "uygun": 3704679,
+        "kentsel": 303910,
+        "kentselUygun": 170062
       },
       "kapsama50": {
-        "uygun": 3907328,
-        "kentsel": 305553,
-        "kentselUygun": 246021
+        "kara": 4081636,
+        "uygun": 3906771,
+        "kentsel": 304796,
+        "kentselUygun": 245762
       }
     },
     "islenenKaro": 5894,
@@ -187,47 +191,47 @@
   },
   "ciktilar": {
     "bhiHamBayt": 24025688,
-    "bhiGzBayt": 631678,
-    "bhiBrBayt": 497870,
-    "bhiYalnizDurumGzBayt": 449950,
+    "bhiGzBayt": 561360,
+    "bhiBrBayt": 449360,
+    "bhiYalnizDurumGzBayt": 379556,
     "geojsonSeq": {
       "hucre": {
         "ozellik": 5734749,
-        "bayt": 1393281669
+        "bayt": 1393280815
       },
       "serit": {
-        "ozellik": 454469,
-        "bayt": 99498264
+        "ozellik": 382349,
+        "bayt": 83711018
       }
     },
     "pmtiles": {
       "hucre": {
-        "dosyaBayt": 31493162,
+        "dosyaBayt": 31249466,
         "z15": {
           "z": 15,
           "karo": 5912,
           "benzersiz": 5912,
-          "toplamBayt": 31482927,
-          "ortalamaBayt": 5325,
-          "medyanBayt": 5437,
-          "p95Bayt": 6593,
-          "enBuyukBayt": 7796,
-          "enBuyukKaro": "15/19058/12314",
+          "toplamBayt": 31239336,
+          "ortalamaBayt": 5284,
+          "medyanBayt": 5388,
+          "p95Bayt": 6518,
+          "enBuyukBayt": 7902,
+          "enBuyukKaro": "15/19057/12311",
           "butceAsan": 0
         }
       },
       "serit": {
-        "dosyaBayt": 3441609,
+        "dosyaBayt": 3061096,
         "z15": {
           "z": 15,
           "karo": 5912,
-          "benzersiz": 4324,
-          "toplamBayt": 3730075,
-          "ortalamaBayt": 631,
-          "medyanBayt": 465,
-          "p95Bayt": 1831,
-          "enBuyukBayt": 3098,
-          "enBuyukKaro": "15/19127/12321",
+          "benzersiz": 4300,
+          "toplamBayt": 3354201,
+          "ortalamaBayt": 567,
+          "medyanBayt": 393,
+          "p95Bayt": 1670,
+          "enBuyukBayt": 3091,
+          "enBuyukKaro": "15/19061/12306",
           "butceAsan": 0
         }
       }

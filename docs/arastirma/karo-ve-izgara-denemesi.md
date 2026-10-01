@@ -1,6 +1,6 @@
 # Deneme — Karo (PMTiles) ve z20 Arsa Izgarası (Sprint 1 / S6)
 
-> **Özet.** Kocaeli/Gebze için Protomaps PMTiles özütü alındı ve ölçüldü. Ardından ilçe sınırı içindeki tüm z20 hücreleri üretildi ve aynı karolardan uygunluk ile arazi sınıfı hesaplandı. **Karo bütçesi rahat tutuyor:** Gebze'de z15 karosu ortalama 2,4 KB, en büyüğü 31 KB. Kocaeli'nin tamamında hiçbir z12–z15 karosu 94 KB'ı geçmiyor (hedef ≤150 KB). **Türkiye + Balkan dilimi z0–15 için 4,6 GB** çıkıyor. Bu değer tahmin değil; planet dizininden `--dry-run` ile hesaplandı. **Gebze 508.634 hücre** ve hücre kenarı 28,9 m. Spesifikasyondaki "kesişen hücre satın alınamaz" kuralıyla 436.599 hücre (%85,8) satın alınabilir. Ancak bu kural kentsel dokunun yarısından fazlasını kapatıyor; §4.3'te kapsama eşiği öneriliyor. **Önerilen hat:** taban harita için Protomaps özütü kullanılır. Kendi planetiler profilimize şimdilik gerek yok. Izgara aynı z15 karolarından Node'da üretilir. Sunucu ilçe başına ~90 KB'lık `BHI1` ikili dosyasını okur. İstemci şerit katmanını (PMTiles, ~0,8 KB/karo) ya da doğrudan `BHI1`'i kullanır.
+> **Özet.** Kocaeli/Gebze için Protomaps PMTiles özütü alındı ve ölçüldü. Ardından ilçe sınırı içindeki tüm z20 hücreleri üretildi ve aynı karolardan uygunluk ile arazi sınıfı hesaplandı. **Karo bütçesi rahat tutuyor:** Gebze'de z15 karosu ortalama 2,4 KB, en büyüğü 31 KB. Kocaeli'nin tamamında hiçbir z12–z15 karosu 94 KB'ı geçmiyor (hedef ≤150 KB). **Türkiye + Balkan dilimi z0–15 için 4,6 GB** çıkıyor. Bu değer tahmin değil; planet dizininden `--dry-run` ile hesaplandı. **Gebze 508.634 hücre** ve hücre kenarı 28,9 m. İlk denemedeki "kesişen hücre satın alınamaz" kuralı kentsel dokunun yarısından fazlasını kapatıyordu. Takım liderinin kararıyla (§4.3, **uygulandı**) yol ve su artık hücrenin ≥%50'sini kaplıyorsa engel sayılıyor; askeri alan ise her kesişimde engel. Su hücreleri kota ve sayımlardan hariç tutuluyor. Bu kuralla Gebze'nin 507.045 kara hücresinden **485.856'sı (%95,8)** satın alınabilir; kentsel hücrelerde oran %86,6. **Önerilen hat:** taban harita için Protomaps özütü kullanılır. Kendi planetiler profilimize şimdilik gerek yok. Izgara aynı z15 karolarından Node'da üretilir. Sunucu ilçe başına ~85 KB'lık `BHI1` ikili dosyasını okur. İstemci şerit katmanını (PMTiles, ~0,7 KB/karo) ya da doğrudan `BHI1`'i kullanır.
 
 **Kaynak ve tarih.** Ölçümler 2026-10-01'de yapıldı. Kaynak Protomaps `20260930.pmtiles` yapısı: şema v4.15.2, OSM 2026-09-30T04:00Z, planetiler 0.10.2, planet boyutu 138,48 GB. Sınırlar Overpass'tan alındı: Gebze r1211496 (admin_level 6), Kocaeli r223473 (admin_level 4). Tüm sayılar `packages/veri/haritalar/odbl/ornek/{gebze,kocaeli}-olcum.json` dosyalarından gelir.
 
@@ -85,7 +85,8 @@ Boyutlar planet dizininden kesin olarak hesaplandı (`--dry-run`). Bölge poligo
   - **Yol:** merkez hattan tampon uygulanır. Ana yollar 12 m: `highway`, `major_road` (trunk/primary/secondary/tertiary + bağlantılar) ve `aeroway`. Diğer yollar 6 m: `minor_road`, `other` ve `rail`. Tüneller sayılmaz. `path` (yaya, patika, tarla yolu `track`) ve `ferry` engel değildir.
   - **Su:** `water` poligonları dahil; `swimming_pool` ve `fountain` hariç. Ayrıca `river` ve `canal` çizgileri 6 m tamponla dahil.
   - **Askeri:** `landuse` katmanında `military` / `naval_base`.
-  - **Engel kuralı:** spesifikasyondaki "kesişim" uygulandı, yani sayaç ≥ 1.
+  - **Engel kuralı (varsayılan, §4.3 kararı):** yol ve su için sayaç ≥ 32/64, yani hücrenin ≥ %50'si. Askeri alan için sayaç ≥ 1 (herhangi kesişim). İlk denemedeki "kesişim" kuralı (her katmanda sayaç ≥ 1) seçenekle hâlâ üretilebilir.
+  - **Kota tabanı:** `SU` bitli hücreler (karasuları, göl, nehir) ilçe/il hücre kotalarına ve "toplam" sayımlarına girmez (`kotayaSayilir`).
   - **Bina:** ayak izi kesişimi bilgi olarak yazılır (bit + yüzde). Hücreyi engellemez.
 - **Arazi sınıfı.** En baskın sınıf, kapsama ≥ %30 ise hücreye atanır:
   - tarla: farmland, orchard, vineyard, meadow…
@@ -94,37 +95,37 @@ Boyutlar planet dizininden kesin olarak hesaplandı (`--dry-run`). Bölge poligo
   - orman: forest, wood
   - Hiçbiri yoksa ve bina kapsaması ≥ %10 ise sınıf **yapılı** olur, aksi halde **diğer**.
 
-### 3.2 Gebze sonuçları (508.634 hücre ≈ 424,6 km²; resmî alan ~419 km²)
+### 3.2 Gebze sonuçları (varsayılan kural; 508.634 hücre ≈ 424,6 km², resmî alan ~419 km²)
 
-| | Toplam | Satın alınabilir |
+| | Kara hücreleri (kota tabanı) | Satın alınabilir |
 |---|---|---|
-| Hücre | **508.634** | **436.599 (%85,8)** |
-| Engel: yol / su / askeri | 68.337 / 4.002 / 33 | — |
-| Bina kesişen | 20.447 | 9.401 |
-| orman | 275.441 | 269.205 |
-| diğer | 167.465 | 123.008 |
-| tarla | 30.093 | 26.535 |
-| sanayi | 19.329 | 11.893 |
-| yapılı | 8.468 | 3.708 |
-| konut | 7.838 | 2.250 |
+| Hücre | **507.045** (+1.589 su hücresi, hariç) | **485.856 (%95,8)** |
+| Engel: yol / askeri | 21.159 / 33 | — |
+| Bina kesişen | 20.445 | 17.662 |
+| orman | 275.374 | 274.205 |
+| diğer | 165.972 | 150.746 |
+| tarla | 30.065 | 29.571 |
+| sanayi | 19.328 | 17.756 |
+| yapılı | 8.468 | 7.361 |
+| konut | 7.838 | 6.217 |
 
-Hücreler 601 z15 karodan üretildi; eksik karo yok. Süre 1,5 sn (tek çekirdek). Önizleme: `ornek/gebze-onizleme.png` (1 piksel = 1 hücre).
+Hücreler 601 z15 karodan üretildi; eksik karo yok. Süre 1,3–1,5 sn (tek çekirdek). Önizleme: `ornek/gebze-onizleme.png` (1 piksel = 1 hücre).
 
-**Kocaeli ili:**
+**Kocaeli ili (varsayılan kural):**
 
-- 5.734.749 hücre. OSM il sınırı **karasularını da içeriyor**; bunların 1.668.672'si su.
-- Satın alınabilir 3.543.326 hücre. Izgara süresi 16 sn.
-- Sınıf dağılımı: orman 1,73 M, tarla 309 bin, konut 252 bin, sanayi 82 bin, diğer 3,34 M (deniz dahil).
+- İl sınırının içinde 5.734.749 hücre var. OSM il sınırı **karasularını da içeriyor**; bunların 1.653.113'ü (%28,8) su hücresi ve kotadan hariç.
+- Kara hücresi (kota tabanı) 4.081.636; satın alınabilir **3.906.771 (%95,7)**. Izgara süresi 16 sn.
+- Kara hücrelerinde sınıf dağılımı: orman 1,73 M, diğer 1,69 M, tarla 307 bin, konut 251 bin, sanayi 81 bin, yapılı 27 bin.
 
 ### 3.3 Eşik duyarlılığı
 
-**Kentsel hücre** tanımı: bina kapsaması ≥ %10, ya da sınıfı konut/yapılı olan hücre.
+**Kentsel hücre** tanımı: bina kapsaması ≥ %10, ya da sınıfı konut/yapılı olan hücre. Oranlar kara hücreleri üzerindendir; her kuralda, o kurala göre su sayılan hücreler paydadan çıkarılır.
 
-| Engel kuralı (yol/su/askeri) | Gebze uygun | Gebze kentsel uygun (21.813 hücre) | Kocaeli kentsel uygun (305.553) |
-|---|---|---|---|
-| Kesişim (≥1 alt örnek) — **şu anki** | 436.599 (%85,8) | 9.748 (**%44,7**) | %39,2 |
-| Kapsama ≥ %25 | 457.686 (%90,0) | 13.611 (%62,4) | %55,7 |
-| Kapsama ≥ %50 | 485.877 (%95,5) | 18.892 (%86,6) | %80,5 |
+| Engel kuralı | Gebze uygun | Gebze kentsel uygun | Kocaeli uygun | Kocaeli kentsel uygun |
+|---|---|---|---|---|
+| Kesişim (yol/su/askeri ≥1 alt örnek) — ilk deneme | 436.599 / 504.632 (%86,5) | 9.748 / 21.786 (**%44,7**) | %87,1 | %39,6 |
+| Yol/su ≥ %25, askeri kesişim | 457.684 / 505.811 (%90,5) | 13.610 / 21.803 (%62,4) | %90,9 | %56,0 |
+| **Yol/su ≥ %50, askeri kesişim — varsayılan (uygulandı)** | **485.856 / 507.045 (%95,8)** | **18.890 / 21.811 (%86,6)** | **%95,7** | **%80,6** |
 
 ## 4. Çıktı biçimleri
 
@@ -144,14 +145,14 @@ Durum baytının bitleri:
 - bit4: bina
 - bit5–7: sınıf (0 diğer, 1 tarla, 2 sanayi, 3 konut, 4 orman, 5 yapılı)
 
-**Satın alınabilir** = içeride ∧ ¬(yol ∨ su ∨ askeri).
+**Satın alınabilir** = içeride ∧ ¬(yol ∨ su ∨ askeri). **Kotaya sayılır** = içeride ∧ ¬su.
 
 | | Ham | gzip -9 | brotli 11 | Yalnız durum, gzip |
 |---|---|---|---|---|
-| Gebze (1207×1077) | 2,60 MB | **92,8 KB** | 73,5 KB | 64,5 KB |
-| Kocaeli ili (3484×3448) | 24,0 MB | 632 KB | 498 KB | 450 KB |
+| Gebze (1207×1077) | 2,60 MB | **85,2 KB** | 67,6 KB | 56,5 KB |
+| Kocaeli ili (3484×3448) | 24,0 MB | 561 KB | 449 KB | 380 KB |
 
-Ölçek kestirimi: Türkiye ~0,9 milyar hücre ve ~0,18 B/hücre (gzip) → tüm Türkiye ~160 MB; ilçe başına tipik 50–200 KB. Sahiplik bu dosyaya yazılmaz; ayrı tutulur ve hücre kimliğiyle anahtarlanır (ODbL türev veritabanı ile oyun verisi ayrımı).
+Ölçek kestirimi: Türkiye ~0,9 milyar hücre ve ~0,17 B/hücre (gzip) → tüm Türkiye ~150 MB; ilçe başına tipik 50–200 KB. Sahiplik bu dosyaya yazılmaz; ayrı tutulur ve hücre kimliğiyle anahtarlanır (ODbL türev veritabanı ile oyun verisi ayrımı).
 
 ### 4.2 İstemci: tippecanoe PMTiles katmanı
 
@@ -159,25 +160,35 @@ Her iki katman z15 tek düzeyde üretildi; MapLibre z22'ye kadar büyütür.
 
 | Katman | Özellik | GeoJSONSeq girdisi | PMTiles | Karo ort. / en büyük |
 |---|---|---|---|---|
-| `hucreler`: hücre başına kare, `id` = hücre kimliği, `s`/`u`/`e`/`b` | Gebze 508.634 | 123,6 MB | 2,90 MB | 4,8 KB / 7,4 KB |
-| `seritler`: aynı durumlu ardışık hücreler tek dikdörtgen, `s`/`u`/`e` | Gebze 63.456 | 13,9 MB | **459 KB** | **0,77 KB / 2,6 KB** |
-| `hucreler` | Kocaeli 5,73 M | 1,39 GB | 31,5 MB | 5,3 KB / 7,8 KB |
-| `seritler` | Kocaeli 454.469 | 99,5 MB | 3,44 MB | 0,63 KB / 3,1 KB |
+| `hucreler`: hücre başına kare, `id` = hücre kimliği, `s`/`u`/`e`/`b` | Gebze 508.634 | 123,6 MB | 2,87 MB | 4,7 KB / 7,5 KB |
+| `seritler`: aynı durumlu ardışık hücreler tek dikdörtgen, `s`/`u`/`e` | Gebze 55.264 | 12,1 MB | **416 KB** | **0,70 KB / 2,7 KB** |
+| `hucreler` | Kocaeli 5,73 M | 1,39 GB | 31,2 MB | 5,3 KB / 7,9 KB |
+| `seritler` | Kocaeli 382.349 | 83,7 MB | 3,06 MB | 0,57 KB / 3,1 KB |
 
 **Öneri.** Hücre başına poligon ölçeklenmez; Kocaeli'de 1,4 GB ara GeoJSON ve 5 dakikalık tippecanoe süresi gerekiyor. İstemci bu yüzden **şerit katmanını** kullanır. Tıklanan noktanın hücresi `noktadanHucre(boylam, enlem)` ile istemcide hesaplanır. Seçim vurgusu ve sahiplik katmanı, görünümdeki hücreler için istemcide üretilen küçük bir GeoJSON kaynağıdır.
 
-Bir alternatif daha var: ilçe seçilince `BHI1` (~90 KB) indirilip uygunluk doğrudan buradan okunur, böylece vektör katman gerekmez. Bu yol S8 (MapLibre) ajanı için en basitidir.
+Bir alternatif daha var: ilçe seçilince `BHI1` (~85 KB) indirilip uygunluk doğrudan buradan okunur, böylece vektör katman gerekmez. Bu yol S8 (MapLibre) ajanı için en basitidir.
 
-### 4.3 Kural önerisi (karar gerekli)
+### 4.3 Engel kuralı — karar: uygulandı
 
-Spesifikasyondaki "yol tamponuyla kesişen hücre satın alınamaz" kuralı kırsalda iyi çalışıyor. Kentte ise sokak aralığı (50–80 m) hücre boyutuna (29 m) yakın olduğundan sokağa cephesi olan hemen her hücre kapanıyor: Gebze kentsel hücrelerinin yalnız %45'i alınabiliyor. Önizlemede şehir merkezi neredeyse tamamen siyah.
+**Sorun (ilk deneme).** Spesifikasyondaki "yol tamponuyla kesişen hücre satın alınamaz" kuralı kırsalda iyi çalışıyordu. Kentte ise sokak aralığı (50–80 m) hücre boyutuna (29 m) yakın olduğundan sokağa cephesi olan hemen her hücre kapanıyordu: Gebze kentsel hücrelerinin yalnız %44,7'si alınabiliyordu. Önizlemede şehir merkezi neredeyse tamamen siyahtı.
 
-**Önerilen kural:**
-- yol ≥ %50 kapsama
-- su ≥ %50 kapsama (kıyı hücresi alınabilsin)
-- askeri: herhangi kesişim (güvenlik)
+**Karar (takım lideri, S6 sonrası) — uygulandı:**
+- yol ≥ %50 kapsama → engel
+- su ≥ %50 kapsama → engel (kıyı hücresi alınabilir)
+- askeri: herhangi kesişim → engel (güvenlik)
+- su hücreleri ilçe/il hücre kotalarından ve sayımlarından hariç (karasuları)
 
-Bu kuralla Gebze kentsel uygunluğu %87'ye çıkar. Ham sayaçlar korunduğu için eşik değişikliği yalnız `VARSAYILAN_SECENEKLER` güncellemesi ve yeniden üretimdir. Ek fikir: yol kapsaması %1–49 olan hücreye oyun içinde "cadde cephesi" niteliği verilebilir (fiyat/talep çarpanı).
+Kod tarafında `VARSAYILAN_SECENEKLER` güncellendi (`yolEsik` 32, `suEsik` 32, `askeriEsik` 1) ve `kotayaSayilir` eklendi. `izgaraIstatistigi` artık "toplam" olarak kara hücrelerini sayıyor. Gebze örnekleri (`bhi.gz`, `seritler.pmtiles`, `onizleme.png`, `gebze-olcum.json`) ve `kocaeli-olcum.json` bu kuralla yeniden üretildi.
+
+**Yeni satın alınabilir oranlar (kara hücreleri üzerinden):**
+
+| | Kara hücresi | Satın alınabilir | Kentsel uygun |
+|---|---|---|---|
+| Gebze | 507.045 | 485.856 (**%95,8**) | 18.890 / 21.811 (**%86,6**) |
+| Kocaeli ili | 4.081.636 | 3.906.771 (**%95,7**) | 245.762 / 304.796 (**%80,6**) |
+
+Ham sayaçlar korunduğu için eşik değişikliği yalnız `VARSAYILAN_SECENEKLER` güncellemesi ve yeniden üretimdir. Ek fikir (açık): yol kapsaması %1–49 olan hücreye oyun içinde "cadde cephesi" niteliği verilebilir (fiyat/talep çarpanı).
 
 ## 5. Önerilen üretim hattı
 
@@ -203,11 +214,11 @@ Bu kuralla Gebze kentsel uygunluğu %87'ye çıkar. Ham sayaçlar korunduğu iç
 ## 6. Riskler ve bilinen sorunlar
 
 - **OSM arazi etiketi eksik.**
-  - Gebze hücrelerinin %33'ü "diğer" sınıfında; Kocaeli'de deniz hariç ~%41.
+  - Gebze kara hücrelerinin %33'ü "diğer" sınıfında; Kocaeli'de ~%41.
   - Türk kentlerinde `landuse=residential` seyrek. Gebze'de konut sınıfı yalnız 7.838 hücre; "yapılı" sezgiseli 8.468 hücre ekliyor.
   - Sınıf dağılımı oyun dengesi için düzeltme isteyebilir. Seçenekler: nüfus/yerleşim noktasından türetme ya da elle bölge düzeltmesi.
-- **İl sınırı karasularını içeriyor.** Kocaeli'deki hücrelerin %29'u deniz. İl/ilçe hücre kotaları (ör. "ilçenin ≤%25'i") deniz hariç sayılmalı. Gebze ilçe sınırı kara ile sınırlı.
-- **Kesişim kuralı ve örnekleme.** "Kesişim" 3,6 m alt örnek çözünürlüğünde yaklaşık hesaplanıyor; ince şeritler kaçabilir. Yol tamponu gerçek yol genişliğini değil sabit değerleri kullanıyor. Köprüler engel sayılıyor, tüneller sayılmıyor.
+- **İl sınırı karasularını içeriyor.** Kocaeli'deki hücrelerin %29'u deniz. Karar gereği su hücreleri kota ve sayımlardan hariç tutuluyor (`kotayaSayilir`). Hücrenin yarısından azı su ise hücre kara sayılır. Gebze ilçe sınırı kara ile sınırlı.
+- **Örnekleme.** Kapsama ve askeri kesişim 3,6 m alt örnek çözünürlüğünde yaklaşık hesaplanıyor; ince şeritler kaçabilir. %50 eşiği tam sınırda (32/64) olduğundan, hücre ortasından geçen 6 m tamponlu yol tam eşikte kalır. Yol tamponu gerçek yol genişliğini değil sabit değerleri kullanıyor. Köprüler engel sayılıyor, tüneller sayılmıyor.
 - **Protomaps şema sürüklenmesi.** `kind` eşlemesi v4.15.2'ye göre yazıldı (`izgara-uygunluk.ts`). Yapı tarihi ve şema sürümü sabitlenmeli. Ayrıca z15'te Protomaps'in küçük poligonları atıp atmadığı doğrulanmadı.
 - **Mercator alan farkı.** Hücre kenarı 36°K'de ~30,9 m, 42°K'de ~28,4 m; alan farkı ~%18. Fiyat ve verim m² üzerinden hesaplanmalı.
 - **Sınır değişimi.** OSM sınır düzenlemesi hücrenin ilçesini değiştirebilir; kimlik ise sabit kalır. Sezon başına sınır anlık görüntüsü dondurulmalı.
@@ -232,4 +243,4 @@ tsx packages/veri-hatti/src/osm/izgara-cli.ts --ad gebze --iliski 1211496 --orne
 tsx packages/veri-hatti/src/osm/izgara-cli.ts --ad kocaeli --iliski 223473
 ```
 
-Testler `packages/veri-hatti/test/izgara-{geometri,uygunluk,determinizm}.test.ts` dosyalarında, toplam 24 test. Gerçek veri testi önbellek yoksa atlanır; varsa iki koşunun ve repodaki `gebze-hucreler.bhi.gz` örneğinin bayt bayt aynı olduğunu doğrular.
+Testler `packages/veri-hatti/test/izgara-{geometri,uygunluk,determinizm}.test.ts` dosyalarında, toplam 25 test. Gerçek veri testi önbellek yoksa atlanır; varsa iki koşunun ve repodaki `gebze-hucreler.bhi.gz` örneğinin bayt bayt aynı olduğunu doğrular.

@@ -84,8 +84,8 @@ async function main(): Promise<void> {
   const yuzde = (p: number): number => Math.round(p * VARSAYILAN_SECENEKLER.ornek ** 2);
   const duyarlilik = {
     kesisim: esikDuyarliligi(sonuc, { yol: 1, su: 1, askeri: 1 }),
-    kapsama25: esikDuyarliligi(sonuc, { yol: yuzde(0.25), su: yuzde(0.25), askeri: yuzde(0.25) }),
-    kapsama50: esikDuyarliligi(sonuc, { yol: yuzde(0.5), su: yuzde(0.5), askeri: yuzde(0.5) }),
+    kapsama25: esikDuyarliligi(sonuc, { yol: yuzde(0.25), su: yuzde(0.25), askeri: 1 }),
+    kapsama50: esikDuyarliligi(sonuc, { yol: yuzde(0.5), su: yuzde(0.5), askeri: 1 }),
   };
   console.log(`[${ad}] izgara ${sure} ms, uygun ${ist.satinAlinabilir}/${ist.toplam}`, duyarlilik);
 

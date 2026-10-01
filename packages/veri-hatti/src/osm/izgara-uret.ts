@@ -15,6 +15,7 @@ import {
   durumSinifi,
   hucreDurumu,
   karoyuOrnekle,
+  kotayaSayilir,
   metrePerBirim,
   sekilleriAyikla,
   type UygunlukSecenekleri,
@@ -87,9 +88,14 @@ export function izgaraUret(
 }
 
 export interface IzgaraIstatistigi {
+  /** İlçedeki tüm hücreler (su dahil). */
+  icerdeTum: number;
+  /** Su hücreleri (SU biti; karasuları, göl, nehir) — kota ve sayımlardan hariç. */
+  suHucre: number;
+  /** Kota tabanı: ilçedeki su olmayan hücreler. Aşağıdaki tüm sayımlar bu küme üzerindendir. */
   toplam: number;
   satinAlinabilir: number;
-  engel: { yol: number; su: number; askeri: number; herhangi: number };
+  engel: { yol: number; askeri: number; herhangi: number };
   binaKesisen: number;
   /** Satın alınabilir hücrelerde bina kesişimi olanlar. */
   binaKesisenUygun: number;
@@ -99,9 +105,11 @@ export interface IzgaraIstatistigi {
 
 export function izgaraIstatistigi(durum: Uint8Array): IzgaraIstatistigi {
   const st: IzgaraIstatistigi = {
+    icerdeTum: 0,
+    suHucre: 0,
     toplam: 0,
     satinAlinabilir: 0,
-    engel: { yol: 0, su: 0, askeri: 0, herhangi: 0 },
+    engel: { yol: 0, askeri: 0, herhangi: 0 },
     binaKesisen: 0,
     binaKesisenUygun: 0,
     sinif: Object.fromEntries(SINIF_ADLARI.map((a) => [a, 0])),
@@ -109,11 +117,15 @@ export function izgaraIstatistigi(durum: Uint8Array): IzgaraIstatistigi {
   };
   for (const d of durum) {
     if (!(d & Bit.ICERIDE)) continue;
+    st.icerdeTum++;
+    if (!kotayaSayilir(d)) {
+      st.suHucre++;
+      continue;
+    }
     st.toplam++;
     const ad = SINIF_ADLARI[durumSinifi(d)] ?? "diger";
     st.sinif[ad]!++;
     if (d & Bit.YOL) st.engel.yol++;
-    if (d & Bit.SU) st.engel.su++;
     if (d & Bit.ASKERI) st.engel.askeri++;
     if (d & Bit.BINA) st.binaKesisen++;
     if (d & ENGEL_MASKESI) st.engel.herhangi++;
@@ -127,14 +139,15 @@ export function izgaraIstatistigi(durum: Uint8Array): IzgaraIstatistigi {
 }
 
 /**
- * Eşik duyarlılığı: ham sayaçlardan, verilen eşiklerle satın alınabilir hücre sayısı (tüm ilçe ve
- * kentsel alt küme). Kentsel = bina kapsaması >= %10 ya da sınıf konut/yapılı.
- * (Durum baytını yeniden üretmeden "kesişim" yerine "kapsama oranı" kurallarını kıyaslamak için.)
+ * Eşik duyarlılığı: ham sayaçlardan, verilen eşiklerle satın alınabilir hücre sayısı. Su sayacı
+ * eşiği aşan hücreler (o kurala göre su) kota tabanından (`kara`) çıkarılır. Kentsel = bina
+ * kapsaması >= %10 ya da sınıf konut/yapılı. (Durum baytını yeniden üretmeden kuralları kıyaslamak için.)
  */
 export function esikDuyarliligi(
   sonuc: IzgaraSonucu,
   esik: { yol: number; su: number; askeri: number },
-): { uygun: number; kentsel: number; kentselUygun: number } {
+): { kara: number; uygun: number; kentsel: number; kentselUygun: number } {
+  let kara = 0;
   let uygun = 0;
   let kentsel = 0;
   let kentselUygun = 0;
@@ -142,13 +155,15 @@ export function esikDuyarliligi(
   const s = sonuc.sayac;
   for (let i = 0; i < icerde.length; i++) {
     if (!icerde[i]) continue;
+    const o = i * KATMAN_SAYISI;
+    if (s[o + 1]! >= esik.su) continue;
+    kara++;
     const sinif = durumSinifi(sonuc.durum[i]!);
     const k = sonuc.binaYuzde[i]! >= 10 || sinif === Sinif.KONUT || sinif === Sinif.YAPILI;
     if (k) kentsel++;
-    const o = i * KATMAN_SAYISI;
-    if (s[o]! >= esik.yol || s[o + 1]! >= esik.su || s[o + 2]! >= esik.askeri) continue;
+    if (s[o]! >= esik.yol || s[o + 2]! >= esik.askeri) continue;
     uygun++;
     if (k) kentselUygun++;
   }
-  return { uygun, kentsel, kentselUygun };
+  return { kara, uygun, kentsel, kentselUygun };
 }

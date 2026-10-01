@@ -5,7 +5,8 @@
  * Yöntem (deterministik, tamsayı ızgaralı): her hücre ORNEK x ORNEK alt noktaya bölünür; her alt
  * nokta için hangi katmanların içinde (poligon: çift-tek kuralı) ya da tampon mesafesinde (çizgi)
  * olduğu işaretlenir. Hücre başına katman sayacı = kapsayan alt nokta sayısı (0..ORNEK²).
- * "Kesişim" kuralı sayaç >= 1'dir (alt nokta aralığı ORNEK=8 için ~3,6 m @ 41°K).
+ * Varsayılan engel kuralı: yol/su kapsaması >= %50, askeri alan herhangi kesişim (sayaç >= 1;
+ * alt nokta aralığı ORNEK=8 için ~3,6 m @ 41°K).
  *
  * Şema: Protomaps Basemap v4 (https://docs.protomaps.com/basemaps/layers).
  */
@@ -51,6 +52,11 @@ export const Bit = {
 export const ENGEL_MASKESI = Bit.YOL | Bit.SU | Bit.ASKERI;
 
 export const durumSinifi = (d: number): number => (d >> 5) & 7;
+/**
+ * Kota ve sayımlara giren hücre: ilçede ve su değil. Su hücreleri (karasuları, göl, nehir) ilçe/il
+ * hücre kotalarında ve "toplam" sayımlarında hariç tutulur (karar, S6 sonrası).
+ */
+export const kotayaSayilir = (d: number): boolean => (d & Bit.ICERIDE) !== 0 && (d & Bit.SU) === 0;
 export const satinAlinabilir = (d: number): boolean => (d & Bit.ICERIDE) !== 0 && (d & ENGEL_MASKESI) === 0;
 
 export interface Nokta {
@@ -76,7 +82,10 @@ export interface UygunlukSecenekleri {
   nehirTamponM: number;
   /** Hücre kenarı başına alt örnek sayısı. */
   ornek: number;
-  /** Engel eşikleri: sayaç >= eşik ise bit konur (1 = herhangi kesişim). */
+  /**
+   * Engel eşikleri (alt örnek sayısı, 0..ornek²): sayaç >= eşik ise bit konur (1 = herhangi kesişim).
+   * `ornek` değişirse eşikler de ölçeklenmelidir.
+   */
   yolEsik: number;
   suEsik: number;
   askeriEsik: number;
@@ -91,8 +100,10 @@ export const VARSAYILAN_SECENEKLER: UygunlukSecenekleri = {
   digerYolTamponM: 6,
   nehirTamponM: 6,
   ornek: 8,
-  yolEsik: 1,
-  suEsik: 1,
+  // Karar (S6 sonrası, takım lideri): yol ve su hücrenin >= %50'sini kaplıyorsa engel (8x8 = 64 örnekte 32);
+  // askeri alan her kesişimde engel. Kentte sokağa cephesi olan hücreler böylece alınabilir kalır.
+  yolEsik: 32,
+  suEsik: 32,
   askeriEsik: 1,
   sinifOrani: 0.3,
   yapiliOrani: 0.1,

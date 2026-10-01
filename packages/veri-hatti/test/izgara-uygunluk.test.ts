@@ -15,10 +15,13 @@ import {
   durumSinifi,
   hucreDurumu,
   karoyuOrnekle,
+  kotayaSayilir,
   metrePerBirim,
   satinAlinabilir,
   sekilleriAyikla,
+  type UygunlukSecenekleri,
 } from "../src/osm/izgara-uygunluk";
+import { izgaraIstatistigi } from "../src/osm/izgara-uret";
 
 type Koord = [number, number];
 interface SahteOzellik {
@@ -58,7 +61,13 @@ function karo(katmanlar: Record<string, SahteOzellik[]>): VectorTile {
 }
 
 /** 32x32 durum baytı ve bina yüzdesi. */
-function isle(katmanlar: Record<string, SahteOzellik[]>): { durum: number[][]; bina: number[][]; sayac: Uint8Array } {
+/** Spesifikasyondaki ilk kural (herhangi kesişim): tampon geometrisini sınamak için. */
+const KESISIM: UygunlukSecenekleri = { ...VARSAYILAN_SECENEKLER, yolEsik: 1, suEsik: 1, askeriEsik: 1 };
+
+function isle(
+  katmanlar: Record<string, SahteOzellik[]>,
+  secenek: UygunlukSecenekleri = VARSAYILAN_SECENEKLER,
+): { durum: number[][]; bina: number[][]; sayac: Uint8Array } {
   const sayac = karoyuOrnekle(sekilleriAyikla(karo(katmanlar)), 4096, MPB);
   const durum: number[][] = [];
   const bina: number[][] = [];
@@ -66,7 +75,7 @@ function isle(katmanlar: Record<string, SahteOzellik[]>): { durum: number[][]; b
     durum.push([]);
     bina.push([]);
     for (let hx = 0; hx < 32; hx++) {
-      const h = hucreDurumu(sayac, (hy * 32 + hx) * KATMAN_SAYISI);
+      const h = hucreDurumu(sayac, (hy * 32 + hx) * KATMAN_SAYISI, secenek);
       durum[hy]!.push(h.durum);
       bina[hy]!.push(h.binaYuzde);
     }
@@ -86,8 +95,8 @@ describe("uygunluk kirpma", () => {
     expect(MPB).toBeLessThan(0.232);
   });
 
-  it("yatay ana yol hucre sinirinda: yalniz iki komsu satir engellenir", () => {
-    const { durum } = isle({ roads: [cizgi("major_road", [[-64, 2048], [4160, 2048]])] });
+  it("kesisim kurali: hucre sinirindaki ana yol yalniz iki komsu satiri engeller", () => {
+    const { durum } = isle({ roads: [cizgi("major_road", [[-64, 2048], [4160, 2048]])] }, KESISIM);
     const yol = bitli(durum, Bit.YOL);
     expect(yol).toHaveLength(64);
     expect(yol.every((k) => ["15", "16"].includes(k.split(",")[1]!))).toBe(true);
@@ -106,11 +115,11 @@ describe("uygunluk kirpma", () => {
     expect(bitli(durum, Bit.YOL)).toEqual([]);
   });
 
-  it("tampon genisligi: ana yol (12 m) komsu sutuna tasar, diger yol (6 m) tasmaz", () => {
+  it("tampon genisligi (kesisim kurali): ana yol (12 m) komsu sutuna tasar, diger yol (6 m) tasmaz", () => {
     // Çizgi x=148: sütun 0'ın son alt örneği x=120 -> 28 birim (~6,3 m) uzakta
     const dikey = (kind: string): SahteOzellik => cizgi(kind, [[148, -64], [148, 4160]]);
-    const diger = isle({ roads: [dikey("minor_road")] }).durum;
-    const ana = isle({ roads: [dikey("highway")] }).durum;
+    const diger = isle({ roads: [dikey("minor_road")] }, KESISIM).durum;
+    const ana = isle({ roads: [dikey("highway")] }, KESISIM).durum;
     expect(new Set(bitli(diger, Bit.YOL).map((k) => k.split(",")[0]))).toEqual(new Set(["1"]));
     expect(new Set(bitli(ana, Bit.YOL).map((k) => k.split(",")[0]))).toEqual(new Set(["0", "1"]));
   });
@@ -168,12 +177,42 @@ describe("uygunluk kirpma", () => {
     expect(durum[0]![0]).toBe(Bit.ICERIDE);
   });
 
-  it("esik secenegi: kapsama esigi kesisimden gevsek", () => {
-    const sayac = karoyuOrnekle(sekilleriAyikla(karo({ roads: [cizgi("minor_road", [[0, 2048], [4096, 2048]])] })), 4096, MPB);
-    const of = (15 * 32) * KATMAN_SAYISI;
-    expect(hucreDurumu(sayac, of).durum & Bit.YOL).toBeTruthy();
-    const gevsek = { ...VARSAYILAN_SECENEKLER, yolEsik: 32 };
-    expect(hucreDurumu(sayac, of, gevsek).durum & Bit.YOL).toBe(0);
+  it("varsayilan kural: yol/su >= %50 kaplarsa engel, askeri her kesisimde", () => {
+    expect(VARSAYILAN_SECENEKLER.yolEsik).toBe(VARSAYILAN_SECENEKLER.ornek ** 2 / 2);
+    expect(VARSAYILAN_SECENEKLER.suEsik).toBe(VARSAYILAN_SECENEKLER.ornek ** 2 / 2);
+    expect(VARSAYILAN_SECENEKLER.askeriEsik).toBe(1);
+    // Hücre sınırındaki ana yol iki satırın her birinin %50'sinden azını kaplar -> engel yok
+    const sinir = isle({ roads: [cizgi("major_road", [[-64, 2048], [4160, 2048]])] });
+    expect(bitli(sinir.durum, Bit.YOL)).toEqual([]);
+    expect(bitli(isle({ roads: [cizgi("major_road", [[-64, 2048], [4160, 2048]])] }, KESISIM).durum, Bit.YOL)).toHaveLength(64);
+    // Hücre ortasından geçen yol (y = 15*128 + 64): ana yol 6/8, diğer yol 4/8 satır -> ikisi de engel
+    for (const tur of ["major_road", "minor_road"]) {
+      const orta = bitli(isle({ roads: [cizgi(tur, [[-64, 1984], [4160, 1984]])] }).durum, Bit.YOL);
+      expect(orta).toHaveLength(32);
+      expect(orta.every((k) => k.endsWith(",15"))).toBe(true);
+    }
+    // Kıyı: hücrenin %25'i su -> alınabilir; %75'i su -> su hücresi
+    const kiyi = isle({ water: [dortgen("ocean", 0, 0, 32, 128), dortgen("ocean", 128, 0, 224, 128)] });
+    expect(satinAlinabilir(kiyi.durum[0]![0]!)).toBe(true);
+    expect(kotayaSayilir(kiyi.durum[0]![0]!)).toBe(true);
+    expect(bitli(kiyi.durum, Bit.SU)).toEqual(["1,0"]);
+    expect(kotayaSayilir(kiyi.durum[0]![1]!)).toBe(false);
+    // Askeri alan: tek alt örnek bile engeller
+    const askeri = isle({ landuse: [dortgen("military", 0, 0, 16, 16)] });
+    expect(bitli(askeri.durum, Bit.ASKERI)).toEqual(["0,0"]);
+  });
+
+  it("istatistik: su hucreleri kota tabanindan (toplam) haric", () => {
+    const D = Bit.ICERIDE;
+    const durum = Uint8Array.from([0, D, D | Bit.YOL, D | Bit.SU, D | Bit.SU | Bit.YOL, D | Bit.ASKERI, D | (Sinif.TARLA << 5)]);
+    const st = izgaraIstatistigi(durum);
+    expect(st.icerdeTum).toBe(6);
+    expect(st.suHucre).toBe(2);
+    expect(st.toplam).toBe(4);
+    expect(st.satinAlinabilir).toBe(2);
+    expect(st.engel).toEqual({ yol: 1, askeri: 1, herhangi: 2 });
+    expect(st.sinif["tarla"]).toBe(1);
+    expect(Object.values(st.sinif).reduce((a, b) => a + b, 0)).toBe(st.toplam);
   });
 
   it("deterministik ve ozellik sirasindan bagimsiz", () => {
