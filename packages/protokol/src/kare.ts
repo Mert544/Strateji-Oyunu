@@ -183,6 +183,12 @@ export interface OyuncuKaresi {
    * (mülk kipi hücreli inşaat; yoksa -1) aşama hesabı içindir; `ekYapı` ek yapı inşaatında `mulk.ekYapilar` kimliğidir.
    */
   insaatlar: Array<[id: number, tur: string, bolge: number, hedef: number, bitis: Ms, baslangic?: Ms, ekYapi?: string]>;
+  /**
+   * Yalnız ekleme (isteğe bağlı; mülk kipi, G6): inşaatta SEÇİLEN yöntemin KİMLİĞİ (çekirdek `InsaatDurumu.yontem`): `[inşaat kimliği, yöntem kimliği]`. Yalnız komutta
+   * `yontem` verilmiş (alan yazılmış) KENDİ inşaatları listelenir; yöntemsiz inşaat (tür varsayılanı) ve hiç yoksa alan YAZILMAZ. `insaatlar` demetine öğe EKLENMEZ
+   * (zod 3 tuple fazla öğeyi reddeder; eski istemci kareyi tümden atardı); eski istemci (z.object bilinmeyen anahtarı atar) alanı sessizce yok sayar.
+   */
+  insaatYontem?: Array<[insaat: number, yontem: string]>;
   /** Erken oyun süre çarpanı formülü (inşa, kenar, birlik, araştırma süreleri); değer için `erkenOyunCarpani(f, t)`. */
   erkenOyun?: ErkenOyunFormulu;
   /** Mülk kipinde oyuncunun arazi kaydı (katılmış ama hücresi yoksa da vardır). */
@@ -409,6 +415,8 @@ export function ilgiKaresiCikar(
             return girdi;
           }),
       };
+      const yontemler = d.insaatlar.filter((x) => x.sahip === oyuncu && x.yontem !== undefined).map((x): [number, string] => [x.id, x.yontem as string]);
+      if (yontemler.length > 0) kare.oyuncu.insaatYontem = yontemler;
       const eo = kaynak.ic.param.erkenOyun;
       if (eo) kare.oyuncu.erkenOyun = [o.katilmaZamani, eo.baslangicCarpaniPpm, eo.sabitSaat * 3_600_000, eo.bitisSaat * 3_600_000];
       const mo = d.mulk?.oyuncular.find((x) => x.id === oyuncu);

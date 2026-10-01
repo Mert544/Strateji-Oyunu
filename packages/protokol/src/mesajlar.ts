@@ -297,6 +297,7 @@ const oyuncuKaresiSemasi = z.object({
   arastirma: z.object({ teknoloji: tam, bitis: tam }).nullable(),
   korumaBitis: tam,
   insaatlar: z.array(insaatKaresiSemasi),
+  insaatYontem: z.array(z.tuple([tam, z.string()])).optional(),
   erkenOyun: z.tuple([tam, tam, tam, tam]).optional(),
   mulk: z
     .object({
