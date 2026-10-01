@@ -32,6 +32,14 @@ describe("ilçe sözlüğü", () => {
     for (const [k, m] of Object.entries(ILCE_METIN)) if (m.bilinenYani !== null) expect(m.bilinenYani.trim().length, k).toBeGreaterThan(0);
   });
 
+  it("P4 akışı: her açılış cümlesi Çiftlikle başlar; G6 düzeyinde dükkân ve cam yok, dükkân yalnız acilisG7'de, cam ve pencere yalnız acilisG8'de", () => {
+    const hepsi = [...Object.values(ILCE_ORTAK.acilis), ...Object.values(ILCE_ORTAK.acilisG7), ...Object.values(ILCE_ORTAK.acilisG8)];
+    for (const t of hepsi) expect(t, t).toMatch(/^Çiftlikle başla/);
+    for (const t of Object.values(ILCE_ORTAK.acilis)) expect(t, t).not.toMatch(/dükkân|cam|pencere/i);
+    for (const t of Object.values(ILCE_ORTAK.acilisG7)) expect(t, t).toMatch(/dükkân/);
+    for (const t of Object.values(ILCE_ORTAK.acilisG8)) expect(t, t).toMatch(/cam|pencere/);
+  });
+
   it("seçiciler: neden G7 açıkken nedenG7; açılış G8 > G7 > temel; bilinen yanı null ise satır yok", () => {
     const m = ilceMetni("tr_41_basiskele")!;
     expect(ilceNedeni("tr_41_basiskele")).toBe(m.neden);
