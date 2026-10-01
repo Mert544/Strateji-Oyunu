@@ -44,7 +44,9 @@ services:
       # Origin izin listesi (virgullu) ve postadaki baglantinin genel adresi (https): ikisi de zorunlu.
       BOLGE_IZINLI_KOKENLER: ${IZINLI_KOKENLER:?IZINLI_KOKENLER gerekli (virgullu Origin listesi, ornek https://oyun.ornek.org)}
       BOLGE_GENEL_URL: ${GENEL_URL:?GENEL_URL gerekli (https://...)}
-      BOLGE_GUVENILIR_PROXY: ${GUVENILIR_PROXY:-0}
+      # Caddy (asagida) ayni compose aginda sunucunun onunde durur: istemci IP'si X-Forwarded-For'un son ogesidir. Sunucu portu YALNIZ Caddy'ye ve
+      # localhost'a acik olmali (asagidaki ports); disariya dogrudan yayinlanirsa X-Forwarded-For sahtelenir.
+      BOLGE_GUVENILIR_PROXY: ${GUVENILIR_PROXY:-1}
       # Posta: gercek SMTP/SES bagdastirici henuz yok; 'dosya' postacisi baglantiyi /veri/posta altina JSON olarak yazar (kisisel veri + giris
       # baglantisi icerir: erisimi kisitli tutun, isi bitince silin). 'konsol' uretimde yasak.
       BOLGE_POSTA: dosya
@@ -77,10 +79,31 @@ services:
       # Davetli listesi dizini (salt okunur). Dizin yoksa docker bos bir dizin olusturur; liste dosyasi 'node' (uid 1000) tarafindan okunabilmeli (chmod 644).
       - ${DAVET_DIZIN:-./davet}:/davet:ro
     ports:
-      # Yalniz localhost'a yayinlanir; disariya TLS sonlandiran bir ters vekil acsin.
+      # Yalniz localhost'a yayinlanir; disariya yalniz `caddy` servisi (TLS) acilir. 9464 (metrik) ASLA vekillenmez.
       - "127.0.0.1:${SUNUCU_PORT:-8787}:8787"
       - "127.0.0.1:${METRIK_YAYIN_PORT:-9464}:9464"
     # Dosya deposu istenirse (BOLGE_DEPO=dosya): /veri hacmi imajda tanimlidir; compose'ta pg varsayilandir.
+
+  # Ters vekil + istemci sunumu (Alfa-0): TLS sonlandirir, /istemci dizinini BUTUN olarak sunar (.js icin text/javascript), ws ve /giris/*, /saglik,
+  # /hazir'i `sunucu`ya vekiller; /metrik'i vekillemez. Saglayiciya bagli degil (bkz. deploy/Caddyfile). DOGRULAMA: yalniz `docker compose config`
+  # (statik); servis bu ortamda CALISTIRILMADI. Operator provasi: packages/sunucu/README.md kontrol listesi adim 16.
+  # Istemci dizini imaja GIRMEZ: ana makinedeki ISTEMCI_DIZIN (varsayilan ../istemci = `pnpm dunya` ciktisi, git disi) salt okunur baglanir.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - sunucu
+    environment:
+      SITE_ADRESI: ${SITE_ADRESI:?SITE_ADRESI gerekli (yalniz ana makine adi, ornek oyun.ornek.org)}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${ISTEMCI_DIZIN:-../istemci}:/istemci:ro
+      - caddy_veri:/data
+      - caddy_ayar:/config
 
   # Duzenli yedek (Alfa-0): her gun YEDEK_SAAT'te (UTC) deploy/yedek-dondur.sh: pg_dump + sha256, dogrulama, en yeni YEDEK_SAKLA yedek kalir.
   # Betikler imaja GIRMEZ (salt okunur baglama); yedekler ana makinedeki YEDEK_DIZIN dizinine yazilir (varsayilan deploy/yedekler, git disi).
@@ -114,3 +137,5 @@ services:
 volumes:
   pgdata:
   veri:
+  caddy_veri:
+  caddy_ayar:

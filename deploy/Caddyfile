@@ -1,0 +1,42 @@
+# Bolge Stratejisi: istemciyi sunan ve sunucuya vekillik yapan ters vekil (Caddy 2). Saglayiciya bagli degildir: herhangi bir makinede
+# `docker compose` ile calisir; TLS sertifikasi Caddy'nin kendi (ACME) otomatik sertifikasidir ya da asagidaki `tls` satiriyla operator sertifikasi.
+# SITE_ADRESI (deploy/.env) yalniz ANA MAKINE adi olmali (ornek oyun.ornek.org; https:// ve yol YOK) ve GENEL_URL ile IZINLI_KOKENLER'deki
+# ana makineyle AYNI olmali (Origin denetimi: https://<SITE_ADRESI> IZINLI_KOKENLER icinde).
+# DOGRULAMA DURUMU: bu dosya `docker compose config` ile yalniz statik denendi; Caddy'nin kendisi bu ortamda CALISTIRILMADI (daemon yok).
+# Operator provasi: packages/sunucu/README.md "Alfa-0 acilis kontrol listesi" adim 16.
+{$SITE_ADRESI} {
+	# Operator sertifikasi icin (otomatik ACME yerine): dosyalari compose'ta /sertifika olarak baglayip sonraki satiri acin.
+	# tls /sertifika/tam-zincir.pem /sertifika/anahtar.pem
+	encode zstd gzip
+
+	# /metrik ASLA disariya vekillenmez (token olsa bile): metrik ayri portta (9464) ve yalniz ic aga/localhost'a aciktir. Savunma amacli acik ret.
+	@metrik path /metrik /metrik/*
+	handle @metrik {
+		respond 404
+	}
+
+	# Oyun baglantisi (ws): Upgrade istekleri sunucuya gider. Origin basligi aynen iletilir (sunucu IZINLI_KOKENLER ile denetler).
+	@ws {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	handle @ws {
+		reverse_proxy sunucu:8787
+	}
+
+	# Giris ve hesap uclari (hesap silme dahil), saglik uclari: sunucuya. /giris/* (egik cizgiyle) /giris.js dosyasini KAPSAMAZ.
+	@sunucu path /giris/* /saglik /hazir
+	handle @sunucu {
+		reverse_proxy sunucu:8787
+	}
+
+	# Istemci dizini (pnpm dunya cikti: dunya.html, harita.js, yuru.js, giris.js, yazi/, harita-verisi/) BUTUN olarak, salt okunur.
+	# Tek tek dosya listesi YOKTUR: dizine konan her dosya sunulur. .js icin icerik turu acikca text/javascript (ES modulu icin sart).
+	handle {
+		root * /istemci
+		@js path *.js
+		header @js Content-Type "text/javascript; charset=utf-8"
+		rewrite / /dunya.html
+		file_server
+	}
+}
