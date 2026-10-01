@@ -23,3 +23,8 @@ export { BakimIzleyici, BAKIM_OLCUM_GUNLERI } from "./parsel-bakim";
 export type { ParselBakimOlcumu, ParselBakimOyuncu, BakimDonemi } from "./parsel-bakim";
 export { bakimOzetiUret, bakimIzgarasiUret, yuzdelik } from "./parsel-bakim-rapor";
 export type { BakimOzetKosusu } from "./parsel-bakim-rapor";
+export { cikar, URETIM_DISI_YAPILAR, DUKKAN_TURLERI, II_PENCERE_MS, Y7_PENCERE_MS, SATIS_DAKIKA_PENCERESI_MS } from "./insan-cikarma";
+export type { CikarmaGoruntusu, CikarmaGunlukKaydi, CikarmaOyuncusu, CikarmaSecenek, InsanTestiCikti, KatilimciCikti, ZamanDamgasi, YapiDenemesi } from "./insan-cikarma";
+export { dosyaDeposundanOku } from "./insan-cikarma-depo";
+export type { DosyaDeposuOkuma } from "./insan-cikarma-depo";
+export { cikarmaAna, cikarmaArgumanAyristir } from "./insan-cikarma-cli";

@@ -1,6 +1,7 @@
 /**
  * Komut satırı: pnpm olcum [--kip bolge|parsel] --hip H1,H2,H3,H5,H6,H7 --tohum 1-10 --cikti raporlar/ [--harita sentetik|gercek] [--iklim gercek|hizli] [--hizli] [--tam] [--bolge 16] [--odak bolge_liman|bolge] [--anlamli 0.03] [--pencere-bas 3] [--h1-gun 7] [--ad v0.2] [--karsilastir onceki.json]
  * `--kip parsel`: mülk kipi kısa ölçümü (parsel-cli.ts: H6 ham + arındırılmış + Y7, H8, Y ölçütleri; `pnpm olcum --kip parsel --yardim`); vars. kip bolge.
+ * `--kip cikarma`: insan testi gunluk oynatma ve cikarma (insan-cikarma-cli.ts; `pnpm olcum --kip cikarma --yardim`).
  * Varsayılan: tüm hipotezler, tohum 1-3, çıktı "raporlar". Dosya adları deterministiktir (tarih yok):
  * olcum-<hipotezler>-t<tohum aralığı>[-hizli][-gercek][-iklimgercek][-<ad>].json / .md
  * (-gercek: gerçek harita; -iklimgercek: gerçek takvim, vars. "hizli" iklimde sonek yok).
@@ -13,6 +14,7 @@ import { raporUret } from "./rapor";
 import type { KarsilastirmaVerisi } from "./rapor";
 import { tohumAyristir } from "./ortak";
 import { parselAna } from "./parsel-cli";
+import { cikarmaAna } from "./insan-cikarma-cli";
 import { TUM_HARITALAR, TUM_IKLIM_MODLARI } from "./tipler";
 import type { HaritaAdi, IklimModu } from "./tipler";
 
@@ -149,14 +151,14 @@ export function dosyaAdi(hip: readonly string[], tohumlar: readonly number[], hi
 }
 
 /** `--kip bolge|parsel` seçeneğini ayıklar (vars. bolge: mevcut hipotez koşucuları değişmez); kalan argümanları döndürür. */
-function kipAyir(argv: readonly string[]): { kip: "bolge" | "parsel"; kalan: string[] } {
+function kipAyir(argv: readonly string[]): { kip: "bolge" | "parsel" | "cikarma"; kalan: string[] } {
   const kalan: string[] = [];
-  let kip: "bolge" | "parsel" = "bolge";
+  let kip: "bolge" | "parsel" | "cikarma" = "bolge";
   for (let i = 0; i < argv.length; i++) {
     const x = argv[i] as string;
     const v = x === "--kip" ? argv[++i] : x.startsWith("--kip=") ? x.slice(6) : undefined;
     if (x === "--kip" || x.startsWith("--kip=")) {
-      if (v !== "bolge" && v !== "parsel") throw new Error(`--kip 'bolge' veya 'parsel' olmali: ${String(v)}`);
+      if (v !== "bolge" && v !== "parsel" && v !== "cikarma") throw new Error(`--kip 'bolge', 'parsel' veya 'cikarma' olmali: ${String(v)}`);
       kip = v;
     } else kalan.push(x);
   }
@@ -167,6 +169,10 @@ export function ana(argv: readonly string[]): void {
   const { kip, kalan } = kipAyir(argv);
   if (kip === "parsel") {
     parselAna(kalan);
+    return;
+  }
+  if (kip === "cikarma") {
+    cikarmaAna(kalan);
     return;
   }
   const arg = argumanAyristir(kalan);
