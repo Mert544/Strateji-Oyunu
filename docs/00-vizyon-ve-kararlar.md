@@ -34,7 +34,7 @@
 | K9 | Teknoloji yığını | TypeScript, pnpm monorepo, Vitest | [Oturum] |
 | K10 | Dünya modeli | **Kalıcı tek dünya** (sezon yok; K5 ile uyumlu). Geç katılım sorunu koruma süresi, puan bandı ve yetişme yardımıyla (H6) çözülür. Sezon seçeneği açık not olarak kalır (§8). **→ Güncellendi (K23+): kalıcı tek dünya baştan çok oyunculu ve hesaplıdır (K23); yetişme paketi K25 / [11 §7.9](11-urun-donusu.md#79-yeni-oyuncu-h6)** | [Oturum] |
 | K11 | Dil | Her şey Türkçe; kodda tanımlayıcılar ASCII Türkçe | [Oturum] |
-| K12 | Ekip | Takım lideri (Claude) + Sonnet uygulayıcı ajanlar. **→ Güncellendi (K23+): Opus 5.5 ajanları, bkz. K35** | [Oturum] |
+| K12 | Ekip | Takım lideri (Claude) + uygulayıcı ajanlar. **→ Güncellendi (K23+), bkz. K35** | [Oturum] |
 | K13 | Gelir modeli ilkesi | Kritik kararlarda parayla güç yok. Gelir modeli prototip kapsamı dışında | [PDF] |
 | K14 | İçerik üretimi | Şablonlu, veriyle tanımlanan içerik (içerik üretimi pahalı) | [PDF] |
 | K15 | Test haritası | Sentetik (kıyı, dağ, ova, liman, dar geçit taşıyan kurgusal bölge grafiği); gerçek dilim seçilince aynı veri biçimine geçilir | [PDF] |
@@ -57,7 +57,7 @@
 | K32 | Alfa-0 kapsamı | **Kocaeli + Sakarya + Bursa** (~40 ilçe, ≤200 davetli). Alfa-0'da askeri, seçimler (NPC vali varsayılan yasalarla) ve yürüyüş **yok**; Alfa-1'e kalır. Balkanlar Alfa-1'de; ilçeler %70 doluluğa göre kademeli açılır | [Lider 1 Ekim] |
 | K33 | Ad ve sınır politikası | **Gerçek il ve ilçe adları** kullanılır; ülke düzeyi NPC çerçevedir (sabit taban tarifeler); ihtilaflı alanlar dilim dışında kalır. A2'yi kısmen kapatır; yazılı dışlama listesi Balkan açılışından önce | [Lider 1 Ekim] |
 | K34 | Altyapı ve hukuk | Hetzner (CX33) + aynı makinede Postgres + Cloudflare (proxy, Turnstile, R2 yedek); alfa ~€15–20/ay (tahmin). Açık alfadan önce ODbL (ve kişisel veri) için dış hukuki görüş | [Lider 1 Ekim] |
-| K35 | Ekip (güncel) | Takım lideri + **Opus 5.5** ajanları; en çok 4–5 eşzamanlı ajan; çekirdekte aynı anda tek yazar; `tipler.ts` sözleşmesi takım liderinde; ölçümler sabit commit'ten açılan ayrı git worktree'de. K12'nin yerine geçer | [Sahip 1 Ekim], [Lider 1 Ekim] |
+| K35 | Ekip (güncel) | Takım lideri + uygulayıcı ajanlar (model seçimi sahibin tercihine göre); en çok 4–5 eşzamanlı ajan; çekirdekte aynı anda tek yazar; `tipler.ts` sözleşmesi takım liderinde; ölçümler sabit commit'ten açılan ayrı git worktree'de. K12'nin yerine geçer | [Sahip 1 Ekim], [Lider 1 Ekim] |
 
 ## 3. Zaman modeli
 

@@ -30,7 +30,7 @@
 | 7 | **Dünya:** baştan paylaşılan dünya (sunucu, hesap) | F1 sunucu temeli, F7 alfa (§5) |
 | 8 | **Lojistik:** "Lojistiği ön planda tutmaya gerek yok"; otomatik ve arka planda | Merkez MCF, il içi havuz, görünmeyen lojistik (§4.3) |
 | 9 | **Katmanlar:** 6 katman sürsün: Tarım, Sanayi, Lojistik (arka plan), Teknoloji, Pazar, Devlet (yönetici) | §4, §7 |
-| 10 | **Planlama** takım liderine bırakıldı; ajanlar Opus 5.5 | §5, §13; [10](10-gorev-listesi.md) |
+| 10 | **Planlama** takım liderine bırakıldı; uygulayıcı ajanlar | §5, §13; [10](10-gorev-listesi.md) |
 
 ### 1.2 Mevcut temel (`claude/brave-hawking-flv1y0`, ~940 test yeşil)
 
@@ -61,7 +61,7 @@ Bugünkü model oyuncuya bir veya birkaç **bölgenin tamamını** verir. Sahibi
 | 10 | **Alfa-0 kapsamı:** Kocaeli + Sakarya + Bursa (~40 ilçe, ≤200 davetli). Askeri, seçimler ve yürüyüş Alfa-1'e kalır (Alfa-0'da NPC vali varsayılan yasalarla). Balkanlar Alfa-1'de | [Lider] | K32 |
 | 11 | **Adlar:** gerçek il ve ilçe adları kullanılır; ülke düzeyi NPC çerçevedir; ihtilaflı alanlar dilim dışında kalır | [Lider] | K33 |
 | 12 | **Altyapı:** Hetzner + Postgres + Cloudflare (proxy, Turnstile, R2). Açık alfadan önce ODbL için dış hukuki görüş alınır | [Lider] | K34 |
-| 13 | **Ekip:** takım lideri + Opus 5.5 ajanları; çekirdekte aynı anda tek yazar, `tipler.ts` sözleşmesi takım liderinde | [Sahip] + [Lider] | K35 |
+| 13 | **Ekip:** takım lideri + uygulayıcı ajanlar; çekirdekte aynı anda tek yazar, `tipler.ts` sözleşmesi takım liderinde | [Sahip] + [Lider] | K35 |
 
 Kararların tam metni [00 §2](00-vizyon-ve-kararlar.md#2-kararlar-tablosu) içindedir (K23–K35).
 
