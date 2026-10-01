@@ -926,7 +926,7 @@ export class WsBaglanti implements MulkBaglantisi {
     // Ayrılmış hücre kümesi (liste istenmişse) ve para ile alınmış ayrılmış sayısı: karede `ayrilmisSatilmis` varsa kesin değer; yoksa
     // (eski sunucu) satılmış ∩ ayrılmış tahmini; liste de yoksa bilinmiyor (eğri normal sayılır).
     const ayrilmis = c.ayrilmis ? this.ayrilmisKumesi(c.ayrilmis) : undefined;
-    const kesin = (c as { ayrilmisSatilmis?: number }).ayrilmisSatilmis;
+    const kesin = c.ayrilmisSatilmis;
     let ayrilmisSatilmis: number | undefined = kesin;
     if (ayrilmisSatilmis === undefined && ayrilmis) {
       ayrilmisSatilmis = 0;
