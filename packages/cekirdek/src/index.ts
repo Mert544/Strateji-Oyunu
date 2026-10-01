@@ -90,10 +90,20 @@ export {
   anlikGoruntuOlustur,
   anlikGoruntuOlusturOzetli,
   anlikGoruntuCoz,
+  anlikGoruntuUyarla,
   ANLIK_GORUNTU_SURUMU,
+  ANLIK_GORUNTU_ESKI_SURUMU,
   SerilestirmeHatasi,
 } from "./serilestir";
-export type { AnlikGoruntu } from "./serilestir";
+export type { AnlikGoruntu, GocRaporu, GocSecenegi } from "./serilestir";
+// Kalıcı kimlik ve içerik göçü (G8, docs/06 §14): kimlik tablosu, yalnız-ekle denetimi
+export {
+  KIMLIK_TABLOSU_ADLARI,
+  icerikKimlikTablosuOlustur,
+  kimlikTablolariEsit,
+  yalnizEkleDenetimi,
+} from "./goc";
+export type { EkleDenetimi, EkleIhlali, IcerikKimlikTablosu, KimlikTablosuAdi } from "./goc";
 export { PRNG_AKISLARI } from "./kurulum";
 export { kuyrukOnce } from "./kuyruk";
 // Mülk kipi (S3, docs/11 §4.3, §7): parsel komutları, işletme düğümleri, arazi vergisi, inşaat aşaması

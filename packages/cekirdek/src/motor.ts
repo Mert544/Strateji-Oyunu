@@ -10,7 +10,8 @@ import { kuyrukBas, kuyrukCikar } from "./kuyruk";
 import { dunyaKur } from "./kurulum";
 import { lojistikCoz, lojistikKomutu } from "./lojistik/cozum";
 import { durumOzeti } from "./ozet";
-import { anlikGoruntuCoz, dunyaIcerikUyumu, kuralSurumuHesapla } from "./serilestir";
+import { anlikGoruntuCoz, anlikGoruntuUyarla, dunyaIcerikUyumu, kuralSurumuHesapla } from "./serilestir";
+import type { GocRaporu, GocSecenegi } from "./serilestir";
 import { pazarTablosu } from "./pazar/tablo";
 import { ticaretDefteriBaslat } from "./pazar";
 import { politikaKomutu } from "./politika";
@@ -46,7 +47,7 @@ export const SISTEM_OYUNCUSU = "sistem";
 export const EN_COK_KOMUT_ILERISI: Ms = 400 * GUN;
 
 /** Kurtarma seçenekleri (`anlikGoruntudenYukle`). */
-export interface KurtarmaSecenegi {
+export interface KurtarmaSecenegi extends GocSecenegi {
   /** true: kalan günlükteki başarısız kayıt hata fırlatmaz (yalnız sonucu raporlanır). Varsayılan false. */
   basarisizlaraIzin?: boolean;
 }
@@ -88,15 +89,23 @@ export class Simulasyon {
    * anahtarlı) yeni `ic` için tembelce yeniden kurulur; sonuçları yalnız içeriğe bağlıdır.
    */
   static yukle(veri: CekirdekVeriPaketi, dunya: Dunya, gunluk?: readonly DamgaliKomut[]): Simulasyon {
-    const ic = icerikDerle(veri);
+    return Simulasyon.yukleDerlenmis(icerikDerle(veri), dunya, gunluk);
+  }
+
+  private static yukleDerlenmis(ic: DerlenmisIcerik, dunya: Dunya, gunluk?: readonly DamgaliKomut[]): Simulasyon {
     dunyaIcerikUyumu(ic, dunya);
     return new Simulasyon(ic, dunya, gunluk ? structuredClone([...gunluk]) : []);
   }
 
   /**
-   * Kurtarma (kill -9 sonrası): anlık görüntü metnini çözer (kural sürümü `veri`den hesaplanıp denetlenir), dünyayı
-   * yükler ve görüntüden SONRA kaydedilmiş başarılı komutları (`kalanGunluk`, günlük sırasıyla) uygular. Kalan
-   * komutlardan biri uygulanamazsa hata fırlatır (yenidenOynat gibi). Dönen simülasyonun günlüğü = kalanGunluk.
+   * Kurtarma (kill -9 sonrası): anlık görüntü metnini çözer, kural sürümünü ve içerik kimlik tablosunu mevcut `veri`yle
+   * karşılaştırır (`anlikGoruntuUyarla`), dünyayı yükler ve görüntüden SONRA kaydedilmiş başarılı komutları (`kalanGunluk`,
+   * günlük sırasıyla) uygular. Kalan komutlardan biri uygulanamazsa hata fırlatır (yenidenOynat gibi). Dönen simülasyonun
+   * günlüğü = kalanGunluk.
+   *
+   * Kural sürümü farklıysa varsayılan HATA'dır; `secenek.gocIzni` ile yalnız-ekle içerik göçü yapılır (docs/06 §14): görüntüdeki
+   * kimlikler mevcut içerikle eşlenir, yeni kimlikler varsayılanla doldurulur, kaldırılmış kimlik hata verir. Göçte kalan günlük
+   * ESKİ kural sürümüyle yazılmış olabileceğinden çağıranın sorumluluğundadır (sunucu göçten hemen sonra yeni görüntü alır).
    */
   static anlikGoruntudenYukle(
     veri: CekirdekVeriPaketi,
@@ -108,19 +117,25 @@ export class Simulasyon {
   }
 
   /**
-   * `anlikGoruntudenYukle` ile aynı; ek olarak kalan günlüğün her kaydı için `KomutSonucu` döndürür (günlük sırasıyla).
-   * `secenek.basarisizlaraIzin` true ise başarısız kayıt hata fırlatmaz (sunucu başarısız komutları da günlüğe yazıyorsa):
-   * başarısız komut zamanı ilerletir ama durumu değiştirmez (docs/06 §14), bu yüzden sonuç kesintisiz koşuyla aynıdır.
-   * Dönen simülasyonun günlüğü yalnız BAŞARILI kayıtları içerir.
+   * `anlikGoruntudenYukle` ile aynı; ek olarak kalan günlüğün her kaydı için `KomutSonucu` döndürür (günlük sırasıyla) ve göç
+   * raporunu (`goc`). `secenek.basarisizlaraIzin` true ise başarısız kayıt hata fırlatmaz (sunucu başarısız komutları da
+   * günlüğe yazıyorsa): başarısız komut zamanı ilerletir ama durumu değiştirmez (docs/06 §14), bu yüzden sonuç kesintisiz
+   * koşuyla aynıdır. Dönen simülasyonun günlüğü yalnız BAŞARILI kayıtları içerir.
+   *
+   * Dünya yeniden indekslendiyse (`goc.yenidenIndekslendi`) lojistik kirli işaretlenir (yeni kimlikler için çözüm planlanır) ve
+   * `sim.durumOzeti()` görüntünün `durumOzeti`sinden FARKLI olur (`goc.eskiDurumOzeti` yazıldığı haliyle dünyanındır).
    */
   static anlikGoruntudenYukleSonuclu(
     veri: CekirdekVeriPaketi,
     goruntu: string,
     kalanGunluk: readonly DamgaliKomut[] = [],
     secenek: KurtarmaSecenegi = {},
-  ): { sim: Simulasyon; sonuclar: KomutSonucu[] } {
-    const g = anlikGoruntuCoz(goruntu, kuralSurumuHesapla(veri));
-    const s = Simulasyon.yukle(veri, g.dunya);
+  ): { sim: Simulasyon; sonuclar: KomutSonucu[]; goc: GocRaporu } {
+    const g = anlikGoruntuCoz(goruntu);
+    const ic = icerikDerle(veri);
+    const { dunya, goc } = anlikGoruntuUyarla(g, ic, kuralSurumuHesapla(veri), secenek);
+    const s = Simulasyon.yukleDerlenmis(ic, dunya);
+    if (goc.yenidenIndekslendi) s.baglam.kirlet(s.dunya);
     const sonuclar: KomutSonucu[] = [];
     for (const k of kalanGunluk) {
       const r = s.uygula(k);
@@ -129,7 +144,7 @@ export class Simulasyon {
       }
       sonuclar.push(r);
     }
-    return { sim: s, sonuclar };
+    return { sim: s, sonuclar, goc };
   }
 
   /** Aynı veri + tohum + günlük ile baştan oynatır. */

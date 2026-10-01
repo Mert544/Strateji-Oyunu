@@ -8,7 +8,10 @@
  *   paylaşım kaybolacağından davranış değişebilirdi.
  * - `dunyaCoz`: JSON.parse + biçim doğrulaması (üst düzey alanlar, tipler, dizi uzunluklarının tutarlılığı, indeks
  *   aralıkları, kuyruk yığın düzeni ve öncelikleri). Bozuk girdide yolu belirten `SerilestirmeHatasi` fırlatır.
- * - Anlık görüntü zarfı: `{ surum: 1, kuralSurumu, simZamani, durumOzeti, dunya }` (kendisi de kanonik JSON).
+ * - Anlık görüntü zarfı (sürüm 2): `{ dunya, durumOzeti, icerikKimlikTablosu, kuralSurumu, simZamani, surum: 2 }` (kendisi de
+ *   kanonik JSON). `dunya` ve `durumOzeti` sürüm 1 ile BAYT BAYT aynıdır (indeksli kanonik metin; bölge kipi altınları
+ *   değişmez); sürüm 2 yalnız içerik kimlik tablosunu ekler (docs/06 §14 "Kalıcı kimlik ve içerik göçü"). Sürüm 1
+ *   görüntüleri (tablosuz) yüklenir; göç `anlikGoruntuUyarla` ile yapılır.
  * - `kuralSurumuHesapla(veri)`: içerik + parametre JSON'larının kanonik özetinden türetilen kimlik ("k1-<16 hex>").
  *
  * Bu modül motoru (Simulasyon) yalnız TİP olarak içe aktarır; yükleme `Simulasyon.yukle` / `anlikGoruntudenYukle`'dedir.
@@ -17,6 +20,16 @@ import type { VeriPaketi } from "@bolge/veri";
 import { PRNG_AKISLARI } from "./kurulum";
 import { kuyrukOnce } from "./kuyruk";
 import type { Simulasyon } from "./motor";
+import {
+  KIMLIK_TABLOSU_ADLARI,
+  dunyaTabloUyumu,
+  dunyaYenidenIndeksle,
+  icerikKimlikTablosuOlustur,
+  kimlikTablolariEsit,
+  kimlikTablosuMetni,
+  yalnizEkleDenetimi,
+} from "./goc";
+import type { EkleIhlali, IcerikKimlikTablosu } from "./goc";
 import { fnv1a64 } from "./ozet";
 import { OLAY_ONCELIGI } from "./tipler";
 import type { DerlenmisIcerik, Dunya, Ms } from "./tipler";
@@ -520,7 +533,8 @@ export function dunyaCoz(metin: string): Dunya {
 
 /**
  * Dünyanın derlenmiş içerikle uyumu: bölge sayısı ve kimlikleri (sırayla), kenar, mal ve birlik sayıları, tesis türü /
- * yöntem / teknoloji indeks aralıkları, iklim durumunun varlığı (tarım açıklığı). Uyumsuzlukta `SerilestirmeHatasi`.
+ * yöntem / teknoloji indeks aralıkları, tarım ürünü sayısı, iklim durumunun varlığı (tarım açıklığı). Uyumsuzlukta
+ * `SerilestirmeHatasi`. İçerik değişmişse (kimlik ekleme) önce `anlikGoruntuUyarla` ile dünya yeniden indekslenir.
  */
 export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
   const hb = ic.harita.bolgeler;
@@ -547,6 +561,8 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
       indeks(t.tur, `${y}.tesisler[${j}].tur`, ic.tesisTurleri.length);
       indeks(t.yontem, `${y}.tesisler[${j}].yontem`, ic.yontemler.length);
     });
+    const urunSayisi = ic.icerik.tarimUrunleri?.length ?? 0;
+    if (b.tarim !== undefined && b.tarim.ekimPpm.length !== urunSayisi) hata(`${y}.tarim.ekimPpm`, `tarim urunu sayisi ${b.tarim.ekimPpm.length}, icerikte ${urunSayisi}`);
   });
   if (d.kenarlar.length !== ic.harita.kenarlar.length) hata("$.kenarlar", `kenar sayisi ${d.kenarlar.length}, icerikte ${ic.harita.kenarlar.length}`);
   d.oyuncular.forEach((o, i) => {
@@ -625,26 +641,31 @@ export function kuralSurumuHesapla(veri: Pick<VeriPaketi, "icerik" | "param">): 
   return `k1-${fnv1a64(cikti.join(""))}`;
 }
 
-/** Anlık görüntü zarfı biçim sürümü. */
-export const ANLIK_GORUNTU_SURUMU = 1;
+/** Anlık görüntü zarfı biçim sürümü (yazılan): 2 = içerik kimlik tablosu var. */
+export const ANLIK_GORUNTU_SURUMU = 2;
+/** Okunabilen eski zarf sürümü: 1 = kimlik tablosu yok (göç için `GocSecenegi.eskiTablo` gerekebilir). */
+export const ANLIK_GORUNTU_ESKI_SURUMU = 1;
 
 export interface AnlikGoruntu {
-  surum: 1;
+  surum: 1 | 2;
   /** `kuralSurumuHesapla(veri)` ile üretilmiş kural kimliği. */
   kuralSurumu: string;
   /** Görüntü anındaki simülasyon zamanı (= dunya.zaman). */
   simZamani: Ms;
-  /** `durumOzeti(dunya)` (FNV-1a 64, 16 hex). */
+  /** `durumOzeti(dunya)` (FNV-1a 64, 16 hex): YAZILDIĞI HALİYLE dünyanın özeti (göçten sonraki dünyanın değil). */
   durumOzeti: string;
+  /** Yazıldığı andaki içerik kimlik tablosu (yalnız sürüm 2). `dunya`nın indeks uzayları bu tabloya göredir. */
+  icerikKimlikTablosu?: IcerikKimlikTablosu;
+  /** Yazıldığı haliyle dünya (içerik indeksleri `icerikKimlikTablosu`na göre; mevcut içeriğe `anlikGoruntuUyarla` uyarlar). */
   dunya: Dunya;
 }
 
 /**
- * Simülasyonun anlık görüntüsü (kanonik JSON metni): `{ dunya, durumOzeti, kuralSurumu, simZamani, surum: 1 }`.
+ * Simülasyonun anlık görüntüsü (kanonik JSON metni): `{ dunya, durumOzeti, icerikKimlikTablosu, kuralSurumu, simZamani, surum: 2 }`.
  * Dünya bir kez serileştirilir; özet aynı metinden hesaplanır (= sim.durumOzeti()). Günlük zarfa girmez (sunucuda ayrı
  * tutulur: görüntüden sonraki başarılı komutlar `anlikGoruntudenYukle`'ye kuyruk olarak verilir).
  */
-export function anlikGoruntuOlustur(sim: Pick<Simulasyon, "dunya">, kuralSurumu: string): string {
+export function anlikGoruntuOlustur(sim: Pick<Simulasyon, "dunya" | "ic">, kuralSurumu: string): string {
   return anlikGoruntuOlusturOzetli(sim, kuralSurumu).metin;
 }
 
@@ -652,21 +673,51 @@ export function anlikGoruntuOlustur(sim: Pick<Simulasyon, "dunya">, kuralSurumu:
  * `anlikGoruntuOlustur` ile aynı metin, ek olarak dünyanın durum özeti (aynı serileştirmeden; `sim.durumOzeti()` ile eşit).
  * Sunucu özeti ayrıca saklamak için dünyayı ikinci kez serileştirmek zorunda kalmaz.
  */
-export function anlikGoruntuOlusturOzetli(sim: Pick<Simulasyon, "dunya">, kuralSurumu: string): { metin: string; durumOzeti: string } {
+export function anlikGoruntuOlusturOzetli(sim: Pick<Simulasyon, "dunya" | "ic">, kuralSurumu: string): { metin: string; durumOzeti: string } {
   if (typeof kuralSurumu !== "string" || kuralSurumu === "") hata("$.kuralSurumu", "bos olmayan dize bekleniyordu");
   const dunyaMetni = dunyaSerilestir(sim.dunya);
   const ozet = fnv1a64(dunyaMetni);
-  // Anahtarlar sıralı: dunya < durumOzeti < kuralSurumu < simZamani < surum (zarf da kanonik JSON'dur).
+  const tablo = icerikKimlikTablosuOlustur(sim.ic);
+  // Anahtarlar sıralı: dunya < durumOzeti < icerikKimlikTablosu < kuralSurumu < simZamani < surum (zarf da kanonik JSON'dur).
   const metin =
-    `{"dunya":${dunyaMetni},"durumOzeti":${JSON.stringify(ozet)},"kuralSurumu":${JSON.stringify(kuralSurumu)},` +
-    `"simZamani":${sim.dunya.zaman},"surum":${ANLIK_GORUNTU_SURUMU}}`;
+    `{"dunya":${dunyaMetni},"durumOzeti":${JSON.stringify(ozet)},"icerikKimlikTablosu":${kimlikTablosuMetni(tablo)},` +
+    `"kuralSurumu":${JSON.stringify(kuralSurumu)},"simZamani":${sim.dunya.zaman},"surum":${ANLIK_GORUNTU_SURUMU}}`;
   return { metin, durumOzeti: ozet };
 }
 
+/** Zarf düzeyindeki kimlik tablosunu doğrular: bilinen altı uzay, her biri benzersiz boş olmayan dizelerden dizi. */
+function kimlikTablosuDogrula(v: unknown, yol: string): IcerikKimlikTablosu {
+  const o = nesne(v, yol);
+  for (const k of Object.keys(o)) if (!(KIMLIK_TABLOSU_ADLARI as readonly string[]).includes(k)) hata(`${yol}.${k}`, "bilinmeyen kimlik tablosu");
+  const t = {} as IcerikKimlikTablosu;
+  for (const ad of KIMLIK_TABLOSU_ADLARI) {
+    if (!(ad in o)) hata(`${yol}.${ad}`, "zorunlu alan eksik");
+    const goruldu = new Set<string>();
+    t[ad] = dizi(o[ad], `${yol}.${ad}`).map((x, i) => {
+      const id = dize(x, `${yol}.${ad}[${i}]`);
+      if (id === "") hata(`${yol}.${ad}[${i}]`, "bos kimlik");
+      if (goruldu.has(id)) hata(`${yol}.${ad}[${i}]`, `tekrarlanan kimlik: ${id}`);
+      goruldu.add(id);
+      return id;
+    });
+  }
+  return t;
+}
+
+/** Dünya yolu ($.bolgeler...) hatasını zarf yoluna ($.dunya.bolgeler...) çevirir. */
+function dunyaYoluHatasi(yol: string, mesaj: string): SerilestirmeHatasi {
+  return new SerilestirmeHatasi(yol.replace(/^\$/, "$.dunya"), mesaj);
+}
+
+function zarfYoluHatasi(yol: string, mesaj: string): SerilestirmeHatasi {
+  return new SerilestirmeHatasi(yol, mesaj);
+}
+
 /**
- * Anlık görüntü metnini çözer ve doğrular: zarf alanları (sıkı), `surum === 1`, (verilmişse) beklenen kural sürümü,
- * `simZamani === dunya.zaman`, dünya biçimi (`dunyaDogrula`) ve özet (dünya yeniden kanonik serileştirilip
- * `durumOzeti` ile karşılaştırılır: bozulma/elle düzenleme yakalanır). Hata: `SerilestirmeHatasi`.
+ * Anlık görüntü metnini çözer ve doğrular: zarf alanları (sıkı), `surum` 1 ya da 2, (verilmişse) beklenen kural sürümü,
+ * `simZamani === dunya.zaman`, dünya biçimi (`dunyaDogrula`), sürüm 2'de kimlik tablosu ve dünyanın tabloyla uyumu, ve özet
+ * (dünya yeniden kanonik serileştirilip `durumOzeti` ile karşılaştırılır: bozulma/elle düzenleme yakalanır). Dönen dünya
+ * YAZILDIĞI HALİYLEDİR; içerik değişmişse `anlikGoruntuUyarla` ile mevcut içeriğe göçürülür. Hata: `SerilestirmeHatasi`.
  */
 export function anlikGoruntuCoz(metin: string, beklenenKuralSurumu?: string): AnlikGoruntu {
   let deger: unknown;
@@ -676,10 +727,12 @@ export function anlikGoruntuCoz(metin: string, beklenenKuralSurumu?: string): An
     hata("$", `gecersiz JSON: ${e instanceof Error ? e.message : String(e)}`);
   }
   const z = nesne(deger, "$");
-  const zarfAlanlari = ["dunya", "durumOzeti", "kuralSurumu", "simZamani", "surum"];
+  if (!("surum" in z)) hata("$.surum", "zorunlu alan eksik");
+  if (z.surum !== ANLIK_GORUNTU_SURUMU && z.surum !== ANLIK_GORUNTU_ESKI_SURUMU) hata("$.surum", `desteklenmeyen anlik goruntu surumu: ${JSON.stringify(z.surum)}`);
+  const surum = z.surum as 1 | 2;
+  const zarfAlanlari = surum === 2 ? ["dunya", "durumOzeti", "icerikKimlikTablosu", "kuralSurumu", "simZamani", "surum"] : ["dunya", "durumOzeti", "kuralSurumu", "simZamani", "surum"];
   for (const k of zarfAlanlari) if (!(k in z)) hata(`$.${k}`, "zorunlu alan eksik");
   for (const k of Object.keys(z)) if (!zarfAlanlari.includes(k)) hata(`$.${k}`, "bilinmeyen zarf alani");
-  if (z.surum !== ANLIK_GORUNTU_SURUMU) hata("$.surum", `desteklenmeyen anlik goruntu surumu: ${JSON.stringify(z.surum)}`);
   const kuralSurumu = dize(z.kuralSurumu, "$.kuralSurumu");
   if (beklenenKuralSurumu !== undefined && kuralSurumu !== beklenenKuralSurumu) {
     hata("$.kuralSurumu", `kural surumu uyusmuyor: goruntu ${kuralSurumu}, beklenen ${beklenenKuralSurumu}`);
@@ -687,15 +740,115 @@ export function anlikGoruntuCoz(metin: string, beklenenKuralSurumu?: string): An
   const simZamani = tamsayi(z.simZamani, "$.simZamani", 0);
   const durumOzeti = dize(z.durumOzeti, "$.durumOzeti");
   if (!/^[0-9a-f]{16}$/.test(durumOzeti)) hata("$.durumOzeti", "16 haneli kucuk harf onaltilik bekleniyordu");
+  const tablo = surum === 2 ? kimlikTablosuDogrula(z.icerikKimlikTablosu, "$.icerikKimlikTablosu") : undefined;
   let dunya: Dunya;
   try {
     dunya = dunyaDogrula(z.dunya);
   } catch (e) {
-    if (e instanceof SerilestirmeHatasi) throw new SerilestirmeHatasi(e.yol.replace(/^\$/, "$.dunya"), e.message.slice(e.yol.length + 2));
+    if (e instanceof SerilestirmeHatasi) throw dunyaYoluHatasi(e.yol, e.message.slice(e.yol.length + 2));
     throw e;
   }
   if (dunya.zaman !== simZamani) hata("$.simZamani", `simZamani ${simZamani} != dunya.zaman ${dunya.zaman}`);
+  if (tablo !== undefined) dunyaTabloUyumu(tablo, dunya, dunyaYoluHatasi);
   const gercek = fnv1a64(dunyaSerilestir(dunya));
   if (gercek !== durumOzeti) hata("$.durumOzeti", `ozet uyusmuyor (bozuk anlik goruntu): kayitli ${durumOzeti}, hesaplanan ${gercek}`);
-  return { surum: ANLIK_GORUNTU_SURUMU, kuralSurumu, simZamani, durumOzeti, dunya };
+  return { surum, kuralSurumu, simZamani, durumOzeti, ...(tablo !== undefined ? { icerikKimlikTablosu: tablo } : {}), dunya };
+}
+
+// ---------------------------------------------------------------------------
+// İçerik göçü (G8): kural sürümü politikası + kimlik eşlemesi
+// ---------------------------------------------------------------------------
+
+/** Anlık görüntü göç seçenekleri. */
+export interface GocSecenegi {
+  /**
+   * Kural sürümü farklıysa (içerik/parametre değişmiş) yüklemeye izin ver. Varsayılan false: sürüm uyuşmazlığı hata
+   * (davranış değişmez). Yetki açıktır ve işletmecinin kararıdır (dönem sınırı); izin verilse bile kaldırılmış kimlik
+   * hatadır ve yalnız kimlik EKLEME (ve parametre/denge değişimi) yüklenir.
+   */
+  gocIzni?: boolean;
+  /** true: araya ekleme / sıra değişimi de hata (yalnız sona ekleme kabul). Varsayılan false (kimlikle eşlenir, rapora yazılır). */
+  yalnizEkleZorunlu?: boolean;
+  /**
+   * Yalnız SÜRÜM 1 görüntüler için: görüntünün yazıldığı içeriğin kimlik tablosu (`icerikKimlikTablosuOlustur`). Sürüm 1
+   * zarfında tablo yoktur; kural sürümü mevcutla aynıysa tablo mevcut içeriktir (gerekmez), farklıysa bu seçenek şarttır.
+   */
+  eskiTablo?: IcerikKimlikTablosu;
+}
+
+/** Göç raporu (sunucu / ölçüm tarafı için). */
+export interface GocRaporu {
+  /** Dünya yeniden indekslendi mi (kimlik tabloları farklıydı)? */
+  yenidenIndekslendi: boolean;
+  /** Kural sürümü (içerik/parametre) görüntüyle farklı mı? */
+  kuralDegisti: boolean;
+  eskiKuralSurumu: string;
+  yeniKuralSurumu: string;
+  /** Görüntüdeki (yazıldığı haliyle) dünyanın özeti. `yenidenIndekslendi` ise yüklenen dünyanın özetiyle EŞİT OLMAZ. */
+  eskiDurumOzeti: string;
+  /** Yalnızca sona ekleme miydi? */
+  yalnizEkle: boolean;
+  /** İçerikte yeni olan, varsayılanla doldurulan kimlikler. */
+  eklenen: IcerikKimlikTablosu;
+  /** Yalnız-ekle ihlalleri (araya ekleme / taşıma; silme zaten hata). */
+  ihlaller: EkleIhlali[];
+}
+
+/**
+ * Anlık görüntüyü mevcut içeriğe uyarlar (yükleme kuralları):
+ * 1. Kural sürümü aynıysa: kimlik tablosu mevcut içerikle birebir aynı olmalıdır (aksi halde bozuk görüntü); dünya olduğu gibi döner.
+ * 2. Kural sürümü farklıysa: `gocIzni` yoksa `kural surumu uyusmuyor` hatası; varsa göç denenir.
+ * 3. Göç: görüntüdeki her kimlik mevcut içerikte olmalıdır (kaldırılmış kimlik = açık hata); yeni kimlikler varsayılanla
+ *    doldurulur; sıra farkı kimlikle eşlenir (`yalnizEkleZorunlu` ise araya ekleme/taşıma hata).
+ * Dünya YERİNDE dönüştürülür (kopyalanmaz). Sürüm 1 görüntüler için `GocSecenegi.eskiTablo`.
+ */
+export function anlikGoruntuUyarla(
+  g: AnlikGoruntu,
+  ic: DerlenmisIcerik,
+  kuralSurumu: string,
+  secenek: GocSecenegi = {},
+): { dunya: Dunya; goc: GocRaporu } {
+  const yeniTablo = icerikKimlikTablosuOlustur(ic);
+  const kuralAyni = g.kuralSurumu === kuralSurumu;
+  if (!kuralAyni && secenek.gocIzni !== true) {
+    hata("$.kuralSurumu", `kural surumu uyusmuyor: goruntu ${g.kuralSurumu}, beklenen ${kuralSurumu} (icerik/parametre degismis: goc icin gocIzni gerekir)`);
+  }
+  let eskiTablo: IcerikKimlikTablosu;
+  if (g.icerikKimlikTablosu !== undefined) eskiTablo = g.icerikKimlikTablosu;
+  else if (kuralAyni) eskiTablo = yeniTablo;
+  else if (secenek.eskiTablo !== undefined) eskiTablo = kimlikTablosuDogrula(secenek.eskiTablo, "$.eskiTablo");
+  else {
+    hata(
+      "$.icerikKimlikTablosu",
+      `surum ${g.surum} goruntude kimlik tablosu yok ve kural surumu uyusmuyor (goruntu ${g.kuralSurumu}, beklenen ${kuralSurumu}): ` +
+        "goruntunun yazildigi icerigin tablosu `eskiTablo` ile verilmeli",
+    );
+  }
+  const tabloAyni = kimlikTablolariEsit(eskiTablo, yeniTablo);
+  if (kuralAyni && !tabloAyni) hata("$.icerikKimlikTablosu", "kural surumu ayni ama kimlik tablosu mevcut icerikten farkli (bozuk goruntu)");
+  const denetim = yalnizEkleDenetimi(eskiTablo, yeniTablo);
+  for (const ad of KIMLIK_TABLOSU_ADLARI) {
+    const k = denetim.silinen[ad][0];
+    if (k !== undefined) hata(`$.icerikKimlikTablosu.${ad}[${eskiTablo[ad].indexOf(k)}]`, `kaldirilmis kimlik: ${k} (yalniz-ekle ilkesi: icerikten kimlik silinemez)`);
+  }
+  const ihlal = denetim.ihlaller[0];
+  if (secenek.yalnizEkleZorunlu === true && ihlal !== undefined) {
+    const yer = ihlal.tur === "tasinan" ? `${ihlal.eskiIndeks} -> ${ihlal.yeniIndeks}` : `indeks ${ihlal.yeniIndeks}`;
+    hata(`$.icerikKimlikTablosu.${ihlal.tablo}`, `yalniz-ekle ihlali (${ihlal.tur}): ${ihlal.kimlik} (${yer}); icerik yalniz sona eklenebilir`);
+  }
+  if (g.icerikKimlikTablosu === undefined) dunyaTabloUyumu(eskiTablo, g.dunya, dunyaYoluHatasi);
+  const dunya = tabloAyni ? g.dunya : dunyaYenidenIndeksle(g.dunya, eskiTablo, ic, zarfYoluHatasi);
+  return {
+    dunya,
+    goc: {
+      yenidenIndekslendi: !tabloAyni,
+      kuralDegisti: !kuralAyni,
+      eskiKuralSurumu: g.kuralSurumu,
+      yeniKuralSurumu: kuralSurumu,
+      eskiDurumOzeti: g.durumOzeti,
+      yalnizEkle: denetim.yalnizEkle,
+      eklenen: denetim.eklenen,
+      ihlaller: denetim.ihlaller,
+    },
+  };
 }

@@ -214,10 +214,10 @@ describe("anlik goruntu zarfi", () => {
 
   it("zarf kanonik JSON; alanlar dogru; coz -> ayni dunya", () => {
     const ham = JSON.parse(metin) as Record<string, unknown>;
-    expect(Object.keys(ham)).toEqual(["dunya", "durumOzeti", "kuralSurumu", "simZamani", "surum"]);
+    expect(Object.keys(ham)).toEqual(["dunya", "durumOzeti", "icerikKimlikTablosu", "kuralSurumu", "simZamani", "surum"]);
     expect(kanonikSerilestir(ham)).toBe(metin);
     const g = anlikGoruntuCoz(metin, kural);
-    expect(g.surum).toBe(1);
+    expect(g.surum).toBe(2);
     expect(g.kuralSurumu).toBe(kural);
     expect(g.simZamani).toBe(30 * SAAT);
     expect(g.durumOzeti).toBe(s.durumOzeti());
@@ -232,8 +232,8 @@ describe("anlik goruntu zarfi", () => {
   });
 
   it("bozuk zarf reddedilir: surum, ozet (dunya ile oynanmis), simZamani, eksik/fazla alan, dunya ici yol", () => {
-    expect(hataYolu(() => anlikGoruntuCoz(boz(metin, (z) => (z.surum = 2))))).toBe("$.surum");
-    expect(() => anlikGoruntuCoz(boz(metin, (z) => (z.surum = 2)))).toThrow(/desteklenmeyen anlik goruntu surumu/);
+    expect(hataYolu(() => anlikGoruntuCoz(boz(metin, (z) => (z.surum = 3))))).toBe("$.surum");
+    expect(() => anlikGoruntuCoz(boz(metin, (z) => (z.surum = 3)))).toThrow(/desteklenmeyen anlik goruntu surumu/);
     expect(hataYolu(() => anlikGoruntuCoz(boz(metin, (z) => z.dunya.bolgeler[0].nufus++)))).toBe("$.durumOzeti");
     expect(hataYolu(() => anlikGoruntuCoz(boz(metin, (z) => (z.simZamani = 0))))).toBe("$.simZamani");
     expect(hataYolu(() => anlikGoruntuCoz(boz(metin, (z) => delete z.durumOzeti)))).toBe("$.durumOzeti");

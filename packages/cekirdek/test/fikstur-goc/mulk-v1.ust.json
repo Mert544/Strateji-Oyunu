@@ -1,0 +1,92 @@
+{
+ "kural": "k1-ce00d46df2e2061d",
+ "ozet": "55a86d82fe052ff3",
+ "zaman": 172800000,
+ "tablo": {
+  "birlikler": [
+   "piyade_tumeni",
+   "zirhli_tumen"
+  ],
+  "mallar": [
+   "tahil",
+   "gida",
+   "cevher",
+   "komur",
+   "celik",
+   "bakir",
+   "silis",
+   "parca",
+   "elektronik",
+   "petrol",
+   "yakit",
+   "muhimmat",
+   "gubre",
+   "elektrik"
+  ],
+  "tarimUrunleri": [
+   "bugday",
+   "baklagil",
+   "nadas"
+  ],
+  "teknolojiler": [
+   "mekanize_tarim",
+   "sulama_sistemi",
+   "derin_madencilik",
+   "elektrik_ark_ocagi",
+   "otomasyon",
+   "konteyner_limani",
+   "mekanize_ordu"
+  ],
+  "tesisTurleri": [
+   "ciftlik",
+   "gida_fabrikasi",
+   "cevher_madeni",
+   "komur_ocagi",
+   "bakir_madeni",
+   "silis_ocagi",
+   "petrol_kuyusu",
+   "celikhane",
+   "parca_fabrikasi",
+   "elektronik_fabrikasi",
+   "rafineri",
+   "muhimmat_fabrikasi",
+   "ahir",
+   "mera",
+   "gubre_fabrikasi",
+   "santral",
+   "hidro_santrali",
+   "sulama_kanali"
+  ],
+  "yontemler": [
+   "geleneksel_tarim",
+   "mekanize_tarim",
+   "standart_gida_isleme",
+   "yuzey_cevher",
+   "derin_cevher",
+   "yuzey_komur",
+   "derin_komur",
+   "bakir_cikarim",
+   "silis_cikarim",
+   "petrol_cikarim",
+   "yuksek_firin",
+   "elektrik_ark",
+   "standart_parca",
+   "otomatik_hat",
+   "standart_elektronik",
+   "standart_rafineri",
+   "standart_muhimmat",
+   "ahir_besi",
+   "mera_hayvancilik",
+   "azotlu_gubre",
+   "komur_santrali",
+   "yakit_jeneratoru",
+   "hidro_santrali",
+   "sulama_pompasi"
+  ]
+ },
+ "ekYapi": [
+  "ambar",
+  "konut",
+  "ticaret_ofisi"
+ ]
+}
