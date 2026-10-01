@@ -15,7 +15,7 @@ import type { IcerikTablosu } from "./tablo";
 import { kitlikCarpani, temelKarsilanmaHesapla } from "../pazar";
 import { pazarTablosu } from "../pazar/tablo";
 import { carpBol, tamsayiKarekok } from "../sabit";
-import { bakimCarpani, bakimDuzeyiIndeksi, cezaCarpani, kirlilikTarimCarpani, olcekKademesi } from "../sanayi/carpan";
+import { bakimCarpani, bakimDuzeyiIndeksi, bakimGirdiMiktari, cezaCarpani, kirlilikTarimCarpani, mulkBakim, olcekKademesi } from "../sanayi/carpan";
 import { elektrikDagit } from "../sanayi/elektrik";
 import type { ElektrikSonucu } from "../sanayi/elektrik";
 import { akarsuCarpani, sanayiTablosu } from "../sanayi/tablo";
@@ -232,7 +232,7 @@ function ciktiCarpaniHesapla(tt: TarimTablosu | null, sn: SanayiTablosu | null, 
   if (sn !== null) {
     const ol = olcekKademesi(sn, ts).ciktiPpm;
     if (ol !== PPM) c = carpBol(c, ol, PPM);
-    const ceza = cezaCarpani(sn, ts, kitlik);
+    const ceza = cezaCarpani(sn, ts, kitlik, mulkBakim(ic, b)?.tavanPpm);
     if (ceza !== PPM) c = carpBol(c, ceza, PPM);
     if (tarimsal) {
       const k = kirlilikTarimCarpani(sn, b);
@@ -277,6 +277,8 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
   const sn = sanayiTablosu(ctx.ic);
   const rezervTaban = sn === null ? 0 : sn.p.damar.rezervVerimTabaniPpm;
   const duzey = sn === null ? 1 : bakimDuzeyiIndeksi(d, b);
+  // Mülk bakımı C (sartname §5.10): yalnız mülk kipinde, işletme düğümünde ve blok etkinse tanımlı; aksi halde undefined (eski aritmetik).
+  const mb = mulkBakim(ctx.ic, b);
   const akarsu = sn === null ? PPM : akarsuCarpani(sn, ctx.ic, t);
   // Pazar v1 (B3): bölgede kıtlık cezası varsa sanayi kapalıyken de çıktı çarpanı hesaplanır.
   const kitlikAktif = pazarTablosu(ctx.ic) !== null && (b.kitlikKademesi ?? 0) > 0;
@@ -344,7 +346,7 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
         const ec = sn.yontemElektrikCikti[ts.yontem] as number;
         if (ec > 0) {
           const hidroCarpan = sn.yontemHidro[ts.yontem] ? akarsu : PPM;
-          h.elektrikKap[i] = carpBol(carpBol(ec, olcekCikti, PPM), carpBol(hidroCarpan, cezaCarpani(sn, ts), PPM), PPM);
+          h.elektrikKap[i] = carpBol(carpBol(ec, olcekCikti, PPM), carpBol(hidroCarpan, cezaCarpani(sn, ts, PPM, mb?.tavanPpm), PPM), PPM);
           // Santralin yakıt talebi gerçek yükünü izler (tam yük planlamak, kullanılmayan yakıtı depoya yığardı).
           planPot = carpBol(planPot, planYuk, PPM);
         }
@@ -360,7 +362,8 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
     }
     // Bakım aktif olsun olmasın tüketilir (batma); sanayide ölçek ve bakım düzeyi çarpanıyla.
     const bakimC = sn === null ? PPM : bakimCarpani(sn, ts, duzey);
-    for (const [m, q] of y.bakim) h.bakim[m] = (h.bakim[m] as number) + (bakimC === PPM ? q : carpBol(q, bakimC, PPM));
+    const pp = mb?.yontemParcaPpm?.[ts.yontem];
+    for (const [m, q] of y.bakim) h.bakim[m] = (h.bakim[m] as number) + bakimGirdiMiktari(q, pp, bakimC);
     const pot = h.potansiyelPpm[i] as number;
     if (pot > 0) {
       for (const [m, q] of y.girdi) {

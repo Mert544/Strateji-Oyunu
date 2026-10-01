@@ -9,7 +9,7 @@
 import { carpBol, carpBolTavan, kelepce } from "../sabit";
 import { PPM } from "../tipler";
 import type { Baglam, BolgeDurumu, Dunya } from "../tipler";
-import { bakimDuzeyiIndeksi, olcekKademesi } from "./carpan";
+import { bakimDuzeyiIndeksi, mulkBakim, olcekKademesi } from "./carpan";
 import { sanayiTablosu } from "./tablo";
 
 /** Saatlik emisyon: Σ yöntem.kirlilikPpmSaat x verim x ölçek (son çözümdeki verimle). */
@@ -40,12 +40,15 @@ export function sanayiGunluk(d: Dunya, ctx: Baglam): void {
   for (const b of d.bolgeler) {
     if (b.sahip === null) continue;
     const duzey = bakimDuzeyiIndeksi(d, b);
-    let delta = (bk.duzeyler[duzey] as { asinmaPpmGun: number }).asinmaPpmGun;
+    // Mülk bakımı C (sartname §5.10): yalnız mülk kipinde ve işletme düğümünde etkin; yoksa `sanayi.bakim` değerleri (bit bit eski).
+    const mb = mulkBakim(ctx.ic, b);
+    let delta = mb?.duzeyAsinmaPpmGun?.[duzey] ?? (bk.duzeyler[duzey] as { asinmaPpmGun: number }).asinmaPpmGun;
+    const kitlikAsinma = mb?.kitlikAsinmaPpmGun ?? bk.kitlikAsinmaPpmGun;
     // Parça kıtlığı: bakım girdisi karşılanma eşiğinin altındaysa günlük aşınma en az kitlikAsinmaPpmGun x (1 - karşılanma)
     // olur (tam kıtlıkta +20 000, yarım kıtlıkta +10 000; eşik üstünde ek aşınma yok).
     const karsilanma = b.bakimKarsilanmaPpm ?? PPM;
     if (karsilanma < bk.kitlikEsigiPpm) {
-      const kitlik = carpBolTavan(bk.kitlikAsinmaPpmGun, PPM - karsilanma, PPM);
+      const kitlik = carpBolTavan(kitlikAsinma, PPM - karsilanma, PPM);
       if (delta < kitlik) delta = kitlik;
     }
     if (delta === 0) continue;

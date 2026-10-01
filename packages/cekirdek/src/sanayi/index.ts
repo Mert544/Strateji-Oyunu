@@ -10,4 +10,4 @@ export { elektrikDagit } from "./elektrik";
 export type { ElektrikSonucu } from "./elektrik";
 export { sanayiTablosu, akarsuCarpani } from "./tablo";
 export type { SanayiTablosu } from "./tablo";
-export { cezaCarpani, kirlilikTarimCarpani, kirlilikIstikrarCezasi, olcekKademesi, bakimCarpani } from "./carpan";
+export { cezaCarpani, kirlilikTarimCarpani, kirlilikIstikrarCezasi, olcekKademesi, bakimCarpani, mulkBakim, bakimGirdiMiktari, bakimGirdileriSaat, bakimParcaSaat } from "./carpan";

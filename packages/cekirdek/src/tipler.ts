@@ -129,8 +129,25 @@ export interface DerlenmisMulk {
    * OLUŞMAZ (çıktı yolu atlanır). Yalnız mülk kipinde ve işletme düğümünde (`b.merkez`) uygulanır; çıktıya uygulanır, girdiye değil (G6-2).
    */
   yontemCiktiPpm?: Record<number, number>;
+  /**
+   * Mülk bakımı C (`mulk.bakim`, sartname §5.10): derlemede YALNIZ etkin satırlardan kurulur; hiç etkin satır yoksa ya da blok yoksa alan OLUŞMAZ (bakım yolu atlanır).
+   * Yalnız mülk kipinde ve işletme düğümünde (`b.merkez`) uygulanır; bölge kipi ve bölge kipi altınları etkilenmez.
+   */
+  bakim?: DerlenmisMulkBakim;
   /** Şebeke tedariki (`mulk.sebeke` tanımlıysa; sartname §4.6, §5.2): derlemede kurulur, yoksa alan OLUŞMAZ (şebeke yolu atlanır). */
   sebeke?: DerlenmisSebeke;
+}
+
+/** Derlenmiş mülk bakım ayarı (`mulk.bakim`, sartname §5.10.3): her alan yalnız etkinse (kimlikten farklıysa) vardır. */
+export interface DerlenmisMulkBakim {
+  /** Düzey (0 asgari, 1 normal, 2 yüksek) -> günlük aşınma değişimi (ppm), `asinmaHizCarpaniPpm` uygulanmış. Yalnız çarpan !== PPM iken; `kitlikAsinmaPpmGun` ile birlikte oluşur. */
+  duzeyAsinmaPpmGun?: readonly [number, number, number];
+  /** `sanayi.bakim.kitlikAsinmaPpmGun` x çarpan. */
+  kitlikAsinmaPpmGun?: number;
+  /** Etkin çıktı kaybı tavanı; yalnız `sanayi.bakim` değerinden FARKLIYSA. */
+  tavanPpm?: number;
+  /** Yöntem indeksi -> bakım parçası çarpanı (ppm); YALNIZ !== PPM olan yöntemler. */
+  yontemParcaPpm?: Record<number, number>;
 }
 
 /** Derlenmiş şebeke: birim fiyatlar derleme zamanında TABANDAN sabitlenir (`tabanFiyat x kamuIthalatCarpaniPpm x tavanOraniPpm`); canlı pazar fiyatı yolu YOKTUR. */

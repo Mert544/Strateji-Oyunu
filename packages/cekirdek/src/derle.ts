@@ -8,7 +8,7 @@ import { GUN, PPM } from "./tipler";
 import { HucreDizini } from "./mulk/hucreDizini";
 import { kamuKumeleriHesapla } from "./mulk/kamu";
 import { kamuIthalatCarpaniHesapla } from "./mulk/kamuFiyat";
-import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, DerlenmisSebeke } from "./tipler";
+import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, DerlenmisMulkBakim, DerlenmisSebeke } from "./tipler";
 
 /** Derleme zamanı anahtarı: bkz. `mulkDerle`. */
 declare const __BOLGE_MULKSUZ__: boolean | undefined;
@@ -261,6 +261,36 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
       }
     }
     if (etkin) sonuc.yontemCiktiPpm = tablo;
+  }
+  // Mülk bakımı C (sartname §5.10.3): tablo YALNIZ etkin satırlardan (çarpan !== PPM, tavan sanayi değerinden farklı, parça çarpanı !== PPM); hiç yoksa alan oluşmaz.
+  const mb = p.bakim;
+  if (mb !== undefined) {
+    const o: DerlenmisMulkBakim = {};
+    const sp = ic.param.sanayi; // sanayi kapalıysa aşınma alanları okunmaz (veri doğrulayıcı uyarır: aşınma yalnız sanayi açıkken çalışır)
+    const h = mb.asinmaHizCarpaniPpm;
+    if (h !== undefined && (!Number.isSafeInteger(h) || h <= 0 || h > 2 * PPM)) throw new Error(`icerikDerle: mulk.bakim.asinmaHizCarpaniPpm (0, ${2 * PPM}] araliginda tamsayi olmali`);
+    if (sp !== undefined && h !== undefined && h !== PPM) {
+      o.duzeyAsinmaPpmGun = [0, 1, 2].map((i) => carpBol((sp.bakim.duzeyler[i] as { asinmaPpmGun: number }).asinmaPpmGun, h, PPM)) as [number, number, number];
+      o.kitlikAsinmaPpmGun = carpBol(sp.bakim.kitlikAsinmaPpmGun, h, PPM);
+    }
+    const t = mb.asinmaVerimKaybiTavaniPpm;
+    if (t !== undefined && (!Number.isSafeInteger(t) || t < 0 || t > PPM)) throw new Error(`icerikDerle: mulk.bakim.asinmaVerimKaybiTavaniPpm [0, ${PPM}] araliginda tamsayi olmali`);
+    if (sp !== undefined && t !== undefined && t !== sp.bakim.asinmaVerimKaybiTavaniPpm) o.tavanPpm = t;
+    if (mb.yontemParcaPpm !== undefined) {
+      const tablo: Record<number, number> = {};
+      for (const yid of Object.keys(mb.yontemParcaPpm).sort()) {
+        const yi = ic.yontemIndeks[yid];
+        if (yi === undefined) throw new Error(`icerikDerle: mulk.bakim.yontemParcaPpm bilinmeyen yontem: ${yid}`);
+        const ppm = mb.yontemParcaPpm[yid] as number;
+        if (!Number.isSafeInteger(ppm) || ppm <= 0 || ppm > 2 * PPM) throw new Error(`icerikDerle: mulk.bakim.yontemParcaPpm.${yid} (0, ${2 * PPM}] araliginda tamsayi olmali`);
+        const bakim = Object.values((ic.yontemler[yi] as { bakim: Record<string, number> }).bakim);
+        if (bakim.length === 0) throw new Error(`icerikDerle: mulk.bakim.yontemParcaPpm bakim girdisi bos yontem: ${yid}`);
+        if (bakim.some((q) => carpBol(q, ppm, PPM) < 1)) throw new Error(`icerikDerle: mulk.bakim.yontemParcaPpm miktar 0'a iner: ${yid}`);
+        if (ppm !== PPM) tablo[yi] = ppm;
+      }
+      if (Object.keys(tablo).length > 0) o.yontemParcaPpm = tablo;
+    }
+    if (Object.keys(o).length > 0) sonuc.bakim = o;
   }
   return sonuc;
 }
