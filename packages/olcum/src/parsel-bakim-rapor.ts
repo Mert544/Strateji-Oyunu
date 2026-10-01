@@ -493,7 +493,7 @@ export function bakimIzgarasiUret(kosular: readonly BakimOzetKosusu[], meta: { e
   const k: string[] = [];
   k.push(`# Parsel ölçümü — bakım duyarlılık ızgarası (${meta.etiket ?? "bakim-izgara"})`);
   k.push("");
-  k.push("Her satır bir (kıtlık aşınması `kitlikAsinmaPpmGun`, ceza tavanı `asinmaVerimKaybiTavaniPpm`) ayarıdır; bakımsız = yönetim kapalı, bakımlı = bakım yönetimi AÇIK. Gelir = yerleşik oyuncunun son 7 gün net üretim geliri, oyuncu başına medyan (tohumlar ve oyuncular üzerinden havuzlanmış). **Yorum yoktur**; kalibrasyon yorumu Ar-Ge'nindir.");
+  k.push("Her satır bir (kıtlık aşınması `kitlikAsinmaPpmGun`, ceza tavanı `asinmaVerimKaybiTavaniPpm`) ayarıdır; bakımsız = yönetim kapalı, bakımlı = bakım yönetimi AÇIK; hücreler \"bakımsız / bakımlı / oran\" biçimindedir. Gelir = yerleşik oyuncunun son 7 gün net üretim geliri, oyuncu başına medyan (tohumlar ve oyuncular üzerinden havuzlanmış). **Yorum yoktur**; kalibrasyon yorumu Ar-Ge'nindir.");
   k.push("");
   k.push(`**Bulgular ve yorum (elle yazılmış):** [${meta.bulgular}](${meta.bulgular})`);
   k.push("");
@@ -515,7 +515,7 @@ export function bakimIzgarasiUret(kosular: readonly BakimOzetKosusu[], meta: { e
     return medyan(oyuncular(c).filter((x) => x.grup === g).map((x) => x.ozet.gelir7Gun));
   };
   const oranG = (a: number | null, b: number | null): string => (a === null || b === null || a <= 0 ? "—" : yuzde(Math.floor((b * 1_000_000) / a)));
-  k.push("## 1. Yerleşik oyuncu geliri (7 gün, ₺): bakımsız | bakımlı | bakımlı/bakımsız");
+  k.push("## 1. Yerleşik oyuncu geliri (7 gün, ₺): bakımsız / bakımlı / bakımlı÷bakımsız");
   k.push("");
   const satir1: string[][] = [];
   for (const [ky, e] of sirali) {
@@ -523,20 +523,20 @@ export function bakimIzgarasiUret(kosular: readonly BakimOzetKosusu[], meta: { e
     const hucre = (g: Grup): string => {
       const a = gelirMed(e.bakimsiz, g);
       const b = gelirMed(e.bakimli, g);
-      return `${a === null ? "—" : tl(a)} | ${b === null ? "—" : tl(b)} | ${oranG(a, b)}`;
+      return `${a === null ? "—" : tl(a)} / ${b === null ? "—" : tl(b)} / ${oranG(a, b)}`;
     };
     satir1.push([kit === "vars" ? "varsayılan" : String(kit), tav === "vars" ? "varsayılan" : String(tav), hucre("ciftci"), hucre("sanayici"), hucre("tuccar")]);
   }
   k.push(tablo(["Kıtlık aşınması (ppm/gün)", "Ceza tavanı (ppm)", "Çiftçi", "Sanayici", "Tüccar"], satir1));
   k.push("");
-  k.push("## 2. Y7 ve geç katılan gelir/emsal (tohum ortalaması): bakımsız | bakımlı");
+  k.push("## 2. Y7 ve geç katılan gelir/emsal (tohum ortalaması): bakımsız / bakımlı");
   k.push("");
   const satir2: string[][] = [];
   for (const [ky, e] of sirali) {
     const [kit, tav] = ky.split("|");
     const y = (c: BakimOzetKosusu | undefined): string => (c === undefined ? "—" : yuzdeHucre(parselOzetle(c.json.tohumBasina).h6.y7PayiPpm));
     const og = (c: BakimOzetKosusu | undefined, a: string): string => (c === undefined ? "—" : yuzdeHucre(olguKarsilastirmasi(c.json.tohumBasina)[a]?.gelirOranPpm ?? null));
-    satir2.push([kit === "vars" ? "varsayılan" : String(kit), tav === "vars" ? "varsayılan" : String(tav), `${y(e.bakimsiz)} | ${y(e.bakimli)}`, ...["ciftci", "sanayici", "pazar"].map((a) => `${og(e.bakimsiz, a)} | ${og(e.bakimli, a)}`)]);
+    satir2.push([kit === "vars" ? "varsayılan" : String(kit), tav === "vars" ? "varsayılan" : String(tav), `${y(e.bakimsiz)} / ${y(e.bakimli)}`, ...["ciftci", "sanayici", "pazar"].map((a) => `${og(e.bakimsiz, a)} / ${og(e.bakimli, a)}`)]);
   }
   k.push(tablo(["Kıtlık aşınması", "Ceza tavanı", "Y7 oyuncu payı", "Geç çiftçi/emsal", "Geç sanayici/emsal", "Geç pazar/emsal"], satir2));
   k.push("");

@@ -1,0 +1,313 @@
+# Parsel ölçümü — bakım ve aşınma özeti (bakim-c-ozet-r34)
+
+`--bakim-olc` ile üretilmiş koşulardan ham tablolar. **Yorum yoktur**; kalibrasyon yorumu Ar-Ge'nindir (A2). Medyanlar ve yüzdelikler tohumlar ve oyuncular üzerinden havuzlanır; "med (p10–p90)" biçimindedir. Yöntem ve sınırlar [bakim-asinma-temel.md](bakim-asinma-temel.md) içindedir.
+
+**Bulgular ve yorum (elle yazılmış):** [bakim-asinma-c.md](bakim-asinma-c.md)
+
+## 1. Koşular
+
+| Etiket | Dosya | Yönetim | Tohumlar | Süre (gün) | Geç katılım günü | Düzen (yerleşik · geç) |
+|---|---|---|---|---|---|---|
+| bakim-c-r34-kapali | parsel-bakim-c-r34-kapali.json | tarım kapalı · bakım kapalı · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000 | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 | 74 | 60 | ciftci=3, sanayici=2, tuccar=2, pasif=1 · ciftci, sanayici, pazar |
+| bakim-c-r34-bakim | parsel-bakim-c-r34-bakim.json | tarım kapalı · bakım AÇIK · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000 | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 | 74 | 60 | ciftci=3, sanayici=2, tuccar=2, pasif=1 · ciftci, sanayici, pazar |
+
+## 2. Y7: gelir / emsal (geç katılanın son 7 gün net üretim geliri / üreten ilçe emsallerinin medyanı)
+
+Oran = tohumlar üzerinden ortalama (Y7'nin ham oranı; parsel-rapor §5a ile aynı yöntem). Gelir ve emsal sütunları tohumlar üzerinden ortalamadır (ölçülebilen olgular).
+
+| Koşu | Yönetim | Y7 oyuncu payı | Y7 kararı | Gelir/emsal ciftci | Gelir/emsal sanayici | Gelir/emsal pazar |
+|---|---|---|---|---|---|---|
+| bakim-c-r34-kapali | tarım kapalı · bakım kapalı · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000 | %100 | GEÇTİ | %235,9 | %185,5 | %96,9 |
+| bakim-c-r34-bakim | tarım kapalı · bakım AÇIK · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000 | %100 | GEÇTİ | %157,1 | %358,4 | %60,2 |
+
+Geç katılanın geliri ve kullanılan emsal medyanı (7 gün, ₺; tohum ortalaması):
+
+| Koşu | Geç açılış | Ölçülebilen olgu | Geç katılan geliri (ort.) | Emsal geliri medyanı (ort.) |
+|---|---|---|---|---|
+| bakim-c-r34-kapali | ciftci | 10 | 762.241 ₺ | 331.302 ₺ |
+| bakim-c-r34-kapali | sanayici | 10 | 933.281 ₺ | 502.985 ₺ |
+| bakim-c-r34-kapali | pazar | 10 | 410.541 ₺ | 423.236 ₺ |
+| bakim-c-r34-bakim | ciftci | 10 | 697.582 ₺ | 434.303 ₺ |
+| bakim-c-r34-bakim | sanayici | 10 | 957.292 ₺ | 267.089 ₺ |
+| bakim-c-r34-bakim | pazar | 10 | 371.147 ₺ | 612.369 ₺ |
+
+Yerleşik oyuncuların son 7 gün net üretim geliri (₺; yerleşik oyuncu başına, tohumlar üzerinden havuzlanmış medyan ve p10–p90):
+
+| Koşu | Yönetim | yerleşik çiftçi | yerleşik sanayici | yerleşik tüccar | geç katılan (üçü) | Havuzdaki oyuncu (çiftçi/sanayici/tüccar) |
+|---|---|---|---|---|---|---|
+| bakim-c-r34-kapali | tarım kapalı · bakım kapalı · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000 | 580.642 ₺ (253.063 ₺–766.771 ₺) | 502.984 ₺ (502.983 ₺–502.985 ₺) | 262.701 ₺ (235.699 ₺–339.844 ₺) | 810.597 ₺ (349.976 ₺–962.930 ₺) | 30/20/20 |
+| bakim-c-r34-bakim | tarım kapalı · bakım AÇIK · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000 | 829.041 ₺ (387.720 ₺–994.417 ₺) | 267.186 ₺ (267.169 ₺–284.835 ₺) | 395.139 ₺ (355.305 ₺–507.210 ₺) | 748.159 ₺ (298.357 ₺–957.293 ₺) | 30/20/20 |
+
+## 3. Aşınma yörüngesi (tesis düzeyi, havuzlanmış)
+
+Hücre: tesislerin aşınma yüzdesi, medyan (p10–p90). Kaynak: ölçüm anlarında tesis başına `asinmaPpm`. Geç katılan tesisleri katılımdan önce yoktur (— ya da az örnek). Satır başına "n" ilgili günde havuzlanan tesis sayısıdır.
+
+### bakim-c-r34-kapali (tarım kapalı · bakım kapalı · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000)
+
+| Grup | 5. gün | 10. gün | 20. gün | 30. gün | 50. gün | 74. gün |
+|---|---|---|---|---|---|---|
+| yerleşik çiftçi | %5 (%5–%5) n=90 | %10 (%10–%10) n=90 | %20 (%20–%20) n=90 | %30 (%30–%30) n=90 | %50 (%50–%50) n=90 | %74 (%74–%74) n=90 |
+| yerleşik sanayici | %4,9 (%4,9–%4,9) n=60 | %9,9 (%9,9–%9,9) n=60 | %19,9 (%19,9–%19,9) n=60 | %29,9 (%29,9–%29,9) n=60 | %49,9 (%49,9–%49,9) n=60 | %73,9 (%73,9–%73,9) n=60 |
+| yerleşik tüccar | %4,7 (%4,7–%4,7) n=40 | %9,7 (%9,7–%9,7) n=40 | %19,7 (%19,7–%19,7) n=40 | %29,7 (%29,7–%29,7) n=40 | %49,7 (%49,7–%49,7) n=40 | %73,7 (%73,7–%73,7) n=40 |
+| geç katılan (üçü) | — | — | — | — | — | %13,9 (%13,7–%14) n=80 |
+
+Bakım parçası karşılanma (`bakimKarsilanmaPpm`), düğüm düzeyi, medyan (p10–p90):
+
+| Grup | 5. gün | 10. gün | 20. gün | 30. gün | 50. gün | 74. gün |
+|---|---|---|---|---|---|---|
+| yerleşik çiftçi | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+| yerleşik sanayici | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+| yerleşik tüccar | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+| geç katılan (üçü) | — | — | — | — | — | %0 (%0–%0) |
+
+Aşınmanın %50 ve %100'e vardığı gün (tesisin ilk görüldüğü andan itibaren geçen gün; medyan (p10–p90)) ve ölçüm anına kadar varan tesis payı:
+
+| Grup | Tesis (n) | %50'ye varan | %50 gün (kurulumdan) | %50 gün (mutlak sim günü) | %100'e varan | %100 gün (kurulumdan) | %100 gün (mutlak) |
+|---|---|---|---|---|---|---|---|
+| yerleşik çiftçi | 90 | %100 | 51,0 (50,7–51,0) | 51,0 (51,0–51,0) | %0 | — | — |
+| yerleşik sanayici | 60 | %100 | 51,0 (50,5–51,0) | 51,0 (51,0–51,0) | %0 | — | — |
+| yerleşik tüccar | 40 | %100 | 50,7 (50,7–51,0) | 51,0 (51,0–51,0) | %0 | — | — |
+| geç katılan (üçü) | 80 | %0 | — | — | %0 | — | — |
+
+Yerleşik tesis türüne göre 74. günde (ölçüm anı) aşınma ve verim (`verimPpm`: son çözümdeki girdi yeterliliği), medyan (p10–p90):
+
+| Grup | Tesis türü | n | Aşınma | Verim | İşçi |
+|---|---|---|---|---|---|
+| yerleşik çiftçi | ciftlik | 60 | %74 (%74–%74) | %100 (%100–%100) | %100 (%100–%100) |
+| yerleşik çiftçi | ahir | 30 | %74 (%74–%74) | %80,9 (%43,1–%100) | %100 (%100–%100) |
+| yerleşik sanayici | cevher_madeni | 40 | %73,9 (%73,9–%73,9) | %59,8 (%59,8–%59,8) | %100 (%100–%100) |
+| yerleşik sanayici | hidro_santrali | 20 | %73,9 (%73,9–%73,9) | %3,2 (%1,2–%4,5) | %100 (%100–%100) |
+| yerleşik tüccar | ciftlik | 20 | %73,7 (%73,7–%73,7) | %100 (%100–%100) | %100 (%100–%100) |
+| yerleşik tüccar | ahir | 20 | %73,7 (%73,7–%73,7) | %38 (%29,3–%51,2) | %100 (%100–%100) |
+
+### bakim-c-r34-bakim (tarım kapalı · bakım AÇIK · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000)
+
+| Grup | 5. gün | 10. gün | 20. gün | 30. gün | 50. gün | 74. gün |
+|---|---|---|---|---|---|---|
+| yerleşik çiftçi | %0 (%0–%0) n=90 | %0 (%0–%0) n=90 | %0 (%0–%0) n=90 | %0 (%0–%0) n=90 | %0 (%0–%0) n=90 | %0 (%0–%0) n=90 |
+| yerleşik sanayici | %0 (%0–%0) n=60 | %0 (%0–%0) n=60 | %0 (%0–%0) n=60 | %0 (%0–%0) n=60 | %0 (%0–%0) n=60 | %0 (%0–%0) n=60 |
+| yerleşik tüccar | %0 (%0–%0) n=40 | %0 (%0–%0) n=40 | %0 (%0–%0) n=40 | %0 (%0–%0) n=40 | %0 (%0–%0) n=40 | %0 (%0–%0) n=40 |
+| geç katılan (üçü) | — | — | — | — | — | %0 (%0–%0) n=80 |
+
+Bakım parçası karşılanma (`bakimKarsilanmaPpm`), düğüm düzeyi, medyan (p10–p90):
+
+| Grup | 5. gün | 10. gün | 20. gün | 30. gün | 50. gün | 74. gün |
+|---|---|---|---|---|---|---|
+| yerleşik çiftçi | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) |
+| yerleşik sanayici | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) |
+| yerleşik tüccar | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) |
+| geç katılan (üçü) | — | — | — | — | — | %100 (%100–%100) |
+
+Aşınmanın %50 ve %100'e vardığı gün (tesisin ilk görüldüğü andan itibaren geçen gün; medyan (p10–p90)) ve ölçüm anına kadar varan tesis payı:
+
+| Grup | Tesis (n) | %50'ye varan | %50 gün (kurulumdan) | %50 gün (mutlak sim günü) | %100'e varan | %100 gün (kurulumdan) | %100 gün (mutlak) |
+|---|---|---|---|---|---|---|---|
+| yerleşik çiftçi | 90 | %0 | — | — | %0 | — | — |
+| yerleşik sanayici | 60 | %0 | — | — | %0 | — | — |
+| yerleşik tüccar | 40 | %0 | — | — | %0 | — | — |
+| geç katılan (üçü) | 80 | %0 | — | — | %0 | — | — |
+
+Yerleşik tesis türüne göre 74. günde (ölçüm anı) aşınma ve verim (`verimPpm`: son çözümdeki girdi yeterliliği), medyan (p10–p90):
+
+| Grup | Tesis türü | n | Aşınma | Verim | İşçi |
+|---|---|---|---|---|---|
+| yerleşik çiftçi | ciftlik | 60 | %0 (%0–%0) | %100 (%100–%100) | %100 (%100–%100) |
+| yerleşik çiftçi | ahir | 30 | %0 (%0–%0) | %99,2 (%52,9–%100) | %100 (%100–%100) |
+| yerleşik sanayici | cevher_madeni | 40 | %0 (%0–%0) | %55,8 (%55,8–%55,8) | %100 (%100–%100) |
+| yerleşik sanayici | hidro_santrali | 20 | %0 (%0–%0) | %2,5 (%0,9–%3,5) | %100 (%100–%100) |
+| yerleşik tüccar | ciftlik | 20 | %0 (%0–%0) | %100 (%100–%100) | %100 (%100–%100) |
+| yerleşik tüccar | ahir | 20 | %0 (%0–%0) | %46,6 (%35,9–%62,8) | %100 (%100–%100) |
+
+## 4. Son 7 günlük gelir kalemleri, aşınma kaybı ve bakım harcaması (yerleşik ve geç oyuncu başına, havuzlanmış medyan)
+
+Kalemler çekirdeğin para defterindeki saatlik akışların (`paraAkisi`) saatlik örneklemeyle toplamıdır (mili-₺ → ₺). **Net üretim geliri** koşucunun Y7 ölçüsüdür (hazine farkı + sermaye harcaması). **Hesaplanan net** = ihracat + nüfus − ithalat − işletme − vergi − genel onarım parası; **uzlaşma farkı** = net üretim geliri − hesaplanan net (örnekleme, komutla alınan ek giderler, hazine kelepçesi). **Aşınma kaybı TAHMİNDİR** (yöntem notuna bakın). Genel onarım malzemesi hazineden değil düğüm stoğundan çıkar (taban fiyatla değer, ayrı sütun; net gelire girmez). Medyanlar sütun sütun alınır: sütunlar birbirinin toplamı olmak zorunda değildir.
+
+### bakim-c-r34-kapali (tarım kapalı · bakım kapalı · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000)
+
+| Kalem (7 gün) | yerleşik çiftçi | yerleşik sanayici | yerleşik tüccar | geç katılan (üçü) |
+|---|---|---|---|---|
+| Net üretim geliri (Y7) | 580.642 ₺ (253.063 ₺–766.771 ₺) | 502.984 ₺ (502.983 ₺–502.985 ₺) | 262.701 ₺ (235.699 ₺–339.844 ₺) | 810.597 ₺ (349.976 ₺–962.930 ₺) |
+| Brüt çıktı değeri (ihracat + nüfus) | 609.039 ₺ (285.263 ₺–795.698 ₺) | 522.926 ₺ (522.926 ₺–522.926 ₺) | 283.250 ₺ (255.911 ₺–358.917 ₺) | 843.962 ₺ (370.324 ₺–994.343 ₺) |
+| Aşınma kaybı (TAHMİN) | 128.694 ₺ (61.259 ₺–168.442 ₺) | 110.654 ₺ (110.654 ₺–110.654 ₺) | 60.009 ₺ (54.141 ₺–75.538 ₺) | 22.496 ₺ (9.209 ₺–25.492 ₺) |
+| İşletme gideri | 30.240 ₺ (30.240 ₺–30.240 ₺) | 20.160 ₺ (20.160 ₺–20.160 ₺) | 20.160 ₺ (20.160 ₺–20.160 ₺) | 20.160 ₺ (20.160 ₺–30.240 ₺) |
+| İthalat (tüm mal) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| · bunun bakım parçası payı | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Genel onarım: para | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Genel onarım: malzeme (stok değeri) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Genel onarım: sayı (7 gün) | 0 (0–0) | 0 (0–0) | 0 (0–0) | 0 (0–0) |
+| Genel onarım duruşu (tesis-saat payı) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+| Arazi vergisi | 15 ₺ (10 ₺–20 ₺) | 22 ₺ (22 ₺–22 ₺) | 0 ₺ (0 ₺–10 ₺) | 0 ₺ (0 ₺–20 ₺) |
+| Hesaplanan net | 578.779 ₺ (255.003 ₺–765.438 ₺) | 502.744 ₺ (502.744 ₺–502.744 ₺) | 263.090 ₺ (235.751 ₺–338.757 ₺) | 813.722 ₺ (350.164 ₺–964.103 ₺) |
+| Uzlaşma farkı | -148 ₺ (-2.791 ₺–1.862 ₺) | 240 ₺ (239 ₺–241 ₺) | -76 ₺ (-563 ₺–1.022 ₺) | 402 ₺ (-2.722 ₺–1.530 ₺) |
+| Ortalama aşınma (pencere) | %70 (%70–%70) | %69,9 (%69,9–%69,9) | %69,8 (%69,8–%69,8) | %9,9 (%9,8–%10) |
+| Aşınmanın verim cezası (pencere) | %17,5 (%17,5–%17,5) | %17,5 (%17,5–%17,5) | %17,4 (%17,4–%17,4) | %2,5 (%2,4–%2,5) |
+| Bakım karşılanma (pencere) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+
+Katılımdan ölçüm anına TOPLAM bakım harcaması (oyuncu başına medyan):
+
+| Kalem (toplam) | yerleşik çiftçi | yerleşik sanayici | yerleşik tüccar | geç katılan (üçü) |
+|---|---|---|---|---|
+| Bakım parçası ithalatı (nakit) | 0 ₺ (0 ₺–0 ₺) | 15.194 ₺ (15.194 ₺–15.194 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–14.731 ₺) |
+| Genel onarım: para | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Genel onarım: malzeme (stok değeri) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Genel onarım sayısı | 0 (0–0) | 0 (0–0) | 0 (0–0) | 0 (0–0) |
+| Genel onarım reddi (yetersiz kaynak vb.) | 0 (0–0) | 0 (0–0) | 0 (0–0) | 0 (0–0) |
+| Onarım duruşu (tesis-saat) | 0 (0–0) | 0 (0–0) | 0 (0–0) | 0 (0–0) |
+| Brüt çıktı değeri (ihracat + nüfus) | 7.345.111 ₺ (6.599.245 ₺–7.788.411 ₺) | 8.179.778 ₺ (8.179.777 ₺–8.179.780 ₺) | 4.253.875 ₺ (4.164.288 ₺–4.327.525 ₺) | 1.850.997 ₺ (1.167.370 ₺–2.047.145 ₺) |
+| Aşınma kaybı (TAHMİN) | 697.810 ₺ (606.545 ₺–725.289 ₺) | 738.354 ₺ (738.354 ₺–738.354 ₺) | 372.961 ₺ (363.796 ₺–379.970 ₺) | 28.133 ₺ (14.469 ₺–32.466 ₺) |
+| Ortalama aşınma | %36,6 (%36,6–%36,6) | %36,5 (%36,5–%36,5) | %36,3 (%36,3–%36,3) | %6,5 (%6,4–%6,6) |
+| Aşınmanın verim cezası | %9,1 (%9,1–%9,1) | %9,1 (%9,1–%9,1) | %9,1 (%9,1–%9,1) | %1,6 (%1,6–%1,6) |
+
+### bakim-c-r34-bakim (tarım kapalı · bakım AÇIK · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000)
+
+| Kalem (7 gün) | yerleşik çiftçi | yerleşik sanayici | yerleşik tüccar | geç katılan (üçü) |
+|---|---|---|---|---|
+| Net üretim geliri (Y7) | 829.041 ₺ (387.720 ₺–994.417 ₺) | 267.186 ₺ (267.169 ₺–284.835 ₺) | 395.139 ₺ (355.305 ₺–507.210 ₺) | 748.159 ₺ (298.357 ₺–957.293 ₺) |
+| Brüt çıktı değeri (ihracat + nüfus) | 857.561 ₺ (420.969 ₺–1.023.490 ₺) | 596.600 ₺ (596.600 ₺–596.600 ₺) | 415.980 ₺ (375.642 ₺–525.882 ₺) | 876.716 ₺ (389.260 ₺–1.027.401 ₺) |
+| Aşınma kaybı (TAHMİN) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| İşletme gideri | 30.240 ₺ (30.240 ₺–30.240 ₺) | 20.160 ₺ (20.160 ₺–20.160 ₺) | 20.160 ₺ (20.160 ₺–20.160 ₺) | 20.160 ₺ (20.160 ₺–30.240 ₺) |
+| İthalat (tüm mal) | 0 ₺ (0 ₺–0 ₺) | 291.839 ₺ (291.839 ₺–309.503 ₺) | 0 ₺ (0 ₺–0 ₺) | 61.192 ₺ (0 ₺–95.021 ₺) |
+| · bunun bakım parçası payı | 0 ₺ (0 ₺–0 ₺) | 291.839 ₺ (291.839 ₺–309.503 ₺) | 0 ₺ (0 ₺–0 ₺) | 61.192 ₺ (0 ₺–95.021 ₺) |
+| Genel onarım: para | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Genel onarım: malzeme (stok değeri) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Genel onarım: sayı (7 gün) | 0 (0–0) | 0 (0–0) | 0 (0–0) | 0 (0–0) |
+| Genel onarım duruşu (tesis-saat payı) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+| Arazi vergisi | 15 ₺ (10 ₺–20 ₺) | 22 ₺ (22 ₺–22 ₺) | 0 ₺ (0 ₺–10 ₺) | 0 ₺ (0 ₺–20 ₺) |
+| Hesaplanan net | 827.301 ₺ (390.709 ₺–993.231 ₺) | 266.929 ₺ (266.915 ₺–284.578 ₺) | 395.820 ₺ (355.482 ₺–505.722 ₺) | 751.456 ₺ (301.338 ₺–956.976 ₺) |
+| Uzlaşma farkı | -328 ₺ (-3.331 ₺–1.740 ₺) | 257 ₺ (255 ₺–257 ₺) | -204 ₺ (-947 ₺–1.384 ₺) | 316 ₺ (-2.981 ₺–1.516 ₺) |
+| Ortalama aşınma (pencere) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+| Aşınmanın verim cezası (pencere) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+| Bakım karşılanma (pencere) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) | %100 (%100–%100) |
+
+Katılımdan ölçüm anına TOPLAM bakım harcaması (oyuncu başına medyan):
+
+| Kalem (toplam) | yerleşik çiftçi | yerleşik sanayici | yerleşik tüccar | geç katılan (üçü) |
+|---|---|---|---|---|
+| Bakım parçası ithalatı (nakit) | 918.473 ₺ (918.053 ₺–918.473 ₺) | 2.633.878 ₺ (2.633.194 ₺–2.639.971 ₺) | 515.545 ₺ (515.483 ₺–515.546 ₺) | 180.591 ₺ (135.403 ₺–503.069 ₺) |
+| Genel onarım: para | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Genel onarım: malzeme (stok değeri) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Genel onarım sayısı | 0 (0–0) | 0 (0–0) | 0 (0–0) | 0 (0–0) |
+| Genel onarım reddi (yetersiz kaynak vb.) | 0 (0–0) | 0 (0–0) | 0 (0–0) | 0 (0–0) |
+| Onarım duruşu (tesis-saat) | 0 (0–0) | 0 (0–0) | 0 (0–0) | 0 (0–0) |
+| Brüt çıktı değeri (ihracat + nüfus) | 8.499.366 ₺ (7.649.399 ₺–9.102.309 ₺) | 8.766.495 ₺ (8.766.493 ₺–8.766.496 ₺) | 5.048.590 ₺ (4.940.489 ₺–5.138.802 ₺) | 1.894.529 ₺ (1.194.278 ₺–2.081.980 ₺) |
+| Aşınma kaybı (TAHMİN) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) |
+| Ortalama aşınma | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+| Aşınmanın verim cezası | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) |
+
+## 5. Bakım parçası piyasası (1–30. gün; günün saatlik ortalamaları, tohumlar üzerinden medyan)
+
+İstenen: botların parça ithalat emri toplamı (parça/saat). Gerçekleşen: pazarın emirlere verdiği. NPC arzı: pazarın bu saatteki parça arz limiti (oyuncu sayısına göre ölçeklenmiş). Oyuncu talebi: pazarın kaydettiği saatlik talep. Fiyat/taban: parça referans fiyatının taban fiyata oranı.
+
+### bakim-c-r34-kapali (tarım kapalı · bakım kapalı · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000)
+
+Bu koşuda 5–30. günlerde hiçbir bot parça ithalat emri vermedi; günlük satırlar yazılmadı.
+
+5–30. günler, tohum × gün havuzu (260 gün-örneği): parça ithalat emri olan gün payı %0; ortalamalar (parça/saat): istenen 0,00, gerçekleşen 0,00, oyuncu talebi 0,00, NPC arzı 340,00; en yüksek günlük istenen 0,00, en yüksek günlük gerçekleşen 0,00.
+
+| Gün | İstenen (parça/sa) | Gerçekleşen (parça/sa) | Oyuncu talebi (parça/sa) | NPC arzı (parça/sa) | İstenen / NPC arzı | Fiyat / taban |
+|---|---|---|---|---|---|---|
+| 5–30 tümü (medyan) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+
+### bakim-c-r34-bakim (tarım kapalı · bakım AÇIK · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000)
+
+5–30. günler, tohum × gün havuzu (260 gün-örneği): parça ithalat emri olan gün payı %30,8; ortalamalar (parça/saat): istenen 19,93, gerçekleşen 15,23, oyuncu talebi 18,27, NPC arzı 340,00; en yüksek günlük istenen 126,98, en yüksek günlük gerçekleşen 91,29.
+
+| Gün | İstenen (parça/sa) | Gerçekleşen (parça/sa) | Oyuncu talebi (parça/sa) | NPC arzı (parça/sa) | İstenen / NPC arzı | Fiyat / taban |
+|---|---|---|---|---|---|---|
+| 5 | 47,70 (47,70–47,70) | 47,70 (47,70–47,70) | 57,24 (57,24–57,24) | 340,00 (340,00–340,00) | %14 (%14–%14) | %125,9 (%125,9–%125,9) |
+| 6 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 7 | 102,59 (102,59–102,59) | 70,83 (70,83–70,83) | 85,00 (85,00–85,00) | 340,00 (340,00–340,00) | %30,2 (%30,2–%30,2) | %128,7 (%128,7–%128,7) |
+| 8 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 9 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 10 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 11 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 12 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 13 | 25,79 (25,79–25,79) | 21,49 (21,49–21,49) | 25,79 (25,79–25,79) | 340,00 (340,00–340,00) | %7,6 (%7,6–%7,6) | %118,9 (%118,9–%118,9) |
+| 14 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 15 | 75,32 (75,32–75,32) | 48,53 (48,53–48,53) | 58,23 (58,23–58,23) | 340,00 (340,00–340,00) | %22,2 (%22,2–%22,2) | %126,1 (%126,1–%126,1) |
+| 16 | 85,43 (85,43–85,43) | 70,83 (70,83–70,83) | 85,00 (85,00–85,00) | 340,00 (340,00–340,00) | %25,1 (%25,1–%25,1) | %128,7 (%128,7–%128,7) |
+| 17 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 18 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 19 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 20 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 21 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 22 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 23 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 24 | 126,98 (126,98–126,98) | 91,29 (91,29–91,29) | 109,55 (109,55–109,55) | 340,00 (340,00–340,00) | %37,3 (%37,3–%37,3) | %134,1 (%134,1–%134,1) |
+| 25 | 9,06 (9,06–9,06) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %2,7 (%2,7–%2,7) | %113,2 (%113,2–%113,2) |
+| 26 | 45,30 (45,30–45,30) | 45,30 (45,30–45,30) | 54,36 (54,36–54,36) | 340,00 (340,00–340,00) | %13,3 (%13,3–%13,3) | %125,2 (%125,2–%125,2) |
+| 27 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 28 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 29 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 30 | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 340,00 (340,00–340,00) | %0 (%0–%0) | %113,2 (%113,2–%113,2) |
+| 5–30 tümü (medyan) | 0,00 (0,00–85,43) | 0,00 (0,00–70,83) | 0,00 (0,00–85,00) | 340,00 (340,00–340,00) | %0 (%0–%25,1) | %113,2 (%113,2–%128,7) |
+
+## 6. Parça stoğu (başlangıç kiti ve ilk 15 gün; düğümlerdeki toplam, oyuncu başına medyan)
+
+### bakim-c-r34-kapali (tarım kapalı · bakım kapalı · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000) — başlangıç kitindeki parça: 40,00
+
+| Grup | 1. gün sonu | 2. gün sonu | 3. gün sonu | 4. gün sonu | 5. gün sonu | 7. gün sonu | 10. gün sonu | 15. gün sonu | Stoğu 1 parçanın altına inen oyuncu (gün medyanı) |
+|---|---|---|---|---|---|---|---|---|---|
+| yerleşik çiftçi | 0,08 (0,08–0,08) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 30/30 (1,0) |
+| yerleşik sanayici | 1,80 (1,80–1,80) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 20/20 (2,0) |
+| yerleşik tüccar | 0,78 (0,78–0,78) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 0,00 (0,00–0,00) | 20/20 (1,0) |
+| geç katılan (üçü) | — | — | — | — | — | — | — | — | — |
+
+### bakim-c-r34-bakim (tarım kapalı · bakım AÇIK · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000) — başlangıç kitindeki parça: 40,00
+
+| Grup | 1. gün sonu | 2. gün sonu | 3. gün sonu | 4. gün sonu | 5. gün sonu | 7. gün sonu | 10. gün sonu | 15. gün sonu | Stoğu 1 parçanın altına inen oyuncu (gün medyanı) |
+|---|---|---|---|---|---|---|---|---|---|
+| yerleşik çiftçi | 140,36 (140,36–140,36) | 104,05 (104,05–104,05) | 67,84 (67,84–67,84) | 31,67 (31,67–31,67) | 376,69 (376,69–376,69) | 303,24 (303,24–303,24) | 193,57 (193,57–193,57) | 400,36 (400,36–400,36) | 0/30 (—) |
+| yerleşik sanayici | 120,68 (120,68–120,68) | 493,91 (493,91–494,02) | 396,88 (396,88–396,99) | 299,97 (299,97–300,09) | 203,33 (203,33–203,44) | 859,69 (859,69–860,05) | 566,89 (566,89–567,24) | 82,80 (82,80–83,15) | 0/20 (—) |
+| yerleşik tüccar | 306,71 (306,71–306,71) | 282,09 (282,09–282,09) | 257,50 (257,50–257,50) | 232,99 (232,99–232,99) | 208,49 (208,49–208,49) | 159,70 (159,70–159,70) | 86,82 (86,82–86,82) | 223,23 (223,23–223,23) | 0/20 (—) |
+| geç katılan (üçü) | — | — | — | — | — | — | — | — | — |
+
+Notlar: saat başına bir örnek; "gün N sonu" = N × 24. saat. "Stoğu 1 parçanın altına inen": serideki ilk gün sonu ölçümünde parça stoğu 1 parçadan az olan oyuncu sayısı / yalnız gün 0'da katılanlar.
+## 7. Bakım parçası ithalatının zamanlaması (gün düzeyi; yalnız gün 0'da katılan yerleşik oyuncular)
+
+İthalat günü = o gün saatlik örneklerde parça ithalatı nakit bedeli > 0 olan gün. Dönem payları toplam ithalatın gün 1–30, 31–60 ve 61–son gün paylarıdır. "Haftalık ort. / Y7 net" = (toplam parça ithalatı / (gün sayısı / 7)) ÷ son 7 günlük net üretim geliri (Y7 ölçüsü parça giderini görmeyen pencerede ne kadar sapma olduğunu verir: son 7 günlük gerçek ithalat ayrı satırdadır).
+
+### bakim-c-r34-kapali (tarım kapalı · bakım kapalı · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000)
+
+| Grup | Oyuncu | İthalat günü sayısı | İlk ithalat günü | Son ithalat günü | Pay gün 1–30 | Pay gün 31–60 | Pay gün 61–son | İthalat günleri arası (gün) | Toplam ithalat | Son 7 gün ithalatı | Haftalık ortalama ithalat | Haftalık ort. / Y7 net |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| yerleşik çiftçi | 30 | 0 (0–0) | 0 (0–0) | 0 (0–0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | — | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | %0 (%0–%0) |
+| yerleşik sanayici | 20 | 1 (1–1) | 1 (1–1) | 1 (1–1) | %100 (%100–%100) | %0 (%0–%0) | %0 (%0–%0) | — | 15.194 ₺ (15.194 ₺–15.194 ₺) | 0 ₺ (0 ₺–0 ₺) | 1.437 ₺ (1.437 ₺–1.437 ₺) | %0,3 (%0,3–%0,3) |
+| yerleşik tüccar | 20 | 0 (0–0) | 0 (0–0) | 0 (0–0) | %0 (%0–%0) | %0 (%0–%0) | %0 (%0–%0) | — | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | 0 ₺ (0 ₺–0 ₺) | %0 (%0–%0) |
+
+- **yerleşik çiftçi (örnek oyuncu, ilk tohum)** — 0 ithalat günü: yok.
+- **yerleşik sanayici (örnek oyuncu, ilk tohum)** — 1 ithalat günü: g1: 15.194 ₺.
+- **yerleşik tüccar (örnek oyuncu, ilk tohum)** — 0 ithalat günü: yok.
+
+### bakim-c-r34-bakim (tarım kapalı · bakım AÇIK · ayar kitlikAsinmaPpmGun=10000,duzeyler.0.asinmaPpmGun=10000,duzeyler.2.asinmaPpmGun=-7500,asinmaVerimKaybiTavaniPpm=250000)
+
+| Grup | Oyuncu | İthalat günü sayısı | İlk ithalat günü | Son ithalat günü | Pay gün 1–30 | Pay gün 31–60 | Pay gün 61–son | İthalat günleri arası (gün) | Toplam ithalat | Son 7 gün ithalatı | Haftalık ortalama ithalat | Haftalık ort. / Y7 net |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| yerleşik çiftçi | 30 | 8 (8–8) | 1 (1–1) | 66 (66–66) | %46,1 (%46,1–%46,1) | %39,5 (%39,5–%39,6) | %14,4 (%14,4–%14,4) | 10 (4–11) | 918.473 ₺ (918.053 ₺–918.473 ₺) | 0 ₺ (0 ₺–0 ₺) | 86.883 ₺ (86.843 ₺–86.883 ₺) | %10,5 (%8,7–%22,4) |
+| yerleşik sanayici | 20 | 10 (10–10) | 1 (1–1) | 71 (71–72) | %42,4 (%42,4–%42,5) | %34,1 (%34,1–%35,6) | %22 (%22–%23,4) | 9 (1–11) | 2.633.878 ₺ (2.633.194 ₺–2.639.971 ₺) | 291.839 ₺ (291.839 ₺–309.503 ₺) | 249.151 ₺ (249.086 ₺–249.727 ₺) | %87,7 (%87,7–%93,2) |
+| yerleşik tüccar | 20 | 7 (7–7) | 1 (1–1) | 66 (66–66) | %42,3 (%42,3–%42,3) | %40,8 (%40,8–%40,8) | %16,8 (%16,8–%16,8) | 11 (10–12) | 515.545 ₺ (515.483 ₺–515.546 ₺) | 0 ₺ (0 ₺–0 ₺) | 48.768 ₺ (48.762 ₺–48.768 ₺) | %11,2 (%9,1–%13,4) |
+
+- **yerleşik çiftçi (örnek oyuncu, ilk tohum)** — 8 ithalat günü: g1: 54.615 ₺; g5: 123.730 ₺; g15: 127.805 ₺; g26: 116.824 ₺; g36: 121.489 ₺; g46: 122.189 ₺; g56: 119.448 ₺; g66: 132.373 ₺.
+- **yerleşik sanayici (örnek oyuncu, ilk tohum)** — 10 ithalat günü: g1: 67.199 ₺; g2: 162.810 ₺; g7: 294.444 ₺; g16: 297.729 ₺; g24: 296.655 ₺; g33: 299.993 ₺; g42: 289.647 ₺; g50: 308.728 ₺; g61: 306.492 ₺; g71: 309.503 ₺.
+- **yerleşik tüccar (örnek oyuncu, ilk tohum)** — 7 ithalat günü: g1: 84.654 ₺; g13: 68.483 ₺; g24: 65.163 ₺; g34: 70.893 ₺; g45: 67.140 ₺; g55: 72.465 ₺; g66: 86.747 ₺.
+
+## 8. Tesis türü başına bakım başabaşı (içerik tablosundan; tam verim ve tam kadro, taban fiyat)
+
+Eşik: T = aşınmanın verim kaybı tavanı = %25; (1 − T) / T = 3,000, 1 / T = 4,000. **R** = katma değer (çıktı − girdi değeri) / bakım parçası maliyeti (parça/sa × parça taban fiyatı 180 ₺); "R ≥ (1−T)/T": bakımsız çıktı baz alındığında bakım kazandırır (A2 tanımı); "R ≥ 1/T": bakımlı çıktı baz alındığında. Değerler ₺/saat ve taban fiyatlıdır (pazar fiyatı ve ithalat çarpanı hariç); girdisi ya da çıktısı pazarda taban fiyatı olmayan mal 0 sayılır. Doğrudan değerdir: santralin elektriği tesislerin girdisidir, dolaylı değeri (zincir) burada yoktur.
+
+| Tesis türü | İlk yöntem | Bakım parçası (parça/sa) | Parça maliyeti (₺/sa) | Çıktı değeri (₺/sa) | Girdi değeri (₺/sa) | Katma değer (₺/sa) | R | R ≥ (1−T)/T | R ≥ 1/T |
+|---|---|---|---|---|---|---|---|---|---|
+| ahir | ahir_besi | 0,50 | 90 ₺ | 6.580 ₺ | 3.600 ₺ | 2.980 ₺ | 33,11 | evet | evet |
+| cevher_madeni | yuzey_cevher | 1,00 | 180 ₺ | 3.500 ₺ | 50 ₺ | 3.450 ₺ | 19,17 | evet | evet |
+| ciftlik | geleneksel_tarim | 0,50 | 90 ₺ | 6.000 ₺ | 0 ₺ | 6.000 ₺ | 66,67 | evet | evet |
+| hidro_santrali | hidro_santrali | 2,00 | 360 ₺ | 3.000 ₺ | 0 ₺ | 3.000 ₺ | 8,33 | evet | evet |
+
+Yönetimsiz koşuda (bakim-c-r34-kapali) 74. günde ölçülen verim (`verimPpm`, yerleşik oyuncular, medyan (p10–p90)):
+
+| Tesis türü | n | Verim |
+|---|---|---|
+| ahir | 50 | %58,4 (%35,3–%100) |
+| cevher_madeni | 40 | %59,8 (%59,8–%59,8) |
+| ciftlik | 80 | %100 (%100–%100) |
+| hidro_santrali | 20 | %3,2 (%1,2–%4,5) |
+
