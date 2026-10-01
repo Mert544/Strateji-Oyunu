@@ -22,6 +22,7 @@ import {
 import type { HataKodu, IlgiKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
 import type { AdSuzgeci } from "./ad-suzgec";
 import { HizSiniri, VARSAYILAN_HIZ_SINIRI } from "./hiz-siniri";
+import { ekonomiOlcumu } from "./ekonomi-metrik";
 import { OlayDongusuOlcer, metrikMetni, metrikSunucusuBaslat, saglikYaniti } from "./metrik";
 import type { MetrikSecenekleri, MetrikSunucusu, SaglikDurumu } from "./metrik";
 import type { HizSiniriSecenekleri } from "./hiz-siniri";
@@ -257,6 +258,8 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       yayin: { atlananKare: yayinSayaci.atlananKare, yavasKopan: yayinSayaci.yavasKopan, sira: yayinSirasi.size },
       olayDongusu: olayDongusu.olcum(),
       odul: { verilen: m.odulVerilen, reddedilen: m.odulReddedilen, taramaToplamMs: Math.round(m.odulTaramaToplamMs * 100) / 100, izgara: m.odulIzgaraSayisi, taramaSonMs: Math.round(m.odulTaramaSonMs * 100) / 100, taramaEnUzunMs: Math.round(m.odulTaramaEnUzunMs * 100) / 100 },
+      ekonomi: ekonomiOlcumu(yazar.sim.dunya, yazar.sim.ic),
+      sermaye: m.sermaye.ozet(),
       ...(s.giris ? { giris: s.giris.sayaclar.hepsi() } : {}),
       depo: depoOnbellek.boyut,
       commit: m.commit,

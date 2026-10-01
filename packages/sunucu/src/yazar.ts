@@ -46,13 +46,14 @@
  * özet karşılaştırılır) + görüntüden sonraki günlük kayıtları. Kurtarılan dünyanın zamanı, son kaydın `t`'si ile
  * görüntü zamanının büyüğüdür; canlı dünyayla karşılaştırma AYNI t'de yapılmalıdır (`calistirKadar(t)`, docs/06 §14).
  */
-import { HucreDiziniBuyukHatasi, SAAT, SISTEM_OYUNCUSU, Simulasyon, alinanOdulDegeri, anlikGoruntuOlustur, icerikKimlikTablosuOlustur, kamuHucreleri, kuralSurumuHesapla, odulDegeri } from "@bolge/cekirdek";
+import { HucreDiziniBuyukHatasi, SAAT, SISTEM_OYUNCUSU, Simulasyon, alinanOdulDegeri, anlikGoruntuOlustur, anlikHazine, icerikKimlikTablosuOlustur, kamuHucreleri, kuralSurumuHesapla, odulDegeri } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi, Dunya, IcerikKimlikTablosu, Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
 import type { Bot } from "@bolge/botlar";
 import type { Dizin } from "@bolge/protokol";
 import { SEMA_SURUMU } from "./depo/tipler";
 import type { AnlikGoruntuKaydi, Damga, Depo, GunlukKaydi, IdempotansGirdisi, OzetKaydi } from "./depo/tipler";
 import { oyuncuAnligi } from "./donus/anlik";
+import { SERMAYE_KOMUTLARI, SERMAYE_OLCUM_ILERI_SINIRI } from "./ekonomi-metrik";
 import { OzetIzleyici } from "./donus/izleyici";
 import type { OyuncuKaydi } from "./donus/izleyici";
 import { GoruntuIscisi } from "./goruntu";
@@ -475,7 +476,9 @@ export class DunyaYazari {
       if (k.kuralSurumu !== kuralSurumu) throw new Error(`gunluk kaydi ${k.seq} farkli kural surumuyle yazilmis: ${k.kuralSurumu}`);
       y.donusOnce(k.t);
       const onceki = y.odulAcik ? sonEtkinlik(sim.dunya, k.oyuncu) : null;
+      const hazineOnce = y.sermayeOncesi(k);
       const r = y.simUygula(k, true);
+      y.sermayeSonrasi(k, r, hazineOnce);
       y.donusKomutSonrasi(k.oyuncu, k.komut, r);
       y.odulKomutSonrasi(k, r, onceki); // yeniden oynatma: yalnız damga; yeni ödül KOMUTU üretmez (günlükteki ödüller zaten oynatılır)
       if (!r.tamam) y.kurtarma.kalanBasarisiz++;
@@ -1119,13 +1122,34 @@ export class DunyaYazari {
   private kaydiUygula(k: GunlukKaydi): KomutSonucu {
     this.donusOnce(k.t);
     const onceki = this.odulAcik ? sonEtkinlik(this.sim.dunya, k.oyuncu) : null;
+    const hazineOnce = this.sermayeOncesi(k);
     const sonuc = this.simUygula(k, false);
+    this.sermayeSonrasi(k, sonuc, hazineOnce);
     this.donusKomutSonrasi(k.oyuncu, k.komut, sonuc);
     this.odulKomutSonrasi(k, sonuc, onceki);
     this.seqDegeri = k.seq;
     if (sonuc.tamam) this.metrikler.komutTamam++;
     else this.metrikler.komutBasarisiz++;
     return sonuc;
+  }
+
+  /**
+   * Sermaye komutlarında (`SERMAYE_KOMUTLARI`) komut öncesi hazine (ekonomi izleme, A2 §8.2 K2-7 yerine): komut ZAMANINA kadar ilerletilir (`uygula` zaten aynısını
+   * yapar: `calistirKadar` bölünmesi nötrdür, durum ve özet değişmez) ve hazine okunur. Diğer komutlar, sistem komutları ve oyuncusuz kayıtlar için null (hiçbir iş yapılmaz).
+   */
+  private sermayeOncesi(k: GunlukKaydi): number | null {
+    if (!SERMAYE_KOMUTLARI.has(k.komut.tur) || k.oyuncu === SISTEM_OYUNCUSU) return null;
+    // `uygula` geçmiş ya da çok ileri zamanlı komutu zaten reddeder (başarısız, ilerletmez): orada ölçülecek bir şey yok, `calistirKadar` fırlatmasın.
+    const z = this.sim.dunya.zaman;
+    if (!Number.isSafeInteger(k.t) || k.t < z || k.t > z + SERMAYE_OLCUM_ILERI_SINIRI) return null;
+    this.sim.calistirKadar(k.t);
+    return anlikHazine(this.sim.dunya, k.oyuncu);
+  }
+
+  /** Başarılı sermaye komutunun hazine farkını (öncesi - sonrası) toplayıcıya yazar; çekirdek ve para defteri değişmez. */
+  private sermayeSonrasi(k: GunlukKaydi, sonuc: KomutSonucu, once: number | null): void {
+    if (once === null || !sonuc.tamam) return;
+    this.metrikler.sermaye.kaydet(k.oyuncu, this.botKimlikleri.has(k.oyuncu) ? "bot" : "insan", k.komut.tur, once - anlikHazine(this.sim.dunya, k.oyuncu));
   }
 
   /** Toplu komutlarını sim-saat penceresine göre art arda gruplar (pencereler arasında dünya ızgara sınırında durur). */

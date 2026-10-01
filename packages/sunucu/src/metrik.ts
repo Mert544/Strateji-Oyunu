@@ -12,6 +12,8 @@ import { createServer, type Server } from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { monitorEventLoopDelay, type IntervalHistogram } from "node:perf_hooks";
 import type { AddressInfo } from "node:net";
+import { SermayeSayaci } from "./ekonomi-metrik";
+import type { EkonomiOlcumu, SermayeOzeti } from "./ekonomi-metrik";
 
 /** Gecikme histogramı (ms): küme sınırları sabit; ayrıca son `PENCERE` örnekten p50/p95 hesaplanır. */
 export const GECIKME_KUMELERI_MS: readonly number[] = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000];
@@ -85,6 +87,8 @@ export class YazarMetrikleri {
   odulIzgaraSayisi = 0;
   odulTaramaSonMs = 0;
   odulTaramaEnUzunMs = 0;
+  /** Sermaye komutlarında hazine farkı (komut başına toplam ve insan oyuncu dağılımı; oyuncu başına değerler dışarı çıkmaz). */
+  readonly sermaye = new SermayeSayaci();
 }
 
 /** Olay döngüsü gecikmesi (ms): p50, p99 ve en büyük. `perf_hooks.monitorEventLoopDelay` çözünürlüğü (10 ms) tabanı dahildir. */
@@ -159,6 +163,10 @@ export interface MetrikGirdisi {
   olayDongusu: OlayDongusuGecikmesi;
   /** Esnaf Defteri dedektörü: günlüğe giren ödül komutları (uygulanan / çekirdek reddi). */
   odul: { verilen: number; reddedilen: number; taramaToplamMs: number; izgara: number; taramaSonMs: number; taramaEnUzunMs: number };
+  /** Ekonomi izleme gauge'ları (dünya toplamı; oyuncu etiketi YOK; bkz. `ekonomi-metrik.ts`). Verilmezse satır yazılmaz. */
+  ekonomi?: EkonomiOlcumu;
+  /** Sermaye komutlarında hazine farkı: komut başına toplam ve insan oyuncu dağılımı (kimlik yok). */
+  sermaye?: SermayeOzeti;
   /** E-posta girişi olay sayaçları (yalnız toplu sayılar; belirteç, adres ve IP YOK). Giriş kapalıysa yoktur. */
   giris?: Record<string, number>;
   depo: { gunlukBayt: number; goruntuBayt: number } | null;
@@ -169,6 +177,57 @@ export interface MetrikGirdisi {
 
 function satir(ad: string, tur: "counter" | "gauge", yardim: string, v: number | string, etiket = ""): string[] {
   return [`# HELP ${ad} ${yardim}`, `# TYPE ${ad} ${tur}`, `${ad}${etiket} ${v}`];
+}
+
+/** Etiket değeri kaçışı (Prometheus metin biçimi): ters bölü, çift tırnak, satır sonu. */
+const etiketKac = (v: string): string => v.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
+
+/** Etiketli aile: bir HELP/TYPE başlığı + `ad{e1="v1",...} değer` satırları (satır yoksa hiçbir şey yazılmaz). */
+function aile(ad: string, tur: "counter" | "gauge", yardim: string, satirlar: Array<[Record<string, string>, number]>): string[] {
+  if (satirlar.length === 0) return [];
+  const o = [`# HELP ${ad} ${yardim}`, `# TYPE ${ad} ${tur}`];
+  for (const [e, v] of satirlar) {
+    const et = Object.entries(e).map(([k, x]) => `${k}="${etiketKac(x)}"`).join(",");
+    o.push(`${ad}${et ? `{${et}}` : ""} ${v}`);
+  }
+  return o;
+}
+
+/**
+ * Ekonomi izleme satırları (A2 §8.2 K2-1..K2-6) ve sermaye hazine farkı: YALNIZ dünya toplamı ya da dağılım, oyuncu etiketi yok. Etiketler: kalem, mal, tur,
+ * yontem, komut, kaynak, ceyrek. Para defteri yoksa (bölge kipi) para/kasa aileleri yazılmaz.
+ */
+function ekonomiSatirlari(e: EkonomiOlcumu | undefined, sr: SermayeOzeti | undefined): string[] {
+  const o: string[] = [];
+  if (e) {
+    if (e.para) {
+      o.push(...aile("bolge_para_musluk_mili", "gauge", "Para musluklari (oyunculara giren yeni para; kumulatif, mili-para; kalem anahtarlardan okunur).", e.para.musluk.map(([k, v]) => [{ kalem: k }, v])));
+      o.push(...aile("bolge_para_lavabo_mili", "gauge", "Para lavabolari (yanan para; kumulatif, mili-para; kalem anahtarlardan okunur).", e.para.lavabo.map(([k, v]) => [{ kalem: k }, v])));
+      const odul = e.para.musluk.find(([k]) => k === "odul");
+      if (odul) o.push(...satir("bolge_odul_musluk_mili", "gauge", "Odul musluguyla verilen kumulatif para (mili-para; dunya).", odul[1]));
+    }
+    if (e.kasa) {
+      o.push(...satir("bolge_kasa_sayisi", "gauge", "Kamu kasasi sayisi.", e.kasa.sayi));
+      o.push(...satir("bolge_kasa_bakiye_mili", "gauge", "Kamu kasalarinin toplam kullanilabilir bakiyesi (mili-para).", e.kasa.bakiye));
+      o.push(...aile("bolge_kasa_giris_mili", "gauge", "Kamu kasalarina kumulatif giris (kalem anahtarlardan; mili-para).", e.kasa.giris.map(([k, v]) => [{ kalem: k }, v])));
+      o.push(...aile("bolge_kasa_cikis_mili", "gauge", "Kamu kasalarindan kumulatif cikis (hedef: oyuncu ya da npc; mili-para).", e.kasa.cikis.map(([k, v]) => [{ hedef: k }, v])));
+    }
+    o.push(...aile("bolge_pazar_fiyat_taban_orani", "gauge", "NPC pazar referans fiyati / tabanFiyat (formul sinirlari 0,25-1,75).", e.pazar.oran.map(([m, v]) => [{ mal: m }, v])));
+    o.push(...aile("bolge_pazar_sinirda_mal", "gauge", "Fiyat siniri bandina dayanan mal sayisi (alt <= 0,26 taban, ust >= 1,74 taban).", [[{ sinir: "alt" }, e.pazar.sinirda.alt], [{ sinir: "ust" }, e.pazar.sinirda.ust]]));
+    o.push(...aile("bolge_tesis_yontem", "gauge", "Anlik tesis dagilimi (tur ve aktif yontem).", e.yontem.map((y): [Record<string, string>, number] => [{ tur: y.tur, yontem: y.yontem }, y.adet])));
+    o.push(...aile("bolge_tesis_asinma_ppm", "gauge", "Tesis asinmasi ceyrekleri (ppm; tur basina; yalniz asinma verisi olan tesisler).", e.asinma.flatMap((a): Array<[Record<string, string>, number]> => [[{ tur: a.tur, ceyrek: "25" }, a.c25], [{ tur: a.tur, ceyrek: "50" }, a.c50], [{ tur: a.tur, ceyrek: "75" }, a.c75]])));
+    o.push(...aile("bolge_tesis_asinma_adet", "gauge", "Asinma verisi olan tesis sayisi (tur basina).", e.asinma.map((a): [Record<string, string>, number] => [{ tur: a.tur }, a.adet])));
+  }
+  if (sr) {
+    o.push(...aile("bolge_sermaye_komut_toplam", "counter", "Basarili sermaye komutlari (komut ve kaynak: insan ya da bot).", sr.komutlar.map((k): [Record<string, string>, number] => [{ komut: k.komut, kaynak: k.kaynak }, k.adet])));
+    o.push(...aile("bolge_sermaye_hazine_farki_mili", "gauge", "Sermaye komutlarinda kumulatif hazine farki (komut oncesi - sonrasi, mili-para; dunya toplami).", sr.komutlar.map((k): [Record<string, string>, number] => [{ komut: k.komut, kaynak: k.kaynak }, k.fark])));
+    o.push(...satir("bolge_sermaye_insan_oyuncu_sayisi", "gauge", "Sermaye komutu vermis insan oyuncu sayisi (bu surecte).", sr.insanOyuncu.sayi));
+    if (sr.insanOyuncu.sayi > 0) {
+      const q = sr.insanOyuncu;
+      o.push(...aile("bolge_sermaye_insan_oyuncu_mili", "gauge", "Insan oyuncu basina kumulatif sermaye hazine farki DAGILIMI (ceyrekler; kimlik yok; mili-para).", [[{ ceyrek: "25" }, q.c25], [{ ceyrek: "50" }, q.c50], [{ ceyrek: "75" }, q.c75], [{ ceyrek: "100" }, q.c100]]));
+    }
+  }
+  return o;
 }
 
 /** Prometheus metin biçimi 0.0.4. Saf işlev: aynı girdi aynı metin. */
@@ -220,6 +279,7 @@ export function metrikMetni(g: MetrikGirdisi): string {
     satir("bolge_olay_dongusu_gecikme_p99_ms", "gauge", "Olay dongusu gecikmesi p99 (ms).", g.olayDongusu.p99Ms),
     satir("bolge_olay_dongusu_gecikme_en_buyuk_ms", "gauge", "Olay dongusu gecikmesi en buyuk (ms).", g.olayDongusu.maxMs),
   );
+  o.push(...ekonomiSatirlari(g.ekonomi, g.sermaye));
   if (g.giris) {
     o.push("# HELP bolge_giris_olay_toplam E-posta girisi olaylari (olay etiketine gore; kisisel veri yok).", "# TYPE bolge_giris_olay_toplam counter");
     for (const [olay, n] of Object.entries(g.giris)) o.push(`bolge_giris_olay_toplam{olay="${olay}"} ${n}`);
