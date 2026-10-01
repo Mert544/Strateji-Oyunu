@@ -3,6 +3,7 @@
  * içindir (arayuz/bildirim.ts); diğer her şey (savaş ilanı, biten inşaat, iklim uyarısı...) buraya düşer ve asla
  * açılır pencere olarak gösterilmez. Olay üretimi saftır (`gelenOlaylari`); `GelenKutusu` yalnız DOM'u yönetir.
  */
+import { ikon } from "../tasarim/ikon";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
 import type { BitenInsaat } from "../veri/rozet";
 import { olayEvresi, olaySimgesi } from "../veri/tarim";
@@ -112,12 +113,12 @@ export class GelenKutusu {
 
   private ciz(): void {
     const n = this.okunmamis;
-    this.dugme.innerHTML = `<span aria-hidden="true">🔔</span>${n > 0 ? `<span class="sayac">${n}</span>` : ""}`;
+    this.dugme.innerHTML = `${ikon("bell", 20)}${n > 0 ? `<span class="sayac">${n}</span>` : ""}`;
     this.dugme.setAttribute("aria-label", n > 0 ? `Bildirimler (${n} yeni)` : "Bildirimler");
     if (this.liste.hidden) return;
     const satirlar = this.olaylar
       .map((o) => `<li><button type="button" class="gelen-satir" ${o.bolge >= 0 ? `data-git="${o.bolge}"` : "disabled"}><span>${esc(o.metin)}</span><span class="soluk">${esc(simSaatMetni(o.saat))}</span></button></li>`)
       .join("");
-    this.liste.innerHTML = `<div class="acilir-baslik"><b>Bildirimler</b>${this.olaylar.length ? `<button type="button" class="mini-dugme" data-temizle>Temizle</button>` : ""}</div>${satirlar ? `<ul class="gelen-liste">${satirlar}</ul>` : `<p class="ipucu-metin">Henüz bildirim yok. Savaş ilanları, biten inşaatlar ve iklim uyarıları burada toplanır; açılır pencere olarak gösterilmez.</p>`}`;
+    this.liste.innerHTML = `<div class="acilir-baslik"><b>Bildirimler</b>${this.olaylar.length ? `<button type="button" class="mini-dugme" data-temizle>Temizle</button>` : ""}</div>${satirlar ? `<ul class="gelen-liste">${satirlar}</ul>` : `<div class="bos-durum">${ikon("bell", 32)}<p class="ipucu-metin">Henüz bildirimin yok. Savaş ilanları, biten inşaatlar ve iklim uyarıları burada toplanır.</p></div>`}`;
   }
 }

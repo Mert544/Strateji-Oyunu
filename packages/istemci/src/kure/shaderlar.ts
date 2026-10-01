@@ -10,11 +10,11 @@ vec3 isiklandir(vec3 renk, vec3 n, vec3 nr, vec3 gorus) {
   float ndl = dot(nr, uGunes);
   float gun = smoothstep(-0.10, 0.28, ndl);
   float yuz = clamp(dot(n, uGunes), 0.0, 1.0);
-  float isik = mix(uGece, 0.78 + 0.32 * yuz, gun);
+  float isik = mix(uGece, 0.84 + 0.18 * yuz, gun);
   vec3 c = renk * isik;
   c += vec3(1.0, 0.55, 0.25) * exp(-pow(ndl / 0.09, 2.0)) * 0.12 * uAksam;
   float rim = pow(1.0 - clamp(dot(nr, gorus), 0.0, 1.0), 3.0);
-  c += uKenarIsik * rim * 0.30 * mix(0.35, 1.0, gun);
+  c += uKenarIsik * rim * 0.12 * mix(0.35, 1.0, gun);
   return c;
 }
 `;
@@ -39,7 +39,7 @@ void main() {
   vec3 renk = mix(uOkyanusDerin, uOkyanus, pow(ndv, 0.55));
   renk = isiklandir(renk, nr, nr, gorus);
   vec3 yans = reflect(-uGunes, nr);
-  float ozel = pow(max(dot(yans, gorus), 0.0), 70.0) * 0.30 * smoothstep(0.0, 0.3, dot(nr, uGunes));
+  float ozel = pow(max(dot(yans, gorus), 0.0), 70.0) * 0.14 * smoothstep(0.0, 0.3, dot(nr, uGunes));
   renk += vec3(1.0, 0.95, 0.85) * ozel;
   gl_FragColor = vec4(renk, 1.0);
 }

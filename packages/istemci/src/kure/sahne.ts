@@ -22,7 +22,7 @@ import type { SahnePaleti } from "./tema";
 import type { DunyaKarasi } from "../veri/cografya";
 import type { DunyaHaritasi } from "../veri/harita-birlestir";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
-import { genelRenkleri, pazarRenkleri, sanayiRenkleri } from "../veri/mercek";
+import { genelRenkleri, pazarRenkleri, sahiplikRenkleri, sanayiRenkleri } from "../veri/mercek";
 import type { Mercek } from "../veri/mercek";
 import { bolgeRenkleriniHesapla, bolgeTamponuOlustur } from "../veri/renkler";
 import type { BolgeRenkTamponu } from "../veri/renkler";
@@ -181,7 +181,7 @@ export class Sahne {
         pazarRenkleri(this.kare, dizin, p, this.renkler);
         break;
       case "sahiplik":
-        bolgeRenkleriniHesapla(this.kare, dizin, -1, p, this.renkler);
+        sahiplikRenkleri(this.kare, dizin, this.ben, p, this.renkler);
         break;
       case "mal":
         bolgeRenkleriniHesapla(this.kare, dizin, this.mal, p, this.renkler);

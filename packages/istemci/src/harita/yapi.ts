@@ -62,6 +62,48 @@ const GRUP: Record<string, string> = {
   muhimmat_fabrikasi: "Askeri",
 };
 
+/**
+ * Yapı → katman rengi (görsel kimlik §3.6): haritada yapı dolgusu, menüde nokta, 3B'de tente/çatı kenarı. Sahip = oyuncu
+ * rengi, iş = katman rengi (ayrı kanallar). Konut ve bilinmeyen: null (nötr mürekkep).
+ */
+const KATMAN: Record<string, "tarim" | "sanayi" | "lojistik" | "teknoloji" | "pazar" | "devlet" | "askeri"> = {
+  ciftlik: "tarim",
+  ahir: "tarim",
+  mera: "tarim",
+  sulama_kanali: "tarim",
+  gubre_fabrikasi: "tarim",
+  gida_fabrikasi: "tarim",
+  cevher_madeni: "sanayi",
+  komur_ocagi: "sanayi",
+  bakir_madeni: "sanayi",
+  silis_ocagi: "sanayi",
+  petrol_kuyusu: "sanayi",
+  celikhane: "sanayi",
+  parca_fabrikasi: "sanayi",
+  elektronik_fabrikasi: "sanayi",
+  santral: "sanayi",
+  hidro_santrali: "sanayi",
+  muhimmat_fabrikasi: "askeri",
+};
+
+export function yapiKatmani(id: string | undefined): (typeof KATMAN)[string] | null {
+  if (!id) return null;
+  const k = KATMAN[id];
+  if (k) return k;
+  if (/ambar|garaj|depo/.test(id)) return "lojistik";
+  if (/atolye|lab/.test(id)) return "teknoloji";
+  if (/ticaret|pazar|dukkan/.test(id)) return "pazar";
+  if (/ordugah|muhimmat/.test(id)) return "askeri";
+  if (/muhtar/.test(id)) return "devlet";
+  return null;
+}
+
+/** Katman renginin CSS değeri (nötr yedek). */
+export const yapiRengiCss = (id: string | undefined): string => {
+  const k = yapiKatmani(id);
+  return k ? `var(--katman-${k})` : "var(--murekkep-3)";
+};
+
 export const GRUP_SIRASI = ["Tarım", "Gıda", "Sanayi", "Madencilik", "Enerji", "Askeri", "Kent ve altyapı", "Diğer"] as const;
 
 export const ETIKET_ADI: Readonly<Record<string, string>> = { liman: "Liman", dag: "Dağ", dar_gecit: "Dar geçit", kiyi: "Kıyı", ova: "Ova" };

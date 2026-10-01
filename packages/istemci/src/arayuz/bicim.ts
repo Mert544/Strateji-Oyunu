@@ -2,7 +2,7 @@
  * Tek Türkçe (tr-TR) sayı, yüzde ve zaman biçimleyicisi (saf; DOM yok). Arayüzdeki tüm sayılar buradan geçer:
  *   - binlik ayırıcı ".", ondalık "," (Intl.NumberFormat('tr-TR'));
  *   - yüzde işareti sayının ÖNÜNDE ve boşluksuz: "%90" (Intl yüzde biçimi tr-TR'de zaten böyledir);
- *   - büyük harf `toLocaleUpperCase('tr')` ile (i -> İ, ı -> I).
+ *   - tümü büyük harf YOK (Türkçe İ/ı tuzağı; görsel kimlik kararı): yalnız cümle başı büyük harf.
  * Biçimleyiciler önbelleklenir (her çağrıda yeni Intl nesnesi kurulmaz).
  */
 
@@ -62,11 +62,6 @@ export function kisalt(n: number): string {
   if (a >= 1e6) return fmt1(n / 1e6) + " Mn";
   if (a >= 1e4) return fmt1(n / 1e3) + " B";
   return fmt(n);
-}
-
-/** Türkçe büyük harf ("istanbul" -> "İSTANBUL"). */
-export function buyukHarf(s: string): string {
-  return s.toLocaleUpperCase("tr");
 }
 
 export function sinirla(x: number, a: number, b: number): number {

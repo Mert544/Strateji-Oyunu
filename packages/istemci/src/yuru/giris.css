@@ -1,5 +1,2 @@
-/* Kabukta: haritadaki "Sokakta yürü" düğmesi (yürüyüş yığını ayrıca yuru.css getirir). */
-#parsel-kart .kart-yuru {
-  margin-top: 9px; width: 100%; min-height: 38px; border-radius: 9px; border: 1px solid var(--line); cursor: pointer;
-  background: var(--panel2); color: var(--ink); font: inherit; font-size: 13.5px;
-}
+/* Kabukta: haritadaki "Sokakta yürü" düğmesi (stil harita.css .kart-yuru; yürüyüş yığını ayrıca yuru.css getirir). */
+#parsel-kart .kart-yuru { font-family: var(--yazi-ailesi); }

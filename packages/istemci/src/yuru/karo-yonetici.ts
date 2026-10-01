@@ -35,6 +35,10 @@ function geometri(p: GeometriParcasi): BufferGeometry {
   g.setAttribute("position", new BufferAttribute(p.konum, 3));
   g.setAttribute("aSinif", new BufferAttribute(p.sinif, 1));
   g.setAttribute("aGolge", new BufferAttribute(p.golge, 1, true));
+  if (p.cephe && p.ust) {
+    g.setAttribute("aCephe", new BufferAttribute(p.cephe, 4));
+    g.setAttribute("aUst", new BufferAttribute(p.ust, 1));
+  }
   g.setIndex(new BufferAttribute(p.indeks, 1));
   g.computeBoundingSphere();
   return g;

@@ -23,20 +23,27 @@ import type { Komut } from "../komut/tipler";
 import type { Oneri } from "../isci/protokol";
 import { hasatCubuklari, olayPaneli, olaySayisi } from "./tarim-govde";
 import { esc, fmt, kisalt, simSaatMetni, yuzde } from "./bicim";
+import { ikon } from "../tasarim/ikon";
+import type { IkonAdi } from "../tasarim/ikon";
 import { hasatMetni, takvimDurumu, takvimMetni, takvimParametresi } from "../veri/tarim";
 
 export type Sekme = "bolge" | "devlet" | "dikkat" | "mal" | "hazine" | "savas" | "olaylar";
 
 /** "Devlet" sekmesi yalnızca oyuncu kipinde görünür. "Dikkat", eski "Darboğaz" sekmesinin yerindedir. */
-const SEKMELER: ReadonlyArray<{ id: Sekme; ad: string; oyuncu?: boolean }> = [
-  { id: "bolge", ad: "Bölge" },
-  { id: "devlet", ad: "Devlet", oyuncu: true },
-  { id: "dikkat", ad: "Dikkat" },
-  { id: "mal", ad: "Mal" },
-  { id: "hazine", ad: "Hazine" },
-  { id: "savas", ad: "Savaş" },
-  { id: "olaylar", ad: "Olaylar" },
+const SEKMELER: ReadonlyArray<{ id: Sekme; ad: string; ikon: IkonAdi; oyuncu?: boolean }> = [
+  { id: "bolge", ad: "Bölge", ikon: "map-pin" },
+  { id: "devlet", ad: "Devlet", ikon: "landmark", oyuncu: true },
+  { id: "dikkat", ad: "Dikkat", ikon: "triangle-alert" },
+  { id: "mal", ad: "Mal", ikon: "package" },
+  { id: "hazine", ad: "Hazine", ikon: "wallet" },
+  { id: "savas", ad: "Savaş", ikon: "swords" },
+  { id: "olaylar", ad: "Olaylar", ikon: "cloud-sun-rain" },
 ];
+
+/** Görünüm menüsündeki mercek simgeleri. */
+const MERCEK_IKON: Record<string, IkonAdi> = { genel: "map", tarim: "wheat", sanayi: "factory", pazar: "store", sahiplik: "layers" };
+
+const sekmeIcerik = (s: (typeof SEKMELER)[number], n = 0): string => `${ikon(s.ikon, 18)}<span>${s.ad}</span>${n > 0 ? `<span class="sayac">${n}</span>` : ""}`;
 
 export interface PanelGeriCagrilari {
   /** Mercek seç (tek mercek etkin); mal yalnız "mal" merceğinde anlamlı. */
@@ -162,7 +169,10 @@ export class Panel {
     const panel = $("panel");
     $("panel-tutamac").addEventListener("click", () => this.panelKapali(!panel.classList.contains("kapali")));
     if (window.matchMedia("(max-width: 820px)").matches) this.panelKapali(true);
-    $("atif").innerHTML = atif.map((a) => `<li>${esc(a)}</li>`).join("") + (gecici ? "<li><b>Geçici bölge katmanı</b></li>" : "");
+    $("atif").innerHTML =
+      atif.map((a) => `<li>${esc(a)}</li>`).join("") +
+      (gecici ? "<li><b>Geçici bölge katmanı</b></li>" : "") +
+      "<li>Yazı tipi: Inter (SIL Open Font License 1.1) · Simgeler: Lucide (ISC; Feather türevleri MIT)</li>";
     this.mercekDugmesiYaz();
   }
 
@@ -196,7 +206,7 @@ export class Panel {
   private sekmeleriCiz(): void {
     const oyuncu = this.durum.oyun !== undefined;
     $("sekmeler").innerHTML = SEKMELER.filter((s) => oyuncu || !s.oyuncu)
-      .map((s) => `<button type="button" role="tab" id="sek-${s.id}" data-sekme="${s.id}" aria-selected="${s.id === this.sekme}">${s.ad}</button>`)
+      .map((s) => `<button type="button" role="tab" id="sek-${s.id}" data-sekme="${s.id}" aria-selected="${s.id === this.sekme}">${sekmeIcerik(s)}</button>`)
       .join("");
   }
 
@@ -236,7 +246,7 @@ export class Panel {
     const ad = (dev?.ad ?? "").split(" ")[0] ?? "";
     const hazine = kare.hazine[o.idx] ?? 0;
     const k = $("oyuncu-cubuk");
-    const metin = `<i class="nokta" style="background:var(--d${o.idx % 4})"></i><span class="ocad">${esc(ad)}</span><b>${kisalt(hazine)}</b>`;
+    const metin = `<i class="nokta" style="background:var(--sen)"></i><span class="ocad">${esc(ad)}</span><b>${kisalt(hazine)}</b>`;
     if (k.innerHTML !== metin) k.innerHTML = metin;
     k.title = `${dev?.ad ?? ""}: hazine ${fmt(hazine)} para. Devlet sekmesini açmak için dokunun.`;
   }
@@ -385,7 +395,7 @@ export class Panel {
     this.duraklatildi = d;
     const b = $("duraklat");
     b.setAttribute("aria-pressed", String(d));
-    b.textContent = d ? "▶ Sürdür" : "⏸ Duraklat";
+    b.innerHTML = d ? `${ikon("play", 16)} Sürdür` : `${ikon("pause", 16)} Duraklat`;
     b.setAttribute("aria-label", d ? "Sürdür" : "Duraklat");
     $("duraklama-isareti").hidden = !d;
     if (bildir) this.g.duraklat(d);
@@ -432,8 +442,8 @@ export class Panel {
   private mercekDugmesiYaz(): void {
     const m = this.durum.mercek ?? "genel";
     const d = this.durum.dizin;
-    const ikon = m === "mal" && d ? malIkonu(d, this.durum.mal, 11) + " " : "";
-    $("mercek-dugme").innerHTML = `<span class="soluk">Görünüm:</span> ${ikon}<b>${esc(mercekAdi(m, d, this.durum.mal))}</b> <span aria-hidden="true">▾</span>`;
+    const malSimge = m === "mal" && d ? malIkonu(d, this.durum.mal, 12) : "";
+    $("mercek-dugme").innerHTML = `${ikon(m === "mal" ? "package" : (MERCEK_IKON[m] ?? "layers"), 18)}<span class="soluk">Görünüm</span>${malSimge}<b>${esc(mercekAdi(m, d, this.durum.mal))}</b>${ikon("chevron-down", 16)}`;
     if (!$("mercek-menu").hidden) this.mercekMenusuCiz();
   }
 
@@ -443,7 +453,7 @@ export class Panel {
     let s = `<div class="acilir-baslik"><b>Görünüm</b><span class="soluk">tek mercek · 1–5</span></div><div class="mercek-liste" role="group" aria-label="Mercekler">`;
     for (const x of MERCEKLER) {
       if (x.id === "tarim" && !d?.tarim) continue;
-      s += `<button type="button" class="mercek-secenek" data-mercek="${x.id}" aria-pressed="${m === x.id}"><span class="tus" aria-hidden="true">${x.tus}</span><span><b>${esc(x.ad)}</b><br><span class="soluk">${esc(x.aciklama)}</span></span></button>`;
+      s += `<button type="button" class="mercek-secenek" data-mercek="${x.id}" aria-pressed="${m === x.id}">${ikon(MERCEK_IKON[x.id] ?? "layers", 20)}<span><b>${esc(x.ad)}</b><br><span class="soluk">${esc(x.aciklama)}</span></span><span class="tus" aria-hidden="true">${x.tus}</span></button>`;
     }
     s += `</div>`;
     if (d) {
@@ -522,7 +532,9 @@ export class Panel {
     const yaz = (id: string, ad: string, n: number): void => {
       const b = document.getElementById(id);
       if (!b) return;
-      const metin = n > 0 ? `${ad} <span class="sayac">${n}</span>` : ad;
+      const s = SEKMELER.find((x) => x.ad === ad);
+      if (!s) return;
+      const metin = sekmeIcerik(s, n);
       if (b.innerHTML !== metin) b.innerHTML = metin;
     };
     yaz("sek-olaylar", "Olaylar", olaySayisi(this.durum));

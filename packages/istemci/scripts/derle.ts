@@ -5,6 +5,7 @@
  *   3) ../../istemci/harita.js  : harita yığını (MapLibre + pmtiles + görünüm; tek ES modülü), HTML'in yanında
  *      ve ../../istemci/harita-verisi/ (ODbL harita verisi). Karar 1 Ekim (seçenek A): tek dosya ≤400 KB gzip;
  *      harita yığını ayrı ölçülür ve yazdırılır (bütçe testi yok).
+ *   5) ../../istemci/yazi/      : Inter alt kümesi (woff2, OFL) ve lisanslar; tek dosyaya gömülmez (bütçe), HTTP'de yüklenir.
  *   4) ../../istemci/yuru.js    : L4 yürüyüş yığını (sahne + karo işçisi + karakter), HTML'in yanında. three.js
  *      yeniden paketlenmez: "three" içe aktarımları kabuğun koyduğu köprü nesnesinden okunur (src/yuru/three-kopru.ts).
  *      Protomaps z15 özütü varsa (veri-hatti önbelleği, gitignore'lu) harita-verisi/karolar/ altına kopyalanır.
@@ -96,6 +97,9 @@ async function main(): Promise<void> {
   copyFileSync(join(AYRI, "dist-tek", "harita-yigini", "harita.js"), haritaJs);
   const yuruJs = join(hedefKlasor, "yuru.js");
   copyFileSync(join(AYRI, "dist-tek", "yuru-yigini", "yuru.js"), yuruJs);
+  // Yazı tipi (Inter alt kümesi, OFL; tek dosyaya gömülmez: bütçe) ve simge lisansı sayfanın yanına
+  cpSync(join(AYRI, "public", "yazi"), join(hedefKlasor, "yazi"), { recursive: true });
+  copyFileSync(join(AYRI, "src", "tasarim", "LUCIDE-LISANS.txt"), join(hedefKlasor, "yazi", "LUCIDE-LISANS.txt"));
   // Yürüyüş karoları (Protomaps z15 özütü, ODbL; repo dışı önbellek): varsa sayfanın yanına
   const ozut = join(DEPO, "packages", "veri-hatti", ".onbellek", "karolar", "gebze-z15.pmtiles");
   if (existsSync(ozut))
@@ -126,6 +130,8 @@ async function main(): Promise<void> {
   console.log(`  ${hedef}: ${kb(statSync(hedef).size)} / gzip ${kb(htmlGz)} (bütçe 400 KB: ${htmlGz <= 400 * 1024 ? "tamam" : "AŞILDI"})`);
   const hjs = readFileSync(haritaJs);
   console.log(`  ${haritaJs} (harita yığını, ayrı; yalnız harita açılınca): ${kb(hjs.length)} / gzip ${kb(gzipSync(hjs, { level: 9 }).length)}`);
+  const yazi = readFileSync(join(hedefKlasor, "yazi", "inter-tr.woff2"));
+  console.log(`  ${join(hedefKlasor, "yazi", "inter-tr.woff2")} (yazı tipi, ayrı; yalnız HTTP'de yüklenir): ${kb(yazi.length)}`);
   const yjs = readFileSync(yuruJs);
   console.log(`  ${yuruJs} (yürüyüş yığını, ayrı; yalnız sokakta yürürken): ${kb(yjs.length)} / gzip ${kb(gzipSync(yjs, { level: 9 }).length)}`);
 }

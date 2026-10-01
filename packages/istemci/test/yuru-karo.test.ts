@@ -167,6 +167,11 @@ describe("yürüyüş: karo → geometri", () => {
         expect(n[1]!).toBeGreaterThan(0); // çatı yukarı
         continue;
       }
+      // Parapetin iç yüzü (çatı kotunun üstü) bilerek içe bakar: üstten bakınca çatı çukurda okunur
+      if ((A[1] + B[1] + C[1]) / 3 >= 10) {
+        expect(n[0]! * mx + n[2]! * mz).toBeLessThan(0);
+        continue;
+      }
       duvar++;
       expect(n[0]! * mx + n[2]! * mz).toBeGreaterThan(0);
     }
@@ -229,7 +234,12 @@ describe("yürüyüş: çizim çağrısı birleştirme", () => {
     const karoBasina = 3;
     const sabit = 8; // karakterler (örnekli), ızgara, sahiplik dolgu + kenar, inşaat/bayrak (örnekli), hedef, gölge
     expect(9 * karoBasina + sabit).toBeLessThanOrEqual(60);
-    expect(g.bina.indeks.length / 3).toBe(400 * (4 * 2 + 2));
+    // Bina başına: 4 duvar × 2 + (parapet iç yüzü 4 × 2 + düz çatı 2 | kırma çatı 6): en çok 18 üçgen
+    expect(g.bina.indeks.length / 3).toBeLessThanOrEqual(400 * 18);
+    expect(g.bina.indeks.length / 3).toBeGreaterThanOrEqual(400 * 14);
+    // Cephe verisi (pencere ritmi, kat çizgisi gölgelendiricide): köşe başına 4 sayı + üst kot
+    expect(g.bina.cephe?.length).toBe((g.bina.konum.length / 3) * 4);
+    expect(g.bina.ust?.length).toBe(g.bina.konum.length / 3);
   });
 });
 

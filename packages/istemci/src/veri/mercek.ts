@@ -31,9 +31,12 @@ export function mercekAdi(m: Mercek, d: Dizin | null, mal: number): string {
   return MERCEKLER.find((x) => x.id === m)?.ad ?? "Genel";
 }
 
-/** "Genel" merceğinde başkasının bölgesinin nötre doğru soldurulma payı (izleme kipinde daha az). */
-export const SOLUK_PAY = 0.74;
-export const IZLE_SOLUK_PAY = 0.5;
+/**
+ * "Genel" merceğinde başkasının bölgesinin nötre doğru soldurulma payı (izleme kipinde daha az). Görsel kimlik §3.5:
+ * yalnız "Sen" canlı; başkaları soluk ton (kroma düşük, açıklık kâğıda yakın) ama ayırt edilebilir.
+ */
+export const SOLUK_PAY = 0.62;
+export const IZLE_SOLUK_PAY = 0.3;
 
 function yaz(cikti: BolgeRenkTamponu, i: number, r: RGB, desen = 0): void {
   cikti.renk[3 * i] = r[0];
@@ -52,7 +55,11 @@ export function genelRenkleri(kare: Kare | null, dizin: Dizin, ben: number, pale
   const pay = ben >= 0 ? SOLUK_PAY : IZLE_SOLUK_PAY;
   for (let i = 0; i < dizin.bolgeler.length; i++) {
     const sahip = kare?.bolgeler[i]?.sahip ?? -2;
-    if (ben >= 0 && sahip === ben) continue;
+    if (ben >= 0 && sahip === ben) {
+      // "Sen" çini, ama geniş alanda düz doygun dolgu değil: kâğıda yarı yarıya yaklaştırılmış sakin ton (etiket koyu mürekkeple okunur)
+      if (palet.sen) yaz(cikti, i, karistir(palet.sen, palet.notr, 0.48));
+      continue;
+    }
     const r: RGB = [cikti.renk[3 * i] as number, cikti.renk[3 * i + 1] as number, cikti.renk[3 * i + 2] as number];
     yaz(cikti, i, karistir(r, palet.notr, sahip < 0 ? 0.6 : pay));
   }
@@ -97,4 +104,11 @@ export function sanayiRenkleri(kare: Kare | null, dizin: Dizin, palet: Palet, ci
 
 export function pazarRenkleri(kare: Kare | null, dizin: Dizin, palet: Palet, cikti: BolgeRenkTamponu): void {
   siraliRenkler(kare, dizin, (i) => (kare ? pazarDegeri(kare, dizin, i) : 0), palet.pazar, palet, cikti);
+}
+
+/** "Sahiplik": tüm devletler tam renkte; oyuncunun kendi bölgeleri "Sen" renginde. */
+export function sahiplikRenkleri(kare: Kare | null, dizin: Dizin, ben: number, palet: Palet, cikti: BolgeRenkTamponu): void {
+  bolgeRenkleriniHesapla(kare, dizin, -1, palet, cikti);
+  if (ben < 0 || !palet.sen) return;
+  for (let i = 0; i < dizin.bolgeler.length; i++) if (kare?.bolgeler[i]?.sahip === ben) yaz(cikti, i, palet.sen);
 }

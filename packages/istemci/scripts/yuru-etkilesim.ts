@@ -120,6 +120,8 @@ async function hucreSecVeAl(sayfa: Page, mobil: boolean, e: string): Promise<voi
     else await sayfa.mouse.click(kap.x + x, kap.y + y);
     await sayfa.waitForTimeout(200);
   };
+  // F4'ten beri varsayılan dokunma hazır arsayı seçer: hücre seçimi "Hücre aracı" ile (telefonda Shift yok)
+  if (mobil) await sayfa.locator("#harita-alt [data-eylem='hucre-araci']").tap();
   await tik(sira[0]!.x, sira[0]!.y);
   if (mobil) await sayfa.locator("#harita-alt [data-eylem='coklu']").tap();
   if (!mobil) await sayfa.keyboard.down("Shift");
@@ -299,7 +301,11 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   if (!mobil) {
     await sayfa.locator(".yuru-tuval").focus();
     await sayfa.keyboard.down("KeyW");
+    // Yazılım GL'de kare hızı yüke göre değişir (dt kare başına 0,05 sn ile sınırlı): en az 1,6 sn, gerekirse 3 m'ye dek (≤ 5 sn)
     await sayfa.waitForTimeout(1600);
+    await sayfa
+      .waitForFunction((o) => { const p = window.__yuru?.durum().dunya; return !!p && Math.hypot(p[0] - o[0], p[1] - o[1]) >= 3; }, once, { timeout: 3400 })
+      .catch(() => undefined);
     await sayfa.keyboard.up("KeyW");
     await sayfa.keyboard.down("KeyD");
     await sayfa.keyboard.down("Shift");

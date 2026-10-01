@@ -8,6 +8,7 @@ import { BufferAttribute, DataTexture, FloatType, InstancedBufferAttribute, Inst
 import type { ShaderMaterial } from "three";
 import { animasyonDokusu, karakterCoz, kareIndeksi } from "./karakter-veri";
 import type { KarakterAnimasyonu, KarakterVerisi } from "./karakter-veri";
+import { KARAKTER_OLCEK } from "./kontrol";
 import { kalabalikMalzemesi } from "./malzeme";
 import type { SisAyari } from "./malzeme";
 import type { Rgb, YuruPaleti } from "./palet";
@@ -49,7 +50,7 @@ export class Kalabalik {
     doku.minFilter = NearestFilter;
     doku.magFilter = NearestFilter;
     doku.needsUpdate = true;
-    this.malz = kalabalikMalzemesi(doku, p.govde, p, sis);
+    this.malz = kalabalikMalzemesi(doku, p.govde, p, sis, KARAKTER_OLCEK);
     this.mesh = new Mesh(g, this.malz);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 5;
@@ -118,6 +119,8 @@ export class Kalabalik {
 
   temaAyarla(p: YuruPaleti): void {
     this.malz.uniforms["uGovde"]!.value = [...p.govde];
+    this.malz.uniforms["uAlt"]!.value = [...p.giysiAlt];
+    this.malz.uniforms["uTen"]!.value = [...p.ten];
     this.malz.uniforms["uSis"]!.value = [...p.gok];
   }
 

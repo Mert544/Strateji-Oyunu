@@ -7,10 +7,10 @@
  * Çizim durağandır: harita yalnız etkileşimde yeniden çizilir (MapLibre boşta 0 fps), sürekli animasyon yok.
  */
 import maplibregl from "maplibre-gl";
-import type { GeoJSONSource, LngLatBoundsLike, Map as MlHarita, MapMouseEvent, StyleSpecification } from "maplibre-gl";
+import type { GeoJSONSource, LayerSpecification, LngLatBoundsLike, Map as MlHarita, MapMouseEvent, StyleSpecification } from "maplibre-gl";
 import maplibreCss from "maplibre-gl/dist/maplibre-gl.css?inline";
 import { Protocol } from "pmtiles";
-import type { Feature, FeatureCollection, LineString, Polygon } from "geojson";
+import type { Feature, FeatureCollection, LineString, MultiPolygon, Polygon } from "geojson";
 import type { IcerikDosyasi, Parametreler } from "@bolge/veri";
 import type { ArsaSinifi, HucreId } from "@bolge/cekirdek";
 import icerikHam from "../../../veri/icerik/icerik.json";
@@ -26,7 +26,9 @@ import type { Duzey, HaritaDurumu } from "./denetci";
 import { arsaSinifi, hucreFiyati, ilceTavani, parselFiyatiMili, SINIF_ADI, satinAlmaOzeti } from "./fiyat";
 import type { IlceSayilari } from "./fiyat";
 import { parselZinciri } from "./zincir";
-import { ASAMA_ADI, yapiAsamasi, yapiKatalogu } from "./yapi";
+import { ASAMA_ADI, yapiAsamasi, yapiKatalogu, yapiKatmani, yapiRengiCss } from "./yapi";
+import { altlikKatmanlari, boyalar, IZGARA_CIZGI_ZOOM, L3_ZOOM, oyunKatmanlari, sahiplikBoyasi, SERIT_ONCESI, seritRengi, sinirKatmanlari, zeminKatmanlari } from "./stil";
+import { ikon } from "../tasarim/ikon";
 import type { YapiTanimi } from "./yapi";
 import { YerlesimKipi } from "./yerlesim";
 import { cerceveBirlestir } from "./geometri";
@@ -65,17 +67,24 @@ export interface GorunumSecenekleri {
   duzeyDegisti: (d: Duzey) => void;
   /** L4: hücre merkezinde sokak yürüyüşünü aç (parsel kartındaki "Sokakta yürü" düğmesi). */
   yuruAc?: (boylam: number, enlem: number) => void;
+  /** Komşu ülkeler ("dış kara"; küre verisinden, Türkiye hariç). */
+  dunya?: FeatureCollection<Polygon | MultiPolygon>;
 }
 
 /** L3 (arsa ızgarası) bu yakınlaşmadan itibaren: seritler katmanı yalnız z15 karosu içerir. */
-export const L3_ZOOM = 15;
-/** Hücre kenar çizgileri bu yakınlaşmadan itibaren (hücre ~16 px). */
-const IZGARA_CIZGI_ZOOM = 16;
+export { L3_ZOOM };
+
+/** Oyuncu kimliğinden renk indeksi (0–11). Sunucu `renkIndeksi` gönderince o kullanılır; şimdilik kararlı karma. */
+export function oyuncuRenkIndeksi(oyuncu: string): number {
+  let x = 2166136261;
+  for (let i = 0; i < oyuncu.length; i++) x = Math.imul(x ^ oyuncu.charCodeAt(i), 16777619);
+  return (x >>> 0) % 12;
+}
 
 const BOS: FeatureCollection = { type: "FeatureCollection", features: [] };
 
 function renk(ad: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(ad).trim() || "#888";
+  return getComputedStyle(document.documentElement).getPropertyValue(ad).trim() || "#888888";
 }
 
 function hareketAzMi(): boolean {
@@ -262,13 +271,23 @@ export class HaritaGorunumu {
 
   // --- stil ------------------------------------------------------------------------------------------
 
+  private altlikVar = new URLSearchParams(location.search).get("altlik");
+
+  /** Stilin tüm katmanları (tema değişince aynı listeden yeniden boyanır; serit ve hayalet ayrıca). */
+  private katmanlar(): LayerSpecification[] {
+    return [...zeminKatmanlari(renk), ...(this.altlikVar ? altlikKatmanlari(renk) : []), ...sinirKatmanlari(renk), ...oyunKatmanlari(renk, this.sahiplikAcik)];
+  }
+
   private stil(): StyleSpecification {
-    const altlik = new URLSearchParams(location.search).get("altlik");
+    const altlik = this.altlikVar;
     const st: StyleSpecification = {
       version: 8,
       sources: {
+        dunya: { type: "geojson", data: this.s.dunya ?? BOS },
         iller: { type: "geojson", data: this.s.iller.fc, promoteId: "kimlik" },
+        "il-sinir": { type: "geojson", data: this.s.iller.sinir ?? BOS },
         ilceler: { type: "geojson", data: BOS, promoteId: "kimlik" },
+        "ilce-sinir": { type: "geojson", data: BOS },
         sahiplik: { type: "geojson", data: BOS },
         secim: { type: "geojson", data: BOS },
         izgara: { type: "geojson", data: BOS },
@@ -278,47 +297,18 @@ export class HaritaGorunumu {
         "arsa-vurgu": { type: "geojson", data: BOS },
         yapilar: { type: "geojson", data: BOS },
       },
-      layers: [{ id: "zemin", type: "background", paint: { "background-color": renk("--harita-zemin") } }],
+      layers: this.katmanlar(),
     };
-    st.layers.push(
-      { id: "il-dolgu", type: "fill", source: "iller", paint: { "fill-color": renk("--harita-kara") } },
-      { id: "ilce-dolgu", type: "fill", source: "ilceler", paint: { "fill-color": renk("--harita-ilce-vurgu"), "fill-opacity": ["case", ["boolean", ["feature-state", "uzerinde"], false], 1, 0] } },
-    );
-    if (altlik) {
-      // İsteğe bağlı Protomaps altlığı (şema v4): yalnız su, yol ve bina; etiket yok (glyph gerekmez).
-      st.sources["altlik"] = { type: "vector", url: "pmtiles://" + new URL(altlik, location.href).href };
-      st.layers.push(
-        { id: "altlik-su", type: "fill", source: "altlik", "source-layer": "water", paint: { "fill-color": renk("--harita-su") } },
-        { id: "altlik-yol", type: "line", source: "altlik", "source-layer": "roads", minzoom: 11, paint: { "line-color": renk("--harita-il-cizgi"), "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.4, 17, 3] } },
-        { id: "altlik-bina", type: "fill", source: "altlik", "source-layer": "buildings", minzoom: 14, paint: { "fill-color": renk("--harita-engel"), "fill-opacity": 0.35 } },
-      );
-    }
-    st.layers.push(
-      { id: "il-cizgi", type: "line", source: "iller", paint: { "line-color": renk("--harita-il-cizgi"), "line-width": 1 } },
-      { id: "ilce-cizgi", type: "line", source: "ilceler", paint: { "line-color": renk("--harita-ilce-cizgi"), "line-width": ["interpolate", ["linear"], ["zoom"], 7, 0.6, 12, 1.2] } },
-      { id: "izgara-cizgi", type: "line", source: "izgara", minzoom: IZGARA_CIZGI_ZOOM, paint: { "line-color": renk("--harita-izgara"), "line-width": 0.6 } },
-      { id: "sahiplik-dolgu", type: "fill", source: "sahiplik", minzoom: 13, paint: { "fill-color": ["case", ["==", ["get", "ben"], 1], renk("--harita-ben"), renk("--harita-baskasi")], "fill-opacity": ["case", ["==", ["get", "ben"], 1], 0.45, 0] } },
-      { id: "sahiplik-cizgi", type: "line", source: "sahiplik", minzoom: 13, paint: { "line-color": ["case", ["==", ["get", "ben"], 1], renk("--harita-ben"), renk("--harita-baskasi")], "line-width": 1.2 } },
-      { id: "arsa-kamu-dolgu", type: "fill", source: "arsa-kamu", minzoom: L3_ZOOM - 0.2, paint: { "fill-color": renk("--harita-kamu"), "fill-opacity": 0.55 } },
-      { id: "arsa-cizgi", type: "line", source: "arsalar", minzoom: L3_ZOOM - 0.2, paint: { "line-color": renk("--harita-arsa"), "line-width": ["interpolate", ["linear"], ["zoom"], 15, 0.8, 18, 1.8] } },
-      { id: "yapi-dolgu", type: "fill", source: "yapilar", minzoom: 13, paint: { "fill-color": ["match", ["get", "a"], 0, renk("--harita-asama0"), 1, renk("--harita-asama1"), 2, renk("--harita-asama2"), renk("--harita-asama3")], "fill-opacity": 0.82 } },
-      { id: "yapi-cizgi", type: "line", source: "yapilar", minzoom: 13, paint: { "line-color": renk("--harita-yapi-cizgi"), "line-width": 1.6 } },
-      { id: "arsa-vurgu-dolgu", type: "fill", source: "arsa-vurgu", paint: { "fill-color": renk("--harita-secim"), "fill-opacity": ["case", ["==", ["get", "s"], 1], 0.34, 0.2] } },
-      { id: "arsa-vurgu-cizgi", type: "line", source: "arsa-vurgu", paint: { "line-color": renk("--harita-secim"), "line-width": ["case", ["==", ["get", "s"], 1], 3, 2] } },
-      { id: "secim-dolgu", type: "fill", source: "secim", paint: { "fill-color": renk("--harita-secim"), "fill-opacity": 0.35 } },
-      { id: "secim-cizgi", type: "line", source: "secim", paint: { "line-color": renk("--harita-secim"), "line-width": 2 } },
-      { id: "dikdortgen-cizgi", type: "line", source: "dikdortgen", paint: { "line-color": renk("--harita-secim"), "line-width": 1.5, "line-dasharray": [2, 2] } },
-      { id: "ilce-secili", type: "line", source: "ilceler", filter: ["==", ["get", "kimlik"], ""], paint: { "line-color": renk("--harita-secili-cizgi"), "line-width": 2.2 } },
-      { id: "il-secili", type: "line", source: "iller", filter: ["==", ["get", "kimlik"], ""], paint: { "line-color": renk("--harita-secili-cizgi"), "line-width": 2 } },
-    );
+    // İsteğe bağlı Protomaps altlığı (şema v4): arazi, su, bina, yol hiyerarşisi; etiket yok (glyph gerekmez).
+    if (altlik) st.sources["altlik"] = { type: "vector", url: "pmtiles://" + new URL(altlik, location.href).href };
     return st;
   }
 
-  /** Satın alınamaz hücreler için taralı desen (8×8, tema rengiyle). */
+  /** Alınamaz hücreler için taralı desen (yalnız yüksek kontrast kipinde kullanılır; 8×8, tema rengiyle). */
   private desenEkle(): void {
-    const c = renk("--harita-engel");
+    const c = renk("--murekkep-3");
     const m = /^#([0-9a-f]{6})$/i.exec(c);
-    const v = m ? parseInt(m[1]!, 16) : 0x9aa0a8;
+    const v = m ? parseInt(m[1]!, 16) : 0x5f6b75;
     const [r, g, b] = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
     const data = new Uint8Array(8 * 8 * 4);
     for (let y = 0; y < 8; y++)
@@ -328,7 +318,7 @@ export class HaritaGorunumu {
         data[i] = r;
         data[i + 1] = g;
         data[i + 2] = b;
-        data[i + 3] = cizgi ? 120 : 28;
+        data[i + 3] = cizgi ? 120 : 0;
       }
     if (this.harita.hasImage("tarali")) this.harita.updateImage("tarali", { width: 8, height: 8, data });
     else this.harita.addImage("tarali", { width: 8, height: 8, data });
@@ -342,8 +332,8 @@ export class HaritaGorunumu {
     for (const id of ["serit-dolgu", "serit-engel"]) if (h.getLayer(id)) h.removeLayer(id);
     if (h.getSource("seritler")) h.removeSource("seritler");
     h.addSource("seritler", { type: "vector", url: "pmtiles://" + url });
-    // Altlık varsa şeritler onun altında kalır (yollar ve binalar ızgaranın üstünde okunur)
-    const once = h.getLayer("altlik-su") ? "altlik-su" : "izgara-cizgi";
+    // Arsa mozaiği karanın üstünde, sınırların altında; altlık varsa onun altında (yollar ve binalar ızgaranın üstünde okunur)
+    const once = h.getLayer("altlik-orman") ? "altlik-orman" : SERIT_ONCESI;
     // Su biti: e = (durum & (yol|su|askerî|bina)) >> 1 -> su = ⌊e/2⌋ mod 2 (ifadelerde bit işlemi yok)
     const su: maplibregl.ExpressionSpecification = ["==", ["%", ["floor", ["/", ["get", "e"], 2]], 2], 1];
     h.addLayer(
@@ -353,7 +343,7 @@ export class HaritaGorunumu {
         source: "seritler",
         "source-layer": "seritler",
         minzoom: L3_ZOOM - 0.01,
-        paint: { "fill-color": this.seritRengi(su), "fill-antialias": false },
+        paint: { "fill-color": seritRengi(renk, su, this.sahiplikAcik), "fill-antialias": false },
       },
       once,
     );
@@ -365,61 +355,36 @@ export class HaritaGorunumu {
         "source-layer": "seritler",
         minzoom: L3_ZOOM - 0.01,
         filter: ["all", ["==", ["get", "u"], 0], ["!", su]],
-        paint: { "fill-pattern": "tarali" },
+        // Alınamaz hücre: düz `arsa-engel` (tarama yok); yalnız yüksek kontrast kipinde taralı desen
+        paint: window.matchMedia("(prefers-contrast: more)").matches ? { "fill-pattern": "tarali" } : { "fill-color": renk("--arsa-engel"), "fill-antialias": false },
       },
       once,
     );
     this.seritYuklu = url;
   }
 
-  private seritRengi(su: maplibregl.ExpressionSpecification): maplibregl.ExpressionSpecification | string {
-    if (this.sahiplikAcik) return ["case", su, renk("--harita-su"), renk("--harita-mercek-soluk")];
-    return [
-      "case",
-      su,
-      renk("--harita-su"),
-      ["match", ["get", "s"], 1, renk("--harita-tarla"), 2, renk("--harita-sanayi"), 3, renk("--harita-konut"), 4, renk("--harita-orman"), 5, renk("--harita-yapili"), renk("--harita-diger")],
-    ];
-  }
-
   temaUygula(): void {
     void this.yuklendi.then(() => {
       const h = this.harita;
-      const ayar = (l: string, p: string, v: unknown): void => {
-        if (h.getLayer(l)) h.setPaintProperty(l, p, v);
-      };
-      ayar("zemin", "background-color", renk("--harita-zemin"));
-      ayar("il-dolgu", "fill-color", renk("--harita-kara"));
-      ayar("ilce-dolgu", "fill-color", renk("--harita-ilce-vurgu"));
-      ayar("il-cizgi", "line-color", renk("--harita-il-cizgi"));
-      ayar("ilce-cizgi", "line-color", renk("--harita-ilce-cizgi"));
-      ayar("izgara-cizgi", "line-color", renk("--harita-izgara"));
-      ayar("ilce-secili", "line-color", renk("--harita-secili-cizgi"));
-      ayar("il-secili", "line-color", renk("--harita-secili-cizgi"));
-      ayar("arsa-cizgi", "line-color", renk("--harita-arsa"));
-      ayar("arsa-kamu-dolgu", "fill-color", renk("--harita-kamu"));
-      ayar("yapi-dolgu", "fill-color", ["match", ["get", "a"], 0, renk("--harita-asama0"), 1, renk("--harita-asama1"), 2, renk("--harita-asama2"), renk("--harita-asama3")]);
-      ayar("yapi-cizgi", "line-color", renk("--harita-yapi-cizgi"));
-      ayar("arsa-vurgu-dolgu", "fill-color", renk("--harita-secim"));
-      ayar("arsa-vurgu-cizgi", "line-color", renk("--harita-secim"));
+      for (const l of this.katmanlar()) {
+        if (!h.getLayer(l.id)) continue;
+        for (const [p, v] of Object.entries(boyalar(l))) h.setPaintProperty(l.id, p, v);
+      }
       this.yerlesim?.temaUygula();
-      ayar("secim-dolgu", "fill-color", renk("--harita-secim"));
-      ayar("secim-cizgi", "line-color", renk("--harita-secim"));
-      ayar("dikdortgen-cizgi", "line-color", renk("--harita-secim"));
       this.sahiplikBoya();
       this.desenEkle();
+      if (h.getLayer("serit-engel") && !window.matchMedia("(prefers-contrast: more)").matches) h.setPaintProperty("serit-engel", "fill-color", renk("--arsa-engel"));
+      this.yapilariCiz();
     });
   }
 
   private sahiplikBoya(): void {
     const h = this.harita;
     if (!h.getLayer("sahiplik-dolgu")) return;
-    const ben = renk("--harita-ben");
-    const diger = renk("--harita-baskasi");
-    h.setPaintProperty("sahiplik-dolgu", "fill-color", ["case", ["==", ["get", "ben"], 1], ben, diger]);
-    h.setPaintProperty("sahiplik-dolgu", "fill-opacity", ["case", ["==", ["get", "ben"], 1], this.sahiplikAcik ? 0.9 : 0.45, this.sahiplikAcik ? 0.55 : 0]);
-    h.setPaintProperty("sahiplik-cizgi", "line-color", ["case", ["==", ["get", "ben"], 1], ben, diger]);
-    if (h.getLayer("serit-dolgu")) h.setPaintProperty("serit-dolgu", "fill-color", this.seritRengi(["==", ["%", ["floor", ["/", ["get", "e"], 2]], 2], 1]));
+    const b = sahiplikBoyasi(renk, this.sahiplikAcik);
+    for (const [p, v] of Object.entries(b.dolgu)) h.setPaintProperty("sahiplik-dolgu", p, v);
+    for (const [p, v] of Object.entries(b.cizgi)) h.setPaintProperty("sahiplik-cizgi", p, v);
+    if (h.getLayer("serit-dolgu")) h.setPaintProperty("serit-dolgu", "fill-color", seritRengi(renk, ["==", ["%", ["floor", ["/", ["get", "e"], 2]], 2], 1], this.sahiplikAcik));
   }
 
   // --- dış arayüz ------------------------------------------------------------------------------------
@@ -500,7 +465,9 @@ export class HaritaGorunumu {
       this.il = hedef.il;
       this.ilce = await ilceleriYukle(hedef.il);
       (h.getSource("ilceler") as GeoJSONSource).setData(this.ilce.fc);
+      (h.getSource("ilce-sinir") as GeoJSONSource).setData(this.ilce.sinir ?? BOS);
       h.setFilter("il-secili", ["==", ["get", "kimlik"], hedef.il]);
+      h.setFilter("ortu-il", ["!=", ["get", "kimlik"], hedef.il]);
     }
     if (hedef.ilce !== this.ilceKimlik) {
       this.ilceKimlik = hedef.ilce;
@@ -515,6 +482,7 @@ export class HaritaGorunumu {
       this.arsaUzerinde = null;
       this.yerlesim?.iptal();
       h.setFilter("ilce-secili", ["==", ["get", "kimlik"], hedef.ilce ?? ""]);
+      h.setFilter("ortu-ilce", hedef.ilce ? ["!=", ["get", "kimlik"], hedef.ilce] : ["==", ["get", "kimlik"], "__yok__"]);
       if (hedef.ilce && this.izgaraVar(hedef.ilce)) {
         this.baglanti.ilgi?.("harita", [hedef.ilce]);
         const [iz, sh] = await Promise.all([izgaraYukle(hedef.ilce), this.baglanti.sahiplikAl(hedef.ilce)]);
@@ -652,10 +620,16 @@ export class HaritaGorunumu {
     const f: Feature<Polygon>[] = [];
     for (const [id, h] of s.hucreler) {
       const c = idCoz(id);
-      if (c) f.push(hucreCokgeni(c.x, c.y, { ben: h.sahip === ben ? 1 : 0, sahip: h.sahip }));
+      if (c) f.push(hucreCokgeni(c.x, c.y, { ben: h.sahip === ben ? 1 : 0, sahip: h.sahip, r: this.renkIndeksi(h.sahip) }));
     }
     src.setData({ type: "FeatureCollection", features: f });
     this.yapilariCiz();
+  }
+
+  /** Oyuncunun renk indeksi: bağdaştırıcı sunarsa sunucunun `renkIndeksi`, yoksa kimlikten kararlı karma. */
+  private renkIndeksi(oyuncu: string): number {
+    const b = this.baglanti as MulkBaglantisi & { renkIndeksi?: (o: string) => number | null };
+    return b.renkIndeksi?.(oyuncu) ?? oyuncuRenkIndeksi(oyuncu);
   }
 
   private secimCiz(): void {
@@ -794,7 +768,7 @@ export class HaritaGorunumu {
     const neden = engelNedeni(d);
     const ben = sahip?.sahip === this.baglanti.ben.id;
     const sahipMetni = sahip
-      ? `<span class="sahip-isaret" style="background:${ben ? "var(--harita-ben)" : "var(--harita-baskasi)"}"></span>${esc(ben ? "Sen" : this.baglanti.oyuncuAdi(sahip.sahip))}`
+      ? `<span class="sahip-isaret" style="background:${ben ? "var(--sen)" : `var(--oyuncu-${this.renkIndeksi(sahip.sahip)})`}"></span>${esc(ben ? "Sen" : this.baglanti.oyuncuAdi(sahip.sahip))}`
       : neden
         ? "Satılık değil"
         : "Sahipsiz";
@@ -803,13 +777,13 @@ export class HaritaGorunumu {
     const ilceAd = this.ilceKimlik ? (this.s.hiyerarsi.ilceler.get(this.ilceKimlik)?.ad ?? "") : "";
     this.kart.hidden = false;
     this.kart.innerHTML = `
-      <h3><span>Parsel ${esc(kisaAd(id))}</span><button type="button" data-eylem="kart-kapat" aria-label="Kartı kapat">×</button></h3>
+      <h3><span>Parsel ${esc(kisaAd(id))}</span><button type="button" data-eylem="kart-kapat" aria-label="Kartı kapat">${ikon("x", 18)}</button></h3>
       <dl>
         <dt>Sahip</dt><dd data-alan="sahip">${sahipMetni}</dd>
         <dt>Sınıf</dt><dd data-alan="sinif">${neden ? esc(neden) : `${SINIF_ADI[sinif]} · ${ARAZI_ADLARI[durumSinifi(d)] ?? ""}`}</dd>
         <dt>${sahip ? "Değer" : "Fiyat"}</dt><dd data-alan="deger">${deger}</dd>
         <dt>${esc(ilceAd)}</dt><dd>${doluluk} dolu</dd>
-      </dl>${this.s.yuruAc ? `<button type="button" class="kart-yuru" data-eylem="yuru" title="Sokak düzeyinde yürü (L4)">Sokakta yürü</button>` : ""}`;
+      </dl>${this.s.yuruAc ? `<button type="button" class="kart-yuru" data-eylem="yuru" title="Sokak düzeyinde yürü (L4)">${ikon("footprints", 16)}Sokakta yürü</button>` : ""}`;
   }
 
   // --- hazır arsalar (F4) ----------------------------------------------------------------------------
@@ -1018,6 +992,10 @@ export class HaritaGorunumu {
     const simdi = this.baglanti.ozet?.()?.simZamani ?? 0;
     const ben = this.baglanti.ben.id;
     const f: Feature<Polygon>[] = [];
+    const katmanRengi = (tur: string | undefined): string => {
+      const k = yapiKatmani(tur);
+      return renk(k ? `--katman-${k}` : "--murekkep-3");
+    };
     for (const y of yapilar) {
       const a = yapiAsamasi(y, simdi, (this.katalog.find((k) => k.id === y.tur)?.ilkGunSureSaat ?? 1) * 3_600_000);
       let sx = 0;
@@ -1025,13 +1003,14 @@ export class HaritaGorunumu {
       for (const id of y.hucreler) {
         const c = idCoz(id);
         if (!c) continue;
-        f.push(hucreCokgeni(c.x, c.y, { a, ben: y.sahip === ben ? 1 : 0 }));
+        f.push(hucreCokgeni(c.x, c.y, { a, ben: y.sahip === ben ? 1 : 0, c: katmanRengi(y.tur) }));
         sx += c.x + 0.5;
         sy += c.y + 0.5;
       }
       if (this.duzey < 3 || y.hucreler.length === 0) continue;
       const e = document.createElement("div");
       e.className = `yapi-etiket asama${a}${y.sahip === ben ? " benim" : ""}`;
+      e.style.setProperty("--kr", yapiRengiCss(y.tur));
       e.dataset["yapi"] = y.anahtar;
       e.setAttribute("aria-hidden", "true");
       const ad = y.tur ? (this.katalog.find((k) => k.id === y.tur)?.ad ?? y.tur) : "Yapı";

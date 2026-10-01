@@ -65,7 +65,8 @@ describe("renk yardımcıları", () => {
   });
 
   it("mal renkleri kararlı, şekil kategoriden", () => {
-    expect(malRengiHex("celik")).toBe("#5b8db8");
+    expect(malRengiHex("celik")).toBe("#6e829e"); // Sanayi katmanı
+    expect(malRengiHex("tahil")).toBe("#b3a74c"); // Tarım katmanı
     expect(malRengiHex("bilinmeyen")).toMatch(/^#[0-9a-f]{6}$/);
     expect(malRengiHex("bilinmeyen")).toBe(malRengiHex("bilinmeyen"));
     expect([sekilKodu("ham"), sekilKodu("ara"), sekilKodu("tuketim"), sekilKodu("askeri"), sekilKodu("?")]).toEqual([0, 1, 2, 3, 0]);

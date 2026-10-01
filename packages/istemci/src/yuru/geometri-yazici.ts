@@ -12,9 +12,34 @@ export interface GeometriParcasi {
   /** Köşe başına gölge çarpanı (255 = 1). */
   golge: Uint8Array;
   indeks: Uint32Array;
+  /**
+   * İsteğe bağlı cephe verisi (köşe başına 4 sayı; yalnız bina parçası): u (duvar boyunca m, pencere aralığının
+   * başından), pencere açıklığı bitişi (m), pencere aralığı (m), bina tohumu (0–1). Gölgelendirici kat çizgisi,
+   * pencere ritmi ve giriş katını bundan üretir (doku yok, tek çizim çağrısı korunur).
+   */
+  cephe?: Float32Array;
+  /** İsteğe bağlı: köşenin ait olduğu cephenin üst kotu (m; korniş/parapet bandı için). */
+  ust?: Float32Array;
 }
 
 export class GeometriYazici {
+  private c: Float32Array | null;
+  private u: Float32Array | null;
+  /** Sonraki köşelere yazılacak cephe verisi (bina yazıcısında). */
+  private simdiC: [number, number, number, number] = [0, 0, 0, 0];
+  private simdiU = 0;
+
+  constructor(cephe = false) {
+    this.c = cephe ? new Float32Array(4 * 1024) : null;
+    this.u = cephe ? new Float32Array(1024) : null;
+  }
+
+  /** Bundan sonra eklenen köşelerin cephe verisi (u, açıklık sonu, aralık, tohum) ve üst kotu. */
+  cepheAyarla(u: number, aciklik: number, aralik: number, tohum: number, ust: number): void {
+    this.simdiC = [u, aciklik, aralik, tohum];
+    this.simdiU = ust;
+  }
+
   private k = new Float32Array(3 * 1024);
   private s = new Uint8Array(1024);
   private g = new Uint8Array(1024);
@@ -43,6 +68,14 @@ export class GeometriYazici {
     const g = new Uint8Array(c);
     g.set(this.g);
     this.g = g;
+    if (this.c && this.u) {
+      const cc = new Float32Array(c * 4);
+      cc.set(this.c);
+      this.c = cc;
+      const uu = new Float32Array(c);
+      uu.set(this.u);
+      this.u = uu;
+    }
   }
 
   private indeksYeri(n: number): void {
@@ -63,6 +96,10 @@ export class GeometriYazici {
     this.k[i * 3 + 2] = z;
     this.s[i] = sinif;
     this.g[i] = golge;
+    if (this.c && this.u) {
+      this.c.set(this.simdiC, i * 4);
+      this.u[i] = this.simdiU;
+    }
     return i;
   }
 
@@ -81,6 +118,10 @@ export class GeometriYazici {
     this.k.set(p.konum, taban * 3);
     this.s.set(p.sinif, taban);
     this.g.set(p.golge, taban);
+    if (this.c && this.u && p.cephe && p.ust) {
+      this.c.set(p.cephe, taban * 4);
+      this.u.set(p.ust, taban);
+    }
     this.nk += n;
     this.indeksYeri(p.indeks.length);
     for (let i = 0; i < p.indeks.length; i++) this.ix[this.ni + i] = p.indeks[i]! + taban;
@@ -93,13 +134,14 @@ export class GeometriYazici {
       sinif: this.s.slice(0, this.nk),
       golge: this.g.slice(0, this.nk),
       indeks: this.ix.slice(0, this.ni),
+      ...(this.c && this.u ? { cephe: this.c.slice(0, this.nk * 4), ust: this.u.slice(0, this.nk) } : {}),
     };
   }
 }
 
 /** Parçaları tek parçaya birleştirir (çizim çağrısı birleştirme). Sıra korunur. */
 export function birlestir(parcalar: readonly GeometriParcasi[]): GeometriParcasi {
-  const y = new GeometriYazici();
+  const y = new GeometriYazici(parcalar.some((p) => p.cephe));
   for (const p of parcalar) y.ekle(p);
   return y.bitir();
 }
@@ -117,5 +159,6 @@ export function parcaOzeti(p: GeometriParcasi): string {
   yut(p.sinif);
   yut(p.golge);
   yut(new Uint8Array(p.indeks.buffer, p.indeks.byteOffset, p.indeks.byteLength));
+  if (p.cephe) yut(new Uint8Array(p.cephe.buffer, p.cephe.byteOffset, p.cephe.byteLength));
   return (h >>> 0).toString(16).padStart(8, "0");
 }

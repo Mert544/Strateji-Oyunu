@@ -2,7 +2,11 @@
  * Bölge Stratejisi 3B istemci (Katman A): three.js ile stilize Dünya küresi.
  * Simülasyon Web Worker'da (inline blob) çalışır; ana iş parçacığı yalnızca çizim, kamera ve arayüzle ilgilenir.
  */
+import "./tasarim/tema.css";
+import "./tasarim/temel.css";
 import "./arayuz/stil.css";
+import { ikonlariKur } from "./tasarim/ikon-veri";
+import { ikon } from "./tasarim/ikon";
 import SimIsci from "./isci/sim.worker?worker&inline";
 import icerik from "../../veri/icerik/icerik.json";
 import param from "../../veri/icerik/parametreler.json";
@@ -80,7 +84,7 @@ function temaKur(onDegisti: () => void): () => void {
     else document.documentElement.setAttribute("data-theme", simdi);
     const d = document.getElementById("tema");
     if (d) {
-      d.textContent = simdi === "auto" ? "◐" : simdi === "light" ? "☀" : "☾";
+      d.innerHTML = ikon(simdi === "auto" ? "sun-moon" : simdi === "light" ? "sun" : "moon", 20);
       d.title = `Tema: ${simdi === "auto" ? "otomatik" : simdi === "light" ? "açık" : "koyu"} (değiştirmek için dokunun)`;
     }
   };
@@ -100,7 +104,18 @@ function temaKur(onDegisti: () => void): () => void {
   };
 }
 
+/** Yükleme ekranı: adımlı ince ilerleme (Veri · Küre · Kurallar · Hazır); sürekli dönen gösterge yok. */
+function yuklemeAdimi(oran: number, metin: string): void {
+  const y = document.getElementById("yukleme");
+  if (!y) return;
+  y.style.setProperty("--ilerleme", String(oran));
+  const a = y.querySelector(".yk-adim");
+  if (a) a.textContent = metin;
+}
+
 function baslat(): void {
+  ikonlariKur();
+  yuklemeAdimi(0.15, "Veri hazırlanıyor…");
   const q = new URLSearchParams(location.search);
   const mobil = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 820;
   let haritaDenetci: HaritaDenetci | null = null;
@@ -134,6 +149,7 @@ function baslat(): void {
     hataGoster("WebGL bağlamı kayboldu (GPU sıfırlandı veya bellek doldu). Sayfayı yenileyin.");
   });
 
+  yuklemeAdimi(0.55, "Kurallar yükleniyor…");
   const isci = new SimIsci();
   const isciyeGonder = (m: IsciyeMesaj): void => isci.postMessage(m);
 
@@ -211,6 +227,7 @@ function baslat(): void {
     kureyiAskiyaAl: (a) => {
       s.askida = a;
     },
+    dunyaTopo,
   });
 
   const etiketler = new Etiketler(
@@ -233,6 +250,7 @@ function baslat(): void {
     const m = e.data;
     switch (m.tur) {
       case "hazir":
+        yuklemeAdimi(0.85, "Dünya hazırlanıyor…");
         dizin = m.dizin;
         s.dizinKur(m.dizin);
         panel.dizinKur(m.dizin);

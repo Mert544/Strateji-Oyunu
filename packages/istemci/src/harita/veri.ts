@@ -6,10 +6,10 @@
  * derleme (scripts/derle.ts) ise dosyaları dist/ ve istemci/ yanına kopyalar. Tek dosya HTML file:// ile
  * açılırsa tarayıcı fetch'e izin vermez; harita bu durumda açık bir hata gösterir.
  */
-import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
-import { feature } from "topojson-client";
+import type { Feature, FeatureCollection, MultiLineString, MultiPolygon, Polygon } from "geojson";
+import { feature, mesh } from "topojson-client";
 import type { AramaKaydi } from "./arama";
-import { cerceve } from "./geometri";
+import { cerceve, noktadakiOzellik } from "./geometri";
 import { bhiCoz } from "./hucre";
 import type { Izgara, Sinir } from "./hucre";
 
@@ -50,9 +50,14 @@ export interface Hiyerarsi {
 export type CokgenOzellik = Feature<Polygon | MultiPolygon, { kimlik: string; ad: string; ebeveyn: string }>;
 export type CokgenKumesi = FeatureCollection<Polygon | MultiPolygon, { kimlik: string; ad: string; ebeveyn: string }>;
 
+/** Sınır çizgileri: `ic` = iki birim arasındaki ortak sınır (ilçe ↔ ilçe), `dis` = dış kenar (kıyı ve ülke sınırı). */
+export type SinirCizgileri = FeatureCollection<MultiLineString, { tur: "ic" | "dis" }>;
+
 export interface SinirKatmani {
   fc: CokgenKumesi;
   cerceve: Map<string, Sinir>;
+  /** Kartografik sınırlar (topojson `mesh`): iç sınır desenle, dış kenar kıyı çizgisi olarak çizilir. */
+  sinir?: SinirCizgileri;
 }
 
 /** Arsa ızgarası olan ilçeler (S6 örneği; ileride il başına `seritler.pmtiles` + ilçe başına BHI1). */
@@ -131,10 +136,31 @@ export function aramaKayitlari(h: Hiyerarsi): AramaKaydi[] {
 function topoCoz(t: Topology): SinirKatmani {
   const ad = Object.keys(t.objects)[0];
   if (!ad) throw new Error("Boş TopoJSON");
-  const fc = feature(t, t.objects[ad] as Parameters<typeof feature>[1]) as unknown as CokgenKumesi;
+  const nesne = t.objects[ad] as Parameters<typeof feature>[1];
+  const fc = feature(t, nesne) as unknown as CokgenKumesi;
   const c = new Map<string, Sinir>();
   for (const f of fc.features) c.set(f.properties.kimlik, cerceve(f.geometry));
-  return { fc, cerceve: c };
+  const m = (filtre: (a: unknown, b: unknown) => boolean): MultiLineString => mesh(t, nesne as Parameters<typeof mesh>[1], filtre) as unknown as MultiLineString;
+  const sinir: SinirCizgileri = {
+    type: "FeatureCollection",
+    features: [
+      { type: "Feature", properties: { tur: "ic" }, geometry: m((a, b) => a !== b) },
+      { type: "Feature", properties: { tur: "dis" }, geometry: m((a, b) => a === b) },
+    ],
+  };
+  return { fc, cerceve: c, sinir };
+}
+
+/**
+ * Dünya ülkeleri (küre verisi; özniteliksiz): harita için "dış kara" katmanı. Türkiye çıkarılır (il çokgenleri daha
+ * ayrıntılı kıyıyla çizer; Natural Earth kıyısı denize taşmasın): Ankara'yı içeren çokgen.
+ */
+export function disKaraCoz(topo: Topology): FeatureCollection<Polygon | MultiPolygon> {
+  const ad = Object.keys(topo.objects)[0];
+  if (!ad) return { type: "FeatureCollection", features: [] };
+  const fc = feature(topo, topo.objects[ad] as Parameters<typeof feature>[1]) as unknown as FeatureCollection<Polygon | MultiPolygon, { kimlik: string; ad: string; ebeveyn: string }>;
+  const tr = noktadakiOzellik(32.85, 39.93, fc as unknown as CokgenKumesi);
+  return { type: "FeatureCollection", features: fc.features.filter((f) => f !== (tr as unknown)) };
 }
 
 const onbellek = new Map<string, Promise<unknown>>();

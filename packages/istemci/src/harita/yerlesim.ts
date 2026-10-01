@@ -13,7 +13,8 @@ import { esc, fmt, sureMetni } from "../arayuz/bicim";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import { hucreSiniri, noktadanHucre } from "./hucre";
 import type { Izgara } from "./hucre";
-import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yerlesimPlani } from "./yapi";
+import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yapiRengiCss, yerlesimPlani } from "./yapi";
+import { ikon } from "../tasarim/ikon";
 import type { YapiTanimi, YerlesimPlani } from "./yapi";
 import { yerlesimiUygula } from "./zincir";
 
@@ -88,7 +89,7 @@ export class YerlesimKipi {
     this.dugme.setAttribute("aria-haspopup", "true");
     this.dugme.setAttribute("aria-expanded", "false");
     this.dugme.setAttribute("aria-controls", "yapi-menu");
-    this.dugme.innerHTML = `<span aria-hidden="true">▦</span> Yapı kur`;
+    this.dugme.innerHTML = `${ikon("hammer", 17)}Yapı kur`;
     this.dugme.title = "Önce yapıyı seç, sonra haritada yerleştir; arsa aynı işlemde alınır";
     this.menu = document.createElement("div");
     this.menu.id = "yapi-menu";
@@ -148,28 +149,29 @@ export class YerlesimKipi {
     if (this.hazir) return;
     h.addSource("hayalet", { type: "geojson", data: BOS });
     this.desen();
-    // Geçerli: mavi; geçersiz: turuncu. Satın alınacak (boş) hücre daha açık ve kesikli çizgili.
+    // Geçerli: "Sen" (çini); geçersiz: hata (soluk kiremit-kırmızı) + tarama (taramanın anlamlı olduğu tek yer).
+    // Satın alınacak (boş) hücre daha açık ve kesikli çizgili.
     h.addLayer({
       id: "hayalet-dolgu",
       type: "fill",
       source: "hayalet",
-      paint: { "fill-color": ["case", ["==", ["get", "g"], 1], renk("--harita-ben"), renk("--harita-secim")], "fill-opacity": ["case", ["==", ["get", "g"], 1], ["case", ["==", ["get", "b"], 1], 0.34, 0.58], 0.3] },
+      paint: { "fill-color": ["case", ["==", ["get", "g"], 1], renk("--sen"), renk("--hata")], "fill-opacity": ["case", ["==", ["get", "g"], 1], ["case", ["==", ["get", "b"], 1], 0.3, 0.55], 0.22] },
     });
     h.addLayer({ id: "hayalet-tarali", type: "fill", source: "hayalet", filter: ["==", ["get", "g"], 0], paint: { "fill-pattern": "hayalet-tarali", "fill-opacity": 0.95 } });
     h.addLayer({
       id: "hayalet-cizgi",
       type: "line",
       source: "hayalet",
-      paint: { "line-color": ["case", ["==", ["get", "g"], 1], renk("--harita-ben"), renk("--harita-secim")], "line-width": 2.2 },
+      paint: { "line-color": ["case", ["==", ["get", "g"], 1], renk("--sen"), renk("--hata")], "line-width": 2.2 },
     });
-    h.addLayer({ id: "hayalet-bos-cizgi", type: "line", source: "hayalet", filter: ["all", ["==", ["get", "g"], 1], ["==", ["get", "b"], 1]], paint: { "line-color": renk("--harita-ben"), "line-width": 2.2, "line-dasharray": [1.6, 1.2] } });
+    h.addLayer({ id: "hayalet-bos-cizgi", type: "line", source: "hayalet", filter: ["all", ["==", ["get", "g"], 1], ["==", ["get", "b"], 1]], paint: { "line-color": renk("--sen"), "line-width": 2.2, "line-dasharray": [1.6, 1.2] } });
     this.hazir = true;
   }
 
   private desen(): void {
-    const c = renk("--harita-secim");
+    const c = renk("--hata");
     const m = /^#([0-9a-f]{6})$/i.exec(c);
-    const v = m ? parseInt(m[1]!, 16) : 0xe69f00;
+    const v = m ? parseInt(m[1]!, 16) : 0xb53434;
     const [r, g, b] = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
     const data = new Uint8Array(8 * 8 * 4);
     for (let y = 0; y < 8; y++)
@@ -179,7 +181,7 @@ export class YerlesimKipi {
         data[i] = r;
         data[i + 1] = g;
         data[i + 2] = b;
-        data[i + 3] = cizgi ? 210 : 40;
+        data[i + 3] = cizgi ? 170 : 30;
       }
     if (this.g.ml.hasImage("hayalet-tarali")) this.g.ml.updateImage("hayalet-tarali", { width: 8, height: 8, data });
     else this.g.ml.addImage("hayalet-tarali", { width: 8, height: 8, data });
@@ -189,9 +191,9 @@ export class YerlesimKipi {
     if (!this.hazir) return;
     const h = this.g.ml;
     this.desen();
-    h.setPaintProperty("hayalet-dolgu", "fill-color", ["case", ["==", ["get", "g"], 1], renk("--harita-ben"), renk("--harita-secim")]);
-    h.setPaintProperty("hayalet-cizgi", "line-color", ["case", ["==", ["get", "g"], 1], renk("--harita-ben"), renk("--harita-secim")]);
-    h.setPaintProperty("hayalet-bos-cizgi", "line-color", renk("--harita-ben"));
+    h.setPaintProperty("hayalet-dolgu", "fill-color", ["case", ["==", ["get", "g"], 1], renk("--sen"), renk("--hata")]);
+    h.setPaintProperty("hayalet-cizgi", "line-color", ["case", ["==", ["get", "g"], 1], renk("--sen"), renk("--hata")]);
+    h.setPaintProperty("hayalet-bos-cizgi", "line-color", renk("--sen"));
   }
 
   // --- menü -------------------------------------------------------------------------------------------
@@ -231,7 +233,7 @@ export class YerlesimKipi {
         if (y.gerekliTeknoloji) koşul.push("teknoloji gerekir");
         if (y.enFazlaIlBasina) koşul.push(`ilde en çok ${y.enFazlaIlBasina}`);
         html.push(
-          `<button type="button" role="menuitem" data-yapi="${esc(y.id)}"><span class="yapi-ad">${esc(y.ad)}${y.id === this.oneriId ? ' <i class="oneri-rozet">Önerilen</i>' : ""}</span><small>${esc(notlar.join(" · "))}</small>${koşul.length ? `<small class="yapi-kosul">${esc(koşul.join(" · "))}</small>` : ""}</button>`,
+          `<button type="button" role="menuitem" data-yapi="${esc(y.id)}"><span class="yapi-ad"><i class="yapi-nokta" style="--kr:${yapiRengiCss(y.id)}"></i>${esc(y.ad)}${y.id === this.oneriId ? ' <i class="oneri-rozet">Önerilen</i>' : ""}</span><small>${esc(notlar.join(" · "))}</small>${koşul.length ? `<small class="yapi-kosul">${esc(koşul.join(" · "))}</small>` : ""}</button>`,
         );
       }
     }
@@ -373,7 +375,7 @@ export class YerlesimKipi {
     const p = this.plan;
     const oz = this.g.baglanti.ozet?.() ?? null;
     const sabit = this.sabit !== null && p !== null;
-    const baslik = `<div class="yk-baslik"><div><b>${esc(y.ad)}</b><small>${esc(y.grup)} · ${y.yuva} hücre${y.ek ? "" : ""}</small></div><button type="button" data-yk="vazgec" aria-label="Vazgeç (Esc)" title="Vazgeç (Esc)">×</button></div>`;
+    const baslik = `<div class="yk-baslik"><div><b>${esc(y.ad)}</b><small>${esc(y.grup)} · ${y.yuva} hücre${y.ek ? "" : ""}</small></div><button type="button" data-yk="vazgec" aria-label="Vazgeç (Esc)" title="Vazgeç (Esc)">${ikon("x", 18)}</button></div>`;
     let govde: string;
     if (!p) {
       govde = `<p class="yk-ipucu">${window.matchMedia("(pointer: coarse)").matches ? "Yerleştirmek için haritaya dokun." : "Haritada yeri seç: tıkla. R: döndür · Esc: vazgeç."}</p>`;
@@ -390,7 +392,7 @@ export class YerlesimKipi {
       ${p.neden ? `<p class="yk-uyari" role="alert" data-yk-alan="neden">${esc(p.neden)}</p>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için tıkla.</p>`}`;
     }
     const kur = this.uygulaniyor ? "Kuruluyor…" : `${esc(y.ad)} kur`;
-    this.kart.innerHTML = `${baslik}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${p?.gecerli && sabit && !this.uygulaniyor ? "" : "disabled"}>${kur}</button></div>`;
+    this.kart.innerHTML = `${baslik}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${p?.gecerli && sabit && !this.uygulaniyor ? "" : "disabled"}>${kur}</button></div>`;
     this.kart.hidden = false;
   }
 
@@ -434,7 +436,7 @@ export class YerlesimKipi {
     const s = this.sonIslem;
     if (!s || Date.now() >= s.bitis) return this.geriGizle();
     const kalan = Math.ceil((s.bitis - Date.now()) / 1000);
-    this.geri.innerHTML = `<span>${esc(s.ad)} kuruluyor · <b>${Math.floor(kalan / 60)}:${String(kalan % 60).padStart(2, "0")}</b> içinde geri alabilirsin</span><button type="button" data-yg="geri-al">Geri al</button><button type="button" data-yg="kapat" aria-label="Kapat">×</button>`;
+    this.geri.innerHTML = `<span>${esc(s.ad)} kuruluyor · <b>${Math.floor(kalan / 60)}:${String(kalan % 60).padStart(2, "0")}</b> içinde geri alabilirsin</span><button type="button" data-yg="geri-al">${ikon("undo-2", 15)} Geri al</button><button type="button" data-yg="kapat" aria-label="Kapat">${ikon("x", 15)}</button>`;
     this.geri.hidden = false;
   }
 

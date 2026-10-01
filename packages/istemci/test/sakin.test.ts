@@ -3,7 +3,7 @@
  * tek tr-TR biçimleyici (sahte küçük dünya; DOM yok).
  */
 import { describe, expect, it } from "vitest";
-import { buyukHarf, fmt, fmt1, kisalt, sayi, simSaatMetni, sureMetni, yuzde } from "../src/arayuz/bicim";
+import { fmt, fmt1, kisalt, sayi, simSaatMetni, sureMetni, yuzde } from "../src/arayuz/bicim";
 import { DIKKAT_EN_COK, dikkatMaddeleri, dikkatPaneli } from "../src/arayuz/dikkat";
 import { gelenOlaylari } from "../src/arayuz/gelen-kutusu";
 import type { GovdeDurumu } from "../src/arayuz/govde";
@@ -150,7 +150,7 @@ describe("Dikkat paneli", () => {
     expect(h).toContain("data-form-ac=");
     expect(h).toContain("İthalat aç");
     const sakin = kareKur({ bolgeler: [bolge(0), bolge(0), bolge(0), bolge(1), bolge(-1)], kapsam: [] });
-    expect(dikkatPaneli(g(oyuncuKaresi(sakin), { oyun: yeniOyunDurumu(ic) }))).toContain("dikkat gerektiren bir şey yok");
+    expect(dikkatPaneli(g(oyuncuKaresi(sakin), { oyun: yeniOyunDurumu(ic) }))).toContain("ilgilenmen gereken bir şey yok");
   });
   it("izleme kipinde eylem düğmesi yok (yalnız Git); başkalarının bölgeleri de listelenir", () => {
     const m = dikkatMaddeleri(g(kareKur({ savaslar: [savas] })));
@@ -191,8 +191,7 @@ describe("tek tr-TR biçimleyici", () => {
     expect(yuzde(-0.2)).toBe("%0");
     expect(yuzde(1234)).toBe("%1.234");
   });
-  it("Türkçe büyük harf ve zaman", () => {
-    expect(buyukHarf("istanbul ılgaz")).toBe("İSTANBUL ILGAZ");
+  it("zaman biçimleri", () => {
     expect(simSaatMetni(0)).toBe("Gün 1 · 09:00");
     expect(sureMetni(0.5)).toBe("30 dk");
     expect(sureMetni(1.5)).toBe("1,5 sa");

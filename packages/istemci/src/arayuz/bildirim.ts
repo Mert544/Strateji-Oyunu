@@ -3,6 +3,8 @@
  * hatası). Başka her olay (savaş ilanı, biten inşaat, iklim uyarısı) "Bildirimler" gelen kutusuna düşer
  * (arayuz/gelen-kutusu.ts) ve açılır pencere olarak gösterilmez.
  */
+import { ikon } from "../tasarim/ikon";
+
 export type BildirimTuru = "tamam" | "hata" | "bilgi";
 
 const EN_COK = 4;
@@ -17,7 +19,7 @@ export function bildir(mesaj: string, tur: BildirimTuru = "bilgi"): void {
   d.className = `bildirim ${tur}`;
   d.setAttribute("role", tur === "hata" ? "alert" : "status");
   const simge = document.createElement("b");
-  simge.textContent = tur === "tamam" ? "✓" : tur === "hata" ? "!" : "i";
+  simge.innerHTML = ikon(tur === "tamam" ? "circle-check" : tur === "hata" ? "circle-alert" : "info", 20);
   simge.setAttribute("aria-hidden", "true");
   const metin = document.createElement("span");
   metin.textContent = mesaj;

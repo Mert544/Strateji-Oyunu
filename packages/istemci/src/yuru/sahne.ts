@@ -30,7 +30,7 @@ import KaroIsci from "./karo.worker?worker&inline";
 import { KaroYonetici } from "./karo-yonetici";
 import { cerceveKur, dunyaHucre, dunyaKaro, dunyaLl, karoKenari, llDunya, orijinGerekli, orijinKaydir } from "./koordinat";
 import type { Cerceve, Orijin } from "./koordinat";
-import { aciYaklas, animasyonSec, arkaYaw, bakisNoktasi, hareketYonu, HIZ, KAMERA_GORUS, KARAKTER_R, kameraKonumu, kameraSinirla, VARSAYILAN_KAMERA, yawTakip, yerKesisimi, yonAcisi, ZIPLA, ziplaAdimi } from "./kontrol";
+import { aciYaklas, animasyonSec, arkaYaw, bakisNoktasi, hareketYonu, HIZ, KAMERA_GORUS, KARAKTER_OLCEK, KARAKTER_R, kameraKonumu, kameraSinirla, VARSAYILAN_KAMERA, yawTakip, yerKesisimi, yonAcisi, ZIPLA, ziplaAdimi } from "./kontrol";
 import type { KameraDurumu } from "./kontrol";
 import { binaMalzemesi, cizgiMalzemesi, katmanMalzemesi, kutuMalzemesi, temaGuncelle, yerMalzemesi } from "./malzeme";
 import type { SisAyari } from "./malzeme";
@@ -41,6 +41,9 @@ import karakterUrl from "./varlik/karakter.ykr?url";
 import { yolBul } from "./yol-bulma";
 import type { YolSorgusu } from "./yol-bulma";
 import yuruCss from "./yuru.css?inline";
+import yuruTemaCss from "./yuru-tema.css?inline";
+import { ikon } from "../tasarim/ikon";
+import { ortuIle } from "../tasarim/ortu";
 
 export interface YuruGirisi {
   boylam: number;
@@ -180,7 +183,7 @@ export class YuruSahnesi {
   constructor(private sahneKap: HTMLElement) {
     if (!cssEklendi) {
       const st = document.createElement("style");
-      st.textContent = yuruCss;
+      st.textContent = yuruTemaCss + yuruCss;
       document.head.append(st);
       cssEklendi = true;
     }
@@ -206,7 +209,7 @@ export class YuruSahnesi {
     this.kap.innerHTML = `
       <canvas class="yuru-tuval" tabindex="0" aria-label="Sokak sahnesi: yürümek için tıklayın ya da WASD"></canvas>
       <div class="yuru-ust">
-        <button type="button" class="yuru-geri" data-eylem="don" title="Haritaya dön (Esc)">‹ Haritaya dön</button>
+        <button type="button" class="yuru-geri" data-eylem="don" title="Haritaya dön (Esc)">${ikon("chevron-left", 18)}Haritaya dön</button>
         <span class="yuru-baslik"></span>
       </div>
       <button type="button" class="yuru-hap" data-eylem="kart" hidden>${mobil ? "" : "<kbd>E</kbd>"}<span></span></button>
@@ -262,9 +265,9 @@ export class YuruSahnesi {
     this.boyutGozcu.observe(this.kap);
 
     // Karakter gölgesi (yumuşak disk) ve tıkla-git hedef halkası
-    this.golge = new Mesh(diskGeometrisi(0.55, 0.32, this.palet.golge), this.malz.isaret);
+    this.golge = new Mesh(diskGeometrisi(0.64, 0.32, this.palet.golge), this.malz.isaret);
     // Oyuncu halkası: karakter uzaktan ve kalabalıkta seçilsin (oyuncu renginde, durağan)
-    this.halka = new Mesh(halkaGeometrisi(0.5, 0.62, this.palet.ben), this.malz.isaret);
+    this.halka = new Mesh(halkaGeometrisi(0.56, 0.69, this.palet.ben), this.malz.isaret);
     this.halka.renderOrder = 4;
     this.sahne.add(this.halka);
     this.golge.renderOrder = 4;
@@ -388,12 +391,16 @@ export class YuruSahnesi {
     this.acik = false;
     if (this.ipucuZamani) clearTimeout(this.ipucuZamani);
     this.ipucuZamani = 0;
-    this.kap.hidden = true;
-    document.body.classList.remove("yuru-acik");
     this.girdi.sifirla();
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = 0;
-    this.g?.donus();
+    // Sokak → harita: kâğıt örtü altında (tersi yönde aynı geçiş)
+    void ortuIle(() => {
+      if (this.acik) return;
+      this.kap.hidden = true;
+      document.body.classList.remove("yuru-acik");
+      this.g?.donus();
+    });
   }
 
   private async arsaVerisi(g: YuruGirisi): Promise<void> {
@@ -480,11 +487,11 @@ export class YuruSahnesi {
     if (this.kalabalik && this.benOrnek >= 0) this.kalabalik.renkAyarla(this.benOrnek, this.palet.ben);
     this.arsa?.paletAyarla(this.palet);
     this.golge.geometry.dispose();
-    this.golge.geometry = diskGeometrisi(0.55, this.palet.koyu ? 0.45 : 0.3, this.palet.golge);
+    this.golge.geometry = diskGeometrisi(0.64, this.palet.koyu ? 0.45 : 0.3, this.palet.golge);
     this.isaret.geometry.dispose();
     this.isaret.geometry = halkaGeometrisi(0.55, 0.8, this.palet.ben);
     this.halka.geometry.dispose();
-    this.halka.geometry = halkaGeometrisi(0.5, 0.62, this.palet.ben);
+    this.halka.geometry = halkaGeometrisi(0.56, 0.69, this.palet.ben);
     this.mini.gecersiz();
     this.iste();
   }
@@ -668,9 +675,9 @@ export class YuruSahnesi {
     else if (e?.tur === "kur") eylem = `<button type="button" disabled title="İnşa modu sonraki dilimde">Yapı kur (yakında)</button>`;
     const k = this.ui.kart;
     k.innerHTML = `
-      <h3><span>Parsel ${esc(kisaAd(id))}</span><button type="button" data-eylem="kart-kapat" aria-label="Kartı kapat">×</button></h3>
+      <h3><span>Parsel ${esc(kisaAd(id))}</span><button type="button" data-eylem="kart-kapat" aria-label="Kartı kapat">${ikon("x", 18)}</button></h3>
       <dl>
-        <dt>Sahip</dt><dd data-alan="sahip">${sh ? `<span class="sahip-isaret" style="background:${benim ? "var(--harita-ben)" : "var(--harita-baskasi)"}"></span>` : ""}${esc(sahip)}</dd>
+        <dt>Sahip</dt><dd data-alan="sahip">${sh ? `<span class="sahip-isaret" style="background:${benim ? "var(--sen)" : "var(--murekkep-3)"}"></span>` : ""}${esc(sahip)}</dd>
         <dt>Sınıf</dt><dd data-alan="sinif">${neden ? esc(neden) : `${SINIF_ADI[sh?.sinif ?? arsaSinifi(d)]} · ${ARAZI_ADLARI[durumSinifi(d)] ?? ""}`}</dd>
         ${sh ? `<dt>Değer</dt><dd>${fmt(sh.degerMili / 1000)} ₺</dd>` : !neden && fiyat ? `<dt>Fiyat</dt><dd>${fiyat}</dd>` : ""}
         <dt>Yapı</dt><dd data-alan="insaat">${ins ? `${esc(ASAMA_ADI[ins.asama])}${ins.ornek ? " <small>(örnek)</small>" : ""}` : "Yok"}</dd>
@@ -919,7 +926,7 @@ export class YuruSahnesi {
       return [((v.x + 1) / 2) * w, ((1 - v.y) / 2) * h];
     };
     const ayak = nokta(this.y);
-    const bas = nokta(this.y + 1.78);
+    const bas = nokta(this.y + 1.78 * KARAKTER_OLCEK);
     const piksel = Math.hypot(ayak[0] - bas[0], ayak[1] - bas[1]);
     return { oran: piksel / h, piksel, ayak, bas };
   }

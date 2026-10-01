@@ -36,15 +36,6 @@ export interface SahnePaleti {
   olayDiger: RGB;
 }
 
-function rgba(v: string): [number, number, number, number] {
-  const m = /rgba?\(([^)]+)\)/.exec(v);
-  if (m) {
-    const p = (m[1] as string).split(",").map((x) => parseFloat(x));
-    return [(p[0] ?? 0) / 255, (p[1] ?? 0) / 255, (p[2] ?? 0) / 255, p[3] ?? 1];
-  }
-  const c = hexRgb(v);
-  return [c[0], c[1], c[2], 1];
-}
 
 export function paletiOku(): SahnePaleti {
   const cs = getComputedStyle(document.documentElement);
@@ -53,9 +44,15 @@ export function paletiOku(): SahnePaleti {
     const x = parseFloat(t(n));
     return Number.isNaN(x) ? vars : x;
   };
+  /** Belirteçler yalnız hex; saydamlık ayrı `-alfa` sayısıdır (tasarim/belirtec.ts). */
+  const rgba = (n: string): [number, number, number, number] => {
+    const c = hexRgb(t(n));
+    return [c[0], c[1], c[2], num(`${n}-alfa`, 1)];
+  };
   const palet: Palet = {
     devlet: ["--d0", "--d1", "--d2", "--d3"].map((n) => hexRgb(t(n))),
     sahipsiz: hexRgb(t("--sahipsiz")),
+    sen: hexRgb(t("--sen")),
     durum: {
       karsilanan: hexRgb(t("--k-karsilanan")),
       kismi: hexRgb(t("--k-kismi")),
@@ -77,12 +74,12 @@ export function paletiOku(): SahnePaleti {
     okyanus: hexRgb(t("--sahne-okyanus")),
     okyanusDerin: hexRgb(t("--sahne-okyanus-derin")),
     kara: hexRgb(t("--sahne-kara")),
-    kara2: hexRgb(t("--sahne-kara2")),
+    kara2: hexRgb(t("--sahne-kara-2")),
     kutup: hexRgb(t("--sahne-kutup")),
-    sinir: rgba(t("--sahne-sinir")),
-    kiyi: rgba(t("--sahne-kiyi")),
-    bolgeCizgi: rgba(t("--sahne-bolge-cizgi")),
-    secimCizgi: rgba(t("--sahne-secim")),
+    sinir: rgba("--sahne-sinir"),
+    kiyi: rgba("--sahne-kiyi"),
+    bolgeCizgi: rgba("--sahne-bolge-cizgi"),
+    secimCizgi: rgba("--sahne-secim"),
     atmosfer: hexRgb(t("--sahne-atmosfer")),
     atmosferGuc: num("--sahne-atmosfer-guc", 0.6),
     yildizAlfa: num("--sahne-yildiz", 1),
@@ -91,10 +88,10 @@ export function paletiOku(): SahnePaleti {
     aksam: num("--sahne-aksam", 1),
     kenarIsik: hexRgb(t("--sahne-kenar-isik")),
     desen: hexRgb(t("--desen-rgb")),
-    panel: hexRgb(t("--panel")),
-    murekkep: hexRgb(t("--ink")),
+    panel: hexRgb(t("--yuzey")),
+    murekkep: hexRgb(t("--murekkep")),
     rozet: { savas: hexRgb(t("--rozet-savas")), eksik: hexRgb(t("--rozet-eksik")), bosta: hexRgb(t("--rozet-bosta")), bitti: hexRgb(t("--rozet-bitti")) },
-    zemin: t("--sahne-zemin"),
+    zemin: t("--sahne-uzay"),
     palet,
   };
 }

@@ -7,6 +7,7 @@ import { oneriNedeni } from "../komut/oneri-metin";
 import type { Icerik } from "../komut/tablo";
 import type { Alan, Baglam, Girdi, KomutTanimi } from "../komut/tipler";
 import type { Oneri } from "../isci/protokol";
+import { ikon } from "../tasarim/ikon";
 import { esc, fmt, kisalt, yuzde } from "./bicim";
 import type { GovdeDurumu } from "./govde";
 
@@ -141,7 +142,7 @@ export function oneriKutusu(g: GovdeDurumu): string {
   else {
     s += `<p class="ipucu-metin">Botların kullandığı planlayıcı, durumunuza göre en yararlı hamleleri seçer. Yeni başlıyorsanız yukarıdan başlayın.</p><ol class="oneri-liste">`;
     liste.forEach((o, i) => {
-      s += `<li class="oneri-satir"><div><b>${esc(eylemMetni(o.komut, b))}</b><br><span class="soluk">${esc(oneriNedeni(o))}</span></div><div class="oneri-dugme"><button type="button" class="eylem birincil" data-oneri="${i}">Tek tıkla uygula</button>${o.bolge >= 0 ? `<button type="button" class="eylem" data-bolge="${o.bolge}" title="Bölgeye git">Göster</button>` : ""}</div></li>`;
+      s += `<li class="oneri-satir"><div><b>${esc(eylemMetni(o.komut, b))}</b><br><span class="soluk">${esc(oneriNedeni(o))}</span></div><div class="oneri-dugme"><button type="button" class="eylem ton" data-oneri="${i}">Tek tıkla uygula</button>${o.bolge >= 0 ? `<button type="button" class="eylem" data-bolge="${o.bolge}" title="Bölgeye git">Göster</button>` : ""}</div></li>`;
     });
     s += "</ol>";
   }
@@ -175,8 +176,8 @@ export function devletPaneli(g: GovdeDurumu): string {
   const hazine = b.kare.hazine[ben.idx] ?? 0;
   const oran = b.kare.hazineOrani[ben.idx] ?? 0;
   const bolgeSayisi = b.kare.bolgeler.filter((x) => x.sahip === ben.idx).length;
-  let s = `<div class="ayrinti-baslik"><b><span class="nokta" style="background:var(--d${(b.dizin.oyuncular[ben.idx]?.devlet ?? 0) % 4})"></span> ${esc(devletAd(b, ben.idx))}</b><span class="soluk">${bolgeSayisi} bölge</span></div>`;
-  s += `<div class="satir"><span class="ad">Hazine</span><span class="sayi">${kisalt(hazine)} para <span class="${oran >= 0 ? "yukari" : "asagi"}">${oran >= 0 ? "▲ +" : "▼ "}${fmt(oran)}/sa</span></span></div>`;
+  let s = `<div class="ayrinti-baslik"><b><span class="nokta" style="background:var(--sen)"></span> ${esc(devletAd(b, ben.idx))}</b><span class="soluk">${bolgeSayisi} bölge</span></div>`;
+  s += `<div class="satir"><span class="ad">Hazine</span><span class="sayi">${kisalt(hazine)} para <span class="${oran >= 0 ? "yukari" : "asagi"}">${oran >= 0 ? ikon("arrow-up-right", 14) + "+" : ikon("arrow-down-right", 14)}${fmt(oran)}/sa</span></span></div>`;
   const koruma = ben.koruma[ben.idx] ?? 0;
   if (koruma > b.kare.saat) {
     s += `<div class="satir"><span class="ad">Yeni oyuncu koruması</span><span class="sayi">${sureMetni(koruma - b.kare.saat)} kaldı</span></div><p class="ipucu-metin">Bu sürede kimse size savaş ilan edemez. Siz savaş ilan ederseniz koruma erken biter.</p>`;

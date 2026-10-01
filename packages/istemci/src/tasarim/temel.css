@@ -1,0 +1,160 @@
+/*
+ * "Kâğıt ve Çini" temel stil ve bileşen dili (docs/arastirma/gorsel-kimlik-ve-arayuz.md §5).
+ * Renk/ölçü değerleri YALNIZ tema.css belirteçlerinden (var(--…)) gelir; burada onaltılık renk yazılmaz.
+ * Kurallar: 4 px ızgara · yarıçap 6/10/14 · kenarlık VEYA gölge · bulanıklık yok · görünümde tek birincil düğme ·
+ * tümü büyük harf yok · süs animasyonu yok (yalnız tek seferlik geri bildirim, 120/200/320 ms).
+ */
+
+/* Sözde öğe simgeleri (CSS maskesi; Lucide yolları) */
+:root {
+  --ikon-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+  --ikon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  --ikon-x: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E");
+  --ikon-alert: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 8v4M12 16h.01'/%3E%3C/svg%3E");
+  --ikon-ara: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21 21-4.34-4.34'/%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3C/svg%3E");
+  --ikon-ucgen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4M12 17h.01'/%3E%3C/svg%3E");
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--zemin);
+  color: var(--murekkep);
+  font-family: var(--yazi-ailesi);
+  font-size: var(--yazi-md);
+  line-height: 1.45;
+  font-feature-settings: "kern", "calt";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--odak); outline-offset: 2px; }
+input:focus-visible, select:focus-visible { outline-offset: 0; }
+b, strong { font-weight: 600; }
+h1, h2 { font-weight: 600; letter-spacing: -0.015em; }
+a { color: var(--birincil-ink); }
+::selection { background: var(--birincil-tint); color: var(--murekkep); }
+
+/* Sayılar her yerde eşit genişlikte (HUD ve tablolar) */
+.sayi, .tabular, time, output { font-variant-numeric: tabular-nums; }
+.sayi { text-align: right; }
+.soluk { color: var(--murekkep-2); }
+.gizli { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- Simge (Lucide, tek çizgi) ---- */
+.ikon {
+  display: inline-block; flex: none; vertical-align: -0.2em;
+  fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+.ikon.kalin { stroke-width: 2.2; }
+
+/* ---- Düğmeler: birincil (görünümde en çok bir) · ikincil · ton (satır eylemi) · hayalet · tehlike ---- */
+.dugme, .eylem, .mini-dugme, .komut-gonder {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  min-height: 36px; padding: 0 var(--s-4); border-radius: var(--r-md);
+  border: 1px solid var(--cizgi); background: transparent; color: var(--murekkep);
+  font-size: var(--yazi-md); font-weight: 500; line-height: 1.2; white-space: nowrap; text-decoration: none;
+  transition: background-color var(--sure-hizli) var(--ease-standart), border-color var(--sure-hizli) var(--ease-standart), color var(--sure-hizli) var(--ease-standart), transform var(--sure-anlik) var(--ease-standart);
+}
+.dugme:hover:not(:disabled), .eylem:hover:not(:disabled), .mini-dugme:hover:not(:disabled) { background: var(--yuzey-3); }
+.dugme:active:not(:disabled), .eylem:active:not(:disabled), .komut-gonder:active:not(:disabled), .mini-dugme:active:not(:disabled) { transform: scale(0.98); }
+.birincil, .eylem.birincil, .komut-gonder, .dugme.birincil {
+  background: var(--birincil); border-color: var(--birincil); color: var(--birincil-ustu); font-weight: 600;
+}
+.birincil:hover:not(:disabled), .eylem.birincil:hover:not(:disabled), .komut-gonder:hover:not(:disabled) { background: var(--birincil-hover); border-color: var(--birincil-hover); }
+.birincil:disabled, .komut-gonder:disabled, .dugme:disabled, .eylem:disabled {
+  background: var(--yuzey-2); border-color: var(--yuzey-2); color: var(--murekkep-4);
+}
+.ton, .eylem.ton, .dugme.ton { background: var(--birincil-tint); border-color: transparent; color: var(--birincil-ink); font-weight: 600; }
+.ton:hover:not(:disabled), .eylem.ton:hover:not(:disabled) { background: var(--birincil-cizgi); }
+.hayalet, .dugme.hayalet { border-color: transparent; background: transparent; }
+.tehlike, .dugme.tehlike { background: var(--hata); border-color: var(--hata); color: var(--birincil-ustu); }
+.mini-dugme { min-height: 30px; padding: 0 var(--s-3); font-size: var(--yazi-sm); border-radius: var(--r-sm); }
+.komut-gonder { align-self: flex-start; }
+
+/* İkon düğmesi: 36 × 36 (dokunmatikte 44), ikon 20 px */
+.ikon-dugme {
+  display: inline-grid; place-items: center; position: relative; width: 36px; height: 36px; padding: 0;
+  border: 0; border-radius: var(--r-md); background: transparent; color: var(--murekkep-2);
+  transition: background-color var(--sure-hizli) var(--ease-standart), color var(--sure-hizli) var(--ease-standart);
+}
+.ikon-dugme:hover { background: var(--yuzey-3); color: var(--murekkep); }
+.ikon-dugme[aria-pressed="true"], .ikon-dugme[aria-expanded="true"] { background: var(--birincil-tint); color: var(--birincil-ink); }
+@media (pointer: coarse) {
+  .ikon-dugme { width: 44px; height: 44px; }
+  .dugme, .eylem, .komut-gonder { min-height: 44px; }
+}
+
+/* ---- Segment: gömük yol, seçili parça yüzey + gölge ---- */
+.segment {
+  display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--r-md); background: var(--yuzey-2); border: 0;
+}
+.segment button {
+  border: 0; background: transparent; color: var(--murekkep-2); min-height: 32px; min-width: 38px; padding: 0 var(--s-3);
+  border-radius: calc(var(--r-md) - 2px); font-size: var(--yazi-sm); font-weight: 500; font-variant-numeric: tabular-nums;
+  transition: background-color var(--sure-hizli) var(--ease-standart), color var(--sure-hizli) var(--ease-standart);
+}
+.segment button:hover { color: var(--murekkep); }
+.segment button[aria-pressed="true"] { background: var(--yuzey); color: var(--murekkep); box-shadow: var(--golge-1); font-weight: 600; }
+
+/* ---- Rozet (durum hapı: tint zemin + ink metin) ve sayaç ---- */
+.rozet {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 20px; padding: 0 var(--s-2); border-radius: var(--r-hap);
+  font-size: var(--yazi-xs); font-weight: 500; line-height: 1; background: var(--yuzey-2); color: var(--murekkep-2); white-space: nowrap;
+}
+.rozet.basari { background: var(--basari-tint); color: var(--basari-ink); }
+.rozet.uyari { background: var(--uyari-tint); color: var(--uyari-ink); }
+.rozet.hata { background: var(--hata-tint); color: var(--hata-ink); }
+.rozet.bilgi { background: var(--bilgi-tint); color: var(--bilgi-ink); }
+.rozet.ikincil { background: var(--ikincil-tint); color: var(--ikincil-ink); }
+.rozet.birincil { background: var(--birincil-tint); color: var(--birincil-ink); border: 0; font-weight: 600; }
+.sayac {
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-hap);
+  background: var(--murekkep); color: var(--yuzey); font-size: 11.5px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums;
+}
+
+/* ---- Yüzeyler: kart (kenarlık), yüzen (gölge), açılır kutu (gölge) ---- */
+.kart {
+  background: var(--yuzey); color: var(--murekkep); border: 1px solid var(--cizgi-ince); border-radius: var(--r-lg); padding: var(--s-4);
+}
+.yuzen { background: var(--yuzey); color: var(--murekkep); border-radius: var(--r-lg); box-shadow: var(--golge-2); }
+
+/* ---- Girdi ---- */
+input[type="search"], input[type="number"], input[type="text"], select {
+  min-height: 36px; padding: 0 var(--s-3); border: 1px solid var(--cizgi-guclu); border-radius: var(--r-sm);
+  background: var(--yuzey-2); color: var(--murekkep); font-size: var(--yazi-md);
+}
+input::placeholder { color: var(--murekkep-3); opacity: 1; }
+input[type="range"] { accent-color: var(--birincil); }
+
+/* ---- İpucu metni, bölüm başlığı (tümü büyük harf YOK) ---- */
+.ipucu-metin { color: var(--murekkep-2); font-size: var(--yazi-sm); line-height: var(--satir-sm); margin: 0 0 var(--s-3); }
+h3 {
+  font-size: var(--yazi-xs); font-weight: 600; color: var(--murekkep-2); letter-spacing: 0.01em;
+  margin: var(--s-5) 0 var(--s-2);
+}
+
+/* ---- Boş / hata durumu: ikon + tek cümle + en çok bir eylem ---- */
+.bos-durum { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); padding: var(--s-6) var(--s-4); text-align: center; color: var(--murekkep-2); }
+.bos-durum .ikon { color: var(--murekkep-4); }
+
+/* ---- Kâğıt örtü (büyük görünüm geçişleri; zemin rengi, α 0 → 0,85 → 0; siyah/beyaz flaş yok) ---- */
+#kagit-ortu {
+  position: fixed; inset: 0; z-index: var(--z-ortu); background: var(--ortu); opacity: 0; pointer-events: none;
+  transition: opacity var(--sure-ortu) var(--ease-standart);
+}
+#kagit-ortu.acik { opacity: 0.85; }
+
+/* ---- Sakin ilerleme (sürekli dönen gösterge yok; adımlı) ---- */
+.ilerleme { display: block; width: 120px; height: 2px; border-radius: 2px; background: var(--cizgi-ince); overflow: hidden; }
+.ilerleme > i { display: block; height: 100%; background: var(--birincil); transform-origin: left; transform: scaleX(var(--ilerleme, 0.08)); transition: transform var(--sure-yavas) var(--ease-cikis); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0ms !important; transition-duration: 0ms !important; }
+  #kagit-ortu { transition: opacity var(--sure-anlik) linear !important; }
+}

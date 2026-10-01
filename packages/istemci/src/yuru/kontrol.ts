@@ -63,6 +63,11 @@ export function ziplaAdimi(y: number, vy: number, dt: number): [number, number] 
 }
 /** Karakter dairesinin yarıçapı (m). */
 export const KARAKTER_R = 0.35;
+/**
+ * Karakterin görsel ölçeği (sahip notu: "binaların yanında küçük kalıyor"): +%18. Yalnız çizim büyür; çarpışma yarıçapı
+ * (KARAKTER_R) ve kamera mantığı aynı kalır.
+ */
+export const KARAKTER_OLCEK = 1.18;
 
 export function kameraSinirla(d: KameraDurumu): KameraDurumu {
   return {

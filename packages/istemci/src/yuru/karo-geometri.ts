@@ -4,8 +4,11 @@
  * Karo başına üç birleştirilmiş parça çıkar (= üç çizim çağrısı):
  *   - **yer**: deniz tabanı, kara (earth), arazi örtüsü/kullanımı, su, kaldırımlar ve yol şeritleri. Hepsi y = 0
  *     düzleminde; sahnede derinlik testi kapalı ve üçgen sırasıyla (ressam algoritması) çizilir, z-çatışması olmaz.
- *   - **bina**: ayak izi ekstrüzyonu (duvar + düz çatı); duvar gölgesi yöne göre pişirilir (ışık yok, ucuz).
- *   - **çizgi**: çatı çevresi ve belirgin köşelerde dikey kenarlar (oyunsu, net bloklu siluet).
+ *   - **bina**: ayak izi ekstrüzyonu; küçük dörtgen konutlarda saçaklı kırma çatı (kiremit), apartmanlarda parapetli düz
+ *     çatı (beton/arduvaz), büyük ayak izlerinde sanayi gövdesi. Yüz gölgesi tek yönlü güneşe (güneybatı, yüksek) göre
+ *     pişirilir; kat çizgisi, pencere ritmi, giriş katı vitrini ve korniş gölgelendiricide köşe başına cephe verisinden
+ *     (aCephe, aUst) üretilir: doku yok, tek çizim çağrısı korunur.
+ *   - **çizgi**: çatı çevresi, mahya ve kırma çizgileri, belirgin köşelerde dikey kenarlar (net, illüstratif siluet).
  * Ayrıca çarpışma için bina halkaları (ayak izleri) döner.
  *
  * Koordinatlar karo yereldir: karo kuzeybatı köşesi (0, 0); x doğu, z güney, metre. `olcek` = metre / karo birimi.
@@ -42,8 +45,13 @@ export const S = {
   SANAYI_CATI: 19,
   KALDIRIM: 20,
   KENAR: 21,
+  /** Kaldırım taşı (bordür): kaldırımla asfaltın birleştiği ince şerit. */
+  KERB: 22,
+  CATI_KIREMIT: 23,
+  CATI_KOYU_KIREMIT: 24,
+  CATI_ARDUVAZ: 25,
 } as const;
-export const SINIF_SAYISI = 22;
+export const SINIF_SAYISI = 26;
 
 export interface AyakIzleri {
   /** Halka noktaları (x, z çiftleri, karo yerel metre). */
@@ -298,19 +306,154 @@ function serit(y: GeometriYazici, cizgi: readonly number[], E: number, olcek: nu
   return n;
 }
 
-/** Duvar gölgesi: güneybatıdan gelen sabit ışık (sakin, yöne göre ayırt edilebilir yüzler). */
+/** Güneş yönü (birim; x doğu, y yukarı, z güney): güneybatıdan, yüksek; sakin ve tek yönlü. */
+const GUNES: readonly [number, number, number] = (() => {
+  const v = [-0.5, 0.72, 0.48];
+  const L = Math.hypot(v[0]!, v[1]!, v[2]!);
+  return [v[0]! / L, v[1]! / L, v[2]! / L] as const;
+})();
+
+/** Yüz gölgesi (0–255): ortam + yumuşak yayınık güneş. Güneşe bakan duvar ~0,97, gölgedeki ~0,74; düz çatı 1. */
+export function yuzGolgesi(nx: number, ny: number, nz: number): number {
+  const d = nx * GUNES[0] + ny * GUNES[1] + nz * GUNES[2];
+  return Math.round(255 * Math.min(1, 0.74 + 0.25 * Math.max(0, Math.min(1, (d + 0.25) / 0.85))));
+}
+
+/** Duvar gölgesi (yatay normal). */
 function duvarGolgesi(nx: number, nz: number): number {
-  const lx = -0.55;
-  const lz = 0.83; // ışığa doğru (güney-güneybatı)
-  const d = nx * lx + nz * lz;
-  return Math.round(255 * (0.78 + 0.18 * d));
+  return yuzGolgesi(nx, 0, nz);
+}
+
+/** Bina tohumu → 0–1 (cephe tonu, pencere aralığı, vitrin, çatı türü; deterministik). */
+const tohum01 = (t: number): number => ((t >>> 0) % 9973) / 9973;
+
+/**
+ * Dörtgen (yaklaşık dikdörtgen) ayak izi: neredeyse doğrusal köşeler atılır; tam 4 köşe, dışbükey ve köşeleri dike
+ * yakınsa metre cinsinden köşeleri döndürür (kırma çatı için), değilse null.
+ */
+export function dortgenMi(h: readonly number[], olcek: number): [number, number][] | null {
+  const n = h.length / 2;
+  const p: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const a = [h[((i + n - 1) % n) * 2]!, h[((i + n - 1) % n) * 2 + 1]!];
+    const b = [h[i * 2]!, h[i * 2 + 1]!];
+    const c = [h[((i + 1) % n) * 2]!, h[((i + 1) % n) * 2 + 1]!];
+    const ux = b[0]! - a[0]!;
+    const uz = b[1]! - a[1]!;
+    const vx = c[0]! - b[0]!;
+    const vz = c[1]! - b[1]!;
+    const lu = Math.hypot(ux, uz);
+    const lv = Math.hypot(vx, vz);
+    if (lu < 1e-6 || lv < 1e-6) continue;
+    if ((ux * vx + uz * vz) / (lu * lv) > 0.985) continue; // neredeyse doğrusal
+    p.push([b[0]! * olcek, b[1]! * olcek]);
+  }
+  if (p.length !== 4) return null;
+  let isaret = 0;
+  for (let i = 0; i < 4; i++) {
+    const a = p[i]!;
+    const b = p[(i + 1) % 4]!;
+    const c = p[(i + 2) % 4]!;
+    const ux = b[0] - a[0];
+    const uz = b[1] - a[1];
+    const vx = c[0] - b[0];
+    const vz = c[1] - b[1];
+    const cr = ux * vz - uz * vx;
+    if (isaret === 0) isaret = Math.sign(cr);
+    else if (Math.sign(cr) !== isaret) return null;
+    if (Math.abs(ux * vx + uz * vz) / (Math.hypot(ux, uz) * Math.hypot(vx, vz)) > 0.3) return null;
+  }
+  return p;
 }
 
 const sayi = (v: MvtDeger | undefined): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
+/** Üçgeni yukarı (+y) bakan sarımla ve normale göre gölgeyle yazar. */
+function catiUcgen(y: GeometriYazici, p: readonly [number, number, number][], sinif: number): void {
+  const [a, b, c] = p as [[number, number, number], [number, number, number], [number, number, number]];
+  const ux = b[0] - a[0];
+  const uy = b[1] - a[1];
+  const uz = b[2] - a[2];
+  const vx = c[0] - a[0];
+  const vy = c[1] - a[1];
+  const vz = c[2] - a[2];
+  let nx = uy * vz - uz * vy;
+  let ny = uz * vx - ux * vz;
+  let nz = ux * vy - uy * vx;
+  const L = Math.hypot(nx, ny, nz) || 1;
+  const ters = ny < 0;
+  if (ters) {
+    nx = -nx;
+    ny = -ny;
+    nz = -nz;
+  }
+  const gl = yuzGolgesi(nx / L, ny / L, nz / L);
+  const i = y.nokta(a[0], a[1], a[2], sinif, gl);
+  const j = y.nokta(b[0], b[1], b[2], sinif, gl);
+  const k = y.nokta(c[0], c[1], c[2], sinif, gl);
+  if (ters) y.uc(i, k, j);
+  else y.uc(i, j, k);
+}
+
+/**
+ * Saçaklı kırma çatı (dörtgen konut): ayak izi 0,35 m dışa genişletilir (saçak), mahya uzun eksende, kırma uçları 45°
+ * planla; eğim ~30°. Mahya ve kırma çizgileri siluet çizgisine eklenir.
+ */
+function kirmaCati(y: GeometriYazici, cizgi: number[], p: [number, number][], ust: number, sinif: number): void {
+  const SACAK = 0.35;
+  const birim = (x: number, z: number): [number, number] => {
+    const L = Math.hypot(x, z) || 1;
+    return [x / L, z / L];
+  };
+  const q = p.map((v, i) => {
+    const o = p[(i + 3) % 4]!;
+    const s = p[(i + 1) % 4]!;
+    const a = birim(v[0] - o[0], v[1] - o[1]);
+    const b = birim(v[0] - s[0], v[1] - s[1]);
+    return [v[0] + (a[0] + b[0]) * SACAK, v[1] + (a[1] + b[1]) * SACAK] as [number, number];
+  });
+  // Uzun kenar 0→1 olsun
+  const e0 = Math.hypot(q[1]![0] - q[0]![0], q[1]![1] - q[0]![1]);
+  const e1 = Math.hypot(q[2]![0] - q[1]![0], q[2]![1] - q[1]![1]);
+  const r = e0 >= e1 ? q : [q[1]!, q[2]!, q[3]!, q[0]!];
+  const kisa = Math.min(e0, e1);
+  const uzun = Math.max(e0, e1);
+  const [P0, P1, P2, P3] = r as [[number, number], [number, number], [number, number], [number, number]];
+  const Ma: [number, number] = [(P3[0] + P0[0]) / 2, (P3[1] + P0[1]) / 2];
+  const Mb: [number, number] = [(P1[0] + P2[0]) / 2, (P1[1] + P2[1]) / 2];
+  const ek = birim(Mb[0] - Ma[0], Mb[1] - Ma[1]);
+  const hs = Math.min(kisa / 2, uzun / 2 - 0.01);
+  const rise = Math.min(2.8, Math.max(0.9, (kisa / 2) * 0.58));
+  const Ra: [number, number, number] = [Ma[0] + ek[0] * hs, ust + rise, Ma[1] + ek[1] * hs];
+  const Rb: [number, number, number] = [Mb[0] - ek[0] * hs, ust + rise, Mb[1] - ek[1] * hs];
+  const k = (v: [number, number]): [number, number, number] => [v[0], ust, v[1]];
+  // İki eğimli uzun yüz (yamuk) + iki kırma ucu (üçgen)
+  catiUcgen(y, [k(P0), k(P1), Rb], sinif);
+  catiUcgen(y, [k(P0), Rb, Ra], sinif);
+  catiUcgen(y, [k(P2), k(P3), Ra], sinif);
+  catiUcgen(y, [k(P2), Ra, Rb], sinif);
+  catiUcgen(y, [k(P1), k(P2), Rb], sinif);
+  catiUcgen(y, [k(P3), k(P0), Ra], sinif);
+  // Siluet: saçak çevresi, mahya, dört kırma çizgisi
+  const e = 0.03;
+  for (let i = 0; i < 4; i++) {
+    const a = k(r[i]!);
+    const b = k(r[(i + 1) % 4]!);
+    cizgi.push(a[0], a[1] + e, a[2], b[0], b[1] + e, b[2]);
+  }
+  cizgi.push(Ra[0], Ra[1] + e, Ra[2], Rb[0], Rb[1] + e, Rb[2]);
+  for (const [v, R] of [
+    [P0, Ra],
+    [P3, Ra],
+    [P1, Rb],
+    [P2, Rb],
+  ] as [[number, number], [number, number, number]][])
+    cizgi.push(v[0], ust + e, v[1], R[0], R[1] + e, R[2]);
+}
+
 export function karoGeometrisi(g: KaroGirdisi): KaroGeometrisi {
   const yer = new GeometriYazici();
-  const bina = new GeometriYazici();
+  const bina = new GeometriYazici(true);
   const izNokta: number[] = [];
   const izBas: number[] = [0];
   const izBina: number[] = [];
@@ -366,10 +509,15 @@ export function karoGeometrisi(g: KaroGirdisi): KaroGeometrisi {
     .map((f, i) => ({ f, i, sira: sayi(f.ozellik["sort_rank"]) ?? 0, s: f.tur === 2 ? yolSinifi(f.ozellik) : null }))
     .filter((y) => y.s !== null)
     .sort((a, b) => a.sira - b.sira || a.i - b.i);
-  // Önce bütün kaldırımlar, sonra asfalt: kavşaklarda kaldırım yolun üstüne binmez
+  // Önce bütün kaldırımlar, sonra bordür, sonra asfalt: kavşaklarda kaldırım yolun üstüne binmez; bordür asfaltın hemen
+  // dışında ince bir şerittir (asfalt sonra çizildiği için kavşakta yolun içine taşan bordür örtülür).
   for (const { f, s } of yollar) {
     const pay = kaldirimPayi(f.ozellik);
     if (pay > 0) for (const c of f.parcalar) serit(yer, c, E, o, s![1] + 2 * pay, S.KALDIRIM);
+  }
+  for (const { f, s } of yollar) {
+    const pay = kaldirimPayi(f.ozellik);
+    if (pay > 0) for (const c of f.parcalar) serit(yer, c, E, o, s![1] + 0.7, S.KERB);
   }
   for (const { f, s } of yollar) {
     let n = 0;
@@ -389,12 +537,20 @@ export function karoGeometrisi(g: KaroGirdisi): KaroGeometrisi {
       if (!k.length || halkaAlani(k[0]!) === 0) continue;
       const h0 = c[0]!;
       const tohum = Math.imul(h0[0]! | 0, 73856093) ^ Math.imul(h0[1]! | 0, 19349663);
+      const t01 = tohum01(tohum);
       const yuk = sayi(f.ozellik["height"]);
       const ust = Math.max(2.5, yuk ?? varsayilanYukseklik(alanM2, tohum));
       const alt = Math.min(ust - 1, Math.max(0, sayi(f.ozellik["min_height"]) ?? 0));
       const sanayi = alanM2 >= 1800 && yuk === null;
+      // Kırma çatı: küçük, alçak, kırpılmamış dörtgen konut (çoğunluk); diğerleri parapetli düz çatı.
+      const kirpilmamis = k.length === 1 && c.length === 1 && k[0]!.length === h0.length;
+      const dort = !sanayi && kirpilmamis && alanM2 < 480 && ust <= 10 && t01 < 0.78 ? dortgenMi(k[0]!, o) : null;
+      const parapet = sanayi || dort ? 0 : 0.45 + Math.floor(t01 * 3) * 0.15;
+      const cepheUst = ust + parapet;
       const duvarS = sanayi ? S.SANAYI_BINA : S.BINA;
-      const catiS = sanayi ? S.SANAYI_CATI : S.BINA_CATI;
+      const catiS = sanayi ? S.SANAYI_CATI : t01 < 0.6 ? S.BINA_CATI : S.CATI_ARDUVAZ;
+      // Pencere aralığı (m): konutta 2,9–4,0; sanayide 0 (gölgelendirici panel çizgisi ve yüksek bant çizer)
+      const aralik = sanayi ? 0 : 2.9 + ((t01 * 7.3) % 1) * 1.1;
       // Duvarlar: karo sınırı üzerindeki kırpma kenarları atlanır (komşu karodaki parça devam eder).
       for (const h of k) {
         const n = h.length / 2;
@@ -416,27 +572,44 @@ export function karoGeometrisi(g: KaroGirdisi): KaroGeometrisi {
           const nx = (bz - az) / L;
           const nz = -(bx - ax) / L;
           const gl = duvarGolgesi(nx, nz);
-          // Siluet: çatı kenarı her duvarda; dikey köşe yalnız belirgin dönüşlerde (eğri cephede çizgi kalabalığı olmasın)
-          cizgi.push(ax, ust + 0.03, az, bx, ust + 0.03, bz);
-          const h0 = (i + n - 1) % n;
-          const px = h[h0 * 2]! * o;
-          const pz = h[h0 * 2 + 1]! * o;
+          // Siluet: cephe üstü her duvarda; dikey köşe yalnız belirgin dönüşlerde (eğri cephede çizgi kalabalığı olmasın)
+          cizgi.push(ax, cepheUst + 0.03, az, bx, cepheUst + 0.03, bz);
+          const h0i = (i + n - 1) % n;
+          const px = h[h0i * 2]! * o;
+          const pz = h[h0i * 2 + 1]! * o;
           const pl = Math.hypot(ax - px, az - pz);
-          if (pl > 1e-4 && ((ax - px) * (bx - ax) + (az - pz) * (bz - az)) / (pl * L) < 0.94) cizgi.push(ax, alt, az, ax, ust + 0.03, az);
+          if (pl > 1e-4 && ((ax - px) * (bx - ax) + (az - pz) * (bz - az)) / (pl * L) < 0.94) cizgi.push(ax, alt, az, ax, cepheUst + 0.03, az);
+          // Cephe: pencereler duvar ortasına hizalı (u = 0 ilk pencere aralığının başı)
+          const adet = aralik > 0 ? Math.floor((L - 0.8) / aralik) : 0;
+          const u0 = adet > 0 ? -(L - adet * aralik) / 2 : 0;
+          bina.cepheAyarla(u0, adet * aralik, aralik, t01, cepheUst);
           const a = bina.nokta(ax, alt, az, duvarS, gl);
+          const d = bina.nokta(ax, cepheUst, az, duvarS, gl);
+          bina.cepheAyarla(u0 + L, adet * aralik, aralik, t01, cepheUst);
           const b = bina.nokta(bx, alt, bz, duvarS, gl);
-          const cc = bina.nokta(bx, ust, bz, duvarS, gl);
-          const d = bina.nokta(ax, ust, az, duvarS, gl);
+          const cc = bina.nokta(bx, cepheUst, bz, duvarS, gl);
           bina.uc(a, cc, b);
           bina.uc(a, d, cc);
+          if (parapet > 0) {
+            // Parapetin iç yüzü (üstten bakınca çatı çukurda kalır; arka yüz görünmez olmasın)
+            bina.cepheAyarla(0, 0, 0, t01, cepheUst);
+            const ia = bina.nokta(ax, ust, az, duvarS, 175);
+            const ib = bina.nokta(bx, ust, bz, duvarS, 175);
+            const ic = bina.nokta(bx, cepheUst, bz, duvarS, 175);
+            const id = bina.nokta(ax, cepheUst, az, duvarS, 175);
+            bina.uc(ia, ib, ic);
+            bina.uc(ia, ic, id);
+          }
         }
       }
-      duzCokgen(bina, k, o, ust, catiS, 255);
+      bina.cepheAyarla(0, 0, 0, t01, cepheUst);
+      if (dort) kirmaCati(bina, cizgi, dort, ust, t01 < 0.36 ? S.CATI_KOYU_KIREMIT : S.CATI_KIREMIT);
+      else duzCokgen(bina, k, o, ust, catiS, 255);
       for (const h of k) {
         for (let i = 0; i < h.length; i++) izNokta.push(h[i]! * o);
         izBas.push(izNokta.length / 2);
         izBina.push(binaNo);
-        izUst.push(ust);
+        izUst.push(dort ? ust + 1 : cepheUst);
       }
       binaNo++;
       ist.bina++;

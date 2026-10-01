@@ -9,7 +9,8 @@
     "build": "tsx scripts/derle.ts",
     "tipkontrol": "tsc --noEmit -p tsconfig.json",
     "veri:hazirla": "tsx scripts/veri-hazirla.ts",
-    "olcum": "tsx scripts/olcum.ts"
+    "olcum": "tsx scripts/olcum.ts",
+    "tasarim": "tsx scripts/belirtec-uret.ts"
   },
   "dependencies": {
     "@bolge/botlar": "workspace:*",

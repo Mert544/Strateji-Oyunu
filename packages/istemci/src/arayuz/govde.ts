@@ -8,9 +8,10 @@ import type { Hucre, KapsamDurumu } from "../veri/kapsam";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
 import { MERCEKLER, mercekAdi } from "../veri/mercek";
 import type { Mercek } from "../veri/mercek";
-import { malRengiHex, sekilKodu } from "../veri/renkler";
+import { malRengiCss, sekilKodu } from "../veri/renkler";
 import type { BitenInsaat } from "../veri/rozet";
 import { esc, fmt, fmt1, kisalt, sinirla, yuzde } from "./bicim";
+import { ikon } from "../tasarim/ikon";
 import { bolgeTarimBolumu, olayOzeti, tarimLejanti, tarimNedenSatiri } from "./tarim-govde";
 import { komutBolumu } from "./komut-govde";
 import type { OyunDurumu } from "./komut-govde";
@@ -72,7 +73,7 @@ export function malIkonu(d: Dizin, m: number, boy: number): string {
   const mal = d.mallar[m];
   if (!mal) return "";
   const yol = SEKIL_YOL[sekilKodu(mal.kategori)] as string;
-  return `<svg width="${boy}" height="${boy}" viewBox="-5 -5 10 10" aria-hidden="true"><path d="${yol}" fill="${malRengiHex(mal.id)}" stroke="var(--ink2)" stroke-width="0.6"/></svg>`;
+  return `<svg width="${boy}" height="${boy}" viewBox="-5 -5 10 10" aria-hidden="true"><path d="${yol}" style="fill:${malRengiCss(mal.id)};stroke:var(--murekkep-2)" stroke-width="0.6"/></svg>`;
 }
 
 function cubuk(p: number): string {
@@ -135,7 +136,7 @@ export function bolgePaneli(g: GovdeDurumu): string {
   for (let m = 0; m < nm; m++) {
     const h = hucre(kare, t, i, m);
     const kars =
-      h.d === "sahipsiz" || h.d === "ilgisiz" ? "<span class='soluk'>—</span>" : h.d === "karsilanan" ? "<span>✓ %100</span>" : `<span>${DURUM_AD[h.d]} ${yuzde(h.pct)} · ${esc(NEDEN_KISA[h.neden] ?? "")}</span>`;
+      h.d === "sahipsiz" || h.d === "ilgisiz" ? "<span class='soluk'>—</span>" : h.d === "karsilanan" ? `<span class="yukari">${ikon("check", 14)}%100</span>` : `<span>${DURUM_AD[h.d]} ${yuzde(h.pct)} · ${esc(NEDEN_KISA[h.neden] ?? "")}</span>`;
     const sel = g.mal === m ? " class='secili-satir'" : "";
     s += `<tr${sel}><td>${malIkonu(dizin, m, 11)} ${esc(dizin.mallar[m]?.ad ?? "?")}</td><td class="sayi">${fmt(bk.stok[m] ?? 0)}</td><td class="sayi">${bk.uretim[m] ? fmt1(bk.uretim[m] as number) : "<span class='soluk'>0</span>"}</td><td>${kars}</td></tr>`;
   }
@@ -261,7 +262,7 @@ export function hazinePaneli(g: GovdeDurumu): string {
     for (const b of kare.bolgeler) if (b.sahip === i) for (const x of b.ordu) ordu += x[1];
     const renkVar = `var(--d${o.devlet % 4})`;
     s += `<div class="oyuncu"><div class="oyuncu-ust"><span class="nokta" style="background:${renkVar}"></span><span class="ad">${esc(devletAd(dizin, o.devlet))}</span><span class="soluk">${esc(o.arketip)}</span></div>
-<div class="oyuncu-alt"><span>Hazine <b>${kisalt(h)}</b></span><span class="${or >= 0 ? "yukari" : "asagi"}">${or >= 0 ? "▲ +" : "▼ "}${fmt(or)}/sa</span><span>Bölge <b>${t.sahipSayisi[i] ?? 0}</b></span><span>Ordu <b>${fmt(ordu)}</b></span></div>${mini(g.hazineGecmisi[i] ?? [], renkVar)}</div>`;
+<div class="oyuncu-alt"><span>Hazine <b>${kisalt(h)}</b></span><span class="${or >= 0 ? "yukari" : "asagi"}">${or >= 0 ? ikon("arrow-up-right", 14) + "+" : ikon("arrow-down-right", 14)}${fmt(or)}/sa</span><span>Bölge <b>${t.sahipSayisi[i] ?? 0}</b></span><span>Ordu <b>${fmt(ordu)}</b></span></div>${mini(g.hazineGecmisi[i] ?? [], renkVar)}</div>`;
   });
   return s;
 }

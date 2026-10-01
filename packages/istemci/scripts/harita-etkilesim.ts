@@ -166,7 +166,7 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
     return {
       surum: g ? g.getParameter(g.VERSION) as string : "",
       cizici: g && dbg ? (g.getParameter(dbg.UNMASKED_RENDERER_WEBGL) as string) : "",
-      ilce: ml.queryRenderedFeatures({ layers: ["ilce-cizgi"] }).length,
+      ilce: ml.queryRenderedFeatures({ layers: ["sinir-ilce"] }).length,
     };
   });
   kontrol(`${e} MapLibre yazılım GL'de çiziyor`, !!gl && gl.ilce > 0, JSON.stringify(gl));
@@ -359,7 +359,7 @@ async function altlikli(tarayici: Browser, adres: string): Promise<void> {
   await sayfa.evaluate(() => window.__harita?.gorunum()?.ml.jumpTo({ center: [29.4307, 40.8027], zoom: 16.4 }));
   await haritaHazir(sayfa, "d.duzey === 3");
   await sayfa.waitForTimeout(800);
-  const n = await sayfa.evaluate(() => window.__harita?.gorunum()?.ml.queryRenderedFeatures({ layers: ["altlik-yol"] }).length ?? 0);
+  const n = await sayfa.evaluate(() => window.__harita?.gorunum()?.ml.queryRenderedFeatures({ layers: ["altlik-yol-minor_road", "altlik-yol-medium_road", "altlik-yol-major_road", "altlik-yol-highway"] }).length ?? 0);
   kontrol("[altlık] Protomaps yolları çizildi (koyu tema)", n > 0, `${n} yol`);
   await sayfa.screenshot({ path: join(EKRAN, "harita-masaustu-altlik-koyu.png") });
   kontrol("[altlık] konsol hatası yok", konsol.length === 0, konsol.slice(0, 3).join(" | "));

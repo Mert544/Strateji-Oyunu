@@ -1,0 +1,5 @@
+Inter (https://github.com/rsms/inter), SIL Open Font License 1.1 (OFL.txt).
+Bu dosya, google/fonts deposundaki Inter[opsz,wght].ttf'ten türetilmiş bir alt kümedir:
+fontTools ile wght 400–700 aralığı korunarak opsz = 14'e sabitlendi; Latin-1, Türkçe (Ğ ğ İ ı Ş ş), Rumence (Ă ă Ș ș Ț ț),
+₺ ve tipografik işaretlerle (– — ‘ ’ “ ” … ‹ › ← → ≈ ≤ ≥ −) sınırlandı; woff2. Telif hakkı satırında "Reserved Font Name"
+beyanı yoktur (OFL.txt); ad korunmuştur.

@@ -34,7 +34,10 @@ async function karoIsle(m: Extract<IsciyeKaro, { tur: "karo" }>): Promise<void> 
     const bayt = r ? new Uint8Array(r.data) : null;
     const geo = karoGeometrisi(bayt ? { katmanlar: mvtCoz(bayt, ISTENEN_KATMANLAR), olcek: m.olcek } : { katmanlar: new Map(), olcek: m.olcek, bos: true });
     const aktar: Transferable[] = [];
-    for (const p of [geo.yer, geo.bina]) aktar.push(p.konum.buffer, p.sinif.buffer, p.golge.buffer, p.indeks.buffer);
+    for (const p of [geo.yer, geo.bina]) {
+      aktar.push(p.konum.buffer, p.sinif.buffer, p.golge.buffer, p.indeks.buffer);
+      if (p.cephe && p.ust) aktar.push(p.cephe.buffer, p.ust.buffer);
+    }
     aktar.push(geo.cizgi.konum.buffer, geo.cizgi.sinif.buffer);
     aktar.push(geo.iz.nokta.buffer, geo.iz.halkaBas.buffer, geo.iz.bina.buffer, geo.iz.ust.buffer);
     kapsam.postMessage({ tur: "karo", no: m.no, x: m.x, y: m.y, geo, bayt: bayt?.length ?? 0, ms: performance.now() - t0, bos: !bayt }, aktar);

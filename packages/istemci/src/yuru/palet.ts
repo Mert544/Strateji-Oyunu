@@ -1,6 +1,7 @@
 /**
- * Yürüyüş sahnesi paleti: sakin, düşük doygunluklu, düz renkler (açık: kum/zeytin; koyu: arduvaz/koyu turkuaz).
- * Doygun renk yalnız oyuncunun mülkü için (harita ile aynı `--harita-ben` belirteci). Sınıf sırası karo-geometri.ts `S`.
+ * Yürüyüş sahnesi paleti: tema belirteçlerinden (src/tasarim/belirtec.ts → tema.css `--yuru-*`, yalnız hex) okunur;
+ * sahne ve harita aynı kaynaktan beslenir (L3 → L4 geçişinde zemin rengi sıçramaz). Doygun renk yalnız oyuncunun
+ * mülkü ve karakter vurgusu içindir (`--sen`). Sınıf sırası karo-geometri.ts `S`.
  */
 import { S, SINIF_SAYISI } from "./karo-geometri";
 
@@ -12,92 +13,62 @@ const hex = (h: string): Rgb => {
   return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255];
 };
 
-interface TemaRenkleri {
-  gok: string;
-  sinif: Record<number, string>;
-  izgara: string;
-  izgaraAlfa: number;
-  govde: string;
-  insaat: [string, string, string, string];
-  golge: string;
-}
-
-const ACIK: TemaRenkleri = {
-  gok: "#dfe4e6",
-  sinif: {
-    [S.DENIZ]: "#a7bfca",
-    [S.KARA]: "#e3e0d6",
-    [S.YESIL]: "#cbd5b6",
-    [S.ORMAN]: "#b5c4a1",
-    [S.TARLA]: "#dfdabd",
-    [S.SANAYI_ALAN]: "#d9d7d2",
-    [S.KONUT_ALAN]: "#e2ddd2",
-    [S.KURUM]: "#e1d8cc",
-    [S.YAYA]: "#ebe7df",
-    [S.KUM]: "#ece3c9",
-    [S.SU]: "#a7bfca",
-    [S.OTOYOL]: "#b9bbbd",
-    [S.ANA_YOL]: "#c4c6c7",
-    [S.TALI_YOL]: "#cfd0d0",
-    [S.PATIKA]: "#e6dccb",
-    [S.RAY]: "#a9a49c",
-    [S.BINA]: "#e6dfd2",
-    [S.BINA_CATI]: "#c7a796",
-    [S.SANAYI_BINA]: "#d9dde0",
-    [S.SANAYI_CATI]: "#a9b4bc",
-    [S.KALDIRIM]: "#f1eee8",
-    [S.KENAR]: "#8b8478",
-  },
-  izgara: "#3a4652",
-  izgaraAlfa: 0.13,
-  govde: "#ece9e2",
-  insaat: ["#b9b5ad", "#a08a6a", "#d4cec3", "#e6dfd2"],
-  golge: "#3a4048",
+/** Sınıf → belirteç (yer, bina, çizgi). */
+const SINIF_BELIRTEC: Record<number, string> = {
+  [S.DENIZ]: "--yuru-su",
+  [S.KARA]: "--yuru-zemin-kara",
+  [S.YESIL]: "--yuru-cim",
+  [S.ORMAN]: "--yuru-orman",
+  [S.TARLA]: "--yuru-tarla",
+  [S.SANAYI_ALAN]: "--yuru-sanayi-alan",
+  [S.KONUT_ALAN]: "--yuru-konut-alan",
+  [S.KURUM]: "--yuru-kurum",
+  [S.YAYA]: "--yuru-yaya-yolu",
+  [S.KUM]: "--yuru-kum",
+  [S.SU]: "--yuru-su",
+  [S.OTOYOL]: "--yuru-asfalt-otoyol",
+  [S.ANA_YOL]: "--yuru-asfalt-ana",
+  [S.TALI_YOL]: "--yuru-asfalt",
+  [S.PATIKA]: "--yuru-patika",
+  [S.RAY]: "--yuru-ray",
+  [S.BINA]: "--yuru-fasad-krem",
+  [S.BINA_CATI]: "--yuru-cati-duz-beton",
+  [S.SANAYI_BINA]: "--yuru-sanayi-govde",
+  [S.SANAYI_CATI]: "--yuru-sanayi-cati",
+  [S.KALDIRIM]: "--yuru-kaldirim",
+  [S.KENAR]: "--yuru-kenar",
+  [S.KERB]: "--yuru-kerb-cizgi",
+  [S.CATI_KIREMIT]: "--yuru-cati-kiremit",
+  [S.CATI_KOYU_KIREMIT]: "--yuru-cati-koyu-kiremit",
+  [S.CATI_ARDUVAZ]: "--yuru-cati-arduvaz",
 };
 
-const KOYU: TemaRenkleri = {
-  gok: "#121a21",
-  sinif: {
-    [S.DENIZ]: "#1a3340",
-    [S.KARA]: "#1f262b",
-    [S.YESIL]: "#21302a",
-    [S.ORMAN]: "#1d2b25",
-    [S.TARLA]: "#292b23",
-    [S.SANAYI_ALAN]: "#25292d",
-    [S.KONUT_ALAN]: "#24292c",
-    [S.KURUM]: "#29292b",
-    [S.YAYA]: "#2a2f33",
-    [S.KUM]: "#2e2d27",
-    [S.SU]: "#1a3340",
-    [S.OTOYOL]: "#2a2f33",
-    [S.ANA_YOL]: "#2d3236",
-    [S.TALI_YOL]: "#30353a",
-    [S.PATIKA]: "#2f3337",
-    [S.RAY]: "#474a4e",
-    [S.BINA]: "#4b545d",
-    [S.BINA_CATI]: "#6d5a52",
-    [S.SANAYI_BINA]: "#48515a",
-    [S.SANAYI_CATI]: "#53606c",
-    [S.KALDIRIM]: "#3a4046",
-    [S.KENAR]: "#161b21",
-  },
-  izgara: "#c8d6e4",
-  izgaraAlfa: 0.11,
-  govde: "#c4c9cf",
-  insaat: ["#5b5f63", "#7a6a52", "#6b7178", "#858c94"],
-  golge: "#000000",
-};
+const FASAD = ["--yuru-fasad-krem", "--yuru-fasad-badana", "--yuru-fasad-pembe", "--yuru-fasad-gri", "--yuru-fasad-seftali", "--yuru-fasad-ten"];
+const TENTE = ["--yuru-tente", "--yuru-tente-2", "--yuru-tente-3", "--katman-pazar"];
 
 export interface YuruPaleti {
   koyu: boolean;
   gok: Rgb;
   /** SINIF_SAYISI × 3 (tekdüze dizi). */
   sinif: Float32Array;
+  /** Altı cephe tonu × 3 (bina tohumuyla seçilir; "mahalle dokusu"). */
+  fasad: Float32Array;
+  /** Dört tente rengi × 3 (giriş katı vitrini). */
+  tente: Float32Array;
+  cam: Rgb;
+  /** Akşam (koyu tema) yanan pencere ışığı. */
+  camIsik: Rgb;
+  /** Yanan pencere oranı (açık temada 0). */
+  isikOran: number;
+  vitrin: Rgb;
   izgara: Rgb;
   izgaraAlfa: number;
   ben: Rgb;
   baskasi: Rgb;
+  /** Karakter giysisi: üst (oyuncu rengiyle karışır), alt, ten. */
   govde: Rgb;
+  giysiAlt: Rgb;
+  ten: Rgb;
   insaat: [Rgb, Rgb, Rgb, Rgb];
   golge: Rgb;
 }
@@ -111,22 +82,33 @@ export function koyuMu(): boolean {
 
 export function paletOku(): YuruPaleti {
   const koyu = koyuMu();
-  const t = koyu ? KOYU : ACIK;
   const cs = getComputedStyle(document.documentElement);
-  const tok = (ad: string, yedek: string): Rgb => hex(cs.getPropertyValue(ad).trim() || yedek);
+  const tok = (ad: string): Rgb => hex(cs.getPropertyValue(ad).trim() || "#888888");
   const sinif = new Float32Array(SINIF_SAYISI * 3);
-  for (let i = 0; i < SINIF_SAYISI; i++) sinif.set(hex(t.sinif[i] ?? "#888888"), i * 3);
+  for (let i = 0; i < SINIF_SAYISI; i++) sinif.set(tok(SINIF_BELIRTEC[i] ?? "--yuru-zemin-kara"), i * 3);
+  const fasad = new Float32Array(FASAD.length * 3);
+  FASAD.forEach((ad, i) => fasad.set(tok(ad), i * 3));
+  const tente = new Float32Array(TENTE.length * 3);
+  TENTE.forEach((ad, i) => tente.set(tok(ad), i * 3));
   return {
     koyu,
-    gok: hex(t.gok),
+    gok: tok("--yuru-gok"),
     sinif,
-    izgara: hex(t.izgara),
-    izgaraAlfa: t.izgaraAlfa,
-    ben: tok("--harita-ben", koyu ? "#6aa6ff" : "#1f5fbf"),
-    baskasi: tok("--harita-baskasi", koyu ? "#8d96a0" : "#7d8792"),
-    govde: hex(t.govde),
-    insaat: t.insaat.map(hex) as YuruPaleti["insaat"],
-    golge: hex(t.golge),
+    fasad,
+    tente,
+    cam: tok("--yuru-cam"),
+    camIsik: tok("--yuru-cam-aksam"),
+    isikOran: koyu ? 0.34 : 0,
+    vitrin: tok("--yuru-vitrin"),
+    izgara: tok("--murekkep-2"),
+    izgaraAlfa: koyu ? 0.12 : 0.13,
+    ben: tok("--sen"),
+    baskasi: tok("--murekkep-3"),
+    govde: tok("--yuru-giysi-ust"),
+    giysiAlt: tok("--yuru-giysi-alt"),
+    ten: tok("--yuru-ten"),
+    insaat: [tok("--yuru-insaat-0"), tok("--yuru-insaat-1"), tok("--yuru-insaat-2"), tok("--yuru-insaat-3")],
+    golge: tok("--yuru-golge"),
   };
 }
 

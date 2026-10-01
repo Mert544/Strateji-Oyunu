@@ -6,6 +6,8 @@
  *   - ön doldurulmuş form (ör. ithalat emri; oranı oyuncu seçer) -> data-form-ac.
  * Oyuncu kipinde yalnız oyuncunun bölgeleri ve taraf olduğu savaşlar; izleme kipinde sahipli tüm bölgeler.
  */
+import { ikon } from "../tasarim/ikon";
+import type { IkonAdi } from "../tasarim/ikon";
 import type { Komut } from "../komut/tipler";
 import type { Icerik } from "../komut/tablo";
 import { rozetAlabilir, rozetNedenleri } from "../veri/rozet";
@@ -34,11 +36,11 @@ export interface DikkatMaddesi {
 }
 
 /** Rozet simgesi (şekil + metin; renk tek başına anlam taşımaz). */
-export const ROZET_SIMGE: Record<RozetTuru, { simge: string; ad: string }> = {
-  savas: { simge: "⚔", ad: "Savaş" },
-  eksik: { simge: "▲", ad: "Eksik girdi" },
-  bosta: { simge: "◯", ad: "Boşta" },
-  bitti: { simge: "✓", ad: "İnşaat bitti" },
+export const ROZET_SIMGE: Record<RozetTuru, { simge: IkonAdi; ad: string }> = {
+  savas: { simge: "swords", ad: "Savaş" },
+  eksik: { simge: "triangle", ad: "Eksik girdi" },
+  bosta: { simge: "circle", ad: "Boşta" },
+  bitti: { simge: "check", ad: "İnşaat bitti" },
 };
 
 const TUR_SIRA: Record<RozetTuru, number> = { savas: 0, eksik: 1, bosta: 2, bitti: 3 };
@@ -137,15 +139,15 @@ export function dikkatMaddeleri(g: GovdeDurumu): DikkatMaddesi[] {
 }
 
 function eylemHtml(e: DikkatEylemi, bolge: number): string {
-  if (e.komut) return `<button type="button" class="eylem birincil" data-komut="${esc(JSON.stringify(e.komut))}">${esc(e.etiket)}</button>`;
-  if (e.form) return `<button type="button" class="eylem birincil" data-form-ac="${esc(JSON.stringify({ ...e.form, bolge }))}">${esc(e.etiket)}</button>`;
+  if (e.komut) return `<button type="button" class="eylem ton" data-komut="${esc(JSON.stringify(e.komut))}">${esc(e.etiket)}</button>`;
+  if (e.form) return `<button type="button" class="eylem ton" data-form-ac="${esc(JSON.stringify({ ...e.form, bolge }))}">${esc(e.etiket)}</button>`;
   return "";
 }
 
 /** Rozet şekil göstergesi (panelde ve lejantta). */
 export function rozetSimgesi(t: RozetTuru): string {
   const r = ROZET_SIMGE[t];
-  return `<span class="rozet-simge ${t}" role="img" aria-label="${esc(r.ad)}">${r.simge}</span>`;
+  return `<span class="rozet-simge ${t}" role="img" aria-label="${esc(r.ad)}">${ikon(r.simge, 15, "kalin")}</span>`;
 }
 
 export function rozetLejanti(): string {
@@ -159,11 +161,11 @@ export function dikkatPaneli(g: GovdeDurumu): string {
   const tum = dikkatMaddeleri(g);
   const oyuncu = g.oyun !== undefined && kare.oyuncu !== undefined;
   let s = `<p class="ipucu-metin">${oyuncu ? "Bölgelerinizde ilgilenmeniz gerekenler" : "Dünyada dikkat çeken durumlar"} (en çok ${DIKKAT_EN_COK}). Haritadaki rozetler aynı kuralla çizilir; her bölgede en çok bir rozet.</p>`;
-  if (!tum.length) s += `<p class="ipucu-metin bos-durum">Şu an dikkat gerektiren bir şey yok.</p>`;
+  if (!tum.length) s += `<div class="bos-durum">${ikon("circle-check", 32)}<p class="ipucu-metin">Şu an ilgilenmen gereken bir şey yok. Bereket versin.</p></div>`;
   else {
     s += `<ol class="dikkat-liste">`;
     for (const m of tum.slice(0, DIKKAT_EN_COK)) {
-      s += `<li class="dikkat-satir" data-tur="${m.tur}">${rozetSimgesi(m.tur)}<div class="dikkat-metin"><b>${esc(m.baslik)}</b>${m.ayrinti ? `<br><span class="soluk">${esc(m.ayrinti)}</span>` : ""}</div><div class="dikkat-dugme"><button type="button" class="eylem" data-bolge="${m.bolge}" title="Bölgeye git">Git</button>${m.eylem ? eylemHtml(m.eylem, m.bolge) : ""}</div></li>`;
+      s += `<li class="dikkat-satir" data-tur="${m.tur}">${rozetSimgesi(m.tur)}<div class="dikkat-metin"><b>${esc(m.baslik)}</b>${m.ayrinti ? `<br><span class="soluk">${esc(m.ayrinti)}</span>` : ""}</div><div class="dikkat-dugme"><button type="button" class="eylem" data-bolge="${m.bolge}" title="Bölgeye git">${ikon("map-pin", 15)}Git</button>${m.eylem ? eylemHtml(m.eylem, m.bolge) : ""}</div></li>`;
     }
     s += `</ol>`;
     if (tum.length > DIKKAT_EN_COK) s += `<p class="ipucu-metin">+${tum.length - DIKKAT_EN_COK} madde daha; önce yukarıdakileri çözün.</p>`;

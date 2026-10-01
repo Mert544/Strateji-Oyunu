@@ -12,6 +12,8 @@ export interface Palet {
   /** Devlet renkleri (Okabe-Ito). */
   devlet: RGB[];
   sahipsiz: RGB;
+  /** "Sen" rengi (birincil çini): Genel ve Sahiplik merceklerinde oyuncunun kendi bölgeleri. Yoksa devlet rengi. */
+  sen?: RGB;
   durum: Record<KapsamDurumu, RGB>;
   /** Sakin nötr dolgu ("Genel" merceğinde başkalarının bölgeleri buna doğru soldurulur). */
   notr: RGB;
@@ -50,38 +52,39 @@ export function kullanimRengi(u: number, rampa: readonly RGB[]): RGB {
   return karistir(rampa[i] as RGB, rampa[i + 1] as RGB, t - i);
 }
 
-/** Mal renkleri (izleyici ile aynı). Bilinmeyen mal kimliği için kimlikten türetilen renk. */
-export const MAL_RENK_HEX: Record<string, string> = {
-  tahil: "#e0b000",
-  gida: "#7cb518",
-  cevher: "#b5542b",
-  komur: "#7a5c48",
-  celik: "#5b8db8",
-  bakir: "#ee7d31",
-  silis: "#b59f5f",
-  parca: "#8b72c9",
-  elektronik: "#19b3c9",
-  petrol: "#4f5d9a",
-  yakit: "#e5484d",
-  muhimmat: "#c2388f",
-  gubre: "#3f8f5a",
+/**
+ * Mal = simge + ÜRETEN KATMANIN rengi (görsel kimlik §3.6): tahıl, gıda, gübre → Tarım; cevher … yakıt → Sanayi;
+ * mühimmat → Askeri. Ayırt etme işini renk değil şekil/simge yapar. Bilinmeyen mal nötr mürekkep.
+ */
+export const MAL_KATMANI: Record<string, "tarim" | "sanayi" | "askeri"> = {
+  tahil: "tarim",
+  gida: "tarim",
+  gubre: "tarim",
+  cevher: "sanayi",
+  komur: "sanayi",
+  celik: "sanayi",
+  bakir: "sanayi",
+  silis: "sanayi",
+  parca: "sanayi",
+  elektronik: "sanayi",
+  petrol: "sanayi",
+  yakit: "sanayi",
+  muhimmat: "askeri",
 };
 
-export function malRengiHex(id: string): string {
-  const h = MAL_RENK_HEX[id];
-  if (h) return h;
-  let x = 0;
-  for (let i = 0; i < id.length; i++) x = (x * 31 + id.charCodeAt(i)) >>> 0;
-  return hslHex(x % 360);
+/** Katman → açık tema onaltılık (CSS dışı tüketiciler için; tema.css `--katman-*` ile aynı). */
+const KATMAN_ACIK_HEX: Record<string, string> = { tarim: "#b3a74c", sanayi: "#6e829e", askeri: "#4b6121" };
+
+/** Mal rengi CSS değeri (temaya duyarlı): `var(--katman-…)`; bilinmeyen mal `var(--murekkep-3)`. */
+export function malRengiCss(id: string): string {
+  const k = MAL_KATMANI[id];
+  return k ? `var(--katman-${k})` : "var(--murekkep-3)";
 }
 
-function hslHex(h: number): string {
-  const f = (n: number): number => {
-    const k = (n + h / 30) % 12;
-    return 0.5 - 0.275 * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-  };
-  const c = (v: number): string => Math.round(v * 255).toString(16).padStart(2, "0");
-  return `#${c(f(0))}${c(f(8))}${c(f(4))}`;
+/** Mal rengi onaltılık (açık tema; bilinmeyen mal nötr). */
+export function malRengiHex(id: string): string {
+  const k = MAL_KATMANI[id];
+  return k ? (KATMAN_ACIK_HEX[k] as string) : "#5f6b75";
 }
 
 /** Kategori -> şekil kodu (parçacık/glif ikinci kanalı): 0 daire, 1 eşkenar dörtgen, 2 kare, 3 üçgen. */

@@ -84,14 +84,14 @@ export class MiniHarita {
     g.lineTo(-5, -5);
     g.closePath();
     g.fillStyle = rgbCss(p.ben);
-    g.strokeStyle = p.koyu ? "#0b1016" : "#ffffff";
+    g.strokeStyle = rgbCss(p.gok);
     g.lineWidth = 1.5;
     g.stroke();
     g.fill();
     g.restore();
     // Kuzey
-    g.fillStyle = rgbCss(p.koyu ? [0.85, 0.88, 0.92] : [0.2, 0.24, 0.3]);
-    g.font = "600 10px system-ui, sans-serif";
+    g.fillStyle = rgbCss(p.baskasi);
+    g.font = '600 10px "Inter", system-ui, sans-serif';
     g.textAlign = "center";
     g.fillText("K", BOYUT / 2, 11);
   }
