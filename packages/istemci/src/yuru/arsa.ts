@@ -13,6 +13,7 @@ import type { IlceSahipligi } from "../harita/baglanti";
 import { idCoz } from "../harita/hucre";
 import { S } from "./karo-geometri";
 import { MARKA_RENK_SAYISI } from "../tasarim/marka";
+import { ASINMA_SOLMA, asinmaKademesi } from "../tasarim/asinma";
 import { hucreDunya } from "./koordinat";
 import { SILUET_RENK, SILUET_RENK_ILK, SILUETLI_YONTEMLER, siluetKutulari, siluetliMi } from "./siluet";
 import type { Cerceve, Orijin } from "./koordinat";
@@ -32,6 +33,11 @@ export interface InsaatBilgisi {
   dukkan?: { tur: string; markaRenk?: number };
   /** Bitmiş (Tamam) yapının üretim yöntemi kimliği (G6/G8): imza silüetini belirler (siluet.ts). Yoksa genel gövde. */
   yontem?: string;
+  /**
+   * Tesisin aşınması (ppm; kare `ozel.tesisAsinma`; yalnız oyuncunun kendi tesisinde ve aşınma > 0 iken). Bitmiş yapıda malzeme
+   * rengi kademeye göre soluklaşır (tasarim/asinma.ts); yoksa görünüm aynen.
+   */
+  asinmaPpm?: number;
   /** Sahte bağdaştırıcıda inşaat yoksa üretilen örnek (kartta belirtilir). */
   ornek?: boolean;
 }
@@ -407,6 +413,8 @@ export class ArsaKatmani {
       const dukkan = ins.asama === 3 ? ins.dukkan : undefined;
       const siluet = ins.asama === 3 && !dukkan && siluetliMi(ins.yontem) ? ins.yontem : null;
       const mr = dukkan?.markaRenk;
+      // Aşınma: yalnız bitmiş tesiste (dükkân hariç); malzeme rengi açık beton tonuna doğru soluklaşır (kademe 0: değişmez)
+      const solma = ins.asama === 3 && !dukkan ? ASINMA_SOLMA[asinmaKademesi(ins.asinmaPpm)] : 0;
       const marka: Rgb = mr === undefined ? this.palet.insaat[2] : this.markaRengi(mr);
       for (const [x, y, z, sx, sy, sz, r] of dukkan ? dukkanKutulari(k) : siluet ? siluetKutulari(siluet, k) : asamaKutulari(ins.asama, k)) {
         let renk: Rgb =
@@ -422,6 +430,8 @@ export class ArsaKatmani {
                     ? this.siluetRengi(r, karis)
                     : this.palet.insaat[r as 0 | 1 | 2 | 3];
         if (!dukkan && (r === 2 || r === 3) && sahip === this.ben) renk = karis(renk, this.palet.ben, 0.45);
+        // sıcak ışık ve cam soluklaşmaz (silüetin ayırt edici parçaları); temel döşemesi (renk 0) da değişmez
+        if (solma > 0 && r !== 0 && r !== SILUET_RENK.isik && r !== SILUET_RENK.cam) renk = karis(renk, this.palet.insaat[2], solma);
         kutu(bx + x, y, bz + z, sx, sy, sz, renk);
       }
     }

@@ -8,6 +8,7 @@
  * Büyük harf yok (MapLibre `text-transform`/`upcase` yerel dil bağımsız çalışır: "BILECIK" tuzağı).
  */
 import type { ExpressionSpecification, LayerSpecification } from "maplibre-gl";
+import { ASINMA_OPAKLIK } from "../tasarim/asinma";
 
 export type RenkOku = (ad: string) => string;
 type Boya = Record<string, unknown>;
@@ -300,6 +301,16 @@ export function yontemSimgeKatmani(r: RenkOku): LayerSpecification {
   };
 }
 
+/**
+ * Aşınma kademesi (özellik `w`: 0 yok, 1 hafif, 2 belirgin; `asinmaKademesi(ppm)`): yapı dolgusu ve kenarı kademeye göre soluk.
+ * SÖZLEŞME: `w` yalnız oyuncunun kendi tesislerinde ve kademe > 0 iken yapılar GeoJSON'una yazılır (K1, gorunum.ts; kare
+ * `ozel.tesisAsinma`). Alan yoksa (`has` koruması) değer eskisiyle birebir aynıdır.
+ */
+export function asinmaOpakligi(taban: number | ExpressionSpecification): ExpressionSpecification {
+  const carpan = ["match", ["get", "w"], 1, ASINMA_OPAKLIK[1], 2, ASINMA_OPAKLIK[2], 1];
+  return ["case", ["has", "w"], ["*", taban, carpan], taban] as unknown as ExpressionSpecification;
+}
+
 /** Oyun katmanları: kamu, sahiplik, arsa sınırı, yapı, odak örtüsü, vurgu, seçim, seçili sınırlar. `dukkanSimgeleri`: dükkân türü simgeleri kayıtlıysa. */
 export function oyunKatmanlari(r: RenkOku, sahiplikMercegi: boolean, dukkanSimgeleri = false): LayerSpecification[] {
   const sb = sahiplikBoyasi(r, sahiplikMercegi);
@@ -326,8 +337,8 @@ export function oyunKatmanlari(r: RenkOku, sahiplikMercegi: boolean, dukkanSimge
       paint: { "line-color": r("--murekkep-3"), "line-width": lin(15, 0.7, 18, 1.6), "line-opacity": 0.5 },
     },
     // Yapı: katman rengi (iş), aşamaya göre dolgu 0,25 / 0,45 / 0,65 / 1; inşaatta kesik, bitince düz kenar
-    { id: "yapi-dolgu", type: "fill", source: "yapilar", minzoom: 13, paint: { "fill-color": yapiDolguRengi(r), "fill-opacity": ["match", ["get", "a"], 0, 0.25, 1, 0.45, 2, 0.65, 0.92] } },
-    { id: "yapi-cizgi", type: "line", source: "yapilar", minzoom: 13, filter: [">=", ["get", "a"], 3], paint: { "line-color": r("--murekkep-2"), "line-width": 1.2, "line-opacity": 0.7 } },
+    { id: "yapi-dolgu", type: "fill", source: "yapilar", minzoom: 13, paint: { "fill-color": yapiDolguRengi(r), "fill-opacity": asinmaOpakligi(["match", ["get", "a"], 0, 0.25, 1, 0.45, 2, 0.65, 0.92]) } },
+    { id: "yapi-cizgi", type: "line", source: "yapilar", minzoom: 13, filter: [">=", ["get", "a"], 3], paint: { "line-color": r("--murekkep-2"), "line-width": 1.2, "line-opacity": asinmaOpakligi(0.7) } },
     { id: "yapi-cizgi-insaat", type: "line", source: "yapilar", minzoom: 13, filter: ["<", ["get", "a"], 3], paint: { "line-color": r("--murekkep-2"), "line-width": 1.2, "line-dasharray": [2, 1.5] } },
     ...(dukkanSimgeleri ? [dukkanSimgeKatmani(r)] : []),
     // Odak: seçili olmayan iller ve ilçeler kâğıt örtüyle soluklaşır
