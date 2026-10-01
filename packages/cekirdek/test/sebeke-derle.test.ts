@@ -20,6 +20,7 @@ const SEBEKE = () => ({ surum: 1 as const, mallar: [{ mal: "elektrik", tavanOran
 const veri = (sebeke?: ReturnType<typeof SEBEKE>, duzenle?: (v: CekirdekVeriPaketi) => void): CekirdekVeriPaketi =>
   yontemliMulkVeri((v) => {
     if (sebeke !== undefined) v.param.mulk!.sebeke = sebeke;
+    else delete v.param.mulk!.sebeke; // G6-3: bugünkü JSON şebeke bloğunu taşır; "blok yok" durumu bellekte kurulur
     // yakıt girdisi (stoksuz mal): tesis yakıtı şebekeden alır (stoktan değil)
     v.icerik.yontemler.find((y) => y.id === "standart_gida_isleme")!.girdiler["yakit"] = 5_000;
     duzenle?.(v);

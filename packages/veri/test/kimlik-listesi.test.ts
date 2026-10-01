@@ -272,8 +272,7 @@ function yontemGirdisi(): { liste: KimlikListesi; g: KimlikKilidiGirdisi; v: Ret
   const v = varsayilanVeriyiYukle();
   const evSahibi = new Map<string, string>();
   for (const t of v.icerik.tesisTurleri) for (const y of t.yontemler) if (!evSahibi.has(y)) evSahibi.set(y, t.id);
-  const liste = listeOku();
-  liste.yontemler = v.icerik.yontemler.map((y) => ({ id: y.id, evSahibi: evSahibi.get(y.id) as string, asama: "A0" as const }));
+  const liste = listeOku(); // G6-3: `yontemler` bölümü kimlik-listesi.json'dadır (içerik sırasıyla)
   const g: KimlikKilidiGirdisi = {
     mallar: v.icerik.mallar.map((m) => ({ id: m.id, tabanFiyat: m.tabanFiyat })),
     tesisTurleri: v.icerik.tesisTurleri.map((t) => t.id),
@@ -284,18 +283,21 @@ function yontemGirdisi(): { liste: KimlikListesi; g: KimlikKilidiGirdisi; v: Ret
 }
 
 describe("yöntem kilidi (Y1-Y8)", () => {
-  it("bugünkü 24 yöntem listeyle uyumlu: hata yok (hidro_santrali hem tür hem yöntem: istisna)", () => {
+  it("bugünkü 28 yöntem listeyle uyumlu: hata yok (hidro_santrali hem tür hem yöntem: istisna); liste içerikle aynı sırada ve G6'nın dört yeni yöntemi mulkKipi", () => {
     const { liste, g, v } = yontemGirdisi();
-    expect(v.icerik.yontemler).toHaveLength(24);
+    expect(v.icerik.yontemler).toHaveLength(28);
+    expect(liste.yontemler!.map((y) => y.id)).toEqual(v.icerik.yontemler.map((y) => y.id));
+    expect(liste.yontemler!.filter((y) => y.mulkKipi === true).map((y) => y.id)).toEqual(["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli"]);
     expect(kimlikListesiHatalari(liste)).toEqual([]);
     expect(kilit(liste, g)).toBe("");
     expect(v.icerik.tesisTurleri.some((t) => t.id === "hidro_santrali")).toBe(true);
     expect(v.icerik.yontemler.some((y) => y.id === "hidro_santrali")).toBe(true);
   });
 
-  it("yontemler alanı YOKKEN yöntem kilidi uygulanmaz (bugünkü liste; içeriğe sahte yöntem eklense de hata yok)", () => {
+  it("yontemler alanı YOKKEN yöntem kilidi uygulanmaz (eski liste biçimi; içeriğe sahte yöntem eklense de hata yok)", () => {
     const { g } = yontemGirdisi();
     const liste = listeOku();
+    delete liste.yontemler; // G6-3 ile liste artık bölümü taşır; yokluk durumu (eski listeler) bellekte sınanır
     expect(liste.yontemler).toBeUndefined();
     expect(kilit(liste, { ...g, yontemler: [...(g.yontemler ?? []), { id: "sahte_yontem", evSahibi: "ciftlik", mulkKipi: false }] })).toBe("");
   });

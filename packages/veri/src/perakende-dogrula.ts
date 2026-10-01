@@ -17,10 +17,10 @@ import { yontemSayisiUyarilari } from "./kimlik-listesi";
 export const CIKMAZ_MAL_HATA = false;
 
 /**
- * V13(a) yan ürün kuralı (`kepek`, `gubre`: yöntem girdisi tüketicisi Ü ≥ 1 ve NPC pazar emilimi N > 0) hata mı sayılsın? Şartname: hata. G6-1'de veri henüz değişmedi (`kepek`i
- * tüketen yöntem G6-3'te gelir), bu yüzden bu dilimde uyarıdır; G6-3 (veri) commit'i bunu `true` yapar.
+ * V13(a) yan ürün kuralı (`kepek`, `gubre`: yöntem girdisi tüketicisi Ü >= 1 ve NPC pazar emilimi N > 0) HATA mı sayılsın? Şartname: hata. G6-3 (veri) commit'i `kepek`i tüketen
+ * yöntemleri (`kepek_gubresi`, `sut_kepekli`) getirdiği için artık `true`: kepek ya da gübre alıcısız kalırsa paket reddedilir.
  */
-export const YAN_URUN_KURALI_HATA = false;
+export const YAN_URUN_KURALI_HATA = true;
 
 /** Yan ürünler (UA1: bu mallar çöpe gitmemeli). */
 const YAN_URUNLER = ["kepek", "gubre"] as const;

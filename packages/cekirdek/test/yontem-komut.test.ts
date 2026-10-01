@@ -164,13 +164,13 @@ describe("mulkKipi süzgeci (icerikDerle): bölge kipinde süzülür, mülk kipi
     const tamIcerik = structuredClone(bolge.icerik);
     const ic = icerikDerle(bolge);
     const gida = ic.tesisTurleri[ic.tesisTuruIndeks["gida_fabrikasi"] as number]!;
-    expect(gida.yontemler).toEqual(["standart_gida_isleme", BAYRAKSIZ_T, KILITLI_T]); // DEGIRMEN_T süzüldü
+    expect(gida.yontemler).toEqual(["standart_gida_isleme", BAYRAKSIZ_T, KILITLI_T]); // DEGIRMEN_T ve (G6-3) gerçek degirmen, ekmek_firini süzüldü
     // içerik nesnesi değişmedi (kopya)
     expect(bolge.icerik).toEqual(tamIcerik);
     expect(bolge.icerik.tesisTurleri.find((t) => t.id === "gida_fabrikasi")!.yontemler).toContain(DEGIRMEN_T);
     // mülk kipi: tam liste
     const mulk = icerikDerle(yontemliMulkVeri());
-    expect(mulk.tesisTurleri[mulk.tesisTuruIndeks["gida_fabrikasi"] as number]!.yontemler).toEqual(["standart_gida_isleme", DEGIRMEN_T, BAYRAKSIZ_T, KILITLI_T]);
+    expect(mulk.tesisTurleri[mulk.tesisTuruIndeks["gida_fabrikasi"] as number]!.yontemler).toEqual(["standart_gida_isleme", "degirmen", "ekmek_firini", DEGIRMEN_T, BAYRAKSIZ_T, KILITLI_T]); // G6-3: gerçek degirmen ve ekmek_firini de mülk kipinde görünür
     // indeks ve kimlik tabloları iki kipte aynı sırada ve TAM (süzülmüş yöntem de indekslidir)
     expect(ic.yontemIndeks[DEGIRMEN_T]).toBe(mulk.yontemIndeks[DEGIRMEN_T]);
     expect(ic.yontemler.map((y) => y.id)).toEqual(bolge.icerik.yontemler.map((y) => y.id));
@@ -182,6 +182,9 @@ describe("mulkKipi süzgeci (icerikDerle): bölge kipinde süzülür, mülk kipi
 
   it("hiçbir yöntem mulkKipi değilse bugünkü dizi referansı aynen döner (bit bit aynı davranış)", () => {
     const v = miniVeriyiYukle();
+    expect(v.icerik.yontemler.some((y) => y.mulkKipi === true)).toBe(true); // G6-3: gerçek içerikte mulkKipi yöntemler var, süzülür
+    expect(icerikDerle(v).tesisTurleri).not.toBe(v.icerik.tesisTurleri);
+    for (const y of v.icerik.yontemler) delete y.mulkKipi; // G6 öncesi içerik: hiçbiri mulkKipi değil
     expect(icerikDerle(v).tesisTurleri).toBe(v.icerik.tesisTurleri);
   });
 

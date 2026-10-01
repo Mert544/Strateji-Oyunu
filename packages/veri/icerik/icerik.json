@@ -146,6 +146,26 @@
       "id": "sulama_pompasi", "ad": "Sulama Pompası",
       "girdiler": { "elektrik": 8000 }, "ciktilar": {}, "isci": 3000,
       "bakim": { "parca": 500 }, "sulama": true
+    },
+    {
+      "id": "degirmen", "ad": "Değirmen",
+      "girdiler": { "tahil": 200000, "elektrik": 12000 }, "ciktilar": { "un": 165000, "kepek": 33000 }, "isci": 5000,
+      "bakim": { "parca": 800 }, "kirlilikPpmSaat": 20, "mulkKipi": true
+    },
+    {
+      "id": "ekmek_firini", "ad": "Ekmek Fırını",
+      "girdiler": { "un": 165000, "yakit": 20000, "elektrik": 15000 }, "ciktilar": { "ekmek": 240000 }, "isci": 8000,
+      "bakim": { "parca": 800 }, "kirlilikPpmSaat": 20, "mulkKipi": true
+    },
+    {
+      "id": "kepek_gubresi", "ad": "Kepekten Gübre",
+      "girdiler": { "kepek": 100000, "elektrik": 5000 }, "ciktilar": { "gubre": 18000 }, "isci": 3000,
+      "bakim": { "parca": 500 }, "kirlilikPpmSaat": 10, "mulkKipi": true
+    },
+    {
+      "id": "sut_kepekli", "ad": "Kepekli Süt Besisi",
+      "girdiler": { "tahil": 50000, "kepek": 60000, "elektrik": 5000 }, "ciktilar": { "sut": 82000, "gubre": 4000 }, "isci": 5000,
+      "bakim": { "parca": 500 }, "kirlilikPpmSaat": 10, "mulkKipi": true
     }
   ],
   "tesisTurleri": [
@@ -158,7 +178,7 @@
     {
       "id": "gida_fabrikasi", "ad": "Gıda Fabrikası",
       "insaMaliyeti": { "celik": 60000, "parca": 20000 }, "insaParasi": 10000000, "insaSuresiSaat": 6,
-      "yontemler": ["standart_gida_isleme"]
+      "yontemler": ["standart_gida_isleme", "degirmen", "ekmek_firini"]
     },
     {
       "id": "cevher_madeni", "ad": "Cevher Madeni",
@@ -213,7 +233,7 @@
     {
       "id": "ahir", "ad": "Ahır",
       "insaMaliyeti": { "celik": 40000, "parca": 15000 }, "insaParasi": 8000000, "insaSuresiSaat": 6,
-      "yontemler": ["ahir_besi"], "gerekliEtiket": "ova", "tarimTesisi": true
+      "yontemler": ["ahir_besi", "kepek_gubresi", "sut_kepekli"], "gerekliEtiket": "ova", "tarimTesisi": true
     },
     {
       "id": "mera", "ad": "Mera",

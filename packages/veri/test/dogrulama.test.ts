@@ -323,9 +323,11 @@ describe("mulkKipi (YontemTanimi): kurallar", () => {
     throw new Error("aday yontem yok");
   }
 
-  it("varsayılan olmayan ve teknoloji şartsız yöntemde geçerli; alan yokken bugünkü içerik aynen geçerli", () => {
+  it("varsayılan olmayan ve teknoloji şartsız yöntemde geçerli; alan yokken (eski içerik) aynen geçerli; bugünkü içerikte yalnız G6'nın dört yöntemi mulkKipi", () => {
     const v = kopya(varsayilanVeriyiYukle());
-    expect(v.icerik.yontemler.some((y) => y.mulkKipi !== undefined)).toBe(false);
+    expect(v.icerik.yontemler.filter((y) => y.mulkKipi === true).map((y) => y.id)).toEqual(["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli"]);
+    expect(dogrulaIcerik(v.icerik)).toEqual({ gecerli: true });
+    for (const y of v.icerik.yontemler) delete y.mulkKipi; // alan yokken (G6 öncesi içerik) geçerli
     expect(dogrulaIcerik(v.icerik)).toEqual({ gecerli: true });
     const { yontem } = aday(v);
     v.icerik.yontemler.find((y) => y.id === yontem)!.mulkKipi = true;
@@ -377,11 +379,14 @@ describe("mulk.sebeke ve mulk.yontemGecersizKilma (şema ve aralık)", () => {
     return { v, p: kopya(v.param) };
   };
 
-  it("alanlar yokken bugünkü parametreler geçerli; sebeke ve gecersizKilma eklenince geçerli", () => {
+  it("alanlar yokken (G6 öncesi parametreler) geçerli; bugünkü parametrelerde sebeke ve gecersizKilma (T3 G6 yaması) var ve geçerli", () => {
     const { v, p } = mulkParam();
-    expect(p.mulk?.sebeke).toBeUndefined();
-    expect(p.mulk?.yontemGecersizKilma).toBeUndefined();
+    expect(p.mulk?.sebeke).toEqual({ surum: 1, mallar: [{ mal: "elektrik", tavanOraniPpm: 1_000_000 }, { mal: "yakit", tavanOraniPpm: 1_000_000 }], kasaPayiPpm: 120_000 });
+    expect(p.mulk?.yontemGecersizKilma).toEqual({ standart_gida_isleme: { ciktiPpm: 1_000_000 } });
     expect(dogrulaParametreler(p, v.icerik)).toEqual({ gecerli: true });
+    delete p.mulk!.sebeke;
+    delete p.mulk!.yontemGecersizKilma;
+    expect(dogrulaParametreler(p, v.icerik)).toEqual({ gecerli: true }); // alanlar yokken
     p.mulk!.sebeke = sebeke();
     p.mulk!.yontemGecersizKilma = { standart_gida_isleme: { ciktiPpm: 1_000_000 } };
     expect(dogrulaParametreler(p, v.icerik)).toEqual({ gecerli: true });

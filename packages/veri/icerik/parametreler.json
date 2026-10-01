@@ -232,6 +232,8 @@
       "kalkanGun": 14
     },
     "temelEmirYuvasi": 4,
+    "sebeke": { "surum": 1, "mallar": [{ "mal": "elektrik", "tavanOraniPpm": 1000000 }, { "mal": "yakit", "tavanOraniPpm": 1000000 }], "kasaPayiPpm": 120000 },
+    "yontemGecersizKilma": { "standart_gida_isleme": { "ciktiPpm": 1000000 } },
     "kasa": {
       "vergiPayi": { "mahallePpm": 200000, "ilcePpm": 400000, "ilPpm": 150000 },
       "ithalatMakasiIlcePpm": 200000,

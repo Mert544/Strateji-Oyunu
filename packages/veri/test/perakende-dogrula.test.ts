@@ -1,6 +1,6 @@
 /**
  * Node-only ek doğrulayıcı (`veri/src/perakende-dogrula.ts`; sartname §4.5 Katman 2): V13 çıkmaz mal (yan ürün kuralı ve genel uyarı), V14 `mulk.sebeke`,
- * V15 mülk kipi yöntem oran bandı (uyarı), V17 `mulk.yontemGecersizKilma`; Y8 uyarısı. G6-1: bugünkü veride hata yok; bloklar yokken sonuç değişmez.
+ * V15 mülk kipi yöntem oran bandı (uyarı), V17 `mulk.yontemGecersizKilma`; Y8 uyarısı. G6-3: yan ürün kuralı hata; bloklar yokken sonuç değişmez.
  */
 import { describe, expect, it } from "vitest";
 import { CIKMAZ_MAL_HATA, YAN_URUN_KURALI_HATA, dogrulaPerakende, miniVeriyiYukle, varsayilanVeriyiYukle, veriUyarilari } from "../src/index";
@@ -8,31 +8,33 @@ import { CIKMAZ_MAL_HATA, YAN_URUN_KURALI_HATA, dogrulaPerakende, miniVeriyiYukl
 const kopya = <T>(x: T): T => structuredClone(x);
 const hatalar = (r: ReturnType<typeof dogrulaPerakende>): string => (r.gecerli ? "" : r.hatalar.join("\n"));
 
-describe("dogrulaPerakende: bugünkü veri (JSON değişmedi)", () => {
-  it("hata yok; sabitler: çıkmaz mal ve yan ürün kuralı bu dilimde uyarı; yan ürün uyarısı kepek için var (tüketici yöntem G6-3'te gelir)", () => {
+describe("dogrulaPerakende: bugünkü veri (G6-3 içeriği: T3 G6 yaması)", () => {
+  it("hata yok; yan ürün kuralı HATA (G6-3), genel çıkmaz mal kuralı hâlâ uyarı; kepek ve gübre alıcılı (yan ürün uyarısı yok)", () => {
     expect(CIKMAZ_MAL_HATA).toBe(false);
-    expect(YAN_URUN_KURALI_HATA).toBe(false);
+    expect(YAN_URUN_KURALI_HATA).toBe(true);
     const v = miniVeriyiYukle();
     const r = dogrulaPerakende(v);
     expect(r.gecerli).toBe(true);
-    expect(r.uyarilar).toContain("icerik: yan urun alicisiz: kepek");
+    expect(r.uyarilar.some((u) => u.includes("yan urun"))).toBe(false);
     // yükleyici de aynı doğrulamadan geçer; uyarılar okunabilir (varsayılan sessiz)
-    expect(veriUyarilari()).toContain("icerik: yan urun alicisiz: kepek");
+    expect(veriUyarilari().some((u) => u.includes("yan urun"))).toBe(false);
   });
 
-  it("yan ürün kuralı HATA kipinde (G6-3 ile açılır) bugünkü veriyi reddeder; elektrik muaf, gubre yöntem girdisi ya da gübre dozu ile karşılanır", () => {
+  it("yan ürün kuralı HATA: kepeği tüketen yöntemler (kepek_gubresi, sut_kepekli) ve pazar emilimi kalkınca bugünkü veriyi reddeder; elektrik muaf, gubre yöntem girdisi ya da gübre dozu ile karşılanır", () => {
     const v = varsayilanVeriyiYukle();
-    const r = dogrulaPerakende(v, { yanUrunHata: true });
-    expect(hatalar(r)).toBe("icerik: yan urun alicisiz: kepek");
-    expect(r.uyarilar.some((u) => u.includes("yan urun"))).toBe(false);
+    const r = dogrulaPerakende(v);
+    expect(r.gecerli).toBe(true);
     expect(r.uyarilar.some((u) => u.includes("cikmaz mal: elektrik"))).toBe(false);
-    // kepeği tüketen bir yöntem + pazar emilimi: kural karşılanır
+    // kepeği tüketen yöntemler yoksa alıcısız
     const w = kopya(v);
-    w.icerik.yontemler.find((y) => y.id === "ahir_besi")!.girdiler["kepek"] = 1000;
-    expect(dogrulaPerakende(w, { yanUrunHata: true }).gecerli).toBe(true);
-    // pazar emilimi (N) yoksa yine alıcısız
-    w.param.pazar.emilimSaat["kepek"] = 0;
-    expect(hatalar(dogrulaPerakende(w, { yanUrunHata: true }))).toBe("icerik: yan urun alicisiz: kepek");
+    for (const y of w.icerik.yontemler) delete y.girdiler["kepek"];
+    expect(hatalar(dogrulaPerakende(w))).toBe("icerik: yan urun alicisiz: kepek");
+    // yöntem girdisi var ama pazar emilimi (N) yoksa yine alıcısız
+    const z = kopya(v);
+    z.param.pazar.emilimSaat["kepek"] = 0;
+    expect(hatalar(dogrulaPerakende(z))).toBe("icerik: yan urun alicisiz: kepek");
+    // kural kapatılırsa (yalnız seçenek) uyarı olur
+    expect(dogrulaPerakende(w, { yanUrunHata: false }).uyarilar).toContain("icerik: yan urun alicisiz: kepek");
   });
 
   it("genel çıkmaz mal kuralı: uyarı; HATA kipinde (P1 kapısı) aynı iletiler hata olur", () => {
@@ -45,9 +47,10 @@ describe("dogrulaPerakende: bugünkü veri (JSON değişmedi)", () => {
     expect(hatalar(h)).toContain(u[0]);
   });
 
-  it("blok yokken sonuç yalnız bu uyarılardır: sebeke, gecersizKilma ve mulkKipi kuralları sessiz", () => {
+  it("sebeke ve gecersizKilma blokları yoksa (G6 öncesi parametreler) sonuç yalnız bu uyarılardır: sebeke, gecersizKilma kuralları sessiz", () => {
     const v = miniVeriyiYukle();
-    expect(v.param.mulk?.sebeke).toBeUndefined();
+    delete v.param.mulk!.sebeke;
+    delete v.param.mulk!.yontemGecersizKilma;
     expect(dogrulaPerakende(v).uyarilar.every((u) => u.startsWith("icerik: "))).toBe(true);
   });
 });
