@@ -197,7 +197,7 @@ Kural sürümü değişimi (yeni kimlik eklemek, parametre/denge değiştirmek) 
 1. Eski içerikle çalışan sunucuyu normal kapatın (SIGTERM: kuyruk yazılır, kapanış görüntüsü günlüğü boşaltır). Günlük kuyruğu boş olmalıdır, aksi halde göç reddedilir.
 2. `deploy/yedek.sh` ile pg dökümünü alın (göç ayrıca kendi görüntü yedeğini `snapshot_yedek`'e yazar, ama tam döküm ikinci sigortadır).
 3. Yeni içerikle `BOLGE_GOC=1` (ya da `--goc`) açın; `hazir` olayındaki `kurtarma.goc` (`eklenen`, `ihlalSayisi`, `yenidenIndekslendi`) beklenenle uyuşuyor mu bakın; ardından `BOLGE_GOC=0` ile yeniden başlatın (sonraki açılış göç etmez).
-4. Geri dönüş: yalnız yeni kural sürümüyle hiç komut kabul edilmediyse geçerlidir. Sunucuyu durdurun, `--depo pg --dunya <ad> --yedekten-don goc-<eskiKural>` CLI'ı ile (kodda `postgresDeposu({...}).yedektenDon("goc-<eskiKural>")`) yedeği en yeni görüntü yapın (ya da tam dökümü geri yükleyin), eski içerikle bayraksız açın. Adım adım prova: "Alfa-0 açılış kontrol listesi", adım 6. Dosya deposunda `.yedek` dosyasını `<ad>.goruntu` üzerine kopyalayın.
+4. Geri dönüş: yalnız yeni kural sürümüyle hiç komut kabul edilmediyse geçerlidir. Sunucuyu durdurun, `--depo pg --dunya <ad> --yedekten-don goc-<eskiKural>` CLI'ı ile (kodda `postgresDeposu({...}).yedektenDon("goc-<eskiKural>")`) yedeği en yeni görüntü yapın (ya da tam dökümü geri yükleyin), eski içerikle bayraksız açın. Uyarı: göç açılışı normal kapatıldıysa yedek, daha geç sim_t'li yeni-kural görüntülerinin altında kalır; bu durumda önce `DELETE FROM snapshots WHERE dunya = '<ad>' AND kural_sur = '<yeniKural>'` gerekir (yalnız yeni kuralla hiç komut kabul edilmediyse; kontrol: `max(seq)` yedeğin seq'ine eşit). Kalıcı çözüm K2'de (`yedektenDon`). Adım adım prova: "Alfa-0 açılış kontrol listesi", adım 6. Dosya deposunda `.yedek` dosyasını `<ad>.goruntu` üzerine kopyalayın.
 
 ### Sağlık ve metrik
 
@@ -306,7 +306,7 @@ Ne değişti, ne değişmedi: (a) **olay döngüsü p99 %33-53 düştü, en büy
 
 ## Alfa-0 açılış kontrol listesi
 
-Gerçek bir makinede (Docker + Compose v2) İLK kurulumda, sırayla ve bir adım geçmeden sonrakine geçmeden koşulacak kontroller. Her adım komutu ve beklenen sonucu verir; beklenenden saparsa DURUN ve düzeltin. Bu listenin hiçbir adımı bu depoda Docker daemon'ı olmadan koşulamadı (ortamda daemon yok): Docker'a özgü adımlar (1, 4'ün konteyner kısmı, 5-6'nın `compose` komutları) **ilk gerçek makinede ilk kez denenecektir**; sunucu davranışı (üretim kipi, sağlık, metrik, SIGTERM, kill -9) aynı CLI ile yerelde ve otomatik testlerde doğrulanmıştır, bu adımlarda yerel eşdeğeri de yazılıdır. Komutlarda kısaltma:
+Gerçek bir makinede (Docker + Compose v2) İLK kurulumda, sırayla ve bir adım geçmeden sonrakine geçmeden koşulacak kontroller. Her adım komutu ve beklenen sonucu verir; beklenenden saparsa DURUN ve düzeltin. Bu listenin hiçbir adımı bu depoda Docker daemon'ı olmadan koşulamadı (ortamda daemon yok): Docker'a özgü adımlar (1, 4'ün konteyner kısmı, 5-6'nın `compose` komutları) **ilk gerçek makinede ilk kez denenecektir**; sunucu davranışı (üretim kipi, sağlık, metrik, SIGTERM, kill -9) aynı CLI ile yerelde ve otomatik testlerde doğrulanmıştır, bu adımlarda yerel eşdeğeri de yazılıdır. **Yerel prova (1 Ekim, O3):** Docker'a özgü olmayan adımlar (2, 3, 4'ün yerel eşdeğeri, 5'in `deploy/yedek.sh` / `geri-yukle.sh` yolu, 6, 7, 8, 10) yerel Postgres 16 ile gerçekten koşuldu; sonuçlar ve sapmalar `docs/agent-results/acilis-prova-o3.md`'dedir ve aşağıda düzeltilmiştir (adım 3, 6, 8, 10). Ortamda Docker CLI ve compose v5 var, daemon yok: `docker compose ... config` statik doğrulaması geçti, `build`/`up` koşulamadı. Adım 9 (yük) bu provada koşulmadı. Komutlarda kısaltma:
 
 ```sh
 D="docker compose -f deploy/docker-compose.yml --env-file deploy/.env"
@@ -334,9 +334,9 @@ curl -si http://127.0.0.1:8787/hazir      # beklenen: HTTP 200 (yalnız durum "o
 ```sh
 curl -si http://127.0.0.1:9464/metrik | head -1                                   # beklenen: HTTP/1.1 401 (loopback dışı bind = konteyner içi 0.0.0.0; token zorunlu)
 curl -s -H "Authorization: Bearer $(grep ^METRIK_TOKEN deploy/.env | cut -d= -f2-)" http://127.0.0.1:9464/metrik | grep -E '^bolge_(olumcul|yetisiyor|bagli_oyuncu|seq) '
-                                                                                  # beklenen: bolge_olumcul 0, bolge_yetisiyor 0, seq > 0
+                                                                                  # beklenen: bolge_olumcul 0, bolge_yetisiyor 0, seq >= 0 (yeni dünyada ilk komuta kadar 0)
 curl -si -X POST http://127.0.0.1:9464/metrik | head -1                           # beklenen: 405 (GET dışı); /bilinmeyen yol: 404
-ss -ltn | grep -E ':(5432|8787|9464)\b'                                           # beklenen: 8787 ve 9464 YALNIZ 127.0.0.1'de; 5432 hiç yok (pg yayınlanmaz)
+ss -ltn | grep -E ':(5432|8787|9464)\b'                                           # beklenen: 8787 ve 9464 YALNIZ 127.0.0.1'de; 5432 hiç yok (pg yayınlanmaz); ss yoksa: lsof -nP -iTCP -sTCP:LISTEN
 ```
 Üretimde tokensiz açma denemesi (`BOLGE_METRIK_HOST=0.0.0.0` + boş/kısa token) sunucuyu BAŞLATMAZ: aşağıdaki adım 4 bunu da kapsar.
 
@@ -346,7 +346,8 @@ $D --env-file deploy/.env.ornek config >/dev/null && echo "yapi ok"             
 $D --env-file deploy/.env.ornek run --rm --no-deps sunucu; echo "kod=$?"          # beklenen: kod=1; mesaj "uretim kipi: gelistirme sirri en az 16 karakter olmali ve varsayilan/ornek ('degistir...') deger olmamali"; sunucu HİÇ başlamaz
 $D run --rm --no-deps -e BOLGE_GELISTIRME_SIRRI=kisa sunucu; echo "kod=$?"        # beklenen: kod=1 (< 16 karakter)
 $D run --rm --no-deps -e BOLGE_ELLE_SAAT=1 sunucu; echo "kod=$?"                  # beklenen: kod=1 (üretimde elle saat yasak)
-# yerel eşdeğer (Docker'sız): BOLGE_URETIM=1 node --import tsx packages/sunucu/src/cli.ts   # beklenen: çıkış kodu 1 + aynı mesaj
+# yerel eşdeğer (Docker'sız): BOLGE_URETIM=1 BOLGE_DEPO=bellek BOLGE_PORT=0 node --import tsx packages/sunucu/src/cli.ts   # beklenen: çıkış kodu 1 + aynı mesaj
+#   sırsız: "BOLGE_GELISTIRME_SIRRI (ya da --gelistirme-sirri) acikca verilmeli"; örnek/kısa sır, örnek metrik token'ı ve BOLGE_ELLE_SAAT=1 için yukarıdaki mesajlar; BOLGE_METRIK_HOST=0.0.0.0 + tokensiz: "metrik ucu loopback disi bir adrese (0.0.0.0) baglanmak icin en az 16 karakterlik bir token ... gerektirir" (hepsi kod=1, olay `olumcul`)
 ```
 `BOLGE_METRIK_TOKEN=degistir...` de aynı şekilde reddedilir (`uretim kipi: metrik token'i ornek ...`). **Sunucu `PG_SIFRE`'yi DENETLEMEZ** (pg'nin kendi sırrıdır): `grep -c degistir deploy/.env` çıktısı 0 olmalı. Not: `run` ile verilen `-e` değerleri `.env`'in üzerine yazılır; açık üretim sunucusuna dokunmaz (`--no-deps`: pg'ye de dokunmaz, `--rm`: kalıcı konteyner bırakmaz).
 
@@ -364,18 +365,21 @@ $D start sunucu && sleep 20 && $D logs sunucu 2>&1 | grep '"olay":"hazir"' | tai
 # beklenen: iki satırın kurtarma.seq, kurtarma.simZamani, kurtarma.durumOzeti ve kurtarma.goruntuSeq ALANLARI AYNIDIR (yetişme sonrası değil, açılıştaki kurtarma)
 docker rm -f bolge-geri-deneme; $D exec -T pg dropdb -U bolge bolge_geri
 ```
-Host'ta pg istemci araçları varsa alternatif: `deploy/yedek.sh` ve `deploy/geri-yukle.sh ... --olustur` (sha256 doğrulamalı; bkz. "Yedek ve geri yükleme"). Otomatik eşdeğeri: `test/yedek-geri-yukle.test.ts`. Dumpı SERVER dışında (başka disk/makine) saklayın; `BOLGE_GELISTIRME_SIRRI` ayrıca yedeklenir.
+Host'ta pg istemci araçları varsa alternatif: `deploy/yedek.sh` ve `deploy/geri-yukle.sh ... --olustur` (sha256 doğrulamalı; bkz. "Yedek ve geri yükleme"). Yerelde doğrulandı (unix soketli küme, `PG_BIN=/usr/lib/postgresql/16/bin`, URI `postgres://bolge@localhost/bolge?host=/tmp/o3-pg/soket`): sunucuyu SIGTERM'le kapatın, `deploy/yedek.sh "$URI" yedek.dump` (beklenen özet satırı `dunya=ana son_seq=N goruntu=M`), `deploy/geri-yukle.sh yedek.dump "$URI_GERI" --olustur` (aynı özet satırı), ikinci yükleme "hedef veritabani bos degil" ile reddedilir (kod 1), bozulmuş `.sha256` "yedek sha256 uyusmuyor" ile reddedilir; sonra geri yüklenen ve canlı veritabanından açılan sunucuların `kurtarma.seq/simZamani/durumOzeti/goruntuSeq` değerleri aynı çıktı. Otomatik eşdeğeri: `test/yedek-geri-yukle.test.ts`. Dumpı SERVER dışında (başka disk/makine) saklayın; `BOLGE_GELISTIRME_SIRRI` ayrıca yedeklenir.
 
 **6. Kural dönemi göç provası** (üretim veritabanına DOKUNMADAN, yedeğin kopyasında): yeni içerikle (`packages/veri/icerik/*` değişmiş yeni imaj; içerik değişmediyse bayrak zararsızdır ve `kurtarma.goc` `null` döner) göç `bolge_geri` kopyasında denenir.
 ```sh
 $D exec -T pg createdb -U bolge bolge_prova && $D exec -T pg pg_restore -U bolge -d bolge_prova --no-owner < yedek.dump
 $D run --rm --no-deps -e BOLGE_GOC=1 -e BOLGE_PG_URL="postgres://bolge:$SIFRE@pg:5432/bolge_prova" sunucu   # (ayrı terminalde izleyin; Ctrl-C = SIGTERM)
-#   beklenen "hazir" olayı: kurtarma.goc = { eskiKuralSurumu, yeniKuralSurumu, eklenen: {...}, eklenenSayisi, ihlalSayisi: 0, yenidenIndekslendi: false(yalnız sona ekleme), yedek: "goc-<eskiKural>" }
+#   beklenen "hazir" olayı: kurtarma.goc = { eskiKuralSurumu, yeniKuralSurumu, eklenen: {...}, eklenenSayisi, ihlalSayisi: 0, yenidenIndekslendi, yedek: "pg:snapshot_yedek:<dunya>:goc-<eskiKural>" }
+#   yenidenIndekslendi = true: yeni kimlik eklendiyse (kimlik tablosu değişir, yalnız sona ekleme olsa da); false: yalnız parametre/denge değiştiyse. Yerel prova: icerik.json'a sona bir mal + kimlik-listesi.json'a aynı kimlik + parametreler.json `pazar.emilimSaat` ve `arzSaat`'a değer eklenir (yoksa veri paketi açılışta reddeder)
 #   (içerik değişmediyse kurtarma.goc = null: göç gerekmedi)
 $D exec -T pg psql -U bolge -d bolge_prova -tAc "SELECT etiket, seq FROM snapshot_yedek"   # beklenen: goc-<eskiKural> satırı (göç önce eski görüntüyü yedekler)
 # GERİ DÖNÜŞ provası (göçten sonra, hiç komut kabul edilmeden): yedeği en yeni görüntü yap
 $D run --rm --no-deps -e BOLGE_PG_URL="postgres://bolge:$SIFRE@pg:5432/bolge_prova" sunucu node --import tsx packages/sunucu/src/cli.ts --depo pg --dunya ana --yedekten-don goc-<eskiKural>
 #   beklenen: {"olay":"yedektenDon",...,"durumOzeti":"..."} ve çıkış kodu 0; ESKİ imajla bayraksız açılış aynı özetle (hazir.kurtarma.durumOzeti) gelir; yok etiket: çıkış 1 "goc yedegi yok"
+#   DİKKAT (provada saptandı, K2'ye bildirildi): göç açılışı bir kez bile normal kapatıldıysa (SIGTERM kapanış görüntüsü, mutlak saatte yedekten DAHA GEÇ sim_t) `yedektenDon` yedeği "en yeni" yapamaz ve eski içerikle açılış "kural surumu uyusmuyor" ile reddedilir. Geçici çözüm (yalnız yeni kuralla hiç komut kabul edilmediyse: `SELECT max(seq) FROM log WHERE dunya='ana'` = yedeğin seq'i):
+#     $D exec -T pg psql -U bolge -d bolge_prova -tAc "DELETE FROM snapshots WHERE dunya='ana' AND kural_sur='<yeniKural>'"   # ardından --yedekten-don, sonra eski imajla açılış
 $D exec -T pg dropdb -U bolge bolge_prova
 ```
 Gerçek dönem göçünde sıra: SIGTERM ile kapat (kuyruk boş) → döküm (adım 5) → yeni imajla `BOLGE_GOC=1` → `hazir.kurtarma.goc`'u beklenenle karşılaştır → `BOLGE_GOC=0` ile yeniden başlat. `--yedekten-don` (CLI; `BOLGE_PG_URL` ya da `--pg-url` + `--depo pg --dunya <ad>` ister) pg'de `yedektenDon(etiket)` çağırır. Otomatik eşdeğeri: `test/pg.test.ts` (göç + geri dönüş + CLI).
@@ -392,7 +396,7 @@ Yükseltme: eski sürümlü (1 ya da 2; ya da sürüm tablosuz eski kurulum) bir
 $D logs sunucu 2>&1 | grep '"olay":"hazir"' | head -1     # beklenen: kurtarma.dunyaEpochMs = 1790802000000 (2026-09-30T21:00Z; boş BOLGE_DUNYA_EPOCH = varsayılan) YENİ dünyada
 curl -s http://127.0.0.1:8787/saglik                      # beklenen: simZamaniMs ≈ (şimdi_ms - dunyaEpochMs) (yenilemede kendi saatinizle: $(( $(date +%s%3N) - 1790802000000 )) ± birkaç yüz ms)
 ```
-Epoch yalnız YENİ dünyada uygulanır ve bir Türkiye gece yarısı olmalıdır (ör. `BOLGE_DUNYA_EPOCH=2026-09-30T21:00:00Z`); var olan dünyada `.env`'deki değer yok sayılır. **Kapalıyken yetişme:** `$D stop sunucu`, ≥ 1-2 dk bekleyin, `$D start sunucu`; beklenen: `{"olay":"yetisme",...}` satırları, ardından `{"olay":"yetisti",...}` (1 sim-saatlik adımlarla yetişme; 100 oyuncuyla sim-gün başına birkaç sn, "Ödül dedektörü açıkken" bölümüne bakın); yetişirken `/saglik` 200 `durum:"yetisiyor"`, `/hazir` 503, oyuncu komutu `yetisiyor` kodu alır; bitince `/hazir` 200 ve `simZamaniMs` yine ≈ şimdi - epoch. Yetişirken verilen Esnaf Defteri ödülleri `bolge_odul_verilen_toplam`'a eklenir.
+Epoch yalnız YENİ dünyada uygulanır ve bir Türkiye gece yarısı olmalıdır (ör. `BOLGE_DUNYA_EPOCH=2026-09-30T21:00:00Z`); var olan dünyada `.env`'deki değer yok sayılır. **Kapalıyken yetişme:** `$D stop sunucu`, ≥ 1-2 dk bekleyin, `$D start sunucu`; beklenen: `hazir.kurtarma.simZamani` kapanıştaki değer, ardından `{"olay":"yetisti",...}` ve `/saglik` `simZamaniMs` ≈ şimdi - epoch. Yetişme 1 sim-saatlik adımlarla ilerler: 1 sim-saatten kısa kapalı kalma tek `yetisti` satırı verir (`adim: 0`), `{"olay":"yetisme",...}` satırları yalnız birkaç saatlik yetişmede çıkar (yerelde 128 sn kapalılık: yalnız `yetisti`, 93 ms; 21,8 saatlik ilk açılış yetişmesi: 21 adım, 98 ms). Boş sunucuda yetişme milisaniyeler sürdüğünden yetişirken `/saglik` 200 `durum:"yetisiyor"`, `/hazir` 503 ve `yetisiyor` komut reddi elle gözlenemez (otomatik testlerde kapsanır); 100 oyuncuyla sim-gün başına birkaç sn ("Ödül dedektörü açıkken" bölümüne bakın). Bitince `/hazir` 200. Çok adımlı yetişmeyi görmek için günler öncesinin gece yarısı epoch'uyla YENİ bir dünya açın (`BOLGE_DUNYA=ep BOLGE_DUNYA_EPOCH=2026-09-29T21:00:00Z`: `simZamani = şimdi - epoch`; gece yarısı olmayan epoch "dunyaEpochMs bir Turkiye gece yarisi olmali (UTC+3)" ile reddedilir; var olan dünyada env'deki epoch yok sayılır). Yetişirken verilen Esnaf Defteri ödülleri `bolge_odul_verilen_toplam`'a eklenir.
 
 **9. Yük testi `yuk.sh kademeli pg`** (ÜRETİM veritabanına DEĞİL: ayrı, geçici bir pg ile; yük testi dünyayı doldurur)
 ```sh
@@ -413,7 +417,7 @@ docker kill -s KILL "$($D ps -q sunucu)"
 $D start sunucu       # (restart: unless-stopped zaten kaldırır)   beklenen: "hazir"; kurtarma.kalanKayit >= 0, kurtarma.kalanBasarisiz = 0, olumcul/uyari yok; oyuncular yeniden bağlanıp tam kare alır
 $D exec -T pg psql -U bolge -d bolge -tAc "SELECT max(seq) FROM log"   # kill öncesi son seq'ten GERİ GİTMEMİŞ olmalı (kabul edilen komut kaybolmaz)
 ```
-Yerel eşdeğeri `test/kurtarma-sureci.test.ts` (üç kipte SIGKILL, dünya özeti eşitliği) ve kapanış testleridir. Pg konteynerini de aynı şekilde sınayın (`docker kill pg`): sunucu yazma hatasında ÖLÜMCÜL olur (`/saglik` 503, `bolge_olumcul 1`), pg dönünce yeniden başlatılana kadar açık yazma yapmaz; bu bilinçlidir (fail-stop).
+Yerel eşdeğeri `test/kurtarma-sureci.test.ts` (üç kipte SIGKILL, dünya özeti eşitliği) ve kapanış testleridir. Pg konteynerini de aynı şekilde sınayın (`docker kill pg`). Yazma hatasında (kalıcı katmanın bir yazması reddedilirse) sunucu ÖLÜMCÜL olur (`/saglik` 503, `bolge_olumcul 1`) ve yeniden başlatılana kadar açık yazma yapmaz; bu bilinçlidir (fail-stop). **Provada saptanan sapma (K2'ye bildirildi):** pg süreci düşünce (yerelde `pg_ctl -m immediate stop`) boştaki havuz bağlantısı `Connection terminated unexpectedly` ile kopar ve havuzun `error` olayı dinlenmediği için süreç işlenmeyen hatayla çıkış kodu 1'le çöker; `olumcul` olayı yazılmaz ve `/saglik` 503 görülmez. `restart: unless-stopped` süreci yeniden başlatır; pg dönünce kurtarma temizdir (seq korunur, `kalanKayit` 0). Davranış sonuç olarak fail-stop'tur ama günlük satırı yoktur.
 
 **Sonuç ölçütü:** 1-10 geçtiyse ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
 
