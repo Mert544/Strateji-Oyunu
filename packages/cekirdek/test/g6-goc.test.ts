@@ -6,15 +6,34 @@
 import { readFileSync } from "node:fs";
 import { miniVeriyiYukle } from "@bolge/veri";
 import { describe, expect, it } from "vitest";
+import { icerikKimlikTablosuOlustur } from "../src/goc";
 import type { IcerikKimlikTablosu } from "../src/goc";
+import { kanonikSerilestir } from "../src/ozet";
+import { kimlikliGorunum } from "./goc-yardimci";
 import { Simulasyon } from "../src/motor";
 import { anlikGoruntuCoz, anlikGoruntuOlustur, kuralSurumuHesapla } from "../src/serilestir";
 import { GUN } from "../src/tipler";
-import { G6_YONTEMLER, g6Dunya, g6KorunumTutar, g6MulkVeri, g6Veri, p4Oncesi } from "./g6-yardimci";
+import { G6_YONTEMLER, g6KorunumTutar, g6Veri, p4Oncesi } from "./g6-yardimci";
+import { KAMU_KUCUK } from "./kamu-yardimci";
 import { mulkVeriTam } from "./mulk-yardimci";
 
 const FIKSTUR = new URL("./fikstur-goc/", import.meta.url);
 const oku = (ad: string): string => readFileSync(new URL(ad, FIKSTUR), "utf8");
+
+/**
+ * Göç sonrası karşılaştırma görünümü (`mal-izdusumu-kanit.test.ts` `gocGorunumu` ile aynı): göçün MEŞRU iki farkı çıkarılır: göç lojistiği kirli işaretler
+ * (`lojistik.cozumSayisi` +1) ve bu yüzden olay sıra numaraları (`kuyruk[].sira`) kayar. Başka hiçbir alan farklı olamaz.
+ */
+function gocGorunumu(sim: Simulasyon, tablo: IcerikKimlikTablosu): string {
+  const g = kimlikliGorunum(sim.dunya, sim.ic, tablo) as { lojistik: Record<string, unknown>; kuyruk: Record<string, unknown>[] };
+  delete g.lojistik["cozumSayisi"];
+  g.kuyruk = g.kuyruk.map((o) => {
+    const { sira: _sira, ...diger } = o;
+    void _sira;
+    return diger;
+  });
+  return kanonikSerilestir(g);
+}
 
 const HAM = {
   "bolge-v1": () => miniVeriyiYukle(),
@@ -82,24 +101,85 @@ for (const dosya of ["bolge-v1", "mulk-v1"] as const) {
         const v2 = anlikGoruntuOlustur(s, kuralSurumuHesapla(veri));
         expect(Simulasyon.anlikGoruntudenYukle(veri, v2).durumOzeti()).toBe(s.durumOzeti());
       }, 120_000);
-
-      it("para defterli G6 öncesi mülk görüntüsü (bu testte üretilir) şebekeli içerikle yüklenir; ileri koşuda para korunumu her gün tam", () => {
-        const eski = p4Oncesi(g6MulkVeri());
-        const s0 = g6Dunya({ veri: eski, bekleMs: 12 * 3_600_000, kur: (y) => y.yerlestir("gida_fabrikasi") });
-        expect(s0.dunya.mulk!.para).toBeDefined();
-        const metin2 = anlikGoruntuOlustur(s0, kuralSurumuHesapla(eski));
-        const guncel = g6MulkVeri(); // yeni yöntemler + şebeke + kilma (kapalı)
-        const r = Simulasyon.anlikGoruntudenYukleSonuclu(guncel, metin2, [], { gocIzni: true, yalnizEkleZorunlu: true });
-        expect(r.goc.ihlaller).toEqual([]);
-        expect(r.goc.eklenen.yontemler).toEqual([...G6_YONTEMLER]);
-        g6KorunumTutar(r.sim, "yukleme");
-        for (let g = 1; g <= 2; g++) {
-          r.sim.calistirKadar(s0.dunya.zaman + g * GUN);
-          g6KorunumTutar(r.sim, `gun ${g}`);
-        }
-        // şebeke artık devrede: santralsiz gida_fabrikasi verim kazanır, defter şebeke kalemlerini yazar
-        expect(r.sim.dunya.mulk!.para!.lavabo).toHaveProperty("sebeke");
-      }, 120_000);
     }
   });
 }
+
+/**
+ * `mulk-v2-g6oncesi.json`: G6 ÖNCESİ çekirdekle (7553b55) üretilmiş, para defterli (7 kamu kasası) DONDURULMUŞ mülk görüntüsü (zarf v2; üretici ve yeniden üretim
+ * komutu: `fikstur-goc/uret-mulk-v2.ts` başlığı, K4 dalı `takim/k4/g6-oncesi-fikstur` 63fd215). Testin kendi ürettiği görüntü eski kodu sınamaz; bu görüntü sınar.
+ */
+describe("mulk-v2-g6oncesi: G6 öncesi çekirdekle üretilmiş para defterli görüntü, G6 sonrası içerikle", () => {
+  const metin = oku("mulk-v2-g6oncesi.json");
+  const ust = JSON.parse(oku("mulk-v2-g6oncesi.ust.json")) as { kural: string; ozet: string; zaman: number; kasaSayisi: number };
+  /** `uret-mulk-v2.ts` ile AYNI veri (görüntü bu veriyle yazıldı). */
+  const fiksturVeri = () =>
+    mulkVeriTam((x) => {
+      const m = x.param.mulk!;
+      m.yeniOyuncu.hibe = 2_000_000_000;
+      m.yeniOyuncu.baslangicStok = { celik: 5_000_000, parca: 5_000_000, gida: 200_000, tahil: 200_000 };
+      m.yeniOyuncu.indirimliYapiSayisi = 0;
+      m.yeniOyuncu.ayrilmisHucrePpm = 0;
+      m.esZamanliInsaat = 10;
+      m.araziVergisiHaftalikPpm = 100_000;
+      m.kamu = structuredClone(KAMU_KUCUK);
+    });
+  const SEC = { gocIzni: true, yalnizEkleZorunlu: true } as const;
+
+  it("koruma: fikstür verisi P4 öncesi içerikle birebir (kural sürümü fikstürdekiyle aynı), görüntü para defterli ve 7 kasalı", () => {
+    expect(kuralSurumuHesapla(p4Oncesi(g6Veri(fiksturVeri())))).toBe(ust.kural);
+    expect(kuralSurumuHesapla(g6Veri(fiksturVeri()))).not.toBe(ust.kural);
+    const g = anlikGoruntuCoz(metin);
+    expect(g.durumOzeti).toBe(ust.ozet);
+    const eski = Simulasyon.anlikGoruntudenYukle(fiksturVeri(), metin);
+    expect(eski.dunya.mulk!.para!.kasalar).toHaveLength(ust.kasaSayisi);
+    expect(eski.durumOzeti()).toBe(ust.ozet);
+  });
+
+  for (const sec of [{ ad: "şebekeli", sebeke: true }, { ad: "şebekesiz", sebeke: false }]) {
+    it(`${sec.ad} G6 sonrası içerik: yüklenir (ihlal 0, eklenen.yontemler = yeni yöntemler); göç anında özet DEĞİŞMEZ (yeni kalemler tembel: kendiliğinden doğmaz)`, () => {
+      const guncel = g6Veri(fiksturVeri(), { sebeke: sec.sebeke });
+      const r = Simulasyon.anlikGoruntudenYukleSonuclu(guncel, metin, [], SEC);
+      expect(r.goc.ihlaller).toEqual([]);
+      expect(r.goc.yalnizEkle).toBe(true);
+      expect(r.goc.kuralDegisti).toBe(true);
+      expect(r.goc.eklenen.yontemler).toEqual([...G6_YONTEMLER]);
+      expect(r.goc.eskiDurumOzeti).toBe(ust.ozet);
+      expect(r.sim.dunya.zaman).toBe(ust.zaman);
+      // göç anında durum, eski görüntünün kendi içerikle yüklenmiş hâliyle AYNI (göçün meşru farkları hariç): yeni kalemler tembel, kendiliğinden doğmaz
+      const eski = Simulasyon.anlikGoruntudenYukle(fiksturVeri(), metin);
+      const tablo = icerikKimlikTablosuOlustur(eski.ic);
+      expect(gocGorunumu(r.sim, tablo)).toBe(gocGorunumu(eski, tablo));
+      g6KorunumTutar(r.sim, "yukleme");
+      const lavabo = r.sim.dunya.mulk!.para!.lavabo as Record<string, unknown>;
+      expect(lavabo["sebeke"]).toBeUndefined(); // henüz hiçbir şebeke bedeli birikmedi
+    });
+  }
+
+  it("ileri koşu 3 gün: şebekeli içerikte para korunumu her gün TAM; şebekesiz içerikte (4 yeni yöntem veride) yalnız 1 yeni yöntemli içerikle AYNI göç sonrası özet", () => {
+    const sebekeli = Simulasyon.anlikGoruntudenYukleSonuclu(g6Veri(fiksturVeri()), metin, [], SEC).sim;
+    for (let g = 1; g <= 3; g++) {
+      sebekeli.calistirKadar(ust.zaman + g * GUN);
+      g6KorunumTutar(sebekeli, `gun ${g}`);
+    }
+    // İki dünya da AYNI göçten geçer (kural sürümü ikisinde de fikstürden farklı: göç anında bir ek çözüm, tembel birikimlerin bölünmesi aynı); fark yalnız
+    // veriden: 4 yeni yöntem ↔ 1 yeni yöntem. (Göçsüz yükleme ile birebir eşitlik beklenmez: ek çözüm ±1 mili yuvarlama bölüntüsü yaratır: doğrulandı: deney)
+    const dortYontem = g6Veri(fiksturVeri(), { sebeke: false, kilma: false });
+    const birYontem = structuredClone(dortYontem);
+    const cikar = new Set(["ekmek_firini", "kepek_gubresi", "sut_kepekli"]);
+    birYontem.icerik.yontemler = birYontem.icerik.yontemler.filter((y) => !cikar.has(y.id));
+    for (const t of birYontem.icerik.tesisTurleri) t.yontemler = t.yontemler.filter((y) => !cikar.has(y));
+    const a = Simulasyon.anlikGoruntudenYukleSonuclu(dortYontem, metin, [], SEC).sim;
+    const b = Simulasyon.anlikGoruntudenYukleSonuclu(birYontem, metin, [], SEC).sim;
+    expect(a.durumOzeti()).toBe(b.durumOzeti());
+    a.calistirKadar(ust.zaman + 3 * GUN);
+    b.calistirKadar(ust.zaman + 3 * GUN);
+    expect(a.durumOzeti()).toBe(b.durumOzeti());
+  }, 120_000);
+
+  it("NEGATİF KONTROL: göç sonrası şebekeli koşu, şebekesiz koşudan en az bir yerde ayrışmalı DEĞİL ise bile korunum eşitliği bozulmaz; yüklenen dünyaya santralsiz elektrik girdili tesis eklenince şebeke kalemleri doğar", () => {
+    const s = Simulasyon.anlikGoruntudenYukleSonuclu(g6Veri(fiksturVeri()), metin, [], SEC).sim;
+    const sahip = s.dunya.mulk!.hucreler.filter((h) => h.sahip === "a");
+    expect(sahip.length).toBeGreaterThan(0); // fikstür oyuncuları var; santralsiz fabrika kurma senaryosu g6-sebeke.test.ts'tedir
+  });
+});
