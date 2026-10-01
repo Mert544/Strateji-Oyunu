@@ -1779,7 +1779,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 |---|---|---|---|
 | GZ-1 | **Yöntem, tesis türü değil;** ev sahipleri (`cam_firini` → `parca_fabrikasi`); yöntem sırası `[24..29]` | canlı tesis `tesis.tur` ve `tesis.yontem` **indeksi** taşır; ev sahibi taşınamaz; kimlik listesi kilitler (§3.5) | önerilen, baş lider kararı 1 ve 11 |
 | GZ-2 | **Şebeke enerjisi (elektrik + yakıt):** otomatik tedarik, fiyat = **taban × `kamuIthalatCarpaniPpm` × mal başına `tavanOraniPpm` (sabit tamsayı; canlı referans yok)**, bayrak = `mulk.sebeke` bloğu ve mal listesi (genişletilebilir), ledger kalemleri (`lavabo.sebeke`, `kasa.giris.sebeke`), `kasaPayiPpm` 120 000 | para arzı ve sanayi dengesi (santralin rolü, yatırım sırası); defter kalem adları kalıcıdır; yakıtın stoksuz alınması oyuncu stok davranışını değiştirir | baş lider kararı (yakıt kapsamı S-10; referans S-16) |
-| GZ-3 | **Fiyat kademesi sayısı ve indeks anlamı** (4 kademe; kampanya indeks 0) | kayıtlı dükkân fiyatları indeksle saklanır; araya kademe eklemek anlamı kaydırır (A2 ZA-6) | A2 önerisi, onay bekler |
+| GZ-3 | **Fiyat kademesi sayısı ve indeks anlamı** (4 kademe; kampanya indeks 0) | kayıtlı dükkân fiyatları indeksle saklanır; araya kademe eklemek anlamı kaydırır (A2 ZA-6) | baş lider onaylı (0,85 / 0,95 / 1,05 varsayılan / 1,15) |
 | GZ-4 | **Yerel talep kimliği:** ilçe sınıfı × `talep1000Saat` × nüfus eşdeğeri × takvim grubu × bayram (nüfus yok) | arsa fiyat beklentileri ve dükkân kararları buna dayanır (A2 ZA-5); grup adları ve formül biçimi kalıcı | önerilen |
 | GZ-5 | **R tanımı:** `d.pazar.fiyat[m]` (R0 ≠ taban) | bütün oran/bant/tavan R'ye göre yazıldı | önerilen |
 | GZ-6 | **Öncelik katmanı 4a** (ihracattan önce) | stok kıtken kimin payı kaybettiği oyun dengesidir | önerilen |
@@ -1829,7 +1829,7 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | T3 # | Soru | Sonuç | Tür |
 |---|---|---|---|
 | 1 | Yöntem mi tür mü | **yöntem** (baş lider 1) | karar |
-| 2 | Yöntem seçimi akışı | **inşa komutunda isteğe bağlı `yontem?`**; `yontem_degistir` bedelsiz kalır. Görüş: kurulumdan sonra değişimden üstün (inşa saatlerce sürerken yanlış yöntemle çalışmaz; tek adım UX); maliyet küçük ve isteğe bağlı (§5.8) | karar (onaya bağlı; S-14) |
+| 2 | Yöntem seçimi akışı | **inşa komutunda isteğe bağlı `yontem?`**; `yontem_degistir` bedelsiz kalır. Görüş: kurulumdan sonra değişimden üstün (inşa saatlerce sürerken yanlış yöntemle çalışmaz; tek adım UX); maliyet küçük ve isteğe bağlı (§5.8) | karar (baş lider kabul; S-14 kapandı) |
 | 3 | `cam_firini` ev sahibi | **`parca_fabrikasi`** (A2 maliyeti −9.700 ₺, −1 hücre; ev sahibi görünen ad taşımaz; `celikhane` tavanı korunur) | karar |
 | 4 | A2 ön önerisi mi rapor değerleri mi | **A2** (tek kaynak); `standart_gida_isleme` ile ilişki §5.9 | karar |
 | 5 | Kepek ikinci tüketici | **`kepek_gubresi`**; `besi_kepekli` düştü; yeni `NpcAlici` türü yok | karar |
