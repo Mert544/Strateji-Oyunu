@@ -17,7 +17,8 @@
     "izle": "tsx packages/izleyici/src/cli.ts",
     "dunya": "pnpm --filter @bolge/istemci build",
     "harita:gercek": "tsx packages/veri-hatti/src/cli.ts",
-    "harita:osm": "tsx packages/veri-hatti/src/osm/idari-cli.ts"
+    "harita:osm": "tsx packages/veri-hatti/src/osm/idari-cli.ts",
+    "sunucu": "tsx packages/sunucu/src/cli.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",

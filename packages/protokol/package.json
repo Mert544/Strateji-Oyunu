@@ -1,0 +1,15 @@
+{
+  "name": "@bolge/protokol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "İstemci <-> sunucu mesaj sözleşmesi (tipler + zod şemaları) ve ilgi alanı kare süzgeci",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@bolge/cekirdek": "workspace:*",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@bolge/veri": "workspace:*"
+  }
+}
