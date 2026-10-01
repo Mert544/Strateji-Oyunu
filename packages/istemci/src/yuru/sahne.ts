@@ -13,7 +13,7 @@
  */
 import { BufferAttribute, BufferGeometry, Color, Mesh, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from "three";
 import type { ShaderMaterial } from "three";
-import { esc, fmt, sayi } from "../arayuz/bicim";
+import { esc, para, paraMili, sayi } from "../arayuz/bicim";
 import { bildir } from "../arayuz/bildirim";
 import type { IlceSahipligi, MulkBaglantisi } from "../harita/baglanti";
 import { arsaSinifi, hucreFiyati, SINIF_ADI } from "../harita/fiyat";
@@ -679,7 +679,7 @@ export class YuruSahnesi {
       <dl>
         <dt>Sahip</dt><dd data-alan="sahip">${sh ? `<span class="sahip-isaret" style="background:${benim ? "var(--sen)" : "var(--murekkep-3)"}"></span>` : ""}${esc(sahip)}</dd>
         <dt>Sınıf</dt><dd data-alan="sinif">${neden ? esc(neden) : `${SINIF_ADI[sh?.sinif ?? arsaSinifi(d)]} · ${ARAZI_ADLARI[durumSinifi(d)] ?? ""}`}</dd>
-        ${sh ? `<dt>Değer</dt><dd>${fmt(sh.degerMili / 1000)} ₺</dd>` : !neden && fiyat ? `<dt>Fiyat</dt><dd>${fiyat}</dd>` : ""}
+        ${sh ? `<dt>Değer</dt><dd>${paraMili(sh.degerMili, "yakin")}</dd>` : !neden && fiyat ? `<dt>Fiyat</dt><dd>${fiyat}</dd>` : ""}
         <dt>Yapı</dt><dd data-alan="insaat">${ins ? `${esc(ASAMA_ADI[ins.asama])}${ins.ornek ? " <small>(örnek)</small>" : ""}` : "Yok"}</dd>
         <dt>Konum</dt><dd>${sayi(lat, 5)}° K, ${sayi(lon, 5)}° D</dd>
       </dl>${eylem ? `<div class="yuru-kart-eylem">${eylem}</div>` : ""}`;
@@ -689,7 +689,7 @@ export class YuruSahnesi {
   private hucreFiyat(d: number): string {
     const s = this.sahiplik;
     if (!s || !satinAlinabilir(d)) return "";
-    return `${fmt(hucreFiyati(arsaSinifi(d), s.satilmis, s.uygun))} ₺`;
+    return para(hucreFiyati(arsaSinifi(d), s.satilmis, s.uygun));
   }
 
   /** Bulunulan hücreyi satın al (sahte bağdaştırıcı ya da sunucu; haritadaki satın almayla aynı komut). */
@@ -705,7 +705,7 @@ export class YuruSahnesi {
         bildir(`Olmadı: ${r.mesaj}`, "hata");
         return;
       }
-      bildir(`Parsel satın alındı: 1 hücre, ${fmt(r.toplamMili / 1000)} ₺.`, "tamam");
+      bildir(`Parsel satın alındı: 1 hücre, ${paraMili(r.toplamMili, "yakin")}.`, "tamam");
       this.sahiplik = await g.baglanti.sahiplikAl(g.ilce);
       this.arsa?.veriAyarla(this.sahiplik, this.ben, this.insaatlar);
       this.arsa?.guncelle(this.hucre);

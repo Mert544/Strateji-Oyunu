@@ -158,3 +158,39 @@ describe("büyük harf yasağı", () => {
     }
   });
 });
+
+/** Para biçimi (sahip kararı T-1): tek biçim "1.234 ₺"; simge sayının sonunda. Elle yazılmış `₺1.234` / `₺${...}` kalıbı kaynakta yok. */
+describe("para biçimi yasağı (T-1)", () => {
+  const dosyalar: string[] = [];
+  const gez = (d: string): void => {
+    for (const a of readdirSync(d)) {
+      const y = join(d, a);
+      if (statSync(y).isDirectory()) gez(y);
+      else if (/\.(ts|css|html)$/.test(a) && a !== "ikon-veri.ts") dosyalar.push(y);
+    }
+  };
+  gez(join(KOK, "src"));
+  dosyalar.push(join(KOK, "index.html"));
+  /** Yorumlar (blok ve satır başı //) ayıklanır: belge cümleleri "mili-₺" gibi simge kullanabilir. */
+  const kodlar = (s: string): string =>
+    s
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("//"))
+      .join("\n");
+
+  it("`₺` sayıdan ya da şablon alanından ÖNCE yazılmaz (₺\\d, ₺${)", () => {
+    for (const f of dosyalar) {
+      const s = kodlar(readFileSync(f, "utf8"));
+      expect(/₺\s*\d/.test(s), `${f}: ₺ sayıdan önce`).toBe(false);
+      expect(/₺\s*\$\{/.test(s), `${f}: ₺ şablon alanından önce`).toBe(false);
+    }
+  });
+  it("sayı ile `₺` arasına elle düz boşluk konmaz: tek kaynak para() (bölünmez boşluk)", () => {
+    for (const f of dosyalar) {
+      if (f.endsWith("bicim.ts")) continue; // para() burada
+      const s = kodlar(readFileSync(f, "utf8"));
+      expect(/[\d}] ₺/.test(s), `${f}: elle yazılmış "sayı ₺"`).toBe(false);
+    }
+  });
+});

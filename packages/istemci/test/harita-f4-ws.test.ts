@@ -261,7 +261,7 @@ describe("WsBaglanti: gerçek sunucu", () => {
     // 3) tam başarı: kendi hücren (CIFT_A[0]) + 1 yeni hücre alınır, sonra yapı kurulur (2 komut)
     const k3 = await yerlesimiUygula(sarmal, ILCE, plan([CIFT_A[0]!, CIFT_A[1]!], [CIFT_A[1]!]));
     expect(k3).toMatchObject({ tamam: true, gonderilen: 2, alinan: [CIFT_A[1]] });
-    expect(k3.mesaj).toMatch(/^Çiftlik kuruluyor: arsa 1 hücre, [\d.]+ ₺ \+ yapı 6\.000 ₺\.$/);
+    expect(k3.mesaj).toMatch(/^Çiftlik kuruluyor: arsa 1 hücre, [\d.]+\u00a0₺ \+ yapı 6\.000\u00a0₺\.$/);
     expect(insaCagri).toBe(2);
   });
 });

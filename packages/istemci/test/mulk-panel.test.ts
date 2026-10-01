@@ -76,8 +76,8 @@ describe("mülk kipi paneli", () => {
 
   it("Hazine ve Mal", () => {
     const h = mulkHazinePaneli(durum());
-    expect(h).toContain("41.500 ₺");
-    expect(h).toContain("−12 ₺ / sa");
+    expect(h).toContain("41.500\u00a0₺");
+    expect(h).toContain("−12\u00a0₺ / sa");
     expect(h).toContain("Arazi değeri");
     const m = mulkMalPaneli(durum(), ad);
     expect(m).toContain("Tahıl");

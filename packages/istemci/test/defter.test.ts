@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFTER_DAMGALARI, DEFTER_ODUL_SIRASI, defterSablonu } from "@bolge/protokol";
 import type { Defter } from "@bolge/protokol";
-import { DEFTER_METINLERI, defterHtml, kazanimBildirimi, kazanimBildirimleri, odulMetni, yeniKazanilanlar } from "../src/harita/defter";
+import { DEFTER_METINLERI, defterHtml, kazanimBildirimi, kazanimBildirimleri, odulMetni, odulSutunu, yeniKazanilanlar } from "../src/harita/defter";
 import { SahteBaglanti } from "../src/harita/baglanti";
 import { Bit, hucreId } from "../src/harita/hucre";
 
@@ -38,20 +38,30 @@ describe("Esnaf Defteri", () => {
   });
 
   it("ödül metni: para, mal, değer", () => {
-    expect(odulMetni({ paraMili: 500_000, degerMili: 500_000 }, malAdi)).toBe("₺500");
-    expect(odulMetni({ mal: { celik: 5000 }, degerMili: 600_000 }, malAdi)).toBe("5 çelik (≈ ₺600 değerinde)");
-    expect(odulMetni({ paraMili: 250_000, mal: { parca: 2000 }, degerMili: 450_000 }, malAdi)).toBe("₺250 ve 2 makine parçası");
+    // Tek para biçimi "1.234 ₺": sayı ile simge arası bölünmez boşluk; "≈" ile sayı da bölünmez
+    expect(odulMetni({ paraMili: 500_000, degerMili: 500_000 }, malAdi)).toBe("500\u00a0₺");
+    expect(odulMetni({ mal: { celik: 5000 }, degerMili: 600_000 }, malAdi)).toBe("5 çelik (≈\u00a0600\u00a0₺ değerinde)");
+    expect(odulMetni({ paraMili: 250_000, mal: { parca: 2000 }, degerMili: 450_000 }, malAdi)).toBe("250\u00a0₺ ve 2 makine parçası");
+  });
+
+  it("sağ sütun: uzun ödül iki düzgün satır (ne, altta değeri); tutar parçaları ayrı ve bölünmez", () => {
+    expect(odulSutunu({ mal: { parca: 9000 }, degerMili: 900_000 }, malAdi)).toBe(
+      '<span class="dt-ana">9 makine parçası</span><span class="dt-deger soluk">≈\u00a0900\u00a0₺ değerinde</span>',
+    );
+    expect(odulSutunu({ paraMili: 500_000, degerMili: 500_000 }, malAdi)).toBe('<span class="dt-ana">500\u00a0₺</span>');
+    expect(odulSutunu({ paraMili: 250_000, mal: { parca: 2000 }, degerMili: 450_000 }, malAdi)).toBe('<span class="dt-ana">250\u00a0₺</span><span class="dt-ana">2 makine parçası</span>');
+    expect(odulSutunu(undefined, malAdi)).toBe("");
   });
 
   it("bölüm: ödül çubuğu (toplam / tavan), sıradakiler tutarla, yer tutucu gizli, kazanılanlar tarih ve ödülle; sayaç ya da yüzde yok", () => {
     const h = defterHtml(defter, malAdi, EPOCH);
-    expect(h).toContain("₺600 <span class=\"soluk\">/ ₺8.000</span>");
+    expect(h).toContain("600\u00a0₺ <span class=\"soluk\">/ 8.000\u00a0₺</span>");
     expect(h).toContain('style="width:7.5%"');
     expect(h).toContain("İlk satışını yap");
-    expect(h).toContain("₺500");
+    expect(h).toContain("500\u00a0₺");
     expect(h).not.toContain("ilk_dukkan");
     expect(h).toContain("İlk yapın kuruldu; kolay gelsin.");
-    expect(h).toContain("2 Ekim · 5 çelik (≈ ₺600 değerinde)");
+    expect(h).toContain("2 Ekim · 5 çelik (≈\u00a0600\u00a0₺ değerinde)");
     expect(h).toContain("1 Ekim · damga");
     expect(h).not.toMatch(/\d+\s*\/\s*\d+\s*(kavram|adım)|%\d/);
     expect(defterHtml(null, malAdi)).toContain("Defter yükleniyor");
@@ -62,9 +72,9 @@ describe("Esnaf Defteri", () => {
     expect(yeniKazanilanlar(null, defter)).toEqual([]);
     const yeni = yeniKazanilanlar(once, defter);
     expect(yeni.map((k) => k.kavram)).toEqual(["ilk_yapi"]);
-    expect(kazanimBildirimi(yeni[0]!, malAdi)).toBe("Defter: İlk yapın kuruldu; kolay gelsin. Ödül: 5 çelik (≈ ₺600 değerinde).");
+    expect(kazanimBildirimi(yeni[0]!, malAdi)).toBe("Defter: İlk yapın kuruldu; kolay gelsin. Ödül: 5 çelik (≈\u00a0600\u00a0₺ değerinde).");
     expect(kazanimBildirimleri(yeni, malAdi)).toEqual([kazanimBildirimi(yeni[0]!, malAdi)]);
-    expect(kazanimBildirimleri(defter.kazanilan, malAdi)).toEqual(["Defterine 2 yeni satır işlendi; ödüllerin toplamı ≈ ₺600. Ayrıntı İşletmem'de."]);
+    expect(kazanimBildirimleri(defter.kazanilan, malAdi)).toEqual(["Defterine 2 yeni satır işlendi; ödüllerin toplamı ≈\u00a0600\u00a0₺. Ayrıntı İşletmem'de."]);
   });
 
   it("sahte bağdaştırıcı örnek defter verir: arsa alınınca ilk arsa damgası; sıradakiler kritik yol sırasıyla", async () => {

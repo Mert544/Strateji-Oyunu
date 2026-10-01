@@ -11,7 +11,7 @@
  * "Rehber görevler yakında".
  * Veri bağdaştırıcının `isletme()` özetinden okunur (sunucu karesi ya da sahte bağdaştırıcı); burada hesap yoktur.
  */
-import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, sureMetni, tamTarihMetni, yuzde } from "../arayuz/bicim";
+import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, paraIsaretli, paraMili, sureMetni, tamTarihMetni, yuzde } from "../arayuz/bicim";
 import type { GovdeDurumu } from "../arayuz/govde";
 import type { MulkPaneli } from "../arayuz/mulk-paneli";
 import { hasatCubuklari } from "../arayuz/tarim-govde";
@@ -149,16 +149,14 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
   return s;
 }
 
-const tl = (mili: number): string => `${fmt(Math.floor(mili / 1000))} ₺`;
-
 export function mulkHazinePaneli(d: IsletmeDurumu | null): string {
   if (!d) return `<p class="ipucu-metin">Hazine bilgisi yükleniyor…</p>`;
   const satir = (k: string, v: string, a = ""): string => `<dt>${k}</dt><dd>${v}${a ? `<br><span class="soluk">${a}</span>` : ""}</dd>`;
   let s = `<dl class="mulk-dl">`;
-  s += satir("Hazine", d.hazineMili !== null ? `<b data-alan="mulk-hazine">${tl(d.hazineMili)}</b>` : "—");
-  if (d.hazineOraniMili !== null && d.hazineOraniMili !== 0) s += satir("Net akış", `${d.hazineOraniMili > 0 ? "+" : "−"}${tl(Math.abs(d.hazineOraniMili))} / sa`, "Gelir ve giderlerin saatlik toplamı.");
-  if (d.araziDegeriMili !== null) s += satir("Arazi değeri", tl(d.araziDegeriMili), "Arsalarının satın alma bedeli toplamı.");
-  if (d.araziVergisiMili !== null) s += satir("Arazi vergisi", tl(d.araziVergisiMili), "Tahakkuk eden, henüz ödenmemiş.");
+  s += satir("Hazine", d.hazineMili !== null ? `<b data-alan="mulk-hazine">${paraMili(d.hazineMili)}</b>` : "—");
+  if (d.hazineOraniMili !== null && d.hazineOraniMili !== 0) s += satir("Net akış", `${paraIsaretli(d.hazineOraniMili)} / sa`, "Gelir ve giderlerin saatlik toplamı.");
+  if (d.araziDegeriMili !== null) s += satir("Arazi değeri", paraMili(d.araziDegeriMili), "Arsalarının satın alma bedeli toplamı.");
+  if (d.araziVergisiMili !== null) s += satir("Arazi vergisi", paraMili(d.araziVergisiMili), "Tahakkuk eden, henüz ödenmemiş.");
   s += `</dl>`;
   return s;
 }
@@ -322,8 +320,8 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       if (!oz) return null;
       const ilk = [...b.ben.ad.trim()][0] ?? "?";
       return {
-        html: `<i class="mulk-amblem kucuk" aria-hidden="true">${esc(ilk)}</i><span class="ocad">${esc(b.ben.ad)}</span>${oz.hazineMili !== null ? `<b>${tl(oz.hazineMili)}</b>` : ""}`,
-        baslik: `${b.ben.ad}${oz.hazineMili !== null ? `: hazine ${tl(oz.hazineMili)}` : ""}. İşletmem sekmesini açmak için dokunun.`,
+        html: `<i class="mulk-amblem kucuk" aria-hidden="true">${esc(ilk)}</i><span class="ocad">${esc(b.ben.ad)}</span>${oz.hazineMili !== null ? `<b>${paraMili(oz.hazineMili)}</b>` : ""}`,
+        baslik: `${b.ben.ad}${oz.hazineMili !== null ? `: hazine ${paraMili(oz.hazineMili)}` : ""}. İşletmem sekmesini açmak için dokunun.`,
       };
     },
     simSaat() {

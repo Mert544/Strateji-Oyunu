@@ -9,7 +9,7 @@
 import type { Feature, FeatureCollection, Polygon } from "geojson";
 import type { GeoJSONSource, Map as MlHarita, MapMouseEvent } from "maplibre-gl";
 import { bildir } from "../arayuz/bildirim";
-import { esc, fmt, sureMetni } from "../arayuz/bicim";
+import { esc, fmt, para, paraMili, sureMetni } from "../arayuz/bicim";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import { geriSeridiGorunur } from "./gorunurluk";
 import { hucreSiniri, noktadanHucre } from "./hucre";
@@ -58,8 +58,6 @@ function hucreCokgeni(x: number, y: number, oz: Record<string, unknown>): Featur
 
 /** Onaydan sonra geri alma penceresi (ürün kararı: 5 dk). */
 const GERI_AL_MS = 5 * 60 * 1000;
-
-const TL = (mili: number): string => `${fmt(Math.ceil(mili / 1000))} ₺`;
 
 export class YerlesimKipi {
   private yapi: YapiTanimi | null = null;
@@ -232,7 +230,7 @@ export class YerlesimKipi {
       if (!l) continue;
       html.push(`<h4>${esc(ad)}</h4>`);
       for (const y of l) {
-        const notlar: string[] = [`${y.yuva} hücre`, TL(y.paraMili), sureMetni(y.sureSaat)];
+        const notlar: string[] = [`${y.yuva} hücre`, paraMili(y.paraMili, "yukari"), sureMetni(y.sureSaat)];
         const koşul: string[] = [];
         if (y.gerekliEtiket) koşul.push(`${ETIKET_ADI[y.gerekliEtiket] ?? y.gerekliEtiket} ilinde`);
         if (y.gerekliTeknoloji) koşul.push("teknoloji gerekir");
@@ -385,14 +383,14 @@ export class YerlesimKipi {
     if (!p) {
       govde = `<p class="yk-ipucu">${window.matchMedia("(pointer: coarse)").matches ? "Yerleştirmek için haritaya dokun." : "Haritada yeri seç: tıkla. R: döndür · Esc: vazgeç."}</p>`;
     } else {
-      const arsa = p.alinacak.length > 0 ? `${fmt(p.alinacak.length)} hücre alınacak · <b>${TL(p.arsaMili)}</b>` : `Kendi arsan · <b>0 ₺</b>`;
+      const arsa = p.alinacak.length > 0 ? `${fmt(p.alinacak.length)} hücre alınacak · <b>${paraMili(p.arsaMili, "yukari")}</b>` : `Kendi arsan · <b>${para(0)}</b>`;
       const sure = `${sureMetni(y.sureSaat)}${y.ilkGunSureSaat < y.sureSaat ? ` <small>(yeni oyuncuya ilk gün ≈ ${sureMetni(y.ilkGunSureSaat)})</small>` : ""}`;
       const malzeme = malzemeMetni(y);
       govde = `<dl class="yk-satirlar">
         <dt>Arsa</dt><dd data-yk-alan="arsa">${arsa}</dd>
-        <dt>Yapı</dt><dd data-yk-alan="yapi"><b>${TL(p.yapiMili)}</b>${malzeme ? ` <small>+ ${esc(malzeme)}</small>` : ""}</dd>
+        <dt>Yapı</dt><dd data-yk-alan="yapi"><b>${paraMili(p.yapiMili, "yukari")}</b>${malzeme ? ` <small>+ ${esc(malzeme)}</small>` : ""}</dd>
         <dt>Süre</dt><dd data-yk-alan="sure">${sure}</dd>
-        <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${TL(p.toplamMili)}</b>${oz?.hazineMili != null ? ` <small>Hazine ${TL(oz.hazineMili)}</small>` : ""}</dd>
+        <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${paraMili(p.toplamMili, "yukari")}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili, "yukari")}</small>` : ""}</dd>
       </dl>
       ${p.neden ? `<p class="yk-uyari" role="alert" data-yk-alan="neden">${esc(p.neden)}</p>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için tıkla.</p>`}`;
     }

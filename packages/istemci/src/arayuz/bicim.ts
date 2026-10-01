@@ -56,6 +56,43 @@ export function yuzde(p: number, ondalik = 0): string {
   return s === "-%0" ? "%0" : s;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Para (T-1, sahip kararı 1 Ekim: tek biçim "1.234 ₺")
+// ---------------------------------------------------------------------------------------------
+
+/** Para simgesi. Arayüzdeki TEK kaynak: simge sayının SONUNDA ("1.234 ₺"), asla önünde; yasağı `test/tasarim.test.ts` korur. */
+export const PARA_SIMGESI = "₺";
+/** Sayı ile simge arası: bölünmez boşluk (U+00A0); satır sonunda "1.234" ile "₺" ayrılmaz. */
+export const PARA_ARASI = "\u00a0";
+/** Eksi işareti (U+2212); tire değil, sayıyla aynı yükseklikte. */
+export const EKSI = "\u2212";
+
+/** Mili-para -> tam lira yuvarlaması: aşağı (varsayılan; bakiye, ödül), yukarı (gereken tutar), en yakın. */
+export type ParaYuvarlama = "asagi" | "yukari" | "yakin";
+
+/** Tam lira: para(1234) -> "1.234 ₺", para(-5) -> "−5 ₺". Ondalık gösterilmez (oyunda tutarlar tam liradır). */
+export function para(tl: number): string {
+  const m = fmt(Math.abs(tl));
+  return `${tl < 0 && m !== "0" ? EKSI : ""}${m}${PARA_ARASI}${PARA_SIMGESI}`;
+}
+
+function tamLira(mili: number, yuvarlama: ParaYuvarlama): number {
+  const a = Math.abs(mili) / 1000;
+  const t = yuvarlama === "yukari" ? Math.ceil(a) : yuvarlama === "yakin" ? Math.round(a) : Math.floor(a);
+  return mili < 0 ? -t : t;
+}
+
+/** Mili-para (çekirdek birimi; 1 ₺ = 1000 mili): paraMili(1_234_000) -> "1.234 ₺". Yuvarlama çağıranın kararıdır (varsayılan aşağı). */
+export function paraMili(mili: number, yuvarlama: ParaYuvarlama = "asagi"): string {
+  return para(tamLira(mili, yuvarlama));
+}
+
+/** İşaretli mili-para (net sonuç, akış): "+1.960 ₺", "−180 ₺", sıfır "0 ₺". İşaret sayının önünde, simge yine sonda. */
+export function paraIsaretli(mili: number, yuvarlama: ParaYuvarlama = "asagi"): string {
+  const t = tamLira(mili, yuvarlama);
+  return `${t > 0 ? "+" : ""}${para(t)}`;
+}
+
 /** 12 345 -> "12,3 B"; 1 200 000 -> "1,2 Mn". */
 export function kisalt(n: number): string {
   const a = Math.abs(n);
@@ -86,12 +123,16 @@ export const DUNYA_EPOCH_MS = 1_790_802_000_000;
 /** Türkiye kalıcı UTC+3 (yaz saati yok): gün sınırı `(t + 3 sa) mod 24 sa`. */
 export const TURKIYE_OFSETI_MS = 3 * 3_600_000;
 
-/** "Gün N · SS:DD" biçiminde Türkiye saati (sim saat 0 = 1 Ekim 00:00 TRT; gün sınırı gerçek tarihle aynı). */
+/** Sade saat: "SS:DD" (Türkiye saati; sim saat 0 = 1 Ekim 00:00 TRT). Gün sayısı yazılmaz: tarih zaten gerçek takvimdendir (`simGunNo` ipucu içindir). */
 export function simSaatMetni(simSaat: number): string {
   const dk = Math.floor(Math.max(0, simSaat) * 60 + 1e-6);
-  const gun = Math.floor(dk / 1440) + 1;
   const saat = Math.floor((dk % 1440) / 60);
-  return `Gün ${gun} · ${String(saat).padStart(2, "0")}:${String(dk % 60).padStart(2, "0")}`;
+  return `${String(saat).padStart(2, "0")}:${String(dk % 60).padStart(2, "0")}`;
+}
+
+/** Oyunun kaçıncı günü (1 Ekim = 1). Yalnız ipucunda (title) kullanılır; arayüz metninde "Gün N" gösterilmez. */
+export function simGunNo(simSaat: number): number {
+  return Math.floor(Math.floor(Math.max(0, simSaat) * 60 + 1e-6) / 1440) + 1;
 }
 
 export const AY_ADLARI = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"] as const;
@@ -118,6 +159,8 @@ export function gercekTarih(simSaat: number, epochMs = DUNYA_EPOCH_MS): GercekTa
 
 /** "2 Ekim" */
 export const tarihMetni = (g: GercekTarih): string => `${g.gun} ${g.ayAdi}`;
+/** Tarih ve saat tek ifadede (tarihsiz listeler: gelen kutusu, rehber): "1 Ekim · 01:01". `epochMs`: sunucunun dünya epoch'u. */
+export const tarihSaatMetni = (simSaat: number, epochMs = DUNYA_EPOCH_MS): string => `${tarihMetni(gercekTarih(simSaat, epochMs))} · ${simSaatMetni(simSaat)}`;
 /** "2 Ekim 2026 Cuma" */
 export const tamTarihMetni = (g: GercekTarih): string => `${g.gun} ${g.ayAdi} ${g.yil} ${g.gunAdi}`;
 

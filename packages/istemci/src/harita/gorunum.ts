@@ -18,7 +18,7 @@ import type { DefterOdulu, KamuGrubuKaresi } from "@bolge/protokol";
 import icerikHam from "../../../veri/icerik/icerik.json";
 import parametreHam from "../../../veri/icerik/parametreler.json";
 import { bildir } from "../arayuz/bildirim";
-import { esc, fmt, simSaatMetni, yuzde } from "../arayuz/bicim";
+import { esc, fmt, para, paraMili, simSaatMetni, yuzde } from "../arayuz/bicim";
 import { icerikTablosu } from "../komut/tablo";
 import type { Icerik } from "../komut/tablo";
 import { arsaKenarlari, arsalariTuret, arsaSinirlari, arsaSiniflari, hucredenArsa, kamuBilgisi, kamuBloklari, onerilenArsa, sinifGruplari } from "./arsa";
@@ -782,7 +782,7 @@ export class HaritaGorunumu {
         this.alt.innerHTML = `
           <span class="alt-sayi"><small>Hazır arsa</small><b data-alan="arsa-hucre">${fmt(a.hucreler.length)} hücre</b></span>
           <span class="alt-sayi"><small>Sınıf</small><b data-alan="arsa-sinif">${esc(siniflar)}</b></span>
-          <span class="alt-sayi alt-toplam"><small>Fiyat</small><b data-alan="arsa-toplam">${fmt(Math.ceil(o.mili / 1000))} ₺</b></span>
+          <span class="alt-sayi alt-toplam"><small>Fiyat</small><b data-alan="arsa-toplam">${paraMili(o.mili, "yukari")}</b></span>
           <span class="alt-sayi"><small>${esc(ilceAd)} payın</small><b>${fmt(o.benimSonra)} / ${fmt(ilceTavani(sayi.uygun))}</b></span>
           <div class="alt-dugmeler">${yapiDugme}<button type="button" data-eylem="temizle">Temizle</button><button type="button" class="birincil" data-eylem="arsa-al" ${sinir || this.satinAliniyor ? "disabled" : ""}>Satın al</button></div>
           <ul class="alt-uyari">${sinir ? `<li>${esc(sinir)}</li>` : ""}</ul>`;
@@ -817,8 +817,8 @@ export class HaritaGorunumu {
     this.alt.innerHTML = `
       <span class="alt-sayi"><small>Seçili</small><b data-alan="sayi">${fmt(o.sayi)} hücre</b></span>
       <span class="alt-sayi"><small>Sınıf</small><b data-alan="sinif">${esc(sinifMetni)}</b></span>
-      <span class="alt-sayi"><small>Hücre fiyatı</small><b>${o.hucreFiyati ? `${fmt(o.hucreFiyati)} ₺` : "—"}</b></span>
-      <span class="alt-sayi alt-toplam"><small>Toplam</small><b data-alan="toplam">${fmt(o.toplam)} ₺</b></span>
+      <span class="alt-sayi"><small>Hücre fiyatı</small><b>${o.hucreFiyati ? para(o.hucreFiyati) : "—"}</b></span>
+      <span class="alt-sayi alt-toplam"><small>Toplam</small><b data-alan="toplam">${para(o.toplam)}</b></span>
       <span class="alt-sayi"><small>${esc(ilceAd)} payın</small><b>${fmt(o.sinir.sonra)} / ${fmt(o.sinir.tavan)}</b></span>
       <div class="alt-dugmeler">
         ${aracDugme}${coklu}
@@ -846,7 +846,7 @@ export class HaritaGorunumu {
       : neden
         ? "Satılık değil"
         : "Sahipsiz";
-    const deger = sahip ? (sahip.degerMili > 0 ? `${fmt(sahip.degerMili / 1000)} ₺` : "—") : neden ? "—" : sayi ? `${fmt(hucreFiyati(sinif, sayi.satilmis, sayi.uygun))} ₺` : "—";
+    const deger = sahip ? (sahip.degerMili > 0 ? paraMili(sahip.degerMili, "yakin") : "—") : neden ? "—" : sayi ? para(hucreFiyati(sinif, sayi.satilmis, sayi.uygun)) : "—";
     const doluluk = this.sahiplik && this.sahiplik.uygun > 0 ? yuzde((100 * this.sahiplik.satilmis) / this.sahiplik.uygun, 2) : "—";
     const ilceAd = this.ilceKimlik ? (this.s.hiyerarsi.ilceler.get(this.ilceKimlik)?.ad ?? "") : "";
     this.kart.hidden = false;
@@ -929,7 +929,7 @@ export class HaritaGorunumu {
     else if (sd > tavan) engel = `İlçenin en çok %25'i senin olabilir (${fmt(tavan)} hücre)`;
     else {
       const hz = this.baglanti.ozet?.()?.hazineMili ?? null;
-      if (hz !== null && mili > hz) engel = `Hazinede yeterli para yok (gereken ${fmt(Math.ceil(mili / 1000))} ₺)`;
+      if (hz !== null && mili > hz) engel = `Hazinede yeterli para yok (gereken ${paraMili(mili, "yukari")})`;
     }
     return { mili, adimlar, engel, benimSonra: sd };
   }
@@ -1018,7 +1018,7 @@ export class HaritaGorunumu {
     this.altCiz();
     try {
       const r = await parselZinciri(this.baglanti, ilce, o.adimlar);
-      if (!r.hata) bildir(`Arsa satın alındı: ${fmt(r.alinan.length)} hücre, ${fmt(r.odenenMili / 1000)} ₺.`, "tamam");
+      if (!r.hata) bildir(`Arsa satın alındı: ${fmt(r.alinan.length)} hücre, ${paraMili(r.odenenMili, "yakin")}.`, "tamam");
       else if (r.alinan.length > 0) bildir(`Arsa kısmen alındı (${fmt(r.alinan.length)} hücre): ${r.hata.mesaj}`, "hata");
       else bildir(`Arsa alınamadı: ${r.hata.mesaj}`, "hata");
     } catch (e) {
@@ -1056,7 +1056,7 @@ export class HaritaGorunumu {
       const kopuk = oz.baglanti === "kopuk";
       this.hazineYazi.hidden = oz.hazineMili === null && !kopuk;
       this.hazineYazi.classList.toggle("kopuk", kopuk);
-      this.hazineYazi.innerHTML = `${oz.hazineMili !== null ? `<span class="hz-etiket">Hazine</span> <b data-alan="hazine">${fmt(Math.floor(oz.hazineMili / 1000))} ₺</b>` : ""} <span class="hz-saat" data-alan="saat">${simSaatMetni(oz.simZamani / 3_600_000)}</span>${kopuk ? ` <span class="hz-kopuk">Bağlantı koptu, yeniden deneniyor…</span>` : ""}`;
+      this.hazineYazi.innerHTML = `${oz.hazineMili !== null ? `<span class="hz-etiket">Hazine</span> <b data-alan="hazine">${paraMili(oz.hazineMili)}</b>` : ""} <span class="hz-saat" data-alan="saat">${simSaatMetni(oz.simZamani / 3_600_000)}</span>${kopuk ? ` <span class="hz-kopuk">Bağlantı koptu, yeniden deneniyor…</span>` : ""}`;
     }
     const yet = oz?.yetisiyor ?? null;
     if (yet && !this.kap.hidden) {
@@ -1226,7 +1226,7 @@ export class HaritaGorunumu {
     const sayi = this.sayilar();
     const sinif = arsaSinifi(d);
     const fiyat = sayi ? hucreFiyati(sinif, sayi.satilmis, sayi.uygun) : 0;
-    return { html: `<b>${SINIF_ADI[sinif]}</b> · ${esc(ARAZI_ADLARI[durumSinifi(d)] ?? "")} · ${fmt(fiyat)} ₺`, uyari: false };
+    return { html: `<b>${SINIF_ADI[sinif]}</b> · ${esc(ARAZI_ADLARI[durumSinifi(d)] ?? "")} · ${para(fiyat)}`, uyari: false };
   }
 
   /** Hazır arsa üzerinde ipucu: hücre sayısı, sınıf, fiyat ya da durum. */
@@ -1238,7 +1238,7 @@ export class HaritaGorunumu {
     if (d.durum === "baskasi") return { html: `${bas} · sahibi ${esc(d.sahipler.join(", "))}`, uyari: true };
     if (d.durum === "kismen") return { html: `${bas} · kısmen satılmış`, uyari: true };
     const sayi = this.sayilar();
-    return { html: `${bas}${sayi ? ` · ${fmt(Math.ceil(this.arsaFiyati(a, sayi).mili / 1000))} ₺` : ""}`, uyari: false };
+    return { html: `${bas}${sayi ? ` · ${paraMili(this.arsaFiyati(a, sayi).mili, "yukari")}` : ""}`, uyari: false };
   }
 
   // --- olaylar --------------------------------------------------------------------------------------
@@ -1484,7 +1484,7 @@ export class HaritaGorunumu {
     try {
       const r = await this.baglanti.parselAl({ tur: "parsel_al", ilce, hucreler: this.secim.liste, sinif: o.sinif });
       if (r.tamam) {
-        bildir(`Parsel satın alındı: ${fmt(r.hucreler.length)} hücre, ${fmt(r.toplamMili / 1000)} ₺.`, "tamam");
+        bildir(`Parsel satın alındı: ${fmt(r.hucreler.length)} hücre, ${paraMili(r.toplamMili, "yakin")}.`, "tamam");
         this.secim.temizle();
         this.kartHucre = r.hucreler[0] ?? null;
         const sh = await this.baglanti.sahiplikAl(ilce);

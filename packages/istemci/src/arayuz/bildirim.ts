@@ -4,6 +4,7 @@
  * (arayuz/gelen-kutusu.ts) ve açılır pencere olarak gösterilmez.
  */
 import { ikon } from "../tasarim/ikon";
+import { bildirimKonumIzle } from "../tasarim/toast-konum";
 
 export type BildirimTuru = "tamam" | "hata" | "bilgi";
 
@@ -30,6 +31,7 @@ export function bildir(mesaj: string, tur: BildirimTuru = "bilgi"): void {
   };
   d.addEventListener("click", kapat);
   kap.append(d);
+  bildirimKonumIzle(kap); // açık kartın/alt çubuğun 12 px üstüne oturur (görsel kimlik §5.3)
   while (kap.childElementCount > EN_COK) kap.firstElementChild?.remove();
   window.setTimeout(kapat, (tur === "hata" ? 8000 : 4500) * carpan());
 }

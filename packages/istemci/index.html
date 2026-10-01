@@ -29,11 +29,11 @@ if (/^https?:$/.test(location.protocol)) {
       <button type="button" class="kart-cubuk oyuncu-dugme" id="oyuncu-cubuk" hidden aria-label="Devletim"></button>
       <div class="kart-cubuk marka">Bölge Stratejisi<small>Dünya</small></div>
       <div class="kart-cubuk kart-zaman">
-        <span class="zaman" id="zaman" aria-live="off">Gün 1 · 00:00</span>
+        <span class="zaman" id="zaman" aria-live="off">00:00</span>
         <span class="duraklama-isareti" id="duraklama-isareti" hidden title="Dünya duraklatıldı (Boşluk ile sürdür)"><svg class="ikon" width="13" height="13" aria-hidden="true" focusable="false"><use href="#i-pause"></use></svg><span class="genis">duraklatıldı</span></span>
         <span id="geride" hidden>sim geride</span>
         <span class="kart-takvim" id="takvim" hidden>
-          <span class="takvim-tarih"><b id="takvim-gun">—</b><small id="takvim-yil"></small></span>
+          <span class="takvim-tarih"><b id="takvim-gun">—</b><small><span id="takvim-yil"></span><span class="takvim-ayrac" aria-hidden="true"> · </span><span class="takvim-saat" id="takvim-saat"></span></small></span>
           <span class="hasat" id="hasat" role="img" aria-label="Aylık hasat ritmi"></span>
           <span class="hasat-deger"><b id="hasat-yuzde">%100</b><small>hasat</small></span>
         </span>

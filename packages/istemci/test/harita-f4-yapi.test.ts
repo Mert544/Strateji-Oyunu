@@ -136,7 +136,7 @@ describe("yerleşim planı", () => {
     expect(yerlesimPlani(yapi("ciftlik"), x0 + 3, y0 + 3, 0, baglam(iz, [], { surenInsaat: 2 })).neden).toBe("Aynı anda en çok 2 inşaat sürebilir");
     const yoksul = yerlesimPlani(yapi("ciftlik"), x0 + 3, y0 + 3, 0, baglam(iz, [], { hazineMili: 5_000_000 }));
     expect(yoksul).toMatchObject({ gecerli: false, hazineYetmez: true });
-    expect(yoksul.neden).toMatch(/^Hazinede yeterli para yok \(gereken [\d.]+ ₺\)$/);
+    expect(yoksul.neden).toMatch(/^Hazinede yeterli para yok \(gereken [\d.]+\u00a0₺\)$/);
     // hazine bilinmiyorsa (null) kontrol atlanır
     expect(yerlesimPlani(yapi("ciftlik"), x0 + 3, y0 + 3, 0, baglam(iz, [], { hazineMili: null })).gecerli).toBe(true);
     // %25 payı: uygun 8 -> en çok 2 hücre; ben zaten 2 hücreli
@@ -192,7 +192,7 @@ describe("hata çevirisi", () => {
   it("çekirdek metinleri Türkçe cümleye çevrilir; tanınmayan ham metin cümleye gömülür", () => {
     const ad = (x: string): string => (x === "veli" ? "Veli" : x);
     expect(mulkHatasiTurkce("hucre zaten sahipli: 1:2 (veli)", ad)).toBe("Bir hücre az önce Veli tarafından alındı.");
-    expect(mulkHatasiTurkce("yetersiz hazine (gereken 8005000)")).toBe("Hazinede yeterli para yok (gereken 8.005 ₺).");
+    expect(mulkHatasiTurkce("yetersiz hazine (gereken 8005000)")).toBe("Hazinede yeterli para yok (gereken 8.005\u00a0₺).");
     expect(mulkHatasiTurkce("ilcenin en cok %25'i (20 hucre; mevcut 20)")).toBe("İlçenin en çok %25'i senin olabilir (20 hücre; şu an 20).");
     expect(mulkHatasiTurkce("il etiketi yetersiz: ova")).toBe('Bu ilde bu yapı kurulamaz: il "Ova" özelliği taşımıyor.');
     expect(mulkHatasiTurkce("ciftlik 2 hucre kaplar (verilen 1)")).toBe("Bu yapı 2 hücre kaplar (seçilen 1).");
@@ -234,7 +234,7 @@ describe("komut yolu (sahte bağdaştırıcı)", () => {
     const plan = await planYap(b, "ciftlik", 3, 3);
     const r = await yerlesimiUygula(b, "i", plan);
     expect(r).toMatchObject({ tamam: true, yol: "atomik", gonderilen: 1, alinan: [id(3, 3), id(4, 3)] });
-    expect(r.mesaj).toMatch(/^Çiftlik kuruluyor: arsa 2 hücre, [\d.]+ ₺ \+ yapı 6\.000 ₺\.$/);
+    expect(r.mesaj).toMatch(/^Çiftlik kuruluyor: arsa 2 hücre, [\d.]+\u00a0₺ \+ yapı 6\.000\u00a0₺\.$/);
     expect(b.ozet().hazineMili).toBe(50_000_000 - plan.arsaMili - 6_000_000);
     const s = (await b.sahiplikAl("i"))!;
     expect(s.yapilar).toHaveLength(1);
@@ -284,7 +284,7 @@ describe("komut yolu (sahte bağdaştırıcı)", () => {
     expect(plan3.gecerli).toBe(true);
     const ucuncu = await yerlesimiUygula(z, "i", plan3);
     expect(ucuncu).toMatchObject({ tamam: false, asama: "insa", yol: "zincir", gonderilen: 2 });
-    expect(ucuncu.mesaj).toMatch(/^Arsa alındı \(2 hücre, [\d.]+ ₺\) ama Çiftlik kurulamadı: Aynı anda en çok 2 inşaat sürebilir\. Hücreler sende; yapıyı yeniden deneyebilirsin\.$/);
+    expect(ucuncu.mesaj).toMatch(/^Arsa alındı \(2 hücre, [\d.]+\u00a0₺\) ama Çiftlik kurulamadı: Aynı anda en çok 2 inşaat sürebilir\. Hücreler sende; yapıyı yeniden deneyebilirsin\.$/);
   });
 
   it("geri al (sahte): inşaat kalkar, alınan hücreler bırakılır, ödenen para iade edilir", async () => {

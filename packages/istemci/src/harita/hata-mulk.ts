@@ -2,7 +2,7 @@
  * Mülk komutlarının (çekirdek `mulk/komut.ts`) ASCII-Türkçe hata metinlerini oyuncunun diline çevirir (saf).
  * Tanınmayan metin ham hâliyle cümleye gömülür: hiçbir hata sessizce yutulmaz. Bölge kipi çevirisi `komut/hata.ts`'dedir.
  */
-import { fmt } from "../arayuz/bicim";
+import { paraMili } from "../arayuz/bicim";
 import { KAMU_TUR_ADI } from "./kamu";
 import type { KamuTuru } from "./kamu";
 import { ETIKET_ADI } from "./yapi";
@@ -28,7 +28,7 @@ const KURALLAR: Kural[] = [
   [/^ilcede en cok (\d+) hucre \(mevcut (\d+)\)/, (m) => `İlçede en çok ${m[1]} hücren olabilir (şu an ${m[2]}).`],
   [/^ilcenin en cok %(\d+)'i \((\d+) hucre; mevcut (\d+)\)/, (m) => `İlçenin en çok %${m[1]}'i senin olabilir (${m[2]} hücre; şu an ${m[3]}).`],
   [/^ilcede yeterli bos uygun hucre yok/, () => "İlçede yeterli boş hücre kalmadı."],
-  [/^yetersiz hazine \(gereken (\d+)\)/, (m) => `Hazinede yeterli para yok (gereken ${fmt(Math.ceil(Number(m[1]) / 1000))} ₺).`],
+  [/^yetersiz hazine \(gereken (\d+)\)/, (m) => `Hazinede yeterli para yok (gereken ${paraMili(Number(m[1]), "yukari")}).`],
   [/^yetersiz hazine/, () => "Hazinede yeterli para yok."],
   [/^yetersiz stok: (\S+)/, () => "İşletme deposunda yeterli malzeme yok (çelik ya da makine parçası)."],
   [/^bilinmeyen tesis turu/, () => "Bilinmeyen yapı türü."],

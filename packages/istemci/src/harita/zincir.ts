@@ -6,7 +6,7 @@
  *      durur: sonraki komut GÖNDERİLMEZ; arsa alınıp yapı reddedilirse hücreler oyuncuda kalır ve mesaj bunu söyler.
  * Sonuç, oyuncuya gösterilecek Türkçe bildirimle döner. Bağdaştırıcı sahte ya da gerçek olabilir (aynı `MulkBaglantisi`).
  */
-import { fmt } from "../arayuz/bicim";
+import { fmt, paraMili } from "../arayuz/bicim";
 import type { MulkBaglantisi, ParselSonucu } from "./baglanti";
 import type { ParselAdimi, YerlesimPlani } from "./yapi";
 import type { HucreId } from "@bolge/cekirdek";
@@ -53,8 +53,8 @@ export async function yerlesimiUygula(b: MulkBaglantisi, ilce: string, plan: Yer
     const sinif = plan.parseller[0]?.sinif ?? "kirsal";
     const r = await b.yapiYerlestir({ ilce, tesisTuru: plan.yapi.id, hucreler: plan.hucreler.map((h) => h.id), sinif });
     if (!r.tamam) return { tamam: false, asama: "insa", yol: "atomik", alinan: [], odenenMili: 0, gonderilen: 1, neden: r.mesaj, mesaj: `${ad} kurulamadı: ${nokta(r.mesaj)} Hiçbir şey değişmedi.` };
-    const arsa = plan.alinacak.length > 0 ? `arsa ${fmt(plan.alinacak.length)} hücre, ${fmt(plan.arsaMili / 1000)} ₺ + ` : "";
-    return { tamam: true, yol: "atomik", alinan: [...plan.alinacak], odenenMili: plan.arsaMili, gonderilen: 1, mesaj: `${ad} kuruluyor: ${arsa}yapı ${fmt(plan.yapiMili / 1000)} ₺.` };
+    const arsa = plan.alinacak.length > 0 ? `arsa ${fmt(plan.alinacak.length)} hücre, ${paraMili(plan.arsaMili, "yakin")} + ` : "";
+    return { tamam: true, yol: "atomik", alinan: [...plan.alinacak], odenenMili: plan.arsaMili, gonderilen: 1, mesaj: `${ad} kuruluyor: ${arsa}yapı ${paraMili(plan.yapiMili, "yakin")}.` };
   }
   if (!b.tesisInsa) return { tamam: false, asama: "insa", yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 0, mesaj: "Bu bağlantı yapı kurmayı desteklemiyor.", neden: "desteklenmiyor" };
   const p = await parselZinciri(b, ilce, plan.parseller);
@@ -81,9 +81,9 @@ export async function yerlesimiUygula(b: MulkBaglantisi, ilce: string, plan: Yer
       odenenMili: p.odenenMili,
       gonderilen,
       neden: r.mesaj,
-      mesaj: p.alinan.length > 0 ? `Arsa alındı (${fmt(p.alinan.length)} hücre, ${fmt(p.odenenMili / 1000)} ₺) ama ${ad} kurulamadı: ${nokta(r.mesaj)} Hücreler sende; yapıyı yeniden deneyebilirsin.` : `${ad} kurulamadı: ${nokta(r.mesaj)}`,
+      mesaj: p.alinan.length > 0 ? `Arsa alındı (${fmt(p.alinan.length)} hücre, ${paraMili(p.odenenMili, "yakin")}) ama ${ad} kurulamadı: ${nokta(r.mesaj)} Hücreler sende; yapıyı yeniden deneyebilirsin.` : `${ad} kurulamadı: ${nokta(r.mesaj)}`,
     };
   }
-  const arsa = p.alinan.length > 0 ? `arsa ${fmt(p.alinan.length)} hücre, ${fmt(p.odenenMili / 1000)} ₺ + ` : "";
-  return { tamam: true, yol: "zincir", alinan: p.alinan, odenenMili: p.odenenMili, gonderilen, mesaj: `${ad} kuruluyor: ${arsa}yapı ${fmt(plan.yapiMili / 1000)} ₺.` };
+  const arsa = p.alinan.length > 0 ? `arsa ${fmt(p.alinan.length)} hücre, ${paraMili(p.odenenMili, "yakin")} + ` : "";
+  return { tamam: true, yol: "zincir", alinan: p.alinan, odenenMili: p.odenenMili, gonderilen, mesaj: `${ad} kuruluyor: ${arsa}yapı ${paraMili(plan.yapiMili, "yakin")}.` };
 }

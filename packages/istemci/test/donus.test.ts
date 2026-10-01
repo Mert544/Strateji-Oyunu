@@ -26,8 +26,8 @@ describe("dönüş ekranı", () => {
 
   it("net sonuç işaretli, üretim, en çok 8 satır; Git yalnız ilçede; K5+ girmen yeter", () => {
     const s = donusSatirlari(DONUS_ORNEGI, ad);
-    expect(s[0]!.html).toContain("+₺1.960");
-    expect(s[0]!.html).toContain("giderler −₺180");
+    expect(s[0]!.html).toContain("+1.960\u00a0₺");
+    expect(s[0]!.html).toContain("giderler −180\u00a0₺");
     expect(s[1]!.html).toBe("Üretimden çıkanlar: Tahıl 220 · Gıda 60");
     expect(s[2]!.git).toBe("tr_41_gebze");
     const cok: DonusOzeti = { ...DONUS_ORNEGI, maddeler: Array.from({ length: 20 }, (_, i) => ({ ...DONUS_ORNEGI.maddeler[0]!, tohum: i, onem: i })) };

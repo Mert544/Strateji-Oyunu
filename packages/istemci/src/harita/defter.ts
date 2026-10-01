@@ -9,7 +9,7 @@
  * sakin bir bildirim (`yeniKazanilanlar`).
  */
 import type { Defter, DefterKazanilan, DefterOdulu } from "@bolge/protokol";
-import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, tarihMetni } from "../arayuz/bicim";
+import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, paraMili, tarihMetni } from "../arayuz/bicim";
 import { ikon } from "../tasarim/ikon";
 
 export interface DefterMetni {
@@ -38,14 +38,34 @@ export function defterMetni(sablon: string, kavram: string): DefterMetni {
   return DEFTER_METINLERI[sablon] ?? { kazanildi: `${kavram.replace(/_/g, " ")}: tamamlandı.`, siradaki: kavram.replace(/_/g, " ") };
 }
 
-/** Ödül metni: "₺500", "5 çelik", "₺500 ve 5 çelik"; yalnız mal ise yanına "≈ ₺600 değerinde". */
+/** "≈" ile sayı arası bölünmez boşluk: "(≈\u00a0900\u00a0₺ değerinde)" satır sonunda "≈" yalnız kalmaz. */
+const YAKLASIK = "≈\u00a0";
+
+/** Ödülün parçaları: para, mal listesi (ad sırasıyla) ve yalnız mal ise değeri. Liste ve cümle aynı parçalardan kurulur. */
+export function odulParcalari(o: DefterOdulu | undefined, malAdi: (m: string) => string): { para: string; mal: string; deger: string } {
+  if (!o) return { para: "", mal: "", deger: "" };
+  const mal = Object.entries(o.mal ?? {})
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([m, mili]) => `${fmt(Math.round(mili / 1000))} ${malAdi(m).toLocaleLowerCase("tr")}`)
+    .join(" ve ");
+  return { para: o.paraMili ? paraMili(o.paraMili) : "", mal, deger: !o.paraMili && o.degerMili > 0 ? `${YAKLASIK}${paraMili(o.degerMili)}` : "" };
+}
+
+/** Ödül metni (cümle): "500 ₺", "5 çelik", "500 ₺ ve 5 çelik"; yalnız mal ise yanına "(≈ 600 ₺ değerinde)". */
 export function odulMetni(o: DefterOdulu | undefined, malAdi: (m: string) => string): string {
-  if (!o) return "";
-  const parca: string[] = [];
-  if (o.paraMili) parca.push(`₺${fmt(Math.floor(o.paraMili / 1000))}`);
-  for (const [m, mili] of Object.entries(o.mal ?? {}).sort(([a], [b]) => (a < b ? -1 : 1))) parca.push(`${fmt(Math.round(mili / 1000))} ${malAdi(m).toLocaleLowerCase("tr")}`);
-  const metin = parca.join(" ve ");
-  return !o.paraMili && o.degerMili > 0 ? `${metin} (≈ ₺${fmt(Math.floor(o.degerMili / 1000))} değerinde)` : metin;
+  const p = odulParcalari(o, malAdi);
+  const metin = [p.para, p.mal].filter(Boolean).join(" ve ");
+  return p.deger ? `${metin} (${p.deger} değerinde)` : metin;
+}
+
+/**
+ * Sıradaki adımın sağ sütunu: her parça kendi satırında ve bölünmez (`.defter-tutar` nowrap); uzun ödül ("5 makine parçası
+ * (≈ 900 ₺ değerinde)") iki düzgün satıra ayrılır: üstte ne, altta değeri. Açıklama sütunu kırılır, tutar kırılmaz.
+ */
+export function odulSutunu(o: DefterOdulu | undefined, malAdi: (m: string) => string): string {
+  const p = odulParcalari(o, malAdi);
+  const satirlar = [p.para && `<span class="dt-ana">${esc(p.para)}</span>`, p.mal && `<span class="dt-ana">${esc(p.mal)}</span>`, p.deger && `<span class="dt-deger soluk">${esc(p.deger)} değerinde</span>`].filter(Boolean);
+  return satirlar.join("");
 }
 
 /** Önceki defterde olmayan kazanılanlar (bildirim için; ilk okumada boş). */
@@ -65,7 +85,7 @@ export function kazanimBildirimi(k: DefterKazanilan, malAdi: (m: string) => stri
 export function kazanimBildirimleri(yeni: readonly DefterKazanilan[], malAdi: (m: string) => string): string[] {
   if (yeni.length <= 1) return yeni.map((k) => kazanimBildirimi(k, malAdi));
   const deger = yeni.reduce((t, k) => t + (k.odul?.degerMili ?? 0), 0);
-  return [`Defterine ${fmt(yeni.length)} yeni satır işlendi${deger > 0 ? `; ödüllerin toplamı ≈ ₺${fmt(Math.floor(deger / 1000))}` : ""}. Ayrıntı İşletmem'de.`];
+  return [`Defterine ${fmt(yeni.length)} yeni satır işlendi${deger > 0 ? `; ödüllerin toplamı ${YAKLASIK}${paraMili(deger)}` : ""}. Ayrıntı İşletmem'de.`];
 }
 
 /** "Defter" bölümü (İşletmem'de). `epochMs`: tarihleri gerçek takvime çevirmek için. */
@@ -74,13 +94,13 @@ export function defterHtml(d: Defter | null, malAdi: (m: string) => string, epoc
   if (!d) return s + `<p class="ipucu-metin">Defter yükleniyor…</p>`;
   const tavan = Math.max(1, d.tavanMili);
   const oran = Math.min(1, Math.max(0, d.toplamOdulMili / tavan));
-  s += `<div class="defter-odul" data-alan="defter-odul"><div class="defter-odul-satir"><span>Defter ödülleri</span><b>₺${fmt(Math.floor(d.toplamOdulMili / 1000))} <span class="soluk">/ ₺${fmt(Math.floor(d.tavanMili / 1000))}</span></b></div>`;
-  s += `<span class="defter-cubuk" role="img" aria-label="Defter ödülleri: ₺${fmt(Math.floor(d.toplamOdulMili / 1000))}, tavan ₺${fmt(Math.floor(d.tavanMili / 1000))}"><i style="width:${(oran * 100).toFixed(1)}%"></i></span></div>`;
+  s += `<div class="defter-odul" data-alan="defter-odul"><div class="defter-odul-satir"><span>Defter ödülleri</span><b>${paraMili(d.toplamOdulMili)} <span class="soluk">/ ${paraMili(d.tavanMili)}</span></b></div>`;
+  s += `<span class="defter-cubuk" role="img" aria-label="Defter ödülleri: ${paraMili(d.toplamOdulMili)}, tavan ${paraMili(d.tavanMili)}"><i style="width:${(oran * 100).toFixed(1)}%"></i></span></div>`;
   const siradaki = d.siradaki.filter((x) => x.etkin);
   if (siradaki.length) {
     s += `<p class="defter-baslik">Sıradaki adımlar</p><ul class="mulk-liste defter-liste">`;
     for (const x of siradaki)
-      s += `<li data-kavram="${esc(x.kavram)}"><span class="ml-ad"><b>${esc(defterMetni(x.sablon, x.kavram).siradaki)}</b></span><span class="defter-tutar">${esc(odulMetni(x.odul, malAdi))}</span></li>`;
+      s += `<li data-kavram="${esc(x.kavram)}"><span class="ml-ad"><b>${esc(defterMetni(x.sablon, x.kavram).siradaki)}</b></span><span class="defter-tutar">${odulSutunu(x.odul, malAdi)}</span></li>`;
     s += `</ul>`;
   }
   if (d.kazanilan.length) {

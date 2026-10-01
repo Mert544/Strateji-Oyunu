@@ -8,7 +8,7 @@ describe("yürüyüş: [E] etkileşim bağlamı", () => {
     expect(etkilesimSec({ ...temel, durum: 0 })).toBeNull();
   });
   it("boş satın alınabilir hücre: satın al (fiyatla)", () => {
-    expect(etkilesimSec({ ...temel, fiyat: "1.000 ₺" })).toEqual({ tur: "satin-al", etiket: "Satın al · 1.000 ₺" });
+    expect(etkilesimSec({ ...temel, fiyat: "1.000\u00a0₺" })).toEqual({ tur: "satin-al", etiket: "Satın al · 1.000\u00a0₺" });
   });
   it("yol/su: parsel bilgisi", () => {
     expect(etkilesimSec({ ...temel, durum: 1 | 2, satinAlinabilir: false })!.tur).toBe("parsel");

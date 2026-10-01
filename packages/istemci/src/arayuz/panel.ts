@@ -22,7 +22,7 @@ import type { Icerik } from "../komut/tablo";
 import type { Komut } from "../komut/tipler";
 import type { Oneri } from "../isci/protokol";
 import { hasatCubuklari, olayPaneli, olaySayisi } from "./tarim-govde";
-import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, kisalt, simSaatMetni, tamTarihMetni, tarihMetni, yuzde } from "./bicim";
+import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, kisalt, simGunNo, simSaatMetni, tamTarihMetni, tarihMetni, yuzde } from "./bicim";
 import { ikon } from "../tasarim/ikon";
 import type { IkonAdi } from "../tasarim/ikon";
 import { hasatMetni, takvimDurumu, takvimParametresi } from "../veri/tarim";
@@ -428,8 +428,12 @@ export class Panel {
     // Mülk kipinde saat ve tarih sunucunun dünyasından (mutlak saat); küredeki bölge simülasyonundan değil
     simSaat = this.mulk?.simSaat() ?? simSaat;
     const t = simSaatMetni(simSaat);
-    const z = $("zaman");
-    if (z.textContent !== t) z.textContent = t;
+    // Sade saat (SS:DD): tarih çubukta zaten gerçek takvimden; "Gün N" yalnız ipucunda. Saat tarihin altındaki satırda (#takvim-saat);
+    // #zaman yalnız takvim yokken (tarım verisi gelmeden) görünür.
+    for (const id of ["zaman", "takvim-saat"]) {
+      const z = $(id);
+      if (z.textContent !== t) z.textContent = t;
+    }
     $("geride").hidden = !gerideMi;
     this.takvimYaz(simSaat);
   }
@@ -456,7 +460,7 @@ export class Panel {
     $("takvim-yil").textContent = g.gunAdi;
     $("hasat-yuzde").textContent = hasatMetni(aylik);
     $("hasat").innerHTML = hasatCubuklari(tarim.hasatAylik, d.ay, false);
-    kap.title = `${tamTarihMetni(g)} (Türkiye saati). İklim dönemi: ${d.ayAdi}; bu ayın ortalama hasat oranı ${hasatMetni(aylik)} (yıllık ortalama %100). Ayrıntı için Olaylar sekmesi.`;
+    kap.title = `${tamTarihMetni(g)} (Türkiye saati; oyunun ${simGunNo(simSaat)}. günü). İklim dönemi: ${d.ayAdi}; bu ayın ortalama hasat oranı ${hasatMetni(aylik)} (yıllık ortalama %100). Ayrıntı için Olaylar sekmesi.`;
   }
 
   // --- mercek ----------------------------------------------------------------------------------

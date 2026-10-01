@@ -251,7 +251,7 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
   const secili = await sayfa.evaluate(() => window.__harita?.gorunum()?.seciliHucreler() ?? []);
   kontrol(`${e} çoklu seçim 3 hücre`, secili.length === 3, secili.join(" "));
   const alt = (await sayfa.locator("#harita-alt").innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} alt çubuk: sayı, sınıf, ₺ toplam`, /3 hücre/.test(alt) && /(Kırsal|Kasaba|Şehir)/.test(alt) && /\d{1,3}(\.\d{3})* ₺/.test(alt), alt);
+  kontrol(`${e} alt çubuk: sayı, sınıf, ₺ toplam`, /3 hücre/.test(alt) && /(Kırsal|Kasaba|Şehir)/.test(alt) && /\d{1,3}(\.\d{3})*\s₺/.test(alt), alt);
   const dugme = sayfa.locator("#harita-alt [data-eylem='satin-al']");
   kontrol(`${e} Satın al etkin`, await dugme.isEnabled());
   await ekran("3-secim");

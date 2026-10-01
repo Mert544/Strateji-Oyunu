@@ -13,7 +13,7 @@
 import type { DonusMaddesi, DonusOzeti } from "@bolge/protokol";
 import { DONUS_SABLON } from "@bolge/protokol";
 import { bildir } from "../arayuz/bildirim";
-import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, sureMetni, tamTarihMetni, TURKIYE_OFSETI_MS } from "../arayuz/bicim";
+import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, paraIsaretli, sureMetni, tamTarihMetni, TURKIYE_OFSETI_MS } from "../arayuz/bicim";
 import { ikon } from "../tasarim/ikon";
 import type { HaritaGorunumu } from "./gorunum";
 import type { Hiyerarsi } from "./veri";
@@ -38,9 +38,6 @@ export const DONUS_METINLERI: Readonly<Record<string, readonly string[]>> = {
 const SELAM = (trtSaat: number): string => (trtSaat >= 5 && trtSaat < 11 ? "Günaydın" : trtSaat >= 11 && trtSaat < 17 ? "İyi günler" : trtSaat >= 17 && trtSaat < 22 ? "İyi akşamlar" : "İyi geceler");
 
 const OZEL_TUR: Record<string, string> = { olcek: "Ölçek büyütme", kenar: "Yol", onarim: "Onarım" };
-
-const tl = (mili: number): string => `₺${fmt(Math.floor(Math.abs(mili) / 1000))}`;
-const isaretli = (mili: number): string => `${mili > 0 ? "+" : mili < 0 ? "−" : ""}${tl(mili)}`;
 
 /** Bir maddenin Türkçe cümlesi (şablon + tohum). */
 export function maddeMetni(m: DonusMaddesi, ad: DonusAdlari): string {
@@ -67,10 +64,10 @@ export function donusSatirlari(o: DonusOzeti, ad: DonusAdlari): Array<{ html: st
   const n = o.net;
   if (n.hazineFarki !== 0 || n.kalemler.satis !== 0) {
     const kalem: string[] = [];
-    if (n.kalemler.satis) kalem.push(`satış ${isaretli(n.kalemler.satis)}`);
-    if (n.kalemler.gider) kalem.push(`giderler ${isaretli(n.kalemler.gider)}`);
-    if (n.kalemler.diger) kalem.push(`diğer ${isaretli(n.kalemler.diger)}`);
-    l.push({ html: `<b class="${n.hazineFarki > 0 ? "dn-arti" : ""}">${esc(isaretli(n.hazineFarki))}</b>${kalem.length ? ` <span class="soluk">${esc(kalem.join(", "))}</span>` : ""}` });
+    if (n.kalemler.satis) kalem.push(`satış ${paraIsaretli(n.kalemler.satis)}`);
+    if (n.kalemler.gider) kalem.push(`giderler ${paraIsaretli(n.kalemler.gider)}`);
+    if (n.kalemler.diger) kalem.push(`diğer ${paraIsaretli(n.kalemler.diger)}`);
+    l.push({ html: `<b class="${n.hazineFarki > 0 ? "dn-arti" : ""}">${esc(paraIsaretli(n.hazineFarki))}</b>${kalem.length ? ` <span class="soluk">${esc(kalem.join(", "))}</span>` : ""}` });
   }
   if (n.uretim.length) l.push({ html: `Üretimden çıkanlar: ${esc(n.uretim.map((u) => `${ad.mal(u.mal)} ${fmt(Math.round(u.miktar / 1000))}`).join(" · "))}` });
   const maddeler = [...o.maddeler].sort((a, b) => b.onem - a.onem);
