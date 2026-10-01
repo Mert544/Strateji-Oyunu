@@ -86,3 +86,10 @@ Sahip "genel kararları baş lider versin" dedi; aşağıdakiler sentezin öneri
 - **Üretim döngüsü genişler:** mal, kaynak ve zincirler artırılır (buğday → un → ekmek; hayvancılık: inek → süt, et, deri → deri ürünleri; madencilik ve fabrikalar); perakende kademeleri: bakkal, market, süpermarket; üretimhaneler ve fabrikalar.
 - **Dönüş deneyimi:** oyun açıldığında "sen yokken neler oldu" açılış ekranı; Esnaf Defteri, ödüller ve kaldığın yer kartı geliştirilir. Takvim beğenildi.
 - **Toplantı:** tüm işler bitince sahip ile baş lider toplantı yapar.
+
+## 12. Sahip kararı (1 Ekim): kademeler seçimdir, ilerleme merdiveni değil
+- Bakkal, market, süpermarket bir ilerleme fazı değildir; oyuncunun seçtiği iş modelleridir. İsteyen bakkalda kalır, isteyen büyür, isteyen kendi markasıyla bakkal zinciri kurar; parası olan (madencilik, askeri/koruma işleri, kaynak satışı vb. ile kazanmış) **doğrudan süpermarket açar**.
+- Açılışı kilitleyen sıra, seviye ya da "önce küçüğü" şartı yoktur. Kısıtlar yalnız sermaye, uygun arsa/ayak izi, işletme gideri ve tekelleşme korumalarıdır. Yerinde büyüme (yükseltme) bir seçenektir, zorunlu yol değildir.
+- Oyuncuya özgü marka ve tabela kimliği desteklenir.
+- Aynı "kilit yok, seçim var" ilkesi fabrika ölçekleri, askeri yapılar ve diğer sistemler için de geçerlidir.
+- Takım düzeni sürer: geri kalan Ar-Ge çalışmaları liderler ve ajanlarla birlikte yürütülür.
