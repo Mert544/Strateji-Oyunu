@@ -9,7 +9,7 @@ import type { Komut } from "@bolge/cekirdek";
 import { bellekDeposu } from "../src/depo/bellek";
 import { ElleSaat } from "../src/saat";
 import { DunyaYazari } from "../src/yazar";
-import { mulkVerisi } from "./yardimci";
+import { bitisikSatilabilir, mulkVerisi } from "./yardimci";
 
 const ILCE = "sn_m_ova_merkez";
 
@@ -34,12 +34,8 @@ describe("mulk kipi: gorunum alimi", () => {
     expect(await gonder(SISTEM_OYUNCUSU, { tur: "oyuncu_katil", oyuncu: "ali", bolgeler: [] })).toBe(true);
     saat.ilerlet(SAAT);
     await yazar.birTur();
-    // Hücreler: ilçenin ilk iki uygun hücresi (fikstürden).
-    const ilce = yazar.sim.dunya.mulk?.ilceler.find((c) => c.id === ILCE);
-    expect(ilce).toBeDefined();
-    const fikstur = veri().parsel?.ilceler.find((c) => c.id === ILCE);
-    const hucreler = (fikstur?.hucreler ?? []).filter((h) => h.uygun && h.sinif === "kirsal").slice(0, 2).map((h) => h.id);
-    expect(hucreler).toHaveLength(2);
+    // Hücreler: kamu olmayan bitişik iki kırsal hücre.
+    const hucreler = bitisikSatilabilir(yazar.sim, ILCE);
     expect(await gonder("ali", { tur: "parsel_al", ilce: ILCE, hucreler, sinif: "kirsal" })).toBe(true);
     expect(await gonder("ali", { tur: "tesis_insa_hucre", ilce: ILCE, tesisTuru: "ciftlik", hucreler })).toBe(true);
     await gonder("ali", { tur: "ticaret_emri", bolge: "sn_m_ova#ali", mal: "tahil", yon: "ihracat", oranSaat: 100_000 });

@@ -68,6 +68,8 @@ interface Baglanti {
   abone: boolean;
   /** Mülk kipi: ilçe karelerine ayrılmış hücre listesi de gelsin (abone mesajındaki `ayrilmis`). */
   ayrilmis: boolean;
+  /** Mülk kipi: ilçe karelerine kamu arsası grupları da gelsin (abone mesajındaki `kamu`). */
+  kamu: boolean;
   sonKare: IlgiKaresi | null;
   rev: number;
   canli: boolean;
@@ -120,7 +122,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     const oyuncu = kareOyuncusu(b);
     const ilgi = ilgiAlaniKur(yazar.sim, b.istenen, oyuncu);
     const ilceIlgisi = ilceIlgisiKur(yazar.sim, b.istenenIlceler, oyuncu);
-    const kare = ilgiKaresiCikar(yazar.sim, ilgi, oyuncu, ilceIlgisi, { ayrilmisListesi: b.ayrilmis });
+    const kare = ilgiKaresiCikar(yazar.sim, ilgi, oyuncu, ilceIlgisi, { ayrilmisListesi: b.ayrilmis, kamuListesi: b.kamu });
     if (tam || b.sonKare === null) {
       b.rev++;
       gonder(b, { tur: "kare", rev: b.rev, seq: yazar.seq, ilgi, ...(yazar.sim.dunya.mulk ? { ilceIlgisi } : {}), kare });
@@ -200,6 +202,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     b.istenen = tekil;
     b.istenenIlceler = tekilIlce;
     b.ayrilmis = m.ayrilmis === true;
+    b.kamu = m.kamu === true;
     b.abone = true;
     kareGonder(b, true);
   }
@@ -304,7 +307,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   }
 
   wss.on("connection", (ws) => {
-    const b: Baglanti = { ws, kimlik: null, istemci: "", istenen: [], istenenIlceler: [], abone: false, ayrilmis: false, sonKare: null, rev: 0, canli: true, zincir: Promise.resolve() };
+    const b: Baglanti = { ws, kimlik: null, istemci: "", istenen: [], istenenIlceler: [], abone: false, ayrilmis: false, kamu: false, sonKare: null, rev: 0, canli: true, zincir: Promise.resolve() };
     baglantilar.add(b);
     const zamanAsimi = setTimeout(() => {
       if (!b.kimlik) ws.close(KAPANIS.zamanAsimi, "merhaba zaman asimi");

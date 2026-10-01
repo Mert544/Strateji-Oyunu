@@ -68,6 +68,11 @@ export const AboneSemasi = z.object({
    * her zaman gelir.
    */
   ayrilmis: z.boolean().optional(),
+  /**
+   * Mülk kipi: ilçe karelerine kamu arsası GRUPLARI (`kamu`, dikdörtgen blok) de gelsin mi (varsayılan hayır; Gebze ölçeğinde
+   * ilçe başına on binlerce hücre). `kamuAdet` (sayı) her zaman gelir. Kamu kümesi değişmez: deltada tekrarlanmaz.
+   */
+  kamu: z.boolean().optional(),
 });
 
 export const KomutMesajiSemasi = z.object({
@@ -229,6 +234,16 @@ const ilceKaresiSemasi = z.object({
   hucreler: z.array(hucreKaresiSemasi),
   ayrilmisAdet: tam.optional(),
   ayrilmis: z.array(z.string()).optional(),
+  kamuAdet: tam.optional(),
+  kamu: z
+    .array(
+      z.object({
+        sahip: z.string(),
+        tur: z.enum(["meydan", "pazar", "park", "hizmet", "kiyi", "sanayi_rezervi", "hazine"]),
+        blok: z.array(z.tuple([tam, tam, tam, tam])),
+      }),
+    )
+    .optional(),
 });
 const oyuncuKaresiSemasi = z.object({
   id: z.string(),

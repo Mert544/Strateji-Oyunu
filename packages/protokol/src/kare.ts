@@ -21,13 +21,34 @@
  *   oyun çarpanı FORMÜLÜ (`erkenOyun`; çarpan zamanla değiştiği için değer değil formül gider, delta kirlenmez), ilk-yapı
  *   indirimi kalan hakkı, ayrılmış hücre satın alma bitişi ve inşaatın başlangıcı/ek yapı kimliği.
  *
+ * - Kamu arsası (satılmayan hücreler; G2 P1): ilçe girdisinde `kamuAdet` (her zaman) ve `kamu` grupları (yalnız `abone {kamu:
+ *   true}` isteyen bağlantıya; Gebze ölçeğinde ilçe başına on binlerce hücre olabilir). Tel biçimi DİKDÖRTGEN BLOK: her grup
+ *   `{sahip, tur, blok: [x0, y0, x1, y1][]}`; hücre kimliği "x:y" olduğundan blok x0..x1 × y0..y1 (dört uç da DAHİL) kamu hücreleridir.
+ *   Çekirdek bloklar YALNIZ uygun kamu hücrelerini kapsar (bloğun her hücresi kamudur; yol/su gibi uygunsuz hücre blok dışında kalır).
+ *   Gruplar (sahip, tür) sırasıyla, bloklar (y0, x0) sırasıyla gelir (çekirdeğin `kamuBloklari` sırası). `kamuAdet` blok alanları
+ *   toplamıdır. Kamu kümesi DEĞİŞMEZ (dünya kurulurken donar), bu yüzden `ayrilmis` gibi deltada tekrarlanmaz. Kamu hücreleri `hucreler`de
+ *   yoktur (satılmaz). Yardımcılar: `kamuBilgisiBul` (hücre sorgusu), `blokHucreleri` (blok açma).
+ *
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { PPM, anlikMiktar, carpBol } from "@bolge/cekirdek";
-import type { ArsaSinifi, DerlenmisIcerik, DerlenmisMulk, Dunya, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
+import { PPM, anlikMiktar, carpBol, kamuBloklari } from "@bolge/cekirdek";
+import type { ArsaSinifi, DerlenmisIcerik, DerlenmisMulk, Dunya, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
+
+/** Dikdörtgen kamu bloğu: `[x0, y0, x1, y1]` = x0..x1 × y0..y1 (dört uç dahil) hücreleri ("x:y" kimliği), hepsi kamu arsası. */
+export type KamuBlogu = [x0: number, y0: number, x1: number, y1: number];
+
+/** Aynı sahibe ve türe ait kamu blokları. */
+export interface KamuGrubuKaresi {
+  /** `k:mahalle:<id>` | `k:ilce:<id>` (ileride `k:il:<id>`). */
+  sahip: string;
+  tur: KamuGrubu["tur"];
+  blok: KamuBlogu[];
+}
 
 export interface KareSecenekleri {
+  /** İlçe karelerine kamu arsası gruplarını (`IlceKaresi.kamu`) ekle (varsayılan hayır; büyük olabilir). */
+  kamuListesi?: boolean;
   /** İlçe karelerine ayrılmış hücre listesini (`IlceKaresi.ayrilmis`) ekle (varsayılan hayır; büyük). */
   ayrilmisListesi?: boolean;
 }
@@ -91,6 +112,13 @@ export interface IlceKaresi {
   uygunHucre: number;
   satilmisHucre: number;
   hucreler: HucreKaresi[];
+  /** Kamu arsası hücre sayısı (satılmaz; kamu kuralı kapalıysa ya da ilçede kamu yoksa alan yok). */
+  kamuAdet?: number;
+  /**
+   * Kamu arsası grupları (dikdörtgen blok; bkz. dosya başlığı): yalnız `abone {kamu: true}` isteyen bağlantıya
+   * (`KareSecenekleri.kamuListesi`). Değişmezdir: delta yalnız ilçe ilk girdiğinde taşır, `deltaUygula` önceki girdiden korur.
+   */
+  kamu?: KamuGrubuKaresi[];
   /** Yeni oyunculara ayrılmış hücre sayısı (türetilmiş, değişmez; yoksa alan yok). */
   ayrilmisAdet?: number;
   /**
@@ -179,6 +207,54 @@ export function erkenOyunCarpani(f: Readonly<ErkenOyunFormulu>, t: Ms): number {
   if (gecen <= sabitMs) return baslangic;
   if (gecen >= bitisMs) return PPM;
   return baslangic + carpBol(PPM - baslangic, gecen - sabitMs, bitisMs - sabitMs);
+}
+
+/** Blokların kapladığı hücre kimlikleri ("x:y"), blok sırasıyla ve her blokta (y, x) sırasıyla (listeyi açmak gerekirse). */
+export function blokHucreleri(blok: readonly KamuBlogu[]): string[] {
+  const sonuc: string[] = [];
+  for (const [x0, y0, x1, y1] of blok) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) sonuc.push(`${x}:${y}`);
+  return sonuc;
+}
+
+/** Hücre kamu bloklarından birinde mi? Tür ve sahip döner (istemci hücre kartı için; sunucuya sormaz). */
+export function kamuBilgisiBul(kamu: readonly KamuGrubuKaresi[] | undefined, hucre: string): { tur: KamuGrubu["tur"]; sahip: string } | undefined {
+  if (kamu === undefined) return undefined;
+  const i = hucre.indexOf(":");
+  const x = Number(hucre.slice(0, i));
+  const y = Number(hucre.slice(i + 1));
+  if (i <= 0 || !Number.isFinite(x) || !Number.isFinite(y)) return undefined;
+  for (const g of kamu) for (const [x0, y0, x1, y1] of g.blok) if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return { tur: g.tur, sahip: g.sahip };
+  return undefined;
+}
+
+/**
+ * İlçenin kamu grupları (çekirdeğin `kamuBloklari` API'si; bloklar (sahip, tür) sıralı); kamu kümesi dünya kurulurken donduğu için
+ * (dünyanın mülk durumu başına, ilçe başına) bir kez hesaplanır ve saklanır: referans sabittir (deltada karşılaştırma ucuzdur).
+ */
+const kamuOnbellek = new WeakMap<object, Map<string, { adet: number; gruplar: KamuGrubuKaresi[] } | null>>();
+function kamuKompakt(d: Dunya, ilce: string): { adet: number; gruplar: KamuGrubuKaresi[] } | undefined {
+  const m = d.mulk;
+  if (m === undefined) return undefined;
+  let o = kamuOnbellek.get(m);
+  if (!o) kamuOnbellek.set(m, (o = new Map()));
+  let k = o.get(ilce);
+  if (k === undefined) {
+    const bloklar = kamuBloklari(d, ilce);
+    if (bloklar.length === 0) k = null; // kural kapalı ya da ilçede kamu yok
+    else {
+      const gruplar: KamuGrubuKaresi[] = [];
+      let adet = 0;
+      for (const b of bloklar) {
+        let g = gruplar[gruplar.length - 1];
+        if (!g || g.sahip !== b.sahip || g.tur !== b.tur) gruplar.push((g = { sahip: b.sahip, tur: b.tur, blok: [] }));
+        g.blok.push([b.x0, b.y0, b.x1, b.y1]);
+        adet += (b.x1 - b.x0 + 1) * (b.y1 - b.y0 + 1);
+      }
+      k = { adet, gruplar };
+    }
+    o.set(ilce, k);
+  }
+  return k ?? undefined;
 }
 
 /** İlçe başına ayrılmış hücre listesi (türetilmiş; çekirdek derlemesi başına bir kez hesaplanır, referans sabittir). */
@@ -356,6 +432,11 @@ export function ilgiKaresiCikar(
           girdi.ayrilmisAdet = ayrilmis.length;
           if (secenek.ayrilmisListesi === true) girdi.ayrilmis = ayrilmis;
         }
+        const k = kamuKompakt(d, c.id);
+        if (k) {
+          girdi.kamuAdet = k.adet;
+          if (secenek.kamuListesi === true) girdi.kamu = k.gruplar;
+        }
         return girdi;
       });
   }
@@ -369,8 +450,9 @@ function ayni(a: unknown, b: unknown): boolean {
 /** İlçe girdisi eşitliği; büyük `ayrilmis` listesi önce referansla (kare başına aynı önbellek dizisi) karşılaştırılır. */
 function ilceAyni(a: IlceKaresi, b: IlceKaresi): boolean {
   if (a.ayrilmis !== b.ayrilmis && !ayni(a.ayrilmis, b.ayrilmis)) return false;
-  const { ayrilmis: _a, ...x } = a;
-  const { ayrilmis: _b, ...y } = b;
+  if (a.kamu !== b.kamu && !ayni(a.kamu, b.kamu)) return false;
+  const { ayrilmis: _a, kamu: _k, ...x } = a;
+  const { ayrilmis: _b, kamu: _l, ...y } = b;
   return ayni(x, y);
 }
 
@@ -396,8 +478,10 @@ export function kareFarki(eski: IlgiKaresi, yeni: IlgiKaresi): KareDeltasi {
       const e = eskiIlce.get(c.id);
       if (e !== undefined && ilceAyni(e, c)) continue;
       // Ayrılmış hücre kümesi değişmezdir: ilçe zaten istemcideyse delta taşımaz (kare boyutu).
-      if (e !== undefined && c.ayrilmis !== undefined && ayni(e.ayrilmis, c.ayrilmis)) {
-        const { ayrilmis: _atla, ...kalan } = c;
+      if (e !== undefined && ((c.ayrilmis !== undefined && ayni(e.ayrilmis, c.ayrilmis)) || (c.kamu !== undefined && ayni(e.kamu, c.kamu)))) {
+        const kalan = { ...c };
+        if (c.ayrilmis !== undefined && ayni(e.ayrilmis, c.ayrilmis)) delete kalan.ayrilmis;
+        if (c.kamu !== undefined && ayni(e.kamu, c.kamu)) delete kalan.kamu;
         degisen.push(kalan);
       } else degisen.push(c);
     }
@@ -436,8 +520,11 @@ export function deltaUygula(kare: IlgiKaresi, delta: KareDeltasi): IlgiKaresi {
     for (const c of delta.cikanIlceler ?? []) ilce.delete(c);
     for (const c of delta.ilceler ?? []) {
       const onceki = ilce.get(c.id);
-      // `ayrilmis` yoksa önceki girdiden korunur (değişmezdir).
-      ilce.set(c.id, c.ayrilmis === undefined && onceki?.ayrilmis !== undefined ? { ...c, ayrilmis: onceki.ayrilmis } : c);
+      // `ayrilmis` ve `kamu` yoksa önceki girdiden korunur (değişmezdir).
+      const girdi = { ...c };
+      if (c.ayrilmis === undefined && onceki?.ayrilmis !== undefined) girdi.ayrilmis = onceki.ayrilmis;
+      if (c.kamu === undefined && onceki?.kamu !== undefined) girdi.kamu = onceki.kamu;
+      ilce.set(c.id, girdi);
     }
     yeni.ilceler = [...ilce.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   }

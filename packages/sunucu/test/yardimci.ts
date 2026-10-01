@@ -1,7 +1,8 @@
 /** Sunucu testlerinin ortak kurulumu: mini harita, bellek deposu, elle saat, rastgele port. */
 import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
 import type { VeriPaketi } from "@bolge/veri";
-import type { CekirdekVeriPaketi, Komut } from "@bolge/cekirdek";
+import { kamuHucreleri } from "@bolge/cekirdek";
+import type { ArsaSinifi, CekirdekVeriPaketi, Komut, Simulasyon } from "@bolge/cekirdek";
 import { bellekDeposu } from "../src/depo/bellek";
 import type { HizSiniriSecenekleri } from "../src/hiz-siniri";
 import { GelistirmeKimligi, gelistirmeTokeni } from "../src/kimlik";
@@ -89,4 +90,21 @@ export async function katil(yonetici: SunucuIstemcisi, oyuncu: string, bolgeler:
 export async function kareBekle(ist: SunucuIstemcisi, kosul: () => boolean, zamanAsimiMs = 10_000): Promise<void> {
   if (kosul()) return;
   await ist.bekle((m: SunucuMesaji) => (m.tur === "kare" || m.tur === "delta") && kosul(), zamanAsimiMs);
+}
+
+/** Kamu arsası (satılmaz) hücreleri: çekirdeğin `kamuHucreleri` API'si (iç yapıya bağlanmaz); kural kapalıysa boş. */
+export function kamuKumesi(sim: Pick<Simulasyon, "dunya">, ilce: string): Set<string> {
+  return new Set(kamuHucreleri(sim.dunya, ilce).flatMap((g) => g.hucreler));
+}
+
+/** İlçede yatayda bitişik, uygun, `sinif` sınıfında ve kamu olmayan iki hücre (satın alınır, birlikte yapı kurulur). */
+export function bitisikSatilabilir(sim: Pick<Simulasyon, "dunya" | "ic">, ilce: string, sinif: ArsaSinifi = "kirsal"): [string, string] {
+  const kamu = kamuKumesi(sim, ilce);
+  const uygun = new Set((sim.ic.mulk?.fikstur.ilceler.find((c) => c.id === ilce)?.hucreler ?? []).filter((h) => h.uygun && h.sinif === sinif && !kamu.has(h.id)).map((h) => h.id));
+  for (const id of uygun) {
+    const [x, y] = id.split(":").map(Number) as [number, number];
+    const komsu = `${x + 1}:${y}`;
+    if (uygun.has(komsu)) return [id, komsu];
+  }
+  throw new Error(`bitisik satilabilir hucre cifti yok: ${ilce}`);
 }

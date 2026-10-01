@@ -4,10 +4,10 @@
  * özel erken oyun formülü / indirimli yapı hakkı / ayrılmış bitişi. Şema doğrulaması ve `deltaUygula(a, kareFarki(a, b)) ≡ b`.
  */
 import { describe, expect, it } from "vitest";
-import { GUN, SAAT, SISTEM_OYUNCUSU, Simulasyon, sureCarpaniPpm } from "@bolge/cekirdek";
+import { GUN, SAAT, SISTEM_OYUNCUSU, Simulasyon, kamuBilgisi, kamuBloklari, kamuHucreleri, sureCarpaniPpm } from "@bolge/cekirdek";
 import type { Baglam, CekirdekVeriPaketi } from "@bolge/cekirdek";
 import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
-import { IlgiKaresiSemasi, KareDeltasiSemasi, deltaUygula, erkenOyunCarpani, ilceIlgisiKur, ilgiAlaniKur, ilgiKaresiCikar, kareFarki } from "../src/index";
+import { IlgiKaresiSemasi, KareDeltasiSemasi, blokHucreleri, deltaUygula, erkenOyunCarpani, ilceIlgisiKur, ilgiAlaniKur, ilgiKaresiCikar, kamuBilgisiBul, kareFarki } from "../src/index";
 import type { IlgiKaresi } from "../src/index";
 
 const ILCE = "sn_m_ova_merkez";
@@ -22,14 +22,22 @@ function kurulum(): { sim: Simulasyon; h1: string; h2: string } {
   const sim = Simulasyon.olustur(v, 3);
   sim.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "ali", bolgeler: [] } });
   sim.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "veli", bolgeler: [] } });
-  const uygun = (v.parsel?.ilceler.find((c) => c.id === ILCE)?.hucreler ?? []).filter((h) => h.uygun && h.sinif === "kirsal").map((h) => h.id);
-  const [h1, h2] = [uygun[0] as string, uygun[1] as string];
+  // Kamu arsası satılmaz: kamu olmayan, uygun, bitişik iki kırsal hücre.
+  const kamu = kamuKumesi(sim);
+  const uygun = new Set((v.parsel?.ilceler.find((c) => c.id === ILCE)?.hucreler ?? []).filter((h) => h.uygun && h.sinif === "kirsal" && !kamu.has(h.id)).map((h) => h.id));
+  const h1 = [...uygun].find((id) => uygun.has(`${Number(id.split(":")[0]) + 1}:${id.split(":")[1]}`)) as string;
+  const h2 = `${Number(h1.split(":")[0]) + 1}:${h1.split(":")[1]}`;
   expect(sim.uygula({ t: SAAT, oyuncu: "ali", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [h1, h2], sinif: "kirsal" } }).tamam).toBe(true);
   return { sim, h1, h2 };
 }
 
+/** Kamu arsası hücreleri (çekirdeğin `kamuHucreleri` API'si). */
+function kamuKumesi(sim: Simulasyon, ilce = ILCE): Set<string> {
+  return new Set(kamuHucreleri(sim.dunya, ilce).flatMap((g) => g.hucreler));
+}
+
 function kare(sim: Simulasyon, oyuncu: string | null, liste = true): IlgiKaresi {
-  return ilgiKaresiCikar(sim, ilgiAlaniKur(sim, [], oyuncu), oyuncu, ilceIlgisiKur(sim, [ILCE], oyuncu), { ayrilmisListesi: liste });
+  return ilgiKaresiCikar(sim, ilgiAlaniKur(sim, [], oyuncu), oyuncu, ilceIlgisiKur(sim, [ILCE], oyuncu), { ayrilmisListesi: liste, kamuListesi: liste });
 }
 
 describe("mulk kare eklemeleri", () => {
@@ -103,7 +111,7 @@ describe("mulk kare eklemeleri", () => {
   it("yalnizca sahip degisince: delta ayrilmis tasimaz ve ilceAyni referans onbellegiyle ucuz", () => {
     const { sim } = kurulum();
     const a = kare(sim, null);
-    sim.uygula({ t: 2 * SAAT, oyuncu: "veli", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [sim.ic.mulk!.fikstur.ilceler.find((c) => c.id === ILCE)!.hucreler.filter((h) => h.uygun && h.sinif === "kirsal")[5]!.id], sinif: "kirsal" } });
+    sim.uygula({ t: 2 * SAAT, oyuncu: "veli", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [sim.ic.mulk!.fikstur.ilceler.find((c) => c.id === ILCE)!.hucreler.filter((h) => h.uygun && h.sinif === "kirsal" && !kamuKumesi(sim).has(h.id)).at(-1)!.id], sinif: "kirsal" } });
     const b = kare(sim, null);
     expect(a.ilceler?.[0]?.ayrilmis).toBe(b.ilceler?.[0]?.ayrilmis); // aynı önbellek dizisi
     const delta = kareFarki(a, b);
@@ -130,5 +138,71 @@ describe("erkenOyunCarpani", () => {
     }
     // Formül sabittir: zaman ilerleyince oyuncu karesi bu yüzden kirlenmez.
     expect(kare(sim, "ali").oyuncu?.erkenOyun).toEqual(f);
+  });
+});
+
+describe("kamu arsasi yayini (dikdortgen blok)", () => {
+  it("blokHucreleri ve kamuBilgisiBul: dort uc dahil, blok disi tanimsiz, negatif koordinat, gecersiz kimlik", () => {
+    const kamu = [
+      { sahip: "k:mahalle:m1", tur: "park" as const, blok: [[3, 1, 5, 2], [10, 10, 10, 10]] as Array<[number, number, number, number]> },
+      { sahip: "k:ilce:i1", tur: "hazine" as const, blok: [[-3, 7, -2, 7]] as Array<[number, number, number, number]> },
+    ];
+    expect(blokHucreleri(kamu[0]!.blok)).toEqual(["3:1", "4:1", "5:1", "3:2", "4:2", "5:2", "10:10"]);
+    expect(blokHucreleri(kamu[1]!.blok)).toEqual(["-3:7", "-2:7"]);
+    expect(blokHucreleri([])).toEqual([]);
+    for (const h of ["3:1", "5:1", "3:2", "5:2", "4:2", "10:10"]) expect(kamuBilgisiBul(kamu, h)).toEqual({ tur: "park", sahip: "k:mahalle:m1" });
+    for (const h of ["-3:7", "-2:7"]) expect(kamuBilgisiBul(kamu, h)).toEqual({ tur: "hazine", sahip: "k:ilce:i1" });
+    for (const h of ["2:1", "6:1", "3:0", "3:3", "10:11", "11:10", "-1:7", "-4:7"]) expect(kamuBilgisiBul(kamu, h)).toBeUndefined();
+    expect(kamuBilgisiBul(kamu, "x:1")).toBeUndefined();
+    expect(kamuBilgisiBul(kamu, "12")).toBeUndefined();
+    expect(kamuBilgisiBul(undefined, "1:1")).toBeUndefined();
+  });
+
+  it("kare: kamuAdet her zaman, kamu gruplari yalniz istenince; cekirdek kamuBloklari/kamuHucreleri ile ayni; her blok hucresi kamu; delta tekrarlamaz", () => {
+    const { sim } = kurulum();
+    const grup = kamuHucreleri(sim.dunya, ILCE);
+    const toplam = grup.reduce((n, g) => n + g.hucreler.length, 0);
+    expect(toplam).toBeGreaterThan(0);
+    const tam = kare(sim, null, true).ilceler?.[0];
+    const sade = kare(sim, null, false).ilceler?.[0];
+    expect(sade?.kamuAdet).toBe(toplam);
+    expect(sade?.kamu).toBeUndefined();
+    expect(tam?.kamuAdet).toBe(toplam);
+    // Gruplar çekirdeğin (sahip, tür) gruplarıyla aynı; açılmış blok hücreleri aynı küme; blok sayısı kamuBloklari ile aynı.
+    expect(tam?.kamu?.map((g) => [g.sahip, g.tur])).toEqual(grup.map((g) => [g.sahip, g.tur]));
+    for (const [i, g] of grup.entries()) expect([...blokHucreleri(tam?.kamu?.[i]?.blok ?? [])].sort()).toEqual([...g.hucreler].sort());
+    expect(tam?.kamu?.reduce((n, g) => n + g.blok.length, 0)).toBe(kamuBloklari(sim.dunya, ILCE).length);
+    // Bloğun içindeki her hücre bir kamu hücresidir (çekirdek bilgisi tür ve sahibi doğrular).
+    for (const g of tam?.kamu ?? []) for (const h of blokHucreleri(g.blok)) expect(kamuBilgisi(sim.dunya, ILCE, h)).toEqual({ tur: g.tur, sahip: g.sahip });
+    // Hücre sorgusu (istemci hücre kartı): kamu hücresi tür ve sahibi verir; kamu olmayan tanımsız.
+    for (const g of grup) for (const h of g.hucreler.slice(0, 3)) expect(kamuBilgisiBul(tam?.kamu, h)).toEqual({ tur: g.tur, sahip: g.sahip });
+    const kamuIds = kamuKumesi(sim);
+    const satilabilir = (sim.ic.mulk?.fikstur.ilceler.find((c) => c.id === ILCE)?.hucreler ?? []).find((h) => h.uygun && !kamuIds.has(h.id));
+    expect(kamuBilgisiBul(tam?.kamu, satilabilir?.id ?? "")).toBeUndefined();
+    expect(kamuBilgisiBul(undefined, "1:1")).toBeUndefined();
+    // Kamu hücresi mulk.hucreler'de (satılmış hücre listesinde) yok.
+    expect((tam?.hucreler ?? []).every((h) => !kamuIds.has(h[0]))).toBe(true);
+    expect(IlgiKaresiSemasi.parse(kare(sim, "ali", true))).toEqual(kare(sim, "ali", true));
+    // Şema dört elemanlı bloğu ister.
+    const bozuk = structuredClone(kare(sim, null, true));
+    (bozuk.ilceler?.[0]?.kamu?.[0]?.blok as unknown as number[][]).push([1, 2, 3]);
+    expect(IlgiKaresiSemasi.safeParse(bozuk).success).toBe(false);
+    // Delta: ilçe zaten istemcideyken kamu tekrarlanmaz; uygulayınca korunur.
+    const a = kare(sim, null, true);
+    const satilacak = [...(sim.ic.mulk?.fikstur.ilceler.find((c) => c.id === ILCE)?.hucreler ?? [])].reverse().find((h) => h.uygun && h.sinif === "kirsal" && !kamuIds.has(h.id) && !sim.dunya.mulk?.hucreler.some((x) => x.id === h.id));
+    sim.uygula({ t: 3 * SAAT, oyuncu: "veli", komut: { tur: "parsel_al", ilce: ILCE, hucreler: [satilacak!.id], sinif: "kirsal" } });
+    const b = kare(sim, null, true);
+    const delta = kareFarki(a, b);
+    expect(delta.ilceler).toHaveLength(1);
+    expect(delta.ilceler?.[0]?.kamu).toBeUndefined();
+    expect(delta.ilceler?.[0]?.ayrilmis).toBeUndefined();
+    expect(KareDeltasiSemasi.parse(delta)).toEqual(delta);
+    expect(deltaUygula(a, delta)).toEqual(b);
+    expect(deltaUygula(a, delta).ilceler?.[0]?.kamu).toEqual(a.ilceler?.[0]?.kamu);
+    // İlçe karede yokken delta kamuyu da taşır.
+    const bos: IlgiKaresi = { ...a, ilceler: [] };
+    const taze = kareFarki(bos, b);
+    expect(taze.ilceler?.[0]?.kamu?.length).toBeGreaterThan(0);
+    expect(deltaUygula(bos, taze)).toEqual(b);
   });
 });

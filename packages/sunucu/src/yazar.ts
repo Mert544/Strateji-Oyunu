@@ -46,7 +46,7 @@
  * özet karşılaştırılır) + görüntüden sonraki günlük kayıtları. Kurtarılan dünyanın zamanı, son kaydın `t`'si ile
  * görüntü zamanının büyüğüdür; canlı dünyayla karşılaştırma AYNI t'de yapılmalıdır (`calistirKadar(t)`, docs/06 §14).
  */
-import { SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikGoruntuOlustur, kuralSurumuHesapla } from "@bolge/cekirdek";
+import { SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikGoruntuOlustur, kamuHucreleri, kuralSurumuHesapla } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi, IcerikKimlikTablosu, Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
 import type { Bot } from "@bolge/botlar";
 import type { Dizin } from "@bolge/protokol";
@@ -174,6 +174,13 @@ export interface KurtarmaRaporu {
   dunyaEpochMs: number | null;
   /** İçerik göçü yapıldıysa özeti (yoksa null). */
   goc: GocOzeti | null;
+  /**
+   * Mülk kipi açık ve parametrelerde `mulk.kamu` var ama yüklenen dünyada kamu kümesi YOK (kamu öncesi kurulmuş dünya): kamu
+   * arsası kuralı bu dünyada kapalıdır. Açılışta `uyari` olarak da bildirilir.
+   */
+  kamuKapali: boolean;
+  /** Açılışta üretilen uyarılar (aynı iletiler `uyari` dinleyicisine de gider). */
+  uyarilar: string[];
   /** Açılışta duvar saatinin gerisinde kalan sim süresi (yetişilecek miktar; mutlak saat değilse 0). */
   yetisecekMs: Ms;
   /** Açılışta duvar saati dünya zamanının gerisindeyse (saat geri gitmiş) fark; yoksa 0. Dünya geri gitmez, saat bekler. */
@@ -243,6 +250,8 @@ export class DunyaYazari {
   private readonly yetismeDinleyicileri: Array<(d: YetismeDurumu) => void> = [];
   private yetismeBekleyenleri: Array<() => void> = [];
   private saatGeride = false;
+  /** Açılışta üretilen, dinleyici bağlanınca teslim edilecek uyarılar. */
+  private readonly acilisUyarilari: string[] = [];
   /** Son uygulanan (= son günlüğe yazılan) seq. */
   private seqDegeri = 0;
   private sonDamga: Ms = 0;
@@ -352,6 +361,8 @@ export class DunyaYazari {
       sureMs: 0,
       dunyaEpochMs: null,
       goc,
+      kamuKapali: false,
+      uyarilar: [],
       yetisecekMs: 0,
       saatGeriMs: 0,
     });
@@ -391,6 +402,14 @@ export class DunyaYazari {
     } else {
       epoch ??= s.dunyaEpochMs ?? null;
       s.saat.baslat(sim.dunya.zaman);
+    }
+    // Kamu arsası kuralı: parametrede var, dünyada yok (kamu öncesi kurulmuş dünya) -> açık uyarı (yalnız çekirdek API'si okunur).
+    const mulkDunya = sim.dunya.mulk;
+    if (mulkDunya !== undefined && sim.ic.mulk?.p.kamu !== undefined && mulkDunya.ilceler.length > 0 && mulkDunya.ilceler.every((c) => kamuHucreleri(sim.dunya, c.id).length === 0)) {
+      y.kurtarma.kamuKapali = true;
+      const m = "bu dunyada kamu arsasi kurali kapali (dunya kamu oncesi kurulmus); ilk gercek satistan once yeni dunya baslatin";
+      y.kurtarma.uyarilar.push(m);
+      y.acilisUyarilari.push(m);
     }
     y.dunyaEpochMsDegeri = epoch;
     y.kurtarma.dunyaEpochMs = epoch;
@@ -721,6 +740,7 @@ export class DunyaYazari {
   /** Uyarı dinleyicisi (ör. anlık görüntü alınamadı; dünya ve günlük etkilenmez). */
   uyari(f: (m: string) => void): void {
     this.uyariDinleyici = f;
+    for (const m of this.acilisUyarilari.splice(0)) f(m);
   }
 
   /**

@@ -8,7 +8,7 @@ import { SAAT, SISTEM_OYUNCUSU } from "@bolge/cekirdek";
 import type { IlgiKaresi } from "@bolge/protokol";
 import { ElleSaat } from "../src/saat";
 import { DunyaYazari } from "../src/yazar";
-import { kareBekle, katil, mulkVerisi, testSunucusu } from "./yardimci";
+import { bitisikSatilabilir, kareBekle, katil, mulkVerisi, testSunucusu } from "./yardimci";
 import type { TestSunucusu } from "./yardimci";
 
 let ts: TestSunucusu | null = null;
@@ -18,8 +18,8 @@ afterEach(async () => {
 });
 
 const ILCE = "sn_m_ova_merkez";
-const H1 = "604800:381800";
-const H2 = "604801:381800";
+let H1 = "";
+let H2 = "";
 
 function hucreler(k: IlgiKaresi | null): unknown {
   return k?.ilceler?.find((c) => c.id === ILCE)?.hucreler;
@@ -29,6 +29,7 @@ describe("mulk kipi: iki istemci", () => {
   it("parsel_al iki karede de gorunur; isletme ve arazi kaydi yalniz sahibine; ozet esit; kurtarma", async () => {
     ts = await testSunucusu({ veri: mulkVerisi() });
     expect(ts.yazar.sim.dunya.mulk).toBeDefined();
+    [H1, H2] = bitisikSatilabilir(ts.yazar.sim, ILCE); // kamu arsası satılmaz: kamu olmayan bitişik iki hücre
     const y = await ts.baglan(SISTEM_OYUNCUSU);
     await katil(y, "ali", []);
     await katil(y, "veli", []);
