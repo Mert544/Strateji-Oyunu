@@ -4,7 +4,7 @@
 >
 > **Düzeltme (atıf).** Dükkân geri ödeme medyanı ≤ 48 sa hedefi GDD'de **A0-11** satırındadır (`oyun-tasarim-belgesi-v1.md:1088`); **A0-12** (`:1089`) perakende primi (1,05–1,20; > 1,30 alarm), ilk dükkân ≤ 36 sa ve fiyat savaşı (< 0,85 R süre ≤ %5) satırıdır. `yerel-talep-kalibrasyon.md` ve bu belgenin eski anıları "geri ödeme (A0-12)" yazıyordu; bu belgede A0-11'e bağlanır.
 
-## 0. Özet: on metrik, okuma yolu, eşikler
+## 0. Özet: on bir metrik, okuma yolu, eşikler
 
 Okuma yolları: **[S]** = bugünkü `/metrik` ucu (`packages/sunucu/src/metrik.ts`): **ekonomi metriği yok** (yalnız sistem metrikleri ve ödül sayaçları, bkz. §1). **[O]** = O2'nin günlük oynatması (`takim/o2/g10-cikarma`, `packages/olcum/src/insan-cikarma.ts`): `Simulasyon` ile günlüğü oynar, `sim.dunya` her adımda okunur. **[K2]** = K2'nin `/metrik`'e ekleyeceği dünya düzeyi gauge'lar (§8.2). Oyuncu başına olanlar yalnız [O]'da (kardinalite).
 
@@ -20,6 +20,7 @@ Okuma yolları: **[S]** = bugünkü `/metrik` ucu (`packages/sunucu/src/metrik.t
 | E8 | **Fiyat sınırına dayanan mal sayısı** (NPC fiyat/taban ≤ 0,26 ya da ≥ 1,74) | [K2] ya da [O] | 0 | 1–2 mal | ≥ 3 mal ya da bir mal 48 sa kesintisiz | `pazar.emilimSaat`/`arzSaat` (kapasite), `fiyatEsnekligiPpm` en son |
 | E9 | **Bakım C**: aşınma, zincir çıktı kaybı ve **bakımlı/bakımsız oranı** (NPC dilimi altında) | [O] ya da [K2] | gün 14 ≤ %12, gün 45 ≤ %32; **oran ≥ 1,1** | ≤ %18 / ≤ %40 | üstü ya da < %5 (hiç aşınmıyor); **oran < 1,1 ⇒ baş lider kararı** | **C sabit (baş lider kararı)**; parametre ayarı yok, oran < 1,1 ise karar baş liderde |
 | E10 | **Kit pencere ve ödül toplamı** (A0-10) | [S] kısmen, [O] | oyuncu başı ödül ≤ 6.790 ₺, ret 0 | 6.790–8.000 ₺ | > 8.000 ₺ ya da `odul_reddedilen` > 0 | Ödül tablosu (`ilk_pencere` 8 → 4 parça); kit pencere dokunulmaz |
+| E11 | **Perakende primi (ZP3, A0-12)** = satış ağırlıklı dükkân fiyatı / 0,891 R; **kademe dağılımı** (%1,15 payı) | [O] ya da [K2] | prim 1,05–1,20 (1,15 payı ≲ %19) | 1,20–1,30 | > 1,30 (kademe tavanıyla ulaşılamaz: ölçüm hatası ya da yeni fiyat bandı) | **Parametre ayarı yok**: "bilinen tasarım açığı, Alfa-1 esneklik notu" |
 
 **Örneklem koşulu (hepsi için).** n < 5 oyuncuda ya da n < 3 olay (ör. dükkân kuran) için sarı/kırmızı **verilmez**, "ölçülmedi" yazılır (aynı kural `insan-testi-kilavuzu.md:583`). **Küçük dünya uyarısı:** NPC pazar dilimi kişi başına `emilimSaat × max(4, N)/4 ÷ N` olduğundan N < 4'te kişi başı pazar derinliği büyür; ihracat ve ZP8 yukarı, R aşağı sapar. N < 4 koşulunda E1, E3, E8 kâğıt ölçekle karşılaştırılmaz.
 
@@ -63,7 +64,7 @@ Okuma yolları: **[S]** = bugünkü `/metrik` ucu (`packages/sunucu/src/metrik.t
 - **Eşikler.** Yeşil %10–%40: R bantta kalır (r = %10 ⇒ R 0,32–0,33). Sarı %5–%10 ya da %40–%50. Kırmızı < %5 (hazine birikir, para yutulmaz: enflasyon riski; hazine eğrisi gün 30'da 3,5 M ₺/oyuncu) ya da > %50 (R 0,62 üstü).
 - **Kırmızıda:** r < %5 ise ayarlanacak şey para değil **yatırım sürtünmesi**: yapı/ölçek bedeli ↓ (yatırım caziplik ↑), hücre fiyatı ↓, Defter yatırım kartı (tasarım işi); R'yi yükseltmek için E1 listesine bakılır (r'yi artırmak ve lavabo kalemi artırmak ayrı yollar). r > %50 ise lavabo kalemleri ↓ (E1 üst bölge).
 
-## 3. Perakende: E3 ZP8, E4 ilk dükkân, E5 geri ödeme
+## 3. Perakende: E3 ZP8, E4 ilk dükkân, E5 geri ödeme, E11 perakende primi
 
 ### E3 ZP8
 
@@ -88,6 +89,15 @@ Okuma yolları: **[S]** = bugünkü `/metrik` ucu (`packages/sunucu/src/metrik.t
 - **Beklenen (b), `yerelOlcek` 40:** medyan 37 (U) / 22 (N) sa; kârlı ilçe 36 / 42 (nüfusu ≥ 30 bin ilçeler).
 - **Eşikler:** yeşil ≤ 48 sa (GDD A0-11); sarı 48–150 sa; kırmızı > 150 sa (300 sa "çöküş" sınırı, `yerel-talep-kalibrasyon.md` §7).
 - **Kırmızıda sıra:** (1) `giderMiliSaat` ↓ ve dükkân bedeli ↓ (R'yi biraz düşürür); (2) kademe bandı/fiyat tabanı (`fiyatKademeleriPpm`); (3) `yerelOlcek` ↑ (40 → 45) **yalnız en son** ve yalnız E3 (ZP8) ve E1 (R) yeşilse: aksi hâlde üçgen (§8.1). Ölçek ↑ ZP8'i ve payda'yı yükseltir (R ↓).
+
+
+### E11 Perakende primi (ZP3, A0-12) ve kademe dağılımı
+
+- **Tanım.** `prim = Σ(satış × kademe çarpanı) / Σ(satış) / 0,891` (satış ağırlıklı; dünya ve ilçe kırılımı). Kademe çarpanı 0,85 / 0,95 / 1,05 / 1,15 R için prim **0,954 / 1,066 / 1,178 / 1,291**'dir (GDD A0-12 `:1089` ve A3 şartnamesi §12.3 ZP3: hedef 1,05–1,20, alarm > 1,30). Yanında **kademe dağılımı**: dükkânların ve satışın yüzde kaçı 1,15'te (ayrıca 0,95 ve 0,85 payı).
+- **Okuma:** [O] `yerelPazarGorunumu` (A3 §6.8, `:1227-1229`: yuva başına `etkinKademe`, `istek`) ve `YerelSatir { fiyatPpm, istek }` (§6.4 Adım 6) toplamı; [K2] `bolge_dukkan_kademe_satis{kademe}` (satış birim/sa, kademe etiketli; oyuncu etiketi yok, **K2-9**). Dükkân sayısı bazı: yuvaların `etkinKademe` dağılımı.
+- **Beklenen (kâğıt):** hepsi 1,05'te ⇒ prim 1,178 (yeşil). Kademe 1,15 payı f, kalan 1,05 ise `prim = 1,178 + 0,113 f`; **f ≲ %19'da prim 1,20'yi geçer**, f = %100 ⇒ 1,291 (sarı üst sınır, alarm 1,30'un hemen altında). Bot nüfusu (A1 %60 dokunmaz / %20 yüksek / %15 uygun / %5 kampanya; kampanya kapalıysa %5 uygun) ≈ 1,17–1,18. **Gerçek oyuncu kademeyi görürse 1,15'e yığılması beklenir** (`fiyat-kademesi-rehberi.md`: üst kademe denenen her koşulda net'i %54–74 artırır, satışı %4–14 azaltır): prim 1,25–1,29'a kayabilir.
+- **Eşikler:** yeşil prim 1,05–1,20; sarı 1,20–1,30 (1,15 payı ≳ %19); kırmızı > 1,30. Kademe tavanı 1,15 R olduğundan prim **1,291'i geçemez**: kırmızı kademe ile ulaşılamaz (yalnız ölçüm hatası ya da ileride fiyat bandı genişlerse). Pratik alarm bu yüzden **1,15 payı ≥ %60 ve prim ≥ 1,25**.
+- **Kırmızıda ve sarıda parametre ayarı yok.** Baş lider kararı (kademe seçeneği A, Alfa-0'da kabul): "**bilinen tasarım açığı, Alfa-1 esneklik notu**" yazılır (üst kademe baskın: ilçe talebi fiyata duyarsız, fiyat yalnız bölüşümü değiştirir; A3 Alfa-1'de talep esnekliği notunu yazar). Baş lidere bilgi gider; ZP3 ve A0-12 canlıda yalnız izlenir. 1,10 ara kademe hesaplanmadı (baskınlığı çözmüyor, marjı kısıyor).
 
 ## 4. Zincir: E6 M
 
@@ -161,6 +171,7 @@ Bugün (7553b55) `/metrik` hiçbir ekonomi alanı sunmaz. **Seçenek 1 (önerile
 | K2-6 | `bolge_odul_musluk_mili` (`musluk.odul`) | E10 (dünya) | gauge |
 | K2-7 | **r için komut başına hazine farkı (sunucu tarafı):** sermaye komutlarında (`parsel_al`, `yapi_yerlestir`, `tesis_insa_hucre`, `tesis_olcek_yukselt`, `kenar_gelistir`) komut öncesi/sonrası hazine farkı oyuncu başına toplanır. **Çekirdeğe `yatirim` kalemi eklenmez** (Ar-Ge lideri kararı; para defteri sürümü değişmez) | E2 | sunucu sayacı |
 | K2-8 | **Dükkân başına kümülatif satış miktarı** (q) ve `DukkanDurumu.kurulus` | E4 (b), E5 | çekirdek alan (A3 şartnamesine eklenir) |
+| K2-9 | `bolge_dukkan_kademe_satis{kademe}` (kademe başına satış birim/sa) ve `bolge_dukkan_kademe_sayisi{kademe}` | E11 (prim, 1,15 payı) | gauge |
 | O2-1 | `insan-cikarma.ts`: `tesis_olcek_yukselt` ve `kenar_gelistir` komutlarını `SERMAYE_KOMUTLARI`'na ekle (`:29`); dünya düzeyi çıktı (yalnız test oyuncusu değil) | E2, E4–E6 | O2 |
 | O2-2 | `dukkan` olgusunu `kurulus`tan oku (şimdi ilk dükkân yapı komutu `:360`) | E4 | O2 |
 | O2-3 | Bot ve insan oyuncuyu ayrı raporla (bot gerçekçilik dağılımı, `bot-kurallari-g6-g8.md` §1.1) | tümü | O2 |
@@ -173,7 +184,7 @@ Bugün (7553b55) `/metrik` hiçbir ekonomi alanı sunmaz. **Seçenek 1 (önerile
 |---|---|---|
 | Gün 1 (ilk 24 sa) | E10, E4 (kısmi), E8 | Para güvenliği ve ilk dükkân tıkanması; ayar yok |
 | Gün 3 | E4, E6, E8 | Zincir ve dükkân tıkanması; kit/bedel ayarı olabilir |
-| Gün 7 | E1, E2, E3, E5, E7, E9 | İlk ekonomi ayarı kararı (tek parametre, §2) |
+| Gün 7 | E1, E2, E3, E5, E7, E9, E11 | İlk ekonomi ayarı kararı (tek parametre, §2) |
 | Gün 14 | E9 (ilk aşınma çeyreği), E1 yeniden | Bakım C ve R doğrulaması; gerekirse E varyantı |
 | Haftalık | tümü | Ardışık iki pencere kuralı (E3), ayar sonrası 7 gün gözlem |
 
