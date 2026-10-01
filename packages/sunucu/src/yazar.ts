@@ -18,6 +18,19 @@
  * (docs/06 §14: başarısız komut durumu değiştirmez) ve determinizm sayesinde yeniden oynatmada aynı sonucu verirler;
  * kurtarma bu yüzden kalan günlüğü `Simulasyon.anlikGoruntudenYukle`'nin kuyruğu yerine tek tek `uygula` ile oynatır.
  *
+ * Mutlak saat ve yetişme (sahip kararı: dünya sunucu kapalıyken de akar; docs/12 §7): `DuvarSaati` (hız 1) `t = duvar −
+ * dunyaEpochMs` verir; epoch dünyayla birlikte anlık görüntü üst verisinde saklanır (yeni dünyada varsayılan
+ * `VARSAYILAN_DUNYA_EPOCH_MS`, bir Türkiye gece yarısı). Açılışta görüntü + kalan günlük uygulandıktan sonra dünya
+ * şimdiki duvar saatinin gerisindeyse `yetisiyor` olur ve ana döngü dünyayı `yetismeAdimMs`'lik (1 sim-saat) adımlarla
+ * ilerletir: tur arası uyku yok (olay döngüsüne her adımda `setImmediate` ile nefes verilir), ilerleme ~1 sn'de bir
+ * `yetismeDinle`'ye bildirilir, görüntü seyrek alınır, bitince bir görüntü alınır. SÖZLEŞME: yetişirken dışarıdan
+ * gelen komut KUYRUKLANMAZ, `YetisiyorHatasi` ile REDDEDİLİR (günlüğe girmez; istemci bitişi `durum` mesajıyla öğrenip
+ * aynı anahtarla yeniden dener; daha önce işlenmiş anahtarlar ilk sonuçla yanıtlanır). Kapalı geçen sürede komut
+ * kabul edilmediği için kimse adaletsiz hareket etmiş olmaz. Sunucu botları yetişirken de dünya zamanında karar verir
+ * (damga = dünyanın şimdiki zamanı). Duvar saati geri giderse sim zamanı geri gitmez (saat bekler, uyarı verilir).
+ * KESİNTİ ADALETİ (çekirdek işi; burada YOK): kesinti > 15 dk ise rastgele olumsuz olayların "ön duyuru → etki"
+ * geçişi kesinti kadar ötelenmeli (canli-dunya-simulasyonu.md §2.2); yetişme olayları şimdilik kesintisiz oynatır.
+ *
  * Kurtarma: son anlık görüntü (`anlikGoruntudenYukle`: kural sürümü + zarf özeti denetimi; ek olarak üst verideki
  * özet karşılaştırılır) + görüntüden sonraki günlük kayıtları. Kurtarılan dünyanın zamanı, son kaydın `t`'si ile
  * görüntü zamanının büyüğüdür; canlı dünyayla karşılaştırma AYNI t'de yapılmalıdır (`calistirKadar(t)`, docs/06 §14).
@@ -28,6 +41,7 @@ import type { Bot } from "@bolge/botlar";
 import type { Dizin } from "@bolge/protokol";
 import { SEMA_SURUMU } from "./depo/tipler";
 import type { AnlikGoruntuKaydi, Depo, GunlukKaydi, IdempotansGirdisi } from "./depo/tipler";
+import { VARSAYILAN_DUNYA_EPOCH_MS, turkiyeGeceYarisiMi } from "./saat";
 import type { Saat } from "./saat";
 
 export interface YazarSecenekleri {
@@ -53,6 +67,42 @@ export interface YazarSecenekleri {
   botlar?: SunucuBotu[];
   /** Bot karar aralığı (sim ms). Varsayılan 6 sim-saat. */
   botKararAraligiMs?: Ms;
+  /**
+   * YALNIZ yeni dünyada ve mutlak saatte: dünyanın duvar saati epoch'u (epoch ms; bir Türkiye gece yarısı olmalı ve
+   * şimdiden ileri olmamalı). Varsayılan `VARSAYILAN_DUNYA_EPOCH_MS` (1 Ekim 2026 00:00 TRT). Var olan dünyada
+   * saklanan epoch geçerlidir (bu alan yok sayılır).
+   */
+  dunyaEpochMs?: number;
+  /** Yetişirken tur başına en çok sim ilerlemesi (≤ `enCokAdimMs`). Varsayılan 1 sim-saat. */
+  yetismeAdimMs?: Ms;
+  /** Dünya duvar saatinin bu kadar gerisindeyse "yetişiyor" sayılır. Varsayılan 1 sim-dakika. */
+  yetismeEsigiMs?: Ms;
+  /** Yetişirken anlık görüntü aralığı (sim ms; her 6 sim-saatte görüntü büyük boşlukta israftır). Varsayılan 24 sim-saat. */
+  yetismeGoruntuAraligiMs?: Ms;
+  /** Yetişme ilerleme bildirimlerinin en sık aralığı (ms, duvar). Varsayılan 1000. */
+  ilerlemeAraligiMs?: number;
+  /** Yetişirken her adımdan sonra çağrılır (test/enstrümantasyon: söz döndürerek yetişmeyi bekletebilir). */
+  yetismeAdimKancasi?: (d: YetismeDurumu) => void | Promise<void>;
+}
+
+/** Yetişme (kapalıyken geçen süreyi işletme) ilerlemesi. */
+export interface YetismeDurumu {
+  yetisiyor: boolean;
+  /** Dünyanın şimdiki zamanı ve ulaşılacak hedef (duvar saatinin şimdiki sim zamanı). */
+  simZamani: Ms;
+  hedefZamani: Ms;
+  kalanMs: Ms;
+  /** Yetişmenin başlangıcından beri geçen duvar süresi (ms) ve atılan adım sayısı. */
+  gecenSureMs: number;
+  adim: number;
+}
+
+/** Yetişirken dışarıdan gelen komut kuyruklanmaz, bununla reddedilir (günlüğe girmemiştir; yeniden denenebilir). */
+export class YetisiyorHatasi extends Error {
+  constructor() {
+    super("sunucu kapaliyken gecen sureyi yetistiriyor; bitince ayni anahtarla yeniden deneyin");
+    this.name = "YetisiyorHatasi";
+  }
 }
 
 export interface SunucuBotu {
@@ -80,6 +130,12 @@ export interface KurtarmaRaporu {
   simZamani: Ms;
   durumOzeti: string;
   sureMs: number;
+  /** Dünyanın duvar saati epoch'u (mutlak saatte; elle saatli eski dünyada null). */
+  dunyaEpochMs: number | null;
+  /** Açılışta duvar saatinin gerisinde kalan sim süresi (yetişilecek miktar; mutlak saat değilse 0). */
+  yetisecekMs: Ms;
+  /** Açılışta duvar saati dünya zamanının gerisindeyse (saat geri gitmiş) fark; yoksa 0. Dünya geri gitmez, saat bekler. */
+  saatGeriMs: Ms;
 }
 
 export interface TurOlayi {
@@ -133,7 +189,18 @@ export class DunyaYazari {
   private readonly enCokAdimMs: Ms;
   private readonly idempotansTavani: number;
   private readonly botKararAraligiMs: Ms;
+  private readonly yetismeAdimMs: Ms;
+  private readonly yetismeEsigiMs: Ms;
+  private readonly yetismeGoruntuAraligiMs: Ms;
+  private readonly ilerlemeAraligiMs: number;
 
+  /** Dünyanın duvar saati epoch'u (görüntü üst verisine yazılır); elle saatli yeni dünyada null. */
+  private dunyaEpochMsDegeri: number | null = null;
+  private yetisiyorDegeri = false;
+  private yetisme: { bas: number; adim: number; sonBildirim: number } | null = null;
+  private readonly yetismeDinleyicileri: Array<(d: YetismeDurumu) => void> = [];
+  private yetismeBekleyenleri: Array<() => void> = [];
+  private saatGeride = false;
   /** Son uygulanan (= son günlüğe yazılan) seq. */
   private seqDegeri = 0;
   private sonDamga: Ms = 0;
@@ -166,6 +233,10 @@ export class DunyaYazari {
     this.enCokAdimMs = s.enCokAdimMs ?? 6 * SAAT;
     this.idempotansTavani = s.idempotansTavani ?? 20_000;
     this.botKararAraligiMs = s.botKararAraligiMs ?? 6 * SAAT;
+    this.yetismeAdimMs = Math.max(1, Math.min(s.yetismeAdimMs ?? SAAT, this.enCokAdimMs));
+    this.yetismeEsigiMs = s.yetismeEsigiMs ?? 60_000;
+    this.yetismeGoruntuAraligiMs = s.yetismeGoruntuAraligiMs ?? 24 * SAAT;
+    this.ilerlemeAraligiMs = s.ilerlemeAraligiMs ?? 1000;
   }
 
   /** Depodan kurtarır (görüntü + kalan günlük) ya da yeni dünya kurar; saati dünyanın zamanından başlatır. */
@@ -199,6 +270,9 @@ export class DunyaYazari {
       simZamani: 0,
       durumOzeti: "",
       sureMs: 0,
+      dunyaEpochMs: null,
+      yetisecekMs: 0,
+      saatGeriMs: 0,
     });
     for (const e of idempotansGirdileri) {
       y.idempotans.set(idempotansAnahtari(e.oyuncu, e.istemci, e.anahtar), { oyuncu: e.oyuncu, istemci: e.istemci, anahtar: e.anahtar, seq: e.seq, t: e.t, komut: e.komut, sonuc: e.tamam ? { tamam: true } : { tamam: false, hata: e.hata ?? "" }, bekleyenler: [] });
@@ -216,16 +290,43 @@ export class DunyaYazari {
     y.sonDamga = sim.dunya.zaman;
     y.sonGoruntuZamani = g ? g.simZamani : sim.dunya.zaman;
     y.sonGoruntuSeq = g ? g.seq : 0;
-    s.saat.baslat(sim.dunya.zaman);
+    // Saat ve dünya epoch'u. Mutlak saatte epoch dünyayla saklanır; yoksa (yeni dünya ya da eski görüntü) bağlanır.
+    let epoch: number | null = g?.ek.dunyaEpochMs ?? null;
+    let epochYeni = false;
+    if (s.saat.mutlak) {
+      const duvar = s.saat.duvarMs() as number;
+      if (epoch === null) {
+        epochYeni = true;
+        if (g) {
+          // Epoch'suz eski dünya: "şimdi = dünyanın şimdiki zamanı" (o ana kadar kapalı süre sayılmaz).
+          epoch = duvar - sim.dunya.zaman;
+        } else {
+          epoch = s.dunyaEpochMs ?? VARSAYILAN_DUNYA_EPOCH_MS;
+          if (!turkiyeGeceYarisiMi(epoch)) throw new Error(`dunyaEpochMs bir Turkiye gece yarisi olmali (UTC+3): ${epoch}`);
+          if (epoch > duvar) throw new Error(`dunyaEpochMs gelecekte: ${epoch} > simdi ${duvar}`);
+        }
+      }
+      s.saat.baslat(sim.dunya.zaman, epoch);
+    } else {
+      epoch ??= s.dunyaEpochMs ?? null;
+      s.saat.baslat(sim.dunya.zaman);
+    }
+    y.dunyaEpochMsDegeri = epoch;
+    y.kurtarma.dunyaEpochMs = epoch;
+    y.kurtarma.saatGeriMs = s.saat.gerideMs;
+    y.yetisiyorDegeri = y.yetisiyorHesapla();
+    if (y.yetisiyorDegeri) y.yetisme = { bas: performance.now(), adim: 0, sonBildirim: Number.NEGATIVE_INFINITY };
+    y.kurtarma.yetisecekMs = s.saat.mutlak ? Math.max(0, s.saat.simdi() - sim.dunya.zaman) : 0;
     for (const b of s.botlar ?? []) {
       const katildi = sim.dunya.oyuncular.some((o) => o.id === b.bot.oyuncu);
       y.botlar.push({ b, katildi, sonIzgara: Math.floor(sim.dunya.zaman / y.botKararAraligiMs) });
       if (!katildi) {
-        y.komutGonder(SISTEM_OYUNCUSU, "sunucu", `katil:${b.bot.oyuncu}`, { tur: "oyuncu_katil", oyuncu: b.bot.oyuncu, bolgeler: b.bolgeler }).catch(() => undefined);
+        y.komutAl(SISTEM_OYUNCUSU, "sunucu", `katil:${b.bot.oyuncu}`, { tur: "oyuncu_katil", oyuncu: b.bot.oyuncu, bolgeler: b.bolgeler }, true).catch(() => undefined);
       }
     }
     // Görüntü yoksa hemen al: tohum ve başlangıç durumu kalıcı olsun (sonraki açılışlar tohuma bağlı kalmaz).
-    if (!g) await y.goruntuAl();
+    // Epoch yeni bağlandıysa da (eski dünya) hemen kalıcı olsun: çökme sonrası kapalı süre kaybolmasın.
+    if (!g || epochYeni) await y.goruntuAl();
     Object.assign(y.kurtarma, { seq: y.seqDegeri, simZamani: sim.dunya.zaman, durumOzeti: sim.durumOzeti(), sureMs: Math.round(performance.now() - bas) });
     return y;
   }
@@ -240,6 +341,45 @@ export class DunyaYazari {
 
   get saat(): Saat {
     return this.s.saat;
+  }
+
+  /** Dünyanın duvar saati epoch'u (mutlak saatte); yoksa null. */
+  get dunyaEpochMs(): number | null {
+    return this.dunyaEpochMsDegeri;
+  }
+
+  /** Kapalı geçen süreyi yetiştiriyor: dışarıdan gelen komutlar `YetisiyorHatasi` ile reddedilir. */
+  get yetisiyor(): boolean {
+    return this.yetisiyorDegeri;
+  }
+
+  /** Dünya duvar saatinin bu kadar gerisindeyse (`yetismeEsigiMs`) yetişiyor sayılır; yalnız mutlak saatte. */
+  private yetisiyorHesapla(): boolean {
+    return this.s.saat.mutlak && this.s.saat.simdi() - this.sim.dunya.zaman > this.yetismeEsigiMs;
+  }
+
+  /** Yetişme ilerlemesi (yetişmiyorsa `yetisiyor: false`). */
+  yetismeDurumu(): YetismeDurumu {
+    const hedef = Math.max(this.s.saat.simdi(), this.sim.dunya.zaman);
+    return {
+      yetisiyor: this.yetisiyorDegeri,
+      simZamani: this.sim.dunya.zaman,
+      hedefZamani: hedef,
+      kalanMs: hedef - this.sim.dunya.zaman,
+      gecenSureMs: this.yetisme ? Math.round(performance.now() - this.yetisme.bas) : 0,
+      adim: this.yetisme?.adim ?? 0,
+    };
+  }
+
+  /** Yetişme bildirimi (~ilerlemeAraligiMs'de bir ve bitişte `yetisiyor: false` ile bir kez). */
+  yetismeDinle(f: (d: YetismeDurumu) => void): void {
+    this.yetismeDinleyicileri.push(f);
+  }
+
+  /** Yetişme bitince çözülür (yetişmiyorsa hemen). Döngü (`baslat`) ya da elle `birTur` çağrıları yetişmeyi ilerletir. */
+  yetismeBekle(): Promise<void> {
+    if (!this.yetisiyorDegeri) return Promise.resolve();
+    return new Promise((coz) => this.yetismeBekleyenleri.push(coz));
   }
 
   dizin(): Dizin {
@@ -264,6 +404,11 @@ export class DunyaYazari {
    * önce görüldüyse yeniden kuyruğa girmez: ilk sonuç `tekrar: true` ile döner (bekliyorsa uygulanınca).
    */
   komutGonder(oyuncu: OyuncuId, istemci: string, anahtar: string, komut: Komut): Promise<KomutYaniti> {
+    return this.komutAl(oyuncu, istemci, anahtar, komut, false);
+  }
+
+  /** `ic`: sunucunun kendi komutları (bot, açılış katılımı); yetişirken de kabul edilir ve dünya zamanıyla damgalanır. */
+  private komutAl(oyuncu: OyuncuId, istemci: string, anahtar: string, komut: Komut, ic: boolean): Promise<KomutYaniti> {
     if (this.olumcul) return Promise.reject(this.olumcul);
     const ia = idempotansAnahtari(oyuncu, istemci, anahtar);
     const var_ = this.idempotans.get(ia);
@@ -271,7 +416,9 @@ export class DunyaYazari {
       if (var_.sonuc) return Promise.resolve({ seq: var_.seq, t: var_.t, komut: var_.komut, sonuc: var_.sonuc, tekrar: true });
       return new Promise((coz, reddet) => var_.bekleyenler.push({ coz: (y) => coz({ ...y, tekrar: true }), reddet }));
     }
-    const t = Math.max(this.s.saat.simdi(), this.sonDamga, this.sim.dunya.zaman);
+    if (!ic && this.yetisiyorDegeri) return Promise.reject(new YetisiyorHatasi());
+    // Yetişirken duvar saati dünyadan çok ileridedir: sunucu komutları dünyanın şimdiki zamanında damgalanır.
+    const t = this.yetisiyorDegeri ? Math.max(this.sonDamga, this.sim.dunya.zaman) : Math.max(this.s.saat.simdi(), this.sonDamga, this.sim.dunya.zaman);
     this.sonDamga = t;
     const girdi: IdempotansKaydi = { oyuncu, istemci, anahtar, seq: 0, t, komut: structuredClone(komut), sonuc: null, bekleyenler: [] };
     this.idempotansYaz(ia, girdi);
@@ -331,7 +478,9 @@ export class DunyaYazari {
         const bas = performance.now();
         await this.birTur();
         if (this.olumcul) break;
-        await uyku(Math.max(1, this.commitAraligiMs - (performance.now() - bas)));
+        // Yetişirken uyku yok (aksi halde yıllık boşluk saatlerce sürer); olay döngüsüne her adımda nefes verilir.
+        if (this.yetisiyorDegeri) await new Promise<void>((r) => setImmediate(r));
+        else await uyku(Math.max(1, this.commitAraligiMs - (performance.now() - bas)));
       }
     })();
   }
@@ -341,6 +490,7 @@ export class DunyaYazari {
     this.calisiyor = false;
     await this.dongu;
     this.dongu = null;
+    for (const c of this.yetismeBekleyenleri.splice(0)) c();
     if (!this.olumcul) {
       while (this.bekleyenler.length > 0) await this.birTur(false);
       await this.goruntuDene();
@@ -392,7 +542,7 @@ export class DunyaYazari {
       let hedef = this.s.saat.simdi();
       const ilk = this.bekleyenler[0];
       if (ilk) hedef = Math.min(hedef, ilk.t);
-      hedef = Math.min(hedef, this.sim.dunya.zaman + this.enCokAdimMs);
+      hedef = Math.min(hedef, this.sim.dunya.zaman + (this.yetisiyorDegeri ? this.yetismeAdimMs : this.enCokAdimMs));
       // `>=`: zaman ilerlemese bile aynı t'deki bekleyen olaylar (ör. son komutun planladığı `cozum`) işlenir; tur
       // sonundaki dünya her zaman "t'ye yerleşmiş" durumdur (docs/06 §14: karşılaştırma aynı t'de calistirKadar(t)).
       if (hedef >= this.sim.dunya.zaman) this.sim.calistirKadar(hedef);
@@ -402,12 +552,13 @@ export class DunyaYazari {
     // 3. Sunucu botları.
     this.botTuru();
     // 4. Anlık görüntü.
-    if (
-      this.sim.dunya.zaman - this.sonGoruntuZamani >= this.goruntuAraligiMs ||
-      this.seqDegeri - this.sonGoruntuSeq >= this.goruntuKomutAraligi
-    ) {
+    const goruntuAraligi = this.yetisiyorDegeri ? Math.max(this.goruntuAraligiMs, this.yetismeGoruntuAraligiMs) : this.goruntuAraligiMs;
+    if (this.sim.dunya.zaman - this.sonGoruntuZamani >= goruntuAraligi || this.seqDegeri - this.sonGoruntuSeq >= this.goruntuKomutAraligi) {
       await this.goruntuDene();
     }
+    // 4b. Yetişme durumu ve saat geri gitme denetimi.
+    await this.yetismeGuncelle();
+    this.saatDenetle();
     // 5. Durgunluk bekleyenleri.
     if (this.bekleyenler.length === 0 && this.durgunlukBekleyenleri.length > 0) {
       const z = this.sim.dunya.zaman;
@@ -421,6 +572,47 @@ export class DunyaYazari {
     // 6. Yayın.
     const olay: TurOlayi = { uygulanan, basarili, ilerledi: this.sim.dunya.zaman > zaman0 };
     for (const f of this.dinleyiciler) f(olay);
+  }
+
+  /** Tur sonu: yetişme sürüyor mu, ilerleme bildirimi, bitişte görüntü + bekleyenleri çöz. */
+  private async yetismeGuncelle(): Promise<void> {
+    const once = this.yetisiyorDegeri;
+    const simdi = this.yetisiyorHesapla();
+    this.yetisiyorDegeri = simdi;
+    if (!once && !simdi) return;
+    const an = performance.now();
+    if (!once) this.yetisme = { bas: an, adim: 0, sonBildirim: Number.NEGATIVE_INFINITY };
+    const y = this.yetisme as { bas: number; adim: number; sonBildirim: number };
+    if (simdi) {
+      y.adim++;
+      if (an - y.sonBildirim >= this.ilerlemeAraligiMs) {
+        y.sonBildirim = an;
+        this.yetismeBildir();
+      }
+      await this.s.yetismeAdimKancasi?.(this.yetismeDurumu());
+      return;
+    }
+    // Bitti: yetişme boyunca seyrek alınan görüntü yerine tam bir görüntü (çökme sonrası yeniden yetişme kısa kalsın).
+    await this.goruntuDene();
+    this.yetismeBildir();
+    this.yetisme = null;
+    for (const c of this.yetismeBekleyenleri.splice(0)) c();
+  }
+
+  private yetismeBildir(): void {
+    const d = this.yetismeDurumu();
+    for (const f of this.yetismeDinleyicileri) f(d);
+  }
+
+  /** Duvar saati geri gittiyse bir kez uyarır (sim zamanı geri gitmez; saat eski değere ulaşana kadar bekler). */
+  private saatDenetle(): void {
+    const geri = this.s.saat.gerideMs;
+    if (geri > 0 && !this.saatGeride) {
+      this.saatGeride = true;
+      this.uyariDinleyici?.(`duvar saati geri gitti (${geri} ms); sim zamani geri gitmez, saat eski degere ulasana kadar bekliyor`);
+    } else if (geri === 0) {
+      this.saatGeride = false;
+    }
   }
 
   private botTuru(): void {
@@ -439,7 +631,7 @@ export class DunyaYazari {
       d.sonIzgara = izgara;
       for (const komut of d.b.bot.karar(this.sim)) {
         // Bot yanıtını bekleyen yok; sonuç idempotans tablosunda ve günlükte kalır.
-        this.komutGonder(d.b.bot.oyuncu, "sunucu-bot", `bot:${z}:${this.botAnahtarSayaci++}`, komut).catch(() => undefined);
+        this.komutAl(d.b.bot.oyuncu, "sunucu-bot", `bot:${z}:${this.botAnahtarSayaci++}`, komut, true).catch(() => undefined);
       }
     }
   }
@@ -497,7 +689,7 @@ export class DunyaYazari {
       semaSurumu: SEMA_SURUMU,
       durumOzeti,
       metin,
-      ek: { tohum: this.sim.dunya.tohum, idempotans },
+      ek: { tohum: this.sim.dunya.tohum, ...(this.dunyaEpochMsDegeri !== null ? { dunyaEpochMs: this.dunyaEpochMsDegeri } : {}), idempotans },
     };
     await this.s.depo.goruntu.kaydet(g);
     this.sonGoruntuZamani = g.simZamani;

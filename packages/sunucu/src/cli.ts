@@ -30,7 +30,11 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --depo TUR           bellek | dosya | pg (vars. dosya)
   --dizin YOL          dosya deposu dizini (vars. raporlar/dunya; git disi)
   --pg-url URL         pg deposu (vars. $BOLGE_PG_URL); --dunya AD (vars. ana)
-  --hiz X              sim ms / gercek ms (vars. 1 = gercek zaman)
+  --hiz X              sim ms / gercek ms (vars. 1 = gercek zaman, MUTLAK saat: t = duvar - dunya-epoch;
+                       kapaliyken de akar, acilista yetisilir). 1'den farkli hiz birikimli kiptir
+  --birikimli          kapaliyken duran eski saat (hiz 1 ile bile); mutlak saat degil
+  --dunya-epoch T      yalniz yeni dunyada: duvar saati epoch'u (ISO, ornek 2026-09-30T21:00:00Z, ya da epoch ms);
+                       bir Turkiye gece yarisi (UTC+3) olmali (vars. 2026-09-30T21:00:00Z = 1 Ekim 2026 00:00 TRT)
   --elle-saat          saat yalniz yoneticinin zamanIlerlet mesajiyla ilerler (test/gelistirme)
   --commit-ms N        grup commit araligi (vars. 75)
   --goruntu-saat N     anlik goruntu araligi, sim-saat (vars. 6)
@@ -86,6 +90,8 @@ async function ana(): Promise<void> {
       dunya: { type: "string", default: "ana" },
       hiz: { type: "string", default: "1" },
       "elle-saat": { type: "boolean", default: false },
+      birikimli: { type: "boolean", default: false },
+      "dunya-epoch": { type: "string" },
       "commit-ms": { type: "string", default: "75" },
       "goruntu-saat": { type: "string", default: "6" },
       botlar: { type: "string", default: "" },
@@ -127,7 +133,13 @@ async function ana(): Promise<void> {
     depo = await postgresDeposu({ baglanti: url, dunya: a.dunya as string, semaKur: true });
   } else throw new Error(`bilinmeyen depo: ${a.depo}`);
 
-  const saat = a["elle-saat"] ? new ElleSaat() : new DuvarSaati(sayi("hiz", a.hiz));
+  const saat = a["elle-saat"] ? new ElleSaat() : new DuvarSaati(sayi("hiz", a.hiz), a.birikimli ? { birikimli: true } : {});
+  let dunyaEpochMs: number | undefined;
+  const epochMetni = a["dunya-epoch"];
+  if (epochMetni !== undefined) {
+    dunyaEpochMs = /^\d+$/.test(epochMetni) ? Number(epochMetni) : Date.parse(epochMetni);
+    if (!Number.isSafeInteger(dunyaEpochMs)) throw new Error(`--dunya-epoch gecersiz: ${epochMetni}`);
+  }
   const yazar = await DunyaYazari.ac({
     veri,
     tohum: Math.trunc(sayi("tohum", a.tohum)),
@@ -136,11 +148,14 @@ async function ana(): Promise<void> {
     commitAraligiMs: sayi("commit-ms", a["commit-ms"]),
     goruntuAraligiMs: Math.round(sayi("goruntu-saat", a["goruntu-saat"]) * SAAT),
     botlar: botlarKur(veri, a.botlar as string),
+    ...(dunyaEpochMs !== undefined ? { dunyaEpochMs } : {}),
   });
   yazar.olumculHata((e) => {
     yaz("olumcul", { hata: e.message });
     process.exit(1);
   });
+  // Yetisme ilerleme gunlugu: kapali gecen sure isletilirken ~1 sn'de bir (ve bitiste) satir.
+  yazar.yetismeDinle((d) => yaz(d.yetisiyor ? "yetisme" : "yetisti", { ...d }));
   const [kapasite, saniyeBasina] = (a["hiz-siniri"] as string).split("/").map((x) => sayi("hiz-siniri", x));
   const sunucu = await sunucuBaslat({
     yazar,

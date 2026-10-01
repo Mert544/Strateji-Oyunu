@@ -29,6 +29,12 @@ export interface GunlukKaydi {
 export interface GoruntuEki {
   /** Dünyanın oluşturulduğu tohum (yalnız bilgi; dünya zaten PRNG durumunu taşır). */
   tohum: number;
+  /**
+   * Dünyanın duvar saati epoch'u (epoch ms; bir Türkiye gece yarısı): mutlak saatte `t = duvar − dunyaEpochMs`.
+   * Dünyayla birlikte saklanır; yoksa (eski görüntü ya da elle saatle kurulmuş dünya) ilk mutlak saatli açılışta
+   * "şimdi = dünyanın şimdiki zamanı" olacak biçimde bağlanır ve hemen yeni görüntüye yazılır.
+   */
+  dunyaEpochMs?: number;
   /** İdempotans tablosunun bu görüntüdeki kopyası (seq ≤ görüntü seq'i olan girdiler). */
   idempotans: IdempotansGirdisi[];
 }

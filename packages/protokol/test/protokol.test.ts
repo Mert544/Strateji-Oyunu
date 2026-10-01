@@ -78,6 +78,18 @@ describe("mesaj semalari", () => {
     expect(sunucuMesajiCoz(JSON.stringify(m))).toEqual({ tamam: true, mesaj: m });
     expect(sunucuMesajiCoz(JSON.stringify({ tur: "hata", kod: "uydurma", mesaj: "" })).tamam).toBe(false);
   });
+
+  it("yetisme durumu (yalniz ekleme): durum mesaji, yetisiyor hata kodu ve istege bagli hosgeldin alanlari", () => {
+    const durum: SunucuMesaji = { tur: "durum", yetisiyor: true, simZamani: 3_600_000, hedefZamani: 864_000_000 };
+    expect(sunucuMesajiCoz(JSON.stringify(durum))).toEqual({ tamam: true, mesaj: durum });
+    expect(sunucuMesajiCoz(JSON.stringify({ tur: "durum", yetisiyor: "evet", simZamani: 1, hedefZamani: 2 })).tamam).toBe(false);
+    const hata: SunucuMesaji = { tur: "hata", kod: "yetisiyor", mesaj: "yetisiyor", anahtar: "a" };
+    expect(sunucuMesajiCoz(JSON.stringify(hata))).toEqual({ tamam: true, mesaj: hata });
+    // Eski sunucunun hosgeldin'i (yetisiyor/hedefZamani yok) hala gecerlidir.
+    const hos = { tur: "hosgeldin", protokolSurumu: PROTOKOL_SURUMU, kuralSurumu: "k", oyuncu: "o", yonetici: false, simZamani: 0, seq: 0, hiz: 1, dizin: { bolgeler: [], mallar: [], tesisTurleri: [], yontemler: [], birlikler: [], teknolojiler: [] } };
+    expect(sunucuMesajiCoz(JSON.stringify(hos)).tamam).toBe(true);
+    expect(sunucuMesajiCoz(JSON.stringify({ ...hos, yetisiyor: true, hedefZamani: 99 })).tamam).toBe(true);
+  });
 });
 
 function kurulum(): Simulasyon {

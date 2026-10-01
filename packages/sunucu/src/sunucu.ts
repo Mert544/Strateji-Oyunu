@@ -23,6 +23,7 @@ import { HizSiniri, VARSAYILAN_HIZ_SINIRI } from "./hiz-siniri";
 import type { HizSiniriSecenekleri } from "./hiz-siniri";
 import type { Kimlik, KimlikDogrulayici } from "./kimlik";
 import { ElleSaat } from "./saat";
+import { YetisiyorHatasi } from "./yazar";
 import type { DunyaYazari } from "./yazar";
 
 export interface SunucuSecenekleri {
@@ -130,6 +131,11 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     for (const b of baglantilar) kareGonder(b, false);
   });
 
+  // Yetişme (sunucu kapalıyken geçen süreyi işletme) durumu: kimliği doğrulanmış her bağlantıya bildirilir.
+  yazar.yetismeDinle((d) => {
+    for (const b of baglantilar) if (b.kimlik) gonder(b, { tur: "durum", yetisiyor: d.yetisiyor, simZamani: d.simZamani, hedefZamani: d.hedefZamani });
+  });
+
   function aboneOl(b: Baglanti, m: Extract<IstemciMesaji, { tur: "abone" }>): void {
     const ic = yazar.sim.ic;
     const d = yazar.sim.dunya;
@@ -179,12 +185,17 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
     if (m.komut.tur === "oyuncu_katil" && !k.yonetici) {
       return hata(b, "yetki", "oyuncu_katil yalniz yonetici", { anahtar: m.anahtar });
     }
-    if (!yazar.anahtarVarMi(oyuncu, b.istemci, m.anahtar) && !hizSiniri.al(k.oyuncu)) {
+    const yeniAnahtar = !yazar.anahtarVarMi(oyuncu, b.istemci, m.anahtar);
+    // Yetişirken yeni komut kuyruklanmaz, reddedilir (hız sınırı jetonu da harcanmaz); işlenmiş anahtarlar ilk sonuçla yanıtlanır.
+    if (yeniAnahtar && yazar.yetisiyor) {
+      return hata(b, "yetisiyor", "sunucu kapaliyken gecen sureyi yetistiriyor; 'durum' mesaji bitisi bildirince ayni anahtarla yeniden deneyin", { anahtar: m.anahtar });
+    }
+    if (yeniAnahtar && !hizSiniri.al(k.oyuncu)) {
       return hata(b, "hiz_siniri", "cok fazla komut; biraz bekleyip ayni anahtarla yeniden deneyin", { anahtar: m.anahtar });
     }
     yazar.komutGonder(oyuncu, b.istemci, m.anahtar, m.komut).then(
       (y) => gonder(b, { tur: "komutSonucu", anahtar: m.anahtar, seq: y.seq, t: y.t, komut: y.komut, sonuc: y.sonuc, tekrar: y.tekrar }),
-      (e: unknown) => hata(b, "ic_hata", e instanceof Error ? e.message : String(e), { anahtar: m.anahtar }),
+      (e: unknown) => hata(b, e instanceof YetisiyorHatasi ? "yetisiyor" : "ic_hata", e instanceof Error ? e.message : String(e), { anahtar: m.anahtar }),
     );
   }
 
@@ -215,6 +226,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
         simZamani: yazar.sim.dunya.zaman,
         seq: yazar.seq,
         hiz: yazar.saat.hiz,
+        ...(yazar.yetisiyor ? { yetisiyor: true, hedefZamani: yazar.yetismeDurumu().hedefZamani } : {}),
         dizin: yazar.dizin(),
       });
       return;
@@ -231,7 +243,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       case "komut":
         return komutAl(b, k, m);
       case "zamanIste":
-        return gonder(b, { tur: "zaman", istemciGonderim: m.istemciGonderim, sunucuDuvar: Date.now(), simZamani: yazar.saat.simdi(), hiz: yazar.saat.hiz });
+        return gonder(b, { tur: "zaman", istemciGonderim: m.istemciGonderim, sunucuDuvar: Date.now(), simZamani: yazar.yetisiyor ? yazar.sim.dunya.zaman : yazar.saat.simdi(), hiz: yazar.saat.hiz });
       case "ozetIste": {
         const ek = m.istek !== undefined ? { istek: m.istek } : {};
         if (!hizSiniri.al(k.oyuncu, OZET_BEDELI)) return hata(b, "hiz_siniri", "ozet istegi siniri", ek);

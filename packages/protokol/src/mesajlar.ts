@@ -115,7 +115,9 @@ export type HataKodu =
   | "hiz_siniri"
   | "gecersiz_ilgi"
   | "kapaniyor"
-  | "ic_hata";
+  | "ic_hata"
+  /** Sunucu kapalıyken geçen süreyi yetiştiriyor: komut kabul edilmedi (günlüğe girmedi); `durum` bitişi bildirir. */
+  | "yetisiyor";
 
 export type SunucuMesaji =
   | {
@@ -130,6 +132,10 @@ export type SunucuMesaji =
       seq: number;
       /** Sim ms / gerçek ms (elle saatte 0). */
       hiz: number;
+      /** Sunucu kapalıyken geçen süreyi yetiştiriyor (komutlar `yetisiyor` hatasıyla reddedilir). Yoksa false. */
+      yetisiyor?: boolean;
+      /** Yetişme hedefi (sim ms; duvar saatinin şimdiki sim zamanı). Yalnız yetişirken. */
+      hedefZamani?: Ms;
       dizin: Dizin;
     }
   /** Tam kare (abonelikten sonra ve gerektiğinde). `rev` bağlantı başına artan kare sürümüdür. */
@@ -140,6 +146,11 @@ export type SunucuMesaji =
   | { tur: "komutSonucu"; anahtar: string; seq: number; t: Ms; komut: Komut; sonuc: KomutSonucu; tekrar: boolean }
   | { tur: "zaman"; istemciGonderim: number; sunucuDuvar: number; simZamani: Ms; hiz: number }
   | { tur: "ozet"; istek?: number; t: Ms; seq: number; durumOzeti: string }
+  /**
+   * Yetişme durumu (yalnız ekleme): sunucu kapalı geçen süreyi işletirken yaklaşık saniyede bir, bitince bir kez
+   * (`yetisiyor: false`) gönderilir. `simZamani` dünyanın şimdiki zamanı, `hedefZamani` ulaşılacak sim zamanıdır.
+   */
+  | { tur: "durum"; yetisiyor: boolean; simZamani: Ms; hedefZamani: Ms }
   | { tur: "hata"; kod: HataKodu; mesaj: string; anahtar?: string; istek?: number };
 
 // İstemci tarafı doğrulama için sunucu mesajı şemaları (kare içeriği yapısal olarak denetlenir).
@@ -224,6 +235,8 @@ export const SunucuMesajiSemasi = z.discriminatedUnion("tur", [
     simZamani: tam,
     seq: tam,
     hiz: z.number(),
+    yetisiyor: z.boolean().optional(),
+    hedefZamani: tam.optional(),
     dizin: dizinSemasi,
   }),
   z.object({ tur: z.literal("kare"), rev: tam, seq: tam, ilgi: z.array(tam), ilceIlgisi: z.array(z.string()).optional(), kare: IlgiKaresiSemasi }),
@@ -239,9 +252,10 @@ export const SunucuMesajiSemasi = z.discriminatedUnion("tur", [
   }),
   z.object({ tur: z.literal("zaman"), istemciGonderim: z.number(), sunucuDuvar: z.number(), simZamani: tam, hiz: z.number() }),
   z.object({ tur: z.literal("ozet"), istek: tam.optional(), t: tam, seq: tam, durumOzeti: z.string() }),
+  z.object({ tur: z.literal("durum"), yetisiyor: z.boolean(), simZamani: tam, hedefZamani: tam }),
   z.object({
     tur: z.literal("hata"),
-    kod: z.enum(["gecersiz_mesaj", "protokol_surumu", "kimlik", "kural_surumu", "sira", "yetki", "hiz_siniri", "gecersiz_ilgi", "kapaniyor", "ic_hata"]),
+    kod: z.enum(["gecersiz_mesaj", "protokol_surumu", "kimlik", "kural_surumu", "sira", "yetki", "hiz_siniri", "gecersiz_ilgi", "kapaniyor", "ic_hata", "yetisiyor"]),
     mesaj: z.string(),
     anahtar: z.string().optional(),
     istek: tam.optional(),
