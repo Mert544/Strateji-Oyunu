@@ -23,7 +23,7 @@
 |---|---|---|---|
 | **H6 (birincil: Y7 + ucuz hücre)** — hipotez kararı | GEÇTİ · Y7 %100 oyuncu | Y7: oyuncuların < %50'si emsal medyanının ≥ %50'sinde ya da ucuz hücre < %20 | hibeden bağımsız üretim geliri (son 7 gün); karar servetten gelmez |
 | H6 ikincil: servet medyana ulaşma (bilgi) | KALDI · ulaşan %0 | (karara girmez; eski tanım: ulaşan < %50) | hibe + kit ham servetin ~%6,8'i; hibe/kit arındırması ulaşma kararını değiştirmez |
-| H6 ucuz hücre payı (≤ 2× taban) | %90,2 (eski oyuncuya açık: %73,2) | < %20 | ayrılmış hücreler yalnız yeni oyuncuya |
+| H6 ucuz hücre payı (≤ 2× taban) | %90,2 (eski oyuncuya açık: %73,8) | < %20 | ayrılmış hücreler yalnız yeni oyuncuya |
 | **H8** (Gini · en büyük ilçe payı · yeniden satış) | BELİRSİZ · Gini %16,4 · ilçe payı %24,1 | Gini > %60 ya da pay > %25 ya da > 10 hf | yeniden satış yok: koşul 3 ölçülemez |
 
 ## 2. H6 — geç katılan işe yarar
@@ -44,7 +44,7 @@ Paket çekirdeğin gerçek davranışına göre okunur (docs/06 §15.1; botlar `
 | Geç katılan | İlçe | Emsal (üreten / toplam) | Üretim geliri (7 gün) | Üreten emsal geliri medyan | Üreten emsal medyanının ≥ %50'si |
 |---|---|---|---|---|---|
 | gec_ciftci | sn_m_ova_tasra | 2 / 2 | 1.112.913 ₺ | 403.296 ₺ | evet |
-| gec_sanayici | sn_m_dag_merkez | 1 / 1 | 935.691 ₺ | 681.657 ₺ | evet |
+| gec_sanayici | sn_m_dag_merkez | 1 / 1 | 935.701 ₺ | 681.659 ₺ | evet |
 | gec_pazar | sn_m_sehir_merkez | 2 / 2 | 572.128 ₺ | 355.243 ₺ | evet |
 
 **İkincil — servet (bilgi; karara girmez):**
@@ -52,10 +52,10 @@ Paket çekirdeğin gerçek davranışına göre okunur (docs/06 §15.1; botlar `
 | Geç katılan | Servet (ham) | Emsal medyan (ham) | Servet/medyan (ham) | Servet/medyan (arınd.) | Hibe+kit payı | Medyana ulaştı |
 |---|---|---|---|---|---|---|
 | gec_ciftci | 1.699.074 ₺ | 1.748.288 ₺ | %97,2 | %97 | %5 | hayır |
-| gec_sanayici | 1.392.804 ₺ | 3.668.321 ₺ | %38 | %36,5 | %6,1 | hayır |
+| gec_sanayici | 1.392.818 ₺ | 3.668.332 ₺ | %38 | %36,5 | %6,1 | hayır |
 | gec_pazar | 1.030.674 ₺ | 2.479.817 ₺ | %41,6 | %39,5 | %8,3 | hayır |
 
-Ucuz hücre (katılım anında): %90,2 (526/583); bunun 99 hücresi ayrılmış (yalnız yeni oyuncu), 427 hücresi genel (%73,2). Satılmamış ayrılmış hücre: 99. **H6 kararı (Y7 + ucuz): GEÇTİ** · Y7 %100 (3/3). İkincil servet ulaşma: KALDI.
+Ucuz hücre (katılım anında): %90,2 (526/583); bunun 96 hücresi ayrılmış (yalnız yeni oyuncu), 430 hücresi genel (%73,8). Satılmamış ayrılmış hücre: 96. **H6 kararı (Y7 + ucuz): GEÇTİ** · Y7 %100 (3/3). İkincil servet ulaşma: KALDI.
 
 ### Tohum 2
 
@@ -64,7 +64,7 @@ Ucuz hücre (katılım anında): %90,2 (526/583); bunun 99 hücresi ayrılmış 
 | Geç katılan | İlçe | Emsal (üreten / toplam) | Üretim geliri (7 gün) | Üreten emsal geliri medyan | Üreten emsal medyanının ≥ %50'si |
 |---|---|---|---|---|---|
 | gec_ciftci | sn_m_ova_tasra | 2 / 2 | 1.041.304 ₺ | 340.975 ₺ | evet |
-| gec_sanayici | sn_m_dag_merkez | 1 / 1 | 935.691 ₺ | 681.657 ₺ | evet |
+| gec_sanayici | sn_m_dag_merkez | 1 / 1 | 935.701 ₺ | 681.659 ₺ | evet |
 | gec_pazar | sn_m_sehir_merkez | 2 / 2 | 471.904 ₺ | 322.201 ₺ | evet |
 
 **İkincil — servet (bilgi; karara girmez):**
@@ -72,10 +72,10 @@ Ucuz hücre (katılım anında): %90,2 (526/583); bunun 99 hücresi ayrılmış 
 | Geç katılan | Servet (ham) | Emsal medyan (ham) | Servet/medyan (ham) | Servet/medyan (arınd.) | Hibe+kit payı | Medyana ulaştı |
 |---|---|---|---|---|---|---|
 | gec_ciftci | 1.627.465 ₺ | 1.718.731 ₺ | %94,7 | %94,4 | %5,3 | hayır |
-| gec_sanayici | 1.392.804 ₺ | 3.668.324 ₺ | %38 | %36,5 | %6,1 | hayır |
+| gec_sanayici | 1.392.817 ₺ | 3.668.334 ₺ | %38 | %36,5 | %6,1 | hayır |
 | gec_pazar | 930.450 ₺ | 2.481.946 ₺ | %37,5 | %35,3 | %9,2 | hayır |
 
-Ucuz hücre (katılım anında): %90,2 (526/583); bunun 99 hücresi ayrılmış (yalnız yeni oyuncu), 427 hücresi genel (%73,2). Satılmamış ayrılmış hücre: 99. **H6 kararı (Y7 + ucuz): GEÇTİ** · Y7 %100 (3/3). İkincil servet ulaşma: KALDI.
+Ucuz hücre (katılım anında): %90,2 (526/583); bunun 96 hücresi ayrılmış (yalnız yeni oyuncu), 430 hücresi genel (%73,8). Satılmamış ayrılmış hücre: 96. **H6 kararı (Y7 + ucuz): GEÇTİ** · Y7 %100 (3/3). İkincil servet ulaşma: KALDI.
 
 ### Tohum 3
 
@@ -84,7 +84,7 @@ Ucuz hücre (katılım anında): %90,2 (526/583); bunun 99 hücresi ayrılmış 
 | Geç katılan | İlçe | Emsal (üreten / toplam) | Üretim geliri (7 gün) | Üreten emsal geliri medyan | Üreten emsal medyanının ≥ %50'si |
 |---|---|---|---|---|---|
 | gec_ciftci | sn_m_ova_tasra | 2 / 2 | 932.677 ₺ | 278.747 ₺ | evet |
-| gec_sanayici | sn_m_dag_merkez | 1 / 1 | 935.691 ₺ | 681.657 ₺ | evet |
+| gec_sanayici | sn_m_dag_merkez | 1 / 1 | 935.701 ₺ | 681.659 ₺ | evet |
 | gec_pazar | sn_m_sehir_merkez | 2 / 2 | 451.768 ₺ | 333.300 ₺ | evet |
 
 **İkincil — servet (bilgi; karara girmez):**
@@ -92,10 +92,10 @@ Ucuz hücre (katılım anında): %90,2 (526/583); bunun 99 hücresi ayrılmış 
 | Geç katılan | Servet (ham) | Emsal medyan (ham) | Servet/medyan (ham) | Servet/medyan (arınd.) | Hibe+kit payı | Medyana ulaştı |
 |---|---|---|---|---|---|---|
 | gec_ciftci | 1.518.839 ₺ | 1.704.990 ₺ | %89,1 | %88,5 | %5,6 | hayır |
-| gec_sanayici | 1.392.804 ₺ | 3.668.323 ₺ | %38 | %36,5 | %6,1 | hayır |
+| gec_sanayici | 1.392.818 ₺ | 3.668.333 ₺ | %38 | %36,5 | %6,1 | hayır |
 | gec_pazar | 892.361 ₺ | 2.484.793 ₺ | %35,9 | %33,6 | %9,6 | hayır |
 
-Ucuz hücre (katılım anında): %90,2 (526/583); bunun 99 hücresi ayrılmış (yalnız yeni oyuncu), 427 hücresi genel (%73,2). Satılmamış ayrılmış hücre: 99. **H6 kararı (Y7 + ucuz): GEÇTİ** · Y7 %100 (3/3). İkincil servet ulaşma: KALDI.
+Ucuz hücre (katılım anında): %90,2 (526/583); bunun 96 hücresi ayrılmış (yalnız yeni oyuncu), 430 hücresi genel (%73,8). Satılmamış ayrılmış hücre: 96. **H6 kararı (Y7 + ucuz): GEÇTİ** · Y7 %100 (3/3). İkincil servet ulaşma: KALDI.
 
 ## 3. H8 — arazi yoğunlaşması
 
@@ -115,12 +115,12 @@ Ayrılmış hücreler (ilçenin uygun hücrelerinin %20'si) yalnız katılımın
 
 | Tohum | An | Ayrılmış toplam | Satılan | Boş | Kalan pay | İhlal | Güvence |
 |---|---|---|---|---|---|---|---|
-| 1 | geç katılımdan hemen önce | 110 | 11 | 99 | %90 | 0 | tuttu |
-| 1 | koşu sonu | 110 | 14 | 96 | %87,3 | 0 | tuttu |
-| 2 | geç katılımdan hemen önce | 110 | 11 | 99 | %90 | 0 | tuttu |
-| 2 | koşu sonu | 110 | 14 | 96 | %87,3 | 0 | tuttu |
-| 3 | geç katılımdan hemen önce | 110 | 11 | 99 | %90 | 0 | tuttu |
-| 3 | koşu sonu | 110 | 14 | 96 | %87,3 | 0 | tuttu |
+| 1 | geç katılımdan hemen önce | 110 | 14 | 96 | %87,3 | 0 | tuttu |
+| 1 | koşu sonu | 110 | 19 | 91 | %82,7 | 0 | tuttu |
+| 2 | geç katılımdan hemen önce | 110 | 14 | 96 | %87,3 | 0 | tuttu |
+| 2 | koşu sonu | 110 | 19 | 91 | %82,7 | 0 | tuttu |
+| 3 | geç katılımdan hemen önce | 110 | 14 | 96 | %87,3 | 0 | tuttu |
+| 3 | koşu sonu | 110 | 19 | 91 | %82,7 | 0 | tuttu |
 
 Okuma: İHLAL = 0 ise çekirdek kuralı (eski oyuncuya satmama) tutuyor. Kalan pay düşükse ayrılmış hücreler **önceki yeni oyuncular** (ör. ilk 14 günde alım yapan spekülatörler) tarafından tüketilmiş demektir: kural eski oyuncudan korur, aynı dönemdeki yeni oyuncudan korumaz.
 
@@ -143,19 +143,19 @@ Okuma: İHLAL = 0 ise çekirdek kuralı (eski oyuncuya satmama) tutuyor. Kalan p
 
 ## 5. Oyuncu özeti (tohum 1)
 
-| Oyuncu | Katılım (gün) | İlçe | Hücre | Yapı | Komut | Reddedilen | Hazine | Stok | Arazi | Yapı bedeli | Ham servet |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| ciftci_1 | 0 | sn_m_ova_merkez | 8 | 3 | 7 | 0 | 2.798.127 ₺ | 5.569 ₺ | 2.542 ₺ | 26.810 ₺ | 2.833.047 ₺ |
-| ciftci_2 | 0 | sn_m_ova_tasra | 7 | 3 | 7 | 0 | 2.799.296 ₺ | 5.569 ₺ | 1.421 ₺ | 26.810 ₺ | 2.833.095 ₺ |
-| ciftci_3 | 0 | sn_m_sehir_merkez | 6 | 3 | 7 | 0 | 3.106.369 ₺ | 5.569 ₺ | 0 ₺ | 26.810 ₺ | 3.138.747 ₺ |
-| sanayici_1 | 0 | sn_m_dag_merkez | 8 | 4 | 10 | 0 | 3.590.331 ₺ | 21.844 ₺ | 2.456 ₺ | 53.690 ₺ | 3.668.321 ₺ |
-| sanayici_2 | 0 | sn_m_dag_tasra | 8 | 4 | 10 | 0 | 3.590.241 ₺ | 21.844 ₺ | 2.542 ₺ | 53.690 ₺ | 3.668.318 ₺ |
-| tuccar_1 | 0 | sn_m_sehir_tasra | 7 | 3 | 7 | 0 | 1.788.431 ₺ | 7.245 ₺ | 1.414 ₺ | 23.800 ₺ | 1.820.890 ₺ |
-| tuccar_2 | 0 | sn_m_sehir_merkez | 7 | 3 | 7 | 0 | 1.788.341 ₺ | 7.245 ₺ | 1.500 ₺ | 23.800 ₺ | 1.820.886 ₺ |
-| pasif_1 | 0 | sn_m_ova_tasra | 6 | 1 | 2 | 0 | 636.859 ₺ | 18.642 ₺ | 0 ₺ | 7.980 ₺ | 663.480 ₺ |
-| gec_ciftci | 20 | sn_m_ova_tasra | 6 | 3 | 7 | 0 | 1.666.408 ₺ | 5.856 ₺ | 0 ₺ | 26.810 ₺ | 1.699.074 ₺ |
-| gec_sanayici | 20 | sn_m_dag_merkez | 8 | 4 | 10 | 0 | 1.309.863 ₺ | 26.234 ₺ | 3.018 ₺ | 53.690 ₺ | 1.392.804 ₺ |
-| gec_pazar | 20 | sn_m_sehir_merkez | 7 | 3 | 7 | 0 | 997.549 ₺ | 7.533 ₺ | 1.792 ₺ | 23.800 ₺ | 1.030.674 ₺ |
+| Oyuncu | Katılım (gün) | İlçe | Hücre | Ayrılmış | Yapı | Komut | Reddedilen | Hazine | Stok | Arazi | Yapı bedeli | Ham servet |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ciftci_1 | 0 | sn_m_ova_merkez | 8 | 2 | 3 | 7 | 0 | 2.798.692 ₺ | 5.569 ₺ | 2.000 ₺ | 26.810 ₺ | 2.833.070 ₺ |
+| ciftci_2 | 0 | sn_m_ova_tasra | 7 | 3 | 3 | 7 | 0 | 2.799.296 ₺ | 5.569 ₺ | 1.421 ₺ | 26.810 ₺ | 2.833.095 ₺ |
+| ciftci_3 | 0 | sn_m_sehir_merkez | 6 | 3 | 3 | 7 | 0 | 3.106.369 ₺ | 5.569 ₺ | 0 ₺ | 26.810 ₺ | 3.138.747 ₺ |
+| sanayici_1 | 0 | sn_m_dag_merkez | 8 | 1 | 4 | 10 | 0 | 3.590.587 ₺ | 21.844 ₺ | 2.211 ₺ | 53.690 ₺ | 3.668.332 ₺ |
+| sanayici_2 | 0 | sn_m_dag_tasra | 8 | 1 | 4 | 10 | 0 | 3.590.546 ₺ | 21.844 ₺ | 2.250 ₺ | 53.690 ₺ | 3.668.330 ₺ |
+| tuccar_1 | 0 | sn_m_sehir_tasra | 7 | 1 | 3 | 7 | 0 | 1.788.431 ₺ | 7.245 ₺ | 1.414 ₺ | 23.800 ₺ | 1.820.890 ₺ |
+| tuccar_2 | 0 | sn_m_sehir_merkez | 7 | 2 | 3 | 7 | 0 | 1.788.341 ₺ | 7.245 ₺ | 1.500 ₺ | 23.800 ₺ | 1.820.886 ₺ |
+| pasif_1 | 0 | sn_m_ova_tasra | 6 | 1 | 1 | 2 | 0 | 636.859 ₺ | 18.642 ₺ | 0 ₺ | 7.980 ₺ | 663.480 ₺ |
+| gec_ciftci | 20 | sn_m_ova_tasra | 6 | 0 | 3 | 7 | 0 | 1.666.408 ₺ | 5.856 ₺ | 0 ₺ | 26.810 ₺ | 1.699.074 ₺ |
+| gec_sanayici | 20 | sn_m_dag_merkez | 8 | 3 | 4 | 10 | 0 | 1.310.894 ₺ | 26.234 ₺ | 2.000 ₺ | 53.690 ₺ | 1.392.818 ₺ |
+| gec_pazar | 20 | sn_m_sehir_merkez | 7 | 2 | 3 | 7 | 0 | 997.549 ₺ | 7.533 ₺ | 1.792 ₺ | 23.800 ₺ | 1.030.674 ₺ |
 
 Not: tablodaki servet KOŞU SONUDUR (geç katılanlar için ölçüm anı katılım + 10 gündür; koşu bitişiyle aynı).
 
@@ -163,9 +163,9 @@ Not: tablodaki servet KOŞU SONUDUR (geç katılanlar için ölçüm anı katıl
 
 | Tohum | durumOzeti |
 |---|---|
-| 1 | `af890ec70c6b809f` |
-| 2 | `1dea1c2ad1d85fb7` |
-| 3 | `0ccbd7fb9cf5093a` |
+| 1 | `f82f5c4746405158` |
+| 2 | `da6cad964dd4942d` |
+| 3 | `d9e7727f2ccc4c55` |
 
 ## 7. Bölge kipi v0.3 temel çizgisiyle karşılaştırma notu
 

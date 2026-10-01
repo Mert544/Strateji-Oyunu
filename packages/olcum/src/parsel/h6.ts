@@ -67,6 +67,16 @@ export function hucreFiyatCarpaniPpm(uygunHucre: number, satilmisHucre: number):
 export interface IlceDolulugu {
   uygunHucre: number;
   satilmisHucre: number;
+  /**
+   * Satılmış hücrelerden AYRILMIŞ olanlar (`IlceDurumu.ayrilmisSatilmis`; docs/06 §15.7): ayrılmış hücre taban fiyattan satılır ve kıtlık
+   * eğrisinden muaftır, yani fiyat çarpanı yalnız `satilmisHucre − ayrilmisSatilmis` üzerinden ilerler. Tanımsız = 0 (eski davranış).
+   */
+  ayrilmisSatilmis?: number;
+  /**
+   * Henüz satılmamış ayrılmış hücre. Verilirse bu hücreler (yeni oyuncu için taban fiyatlı) ilçe çarpanından bağımsız ÜCUZ sayılır;
+   * tanımsızsa ucuz hücre yalnız çarpanı ≤ 2 olan ilçelerin satılmamış hücreleridir (eski davranış).
+   */
+  ayrilmisBos?: number;
 }
 
 export interface UcuzHucreSonucu {
@@ -81,8 +91,14 @@ export function ucuzHucrePayi(ilceler: readonly IlceDolulugu[]): UcuzHucreSonucu
   let uygun = 0;
   for (const c of ilceler) {
     uygun += c.uygunHucre;
-    if (c.uygunHucre > 0 && hucreFiyatCarpaniPpm(c.uygunHucre, c.satilmisHucre) <= PARSEL_H6_FIYAT_CARPANI_TAVANI_PPM) {
+    const ayr = c.ayrilmisSatilmis ?? 0;
+    tamsayiDenetle(ayr, "ayrilmisSatilmis");
+    if (ayr < 0 || ayr > c.satilmisHucre) throw new Error(`ucuzHucrePayi: ayrilmisSatilmis ${ayr} tutarsiz (satilmis ${c.satilmisHucre})`);
+    const normalSatilmis = c.satilmisHucre - ayr;
+    if (c.uygunHucre > 0 && hucreFiyatCarpaniPpm(c.uygunHucre, normalSatilmis) <= PARSEL_H6_FIYAT_CARPANI_TAVANI_PPM) {
       ucuz += c.uygunHucre - c.satilmisHucre;
+    } else if (c.ayrilmisBos !== undefined) {
+      ucuz += c.ayrilmisBos; // ayrılmış hücre çarpandan muaf: taban fiyat
     }
   }
   return { payPpm: uygun === 0 ? 0 : oranPpm(ucuz, uygun), ucuzHucre: ucuz, uygunHucre: uygun };
@@ -198,7 +214,7 @@ export function gecKatilanIkiBicim(olgular: readonly GecKatilanOlgusuIki[]): H6I
   return { ham, arindirilmis, oranlar: olgular.map(servetOrani) };
 }
 
-/** Ucuz hücre ayrıntısı: hücreler ayrılmış (yalnız yeni oyuncuya) ve genel (herkese) olarak ayrılır. */
+/** Ucuz hücre ayrıntısı: hücreler ayrılmış (yalnız yeni oyuncuya; taban fiyatlı, çarpandan muaf) ve genel (herkese; çarpanı ≤ 2 ilçelerde) olarak ayrılır. */
 export interface IlceAyrilmisDolulugu extends IlceDolulugu {
   /** Henüz satılmamış ayrılmış hücre sayısı (ilçe başına; yalnız yeni oyuncu alabilir). */
   ayrilmisBos: number;
@@ -214,15 +230,13 @@ export interface UcuzHucreAyrintisi extends UcuzHucreSonucu {
 }
 
 export function ucuzHucreAyrintisi(ilceler: readonly IlceAyrilmisDolulugu[]): UcuzHucreAyrintisi {
+  let ayrilmis = 0;
   for (const c of ilceler) {
     tamsayiDenetle(c.ayrilmisBos, "ayrilmisBos");
     if (c.ayrilmisBos < 0 || c.ayrilmisBos > c.uygunHucre - c.satilmisHucre) throw new Error(`ucuzHucreAyrintisi: ayrilmisBos ${c.ayrilmisBos} tutarsiz`);
+    ayrilmis += c.ayrilmisBos; // ayrılmış hücre taban fiyatlı ve çarpandan muaf: yeni oyuncu için HER ZAMAN ucuz
   }
   const t = ucuzHucrePayi(ilceler);
-  let ayrilmis = 0;
-  for (const c of ilceler) {
-    if (c.uygunHucre > 0 && hucreFiyatCarpaniPpm(c.uygunHucre, c.satilmisHucre) <= PARSEL_H6_FIYAT_CARPANI_TAVANI_PPM) ayrilmis += c.ayrilmisBos;
-  }
   const genel = t.ucuzHucre - ayrilmis;
   return { ...t, ayrilmisUcuz: ayrilmis, genelUcuz: genel, genelPayPpm: t.uygunHucre === 0 ? 0 : oranPpm(genel, t.uygunHucre) };
 }

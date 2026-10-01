@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { GUN, SAAT, SISTEM_OYUNCUSU, Simulasyon, anlikHazine, anlikMiktar, kamuHucreMi, mulkOyuncuBul, yurtPlanla } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi } from "@bolge/cekirdek";
 import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
-import { ACILIS_ESLEMESI, GEC_ACILISLARI, PARSEL_ONAYARLARI, ilceSec, parselBotuOlustur, parselKos } from "../src";
+import { ACILIS_ESLEMESI, GEC_ACILISLARI, PARSEL_ONAYARLARI, ilceSec, parselArsaFiyati, parselBotuOlustur, parselKos } from "../src";
 import type { ParselBotu, ParselKosuOyuncusu, ParselOnayari } from "../src";
 
 function veri(): CekirdekVeriPaketi {
@@ -439,5 +439,63 @@ describe("ilceSec: yurt verebilen + açılışa uygun ilçe", () => {
     expect(parselBotuOlustur("gec_katilan", "x").ilceKarari).toBeDefined(); // geç katılan vars. açık
     const s = taze();
     expect(bot.ilceKarari!(s).ilce).toMatch(/^sn_m_ova_/);
+  });
+});
+
+describe("P2 uyarlaması: ayrılmış hücre hesap tavanı ve taban fiyat", () => {
+  const tavan = (): number => veri().param.mulk!.yeniOyuncu.ayrilmisHucreHesapTavani!;
+
+  it("parametre mevcut: hesap başına ayrılmış tavanı tanımlı ve yurt hücresinden küçük değil", () => {
+    expect(tavan()).toBeGreaterThan(0);
+    expect(tavan()).toBeGreaterThanOrEqual(0);
+  });
+
+  it("fiyat tahmini çekirdekle BİREBİR: karışık (ayrılmış + normal) alımda hazine farkı = tahmin; ayrılmış taban fiyatlı, normal artımlı", () => {
+    const s = Simulasyon.olustur(veri(), 1);
+    const mk = s.ic.mulk!;
+    // Önce ilçede satılmış hücre ve ayrılmış satış üret (eğri normal satılmışa bağlı olsun): başka bir oyuncu karışık alsın
+    const ilce = "sn_m_gecit_merkez";
+    s.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "once", bolgeler: [], ilce } });
+    const tanim = mk.ilceler.get(ilce)!;
+    const bos = (ayr: boolean) => tanim.hucreler.filter((h) => h.uygun && h.sinif === "kirsal" && !kamuHucreMi(s.dunya, ilce, h.id) && !s.dunya.mulk!.hucreler.some((x) => x.id === h.id) && mk.ayrilmis.has(h.id) === ayr).map((h) => h.id);
+    // İkinci oyuncu (aynı ilçeye yurt): 2 ayrılmış + 3 normal al, bedeli çekirdekle karşılaştır
+    s.uygula({ t: 0, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "alici", bolgeler: [], ilce: "sn_m_liman_merkez" } });
+    const durum = () => s.dunya.mulk!.ilceler.find((i) => i.id === "sn_m_gecit_merkez")!;
+    for (const [ayr, norm] of [[2, 3], [0, 4], [3, 0]] as const) {
+      const a = bos(true).slice(0, ayr);
+      const n = bos(false).slice(0, norm);
+      const tahmin = parselArsaFiyati(s, ilce, "kirsal", a.length, n.length);
+      const once = anlikHazine(s.dunya, "alici");
+      const r = s.uygula({ t: s.dunya.zaman, oyuncu: "alici", komut: { tur: "parsel_al", ilce, hucreler: [...a, ...n], sinif: "kirsal" } });
+      expect(r.tamam, JSON.stringify(r)).toBe(true);
+      expect(once - anlikHazine(s.dunya, "alici"), `ayrilmis ${ayr} normal ${norm}`).toBe(tahmin);
+    }
+    expect(durum().ayrilmisSatilmis).toBe(5);
+    // Ayrılmış hücre taban fiyatı: eğriden bağımsız (satilmis artsa da aynı)
+    const taban = mk.p.hucreFiyati["kirsal"];
+    expect(parselArsaFiyati(s, ilce, "kirsal", 1, 0)).toBe(taban);
+    expect(parselArsaFiyati(s, ilce, "kirsal", 3, 0)).toBe(3 * taban);
+  });
+
+  it("spekülatör hesap tavanına KADAR ayrılmış hücre alır (yurt dahil) ve aşmaz; kalanı normal hücreden; reddedilen komut yok", () => {
+    const r = parselKos({ veri: veri(), tohum: 1, oyuncular: Array.from({ length: 2 }, (_, i) => ({ id: `s${i + 1}`, bot: parselBotuOlustur("spekulator", `s${i + 1}`), katilmaMs: 0 })), sureMs: 6 * GUN });
+    for (const o of ["s1", "s2"]) {
+      const mo = mulkOyuncuBul(r.sim.dunya, o)!;
+      expect(mo.ayrilmisHucre ?? 0, o).toBeLessThanOrEqual(tavan());
+      expect(mo.ayrilmisHucre ?? 0, o).toBe(tavan()); // yeni oyuncu bütçesi yeter: tavana dayanır
+      const sayilan = r.sim.dunya.mulk!.hucreler.filter((h) => h.sahip === o && r.sim.ic.mulk!.ayrilmis.has(h.id)).length;
+      expect(sayilan).toBe(mo.ayrilmisHucre ?? 0);
+      expect(r.sim.dunya.mulk!.hucreler.filter((h) => h.sahip === o).length, o).toBeGreaterThan(tavan()); // kalanı normal
+    }
+    for (const k of r.komutGunlugu) expect(k.tamam, JSON.stringify(k)).toBe(true);
+  });
+
+  it("yapi_yerlestir bot: ayrılmış kotası dolunca (tavan 0) ayrılmış hücre almaz, reddedilmez", () => {
+    const v = veri();
+    v.param.mulk!.yeniOyuncu.ayrilmisHucreHesapTavani = 0;
+    v.param.mulk!.yeniOyuncu.yurtHucre = 0; // yurt ayrılmış sayılmasın; kota 0
+    const r = parselKos({ veri: v, tohum: 1, oyuncular: [{ id: "c", bot: parselBotuOlustur("ciftci", "c"), katilmaMs: 0 }], sureMs: 2 * GUN, katilimRedDevam: true });
+    expect(r.basarisizSayisi["c"] ?? 0).toBe(0);
+    for (const h of r.sim.dunya.mulk!.hucreler) expect(r.sim.ic.mulk!.ayrilmis.has(h.id)).toBe(false);
   });
 });

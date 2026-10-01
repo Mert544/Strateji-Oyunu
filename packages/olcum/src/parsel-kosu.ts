@@ -98,6 +98,8 @@ export interface ParselOyuncuOzeti {
   /** En çok hücreye sahip olduğu ilçe (yoksa null). */
   ilce: string | null;
   hucre: number;
+  /** Sahip olunan AYRILMIŞ hücre (yurt dahil; hesap başına tavan `ayrilmisHucreHesapTavani`). */
+  ayrilmisHucre: number;
   yapi: number;
   komut: number;
   basarisiz: number;
@@ -373,7 +375,7 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
         // Geç katılımdan hemen ÖNCE (geç katılanın kendi yurdu henüz verilmedi): "katılım anında" ilçe doluluğu.
         ilceDoluluk.set(
           t,
-          d.mulk!.ilceler.map((c) => ({ ilce: c.id, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, ayrilmisBos: ayrilmisBos(sim, c.id) })),
+          d.mulk!.ilceler.map((c) => ({ ilce: c.id, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, ayrilmisSatilmis: c.ayrilmisSatilmis ?? 0, ayrilmisBos: ayrilmisBos(sim, c.id) })),
         );
       }
       if (t % (8 * GUN) === 0 && t > 0) ilerleme(`parsel tohum ${tohum}: gun ${t / GUN}/${sureGun}`);
@@ -479,6 +481,7 @@ export function parselTohumKos(secenek: ParselKosuSecenek, tohum: number): Parse
       katilmaGun: o.katilmaGun,
       ilce: sonKullanilanIlce(sim, o.id),
       hucre: (d.mulk?.hucreler ?? []).filter((h) => h.sahip === o.id).length,
+      ayrilmisHucre: (d.mulk?.hucreler ?? []).filter((h) => h.sahip === o.id && sim.ic.mulk!.ayrilmis.has(h.id)).length,
       yapi: yapiKomutlari(o.id).length,
       komut: sonuc.komutSayisi[o.id] ?? 0,
       basarisiz: sonuc.basarisizSayisi[o.id] ?? 0,

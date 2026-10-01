@@ -381,12 +381,13 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
     }
     k.push(
       tablo(
-        ["Oyuncu", "Katılım (gün)", "İlçe", "Hücre", "Yapı", "Komut", "Reddedilen", "Hazine", "Stok", "Arazi", "Yapı bedeli", "Ham servet"],
+        ["Oyuncu", "Katılım (gün)", "İlçe", "Hücre", "Ayrılmış", "Yapı", "Komut", "Reddedilen", "Hazine", "Stok", "Arazi", "Yapı bedeli", "Ham servet"],
         ilk.oyuncular.slice(0, 16).map((o) => [
           o.id,
           String(o.katilmaGun),
           o.ilce ?? "—",
           String(o.hucre),
+          String(o.ayrilmisHucre),
           String(o.yapi),
           String(o.komut),
           String(o.basarisiz),

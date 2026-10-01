@@ -78,24 +78,39 @@ describe("H6 iki biçim: servet bileşenleri ve arındırma", () => {
     expect(servetOrani({ servet: 10, ilceServetleri: [10], hibeKitDegeri: 50 }).hibePayiPpm).toBe(1_000_000);
   });
 
-  it("ucuz hücre ayrıntısı: ayrılmış ve genel ucuz hücreler ayrılır; tutarsız ayrılmış sayısı reddedilir", () => {
+  it("ucuz hücre ayrıntısı: ayrılmış hücre taban fiyatlı ve çarpandan muaf → çarpan > 2 ilçede de ucuz; genel ucuz yalnız çarpanı ≤ 2 ilçelerde", () => {
     const iki = [
-      { uygunHucre: 100, satilmisHucre: 10, ayrilmisBos: 20 }, // çarpan 1,2: 90 ucuz, 20 ayrılmış
-      { uygunHucre: 100, satilmisHucre: 60, ayrilmisBos: 20 }, // çarpan 2,2 > 2: ucuz değil
+      { uygunHucre: 100, satilmisHucre: 10, ayrilmisBos: 20 }, // çarpan 1,2: 90 satılmamış ucuz (20'si ayrılmış)
+      { uygunHucre: 100, satilmisHucre: 60, ayrilmisBos: 20 }, // çarpan 2,2 > 2: yalnız ayrılmış 20 ucuz
     ];
     const r = ucuzHucreAyrintisi(iki);
-    expect(r.ucuzHucre).toBe(90);
-    expect(r.ayrilmisUcuz).toBe(20);
+    expect(r.ucuzHucre).toBe(110);
+    expect(r.ayrilmisUcuz).toBe(40);
     expect(r.genelUcuz).toBe(70);
     expect(r.genelPayPpm).toBe(350_000); // 70 / 200
-    expect(r.payPpm).toBe(ucuzHucrePayi(iki).payPpm);
+    expect(r.payPpm).toBe(550_000); // 110 / 200
     expect(() => ucuzHucreAyrintisi([{ uygunHucre: 10, satilmisHucre: 9, ayrilmisBos: 2 }])).toThrow(/tutarsiz/);
     expect(() => ucuzHucreAyrintisi([{ uygunHucre: 10, satilmisHucre: 0, ayrilmisBos: -1 }])).toThrow(/tutarsiz/);
   });
 
-  it("ucuz hücre ayrıntısı: çarpan tam 2 (satılmış %50) sınırında ucuz sayılır, bir fazlasında sayılmaz", () => {
-    expect(ucuzHucreAyrintisi([{ uygunHucre: 100, satilmisHucre: 50, ayrilmisBos: 10 }]).ayrilmisUcuz).toBe(10);
-    expect(ucuzHucreAyrintisi([{ uygunHucre: 100, satilmisHucre: 51, ayrilmisBos: 10 }]).ayrilmisUcuz).toBe(0);
+  it("ucuz hücre ayrıntısı: çarpan tam 2 sınırında genel hücre ucuz, bir fazlasında yalnız ayrılmış ucuz", () => {
+    expect(ucuzHucreAyrintisi([{ uygunHucre: 100, satilmisHucre: 50, ayrilmisBos: 10 }]).genelUcuz).toBe(40);
+    const asan = ucuzHucreAyrintisi([{ uygunHucre: 100, satilmisHucre: 51, ayrilmisBos: 10 }]);
+    expect(asan.ayrilmisUcuz).toBe(10);
+    expect(asan.genelUcuz).toBe(0);
+  });
+
+  it("P2: çarpan YALNIZ satılmış − ayrilmisSatilmis üzerinden ilerler (ayrılmış satışlar eğriyi ilerletmez); eski çağrılar (alan yok) aynı", () => {
+    // 100 uygun, 60 satılmış: ayrılmış satış yoksa çarpan 2,2 (ucuz 0); 20'si ayrılmışsa normal satılmış 40 → çarpan 1,8 (ucuz 40)
+    expect(ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 60 }]).ucuzHucre).toBe(0);
+    expect(ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 60, ayrilmisSatilmis: 20 }]).ucuzHucre).toBe(40);
+    // Sınır: normal satılmış tam 50 → çarpan 2,0 ucuz; 51 → ucuz değil
+    expect(ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 70, ayrilmisSatilmis: 20 }]).ucuzHucre).toBe(30);
+    expect(ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 71, ayrilmisSatilmis: 20 }]).ucuzHucre).toBe(0);
+    // ayrilmisBos verilirse çarpan > 2 ilçede ayrılmış satılmamışlar ucuz kalır
+    expect(ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 71, ayrilmisSatilmis: 20, ayrilmisBos: 7 }]).ucuzHucre).toBe(7);
+    expect(() => ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 10, ayrilmisSatilmis: 11 }])).toThrow(/tutarsiz/);
+    expect(() => ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 10, ayrilmisSatilmis: -1 }])).toThrow(/tutarsiz/);
   });
 
   it("karar kaynağı: hipotez kararı Y7 + ucuz hücreden gelir (birincil); servet yalnız ikincil bilgidir", () => {

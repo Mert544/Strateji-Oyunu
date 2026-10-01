@@ -19,7 +19,7 @@
  *    Yerleşiklerin bulunduğu (en çok sahipli) ilçeye katılır: ilçe medyanı ile karşılaştırılabilsin.
  */
 import { anlikHazine, anlikMiktar, isletmeBul, kamuHucreMi, mulkOyuncuBul, parselFiyati, ticaretEmirYuvasi, yurtPlanla } from "@bolge/cekirdek";
-import type { ArsaSinifi, BolgeDurumu, DerlenmisMulk, Dunya, HucreDurumu, Komut, OyuncuId, Simulasyon } from "@bolge/cekirdek";
+import type { ArsaSinifi, BolgeDurumu, DerlenmisMulk, Dunya, HucreDurumu, IlceDurumu, Komut, OyuncuId, Simulasyon } from "@bolge/cekirdek";
 import { icerikBilgisi } from "./tablo";
 import type { IcerikBilgisi } from "./tablo";
 
@@ -238,6 +238,39 @@ interface Yerlesim {
 }
 
 /**
+ * Oyuncunun kalan AYRILMIŞ hücre kotası (docs/06 §15.7): hesap başına tavan (`yeniOyuncu.ayrilmisHucreHesapTavani`) − sahip olduğu ayrılmış
+ * hücre (yurt dahil). Tavan tanımsızsa sınırsız (Infinity).
+ */
+function ayrilmisKota(g: Gorunum): number {
+  const tavan = g.mk.p.yeniOyuncu.ayrilmisHucreHesapTavani;
+  if (tavan === undefined) return Infinity;
+  return Math.max(0, tavan - (mulkOyuncuBul(g.d, g.oyuncu)?.ayrilmisHucre ?? 0));
+}
+
+/**
+ * `parsel_al` / `yapi_yerlestir` arsa bedeli tahmini (çekirdek `alimPlani` ile aynı kural; fiyat mantığı çekirdekte dışa aktarılmış tek bir
+ * yardımcı olarak yok, `parselFiyati` bileşeniyle yeniden kurulur ve testle çekirdekle eşitliği denetlenir): AYRILMIŞ hücre taban (sınıf)
+ * fiyatından satılır ve kıtlık eğrisinden muaftır; normal hücreler artımlıdır ve eğri `satilmisHucre − ayrilmisSatilmis` üzerinden ilerler.
+ */
+function arsaFiyati(g: Gorunum, durum: IlceDurumu, sinif: ArsaSinifi, ayrilmisAdet: number, normalAdet: number): number {
+  const p = g.mk.p;
+  const taban = p.hucreFiyati[sinif];
+  return ayrilmisAdet * taban + (normalAdet > 0 ? parselFiyati(taban, p.satisPayiCarpaniPpm, durum.satilmisHucre - (durum.ayrilmisSatilmis ?? 0), durum.uygunHucre, normalAdet) : 0);
+}
+
+/**
+ * Arsa bedeli tahmini (public; testler çekirdekle eşitliği denetler): `ayrilmisAdet` AYRILMIŞ hücre taban fiyattan (kıtlık eğrisinden muaf),
+ * `normalAdet` normal hücre artımlı (eğri `satilmisHucre − ayrilmisSatilmis` üzerinden). Çekirdekte dışa aktarılmış tek bir fiyat yardımcısı
+ * olmadığından `parselFiyati` bileşeniyle kurulur.
+ */
+export function parselArsaFiyati(sim: Simulasyon, ilce: string, sinif: ArsaSinifi, ayrilmisAdet: number, normalAdet: number): number {
+  const g = gorunumKur(sim, "aday");
+  const durum = g?.d.mulk?.ilceler.find((i) => i.id === ilce);
+  if (g === null || durum === undefined) throw new Error(`parselArsaFiyati: mulk kipi kapali ya da bilinmeyen ilce: ${ilce}`);
+  return arsaFiyati(g, durum, sinif, ayrilmisAdet, normalAdet);
+}
+
+/**
  * İlçede `yuva` hücrelik (yatay ya da dikey, kenar-bitişik) en iyi grubu bulur. Hücreler oyuncunun boş hücresi ya da satın
  * alınabilir sahipsiz uygun hücre olabilir; satın alınanlar tek sınıfta olmalı (komuttaki `sinif`). Sıra: tahmini arsa bedeli
  * (küçük), oyuncunun hücrelerine komşuluk (çok), çapa sırası (fikstür sırası). Ayrılmış hücreler yalnız yeni oyuncuya açıktır.
@@ -250,6 +283,8 @@ function yerlesimBul(g: Gorunum, ilceId: string, yuva: number, kullanilan: Reado
   const yeniOyuncu = katilma !== undefined && g.d.zaman < katilma + g.mk.ayrilmisSureMs;
   const p = g.mk.p;
   const benimSayi = ilceHucreleri(g, ilceId).length + [...kullanilan].filter((id) => !g.sahipli.has(id)).length;
+  // Bu turda önceki komutlarla alınacak ayrılmış hücreler de hesap kotasından düşer.
+  const kota = ayrilmisKota(g) - [...kullanilan].filter((id) => !g.sahipli.has(id) && g.mk.ayrilmis.has(id)).length;
   const tavan = Math.min(p.ilceHucreTavani, Math.floor((durum.uygunHucre * p.ilcePayTavaniPpm) / 1_000_000));
 
   const tanim = new Map(ilce.hucreler.map((h) => [h.id, h]));
@@ -278,8 +313,10 @@ function yerlesimBul(g: Gorunum, ilceId: string, yuva: number, kullanilan: Reado
       if (siniflar.size > 1) continue;
       if (benimSayi + yeniler.length > tavan) continue;
       if (durum.satilmisHucre + yeniler.length > durum.uygunHucre) continue;
+      const yeniAyrilmis = yeniler.filter((id) => g.mk.ayrilmis.has(id)).length;
+      if (yeniAyrilmis > kota) continue; // hesap başına ayrılmış hücre tavanı (yurt dahil)
       const sinif: ArsaSinifi = siniflar.size === 1 ? ([...siniflar][0] as ArsaSinifi) : (tanim.get(grup[0] as string) as { sinif: ArsaSinifi }).sinif;
-      const arsa = yeniler.length === 0 ? 0 : parselFiyati(p.hucreFiyati[sinif], p.satisPayiCarpaniPpm, durum.satilmisHucre, durum.uygunHucre, yeniler.length);
+      const arsa = yeniler.length === 0 ? 0 : arsaFiyati(g, durum, sinif, yeniAyrilmis, yeniler.length - yeniAyrilmis);
       let komsu = 0;
       for (const id of grup) {
         const [cx, cy] = xy(id);
@@ -580,12 +617,16 @@ function bakimKomutlari(g: Gorunum, dugum: BolgeDurumu): { komutlar: Komut[]; ac
 interface SpekAday {
   ilce: string;
   sinif: ArsaSinifi;
-  /** Satın alınabilir hücreler, alım sırasıyla (yeni oyuncuysa ayrılmış hücreler önce). */
-  hucreler: string[];
+  /** Satın alınabilir AYRILMIŞ hücreler (yalnız yeni oyuncuda dolu; hesap kotasına kadar alınır), fikstür sırasıyla. */
+  ayrilmis: string[];
+  /** Satın alınabilir normal hücreler, fikstür sırasıyla. */
+  normal: string[];
   /** İlçede alınabilecek en çok hücre (72 ve %25 tavanı, ilçe doluluğu). */
   oda: number;
+  /** Kıtlık eğrisine giren (normal) satılmış hücre: `satilmisHucre − ayrilmisSatilmis`. */
   satilmis: number;
   uygun: number;
+  durum: IlceDurumu;
 }
 
 const SINIF_SIRASI: readonly ArsaSinifi[] = ["kirsal", "kasaba", "sehir"];
@@ -612,9 +653,17 @@ function spekAdaylari(g: Gorunum, yeniOyuncu: boolean): SpekAday[] {
       }
     }
     if (secilen === null) continue;
-    // Yeni oyuncu ayrılmış hücreleri önce alır (yalnız yeni oyuncuya açık olanı tüketir); sıra fikstür sırası.
-    if (yeniOyuncu) adaylar = [...adaylar.filter((id) => g.mk.ayrilmis.has(id)), ...adaylar.filter((id) => !g.mk.ayrilmis.has(id))];
-    sonuc.push({ ilce: durum.id, sinif: secilen, hucreler: adaylar, oda, satilmis: durum.satilmisHucre, uygun: durum.uygunHucre });
+    // Yeni oyuncu ayrılmış hücreleri hesap kotasına kadar önce alır (yalnız yeni oyuncuya açık olanı tüketir; taban fiyat), kalanı normal hücreden.
+    sonuc.push({
+      ilce: durum.id,
+      sinif: secilen,
+      ayrilmis: yeniOyuncu ? adaylar.filter((id) => g.mk.ayrilmis.has(id)) : [],
+      normal: adaylar.filter((id) => !g.mk.ayrilmis.has(id)),
+      oda,
+      satilmis: durum.satilmisHucre - (durum.ayrilmisSatilmis ?? 0),
+      uygun: durum.uygunHucre,
+      durum,
+    });
   }
   // Ucuz sınıf, boş ilçe (düşük fiyat çarpanı), kimlik sırası.
   return sonuc.sort((a, b) => {
@@ -776,14 +825,22 @@ class Bot implements ParselBotu {
     if (yas >= this.baslangicMs) {
       let hazine = Math.floor((anlikHazine(g.d, g.oyuncu) * 95) / 100);
       let komut = 0;
+      let kota = ayrilmisKota(g);
       for (const a of spekAdaylari(g, yeniOyuncu)) {
         if (komut >= 3) break;
-        const taban = g.mk.p.hucreFiyati[a.sinif];
-        let n = Math.min(a.oda, a.hucreler.length);
-        while (n > 0 && parselFiyati(taban, g.mk.p.satisPayiCarpaniPpm, a.satilmis, a.uygun, n) > hazine) n--;
+        // Liste: önce ayrılmış hücreler (hesap kotasına kadar), kalanı normal hücreden.
+        const ayrilmisAlinabilir = a.ayrilmis.slice(0, Math.min(a.ayrilmis.length, kota));
+        const sira = [...ayrilmisAlinabilir, ...a.normal];
+        let n = Math.min(a.oda, sira.length);
+        const fiyat = (adet: number): number => {
+          const r = Math.min(adet, ayrilmisAlinabilir.length);
+          return arsaFiyati(g, a.durum, a.sinif, r, adet - r);
+        };
+        while (n > 0 && fiyat(n) > hazine) n--;
         if (n <= 0) continue;
-        hazine -= parselFiyati(taban, g.mk.p.satisPayiCarpaniPpm, a.satilmis, a.uygun, n);
-        komutlar.push({ tur: "parsel_al", ilce: a.ilce, hucreler: a.hucreler.slice(0, n), sinif: a.sinif });
+        hazine -= fiyat(n);
+        kota -= Math.min(n, ayrilmisAlinabilir.length);
+        komutlar.push({ tur: "parsel_al", ilce: a.ilce, hucreler: sira.slice(0, n), sinif: a.sinif });
         komut++;
       }
     }

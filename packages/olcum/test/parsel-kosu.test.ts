@@ -227,6 +227,16 @@ describe("parsel kısa koşu: spekülatör, ayrılmış hücre garantisi ve H8",
     expect(r.ayrilmis.gecOncesi.satilan).toBeGreaterThan(temel.ayrilmis.gecOncesi.satilan);
   });
 
+  it("P2: hiçbir hesap ayrılmış hücre tavanını aşmaz; spekülatörler ayrılmışı tüketir (tavan parametreden okunur)", () => {
+    const sim = Simulasyon.olustur({ ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") }, 1);
+    const tavan = sim.ic.mulk!.p.yeniOyuncu.ayrilmisHucreHesapTavani;
+    expect(tavan).toBeGreaterThan(0);
+    for (const o of r.oyuncular) expect(o.ayrilmisHucre, o.id).toBeLessThanOrEqual(tavan as number);
+    const spek = r.oyuncular.filter((o) => o.id.startsWith("spekulator"));
+    expect(spek.length).toBeGreaterThan(0);
+    expect(spek.some((o) => o.ayrilmisHucre > 0)).toBe(true);
+  });
+
   it("spekülatör kalabalığı geç katılan için ucuz hücre payını düşürür", () => {
     expect(r.h6.ucuz.payPpm).toBeLessThan(temel.h6.ucuz.payPpm);
   });
