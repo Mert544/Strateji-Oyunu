@@ -297,7 +297,7 @@ describe("G-8 hesap bölümü", () => {
     const o = hesapHtml({ eposta: "", onayAcik: true, cikiyor: false });
     expect(o).not.toContain("gr-hesap-eposta");
     expect(o).toContain('role="alertdialog"');
-    expect(o).toContain("Hesabının bütün oturumları kapanır. Devam edilsin mi?");
+    expect(o).toContain("Hesabının bütün oturumları kapanır. Devam etmek istiyor musun?");
     expect(o).toContain('class="tehlike" type="button" data-eylem="cikis-tumu-onayla"');
     expect(o).toContain('data-eylem="cikis-tumu-vazgec">Vazgeç</button>');
     const k = hesapHtml({ eposta: "a@b.co", onayAcik: false, cikiyor: true });

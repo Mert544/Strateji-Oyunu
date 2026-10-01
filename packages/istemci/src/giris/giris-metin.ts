@@ -74,7 +74,7 @@ export const GIRIS_METIN = {
   "giris.G7.ayar_bitis": "Oturum bitişi: {tarih}",
   "giris.G8.cikis": "Çıkış yap",
   "giris.G8.cikis_tumu": "Tüm cihazlardan çık",
-  "giris.G8.cikis_tumu_onay": "Hesabının bütün oturumları kapanır. Devam edilsin mi?",
+  "giris.G8.cikis_tumu_onay": "Hesabının bütün oturumları kapanır. Devam etmek istiyor musun?",
   "giris.G8.sonuc": "Çıkış yaptın. Yeniden girmek için bağlantı iste.",
   "giris.G8.eposta_satiri": "E-posta: {adres}",
   "giris.G8.silme_bilgi": "Hesabınla ilgili bir sorun olursa bize yaz: {destek_eposta}",
