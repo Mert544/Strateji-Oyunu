@@ -71,8 +71,8 @@ export interface AnlikGoruntuKaydi {
 export interface GunlukDeposu {
   /** Kayıtları sırayla ve kalıcı olarak ekler (toplu commit). seq sürekliliğini bozan ekleme reddedilir. */
   ekle(toplu: readonly GunlukKaydi[]): Promise<void>;
-  /** `seq > seqSonrasi` olan kayıtlar, seq sırasıyla. */
-  oku(seqSonrasi: number): Promise<GunlukKaydi[]>;
+  /** `seq > seqSonrasi` olan kayıtlar, seq sırasıyla; `enCok` verilirse yalnız ilk `enCok` kayıt (büyük günlüğü parça parça okumak için: `--dok`). */
+  oku(seqSonrasi: number, enCok?: number): Promise<GunlukKaydi[]>;
   kapat(): Promise<void>;
 }
 
@@ -262,6 +262,52 @@ export interface HesapDeposu {
   kapat(): Promise<void>;
 }
 
+/**
+ * OYUN BAĞLANTISI oturumu (insan testi İ2; giriş/kimlik oturumu DEĞİLDİR: o çerezle açılan hesap oturumudur, bu oyuncunun ws bağlantısı süresidir).
+ * YALNIZ zaman ve opak oyuncu kimliği tutulur: IP, cihaz, tarayıcı, e-posta YOKTUR. `profil_capa`'ya yazılmaz. Zamanlar duvar saati epoch ms.
+ * Kopup yeniden bağlanma (`boşluk eşiği` içinde) AYNI oturumdur (`OturumKaydedici`).
+ */
+export interface OyunOturumu {
+  id: number;
+  oyuncu: string;
+  acilis: number;
+  /** Açıksa (oyuncunun bağlantısı sürüyor ya da süreç ani öldü) null. */
+  kapanis: number | null;
+}
+
+/** 90 günden eski oturumların gün düzeyinde TOPLU sayıları (ayrıntı satırı silinir; kişi başına iz kalmaz). `gun` = UTC gün başlangıcı (epoch ms). */
+export interface GunlukOturumSayisi {
+  gun: number;
+  oturum: number;
+  /** O gün oturumu olan farklı oyuncu sayısı. */
+  oyuncu: number;
+  /** Kapanmış oturumların toplam süresi (ms). */
+  sureMs: number;
+}
+
+export const OTURUM_GUN_MS = 86_400_000;
+/** Ayrıntı satırlarının ömrü; sonrası yalnız toplu sayılar. */
+export const OYUN_OTURUM_OMRU_MS = 90 * OTURUM_GUN_MS;
+
+/** Oyun oturumu deposu (bellek, dosya ve pg: AYNI sözleşme, test/oyun-oturum-sozlesmesi.ts). Dünya başınadır. */
+export interface OyunOturumDeposu {
+  /** Yeni açık oturum ekler. */
+  ac(oyuncu: string, acilis: number): Promise<OyunOturumu>;
+  /** Oyuncunun en yeni (acilis'e göre) oturumu; yoksa null. */
+  sonOturum(oyuncu: string): Promise<OyunOturumu | null>;
+  /** Kapanışı yazar (null = yeniden açıldı). */
+  kapanisYaz(id: number, kapanis: number | null): Promise<void>;
+  /** Ayrıntı satırları, acilis sırasıyla (`oyuncu` verilirse yalnız onun). */
+  oku(oyuncu?: string): Promise<OyunOturumu[]>;
+  /** Günün başlangıcına yuvarlanmış `simdi - omur` kesiminden ESKİ ayrıntı satırlarını gün düzeyinde toplu sayıya çevirir ve siler. Silinen satır sayısı. */
+  toplulastir(simdi: number, omurMs?: number): Promise<number>;
+  gunlukSayilar(): Promise<GunlukOturumSayisi[]>;
+  /** Dünyanın bütün oturum satırlarını ve toplu sayılarını siler (test dünyası silme; İ3). Silinen satır sayısı. */
+  dunyayiSil(): Promise<{ oturum: number; gunluk: number }>;
+  esitle(): Promise<void>;
+  kapat(): Promise<void>;
+}
+
 /** Depo boyutu (bayt): metrik için; pahalı olabilir, çağıran önbellekler. */
 export interface DepoBoyutu {
   gunlukBayt: number;
@@ -283,6 +329,8 @@ export interface Depo {
   hataDinle?(f: (e: Error) => void): void;
   /** İsteğe bağlı: yoksa e-posta bağlantısıyla giriş kapalıdır (geliştirme kimliği kullanılır). */
   hesap?: HesapDeposu;
+  /** İsteğe bağlı: oyun bağlantısı oturum olayı kaydı (İ2; `BOLGE_OTURUM_KAYDI=1`). */
+  oyunOturumu?: OyunOturumDeposu;
 }
 
 /** Ekleme öncesi ortak süreklilik denetimi: toplu içinde ve son seq'e göre +1 artış. */

@@ -20,6 +20,7 @@ import type { Pool, PoolClient } from "pg";
 import { fnv1a32 } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
 import { PostgresHesapDeposu } from "./hesap-postgres";
+import { PostgresOyunOturumDeposu } from "./oyun-oturum-postgres";
 import { seqSurekliligiDenetle } from "./tipler";
 import { OZET_KAYIT_OMRU_MS, OZET_KAYIT_TAVANI } from "./tipler";
 import type { AnlikGoruntuKaydi, Capa, Damga, Depo, GoruntuEki, GunlukKaydi, OzetKaydi, ProfilDeposu } from "./tipler";
@@ -31,6 +32,11 @@ export interface PostgresSecenekleri {
   dunya: string;
   /** true ise `sql/001-baslangic.sql` çalıştırılır (CREATE ... IF NOT EXISTS). */
   semaKur?: boolean;
+  /**
+   * Dünya kilidini (advisory lock) ALMAZ: yalnız OKUMA içindir (`--dok`, çevrimdışı oynatma); çalışan bir sunucunun dünyası da okunabilir. Yazma ve
+   * `kapat()` dışındaki işlemler bu kipte kullanılmamalıdır (tek yazar garantisi çağırana aittir).
+   */
+  kilitsiz?: boolean;
   /** Yalnız testler: `pg.Pool` yerine kullanılacak (sahte) havuz; verilirse `baglanti` yok sayılır. */
   havuz?: Pool;
 }
@@ -41,6 +47,7 @@ const SEMA_ADIMLARI: ReadonlyArray<{ surum: number; ad: string; dosya: URL }> = 
   { surum: 2, ad: "goc-profil", dosya: new URL("../../sql/002-goc-profil.sql", import.meta.url) },
   { surum: 3, ad: "defter", dosya: new URL("../../sql/003-defter.sql", import.meta.url) },
   { surum: 4, ad: "hesap", dosya: new URL("../../sql/004-hesap.sql", import.meta.url) },
+  { surum: 5, ad: "oyun-oturum", dosya: new URL("../../sql/005-oyun-oturum.sql", import.meta.url) },
 ];
 
 /** Bu kodun beklediği SQL şema sürümü. */
@@ -134,10 +141,12 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
     if (surum < SQL_SEMA_SURUMU) {
       throw new Error(`pg sema surumu eski: ${surum} < ${SQL_SEMA_SURUMU}; semaKur: true (CLI varsayilani) ile acin (eksik gocler uygulanir, veri korunur)`);
     }
-    kilitBaglantisi = await havuz.connect();
-    kilitBaglantisi.on("error", hataBildir);
-    const r = await kilitBaglantisi.query<{ alindi: boolean }>("SELECT pg_try_advisory_lock($1) AS alindi", [kilitAnahtari]);
-    if (r.rows[0]?.alindi !== true) throw new Error(`dunya baska bir yazar tarafindan kilitli (advisory lock): ${s.dunya}`);
+    if (s.kilitsiz !== true) {
+      kilitBaglantisi = await havuz.connect();
+      kilitBaglantisi.on("error", hataBildir);
+      const r = await kilitBaglantisi.query<{ alindi: boolean }>("SELECT pg_try_advisory_lock($1) AS alindi", [kilitAnahtari]);
+      if (r.rows[0]?.alindi !== true) throw new Error(`dunya baska bir yazar tarafindan kilitli (advisory lock): ${s.dunya}`);
+    }
   } catch (e) {
     kapali = true;
     kilitBaglantisi?.release();
@@ -182,10 +191,10 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
         }
         sonSeq = (toplu.at(-1) as GunlukKaydi).seq;
       },
-      async oku(seqSonrasi: number): Promise<GunlukKaydi[]> {
+      async oku(seqSonrasi: number, enCok?: number): Promise<GunlukKaydi[]> {
         const r = await havuz.query<LogSatiri>(
-          "SELECT seq, t, hesap, istemci, anahtar, komut, kural_sur, sema_sur FROM log WHERE dunya = $1 AND seq > $2 ORDER BY seq",
-          [s.dunya, seqSonrasi],
+          `SELECT seq, t, hesap, istemci, anahtar, komut, kural_sur, sema_sur FROM log WHERE dunya = $1 AND seq > $2 ORDER BY seq${enCok === undefined ? "" : " LIMIT $3"}`,
+          enCok === undefined ? [s.dunya, seqSonrasi] : [s.dunya, seqSonrasi, enCok],
         );
         const kayitlar = r.rows.map(
           (x): GunlukKaydi => ({
@@ -205,8 +214,10 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
       async kapat(): Promise<void> {
         kapali = true;
         // Kilit açıkça bırakılır: bağlantının sunucuda kapanması gecikse bile hemen yeniden açılış mümkün olur (kill -9'da bağlantı düşünce kendiliğinden).
-        await kilit.query("SELECT pg_advisory_unlock($1)", [kilitAnahtari]).catch(() => undefined);
-        kilit.release();
+        if (kilit !== null) {
+          await kilit.query("SELECT pg_advisory_unlock($1)", [kilitAnahtari]).catch(() => undefined);
+          kilit.release();
+        }
         await havuz.end();
       },
     },
@@ -252,6 +263,8 @@ export async function postgresDeposu(s: PostgresSecenekleri): Promise<Depo & { h
     profil: new PostgresProfilDeposu(havuz, s.dunya),
     /** Hesap, oturum ve giriş bağlantısı (`sql/004-hesap.sql`; dünyadan bağımsız tablolar). */
     hesap: new PostgresHesapDeposu(havuz),
+    /** Oyun bağlantısı oturum olayı kaydı (`sql/005-oyun-oturum.sql`; dünya başına; İ2). */
+    oyunOturumu: new PostgresOyunOturumDeposu(havuz, s.dunya),
     /** Günlük: `log` tablosunun toplam boyutu (TÜM dünyalar; tablo ortaktır); görüntü: bu dünyanın görüntü gövdeleri. */
     async boyut() {
       const g = await havuz.query<{ b: string }>("SELECT pg_total_relation_size('log') AS b");

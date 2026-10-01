@@ -82,9 +82,12 @@ Uygulananlar:
 | E-posta (hesap kaydı) | Hesap ve giriş | Hesap açıkken; silme talebinde 30 gün içinde silinir (`hesapSil`) |
 | Giriş bağlantısı kaydı (özet + e-posta + bitiş) | Tek seferlik giriş | En çok 10 dk; kullanılınca, yeni bağlantı gelince ya da süre dolunca silinir |
 | Oturum kaydı (kimlik, gizli özeti, açılış/son kullanım/bitiş zamanı) | Giriş oturumu | Kayan 30 gün, mutlak 90 gün; çıkışta silinir; bakım süresi geçenleri saatte bir siler |
+| Oyun bağlantısı oturum kaydı (`BOLGE_OTURUM_KAYDI=1`; varsayılan KAPALI; opak oyuncu kimliği, açılış ve kapanış zamanı) | İnsan testi ölçümü: oturum sayısı ve süresi | Ayrıntı 90 gün; sonrası yalnız günlük toplu sayı (oturum, farklı oyuncu, toplam süre; kişi başına iz yok). IP, cihaz, tarayıcı, e-posta YOK; `profil_capa`'ya yazılmaz; test dünyası silinince gider (`--test-dunya-sil`) |
 | Hız sınırı kovaları | Kötüye kullanım | Yalnız bellek (IP burada), yeniden başlatmada ve boşalınca düşer; depoya yazılmaz |
 | Günlük ve metrik | İşletim | Yalnız olay adı, sayaç, maskelenmiş adres; belirteç ve IP yok |
 | Oyun verisi (`oyuncuId`, komut günlüğü, dünya) | Sözleşmenin ifası | Dünya boyunca; `oyuncuId` opaktır |
+
+Oyun oturum kaydı giriş (kimlik) oturumu değildir: o çerezle açılan hesap oturumudur (`oturum` tablosu), bu oyuncunun ws bağlantısı süresidir (`oyun_oturum`). Test dünyası silme (`--test-dunya-sil <ad>`) dünyanın günlüğünü, görüntülerini ve yedeklerini, profil/oturum kayıtlarını ve YALNIZ o dünyanın oyuncularının hesap, oturum ve bağlantı satırlarını tek işlemde siler; başka dünyada da kullanılan hesaba dokunmaz.
 
 E-posta dışında kişisel veri tutulmaz: ad, IP, cihaz/tarayıcı bilgisi, konum yoktur. Aydınlatma metni, açık rıza gerektirmeyen işleme ve yurt dışına aktarım (posta sağlayıcısı bölgesi, AB önerilir) hukuk metinleri sahip işidir. Hesap silinince e-posta bağı gider, oyuncu anonim kalır (komut günlüğü dünya durumunun parçasıdır; `oyuncuId` geri çözülemez).
 

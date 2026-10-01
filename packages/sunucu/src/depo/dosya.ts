@@ -14,14 +14,15 @@
  *   fdatasync yapar (anlık görüntüden önce). Kayıtlar günlükten yeniden türetilebildiği için satır başına fsync yoktur.
  * - `hesap.jsonl`: hesap, oturum ve giriş bağlantısı işlemleri (satır başına bir `HesapIslemi`; bkz. `DosyaHesapDeposu`). Her işlem fdatasync ile
  *   kalıcıdır (tüketilen bağlantı çökmeyle yeniden canlanmasın). Açık belirteç yazılmaz, yalnız SHA-256 özetleri.
+ * - `oyun-oturum.jsonl`: oyun bağlantısı oturum olayları (İ2; yalnız zaman ve opak oyuncu kimliği; bkz. `DosyaOyunOturumDeposu`). Yalnız bayrak açıkken yazılır.
  * - `yazar.kilit`: tek yazar kilidi (içinde süreç kimliği). Kilit varsa ve sahibi yaşıyorsa açılış reddedilir; sahibi
  *   ölmüşse (kill -9 sonrası) kilit devralınır.
  */
 import { copyFile, mkdir, open, readdir, readFile, rename, rm, stat, truncate, writeFile } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { join } from "node:path";
-import { BellekHesapDeposu, BellekProfilDeposu } from "./bellek";
-import type { HesapIslemi } from "./bellek";
+import { BellekHesapDeposu, BellekOyunOturumDeposu, BellekProfilDeposu } from "./bellek";
+import type { HesapIslemi, OyunOturumIslemi } from "./bellek";
 import { seqSurekliligiDenetle } from "./tipler";
 import type { AnlikGoruntuKaydi, Capa, Damga, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, OzetKaydi } from "./tipler";
 
@@ -31,6 +32,7 @@ const GORUNTU_DIZINI = "goruntu";
 const KILIT_DOSYASI = "yazar.kilit";
 const PROFIL_DOSYASI = "profil.jsonl";
 const HESAP_DOSYASI = "hesap.jsonl";
+const OTURUM_DOSYASI = "oyun-oturum.jsonl";
 
 async function dizinFsync(dizin: string): Promise<void> {
   // Windows dizin tutamacında fsync'i desteklemez (EPERM); NTFS üst veriyi kendi günlüğüyle korur. Üretim Linux'tadır.
@@ -53,7 +55,7 @@ function surecYasiyorMu(pid: number): boolean {
 }
 
 /** Tek yazar kilidi alır; kilit ölü bir sürece aitse devralır. */
-async function kilitAl(dizin: string): Promise<() => Promise<void>> {
+export async function kilitAl(dizin: string): Promise<() => Promise<void>> {
   const yol = join(dizin, KILIT_DOSYASI);
   for (let deneme = 0; deneme < 2; deneme++) {
     try {
@@ -147,9 +149,10 @@ export class DosyaGunlukDeposu implements GunlukDeposu {
     this.sonSeq = (toplu.at(-1) as GunlukKaydi).seq;
   }
 
-  async oku(seqSonrasi: number): Promise<GunlukKaydi[]> {
+  async oku(seqSonrasi: number, enCok?: number): Promise<GunlukKaydi[]> {
     const { kayitlar } = gunlukAyristir(await readFile(this.yol, "utf8"));
-    return kayitlar.filter((k) => k.seq > seqSonrasi);
+    const l = kayitlar.filter((k) => k.seq > seqSonrasi);
+    return enCok === undefined ? l : l.slice(0, enCok);
   }
 
   async kapat(): Promise<void> {
@@ -159,6 +162,56 @@ export class DosyaGunlukDeposu implements GunlukDeposu {
 
 function goruntuAdi(seq: number, simZamani: number): string {
   return `${String(seq).padStart(12, "0")}-${String(simZamani).padStart(16, "0")}.goruntu`;
+}
+
+/** `goruntu/` dizinindeki en yeni geçerli görüntü (dosya adı sırasıyla: seq, sim zamanı); yoksa null. SALT OKUNUR (dosyaya yazmaz). */
+async function dosyadanSonGoruntu(dizin: string): Promise<AnlikGoruntuKaydi | null> {
+  const hepsi = (await readdir(dizin)).filter((x) => x.endsWith(".goruntu")).sort().reverse();
+  for (const ad of hepsi) {
+    const icerik = await readFile(join(dizin, ad), "utf8");
+    const ayrac = icerik.indexOf("\n");
+    if (ayrac < 0) continue;
+    try {
+      const ust = JSON.parse(icerik.slice(0, ayrac)) as Omit<AnlikGoruntuKaydi, "metin">;
+      const metin = icerik.slice(ayrac + 1);
+      if (!Number.isSafeInteger(ust.seq) || metin === "") continue;
+      return { ...ust, metin };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+/**
+ * SALT OKUNUR dosya deposu (`--dok`, çevrimdışı oynatma): kilit ALMAZ, hiçbir dosyayı değiştirmez (yarım kuyruk kesilmez, geçici dosya silinmez); çalışan
+ * bir sunucunun dizini de okunabilir (yarım son günlük satırı yok sayılır). Yazma yöntemleri yoktur.
+ */
+export async function dosyaSaltOkunur(dizin: string): Promise<{ gunluk: { oku(seqSonrasi: number, enCok?: number): Promise<GunlukKaydi[]> }; goruntu: { sonuncu(): Promise<AnlikGoruntuKaydi | null> } }> {
+  const gunlukYolu = join(dizin, GUNLUK_DOSYASI);
+  // Günlük bir kez okunur (anlık görüntü gibi: dökümün tutarlılığı için; parça parça okuma ikinci dereceden büyümesin).
+  let onbellek: GunlukKaydi[] | null = null;
+  return {
+    gunluk: {
+      async oku(seqSonrasi: number, enCok?: number): Promise<GunlukKaydi[]> {
+        if (onbellek === null) {
+          const metin = await readFile(gunlukYolu, "utf8").catch((e: NodeJS.ErrnoException) => {
+            if (e.code === "ENOENT") return "";
+            throw e;
+          });
+          onbellek = gunlukAyristir(metin).kayitlar;
+        }
+        const l = onbellek.filter((k) => k.seq > seqSonrasi);
+        return enCok === undefined ? l : l.slice(0, enCok);
+      },
+    },
+    goruntu: {
+      async sonuncu(): Promise<AnlikGoruntuKaydi | null> {
+        const d = join(dizin, GORUNTU_DIZINI);
+        return (await stat(d).catch(() => null)) ? dosyadanSonGoruntu(d) : null;
+      },
+    },
+  };
 }
 
 export class DosyaGoruntuDeposu implements GoruntuDeposu {
@@ -208,21 +261,7 @@ export class DosyaGoruntuDeposu implements GoruntuDeposu {
   }
 
   async sonuncu(): Promise<AnlikGoruntuKaydi | null> {
-    const hepsi = (await readdir(this.dizin)).filter((x) => x.endsWith(".goruntu")).sort().reverse();
-    for (const ad of hepsi) {
-      const icerik = await readFile(join(this.dizin, ad), "utf8");
-      const ayrac = icerik.indexOf("\n");
-      if (ayrac < 0) continue;
-      try {
-        const ust = JSON.parse(icerik.slice(0, ayrac)) as Omit<AnlikGoruntuKaydi, "metin">;
-        const metin = icerik.slice(ayrac + 1);
-        if (!Number.isSafeInteger(ust.seq) || metin === "") continue;
-        return { ...ust, metin };
-      } catch {
-        continue;
-      }
-    }
-    return null;
+    return dosyadanSonGoruntu(this.dizin);
   }
 
   async kapat(): Promise<void> {}
@@ -424,6 +463,95 @@ export class DosyaHesapDeposu extends BellekHesapDeposu {
   }
 }
 
+/**
+ * Dosya tabanlı oyun oturumu deposu (`oyun-oturum.jsonl`): bellekteki durum + satır başına bir işlem. Oturum olayları denetim verisi değildir:
+ * her işlem `write` ile eklenir, `datasync` YALNIZ `esitle`/`kapat`/toplulaştırmada yapılır (çökmede son birkaç saniye kaybolabilir; kabul).
+ * Yarım son satır açılışta atılır, ortadaki bozuk satır açılışı durdurur. Çok satır birikince atomik yeniden yazılır.
+ */
+export class DosyaOyunOturumDeposu extends BellekOyunOturumDeposu {
+  private satir = 0;
+  private zincir: Promise<void> = Promise.resolve();
+  private kapali = false;
+
+  private constructor(
+    private readonly yol: string,
+    private readonly dizin: string,
+    private tutamac: FileHandle,
+  ) {
+    super();
+  }
+
+  static async ac(dizin: string): Promise<DosyaOyunOturumDeposu> {
+    const yol = join(dizin, OTURUM_DOSYASI);
+    const metin = await readFile(yol, "utf8").catch((e: NodeJS.ErrnoException) => {
+      if (e.code === "ENOENT") return "";
+      throw e;
+    });
+    const yarim = metin !== "" && !metin.endsWith("\n");
+    const tam = yarim ? metin.slice(0, metin.lastIndexOf("\n") + 1) : metin;
+    if (yarim) await truncate(yol, Buffer.byteLength(tam, "utf8"));
+    const tutamac = await open(yol, "a+");
+    const d = new DosyaOyunOturumDeposu(yol, dizin, tutamac);
+    const satirlar = tam.split("\n");
+    for (let i = 0; i < satirlar.length; i++) {
+      const s = satirlar[i] as string;
+      if (s === "") continue;
+      let islem: OyunOturumIslemi;
+      try {
+        islem = JSON.parse(s) as OyunOturumIslemi;
+      } catch {
+        await tutamac.close();
+        throw new Error(`oyun oturumu dosyasi satiri ${i + 1} bozuk JSON (orta satir bozulmasi; elle inceleme gerekir)`);
+      }
+      d.uygula(islem);
+      d.satir++;
+    }
+    if (d.satir > 2 * (d.oturumlar.size + d.gunluk.size) + 1000) await d.sikistir();
+    return d;
+  }
+
+  protected override async yaz(islem: OyunOturumIslemi): Promise<void> {
+    const is = this.zincir.then(async () => {
+      await this.tutamac.write(JSON.stringify(islem) + "\n");
+      this.satir++;
+      if (islem.o === "t" || islem.o === "s") await this.tutamac.datasync();
+      if (this.satir > 20_000 + 4 * (this.oturumlar.size + this.gunluk.size)) await this.sikistir();
+    });
+    this.zincir = is.catch(() => undefined);
+    await is;
+  }
+
+  private async sikistir(): Promise<void> {
+    const satirlar = this.durumSatirlari();
+    const gecici = `${this.yol}.tmp`;
+    const h = await open(gecici, "w");
+    try {
+      await h.write(satirlar.map((x) => JSON.stringify(x) + "\n").join(""));
+      await h.sync();
+    } finally {
+      await h.close();
+    }
+    await this.tutamac.close();
+    await rename(gecici, this.yol);
+    await dizinFsync(this.dizin);
+    this.tutamac = await open(this.yol, "a+");
+    this.satir = satirlar.length;
+  }
+
+  override async esitle(): Promise<void> {
+    await this.zincir;
+    await this.tutamac.datasync();
+  }
+
+  override async kapat(): Promise<void> {
+    if (this.kapali) return;
+    this.kapali = true;
+    await this.zincir;
+    await this.tutamac.datasync();
+    await this.tutamac.close();
+  }
+}
+
 /** Dizini hazırlar, tek yazar kilidini alır, günlüğü (yarım kuyruğu keserek) ve görüntü deposunu açar. */
 export async function dosyaDeposu(dizin: string): Promise<Depo> {
   await mkdir(dizin, { recursive: true });
@@ -433,6 +561,7 @@ export async function dosyaDeposu(dizin: string): Promise<Depo> {
     const goruntu = await DosyaGoruntuDeposu.ac(dizin);
     const profil = await DosyaProfilDeposu.ac(dizin);
     const hesap = await DosyaHesapDeposu.ac(dizin);
+    const oyunOturumu = await DosyaOyunOturumDeposu.ac(dizin);
     return {
       gunluk: {
         ekle: (t) => gunluk.ekle(t),
@@ -440,6 +569,7 @@ export async function dosyaDeposu(dizin: string): Promise<Depo> {
         kapat: async () => {
           await profil.kapat(); // idempotent: yazar zaten kapatmış olabilir
           await hesap.kapat();
+          await oyunOturumu.kapat();
           await gunluk.kapat();
           await kilidiBirak();
         },
@@ -447,6 +577,7 @@ export async function dosyaDeposu(dizin: string): Promise<Depo> {
       goruntu,
       profil,
       hesap,
+      oyunOturumu,
       /** Günlük dosyasının ve `goruntu/` dizinindeki dosyaların bayt toplamı. */
       boyut: async () => {
         const gunlukBayt = (await stat(join(dizin, GUNLUK_DOSYASI)).catch(() => ({ size: 0 }))).size;

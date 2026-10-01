@@ -159,6 +159,12 @@ Oyuncu girişi yalnız e-posta bağlantısıyladır (Google yok); tasarım, uçl
 - Geliştirmede deneme: `pnpm -s sunucu -- --harita mini --parsel --elle-saat --depo bellek --kimlik eposta`, sonra `curl -s -X POST -H 'Origin: http://127.0.0.1:8787' -H 'content-type: application/json' -d '{"eposta":"ben@ornek.org"}' http://127.0.0.1:8787/giris/istek`; posta `raporlar/posta/*.json` dosyasına düşer (bağlantı içinde). Sunucu kendi adresini izinli köken sayar (`--genel-url` yoksa).
 - Hesap, oturum ve bağlantı kayıtları seçilen depoda tutulur (bellek, dosya `hesap.jsonl`, pg şema sürümü 4: `hesap`, `hesap_oyuncu`, `giris_baglanti`, `oturum`). Günlük ve metrikte belirteç, tam e-posta ve IP yoktur; metrik `bolge_giris_olay_toplam{olay=...}` yalnız sayaçtır.
 
+### Test dünyası ve döküm araçları (insan testi)
+
+- `--test-dunya-sil <ad>`: TEST dünyasının günlüğü, görüntüleri (yedekler dahil), profili, oyun oturum kaydı ve yalnız o dünyanın oyuncularının hesap/oturum/bağlantı satırları tek komutla (pg: tek işlem) silinir; çıktı `{"olay":"testDunyaSilindi","silinen":{tablo:sayı},...}`. Ad `test` ile başlamalı (paylaşılan dünya reddedilir), yazar açıksa reddedilir, başka dünyada da kullanılan hesap korunur. `--test-dunya-say <ad>` aynı tabloları sayar (silmeden sonra toplam 0). pg: `--depo pg --pg-url`; dosya: `--depo dosya --dizin` (dizin adı da `test` ile başlamalı).
+- `--dok <dizin>`: depoyu (pg ya da dosya; kaynak SALT OKUNUR, kilitsiz, çalışan sunucudan da alınır) günlük + son görüntü olarak dosya deposu biçiminde BOŞ bir dizine döker; çevrimdışı oynatma `pg` paketi olmadan yapılır.
+- Şema sürümü 5 (`sql/005-oyun-oturum.sql`): `oyun_oturum`, `oyun_oturum_gunluk`; yalnız ekleme.
+
 ### Ortam değişkenleri
 
 Her seçenek `BOLGE_<AD>` ile verilebilir; komut satırı bayrağı ortam değişkenini ezer (`pnpm -s sunucu -- --yardim` tam liste).
@@ -185,6 +191,8 @@ Her seçenek `BOLGE_<AD>` ile verilebilir; komut satırı bayrağı ortam deği�
 | `BOLGE_POSTA`, `BOLGE_POSTA_DIZIN` | posta bağdaştırıcısı `dosya` \| `konsol` (`konsol` üretimde yasak); dosya postacısının dizini | `dosya`, `raporlar/posta` |
 | `BOLGE_GENEL_URL`, `BOLGE_GIRIS_BAGLANTISI`, `BOLGE_GIRIS_SONRASI` | sunucunun genel adresi (üretimde https, zorunlu); postadaki bağlantı tabanı (varsayılan `<genel>/giris/onay`); onay formu sonrası yönlendirme | `http://127.0.0.1:<port>`, `<genel>/giris/onay`, kısa sayfa |
 | `BOLGE_IZINLI_KOKENLER` | virgüllü Origin izin listesi (üretimde zorunlu); genel adresin kökeni kendiliğinden eklenir | boş (geliştirmede kendi adresi) |
+| `BOLGE_OTURUM_KAYDI`, `BOLGE_OTURUM_BOSLUK_DK` | `1` = oyun bağlantısı oturum olayı kaydı (insan testi; yalnız zaman ve opak oyuncu kimliği, KIMLIK.md §8); kopup yeniden bağlanmanın aynı oturum sayıldığı boşluk (dk) | `0` (kapalı), `5` |
+| `BOLGE_TEST_DUNYA_ONEKI` | `--test-dunya-sil/-say` ve `--dok` yardımcı komutlarında test dünyası adı öneki | `test` |
 | `BOLGE_TARAYICI_BAGLI`, `BOLGE_GUVENILIR_PROXY`, `BOLGE_GECICI_ALANLAR` | bağlantı isteği yapan tarayıcıya bağlı olsun (`1` açar); IP `X-Forwarded-For` son öğesi (`1`); geçici e-posta alanı listesi (JSON) | `0` (kapalı), kapalı, `veri/gecici-eposta-alanlari.json` |
 
 Compose düzeyinde (`deploy/.env`): `PG_SIFRE`, `GELISTIRME_SIRRI`, `METRIK_TOKEN` (zorunlu), `SUNUCU_PORT`, `METRIK_YAYIN_PORT` ve yukarıdaki `BOLGE_*` seçimleri.

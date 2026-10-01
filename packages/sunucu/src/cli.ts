@@ -13,7 +13,7 @@ import type { ArketipAdi } from "@bolge/botlar";
 import { SAAT } from "@bolge/cekirdek";
 import type { CekirdekVeriPaketi, IcerikKimlikTablosu } from "@bolge/cekirdek";
 import { bellekDeposu } from "./depo/bellek";
-import { dosyaDeposu } from "./depo/dosya";
+import { dosyaDeposu, dosyaSaltOkunur } from "./depo/dosya";
 import { postgresDeposu } from "./depo/postgres";
 import type { Depo } from "./depo/tipler";
 import { geciciAlanlariYukle } from "./giris/eposta";
@@ -23,9 +23,12 @@ import { kimlikKipiCoz } from "./giris/kip";
 import { DosyaPostaGondericisi, KonsolPostaGondericisi } from "./giris/posta";
 import { GelistirmeKimligi, gelistirmeTokeni } from "./kimlik";
 import type { KimlikDogrulayici } from "./kimlik";
+import { depoyuDok } from "./dok";
+import { OturumKaydedici, VARSAYILAN_OTURUM_BOSLUGU_MS } from "./oturum-kaydi";
 import { parselDosyasiYukle } from "./parsel-dosya";
 import { DuvarSaati, ElleSaat } from "./saat";
 import { sunucuBaslat } from "./sunucu";
+import { dosyaTestDunyasiSay, dosyaTestDunyasiSil, pgTestDunyasiSay, pgTestDunyasiSil, TEST_DUNYA_ONEKI } from "./test-dunya";
 import { DunyaYazari } from "./yazar";
 import type { SunucuBotu } from "./yazar";
 
@@ -78,6 +81,17 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --guvenilir-proxy    istemci IP'si X-Forwarded-For'un son ogesidir (ters vekil arkasinda; vars. kapali)
   --gecici-alanlar YOL gecici e-posta alani listesi (JSON { "alanlar": [...] }; vars. packages/sunucu/veri/gecici-eposta-alanlari.json)
   --gelistirme-sirri S gelistirme token imza sirri (vars. $BOLGE_GELISTIRME_SIRRI; yalniz kimlik = gelistirme)
+  --oturum-kaydi 0|1   oyun baglantisi oturum olayi kaydi (insan testi; vars. 0): oyuncunun ilk baglantisi acilinca oturum baslar, son baglantisi kapaninca
+                       biter; yalniz zaman ve opak oyuncu kimligi (IP/cihaz/e-posta yok). 90 gunden eski ayrinti gun duzeyinde toplu sayiya cevrilir. Giris oturumu degildir
+  --oturum-bosluk-dk N kopup yeniden baglanmanin ayni oturum sayildigi bosluk, dakika (vars. 5)
+  --test-dunya-sil AD  TEST dunyasini (gunluk, goruntu, yedek, profil, oturum kaydi ve yalniz o dunyanin oyuncularinin hesap/auth satirlari) tek komutla siler ve cikar.
+                       Ad "test" (ya da --test-dunya-oneki) ile baslamali; baska dunyada da kullanilan hesap korunur; dunyanin yazari aciksa reddedilir.
+                       pg: --depo pg --pg-url; dosya: --depo dosya --dizin (dizin adi da test onekiyle baslamali). Sonuc {"olay":"testDunyaSilindi",...} satiri
+  --test-dunya-say AD  ayni tablolarda KALAN satirlari sayar (silmeden sonra toplam 0); --oyuncular a,b: silme raporundaki oyuncu listesi (hesap/oturum sayimi icin)
+  --test-dunya-oneki P test dunyasi adi oneki (vars. test; $BOLGE_TEST_DUNYA_ONEKI)
+  --test-hesap-oneki P hesap kimligi bu onekle baslayan test hesaplari da silinir/sayilir (ornek: otomatik testlerin ph...)
+  --dok DIZIN          depoyu (--depo pg | dosya; kaynak SALT OKUNUR, kilit alinmaz) gunluk + son goruntu olarak dosya deposu bicimine BOS bir dizine doker ve cikar
+                       (cevrimdisi oynatma: pg paketi gerekmez). Kaynak dosya deposu icin --dizin, pg icin --pg-url ve --dunya
   --token OYUNCU       bu oyuncu icin gelistirme token'i yaz ve cik ("sistem" = yonetici); --uretim'de kapali
 
 Ortam degiskenleri: her secenek BOLGE_<AD> ile de verilir (bayrak ortamdan ustundur): BOLGE_PORT, BOLGE_HOST, BOLGE_HARITA,
@@ -85,7 +99,7 @@ BOLGE_PARSEL (1), BOLGE_PARSEL_DOSYA, BOLGE_TOHUM, BOLGE_DEPO, BOLGE_DIZIN, BOLG
 BOLGE_BIRIKIMLI (1), BOLGE_DUNYA_EPOCH, BOLGE_GOC (1), BOLGE_GOC_ESNEK (1), BOLGE_GOC_ESKI_TABLO, BOLGE_COMMIT_MS, BOLGE_GORUNTU_SAAT, BOLGE_GORUNTU_ISCI (0|1), BOLGE_ODUL (0|1),
 BOLGE_HIZ_SINIRI, BOLGE_BOTLAR, BOLGE_METRIK_PORT, BOLGE_METRIK_HOST, BOLGE_METRIK_TOKEN, BOLGE_URETIM (1), BOLGE_GELISTIRME_SIRRI,
 BOLGE_KIMLIK, BOLGE_POSTA, BOLGE_POSTA_DIZIN, BOLGE_GENEL_URL, BOLGE_GIRIS_BAGLANTISI, BOLGE_GIRIS_SONRASI, BOLGE_IZINLI_KOKENLER, BOLGE_TARAYICI_BAGLI (0|1),
-BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
+BOLGE_GUVENILIR_PROXY (1), BOLGE_GECICI_ALANLAR, BOLGE_OTURUM_KAYDI (0|1), BOLGE_OTURUM_BOSLUK_DK, BOLGE_TEST_DUNYA_ONEKI. Sirlar YALNIZ ortamdan verilir (surec listesinde gorunmesin): BOLGE_BILET_SIRRI ve rotasyon icin BOLGE_BILET_SIRRI_ESKI.`;
 
 function yaz(olay: string, veri: Record<string, unknown> = {}): void {
   process.stdout.write(JSON.stringify({ olay, ...veri }) + "\n");
@@ -170,6 +184,14 @@ async function ana(): Promise<void> {
       "tarayici-bagli": { type: "string", default: ev("TARAYICI_BAGLI", "0") as string },
       "guvenilir-proxy": { type: "boolean", default: evBool("GUVENILIR_PROXY") },
       "gecici-alanlar": { type: "string", ...varsayilan(ev("GECICI_ALANLAR")) },
+      "oturum-kaydi": { type: "string", default: ev("OTURUM_KAYDI", "0") as string },
+      "oturum-bosluk-dk": { type: "string", default: ev("OTURUM_BOSLUK_DK", String(VARSAYILAN_OTURUM_BOSLUGU_MS / 60_000)) as string },
+      "test-dunya-sil": { type: "string" },
+      "test-dunya-say": { type: "string" },
+      "test-dunya-oneki": { type: "string", default: ev("TEST_DUNYA_ONEKI", TEST_DUNYA_ONEKI) as string },
+      "test-hesap-oneki": { type: "string" },
+      oyuncular: { type: "string" },
+      dok: { type: "string" },
       "gelistirme-sirri": { type: "string" },
       token: { type: "string" },
       yardim: { type: "boolean", default: false },
@@ -215,6 +237,48 @@ async function ana(): Promise<void> {
       if (g.gocSonrasiKomut) yaz("uyari", { mesaj: "gocten sonra komut kabul edilmis (gunluk yedegin seq'inden ilerlemis): yeni kural goruntulerine dokunulmadi; eski icerikle acilis reddedilebilir (geri donus yalniz hic komut kabul edilmediyse gecerlidir)" });
     } finally {
       await d.gunluk.kapat();
+    }
+    return;
+  }
+  if (a["test-dunya-sil"] !== undefined || a["test-dunya-say"] !== undefined) {
+    // Test dunyasi silme/sayim (insan testi I3): dunya acilmaz. Yalniz test oneki tasiyan dunya; paylasilan dunya reddedilir.
+    if (a["test-dunya-sil"] !== undefined && a["test-dunya-say"] !== undefined) throw new Error("--test-dunya-sil ve --test-dunya-say birlikte verilemez");
+    const silme = a["test-dunya-sil"] !== undefined;
+    const dunya = (silme ? a["test-dunya-sil"] : a["test-dunya-say"]) as string;
+    const onek = a["test-dunya-oneki"] as string;
+    const hesapOneki = a["test-hesap-oneki"];
+    if (a.depo === "pg") {
+      const pgUrl = a["pg-url"] ?? process.env.BOLGE_PG_URL;
+      if (!pgUrl) throw new Error("--test-dunya-* icin --pg-url veya BOLGE_PG_URL gerekli");
+      if (silme) yaz("testDunyaSilindi", { ...(await pgTestDunyasiSil(pgUrl, { dunya, onek, ...(hesapOneki !== undefined ? { hesapOneki } : {}) })) });
+      else {
+        const oy = (a.oyuncular ?? "").split(",").map((x) => x.trim()).filter((x) => x !== "");
+        yaz("testDunyaSayimi", { ...(await pgTestDunyasiSay(pgUrl, { dunya, oyuncular: oy, ...(hesapOneki !== undefined ? { hesapOneki } : {}) })) });
+      }
+    } else if (a.depo === "dosya") {
+      const dizin = resolve(a.dizin as string);
+      if (silme) yaz("testDunyaSilindi", { ...(await dosyaTestDunyasiSil(dizin, { dunya, onek })) });
+      else yaz("testDunyaSayimi", { ...(await dosyaTestDunyasiSay(dizin, dunya)) });
+    } else throw new Error("--test-dunya-* yalniz --depo pg ya da dosya ile");
+    return;
+  }
+  if (a.dok !== undefined) {
+    // Depo dokumu (insan testi I1): kaynak salt okunur (kilitsiz), hedef bos dizin, dosya deposu bicimi.
+    let kaynak: Parameters<typeof depoyuDok>[0];
+    let kapat: () => Promise<void> = async () => undefined;
+    if (a.depo === "pg") {
+      const pgUrl = a["pg-url"] ?? process.env.BOLGE_PG_URL;
+      if (!pgUrl) throw new Error("--dok icin --pg-url veya BOLGE_PG_URL gerekli");
+      const d = await postgresDeposu({ baglanti: pgUrl, dunya: a.dunya as string, semaKur: false, kilitsiz: true });
+      kaynak = d;
+      kapat = () => d.gunluk.kapat();
+    } else if (a.depo === "dosya") kaynak = await dosyaSaltOkunur(resolve(a.dizin as string));
+    else throw new Error("--dok yalniz --depo pg ya da dosya ile");
+    try {
+      const sonuc = await depoyuDok(kaynak, resolve(a.dok));
+      yaz("dokuldu", { dunya: a.dunya, hedef: resolve(a.dok), ...sonuc });
+    } finally {
+      await kapat();
     }
     return;
   }
@@ -304,9 +368,19 @@ async function ana(): Promise<void> {
     });
     kimlik = hizmet.kimlik;
   }
+  let oturumKaydi: OturumKaydedici | undefined;
+  if (["1", "evet", "true"].includes((a["oturum-kaydi"] as string).toLowerCase())) {
+    if (!depo.oyunOturumu) throw new Error("secilen depo oyun oturumu kaydi sunmuyor (--oturum-kaydi: bellek, dosya ya da pg)");
+    oturumKaydi = new OturumKaydedici({
+      depo: depo.oyunOturumu,
+      boslukMs: Math.round(sayi("oturum-bosluk-dk", a["oturum-bosluk-dk"] as string) * 60_000),
+      hata: (m) => yaz("uyari", { mesaj: m }),
+    });
+  }
   const sunucu = await sunucuBaslat({
     yazar,
     kimlik,
+    ...(oturumKaydi ? { oturumKaydi } : {}),
     ...(giris ? { giris } : {}),
     port,
     host: a.host as string,

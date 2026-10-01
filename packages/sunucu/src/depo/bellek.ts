@@ -1,7 +1,7 @@
 /** Bellek içi depo (testler ve geçici geliştirme dünyası). Kayıtlar yapısal kopyayla saklanır. */
 import { OZET_KAYIT_OMRU_MS, OZET_KAYIT_TAVANI, damgaSirasi, ozetKaydiAnahtari, seqSurekliligiDenetle } from "./tipler";
-import { OyuncuCakismasi } from "./tipler";
-import type { AnlikGoruntuKaydi, BaglantiKaydi, BaglantiTuketimi, Capa, Damga, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, HesapDeposu, HesapKaydi, OturumKaydi, OzetKaydi, ProfilDeposu } from "./tipler";
+import { OTURUM_GUN_MS, OYUN_OTURUM_OMRU_MS, OyuncuCakismasi } from "./tipler";
+import type { AnlikGoruntuKaydi, BaglantiKaydi, BaglantiTuketimi, Capa, Damga, Depo, GoruntuDeposu, GunlukDeposu, GunlukKaydi, GunlukOturumSayisi, HesapDeposu, HesapKaydi, OturumKaydi, OyunOturumDeposu, OyunOturumu, OzetKaydi, ProfilDeposu } from "./tipler";
 
 export class BellekGunlukDeposu implements GunlukDeposu {
   private readonly kayitlar: GunlukKaydi[] = [];
@@ -11,8 +11,9 @@ export class BellekGunlukDeposu implements GunlukDeposu {
     for (const k of toplu) this.kayitlar.push(structuredClone(k));
   }
 
-  async oku(seqSonrasi: number): Promise<GunlukKaydi[]> {
-    return this.kayitlar.filter((k) => k.seq > seqSonrasi).map((k) => structuredClone(k));
+  async oku(seqSonrasi: number, enCok?: number): Promise<GunlukKaydi[]> {
+    const l = this.kayitlar.filter((k) => k.seq > seqSonrasi);
+    return (enCok === undefined ? l : l.slice(0, enCok)).map((k) => structuredClone(k));
   }
 
   /** Yaklaşık bayt (JSON uzunluğu). */
@@ -330,8 +331,118 @@ export class BellekHesapDeposu implements HesapDeposu {
   async kapat(): Promise<void> {}
 }
 
-export function bellekDeposu(): Depo & { gunluk: BellekGunlukDeposu; goruntu: BellekGoruntuDeposu; profil: BellekProfilDeposu; hesap: BellekHesapDeposu } {
+/** Oyun oturumu deposundaki bir değişiklik (dosya deposunda satır başına bir işlem). */
+export type OyunOturumIslemi = { o: "a"; k: OyunOturumu } | { o: "k"; id: number; t: number | null } | { o: "t"; kesim: number } | { o: "s" } | { o: "g"; g: GunlukOturumSayisi };
+
+/** Bellek içi oyun oturumu deposu; dosya deposunun da tabanıdır (`yaz` kancası kalıcılığı ekler). */
+export class BellekOyunOturumDeposu implements OyunOturumDeposu {
+  protected readonly oturumlar = new Map<number, OyunOturumu>();
+  protected readonly gunluk = new Map<number, GunlukOturumSayisi>();
+  protected sonId = 0;
+
+  protected async yaz(_islem: OyunOturumIslemi): Promise<void> {}
+
+  protected uygula(i: OyunOturumIslemi): number {
+    switch (i.o) {
+      case "a":
+        this.oturumlar.set(i.k.id, { ...i.k });
+        this.sonId = Math.max(this.sonId, i.k.id);
+        return 0;
+      case "k": {
+        const o = this.oturumlar.get(i.id);
+        if (o) o.kapanis = i.t;
+        return 0;
+      }
+      case "t": {
+        // Yalnız TAM günler: kesim gün başlangıcıdır; o güne ait bütün ayrıntı satırları aynı anda toplulaşır (günlük farklı-oyuncu sayısı bölünmesin).
+        const gruplar = new Map<number, { oturum: number; oyuncular: Set<string>; sureMs: number }>();
+        let silinen = 0;
+        for (const [id, o] of this.oturumlar) {
+          if (o.acilis >= i.kesim) continue;
+          const gun = Math.floor(o.acilis / OTURUM_GUN_MS) * OTURUM_GUN_MS;
+          let g = gruplar.get(gun);
+          if (!g) gruplar.set(gun, (g = { oturum: 0, oyuncular: new Set(), sureMs: 0 }));
+          g.oturum++;
+          g.oyuncular.add(o.oyuncu);
+          if (o.kapanis !== null) g.sureMs += Math.max(0, o.kapanis - o.acilis);
+          this.oturumlar.delete(id);
+          silinen++;
+        }
+        for (const [gun, g] of gruplar) {
+          const onceki = this.gunluk.get(gun);
+          // Bir gün iki kez toplulaşırsa (tutarsız saatle) oyuncu sayısı üst sınırla toplanır; normal akışta gün tek seferde gelir.
+          this.gunluk.set(gun, { gun, oturum: (onceki?.oturum ?? 0) + g.oturum, oyuncu: (onceki?.oyuncu ?? 0) + g.oyuncular.size, sureMs: (onceki?.sureMs ?? 0) + g.sureMs });
+        }
+        return silinen;
+      }
+      case "g":
+        this.gunluk.set(i.g.gun, { ...i.g });
+        return 0;
+      case "s": {
+        const n = this.oturumlar.size;
+        this.oturumlar.clear();
+        this.gunluk.clear();
+        return n;
+      }
+    }
+  }
+
+  async ac(oyuncu: string, acilis: number): Promise<OyunOturumu> {
+    const k: OyunOturumu = { id: this.sonId + 1, oyuncu, acilis, kapanis: null };
+    const i: OyunOturumIslemi = { o: "a", k };
+    this.uygula(i);
+    await this.yaz(i);
+    return { ...k };
+  }
+
+  async sonOturum(oyuncu: string): Promise<OyunOturumu | null> {
+    let en: OyunOturumu | null = null;
+    for (const o of this.oturumlar.values()) if (o.oyuncu === oyuncu && (en === null || o.acilis > en.acilis || (o.acilis === en.acilis && o.id > en.id))) en = o;
+    return en ? { ...en } : null;
+  }
+
+  async kapanisYaz(id: number, kapanis: number | null): Promise<void> {
+    if (!this.oturumlar.has(id)) return;
+    const i: OyunOturumIslemi = { o: "k", id, t: kapanis };
+    this.uygula(i);
+    await this.yaz(i);
+  }
+
+  async oku(oyuncu?: string): Promise<OyunOturumu[]> {
+    return [...this.oturumlar.values()].filter((o) => oyuncu === undefined || o.oyuncu === oyuncu).sort((a, b) => a.acilis - b.acilis || a.id - b.id).map((o) => ({ ...o }));
+  }
+
+  async toplulastir(simdi: number, omurMs = OYUN_OTURUM_OMRU_MS): Promise<number> {
+    const kesim = Math.floor((simdi - omurMs) / OTURUM_GUN_MS) * OTURUM_GUN_MS;
+    const i: OyunOturumIslemi = { o: "t", kesim };
+    const n = this.uygula(i);
+    if (n > 0) await this.yaz(i);
+    return n;
+  }
+
+  async gunlukSayilar(): Promise<GunlukOturumSayisi[]> {
+    return [...this.gunluk.values()].sort((a, b) => a.gun - b.gun).map((g) => ({ ...g }));
+  }
+
+  async dunyayiSil(): Promise<{ oturum: number; gunluk: number }> {
+    const gunluk = this.gunluk.size;
+    const oturum = this.uygula({ o: "s" });
+    await this.yaz({ o: "s" });
+    return { oturum, gunluk };
+  }
+
+  /** Canlı durumu işlem listesi (dosya sıkıştırması). Gün özetleri `g`, açık/kapalı oturumlar `a` (kapanış dahil). */
+  protected durumSatirlari(): OyunOturumIslemi[] {
+    return [...[...this.gunluk.values()].map((g): OyunOturumIslemi => ({ o: "g", g })), ...[...this.oturumlar.values()].map((k): OyunOturumIslemi => ({ o: "a", k }))];
+  }
+
+  async esitle(): Promise<void> {}
+
+  async kapat(): Promise<void> {}
+}
+
+export function bellekDeposu(): Depo & { gunluk: BellekGunlukDeposu; goruntu: BellekGoruntuDeposu; profil: BellekProfilDeposu; hesap: BellekHesapDeposu; oyunOturumu: BellekOyunOturumDeposu } {
   const gunluk = new BellekGunlukDeposu();
   const goruntu = new BellekGoruntuDeposu();
-  return { gunluk, goruntu, profil: new BellekProfilDeposu(), hesap: new BellekHesapDeposu(), boyut: async () => ({ gunlukBayt: gunluk.bayt(), goruntuBayt: goruntu.bayt() }) };
+  return { gunluk, goruntu, profil: new BellekProfilDeposu(), hesap: new BellekHesapDeposu(), oyunOturumu: new BellekOyunOturumDeposu(), boyut: async () => ({ gunlukBayt: gunluk.bayt(), goruntuBayt: goruntu.bayt() }) };
 }

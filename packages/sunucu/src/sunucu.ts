@@ -26,6 +26,7 @@ import type { MetrikSecenekleri, MetrikSunucusu, SaglikDurumu } from "./metrik";
 import type { HizSiniriSecenekleri } from "./hiz-siniri";
 import type { GirisBaglantisi } from "./giris/http";
 import type { Kimlik, KimlikDogrulayici } from "./kimlik";
+import type { OturumKaydedici } from "./oturum-kaydi";
 import { ElleSaat } from "./saat";
 import { YetisiyorHatasi } from "./yazar";
 import type { DunyaYazari } from "./yazar";
@@ -85,6 +86,11 @@ export interface SunucuSecenekleri {
    * Verilmezse `/giris/` 404'tür (geliştirme kimliği). `kimlik` olarak `giris.hizmet.kimlik` (AuthKimligi) verilir.
    */
   giris?: GirisBaglantisi;
+  /**
+   * Oyun bağlantısı oturum olayı kaydı (İ2; `BOLGE_OTURUM_KAYDI=1`; varsayılan kapalı): oyuncunun ilk bağlantısı ve son bağlantısı bildirilir. Kayıt hatası
+   * oyunu etkilemez. Giriş (kimlik) oturumu değildir.
+   */
+  oturumKaydi?: OturumKaydedici;
 }
 
 /** `ozetIste` jeton bedeli (dünyanın tamamını özetlemek pahalıdır). */
@@ -508,6 +514,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
           if (yazar.yetisiyor) b.ozetBekliyor = true;
           else donusOzeti = await yazar.donusOzeti(k.oyuncu).catch(() => null);
         }
+        if ((canli.get(k.oyuncu) ?? 0) === 0) void s.oturumKaydi?.ac(k.oyuncu);
         canli.set(k.oyuncu, (canli.get(k.oyuncu) ?? 0) + 1);
         b.sayildi = true;
       }
@@ -598,6 +605,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
         if (n > 0) canli.set(oyuncu, n);
         else {
           canli.delete(oyuncu);
+          void s.oturumKaydi?.kapat(oyuncu);
           // Son bağlantı kapandı: çıkış çapası (kapanış sırasında `kapat` zaten yazar).
           if (!kapaniyor) void yazar.cikis(oyuncu).catch(() => undefined);
         }
@@ -614,6 +622,10 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
   // Süresi geçmiş giriş bağlantıları ve oturumlar saatte bir temizlenir (yanıtı etkilemez; hata yutulur).
   const girisBakim = s.giris ? setInterval(() => void s.giris?.bakim().catch(() => undefined), 3_600_000) : null;
   girisBakim?.unref();
+  // Oyun oturumu kaydı: 90 günü geçen ayrıntı gün düzeyinde toplu sayıya çevrilir (saatte bir; açılışta da bir kez).
+  const oturumBakim = s.oturumKaydi ? setInterval(() => void s.oturumKaydi?.bakim(), 3_600_000) : null;
+  oturumBakim?.unref();
+  void s.oturumKaydi?.bakim();
 
   // Ölü bağlantı temizliği ve hız sınırı kovalarının bakımı.
   const bakim = setInterval(() => {
@@ -645,6 +657,8 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       // Bağlı oyuncuların çıkış çapaları (kapanışla gelen kopma olaylarından önce, yazar kapanmadan).
       for (const oyuncu of [...canli.keys()]) await yazar.cikis(oyuncu).catch(() => undefined);
       canli.clear();
+      await s.oturumKaydi?.hepsiniKapat();
+      if (oturumBakim) clearInterval(oturumBakim);
       kapaniyor = true;
       yayinSirasi.clear();
       clearInterval(bakim);

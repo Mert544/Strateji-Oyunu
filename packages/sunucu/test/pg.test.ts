@@ -5,13 +5,18 @@
  * Bellek ve dosya depolarının aynı sözleşmeleri `depolar.test.ts`, `icerik-goc.test.ts`, `donus.test.ts`'tedir.
  */
 import { spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import pg from "pg";
 import { SAAT, SISTEM_OYUNCUSU, kamuBloklari, kuralSurumuHesapla } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
+import { dosyaDeposu } from "../src/depo/dosya";
+import { depoyuDok } from "../src/dok";
+import { pgTestDunyasiSay, pgTestDunyasiSil } from "../src/test-dunya";
 import { postgresDeposu, postgresSemaSurumu, postgresSemasiKur, SQL_SEMA_SURUMU } from "../src/depo/postgres";
 import type { AnlikGoruntuKaydi } from "../src/depo/tipler";
 import { GelistirmeKimligi } from "../src/kimlik";
@@ -22,16 +27,20 @@ import { DunyaYazari } from "../src/yazar";
 import { hesapSozlesmesi } from "./hesap-sozlesmesi";
 import { girisOrtami } from "./giris-yardimci";
 import { ac, arayaMal, eskiDunya, sonaMal } from "./goc-yardimci";
+import { oyunOturumSozlesmesi } from "./oyun-oturum-sozlesmesi";
 import { profilSozlesmesi } from "./profil-sozlesmesi";
 import { KUZEY, SIR, mulkVerisi, veri } from "./yardimci";
 
 const PG = process.env.BOLGE_PG_URL;
 const ON = "pgt";
 let sayac = 0;
+/** Test dünyası silme komutunun önek korumasını geçen dünya adları (`test` ile başlar). */
+const TEST_DUNYA_ON = "test-pgt";
+const testDunyasi = (ad: string): string => `${TEST_DUNYA_ON}-${ad}-${process.pid}-${Date.now()}-${sayac++}`;
 const yeniDunya = (ad: string): string => `${ON}-${ad}-${process.pid}-${Date.now()}-${sayac++}`;
 const pgAc = (dunya: string, semaKur = true) => postgresDeposu({ baglanti: PG as string, dunya, semaKur });
 
-const TABLOLAR = ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit", "profil_damga"];
+const TABLOLAR = ["log", "snapshots", "snapshot_yedek", "profil_capa", "profil_kayit", "profil_damga", "oyun_oturum", "oyun_oturum_gunluk"];
 
 /** Hesap tabloları dünyadan bağımsızdır: testler `pgh` önekiyle yazar, hesap silinince hesap_oyuncu ve oturum ON DELETE CASCADE ile gider. */
 const HESAP_ONEKI = "pgh";
@@ -43,6 +52,7 @@ afterAll(async () => {
   for (const t of TABLOLAR) await h.query(`DELETE FROM ${t} WHERE dunya LIKE $1`, [`${ON}-%`]).catch(() => undefined);
   await h.query("DELETE FROM giris_baglanti WHERE ozet LIKE $1 OR eposta_anahtar LIKE $1", [`${HESAP_ONEKI}%`]).catch(() => undefined);
   await h.query("DELETE FROM hesap WHERE id LIKE $1", [`${HESAP_ONEKI}%`]).catch(() => undefined);
+  for (const t of TABLOLAR) await h.query(`DELETE FROM ${t} WHERE dunya LIKE $1`, [`${TEST_DUNYA_ON}-%`]).catch(() => undefined);
   await h.end();
 });
 
@@ -99,7 +109,7 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
       const depo = await postgresDeposu({ baglanti, dunya: "eskidunya", semaKur: true });
       try {
         expect(await postgresSemaSurumu(havuz)).toBe(SQL_SEMA_SURUMU);
-        expect((await havuz.query("SELECT surum FROM sunucu_sema ORDER BY surum")).rows.map((r) => r.surum)).toEqual([1, 2, 3, 4]);
+        expect((await havuz.query("SELECT surum FROM sunucu_sema ORDER BY surum")).rows.map((r) => r.surum)).toEqual([1, 2, 3, 4, 5]);
         // Veri korunur.
         expect((await depo.gunluk.oku(0)).map((k) => [k.seq, k.kuralSurumu])).toEqual([[1, "k-eski"]]);
         expect(await depo.goruntu.sonuncu()).toEqual(g);
@@ -122,7 +132,7 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
     }
   });
 
-  it("sifirdan kurulum dort adimi uygular; en son goruntu secimi deterministik (seq, sim_t, olusturma, kural_sur)", async () => {
+  it("sifirdan kurulum bes adimi uygular; en son goruntu secimi deterministik (seq, sim_t, olusturma, kural_sur)", async () => {
     const ad = `bolge_yeni_${process.pid}_${Date.now()}`;
     const yonetici = new pg.Pool({ connectionString: PG, max: 1 });
     await yonetici.query(`CREATE DATABASE ${ad}`);
@@ -131,7 +141,7 @@ describe.skipIf(!PG)("postgres: sema surumu ve goc adimi", () => {
     const baglanti = u.toString();
     const havuz = new pg.Pool({ connectionString: baglanti, max: 1 });
     try {
-      expect(await postgresSemasiKur(havuz)).toEqual([1, 2, 3, 4]);
+      expect(await postgresSemasiKur(havuz)).toEqual([1, 2, 3, 4, 5]);
       expect(await postgresSemasiKur(havuz)).toEqual([]);
     } finally {
       await havuz.end();
@@ -537,11 +547,11 @@ describe.skipIf(!PG)("postgres: hesap, oturum ve giris baglantisi (sema surumu 4
       );
       await havuz.query("INSERT INTO profil_damga (dunya, oyuncu, kavram, t, kaynak) VALUES ('s3dunya','ali','ilk_yapi',5,'odul')");
       // Göçsüz açılış açık hata verir; semaKur ile yalnız 4. adım uygulanır.
-      await expect(postgresDeposu({ baglanti, dunya: "s3dunya", semaKur: false })).rejects.toThrow(/sema surumu eski: 3 < 4/);
-      expect(await postgresSemasiKur(havuz)).toEqual([4]);
-      expect(await postgresSemaSurumu(havuz)).toBe(4);
-      expect((await havuz.query("SELECT max(surum) AS m FROM sunucu_sema")).rows[0]?.m).toBe(4);
-      expect((await havuz.query("SELECT surum, ad FROM sunucu_sema ORDER BY surum")).rows.map((r) => `${r.surum} ${r.ad}`)).toEqual(["1 baslangic", "2 goc-profil", "3 defter", "4 hesap"]);
+      await expect(postgresDeposu({ baglanti, dunya: "s3dunya", semaKur: false })).rejects.toThrow(/sema surumu eski: 3 < 5/);
+      expect(await postgresSemasiKur(havuz)).toEqual([4, 5]);
+      expect(await postgresSemaSurumu(havuz)).toBe(5);
+      expect((await havuz.query("SELECT max(surum) AS m FROM sunucu_sema")).rows[0]?.m).toBe(5);
+      expect((await havuz.query("SELECT surum, ad FROM sunucu_sema ORDER BY surum")).rows.map((r) => `${r.surum} ${r.ad}`)).toEqual(["1 baslangic", "2 goc-profil", "3 defter", "4 hesap", "5 oyun-oturum"]);
       expect(await postgresSemasiKur(havuz)).toEqual([]); // idempotent
       // 004'ün kendisi de iki kez koşunca hata vermez (IF NOT EXISTS) ve veriye dokunmaz.
       const sql004 = await readFile(new URL("../sql/004-hesap.sql", import.meta.url), "utf8");
@@ -626,6 +636,127 @@ describe.skipIf(!PG)("postgres: hesap, oturum ve giris baglantisi (sema surumu 4
     } finally {
       await ortam.kapat();
       await depo.gunluk.kapat();
+    }
+  });
+});
+
+describe.skipIf(!PG)("postgres: oyun oturumu kaydi, test dunyasi silme ve dokum (sema surumu 5)", () => {
+  it("005 idempotent; oyun oturumu deposu sozlesmesi (bellek ve dosyayla ayni); dunyalar birbirinden ayridir", async () => {
+    const sql005 = await readFile(new URL("../sql/005-oyun-oturum.sql", import.meta.url), "utf8");
+    const h = new pg.Pool({ connectionString: PG, max: 1 });
+    try {
+      await h.query(sql005);
+      await h.query(sql005);
+    } finally {
+      await h.end();
+    }
+    const a = await pgAc(yeniDunya("oturum-a"));
+    const b = await pgAc(yeniDunya("oturum-b"));
+    try {
+      await oyunOturumSozlesmesi(a.oyunOturumu as NonNullable<typeof a.oyunOturumu>, b.oyunOturumu as NonNullable<typeof b.oyunOturumu>);
+    } finally {
+      await a.gunluk.kapat();
+      await b.gunluk.kapat();
+    }
+  });
+
+  it("test dunyasi silme: yalniz o dunyanin gunlugu, goruntusu, profili, oturum kaydi ve YALNIZ o dunyanin oyuncularinin hesaplari gider; baska dunyada da kullanilan hesap ve baska dunya korunur; sayim 0", async () => {
+    const w1 = testDunyasi("w1");
+    const w2 = testDunyasi("w2");
+    const onek = hesapOnek();
+    const a = { id: `${onek}-h-a`, eposta: `${onek}-a@ornek.org`, anahtar: `${onek}-a@ornek.org`, oyuncu: `${onek}-o_a`.slice(0, 32), olusturma: 1 };
+    const b = { id: `${onek}-h-b`, eposta: `${onek}-b@ornek.org`, anahtar: `${onek}-b@ornek.org`, oyuncu: `${onek}-o_b`.slice(0, 32), olusturma: 1 };
+    const katil = (seq: number, oyuncu: string) => ({ seq, t: seq, oyuncu: "sistem", komut: { tur: "oyuncu_katil" as const, oyuncu, bolgeler: [] as string[] }, istemci: "i", anahtar: `k${seq}`, kuralSurumu: "k", semaSurumu: 1 });
+    const d1 = await pgAc(w1);
+    const d2 = await pgAc(w2);
+    try {
+      await d1.gunluk.ekle([katil(1, a.oyuncu), katil(2, b.oyuncu)]);
+      await d2.gunluk.ekle([katil(1, b.oyuncu)]);
+      await d1.goruntu.kaydet(goruntu(2, 5, "k"));
+      await d2.goruntu.kaydet(goruntu(1, 5, "k"));
+      await d1.oyunOturumu?.ac(a.oyuncu, 1_000);
+      await d2.oyunOturumu?.ac(b.oyuncu, 1_000);
+      await d1.oyunOturumu?.ac(b.oyuncu, 2_000);
+      const h = d1.hesap as NonNullable<typeof d1.hesap>;
+      await h.hesapOlustur(a);
+      await h.hesapOlustur(b);
+      for (const x of [a, b]) {
+        await h.oturumEkle({ id: `${x.id}-ot`, hesap: x.id, gizliOzet: "g", olusturma: 1, sonKullanim: 1, bitis: 9, mutlakBitis: 9 });
+        await h.baglantiEkle({ ozet: `${x.id}-bag`, eposta: x.eposta, anahtar: x.anahtar, bitis: 9, tarayiciOzeti: null, olusturma: 1 });
+      }
+      // Dünya açıkken (yazar kilidi) ve paylaşılan ad reddedilir; hiçbir şey silinmez.
+      await expect(pgTestDunyasiSil(PG as string, { dunya: w1 })).rejects.toThrow(/acik|kilit/);
+      await expect(pgTestDunyasiSil(PG as string, { dunya: "ana" })).rejects.toThrow(/reddedildi/);
+      expect((await d1.gunluk.oku(0)).length).toBe(2);
+    } finally {
+      await d1.gunluk.kapat();
+    }
+
+    const once = await pgTestDunyasiSay(PG as string, { dunya: w1, oyuncular: [a.oyuncu, b.oyuncu] });
+    expect(once.kalan["log"]).toBe(2);
+    expect(once.kalan["oyun_oturum"]).toBe(2);
+    const rapor = await pgTestDunyasiSil(PG as string, { dunya: w1 });
+    expect(rapor.depo).toBe("pg");
+    expect(rapor.silinen["log"]).toBe(2);
+    expect(rapor.silinen["snapshots"]).toBe(1);
+    expect(rapor.silinen["oyun_oturum"]).toBe(2);
+    expect(rapor.silinen["hesap"]).toBe(1); // yalniz a: b baska dunyada da var
+    expect(rapor.silinen["oturum"]).toBe(1);
+    expect(rapor.silinen["giris_baglanti"]).toBe(1);
+    expect(rapor.korunanHesap).toBe(1);
+    expect(rapor.oyuncular).toEqual([a.oyuncu, b.oyuncu].sort());
+
+    const sonra = await pgTestDunyasiSay(PG as string, { dunya: w1, oyuncular: [a.oyuncu] });
+    expect(Object.values(sonra.kalan).every((n) => n === 0), JSON.stringify(sonra)).toBe(true);
+    expect(sonra.toplam).toBe(0);
+    expect((await sorgu("SELECT 1 FROM hesap WHERE id = $1", [a.id])).length).toBe(0);
+    expect((await sorgu("SELECT 1 FROM hesap_oyuncu WHERE hesap_id = $1", [a.id])).length).toBe(0);
+    expect((await sorgu("SELECT 1 FROM hesap WHERE id = $1", [b.id])).length).toBe(1); // korundu
+    expect((await sorgu("SELECT 1 FROM oturum WHERE hesap_id = $1", [b.id])).length).toBe(1);
+    // Diğer dünya dokunulmadan kalır.
+    expect((await sorgu("SELECT 1 FROM log WHERE dunya = $1", [w2])).length).toBe(1);
+    expect((await sorgu("SELECT 1 FROM snapshots WHERE dunya = $1", [w2])).length).toBe(1);
+    expect((await sorgu("SELECT 1 FROM oyun_oturum WHERE dunya = $1", [w2])).length).toBe(1);
+    // İkinci silme boş çalışır; kalan dünya silinince b'nin hesabı da gider.
+    expect((await pgTestDunyasiSil(PG as string, { dunya: w1 })).toplam).toBe(0);
+    await d2.gunluk.kapat();
+    const r2 = await pgTestDunyasiSil(PG as string, { dunya: w2 });
+    expect(r2.silinen["hesap"]).toBe(1);
+    expect((await sorgu("SELECT 1 FROM hesap WHERE id = $1", [b.id])).length).toBe(0);
+  });
+
+  it("dokum: pg dunyasi (yazar ACIKKEN, kilitsiz) dosya deposu bicimine dokulur; dokumden acilan dunya ayni durumOzeti'ni verir", async () => {
+    const dunya = yeniDunya("dok");
+    const saat = new ElleSaat();
+    const depo = await pgAc(dunya);
+    const y = await DunyaYazari.ac({ veri: veri(), tohum: 4, depo, saat, goruntuAraligiMs: 3 * SAAT });
+    const p = [
+      y.komutGonder(SISTEM_OYUNCUSU, "t", "k", { tur: "oyuncu_katil", oyuncu: "ali", bolgeler: KUZEY }),
+      y.komutGonder("ali", "t", "a", { tur: "tesis_insa", bolge: "m_ova", tesisTuru: "ciftlik" }),
+    ];
+    await y.birTur();
+    saat.ilerlet(5 * SAAT);
+    await y.birTur();
+    p.push(y.komutGonder("ali", "t", "b", { tur: "vergi_ayarla", oranPpm: 120_000 }));
+    await y.birTur();
+    await Promise.all(p);
+    const beklenen = y.ozet();
+    const hedef = await mkdtemp(join(tmpdir(), "bolge-pg-dok-"));
+    const kaynak = await postgresDeposu({ baglanti: PG as string, dunya, semaKur: false, kilitsiz: true }); // yazar hala acik
+    try {
+      const sonuc = await depoyuDok(kaynak, hedef, 2);
+      expect(sonuc.sonSeq).toBe(beklenen.seq);
+      const d = await dosyaDeposu(hedef);
+      try {
+        const k = await DunyaYazari.ac({ veri: veri(), tohum: 999, depo: d, saat: new ElleSaat(), goruntuAraligiMs: 1e12 });
+        expect(k.ozet().durumOzeti).toBe(beklenen.durumOzeti);
+      } finally {
+        await d.gunluk.kapat();
+      }
+    } finally {
+      await kaynak.gunluk.kapat();
+      await rm(hedef, { recursive: true, force: true });
+      await y.kapat(); // depoyu (ve yazar kilidini) da kapatir
     }
   });
 });
