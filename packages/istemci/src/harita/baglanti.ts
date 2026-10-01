@@ -1,22 +1,29 @@
 /**
  * Mülk bağdaştırıcısı: haritanın sunucuyla konuştuğu tek yer.
  *
- * Sunucu (S4, packages/sunucu) henüz yok; `SahteBaglanti` bellek içi sahiplik tutar ve sunucunun yapacağı
- * doğrulamayı taklit eder (hücre biçimi, ilçede ve satın alınabilir mi, çakışma, tek sınıf, bitişiklik,
- * ≤72 hücre / ≤%25 sınırı). Sunucu gelince aynı arayüzü uygulayan bir ağ bağdaştırıcısı yazılır; harita kodu değişmez.
- * Fiyat ve `t` istemcide hesaplanmaz: sunucu basar (burada sahte saat).
+ * İki uygulaması var, ikisi de aynı arayüzü (`MulkBaglantisi`) konuşur; harita kodu hangisinin altında olduğunu bilmez:
+ *   - `SahteBaglanti` (burada): bellek içi sahiplik; sunucunun yapacağı doğrulamayı taklit eder (hücre biçimi, ilçede ve
+ *     satın alınabilir mi, çakışma, tek sınıf, bitişiklik, ≤72 hücre / ≤%25 sınırı, hazine, yapı yuvası). Varsayılan.
+ *   - `WsBaglanti` (`baglanti-ws.ts`): gerçek sunucuya WebSocket; `?sunucu=ws://...` ile seçilir.
+ * Fiyat ve `t` istemcide hesaplanmaz: sunucu basar (burada sahte saat). Çekirdekle aynı fiyat işlevi: `parselFiyatiMili`.
+ *
+ * Arayüzün mülk uzantıları (`tesisInsa`, `ozet`, `dinle`, `ilgi`) isteğe bağlıdır: yürüyüş (L4) gibi yalnız
+ * `parselAl`/`sahiplikAl` kullanan tüketiciler etkilenmez.
  */
 import type { ArsaSinifi, HucreId, Mili, MulkKomutu, OyuncuId } from "@bolge/cekirdek";
-import { arsaSinifi, bitisikMi, hucreFiyati, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI } from "./fiyat";
+import { arsaSinifi, bitisikMi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili } from "./fiyat";
 import { durumAl, engelNedeni, hucreId, idCoz, izgaraSay } from "./hucre";
 import type { Izgara } from "./hucre";
 
-/** 1 ₺ = 1000 mili-₺ (çekirdekteki MILI; değer içe aktarımı ana yığına çekirdeği çekmesin diye kopya). */
-const MILI = 1000;
-
 export type ParselKomutu = Extract<MulkKomutu, { tur: "parsel_al" }>;
 
+export type TesisKomutu = Extract<MulkKomutu, { tur: "tesis_insa_hucre" }>;
+
 export type ParselHatasi =
+  | "sunucu"
+  | "baglanti"
+  | "zaman_asimi"
+  | "hazine"
   | "izgara_yok"
   | "bos_secim"
   | "gecersiz_hucre"
@@ -32,17 +39,60 @@ export type ParselSonucu =
   | { tamam: true; hucreler: HucreId[]; toplamMili: Mili; t: number }
   | { tamam: false; hata: ParselHatasi; mesaj: string; hucre?: HucreId };
 
+/**
+ * Atomik "yapı önce yerleşim" isteği (çekirdek `yapi_yerlestir`): arsa al + inşaatı başlat TEK işlemde; başarısızsa hiçbir şey
+ * değişmez. `hucreler` yapının bütün ayak izi (kendi + boş hücreler); `sinif` boş hücrelerin (alınacakların) arsa sınıfı.
+ * Boş hücreler tek sınıftan değilse atomik yol kullanılamaz: zincir (parsel_al ×sınıf + tesis_insa_hucre) çalışır.
+ */
+export interface YerlestirIstegi {
+  ilce: string;
+  tesisTuru: string;
+  hucreler: HucreId[];
+  sinif: ArsaSinifi;
+}
+
+/** Onaydan sonra geri alma: yapının hücreleri ve bu işlemle alınan (bırakılacak) hücreler. */
+export interface GeriAlIstegi {
+  ilce: string;
+  hucreler: HucreId[];
+  alinan: HucreId[];
+}
+
+/** Komut yolu hataları (sunucu reddi dışında): bağlantı yok ya da yanıt gelmedi. */
+export type TesisSonucu = { tamam: true; t: number } | { tamam: false; hata: ParselHatasi | "yapi_yok" | "yuva" | "yapi_var" | "hazine" | "esz_insaat"; mesaj: string; hucre?: HucreId };
+
 export interface HucreSahipligi {
   sahip: OyuncuId;
   sinif: ArsaSinifi;
   degerMili: Mili;
   alinma: number;
+  /** Hücredeki biten tesisin kimliği (yoksa tanımsız). */
+  tesis?: number;
+  /** Hücrede süren inşaatın kimliği (yoksa tanımsız). */
+  insaat?: number;
+}
+
+/** Bir yapı (süren inşaat ya da biten tesis): aynı kimliği taşıyan hücreler. */
+export interface YapiKaydi {
+  /** Tesis ya da inşaat kimliği (sunucu kimlikleri; "t" ya da "i" önekiyle benzersiz anahtar için `anahtar`). */
+  id: number;
+  anahtar: string;
+  durum: "insaat" | "tesis";
+  sahip: OyuncuId;
+  hucreler: HucreId[];
+  /** Tesis türü kimliği (yalnız sahibine bilinir; başkasının yapısı için tanımsız). */
+  tur?: string;
+  /** İnşaat başlangıcı ve bitişi (sim ms); biliniyorsa. */
+  baslangic?: number;
+  bitis?: number;
 }
 
 export interface IlceSahipligi {
   ilce: string;
   /** Hücre -> sahiplik (yalnız satılmış hücreler). */
   hucreler: Map<HucreId, HucreSahipligi>;
+  /** Hücrelerdeki yapılar (inşaat ve tesis). Bağdaştırıcı vermiyorsa tanımsız. */
+  yapilar?: YapiKaydi[];
   /** Uygun (satın alınabilir, su değil) hücre sayısı: fiyat payının ve %25 sınırının paydası. */
   uygun: number;
   satilmis: number;
@@ -53,6 +103,24 @@ export interface Oyuncu {
   ad: string;
 }
 
+/** Oyuncunun anlık özeti (başlık çubuğu ve maliyet kartı). */
+export interface MulkOzeti {
+  /** Hazine (mili-₺), şimdiki sim zamanında; bilinmiyorsa null. */
+  hazineMili: number | null;
+  /** İstemcinin tahmini sim zamanı (ms). */
+  simZamani: number;
+  baglanti: "bagli" | "kopuk";
+  /** Oyuncunun hücre sayısı olan ilçeler: `[ilçe, hücre]`. */
+  ilceHucre: Array<[string, number]>;
+  /** Süren hücreli inşaat sayısı (eşzamanlı inşaat sınırı için). */
+  surenInsaat: number;
+  /**
+   * Sunucu kapalıyken geçen süreyi yetiştiriyorsa (`durum` mesajı): ilerleme 0–1. Bu sırada komutlar bağdaştırıcıda bekler ve
+   * yetişme bitince aynı anahtarla yeniden gönderilir. Yetişmiyorsa null ya da tanımsız.
+   */
+  yetisiyor?: { ilerleme: number } | null;
+}
+
 /** Harita ile sunucu arasındaki sözleşme. */
 export interface MulkBaglantisi {
   /** Bu istemcinin oyuncusu. */
@@ -61,6 +129,30 @@ export interface MulkBaglantisi {
   oyuncuAdi(id: OyuncuId): string;
   parselAl(komut: ParselKomutu): Promise<ParselSonucu>;
   sahiplikAl(ilce: string): Promise<IlceSahipligi | null>;
+  /** Hücreli yapı kurar (`tesis_insa_hucre`). */
+  tesisInsa?(komut: TesisKomutu): Promise<TesisSonucu>;
+  /** Atomik yerleşim (`yapi_yerlestir`): arsa + inşaat tek komut. Yalnız `atomikYerlestirme()` doğruysa kullanılır. */
+  yapiYerlestir?(i: YerlestirIstegi): Promise<TesisSonucu>;
+  /** Bu bağlantıda (sunucuda) atomik yerleşim komutu var mı? Yoksa zincir (iki komut) kullanılır. */
+  atomikYerlestirme?(): boolean;
+  /** Onaydan sonra geri alma (`insaat_iptal` + `parsel_birak`). Tanımsızsa "Geri al" gösterilmez. */
+  yapiGeriAl?(i: GeriAlIstegi): Promise<TesisSonucu>;
+  /** Oyuncu özeti (eşzamanlı; son bilinen). */
+  ozet?(): MulkOzeti | null;
+  /** Durum değişince (kare, delta, bağlantı) çağrılır; dönen işlev aboneliği kaldırır. */
+  dinle?(f: () => void): () => void;
+  /** Haritanın ilgilendiği ilçeleri bildirir (`kaynak` başına küme; sunucuda abone listesinin birleşimi). */
+  ilgi?(kaynak: string, ilceler: readonly string[]): void;
+  /**
+   * Hesabı dünyaya katar (Yerleş ekranı; seçilen ilçe yurt için bildirilir). Protokolde oyuncunun kendi katılımı yoktur
+   * (`oyuncu_katil` yalnız yönetici): embedder (`window.__katilIste` ya da bir ön yüz servisi) sağlar; yoksa açık hata.
+   */
+  katil?(ilce: string): Promise<{ tamam: boolean; mesaj?: string }>;
+  /** İlk oyuncu karesi gelene kadar bekler (bağlantı kurulduktan sonra `ozet()` dolu olsun). */
+  hazirBekle?(): Promise<void>;
+  /** Sunucuda bu ilçe var mı? (yoksa false; bilinmiyorsa null). */
+  ilceVarMi?(ilce: string): boolean | null;
+  kapat?(): void;
 }
 
 export interface SahteSecenekler {
@@ -73,6 +165,14 @@ export interface SahteSecenekler {
   saat?: () => number;
   /** Yapay gecikme (ms). */
   gecikme?: number;
+  /** Başlangıç hazinesi (mili-₺). Verilmezse para takibi yoktur (sınırsız). */
+  hazineMili?: number;
+  /** Tesis türü -> yuva, para (mili-₺) ve süre (saat). Verilmezse `tesisInsa` bilinmeyen tür sayar. */
+  yapiBilgisi?: (tur: string) => { yuva: number; paraMili: number; sureSaat: number } | null;
+  /** Sahte sim hızı: 1 gerçek ms = bu kadar sim ms (varsayılan 3600: 1 sim saati = 1 gerçek saniye). */
+  simHizi?: number;
+  /** Aynı anda en çok hücreli inşaat (çekirdek `esZamanliInsaat`). Varsayılan 2. */
+  esZamanliInsaat?: number;
 }
 
 const MESAJ: Record<ParselHatasi, string> = {
@@ -82,15 +182,33 @@ const MESAJ: Record<ParselHatasi, string> = {
   uygunsuz: "Satın alınamaz hücre",
   sahipli: "Hücre başkasına ait",
   sinif_uyusmuyor: "Hücre sınıfı komuttakiyle uyuşmuyor",
+  sunucu: "Sunucu isteği reddetti",
+  baglanti: "Sunucuyla bağlantı yok",
+  hazine: "Hazinede yeterli para yok",
+  zaman_asimi: "Sunucudan yanıt gelmedi",
   bitisik_degil: "Seçilen hücreler bitişik olmalı",
   hucre_siniri: `İlçede en çok ${ILCE_HUCRE_SINIRI} hücre`,
   pay_siniri: "İlçe payı sınırı aşılıyor",
   yinelenen: "Aynı hücre iki kez seçildi",
 };
 
+interface SahteInsaat {
+  id: number;
+  ilce: string;
+  tur: string;
+  hucreler: HucreId[];
+  baslangic: number;
+  bitis: number;
+  /** Atomik işlemle ödenen yapı bedeli, alınan hücreler ve arsa tutarı (geri alma için). */
+  odenenMili?: number;
+  alinan?: HucreId[];
+  arsaMili?: number;
+}
+
 interface IlceKaydi {
   izgara: Izgara;
   sahiplik: IlceSahipligi;
+  insaatlar: SahteInsaat[];
 }
 
 const KOMSU_OYUNCULAR: Oyuncu[] = [
@@ -104,8 +222,13 @@ export class SahteBaglanti implements MulkBaglantisi {
   readonly ben: Oyuncu;
   private ilceler = new Map<string, Promise<IlceKaydi | null>>();
   private adlar = new Map<OyuncuId, string>();
+  private hazine: number | null;
+  private sonInsaat = 0;
+  private dinleyiciler = new Set<() => void>();
+  private ilk = Date.now();
 
   constructor(private s: SahteSecenekler) {
+    this.hazine = s.hazineMili ?? null;
     this.ben = s.ben ?? { id: "ben", ad: "Sen" };
     for (const o of [this.ben, ...KOMSU_OYUNCULAR]) this.adlar.set(o.id, o.ad);
   }
@@ -118,10 +241,42 @@ export class SahteBaglanti implements MulkBaglantisi {
     return this.s.saat ? this.s.saat() : Date.now();
   }
 
+  /** Sahte sim zamanı (ms): gerçek zamanın `simHizi` katı. */
+  private simZamani(): number {
+    return Math.round((this.saat() - this.ilk) * (this.s.simHizi ?? 3600));
+  }
+
+  private degisti(): void {
+    for (const f of [...this.dinleyiciler]) f();
+  }
+
+  dinle(f: () => void): () => void {
+    this.dinleyiciler.add(f);
+    return () => this.dinleyiciler.delete(f);
+  }
+
+  ozet(): MulkOzeti {
+    const ilceHucre: Array<[string, number]> = [];
+    let suren = 0;
+    for (const p of this.ilceler.values()) {
+      // Yüklenmiş ilçeler eşzamanlı okunur (Promise çözüldüyse); çözülmemişler henüz hücre içermez.
+      const k = this.cozulmus.get(p);
+      if (!k) continue;
+      let n = 0;
+      for (const h of k.sahiplik.hucreler.values()) if (h.sahip === this.ben.id) n++;
+      if (n) ilceHucre.push([k.sahiplik.ilce, n]);
+      const simdi = this.simZamani();
+      suren += k.insaatlar.filter((i) => i.bitis > simdi).length;
+    }
+    return { hazineMili: this.hazine, simZamani: this.simZamani(), baglanti: "bagli", ilceHucre, surenInsaat: suren };
+  }
+
   private async bekle(): Promise<void> {
     const g = this.s.gecikme ?? 0;
     if (g > 0) await new Promise((coz) => setTimeout(coz, g));
   }
+
+  private cozulmus = new WeakMap<Promise<IlceKaydi | null>, IlceKaydi>();
 
   private kayit(ilce: string): Promise<IlceKaydi | null> {
     let p = this.ilceler.get(ilce);
@@ -130,8 +285,9 @@ export class SahteBaglanti implements MulkBaglantisi {
         if (!izgara) return null;
         const say = izgaraSay(izgara);
         const sahiplik: IlceSahipligi = { ilce, hucreler: new Map(), uygun: say.uygun, satilmis: 0 };
-        const k: IlceKaydi = { izgara, sahiplik };
+        const k: IlceKaydi = { izgara, sahiplik, insaatlar: [] };
         if (this.s.komsular !== false) this.komsulariSerp(k);
+        this.cozulmus.set(p!, k);
         return k;
       });
       this.ilceler.set(ilce, p);
@@ -158,7 +314,7 @@ export class SahteBaglanti implements MulkBaglantisi {
           const d = durumAl(iz, x, y);
           if (engelNedeni(d)) continue;
           const sinif = arsaSinifi(d);
-          k.sahiplik.hucreler.set(hucreId(x, y), { sahip: o.id, sinif, degerMili: hucreFiyati(sinif, 0, k.sahiplik.uygun) * MILI, alinma: 0 });
+          k.sahiplik.hucreler.set(hucreId(x, y), { sahip: o.id, sinif, degerMili: parselFiyatiMili(sinif, 0, k.sahiplik.uygun, 1), alinma: 0 });
           k.sahiplik.satilmis++;
         }
     });
@@ -169,8 +325,29 @@ export class SahteBaglanti implements MulkBaglantisi {
     const k = await this.kayit(ilce);
     if (!k) return null;
     const s = k.sahiplik;
+    const simdi = this.simZamani();
+    // Biten inşaatlar tesise döner (sahte sunucu zamanla ilerler).
+    const yapilar: YapiKaydi[] = k.insaatlar.map((i) => ({
+      id: i.id,
+      anahtar: `${i.bitis > simdi ? "i" : "t"}${i.id}`,
+      durum: i.bitis > simdi ? "insaat" : "tesis",
+      sahip: this.ben.id,
+      hucreler: [...i.hucreler],
+      tur: i.tur,
+      baslangic: i.baslangic,
+      bitis: i.bitis,
+    }));
     // Kopya: çağıran tarafın değişikliği sahte sunucu durumunu bozmasın.
-    return { ...s, hucreler: new Map(s.hucreler) };
+    const hucreler = new Map<HucreId, HucreSahipligi>();
+    for (const [id, h] of s.hucreler) hucreler.set(id, { ...h });
+    for (const y of yapilar) for (const id of y.hucreler) {
+      const h = hucreler.get(id);
+      if (h) {
+        if (y.durum === "insaat") h.insaat = y.id;
+        else h.tesis = y.id;
+      }
+    }
+    return { ...s, hucreler, yapilar };
   }
 
   async parselAl(komut: ParselKomutu): Promise<ParselSonucu> {
@@ -198,11 +375,118 @@ export class SahteBaglanti implements MulkBaglantisi {
     const sonra = benim.size + komut.hucreler.length;
     if (sonra > ILCE_HUCRE_SINIRI) return red("hucre_siniri");
     if (sonra > Math.floor(ILCE_PAY_SINIRI * s.uygun)) return red("pay_siniri");
-    // Fiyat satın almadan önceki paya göre (tüm parti için aynı çarpan).
-    const birim = hucreFiyati(komut.sinif, s.satilmis, s.uygun) * MILI;
+    // Çekirdekle aynı: hücre başına artımlı fiyat (k. hücre için pay = (satılmış + k) / uygun).
+    const adet = komut.hucreler.length;
+    const toplam = parselFiyatiMili(komut.sinif, s.satilmis, s.uygun, adet);
+    if (this.hazine !== null && this.hazine < toplam) return red("hazine");
     const t = this.saat();
-    for (const id of komut.hucreler) s.hucreler.set(id, { sahip: this.ben.id, sinif: komut.sinif, degerMili: birim, alinma: t });
-    s.satilmis += komut.hucreler.length;
-    return { tamam: true, hucreler: [...komut.hucreler], toplamMili: birim * komut.hucreler.length, t };
+    komut.hucreler.forEach((id, i) => {
+      const deger = parselFiyatiMili(komut.sinif, s.satilmis + i, s.uygun, 1);
+      s.hucreler.set(id, { sahip: this.ben.id, sinif: komut.sinif, degerMili: deger, alinma: t });
+    });
+    s.satilmis += adet;
+    if (this.hazine !== null) this.hazine -= toplam;
+    this.degisti();
+    return { tamam: true, hucreler: [...komut.hucreler], toplamMili: toplam, t };
+  }
+
+  atomikYerlestirme(): boolean {
+    return true;
+  }
+
+  /** Atomik: önce HER ŞEY doğrulanır, sonra durum değişir (başarısızsa hiçbir şey değişmez). */
+  async yapiYerlestir(i: YerlestirIstegi): Promise<TesisSonucu> {
+    await this.bekle();
+    const k = await this.kayit(i.ilce);
+    const red = (hata: Extract<TesisSonucu, { tamam: false }>["hata"], mesaj: string, hucre?: HucreId): TesisSonucu => ({ tamam: false, hata, mesaj, ...(hucre ? { hucre } : {}) });
+    if (!k) return red("izgara_yok", MESAJ.izgara_yok);
+    const yapi = this.s.yapiBilgisi?.(i.tesisTuru) ?? null;
+    if (!yapi) return red("yapi_yok", "Bu yapı türü kurulamaz");
+    if (i.hucreler.length !== yapi.yuva) return red("yuva", `Bu yapı ${yapi.yuva} hücre kaplar (verilen ${i.hucreler.length})`);
+    const s_ = k.sahiplik;
+    const dolu = new Set<HucreId>();
+    for (const ins of k.insaatlar) for (const id of ins.hucreler) dolu.add(id);
+    const alinacak: HucreId[] = [];
+    for (const id of i.hucreler) {
+      const h = idCoz(id);
+      if (!h) return red("gecersiz_hucre", MESAJ.gecersiz_hucre, id);
+      const d = durumAl(k.izgara, h.x, h.y);
+      const sh = s_.hucreler.get(id);
+      if (sh) {
+        if (sh.sahip !== this.ben.id) return red("sahipli", "Hücre başkasına ait", id);
+        if (dolu.has(id)) return red("yapi_var", "Hücrede zaten yapı var", id);
+      } else {
+        const neden = engelNedeni(d);
+        if (neden) return red("uygunsuz", `${MESAJ.uygunsuz}: ${neden}`, id);
+        if (arsaSinifi(d) !== i.sinif) return red("sinif_uyusmuyor", MESAJ.sinif_uyusmuyor, id);
+        alinacak.push(id);
+      }
+    }
+    let benim = 0;
+    for (const h of s_.hucreler.values()) if (h.sahip === this.ben.id) benim++;
+    if (benim + alinacak.length > ILCE_HUCRE_SINIRI) return red("hucre_siniri", MESAJ.hucre_siniri);
+    if (benim + alinacak.length > Math.floor(ILCE_PAY_SINIRI * s_.uygun)) return red("pay_siniri", MESAJ.pay_siniri);
+    const simdi = this.simZamani();
+    const suren = k.insaatlar.filter((x) => x.bitis > simdi).length;
+    if (suren >= (this.s.esZamanliInsaat ?? 2)) return red("esz_insaat", `Aynı anda en çok ${this.s.esZamanliInsaat ?? 2} inşaat sürebilir`);
+    const arsa = parselFiyatiMili(i.sinif, s_.satilmis, s_.uygun, alinacak.length);
+    if (this.hazine !== null && this.hazine < arsa + yapi.paraMili) return red("hazine", "Hazinede yeterli para yok");
+    // Değişiklikler (artık başarısız olamaz)
+    const t = this.saat();
+    alinacak.forEach((id, n) => s_.hucreler.set(id, { sahip: this.ben.id, sinif: i.sinif, degerMili: parselFiyatiMili(i.sinif, s_.satilmis + n, s_.uygun, 1), alinma: t }));
+    s_.satilmis += alinacak.length;
+    if (this.hazine !== null) this.hazine -= arsa + yapi.paraMili;
+    k.insaatlar.push({ id: ++this.sonInsaat, ilce: i.ilce, tur: i.tesisTuru, hucreler: [...i.hucreler], baslangic: simdi, bitis: simdi + yapi.sureSaat * 3_600_000, odenenMili: yapi.paraMili, alinan: alinacak, arsaMili: arsa });
+    this.degisti();
+    return { tamam: true, t };
+  }
+
+  /** Geri al (sahte): inşaat kalkar, bu işlemle alınan hücreler bırakılır, ödenen para tam iade edilir. */
+  async yapiGeriAl(i: GeriAlIstegi): Promise<TesisSonucu> {
+    await this.bekle();
+    const k = await this.kayit(i.ilce);
+    if (!k) return { tamam: false, hata: "izgara_yok", mesaj: MESAJ.izgara_yok };
+    const konum = k.insaatlar.findIndex((x) => x.hucreler.length === i.hucreler.length && x.hucreler.every((h) => i.hucreler.includes(h)));
+    if (konum < 0) return { tamam: false, hata: "yapi_yok", mesaj: "Geri alınacak inşaat yok" };
+    const ins = k.insaatlar[konum]!;
+    k.insaatlar.splice(konum, 1);
+    let iade = ins.odenenMili ?? 0;
+    for (const id of ins.alinan ?? []) {
+      if (!i.alinan.includes(id)) continue;
+      const h = k.sahiplik.hucreler.get(id);
+      if (h && h.sahip === this.ben.id) {
+        iade += h.degerMili;
+        k.sahiplik.hucreler.delete(id);
+        k.sahiplik.satilmis--;
+      }
+    }
+    if (this.hazine !== null) this.hazine += iade;
+    this.degisti();
+    return { tamam: true, t: this.saat() };
+  }
+
+  async tesisInsa(komut: TesisKomutu): Promise<TesisSonucu> {
+    await this.bekle();
+    const k = await this.kayit(komut.ilce);
+    const red = (hata: Extract<TesisSonucu, { tamam: false }>["hata"], mesaj: string, hucre?: HucreId): TesisSonucu => ({ tamam: false, hata, mesaj, ...(hucre ? { hucre } : {}) });
+    if (!k) return red("izgara_yok", MESAJ.izgara_yok);
+    const yapi = this.s.yapiBilgisi?.(komut.tesisTuru) ?? null;
+    if (!yapi) return red("yapi_yok", "Bu yapı türü kurulamaz");
+    if (komut.hucreler.length !== yapi.yuva) return red("yuva", `Bu yapı ${yapi.yuva} hücre kaplar (verilen ${komut.hucreler.length})`);
+    const simdi = this.simZamani();
+    const dolu = new Set<HucreId>();
+    for (const i of k.insaatlar) for (const id of i.hucreler) dolu.add(id);
+    for (const id of komut.hucreler) {
+      const h = k.sahiplik.hucreler.get(id);
+      if (!h || h.sahip !== this.ben.id) return red("sahipli", "Hücre senin değil", id);
+      if (dolu.has(id)) return red("yapi_var", "Hücrede zaten yapı var", id);
+    }
+    const suren = k.insaatlar.filter((i) => i.bitis > simdi).length;
+    if (suren >= (this.s.esZamanliInsaat ?? 2)) return red("esz_insaat", `Aynı anda en çok ${this.s.esZamanliInsaat ?? 2} inşaat sürebilir`);
+    if (this.hazine !== null && this.hazine < yapi.paraMili) return red("hazine", "Hazinede yeterli para yok");
+    if (this.hazine !== null) this.hazine -= yapi.paraMili;
+    k.insaatlar.push({ id: ++this.sonInsaat, ilce: komut.ilce, tur: komut.tesisTuru, hucreler: [...komut.hucreler], baslangic: simdi, bitis: simdi + yapi.sureSaat * 3_600_000 });
+    this.degisti();
+    return { tamam: true, t: this.saat() };
   }
 }

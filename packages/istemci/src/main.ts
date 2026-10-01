@@ -337,10 +337,20 @@ function baslat(): void {
     };
     (kat.querySelector("[data-devlet]") as HTMLElement | null)?.focus();
   }
-  devletAcici = () => devletKatmaniAc(benim !== -2);
+  // Mülk kipi (sunucu bağlı ya da ?yerles=1): "Devlet seç" gösterilmez; giriş Yerleş ekranıyla başlar (bölge kipinde kalır).
+  const mulkKipi = q.has("sunucu") || q.get("yerles") === "1";
+  if (mulkKipi) document.body.classList.add("mulk-kipi");
+  devletAcici = () => {
+    if (mulkKipi) bildir("Mülk kipinde devlet seçilmez: haritadan arsa alıp yapı kurarsın.", "bilgi");
+    else devletKatmaniAc(benim !== -2);
+  };
 
   const secim = secimCoz(location.hash, location.search, devletIdler);
-  if (secim === null) {
+  if (mulkKipi) {
+    // Küre yalnız izlenir (bölge simülasyonu arka planda); oyun haritada ve sunucudadır.
+    oyunuBaslat(-1);
+    void haritaDenetci.mulkBaslat(q.get("yerles") === "1");
+  } else if (secim === null) {
     document.getElementById("yukleme")?.classList.add("bitti");
     devletKatmaniAc(false);
   } else oyunuBaslat(secim);

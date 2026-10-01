@@ -11,6 +11,7 @@ import {
   fiyatCarpani,
   hucreFiyati,
   ilceTavani,
+  parselFiyatiMili,
   sahipliyeDegiyor,
   satinAlmaOzeti,
   sinirDenetle,
@@ -160,10 +161,14 @@ describe("sahte bağdaştırıcı", () => {
   it("geçerli satın alma sahipliğe yazılır; fiyat paya göre", async () => {
     const b = yeni();
     const s = await b.parselAl(komut([id(0, 2), id(1, 2)]));
-    expect(s).toEqual({ tamam: true, hucreler: [id(0, 2), id(1, 2)], toplamMili: 2_000_000, t: 42 });
+    // Çekirdek `parselFiyati` gibi artımlı: 2. hücrenin payı 1/uygun (uygun 395 -> 1.000 × (1 + 2/395))
+    const uygun = (await b.sahiplikAl("ilce_a"))!.uygun;
+    expect(s).toEqual({ tamam: true, hucreler: [id(0, 2), id(1, 2)], toplamMili: parselFiyatiMili("kirsal", 0, uygun, 2), t: 42 });
+    expect(parselFiyatiMili("kirsal", 0, uygun, 2)).toBeGreaterThan(2_000_000);
     const sh = await b.sahiplikAl("ilce_a");
     expect(sh?.satilmis).toBe(2);
     expect(sh?.hucreler.get(id(0, 2))).toMatchObject({ sahip: "ben", sinif: "kirsal", degerMili: 1_000_000, alinma: 42 });
+    expect(sh?.hucreler.get(id(1, 2))?.degerMili).toBe(parselFiyatiMili("kirsal", 1, uygun, 1));
     // Kopya döner: dışarıdaki değişiklik sunucu durumunu bozmaz
     sh?.hucreler.clear();
     expect((await b.sahiplikAl("ilce_a"))?.hucreler.size).toBe(2);

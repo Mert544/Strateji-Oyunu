@@ -1,0 +1,455 @@
+/**
+ * Yapı önce yerleşim (F4; DOM + MapLibre): yapı menüsü, haritada hayalet, R ile döndürme, maliyet kartı, onayda tek işlem.
+ *
+ * Akış: "Yapı kur" menüsünden yapı seç → hayalet imleci izler (geçerli mavi, geçersiz turuncu taralı; nedeni ipucunda) →
+ * tıkla/dokun = yeri sabitle (maliyet kartı: arsa + yapı bedeli + süre) → "Kur" = `parsel_al` (boş hücreler) + `tesis_insa_hucre`
+ * sırayla; ilki başarısızsa ikincisi gönderilmez (`zincir.ts`). Sonuç Türkçe bildirimle gelir. Hücre ızgarası bu akışta görünmez.
+ * Klavye: R döndür · Enter kur · Esc vazgeç. Plan hesabı saftır (`yapi.ts`); bu dosya yalnız arayüzdür.
+ */
+import type { Feature, FeatureCollection, Polygon } from "geojson";
+import type { GeoJSONSource, Map as MlHarita, MapMouseEvent } from "maplibre-gl";
+import { bildir } from "../arayuz/bildirim";
+import { esc, fmt, sureMetni } from "../arayuz/bicim";
+import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
+import { hucreSiniri, noktadanHucre } from "./hucre";
+import type { Izgara } from "./hucre";
+import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yerlesimPlani } from "./yapi";
+import type { YapiTanimi, YerlesimPlani } from "./yapi";
+import { yerlesimiUygula } from "./zincir";
+
+export interface YerlesimGirdisi {
+  ml: MlHarita;
+  /** Haritanın kabı (ipucu konumu ve imleç için). */
+  kap: HTMLElement;
+  /** Maliyet kartının ekleneceği sahne kabı. */
+  sahneKap: HTMLElement;
+  /** Menü düğmesinin ekleneceği sol üst sütun. */
+  gezgin: HTMLElement;
+  baglanti: MulkBaglantisi;
+  katalog: readonly YapiTanimi[];
+  ilce: () => string | null;
+  izgara: () => Izgara | null;
+  sahiplik: () => IlceSahipligi | null;
+  ad: (sahip: string) => string;
+  /** Hücre kamu arsasında mı (satışa ve yerleşime kapalı)? */
+  kamu: (id: string) => boolean;
+  /** Sahipliği sunucudan/bağdaştırıcıdan tazeler ve çizer. */
+  yenile: () => Promise<void>;
+  ipucu: (html: string, x: number, y: number, uyari: boolean, sure?: number) => void;
+  ipucuGizle: () => void;
+  /** Arsa düzeyine (L3) yakınlaş. */
+  yakinlas: () => void;
+  /** Hayalet etkinken alt çubuğu gizle/göster. */
+  altGizle: (gizle: boolean) => void;
+}
+
+const BOS: FeatureCollection = { type: "FeatureCollection", features: [] };
+
+function renk(ad: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(ad).trim() || "#888";
+}
+
+function hucreCokgeni(x: number, y: number, oz: Record<string, unknown>): Feature<Polygon> {
+  const [b, g, d, k] = hucreSiniri(x, y);
+  return { type: "Feature", properties: oz, geometry: { type: "Polygon", coordinates: [[[b, g], [d, g], [d, k], [b, k], [b, g]]] } };
+}
+
+/** Onaydan sonra geri alma penceresi (ürün kararı: 5 dk). */
+const GERI_AL_MS = 5 * 60 * 1000;
+
+const TL = (mili: number): string => `${fmt(Math.ceil(mili / 1000))} ₺`;
+
+export class YerlesimKipi {
+  private yapi: YapiTanimi | null = null;
+  private donus = 0;
+  /** Sabitlenen çapa hücresi (tıklama/dokunma); null: imleci izler. */
+  private sabit: { x: number; y: number } | null = null;
+  private plan: YerlesimPlani | null = null;
+  private uygulaniyor = false;
+  private oneriId: string | null = null;
+  /** İmlecin son hücresi (sabitlenmeden R'ye basılırsa hayalet burada döner). */
+  private sonHover: { x: number; y: number } | null = null;
+  /** Son başarılı işlem: 5 dk içinde "Geri al" (bağdaştırıcı `yapiGeriAl` sunuyorsa). */
+  private sonIslem: { ilce: string; ad: string; hucreler: string[]; alinan: string[]; bitis: number } | null = null;
+  private geriZamanlayici = 0;
+  private geri: HTMLElement;
+  private menuAcik = false;
+  private hazir = false;
+  readonly dugme: HTMLButtonElement;
+  private menu: HTMLElement;
+  private kart: HTMLElement;
+
+  constructor(private g: YerlesimGirdisi) {
+    this.dugme = document.createElement("button");
+    this.dugme.type = "button";
+    this.dugme.id = "yapi-menu-dugme";
+    this.dugme.className = "yapi-dugme";
+    this.dugme.hidden = true;
+    this.dugme.setAttribute("aria-haspopup", "true");
+    this.dugme.setAttribute("aria-expanded", "false");
+    this.dugme.setAttribute("aria-controls", "yapi-menu");
+    this.dugme.innerHTML = `<span aria-hidden="true">▦</span> Yapı kur`;
+    this.dugme.title = "Önce yapıyı seç, sonra haritada yerleştir; arsa aynı işlemde alınır";
+    this.menu = document.createElement("div");
+    this.menu.id = "yapi-menu";
+    this.menu.hidden = true;
+    this.menu.setAttribute("role", "menu");
+    this.menu.setAttribute("aria-label", "Yapı menüsü");
+    g.gezgin.append(this.dugme, this.menu);
+    this.kart = document.createElement("section");
+    this.kart.id = "yapi-kart";
+    this.kart.hidden = true;
+    this.kart.setAttribute("aria-label", "Yapı maliyet kartı");
+    g.sahneKap.append(this.kart);
+    this.geri = document.createElement("div");
+    this.geri.id = "yapi-geri";
+    this.geri.hidden = true;
+    this.geri.setAttribute("role", "status");
+    // Sol üst sütunda (hazine çipinin altında): alttaki maliyet kartı ve alt çubukla çakışmaz.
+    g.gezgin.append(this.geri);
+    this.geri.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).closest("[data-yg='geri-al']")) void this.geriAl();
+      else if ((e.target as HTMLElement).closest("[data-yg='kapat']")) this.geriGizle();
+    });
+    this.menuyuYaz();
+    this.dugme.addEventListener("click", () => this.menuAc(!this.menuAcik));
+    this.menu.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest("button[data-yapi]") as HTMLButtonElement | null;
+      if (b?.dataset["yapi"]) this.sec(b.dataset["yapi"]);
+    });
+    this.kart.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest("button[data-yk]") as HTMLButtonElement | null;
+      const ey = b?.dataset["yk"];
+      if (ey === "don") this.dondur();
+      else if (ey === "vazgec") this.iptal();
+      else if (ey === "onayla") void this.onayla();
+    });
+    document.addEventListener("pointerdown", (e) => {
+      if (this.menuAcik && !(e.target as HTMLElement).closest("#yapi-menu, #yapi-menu-dugme")) this.menuAc(false);
+    });
+  }
+
+  get aktif(): boolean {
+    return this.yapi !== null;
+  }
+
+  get seciliYapi(): string | null {
+    return this.yapi?.id ?? null;
+  }
+
+  /** Sınama kancası: şu anki plan. */
+  get gecerliPlan(): YerlesimPlani | null {
+    return this.plan;
+  }
+
+  /** Harita stili yüklendikten sonra: hayalet kaynağı, katmanları ve taralı desen. */
+  kur(): void {
+    const h = this.g.ml;
+    if (this.hazir) return;
+    h.addSource("hayalet", { type: "geojson", data: BOS });
+    this.desen();
+    // Geçerli: mavi; geçersiz: turuncu. Satın alınacak (boş) hücre daha açık ve kesikli çizgili.
+    h.addLayer({
+      id: "hayalet-dolgu",
+      type: "fill",
+      source: "hayalet",
+      paint: { "fill-color": ["case", ["==", ["get", "g"], 1], renk("--harita-ben"), renk("--harita-secim")], "fill-opacity": ["case", ["==", ["get", "g"], 1], ["case", ["==", ["get", "b"], 1], 0.34, 0.58], 0.3] },
+    });
+    h.addLayer({ id: "hayalet-tarali", type: "fill", source: "hayalet", filter: ["==", ["get", "g"], 0], paint: { "fill-pattern": "hayalet-tarali", "fill-opacity": 0.95 } });
+    h.addLayer({
+      id: "hayalet-cizgi",
+      type: "line",
+      source: "hayalet",
+      paint: { "line-color": ["case", ["==", ["get", "g"], 1], renk("--harita-ben"), renk("--harita-secim")], "line-width": 2.2 },
+    });
+    h.addLayer({ id: "hayalet-bos-cizgi", type: "line", source: "hayalet", filter: ["all", ["==", ["get", "g"], 1], ["==", ["get", "b"], 1]], paint: { "line-color": renk("--harita-ben"), "line-width": 2.2, "line-dasharray": [1.6, 1.2] } });
+    this.hazir = true;
+  }
+
+  private desen(): void {
+    const c = renk("--harita-secim");
+    const m = /^#([0-9a-f]{6})$/i.exec(c);
+    const v = m ? parseInt(m[1]!, 16) : 0xe69f00;
+    const [r, g, b] = [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+    const data = new Uint8Array(8 * 8 * 4);
+    for (let y = 0; y < 8; y++)
+      for (let x = 0; x < 8; x++) {
+        const i = (y * 8 + x) * 4;
+        const cizgi = (x + y) % 8 < 3;
+        data[i] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+        data[i + 3] = cizgi ? 210 : 40;
+      }
+    if (this.g.ml.hasImage("hayalet-tarali")) this.g.ml.updateImage("hayalet-tarali", { width: 8, height: 8, data });
+    else this.g.ml.addImage("hayalet-tarali", { width: 8, height: 8, data });
+  }
+
+  temaUygula(): void {
+    if (!this.hazir) return;
+    const h = this.g.ml;
+    this.desen();
+    h.setPaintProperty("hayalet-dolgu", "fill-color", ["case", ["==", ["get", "g"], 1], renk("--harita-ben"), renk("--harita-secim")]);
+    h.setPaintProperty("hayalet-cizgi", "line-color", ["case", ["==", ["get", "g"], 1], renk("--harita-ben"), renk("--harita-secim")]);
+    h.setPaintProperty("hayalet-bos-cizgi", "line-color", renk("--harita-ben"));
+  }
+
+  // --- menü -------------------------------------------------------------------------------------------
+
+  /** Yeni ilçe/düzey: menü düğmesi yalnız ızgaralı ilçede ve yapı kurabilen bağdaştırıcıda görünür. */
+  gorunurluk(duzey: number): void {
+    const var_ = duzey >= 2 && !!this.g.izgara() && !!this.g.baglanti.tesisInsa && this.g.katalog.length > 0;
+    this.dugme.hidden = !var_;
+    if (!var_) {
+      this.menuAc(false);
+      if (this.yapi) this.iptal();
+    }
+  }
+
+  /** Yerleş ekranının açılış önerisi: menüde "Önerilen" rozeti. */
+  oneriAyarla(yapiId: string | null): void {
+    this.oneriId = yapiId;
+    this.menuyuYaz();
+  }
+
+  private menuyuYaz(): void {
+    const gruplar = new Map<string, YapiTanimi[]>();
+    for (const y of this.g.katalog) {
+      let l = gruplar.get(y.grup);
+      if (!l) gruplar.set(y.grup, (l = []));
+      l.push(y);
+    }
+    const html: string[] = [];
+    for (const ad of GRUP_SIRASI) {
+      const l = gruplar.get(ad);
+      if (!l) continue;
+      html.push(`<h4>${esc(ad)}</h4>`);
+      for (const y of l) {
+        const notlar: string[] = [`${y.yuva} hücre`, TL(y.paraMili), sureMetni(y.sureSaat)];
+        const koşul: string[] = [];
+        if (y.gerekliEtiket) koşul.push(`${ETIKET_ADI[y.gerekliEtiket] ?? y.gerekliEtiket} ilinde`);
+        if (y.gerekliTeknoloji) koşul.push("teknoloji gerekir");
+        if (y.enFazlaIlBasina) koşul.push(`ilde en çok ${y.enFazlaIlBasina}`);
+        html.push(
+          `<button type="button" role="menuitem" data-yapi="${esc(y.id)}"><span class="yapi-ad">${esc(y.ad)}${y.id === this.oneriId ? ' <i class="oneri-rozet">Önerilen</i>' : ""}</span><small>${esc(notlar.join(" · "))}</small>${koşul.length ? `<small class="yapi-kosul">${esc(koşul.join(" · "))}</small>` : ""}</button>`,
+        );
+      }
+    }
+    this.menu.innerHTML = html.join("");
+  }
+
+  menuAc(ac: boolean): void {
+    this.menuAcik = ac;
+    this.menu.hidden = !ac;
+    this.dugme.setAttribute("aria-expanded", String(ac));
+  }
+
+  // --- seçim ve hayalet -------------------------------------------------------------------------------
+
+  /** Yapıyı seçer ve hayalet kipine girer (menüden ya da programatik). */
+  sec(yapiId: string): boolean {
+    const y = this.g.katalog.find((k) => k.id === yapiId);
+    if (!y || !this.g.izgara()) return false;
+    this.yapi = y;
+    this.donus = 0;
+    this.sabit = null;
+    this.sonHover = null;
+    this.plan = null;
+    this.menuAc(false);
+    this.g.altGizle(true);
+    this.g.yakinlas();
+    this.g.kap.classList.add("yapi-kipi");
+    this.dugme.setAttribute("aria-pressed", "true");
+    this.kartiYaz();
+    this.hayaletCiz(null);
+    return true;
+  }
+
+  iptal(): void {
+    if (!this.yapi) return;
+    this.yapi = null;
+    this.sabit = null;
+    this.plan = null;
+    this.g.kap.classList.remove("yapi-kipi");
+    this.dugme.removeAttribute("aria-pressed");
+    this.g.ipucuGizle();
+    this.g.altGizle(false);
+    this.hayaletCiz(null);
+    this.kart.hidden = true;
+  }
+
+  dondur(): void {
+    if (!this.yapi) return;
+    this.donus = (this.donus + 1) % 2;
+    const c = this.sabit ?? this.sonHover;
+    if (c) this.planla(c.x, c.y);
+    else this.kartiYaz();
+  }
+
+  private baglam(): Parameters<typeof yerlesimPlani>[4] | null {
+    const iz = this.g.izgara();
+    const sh = this.g.sahiplik();
+    if (!iz || !sh) return null;
+    const oz = this.g.baglanti.ozet?.() ?? null;
+    return { izgara: iz, sahiplik: sh, ben: this.g.baglanti.ben.id, ad: this.g.ad, hazineMili: oz?.hazineMili ?? null, surenInsaat: oz?.surenInsaat ?? 0, kamu: this.g.kamu };
+  }
+
+  private planla(x: number, y: number): void {
+    const y_ = this.yapi;
+    const b = this.baglam();
+    if (!y_ || !b) return;
+    this.plan = yerlesimPlani(y_, x, y, this.donus, b);
+    this.hayaletCiz(this.plan);
+    this.kartiYaz();
+  }
+
+  private hayaletCiz(p: YerlesimPlani | null): void {
+    const src = this.g.ml.getSource("hayalet") as GeoJSONSource | undefined;
+    if (!src) return;
+    if (!p) {
+      src.setData(BOS);
+      return;
+    }
+    src.setData({
+      type: "FeatureCollection",
+      features: p.hucreler.map((h) => hucreCokgeni(h.x, h.y, { g: p.gecerli ? 1 : 0, b: h.benim ? 0 : 1 })),
+    });
+  }
+
+  /** Harita imleci hareketi (hayalet imleci izler; yeri sabitlenmişse yerinde kalır). */
+  uzerinde(e: MapMouseEvent): void {
+    if (!this.yapi || this.sabit || this.uygulaniyor) return;
+    const c = noktadanHucre(e.lngLat.lng, e.lngLat.lat);
+    this.sonHover = { x: c.x, y: c.y };
+    this.planla(c.x, c.y);
+    const p = this.plan;
+    if (p && !p.gecerli && p.neden) this.g.ipucu(`<b>Buraya kurulamaz</b> · ${esc(p.neden)}`, e.point.x, e.point.y, true);
+    else this.g.ipucuGizle();
+  }
+
+  /** Haritaya tıklama / dokunma: yeri sabitler (tekrar tıklayınca taşır). */
+  tikla(e: MapMouseEvent): void {
+    if (!this.yapi || this.uygulaniyor) return;
+    const c = noktadanHucre(e.lngLat.lng, e.lngLat.lat);
+    this.sabit = { x: c.x, y: c.y };
+    this.planla(c.x, c.y);
+    const p = this.plan;
+    if (p && !p.gecerli && p.neden) this.g.ipucu(`<b>Buraya kurulamaz</b> · ${esc(p.neden)}`, e.point.x, e.point.y, true, 3200);
+    else this.g.ipucuGizle();
+  }
+
+  /** Klavye: R döndür, Enter kur, Esc vazgeç. İşlendiyse true. */
+  tus(e: KeyboardEvent): boolean {
+    if (!this.yapi) return false;
+    if (e.key === "r" || e.key === "R") {
+      this.dondur();
+      return true;
+    }
+    if (e.key === "Enter") {
+      if (this.plan?.gecerli && this.sabit) void this.onayla();
+      return true;
+    }
+    if (e.key === "Escape") {
+      this.iptal();
+      return true;
+    }
+    return false;
+  }
+
+  /** Sahiplik ya da hazine değişti: planı yeniden hesapla. */
+  tazele(): void {
+    if (this.yapi && this.sabit) this.planla(this.sabit.x, this.sabit.y);
+    else if (this.yapi) this.kartiYaz();
+  }
+
+  // --- kart -------------------------------------------------------------------------------------------
+
+  private kartiYaz(): void {
+    const y = this.yapi;
+    if (!y) {
+      this.kart.hidden = true;
+      return;
+    }
+    const p = this.plan;
+    const oz = this.g.baglanti.ozet?.() ?? null;
+    const sabit = this.sabit !== null && p !== null;
+    const baslik = `<div class="yk-baslik"><div><b>${esc(y.ad)}</b><small>${esc(y.grup)} · ${y.yuva} hücre${y.ek ? "" : ""}</small></div><button type="button" data-yk="vazgec" aria-label="Vazgeç (Esc)" title="Vazgeç (Esc)">×</button></div>`;
+    let govde: string;
+    if (!p) {
+      govde = `<p class="yk-ipucu">${window.matchMedia("(pointer: coarse)").matches ? "Yerleştirmek için haritaya dokun." : "Haritada yeri seç: tıkla. R: döndür · Esc: vazgeç."}</p>`;
+    } else {
+      const arsa = p.alinacak.length > 0 ? `${fmt(p.alinacak.length)} hücre alınacak · <b>${TL(p.arsaMili)}</b>` : `Kendi arsan · <b>0 ₺</b>`;
+      const sure = `${sureMetni(y.sureSaat)}${y.ilkGunSureSaat < y.sureSaat ? ` <small>(yeni oyuncuya ilk gün ≈ ${sureMetni(y.ilkGunSureSaat)})</small>` : ""}`;
+      const malzeme = malzemeMetni(y);
+      govde = `<dl class="yk-satirlar">
+        <dt>Arsa</dt><dd data-yk-alan="arsa">${arsa}</dd>
+        <dt>Yapı</dt><dd data-yk-alan="yapi"><b>${TL(p.yapiMili)}</b>${malzeme ? ` <small>+ ${esc(malzeme)}</small>` : ""}</dd>
+        <dt>Süre</dt><dd data-yk-alan="sure">${sure}</dd>
+        <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${TL(p.toplamMili)}</b>${oz?.hazineMili != null ? ` <small>Hazine ${TL(oz.hazineMili)}</small>` : ""}</dd>
+      </dl>
+      ${p.neden ? `<p class="yk-uyari" role="alert" data-yk-alan="neden">${esc(p.neden)}</p>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için tıkla.</p>`}`;
+    }
+    const kur = this.uygulaniyor ? "Kuruluyor…" : `${esc(y.ad)} kur`;
+    this.kart.innerHTML = `${baslik}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${p?.gecerli && sabit && !this.uygulaniyor ? "" : "disabled"}>${kur}</button></div>`;
+    this.kart.hidden = false;
+  }
+
+  private async onayla(): Promise<void> {
+    const p = this.plan;
+    const ilce = this.g.ilce();
+    if (!p || !p.gecerli || !this.sabit || !ilce || this.uygulaniyor) return;
+    this.uygulaniyor = true;
+    this.kartiYaz();
+    try {
+      const r = await yerlesimiUygula(this.g.baglanti, ilce, p);
+      bildir(r.mesaj, r.tamam ? "tamam" : "hata");
+      await this.g.yenile();
+      if (r.tamam) {
+        this.geriGoster(ilce, p, r.alinan);
+        this.iptal();
+        return;
+      }
+      // Başarısız: kip açık kalır (arsa alındıysa plan artık "kendi arsan" diye yeniden hesaplanır).
+      this.sabit = { ...this.sabit };
+    } catch (e) {
+      bildir(`Olmadı: ${e instanceof Error ? e.message : String(e)}`, "hata");
+    } finally {
+      this.uygulaniyor = false;
+      this.tazele();
+    }
+  }
+
+  // --- geri al (5 dk) -----------------------------------------------------------------------------------
+
+  /** Başarılı onaydan sonra 5 dakikalık "Geri al" şeridi (yalnız bağdaştırıcı `yapiGeriAl` sunuyorsa). */
+  private geriGoster(ilce: string, p: YerlesimPlani, alinan: string[]): void {
+    if (!this.g.baglanti.yapiGeriAl) return;
+    this.sonIslem = { ilce, ad: p.yapi.ad, hucreler: p.hucreler.map((h) => h.id), alinan, bitis: Date.now() + GERI_AL_MS };
+    this.geriYaz();
+    window.clearInterval(this.geriZamanlayici);
+    this.geriZamanlayici = window.setInterval(() => this.geriYaz(), 1000);
+  }
+
+  private geriYaz(): void {
+    const s = this.sonIslem;
+    if (!s || Date.now() >= s.bitis) return this.geriGizle();
+    const kalan = Math.ceil((s.bitis - Date.now()) / 1000);
+    this.geri.innerHTML = `<span>${esc(s.ad)} kuruluyor · <b>${Math.floor(kalan / 60)}:${String(kalan % 60).padStart(2, "0")}</b> içinde geri alabilirsin</span><button type="button" data-yg="geri-al">Geri al</button><button type="button" data-yg="kapat" aria-label="Kapat">×</button>`;
+    this.geri.hidden = false;
+  }
+
+  private geriGizle(): void {
+    window.clearInterval(this.geriZamanlayici);
+    this.sonIslem = null;
+    this.geri.hidden = true;
+  }
+
+  private async geriAl(): Promise<void> {
+    const s = this.sonIslem;
+    if (!s || !this.g.baglanti.yapiGeriAl) return;
+    this.geriGizle();
+    const r = await this.g.baglanti.yapiGeriAl({ ilce: s.ilce, hucreler: s.hucreler, alinan: s.alinan });
+    bildir(r.tamam ? `${s.ad} geri alındı.` : r.mesaj, r.tamam ? "tamam" : "hata");
+    await this.g.yenile();
+  }
+}

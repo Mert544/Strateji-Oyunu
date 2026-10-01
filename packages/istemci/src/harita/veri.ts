@@ -60,6 +60,10 @@ export const IZGARALI_ILCELER: Readonly<Record<string, { seritler: string; hucre
   tr_41_gebze: { seritler: "ornek/gebze-seritler.pmtiles", hucreler: "ornek/gebze-hucreler.bhi.gz" },
 };
 
+export function izgaraVarMi(ilce: string): boolean {
+  return ilce in IZGARALI_ILCELER;
+}
+
 export function veriKoku(): string {
   let kok = "./harita-verisi/";
   try {

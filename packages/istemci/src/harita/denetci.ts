@@ -19,6 +19,7 @@ import { aramaKayitlari, hiyerarsiYukle, illerYukle, izgaraYukle, OSM_ATIF } fro
 import { yuruAc } from "../yuru/giris";
 import type { Hiyerarsi } from "./veri";
 import type { HaritaGorunumu } from "./gorunum";
+import type { YerlesEkrani } from "../arayuz/yerles-ekrani";
 
 export interface KureBaglami {
   canvas: HTMLCanvasElement;
@@ -52,6 +53,9 @@ declare global {
       ilceAc: (ilce: string) => Promise<void>;
       gorunum: () => HaritaGorunumu | null;
       baglanti: () => MulkBaglantisi | null;
+      /** Mülk kipi başlangıcı (sunucu bağlantısı + Yerleş ekranı); sınama kancası. */
+      mulkBaslat: (zorla?: boolean) => Promise<void>;
+      yerles: () => YerlesEkrani | null;
     };
   }
 }
@@ -93,6 +97,8 @@ export class HaritaDenetci {
   readonly kap: HTMLElement;
   private gecmisteMi = false;
   private yukleniyor = false;
+  private yerlesEkrani: YerlesEkrani | null = null;
+  private baglantiSozu: Promise<MulkBaglantisi | undefined> | null = null;
   // Kürede çift tık algılama (kamera kontrolündeki eşiklerle aynı)
   private sonTik = { t: 0, x: 0, y: 0 };
   private basili: { x: number; y: number; t: number; dugme: number; ek: boolean } | null = null;
@@ -145,6 +151,8 @@ export class HaritaDenetci {
       ilceAc: (ilce) => this.ilceAc(ilce),
       gorunum: () => this.gorunum,
       baglanti: () => this.gorunum?.baglanti ?? null,
+      mulkBaslat: (zorla) => this.mulkBaslat(zorla === true),
+      yerles: () => this.yerlesEkrani,
     };
   }
 
@@ -247,11 +255,13 @@ export class HaritaDenetci {
     if (!this.gorunumYukleniyor) {
       // Önce veri (file:// altında fetch denemeden hata verir), sonra MapLibre yığını
       this.gorunumYukleniyor = Promise.all([this.hiyerarsiAl(), illerYukle()])
-        .then(([h, iller]) => gorunumModulu().then((m) => [m, h, iller] as const))
-        .then(([m, h, iller]) => {
+        .then(([h, iller]) => this.baglantiAl().then((b) => [h, iller, b] as const))
+        .then(([h, iller, b]) => gorunumModulu().then((m) => [m, h, iller, b] as const))
+        .then(([m, h, iller, b]) => {
           const g = new m.HaritaGorunumu(this.kap, this.sahneKap, {
             hiyerarsi: h,
             iller,
+            ...(b ? { baglanti: b } : {}),
             ilceSec: (ilce) => void this.ilceAc(ilce),
             yuruAc: (boylam, enlem) => this.yuruBaslat(boylam, enlem),
             duzeyDegisti: (d) => {
@@ -270,6 +280,70 @@ export class HaritaDenetci {
         });
     }
     return this.gorunumYukleniyor;
+  }
+
+  /** `?sunucu=ws://...` varsa gerçek sunucuya WebSocket bağlantısı (sayfa başına bir kez); yoksa tanımsız (sahte bağdaştırıcı). */
+  private baglantiAl(): Promise<MulkBaglantisi | undefined> {
+    if (!new URLSearchParams(location.search).has("sunucu")) return Promise.resolve(undefined);
+    this.baglantiSozu ??= gorunumModulu()
+      .then((m) => m.baglantiKur(location.search))
+      .catch((e: unknown) => {
+        this.baglantiSozu = null;
+        throw e;
+      });
+    return this.baglantiSozu;
+  }
+
+  /**
+   * Mülk kipi başlangıcı (sunucu bağlıyken ya da `?yerles=1`): bağlantıyı kurar; oyuncunun hücresi yoksa Yerleş ekranını açar,
+   * varsa kendi ilçesine uçar. Eski "Devlet seç" akışı bu kipte gösterilmez.
+   */
+  async mulkBaslat(zorla = false): Promise<void> {
+    if (this.yerlesEkrani) return;
+    this.durumYazi.textContent = new URLSearchParams(location.search).has("sunucu") ? "Sunucuya bağlanılıyor…" : "Yerleş hazırlanıyor…";
+    try {
+      const g = await this.gorunumAl();
+      await g.baglanti.hazirBekle?.();
+      const oz = g.baglanti.ozet?.() ?? null;
+      const hucreli = oz?.ilceHucre.find(([, n]) => n > 0)?.[0];
+      this.durumYazi.textContent = "";
+      if (hucreli && !zorla) {
+        await this.ilceAc(hucreli);
+        this.gorunum?.mulkeUc();
+        return;
+      }
+      const m = await gorunumModulu();
+      const h = await this.hiyerarsiAl();
+      this.yerlesEkrani = await m.yerlesAc({
+        kap: this.sahneKap,
+        baglanti: g.baglanti,
+        hiyerarsi: h,
+        git: (ilce, acilis, yapi) => this.yerlesGit(ilce, acilis, yapi),
+        kapandi: () => {
+          this.yerlesEkrani = null;
+        },
+      });
+      this.durumYazi.textContent = "";
+    } catch (e) {
+      const mesaj = e instanceof Error ? e.message : String(e);
+      this.durumYazi.textContent = mesaj;
+      bildir(`Sunucuya bağlanılamadı: ${mesaj}`, "hata");
+    }
+  }
+
+  /** Yerleş onayı: ilçeyi aç, ızgaralıysa önerilen hazır arsaya uç ve seç; yapı menüsüne açılış önerisini işle. */
+  private async yerlesGit(ilce: string, acilis: "tarim" | "sanayi" | "pazar", oneriYapi: string): Promise<void> {
+    await this.ilceAc(ilce);
+    const g = this.gorunum;
+    if (!g || this.durum.ilce !== ilce) return;
+    const merkez = this.hiyerarsi?.ilceler.get(ilce)?.merkez;
+    if (!g.izgaraVar(ilce) || !merkez) {
+      bildir("Bu ilçenin arsa ızgarası henüz yok: haritada gezebilirsin.", "bilgi");
+      return;
+    }
+    // L3'e in ve hazır arsayı seç (ızgara ve sahiplik yüklenmiş olmalı)
+    const a = await g.yerlesVarisi(acilis, oneriYapi, merkez);
+    if (!a) bildir("Bu ilçede boş hazır arsa kalmadı: başka bir ilçe dene.", "bilgi");
   }
 
   private hiyerarsiAl(): Promise<Hiyerarsi> {
@@ -362,6 +436,11 @@ export class HaritaDenetci {
       const t = e.target as HTMLElement;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName)) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Yapı yerleşimi etkinken R (döndür), Enter (kur), Esc (vazgeç) hayalete gider
+      if (this.gorunum?.tusIsle(e)) {
+        e.preventDefault();
+        return;
+      }
       if (e.key === "Escape" || e.key === "Backspace") {
         if (e.key === "Escape" && this.gorunum?.secimVarMi()) {
           this.gorunum.secimTemizle();

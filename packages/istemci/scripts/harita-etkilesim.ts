@@ -233,12 +233,17 @@ async function senaryo(tarayici: Browser, adres: string, mobil: boolean): Promis
     kontrol(`${e} uygunsuz hücre seçime girmedi`, n === 0);
   }
 
-  // Hücre seçimi: tık = tek; masaüstünde Shift+tık, mobilde "Çoklu seç" ile çoklu
+  // F4: varsayılan akış hazır arsadır; hücre ızgarası yalnız ileri düzey araçtır (masaüstünde Shift, mobilde "Hücre aracı").
+  // Hücre seçimi: Shift+tık / "Hücre aracı"; çoklu seçim Shift+tık ya da "Çoklu seç"
   const sira = await sayfa.evaluate(() => window.__harita?.gorunum()?.sinamaUygunSira(3) ?? null);
   kontrol(`${e} 3 bitişik uygun hücre bulundu`, !!sira && sira.length === 3);
   if (!sira) throw new Error("uygun hücre yok");
-  await dokun(sira[0]!.x, sira[0]!.y);
-  kontrol(`${e} tek tık tek hücre`, (await sayfa.evaluate(() => window.__harita?.gorunum()?.seciliHucreler().length)) === 1);
+  if (mobil) {
+    kontrol(`${e} "Hücre aracı" düğmesi (ileri düzey) görünür`, await sayfa.locator("#harita-alt [data-eylem='hucre-araci']").isVisible());
+    await sayfa.locator("#harita-alt [data-eylem='hucre-araci']").tap();
+  }
+  await dokun(sira[0]!.x, sira[0]!.y, true);
+  kontrol(`${e} Shift+tık / Hücre aracı ile tek hücre`, (await sayfa.evaluate(() => window.__harita?.gorunum()?.seciliHucreler().length)) === 1);
   kontrol(`${e} parsel kartı açıldı`, await sayfa.locator("#parsel-kart").isVisible(), (await sayfa.locator("#parsel-kart").innerText()).replace(/\s+/g, " "));
   if (mobil) await sayfa.locator("#harita-alt [data-eylem='coklu']").tap();
   await dokun(sira[1]!.x, sira[1]!.y, true);

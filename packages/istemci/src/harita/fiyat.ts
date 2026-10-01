@@ -37,6 +37,24 @@ export function fiyatCarpani(satilmis: number, uygun: number): number {
   return 1 + 2 * pay;
 }
 
+const PPM = 1_000_000;
+/** Çekirdekteki `satisPayiCarpaniPpm` (2.000.000 = "× (1 + 2·pay)"). */
+const PAY_CARPANI_PPM = 2_000_000;
+
+/**
+ * Çekirdek `parselFiyati` ile birebir (mili-₺): `adet` hücre, ilçede şu an `satilmis` / `uygun` satılmışken. k. hücre (0'dan)
+ * taban × (1 + 2·(satilmis + k)/uygun), her adımda tamsayı bölmeyle aşağı yuvarlanır. Toplu alım indirim yaratmaz.
+ */
+export function parselFiyatiMili(sinif: ArsaSinifi, satilmis: number, uygun: number, adet: number): number {
+  const taban = TABAN_FIYAT[sinif] * 1000;
+  let toplam = 0;
+  for (let k = 0; k < adet; k++) {
+    const pay = uygun > 0 ? Math.floor((PAY_CARPANI_PPM * (satilmis + k)) / uygun) : 0;
+    toplam += Math.floor((taban * (PPM + pay)) / PPM);
+  }
+  return toplam;
+}
+
 /** Tek hücrenin fiyatı (tam ₺). */
 export function hucreFiyati(sinif: ArsaSinifi, satilmis: number, uygun: number): number {
   return Math.round(TABAN_FIYAT[sinif] * fiyatCarpani(satilmis, uygun));

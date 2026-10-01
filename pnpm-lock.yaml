@@ -50,6 +50,9 @@ importers:
       '@bolge/cekirdek':
         specifier: workspace:*
         version: link:../cekirdek
+      '@bolge/protokol':
+        specifier: workspace:*
+        version: link:../protokol
       '@bolge/veri':
         specifier: workspace:*
         version: link:../veri
