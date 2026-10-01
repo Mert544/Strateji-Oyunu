@@ -8,7 +8,7 @@
 
 | Karar | Ne demek oyuncu için |
 |---|---|
-| **Yurt önce** | Yeni oyuncu ücretsiz yurt arsasına (6 hücre) yerleşir; arsa satın almak zorunda değildir |
+| **Yurt önce** | Yeni oyuncuya ücretsiz yurt arsası (6 hücre) verilir; arsa satın almak zorunda değildir. **Verilmesi bugün kodda** (çekirdek); ekranda "Yurdun hazır, yurdunda kur" diye öne çıkması **geliyor** (istemci dalı henüz ana dalda değil, sırası **doğrulanmadı**): bugün ilk akışta ücretli "hazır arsa" öne çıkıyor |
 | **Başlangıç kitinde 3 pencere** | İlk dükkân için pencere beklemek gerekmez; ilk dükkân ilk saatte kurulabilir (≈49. dakikada hazır; **hesap**, doğrulanmadı) |
 | **Ekmek zinciri** | Buğday → un (değirmen) → ekmek (fırın) zinciri; elektrik ve yakıt **şebekeden otomatik** gelir, santral kurmak gerekmez |
 | **Dükkân ve yerel pazar** | Kendi dükkânın ilçenin hane halkına satış yapar; raf, fiyat ve marka oyuncuda |
@@ -20,8 +20,8 @@
 | Zaman | Oyuncu ne yapar | Ne görür | Neye karar verir | Durum |
 |---|---|---|---|---|
 | **0–3 dk** | E-postasını yazar, postadaki bağlantıya dokunur; parola yok | "Postanı kontrol et", "Giriş yapıyorsun", sana önerilen küçük harfli ad | Adı kabul etmek ya da değiştirmek | E-posta girişi **bugün kodda**; ekranların son hâli **geliyor** (G9) |
-| **3–6 dk** | Yerleş ekranında üç ilçeden birini seçer (Gebze, Gemlik, Körfez) | İlçe kartları, önerilen açılış, "başka ilçe öner"; "bu bir sınıf değil" notu | Hangi ilçe | **Bugün kodda** (üç ilçenin arsa haritası var); ekran düzeltmeleri **geliyor** |
-| **6–9 dk** | Arsasına bakar | Hazinede **50.000 ₺** hibe; ücretsiz yurt hücreleri; ilk 14 gün ilçende yeni oyunculara "ayrılmış hücreler"; ilk 14 gün ticarette komisyon ve vergi yok | Yapıyı nereye kuracağı | **Bugün kodda** |
+| **3–6 dk** | Yerleş ekranında üç ilçeden birini seçer (Gebze, Gemlik, Körfez) | İlçe kartları, önerilen açılış, "başka ilçe öner"; "bu bir sınıf değil" notu | Hangi ilçe | **Bugün yalnız Gebze'de başlanabilir** (kodda). Gemlik ve Körfez kartlarda "arsa ızgarası yakında: yalnız gezebilirsin" der; ızgara verisi ana dalda ama istemciye bağlanması **geliyor** (ızgara zinciri sırada). Ekran düzeltmeleri de **geliyor** |
+| **6–9 dk** | Arsasına bakar | Hazinede **50.000 ₺** hibe; ücretsiz yurt hücreleri (bugün arsa listesinde ayrı satır olarak değil, toplam hücre sayısında görünür); ilk 14 gün ilçende yeni oyunculara "ayrılmış hücreler"; ilk 14 gün ticarette komisyon ve vergi yok | Yapıyı nereye kuracağı | **Bugün kodda** |
 | **9–15 dk** | "Yapı kur" der, çiftliği seçip yerleştirir | Maliyet kartı ("gereken / var"); ilk 5 yapıda %30 indirim; yapı iskele olur | Ne kuracağı, nereye | **Bugün kodda**; para biçimi ve kart düzeltmeleri **geliyor** (G1) |
 | **15–27 dk** | Bekler (çiftlik ilk gün 12 dk'da biter) ya da çıkar | İskele ve geri sayım; "kapatsan da biter" | Beklemek, gezmek ya da çıkmak | **Bugün kodda**; haritada kalan süre etiketi **geliyor** |
 | **≈20–25 dk** | Başlangıç gıdasını (200) Pazar'da satar | Nakit artar; "ilk satış" | Ne kadar, hangi fiyata | **Bugün kodda** |
