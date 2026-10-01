@@ -484,12 +484,12 @@ Biçim (`veri/src/tipler.ts:140`): tüm miktarlar **mili-birim/saat**, tam kadro
 | V5 | (A1 için; G7'de yalnız uyarı) `market ⊇ bakkal`, `supermarket ⊇ market` (kayıtlar varsa) | uyarı: `perakende: mal listeleri ic ice degil: <tur>` |
 | V6 | `fiyatKademeleriPpm` kesin artan, hepsi `fiyatBandiPpm` içinde, uzunluk ≥ 3; `varsayilanFiyatKademesi < uzunluk`; `kampanyaKademesi` varsa `= 0`; `kampanyaGunlukEnFazlaSaat ∈ [0, 24]`, `kampanyaHaftalikEnFazlaGun ∈ [0, 7]` (ikisi de yoksa kampanya kapalı) | `perakende.fiyatKademeleriPpm: ...` |
 | V7 | `esnaf.tabanPayPpm ∈ [0, 1 000 000)`, `esnaf.fiyatPpm` bant içinde | `perakende.esnaf: ...` |
-| V8 | `olcekAraligi ⊂ {0,1,2}` ve `acikOlcekler`'le tutarlı; `tamCesit ≥ 1` ve `tamCesit ≤ mallar.length`; mal listesi tekrarsız | `perakende.dukkanTurleri.<id>: ...` |
+| V8 | `olcekAraligi ⊂ {0,1,2}`, **boş ve yinelenen olamaz**; `acikOlcekler` tekil ve **her açık ölçeği en az bir dükkân türü taşımalı** (taşıyıcı tür yoksa açık ölçek ölü ayardır; K4 G7-1a, Kod lideri kabul); `tamCesit ≥ 1` ve `tamCesit ≤ mallar.length`; mal listesi tekrarsız | `perakende.dukkanTurleri.<id>: ...` |
 | V9 | `talep`: `ilceSinifiNufus` (yedek eşdeğer) üç anahtar > 0; `yerelOlcek ≥ 1`; her grubun `takvimPpm` uzunluğu 12, değerler > 0 ve **toplamı tam 12 000 000**; `gruplar` kapsaması: her `talep1000Saat` malı tam bir grupta; `bayram` varsa `oncesiGun × (oncesiPpm − 1 000 000) + sonrasiGun × (sonrasiPpm − 1 000 000) = 0` (toplam sabit; A2 §1.9) ve ppm değerleri > 0; `bayramGunleri` kesin artan, komşu fark ≥ en büyük `oncesiGun + sonrasiGun` | `perakende.talep: ...` |
-| V9b | **Fikstür** (`veri/src/parsel.ts` zod `ilceSema` + `parselFiksturuDogrula`, Katman 1): `ParselIlceTanimi.nufus` varsa tamsayı, `1 ≤ nufus ≤ 20 000 000`; yoksa kural yok (alan **isteğe bağlı**, bozuk fikstür hatası: `ilceler[i] (<id>): nufus tamsayi ve 1..20000000 olmali`) | `ilceler[i]: ...` |
+| V9b | **Fikstür ve ızgara girdisi** (`veri/src/parsel.ts` zod `ilceSema` + `parselFiksturuDogrula`; `veri/src/izgara.ts` `ParselIzgaraIlce.nufus?` + `parselIzgaraHatalari`, Katman 1): `nufus` varsa tamsayı, `1 ≤ nufus ≤ 20 000 000` (`ILCE_NUFUS_ENCOK`); ızgara ilçesinde `sinif` yoksa `ilceSinifiTuret` (en yüksek hücre sınıfı) türetilir ve yedek eşdeğer ondan okunur; yoksa kural yok (alan **isteğe bağlı**, bozuk fikstür hatası: `ilceler[i] (<id>): nufus tamsayi ve 1..20000000 olmali`) | `ilceler[i]: ...` |
 | V10 | Marka: `hesapBasinaEnFazla ∈ [1, 3]`, `simgeSayisi`, `renkSayisi ≥ 1` (ad uzunluğu ve izinli küme parametre değil, çekirdek sabiti `AD_KURALI`) | `perakende.marka: ...` |
 | V11 | Kilitsizlik taraması: `perakende` ve `ekYapilar.dukkan` alt ağacında seviye/teknoloji/önkoşul anahtarı yok (A0-17) | `perakende: kilit alani yasak: <anahtar>` |
-| V12 | `ekYapilar.dukkan.insaMaliyeti` malları içerikte | mevcut genel doğrulama |
+| V12 | `ekYapilar.dukkan.insaMaliyeti` malları içerikte **ve depolanabilir**. Genel doğrulama ek yapı malzemelerine bakmaz (bugün `icerikDerle` Error atar), bu yüzden kural `dukkan` için veri katmanında yazılır (K4 G7-1a; diğer ek yapılar değişmez) | `mulk.ekYapilar.dukkan.insaMaliyeti: bilinmeyen mal "<m>"` / `"<m>" depolanamaz mal` |
 | V13 | **Çıkmaz mal (UA1)**: (a) yan ürün kuralı **hata**: `kepek` için en az bir yöntemin girdisinde `kepek` geçer (Ü) **ve** `emilimSaat.kepek > 0` (N: NPC dünya pazarı güvence alıcıdır, §5.4); aynı kural `gubre` için (Ü: Tarla gübre dozu, `tarim.gubreTuketimiSaat`; N: `emilimSaat.gubre > 0`); (b) genel kural **uyarı** (A0): her depolanabilir mal en az iki farklı tüketici türüne sahip (Ü yöntem girdisi, H raf, Y yapı maliyeti, P pazar emilimi > 0; **K ve N ancak kodda var olunca sayılır**); `elektrik` muaftır (depolanamaz). Sabit `CIKMAZ_MAL_HATA = false`; P1 teslim kapısı bunu `true` yapar (S15) | hata: `icerik: yan urun alicisiz: <mal>`; uyarı: `icerik: cikmaz mal: <mal> (tuketici turu <n> < 2)` |
 | V14 | `mulk.sebeke` (§4.7): `mallar` boş değil, `mal` kimlikleri içerikte ve tekil; `elektrik` kaydı varsa `elektrik` malı depolanamaz ve en az bir yöntem `elektrik` girdisi taşır; `elektrik` dışındaki mallar depolanabilir ve en az bir yöntem girdisinde geçer (aksi halde uyarı: ölü kayıt); `0 < tavanOraniPpm ≤ 1 000 000`; `kasaPayiPpm ∈ [0, 1 000 000]` | `sebeke: ...` |
 | V15 | Yöntem oranı bandı (A2 §1.13 son satır): her `mulkKipi` yönteminin çıktı/girdi değeri oranı [1,16; 1,48] dışında **uyarı** (hata değil; taban fiyatla) | uyarı: `icerik.yontemler.<id>: oran bandi disi` |
@@ -789,10 +789,10 @@ Kural (üretim §3A.2 madde 4, UA1): her mal en az iki farklı tüketici türün
 
 ### 5.5 `mulkKipi` süzgeci: `derle.ts` değişikliği
 
-`derle.ts:27-72` (`icerikDerle`): mülk açıklığı `param.mulk !== undefined && veri.parsel !== undefined` (bugün `:78`, `ic` kurulduktan SONRA) **önce** hesaplanır ve `ic` nesnesinin `tesisTurleri` alanı bölge kipinde süzülmüş kopya olur:
+`derle.ts:27-72` (`icerikDerle`): mülk açıklığı `param.mulk !== undefined && (veri.parsel !== undefined || veri.parselIzgara !== undefined)` (parsel dünyası fikstür ya da ızgara girdisiyle verilir; K3 G6-2a `derle.ts:47`) (bugün `:78`, `ic` kurulduktan SONRA) **önce** hesaplanır ve `ic` nesnesinin `tesisTurleri` alanı bölge kipinde süzülmüş kopya olur:
 
 ```ts
-const mulkAcik = param.mulk !== undefined && veri.parsel !== undefined;
+const mulkAcik = param.mulk !== undefined && (veri.parsel !== undefined || veri.parselIzgara !== undefined);
 // ...
 tesisTurleri: mulkAcik ? icerik.tesisTurleri : bolgeKipiTurleri(icerik),
 ```
@@ -843,7 +843,7 @@ Ayrıntı §17. Özet:
 - `yontem` yalnız **tesis türü** inşasında verilebilir (ek yapıda verilirse: `yontem yalniz tesis turunde verilebilir: <tesisTuru>`).
 - Denetimler `yontem_degistir` ile **aynıdır**, aynı iletilerle (`ekonomi/komut.ts:84-86`): `bilinmeyen yontem: <id>`; `yontem bu tesis turunde yok: <id>` (süzülmüş tür listesi: bölge kipinde `mulkKipi` yöntemi reddedilir; ama komut mülk komutudur); `yontem acik degil: <id>` (`yontemAcikMi`, teknoloji). **Başarısız komut durumu değiştirmez** (denetimler hazine/stok düşmeden önce).
 - Durum: `InsaatDurumu.yontem?: string` (**dize kimlik**, indeks değil; `dunyaYenidenIndeksle` kapsamına girmez) yalnız verilince yazılır. `insaatBitti` (`ekonomi/insaat.ts:24`): `const yontem = insaat.yontem !== undefined ? ctx.ic.yontemIndeks[insaat.yontem] : tur?.yontemler[0];` ve `yontem === undefined` ise tesis kurulmaz (mevcut `if (… && yontem !== undefined)` koşulu).
-- `dunyaDogrula` (`serilestir.ts:392` `$.insaatlar[i]`): `yontem` varsa `dize`; `dunyaIcerikUyumu`: `yontem` içerikte tanımlı ve tesis türünün listesinde.
+- `dunyaDogrula` (`serilestir.ts:392` `$.insaatlar[i]`): `yontem` varsa `dize`; `dunyaIcerikUyumu`: `yontem` içerikte tanımlı, tesis türü inşaatında (ek yapı ve diğer inşaat türlerinde yazılamaz) ve türün listesinde.
 - Protokol: `komut-sema.ts:62-71` iki komuta `yontem: kimlik.optional()`; `komutSemasi.ts:60,62` `yontem: "kimlik"`. Bölge kipi komutu etkilenmez (alan mülk komutlarındadır).
 - Ret iletileri (§9.3 genişler): `YON-01 yontem yalniz tesis turunde verilebilir: <tesisTuru>`; diğerleri mevcut.
 
@@ -875,7 +875,7 @@ if (mc !== undefined && b.merkez !== undefined) c = carpBol(c, mc, PPM);
 ```
 
 - **Çıktıya uygulanır, girdiye değil** (aşınma cezasıyla aynı mekanizma, A2 §2.1): yöntemin katma değeri çarpan oranında düşer; girdi, bakım ve işçi aynı kalır.
-- Çağrı noktaları `:313`, `:325` ve `carpanlariYenile` (`:231`, yalnız tarımsal) fonksiyonu çağırdığından ek yer gerekmez.
+- Çağrı noktaları `:313`, `:325` ve `carpanlariYenile` (`:231`, yalnız tarımsal) fonksiyonu çağırdığından yeni çağrı yeri gerekmez. **Tek ek (K3 G6-2a, `ekonomi/uretim.ts:327`):** `bolgeHesapla`'nın **sanayi-kapalı** dalı `ciktiCarpaniHesapla`'yı yalnız `tarimsal || kitlikAktif` iken çağırır; sanayisiz mülk dünyasında kilma etkisiz kalmasın diye koşula `|| ctx.ic.mulk?.yontemCiktiPpm !== undefined` eklenir (blok yokken koşul eskisiyle aynıdır).
 - `derle.ts` `mulkDerle`: tablo yalnız `ciktiPpm !== PPM` satırlarından kurulur; hepsi `PPM` ise `DerlenmisMulk.yontemCiktiPpm` **hiç oluşmaz** (kod yolu atlanır).
 - **Bölge kipi altınları:** `ic.mulk` bölge kipinde tanımsızdır ve işletme düğümü (`b.merkez`) yalnız mülk kipinde vardır: iki koşul da bölge kipinde yanlış; kod yolu **hiç çalışmaz** (K-5, §13). Mülk kipinde kapalıyken (`ciktiPpm: 1 000 000` ya da blok yok) de bayt bayt aynıdır (test: üç veri kopyası aynı `durumOzeti`).
 - Serileştirme: durum alanı **yok** (parametre); `kuralSurumu` değişir (veri). Göç gerekmez.
@@ -1511,7 +1511,7 @@ Protokol yalnız **biçim** denetler (docs: `komut-sema.ts` başlığı); sözdi
 | `KasaDurumu.giris.sebeke?` | `tipler.ts:863-865` | ilk kasa payı birikiminde (tembel; G6) | `paraDogrula` (`serilestir.ts:493-494`): izinli = `KASA_GIRIS_KALEMLERI` ∪ `KASA_GIRIS_ISTEGE_BAGLI = ["sebeke"]`; zorunlu `sayacDogrula` döngüsü yalnız zorunlu kalemleri dolaşır, `sebeke` varsa ayrıca |
 | `ParaAkisi.sebeke?` | `tipler.ts:884-896` | `sebeke > 0` iken (G6) | `paraAkisi` (`serilestir.ts:570-572`): `alanlar(pa, …, [... , "sebeke"])` izinli listesine **isteğe bağlı** eklenir; `tamsayi ≥ 0`; `paraAkisi.kasa[].kalem` kontrolü (`:581`) `KASA_GIRIS_ISTEGE_BAGLI`'yı da kabul eder |
 | `BolgeElektrikDurumu.sebekeMili?` | `tipler.ts:222-237` | `sebekeMili > 0` iken (G6) | `serilestir.ts` bu nesneyi doğrulamıyor (doğrulandı: arama); K3 `tamsayi ≥ 0` denetimi ekler |
-| `InsaatDurumu.yontem?` | `tipler.ts:476-503` | `yontem` verilen tesis inşaatında (G6) | `$.insaatlar[i]` (`:392`): `dize`; `dunyaIcerikUyumu`: yöntem içerikte ve türün listesinde |
+| `InsaatDurumu.yontem?` | `tipler.ts:476-503` | `yontem` verilen tesis inşaatında (G6) | `$.insaatlar[i]` (`:392`): `dize`; `dunyaIcerikUyumu`: yöntem içerikte ve türün listesinde; **ek kural (K3 G6-2a, `serilestir.ts:717`):** `yontem` yalnız `tur === "tesis"` ve `ekYapi === undefined` inşaatında olabilir (bozuk görüntü reddi) |
 
 `Dunya` üst düzeyine alan **eklenmez** (`DUNYA_ISTEGE_BAGLI`, `serilestir.ts:244`, değişmez). `paraDurumuKur` (`paraSayac.ts:54-60`) **yeni kalemi yaratmaz** (yoksa tüm mülk dünyalarının özeti değişirdi; K3 keşif tuzağı).
 
