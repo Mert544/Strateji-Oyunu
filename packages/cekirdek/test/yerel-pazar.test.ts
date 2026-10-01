@@ -8,8 +8,9 @@ import {
   esnafAgirligi,
   etkinKademe,
   ilcePaylastir,
-  ilceSinifiBaskin,
+  ilceNufusEsdegeri,
   talepTabani,
+  turPayi,
   yerelPazarHesapla,
   yerelSatisGeliri,
   yerelTalep,
@@ -82,6 +83,48 @@ describe("Ek B: çekim hesabı test vektörleri (şartname betiğiyle üretilmi�
   });
 });
 
+describe("Ek B V5 ve turPayi: Qr <= 0 savunması (sıfırla) ve her turda Qr >= 1 değişmezi", () => {
+  const wA = 1_125_000;
+  const wB = 964_504;
+  const wE = 797_193;
+  it("V5: turPayi(Qr, [w_A, w_B], w_esnaf, 250 000): Qr 0 ve -7 -> [0, 0] (eski tur payı taşınmaz); Qr 300 000 -> [116 916, 100 236] (V1 ile aynı)", () => {
+    expect(turPayi(0, [wA, wB], wE, 250_000)).toEqual([0, 0]);
+    expect(turPayi(-7, [wA, wB], wE, 250_000)).toEqual([0, 0]);
+    expect(turPayi(300_000, [wA, wB], wE, 250_000)).toEqual([116_916, 100_236]);
+    expect(turPayi(300_000, [], wE, 250_000)).toEqual([]);
+  });
+
+  it("turPayi: toplam <= Qr - floor(Qr x taban); kalan birimler sıralı ilk yuvalara (0 <= kalan < |ws|)", () => {
+    for (const q of [1, 2, 3, 7, 100, 299_999]) {
+      const pay = turPayi(q, [wA, wB, wA], wE, 250_000);
+      expect(pay.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(q - Math.floor((q * 250_000) / PPM));
+      expect(pay.every((x) => x >= 0)).toBe(true);
+    }
+  });
+
+  it("her turda Qr >= 1 (3 000 rastgele küçük-Q girdisi: Q 1-400 mili, 1-2 mal, 1-4 dükkân, kasa 0-60): Qr <= 0 dalına hiç girilmez", () => {
+    let s = 20_261_001;
+    const rnd = (n: number): number => {
+      s = (Math.imul(s, 1_664_525) + 1_013_904_223) >>> 0;
+      return s % n;
+    };
+    let izlenen = 0;
+    for (let k = 0; k < 3_000; k++) {
+      const mallar = ["ekmek", "gida"].slice(0, 1 + rnd(2));
+      const dukkanlar: YerelDukkan[] = Array.from({ length: 1 + rnd(4) }, (_, i) => ({
+        dugum: 0, oyuncu: `o${i}`, ekYapi: 0, tamCesit: 1 + rnd(2), kasaMiliSaat: rnd(61), cekimCarpaniPpm: PPM, giderMiliSaat: 0,
+        yuvalar: Array.from({ length: 1 + rnd(2) }, (_, j) => ({ mal: mallar[(i + j) % mallar.length] as string, mevcut: true, fiyatPpm: 700_000 + rnd(700_001) })),
+      }));
+      const p: YerelCekimParametreleri = { cesitKatsayiPpm: rnd(400_000), esnaf: { fiyatPpm: 900_000 + rnd(500_001), tabanPayPpm: 250_000 + rnd(400_001) } };
+      ilcePaylastir(p, ilce(Object.fromEntries(mallar.map((m) => [m, 1 + rnd(400)])), dukkanlar), (_tur, _mal, qr) => {
+        izlenen++;
+        expect(qr, `girdi ${k}`).toBeGreaterThanOrEqual(1);
+      });
+    }
+    expect(izlenen).toBeGreaterThan(3_000);
+  });
+});
+
 describe("değişmezler ve sıralama kuralları", () => {
   const karma: YerelIlce = ilce({ ekmek: 300_000, gida: 540_000, un: 80_000 }, [
     { ...dukkan("zeynep", 120_000, 3, [["ekmek", 1_050_000], ["gida", 950_000], ["un", 1_150_000]]), dugum: 3, ekYapi: 7 },
@@ -140,17 +183,21 @@ describe("değişmezler ve sıralama kuralları", () => {
 });
 
 describe("talep Q (§6.5)", () => {
-  it("ilçe sınıfı = baskın UYGUN hücre sınıfı; eşitlikte büyük sınıf; uygun hücre yoksa tüm hücreler", () => {
-    expect(ilceSinifiBaskin({ kirsal: 10, kasaba: 4, sehir: 1 }, { kirsal: 99, kasaba: 99, sehir: 99 })).toBe("kirsal");
-    expect(ilceSinifiBaskin({ kirsal: 5, kasaba: 5, sehir: 0 }, { kirsal: 0, kasaba: 0, sehir: 0 })).toBe("kasaba");
-    expect(ilceSinifiBaskin({ kirsal: 3, kasaba: 3, sehir: 3 }, { kirsal: 0, kasaba: 0, sehir: 0 })).toBe("sehir");
-    expect(ilceSinifiBaskin({ kirsal: 0, kasaba: 0, sehir: 0 }, { kirsal: 2, kasaba: 7, sehir: 1 })).toBe("kasaba");
-    expect(ilceSinifiBaskin({ kirsal: 0, kasaba: 0, sehir: 0 }, { kirsal: 0, kasaba: 0, sehir: 0 })).toBe("kirsal");
+  it("ilceNufusEsdegeri: fikstürde nufus varsa o; yoksa fikstürün sinif alanına bağlı yedek sabit (hücre sınıfı hesaplanmaz)", () => {
+    const sabit = { kirsal: 4_000, kasaba: 12_000, sehir: 60_000 };
+    expect(ilceNufusEsdegeri({ nufus: 152_345, sinif: "kirsal" }, sabit)).toBe(152_345);
+    expect(ilceNufusEsdegeri({ nufus: 1, sinif: "sehir" }, sabit)).toBe(1);
+    expect(ilceNufusEsdegeri({ sinif: "kirsal" }, sabit)).toBe(4_000);
+    expect(ilceNufusEsdegeri({ sinif: "kasaba" }, sabit)).toBe(12_000);
+    expect(ilceNufusEsdegeri({ sinif: "sehir" }, sabit)).toBe(60_000);
   });
 
-  it("taban = floor(talep1000Saat x yerelOlcek x nufus / 1000)", () => {
-    expect(talepTabani(90, 50, 12_000)).toBe(54_000);
-    expect(talepTabani(7, 50, 1_234)).toBe(Math.floor((7 * 50 * 1_234) / 1000));
+  it("taban = floor(talep1000Saat x yerelOlcek x nufus eşdeğeri / 1000): iki yol (nufus ve yedek sabit) aynı formülden", () => {
+    expect(talepTabani(90, 40, 12_000)).toBe(43_200);
+    expect(talepTabani(7, 40, 1_234)).toBe(Math.floor((7 * 40 * 1_234) / 1000));
+    const sabit = { kirsal: 4_000, kasaba: 12_000, sehir: 60_000 };
+    expect(talepTabani(90, 40, ilceNufusEsdegeri({ sinif: "kasaba" }, sabit))).toBe(43_200); // yedek yol
+    expect(talepTabani(90, 40, ilceNufusEsdegeri({ nufus: 300_000, sinif: "kasaba" }, sabit))).toBe(1_080_000); // nufus yolu
   });
 
   it("bayram çarpanı sınırları: oncesi [B - Do, B - 1], sonrasi [B, B + Ds - 1]; dışı PPM; dalga yoksa PPM; boş liste bayram yok", () => {

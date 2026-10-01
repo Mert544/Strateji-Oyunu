@@ -7,10 +7,10 @@
  * (girdi dizileri burada AÇIKÇA sıralanır).
  *
  * İçerik:
- *  1. `yerelPazarHesapla` / `ilcePaylastir`: §6.4 Adım 2-6 (çeşit, ağırlık, ilçe x mal su-doldurma paylaşımı, havuz üst sınırı, satırlar).
+ *  1. `yerelPazarHesapla` / `ilcePaylastir` / `turPayi`: §6.4 Adım 2-6 (çeşit, ağırlık, ilçe x mal su-doldurma paylaşımı, tur payı, havuz üst sınırı, satırlar).
  *     Adım 0 (dükkânları ilçeye göre toplama) ve Adım 1 (mal mevcudiyeti) dünyaya bakar; çağıranın işidir ve `YerelYuva.mevcut` ile gelir.
  *  2. `etkinKademe`: §7.5b kampanya penceresinde yuvanın etkin fiyat kademesi (ağırlığın girdisi `fiyatPpm`).
- *  3. Talep Q (§6.5): `ilceSinifiBaskin`, `talepTabani`, `bayramCarpani`, `yerelTalep`.
+ *  3. Talep Q (§6.5): `ilceNufusEsdegeri`, `talepTabani`, `bayramCarpani`, `yerelTalep`.
  *  4. Para (§6.4 Adım 7, §6.6): `yerelSatisGeliri`.
  *
  * SIRALAMA KURALLARI (hepsi açık; bozulması sonucu değiştirir):
@@ -137,6 +137,25 @@ export function cesitOrani(dolu: number, tamCesit: number): number {
   return dolu >= tamCesit ? PPM : carpBol(dolu, PPM, tamCesit);
 }
 
+/**
+ * Tek (ilçe, mal) turunun oyuncu payı (şartname §6.4 Adım 4a; Ek B V5): `Qr <= 0` ise HERKES SIFIR (önceki turun payı taşınmaz; durum ulaşılamaz, kural savunmadır
+ * ama belirlenimcidir); aksi halde esnaf taban payı ile oyuncu havuzu `P = Qr - floor(Qr x esnafPay / PPM)` ağırlıklarla bölünür (`floor(P x w_i / Σw)`) ve
+ * kalan birimler (0 <= kalan < |ws|) sıradaki ilk yuvalara +1 verilir. `esnafPay = max(tabanPayPpm, floor(wE x PPM / (Σw + wE)))`. `ws` boşsa boş dizi.
+ */
+export function turPayi(Qr: number, ws: readonly number[], wE: number, tabanPayPpm: number): number[] {
+  if (ws.length === 0) return [];
+  if (Qr <= 0) return ws.map(() => 0);
+  let sw = 0;
+  for (const w of ws) sw += w;
+  const pay0 = carpBol(wE, PPM, sw + wE);
+  const esnafPay = pay0 > tabanPayPpm ? pay0 : tabanPayPpm;
+  const P = Qr - carpBol(Qr, esnafPay, PPM); // oyuncu havuzu
+  const s = ws.map((w) => carpBol(P, w, sw));
+  let kalan = P - s.reduce((a, b) => a + b, 0);
+  for (let i = 0; kalan > 0; i++, kalan--) s[i] = (s[i] as number) + 1;
+  return s;
+}
+
 interface YuvaHesabi {
   dukkan: number;
   yuva: number;
@@ -161,9 +180,10 @@ function dukkanSirasi(a: YerelDukkan, b: YerelDukkan): number {
 
 /**
  * Tek ilçenin paylaşımı: su-doldurmalı kasa kırpması (en çok `EN_COK_TUR` tur) ve oyuncu havuzu üst sınırı. Dünyayı değiştirmez; girdi dizilerini değiştirmez.
+ * `izle` (isteğe bağlı, yalnız test/ölçüm): donmamış yuvası olan her (tur, mal) için turun kalan talebi `Qr` verilir (değişmez: her zaman >= 1; şartname §6.4).
  * Satırlar (dugum, mal, ekYapi, yuva) sıralıdır.
  */
-export function ilcePaylastir(p: YerelCekimParametreleri, ilce: YerelIlce): YerelSatir[] {
+export function ilcePaylastir(p: YerelCekimParametreleri, ilce: YerelIlce, izle?: (tur: number, mal: string, kalanTalep: number) => void): YerelSatir[] {
   tamsayiDenetle("cesitKatsayiPpm", p.cesitKatsayiPpm, 0);
   tamsayiDenetle("esnaf.fiyatPpm", p.esnaf.fiyatPpm, 1);
   tamsayiDenetle("esnaf.tabanPayPpm", p.esnaf.tabanPayPpm, 0);
@@ -214,19 +234,10 @@ export function ilcePaylastir(p: YerelCekimParametreleri, ilce: YerelIlce): Yere
         for (const y of dk.yuvalar) if (y.mal === t.mal && y.w > 0) L.push(y);
       }
       const Qr = t.q - (sabit.get(t.mal) as number);
-      if (L.length === 0 || Qr <= 0) continue;
-      let sw = 0;
-      for (const y of L) sw += y.w;
-      const pay0 = carpBol(wE, PPM, sw + wE);
-      const esnafPay = pay0 > p.esnaf.tabanPayPpm ? pay0 : p.esnaf.tabanPayPpm;
-      const P = Qr - carpBol(Qr, esnafPay, PPM); // oyuncu havuzu
-      let top = 0;
-      for (const y of L) {
-        y.s = carpBol(P, y.w, sw);
-        top += y.s;
-      }
-      let kalan = P - top; // 0 <= kalan < |L|: sıralı ilk `kalan` yuvaya +1
-      for (let i = 0; kalan > 0; i++, kalan--) (L[i] as YuvaHesabi).s += 1;
+      if (L.length === 0) continue; // donmamış yuva yok: bu mal bu turda atlanır
+      izle?.(tur, t.mal, Qr);
+      const pay = turPayi(Qr, L.map((y) => y.w), wE, p.esnaf.tabanPayPpm);
+      L.forEach((y, i) => (y.s = pay[i] as number));
     }
     // b) kasası aşılan donmamış dükkânlar
     const yeni: { dk: DukkanHesabi; top: number }[] = [];
@@ -333,27 +344,20 @@ export function etkinKademe(yuvaKademesi: number, kampanyaKademesi: number | und
 // 3. Talep Q (§6.5)
 // ---------------------------------------------------------------------------
 
-const SINIF_SIRASI: readonly IlceSinifi[] = ["kirsal", "kasaba", "sehir"];
-
 /**
- * İlçe sınıfı = BASKIN hücre sınıfı: UYGUN hücrelerin sınıf sayımında en çok olan; eşitlikte BÜYÜK sınıf (sehir > kasaba > kirsal). Uygun hücre yoksa
- * (hepsi 0) TÜM hücrelerin sayımına bakılır; o da boşsa "kirsal". (Fikstürdeki `ParselIlceTanimi.sinif` "en yüksek sınıf"tır ve KULLANILMAZ.)
+ * İlçe nüfus eşdeğeri (kişi; şartname §6.5, baş lider onaylı): fikstürdeki isteğe bağlı `nufus`, yoksa ilçenin fikstürdeki `sinif` alanına bağlı yedek sabit
+ * `ilceSinifiNufus[sinif]`. HÜCRE SINIFI HESAPLANMAZ ve kullanılmaz; ilçe seviyesi yoktur (kilitsizlik). Saf; iki yol da testlidir.
  */
-export function ilceSinifiBaskin(uygunSayim: Readonly<Record<IlceSinifi, number>>, tumSayim: Readonly<Record<IlceSinifi, number>>): IlceSinifi {
-  const toplam = SINIF_SIRASI.reduce((a, s) => a + uygunSayim[s], 0);
-  const sayim = toplam > 0 ? uygunSayim : tumSayim;
-  if (SINIF_SIRASI.every((s) => sayim[s] === 0)) return "kirsal"; // hücre yok: en küçük sınıf (eşitlik kuralı "büyük" burada anlamsız)
-  let en: IlceSinifi = "kirsal";
-  for (const s of SINIF_SIRASI) if (sayim[s] >= sayim[en]) en = s; // >=: eşitlikte sonraki (büyük) sınıf
-  return en;
+export function ilceNufusEsdegeri(ilce: { nufus?: number; sinif: IlceSinifi }, ilceSinifiNufus: Readonly<Record<IlceSinifi, number>>): number {
+  return ilce.nufus ?? ilceSinifiNufus[ilce.sinif];
 }
 
 /**
- * `taban[sınıf][mal] = talep1000Saat[mal] x yerelOlcek x ilceSinifiNufus[sınıf] / 1000` (mili-birim/saat; derlemede bir kez). Nüfus verisi ve ilçe seviyesi yoktur.
+ * `taban[ilçe][mal] = talep1000Saat[mal] x yerelOlcek x ilceNufusEsdegeri(ilçe) / 1000` (mili-birim/saat; derlemede bir kez). İlçe seviyesi yoktur.
  * Ara çarpım `talep1000Saat x yerelOlcek` ilk bölmeden ÖNCE tam çarpılır (`carpBol(talep1000Saat x yerelOlcek, nufus, 1000)`).
  */
-export function talepTabani(talep1000Saat: number, yerelOlcek: number, ilceSinifiNufus: number): number {
-  return carpBol(talep1000Saat * yerelOlcek, ilceSinifiNufus, 1000);
+export function talepTabani(talep1000Saat: number, yerelOlcek: number, nufusEsdegeri: number): number {
+  return carpBol(talep1000Saat * yerelOlcek, nufusEsdegeri, 1000);
 }
 
 /** Toplam-sabit bayram dalgası (A2 §1.9): bayramdan `oncesiGun` gün önce talep x oncesiPpm, bayram günü dahil sonraki `sonrasiGun` gün x sonrasiPpm. */

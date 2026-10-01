@@ -36,3 +36,9 @@ Yok (yeni dosyalar; hiçbir yerden çağrılmıyor, kuralSurumu ve altınlar etk
 
 ## Açık soru
 Yok.
+
+## Güncelleme (A3 8d6a615: §6.4 SIFIRLA, §6.5 ilçe nüfusu; Kod lideri onaylı)
+- `turPayi(Qr, ws, wE, tabanPayPpm)` ayrı saf işlev (şartname Ek B): `Qr <= 0` ise HERKES 0 (eski tur payı taşınmaz); aksi halde esnaf taban paylı havuz, kalan birimler sıralı +1. Ana döngü artık bunu çağırır (`Qr <= 0` dalında eski turun `s` değeri taşınmaz: önceki "birebir betik" davranışı bu güncellemeyle sıfırlama kuralına geçti). `ilcePaylastir`'a isteğe bağlı `izle` geri çağrısı (test/ölçüm): her (tur, mal) için `Qr`.
+- Testler: V5 (`Qr` 0 ve -7 -> `[0, 0]`; 300 000 -> `[116 916, 100 236]`), `turPayi` üst sınır, "her turda `Qr >= 1`" (3 000 rastgele küçük-Q girdisi, A3 taramasının küçük kopyası), V1-V4 AYNEN geçiyor.
+- §6.5: `ilceSinifiBaskin` KALDIRILDI (hücre sınıfı hesaplanmaz); yerine `ilceNufusEsdegeri({ nufus?, sinif }, ilceSinifiNufus) = nufus ?? ilceSinifiNufus[sinif]` (saf; iki yol testli). `talepTabani` üçüncü argümanı nüfus eşdeğeridir (`yerelOlcek` 40 verideki parametredir; kodda sabit yok).
+- Negatif kontrol: `Qr <= 0` korumasını kaldırma V5'i, `nufus` yolunu kaldırma nüfus testini kırdı. vitest hedefli 19/19, eslint temiz.
