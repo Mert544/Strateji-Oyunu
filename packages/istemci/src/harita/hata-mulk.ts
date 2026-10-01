@@ -50,6 +50,21 @@ const KURALLAR: Kural[] = [
   [/^ayni anda en cok (\d+) insaat/, (m) => `Aynı anda en çok ${m[1]} inşaat sürebilir; birinin bitmesini bekle.`],
   [/^bilinmeyen oyuncu/, () => "Bu hesap dünyaya henüz katılmamış (yönetici katılımı yapmalı)."],
   [/^oyuncunun suren hucreli insaati yok/, () => "Bu inşaat artık yok."],
+  // Ölçek büyütme (`tesis_olcek_yukselt`, mülk kipi; docs/06 §15.10)
+  [/^olcek yukseltmesi (\d+) ek bitisik hucre ister/, (m) => `Bu büyütme ${m[1]} ek bitişik hücre ister; hücreler seçilmedi.`],
+  [/^olcek yukseltmesi (\d+) ek hucre ister \(verilen (\d+)\)/, (m) => `Bu büyütme ${m[1]} ek hücre ister (seçilen ${m[2]}).`],
+  [/^bu yukseltme ek hucre gerektirmez/, () => "Bu büyütme için ek hücre gerekmiyor."],
+  [/^ek hucreler tesisin hucrelerine kenar-bitisik olmali/, () => "Ek hücreler yapıya kenar kenara bitişik olmalı."],
+  [/^sahipsiz hucre icin sinif gerekli/, () => "Satın alınacak hücrelerin arsa sınıfı belirtilmedi."],
+  [/^tesis zaten ayni veya daha buyuk olcekte/, () => "Tesis zaten bu ölçekte ya da daha büyük."],
+  [/^tesiste olcek yukseltmesi suruyor/, () => "Bu tesiste büyütme zaten sürüyor."],
+  [/^bolgede boyle bir tesis yok/, () => "Bu tesis artık yok."],
+  [/^bolge oyuncunun degil/, () => "Bu işletme senin değil."],
+  [/^bilinmeyen bolge/, () => "Bu işletme sunucuda bulunamadı."],
+  [/^gecersiz olcek/, () => "Geçersiz ölçek."],
+  [/^tesis turu mulk kipinde olceklenemez/, () => "Bu yapı büyütülemez."],
+  [/^tesisin hucresi yok/, () => "Tesisin hücre kaydı bulunamadı."],
+  [/^sanayi katmani kapali/, () => "Bu dünyada ölçek büyütme kapalı."],
 ];
 
 /** Çekirdek hata metni -> Türkçe cümle. `ad`: sahip kimliğinden görünen ad. */

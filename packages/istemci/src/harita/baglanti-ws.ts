@@ -18,7 +18,7 @@
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
-import type { GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
+import type { GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce } from "./hata-mulk";
 import { parselFiyatiMili } from "./fiyat";
 
@@ -47,6 +47,19 @@ export interface WsSecenekleri {
 }
 
 export type WsDurumu = "baglaniyor" | "bagli" | "kopuk" | "kapali" | "reddedildi";
+
+/**
+ * Özel bölge karesindeki tesis ölçeği: `tesisOlcek` listesi `[tesis kimliği, ölçek (1 M | 2 L)]` (protokole sonradan eklenen isteğe
+ * bağlı alan; `tesisler` demetine öğe eklenmedi). Listede olmayan tesis S'dir (0). Alan hiç yoksa (eski sunucu) tanımsız: istemci
+ * ölçeği ayak izinden çıkarır (`olcek.ts` `mevcutOlcek`).
+ */
+export function tesisOlcegi(oz: object, tesisId: number): 0 | 1 | 2 | undefined {
+  // Alan protokol tipine eklenene dek (K2 `kare-olcek`) yapısal okunur; eklendikten sonra da aynen çalışır
+  const l = (oz as { tesisOlcek?: ReadonlyArray<readonly [number, number]> }).tesisOlcek;
+  if (!l) return undefined;
+  const o = l.find((x) => x[0] === tesisId)?.[1];
+  return o === 1 || o === 2 ? o : 0;
+}
 
 interface Bekleyen {
   anahtar: string;
@@ -108,6 +121,8 @@ export class WsBaglanti implements MulkBaglantisi {
   private ilkHazir: Promise<void>;
   private ilkAcildi = false;
   private insaBaslangic = new Map<HucreId, number>();
+  /** Bu oturumda istenen ölçek büyütmelerinin hedefi (tesis kimliği → ölçek): karede hedef ölçek yoktur. */
+  private olcekHedefleri = new Map<number, 1 | 2>();
   private kapandi = false;
   /** Yetişme (sunucu kapalıyken geçen süreyi işletme): başlangıç, hedef ve son sim zamanı. */
   private yetisme: { bas: number; hedef: number; simdi: number } | null = null;
@@ -233,6 +248,30 @@ export class WsBaglanti implements MulkBaglantisi {
     }
   }
 
+  /** Ölçek büyütme: `tesis_olcek_yukselt` (ek hücrelerin arsası + yükseltme sunucuda tek işlem; başarısızsa hiçbir şey değişmez). */
+  async olcekYukselt(i: OlcekIstegi): Promise<TesisSonucu> {
+    try {
+      const komut: Komut = {
+        tur: "tesis_olcek_yukselt",
+        bolge: i.bolge,
+        tesis: i.tesis,
+        olcek: i.olcek,
+        ...(i.ekHucreler.length > 0 ? { ekHucreler: [...i.ekHucreler] } : {}),
+        ...(i.sinif ? { sinif: i.sinif } : {}),
+      };
+      const r = await this.komutGonder(komut);
+      if (r.tamam) {
+        this.olcekHedefleri.set(i.tesis, i.olcek);
+        for (const h of i.ekHucreler) this.insaBaslangic.set(h, r.t);
+        return { tamam: true, t: r.t };
+      }
+      const hucre = hataHucresi(r.hata);
+      return { tamam: false, hata: "sunucu", mesaj: mulkHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)), ...(hucre ? { hucre } : {}) };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
   /** Geri al: `insaat_iptal` (yapının inşaat kimliği karedeki hücreden), sonra bu işlemle alınan hücreler için `parsel_birak`. */
   async yapiGeriAl(i: GeriAlIstegi): Promise<TesisSonucu> {
     const c = this.ilceKaresi(i.ilce);
@@ -304,7 +343,8 @@ export class WsBaglanti implements MulkBaglantisi {
       simZamani: t,
       baglanti: this.durum === "bagli" ? "bagli" : "kopuk",
       ilceHucre: (k.oyuncu.mulk?.ilceHucre ?? []).map(([i, n]) => [i, n]),
-      surenInsaat: k.oyuncu.insaatlar.filter((x) => x[1] === "tesis").length,
+      // Hücreli inşaatlar: tesis ve ölçek büyütme (çekirdekte yükseltme de eşzamanlı inşaat sınırına girer)
+      surenInsaat: k.oyuncu.insaatlar.filter((x) => x[1] === "tesis" || x[1] === "olcek").length,
       yetisiyor: this.yetisme ? { ilerleme: this.yetisme.hedef > this.yetisme.bas ? Math.max(0, Math.min(1, (this.yetisme.simdi - this.yetisme.bas) / (this.yetisme.hedef - this.yetisme.bas))) : 0 } : null,
     };
   }
@@ -364,11 +404,27 @@ export class WsBaglanti implements MulkBaglantisi {
       }
     const ilDugum = (i: number): string | undefined => k.bolgeler.find((b) => b.i === i)?.id.split("#")[0];
     const yapilar: IsletmeYapisi[] = [];
+    // Tesis türü (kimlik): işletme düğümlerinin özel verisinden; ölçek büyütme inşaatında `hedef` TESİS kimliğidir (tür indeksi değil)
+    const tesisTuru = (tesisId: number): string => {
+      for (const b of k.bolgeler) {
+        const t = b.ozel?.tesisler.find((x) => x[0] === tesisId);
+        if (t) return turler[t[1]] ?? "";
+      }
+      return "";
+    };
     for (const [id, tur, bolge, hedef, bitis, bas, ek] of o.insaatlar) {
-      if (tur !== "tesis") continue;
+      if (tur !== "tesis" && tur !== "olcek") continue;
       const anahtar = `i${id}`;
       const il = ilDugum(bolge);
-      yapilar.push({ anahtar, durum: "insaat", tur: ek ?? turler[hedef] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), ...(bas !== undefined && bas >= 0 ? { baslangic: bas } : {}), bitis });
+      const baslangic = bas !== undefined && bas >= 0 ? { baslangic: bas } : {};
+      if (tur === "olcek") {
+        // Ek hücre gerekmediyse inşaatın hücresi yoktur: ilçe, büyüyen tesisin hücrelerinden bilinir
+        const yer_ = yer.get(anahtar) ?? yer.get(`t${hedef}`);
+        const hedefOlcek = this.olcekHedefleri.get(hedef);
+        yapilar.push({ anahtar, durum: "insaat", tur: tesisTuru(hedef), ...(il ? { il } : {}), ...(yer_ ? { ilce: yer_.ilce } : {}), ...(yer.get(anahtar) ? { hucre: yer.get(anahtar)!.hucre } : {}), ...baslangic, bitis, yukseltme: { tesis: hedef, ...(hedefOlcek ? { olcek: hedefOlcek } : {}) } });
+        continue;
+      }
+      yapilar.push({ anahtar, durum: "insaat", tur: ek ?? turler[hedef] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), ...baslangic, bitis });
     }
     const stok = new Map<number, { stokMili: number; uretimMili: number; satisMili: number; alisMili: number }>();
     const mal = (m: number): { stokMili: number; uretimMili: number; satisMili: number; alisMili: number } => {
@@ -380,9 +436,11 @@ export class WsBaglanti implements MulkBaglantisi {
       const oz = b.ozel;
       if (!oz) continue;
       const il = b.id.split("#")[0];
-      for (const [id, tur, , aktif, verim] of oz.tesisler) {
+      for (const demet of oz.tesisler) {
+        const [id, tur, , aktif, verim] = demet;
         const anahtar = `t${id}`;
-        yapilar.push({ anahtar, durum: "tesis", tur: turler[tur] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), aktif: aktif === 1, verimPpm: verim });
+        const olcek = tesisOlcegi(oz, id);
+        yapilar.push({ anahtar, durum: "tesis", tur: turler[tur] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), aktif: aktif === 1, verimPpm: verim, ...(olcek !== undefined ? { olcek } : {}) });
       }
       oz.stoklar.forEach((f, m) => {
         const v = stokAraDeger(f, t);
@@ -801,8 +859,17 @@ export class WsBaglanti implements MulkBaglantisi {
       if (y.durum === "insaat") {
         const ins = k.oyuncu?.insaatlar.find((x) => x[0] === y.id);
         if (ins) {
-          const tur = turler[ins[3]];
-          if (tur) y.tur = tur;
+          if (ins[1] === "olcek") {
+            // Ölçek büyütme: `hedef` büyüyen TESİSİN kimliğidir (tür indeksi değil); hücreler yalnız eklenecek olanlardır
+            const t = kendi?.ozel?.tesisler.find((x) => x[0] === ins[3]);
+            const tur = t ? turler[t[1]] : undefined;
+            if (tur) y.tur = tur;
+            const hedefOlcek = this.olcekHedefleri.get(ins[3]);
+            y.yukseltme = { tesis: ins[3], ...(hedefOlcek ? { olcek: hedefOlcek } : {}) };
+          } else {
+            const tur = turler[ins[3]];
+            if (tur) y.tur = tur;
+          }
           y.bitis = ins[4];
           const bas = this.insaBaslangic.get(y.hucreler[0]!);
           if (bas !== undefined) y.baslangic = bas;
@@ -811,6 +878,8 @@ export class WsBaglanti implements MulkBaglantisi {
         const t = kendi?.ozel?.tesisler.find((x) => x[0] === y.id);
         const tur = t ? turler[t[1]] : undefined;
         if (tur) y.tur = tur;
+        const olcek = t && kendi?.ozel ? tesisOlcegi(kendi.ozel, t[0]) : undefined;
+        if (olcek !== undefined) y.olcek = olcek;
       }
     }
     return {
