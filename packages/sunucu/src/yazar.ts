@@ -1149,6 +1149,7 @@ export class DunyaYazari {
 
   /** Izgara noktası `g`: zamanla oluşan kavramlar (ve komut kavramları için yedek değerlendirme), `ilk_uretim` damgası. */
   private async odulIzgara(g: Ms): Promise<boolean> {
+    const tara0 = performance.now();
     const d = this.sim.dunya;
     const ic = this.sim.ic;
     const adaylar: OdulAday[] = [];
@@ -1159,6 +1160,12 @@ export class DunyaYazari {
       }
       if (!this.damgaKuyruklandi.has(`${o.id}|ilk_uretim`) && ilkUretim(d, o.id, g)) this.damgaKuyrukla(o.id, { kavram: "ilk_uretim", t: g, kaynak: "damga" });
     }
+    const taramaMs = performance.now() - tara0;
+    const m = this.metrikler;
+    m.odulIzgaraSayisi++;
+    m.odulTaramaToplamMs += taramaMs;
+    m.odulTaramaSonMs = taramaMs;
+    m.odulTaramaEnUzunMs = Math.max(m.odulTaramaEnUzunMs, taramaMs);
     return this.odulYaz(adaylar, g);
   }
 

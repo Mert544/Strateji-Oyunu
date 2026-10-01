@@ -384,6 +384,7 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
         goruntuSureSonMs: yuvarla(m.sonGoruntuSureMs),
         goruntuSureEnUzunMs: yuvarla(m.enUzunGoruntuSureMs),
         goruntuIsci: { alinan: m.isciGoruntu ?? 0, atlanan: m.goruntuAtlanan ?? 0, hata: m.isciHatasi ?? 0, kopyaSonMs: yuvarla(m.sonKopyaMs ?? 0), kopyaEnUzunMs: yuvarla(m.enUzunKopyaMs ?? 0), isciSonMs: yuvarla(m.sonIsciMs ?? 0) },
+        odul: { acik: process.env.BOLGE_YUK_ODUL === "1", verilen: m.odulVerilen ?? 0, reddedilen: m.odulReddedilen ?? 0, izgara: m.odulIzgaraSayisi ?? 0, taramaToplamMs: yuvarla(m.odulTaramaToplamMs ?? 0, 2), taramaIzgaraBasinaMs: yuvarla((m.odulTaramaToplamMs ?? 0) / Math.max(1, m.odulIzgaraSayisi ?? 0), 3), taramaTurBasinaMs: yuvarla((m.odulTaramaToplamMs ?? 0) / Math.max(1, m.tur), 3), taramaEnUzunMs: yuvarla(m.odulTaramaEnUzunMs ?? 0, 2), tur: m.tur },
         yukOrtalamasi: os.loadavg()[0],
         goruntuMaliyeti,
       },

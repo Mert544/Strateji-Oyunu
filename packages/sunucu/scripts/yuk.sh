@@ -6,6 +6,7 @@
 #   packages/sunucu/scripts/yuk.sh patlama dosya 3     # mevcut patlama senaryosu, 3 tekrar
 #   BOLGE_PG_URL=postgres://... packages/sunucu/scripts/yuk.sh kademeli pg
 # Ortam (hepsi istege bagli): BOLGE_YUK_KADEME (5), BOLGE_YUK_BOT (100), BOLGE_YUK_ISINMA (4), BOLGE_YUK_GORUNTU_SAAT (6), BOLGE_YUK_ISCI=0,
+#   BOLGE_YUK_ODUL=1 (Esnaf Defteri odul dedektoru acik; ozet satirina dedektor maliyeti eklenir),
 #   BOLGE_YUK_HEDEF_ZORUNLU=1 (isinmis p95 > 300 ms ise basarisiz). Rapor: raporlar/yuk/yuk-<zaman>.json (git disi).
 # Cikti: her kosu icin tek satir ozet (senaryo, depo, p95'ler, olay dongusu, yuk ortalamasi). Makine paylasimliysa yuk ortalamasina bakin.
 set -uo pipefail
@@ -33,7 +34,8 @@ for i in $(seq 1 "$TEKRAR"); do
       `ilk-turlar p95=${r.uctanUcaIlkTurlar.p95Ms}`,
       `ISINMIS p50/p95=${f(r.uctanUcaIsinmaSonrasi)} (hedef <= ${r.hedefP95Ms}: ${r.hedefIsinmisTuttu ? "TUTTU" : "TUTMADI"})`,
       `commit p50/p95=${r.sunucuCommit.p50Ms}/${r.sunucuCommit.p95Ms}`,
-      `dongu p50/p99/max=${o.p50Ms}/${o.p99Ms}/${o.maxMs}`, `cpu=${r.cpu.ortCekirdek}`, `yuk=${(r.yukOrtalamasi || 0).toFixed(1)}`,
+      `dongu p50/p99/max=${o.p50Ms}/${o.p99Ms}/${o.maxMs}`,
+      r.odul && r.odul.acik ? `odul verilen=${r.odul.verilen} dedektor=${r.odul.taramaToplamMs}ms/${r.odul.izgara}izgara (tur basina ${r.odul.taramaTurBasinaMs}ms, en uzun ${r.odul.taramaEnUzunMs}ms)` : null, `cpu=${r.cpu.ortCekirdek}`, `yuk=${(r.yukOrtalamasi || 0).toFixed(1)}`,
     ].filter(Boolean).join(" | "));
   ' "$KOK/$son" "$i" "$kod"
 done

@@ -137,7 +137,7 @@ runuser -u postgres -- $B/pg_ctl -D $S/veri -m fast stop && rm -rf $S   # işini
 
 ## Alfa-0 işletim
 
-Bu bölüm tek makinede (sunucu + Postgres 16) açık alfa için gerekenleri toplar. Gerçek kimlik doğrulama (e-posta sihirli bağlantı + Google, oturum, çok hesap, KVKK) tasarım notu: [KIMLIK.md](KIMLIK.md). Hiçbir sır depoda yoktur; yapılandırma yalnız ortam değişkenleriyle yapılır. Dosyalar kökteki `deploy/` altındadır.
+Bu bölüm tek makinede (sunucu + Postgres 16) açık alfa için gerekenleri toplar. Gerçek kimlik doğrulama (e-posta sihirli bağlantı + Google, oturum, çok hesap, KVKK) tasarım notu: [KIMLIK.md](KIMLIK.md). Hiçbir sır depoda yoktur; yapılandırma yalnız ortam değişkenleriyle yapılır. Dosyalar kökteki `deploy/` altındadır. İlk gerçek kurulumda sırayla koşulacak adımlar: "Alfa-0 açılış kontrol listesi" (bu bölümün sonunda).
 
 ### Kurulum (Docker Compose)
 
@@ -197,13 +197,13 @@ Kural sürümü değişimi (yeni kimlik eklemek, parametre/denge değiştirmek) 
 1. Eski içerikle çalışan sunucuyu normal kapatın (SIGTERM: kuyruk yazılır, kapanış görüntüsü günlüğü boşaltır). Günlük kuyruğu boş olmalıdır, aksi halde göç reddedilir.
 2. `deploy/yedek.sh` ile pg dökümünü alın (göç ayrıca kendi görüntü yedeğini `snapshot_yedek`'e yazar, ama tam döküm ikinci sigortadır).
 3. Yeni içerikle `BOLGE_GOC=1` (ya da `--goc`) açın; `hazir` olayındaki `kurtarma.goc` (`eklenen`, `ihlalSayisi`, `yenidenIndekslendi`) beklenenle uyuşuyor mu bakın; ardından `BOLGE_GOC=0` ile yeniden başlatın (sonraki açılış göç etmez).
-4. Geri dönüş: yalnız yeni kural sürümüyle hiç komut kabul edilmediyse geçerlidir. Sunucuyu durdurun, `postgresDeposu({...}).yedektenDon("goc-<eskiKural>")` ile yedeği en yeni görüntü yapın (ya da tam dökümü geri yükleyin), eski içerikle bayraksız açın. Dosya deposunda `.yedek` dosyasını `<ad>.goruntu` üzerine kopyalayın.
+4. Geri dönüş: yalnız yeni kural sürümüyle hiç komut kabul edilmediyse geçerlidir. Sunucuyu durdurun, `--depo pg --dunya <ad> --yedekten-don goc-<eskiKural>` CLI'ı ile (kodda `postgresDeposu({...}).yedektenDon("goc-<eskiKural>")`) yedeği en yeni görüntü yapın (ya da tam dökümü geri yükleyin), eski içerikle bayraksız açın. Adım adım prova: "Alfa-0 açılış kontrol listesi", adım 6. Dosya deposunda `.yedek` dosyasını `<ad>.goruntu` üzerine kopyalayın.
 
 ### Sağlık ve metrik
 
 - **`/saglik`** (ana portta, kimlik doğrulamasız, kişisel veri yok): `{ durum: "ok"|"yetisiyor"|"olumcul"|"kapaniyor", seq, simZamaniMs }`. Ölümcül yazma hatası ya da kapanış sırasında **503**, yetişme sırasında **200** (`durum:"yetisiyor"`: süreç sağlıklı, yalnız oyuncu komutu bekletilir; orkestratör yeniden başlatmasın). **`/hazir`** yalnız `durum:"ok"` iken 200'dür (ters vekil / yük dengeleyici kabul testi için).
 - **`/metrik`** (Prometheus metin 0.0.4) **ayrı bir portta** sunulur (`BOLGE_METRIK_PORT`): oyuncu portunun yanından internete sızmaz. **Güvenlik seçimi:** varsayılan dinleme `127.0.0.1`; loopback dışına bağlanırsa (konteyner, ayrı makine) en az 16 karakterli `BOLGE_METRIK_TOKEN` ZORUNLUDUR ve `Authorization: Bearer <token>` istenir (sabit zamanlı karşılaştırma; yetkisiz 401, `GET` dışı 405, bilinmeyen yol 404), aksi halde sunucu başlamaz. Etiketler sabit kümelidir (`sonuc`, `neden`, `quantile`, `le`); oyuncu kimliği, token, ad ya da konum yoktur. Prometheus: `scrape_configs: [{ job_name: bolge, metrics_path: /metrik, authorization: { credentials_file: /etc/prometheus/bolge-token }, static_configs: [{ targets: ["127.0.0.1:9464"] }] }]`.
-- Başlıca metrikler: `bolge_bagli_oyuncu`, `bolge_baglanti`; `bolge_komut_toplam{sonuc}` ve `bolge_komut_reddedilen_toplam{neden}` (hız sınırı, `yetisiyor`); `bolge_commit_gecikme_ms` (histogram + `{quantile}`: komutun kuyruğa girişinden commit'e) ; `bolge_yetisiyor`, `bolge_yetisme_kalan_ms`, `bolge_saat_geride_ms`; `bolge_depo_gunluk_bayt`, `bolge_depo_goruntu_bayt`; `bolge_son_goruntu_yasi_sim_ms` / `_saniye`, `bolge_son_goruntu_bayt`, `bolge_goruntu_toplam`, `bolge_goruntu_hata_toplam`, `bolge_goruntu_sure_son_ms`; `bolge_seq`, `bolge_sim_zamani_ms`, `bolge_tur_toplam`, `bolge_bekleyen_komut`, `bolge_olumcul`; görüntü işçisi: `bolge_goruntu_kopya_son_ms` / `_en_uzun_ms` (ana iş parçacığında kalan yapısal kopya), `bolge_goruntu_isci_son_ms`, `bolge_goruntu_isci_toplam`, `bolge_goruntu_atlanan_toplam`, `bolge_goruntu_isci_hata_toplam`; kare yayını: `bolge_yayin_atlanan_kare_toplam`, `bolge_yayin_yavas_kopan_toplam`, `bolge_yayin_sira`; olay döngüsü (`perf_hooks.monitorEventLoopDelay`, 10 ms çözünürlük, 5 dk kayan pencere): `bolge_olay_dongusu_gecikme_p50_ms` / `_p99_ms` / `_en_buyuk_ms`; süreç: `bolge_surec_bellek_bayt`, `bolge_surec_cpu_saniye_toplam`, `bolge_calisma_saniye`. Önerilen alarmlar: `bolge_olumcul == 1`, `bolge_olay_dongusu_gecikme_p99_ms` > 250, `bolge_goruntu_isci_hata_toplam` artışı, `bolge_son_goruntu_yasi_saniye` > 2 saat, `bolge_commit_gecikme_ms{quantile="0.95"}` > 1000, `bolge_goruntu_hata_toplam` artışı. Testler (`test/metrik.test.ts`) sahte ölçü saatiyle koşar; sayaçlar gerçek zamandan bağımsızdır.
+- Başlıca metrikler: `bolge_bagli_oyuncu`, `bolge_baglanti`; `bolge_komut_toplam{sonuc}` ve `bolge_komut_reddedilen_toplam{neden}` (hız sınırı, `yetisiyor`); `bolge_commit_gecikme_ms` (histogram + `{quantile}`: komutun kuyruğa girişinden commit'e) ; `bolge_yetisiyor`, `bolge_yetisme_kalan_ms`, `bolge_saat_geride_ms`; `bolge_depo_gunluk_bayt`, `bolge_depo_goruntu_bayt`; `bolge_son_goruntu_yasi_sim_ms` / `_saniye`, `bolge_son_goruntu_bayt`, `bolge_goruntu_toplam`, `bolge_goruntu_hata_toplam`, `bolge_goruntu_sure_son_ms`; `bolge_seq`, `bolge_sim_zamani_ms`, `bolge_tur_toplam`, `bolge_bekleyen_komut`, `bolge_olumcul`; görüntü işçisi: `bolge_goruntu_kopya_son_ms` / `_en_uzun_ms` (ana iş parçacığında kalan yapısal kopya), `bolge_goruntu_isci_son_ms`, `bolge_goruntu_isci_toplam`, `bolge_goruntu_atlanan_toplam`, `bolge_goruntu_isci_hata_toplam`; kare yayını: `bolge_yayin_atlanan_kare_toplam`, `bolge_yayin_yavas_kopan_toplam`, `bolge_yayin_sira`; olay döngüsü (`perf_hooks.monitorEventLoopDelay`, 10 ms çözünürlük, 5 dk kayan pencere): `bolge_olay_dongusu_gecikme_p50_ms` / `_p99_ms` / `_en_buyuk_ms`; süreç: `bolge_surec_bellek_bayt`, `bolge_surec_cpu_saniye_toplam`, `bolge_calisma_saniye`; ödül dedektörü: `bolge_odul_verilen_toplam`, `bolge_odul_dedektor_toplam_ms`, `bolge_odul_izgara_toplam`, `bolge_odul_dedektor_son_ms`, `bolge_odul_dedektor_en_uzun_ms` (ızgara başına tarama süresi = toplam_ms / izgara_toplam). Önerilen alarmlar: `bolge_olumcul == 1`, `bolge_olay_dongusu_gecikme_p99_ms` > 250, `bolge_goruntu_isci_hata_toplam` artışı, `bolge_son_goruntu_yasi_saniye` > 2 saat, `bolge_commit_gecikme_ms{quantile="0.95"}` > 1000, `bolge_goruntu_hata_toplam` artışı. Testler (`test/metrik.test.ts`) sahte ölçü saatiyle koşar; sayaçlar gerçek zamandan bağımsızdır.
 
 ### Performans: görüntü işçisi, yayın parçaları, uygulama dilimleme
 
@@ -240,7 +240,7 @@ Ana iş parçacığındaki görüntü işi ≈ 100-112 ms → ≈ 15 ms (≈ 7 k
 BOLGE_AGIR_TEST=1 pnpm vitest run packages/sunucu/test/yuk.test.ts                                 # dosya deposu
 BOLGE_AGIR_TEST=1 BOLGE_YUK_DEPO=pg BOLGE_PG_URL=postgres://... pnpm vitest run packages/sunucu/test/yuk.test.ts
 # ayarlar: BOLGE_YUK_SENARYO (patlama|kademeli), BOLGE_YUK_BOT (100), BOLGE_YUK_TUR (24), BOLGE_YUK_DEPO (bellek|dosya|pg), BOLGE_YUK_ABONE=0, BOLGE_YUK_GORUNTU_SAAT (6),
-#          BOLGE_YUK_ISCI=0 (görüntü işçisi kapalı), BOLGE_YUK_ISINMA (4: ilk N tur ayrıca raporlanır), BOLGE_YUK_PROFIL=dosya.cpuprofile (ana iş parçacığı CPU profili)
+#          BOLGE_YUK_ISCI=0 (görüntü işçisi kapalı), BOLGE_YUK_ODUL=1 (ödül dedektörü açık), BOLGE_YUK_ISINMA (4: ilk N tur ayrıca raporlanır), BOLGE_YUK_PROFIL=dosya.cpuprofile (ana iş parçacığı CPU profili)
 ```
 
 `@bolge/botlar` parsel botları (yalnız içe aktarılır, çekirdek/bot kodu değişmez) gerçek ws üzerinden bir sunucuya `katil` olur; her tur 6 sim-saat (zaman sıkıştırılmıştır: yük, canlı dünyadaki dakikalara değil birkaç saniyeye yığılır, bu yüzden bir gerçek yükün DÜŞMANCA üst sınırıdır). JSON rapor `raporlar/yuk/yuk-<zaman>.json` (git dışı) ve konsol özeti: uçtan uca komut gecikmesi (tüm komutlar, ilk `BOLGE_YUK_ISINMA` tur ve ısınma sonrası ayrı), sunucu commit gecikmesi, olay döngüsü gecikmesi (p50/p99/en büyük), CPU, bellek, görüntü maliyeti. Test düşerse aşama günlüğü, ortam ve pg durumu `=== YUK TESTI DUSTU: TANI ===` bloğunda basılır. `BOLGE_AGIR_TEST` yoksa test atlanır.
@@ -252,7 +252,8 @@ packages/sunucu/scripts/yuk.sh kademeli            # 100 bot, tur başına 5 bot
 packages/sunucu/scripts/yuk.sh patlama dosya 3     # mevcut patlama senaryosu, 3 tekrar
 BOLGE_PG_URL=postgres://... packages/sunucu/scripts/yuk.sh kademeli pg
 BOLGE_YUK_HEDEF_ZORUNLU=1 packages/sunucu/scripts/yuk.sh kademeli   # ısınmış p95 > 300 ms ise başarısız
-# ayarlar: BOLGE_YUK_KADEME (5; tur başına katılan bot), BOLGE_YUK_ISINMA (4), BOLGE_YUK_BOT (100), BOLGE_YUK_TUR, BOLGE_YUK_GORUNTU_SAAT, BOLGE_YUK_ISCI=0
+BOLGE_YUK_ODUL=1 packages/sunucu/scripts/yuk.sh kademeli dosya 3    # Esnaf Defteri ödül dedektörü AÇIK (maliyeti özet satırında)
+# ayarlar: BOLGE_YUK_KADEME (5; tur başına katılan bot), BOLGE_YUK_ISINMA (4), BOLGE_YUK_BOT (100), BOLGE_YUK_TUR, BOLGE_YUK_GORUNTU_SAAT, BOLGE_YUK_ISCI=0, BOLGE_YUK_ODUL=1
 ```
 
 Betik tek satırlık özet basar (senaryo, depo, tüm/katılım dönemi/ısınmış p50-p95, commit, olay döngüsü, makine yükü) ve ayrıntıyı `raporlar/yuk/*.json`'a yazar. Temiz bir çalışma ağacında (başka işlerin yarım değişiklikleri sonucu bozmasın) ve makine boşken koşun; sonuçta "yuk" (1 dk makine yük ortalaması) 4'ün çok üstündeyse mutlak değerler şişkindir, yalnız art arda alınan karşılaştırma anlamlıdır.
@@ -270,6 +271,15 @@ Betik tek satırlık özet basar (senaryo, depo, tüm/katılım dönemi/ısınm�
 | kademeli, pg | 1275 | 340 (287-401) | 199 / 332 | 76 / 296 (99-361) | 308 | 382 / 560 |
 
 Okuma: kademeli katılımda tüm komutların p95'i patlamanın 1/5'i kadardır (kalan darboğaz katılım dönemindeki 5 botluk kurulum dalgaları); ısınmış p95 iki senaryoda da ≈ 210-300 ms (hedefin içinde, yüklü makinede bile; en kötü koşu 360 ms). Daha az yüklü bir koşuda (yük 11,5, `yuk.sh kademeli dosya`) tüm komutların p95'i 251 ms, ısınmış p95 117 ms çıktı (hedef tuttu). Boş makinede (bu ölçümlerin 4 kat altı yüklü) kademeli senaryonun tümünün 300 ms'in altına inmesi beklenir; çekirdek komut maliyeti işi (G2) bunu ve patlamayı iyileştirmelidir.
+
+**Ödül dedektörü açıkken (Esnaf Defteri, `BOLGE_ODUL=1`)**: dedektör dünyayı her sim-saat sınırında durdurur ve oyuncu başına kavram taraması yapar (yalnız ızgara noktalarında; komut maliyeti değişmez). Ölçüm: aynı makine, `BOLGE_YUK_ODUL=0/1` ardışık dönüşümlü 3 çift (`yuk.sh kademeli dosya`, HEAD 3ad8168 + ölçüm metrikleri), **makine yükü 15,8-20,1** (4 çekirdek; mutlak değerler şişkin, yalnız çiftler arası fark anlamlı); hücre = 3 koşunun medyanı, ms:
+
+| | ısınmış p95 | katılım dönemi p95 | tüm komutlar p95 | commit p95 | olay döngüsü p99 |
+| --- | --- | --- | --- | --- | --- |
+| ödül KAPALI | 183 (140-250) | 408 (354-480) | 337 (289-446) | 308 (261-409) | 322 |
+| ödül AÇIK | 231 (171-234) | 454 (364-468) | 350 (286-400) | 293 (265-306) | 323 |
+
+Verilen ödül 281/koşu (264 ızgara noktası, 95 oyuncu). **Dedektörün kendi maliyeti** (`bolge_odul_dedektor_*`, ızgara taraması `performance.now()` ile ölçülür): koşu başına toplam 348 / 714 / 363 ms (medyan 363); ızgara başına ≈ 1,3-2,7 ms; 75 ms'lik tur başına ortalama 2,1 / 4,0 / 2,2 ms (medyan 2,2 ms ≈ ana iş parçacığı süresinin %1-3'ü); tek bir taramanın en uzunu 19-112 ms (yükle çekişen bir ızgara; tipik değil). **Sonuç:** ısınmış p95 hedefi (≤ 300 ms) ödül açıkken de TUTTU (171-234 ms, makine yükü ≈ 18 iken); ödül açık/kapalı arasındaki fark (+≈50 ms ısınmış medyanda) 3'er koşunun kendi yayılımının (140-250 ms) içindedir, yani gürültüden ayrılamaz; dedektörün ölçülen toplam maliyeti bunu açıklamaya yetmez (ızgara başına ≈ 2 ms). Katılım dönemi p95'i (364-468 ms) ödülden BAĞIMSIZ olarak 300'ün üstünde: ödül KAPALI de 354-480 ms; bu, kademeli katılımdaki 5 botluk kurulum dalgalarının (çekirdek komut maliyeti, "Kalan darboğaz") eseridir ve hedef tanımının dışındadır. **Tahmin (ölçülmedi, ızgara başına ≈ 2 ms x 100 oyuncu):** kapalıyken yetişme (catch-up) için bir sim-yılı ≈ 8 760 ızgara = yaklaşık +11-24 s (yüklü makinede; boş makinede birkaç kat az beklenir; `bolge_odul_dedektor_*` ile izlenir); oyuncu sayısıyla doğrusaldır. Dedektörü kapatmak gerekirse `BOLGE_ODUL=0` (çekirdek durumunu değiştirmez, yeni ödül verilmez).
 
 **Ölçüm ortamı:** Intel Xeon 2.10 GHz, 4 çekirdek, 15.7 GB RAM, Linux 6.18, Node v22.22.2; sunucu, 100 bot ve test koşucusu AYNI süreçte ve aynı makinede (yerel pg 16, `fsync=off`; üretim donanımında diskli fsync commit'i yavaşlatır). Sentetik harita + sentetik-50 parsel (mülk kipi), 100 bot (95'inin `katil` komutu başarılı oldu), 24 tur, 1326-1588 komut (bot sürümüne göre), hiç protokol hatası yok. **Makine ölçüm sırasında başka geliştirme işleriyle paylaşıldı ve 4 çekirdeğe karşı ortalama 10-14 koşabilir iş vardı** (`yuk` sütunu): mutlak değerler yaklaşık 3 kat şişkindir, yalnız aynı koşulda art arda alınan "önce/sonra" karşılaştırması anlamlıdır.
 
@@ -293,6 +303,119 @@ Okuma: kademeli katılımda tüm komutların p95'i patlamanın 1/5'i kadardır (
 Ne değişti, ne değişmedi: (a) **olay döngüsü p99 %33-53 düştü, en büyük gecikme %14-80 düştü** (çoğunda %50'den fazla; görüntü işçisi + yayın parçaları + dilimleme); (b) **tüm komutların p50'si %46-65 düştü** (dilimleme: patlamadaki ilk komutların yanıtı toplunun sonunu beklemiyor); (c) **tüm komutların p95'i büyük ölçüde DEĞİŞMEDİ (önce 0,9-1,4 sn, sonra 0,9-1,1 sn)**: hedef (≤ 300 ms) tüm komutlar için TUTMUYOR; (d) ısınmış durumda (ilk 4 turdan sonra) p95 100-210 ms, yani **hedefin içinde**, görüntü işçisi açıkken kuyrukla yarışan ek CPU yüzünden bu makinede sonra sürümün ısınma p50'si birkaç ms ila ~60 ms yüksek çıktı (işçi iş parçacığı çekişmeli 4 çekirdekte ana iş parçacığıyla yarışıyor; boş makinede beklenen tersidir). Not: "önce" sürümün ağır görüntü işi, test düzeninde komutların gönderildiği pencerenin DIŞINA düşüyordu (tur sonunda görüntü, sonra botlar komut gönderir); gerçek trafikte görüntü rastgele anlara denk gelir ve o an gelen her komuta ≈ 100 ms ekler: ölçülen kazanç bu yüzden olay döngüsü gecikmesinde ve CPU maliyetinde görünür, bu test düzeninde komut gecikmesinde değil.
 
 **Kalan darboğaz: çekirdeğin komut maliyeti (sunucu değiştiremez).** Tüm komutların p95'ini ilk turlardaki patlama belirler: 100 bot ilk 3 turda 673 komut yollar (1326 komutun %51'i; ilk turda 361 komut aynı grup commit'inde). Tur içi zamanlama (yazar aşamaları, geçici enstrümantasyon, dosya deposu): 361 komutluk toplu için `Simulasyon.uygula` toplamı 979 ms, 191 komutluk için 797 ms, 121 komutluk için 835 ms; günlük yazımı 2-65 ms; yani **toplunun %86-92'si çekirdekte** (tur 1059 / 928 / 909 ms). Komut türüne göre `Simulasyon.uygula` (tüm koşu, çekişmeli makinede): `ticaret_emri` 337 komut, ort 7,8 ms (en yavaşı 337 ms); `yapi_yerlestir` 239 komut, ort 7,0 ms; `parsel_al` 722 komut, ort 2,2 ms (650'si reddedilen!); `oyuncu_katil` 100 komut, ort 6,8 ms. Isınmış turlarda 40-57 komutluk toplu 33-103 ms. **Öneri (çekirdek/G2):** `ticaret_emri` ve `yapi_yerlestir` sonrası lojistik/kapsam yeniden hesabını (`lojistikCoz`, `kapsamiHesapla`, profilde en yüksek öz süreler) komut başına değil toplu ya da tembel yap; reddedilen `parsel_al`'ı ön doğrulamada ucuzlat. **Öneri (test düzeni):** gerçek oyuncular ilk 4 turdaki gibi hepsi aynı 75 ms'de 361 pahalı komut göndermez; hedef p95'i ısınmış (ya da kademeli katılım) senaryo üzerinde tanımlamak daha gerçekçidir. Sunucu tarafı olarak yapılabilecek kalan: `commitAraligiMs` 75'ten 25-30'a (tur başına iş küçülür, p50 azalır), ama patlamanın toplam maliyetini azaltmaz.
+
+## Alfa-0 açılış kontrol listesi
+
+Gerçek bir makinede (Docker + Compose v2) İLK kurulumda, sırayla ve bir adım geçmeden sonrakine geçmeden koşulacak kontroller. Her adım komutu ve beklenen sonucu verir; beklenenden saparsa DURUN ve düzeltin. Bu listenin hiçbir adımı bu depoda Docker daemon'ı olmadan koşulamadı (ortamda daemon yok): Docker'a özgü adımlar (1, 4'ün konteyner kısmı, 5-6'nın `compose` komutları) **ilk gerçek makinede ilk kez denenecektir**; sunucu davranışı (üretim kipi, sağlık, metrik, SIGTERM, kill -9) aynı CLI ile yerelde ve otomatik testlerde doğrulanmıştır, bu adımlarda yerel eşdeğeri de yazılıdır. Komutlarda kısaltma:
+
+```sh
+D="docker compose -f deploy/docker-compose.yml --env-file deploy/.env"
+# ön koşul: deploy/.env üç sır DEGISTIRILMIS (>= 16 karakter, "degistir..." ile başlamayan); saat NTP ile senkron:
+timedatectl show -p NTPSynchronized      # NTPSynchronized=yes (dünyanın saati duvar saatidir; bkz. "Mutlak saat")
+```
+
+**1. İmaj derlenir, açılır, root olmayan kullanıcıyla çalışır**
+```sh
+$D build                                  # beklenen: hata yok (pnpm install --frozen-lockfile adımı dahil)
+$D up -d && $D ps                         # beklenen: pg "healthy", sunucu "Up (healthy)" (HEALTHCHECK ilk 60 sn bekler)
+$D exec sunucu id -u                      # beklenen: 1000 (root DEĞİL; Dockerfile "USER node")
+$D exec sunucu whoami                     # beklenen: node
+$D logs sunucu | grep '"olay":"hazir"'    # beklenen: tek JSON satırı; port 8787, metrikPort 9464; "olumcul" yok
+```
+Sunucu "unhealthy" ya da yeniden başlıyorsa: `$D logs sunucu` son satırı (`olumcul` + neden). Sık nedenler: sır reddi (adım 3), `PG_SIFRE` ile pg'nin ilk kurulumdaki şifresi farklı (`pgdata` hacmi ilk şifreyle kurulur; şifre sonradan `.env`'de değişirse `docker volume rm bolge_pgdata` ile sıfırlayın, YALNIZ boş kurulumda).
+
+**2. Sağlık ve hazır uçları**
+```sh
+curl -si http://127.0.0.1:8787/saglik     # beklenen: HTTP 200, {"durum":"ok","seq":N,"simZamaniMs":M}
+curl -si http://127.0.0.1:8787/hazir      # beklenen: HTTP 200 (yalnız durum "ok" iken; yetişirken 503, /saglik ise 200 "yetisiyor")
+```
+
+**3. Metrik ucu: tokensiz reddedilir, tokenla açılır; pg ve oyuncu portu dışarı açılmamış**
+```sh
+curl -si http://127.0.0.1:9464/metrik | head -1                                   # beklenen: HTTP/1.1 401 (loopback dışı bind = konteyner içi 0.0.0.0; token zorunlu)
+curl -s -H "Authorization: Bearer $(grep ^METRIK_TOKEN deploy/.env | cut -d= -f2-)" http://127.0.0.1:9464/metrik | grep -E '^bolge_(olumcul|yetisiyor|bagli_oyuncu|seq) '
+                                                                                  # beklenen: bolge_olumcul 0, bolge_yetisiyor 0, seq > 0
+curl -si -X POST http://127.0.0.1:9464/metrik | head -1                           # beklenen: 405 (GET dışı); /bilinmeyen yol: 404
+ss -ltn | grep -E ':(5432|8787|9464)\b'                                           # beklenen: 8787 ve 9464 YALNIZ 127.0.0.1'de; 5432 hiç yok (pg yayınlanmaz)
+```
+Üretimde tokensiz açma denemesi (`BOLGE_METRIK_HOST=0.0.0.0` + boş/kısa token) sunucuyu BAŞLATMAZ: aşağıdaki adım 4 bunu da kapsar.
+
+**4. Üretim kipi örnek/varsayılan sırları reddeder** (yerelde Docker'sız aynı denetim; konteyner kısmı için `.env.ornek`'i olduğu gibi kullanın)
+```sh
+$D --env-file deploy/.env.ornek config >/dev/null && echo "yapi ok"               # beklenen: "yapi ok" (statik doğrulama; sırsız çağrı "PG_SIFRE gerekli" hatası verir)
+$D --env-file deploy/.env.ornek run --rm --no-deps sunucu; echo "kod=$?"          # beklenen: kod=1; mesaj "uretim kipi: gelistirme sirri en az 16 karakter olmali ve varsayilan/ornek ('degistir...') deger olmamali"; sunucu HİÇ başlamaz
+$D run --rm --no-deps -e BOLGE_GELISTIRME_SIRRI=kisa sunucu; echo "kod=$?"        # beklenen: kod=1 (< 16 karakter)
+$D run --rm --no-deps -e BOLGE_ELLE_SAAT=1 sunucu; echo "kod=$?"                  # beklenen: kod=1 (üretimde elle saat yasak)
+# yerel eşdeğer (Docker'sız): BOLGE_URETIM=1 node --import tsx packages/sunucu/src/cli.ts   # beklenen: çıkış kodu 1 + aynı mesaj
+```
+`BOLGE_METRIK_TOKEN=degistir...` de aynı şekilde reddedilir (`uretim kipi: metrik token'i ornek ...`). **Sunucu `PG_SIFRE`'yi DENETLEMEZ** (pg'nin kendi sırrıdır): `grep -c degistir deploy/.env` çıktısı 0 olmalı. Not: `run` ile verilen `-e` değerleri `.env`'in üzerine yazılır; açık üretim sunucusuna dokunmaz (`--no-deps`: pg'ye de dokunmaz, `--rm`: kalıcı konteyner bırakmaz).
+
+**5. Yedek → geri yükleme tatbikatı (`durumOzeti` eşitliği)**: yedekten dönen dünya, yedeğin alındığı dünyayla aynı özeti vermelidir. pg yayınlanmadığı için araçlar pg konteynerinden koşar; yedek alınırken sunucu KAPALI olmalıdır (kapanış görüntüsü günlüğü boşaltır; aksi halde iki sunucunun "aynı an" karşılaştırması açık dünya hareket ettiği için anlamsız olur).
+```sh
+$D stop sunucu                                                                    # beklenen: ≤ 60 sn içinde çıkış; son log satırı "kapandi" (kod 0, 137 DEĞİL)
+$D exec -T pg pg_dump -U bolge -Fc --no-owner bolge > yedek.dump && sha256sum yedek.dump > yedek.dump.sha256
+$D exec -T pg createdb -U bolge bolge_geri                                        # beklenen: hatasız (boş yeni veritabanı)
+$D exec -T pg pg_restore -U bolge -d bolge_geri --no-owner < yedek.dump           # beklenen: hatasız
+# geri yüklenen veritabanından GEÇİCİ ikinci sunucu (üretim sunucusuyla portu çakışmaz: yayın portu yok):
+SIFRE=$(grep ^PG_SIFRE deploy/.env | cut -d= -f2-)
+$D run -d --no-deps --name bolge-geri-deneme -e BOLGE_PG_URL="postgres://bolge:$SIFRE@pg:5432/bolge_geri" sunucu
+docker logs bolge-geri-deneme 2>&1 | grep '"olay":"hazir"' | tee /tmp/geri.hazir     # kurtarma.{seq,simZamani,durumOzeti}
+$D start sunucu && sleep 20 && $D logs sunucu 2>&1 | grep '"olay":"hazir"' | tail -1 | tee /tmp/canli.hazir
+# beklenen: iki satırın kurtarma.seq, kurtarma.simZamani, kurtarma.durumOzeti ve kurtarma.goruntuSeq ALANLARI AYNIDIR (yetişme sonrası değil, açılıştaki kurtarma)
+docker rm -f bolge-geri-deneme; $D exec -T pg dropdb -U bolge bolge_geri
+```
+Host'ta pg istemci araçları varsa alternatif: `deploy/yedek.sh` ve `deploy/geri-yukle.sh ... --olustur` (sha256 doğrulamalı; bkz. "Yedek ve geri yükleme"). Otomatik eşdeğeri: `test/yedek-geri-yukle.test.ts`. Dumpı SERVER dışında (başka disk/makine) saklayın; `BOLGE_GELISTIRME_SIRRI` ayrıca yedeklenir.
+
+**6. Kural dönemi göç provası** (üretim veritabanına DOKUNMADAN, yedeğin kopyasında): yeni içerikle (`packages/veri/icerik/*` değişmiş yeni imaj; içerik değişmediyse bayrak zararsızdır ve `kurtarma.goc` `null` döner) göç `bolge_geri` kopyasında denenir.
+```sh
+$D exec -T pg createdb -U bolge bolge_prova && $D exec -T pg pg_restore -U bolge -d bolge_prova --no-owner < yedek.dump
+$D run --rm --no-deps -e BOLGE_GOC=1 -e BOLGE_PG_URL="postgres://bolge:$SIFRE@pg:5432/bolge_prova" sunucu   # (ayrı terminalde izleyin; Ctrl-C = SIGTERM)
+#   beklenen "hazir" olayı: kurtarma.goc = { eskiKuralSurumu, yeniKuralSurumu, eklenen: {...}, eklenenSayisi, ihlalSayisi: 0, yenidenIndekslendi: false(yalnız sona ekleme), yedek: "goc-<eskiKural>" }
+#   (içerik değişmediyse kurtarma.goc = null: göç gerekmedi)
+$D exec -T pg psql -U bolge -d bolge_prova -tAc "SELECT etiket, seq FROM snapshot_yedek"   # beklenen: goc-<eskiKural> satırı (göç önce eski görüntüyü yedekler)
+# GERİ DÖNÜŞ provası (göçten sonra, hiç komut kabul edilmeden): yedeği en yeni görüntü yap
+$D run --rm --no-deps -e BOLGE_PG_URL="postgres://bolge:$SIFRE@pg:5432/bolge_prova" sunucu node --import tsx packages/sunucu/src/cli.ts --depo pg --dunya ana --yedekten-don goc-<eskiKural>
+#   beklenen: {"olay":"yedektenDon",...,"durumOzeti":"..."} ve çıkış kodu 0; ESKİ imajla bayraksız açılış aynı özetle (hazir.kurtarma.durumOzeti) gelir; yok etiket: çıkış 1 "goc yedegi yok"
+$D exec -T pg dropdb -U bolge bolge_prova
+```
+Gerçek dönem göçünde sıra: SIGTERM ile kapat (kuyruk boş) → döküm (adım 5) → yeni imajla `BOLGE_GOC=1` → `hazir.kurtarma.goc`'u beklenenle karşılaştır → `BOLGE_GOC=0` ile yeniden başlat. `--yedekten-don` (CLI; `BOLGE_PG_URL` ya da `--pg-url` + `--depo pg --dunya <ad>` ister) pg'de `yedektenDon(etiket)` çağırır. Otomatik eşdeğeri: `test/pg.test.ts` (göç + geri dönüş + CLI).
+
+**7. pg şema sürümü ve yükseltme**
+```sh
+$D exec -T pg psql -U bolge -d bolge -tAc "SELECT surum, ad FROM sunucu_sema ORDER BY surum"
+#   beklenen: 1 baslangic | 2 goc-profil | 3 defter  (güncel şema sürümü = 3; max(surum) = 3)
+```
+Yükseltme: eski sürümlü (1 ya da 2; ya da sürüm tablosuz eski kurulum) bir veritabanını yeni imajla açmak eksik adımları kendisi uygular (CLI varsayılanı `semaKur`; adım başına işlem + şema kilidi, veri korunur); sunucu kütüphane olarak `semaKur: false` ile açılır ve eski şemayı reddeder. Prova: adım 5'teki `bolge_geri` kopyasını yeni imajla açın ve yukarıdaki sorguyu o veritabanında koşun. Otomatik: `test/pg.test.ts` (sürümsüz eski şemadan yükseltme, veri korunur, idempotent).
+
+**8. Mutlak saat ve epoch**
+```sh
+$D logs sunucu 2>&1 | grep '"olay":"hazir"' | head -1     # beklenen: kurtarma.dunyaEpochMs = 1790802000000 (2026-09-30T21:00Z; boş BOLGE_DUNYA_EPOCH = varsayılan) YENİ dünyada
+curl -s http://127.0.0.1:8787/saglik                      # beklenen: simZamaniMs ≈ (şimdi_ms - dunyaEpochMs) (yenilemede kendi saatinizle: $(( $(date +%s%3N) - 1790802000000 )) ± birkaç yüz ms)
+```
+Epoch yalnız YENİ dünyada uygulanır ve bir Türkiye gece yarısı olmalıdır (ör. `BOLGE_DUNYA_EPOCH=2026-09-30T21:00:00Z`); var olan dünyada `.env`'deki değer yok sayılır. **Kapalıyken yetişme:** `$D stop sunucu`, ≥ 1-2 dk bekleyin, `$D start sunucu`; beklenen: `{"olay":"yetisme",...}` satırları, ardından `{"olay":"yetisti",...}` (1 sim-saatlik adımlarla yetişme; 100 oyuncuyla sim-gün başına birkaç sn, "Ödül dedektörü açıkken" bölümüne bakın); yetişirken `/saglik` 200 `durum:"yetisiyor"`, `/hazir` 503, oyuncu komutu `yetisiyor` kodu alır; bitince `/hazir` 200 ve `simZamaniMs` yine ≈ şimdi - epoch. Yetişirken verilen Esnaf Defteri ödülleri `bolge_odul_verilen_toplam`'a eklenir.
+
+**9. Yük testi `yuk.sh kademeli pg`** (ÜRETİM veritabanına DEĞİL: ayrı, geçici bir pg ile; yük testi dünyayı doldurur)
+```sh
+docker run -d --rm --name bolge-yuk-pg -e POSTGRES_PASSWORD=yuk -p 127.0.0.1:55432:5432 postgres:16-bookworm   # fsync'li disk: sonuçlar üretime yakındır
+BOLGE_PG_URL=postgres://postgres:yuk@127.0.0.1:55432/postgres packages/sunucu/scripts/yuk.sh kademeli pg 3
+#   beklenen özet satırı: "ISINMIS p95 <= 300 (hedef <= 300: TUTTU)", kod=0, hiç protokol hatası yok. Katılım dönemi p95'i bu makinede ≈ 300-450 ms olabilir (hedef dışı; bkz. "Yük testi")
+BOLGE_YUK_ODUL=1 BOLGE_PG_URL=... packages/sunucu/scripts/yuk.sh kademeli pg 3            # ödül dedektörü açık; beklenen: "odul verilen=... dedektor=...ms" ve ısınmış p95 yine <= 300
+docker rm -f bolge-yuk-pg
+```
+Yük, makinenin başka işlerle paylaşılmadığı bir anda koşulmalıdır (özet satırındaki `yuk` 1 dk yük ortalaması çekirdek sayısının altında olmalı); bu makinede ölçülen değerler şişkindir, boş makinede daha düşük beklenir.
+
+**10. Kapanış (SIGTERM) ve kill -9 kurtarma**
+```sh
+$D stop sunucu; echo "kod=$?"                             # beklenen: ≤ 60 sn, son log "kapandi" (sinyal SIGTERM, seq, simZamani); konteyner kodu 0 (137 = zorla öldürüldü: stop_grace_period yetmedi, araştırın)
+$D start sunucu                                           # beklenen: "hazir"; kurtarma.kalanKayit = 0 (kapanış görüntüsü günlüğü boşalttı); seq kapanıştaki seq ile aynı
+# kill -9: günlük yazıldı, görüntü yazılmadı olabilir; açılış görüntü + kalan günlükle AYNI dünyayı kurar
+docker kill -s KILL "$($D ps -q sunucu)"
+$D start sunucu       # (restart: unless-stopped zaten kaldırır)   beklenen: "hazir"; kurtarma.kalanKayit >= 0, kurtarma.kalanBasarisiz = 0, olumcul/uyari yok; oyuncular yeniden bağlanıp tam kare alır
+$D exec -T pg psql -U bolge -d bolge -tAc "SELECT max(seq) FROM log"   # kill öncesi son seq'ten GERİ GİTMEMİŞ olmalı (kabul edilen komut kaybolmaz)
+```
+Yerel eşdeğeri `test/kurtarma-sureci.test.ts` (üç kipte SIGKILL, dünya özeti eşitliği) ve kapanış testleridir. Pg konteynerini de aynı şekilde sınayın (`docker kill pg`): sunucu yazma hatasında ÖLÜMCÜL olur (`/saglik` 503, `bolge_olumcul 1`), pg dönünce yeniden başlatılana kadar açık yazma yapmaz; bu bilinçlidir (fail-stop).
+
+**Sonuç ölçütü:** 1-10 geçtiyse ve `bolge_olumcul 0`, `/hazir` 200, bir yedek geri yüklenip aynı `durumOzeti` ile açılmış, tokensiz metrik 401, kill -9 sonrası seq geri gitmemişse makine Alfa-0 için hazırdır. Bir adım geçmezse sapmayı ve `$D logs sunucu` çıktısını kayda alın.
 
 ## Testler
 

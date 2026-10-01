@@ -215,7 +215,7 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
       },
       yayin: { atlananKare: yayinSayaci.atlananKare, yavasKopan: yayinSayaci.yavasKopan, sira: yayinSirasi.size },
       olayDongusu: olayDongusu.olcum(),
-      odul: { verilen: m.odulVerilen, reddedilen: m.odulReddedilen },
+      odul: { verilen: m.odulVerilen, reddedilen: m.odulReddedilen, taramaToplamMs: Math.round(m.odulTaramaToplamMs * 100) / 100, izgara: m.odulIzgaraSayisi, taramaSonMs: Math.round(m.odulTaramaSonMs * 100) / 100, taramaEnUzunMs: Math.round(m.odulTaramaEnUzunMs * 100) / 100 },
       depo: depoOnbellek.boyut,
       commit: m.commit,
       surec: { rssBayt: bellek.rss, heapBayt: bellek.heapUsed, cpuSaniye: Math.round(((cpu.user + cpu.system) / 1e6) * 1000) / 1000 },

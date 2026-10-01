@@ -48,6 +48,8 @@ const YARDIM = `Bolge Stratejisi sunucusu
   --elle-saat          saat yalniz yoneticinin zamanIlerlet mesajiyla ilerler (test/gelistirme)
   --commit-ms N        grup commit araligi (vars. 75)
   --goruntu-saat N     anlik goruntu araligi, sim-saat (vars. 6)
+  --yedekten-don ETIKET  pg: icerik gocu yedegini ("goc-<eskiKural>"; hazir olayinda kurtarma.goc.yedek ya da SELECT etiket FROM snapshot_yedek) en yeni goruntu yapar
+                       ve cikar (sunucu KAPALI olmali: dunya kilidi alinir); sonra eski icerikle (--goc'suz) acin
   --odul 0|1           Esnaf Defteri odul dedektoru: kavram saptaninca sistem_odul gunluge girer (vars. 1; 0 = kapali, odul komutu yok)
   --goruntu-isci 0|1   periyodik goruntu serilestirme/ozet/gzip'i worker_threads isciye tasi (vars. 1; 0 = ana donguda)
   --hiz-siniri K/S     oyuncu basina token-kova: kapasite/saniyede jeton (vars. 20/5)
@@ -131,6 +133,7 @@ async function ana(): Promise<void> {
       "goruntu-saat": { type: "string", default: ev("GORUNTU_SAAT", "6") as string },
       "goruntu-isci": { type: "string", default: ev("GORUNTU_ISCI", "1") as string },
       odul: { type: "string", default: ev("ODUL", "1") as string },
+      "yedekten-don": { type: "string" },
       botlar: { type: "string", default: ev("BOTLAR", "") as string },
       "hiz-siniri": { type: "string", default: ev("HIZ_SINIRI", "20/5") as string },
       "metrik-port": { type: "string", ...varsayilan(ev("METRIK_PORT")) },
@@ -158,6 +161,20 @@ async function ana(): Promise<void> {
     const mt = a["metrik-token"];
     if (mt !== undefined && mt.startsWith("degistir")) throw new Error("uretim kipi: metrik token'i ornek ('degistir...') deger olmamali");
     if (a["elle-saat"]) throw new Error("uretim kipi: --elle-saat yasak");
+  }
+  if (a["yedekten-don"] !== undefined) {
+    // Kural donemi geri donusu (README "Kural donemi provasi"): dunya acilmaz, yalniz yedek en yeni goruntu yapilir.
+    if (a.depo !== "pg") throw new Error("--yedekten-don yalniz --depo pg ile");
+    const pgUrl = a["pg-url"] ?? process.env.BOLGE_PG_URL;
+    if (!pgUrl) throw new Error("--yedekten-don icin --pg-url veya BOLGE_PG_URL gerekli");
+    const d = await postgresDeposu({ baglanti: pgUrl, dunya: a.dunya as string, semaKur: false });
+    try {
+      const g = await d.yedektenDon(a["yedekten-don"]);
+      yaz("yedektenDon", { dunya: a.dunya, etiket: a["yedekten-don"], seq: g.seq, simZamani: g.simZamani, kuralSurumu: g.kuralSurumu, durumOzeti: g.durumOzeti });
+    } finally {
+      await d.gunluk.kapat();
+    }
+    return;
   }
   const sayi = (ad: string, d: string | undefined): number => {
     const n = Number(d);

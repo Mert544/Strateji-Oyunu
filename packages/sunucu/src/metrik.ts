@@ -80,6 +80,11 @@ export class YazarMetrikleri {
   /** Esnaf Defteri dedektörü: günlüğe giren `sistem_odul` komutları (uygulanan / çekirdek reddi). */
   odulVerilen = 0;
   odulReddedilen = 0;
+  /** Dedektör tarama maliyeti (ana iş parçacığı, eşzamanlı kısım; günlük yazımı hariç): toplam ms, ızgara noktası sayısı, son ve en uzun tek tarama. */
+  odulTaramaToplamMs = 0;
+  odulIzgaraSayisi = 0;
+  odulTaramaSonMs = 0;
+  odulTaramaEnUzunMs = 0;
 }
 
 /** Olay döngüsü gecikmesi (ms): p50, p99 ve en büyük. `perf_hooks.monitorEventLoopDelay` çözünürlüğü (10 ms) tabanı dahildir. */
@@ -153,7 +158,7 @@ export interface MetrikGirdisi {
   yayin: { atlananKare: number; yavasKopan: number; sira: number };
   olayDongusu: OlayDongusuGecikmesi;
   /** Esnaf Defteri dedektörü: günlüğe giren ödül komutları (uygulanan / çekirdek reddi). */
-  odul: { verilen: number; reddedilen: number };
+  odul: { verilen: number; reddedilen: number; taramaToplamMs: number; izgara: number; taramaSonMs: number; taramaEnUzunMs: number };
   depo: { gunlukBayt: number; goruntuBayt: number } | null;
   commit: Histogram;
   surec: { rssBayt: number; heapBayt: number; cpuSaniye: number };
@@ -205,6 +210,10 @@ export function metrikMetni(g: MetrikGirdisi): string {
     satir("bolge_yayin_sira", "gauge", "Kare yayini sirasinda bekleyen baglanti sayisi.", g.yayin.sira),
     satir("bolge_odul_verilen_toplam", "counter", "Esnaf Defteri dedektorunun gunluge yazdigi ve uygulanan odul komutlari.", g.odul.verilen),
     satir("bolge_odul_reddedilen_toplam", "counter", "Cekirdegin reddettigi (beklenmeyen) odul komutlari.", g.odul.reddedilen),
+    satir("bolge_odul_dedektor_toplam_ms", "counter", "Odul dedektoru tarama suresi toplami (ms; ana is parcacigi, gunluk yazimi haric).", g.odul.taramaToplamMs),
+    satir("bolge_odul_izgara_toplam", "counter", "Dedektorun taradigi sim-saat sinirlari.", g.odul.izgara),
+    satir("bolge_odul_dedektor_son_ms", "gauge", "Son sim-saat sinirindaki dedektor tarama suresi (ms).", g.odul.taramaSonMs),
+    satir("bolge_odul_dedektor_en_uzun_ms", "gauge", "En uzun tek dedektor tarama suresi (ms).", g.odul.taramaEnUzunMs),
     satir("bolge_olay_dongusu_gecikme_p50_ms", "gauge", "Olay dongusu gecikmesi p50 (ms; perf_hooks, kayan pencere).", g.olayDongusu.p50Ms),
     satir("bolge_olay_dongusu_gecikme_p99_ms", "gauge", "Olay dongusu gecikmesi p99 (ms).", g.olayDongusu.p99Ms),
     satir("bolge_olay_dongusu_gecikme_en_buyuk_ms", "gauge", "Olay dongusu gecikmesi en buyuk (ms).", g.olayDongusu.maxMs),

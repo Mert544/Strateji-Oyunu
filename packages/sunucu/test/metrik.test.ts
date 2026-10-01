@@ -96,7 +96,7 @@ describe("histogram ve metin bicimi (saf)", () => {
     const girdi = {
       baglanti: 2, bagliOyuncu: 1, komutTamam: 5, komutBasarisiz: 2, reddedilen: { hizSiniri: 1, yetisiyor: 3 }, tur: 10, seq: 7, simZamaniMs: 99, bekleyenKomut: 0,
       yetisiyor: true, yetismeKalanMs: 3600000, saatGerideMs: 0, olumcul: false, goruntuSayisi: 2, goruntuHatasi: 0, goruntuYasiSimMs: 5, goruntuYasiSaniye: 1.5, goruntuBayt: 1234, goruntuSureSonMs: 12.5, goruntuSureEnUzunMs: 40,
-      goruntuIsci: { kopyaSonMs: 3.5, kopyaEnUzunMs: 9, isciSonMs: 80, alinan: 4, atlanan: 2, hata: 1 }, yayin: { atlananKare: 6, yavasKopan: 1, sira: 3 }, olayDongusu: { p50Ms: 10.5, p99Ms: 40, maxMs: 120.5 }, odul: { verilen: 3, reddedilen: 0 },
+      goruntuIsci: { kopyaSonMs: 3.5, kopyaEnUzunMs: 9, isciSonMs: 80, alinan: 4, atlanan: 2, hata: 1 }, yayin: { atlananKare: 6, yavasKopan: 1, sira: 3 }, olayDongusu: { p50Ms: 10.5, p99Ms: 40, maxMs: 120.5 }, odul: { verilen: 3, reddedilen: 0, taramaToplamMs: 12.5, izgara: 40, taramaSonMs: 0.4, taramaEnUzunMs: 2.5 },
       depo: { gunlukBayt: 10, goruntuBayt: 20 }, commit: h, surec: { rssBayt: 1, heapBayt: 2, cpuSaniye: 0.5 }, calismaSaniye: 3,
     };
     const m = metrikMetni(girdi);
@@ -116,6 +116,9 @@ describe("histogram ve metin bicimi (saf)", () => {
     expect(d.get("bolge_yayin_atlanan_kare_toplam")).toBe(6);
     expect(d.get("bolge_yayin_yavas_kopan_toplam")).toBe(1);
     expect(d.get("bolge_yayin_sira")).toBe(3);
+    expect(d.get("bolge_odul_dedektor_toplam_ms")).toBe(12.5);
+    expect(d.get("bolge_odul_izgara_toplam")).toBe(40);
+    expect(d.get("bolge_odul_dedektor_en_uzun_ms")).toBe(2.5);
     expect(d.get("bolge_olay_dongusu_gecikme_p50_ms")).toBe(10.5);
     expect(d.get("bolge_olay_dongusu_gecikme_p99_ms")).toBe(40);
     expect(d.get("bolge_olay_dongusu_gecikme_en_buyuk_ms")).toBe(120.5);

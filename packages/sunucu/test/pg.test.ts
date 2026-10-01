@@ -228,6 +228,32 @@ describe.skipIf(!PG)("postgres: icerik gocu (--goc), yedek ve geri donus", () =>
     await d3.gunluk.kapat();
   });
 
+  it("CLI --yedekten-don: yedegi en yeni goruntu yapar ve cikar; eski icerikle acilis ozeti ayni; yok etiket hata kodu 1", async () => {
+    const dunya = yeniDunya("clidon");
+    const KOK = fileURLToPath(new URL("../../../", import.meta.url));
+    const CLI = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+    const e = await eskiDunya(await pgAc(dunya));
+    const eskiKural = kuralSurumuHesapla(veri());
+    const y = await ac(await pgAc(dunya, false), sonaMal(), new ElleSaat(), { gocIzni: true });
+    await y.kapat();
+    const calistir = (etiket: string): Promise<{ kod: number | null; cikti: string }> =>
+      new Promise((coz) => {
+        const p = spawn(process.execPath, ["--import", "tsx", CLI, "--depo", "pg", "--pg-url", PG as string, "--dunya", dunya, "--yedekten-don", etiket], { cwd: KOK, stdio: ["ignore", "pipe", "pipe"] });
+        let c = "";
+        p.stdout?.on("data", (b: Buffer) => (c += b.toString()));
+        p.once("close", (kod) => coz({ kod, cikti: c }));
+      });
+    const r = await calistir(`goc-${eskiKural}`);
+    expect(r.kod).toBe(0);
+    expect(JSON.parse(r.cikti.trim())).toMatchObject({ olay: "yedektenDon", etiket: `goc-${eskiKural}`, seq: e.seq, simZamani: e.t, kuralSurumu: eskiKural, durumOzeti: e.ozet });
+    const eski = await ac(await pgAc(dunya, false), veri(), new ElleSaat());
+    expect(eski.kurtarma.durumOzeti).toBe(e.ozet);
+    await eski.kapat();
+    const yok = await calistir("yok-etiket");
+    expect(yok.kod).toBe(1);
+    expect(yok.cikti).toContain("goc yedegi yok");
+  }, 180_000);
+
   it("yedekleme basarisizsa goc durur: goruntu satirlari degismez", async () => {
     const dunya = yeniDunya("yedeksiz");
     await eskiDunya(await pgAc(dunya));
