@@ -3,13 +3,13 @@
 > **Durum.** 1 Ekim 2026, Sprint A0-02, görev G4 (Ar-Ge, A3). Taban: `entegrasyon` = `d28447d`; bütün `dosya:satır` göndermeleri bu tabana göredir. Bu belge kod yazmaz; K3'ün (çekirdek, tek yazar) **yorum yapmadan** kodlayabileceği kesinlikte şartnamedir. Baş lider onayı olmadan çekirdek işi başlamaz (docs/10 §5A).
 >
 > **Girdiler ve atıf biçimi.**
-> - **A2** (sayıların tek kaynağı): `docs/arastirma/p4-p5-ekonomi.md`, dal `takim/a2/p4-p5-ekonomi`, **commit `35ad50f`** (son teslim; tablolar fırın 240'a göre yeniden üretilmiş; §1.13 şeması bu şartnameye bırakılmıştır; atıflar bölüm numarasıyladır). `A2 §n` = o raporun bölümü. Bu belge sayıları **kopyalamaz**: yapı, parametre adı ve şema kesindir; değerleri T3 A2'nin §1.4, §1.9 ve §1.13 bloklarından işler. (Atıf haritası: §1.3-B1 şebeke/santral/kasa payı; §1.3-B2 zincir ↔ standart ve tetik; §1.3-B3 NPC derinliği; §1.4 yöntem satırları; §1.6 kepek; §1.7 yapı; §1.8 süre; §1.9 dükkân/kademe/talep/kamu tavanı/kamu siparişi; §1.10 `yerelNpc` ve `lavabo.sebeke`; §1.11 çıkmaz mal; §1.12 senaryo ve ev sahibi; §1.13 veri; §1.14 T3 sapmaları.) İki istisna: şemayı açıklayan örnek değerler ve test vektörleri (Ek B; çekirdek dışı betikle üretildi).
+> - **A2** (sayıların tek kaynağı): `docs/arastirma/p4-p5-ekonomi.md`, dal `takim/a2/p4-p5-ekonomi`, **commit `eab8fcc`** (son teslim; tablolar fırın 240'a göre yeniden üretilmiş; §1.13 şeması bu şartnameye bırakılmıştır; atıflar bölüm numarasıyladır). `A2 §n` = o raporun bölümü. Bu belge sayıları **kopyalamaz**: yapı, parametre adı ve şema kesindir; değerleri T3 A2'nin §1.4, §1.9 ve §1.13 bloklarından işler. (Atıf haritası: §1.3-B1 şebeke/santral/kasa payı; §1.3-B2 zincir ↔ standart ve tetik; §1.3-B3 NPC derinliği; §1.4 yöntem satırları; §1.6 kepek; §1.7 yapı; §1.8 süre; §1.9 dükkân/kademe/talep/kamu tavanı/kamu siparişi; §1.10 `yerelNpc` ve `lavabo.sebeke`; §1.11 çıkmaz mal; §1.12 senaryo ve ev sahibi; §1.13 veri; §1.14 T3 sapmaları.) İki istisna: şemayı açıklayan örnek değerler ve test vektörleri (Ek B; çekirdek dışı betikle üretildi).
 > - **T3** (içerik taslağı): `takim/t3/p4-p5-icerik`, commit `0561728`, `docs/arastirma/p4-p5-icerik-taslagi.md` (621 satır; `git show` ile okundu). `T3 §n` = o belgenin bölümü. T3'ün sekiz karar maddesi §19.B'de, 16 açık sorusu §21.B'de tek tek karşılanır.
 > - **K3 keşif notu** (`takim/k3-kesif.md`): 12 soru §19.A'da tek tek yanıtlı.
 >
 > **Ad notu (baş lider).** İşler **G6** (ekmek zinciri + şebeke elektriği), **G7** (yerel pazar kanalı + `dukkan` S; iki alt parça: **G7a** kanal, **G7b** dükkân) ve **G8** (cam → pencere + yapı market) diye anılır. "P4a" adı yalnız `e1080dd` commit'indeki ölçek işine aittir (docs/06 §15.10).
 >
-> **İşaretler.** `(doğrulanmadı)` = bu belgenin yazımında kanıtlanmamış iddia. `(doğrulandı: yöntem)` = bu çalışmada çekirdekte ya da betikle denenmiş (geçici test, commit'lenmedi, silindi; ya da `SP` betiği).
+> **İşaretler.** `(doğrulanmadı)` = bu belgenin yazımında kanıtlanmamış iddia. `(doğrulandı: yöntem)` = bu çalışmada çekirdekte ya da betikle denenmiş (geçici test, commit'lenmedi, silindi; ya da BigInt referans betiğiyle).
 
 ## İçindekiler
 
@@ -51,7 +51,7 @@ Yapının dört taşı:
 1. **Yöntemler, bayrak ve yöntem kimlik listesi (G6, G8).** Altı yeni yöntem (`yontemler[24..29]`: `degirmen`, `ekmek_firini`, `kepek_gubresi`, `sut_kepekli`, `cam_firini`, `celik_dograma`), hepsi `mulkKipi: true`. Bayrak, bölge kipinde bu yöntemleri tür listelerinden süzer; indeksler sabit kalır; etkisizlik **yöntem izdüşümü** kanıtıyla gösterilir (P3 mal izdüşümü kalıbı). Yöntem kimlikleri ilk kez **makine-denetimli, yalnız-ekle** bir listeye girer (§3.5): mevcut 24 yöntem ilk kayıtlar, 6 yeni sona eklenir.
 2. **Şebeke enerjisi (G6).** Alfa-0'da **elektrik ve yakıt**, mülk kipinde işletme düğümüne kamu şebekesinden **otomatik** tedarik edilir; yeni komut yoktur. Elektrik: önce düğümdeki kendi santral, kalan açık şebekeden; yakıt: tüketim anında stoksuz. Fiyat mevcut kamu fiyat tavanı mantığıdır (`kamuIthalatCarpaniPpm` × referans; elektrik 10,35 ₺, yakıt 103,5 ₺ [taban referansı]); bedel saatlik türetilmiş gider, %12'si ilçe kamu kasasına (`kasaPayiPpm`, A2), kalanı lavaboda yanar; defterde ayrı satırlar. Bölge kipi koduna dokunulmaz (§5.2).
 3. **Yerel pazar kanalı (G7a).** Mülk kipinin ilk NPC **hane talebi**. Talep ilçe sınıfı × taban × iklim takvimi × bayram (nüfus yok). Çekim formülü tamsayı/PPM, su-doldurma; satış, ihracattan **önce** gelen yeni bir öncelik katmanında (4a) düğüm stoğundan çekilir; NPC dünya fiyatını **etkilemez**; geliri yeni, isteğe bağlı, tembel yazılan musluk `yerelNpc`'dir.
-4. **Dükkân (G7b).** `EkYapiDurumu.dukkan?` ile durum; raf yuvası (mal dize kimlik), **fiyat kademesi** (`secim`, tutar yok), marka (sınırlı serbest metin), 4 yeni komut. Ölçek ayak izi `[1, 2, 3]` (süpermarket 3 hücre, sahip kararı S4-4) tür verisindedir; Alfa-0'da yalnız beş S türü vardır, market ve süpermarket kaydı **yoktur**.
+4. **Dükkân (G7b).** `EkYapiDurumu.dukkan?` ile durum; raf yuvası (mal dize kimlik), **fiyat kademesi** (`secim`, tutar yok), marka (sınırlı serbest metin), 5 yeni oyuncu komutu (raf, fiyat, marka tanımı, markayı bağlama, yıkım) ve 1 sistem komutu (marka sıfırlama), kampanya penceresi (varsayılan kapalı). Ölçek ayak izi `[1, 2, 3]` (süpermarket 3 hücre, sahip kararı S4-4) tür verisindedir; Alfa-0'da yalnız beş S türü vardır, market ve süpermarket kaydı **yoktur**.
 
 ### 0.2 Bu çalışmanın yedi kritik bulgusu (K3 ve baş lider bilmeli)
 
@@ -62,19 +62,19 @@ Yapının dört taşı:
 | B3 | **Pencere NPC ithalatıyla alınabilir ama kırılgandır:** NPC pencere arzı VAR (`parametreler.json` `pazar.arzSaat.pencere = 60 000` mili/sa, `emilimSaat.pencere = 100 000`; doğrulandı: kod okuma), ithalat emri teknik olarak çalışır; fakat emir kalıcı orandır, gerçekleşme bir sonraki tam saat tıkında başlar, bitince elle iptal gerekir (doğrulandı: yöntem; §2.4). Gerçek maliyet R0 ile ≈ 2.400 ₺ (4 × 540 × 1,111), A2'nin 1.600 ₺'sinden fazla (B2). | **Baş lider kuralı:** G7 anında pencere ithal edilebiliyorsa P-İthal. Arz var ⇒ **dükkân bedeli pencere içerir (G7)**; kırılganlık ve gerçek maliyet açık risk olarak §7.4'te. | §7.4, GZ-15 |
 | B4 | **G6'nın eklediği yöntemler `mal-izdusumu-kanit.test.ts` içindeki `p3Oncesi` yardımcısını kırar** (14 mallı içerikte olmayan `un`/`kepek`'i anan yöntem; T3 §9.3 deneyi aynı: 4 test). | K3 teslimine yardımcı güncellemesi şart. | §13.4 |
 | B5 | **Çekirdek `Komut` birliğine tür eklemek `@bolge/protokol` derlemesini kırar** (`_KomutDenetimi`, `komut-sema.ts:81`) ve K1 komut testlerini. | K3 ve K2 teslimleri **aynı kapıda** birleşmeli. | §17 |
-| B6 | **`standart_gida_isleme` ekmek zincirinin rakibidir.** 200 tahıl → 160 gıda, oran 1,84; bölge kipi altınlarının parçası, değiştirilemez. A2 (zincir / standart): **tahıl başına NPC net +%21,2 (fırın 240 ekmek; 250 ekmekle +%33,6); tesis, işçi ve hücre tabanlarında zincir geride (250 ekmekle −%28,9 / −%34,4).** Erken oyunun bağlayıcı kısıtı NPC pazar derinliğidir; zincir ikinci talep havuzudur (A2 §1.3-B2). | **Baş lider kararı: çarpan yok.** Tesis tabanı da kural sayılırsa yedek: mülk kipinde `standart_gida_isleme` çıktısı ×0,75 (`mulk.yontemGecersizKilma`, **varsayılan KAPALI**; şema ve çekirdek yolu G6'da hazır, §5.9). Tetik: A2'nin ölçütü M. Fırın çıktısı **240** (baş lider): zincir +%21,2, K/U bandının (+%10–25) içinde; S-17 kapandı. | §5.9, S-1, S-17 |
+| B6 | **`standart_gida_isleme` ekmek zincirinin rakibidir.** 200 tahıl → 160 gıda, oran 1,84; bölge kipi altınlarının parçası, değiştirilemez. A2 (zincir / standart): **tahıl başına NPC net +%21,2 (fırın 240 ekmek; 250 ekmekle +%33,6); tesis ve hücre başına KD −%34,8, işçi başına −%39,8 (A2 §1.3-B2 240 tablosu).** Erken oyunun bağlayıcı kısıtı NPC pazar derinliğidir; zincir ikinci talep havuzudur (A2 §1.3-B2). | **Baş lider kararı: çarpan yok.** Tesis tabanı da kural sayılırsa yedek: mülk kipinde `standart_gida_isleme` çıktısı ×0,75 (`mulk.yontemGecersizKilma`, **varsayılan KAPALI**; şema ve çekirdek yolu G6'da hazır, §5.9). Tetik: A2'nin ölçütü M. Fırın çıktısı **240** (baş lider): zincir +%21,2, K/U bandının (+%10–25) içinde; S-17 kapandı. | §5.9, S-1, S-17 |
 | B7 | **Kömür santrali S ölçekte şebekeden ucuz değildir** (A2: kömür tam yükte yalnız %5–6 avantaj, başabaş yük %59–67; yakıt jeneratörü hiç avantajlı değil; hidro %12–14; P4 yükünde %13'te kömür S −195 ₺/sa). | **Baş lider kararı:** santral isteğe bağlıdır; yalnız hidroda ve yüksek yükte kârlıdır; şartnamede ve oyun içi metinde **"daha ucuz" vaadi yer almaz**, gerçek sayılar gösterilir; santral fiyatına/maliyetine dokunulmaz. | §5.2, S-2 (kapandı) |
 
 ### 0.3 Kapsam
 
 - **G6:** `degirmen`, `ekmek_firini`, `kepek_gubresi`, `sut_kepekli` (4 yöntem, `yontemler[24..27]`), `mulkKipi` bayrağı ve bölge kipi etkisizlik kanıtı, **şebeke elektriği ve yakıtı** (§5.2: çekirdek, para defteri, kasa girişi), yöntem kimlik listesi (§3.5), yapı komutlarına isteğe bağlı `yontem` alanı (§5.8), `yontemGecersizKilma` yedek yolu (§5.9; kapalı), göç testi, ödül dedektörü doğrulaması, bot ekmek zinciri önayarı.
 - **G7a:** yerel talep (Q), çekim (su-doldurma), esnaf payı, kasa kırpması, öncelik katmanı 4a, para akışı ve `yerelNpc` musluğu, yetişme davranışı.
-- **G7b:** `dukkan` ek yapısı (durum, ölçek ayak izi, inşa), 4 yeni komut (`dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`), `yapi_yerlestir`/`tesis_insa_hucre`'ye `dukkanTuru` alanı, dört dükkân türü verisi (`bakkal`, `firin`, `sarkuteri`, `sekerci`), marka, `ilk_dukkan` tetiği, protokol ve sunucu kancaları.
-- **G8:** `cam_firini` (ev sahibi `parca_fabrikasi`), `celik_dograma`, `yapi_market` dükkân türü (yalnız NPC alıcı), dükkân bedeline pencere eklenmesi (parametre; §7.4), bot cam → pencere zinciri.
+- **G7b:** `dukkan` ek yapısı (durum, ölçek ayak izi, inşa), 5 yeni oyuncu komutu (`dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`, **`dukkan_yik`**) ve 1 sistem komutu (`marka_sifirla`), `yapi_yerlestir`/`tesis_insa_hucre`'ye `dukkanTuru` alanı, dört dükkân türü verisi (`bakkal`, `firin`, `sarkuteri`, `sekerci`), marka, `ilk_dukkan` tetiği, protokol ve sunucu kancaları.
+- **G8:** `cam_firini` (ev sahibi `parca_fabrikasi`), `celik_dograma`, `yapi_market` dükkân türü (yalnız NPC alıcı), dükkân bedeli **değişmez** (G7'de zaten ithal pencereli; §7.4), bot cam → pencere zinciri.
 
 ### 0.4 Kapsam dışı (bilinçli)
 
-- Market (M) ve süpermarket (L) **oynanışı ve veri kayıtları**: Alfa-0 `dukkanTurleri` yalnız beş S türüdür (`bakkal`, `firin`, `sarkuteri`, `sekerci`, `yapi_market`); `market` ve `supermarket` tür kaydı A1'dedir (baş lider; T3 §11 soru 14). `ekYapilar.dukkan.olcekHucre = [1, 2, 3]` (süpermarket 3 hücre) yine yazılır ve `olcek` 1/2 komutları `acikOlcekler = [0]` ile reddedilir (§7.3, GZ-12). Kademe çarpanı dışındaki Alfa-1 kuralları (Yakınlık Havuzu, kademeli pay tavanı, ruhsat/kota, Zincir Kartı, `dukkan_yukselt`, kampanya penceresi) **yok**.
+- Market (M) ve süpermarket (L) **oynanışı ve veri kayıtları**: Alfa-0 `dukkanTurleri` yalnız beş S türüdür (`bakkal`, `firin`, `sarkuteri`, `sekerci`, `yapi_market`); `market` ve `supermarket` tür kaydı A1'dedir (baş lider; T3 §11 soru 14). `ekYapilar.dukkan.olcekHucre = [1, 2, 3]` (süpermarket 3 hücre) yine yazılır ve `olcek` 1/2 komutları `acikOlcekler = [0]` ile reddedilir (§7.3, GZ-12). Kademe çarpanı dışındaki Alfa-1 kuralları (Yakınlık Havuzu, kademeli pay tavanı, ruhsat/kota, Zincir Kartı, `dukkan_yukselt`) **yok**; kampanya penceresi G7 şemasındadır ama **varsayılan kapalıdır** (§7.5b).
 - Açılış Tezgâhı (`tezgah`): T-39 karar bekler; **G7'de yok** (kimlik listede durur, tür kaydı eklenmez). Sahip kararı: §21 S-3.
 - Oyuncu-alıcı (oyuncudan oyuncuya raf satışı), raf tedarik sözleşmesi, toptan, hal, üretici satış noktası modülü.
 - Bayat ekmek → kepek döngüsü (baş lider kararı 8; G6'ya girmez).
@@ -82,7 +82,7 @@ Yapının dört taşı:
 - Yeni PRNG akışı, `ilce_gunluk` olayı, `IlceDurumu` nüfus alanları, göç: yok (GZ-10).
 - Alfa-1 işi: fiyat önayarları, halka havuzu, çeşit için 24 saatlik pencere, hane fiyat esnekliği (η), takvim sonrası telafi dalgası dışındaki bayram kuralları.
 - Nüfus modeli, `gelirEndeksi`, ilçe gelişim seviyesinin hesabı: **kilitsizlik** (Y-33) gereği yerel talep seviyeden bağımsızdır.
-- **Bakım ve aşınma kalibrasyonu** (A2 35ad50f §2: O2 ölçümüyle yeniden yazıldı; son öneri C: aşınma hızı ×0,50 yani kıtlık 10.000 ppm/gün, tavan %25; `mulk.bakim` bloğu; `bakim_duzeyi.otomatikParca`): **baş lider kararıyla bu sprintte karar yok** ve G4 kapsamı dışındadır. Şema rezervi **gerekmez** (yeni `mulk.bakim` bloğu isteğe bağlı eklenebilir; bu şartnamenin hiçbir alanı onunla çakışmaz). Sonraki iş.
+- **Bakım ve aşınma kalibrasyonu** (A2 eab8fcc §2: O2 ölçümüyle yeniden yazıldı; son öneri C: aşınma hızı ×0,50 yani kıtlık 10.000 ppm/gün, tavan %25; `mulk.bakim` bloğu; `bakim_duzeyi.otomatikParca`): **baş lider kararıyla bu sprintte karar yok** ve G4 kapsamı dışındadır. Şema rezervi **gerekmez** (yeni `mulk.bakim` bloğu isteğe bağlı eklenebilir; bu şartnamenin hiçbir alanı onunla çakışmaz). Sonraki iş.
 - Kömür, silis, çelik, parça gibi ham/ara malların şebekeden tedariki (yalnız elektrik ve yakıt şebekedendir; §5.2.8).
 - Sabit fiyatlı kamu siparişi (`kamuSiparisi`, A2 §1.13) kodu ve şeması: S-11.
 
@@ -119,15 +119,15 @@ Yapının dört taşı:
 9. İş bölümü: O2 `parsel.ts` zincir önayarı; K2 protokol/`kare.ts`/dedektör; K1 `gizli.ts`/`komut.test.ts`/hata çevirileri; veri sınırı: önce K3 şemayı isteğe bağlı/no-op indirir, sonra T3 değer yazar; bundle payı 31 KB (G7 +3–5 KB); Node-only doğrulayıcı `saf`a girmez.
 10. **Yöntem kimlik listesi** makine-denetimli, yalnız-ekle (mal listesi gibi); mevcut 24 yöntem ilk kayıtlar; 6 yeni sona (§3.5).
 11. **Yeni tesis türü yok**; `cam_firini` ev sahibi A2'nin maliyetine göre seçilir (**`parca_fabrikasi`**; §3.2).
-12. **Enerji:** santral seçeneği düştü; ilk oturumda santral zorunlu değil. Alfa-0'da **elektrik ve yakıt** (A2 §1.3-B1: "elektrik ve yakıt kamu şebekesinden otomatik gelir") kamu şebekesinden otomatik tedarik edilir, yeni komut yok; fiyat kamu fiyat tavanı kuralı; ödeme ilçe kamu kasasına (`kasaPayiPpm`) ve lavaboya, ayrı defter satırlarıyla; santral isteğe bağlı oyuncu yatırımı (kendi elektriği; fazlasını kamuya satamaz); yalnız mülk kipi, bayrak arkasında; bölge kipi altınları birebir (§5.2). **Yakıtın kapsamı** Ar-Ge liderinin A2 aktarımına dayanır ve baş lider onayında teyit edilir (S-10).
-13. **Ekmek zinciri sayıları A2 raporundan** gelir (tek kaynak; `35ad50f`). **Çarpan yok**; zincir ikinci talep havuzudur. Tesis tabanı da kural sayılırsa yedek seçenek parametre olarak hazır durur: mülk kipinde `standart_gida_isleme` çıktısı ×0,75, **varsayılan kapalı** (`mulk.yontemGecersizKilma`; §5.9). Tetik ölçütü sayısaldır (A2'nin M ölçütü; A0-11 bot ölçümü).
+12. **Enerji:** santral seçeneği düştü; ilk oturumda santral zorunlu değil. Alfa-0'da **elektrik ve yakıt** (A2 §1.3-B1: "elektrik ve yakıt kamu şebekesinden otomatik gelir") kamu şebekesinden otomatik tedarik edilir, yeni komut yok; fiyat kamu fiyat tavanı kuralı; ödeme ilçe kamu kasasına (`kasaPayiPpm`) ve lavaboya, ayrı defter satırlarıyla; santral isteğe bağlı oyuncu yatırımı (kendi elektriği; fazlasını kamuya satamaz); yalnız mülk kipi, bayrak arkasında; bölge kipi altınları birebir (§5.2). **Yakıtın kapsamı** baş lider tarafından teyit edilmiştir (S-10 kapandı).
+13. **Ekmek zinciri sayıları A2 raporundan** gelir (tek kaynak; `eab8fcc`). **Çarpan yok**; zincir ikinci talep havuzudur. Tesis tabanı da kural sayılırsa yedek seçenek parametre olarak hazır durur: mülk kipinde `standart_gida_isleme` çıktısı ×0,75, **varsayılan kapalı** (`mulk.yontemGecersizKilma`; §5.9). Tetik ölçütü sayısaldır (A2'nin M ölçütü; A0-11 bot ölçümü).
 14. **Santral** isteğe bağlıdır; yalnız hidroda ve yüksek yükte kârlıdır; "daha ucuz" vaadi şartnamede ve oyun içi metinde yoktur; santral fiyatı/maliyeti değişmez.
-15. **Şebeke bedelinin kasa payı** (`kasaPayiPpm` + `KASA_GIRIS`): kasa ilçe kamu kasasıdır; pay ekonomide kalır ve kamu siparişini besler, kalanı lavaboya gider; değeri A2 önerir.
+15. **Şebeke bedelinin kasa payı** (`kasaPayiPpm` + `KASA_GIRIS`): kasa ilçe kamu kasasıdır; pay ekonomide kalır ve kamu siparişini besler, kalanı lavaboya gider; değer 120.000 (A2 §1.3-B1).
 16. Sıra değişmedi: G4 → baş lider onayı → K3 ("hücre dizini" işinden sonra, sonra G6).
 
 ### 1.3 Okunan kaynaklar
 
-docs/14; docs/10 §5A; docs/12 §13–§14; docs/13; docs/06 §14–§15; GDD v1 (§1, §3.1–§3.4, §3A, §3B, §3C.2, §5.3, §6, §8); `perakende-kademeleri.md` (§3, §5, §7.5, §12, §14); `uretim-agi-genisletme.md` (§3.3, §5.3, §9, UA1, K-4, K-5); `dikey-zincirler-ve-perakende.md` (§2.2, §3.1–§3.5, §4, §5, §9, §11); `kimlik-listesi-v1.md`; `canli-dunya-simulasyonu.md` (§3.2–§3.4, §4.1–§4.2, §10); **A2 raporu** `p4-p5-ekonomi.md` (`35ad50f`; §1 tamamı) ve **T3 taslağı** `p4-p5-icerik-taslagi.md` (0561728, tamamı); kod: `packages/cekirdek/src/{tipler,derle,motor,komutSemasi,serilestir,goc,ozet,paraSayac,stok}.ts`, `ekonomi/{komut,uretim,tablo,insaat,index}.ts`, `sanayi/elektrik.ts`, `lojistik/cozum.ts`, `pazar/{piyasa,fiyat,tablo}.ts`, `mulk/{komut,yapi,durum,kasa,kamuFiyat,isletme}.ts`, `tarim/iklim.ts`, `packages/veri/src/{tipler,sema,dogrula,kimlik-listesi,parsel,yukle}.ts`, `veri/icerik/{icerik,parametreler,kimlik-listesi}.json`, `packages/protokol/src/{komut-sema,kare,mesajlar,donus}.ts`, `packages/sunucu/src/{odul/dedektor,donus/*}.ts`, `packages/botlar/src/{parsel,onayarlar,tablo}.ts`, `packages/istemci/src/{komut,harita/hata-mulk}.ts`, K3 keşif notu.
+docs/14; docs/10 §5A; docs/12 §13–§14; docs/13; docs/06 §14–§15; GDD v1 (§1, §3.1–§3.4, §3A, §3B, §3C.2, §5.3, §6, §8); `perakende-kademeleri.md` (§3, §5, §7.5, §12, §14); `uretim-agi-genisletme.md` (§3.3, §5.3, §9, UA1, K-4, K-5); `dikey-zincirler-ve-perakende.md` (§2.2, §3.1–§3.5, §4, §5, §9, §11); `kimlik-listesi-v1.md`; `canli-dunya-simulasyonu.md` (§3.2–§3.4, §4.1–§4.2, §10); **A2 raporu** `p4-p5-ekonomi.md` (`eab8fcc`; §1 tamamı) ve **T3 taslağı** `p4-p5-icerik-taslagi.md` (0561728, tamamı); kod: `packages/cekirdek/src/{tipler,derle,motor,komutSemasi,serilestir,goc,ozet,paraSayac,stok}.ts`, `ekonomi/{komut,uretim,tablo,insaat,index}.ts`, `sanayi/elektrik.ts`, `lojistik/cozum.ts`, `pazar/{piyasa,fiyat,tablo}.ts`, `mulk/{komut,yapi,durum,kasa,kamuFiyat,isletme}.ts`, `tarim/iklim.ts`, `packages/veri/src/{tipler,sema,dogrula,kimlik-listesi,parsel,yukle}.ts`, `veri/icerik/{icerik,parametreler,kimlik-listesi}.json`, `packages/protokol/src/{komut-sema,kare,mesajlar,donus}.ts`, `packages/sunucu/src/{odul/dedektor,donus/*}.ts`, `packages/botlar/src/{parsel,onayarlar,tablo}.ts`, `packages/istemci/src/{komut,harita/hata-mulk}.ts`, K3 keşif notu.
 
 ## 2. Mevcut kod durumu (`d28447d`) ve doğrulanan bulgular
 
@@ -263,7 +263,7 @@ Görünen ad notu: "Un İmalathanesi", "Un Fabrikası" gibi ölçeğe göre adla
 
 ### 3.4 Parametre adları (özet)
 
-`mulk.ekYapilar.dukkan` (+ `olcekHucre?`), `mulk.perakende.{acikOlcekler, ilceBasinaEnFazla, fiyatBandiPpm, fiyatKademeleriPpm, varsayilanFiyatKademesi, kampanyaKademesi, fiyatDegisimEnAzSaat, cesitKatsayiPpm, esnaf, olcekler, dukkanTurleri, talep, marka}` (§4.3), `mulk.sebeke` (§4.7, §5.2). Yeni üst düzey parametre bloğu yoktur; hepsi `param.mulk` altındadır (mülk kipi kapalıyken okunmaz: bölge kipi etkilenmez).
+`mulk.ekYapilar.dukkan` (+ `olcekHucre?`), `mulk.perakende.{acikOlcekler, ilceBasinaEnFazla, fiyatBandiPpm, fiyatKademeleriPpm, varsayilanFiyatKademesi, kampanyaKademesi, kampanyaGunlukEnFazlaSaat, kampanyaHaftalikEnFazlaGun, fiyatDegisimEnAzSaat, cesitKatsayiPpm, esnaf, olcekler, dukkanTurleri, talep, marka}` (§4.3), `mulk.sebeke` (§4.7, §5.2), `mulk.yontemGecersizKilma` (§4.8, §5.9). Yeni üst düzey parametre bloğu yoktur; hepsi `param.mulk` altındadır (mülk kipi kapalıyken okunmaz: bölge kipi etkilenmez).
 
 ### 3.5 Yöntem kimlik listesi (makine-denetimli, yalnız-ekle)
 
@@ -402,7 +402,7 @@ export interface MulkPerakendeParametreleri {
   /** Yerel NPC hane talebi (G7a). */
   talep: YerelTalepParametreleri;
   /** Marka kuralları (§7.7). */
-  marka: { hesapBasinaEnFazla: number; adMin: number; adMax: number; simgeSayisi: number; renkSayisi: number };
+  marka: { hesapBasinaEnFazla: number; simgeSayisi: number; renkSayisi: number };   // ad uzunluk/kümesi parametre DEĞİL: AD_KURALI (cekirdek/src/ad.ts; §7.7)
 }
 
 export interface DukkanOlcegi {
@@ -430,7 +430,7 @@ export interface DukkanTuruTanimi {
 export interface YerelTalepParametreleri {
   /** Nüfus-başı talebi ilçe büyüklüğüne çeviren ölçek (kalibre DEĞİL; A2 §1.9: 50; A2 §4 soru 4). */
   yerelOlcek: number;
-  /** İlçe sınıfı (`ParselIlceTanimi.sinif`: kirsal | kasaba | sehir; `veri/src/parsel.ts:89`) başına nüfus EŞDEĞERİ. A2 §1.13. Gerçek ilçe nüfusu YOKTUR (§6.5). */
+  /** İlçe sınıfı (kirsal | kasaba | sehir) başına nüfus EŞDEĞERİ. A2 §1.13. Sınıf = ilçenin BASKIN hücre sınıfıdır (§6.5; fikstürdeki `ParselIlceTanimi.sinif` "en yüksek sınıf" olduğu için KULLANILMAZ). Gerçek ilçe nüfusu YOKTUR (§6.5). */
   ilceSinifiNufus: { kirsal: number; kasaba: number; sehir: number };
   /** Mal -> talep, mili-birim / 1000 nüfus / saat. Rafa girebilen HER mal için satır zorunlu (çıkmaz raf yok). A2 §1.9 tablosu: gida, ekmek, un, sut, sut_urunu, sekerleme, findik_urunu, yakit, pencere, cam, celik, parca (cimento A0'da mal değildir: satırı YAZILMAZ). */
   talep1000Saat: Record<string, number>;
@@ -485,13 +485,14 @@ Biçim (`veri/src/tipler.ts:140`): tüm miktarlar **mili-birim/saat**, tam kadro
 | V7 | `esnaf.tabanPayPpm ∈ [0, 1 000 000)`, `esnaf.fiyatPpm` bant içinde | `perakende.esnaf: ...` |
 | V8 | `olcekAraligi ⊂ {0,1,2}` ve `acikOlcekler`'le tutarlı; `tamCesit ≥ 1` ve `tamCesit ≤ mallar.length`; mal listesi tekrarsız | `perakende.dukkanTurleri.<id>: ...` |
 | V9 | `talep`: `ilceSinifiNufus` üç anahtar > 0; `yerelOlcek ≥ 1`; her grubun `takvimPpm` uzunluğu 12, değerler > 0 ve **toplamı tam 12 000 000**; `gruplar` kapsaması: her `talep1000Saat` malı tam bir grupta; `bayram` varsa `oncesiGun × (oncesiPpm − 1 000 000) + sonrasiGun × (sonrasiPpm − 1 000 000) = 0` (toplam sabit; A2 §1.9) ve ppm değerleri > 0; `bayramGunleri` kesin artan, komşu fark ≥ en büyük `oncesiGun + sonrasiGun` | `perakende.talep: ...` |
-| V10 | Marka: `adMin ≥ 2`, `adMax ≤ 24` (protokol üst sınırıyla uyumlu), `hesapBasinaEnFazla ∈ [1, 3]`, `simgeSayisi`, `renkSayisi ≥ 1` | `perakende.marka: ...` |
+| V10 | Marka: `hesapBasinaEnFazla ∈ [1, 3]`, `simgeSayisi`, `renkSayisi ≥ 1` (ad uzunluğu ve izinli küme parametre değil, çekirdek sabiti `AD_KURALI`) | `perakende.marka: ...` |
 | V11 | Kilitsizlik taraması: `perakende` ve `ekYapilar.dukkan` alt ağacında seviye/teknoloji/önkoşul anahtarı yok (A0-17) | `perakende: kilit alani yasak: <anahtar>` |
 | V12 | `ekYapilar.dukkan.insaMaliyeti` malları içerikte | mevcut genel doğrulama |
 | V13 | **Çıkmaz mal (UA1)**: (a) yan ürün kuralı **hata**: `kepek` için en az bir yöntemin girdisinde `kepek` geçer (Ü) **ve** `emilimSaat.kepek > 0` (N: NPC dünya pazarı güvence alıcıdır, §5.4); aynı kural `gubre` için (Ü: Tarla gübre dozu, `tarim.gubreTuketimiSaat`; N: `emilimSaat.gubre > 0`); (b) genel kural **uyarı** (A0): her depolanabilir mal en az iki farklı tüketici türüne sahip (Ü yöntem girdisi, H raf, Y yapı maliyeti, P pazar emilimi > 0; **K ve N ancak kodda var olunca sayılır**); `elektrik` muaftır (depolanamaz). Sabit `CIKMAZ_MAL_HATA = false`; P1 teslim kapısı bunu `true` yapar (S15) | hata: `icerik: yan urun alicisiz: <mal>`; uyarı: `icerik: cikmaz mal: <mal> (tuketici turu <n> < 2)` |
 | V14 | `mulk.sebeke` (§4.7): `mallar` boş değil, `mal` kimlikleri içerikte ve tekil; `elektrik` kaydı varsa `elektrik` malı depolanamaz ve en az bir yöntem `elektrik` girdisi taşır; `elektrik` dışındaki mallar depolanabilir ve en az bir yöntem girdisinde geçer (aksi halde uyarı: ölü kayıt); `0 < tavanOraniPpm ≤ 1 000 000`; `kasaPayiPpm ∈ [0, 1 000 000]` | `sebeke: ...` |
 | V15 | Yöntem oranı bandı (A2 §1.13 son satır): her `mulkKipi` yönteminin çıktı/girdi değeri oranı [1,16; 1,48] dışında **uyarı** (hata değil; taban fiyatla) | uyarı: `icerik.yontemler.<id>: oran bandi disi` |
-| V16 | `mulkKipi` yöntemi hiçbir türün `yontemler[0]` (varsayılan) elemanı olamaz ve `gerekliTeknoloji` taşıyamaz (§4.1; yeniden belirtilir: bu dosya içeriğe bakan tek yer) | §4.1 iletileri |
+| V16 | `mulkKipi` yöntemi hiçbir türün `yontemler[0]` (varsayılan) elemanı olamaz ve `gerekliTeknoloji` taşıyamaz (§4.1) | §4.1 iletileri |
+| V17 | `mulk.yontemGecersizKilma` (§4.8): anahtarlar `icerik.yontemler` kimlikleri; `0 < ciktiPpm ≤ 2 000 000` | `yontemGecersizKilma: ...` |
 
 **Kimlik kilidi bağlantısı:** §3.5 (`dogrulaKimlikKilidi` `dukkanTurleri` ve `yontemler` geçirir).
 
@@ -529,7 +530,7 @@ export interface DerlenmisSebeke {
 }
 ```
 
-`DerlenmisMulk.perakende?: DerlenmisPerakende` ve `DerlenmisMulk.sebeke?: DerlenmisSebeke` eklenir. Hatalar `Error` ile (derleme sırasında; `mulkDerle` `derle.ts:114-198`): bilinmeyen mal/tür, `acikOlcekler` boş, `dukkan` ek yapısı yok, `sebeke.mal` yok. Node-only ek semantik kurallar (V3–V5, V13, V15) çekirdekte **yok** (çekirdek `@bolge/veri`'den yalnız tip alır; `mal-kimlik-kilidi-paket.test.ts` güvencesi).
+`DerlenmisMulk.perakende?: DerlenmisPerakende` ve `DerlenmisMulk.sebeke?: DerlenmisSebeke` eklenir. Hatalar `Error` ile (derleme sırasında; `mulkDerle` `derle.ts:114-198`): bilinmeyen mal/tür, `acikOlcekler` boş, `dukkan` ek yapısı yok, `sebeke.mallar[].mal` içerikte yok. Node-only ek semantik kurallar (V3–V5, V13, V15) çekirdekte **yok** (çekirdek `@bolge/veri`'den yalnız tip alır; `mal-kimlik-kilidi-paket.test.ts` güvencesi).
 
 ### 4.7 `param.mulk.sebeke` (yeni isteğe bağlı blok; şebekeden otomatik tedarik edilen mallar)
 
@@ -588,7 +589,7 @@ Baş lider kararı: Alfa-0'da **santral zorunlu değildir**. Mülk kipinde, işl
 
 **Kapsam:** yalnız mülk kipi (`ic.mulk !== undefined`), yalnız işletme düğümü (`BolgeDurumu.merkez !== undefined`), yalnız `ic.mulk.sebeke !== undefined` iken ve yalnız `sebeke.mallar[]` listesindeki mallar için (blok yoksa ya da mal listede yoksa hiçbir kod yolu değişmez). Bölge kipi ve harita bölgeleri **dokunulmaz** (§13 K-4). Listedeki mallar **aynı tedarik ilkesini** paylaşır (otomatik, kamu fiyat tavanı, tek defter satırı) ama **iki mekanikle** çözülür: `elektrik` anlık dengedir (§5.2.2), listedeki diğer (depolanabilir) mallar, Alfa-0'da `yakit`, tüketim anında stoksuz alınır (§5.2.2b).
 
-**Santral** isteğe bağlı oyuncu yatırımıdır: kendi elektriğini üretir (önce o kullanılır); **fazlasını kamuya satamaz** (`elektrikDagit` santral yükü talebi izler: fazla üretim yoktur, satış yolu yoktur); yakıtı (`kömür`, `yakıt`) bugünkü gibi **ticaret emri ithalatıdır** (§5.2.8). **Santralin şebekeye göre ekonomisi (baş lider kararı):** yalnız hidroda ve yüksek yükte kârlıdır; şartnamede, oyun içi metinde ve arayüzde **"daha ucuz" vaadi yoktur**, oyuncuya gerçek sayılar gösterilir (A2: kömür tam yükte yalnız %5–6 avantaj, başabaş yük %59–67; yakıt jeneratörü hiç avantajlı değil; hidro %12–14); santral fiyatına ve maliyetine **dokunulmaz** (B7).
+**Santral** isteğe bağlı oyuncu yatırımıdır: kendi elektriğini üretir (önce o kullanılır); **fazlasını kamuya satamaz** (`elektrikDagit` santral yükü talebi izler: fazla üretim yoktur, satış yolu yoktur); santralin **kömürü** bugünkü gibi **ticaret emri ithalatıdır**; `yakit_jeneratoru`'nun yakıtı şebekeden gelir (§5.2.2b, §5.2.8). **Santralin şebekeye göre ekonomisi (baş lider kararı):** yalnız hidroda ve yüksek yükte kârlıdır; şartnamede, oyun içi metinde ve arayüzde **"daha ucuz" vaadi yoktur**, oyuncuya gerçek sayılar gösterilir (A2: kömür tam yükte yalnız %5–6 avantaj, başabaş yük %59–67; yakıt jeneratörü hiç avantajlı değil; hidro %12–14); santral fiyatına ve maliyetine **dokunulmaz** (B7).
 
 #### 5.2.2 Algoritma (`ekonomi/uretim.ts`)
 
@@ -679,7 +680,7 @@ Bedelin bir kısmı **ilçe kasasına** (kamu bütçesi; kasa yalnız yanan para
 | lavabo | `lavabo.sebeke` (YENİ, isteğe bağlı, tembel) | yanan para | `bedel − kasa payı` |
 | kasa girişi | `kasa.giris.sebeke` (YENİ, isteğe bağlı, tembel; `KasaGirisKalemi` + `"sebeke"`) | kamu bütçesi | `Σ_ilçe carpBol(bedel_ilçe, kasaPayiPpm, PPM)` |
 
-- **Hangi kasa:** düğümün **ilçe kasası** `k:ilce:<id>` (`kamuIlceKimligi`, `mulk/kamu.ts`); ilçe `dugumIlcesi(d, ic, oyuncu, b.id)` (`mulk/kasa.ts:179`: oyuncunun düğümün ilindeki en çok hücreli ilçesi; eşitlikte kimlik; hücre yoksa ilin ilk ilçesi) ile bulunur. Gerekçe: ithalat makası ve komisyonu da ilçe kasasına gider (`kasaOranlariHesapla`, `kasa.ts:302-303`); elektrik şebekesi ilçe düzeyi kamu hizmetidir; mahalle/il bölüşümü (vergi gibi 20/40/15) bu parametreyle gelmez (S-4: sahip isterse `kasaPayi` üçe bölünür, **şema genişletilebilir**: `kasaPayiPpm` yalnız ilçe).
+- **Hangi kasa:** düğümün **ilçe kasası** `k:ilce:<id>` (`kamuIlceKimligi`, `mulk/kamu.ts`); ilçe `dugumIlcesi(d, ic, oyuncu, b.id)` (`mulk/kasa.ts:179`: oyuncunun düğümün ilindeki en çok hücreli ilçesi; eşitlikte kimlik; hücre yoksa ilin ilk ilçesi) ile bulunur. Gerekçe: ithalat makası ve komisyonu da ilçe kasasına gider (`kasaOranlariHesapla`, `kasa.ts:302-303`); elektrik şebekesi ilçe düzeyi kamu hizmetidir; mahalle/il bölüşümü (vergi gibi 20/40/15) bu parametreyle gelmez (gerekirse `kasaPayi` üçe bölünür: şema genişletilebilir; `kasaPayiPpm` şimdilik yalnız ilçe).
 - **`kasaPayiPpm = 120 000` (%12; A2 §1.3-B1)**: tek P4 oyuncusu olan en ince ilçede bile kamu siparişi v0 çekirdeğini (23.381 ₺/hafta) 1,1× karşılar; kalabalık ilçede kasa kapasitesi 4–10×, sipariş sayısı (≤ 5/hafta) bağlayıcıdır; lavabo payı %88 kalır. Baş lider kararı: pay ekonomide kalır ve kamu siparişini besler; kalanı lavaboya gider. Kamu NPC alıcısı bu kasadan ödenek verir (`kamuAlici` `mulk/kasa.ts:320`; `kasa.haftalikButcePpm`, `oyuncuPayiTavaniPpm`; `parametreler.json:235-243`), yani pay **dolaşıma geri döner** (kamu siparişiyle oyunculara); lavaboya giden kısım yanar. **Tamsayı kuralı (A2 §1.3-B1; test örneği):** `kasa = floor(ödeme × kasaPayiPpm / 1 000 000)`, `lavabo = ödeme − kasa`. Örnek: ödeme 397.576.620 mili-₺ → kasa 47.709.194, lavabo 349.867.426 (toplamları eşit; korunum her tikte tam kapanır; P4 oyuncusunun haftalık şebeke ödemesi 397.577 ₺ = elektrik 49.817 + yakıt 347.760, A2 §1.3-B1). Pay 0 verilirse kasa alanı hiç yazılmaz (`giris.sebeke` oluşmaz, `ParaAkisi.kasa`'ya girmez); bu karar değildir.
 - `kasaOranlari` (`mulk/kasa.ts:205`) imzasına `sebekeIlce: ReadonlyMap<string, Mili>` eklenir; `kasaOranlariHesapla` (`:302-303` yanına): `for (const [ilce, x] of sebekeIlce) ekle(kamuIlceKimligi(ilce), "sebeke", carpBol(x, kasaPayiPpm, PPM))`. Önbellek anahtarına (`KasaOnbellegi`, `kasa.ts:~232-239`) `sebeke: [string, Mili][]` eklenir ve `haritaAyni` ile karşılaştırılır (önbellek yanlış sonuç vermesin).
 - `paraMuhasebesi` (`mulk/kasa.ts:94-125`) değişiklikleri:
@@ -744,7 +745,7 @@ Aynı tesis kümesi (Tarla + `gida_fabrikasi` ×2 [biri `ekmek_firini`: yakıt g
 
 - **Yakıt girdisi** (`ekmek_firini`, `cam_firini`, `yakit_jeneratoru`) §5.2.2b ile şebekeden gelir (`sebeke.mallar[]` içinde `yakit` kaydı olduğu için). **Kömür** (`komur_santrali` girdisi) ve diğer ham/ara mallar (silis, çelik, parça, kepek...) **şebekeden gelmez**: bugünkü gibi ticaret emri ithalatı ya da kendi üretimidir (`ekonomi/komut.ts:99-130`; emir kalıcı oran; gerçekleşme saat tıkında; yuva 4 + Ticaret ofisi). Böylece "kömür santrali ithal kömürle" ekonomisi (A2 §1.3-B1: kömür 33,3 ₺) korunur ve **santral fiyatına/maliyetine dokunulmaz** (baş lider).
 - Santral kurmayan oyuncunun elektrik için ticaret emri vermesi **gerekmez** (elektrik depolanamaz; `ekonomi/komut.ts:108` reddi değişmez); yakıt için de gerekmez (§5.2.2b).
-- Fırın/santral yakıtı için S-10 (kapsam onayı): A2 yakıtı şebekeye dahil etmiştir; baş lider onayında teyit edilir. Yakıt kaydı `mallar[]`'dan **çıkarılırsa** bu davranış kapanır (kod yolu kalır; kural dönemi).
+- Yakıtın şebekeye dahil olması baş lider tarafından teyit edilmiştir (S-10 kapandı). Yakıt kaydı `mallar[]`'dan **çıkarılırsa** bu davranış kapanır (kod yolu kalır; kural dönemi).
 
 #### 5.2.9 Serileştirme ve göç (özet; ayrıntı §11)
 
@@ -805,7 +806,7 @@ function bolgeKipiTurleri(icerik: IcerikDosyasi): TesisTuruTanimi[] {
 
 - `ic.tesisTuruIndeks` (`derle.ts:31`) ve `ic.yontemIndeks` (`:30`) **tam içerikten** kurulur (indeks sabit).
 - Tüketiciler (hepsi `ic.tesisTurleri`'ni okur, dolayısıyla süzülmüş görünümü alır; K3 listeyi grep ile tamamlar, **doğrulanmadı: tam liste**): `ekonomi/tablo.ts:83-84`, `tarim/tablo.ts:176`, `botlar/src/tablo.ts:144`, `istemci/src/komut/tablo.ts:124`, `teknoloji.ts:122`, `kurulum.ts:117`. **Tam içerik üzerinden kurulan tablolar** (`ic.yontemler`: `sanayi/tablo.ts:57-60`, `ekonomi/tablo.ts:79`, `tarim/tablo.ts:173-175`) bölge kipinde de tam yöntem listesini görür; bunlar durum değil türetilmiş tablodur, özeti etkilemez (doğrulandı: kod okuma).
-- `ic.icerik` değişmez: `goc.ts:45` `icerikKimlikTablosuOlustur(ic)` ve `sunucu/src/yazar.ts:611` dizinleri tam listeyi görür (indeks tabloları sabit).
+- `ic.icerik` değişmez: `goc.ts:45` `icerikKimlikTablosuOlustur(ic)` ve `sunucu/src/yazar.ts:1318` dizinleri tam listeyi görür (indeks tabloları sabit).
 - Bölge kipinde `yontem_degistir` bu yönteme: `yontem bu tesis turunde yok: <id>` (`ekonomi/komut.ts:85`; ileti mevcut).
 - `kurulum.ts:117` (`ilkYontem = ic.tesisTurleri[tur].yontemler[0]`) süzülmüş listeyi okur: bölge kipinde ilk yöntem değişmez (`mulkKipi` yöntemi `[0]` olamaz, §4.1).
 - **Karşıt kanıt (süzgeç gerçekten etkili):** `mulkKipi` bayrağı **olmayan** sahte bir yöntem bölge kipinde `botlar/src/planlayici.ts` `yontemAdaylari`'nda görünür; bayraklısı görünmez (test §16).
@@ -825,7 +826,7 @@ Ayrıntı §17. Özet:
 5. Bot ekmek zinciri 7 günde tamamlanır (O2; yöntem seçimi `yontem` alanıyla ya da `yontem_degistir`'le) **ve botlarda marjinal-net yöntem seçici vardır** (§5.9 ölçümün ön koşulu; G6 kabul koşulu).
 6. Tam kapı yeşil, `dunya.html` gzip ≤ 400 KB (G6 < 0,5 KB beklenir; şebeke + `yontem` alanı ≈ +0,3 KB: K3 ölçer, **doğrulanmadı**).
 
-### 5.8 Yapı komutlarında isteğe bağlı `yontem` alanı (T3 §11 soru 2; A3 görüşü)
+### 5.8 Yapı komutlarında isteğe bağlı `yontem` alanı (T3 §11 soru 2; baş lider KABUL, S-14 kapandı)
 
 **Görüş: evet, G6'ya alınır.** `tesis_insa_hucre` ve `yapi_yerlestir` komutlarına isteğe bağlı `yontem?: string` (yöntem kimliği) eklenir.
 
@@ -834,7 +835,7 @@ Ayrıntı §17. Özet:
 | **A (öneri): inşa komutunda `yontem?`** | "Değirmen kur" **tek adım**; yapı yöntemin kimliğidir (yapı adı yöntemden gelir; üretim §7.1). Tesis tamamlandığı anda doğru yöntemle başlar: inşa bittiğinde `standart_gida_isleme` **tahılı boş yere tüketmez** (kurulumdan sonra yöntem değişimi, inşa saatlerce sürebildiği için, oyuncu çevrimdışıyken yanlış yöntemle bir süre çalışmaya yol açar). Maliyet: komut alanı, `InsaatDurumu.yontem?`, protokol alanı; hepsi isteğe bağlı |
 | B: kurulumdan sonra `yontem_degistir` | Ek komut gerekmez; ama iki adımlı akış (inşa bitişini beklemek) onboarding'e (G9 Esnaf Defteri) sürtünme ekler ve ara dönemde yanlış yöntem çalışır. `yontem_degistir` zaten **kalır** (A'da da) |
 
-Baş lider A'yı reddederse bu madde düşer ve geri kalan G6 **hiç değişmez** (B zaten çalışır).
+**Baş lider A'yı kabul etti.** Protokolde yalnız ekleme (nesne alanı) ve **geriye uyum testi** şarttır: alan olmadan gelen eski komut aynı sonucu verir (§16.1). Protokol kısmı K2'nindir, sırayı Kod lideri belirler. (B yolu `yontem_degistir` olarak her durumda çalışmaya devam eder.)
 
 **Kurallar:**
 - `yontem` yalnız **tesis türü** inşasında verilebilir (ek yapıda verilirse: `yontem yalniz tesis turunde verilebilir: <tesisTuru>`).
@@ -846,9 +847,6 @@ Baş lider A'yı reddederse bu madde düşer ve geri kalan G6 **hiç değişmez*
 
 ## 6. G7a: yerel pazar kanalı
 
-> **TASLAK (Parça 2):** Bu bölüm A2 `35ad50f` sayılarıyla, DUK/MRK tablolarıyla ve protokol ayrıntısıyla **Parça 2'de güncellenecektir**; K3'ün G6 şema dalı bu bölüme bağlı değildir. Önceki sürümden kalan A2 öncesi değerler ve `A2'den` işaretleri geçerli sayılmaz.
-
-
 ### 6.1 Ne eklenir
 
 Mülk kipine **NPC hane talebi**: ilçedeki dükkânlar (ve görünmez esnaf) arasında paylaştırılan, düğüm stoğundan çekilen, oyuncu hazinesine **yeni para** olarak giren (musluk `yerelNpc`) satış akışı. Mevcut NPC dünya pazarı (toptan ihracat, ≤ 0,9 R, hacim sınırlı; `pazar/piyasa.ts`) **değişmez**; yerel kanal ondan ayrı bir talep kaynağıdır, ikisi birbirini dışlamaz (K3 keşif §2).
@@ -857,8 +855,8 @@ Mülk kipine **NPC hane talebi**: ilçedeki dükkânlar (ve görünmez esnaf) ar
 
 | Konu | Karar | Gerekçe |
 |---|---|---|
-| **R tanımı** (GZ-5) | `R[m] = d.pazar.fiyat[m]` (dünya referans fiyatı, saatlik tıkta güncellenir; `pazar/piyasa.ts:123-135`) | docs/06 §15.7 kamu tavanı, 0,891 R çıpası, band [0,7; 1,4] R hep bu R'ye göre yazıldı; tek referans |
-| **Q kimliği** (GZ-4) | `Q[ilçe, mal, t] = ilceTabanSaat[sınıf][mal] × aylık(mal, ay) × bayram(mal, gün)`; **nüfus yok**, **ilçe seviyesi yok** | Baş lider kararı 6; mülk kipinde nüfus yok (`isletme.ts` düğüm `nufus = 0`), fikstürde ilçe nüfusu yok (`veri/src/parsel.ts:81-104`); seviye kilit olamaz (Y-33) |
+| **R tanımı** (GZ-5) | `R[m] = d.pazar.fiyat[m]` (dünya referans fiyatı, saatlik tıkta güncellenir; `pazar/piyasa.ts:123-135`); dükkân geliri `R × kademe`. **Şebeke fiyatı R'yi KULLANMAZ** (taban; §5.2.4) | docs/06 §15.7 kamu tavanı, 0,891 R çıpası, band [0,7; 1,4] R hep bu R'ye göre yazıldı; tek referans |
+| **Q kimliği** (GZ-4) | `Q[ilçe, mal, t] = talep1000Saat[mal] × ilceSinifiNufus[sınıf] × yerelOlcek / 1000 × takvim[grup][ay] × bayram[grup](gün)` (A2 §1.9); **nüfus verisi yok**, **ilçe seviyesi yok** | Baş lider kararı 6; mülk kipinde nüfus yok (`isletme.ts` düğüm `nufus = 0`), fikstürde ilçe nüfusu yok (`veri/src/parsel.ts:81-104`); seviye kilit olamaz (Y-33). Sınıf tanımı §6.5 |
 | **NPC dünya fiyatına etkisi** | **Etkilemez.** Yerel satış `d.pazar.oyuncuArzi/oyuncuTalebi` (`pazar/piyasa.ts:117-118`) ve dolayısıyla `pazarFiyatlari`'na girmez | Geri besleme döngüsü (dükkân satışı → R → dükkân gelirine çarpan) ve oyuncu sayısıyla ölçeklenen NPC emilimine çift sayım yok; test §16 |
 | **Öncelik katmanı** (GZ-6) | **Yeni katman 4a: ihracattan ÖNCE, tesis girdisinden SONRA.** Sıra: 1 nüfus+ordu, 2 bakım, 3 tesis girdisi, **4a yerel (dükkân) satış**, 4 ihracat | Dikey §4.3 taşma sırası: önce kendi dükkânı, sonra NPC pazar (taşma). Aynı `fr4`'ü paylaşmak, stok kıtken ihracatın dükkândan pay almasına yol açardı |
 | **Çekim uzayı** | İlçe düzeyi tek havuz (halka havuzu Alfa-1); konum çarpanı yok (PPM) | Dikey §5.7, karar 7 |
@@ -887,6 +885,7 @@ lojistikCoz(d, ctx)                                   lojistik/cozum.ts:228
 | d | `bolgeOranlariUygula`: `hareketsiz` koşuluna `h.dukkanGercek[m] === 0`; `yerel` toplamından `− h.dukkanGercek[m]` | `:660-668` |
 | e | `hazineKalemleri`: `gelir += yerelGelir`; `gider += dükkân gideri`; `ParaBilesenleri.yerel` | `lojistik/cozum.ts:73-81`, `:91-181` (`:162` işletme gideri satırı) |
 | f | `paraAkisiYaz` çağrısına `yerel: k.para.yerel` | `lojistik/cozum.ts:297-304`, `mulk/kasa.ts:133-159` |
+| g | `bolgeDurumunaYaz`: `b.yerelKarsilanmaPpm = min(frD[m])` (dükkân isteği olan mallar; PPM ise **yazılmaz**, alan silinir); `paraAkisiYaz`: `akis.yerel > 0` iken `mo.ilkSatisT ??= d.zaman` | `ekonomi/uretim.ts:596-620` (`gidaKarsilanmaPpm` örüntüsü `:621`), `mulk/kasa.ts:133-159` |
 
 **`bolgeVerimCoz` katman 4a (tam kural):**
 
@@ -918,7 +917,7 @@ h.dukkanGercek[m] = d4a === 0 ? 0 : carpBol(d4a, h.frD[m] as number, PPM);
 
 ### 6.4 Algoritma (tamsayı, PPM; K3 bunu birebir uygular)
 
-Sabitler: `PPM = 1_000_000`, `MILI = 1000`, `carpBol(a, b, c) = floor(a × b / c)` (`sabit.ts:42`; BigInt yedekli). Kayan nokta, `Math.pow`, `Math.sqrt` yok.
+Sabitler: `PPM = 1_000_000`, `MILI = 1000`, `carpBol(a, b, c) = floor(a × b / c)` (`sabit.ts:42`; BigInt yedekli). Kayan nokta, `Math.pow`, `Math.sqrt` yok. **Referans uygulama ve test vektörleri: Ek B** (çekirdek dışı betik; K3 vektörleri sabit gömer). Formül A2 §1.9 "Tamsayı çekim formülü" ile aynıdır.
 
 **Adım 0: dükkânları topla (sıra sabit).** `d.mulk.isletmeler` sırasıyla (oyuncu, il) her düğüm; düğümde `b.ekYapilar`'ın (tamamlanma sırası) `tur === "dukkan" && dukkan !== undefined` olanları. Her dükkânın ilçesi `mk.hucreler.get(ekYapi.hucreler[0]).ilce`. İlçelere göre grupla; ilçeler **kimlik sırasıyla** (JS dize sırası), ilçe içinde dükkânlar **(oyuncu kimliği, `EkYapiDurumu.id`)** sırasıyla.
 
@@ -926,33 +925,37 @@ Sabitler: `PPM = 1_000_000`, `MILI = 1000`, `carpBol(a, b, c) = floor(a × b / c
 
 **Adım 2: çeşit.** Dükkân `j` için `dolu_j` = `mal` tanımlı **ve** `mevcut` olan yuva sayısı; `cesitPpm_j = dolu_j ≥ tamCesit ? PPM : carpBol(dolu_j, PPM, tamCesit)`. (Alfa-0 sadeleştirmesi: 24 saatlik pencere yok, GZ-11.)
 
-**Adım 3: ağırlık.** Yuva `y` (mal `m`, kademe `k`, `p = fiyatKademeleriPpm[k]`):
+**Adım 3: ağırlık.** Yuva `y` (mal `m`, **etkin** kademe `k`, `p = fiyatKademeleriPpm[k]`; etkin kademe kampanya kuralıyla belirlenir, §7.5b):
 
 ```
-ters  = carpBol(PPM, PPM, p)                       // PPM² / p ; p ∈ [700 000, 1 400 000] -> [714 285, 1 428 571]
-kare  = carpBol(ters, ters, PPM)                   // (R/fiyat)²  ∈ [510 204, 2 040 816]
+ters   = carpBol(PPM, PPM, p)                      // PPM² / p ; p ∈ [700 000, 1 400 000] -> [714 285, 1 428 571]
+kare   = carpBol(ters, ters, PPM)                  // (R/fiyat)²
 cesitC = PPM + carpBol(cesitKatsayiPpm, cesitPpm_j, PPM)
-w     = carpBol(carpBol(kare, cesitC, PPM), olcekler[olcek_j].cekimCarpaniPpm, PPM)
+w      = carpBol(carpBol(kare, cesitC, PPM), olcekler[olcek_j].cekimCarpaniPpm, PPM)       // Alfa-0 S: cekimCarpaniPpm = PPM (etkisiz)
+wE     = kare(esnaf.fiyatPpm)                      // esnaf: aynı ters/kare, çeşit ve ölçek çarpanı yok
 ```
 
-Esnaf ağırlığı: `wE = kare(esnaf.fiyatPpm)` (aynı `ters/kare`, çeşit ve ölçek çarpanı yok).
-
-**Adım 4: ilçe × mal paylaşımı.** `m` artan sırada; `L` = o ilçede `mal = m`, `mevcut`, `w > 0` olan yuvalar, (oyuncu kimliği, `EkYapiDurumu.id`, yuva indeksi) sırasıyla; `L` boşsa geç.
+**Adım 4: ilçe × mal paylaşımı, su-doldurma (en çok 32 tur).** İlçe için `donuk[j] = false` (tüm dükkânlar), `sabit[m] = 0` (mal başına, donmuş dükkânların aldığı toplam). `tur = 0 … 31`:
 
 ```
-Q        = yerelTalep(m, ilce, t)                         // §6.5; 0 ise geç
-Σw       = Σ w(L)
-esnafPay = max(esnaf.tabanPayPpm, carpBol(wE, PPM, Σw + wE))     // ppm
-esnaf    = carpBol(Q, esnafPay, PPM)
-P        = Q - esnaf                                      // oyuncu havuzu (mili-birim/saat)
-s_i      = carpBol(P, w_i, Σw)                            // her i ∈ L
-kalan    = P - Σ s_i                                      // 0 <= kalan < |L|
-// kalan birimler L sırasıyla birer birim: ilk `kalan` giriş +1
+a) m artan sırada, Q[m] > 0 olan her mal için:
+     L  = donmamış dükkânların, mal = m, mevcut, w > 0 olan yuvaları; sıra (oyuncu kimliği, EkYapiDurumu.id, yuva indeksi)
+     Qr = Q[m] − sabit[m];                    L boşsa ya da Qr ≤ 0 ise bu mal bu turda atlanır
+     Σw       = Σ w(L)
+     esnafPay = max(esnaf.tabanPayPpm, carpBol(wE, PPM, Σw + wE))        // ppm
+     esnaf    = carpBol(Qr, esnafPay, PPM)
+     P        = Qr − esnaf                                                // oyuncu havuzu
+     s_i      = carpBol(P, w_i, Σw)                                       // her i ∈ L
+     kalan    = P − Σ s_i                                                 // 0 ≤ kalan < |L|; L sırasıyla ilk `kalan` yuvaya +1
+b) her donmamış dükkân j için top_j = Σ_y s(j,y)  (tüm mallar); top_j > olcekler[olcek_j].kasaMiliSaat ise j "yeni dolan"
+c) yeni dolan yoksa DUR. Varsa (dükkân sırasıyla): her yuva için s = carpBol(s, kasa_j, top_j); sabit[mal] += s; donuk[j] = true. Sonraki tur.
 ```
 
-**Adım 5: kasa kırpması (tek geçiş).** İlçedeki her dükkân `j` için `top_j = Σ_y s_(j,y)` (tüm mallar, adım 4 bitince). `top_j > olcekler[olcek_j].kasaMiliSaat` ise her yuva için `s = carpBol(s, kasa, top_j)` (aşağı yuvarlama). **Taşan talep başka dükkâna yeniden dağıtılmaz** (esnafa/boşa gider; GZ-11). Sonuç `istek(j, y)`.
+`32` tur dolduğunda hâlâ kasayı aşan dükkân varsa son bir kez `s = carpBol(s, kasa_j, top_j)` ile orantılı kısılır. (Kasa kırpması **su-doldurmadır**: kasası dolan dükkânın taşan talebi `Qr` üzerinden **diğer açık dükkânlara ve esnafa** yeniden dağıtılır; K3 keşfinin "su-doldurma" isteği; A2 §1.9 ile aynı.)
 
-**Adım 6: satırlar.** `YerelSatir { dugum, mal, istek, fiyatPpm = p, ekYapi, yuva }` listesi (düğüm indeksi, mal, `ekYapi`, yuva sırasıyla) ve düğüm başına mal toplamı `dugumIstek[dugum][mal]` (`h.dukkan` doldurur). Düğüm başına dükkân gideri `Σ olcekler[olcek].giderMiliSaat` (`yerel.gider`).
+**Adım 5: oyuncu havuzu üst sınırı (ilçe × mal).** `limit_m = Q[m] − carpBol(Q[m], esnaf.tabanPayPpm, PPM)`; o maldaki **tüm** yuvaların (donmuşlar dahil) toplamı `limit_m`'yi aşarsa her yuva `s = carpBol(s, limit_m, toplam_m)` ile orantılı kısılır (donmuş dükkânlar yeniden dağıtımla biraz fazla alabildiği için gerekir; sonuçta kasa aşılmaz: kısma yalnız küçültür).
+
+**Adım 6: satırlar.** `YerelSatir { dugum, mal, istek = s, fiyatPpm = p, ekYapi, yuva }` listesi (düğüm indeksi, mal, `ekYapi`, yuva sırasıyla) ve düğüm başına mal toplamı `dugumIstek[dugum][mal]` (`h.dukkan` doldurur). Düğüm başına dükkân gideri `Σ olcekler[olcek].giderMiliSaat` (`yerel.gider`).
 
 **Adım 7: gerçekleşen satış ve gelir** (`hazineKalemleri` içinde, `hesaplar !== null`):
 
@@ -964,23 +967,36 @@ gelir  = carpBol(brut, fiyatPpm, PPM)                                // dükkân
 
 `hesaplar === null` iken (ödeme gücü tahmini; `cozum.ts:248-253`) `gercek = istek` alınır (ihracatın `e.gerceklesenSaat` kalıbı). Gelir **oyuncu başına toplanır**; `gelir += yerelGelir`, `gider += dükkân gideri`.
 
-### 6.5 Talep Q: formül ve takvim
+**Sıra bağımsızlığı ve determinizm:** sonuç yalnız (durum, `t`) fonksiyonudur; `Map` yalnız geçici ve **sıralı** gezilir; tüm bölmeler aşağı yuvarlar; kalan birimler sıralı dağıtılır. **Bozulmaz değişmezler** (test §16.2): `Σ s ≤ Q[m] − floor(Q[m] × tabanPay / PPM)`; `top_j ≤ kasa_j`; dükkân eklemek/çıkarmak diğer ilçeleri etkilemez; aynı girdi iki kez aynı sonuç.
+
+### 6.5 Talep Q: formül ve takvim (A2 §1.9)
 
 ```
+ilceSinifi(ilce) = baskın hücre sınıfı: ilçenin UYGUN hücrelerinin sınıf sayımı; en çok olan sınıf; eşitlikte BÜYÜK sınıf (sehir > kasaba > kirsal); uygun hücre yoksa tüm hücreler
+                   // derlemede bir kez (DerlenmisPerakende.ilceSinifi); A2'nin tanımı. Fikstürdeki ParselIlceTanimi.sinif "ilçedeki EN YÜKSEK sınıf"tır (veri/src/parsel.ts:89): KULLANILMAZ.
+taban[sınıf][m]  = carpBol(talep1000Saat[m] × yerelOlcek, ilceSinifiNufus[sınıf], 1000)         // mili-birim/saat; derlemede (DerlenmisPerakende.talepTaban)
 yerelTalep(m, ilce, t):
-  taban = mk.perakende.talepTaban[sinif(ilce)][m]                    // mili-birim/saat; 0 ise 0 dön
-  ay    = takvimAyi(ic, t)                                            // tarim/iklim.ts:44; tarım kapalıysa null
-  q     = taban
-  aylik = talepAylik[m]; if (aylik !== undefined && ay !== null) q = carpBol(q, aylik[ay], PPM)
-  gun   = Math.floor(t / GUN)                                         // çekirdeğin sim günü (TRT gece yarısına hizalı)
-  for b of bayram (dizi sırası): if (b.mallar.includes(m) && gun >= b.baslangicGun && gun < b.baslangicGun + b.sureGun) q = carpBol(q, b.carpanPpm, PPM)
-  return q
+  taban = talepTaban[sinif(ilce)][m]; 0 ise 0 dön
+  g     = malGrubu[m]
+  ay    = takvimAyi(ic, t)                                           // tarim/iklim.ts:44; tarım kapalıysa null
+  q     = ay === null ? taban : carpBol(taban, grupTakvim[g][ay], PPM)
+  w     = bayramCarpani(g, Math.floor(t / GUN))                     // sim günü (dünya epoch'undan)
+  return w === PPM ? q : carpBol(q, w, PPM)                          // A2: Q = floor(floor(taban × takvim / 1e6) × bayram / 1e6)
+
+bayramCarpani(g, gun):
+  by = grupBayram[g]; by === null ise PPM
+  for B of bayramGunleri (artan):
+     if gun < B − by.oncesiGun: break                                 // sonraki bayramlar daha ileri
+     if gun < B: return by.oncesiPpm                                  // [B − Do, B − 1]
+     if gun < B + by.sonrasiGun: return by.sonrasiPpm                 // [B, B + Ds − 1] (bayram günü dahil)
+  return PPM
 ```
 
-- `sinif(ilce)` = `ParselIlceTanimi.sinif` (kirsal 0, kasaba 1, sehir 2; `veri/src/parsel.ts:89`), derlemede `ilceSinifi` haritası.
-- `ilceTabanSaat` değerleri ve `aylikPpm` `[A2]`. **Soru (A2):** taban ilçe büyüklüğüne (`uygunHucre`) bağlanacak mı? Varsayılan: hayır (sınıf başına sabit); bağlanacaksa ek parametre gerekir (§21 S-6).
-- Bayram penceresi: `baslangicGun` **sim günüdür** (dünya epoch'undan; epoch 1 Ekim 2026 00:00 TRT, `docs/12 §7`). Resmî bayram tarihleri `[A2]` (doğrulanmadı); toplam-sabit telafi dalgası (dikey §5.6 "bayram sonrası −%15") G7'de **yok**; A2 isterse ikinci pencere (`carpanPpm < PPM`) olarak aynı yapıyla yazar.
-- Takvim ve bayram çarpanları **veri**dir; takvim hesabı (hicri tarih vb.) çekirdekte yoktur.
+- **Nüfus verisi ve ilçe seviyesi yoktur** (Y-33 kilitsizlik); A2: `yerelOlcek` kalibre değildir, gerçek ilçe nüfusu geldiğinde yeniden kalibre edilir (S-6). Taban ilçe büyüklüğüne (`uygunHucre`) bağlanmaz.
+- **Değerler (T3; A2 §1.9, §1.13'ten):** `talep1000Saat` (12 mal), `ilceSinifiNufus`, 4 takvim grubu (her satır toplamı tam 12.000.000), 2 bayram grubu (toplam sabit: `Do·(Wo − 1e6) + Ds·(Ws − 1e6) = 0`), `bayramGunleri`. Çekirdekte sabit değer yoktur.
+- **Bayram sınırı:** `oncesi` penceresi `[B − Do, B − 1]`, `sonrasi` penceresi `[B, B + Ds − 1]` (bayram günü sonrasında; A2 bu tanımı açıkça yazmamıştır: A2'ye teyit, S-8). Pencereler çakışmaz (V9: komşu bayram farkı ≥ `Do + Ds`). Resmî bayram tarihleri (sim günü indeksi, 1 Ekim 2026 = gün 0; TRT gece yarısına hizalı) **T3 verisidir** ve (doğrulanmadı: tarihler); boş liste geçerlidir (bayram yok).
+- Takvim ve bayram çarpanları **veri**dir; takvim hesabı (hicri tarih vb.) çekirdekte yoktur. Kış fırtınası olayı (cam/pencere ×1,5; canlı-dünya §5) takvimden bağımsızdır ve **bu şartnamede yoktur**.
+- `talep1000Saat` mevcut mülk/bölge davranışını değiştirmez (§4.3 son madde).
 
 ### 6.6 Para akışı (özet; ayrıntı §12)
 
@@ -997,7 +1013,7 @@ Sunucu kapalıyken geçen süre açılışta 1 sim-saatlik adımlarla yetiştiri
 
 ### 6.8 Okuma API'si (saf, durumu değiştirmez)
 
-`mulk/yerelPazar.ts`: `yerelPazarGorunumu(d, ic, oyuncu)` → dükkân başına `{ ekYapi, yuvalar: [{ mal, fiyatKademesi, istek, esnafPay, q }], kasaDoluluk, giderMiliSaat }`: arayüz "tahmini satış", ZP ölçümleri ve K2 `kare` alanları için; çözümle **aynı** `yerelPazarHesapla` çekirdeğini kullanır (`istek` = kasa kırpmalı istek; `gercek` stoğa bağlıdır, gösterilmez).
+`mulk/perakende.ts`: `yerelPazarGorunumu(d, ic, oyuncu)` → dükkân başına `{ ekYapi, yuvalar: [{ mal, fiyatKademesi, etkinKademe, mevcut, istek, esnafPay, q }], kasaDoluluk, giderMiliSaat, kampanya: { bitis, kalanSaat, kalanGun } }`: arayüz "tahmini satış", "neden satmıyor" (`mevcut`, `kasaDoluluk`), ZP ölçümleri ve K2 `kare` alanları (§10.2) için; çözümle **aynı** `yerelPazarHesapla` çekirdeğini kullanır (`istek` = kasa kırpmalı istek; dükkân başına `gercek` stoğa bağlıdır ve **durumda tutulmaz**: düğüm düzeyinde `BolgeDurumu.yerelKarsilanmaPpm` ve oyuncu düzeyinde `ParaAkisi.yerel` okunur).
 
 ### 6.9 Performans ve bundle
 
@@ -1005,14 +1021,11 @@ Maliyet: çözüm başına `O(D × Y + I × M)` (D dükkân, Y ≤ 8 yuva, I dü
 
 ### 6.10 Bilinçli sadeleştirmeler (Alfa-0)
 
-Tek geçiş kasa kırpması; çeşit anlık (24 saat penceresi yok); konum, vitrin, bakım çarpanları yok; hane fiyat esnekliği (η) yok (üst sınır §12.4'te invariant olarak testlenir); esnaf payı anlık (14 günlük EMA yok); kampanya penceresi yok. Hepsi Alfa-1 parametre/kural dönemi işi; GZ-11.
+Kasa kırpması **su-doldurmadır** (en çok 32 tur; A2 ile aynı), tek geçişli değil; çeşit anlık (24 saat penceresi yok); konum, vitrin, bakım çarpanları yok; hane fiyat esnekliği (η) yok (üst sınır §12.4'te invariant olarak testlenir); esnaf payı anlık (14 günlük EMA yok); kampanya penceresi G7 şemasındadır ama **varsayılan kapalıdır** (§7.5b). Hepsi Alfa-1 parametre/kural dönemi işi; GZ-11.
 
 ---
 
 ## 7. G7b: `dukkan` S
-
-> **TASLAK (Parça 2):** Bu bölüm A2 `35ad50f` sayılarıyla, DUK/MRK tablolarıyla ve protokol ayrıntısıyla **Parça 2'de güncellenecektir**; K3'ün G6 şema dalı bu bölüme bağlı değildir. Önceki sürümden kalan A2 öncesi değerler ve `A2'den` işaretleri geçerli sayılmaz.
-
 
 ### 7.1 Durum alanları (`tipler.ts`, hepsi isteğe bağlı: yalnız kullanılınca yazılır)
 
@@ -1035,12 +1048,29 @@ export interface DukkanDurumu {
   marka?: number;
   /** Uzunluk = `perakende.olcekler[olcek].rafYuvasi`; boş yuva `mal` taşımaz. */
   raf: RafYuvasi[];
+  /** Kampanya sayaçları (§7.5b); yalnız bir kampanya başlatılınca yazılır. */
+  kampanya?: KampanyaDurumu;
+  /** Yapı komutunun verildiği an (`InsaatDurumu.baslangic`'ten kopyalanır) ve tamamlanma anı (`ekYapiTamamla`: d.zaman). A0-11 ölçümü ve rehber için durumdan okunur (§15.3). */
+  baslangic: Ms;
+  kurulus: Ms;
+}
+
+export interface KampanyaDurumu {
+  /** Sayaçların ait olduğu sim haftası (`floor(gun / 7)`). */
+  hafta: number;
+  /** Bu haftada en az bir kampanya saati olan gün sayısı. */
+  gunSayisi: number;
+  /** En son kampanya kullanılan sim günü ve o gün kullanılan saat. */
+  gun: number;
+  saat: number;
+  /** Etkin kampanyanın bitişi (ms; tam saat sınırı). `bitis > d.zaman` iken kampanya etkindir. */
+  bitis: Ms;
 }
 
 export interface RafYuvasi {
   /** Mal KİMLİĞİ (dize; `dunyaYenidenIndeksle` kapsamına girmez). Tanımsız = boş yuva. */
   mal?: string;
-  /** `perakende.fiyatKademeleriPpm` indeksi (tutar DEĞİL). Boş yuvada da varsayılan değerdedir. */
+  /** `perakende.fiyatKademeleriPpm` indeksi (tutar DEĞİL). Boş yuvada da varsayılan değerdedir. Kampanya kademesi (0) seçiliyse ETKİN kademe kampanya penceresine göre belirlenir (§7.5b). */
   fiyat: number;
   /** Son fiyat/mal DEĞİŞİMİ (ms; hız sınırı için). İlk doldurma ve boşaltma yazmaz. */
   fiyatT?: Ms;
@@ -1049,11 +1079,16 @@ export interface RafYuvasi {
 // tipler.ts:773-797 MulkOyuncuDurumu'na
 markalar?: OyuncuMarka[];        // en çok perakende.marka.hesapBasinaEnFazla; ilk marka tanımlanınca yazılır
 dukkanGeliri?: ParaSayaci;       // kümülatif NPC dükkân geliri (mili-₺); ilk gelirde yazılır
+ilkSatisT?: Ms;                  // yerel satış oranının ilk kez > 0 olduğu an (paraAkisiYaz: akis.yerel > 0 iken `??= d.zaman`); A0-11 "ilk satış" zamanı (§15.3)
 
 export interface OyuncuMarka { ad: string; simge: number; renk: number }
 
 // tipler.ts:476-503 InsaatDurumu'na (inşa sürerken tür taşınır)
 dukkanTuru?: string;
+
+// tipler.ts:238 BolgeDurumu'na (yalnız dükkân varken ve < PPM iken yazılır; `gidaKarsilanmaPpm` örüntüsü): düğümün dükkân satış isteğinin
+// karşılanma oranı = min(frD[m]) (stoğun yetmediği durumu panele söyler: "neden satmıyor")
+yerelKarsilanmaPpm?: number;
 ```
 
 ### 7.2 Yerleşim ve inşa (mevcut komutlara `dukkanTuru`)
@@ -1072,75 +1107,132 @@ dukkanTuru?: string;
 
 `mulk/yapi.ts:54-83` `ekYapiTamamla`: `tur === "dukkan"` ise `(b.ekYapilar).push({ id, tur, hucreler, dukkan: dukkanVarsayilani(mk, insaat.dukkanTuru, insaat.olcek ?? 0) })`; `dukkanVarsayilani`: `{ tur, olcek, raf: Array.from({ length: rafYuvasi }, () => ({ fiyat: varsayilanFiyatKademesi })) }` (marka yok). `ekonomi/insaat.ts:12-17` değişmez (`ekYapiTamamla` çağırır, sonunda `kirlet`).
 
-**S dükkân bedeli (G7):** `ekYapilar.dukkan`: `yuva: 1`, `insaSaati: 4`, `insaParasi: [A2]` (taslak 6 000 000 mili-₺ = 6.000 ₺), `insaMaliyeti: { celik: [A2], parca: [A2] }` (taslak 20 000 + 8 000), **`pencere` yok** (§7.4), `enFazlaIlBasina: 6`, `olcekHucre: [1, 2, 3]`. İlk 5 yapı %30 indirimi ve ilk 24 saat %10 süre mevcut mekanizmayla uygulanır (`mulk/komut.ts:369-380`; indirim tutarı S tabanından, ölçekten bağımsız).
+**S dükkân bedeli (G7; baş lider kuralı: P-İthal):** `ekYapilar.dukkan`: `yuva: 1`, `insaSaati: 4`, `insaParasi: 6 000 000` mili-₺ (A2 §1.7 P-İthal), `insaMaliyeti: { celik: 20 000, parca: 8 000, pencere: 4 000 }`, `enFazlaIlBasina: 6`, `olcekHucre: [1, 2, 3]` (değerler A2 §1.7/§1.13; T3 yazar). İlk 5 yapı %30 indirimi ve ilk 24 saat %10 süre mevcut mekanizmayla uygulanır (`mulk/komut.ts:369-380`; indirim tutarı S tabanından, ölçekten bağımsız); `floor(4 000 × 0,7)` = 2 800 pencere indirimli.
 
 ### 7.3 Ölçek ve türler: G7'de yalnız S açık
 
-- `acikOlcekler = [0]`. Komutta `olcek` 1 ya da 2 (veya tür `market`/`supermarket`) → `dukkan olcegi henuz acik degil: <m|l>` (DUK-04). **Bu bir oyuncu kilidi değildir:** dünyaya özelliğin açılış zamanlamasıdır (perakende §12.3 "M erken açılış kapısı"); A0-17 testi parametrenin varlığını izin verir, hiçbir oyuncu özelliğine (seviye, teknoloji, sıra) bağlı olmadığını doğrular. **T-43 baş lider kararı** gelene dek varsayılan budur (§21 S-1).
-- G7 tür kayıtları: `bakkal` (olcekAraligi `[0]`), `firin` (`[0, 1]`), `market` (`[1]`), `supermarket` (`[2]`). `mallar` ve `tamCesit` T3 verisi; `bakkal.mallar` taslak: `gida, ekmek, un, sut, sut_urunu, sekerleme, findik_urunu, yakit` (perakende §3.2; ancak V3/V4 gereği her mal için pazar kaydı ve talep satırı `[A2]` olmalı). `firin.mallar` taslak: `ekmek, gida`.
-- `ekYapilar.dukkan.olcekHucre = [1, 2, 3]`: market 2 hücre, **süpermarket 3 hücre** (sahip kararı); komut doğrulaması bunu `acikOlcekler` kapıdan geçirmeden bile aynı ayak izi kuralıyla (`kenar-bitişik, ≤ 5`) denetler, M/L açıldığında ek kod gerekmez.
+- `acikOlcekler = [0]`. Komutta `olcek` 1 ya da 2 → `dukkan olcegi henuz acik degil: <m|l>` (DUK-04). **`acikOlcekler` yalnız dükkân ölçeği içindir ve bir özellik açılış zamanlamasıdır; e1080dd'deki fabrika/tesis ölçek serbestliğini (doğrudan M/L kurulum) etkilemez.** Bir oyuncu kilidi değildir: A0-17 testi parametrenin varlığına izin verir, hiçbir oyuncu özelliğine (seviye, teknoloji, sıra) bağlı olmadığını doğrular. Baş lider kararı (S-7): `[0]`.
+- **Alfa-0 dükkân türleri (beş S türü; baş lider; T3 §5.1):** G7'de `bakkal`, `firin`, `sarkuteri`, `sekerci`; G8'de `yapi_market`. Hepsinde `olcekAraligi = [0]`. **`market` ve `supermarket` kaydı yoktur** (A1; T3 §11 soru 14). Mal listeleri ve `tamCesit` T3 verisidir (T3 §5.1 tablosu; her `mal` için NPC pazar kaydı ve `talep1000Saat` satırı zorunlu: V3, V4); `tamCesit` ≤ mal sayısı (V8): `bakkal` 6, `firin` 2, `sarkuteri` 3, `sekerci` 2, `yapi_market` 4 (T3 §11 soru 9: parametre, varsayılan bu).
+- `ekYapilar.dukkan.olcekHucre = [1, 2, 3]`: market 2 hücre, **süpermarket 3 hücre** (sahip kararı S4-4); A0'da kullanılmaz (tür kaydı yok) ama komut doğrulaması ayak izini aynı kuralla (`kenar-bitişik, ≤ 5`) denetler, M/L açıldığında ek kod gerekmez.
 
-### 7.4 `dukkan` bedelinde pencere: seçenekler ve karar (baş lider kararı 2)
+### 7.4 `dukkan` bedelinde pencere: karar, kırılganlık ve geçiş (baş lider kararı 2)
 
-| Seçenek | Açıklama | Değerlendirme (doğrulanmış bulgulara göre, §2.4) |
-|---|---|---|
-| A | G7'de bedel dikeydeki gibi 4 pencere içerir; oyuncu NPC'den ithal eder | Mümkün ama kırılgan: emir **bir sonraki saat tıkında** gerçekleşir, elle oran/süre/iptal gerekir, unutulursa tüketim sürer; yeni oyuncu zinciri (ekmek) kurarken ek bir ticaret emri yuvası ve ≈ 2.450 ₺ (R0 = 558 ₺ × 4 × 1,1) harcar; "ilk dükkân medyan ≤ 36 sa" (A0-11) bu bekleme ve hataya duyarlı |
-| **B (önerim)** | **G7'de bedel pencere içermez** (`celik`, `parca`); G8'de `ekYapilar.dukkan.insaMaliyeti.pencere` eklenir (yalnız yeni kurulumlar; bedel tek sefer ödendiği için mevcut dükkânlar etkilenmez) | G7 kabulü pazar ithalat hattına bağlı değil; G8'de zincir bitince bağ kurulur (dükkân → pencere talebi = G11'in amacı); parametre değişimi kural sürümünü değiştirir (dönem sınırı; Alfa-0 öncesi canlı dünya yok) |
-| C | `yeniOyuncu.baslangicStok`'a `pencere` eklenir | Kit değişimi tüm yeni oyuncuları etkiler, "başlangıç kiti yeni mala verilmez" göç ilkesine (docs/06 §14.2) ters, mal faucet'ı |
+**Baş lider kuralı:** G7 anında pencere NPC'den ithal edilebiliyorsa **P-İthal**, edilemiyorsa **P-Yok**. **Doğrulama (koddan):** NPC pencere arzı **vardır**: `veri/icerik/parametreler.json` `pazar.arzSaat.pencere = 60 000` mili-birim/sa ve `emilimSaat.pencere = 100 000` (oyuncu başına ölçek `max(4, oyuncu)/4 ≥ 1`: `pazar/piyasa.ts:53` `npcHacimleri`); ithalat emri `hazineVar` şartıyla gerçekleşir (`pazar/piyasa.ts:106`) ve pencere işletme düğümü stoğuna girer. **Sonuç: P-İthal** (`insaParasi 6 000 000`, `insaMaliyeti.pencere 4 000`).
 
-**Önerim B.** Baş lider onayı bekler (GZ-15). **Etkileşim:** dükkân bedeli G8'de pencere içerdiğinde ilk-5 indirimi `floor(4 000 × 0,7)` ile hesaplar (`mulk/komut.ts:373-380`); A2 yeni bedeli R0'la hesaplar.
+**Deneyle doğrulama (§2.4):** 4 pencere ithalatı teknik olarak çalışır (emir `pencere` ithalat 4 birim/sa; +70 dk'da stok 666 mili) ama **kırılgandır**: gerçekleşme bir sonraki tam saat tıkında başlar, 4 birim için emir oranı ve süresi elle ayarlanır, bitince **elle iptal gerekir** (iptal edilmezse tüketim sürer). **Gerçek maliyet** R0 ile: 4 × 540 ₺ × 1,111 ≈ **2.400 ₺** (A2 §1.7'nin taban hesabı 1.600 ₺'dir; B2). İlk dükkân akışına ≥ 1 saat ve bir ticaret emri yuvası ekler (A0-11 ≤ 36 sa hedefinde sorun değil). **Açık risk (G9 onboarding):** `yapi_yerlestir` stok yetmezse `yetersiz stok: <düğüm> (mal indeksi <n>)` döner; K1 çevirisi mal adını söylemeli (§9.3 notu); Esnaf Defteri "pencere al" adımını göstermeli.
+
+**P-Yok'a dönüş / geçiş (gerekirse; veri değişikliği olarak):**
+
+| Konu | Yanıt |
+|---|---|
+| Ne değişir | `ekYapilar.dukkan`: `insaParasi` 6 000 000 ↔ 7 440 000 (pencere para eşdeğeri; A2 §1.7: 4 × 360 ₺ taban) ve `insaMaliyeti.pencere` 4 000 ↔ yok. **Yalnız veri**; çekirdek kodu aynıdır (bedel tablodan okunur, `mulk/komut.ts:333-341`) |
+| Mekanizma | **Kural dönemi** (`kuralSurumuHesapla`, `serilestir.ts:802`: içerik/parametre değişimi `kuralSurumu`'nu değiştirir; sunucu `gocIzni` ile dönem sınırında geçer, docs/06 §14.2). **Parametre bayrağı DEĞİL** |
+| Mevcut dükkânlara etkisi | **Yok.** Bedel inşa komutunda tahsil edilir ve `InsaatDurumu.odenenPara/odenenMal`'a yazılır (`tipler.ts:476-503`); biten dükkân bedelden bağımsızdır. **Süren inşaatın iptal iadesi** ödenmiş (eski) bedelle yapılır: iade `odenenMal` tabanlıdır, yeni bedelle değil |
+| Yeni kurulumlar | dönem sınırından sonra yeni bedelle |
+| Test | `dukkan` inşa testi iki veri kopyasıyla (pencereli/pencere-siz); eski görüntü yeni bedelle yüklenir ve süren inşaat iptali eski bedeli iade eder |
+
+**G8'de değişiklik yok** (zaten ithal pencereli): G8 yalnız pencerenin yerli kaynağını (cam → doğrama) ekler; ithalat gerekmez olur (S-13 kapandı).
 
 ### 7.5 Raf, fiyat, hız sınırı
 
 - 1 yuva = 1 mal; aynı mal iki yuvada olamaz. Yuva indeksi 0'dan; sayı `olcekler[olcek].rafYuvasi`.
 - Rafa konabilen mal: `dukkanTurleri[tur].mallar` içinde (DUK-13). Mal koymak/değiştirmek yuvanın fiyat kademesini `varsayilanFiyatKademesi`'ne çeker.
-- **Fiyat kademesi** `dukkan_fiyat.fiyat`: `0 .. fiyatKademeleriPpm.length − 1` (`secim`); fiyat = `R × fiyatKademeleriPpm[k] / PPM`. **Tutar komutta ve durumda yoktur.** İsimler (ucuz, normal, pahalı, ...) arayüz (T1) işidir; çekirdek yalnız indeks bilir. Kademe **sayısı ve sırası kalıcıdır**; çarpan değerleri kalibre edilebilir (GZ-3).
-- **Hız sınırı:** dolu yuvada `mal` değiştirme ya da `fiyat` değiştirme, yuvanın son değişiminden (`fiyatT`) `fiyatDegisimEnAzSaat` saat sonra yapılabilir (DUK-18). İlk doldurma ve boşaltma sınırdan muaftır. Sınır komut başına tam çözüm maliyetini (docs/06 §15.9) sınırlamak içindir.
+- **Fiyat kademesi** `dukkan_fiyat.fiyat`: `0 .. fiyatKademeleriPpm.length − 1` (`secim`); fiyat = `R × fiyatKademeleriPpm[etkinKademe] / PPM`. A2 §1.9 kademeleri (baş lider onaylı): 0 = kampanya 0,85 R, 1 = uygun 0,95 R, **2 = normal 1,05 R (varsayılan)**, 3 = yüksek 1,15 R (üst sınır; ZP3 alarmı 1,30'un altı). **Tutar komutta ve durumda yoktur.** İsimler (ucuz, normal, pahalı, ...) arayüz (T1) işidir; çekirdek yalnız indeks bilir. Kademe **sayısı ve sırası kalıcıdır**; çarpan değerleri kalibre edilebilir (GZ-3).
+- **Hız sınırı:** dolu yuvada `mal` değiştirme ya da `fiyat` değiştirme, yuvanın son değişiminden (`fiyatT`) `fiyatDegisimEnAzSaat` saat sonra yapılabilir (DUK-18). İlk doldurma ve boşaltma sınırdan muaftır. Kampanya kademesini seçmek de bir fiyat değişimidir (sınır uygulanır). Sınır komut başına tam çözüm maliyetini (docs/06 §15.9) sınırlamak içindir.
 - Raf yuvası **boşken** çekime girmez; çeşit paydasında sayılmaz.
+
+### 7.5b Kampanya penceresi (G7-1 şeması; baş lider: kademe 0, günde ≤ 6 sa, haftada ≤ 2 gün)
+
+**Varsayılan kapalıdır:** `kampanyaKademesi`, `kampanyaGunlukEnFazlaSaat` ve `kampanyaHaftalikEnFazlaGun` üçü de tanımlı **ve** sınırlar > 0 değilse kampanya kademesi seçilemez: `dukkan_fiyat` kademe `kampanyaKademesi` ile **DUK-20** `kampanya kademesi acik degil` döner. Açmak veri değişikliğidir (kural dönemi). A2/baş lider değerleri: `kampanyaGunlukEnFazlaSaat = 6`, `kampanyaHaftalikEnFazlaGun = 2`.
+
+**Zaman tanımları (sim zamanı; gerçek saat yok; hepsi tamsayı):** `gun = floor(t / GUN)` (epoch 1 Ekim 2026 00:00 TRT = gün 0), `hafta = floor(gun / 7)` (takvim haftası **değil**, sim-günü bloğu; S-18), saat sınırı `SAAT`. Kampanya **tam saat sınırlarında** işler: başlangıç anının içinde bulunduğu saat tam saat sayılır; bitiş her zaman bir tam saattir (böylece bitiş saatlik tıka denk gelir ve **yeni olay gerekmez**: her saatlik tık `lojistikCoz` çalıştırır).
+
+**Durum (`DukkanDurumu.kampanya?`, §7.1):** `{ hafta, gunSayisi, gun, saat, bitis }`. Yalnız ilk kampanya başlatılınca yazılır.
+
+**Başlatma (`dukkan_fiyat` kademe = `kampanyaKademesi`; hepsi ya da hiçbiri):**
+1. Kampanya kapalıysa DUK-20.
+2. `g = floor(d.zaman / GUN)`, `h = floor(g / 7)`. Kampanya zaten etkinse (`kampanya.bitis > d.zaman`): başka yuvaya kampanya kademesi vermek **ücretsizdir** (pencere paylaşılır; sayaç artmaz); 3-5 atlanır.
+3. Sayaç yoksa ya da `kampanya.hafta !== h` ise sayaçlar sıfırlanır (`gunSayisi = 0`; **hesapta**, durum bu komut başarılı olunca yazılır).
+4. `g !== kampanya.gun` (yeni gün) ise: `gunSayisi ≥ kampanyaHaftalikEnFazlaGun` → **DUK-21** `kampanya haftalik gun siniri (en cok <n> gun)`; değilse `saat = 0`. Aynı günse: `saat ≥ kampanyaGunlukEnFazlaSaat` → **DUK-22** `kampanya gunluk saat siniri (en cok <n> saat)`.
+5. Yazım: `kalan = kampanyaGunlukEnFazlaSaat − saat`; `baslangicSaat = floor(d.zaman / SAAT)`; `gunSonuSaat = (g + 1) × 24`; `bitisSaat = min(baslangicSaat + kalan, gunSonuSaat)`; `saat += bitisSaat − baslangicSaat`; yeni günse `gunSayisi += 1`; `gun = g`; `hafta = h`; `bitis = bitisSaat × SAAT`. (Kampanya gün sınırını **geçmez**: bir sim gününün sonunda biter; ertesi gün yeniden başlatmak haftalık gün sınırına sayılır.)
+
+**Etkin kademe (saf; çekim, okuma API'si ve gelir hesabında tek işlev `etkinKademe(dukkan, yuva, t)`):** yuva `fiyat !== kampanyaKademesi` ise `fiyat`; kampanya kademesindeyse ve `kampanya !== undefined && kampanya.bitis > t` ise `kampanyaKademesi`; aksi halde **`varsayilanFiyatKademesi`** (otomatik dönüş). Durum **değiştirilmez** (yuvanın `fiyat` alanı kampanya kademesinde kalır; oyuncu görünümünde "kampanya bitti, normal fiyat" yazar): bu, çözüm sırasında durum yazma ihtiyacını ortadan kaldırır ve "tek sıçrama = parçalı sıçrama" değişmezini korur (etkin kademe yalnız (durum, `t`) fonksiyonudur).
+
+**Erken bitirme:** oyuncu kampanya yuvasına başka kademe verirse (hız sınırı geçerli) yuva hemen normale döner; tüketilmiş saat **iade edilmez** (sayaç değişmez). Kalan etkin kampanya diğer yuvalar için sürer.
+
+**Ret iletileri:** DUK-20, DUK-21, DUK-22 (§9.3). **Testler (§16.2):** (a) kapalıyken DUK-20; (b) 6 saat sınırı: 10:20'de başlat → 16:00'da biter (6 tam saat sayılır); aynı gün ikinci başlatma DUK-22; (c) gün sonu kesmesi: 21:00'da başlatılan kampanya 24:00'te biter, kalan saat ertesi güne **taşınmaz**; (d) haftalık gün sınırı: 3. farklı günde DUK-21; yeni haftada (gun/7 değişince) sayaç sıfır; (e) bitişte çözüm gelir/çekim `varsayilanFiyatKademesi` kullanır, durum özeti (yuva `fiyat`) değişmez; (f) tek sıçrama = parçalı sıçrama = günlükten yeniden oynatma; (g) iki yuvada paylaşılan pencere; (h) fiyat sınırı DUK-18 ile etkileşim.
 
 ### 7.6 Sayı sınırları
 
-Oyuncu başına ilçede ≤ `ilceBasinaEnFazla` (taslak 2) dükkân (biten + süren), ilde ≤ `ekYapilar.dukkan.enFazlaIlBasina` (taslak 6; mevcut genel kural `mulk/komut.ts:334-336`), ilçe %25 ve 72 hücre tavanı dükkânın hücrelerine de uygulanır (`alimPlani`). Arsa kullanım türü (konut/ticari) **yok** (§19 Soru 5): fikstürde alan yoktur; her uygun hücreye dükkân kurulur.
+Oyuncu başına ilçede ≤ `ilceBasinaEnFazla` (A2 §1.13: 2) dükkân (biten + süren), ilde ≤ `ekYapilar.dukkan.enFazlaIlBasina` (taslak 6; mevcut genel kural `mulk/komut.ts:334-336`), ilçe %25 ve 72 hücre tavanı dükkânın hücrelerine de uygulanır (`alimPlani`). Arsa kullanım türü (konut/ticari) **yok** (§19 Soru 5): fikstürde alan yoktur; her uygun hücreye dükkân kurulur.
 
-### 7.7 Marka (sınırlı serbest metin; baş lider kararı 4)
+### 7.7 Marka ve oyuncu görünen adı: paylaşılan ad kuralı (sınırlı serbest metin; baş lider kararları 4 ve ad kararı)
+
+**Paylaşılan kural (baş lider):** oyuncunun **görünen adı** (hesap başına bir ad; sunucu profilinde, çekirdeğe GİRMEZ) ve **marka adı** (çekirdekte) **AYNI kuralları** kullanır: uzunluk 2–24, izinli küme, boşluk kuralları, yasaklı ad süzgeci. Tek yerde tanımlı tek doğrulayıcı:
+
+| Parça | Yer | Not |
+|---|---|---|
+| **Sözdizimi doğrulayıcı** `adSozdizimiHatasi(ad): string \| null` ve sabit `AD_KURALI = { min: 2, max: 24, izinli: /^[A-Za-zÇĞİÖŞÜçğıöşü0-9 .'&-]+$/ }` | **`packages/cekirdek/src/ad.ts`** (saf, yeni; `@bolge/cekirdek` `index.ts`'ten dışa açılır; marka komutu `mulk/marka.ts` bunu çağırır) | Sunucu zaten `@bolge/cekirdek`'e bağlıdır (`sunucu/src/yazar.ts:49`): görünen ad ucu **aynı işlevi** çağırır; istemci de gönderim öncesi UX denetimi için çağırabilir. **Neden çekirdekte, `veri/saf` ya da `protokol`'de değil:** (a) çekirdek `@bolge/veri` çalışma zamanı importu yapamaz (`mal-kimlik-kilidi-paket.test.ts` güvencesi; ters yön serbest); (b) `protokol` yalnız biçim denetler (zod) ve çekirdeğe bağımlı olmamalıdır; (c) marka komutu çekirdekte doğrulanır ve kuralın günlükte "kural dönemi dışında değişmez" olması gerekir |
+| **Yasaklı ad listesi** | **`packages/veri/icerik/yasakli-adlar.json`** (T3 + hukuk/hassasiyet incelemesi) | İki ad için **aynı** dosya |
+| **Yasaklı ad süzgeci** `adYasakliMi(ad)` | **`packages/sunucu/src/ad-suzgec.ts`** (K2; önceki adı `marka-suzgec.ts`) | İki yolda da çağrılır: (1) `marka_tanimla` komut kabulünde günlüğe yazmadan ÖNCE, (2) görünen ad profil ucunda. Çekirdekte yok (liste güncellenir; replay güvenli) |
+| **Protokol sınırı** | `komut-sema.ts` `marka_tanimla.ad: z.string().min(2).max(24)`; profil ucu aynı `min(2).max(24)` | Test: protokol sınırları `AD_KURALI.min/max`'a eşit (§16.2 `ad-kurali`) |
+
+**Bundle etkisi:** `adSozdizimiHatasi` ≈ 0,2–0,3 KB gzip ve **zaten marka komutu için çekirdek paketindedir** (§6.9: G7 +3–5 KB payının içinde); görünen ad ucu **ek bundle maliyeti getirmez** (aynı işlev; sunucu tarafı bundle dışı). Yasaklı liste istemci paketine **girmez** (yalnız sunucu). **Büyük harf (S-12), iki ad için aynı çözülür:** büyük harf **serbesttir** (izinli küme `A-Z`/`ÇĞİÖŞÜ` içerir); "arayüzde büyük harf yok" kuralı **sabit arayüz metinleri** içindir, kullanıcı verisi (özel adlar) için değil; sahip teyidi S-12. **Görünen ad KVKK:** profilde saklanır (sunucu); çekirdek günlüğüne ve dünya durumuna girmez; sıfırlama sunucu yönetici yoludur (marka için `marka_sifirla`).
 
 **Yer: çekirdek durumunda** (`MulkOyuncuDurumu.markalar`), gerekçe ve karşı seçenek §20 GZ-8'de. Komutlar: `marka_tanimla`, `dukkan_marka`, sistem yolunda `marka_sifirla` (moderasyon).
 
+**Akıllı tırnak (A1 G9 notu; baş lider kararı) — İSTEMCİ NOTU:** iOS/Android klavyelerinin `’` (U+2019) ve `‘` (U+2018) karakterleri **istemcide** `'` (U+0027) işaretine çevrilir (K1/T1; §10.4); çift akıllı tırnak (`“ ”`) çevrilmez. **Çekirdek izinli kümesi DEĞİŞMEZ** ve sunucu/çekirdek yalnız izinli karakterleri kabul etmeye devam eder; böylece günlükteki metin = durumdaki metindir ve kural değişmez.
+
 **Marka çekimi, fiyatı, satışı, çeşidi etkilemez** (canlı §4.1 kuralı; perakende §3.1). Test: aynı dünya markalı ve markasız, `istek` ve gelir birebir aynı.
 
-**Doğrulama (çekirdek, saf, `mulk/marka.ts` `markaAdiHatasi(ad, p)`; kural dönemi dışında DEĞİŞMEZ, tekrar oynatma güvenli):**
+**Doğrulama (çekirdek, saf, `ad.ts` `adSozdizimiHatasi(ad)`; marka komutunda `mulk/marka.ts` çağırır; kural dönemi dışında DEĞİŞMEZ, tekrar oynatma güvenli):**
 
 | Madde | Kural |
 |---|---|
-| 1. Uzunluk | `ad.length` (UTF-16 kod birimi) `adMin` (2) ile `adMax` (24) arasında. İzinli kümede yalnız BMP, ön bileşik karakterler bulunduğundan **bir karakter = bir kod birimi**; Türkçe harfler (ç ğ ı i ö ş ü, İ) tek karakterdir. Protokol de `min(2).max(24)` |
+| 1. Uzunluk | `ad.length` (UTF-16 kod birimi) `AD_KURALI.min` (2) ile `AD_KURALI.max` (24) arasında (**sabit; parametre değil**: iki ad için tek kaynak). İzinli kümede yalnız BMP, ön bileşik karakterler bulunduğundan **bir karakter = bir kod birimi**; Türkçe harfler (ç ğ ı i ö ş ü, İ) tek karakterdir. Protokol de `min(2).max(24)` |
 | 2. İzinli küme | Yalnız: `A-Z a-z Ç Ğ İ Ö Ş Ü ç ğ ı ö ş ü`, `0-9`, boşluk (U+0020), `.`, `'`, `-`, `&`. Düzenli ifade (çekirdekte sabit): `^[A-Za-zÇĞİÖŞÜçğıöşü0-9 .'&-]+$`. Birleşen işaretler, emoji, kontrol karakterleri, eğik/Unicode kesme işaretleri **reddedilir** (normalleştirme gerekmez) |
 | 3. Düzenleme | **Reddet, düzeltme yapma:** baştaki/sondaki boşluk (`ad !== ad.trim()` değil; yalnız U+0020 denetlenir), ardışık boşluk (`"  "`), **en az bir harf** (`[A-Za-zÇĞİÖŞÜçğıöşü]`). İstemci göndermeden önce kırpar (K1). Böylece günlükteki metin = durumdaki metin (yeniden oynatmada dönüşüm yok) |
-| 4. Yasaklı adlar | **Çekirdekte yok.** Liste **veri dosyasıdır** (`packages/veri/icerik/yasakli-adlar.json`, T3 + hukuk/hassasiyet incelemesi) ve **sunucunun komut kabul süzgecinde** (günlüğe yazmadan ÖNCE) uygulanır: `sunucu/src/marka-suzgec.ts` (K2). Gerekçe: liste moderasyon için güncellenir; çekirdekte olsaydı (a) her güncelleme kural sürümünü değiştirirdi (dönem sınırı), (b) günlükte kabul edilmiş eski bir ad, yeni listeyle **yeniden oynatmada reddedilir** ve "başarılılar günlüğü = canlı dünya" değişmezi bozulurdu. Çekirdek yalnız sözdizimini denetler (değişmez kural) |
+| 4. Yasaklı adlar | **Çekirdekte yok.** Liste **veri dosyasıdır** (`packages/veri/icerik/yasakli-adlar.json`, T3 + hukuk/hassasiyet incelemesi) ve **sunucunun komut kabul süzgecinde** (günlüğe yazmadan ÖNCE) uygulanır: `sunucu/src/ad-suzgec.ts` (K2; marka ve görünen ad için ortak). Gerekçe: liste moderasyon için güncellenir; çekirdekte olsaydı (a) her güncelleme kural sürümünü değiştirirdi (dönem sınırı), (b) günlükte kabul edilmiş eski bir ad, yeni listeyle **yeniden oynatmada reddedilir** ve "başarılılar günlüğü = canlı dünya" değişmezi bozulurdu. Çekirdek yalnız sözdizimini denetler (değişmez kural) |
 | 4a. Karşılaştırma | Büyük/küçük harf ve aksan **duyarsız**; çekirdek-dışı sabit katlama tablosu (yerel ayar yok): `A-Z → a-z`; `İ I ı i → i`; `Ç ç → c`; `Ğ ğ → g`; `Ö ö → o`; `Ş ş → s`; `Ü ü → u`; ayırıcılar (`boşluk . ' - &`) kaldırılır. İki liste: `yasakliKelimeler` (katlanmış **kelime** eşitliği; kısa adlar: "bim", "a101", "sok"), `yasakliIcerik` (katlanmış, ayırıcısız adın **alt dizgisi**; uzun adlar ≥ 5 karakter: "migros", "carrefour"...). Liste içeriği K34 (gerçek zincir adları) + küfür/hassas içerik; kapsamı **(doğrulanmadı)**; hukuki/marka taraması ayrı iştir. Süzgeç bot/ajan yoluna uygulanmaz (bot `marka_tanimla` vermez) |
 | 5. Reddin kaynağı | Sözdizimi ret iletileri çekirdekten (MRK-01…MRK-10, §9.3); liste reddi sunucudan (`marka adi kullanilamaz`, MRK-12) |
 
 **Durum ve özet etkisi.**
 
 - Alan: `MulkOyuncuDurumu.markalar?: { ad: string; simge: number; renk: number }[]` (en çok `hesapBasinaEnFazla` = 3). **Yalnız ilk `marka_tanimla` başarılı olunca yazılır**; hiç marka tanımlamamış oyuncuların ve eski dünyaların durum metni ve `durumOzeti` **değişmez** (`yaz`, `ozet.ts:31-80`, tanımsız alanı atlar).
-- Metin kanonik JSON'da `JSON.stringify` ile ve UTF-8 üzerinden FNV-1a 64 ile özetlenir (`ozet.ts:93-110`); izinli küme yalnız BMP karakterlerinden oluştuğu için platformlar arası kodlama farkı doğmaz (tek başına duran vekil (surrogate) kod birimi kümede yoktur). `mulkDogrula` (`serilestir.ts:522-`): `markalar` dizisi uzunluğu ≤ 3, her `ad` aynı `markaAdiHatasi` ile, `simge < simgeSayisi`, `renk < renkSayisi`; ihlal `SerilestirmeHatasi` (bozuk görüntü reddi).
+- Metin kanonik JSON'da `JSON.stringify` ile ve UTF-8 üzerinden FNV-1a 64 ile özetlenir (`ozet.ts:93-110`); izinli küme yalnız BMP karakterlerinden oluştuğu için platformlar arası kodlama farkı doğmaz (tek başına duran vekil (surrogate) kod birimi kümede yoktur). `mulkDogrula` (`serilestir.ts:522-`): `markalar` dizisi uzunluğu ≤ 3, her `ad` aynı `adSozdizimiHatasi` ile, `simge < simgeSayisi`, `renk < renkSayisi`; ihlal `SerilestirmeHatasi` (bozuk görüntü reddi).
 - `dunyaIcerikUyumu` (`serilestir.ts:681`): her `DukkanDurumu.marka < markalar.length`.
 
-**KVKK ve kötüye kullanım.** Marka adı serbest metindir ve kişisel veri içerebilir (ör. kişi adı); komut günlüğü ekleme-yalnız olduğundan **silme** doğrudan mümkün değildir. Önlemler: (1) kısa ve kısıtlı karakter kümesi (adresleme/URL/e-posta kalıpları zor); (2) arayüzde "marka adın dünyadaki herkese görünür ve kalıcıdır" uyarısı (T1 metni, G9); (3) sunucu yönetici yolu **`marka_sifirla {oyuncu, marka}`** (sistem yolu, yalnız `kimlik` + `secim` alanı): adı çekirdek sabiti `"adsiz marka"` yer tutucusuna çevirir (izinli kümede, `markaAdiHatasi`'ndan geçer); günlüğün eski komut metni için sunucu saklama politikası (anlık görüntü + günlük kırpma) K2/O3 işidir **(doğrulanmadı: günlük kırpma ilkesi)**; (4) KVKK hukuki görüşü (docs/12 S4-5 ile aynı iş). Karşı seçenek (sunucu profili) GZ-8'de.
+**KVKK ve kötüye kullanım.** Marka adı serbest metindir ve kişisel veri içerebilir (ör. kişi adı); komut günlüğü ekleme-yalnız olduğundan **silme** doğrudan mümkün değildir. Önlemler: (1) kısa ve kısıtlı karakter kümesi (adresleme/URL/e-posta kalıpları zor); (2) arayüzde "marka adın dünyadaki herkese görünür ve kalıcıdır" uyarısı (T1 metni, G9); (3) sunucu yönetici yolu **`marka_sifirla {oyuncu, marka}`** (sistem yolu, yalnız `kimlik` + `secim` alanı): adı çekirdek sabiti `"adsiz marka"` yer tutucusuna çevirir (izinli kümede, `adSozdizimiHatasi`'ndan geçer); günlüğün eski komut metni için sunucu saklama politikası (anlık görüntü + günlük kırpma) K2/O3 işidir **(doğrulanmadı: günlük kırpma ilkesi)**; (4) KVKK hukuki görüşü (docs/12 S4-5 ile aynı iş). Karşı seçenek (sunucu profili) GZ-8'de.
 
 ### 7.8 `ilk_dukkan` tetiği (K2) ve çekirdek okuma API'si
 
-Rehber değişmezi: ödül bedelden ucuz alınamasın (`dedektor.ts:23-26`). **Tetik: ilk satış** (yapı bitti DEĞİL): koşul = oyuncunun düğümlerinden birinde tamamlanmış `dukkan` ek yapısı **ve** `dukkanGeliri(d, oyuncu, t) > 0`. Çekirdek okuma API'si (`mulk/perakende.ts`, dışa açılır): `dukkanGeliri(d, oyuncu, t): Mili` (`n + oran × (t − t0)/SAAT` tembel; `uretimTembel` kalıbı `dedektor.ts:57-62`), `dukkanlar(d, oyuncu): { dugum, yapi }[]`. K2: `ODUL_YER_TUTUCULARI`'ndan `ilk_dukkan` çıkar, `ODUL_IZGARA_KAVRAMLARI`'na girer (`dedektor.ts:27-29`), `kavramSaglandi` `case "ilk_dukkan"`; istemci `harita/baglanti.ts:376` `etkin` listesi (K1). Ödül tablosu (`ilk_dukkan`: 10 000 mili çelik, `parametreler.json:11`) **değişmez**.
+Rehber değişmezi: ödül bedelden ucuz alınamasın (`dedektor.ts:23-26`). **Tetik: ilk satış** (yapı bitti DEĞİL): koşul = oyuncunun düğümlerinden birinde tamamlanmış `dukkan` ek yapısı **ve** `dukkanGeliri(d, oyuncu, t) > 0`. **Ölçüm için zaman alanları (A1 G9 bulgusu 4; A0-11 iki zaman ister):** (a) **yapı komutu zamanı** = `DukkanDurumu.baslangic` (inşa sürerken `InsaatDurumu.baslangic`); (b) **dükkân kurulma zamanı** = `DukkanDurumu.kurulus`; (c) **ilk satış zamanı** = `MulkOyuncuDurumu.ilkSatisT` (yerel satış oranının ilk > 0 olduğu çözüm anı; `paraAkisiYaz` `akis.yerel > 0` iken `??= d.zaman`). `ilk_dukkan` tetiği **ilk satıştır** (GZ-14): `dukkanGeliri(d, oyuncu, t) > 0`; ölçüm ilk satışı `ilkSatisT`'den okur. Çekirdek okuma API'si (`mulk/perakende.ts`, dışa açılır): `dukkanGeliri(d, oyuncu, t): Mili` (`n + oran × (t − t0)/SAAT` tembel; `uretimTembel` kalıbı `dedektor.ts:57-62`), `dukkanlar(d, oyuncu): { dugum, yapi }[]`. K2: `ODUL_YER_TUTUCULARI`'ndan `ilk_dukkan` çıkar, `ODUL_IZGARA_KAVRAMLARI`'na girer (`dedektor.ts:27-29`), `kavramSaglandi` `case "ilk_dukkan"`; istemci `harita/baglanti.ts:376` `etkin` listesi (K1). Ödül tablosu (`ilk_dukkan`: 10 000 mili çelik, `parametreler.json:11`) **değişmez**.
 
-### 7.9 Çevrimdışı ve sahiplik
+### 7.9 Çevrimdışı, sahiplik ve geri alma: `dukkan_yik` (A1 G9 ZG-5; baş lider kararı)
 
-Satış tembeldir; sahip çevrimdışıyken sürer ("çevrimdışı satar"). Dükkân bırakılamaz/yıkılamaz (mevcut `parsel_birak` yapılı hücreyi reddeder, `mulk/komut.ts:582`); yıkım/iade bu şartnamede yok. Hareketsizlik merdiveni (docs/11 §7.8) bugün yalnız veridir; dükkâna özel kural yok.
+Satış tembeldir; sahip çevrimdışıyken sürer ("çevrimdışı satar"). Hareketsizlik merdiveni (docs/11 §7.8) bugün yalnız veridir; dükkâna özel kural yok. **"Kilit yok, seçim var":** yanlış tür ya da yer seçimi bedelle kalıcı olmamalıdır; iki yol vardır.
 
----
+**1. İnşa sürerken: mevcut `insaat_iptal` AYNEN uygulanır (yeni komut yok; kapsam doğrulandı: kod okuma).** `insaat_iptal` (`mulk/komut.ts:607-632`) oyuncunun **süren hücreli** inşaatını iptal eder (`ins.hucreler !== undefined`, `:611`); dükkân inşaatı `yapiUygula`'da (`:468-495`) `hucreler: plan.liste`, `odenenPara`, `odenenMal` ve `ekYapi: "dukkan"` taşır, dolayısıyla **kapsamdadır** (gerekli değişiklik yok). İade: ödenen paranın ve **malzemenin (pencere dahil)** `insaatIptalIadePpm` (%50; `parametreler.json:195`) kadarı (`:612-619`; para `hazineEkle(…, "iade")` = mevcut `iade` musluk kalemi; malzeme düğüm stoğuna); ilk-yapı indirimi hakkı geri verilir (`:625-631`). **Sınır:** ilk 24 saatte dükkân inşa süresi 24 dk'dır (4 sa × 0,1; A2 §1.7): iptal penceresi dakikalarla ölçülür.
+
+**2. Tamamlanmış dükkân: YENİ komut `dukkan_yik` (G7b; baş lider kararı): iade YOKTUR.** Harcanan para lavaboya gitti; iade yeni bir musluk açardı. **Arsa oyuncuda kalır** (hücre sahibi, ilçe hücre sayacı ve arazi değeri değişmez; sonra `parsel_birak %70` ile bırakılabilir). **Diğer yapı türleri için YOKTUR** (sonraki sprint; bu kural genellenmez: komut yalnız `dukkan` ek yapısına bakar).
+
+| Konu | Karar |
+|---|---|
+| Komut | `{ tur: "dukkan_yik"; dukkan: number }` (oyuncu yolu; `dukkan` = `EkYapiDurumu.id`; **tutar, oran, adet alanı yok**); `komutSemasi.ts`: `dukkan_yik: { yol: "oyuncu", alanlar: { dukkan: "kimlik" } }` |
+| Doğrulama sırası | (1) `perakende` açık (DUK-00); (2) `dukkan` tamsayı; oyuncunun düğümlerinde bu kimlikte `tur === "dukkan"` tamamlanmış yapı yoksa: kimlik oyuncunun **süren dükkân inşaatı**na aitse **DUK-23**, değilse **DUK-10** (başkasının dükkânı ve bilinmeyen kimlik aynı ileti: bilgi sızdırmaz); (3) uygula |
+| Uygulama (hepsi ya da hiçbiri; artık başarısız olamaz) | `b.ekYapilar`'dan yapı silinir (liste boşalırsa alan **silinir**: "yalnız kullanılınca yazılır"); kapladığı hücrelerin `tesis` alanı silinir (`delete h.tesis`; `mulk/yapi.ts:61-68` `ekYapiTamamla`'nın tersi; hücre sahibi ve arazi değeri **değişmez**); `DukkanDurumu` (raf, fiyat, kampanya sayaçları, marka bağı, `baslangic`, `kurulus`) yapıyla birlikte silinir. `ctx.planla` yok (olay yok); motor her başarılı komuttan sonra lojistiği kirletir (çekim ve dükkân gideri sonraki çözümde kalkar) |
+| **Raftaki satılmamış mallar** | **Ayrı raf stoğu YOKTUR** (§7.1: raf yuvası yalnız mal kimliği ve kademe tutar; satış **il düğümü stoğundan** çekilir). Yıkımda taşınacak mal yoktur: mallar zaten oyuncunun deposunda (düğüm stoğu) kalır. Kod tarafında stok işlemi yok |
+| Para | **Yıkımda para hareketi 0:** hazine, musluk, lavabo, kasa girişi/çıkışı değişmez; `paraKaydet`/`hazineEkle` çağrılmaz. (İptalde %50 iade mevcut `iade` kalemidir: `mulk/komut.ts:612`.) Korunum testi: yıkım öncesi ve sonrası `Σ hazine + Σ kasa + Σ lavabo = Σ musluk` ve her kalem sayacı **bayt bayt aynı** |
+| **İlk 5 yapı %30 indirimi sayacı** | Sayaç `MulkOyuncuDurumu.indirimliYapi`'dir (`tipler.ts:787`): `yapiUygula` indirimli inşaatta `mo.indirimliYapi += 1` ve `ins.indirimli = true` yazar (`mulk/komut.ts:371`, `:487-489`); sınır `yeniOyuncu.indirimliYapiSayisi` (5). **İptalde bugünkü davranış AYNEN kalır** (dükkân dahil): `insaat_iptal` indirimli inşaatta sayacı geri verir (`mo.indirimliYapi--`, ≤ 0 ise alan silinir; `:625-631`); ödenenin %50'si zaten iade edildiği için hak geri verilir. **Tamamlanmış dükkânın yıkımında sayaç GERİ VERİLMEZ** (hak harcanmıştır; aksi halde kur-yık döngüsüyle indirim tekrar kullanılırdı); `dukkan_yik` bu alana **dokunmaz** |
+| Marka | `markalar[]` **oyuncuda kalır** (marka tanımı dükkâna bağlı değil); silinen yalnız `dukkan.marka` bağıdır |
+| Sayı sınırı | İlçe (`ilceBasinaEnFazla`) ve il (`enFazlaIlBasina`) sayaçları **türetilmiştir** (düğüm `ekYapilar` + süren inşaat sayımı): yıkımla otomatik düşer; ayrı sayaç yok |
+| `ilk_dukkan` damgası | Ödül bir kez verilir (ödül kaydı kalıcı: `alinanOdulDegeri`); **yıkım ödülü geri almaz ve yeniden kurulum tekrar vermez**. `MulkOyuncuDurumu.ilkSatisT` ve `dukkanGeliri` (kümülatif) **kalır** (oyuncu düzeyinde geçmiş) |
+| Kare / protokol | Yeni mesaj yok. `GenelBolgeKaresi.dukkanlar` ve `OzelBolgeKaresi.dukkanlar` yapı silinince listeden düşer; hücre karesinin `tur` alanı boşalır. `komut-sema.ts`: `dukkan_yik` zod satırı (K2; aynı kapı); `istemci/src/komut/gizli.ts`: `HARITA_KOMUTLARI`'na `dukkan_yik` (K1; `komut.test.ts` listesi) |
+| Serileştirme / göç | Yeni durum alanı **yok** (yapı silinir). `dunyaDogrula`/`dunyaIcerikUyumu` değişmez. Eski görüntü yeni kodla aynı |
+| Ret iletileri | DUK-00; **DUK-10** `dukkan bulunamadi: <id>`; **DUK-23** `dukkan henuz tamamlanmadi: insaat_iptal kullanin (<id>)` (§9.3) |
+| Testler (`perakende-komut`) | yıkım başarılı: yapı ve `dukkan` alanı yok, hücre `tesis` yok, hücre sahibi aynı; başkasının dükkânı DUK-10 (durum değişmez); inşaattaki kimlik DUK-23 (durum değişmez); para korunumu ve kalem sayaçları aynı (yıkım hareketi 0); yıkımdan sonra `parsel_birak` aynı hücrede başarılı; yıkımdan sonra aynı hücreye yeniden dükkân kurulabilir ve ödül tekrar verilmez; `insaat_iptal` dükkân inşaatını %50 (para + pencere) iade eder ve indirim hakkını geri verir; bölge kipi ve dükkânsız mülk dünyası etkilenmez |
 
 ## 8. G8: cam → pencere ve yapı market
-
-> **TASLAK (Parça 2):** Bu bölüm A2 `35ad50f` sayılarıyla, DUK/MRK tablolarıyla ve protokol ayrıntısıyla **Parça 2'de güncellenecektir**; K3'ün G6 şema dalı bu bölüme bağlı değildir. Önceki sürümden kalan A2 öncesi değerler ve `A2'den` işaretleri geçerli sayılmaz.
-
 
 ### 8.1 Ne eklenir
 
@@ -1163,9 +1255,6 @@ Satış tembeldir; sahip çevrimdışıyken sürer ("çevrimdışı satar"). Dü
 
 ## 9. Komutlar ve ret iletileri
 
-> **TASLAK (Parça 2):** Bu bölüm A2 `35ad50f` sayılarıyla, DUK/MRK tablolarıyla ve protokol ayrıntısıyla **Parça 2'de güncellenecektir**; K3'ün G6 şema dalı bu bölüme bağlı değildir. Önceki sürümden kalan A2 öncesi değerler ve `A2'den` işaretleri geçerli sayılmaz.
-
-
 Çekirdek ret iletileri **küçük harfli ASCII-Türkçe** düz dizgidir (mevcut gelenek: `mulk/komut.ts`; `KomutSonucu = { tamam: false, hata }`, hata kodu alanı yoktur). Aşağıdaki **kod** belge, test ve K1 çeviri tablosu içindir; çekirdek yalnız ileti metnini döndürür. Görünen Türkçe metin (aksanlı, cümle düzeni) K1/T1'in `hata-mulk.ts` düzenli ifade tablosundadır (`istemci/src/harita/hata-mulk.ts:12-52` kalıbı); arayüz metninde büyük harf yok, para `1.234 ₺`.
 
 ### 9.1 Yeni komutlar (`tipler.ts` `Komut` birliği, `:638-674`)
@@ -1176,12 +1265,13 @@ Satış tembeldir; sahip çevrimdışıyken sürer ("çevrimdışı satar"). Dü
 | { tur: "dukkan_fiyat";  dukkan: number; yuva: number; fiyat: number }         // fiyat = kademe indeksi (secim)
 | { tur: "marka_tanimla"; marka: number; ad: string; simge: number; renk: number }
 | { tur: "dukkan_marka";  dukkan: number; marka: number }
+| { tur: "dukkan_yik";    dukkan: number }                                    // tamamlanmış dükkânı yıkar; iade YOK (§7.9)
 // Sistem yolu (motor.ts uygula(), sistem_odul kalıbı :182-184):
 | { tur: "marka_sifirla"; oyuncu: OyuncuId; marka: number }
 
 // Mevcut komutlara isteğe bağlı alan (tipler.ts:966-975):
-| { tur: "tesis_insa_hucre"; ...; olcek?: 0 | 1 | 2; dukkanTuru?: string }
-| { tur: "yapi_yerlestir";   ...; olcek?: 0 | 1 | 2; dukkanTuru?: string }
+| { tur: "tesis_insa_hucre"; ...; olcek?: 0 | 1 | 2; dukkanTuru?: string; yontem?: string }   // yontem: G6 (§5.8)
+| { tur: "yapi_yerlestir";   ...; olcek?: 0 | 1 | 2; dukkanTuru?: string; yontem?: string }
 ```
 
 `dukkan` = `EkYapiDurumu.id` (dünya genelinde benzersiz, `mulk/yapi.ts:54`). Tutar, miktar, oran, adet alanı **yoktur**.
@@ -1193,14 +1283,15 @@ dukkan_raf:    { yol: "oyuncu", alanlar: { dukkan: "kimlik", yuva: "secim", mal:
 dukkan_fiyat:  { yol: "oyuncu", alanlar: { dukkan: "kimlik", yuva: "secim", fiyat: "secim" } },
 marka_tanimla: { yol: "oyuncu", alanlar: { marka: "secim", ad: "metin", simge: "secim", renk: "secim" } },
 dukkan_marka:  { yol: "oyuncu", alanlar: { dukkan: "kimlik", marka: "secim" } },
+dukkan_yik:    { yol: "oyuncu", alanlar: { dukkan: "kimlik" } },
 marka_sifirla: { yol: "sistem", alanlar: { oyuncu: "kimlik", marka: "secim" } },
-tesis_insa_hucre: { ..., dukkanTuru: "kimlik" },   // :60
-yapi_yerlestir:   { ..., dukkanTuru: "kimlik" },   // :62
+tesis_insa_hucre: { ..., dukkanTuru: "kimlik", yontem: "kimlik" },   // :60 (yontem: G6)
+yapi_yerlestir:   { ..., dukkanTuru: "kimlik", yontem: "kimlik" },   // :62
 ```
 
 `para-guvenligi.test.ts` "miktar/oran/adet açık listesi" **değişmez** (yeni hiçbir alan miktar/oran/adet değil); yeni test: sistem yolundaki tüm komutlar `SISTEM_ALAN_TURLERI` içinde kalır (`marka_sifirla` uyar; `metin` yok).
 
-**`motor.ts`:** `yonlendir` (`:203-249`): `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka` → `mulkKomutu` (`:234-239` listesine), `mulkKomutu` içinde `perakendeKomutu`'na devir (`mulk/komut.ts:497` switch'ine dört `case`); `marka_sifirla` `uygula` içinde `sistem_odul` yanına (`:182-185`): `k.oyuncu === SISTEM_OYUNCUSU ? markaSifirla(d, komut.oyuncu, komut.marka) : hata("marka_sifirla yalnizca 'sistem' ile verilebilir")`; `yonlendir` kapsayıcılık `default: never` kolu (`:244-248`) ve `case "marka_sifirla": return hata("marka_sifirla yonlendirilemez")`.
+**`motor.ts`:** `yonlendir` (`:203-249`): `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`, `dukkan_yik` → `mulkKomutu` (`:234-239` listesine), `mulkKomutu` içinde `perakendeKomutu`'na devir (`mulk/komut.ts:497` switch'ine beş `case`); `marka_sifirla` `uygula` içinde `sistem_odul` yanına (`:182-185`): `k.oyuncu === SISTEM_OYUNCUSU ? markaSifirla(d, komut.oyuncu, komut.marka) : hata("marka_sifirla yalnizca 'sistem' ile verilebilir")`; `yonlendir` kapsayıcılık `default: never` kolu (`:244-248`) ve `case "marka_sifirla": return hata("marka_sifirla yonlendirilemez")`.
 
 ### 9.2 Doğrulama sırası (hepsi ya da hiçbiri; başarısız komut durumu değiştirmez, docs/06 §14)
 
@@ -1208,7 +1299,9 @@ yapi_yerlestir:   { ..., dukkanTuru: "kimlik" },   // :62
 
 **`dukkan_raf`:** (1) DUK-00; (2) dükkân bul (oyuncunun düğümleri; yoksa DUK-10); (3) `yuva` tamsayı ve `[0, raf.length)` (DUK-12); (4) `mal === null`: yuva boşsa DUK-19a, değilse boşalt; (5) `mal` dize ve `ic.malIndeks`'te (DUK-15); türün mal kümesinde (DUK-13); başka yuvada değil (DUK-14); aynı yuvada aynı mal değil (DUK-19b); (6) dolu yuvada mal **değiştirme** ise hız sınırı (DUK-18); (7) uygula: `mal` yaz, `fiyat = varsayilanFiyatKademesi`, değiştirme ise `fiyatT = d.zaman` (ilk doldurma `fiyatT` yazmaz), boşaltmada `fiyatT` silinir.
 
-**`dukkan_fiyat`:** (1)–(3) aynı; (4) yuva boşsa DUK-17; (5) `fiyat` tamsayı ve `[0, K)` (DUK-16); mevcut kademeyle aynıysa DUK-19c; (6) hız sınırı DUK-18; (7) `fiyat`, `fiyatT = d.zaman`.
+**`dukkan_fiyat`:** (1)–(3) aynı; (4) yuva boşsa DUK-17; (5) `fiyat` tamsayı ve `[0, K)` (DUK-16); mevcut kademeyle aynıysa DUK-19c; (6) `fiyat === kampanyaKademesi` ise kampanya kuralları (§7.5b): kapalıysa DUK-20, haftalık gün sınırı DUK-21, günlük saat sınırı DUK-22 (kampanya zaten etkinse atlanır); (7) hız sınırı DUK-18; (8) `fiyat`, `fiyatT = d.zaman`; kampanya başlatıldıysa `DukkanDurumu.kampanya` yazılır.
+
+**`dukkan_yik`:** (1) DUK-00; (2) `dukkan` tamsayı değilse DUK-10; oyuncunun tamamlanmış `dukkan` yapısı bulunamazsa: kimlik oyuncunun süren dükkân inşaatıysa DUK-23, değilse DUK-10; (3) uygula (§7.9 tablosu): yapı ve hücre `tesis` işareti silinir; **para, stok, kasa, marka tanımı değişmez**.
 
 **`marka_tanimla`:** (1) DUK-00; (2) `marka` tamsayı, `0 ≤ marka ≤ markalar.length` (MRK-01) ve `marka < hesapBasinaEnFazla` (MRK-02); (3) `ad` sözdizimi (MRK-03…MRK-08, §7.7); (4) `simge`/`renk` aralık (MRK-09, MRK-10); (5) mevcut markayla birebir aynıysa MRK-11; (6) uygula: `marka === length` ise ekle, değilse üzerine yaz.
 
@@ -1240,6 +1333,11 @@ yapi_yerlestir:   { ..., dukkanTuru: "kimlik" },   // :62
 | DUK-19a | `yuva zaten bos` | boş yuvayı boşaltma | raf zaten boş |
 | DUK-19b | `yuva zaten bu malla dolu: <mal>` | aynı mal aynı yuvaya | bu raf zaten bu malla dolu |
 | DUK-19c | `fiyat zaten bu kademede` | aynı kademe | fiyat zaten bu seviyede |
+| DUK-23 | `dukkan henuz tamamlanmadi: insaat_iptal kullanin (<id>)` | `dukkan_yik`: kimlik oyuncunun süren dükkân inşaatına ait | dükkân henüz bitmedi; inşaatı iptal edebilirsin |
+| DUK-20 | `kampanya kademesi acik degil` | kampanya kademesi seçildi ama kampanya kapalı (parametre yok ya da 0) | kampanya fiyatı şu an kullanılamıyor |
+| DUK-21 | `kampanya haftalik gun siniri (en cok <n> gun)` | yeni günde haftalık gün sayacı dolu | bu hafta en çok `<n>` gün kampanya yapabilirsin |
+| DUK-22 | `kampanya gunluk saat siniri (en cok <n> saat)` | aynı günde saat sayacı dolu | bugün en çok `<n>` saat kampanya yapabilirsin |
+| YON-01 | `yontem yalniz tesis turunde verilebilir: <tesisTuru>` | `yontem` ek yapı inşasında verildi (G6; §5.8) | yöntem yalnız tesis kurarken seçilir |
 | MRK-01 | `gecersiz marka sirasi: <n>` | `marka` aralık dışı ya da boşluk bırakıyor | geçersiz marka |
 | MRK-02 | `hesap basina en cok <n> marka` | üst sınır | en çok `<n>` marka tanımlayabilirsin |
 | MRK-03 | `marka adi metin olmali` | `ad` dize değil | marka adı yazılmalı |
@@ -1256,14 +1354,11 @@ yapi_yerlestir:   { ..., dukkanTuru: "kimlik" },   // :62
 | MRK-14 | `dukkan zaten bu markada` | aynı marka | dükkân zaten bu markada |
 | SIS-01 | `marka_sifirla yalnizca 'sistem' ile verilebilir` | oyuncu yolundan | (istemciye gösterilmez) |
 
-Mevcut kodun yeni durumlarda da döndüreceği iletiler (K1 çevirisi var): `yetersiz stok: <düğüm> (mal indeksi <n>)`, `yetersiz hazine (gereken <n>)`, `hucre ...`, `ayni anda en cok <n> insaat`, `ilde isletme yok: <il>`. **K1 notu:** `yetersiz stok` çevirisi bugün "çelik ya da makine parçası" der (`hata-mulk.ts:~41`); G8'den sonra dükkân bedeli pencere içerir: ileti mal adını söylemeli (çekirdek iletisi mal **indeksi** verir; `ad` çevirisi K1'de dizinden).
+Mevcut kodun yeni durumlarda da döndüreceği iletiler (K1 çevirisi var): `bilinmeyen yontem: <id>`, `yontem bu tesis turunde yok: <id>`, `yontem acik degil: <id>` (G6 `yontem` alanı; `ekonomi/komut.ts:84-86`), `yetersiz stok: <düğüm> (mal indeksi <n>)`, `yetersiz hazine (gereken <n>)`, `hucre ...`, `ayni anda en cok <n> insaat`, `ilde isletme yok: <il>`. **K1 notu:** `yetersiz stok` çevirisi bugün "çelik ya da makine parçası" der (`hata-mulk.ts:33`); **G7'de dükkân bedeli pencere içerir (P-İthal, §7.4)**: ileti mal adını söylemeli (çekirdek iletisi mal **indeksi** verir; `ad` çevirisi K1'de dizinden).
 
 ---
 
 ## 10. Protokol alanları (yalnız ekleme)
-
-> **TASLAK (Parça 2):** Bu bölüm A2 `35ad50f` sayılarıyla, DUK/MRK tablolarıyla ve protokol ayrıntısıyla **Parça 2'de güncellenecektir**; K3'ün G6 şema dalı bu bölüme bağlı değildir. Önceki sürümden kalan A2 öncesi değerler ve `A2'den` işaretleri geçerli sayılmaz.
-
 
 `PROTOKOL_SURUMU` (`mesajlar.ts:~28`) **değişmez**; tüm yeni alanlar isteğe bağlıdır, eski istemci yok sayar, eski sunucu göndermez. K3'ün tür eklemesi ile K2'nin zod satırları **aynı kapıda** birleşmelidir (B5): `komut-sema.ts:80-82` `_KomutDenetimi` ve `Esit` kontrolü K3 tek başına landed olursa `@bolge/protokol` derlenmez.
 
@@ -1276,8 +1371,9 @@ z.object({ tur: z.literal("dukkan_raf"), dukkan: tamsayi, yuva: tamsayi, mal: z.
 z.object({ tur: z.literal("dukkan_fiyat"), dukkan: tamsayi, yuva: tamsayi, fiyat: tamsayi }),
 z.object({ tur: z.literal("marka_tanimla"), marka: tamsayi, ad: z.string().min(2).max(24), simge: tamsayi, renk: tamsayi }),
 z.object({ tur: z.literal("dukkan_marka"), dukkan: tamsayi, marka: tamsayi }),
+z.object({ tur: z.literal("dukkan_yik"), dukkan: tamsayi }),
 z.object({ tur: z.literal("marka_sifirla"), oyuncu: kimlik, marka: tamsayi }),   // yalnız yönetici kimliği (sunucu "sistem" damgalar)
-// :62-71 tesis_insa_hucre ve yapi_yerlestir: dukkanTuru: kimlik.optional()
+// :62-71 tesis_insa_hucre ve yapi_yerlestir: dukkanTuru: kimlik.optional(), yontem: kimlik.optional()   // yontem: G6 (§5.8); protokolde yalnız ekleme, nesne alanı; geriye uyum testi (§16.1)
 ```
 
 Protokol yalnız **biçim** denetler (docs: `komut-sema.ts` başlığı); sözdizimi kuralları çekirdektedir. `ad` üst sınırı bayt değil kod birimi (BMP).
@@ -1287,7 +1383,8 @@ Protokol yalnız **biçim** denetler (docs: `komut-sema.ts` başlığı); sözdi
 | Alan | Kime | Biçim | Not |
 |---|---|---|---|
 | `GenelBolgeKaresi.dukkanlar?` (`:~67`) | herkese | `Array<[id: number, tur: string, olcek: 0\|1\|2, markaAd: string, simge: number, renk: number]>` | tabela için; markasızsa `markaAd = ""`, simge/renk 0. Hücrenin `tur` alanı (`HucreKaresi`) zaten `"dukkan"` der |
-| `OzelBolgeKaresi.dukkanlar?` (`:~81`) | yalnız sahibine | `Array<[id: number, raf: Array<[mal: string, fiyat: number]>, istekMiliSaat: Mili]>` | raf yuva sırasıyla; boş yuva `mal = ""`; `istekMiliSaat` = §6.8 `yerelPazarGorunumu` toplamı (türetilmiş) |
+| `OzelBolgeKaresi.dukkanlar?` (`:~81`) | yalnız sahibine | `Array<[id: number, raf: Array<[mal: string, fiyat: number, etkin: number, mevcut: 0 \| 1, istekMiliSaat: Mili]>, kasaPpm: number, kampanya: [bitis: Ms, kalanSaat: number, kalanGun: number], karsilanmaPpm: number]>` | raf yuva sırasıyla; boş yuva `mal = ""`; `fiyat` saklanan kademe, `etkin` = `etkinKademe` (§7.5b); **`mevcut`** = §6.4 Adım 1 (stoksuz yuva çekime girmez: panelin "neden satmıyor" yanıtı); `istekMiliSaat` = yuvanın kasa kırpmalı isteği; **`kasaPpm`** = `Σ istek / kasaMiliSaat` (ppm, ≤ PPM: kasa doluluğu); **`kampanya`**: `bitis` (0 = yok), `kalanSaat` = `kampanyaGunlukEnFazlaSaat − (bugünse saat, değilse 0)`, `kalanGun` = `kampanyaHaftalikEnFazlaGun − (bu haftaysa gunSayisi, değilse 0)` (kampanya kapalıysa `[0, 0, 0]`; **tutar alanı yok**); **`karsilanmaPpm`** = `BolgeDurumu.yerelKarsilanmaPpm ?? PPM` (stok isteği karşılamıyorsa < PPM). Gerçekleşen satış geliri sahibin `ParaAkisi.yerel` oranından (saatlik toplam, mevcut paraAkisi görünümü) okunur: dükkân başına gerçekleşen satış durumda **tutulmaz** |
+| `OzelBolgeKaresi.sebeke?` (G6; isteğe bağlı, G9 faturası için) | yalnız sahibine | `Array<[mal: string, miliSaat: Mili]>` | şebekeden son çözümde alınan miktar (`b.elektrik.sebekeMili`, `b.sebekeTuketim`); fiyat veri paketinden (`param.mulk.sebeke`); yalnız `> 0` iken |
 | `OyuncuKaresi.markalar?` (`:~128`) | yalnız kendisine | `Array<[ad: string, simge: number, renk: number]>` | |
 | `IlgiKaresi.fiyat` | herkese (mevcut) | mal indeksine göre R (`d.pazar.fiyat`) | dükkân panelinin "R" ve kademe fiyatı hesabı için zaten var |
 
@@ -1298,14 +1395,16 @@ Protokol yalnız **biçim** denetler (docs: `komut-sema.ts` başlığı); sözdi
 | Konu | Dosya | Değişiklik |
 |---|---|---|
 | `ilk_dukkan` dedektörü | `sunucu/src/odul/dedektor.ts:14,27-29,158-175` | §7.8 |
-| Marka süzgeci (günlüğe yazmadan önce) | `sunucu/src/yazar.ts` komut kabul yolu (**doğrulanmadı: tam konum**) + yeni `marka-suzgec.ts` | `marka_tanimla.ad` katlanıp `yasakli-adlar.json` ile karşılaştırılır; ret `marka adi kullanilamaz`; süzgeç dosyası sıcak güncellenebilir (kural sürümü değişmez) |
+| Ad süzgeci (marka ve görünen ad; günlüğe yazmadan önce) | `sunucu/src/yazar.ts` komut kabul yolu (**doğrulanmadı: tam konum**) + yeni `ad-suzgec.ts` | `marka_tanimla.ad` ve profil ucundaki görünen ad **aynı** süzgeçten geçer: katlanıp `yasakli-adlar.json` ile karşılaştırılır; ret `marka adi kullanilamaz` (marka) / profil ucu iletisi (görünen ad); sözdizimi `adSozdizimiHatasi` (`@bolge/cekirdek`); süzgeç dosyası sıcak güncellenebilir (kural sürümü değişmez) |
 | "Sen yokken" net sonucu: satış kalemi | `sunucu/src/donus/anlik.ts:27-29`, `donus/ozet.ts:76`, `donus/izleyici.ts:95-104` | anlık görüntüye `dukkanGeliri` (çekirdek `dukkanGeliri(d, oyuncu, t)`); `satis = ihracat farkı + dukkan geliri farkı`; `satis + gider + diger = hazineFarki` birebirliği korunur. Yeni şablon gerekmez (`donus.bitti.insaat` ek yapı kimliği `dukkan`'ı zaten taşır, `donus.ts` `DONUS_SABLON`) |
 | Para arzı panosu satırları | `sunucu/src/metrik.ts` (**doğrulanmadı**: pano bugün yok, `mulk.para` sayaçları var) | §12.3 |
-| Kural sürümü göçü | `sunucu/src/yazar.ts:~611` | her G6/G7/G8 veri değişimi `kuralSurumu`'nu değiştirir; dönem sınırında `gocIzni` (docs/06 §14.2 sunucu notu) |
+| Kural sürümü göçü | `sunucu/src/yazar.ts:363,385,1318` | her G6/G7/G8 veri değişimi `kuralSurumu`'nu değiştirir; dönem sınırında `gocIzni` (docs/06 §14.2 sunucu notu) |
 
 ### 10.4 İstemci (K1/T1; G9 öncesi kancalar)
 
-`istemci/src/komut/gizli.ts:11,19`: `marka_sifirla` → `GIZLI_KOMUTLAR`; `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka` → `HARITA_KOMUTLARI` (dükkân paneli haritadan/İşletmem'den gönderir; G9). `istemci/test/komut.test.ts:92-117` `toEqual` listeleri güncellenir. `harita/hata-mulk.ts`: §9.3 çevirileri. `harita/baglanti.ts:376`: `ilk_dukkan` `etkin`. Dükkân paneli ve giriş ekranı G9.
+`istemci/src/komut/gizli.ts:11,19`: `marka_sifirla` → `GIZLI_KOMUTLAR`; `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`, `dukkan_yik` → `HARITA_KOMUTLARI` (dükkân paneli haritadan/İşletmem'den gönderir; G9). `istemci/test/komut.test.ts:92-117` `toEqual` listeleri güncellenir. `harita/hata-mulk.ts`: §9.3 çevirileri. `harita/baglanti.ts:376`: `ilk_dukkan` `etkin`. Dükkân paneli ve giriş ekranı G9.
+
+**Marka adı girişi (A1 G9 notu; baş lider kararı):** istemci iOS/Android akıllı tırnağını (`’` U+2019, `‘` U+2018) gönderimden önce `'` (U+0027) işaretine **çevirir** ve baştaki/sondaki boşluğu kırpar; çift akıllı tırnak (`“ ”`) çevrilmez (kümede yok: ret). **Sunucu ve çekirdek yalnız izinli karakterleri kabul etmeye devam eder; çekirdek izinli kümesi DEĞİŞMEZ** (§7.7). K1/T1: giriş alanı bu çeviriyi yapar ve ret iletisini gösterir (MRK-05).
 
 ---
 
@@ -1319,6 +1418,9 @@ Protokol yalnız **biçim** denetler (docs: `komut-sema.ts` başlığı); sözdi
 | `InsaatDurumu.dukkanTuru?` | `tipler.ts:476-503` | dükkân inşaatı sürerken | `$.insaatlar[i]` (`:392`) `dize` |
 | `MulkOyuncuDurumu.markalar?` | `tipler.ts:773-797` | ilk `marka_tanimla` | `mulkDogrula` oyuncular (`:557-585`): ≤ 3 eleman, `ad` = `markaAdiHatasi` sonucu null, `simge`/`renk` ≥ 0 |
 | `MulkOyuncuDurumu.dukkanGeliri?` | aynı | ilk dükkân gelirinde | `sayacDogrula` (`:470-476`) |
+| `MulkOyuncuDurumu.ilkSatisT?` | aynı | yerel satış oranı ilk kez > 0 olduğunda (`paraAkisiYaz`) | tamsayı ≥ 0 |
+| `DukkanDurumu.baslangic`, `.kurulus`, `.kampanya?` | `EkYapiDurumu.dukkan` içinde | `ekYapiTamamla` (`baslangic` = `InsaatDurumu.baslangic`, `kurulus` = `d.zaman`); `kampanya` ilk kampanyada | `baslangic`, `kurulus` tamsayı ≥ 0 ve `baslangic ≤ kurulus`; `kampanya`: `hafta, gunSayisi, gun, saat, bitis` tamsayı ≥ 0, `gunSayisi ≤ kampanyaHaftalikEnFazlaGun`, `saat ≤ kampanyaGunlukEnFazlaSaat` (parametre yoksa alan **yasak**) |
+| `BolgeDurumu.yerelKarsilanmaPpm?` | `tipler.ts:238` | dükkân isteği olan düğümde ve `< PPM` iken | `0 ≤ değer < PPM`; düğüm işletme düğümü olmalı |
 | `ParaAkisi.yerel?` (G7) | `tipler.ts:884-896` | `yerel > 0` iken | `paraAkisi` alanları (`:568-584`): `alanlar(...)` zorunlu listesine **eklenmez**, isteğe bağlı: tamsayı ≥ 0 |
 | `ParaDurumu.musluk.yerelNpc?` | `tipler.ts:854-860` | ilk yerel gelirde (tembel; G7) | `paraDogrula` (`:478-505`): izinli anahtarlar = `MUSLUK_KALEMLERI` ∪ `MUSLUK_ISTEGE_BAGLI = ["yerelNpc"]`; **zorunlu** liste değişmez; varsa `sayacDogrula` |
 | `ParaDurumu.lavabo.sebeke?` | `tipler.ts:854-860` | ilk şebeke bedeli birikiminde (tembel; G6) | `paraDogrula`: izinli lavabo anahtarları = `LAVABO_KALEMLERI` ∪ `LAVABO_ISTEGE_BAGLI = ["sebeke"]`; zorunlu liste değişmez |
@@ -1349,9 +1451,6 @@ Eklenenler: (a) `perakende` tanımsızken herhangi bir `DukkanDurumu` varsa hata
 
 ## 12. Para korunumu ve para arzı panosu
 
-> **TASLAK (Parça 2):** Bu bölüm A2 `35ad50f` sayılarıyla, DUK/MRK tablolarıyla ve protokol ayrıntısıyla **Parça 2'de güncellenecektir**; K3'ün G6 şema dalı bu bölüme bağlı değildir. Önceki sürümden kalan A2 öncesi değerler ve `A2'den` işaretleri geçerli sayılmaz.
-
-
 ### 12.1 Defter
 
 Korunum (docs/06 §15.7 madde 3) aynen geçerli ve **isteğe bağlı kalemi de kapsar:**
@@ -1375,8 +1474,8 @@ kasa girişi = vergi + ithalatMakas + ithalatKomisyon + (sebeke varsa)
 ### 12.2 Para kaynağı ve para arzı
 
 - **Kaynak:** NPC hane talebi (dış NPC parası); **yeni para musluğudur.** İhracat gibi yeni para basar, ama kayıtlı kalemde ayrıdır.
-- **Üst sınır (hane bütçesi invariantı):** ilçe başına, mal başına, saatlik oyuncu geliri `≤ Q × R × 1,4 × (1 − esnaf.tabanPayPpm/PPM)` (en pahalı kademe ve esnaf tabanı); toplamı (dikey §5.9 hane bütçesi `B = Σ Q·R·1,12`) `B`'yi aşamaz **mekanik olarak** (1,4 × 0,75 = 1,05 < 1,12 `[A2]` taban payı %25 ise). Test §16 `perakende-para`: yerel gelir ≤ `Σ Q × R × 1,4 × (1 − taban)`.
-- **Dağıtım sorusu (A2):** global NPC emilim ölçeği oyuncu sayısıyla büyüyor (`npcLikiditeOlcekPpm`, `pazar/tablo.ts:75-79`); yerel Q sabit. B5 "çift sayım" düzeltmesi (canlı §3.7) G7'de **yok**; ZP8 (`perakende NPC geliri / toplam NPC faucet ≤ %50`) izlenir; aşılırsa ayrı bir kalibrasyon sürümü (§21 S-5).
+- **Üst sınır (hane bütçesi invariantı):** ilçe başına, mal başına, saatlik oyuncu geliri `≤ Q × R × k_max × (1 − esnaf.tabanPayPpm/PPM)` (`k_max` = en yüksek **kademe** çarpanı = 1,15; A2 §1.9: üst sınır 1,15 R); toplamı (dikey §5.9 hane bütçesi `B = Σ Q·R·1,12`) `B`'yi aşamaz **mekanik olarak** (1,15 × 0,75 = 0,8625 < 1,12; esnaf tabanı %25). A2 §1.10: oyuncuya akabilecek tavan `B × (1 − %25)`; ilçe başına haftalık `yerelNpc` kırsal 0,18 M ₺ … şehir 2,91 M ₺; Alfa-0 ölçeğinde (200 oyuncu, 45 ilçe) 92,9 M ₺/hafta, bunun yalnız primi (14,1 M ₺/hafta) **ek** paradır. Test §16.2 `perakende-para`: yerel gelir ≤ `Σ Q × R × 1,15 × (1 − taban)`; fiyat bandı genişletilirse (kademe > 1,15) bu satır `k_max`'a göre güncellenir.
+- **Dağıtım sorusu (A2):** global NPC emilim ölçeği oyuncu sayısıyla büyüyor (`npcLikiditeOlcekPpm`, `pazar/tablo.ts:75-79`); yerel Q sabit. B5 "çift sayım" düzeltmesi (canlı §3.7) G7'de **yok**; ZP8 (`perakende NPC geliri / toplam NPC faucet ≤ %50`; A2 §1.10: %45,3) izlenir; aşılırsa ayrı bir kalibrasyon sürümü (A2 §4 soru 4). **Şebeke lavabosu (A2 §1.10):** 200 P4 oyuncusunda elektrik ≈ 10,0 M ₺/hafta + yakıt ≈ 69,6 M ₺/hafta kamuya gider (yakıt eskiden `ithalatNpc` lavabosundaydı); kasa payı %12.
 
 ### 12.3 Para arzı panosu satırları (K2 pano oluşturduğunda)
 
@@ -1384,12 +1483,14 @@ kasa girişi = vergi + ithalatMakas + ithalatKomisyon + (sebeke varsa)
 |---|---|---|
 | Yerel pazar (dükkân) geliri | `mulk.para.musluk.yerelNpc` (yoksa 0) | musluk (yeni para) |
 | Dükkân işletme gideri | lavabo `isletme` içinde; ayrı satır için `ParaAkisi` değil, `yerelPazarGorunumu` `giderMiliSaat` toplamı | lavabo |
+| Şebeke ödemesi (elektrik + yakıt) | `mulk.para.lavabo.sebeke` (yanan) ve `kasalar[].giris.sebeke` (ilçe kasası) | lavabo ve kasa girişi |
+| Şebeke kasa payı oranı | `Σ kasa.giris.sebeke / (Σ kasa.giris.sebeke + Σ lavabo.sebeke)` (beklenen ≈ `kasaPayiPpm`) | izleme |
 | NPC ihracat geliri, nüfus geliri, hibe, ödül | mevcut musluk kalemleri | musluk |
 | Dükkân gelirinin ihracata oranı | `yerelNpc / (yerelNpc + ihracatNpc)` | ZP8 göstergesi |
 
 ### 12.4 Değişmezler ve testler (§16 `perakende-para`)
 
-I1 korunum: 3 tohum × tohumlu rastgele koşu (parsel al/bırak, yapı, dükkân kur/raf/fiyat/marka, ithalat/ihracat, ödül, araştırma), her kontrol noktasında tam eşitlik (`para-guvenligi.test.ts:82-100` yardımcısı `yerelNpc`'yi toplar). I2 `Σ oyuncu dukkanGeliri == musluk.yerelNpc` (SAAT ölçekli). I3 hane bütçesi üst sınırı. I4 kasa girişleri yerel satıştan **etkilenmez** (`kasalar[].giris` aynı). I5 `d.pazar.fiyat`, `oyuncuArzi`, `oyuncuTalebi` yerel satışla **değişmez**. I6 nötrlük: sık/seyrek `paraUzlastir` kontrol noktası aynı sayaç.
+I1 korunum (şebeke kalemleri dahil; §12.1): 3 tohum × tohumlu rastgele koşu (parsel al/bırak, yapı, dükkân kur/raf/fiyat/marka, ithalat/ihracat, ödül, araştırma), her kontrol noktasında tam eşitlik (`para-guvenligi.test.ts:82-100` yardımcısı `yerelNpc`'yi toplar). I2 `Σ oyuncu dukkanGeliri == musluk.yerelNpc` (SAAT ölçekli). I3 hane bütçesi üst sınırı. I4 kasa girişleri yerel satıştan **etkilenmez** (`kasalar[].giris` aynı). I5 `d.pazar.fiyat`, `oyuncuArzi`, `oyuncuTalebi` yerel satışla **değişmez**. I6 nötrlük: sık/seyrek `paraUzlastir` kontrol noktası aynı sayaç.
 
 ### 12.5 Tutar taşımayan komut ilkesi
 
@@ -1397,7 +1498,7 @@ Dükkân komutlarının alanları: `dukkan` (kimlik), `yuva` (`secim`), `mal` (k
 
 ### 12.6 Arbitraj analizi
 
-NPC'den ithal edip rafa koymak **meşru ticaret yönüdür** (G12; ZP11 izler). Sınırlar: (1) ithalatın nakit çarpanı ≥ 1,035 R (en iyi durum: anlaşma + 2 Ticaret ofisi; `mulk/kamuFiyat.ts`), dükkân satış tavanı 1,4 R: birim marj ≤ 0,365 R; (2) satış hacmi `Q × (1 − esnafPay)` ile ve kasayla sınırlı; esnaf payı alt sınırı %25 `[A2]`; (3) stok **kaynağa göre ayrılmaz** (tembel stok; ithal/yerli ayrımı yok), bu yüzden "ithal rafa fiyat tavanı" (dikey §5.6) uygulanamaz; ZP11 alarmında çare yalnız bandın üst sınırını daraltmaktır (parametre); (4) kamu fiyat tavanı ve sipariş kancaları etkilenmez; (5) "S kur + yükselt = doğrudan" eşitliği G7'de dükkân için yoktur (`dukkan_yukselt` Alfa-1); doğrudan M/L bedeli tablo çarpanıdır ve test: `bedel(M) = bedel(S) × 2,5` tesis ölçek tablosuyla birebir (§16). **Risksiz sınırsız arbitraj yok** testi: ithalat → dükkân zincirinin saatlik net marjı `≤ (1,4 − 1,035) × R × hacim üst sınırı`.
+NPC'den ithal edip rafa koymak **meşru ticaret yönüdür** (G12; ZP11 izler). Sınırlar: (1) ithalatın nakit çarpanı ≥ 1,035 R (en iyi durum: anlaşma + 2 Ticaret ofisi; `mulk/kamuFiyat.ts`), dükkân satış tavanı **1,15 R (en yüksek kademe)**: birim marj ≤ 0,115 R (A2: ithalat nakit çarpanı 1,100–1,111 R, yani kademe 1,15 R ile marj ≈ 0,04 R); **şebeke** (taban × 1,035) ve NPC ithalatı birbirinden bağımsızdır (§5.2.2b); (2) satış hacmi `Q × (1 − esnafPay)` ile ve kasayla sınırlı; esnaf payı alt sınırı %25 `[A2]`; (3) stok **kaynağa göre ayrılmaz** (tembel stok; ithal/yerli ayrımı yok), bu yüzden "ithal rafa fiyat tavanı" (dikey §5.6) uygulanamaz; ZP11 alarmında çare yalnız bandın üst sınırını daraltmaktır (parametre); (4) kamu fiyat tavanı ve sipariş kancaları etkilenmez; (5) "S kur + yükselt = doğrudan" eşitliği G7'de dükkân için yoktur (`dukkan_yukselt` Alfa-1); doğrudan M/L bedeli tablo çarpanıdır ve test: `bedel(M) = bedel(S) × 2,5` tesis ölçek tablosuyla birebir (§16). **Risksiz sınırsız arbitraj yok** testi: ithalat → dükkân zincirinin saatlik net marjı `≤ (1,15 − 1,035) × R × hacim üst sınırı`.
 
 ---
 
@@ -1410,7 +1511,7 @@ NPC'den ithal edip rafa koymak **meşru ticaret yönüdür** (G12; ZP11 izler). 
 - `p4Oncesi(veri)`: güncel veriden tüm `mulkKipi` yöntemleri `icerik.yontemler`'den, ilgili tür listelerinden, `param.mulk.perakende` ve `ekYapilar.dukkan`'dan çıkarılır (başka hiçbir değişiklik yapılmaz); `kimlikListesi` eklenmez (dondurulmuş eski paket).
 - Senaryo: mevcut 4 bot + bulanık komut, mini-6, tohum 3, 6 gün, `esitNoktalar(son, 12)` (en az `senaryolar` P3'tekiyle aynı; ek olarak sentetik-50 4 gün).
 - Beklenen: 12 kontrol noktasında **tam `durumOzeti`**, etkin kuyruk (`sira` sıralı), işlenen etkin olay dizisinin zincir özeti ve `sayac.olay` **birebir aynı**. (P3'ten farkı: yöntem uzayı durumda indeks dizisi olarak yer almadığından izdüşüm gerekmez, **tam özet** eşit olmalıdır; eşit çıkmazsa süzgeç hatalıdır.)
-- Ek: `p4Oncesi` ve güncel içerik `kuralSurumu` **farklı** (`kuralSurumuHesapla`), kimlik tablosu güncel için `yontemler` 29 elemanlı.
+- Ek: `p4Oncesi` ve güncel içerik `kuralSurumu` **farklı** (`kuralSurumuHesapla`), kimlik tablosu güncel için `yontemler` 28 elemanlı (24 + G6'nın 4'ü; G8 sonrası 30; doğrulandı: `icerik.json` bugün 24 yöntem).
 - **Süzgeç yokken** sınamak (karşıt kanıt): `mulkKipi` bayrağı olmayan sahte bir yöntem bölge kipinde botlarca seçilebiliyorsa `botlar/src/planlayici.ts` `yontemAdaylari`'nda görünmeli (K3 keşif §1; test bayrağın gerçekten etkili olduğunu gösterir).
 
 **K-2: dondurulmuş altınlar değişmez.** `git diff` bu dosyalarda **boş** olmalı: `cekirdek/test/fikstur-b1/**`, `fikstur-b2/**`, `fikstur-kanit/**` (`esik-budama-referans.json` dahil), `fikstur-goc/{bolge,mulk}-v1*.json`, `fikstur-goc/icerik-kimlik-kilidi.json`, `sanayi-regresyon`, `pazar-regresyon`, `botlar/test/pazar-regresyon` altın sabitleri. Bu testler **değişiklik yapılmadan** geçer.
@@ -1443,9 +1544,6 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 
 ## 14. Değişmez tablosu
 
-> **TASLAK (Parça 2):** Bu bölüm A2 `35ad50f` sayılarıyla, DUK/MRK tablolarıyla ve protokol ayrıntısıyla **Parça 2'de güncellenecektir**; K3'ün G6 şema dalı bu bölüme bağlı değildir. Önceki sürümden kalan A2 öncesi değerler ve `A2'den` işaretleri geçerli sayılmaz.
-
-
 | Değişmez | G6 | G7 | G8 | Nasıl sağlanır | Test |
 |---|---|---|---|---|---|
 | Deterministik çekirdek (tamsayı, `Math.random`/`Date`/kayan nokta yok) | evet (veri) | evet: çekim PPM `carpBol`; sabit sıra (oyuncu kimliği, `EkYapiDurumu.id`, yuva, mal indeksi, ilçe kimliği); kalan birimler sıralı | evet (veri) | `carpBol` (BigInt yedekli); `Math.pow/sqrt` yok (lint); `Map` yalnız geçici ve sıralı gezilir | `perakende-determinizm` (aynı tohum + günlük = aynı özet; komut sırası) |
@@ -1460,10 +1558,12 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 | Çekirdek paketi `@bolge/veri` çalışma zamanı importu yok | — | yeni dosyalar yalnız tip alır | — | `mal-kimlik-kilidi-paket.test.ts` | aynı test |
 | Arayüzde büyük harf yok; `1.234 ₺`; Türkçe | — | ret iletileri küçük harf | — | §9.3 | K1 çeviri testi |
 | Oyuncu serbest metni sistem/ajan yoluna girmez | — | `metin` ∉ `SISTEM_ALAN_TURLERI` | — | §9.1 | `para-guvenligi` sistem alan türleri testi |
+| Para korunumu (şebeke) | `mulk.sebeke` ile (G6) | - | - | `lavabo.sebeke` + `kasa.giris.sebeke` = hazineden düşen bedel; yeni musluk yok; `ithKasa` kolu ayrı | `sebeke-elektrik` I1 |
+| Blok yokken no-op (sebeke, yontemGecersizKilma, perakende) | evet | evet | evet | `ic.mulk.<blok> === undefined` ⇒ hiçbir kod yolu; durum alanları yalnız kullanılınca yazılır | K-3, K-4, K-5 |
+| Şebeke fiyatı oyuncudan ve pazardan bağımsız | evet (taban sabit) | - | - | derleme zamanı tamsayı; `d.pazar` okunmaz | `sebeke-elektrik` (8) |
+| Etkin kademe saf | - | evet | - | `etkinKademe(durum, t)`; çözümde durum yazılmaz | `perakende-kampanya` |
 
 ## 15. Botlar ve ölçüm
-
-> **Parça 1 durumu:** G6 maddeleri tamdır; G7/G8 maddeleri (A0-11/A0-12, ZP ölçüleri, dükkân botu) **Parça 2**'de A2'nin sayılarıyla yazılır.
 
 ### 15.1 G6: bot önayarı ve ölçüm (O2)
 
@@ -1482,13 +1582,26 @@ Yalnız `icerikDerle`'de `ic.tesisTurleri` görünümü (§5.5). `ic.icerik`, `i
 3. **Ödeme gücü salınımı** (§5.2.6): hazine 0 koşusunda `odemePpm` ve `sebekeMili` zaman serisi.
 4. Mülk kipi testleri/botları şebeke açıkken: §5.2.10 etkilenen koşular yeniden çalıştırılır.
 
-### 15.3 G7/G8 (Parça 2)
+### 15.3 G7/G8: A0-11, A0-12, ZP ölçüleri, dükkân ve cam → pencere botları
 
-A0-11 ("ilk dükkân medyan ≤ 36 sa"), A0-12 (geri ödeme ≤ 48 sa; prim 1,05–1,20), ZP3/ZP8/ZP11 sayaçları, `yerelNpc` panosu, dükkân botu, cam → pencere önayarı (santralsiz) ve süre hedefi (A2 §1.8: ≤ 6 sa).
+**A0-11 ("ilk dükkân medyan ≤ 36 sa") iki zaman ister; ikisi de DURUMDAN okunur (A1 G9 bulgusu 4):**
+
+| Zaman | Okunacağı yer | Tanım |
+|---|---|---|
+| **Yapı komutu zamanı** | `InsaatDurumu.baslangic` (inşa sürerken); biten dükkânda `DukkanDurumu.baslangic` (§7.1) | `yapi_yerlestir`/`tesis_insa_hucre` komutunun uygulandığı `d.zaman` |
+| **Dükkân kurulma zamanı** | `DukkanDurumu.kurulus` | `ekYapiTamamla`'nın çalıştığı `d.zaman` (inşaat bitişi) |
+| **İlk satış zamanı** | `MulkOyuncuDurumu.ilkSatisT` | yerel satış oranının (`ParaAkisi.yerel`) ilk kez > 0 olduğu çözüm anı |
+
+- **`ilk_dukkan` tetiği ilk satıştır, yapı bitişi değil (GZ-14):** koşul `dukkanGeliri(d, oyuncu, t) > 0` ve tamamlanmış `dukkan` (§7.8); ölçüm "ilk satış"ı `ilkSatisT`'den okur. A0-11'in ölçtüğü süre = `ilkSatisT − katılım` (katılım zamanı `MulkOyuncuDurumu` kayıt anı); ara kırılım: `baslangic − katılım`, `kurulus − baslangic`, `ilkSatisT − kurulus` (A2 §1.12: süre değil nakit ve emir yuvası bağlayıcıdır; P-İthal pencere ithalatı ilk dükkânda ≥ 1 saat ekler; §7.4).
+- **A0-12** (geri ödeme ≤ 48 sa; prim 1,05–1,20): `Σ dukkanGeliri` ve `dukkan` bedeli; A2 §1.9 geri ödeme tablosu (şehir 12–15 sa, kasaba 17–21 sa, kırsal tutmaz) beklenen yöndür.
+- **ZP sayaçları:** ZP3 (perakende primi = dükkân fiyatı / 0,891 R; kademe 3'te 1,291, alarm 1,30), ZP8 (`yerelNpc` payı ≤ %50; A2 §1.10: %45,3), ZP11 (ithal alıp perakende satış payı ≤ %15); kaynak `mulk.para.musluk.yerelNpc` ve `ticaretDefteri` (§12.3).
+- **Dükkân botu (O2):** zincir önayarına eklenir: ekmek zinciri sonrası `yapi_yerlestir {dukkanTuru: "firin"|"bakkal"}` + `dukkan_raf` (ekmek, gıda) + varsayılan kademe (normal); P-İthal pencere için `ticaret_emri` ithalat 4 pencere (iptal edilmezse tüketim sürer: bot emri iptal etmeli); botlar `marka_tanimla` vermez; `dukkan_fiyat` yalnız normal/yüksek kademe (kampanya kapalı varsayılan).
+- **Cam → pencere önayarı (O2, G8):** santralsiz (şebeke); silis ithal ya da `silis_ocagi`; `parca_fabrikasi` ×2 (`yontem: "cam_firini"`, `yontem: "celik_dograma"`); çelik ve parça ithalatı; pencere ihracatı ve `yapi_market` rafı; A2 §1.8 hedefi: katılımdan ≤ 6 sim-saat (gün 3 sonrası, santral yok) / 7. günden sonra ≤ 14 sa.
+- **Kapasite notu:** A2 §1.3-B3: NPC pazar derinliği ekmek zinciri sayısını sınırlar (oyuncuların ancak %43'ü fiyat düşmeden); bot koşusunda (A0-4, 100 bot) tek zincire yığılmama izlenir.
 
 ## 16. Test listesi
 
-> **Parça 1 durumu:** G6 testleri tamdır. G7/G8 test adları taslaktır ve Parça 2'de ayrıntılanır. Hepsi **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedefli testleri koşulur, tam kapı O1'indir.
+> Hepsi **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedefli testleri koşulur, tam kapı O1'indir.
 
 ### 16.1 G6
 
@@ -1509,9 +1622,29 @@ A0-11 ("ilk dükkân medyan ≤ 36 sa"), A0-12 (geri ödeme ≤ 48 sa; prim 1,05
 | `protokol` komut-sema testi | K2 | `tesis_insa_hucre` ve `yapi_yerlestir` `yontem` alanı biçimi (isteğe bağlı, kimlik, nesne alanı; protokolde yalnız ekleme); **geriye uyum testi:** alan olmadan gelen eski komut (örnek komut günlüğü satırı) aynı biçimden geçer ve çekirdekte aynı sonucu/durum özetini verir (`yontem-komut.test.ts` ile birlikte) |
 | `botlar/test/` zincir önayarı | O2 | bot 7 günde `ekmek` üretir ve satar (santralsiz); bölge kipi botları yeni yöntemi seçmez |
 
-### 16.2 G7 ve G8 (Parça 2 taslağı)
+### 16.2 G7 ve G8
 
-`perakende-veri` (şema, V1–V16, kilitsizlik, `.strict()`), `perakende-komut` (DUK/MRK reddi, durum değişmez), `perakende-cekim` (Ek B vektörleri, determinizm, sıra bağımsızlığı), `perakende-para` (I1–I6), `perakende-serilestir`, `perakende-yetisme`, `perakende-arbitraj`, `perakende-determinizm`, `marka-sozdizimi`, `marka-suzgec` (K2), `bolge-kipi-etkisiz` (K-3), G8: `yapi-market`, dükkân bedeli pencere, bot cam → pencere. K2/K1 listeleri (`kare`, `gizli.ts`, `komut.test.ts`).
+| Test (dosya) | Sahip | Ne sınar |
+|---|---|---|
+| `veri/test/perakende-veri.test.ts` (yeni) | K3 | V1-V12 ret testleri (bozuk kademe, bant dışı, tamCesit > mal sayısı, takvim satır toplamı ≠ 12.000.000, bayram toplam sapma ≠ 0, çakışan bayram, raf malının talebi yok, pazar kaydı olmayan raf malı, kampanya parametre aralığı, marka sınırları); kilitsizlik taraması (V11: seviye/teknoloji/önkoşul anahtarı yok; `.strict()`); `dukkan` `olcekHucre` kuralı; beş S türü geçerli, `market`/`supermarket` kaydı yok |
+| `cekirdek/test/perakende-cekim.test.ts` (yeni) | K3 | **Ek B vektörleri V1-V4 birebir**; sıra bağımsızlığı (aynı girdi, dükkân girişi permütasyonu aynı sonuç); `Σ s ≤ Q − floor(Q × tabanPay)`; `top_j ≤ kasa_j`; su-doldurma yakınsaması (≤ 32 tur); BigInt/`carpBol` taşma sınırı (Q ≈ 1e9 × w ≈ 1,1e6); mevcut olmayan (stoksuz) yuva çekime girmez ve payı diğerlerine kalır |
+| `cekirdek/test/perakende-talep.test.ts` (yeni) | K3 | Q: sınıf × takvim × bayram; `bayramCarpani` sınırları (`[B − Do, B − 1]`, `[B, B + Ds − 1]`); toplam-sabit (bir bayram döngüsünde Σ sapma = 0); tarım kapalıyken takvim yok; ilçe sınıfı = baskın hücre sınıfı (eşitlikte büyük); `talep1000Saat` mevcut mülk/bölge davranışını değiştirmez (dükkânsız dünya aynı `durumOzeti`) |
+| `cekirdek/test/perakende-komut.test.ts` (yeni) | K3 | **kur-yık döngüsü (baş lider):** oyuncu dükkânı indirimli kurar, tamamlar, `dukkan_yik` ile yıkar, yeniden kurar: ikinci kurulumda `indirimliYapi` sayacı **ilerlemiş**, indirim hakkı **geri gelmemiş** (ikinci kurulum indirimsiz bedel), yıkımda para hareketi 0, korunum tam; DUK-00…DUK-23 ve MRK-01…MRK-14 reddi; **reddedilen komut durumu değiştirmez**; `dukkan_raf`/`dukkan_fiyat`/`dukkan_marka` başarı yolları; hız sınırı (DUK-18); `dukkanTuru` alanı; **`dukkan_yik`** (§7.9 test listesi: iade yok, para korunumu, indirim sayacı geri verilmez, `insaat_iptal` dükkân %50 iadesi); G7'de ölçek 1/2 reddi (DUK-04) |
+| `cekirdek/test/perakende-kampanya.test.ts` (yeni) | K3 | §7.5b (a)-(h): kapalıyken DUK-20; 6 saat sınırı ve tam saat sayımı; gün sonu kesmesi; haftalık gün sınırı DUK-21 ve hafta sıfırlaması; bitişte etkin kademe varsayılana döner (durum değişmez); tek sıçrama = parçalı sıçrama |
+| `cekirdek/test/perakende-para.test.ts` (yeni) | K3 | I1-I6 (§12.4): korunum 3 tohum × rastgele koşu; `Σ dukkanGeliri == musluk.yerelNpc`; hane bütçesi üst sınırı (`≤ Σ Q × R × 1,15 × (1 − taban)`); kasa girişleri yerel satıştan etkilenmez; `d.pazar.fiyat/oyuncuArzi/oyuncuTalebi` değişmez; nötrlük (sık/seyrek `paraUzlastir`) |
+| `cekirdek/test/perakende-serilestir.test.ts` (yeni) | K3 | `dukkan`, `marka`, `kampanya`, `ilkSatisT`, `yerelKarsilanmaPpm`, `ParaAkisi.yerel`, `musluk.yerelNpc` tam gidiş-dönüş; bozuk değer ret; `dunyaIcerikUyumu` (§11.2); `fikstur-goc/mulk-v1.json` yüklenir; eski dünya + yeni kod aynı |
+| `cekirdek/test/perakende-yetisme.test.ts` (yeni) | K3 | tek sıçrama = parçalı sıçrama = günlükten yeniden oynatma (`durumOzeti` birebir); sunucu kapalıyken geçen süre |
+| `cekirdek/test/perakende-arbitraj.test.ts` (yeni) | K3 | ithalat → dükkân zincirinin saatlik net marjı ≤ `(1,15 − 1,035) × R × hacim`; ithal rafı şebeke ve NPC ithalatıyla etkileşmez |
+| `cekirdek/test/perakende-determinizm.test.ts` (yeni) | K3 | aynı tohum + günlük = aynı özet; komut sırası; `Map` sıralı gezilir (permütasyon testi) |
+| `cekirdek/test/marka-sozdizimi.test.ts` (yeni) | K3 | MRK-03…MRK-08 (uzunluk, izinli küme, baş/son boşluk, art arda boşluk, harf şartı); Türkçe harfler tek karakter; emoji/birleşen işaret/akıllı tırnak reddi; durum özeti: marka tanımlamamış oyuncu ve eski dünya aynı |
+| `cekirdek/test/bolge-kipi-etkisiz.test.ts` (K-3 genişler) | K3 | `perakende` ve `yontemGecersizKilma` veride var, dükkân yok ⇒ aynı `durumOzeti`; katman 4a `d4a = 0` aritmetiği |
+| `cekirdek/test/mulk-yapilar.test.ts:50`, `mal-izdusumu-kanit` | K3 | ek yapı listesi 6 → 7 (`dukkan`), göç beklentileri |
+| `sunucu/test/ad-suzgec.test.ts` (yeni) | K2 | yasaklı ad katlama (büyük/küçük harf, aksan, ayırıcı); yasaklı kelime ↔ içerik; **marka komutu ve görünen ad ucu AYNI süzgeci kullanır**; bot/ajan yoluna uygulanmaz; günlüğe yazmadan önce ret (MRK-12) |
+| `cekirdek/test/ad-kurali.test.ts` (yeni) | K3 | `adSozdizimiHatasi` tek kaynak: marka komutu ve (sunucu testinde) görünen ad aynı sonucu verir; protokol zod sınırı `min/max` = `AD_KURALI.min/max` |
+| `sunucu/test/odul.test.ts` | K2 | `ilk_dukkan` = ilk satış (yapı bitişiyle tetiklenmez); `ilk_dukkan` yıkımdan sonra tekrar verilmez |
+| `protokol` kare/komut delta testleri | K2 | `dukkanlar`, `sebeke`, `markalar` kare alanları isteğe bağlı; `PROTOKOL_SURUMU` aynı; yeni komut zod satırları; eski istemci/sunucu alan yok sayar |
+| `istemci/test/komut.test.ts:92-117` | K1 | `GIZLI_KOMUTLAR` (+ `marka_sifirla`), `HARITA_KOMUTLARI` (+ 5 komut) `toEqual` |
+| `botlar/test/` dükkân ve cam → pencere önayarı | O2 | bot ilk dükkânı kurar ve ilk satışı yapar; cam → pencere zinciri santralsiz tamamlanır; A0-11 zaman alanları durumdan okunur |
 
 ## 17. Uygulama sırası ve kabul ölçütleri
 
@@ -1529,9 +1662,27 @@ A0-11 ("ilk dükkân medyan ≤ 36 sa"), A0-12 (geri ödeme ≤ 48 sa; prim 1,05
 
 **G6 teslim kapısı (O1):** tam kapı yeşil (`pnpm typecheck`, tam vitest, `dunya.html` gzip ≤ 400 KB; G6 payı < 0,5 KB beklenir, K3 ölçer: **doğrulanmadı**); bölge kipi altınları **birebir** (K-1: 12 noktada tam özet; K-2: dondurulmuş dosyalarda boş diff); eski mülk görüntüsü yüklenir.
 
-### 17.2 G7 ve G8 (Parça 2)
+### 17.2 G7 alt adımları
 
-G7-1 şema (`perakende`) → G7-2 çekirdek (talep, çekim, katman 4a, `yerelNpc`) → G7-3 dükkân (durum, komutlar, marka) → G7-4 veri (T3) → G7-5 K2/K1 kancaları ve kanıtlar; G8: veri (iki yöntem, `yapi_market`, dükkân bedeli) + bot + kanıt. Kabul ölçütleri Parça 2'de.
+| Adım | İş | Sahip | Bağımlılık | Kabul (hedefli test) |
+|---|---|---|---|---|
+| G7-1 | **Şema (isteğe bağlı/no-op):** `mulk.perakende` (kampanya parametreleri dahil), `MulkEkYapiTanimi.olcekHucre?`, `dukkanTurleri` kilit bağlantısı, V1-V12 (`perakende-dogrula.ts`), `DerlenmisPerakende`; komut tipleri (5 + 1) **K2 zod satırlarıyla aynı birleştirmede**; `AlanTuru += "metin"` | K3 (+K2) | G6 teslim kapısı yeşil | `perakende-veri`; `pnpm -r typecheck`; **hiçbir JSON değişmedi**, altınlar aynı |
+| G7-2 | **Çekirdek (blok yokken no-op):** `yerelPazarHesapla`, katman 4a, `BolgeHesabi.dukkan*`, `hazineKalemleri`/`paraAkisiYaz`/`paraMuhasebesi` yerel kolları, `musluk.yerelNpc` (lazy), `ilkSatisT`, `yerelKarsilanmaPpm` | K3 | G7-1 | `perakende-cekim`, `perakende-talep`, `perakende-para`, `perakende-yetisme`; mevcut tüm çekirdek testler değişiksiz yeşil |
+| G7-3 | **Dükkân:** durum, `ekYapiTamamla`, `yapi_yerlestir`/`tesis_insa_hucre` `dukkanTuru`, 5 komut + `marka_sifirla`, kampanya, marka, `dukkan_yik`, serileştirme/doğrulayıcılar | K3 | G7-2 | `perakende-komut`, `perakende-kampanya`, `marka-sozdizimi`, `perakende-serilestir`, `perakende-arbitraj`, `perakende-determinizm` |
+| G7-4 | **Veri (tek commit; `kuralSurumu` ARTAR):** T3: `ekYapilar.dukkan` (P-İthal bedeli), `mulk.perakende` (A2 §1.9/§1.13; 4 dükkân türü), `kimlik-listesi.json` (dükkân türleri zaten listede) | T3 | G7-3 | `dogrulaVeriPaketi`, `dogrulaPerakende` (V1-V16); `icerikDerle`; **mülk altınları tek commit'te** (eski/yeni raporlu); bölge altınları BİREBİR |
+| G7-5 | **K2/K1 kancaları ve kanıtlar:** `kare.ts` alanları, `ilk_dukkan` dedektörü, marka süzgeci, sunucu göçü; K1 `gizli.ts`/`komut.test.ts`/çeviriler; K-3 testi; ölçüm temel çizgisi | K2, K1, O2 | G7-4 | §16.2 K2/K1 satırları; `bolge-kipi-etkisiz` |
+
+**G7 teslim kapısı (O1):** tam kapı yeşil; `dunya.html` gzip ≤ 400 KB (G7 payı +3–5 KB: çekirdek 2–3, zod/doğrulayıcı 1–2; **K3 ölçer**); bölge kipi altınları birebir (K-1…K-5); eski mülk görüntüsü yüklenir; bot ilk dükkânı kurar ve satar (A0-11 zaman alanları durumdan).
+
+### 17.3 G8 adımları
+
+| Adım | İş | Sahip | Kabul |
+|---|---|---|---|
+| G8-1 | **Veri (tek commit; `kuralSurumu` ARTAR):** T3: `cam_firini` (28) ve `celik_dograma` (29) yöntemleri (A2 §1.4/§1.13), `parca_fabrikasi.yontemler`'e ekleme, `yapi_market` dükkân türü ve `talep1000Saat` satırları (cam, çelik, parça, pencere), `kimlik-listesi.json` `yontemler`'e 2 kayıt | T3 | `dogrulaVeriPaketi`, `dogrulaKimlikKilidi`, V3/V4; `icerikDerle` |
+| G8-2 | **Kanıtlar:** yöntem izdüşümü kanıtı (K-1) 6 yöntemle; mülk altınları (tek commit); `yapi-market` testi (yalnız NPC talebi; oyuncu-alıcı yok) | K3 | `yontem-izdusumu-kanit` (6 yöntem); `serilestir-goc` `eklenen.yontemler = 2` (G6'dan sonra) |
+| G8-3 | **Bot cam → pencere zinciri ve ölçüm** (santralsiz) | O2 | A2 §1.8 hedefi (≤ 6 sa; 7. günden sonra ≤ 14 sa) |
+
+**G8 teslim kapısı:** tam kapı yeşil; `dunya.html` < 1 KB artış; bölge kipi altınları birebir; pencere zinciri santralsiz çalışır.
 
 ## 18. Rollere istek listesi
 
@@ -1541,8 +1692,8 @@ G7-1 şema (`perakende`) → G7-2 çekirdek (talep, çekim, katman 4a, `yerelNpc
 |---|---|---|
 | **K3** | §5, §3.5, §4, §11, §13 ve Ek A'daki değişiklikler; **blok yokken no-op** her yerde; testler §16.1; K3 `p3Oncesi`/`p4Oncesi` yardımcılarını yazar; `veri-importu` kuralı (çekirdek `@bolge/veri` çalışma zamanı importu yok) korunur; Node-only doğrulayıcılar `saf`a girmez; bundle ölçümü | G6 |
 | **T3** | **G6-3 tek commit:** (a) `icerik.json`: `yontemler[]` sonuna 4 yöntem (A2 §1.4/§1.13 değerleri; `mulkKipi: true`); `gida_fabrikasi` ve `ahir` listeleri sonlarına ekleme; **`celikhane` listesi DEĞİŞMEZ** (T3 §8.2 `cam_firini` satırı geçersiz; G8'de `parca_fabrikasi`'ne); (b) `parametreler.json`: `mulk.sebeke` (`mallar: [{ mal: "elektrik", tavanOraniPpm: 1000000 }, { mal: "yakit", tavanOraniPpm: 1000000 }]`, `kasaPayiPpm` **120 000** (A2 §1.3-B1)), `mulk.yontemGecersizKilma` (`standart_gida_isleme: { ciktiPpm: 1000000 }`, kapalı; G2 açılırsa 750 000); (c) `kimlik-listesi.json` `yontemler`: §3.5'teki 28 kayıt, sırayla. **K3'ün G6-1 dalı birleşmeden önce yazma.** Her yeni kimlik önce listeye. | G6 |
-| **K2** | `komut-sema.ts:62-71` iki komuta `yontem: kimlik.optional()` (K3 ile aynı birleştirme); `sunucu/src/odul/dedektor.ts` `ilk_isleme`/`zincir_kapandi` doğrulama testi (kod değişmez); sunucu `kuralSurumu` göçü (`yazar.ts:363,385,1318`) G6-3 sonrası `gocIzni` | G6 |
-| **K1** | G6'da komut **tür** değişikliği yoktur (`gizli.ts`, `komut.test.ts` listeleri değişmez); `harita/hata-mulk.ts` çevirileri: `bilinmeyen yontem`, `yontem bu tesis turunde yok`, `yontem acik degil`, `yontem yalniz tesis turunde verilebilir` (§9.3 ekleri); **oyun içi metinde santral için "daha ucuz" vaadi yoktur**, gerçek sayılar gösterilir (§5.2.1); Dikkat paneli notu "pazar doydu → ekmek zinciri" (G9; §5.9) | G6, G9 |
+| **K2** | `komut-sema.ts:62-71` iki komuta `yontem: kimlik.optional()` (K3 ile aynı birleştirme); (G7) `dukkan_yik` ve diğer yeni komut satırları, `kare.ts` alanları (§10.2); `sunucu/src/odul/dedektor.ts` `ilk_isleme`/`zincir_kapandi` doğrulama testi (kod değişmez); sunucu `kuralSurumu` göçü (`yazar.ts:363,385,1318`) G6-3 sonrası `gocIzni` | G6 |
+| **K1** | G6'da komut **tür** değişikliği yoktur (`gizli.ts`, `komut.test.ts` listeleri değişmez); **G7:** `HARITA_KOMUTLARI`'na `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`, `dukkan_yik`, `GIZLI_KOMUTLAR`'a `marka_sifirla` (`gizli.ts:11,19`; `komut.test.ts:92-117` `toEqual` listeleri); DUK/MRK/YON çevirileri (§9.3); marka adı girişinde `’` → `'` çevirisi ve kırpma (§7.7, §10.4); kampanya kalan hak ve "mevcut" bayrağı gösterimi (§10.2); `harita/hata-mulk.ts` çevirileri: `bilinmeyen yontem`, `yontem bu tesis turunde yok`, `yontem acik degil`, `yontem yalniz tesis turunde verilebilir` (§9.3 ekleri); **oyun içi metinde santral için "daha ucuz" vaadi yoktur**, gerçek sayılar gösterilir (§5.2.1); Dikkat paneli notu "pazar doydu → ekmek zinciri" (G9; §5.9) | G6, G9 |
 | **O2** | `botlar/src/parsel.ts` (`g6-onayar` işi): `yontem_degistir`/`yontem` kullanan **ekmek zinciri önayarı** (Çiftlik → `gida_fabrikasi` ×2 → ihracat; yakıt ithalat emri **yok**; kepek); santralsiz açılış; **marjinal-net `degirmen` yöntem seçici = G6 kabul koşulu** (§5.9 ölçümünün ön koşulu; yoksa M ölçülemez); §15.2 raporları; mülk testleri şebeke açıkken yeniden; **G6-3 sonrası temel çizgiyi (parsel-v1, bakım ölçümleri) yeniden alır** ve eski raporlarla birebir karşılaştırmaz | G6 |
 | **A2** | (SHA: son teslim); **şebeke fiyatı TABAN kararı:** yeniden hesap gerekmez (S-16 kapandı); bayram sınır günü tanımı (§4.3, S-8); zincir +%33,6 ↔ K/U bandı (S-17); `kamuSiparisi` şeması gerekirse (S-11) | G6, G7 |
 | **O1** | G6 teslim kapısı + K-2 `git diff --exit-code` listesi; `dunya.html` boyut ölçümü | G6 |
@@ -1581,19 +1732,19 @@ G7-1 şema (`perakende`) → G7-2 çekirdek (talep, çekim, katman 4a, `yerelNpc
 
 **6. Yerel talep Q: `seviye × uygunHucre` parametresi mi, fikstüre nüfus alanı mı?**
 - **Karar: ikisi de değil.** `Q = talep1000Saat × ilceSinifiNufus[sınıf] × yerelOlcek / 1000 × takvim × bayram` (A2 §1.9); sınıf = `ParselIlceTanimi.sinif`; **nüfus verisi ve ilçe seviyesi yok** (kilitsizlik, Y-33). A2'nin `yerelOlcek` kalibre değildir; gerçek ilçe nüfusu geldiğinde yeniden kalibre (A2 §4 soru 4; S-6). O3'ten istek yok.
-- Dosya:satır: `veri/src/parsel.ts:81-104` (ilçe: nüfus yok), `:89` (`sinif`), `tarim/iklim.ts:44` (`takvimAyi`), `mulk/isletme.ts` (düğüm `nufus = 0`). Ayrıntı §4.3, §6.5 (Parça 2).
+- Dosya:satır: `veri/src/parsel.ts:81-104` (ilçe: nüfus yok), `:89` (`sinif`), `tarim/iklim.ts:44` (`takvimAyi`), `mulk/isletme.ts` (düğüm `nufus = 0`). Ayrıntı §4.3, §6.5.
 
 **7. Çekim, su-doldurma ve kasa formülü tamsayı/PPM adımlarıyla ve sıralama kuralıyla.**
-- **Karar:** §6.4 (Parça 2): A2'nin formülü (`ters`, `kare`, `agirlik`, esnaf ağırlığı, esnaf taban payı, **su-doldurma en çok 32 tur**, tek oyuncu toplamı `Q − floor(Q × tabanPay)` üst sınırı) birebir; kalan birimler sıralı; Ek B test vektörleri (betikle üretildi; çekirdek dışı).
+- **Karar:** §6.4: A2'nin formülü (`ters`, `kare`, `agirlik`, esnaf ağırlığı, esnaf taban payı, **su-doldurma en çok 32 tur**, tek oyuncu toplamı `Q − floor(Q × tabanPay)` üst sınırı) birebir; kalan birimler sıralı; Ek B test vektörleri (betikle üretildi; çekirdek dışı).
 - Dosya:satır: `sabit.ts:42` (`carpBol`, BigInt yedekli), `lojistik/cozum.ts:127` (birim kalıbı).
 
 **8. Yerel satış hangi öncelik katmanında? NPC dünya fiyatını etkilesin mi?**
 - **Karar: yeni katman 4a** (ihracattan önce, tesis girdisinden sonra); **NPC dünya fiyatını etkilemez** (`oyuncuArzi/oyuncuTalebi` yerel satışla değişmez; I5 değişmezi).
-- Dosya:satır: `ekonomi/uretim.ts:421-483` (`bolgeVerimCoz`), `:455` (`d4`), `pazar/piyasa.ts:117-118`, `:123-135` (`pazarFiyatlari`). Ayrıntı §6.2–§6.3 (Parça 2).
+- Dosya:satır: `ekonomi/uretim.ts:421-483` (`bolgeVerimCoz`), `:455` (`d4`), `pazar/piyasa.ts:117-118`, `:123-135` (`pazarFiyatlari`). Ayrıntı §6.2–§6.3.
 
 **9. Yapı market oyuncu-alıcı G8'de mi? Fiyat komutu `oran` mı kademe mi? Fiyat değişim sınırı G7'de mi?**
 - **Karar: oyuncu-alıcı yok** (aklama kanalı; baş lider kararı 7); **fiyat = kademe indeksi (`secim`)**, tutar/oran alanı yok; **hız sınırı G7'de** (`fiyatDegisimEnAzSaat`, DUK-18).
-- Dosya:satır: `komutSemasi.ts:14-27` (`AlanTuru`), `:17` (`SISTEM_ALAN_TURLERI`); `para-guvenligi.test.ts` açık liste. Ayrıntı §7, §9 (Parça 2).
+- Dosya:satır: `komutSemasi.ts:14-27` (`AlanTuru`), `:17` (`SISTEM_ALAN_TURLERI`); `para-guvenligi.test.ts` açık liste. Ayrıntı §7, §9.
 
 **10. İthal edip rafa koyma için kamu çarpanı benzeri fiyat tavanı var mı?**
 - **Karar: yok; yalnız fiyat bandı** `[0,7; 1,4] R` ve (A2) kademeler ≤ 1,15 R. Stok kaynağa göre ayrılmaz (tembel stok): "ithal rafa tavan" uygulanamaz; ZP11 izler, çare bandın üstünü daraltmaktır. Kamu tavanı yalnız kamu siparişi/şebeke fiyatıdır (şebeke bu tavanı kullanır: §5.2.4).
@@ -1605,7 +1756,7 @@ G7-1 şema (`perakende`) → G7-2 çekirdek (talep, çekim, katman 4a, `yerelNpc
 
 **12. `ilk_dukkan` tetiği: yapı bitti mi, ilk satış mı?**
 - **Karar: ilk satış** (yapı bitti DEĞİL): tamamlanmış `dukkan` ve `dukkanGeliri(d, oyuncu, t) > 0`. Rehber değişmezi: ödül bedelden ucuz alınamasın.
-- Dosya:satır: `sunucu/src/odul/dedektor.ts:14`, `:27-29`, `:57-62`, `:158-175`; `veri/icerik/parametreler.json:11`; `istemci/src/harita/baglanti.ts:376`. Ayrıntı §7.8 (Parça 2).
+- Dosya:satır: `sunucu/src/odul/dedektor.ts:14`, `:27-29`, `:57-62`, `:158-175`; `veri/icerik/parametreler.json:11`; `istemci/src/harita/baglanti.ts:376`. Ayrıntı §7.8.
 
 ### 19.B Baş liderin T3 taslağına karar maddeleri
 
@@ -1645,6 +1796,7 @@ G7-1 şema (`perakende`) → G7-2 çekirdek (talep, çekim, katman 4a, `yerelNpc
 | GZ-17 | **`yontem?` inşa komutu alanı** (§5.8) | komut sözleşmesi; `InsaatDurumu.yontem`; protokolde yalnız ekleme (nesne alanı), geriye uyum testi | **kabul (baş lider)** |
 | GZ-18 | **`mulkKipi` bayrağı** ve `mulk.yontemGecersizKilma` şeması (`ciktiPpm`) | `YontemTanimi`/`MulkParametreleri` alan kalıcı; çarpan çıktıya uygulanır (girdiye değil) | baş lider kararı 2 ve 13 |
 | GZ-19 | **G6-3 sonrası ölçüm temel çizgisi yeniden alınır** (`mulk.sebeke` ile mülk kipi kuralı değişir: santralsiz tesis üretir) | `kuralSurumu` artar; mülk altınları tek commit'te yeni değerle; parsel-v1 ve bakım ölçümleri önceki raporlarla birebir karşılaştırılmaz; **bölge kipi altınları birebir** | baş lider (kabul) |
+| GZ-20 | **`dukkan_yik` komutu** (iade yok; arsa oyuncuda; yalnız dükkân) | komut sözleşmesi; "yıkımda iade yok" kuralı para dengesini sabitler; diğer yapılara genelleme sonraki sprint | baş lider kararı |
 
 ## 21. Açık sorular
 
@@ -1660,15 +1812,17 @@ G7-1 şema (`perakende`) → G7-2 çekirdek (talep, çekim, katman 4a, `yerelNpc
 | S-6 | Talep ilçe büyüklüğüne (`uygunHucre`) bağlansın mı; gerçek ilçe nüfusu ne zaman | hayır; sınıf başına sabit (A2 §4 soru 4) | A2, sahip |
 | S-7 | ~~M erken açılış (`acikOlcekler`, T-43)~~ **KAPANDI (baş lider):** `[0]`. **`acikOlcekler` yalnız dükkân ölçeği içindir ve bir özellik açılış zamanlamasıdır; e1080dd'deki fabrika/tesis ölçek serbestliğini (doğrudan M/L kurulum) etkilemez.** | `[0]` | kapandı |
 | S-8 | **Bayram sınır günü ve tarihler:** `oncesi` penceresi `[B − Do, B − 1]`, `sonrasi` penceresi `[B, B + Ds − 1]` (bayram günü sonrasında); resmî bayram tarihleri (doğrulanmadı) | Alfa-0 listesi T3'te, boş olabilir | A2 (sınır), T3 (tarih) |
-| S-9 | ~~Bakım ve aşınma kalibrasyonu~~ **KAPANDI (baş lider):** bu sprintte karar yok; G4 dışı; şema rezervi gerekmez (A2 35ad50f §2: öneri C, ×0,50 ve tavan %25, O2 ölçümü sonrası) | - | kapandı |
+| S-9 | ~~Bakım ve aşınma kalibrasyonu~~ **KAPANDI (baş lider):** bu sprintte karar yok; G4 dışı; şema rezervi gerekmez (A2 eab8fcc §2: öneri C, ×0,50 ve tavan %25, O2 ölçümü sonrası) | - | kapandı |
 | S-10 | ~~Yakıt şebekeden otomatik~~ **KAPANDI (baş lider):** elektrik ve yakıt şebekeden (§5.2.2b; mal listesi `mallar[]`) | kapsamda | kapandı |
 | S-11 | **Kamu siparişi v0** değerleri **onaylı** (A2 §1.9, §1.13 `kamuSiparisi`): mallar `ekmek`, `gida`, `pencere`, `celik`, `parca`; fiyat 1,03 R; boyutlar 100/50/10/30/20; ilçede haftada ≤ 5; vade 3 gün; `kasaPayiPpm` %12. **Sipariş kodu ve şeması sonraki sprintte** (bu şartnamenin dışı); değerler durur | veri taslağı A2'de | kapandı (kod: sonraki sprint) |
-| S-12 | Marka adında **büyük harf** (arayüz kuralı sabit metinler içindir) ve **KVKK** hukuki görüşü | izinli küme büyük harfe izin verir | sahip, hukuk |
+| S-12 | **Büyük harf** (marka ve görünen ad için AYNI çözüm: serbest; "arayüzde büyük harf yok" kuralı sabit arayüz metinleri içindir) ve **KVKK** hukuki görüşü | büyük harf serbest | sahip, hukuk |
 | S-13 | ~~G8'de dükkân bedeline pencere~~ **KAPANDI (baş lider kuralı):** NPC pencere arzı var ⇒ G7'de ithal pencereli bedel (P-İthal); G8'de değişiklik yok | P-İthal | kapandı |
 | S-14 | ~~`yontem?` inşa alanı~~ **KAPANDI (baş lider):** kabul; protokolde yalnız ekleme (nesne alanı), geriye uyum testi (§16.1); protokol kısmı K2, sırayı Kod lideri belirler | alınır | kapandı |
-| S-15 | ~~A2 commit SHA'sına atıf bağlama~~ **KAPANDI:** `35ad50f` (A2 §2 bakım sonraki commit'te) | - | kapandı |
+| S-15 | ~~A2 commit SHA'sına atıf bağlama~~ **KAPANDI:** `eab8fcc` (A2 §2 bakım sonraki commit'te) | - | kapandı |
 | S-16 | ~~Şebeke fiyat referansı~~ **KAPANDI (baş lider):** TABAN (yakıt 103,5 ₺); `canli` yolu kodda yok; `fiyatReferansi` alanı şemada yok | taban | kapandı |
 | S-17 | ~~Zincir +%33,6 K/U bandının üstünde~~ **KAPANDI (baş lider):** fırın çıktısı 240 (+%21,2) | 240 | kapandı |
+| S-18 | **Kampanya sim haftası** (`floor(gun/7)`; takvim haftası değil) ve gün sınırı (sim günü = 24 sa, 00:00 TRT) kabul mü | evet | A2, baş lider |
+| S-19 | ~~Dükkân yıkımı~~ **KAPANDI (baş lider):** `insaat_iptal` (%50) inşa sürerken; tamamlanmış dükkân `dukkan_yik` ile yıkılır, **iade yok**, arsa oyuncuda; yalnız `dukkan` (diğer yapılar sonraki sprint) | `dukkan_yik` (§7.9) | kapandı |
 
 ### 21.B T3 §11'in 16 sorusu (tek tek)
 
@@ -1693,7 +1847,7 @@ G7-1 şema (`perakende`) → G7-2 çekirdek (talep, çekim, katman 4a, `yerelNpc
 
 ## Ek A. Değişen dosya ve fonksiyonlar (`dosya:satır`, taban `d28447d`)
 
-> **Parça 1 durumu:** G6 tamdır; G7/G8 satırları Parça 2'de eklenir.
+> G6, G7 ve G8 satırları.
 
 ### A.1 G6: `packages/veri` (K3: şema, doğrulayıcı, test; T3: yalnız JSON)
 
@@ -1751,11 +1905,49 @@ G7-1 şema (`perakende`) → G7-2 çekirdek (talep, çekim, katman 4a, `yerelNpc
 | `istemci/src/harita/hata-mulk.ts` | K1 | §9.3 çevirileri |
 | `botlar/src/parsel.ts:105-109,392,470`, `onayarlar.ts:77` | O2 | §15.1 |
 
+### A.4 G7: `packages/veri` ve `packages/cekirdek/src` (K3)
+
+| Dosya:satır | Değişiklik |
+|---|---|
+| `veri/src/tipler.ts:577` `MulkEkYapiTanimi`; `:627` `MulkParametreleri` | `olcekHucre?: [n, n, n]`; `perakende?: MulkPerakendeParametreleri` (§4.3) |
+| `veri/src/sema.ts:364` `mulkEkYapiSema`, `:415` `mulkSema` | `olcekHucre`; `perakende` şeması (kampanya parametreleri dahil) |
+| `veri/src/dogrula.ts:537-551` | `olcekHucre` kuralı (`[0] === yuva`, artan, ≤ 5) |
+| `veri/src/perakende-dogrula.ts` (G6'da açılır) | V1-V12, V15, V16 (`perakende`) |
+| `tipler.ts:303` `EkYapiDurumu` | `dukkan?: DukkanDurumu` (`tur`, `olcek`, `marka?`, `raf`, `kampanya?`, `baslangic`, `kurulus`) |
+| `tipler.ts:773-797` `MulkOyuncuDurumu` | `markalar?`, `dukkanGeliri?`, `ilkSatisT?` |
+| `tipler.ts:476-503` `InsaatDurumu` | `dukkanTuru?: string` |
+| `tipler.ts:238` `BolgeDurumu` | `yerelKarsilanmaPpm?: number` |
+| `tipler.ts:842-896` | `MUSLUK_ISTEGE_BAGLI = ["yerelNpc"]`; `ParaDurumu.musluk` `& { yerelNpc?: ParaSayaci }`; `ParaAkisi.yerel?: Mili` |
+| `tipler.ts:638-674`, `:966-975` `Komut`, `MulkKomutu` | `dukkan_raf`, `dukkan_fiyat`, `marka_tanimla`, `dukkan_marka`, `dukkan_yik`, `marka_sifirla`; `dukkanTuru?` |
+| `komutSemasi.ts:14,17,27-64` | `AlanTuru += "metin"` (`SISTEM_ALAN_TURLERI`'ne eklenmez); altı giriş |
+| `derle.ts:114-198` `mulkDerle` | `DerlenmisPerakende` (§4.6), `ilceSinifi` (baskın hücre sınıfı) |
+| `ekonomi/uretim.ts:31-88`, `:117-187`, `:236`, `:362`, `:421-483`, `:531`, `:660-668` | `BolgeHesabi.dukkan/dukkanGercek/frD`; `bolgeHesapla(…, yerel)`; katman 4a; `bolgeOranlariUygula` `dukkanGercek`; `bolgeDurumunaYaz` `yerelKarsilanmaPpm` |
+| `lojistik/cozum.ts:228-308`, `:73-81`, `:91-181` | `yerelPazarHesapla` çağrısı; `ParaBilesenleri.yerel`; `hazineKalemleri` gelir ve dükkân gideri |
+| `mulk/perakende.ts` (YENİ) | `yerelPazarHesapla`, `yerelPazarGorunumu`, `dukkanGeliri`, `dukkanlar`, `etkinKademe`, kampanya, `ilcedeDukkanSayisi`, `perakendeKomutu` (5 komut) |
+| `mulk/marka.ts` (YENİ), `ad.ts` (YENİ; `cekirdek/src/ad.ts`) | marka komutları; `adSozdizimiHatasi`, `AD_KURALI` (§7.7) |
+| `mulk/komut.ts:262-279`, `:321-382`, `:468-495`, `:497`, `:514`, `:582` | `yapiTuruCoz` (`olcekHucre`, `dukkanTuru`), `yapiPlani` (ek yapı ölçek çarpanı, ilçe sınırı), `yapiUygula` (`ins.dukkanTuru`), `mulkKomutu` switch |
+| `mulk/yapi.ts:54-83` `ekYapiTamamla` | `dukkanVarsayilani` (`baslangic`, `kurulus`) |
+| `mulk/kasa.ts:94-159` | `paraMuhasebesi`: `a.yerel` ⇒ `musluk.yerelNpc` + `dukkanGeliri`; `paraAkisiYaz`: `yerel`, `ilkSatisT` |
+| `motor.ts:182-185`, `:203-249` | `marka_sifirla` (`sistem_odul` yanına); `yonlendir` kapsayıcılık |
+| `serilestir.ts:327-336`, `:392`, `:478-505`, `:522-585`, `:681-` | `dukkan`, `kampanya`, `markalar`, `yerelNpc`, `ParaAkisi.yerel`, `dunyaIcerikUyumu` (§11) |
+
+### A.5 G7/G8: diğer paketler
+
+| Dosya:satır | Sahip | Değişiklik |
+|---|---|---|
+| `protokol/src/komut-sema.ts:24-82` | K2 | 6 yeni komut + iki `dukkanTuru`/`yontem` alanı; `_KomutDenetimi` aynı kapı |
+| `protokol/src/kare.ts` | K2 | `GenelBolgeKaresi.dukkanlar?`, `OzelBolgeKaresi.dukkanlar?`, `OzelBolgeKaresi.sebeke?`, `OyuncuKaresi.markalar?` (§10.2) |
+| `sunucu/src/odul/dedektor.ts:14,27-29,57-62,158-175` | K2 | `ilk_dukkan` = ilk satış |
+| `sunucu/src/donus/{anlik,ozet,izleyici}.ts` (`anlik.ts:27-29`, `ozet.ts:76`, `izleyici.ts:95-104`) | K2 | "sen yokken" `satis` = ihracat farkı + dükkân geliri farkı |
+| `sunucu/src/ad-suzgec.ts` (YENİ), `yazar.ts:363,385` | K2 | ortak ad süzgeci; `kuralSurumu` göçü |
+| `istemci/src/komut/gizli.ts:11,19`, `test/komut.test.ts:92-117`, `harita/hata-mulk.ts`, `harita/baglanti.ts:376` | K1 | §10.4 |
+| `veri/icerik/yasakli-adlar.json` (YENİ) | T3 | §7.7 |
+
 ## Ek B. Çekim hesabı test vektörleri
 
-> **Parça 1 durumu:** vektörler üretildi ve doğrulandı (betik); algoritmanın metni §6.4'te (Parça 2). Bu ek çekirdek DIŞI bir referans uygulamadır: K3 testleri vektörleri sabit olarak gömer, betiği çalıştırmaz.
+> Vektörler betikle üretildi ve doğrulandı (doğrulandı: `cekim.mjs` BigInt referansı); algoritmanın metni §6.4'te. Bu ek çekirdek DIŞI bir referans uygulamadır: K3 testleri vektörleri sabit olarak gömer, betiği çalıştırmaz.
 
-**Yöntem:** `SP` betiği (BigInt, `floor(a·b/c)`), `Math.pow/sqrt` yok; Alfa-0 ölçeğinde `cekimCarpaniPpm = 1 000 000` (S). Girdi birimleri mili-birim/saat; `p` = fiyat kademesi çarpanı (ppm); `esnaf.fiyatPpm = 1 120 000`, `tabanPayPpm = 250 000`, `cesitKatsayiPpm = 250 000`. (doğrulandı: yöntem)
+**Yöntem:** aşağıdaki referans betik (BigInt, `floor(a·b/c)`), `Math.pow/sqrt` yok; Alfa-0 ölçeğinde `cekimCarpaniPpm = 1 000 000` (S). Girdi birimleri mili-birim/saat; `p` = fiyat kademesi çarpanı (ppm); `esnaf.fiyatPpm = 1 120 000`, `tabanPayPpm = 250 000`, `cesitKatsayiPpm = 250 000`. (doğrulandı: yöntem)
 
 | Vektör | Girdi | Beklenen çıktı (`s` = yuva başına istek, mili-birim/saat) |
 |---|---|---|
