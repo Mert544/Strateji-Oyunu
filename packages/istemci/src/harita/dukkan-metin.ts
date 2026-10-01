@@ -21,7 +21,7 @@ export const DUKKAN_METIN = {
   "dukkan.D1.palet_alt": "Gıda, ekmek ve benzeri malı ilçenin hane halkına sat. Raf, fiyat ve marka sende.",
   "dukkan.D1.palet_baslik": "Dükkân",
   "dukkan.D1.satir_acik": "{ad} · net ≈ {net}/sa",
-  "dukkan.D1.satir_bos_raf": "{dukkan} · rafı boş",
+  "dukkan.D1.satir_bos_raf": "{ad} · rafı boş",
   "dukkan.D1.satir_git": "Git",
   "dukkan.D1.satir_insaat": "İnşa sürüyor · {kalan}",
   "dukkan.D2.baslik": "Hangi dükkânı kuruyorsun?",
