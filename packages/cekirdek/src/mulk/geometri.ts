@@ -95,49 +95,119 @@ export function ilceMerkeziDizi(g: IlceHucreDizileri): [number, number] {
   return yn > 0 ? [tabanBol(yx, yn), tabanBol(yy, yn)] : [tabanBol(tx, tn), tabanBol(ty, tn)];
 }
 
-/** Adaylar arasında merkeze (cx, cy) en yakın tohumdan büyüyen `n` hücrelik kenar-bitişik küme; yoksa null. */
-export function kumeSec(adaylar: readonly Nokta[], n: number, cx: number, cy: number): string[] | null {
-  const uzak = (c: { x: number; y: number }): number => (c.x - cx) * (c.x - cx) + (c.y - cy) * (c.y - cy);
-  const sirali = adaylar.map((c) => ({ ...c, u: uzak(c) })).sort((a, b) => a.u - b.u || dizge(a.id, b.id));
-  const kimlik = new Map(sirali.map((c) => [c.id, c]));
-  const basarisiz = new Set<string>();
-  for (const tohum of sirali) {
-    if (basarisiz.has(tohum.id)) continue;
-    // Bağlı bileşen yeterince büyük mü? (taşkın doldurma)
-    const bilesen = new Set<string>([tohum.id]);
-    const yigin = [tohum.id];
-    while (yigin.length > 0) {
-      const c = kimlik.get(yigin.pop() as string) as { x: number; y: number };
+// ---------------------------------------------------------------------------
+// Halka araması (yurt; docs/06 §15.11): `kumeSec`in sonucunu TÜM adayları sıralamadan, merkezden dışa doğru halka halka üretir.
+// ---------------------------------------------------------------------------
+
+/** Hücre yüklemi: (x, y) kümeye üye mi? (Üyelik doğrudan dizinden ve dünya durumundan sorulur; aday listesi kurulmaz.) */
+export type HucreYuklemi = (x: number, y: number) => boolean;
+
+/** Aranan çerçeve (kapsayıcı): ilçe ızgarasının sınırları. */
+export interface HalkaCercevesi {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** İlk halka yarıçapı (hücre); her halka bir öncekinin iki katı. Yurt için (n ≤ ~10) çoğu zaman ilk halka yeter. */
+const ILK_YARICAP = 8;
+
+interface HalkaHucre {
+  x: number;
+  y: number;
+  u: number;
+  id: string;
+}
+
+/**
+ * Yüklemi sağlayan hücreleri (uzaklık², kimlik DİZESİ) artan sırasıyla verir: `kumeSec`in `sirali` dizisiyle AYNI sıra. Merkezden yarıçapı ikiye katlayarak
+ * halkalar (u ∈ (önceki², bu²]) üretir; her halka kendi içinde tam sıralanır, halkalar uzaklıkça sıralıdır, yani birleşim tam sıradır.
+ */
+export function* halkaGez(yuklem: HucreYuklemi, c: HalkaCercevesi, cx: number, cy: number): Generator<HalkaHucre> {
+  const dxEn = Math.max(Math.abs(cx - c.x0), Math.abs(cx - c.x1));
+  const dyEn = Math.max(Math.abs(cy - c.y0), Math.abs(cy - c.y1));
+  const uEn = dxEn * dxEn + dyEn * dyEn;
+  let onceki = -1;
+  for (let r = ILK_YARICAP; ; r *= 2) {
+    const ust = r * r;
+    const l: HalkaHucre[] = [];
+    const ya = Math.max(c.y0, cy - r);
+    const yb = Math.min(c.y1, cy + r);
+    const xa = Math.max(c.x0, cx - r);
+    const xb = Math.min(c.x1, cx + r);
+    for (let y = ya; y <= yb; y++) {
+      for (let x = xa; x <= xb; x++) {
+        const u = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+        if (u <= onceki || u > ust) continue;
+        if (yuklem(x, y)) l.push({ x, y, u, id: `${x}:${y}` });
+      }
+    }
+    l.sort((a, b) => a.u - b.u || dizge(a.id, b.id));
+    yield* l;
+    if (ust >= uEn) return;
+    onceki = ust;
+  }
+}
+
+/** Yüklemi sağlayan hücre sayısı, `n`'de keser: dönen değer n'e eşitse "en az n"; n'den küçükse TAM sayıdır. */
+export function halkaSay(yuklem: HucreYuklemi, c: HalkaCercevesi, cx: number, cy: number, n: number): number {
+  let s = 0;
+  for (const _ of halkaGez(yuklem, c, cx, cy)) if (++s >= n) break;
+  return s;
+}
+
+/** Hücre anahtarı (sayısal; dize üretmez): x ∈ (-2³¹, 2³²) ve y ∈ [0, 2²⁰) için çakışmaz (komşu sorgusunun x - 1 = -1 gibi taşmaları gerçek hücreyle karışmaz; sonuç 2⁵³ altında). */
+const hucreAnahtar = (x: number, y: number): number => y * 8_589_934_592 + x;
+
+/**
+ * `kumeSec` ile BİREBİR aynı sonuç (aynı hücreler, aynı seçim sırası; yoksa null), aday listesi kurmadan: tohumlar (uzaklık², kimlik dizesi) sırasıyla
+ * halkalardan gelir; bileşen n'e ulaşınca kesilen taşkın doldurma karar için yeter (karar yalnız "bileşen ≥ n"); büyütme ve komşuluk üyeliği aynı
+ * yüklemden sorulur. Başarısız (n'den küçük) bileşenin hücreleri tohum olarak atlanır.
+ */
+export function kumeSecHalka(yuklem: HucreYuklemi, c: HalkaCercevesi, n: number, cx: number, cy: number): string[] | null {
+  const basarisiz = new Set<number>();
+  const uzak = (x: number, y: number): number => (x - cx) * (x - cx) + (y - cy) * (y - cy);
+  for (const tohum of halkaGez(yuklem, c, cx, cy)) {
+    if (basarisiz.has(hucreAnahtar(tohum.x, tohum.y))) continue;
+    // Bağlı bileşen en az n hücre mi? (taşkın doldurma n'de kesilir)
+    const bilesen = new Set<number>([hucreAnahtar(tohum.x, tohum.y)]);
+    const yigin: [number, number][] = [[tohum.x, tohum.y]];
+    while (yigin.length > 0 && bilesen.size < n) {
+      const [px, py] = yigin.pop() as [number, number];
       for (const [dx, dy] of KOMSULAR) {
-        const k = `${c.x + dx}:${c.y + dy}`;
-        if (kimlik.has(k) && !bilesen.has(k)) {
+        const nx = px + dx;
+        const ny = py + dy;
+        const k = hucreAnahtar(nx, ny);
+        if (!bilesen.has(k) && yuklem(nx, ny)) {
           bilesen.add(k);
-          yigin.push(k);
+          yigin.push([nx, ny]);
         }
       }
     }
     if (bilesen.size < n) {
-      for (const id of bilesen) basarisiz.add(id); // bileşen n'den küçük: içindeki hiçbir hücre tohum olamaz
+      for (const k of bilesen) basarisiz.add(k);
       continue;
     }
     // Merkeze en yakın komşuyu ekleyerek büyüt (kompakt küme).
-    const secilen = [tohum.id];
-    const secili = new Set(secilen);
+    const secilen: [number, number][] = [[tohum.x, tohum.y]];
+    const secili = new Set<number>([hucreAnahtar(tohum.x, tohum.y)]);
     while (secilen.length < n) {
-      let en: { id: string; u: number } | null = null;
-      for (const id of secilen) {
-        const c = kimlik.get(id) as { x: number; y: number };
+      let en: { x: number; y: number; u: number } | null = null;
+      for (const [px, py] of secilen) {
         for (const [dx, dy] of KOMSULAR) {
-          const k = `${c.x + dx}:${c.y + dy}`;
-          const a = kimlik.get(k);
-          if (a !== undefined && !secili.has(k) && (en === null || a.u < en.u || (a.u === en.u && dizge(a.id, en.id) < 0))) en = a;
+          const nx = px + dx;
+          const ny = py + dy;
+          if (secili.has(hucreAnahtar(nx, ny)) || !yuklem(nx, ny)) continue;
+          const u = uzak(nx, ny);
+          if (en === null || u < en.u || (u === en.u && dizge(`${nx}:${ny}`, `${en.x}:${en.y}`) < 0)) en = { x: nx, y: ny, u };
         }
       }
       if (en === null) break; // bileşen yeterli büyüklükte olduğundan olmaz
-      secilen.push(en.id);
-      secili.add(en.id);
+      secilen.push([en.x, en.y]);
+      secili.add(hucreAnahtar(en.x, en.y));
     }
-    if (secilen.length === n) return secilen;
+    if (secilen.length === n) return secilen.map(([x, y]) => `${x}:${y}`);
   }
   return null;
 }

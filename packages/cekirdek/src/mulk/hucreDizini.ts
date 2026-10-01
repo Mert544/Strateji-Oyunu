@@ -375,6 +375,25 @@ export class HucreDizini {
     return -1;
   }
 
+  /**
+   * `no` numaralı ilçenin (x, y) hücresinin durum baytı; ilçenin çerçevesi dışındaysa ya da içeride değilse -1 (yurt halka araması: yalnız o ilçeye bakar;
+   * `hucreDurum`'dan farkı ilçe taraması yoktur). Kopyasız, nesne üretmez.
+   */
+  ilceBayti(no: number, x: number, y: number): number {
+    const c = this.ilceler[no] as IlceIzgarasi;
+    const dx = x - c.x0;
+    const dy = y - c.y0;
+    if (dx < 0 || dy < 0 || dx >= c.w || dy >= c.h) return -1;
+    const b = c.durum[dy * c.w + dx] as number;
+    return (b & ICERIDE) !== 0 ? b : -1;
+  }
+
+  /** İlçe çerçevesi (kapsayıcı x0..x1, y0..y1). */
+  ilceCercevesi(no: number): { x0: number; y0: number; x1: number; y1: number } {
+    const c = this.ilceler[no] as IlceIzgarasi;
+    return { x0: c.x0, y0: c.y0, x1: c.x0 + c.w - 1, y1: c.y0 + c.h - 1 };
+  }
+
   /** "x:y" kimlikli hücrenin bilgisi (eski `hucreler.get`); kanonik olmayan ya da tanımsız hücre için tanımsız. */
   hucreBilgisi(id: string): HucreKaydi | undefined {
     const xy = idAyir(id);
@@ -440,6 +459,17 @@ export class HucreDizini {
    * `geometri.ts ilceMerkezi` ile AYNI tanım. Toplamlar sıradan bağımsızdır.
    */
   ilceMerkezi(no: number): [number, number] {
+    const onbellekte = this.merkezler[no];
+    if (onbellekte !== undefined) return onbellekte;
+    const m = this.ilceMerkeziHesapla(no);
+    this.merkezler[no] = m;
+    return m;
+  }
+
+  /** `ilceMerkezi` önbelleği: dizin değişmezdir (ilçe başına bir kez hesaplanır). */
+  private readonly merkezler: ([number, number] | undefined)[] = [];
+
+  private ilceMerkeziHesapla(no: number): [number, number] {
     let tx = 0;
     let ty = 0;
     let tn = 0;

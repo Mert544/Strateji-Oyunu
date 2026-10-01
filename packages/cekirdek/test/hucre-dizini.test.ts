@@ -569,11 +569,11 @@ describe("6. okuma hatası (HucreDiziniBuyukHatasi) komut sırasında atılırsa
     expect(s.uygula({ t: s.dunya.zaman, oyuncu: "a", komut: { tur: "parsel_al", ilce: "sn_m_ova_merkez", hucreler: serbest.slice(0, 2), sinif: "kirsal" } }).tamam).toBe(true);
   });
 
-  it("oyuncu_katil (bedava yurt planı hücreleri gezerken atar): oyuncu eklenmez, dünya aynı", () => {
+  it("oyuncu_katil (bedava yurt planı hücre durumunu okurken atar): oyuncu eklenmez, dünya aynı", () => {
     const s = hazirDunya();
     const once = s.durumOzeti();
     const oyuncular = s.dunya.oyuncular.length;
-    const spy = vi.spyOn(HucreDizini.prototype, "gez").mockImplementation(hata);
+    const spy = vi.spyOn(HucreDizini.prototype, "ilceBayti").mockImplementation(hata);
     try {
       expect(() => s.uygula({ t: s.dunya.zaman, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: "b", bolgeler: [], ilce: "sn_m_ova_merkez" } })).toThrow(HucreDiziniBuyukHatasi);
     } finally {

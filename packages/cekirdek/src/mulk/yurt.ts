@@ -21,7 +21,8 @@ import { carpBol } from "../sabit";
 import { PPM } from "../tipler";
 import type { Baglam, DerlenmisIcerik, DerlenmisMulk, Dunya, HucreDurumu, IlceDurumu, OyuncuId } from "../tipler";
 import { hucreBul, hucreEkle, ilceBul, ilceHucreEkle, mulkOyuncuAl } from "./durum";
-import { dizge, kumeSec } from "./geometri";
+import { dizge, halkaSay, kumeSecHalka } from "./geometri";
+import type { HucreYuklemi } from "./geometri";
 import { durumUygunMu } from "./hucreDizini";
 import { kamuHucreMi } from "./kamu";
 import { isletmeAl } from "./isletme";
@@ -40,33 +41,39 @@ function ilcePlani(d: Dunya, mk: DerlenmisMulk, ilce: IlceDurumu, n: number): Yu
   if (n > carpBol(ilce.uygunHucre, p.ilcePayTavaniPpm, PPM)) return `ilce yurt icin cok kucuk: ${ilce.id}`;
   const tanim = mk.ilceler.get(ilce.id);
   if (tanim === undefined) return `bilinmeyen ilce: ${ilce.id}`;
-  // İlçe merkezi: kasaba/şehir sınıfı uygun hücrelerin ağırlık merkezi (yoksa tüm uygun hücrelerin); kamu ilçe merkeziyle AYNI tanım.
-  // Kompakt hücre dizininden (docs/06 §15.11): hücre başına nesne yok; yineleme fikstür sırasında, seçim (uzaklık², kimlik dizesi) tam sıralıdır.
+  // İlçe merkezi: kasaba/şehir sınıfı uygun hücrelerin ağırlık merkezi (yoksa tüm uygun hücrelerin); kamu ilçe merkeziyle AYNI tanım (dizinde önbellekli).
+  // Halka araması (docs/06 §15.11): aday listesi KURULMAZ; üyelik (uygun ∧ sahipsiz ∧ ¬kamu [∧ ormansız] [∧ ayrılmamış]) doğrudan dizinden ve dünyadan
+  // sorulur, hücreler merkezden dışa halka halka (uzaklık², kimlik dizesi) sırasıyla gezilir. Sonuç eski tam sıralamalı `kumeSec` ile BİREBİR aynıdır.
   const dz = mk.dizin;
   const no = dz.ilceNo(ilce.id);
   const [cx, cy] = dz.ilceMerkezi(no);
-  const bos: { id: string; x: number; y: number; orman: boolean }[] = [];
-  dz.gez(no, (x, y, b) => {
-    if (!durumUygunMu(b)) return;
+  const cerceve = dz.ilceCercevesi(no);
+  // Kamu arsası (satılmaz) yurt seçiminde atlanır.
+  const bosMu: HucreYuklemi = (x, y) => {
+    const b = dz.ilceBayti(no, x, y);
+    if (b < 0 || !durumUygunMu(b)) return false;
     const id = `${x}:${y}`;
-    // Kamu arsası (satılmaz) yurt seçiminde atlanır.
-    if (hucreBul(d, id) === undefined && !kamuHucreMi(d, ilce.id, id)) bos.push({ id, x, y, orman: dz.ormanMi(no, x, y) });
-  });
-  if (bos.length < n) return `ilcede yeterli bos hucre yok: ${ilce.id} (${bos.length} < ${n})`;
+    return hucreBul(d, id) === undefined && !kamuHucreMi(d, ilce.id, id);
+  };
+  const ormansizMi: HucreYuklemi = (x, y) => bosMu(x, y) && !dz.ormanMi(no, x, y);
+  const ayrilmamisMi: HucreYuklemi = (x, y) => bosMu(x, y) && !mk.ayrilmis.has(`${x}:${y}`);
+  const ayrilmamisOrmansizMi: HucreYuklemi = (x, y) => ayrilmamisMi(x, y) && !dz.ormanMi(no, x, y);
+  // Her aşama doğrudan `kumeSecHalka` ile denenir: aday sayısı n'den azsa küme zaten kurulamaz (eski `length >= n` önkoşulu yalnız iş tasarrufuydu); böylece
+  // başarılı yolda ek bir halka taraması yapılmaz. `bos` sayısı yalnız SONUÇ BULUNAMAYINCA (hata iletisi için) sayılır.
   // Orman hücreleri yalnız yetmezse kullanılır.
-  const ormansiz = bos.filter((c) => !c.orman);
   // Yurt önce AYRILMIŞ DIŞINDAN (P3d, `yurtAyrilmisSonra`): ayrılmış havuz geç gelenler içindir. Küme önce ayrılmamış hücrelerden kurulur; ancak bağlı küme
   // başka türlü kurulamıyorsa ayrılmış hücreler YEDEK olarak dahil edilir (aday kümesi tüm uygun serbest hücreler; kural aynı: merkeze en yakın, kenar-bitişik).
+  const sec = (yuklem: HucreYuklemi): string[] | null => kumeSecHalka(yuklem, cerceve, n, cx, cy);
   if (p.yeniOyuncu.yurtAyrilmisSonra === true) {
-    const ayrilmamis = bos.filter((c) => !mk.ayrilmis.has(c.id));
-    const ayrilmamisOrmansiz = ayrilmamis.filter((c) => !c.orman);
-    const ilk = ayrilmamisOrmansiz.length >= n ? kumeSec(ayrilmamisOrmansiz, n, cx, cy) : null;
-    const ikinci = ilk ?? (ayrilmamis.length >= n ? kumeSec(ayrilmamis, n, cx, cy) : null);
+    const ikinci = sec(ayrilmamisOrmansizMi) ?? sec(ayrilmamisMi);
     if (ikinci !== null) return { ilce: ilce.id, hucreler: ikinci.sort(dizge) };
   }
-  const plan = ormansiz.length >= n ? kumeSec(ormansiz, n, cx, cy) : null;
-  const sonuc = plan ?? kumeSec(bos, n, cx, cy);
-  if (sonuc === null) return `ilcede ${n} hucrelik bitisik bos alan yok: ${ilce.id}`;
+  const sonuc = sec(ormansizMi) ?? sec(bosMu);
+  if (sonuc === null) {
+    // Sayım n'de keser; n'den küçükse TAM sayıdır (iletideki sayı eski `bos.length` ile aynı).
+    const bosSay = halkaSay(bosMu, cerceve, cx, cy, n);
+    return bosSay < n ? `ilcede yeterli bos hucre yok: ${ilce.id} (${bosSay} < ${n})` : `ilcede ${n} hucrelik bitisik bos alan yok: ${ilce.id}`;
+  }
   return { ilce: ilce.id, hucreler: sonuc.sort(dizge) };
 }
 
