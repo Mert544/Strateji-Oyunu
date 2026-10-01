@@ -10,7 +10,7 @@ function gorunum(ek: Partial<DukkanGorunumu> = {}): DukkanGorunumu {
 }
 
 function girdi(ek: Partial<OneriGirdisi> = {}): OneriGirdisi {
-  return { yapilar: [{ durum: "insaat", tur: "ciftlik" }], ekYapiMi: ekMi, dukkan: gorunum(), stokVar: true, oneriKapatildi: false, defterAtlandi: false, defterSiradaki: true, ...ek };
+  return { yapilar: [{ durum: "insaat", tur: "ciftlik" }], ekYapiMi: ekMi, dukkan: gorunum(), stokVar: true, dukkanKurulabilir: true, oneriKapatildi: false, defterAtlandi: false, defterSiradaki: true, ...ek };
 }
 
 function bellekDeposu(): Depo & { m: Map<string, string> } {
@@ -38,6 +38,12 @@ describe("D0 dükkân önerisi ve B7 Defter kartı kuralı", () => {
     expect(oneriDurumu(girdi({ stokVar: false }))).toBe("defter");
     expect(oneriDurumu(girdi({ dukkan: gorunum({ kurmaKarsilaniyor: false }) }))).toBe("defter");
     expect(oneriDurumu(girdi({ dukkan: gorunum({ kapali: true }) }))).toBe("defter");
+  });
+
+  it("kur eylemi bağlı değilse D0 kartı HİÇ çıkmaz (ölü uç yok): Defter kartı yerine geçer; atlanmışsa kart yok", () => {
+    expect(oneriDurumu(girdi({ dukkanKurulabilir: false }))).toBe("defter");
+    expect(oneriDurumu(girdi({ dukkanKurulabilir: false, defterAtlandi: true }))).toBeNull();
+    expect(oneriDurumu(girdi({ dukkanKurulabilir: true }))).toBe("dukkan");
   });
 
   it("dükkân verisi yoksa yalnız Defter kartı: atlanınca ya da sıradaki adım yoksa kart yok; atlanan yeniden çıkmaz", () => {

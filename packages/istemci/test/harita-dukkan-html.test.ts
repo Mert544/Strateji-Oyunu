@@ -56,8 +56,8 @@ describe("D0 öneri kartı ve B7 Defter kartı", () => {
     expect(dukkanMenusuHtml({ id: 8, durum: "insaat" }, true, "%40")).toContain("İptal et (iade %40)");
     expect(kaldirOnayHtml({ id: 8, durum: "insaat" }, "%40")).toContain("%40 kadarı geri gelir");
     expect(rafHtml(dukkan(), { malAdi, simdi: 0, kasaBirimSa: 120 })).toContain("Kasa saatte en çok 120 birim satar.");
-    expect(maliyetSatirlariHtml({ tur: "bakkal", durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9, indirim: { n: 3, yuzde: "%25" } })).toContain("İlk 3 yapında %25 indirim var.");
-    expect(maliyetSatirlariHtml({ tur: "bakkal", durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9 })).not.toContain("indirim var");
+    expect(maliyetSatirlariHtml({ tur: "bakkal", esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9, indirim: { n: 3, yuzde: "%25" } })).toContain("İlk 3 yapında %25 indirim var.");
+    expect(maliyetSatirlariHtml({ tur: "bakkal", esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9 })).not.toContain("indirim var");
   });
 
   it("D0: bölge, başlık bağı, kapat yalnız simgeli (aria-label), tek eylem 'Dükkân kur', boş raf notu", () => {
@@ -158,7 +158,7 @@ describe("D-2 tür seçimi", () => {
 });
 
 describe("D-3 maliyet satırları", () => {
-  const temel = { tur: "bakkal" as const, durum: "uygun" as const, arsaMili: 0, dukkanMili: 12_000_000, celikAdet: 8, parcaAdet: 2, sureSaat: 1.2, toplamMili: 12_000_001, hazineMili: 50_000_000, indirim: { n: 5, yuzde: "%30" } };
+  const temel = { tur: "bakkal" as const, esZamanliInsaat: 2, durum: "uygun" as const, arsaMili: 0, dukkanMili: 12_000_000, celikAdet: 8, parcaAdet: 2, sureSaat: 1.2, toplamMili: 12_000_001, hazineMili: 50_000_000, indirim: { n: 5, yuzde: "%30" } };
 
   it("etiket/değer satırları, bedel yukarı yuvarlı, hazine aşağı; birincil 'Dükkânı kur'", () => {
     const h = maliyetSatirlariHtml(temel);
@@ -373,6 +373,41 @@ describe("D-8 özet ve menü", () => {
     const i = kaldirOnayHtml({ id: 8, durum: "insaat" }, "%50");
     expect(i).toContain("İnşaatı iptal edersen ödediğin paranın ve malzemenin %50 kadarı geri gelir.");
     expect(i).toContain(`data-eylem="insaat-iptal-onayla"`);
+  });
+});
+
+describe("dukkan-duzelt: sabit sayı yok, D0 kartında Defter adımı, Dikkat yol göstermesi", () => {
+  const temel = { tur: "bakkal" as const, durum: "insaat-siniri" as const, arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9 };
+
+  it("inşaat sınırı uyarısı parametreden ('en çok 2'), sabit 3 değil", () => {
+    expect(maliyetSatirlariHtml({ ...temel, esZamanliInsaat: 2 })).toContain("Aynı anda en çok 2 inşaat sürebilir; birinin bitmesini bekle.");
+    expect(maliyetSatirlariHtml({ ...temel, esZamanliInsaat: 4 })).toContain("Aynı anda en çok 4 inşaat");
+  });
+
+  it("D0 kartı Defter'in sıradaki adımını soluk satır olarak taşır; Defter adımı yoksa satır yok", () => {
+    const h = ustKartHtml("dukkan", { metin: "Çiftliğinin tahılını sat.", odulHtml: "" });
+    expect(h).toContain(`data-tur="dukkan"`);
+    expect(h).toContain(`<p class="soluk" data-alan="oneri-defter">Sıradaki adım: Çiftliğinin tahılını sat.</p>`);
+    expect(h).not.toContain(`data-tur="defter"`);
+    expect(ustKartHtml("dukkan", null)).not.toContain("oneri-defter");
+    expect(oneriKartiHtml()).not.toContain("oneri-defter");
+  });
+
+  it("Dikkat: inşadaki dükkân stoksuzken D4.dikkat_stoksuz; stok varsa sessiz", () => {
+    const g = gorunum({ dukkanlar: [dukkan({ durum: "insaat", bitis: 3_600_000 })] });
+    expect(dukkanDikkatMaddeleri(g, malAdi, () => false).map((x) => x.baslik)).toEqual(["Dükkân hazır olunca rafına koyacak bir mal gerekecek."]);
+    expect(dukkanDikkatMaddeleri(g, malAdi, () => true)).toEqual([]);
+    expect(dukkanDikkatMaddeleri(g, malAdi, () => false)[0]?.tur).toBe("eksik");
+  });
+
+  it("Dikkat: açık dükkânın rafı TAMAMEN boşsa stok varken raf önerisi, yoksa boş raf uyarısı; 'başka mal var' yalnız en az bir yuva doluyken", () => {
+    const bos = dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })] });
+    const g = gorunum({ dukkanlar: [bos] });
+    expect(dukkanDikkatMaddeleri(g, malAdi, (m) => m === "gida").map((x) => x.baslik)).toEqual(["Rafına mal koy: boş rafta satış olmaz."]);
+    expect(dukkanDikkatMaddeleri(g, malAdi, () => false).map((x) => x.baslik)).toEqual(["Rafın boş: bir yuvaya mal koyunca satış başlar."]);
+    expect(dukkanDikkatMaddeleri(g, malAdi, (m) => m === "gida").some((x) => x.baslik.includes("başka mal"))).toBe(false);
+    const yarim = gorunum({ dukkanlar: [dukkan()] });
+    expect(dukkanDikkatMaddeleri(yarim, malAdi, (m) => m === "ekmek").map((x) => x.baslik)).toEqual(["Rafına koyabileceğin başka mal var"]);
   });
 });
 

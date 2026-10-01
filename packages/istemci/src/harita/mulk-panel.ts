@@ -352,6 +352,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       ekYapiMi,
       dukkan: g,
       stokVar: g ? rafaKonabilirStok(d.mallar, g.satilabilirMallar) : false,
+      dukkanKurulabilir: s.dukkanKur !== undefined,
       oneriKapatildi: depo.oku(ONERI_KAPALI_ANAHTARI) === "1",
       defterAtlandi: depo.oku(DEFTER_ATLA_ANAHTARI) === "1",
       defterSiradaki: defterUstKarti(defter, ad.mal) !== null,

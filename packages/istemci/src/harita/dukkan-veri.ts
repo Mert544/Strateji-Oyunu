@@ -100,6 +100,8 @@ export interface OneriGirdisi {
   dukkan: DukkanGorunumu | null;
   /** Depoda rafa konabilir stok var mı (`rafaKonabilirStok`). */
   stokVar: boolean;
+  /** "Dükkân kur" eylemi bağlı mı (`MulkPaneliSecenekleri.dukkanKur`). Bağlı değilse D0 kartı HİÇ çıkmaz (ölü uç olmasın): Defter kartı yerine geçer. */
+  dukkanKurulabilir: boolean;
   /** D0 kartı kapatıldı mı (kalıcı tercih). */
   oneriKapatildi: boolean;
   /** B7 Defter kartı atlandı mı (kalıcı tercih). */
@@ -120,12 +122,12 @@ export function rafaKonabilirStok(mallar: ReadonlyArray<{ mal: string; stokMili:
 
 /**
  * Üstte hangi kart gösterilir: dükkân önerisi (D0), Defter kartı (B7) ya da hiçbiri. Dükkân önerisi varken Defter kartı ona katlanır (iki kart üst üste
- * binmez). D0 koşulu (hepsi birden): kapalı değil, dükkân yok (inşadaki dahil), kart kapatılmamış, ilk üretim yapısının inşası başlamış, depoda rafa konabilir stok
+ * binmez; D0 kartı Defter'in sıradaki adımını soluk bir satır olarak içinde taşır). D0 koşulu (hepsi birden): kapalı değil, kur eylemi bağlı, dükkân yok (inşadaki dahil), kart kapatılmamış, ilk üretim yapısının inşası başlamış, depoda rafa konabilir stok
  * var (`stokVar`), ve kurma planlayıcısı dükkân bedelinin tamamını karşılıyor.
  */
 export function oneriDurumu(g: OneriGirdisi): "dukkan" | "defter" | null {
   const d = g.dukkan;
-  const dukkanOneri = d !== null && !d.kapali && d.dukkanlar.length === 0 && !g.oneriKapatildi && uretimTesisiBasladi(g.yapilar, g.ekYapiMi) && g.stokVar && d.kurmaKarsilaniyor;
+  const dukkanOneri = d !== null && g.dukkanKurulabilir && !d.kapali && d.dukkanlar.length === 0 && !g.oneriKapatildi && uretimTesisiBasladi(g.yapilar, g.ekYapiMi) && g.stokVar && d.kurmaKarsilaniyor;
   if (dukkanOneri) return "dukkan";
   return g.defterSiradaki && !g.defterAtlandi ? "defter" : null;
 }

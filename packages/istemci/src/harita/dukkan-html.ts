@@ -53,13 +53,15 @@ export function dukkanAdi(d: Pick<DukkanKaydi, "markaAd" | "tur">): string {
 // --- D-0 ve B7: üst kart -------------------------------------------------------------------------
 
 /** D-0 ilk dükkân önerisi (toast değil, Dikkat maddesi değil; kalıcı kart). Tek eylem "Dükkân kur" (`.eylem.ton`); kapat yalnız simgeli. */
-export function oneriKartiHtml(): string {
+export function oneriKartiHtml(defterAdimi?: string): string {
   return (
     `<div class="dk-oneri" role="region" aria-labelledby="dk-oneri-baslik" data-tur="dukkan" data-durum="acik">` +
     `<button type="button" class="ikon-dugme dk-oneri-kapat" data-eylem="oneri-kapat" aria-label="${enc("dukkan.D0.oneri_kapat")}">${ikon("x", 18)}</button>` +
     `<h4 id="dk-oneri-baslik">${enc("dukkan.D0.oneri_baslik")}</h4>` +
     `<p>${enc("dukkan.D0.oneri_govde")}</p>` +
     `<p class="dk-oneri-not">${enc("dukkan.D0.oneri_not")}</p>` +
+    // Defter'in sıradaki adımı (ör. "Çiftliğinin tahılını sat.") kart varken de görünür kalır: tek soluk satır
+    (defterAdimi ? `<p class="soluk" data-alan="oneri-defter">${enc("defter.ust.baslik")}: ${esc(defterAdimi)}</p>` : "") +
     `<button type="button" class="eylem ton" data-eylem="dukkan-kur">${enc("dukkan.D0.oneri_dugme")}</button>` +
     `</div>`
   );
@@ -110,7 +112,7 @@ export function dukkanBolumuHtml(g: DukkanGorunumu | null, o: DukkanBolumuSecene
 
 /** İşletmem panelinin en üstüne (kimlik satırından sonra) gelecek kart: dükkân önerisi, Defter kartı ya da boş. */
 export function ustKartHtml(durum: "dukkan" | "defter" | null, defter?: { metin: string; odulHtml: string } | null): string {
-  if (durum === "dukkan") return oneriKartiHtml();
+  if (durum === "dukkan") return oneriKartiHtml(defter?.metin);
   if (durum === "defter" && defter) return defterKartiHtml(defter.metin, defter.odulHtml);
   return "";
 }
@@ -168,6 +170,8 @@ export interface MaliyetGirdisi {
   hazineMili: number;
   /** İlk yapı indirimi (parametreden: kaç yapı, yüzde metni); yoksa not yazılmaz. */
   indirim?: { n: number; yuzde: string };
+  /** Aynı anda en çok inşaat (`param.mulk.esZamanliInsaat`; sabit yazılmaz). */
+  esZamanliInsaat: number;
   /** Yatırım tahmini (veri yoksa gizli): kırsal ilçede gün, genel süre. */
   yatirim?: { gun: number } | { saat: number };
   hata?: string;
@@ -194,7 +198,7 @@ export function maliyetSatirlariHtml(g: MaliyetGirdisi): string {
   if (g.indirim) s += `<p class="dk-not">${enc("dukkan.D3.indirim_notu", { n: g.indirim.n, yuzde: g.indirim.yuzde })}</p>`;
   if (g.durum === "pencere-bekliyor") s += `<p class="dk-not">${enc("dukkan.D3.pencere_bekleme")}</p>`;
   if (g.durum === "hazine-yetmiyor") s += `<div class="yk-uyari" role="status">${enc("dukkan.D3.hazine_yetmiyor", { n: yukari(g.toplamMili), m: paraMili(g.hazineMili, "asagi") })}</div>`;
-  if (g.durum === "insaat-siniri") s += `<div class="yk-uyari" role="status">${enc("dukkan.D3.insaat_siniri", { n: 3 })}</div>`;
+  if (g.durum === "insaat-siniri") s += `<div class="yk-uyari" role="status">${enc("dukkan.D3.insaat_siniri", { n: g.esZamanliInsaat })}</div>`;
   s += `<div class="dk-tahmin"${g.yatirim ? "" : " hidden"}><b>${enc("dukkan.D3.yatirim_baslik")}</b> ${g.yatirim ? ("gun" in g.yatirim ? enc("dukkan.D3.yatirim_kirsal", { n: g.yatirim.gun }) : enc("dukkan.D3.yatirim_genel", { sure: saatDakika(g.yatirim.saat) })) : ""}</div>`;
   if (g.hata) s += `<p class="dk-hata" role="alert">${esc(g.hata)}</p>`;
   s += `<div class="yk-dugmeler">`;
@@ -404,15 +408,25 @@ export interface DukkanDikkati {
   ilce?: string;
 }
 
-/** Dükkân Dikkat maddeleri (yalnız açık dükkânlar): boş raf, stoğu biten mal, kasa dolu, kampanya bitti, rafa konabilecek başka mal. */
+/**
+ * Dükkân Dikkat maddeleri. İnşadaki dükkân: rafa konabilir stok yoksa `D4.dikkat_stoksuz`. Açık dükkân: raf TAMAMEN boşsa stok varken `D4.raf_oneri`, yoksa
+ * `D5.bos_raf_uyari` (yol gösterir); `dikkat_mal_var` ("başka mal") yalnız en az bir yuva doluyken. Ayrıca stoğu biten mal, kasa dolu, kampanya bitti.
+ * `rafaKonabilir(mal)`: depoda o maldan stok var mı.
+ */
 export function dukkanDikkatMaddeleri(g: DukkanGorunumu | null, malAdi: (mal: string) => string, rafaKonabilir: (mal: string) => boolean = () => false): DukkanDikkati[] {
   if (!g || g.kapali) return [];
   const l: DukkanDikkati[] = [];
+  const stokVar = [...g.satilabilirMallar].some(rafaKonabilir);
   for (const d of g.dukkanlar) {
-    if (d.durum !== "acik") continue;
     const ilce = d.ilce ? { ilce: d.ilce } : {};
-    if (d.yuvalar.some((y) => y.mal === null)) {
-      const raftakiler = new Set(d.yuvalar.flatMap((y) => (y.mal ? [y.mal] : [])));
+    if (d.durum === "insaat") {
+      if (!stokVar) l.push({ tur: "eksik", baslik: m("dukkan.D4.dikkat_stoksuz"), ...ilce });
+      continue;
+    }
+    const doluYuva = d.yuvalar.filter((y) => y.mal !== null);
+    if (doluYuva.length === 0) l.push({ tur: "bosta", baslik: m(stokVar ? "dukkan.D4.raf_oneri" : "dukkan.D5.bos_raf_uyari"), ...ilce });
+    else if (d.yuvalar.some((y) => y.mal === null)) {
+      const raftakiler = new Set(doluYuva.map((y) => y.mal));
       if ([...g.satilabilirMallar].some((x) => !raftakiler.has(x) && rafaKonabilir(x))) l.push({ tur: "bosta", baslik: m("dukkan.D8.dikkat_mal_var"), ...ilce });
     }
     for (const y of d.yuvalar) if (y.mal !== null && !y.stokVar) l.push({ tur: "eksik", baslik: m("dukkan.D8.dikkat_stok", { mal: malAdi(y.mal) }), ...ilce });
