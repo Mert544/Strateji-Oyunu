@@ -46,12 +46,13 @@
   border: 1px solid var(--cizgi); background: transparent; color: var(--murekkep); white-space: nowrap;
   transition: background-color var(--sure-hizli) var(--ease-standart), transform var(--sure-anlik) var(--ease-standart);
 }
-.alt-dugmeler button:hover:not(:disabled), .yk-dugmeler button:hover:not(:disabled) { background: var(--yuzey-3); }
-.alt-dugmeler button:active:not(:disabled), .yk-dugmeler button:active:not(:disabled) { transform: scale(0.98); }
+.alt-dugmeler button:hover:not(:disabled), .yk-dugmeler button:hover:not(:is(:disabled, [aria-disabled="true"])) { background: var(--yuzey-3); }
+.alt-dugmeler button:active:not(:disabled), .yk-dugmeler button:active:not(:is(:disabled, [aria-disabled="true"])) { transform: scale(0.98); }
 .alt-dugmeler button[aria-pressed="true"] { border-color: transparent; background: var(--birincil-tint); color: var(--birincil-ink); }
 .alt-dugmeler .birincil, .yk-dugmeler .birincil { background: var(--birincil); color: var(--birincil-ustu); border-color: var(--birincil); font-weight: 600; }
-.alt-dugmeler .birincil:hover:not(:disabled), .yk-dugmeler .birincil:hover:not(:disabled) { background: var(--birincil-hover); border-color: var(--birincil-hover); }
-.alt-dugmeler .birincil:disabled, .yk-dugmeler .birincil:disabled { background: var(--yuzey-2); border-color: var(--yuzey-2); color: var(--murekkep-4); cursor: not-allowed; }
+.alt-dugmeler .birincil:hover:not(:disabled), .yk-dugmeler .birincil:hover:not(:is(:disabled, [aria-disabled="true"])) { background: var(--birincil-hover); border-color: var(--birincil-hover); }
+.alt-dugmeler .birincil:disabled, .yk-dugmeler .birincil:is(:disabled, [aria-disabled="true"]) { background: var(--yuzey-2); border-color: var(--yuzey-2); color: var(--murekkep-4); cursor: not-allowed; }
+.yk-dugmeler .birincil[aria-disabled="true"] { color: var(--murekkep-3); }
 .alt-dugmeler [hidden] { display: none; }
 
 /* ---- Parsel kartı ---- */

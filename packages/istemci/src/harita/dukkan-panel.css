@@ -7,6 +7,8 @@
 .dk-satir { display: flex; align-items: center; gap: var(--s-3); min-height: 56px; padding: var(--s-2) 0; border-bottom: 1px solid var(--cizgi-ince); }
 .dk-satir:last-child { border-bottom: 0; }
 .dk-satir .ikon { flex: none; color: var(--katman-pazar-ink); }
+.dk-satir > :not(.ikon, button) { min-width: 0; overflow-wrap: anywhere; }
+.dk-satir :is(.eylem, .mini-dugme) { flex: none; min-height: 44px; }
 .dk-satir[data-durum="insaat"] .soluk { color: var(--uyari-ink); }
 .dk-bos { padding: var(--s-4); }
 .dk-palet-kart { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 56px; padding: var(--s-3) var(--s-4); text-align: left; border: 1px solid var(--cizgi-ince); border-radius: var(--r-lg); background: var(--yuzey); color: var(--murekkep); font-size: var(--yazi-sm); }
@@ -48,10 +50,10 @@
 .dk-tahmin[hidden] { display: none; }
 /* D-5 raf: masaüstü 4 satır, telefon 2×2 */
 .dk-raf { display: flex; flex-direction: column; gap: var(--s-2); }
-.dk-yuva { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; min-height: 64px; padding: var(--s-2) var(--s-3); text-align: left; border: 1px solid var(--cizgi); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); font-size: var(--yazi-sm); }
+.dk-yuva { min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; min-height: 64px; padding: var(--s-2) var(--s-3); text-align: left; border: 1px solid var(--cizgi); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); font-size: var(--yazi-sm); }
 .dk-yuva[data-durum="bos"] { border-style: dashed; background: transparent; color: var(--murekkep-2); }
 /* Yuva durumları (A1 g9-dukkan-durum §2): renk tek başına anlam taşımaz; her biri yanında neden satırı (`dk-neden`) ya da şekil (çerçeve/şerit) taşır */
-.dk-yuva[data-durum="dolu-stoksuz"], .dk-yuva[data-durum="stoksuz"] { border-color: var(--uyari-cizgi); border-width: 2px; }
+.dk-yuva[data-durum="dolu-stoksuz"], .dk-yuva[data-durum="stoksuz"] { border-color: var(--uyari); border-width: 2px; }
 .dk-yuva[data-durum="dolu-karsilanmiyor"] { box-shadow: inset 3px 0 0 var(--uyari); }
 .dk-yuva[data-durum="dolu-kasa-dolu"] { box-shadow: inset 3px 0 0 var(--bilgi); }
 .dk-yuva[data-durum="dolu-kampanya-bitti"] { box-shadow: inset 3px 0 0 var(--ikincil); }
@@ -91,8 +93,11 @@
 .dk-onizleme b { color: var(--murekkep); font-weight: 600; overflow-wrap: anywhere; }
 .dk-palet { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .dk-simge, .dk-renk { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--cizgi); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); }
-.dk-renk { background: var(--renk, var(--yuzey-3)); border-color: transparent; }
+.dk-renk { background: var(--renk, var(--yuzey-3)); border-color: var(--cizgi-guclu); }
 .dk-simge[aria-checked="true"], .dk-renk[aria-checked="true"] { box-shadow: 0 0 0 2px var(--yuzey), 0 0 0 4px var(--odak); }
+/* Seçili halka (4 px) ile odak halkası ayrışsın: odak halkası seçili halkanın dışında */
+.dk-simge:focus-visible, .dk-renk:focus-visible { outline-offset: 5px; }
+.dk-panel .segment button:focus-visible { outline-offset: -2px; }
 /* D-8 satış görünümü */
 .dk-ozet { display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-3); border-radius: var(--r-md); background: var(--yuzey-2); }
 .dk-ozet-satir { margin: 0; font-size: var(--yazi-sm); color: var(--murekkep); font-variant-numeric: tabular-nums; }
@@ -108,16 +113,20 @@
   .dk-yuva { min-height: 72px; }
   .dk-secici, .dk-onay { position: fixed; z-index: var(--z-modal); left: 0; right: 0; bottom: 0; max-height: 60vh; overflow-y: auto; border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--golge-3); padding-bottom: calc(var(--s-4) + env(safe-area-inset-bottom)); }
   .dk-marka { position: fixed; inset: 0; z-index: var(--z-modal); padding: var(--s-4); overflow-y: auto; background: var(--yuzey); }
-  .dk-panel .segment button { min-width: 0; }
+  /* 360 px: dört kademe 328 px'e sığar (düğme iç boşluğu daralır, sözcük taşmaz) */
+  .dk-panel .segment button { min-width: 0; padding-inline: var(--s-1); overflow-wrap: anywhere; }
+  /* Dokunma hedefi ≥ 44 px (ince imleçli telefon önizlemesinde de): dükkân paneli, maliyet kartı düğmeleri, kapat; uzun etiket satıra sarılır */
+  .dk-panel :is(.eylem, .mini-dugme, .tehlike), .dk-onay :is(.eylem, .tehlike), #yapi-kart .yk-dugmeler button { min-height: 44px; white-space: normal; }
+  #yapi-kart .yk-baslik button { width: 44px; height: 44px; }
 }
 /* D. Ek: ilk dükkân önerisi (kart, İşletmem'in en üstü) ve maliyet kartında pencere stoğu satırı */
 .dk-oneri { position: relative; display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); padding-right: 52px; border-radius: var(--r-lg); background: var(--yuzey); color: var(--murekkep); box-shadow: inset 3px 0 0 var(--ikincil), var(--golge-2); }
 .dk-oneri[data-durum="kapali"] { display: none; }
 .dk-oneri-baslik { margin: 0; font-size: var(--yazi-md); font-weight: 600; line-height: var(--satir-md); }
 .dk-oneri-govde { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); }
+.dk-oneri .eylem { align-self: flex-start; min-height: 44px; white-space: normal; }
 /* Boş raf kararı: kit notu gövdenin altında tek satır, soluk değil (normal ağırlık, ana metin rengi) */
 .dk-oneri-not { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); font-weight: 400; color: var(--murekkep); }
-.dk-oneri .eylem { align-self: flex-start; min-height: 44px; }
 .dk-oneri-kapat { position: absolute; top: var(--s-1); right: var(--s-1); width: 44px; height: 44px; }
 .dk-stok { font-variant-numeric: tabular-nums; }
 .dk-stok[data-durum="eksik"] { color: var(--uyari-ink); }

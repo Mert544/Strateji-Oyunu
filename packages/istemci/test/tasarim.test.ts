@@ -55,11 +55,36 @@ describe("kontrast (WCAG 2.2)", () => {
       for (const e of ["il", "ilce", "mahalle", "su", "yol"]) ciftler.push([`harita-etiket-${e}`, "harita-kara"]);
       for (const [a, b] of ciftler) expect(kontrast(r(t, a), r(t, b)), `${a} / ${b}`).toBeGreaterThanOrEqual(4.5);
     });
+    it(`${ad}: G9 giriş ve dükkân ekranlarının ek metin çiftleri ≥ 4,5:1 (gr-*, dk-*)`, () => {
+      const ciftler: [string, string][] = [
+        ["birincil-ustu", "hata"], // .tehlike (Dükkânı kaldır onayı)
+        ["murekkep-2", "birincil-tint"], // .dk-tur[aria-pressed] içindeki .dk-tur-sayi
+        ["murekkep-2", "yuzey-3"], // .dk-palet-kart / .dk-mal hover
+        ["murekkep", "birincil-tint"],
+        ["hata-ink", "yuzey-2"], // .gr-hata alan zemini
+        ["uyari-ink", "ikincil-tint"],
+      ];
+      for (const [a, b] of ciftler) expect(kontrast(r(t, a), r(t, b)), `${a} / ${b}`).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`${ad}: aria-disabled soluk düğme (murekkep-3 / yuzey-2) okunur kalır ≥ 4,5:1; gerçek :disabled yalnız murekkep-4`, () => {
+      expect(kontrast(r(t, "murekkep-3"), r(t, "yuzey-2"))).toBeGreaterThanOrEqual(4.5);
+      expect(kontrast(r(t, "murekkep-3"), r(t, "yuzey"))).toBeGreaterThanOrEqual(4.5);
+    });
     it(`${ad}: arayüz bileşenleri ve anlam taşıyan grafik ≥ 3:1`, () => {
       const ciftler: [string, string][] = [
         ["cizgi-guclu", "yuzey"],
         ["odak", "yuzey"],
         ["odak", "zemin"],
+        ["odak", "yuzey-2"], // segment, gr-girdi/dk-girdi zemini
+        ["odak", "yuzey-3"],
+        ["odak", "birincil-tint"], // .dk-tur[aria-pressed], .ton
+        ["hata", "yuzey"], // [aria-invalid] kenarı (gr-girdi, dk-girdi)
+        ["uyari", "yuzey"], // .dk-yuva[data-durum=stoksuz] 2 px kenarı ve dolu-karsilanmiyor şeridi
+        ["bilgi", "yuzey"], // dolu-kasa-dolu şeridi
+        ["ikincil", "yuzey"], // dolu-kampanya-bitti şeridi, .dk-oneri şeridi
+        ["birincil", "yuzey"], // .dk-oneri[data-tur=defter] şeridi, İşletmem noktası, .dk-tur[aria-pressed] kenarı
+        ["birincil", "birincil-tint"], // .dk-tur[aria-pressed] kenarı ve zemini
+        ["cizgi-guclu", "yuzey-2"], // .dk-ozet, segment içindeki kontroller
         ["sen", "harita-kara"],
         ["secim", "harita-kara"],
         ["rozet-savas", "harita-kara"],

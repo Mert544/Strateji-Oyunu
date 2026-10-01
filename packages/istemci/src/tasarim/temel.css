@@ -70,8 +70,10 @@ a { color: var(--birincil-ink); }
 :is(.birincil, .komut-gonder, .dugme, .eylem):is(:disabled, [aria-disabled="true"]) {
   background: var(--yuzey-2); border-color: var(--yuzey-2); color: var(--murekkep-4);
 }
+/* aria-disabled (önleme: odak kalır, neden satırı yanında) okunur kalır: murekkep-3 / yuzey-2 ≥ 4,5:1 (gerçek :disabled yalnız murekkep-4) */
+:is(.birincil, .komut-gonder, .dugme, .eylem)[aria-disabled="true"] { color: var(--murekkep-3); }
 .ton, .eylem.ton, .dugme.ton { background: var(--birincil-tint); border-color: transparent; color: var(--birincil-ink); font-weight: 600; }
-.ton:hover:not(:is(:disabled, [aria-disabled="true"])), .eylem.ton:hover:not(:is(:disabled, [aria-disabled="true"])) { background: var(--birincil-cizgi); }
+.ton:hover:not(:is(:disabled, [aria-disabled="true"])), .eylem.ton:hover:not(:is(:disabled, [aria-disabled="true"])) { background: var(--birincil-tint); box-shadow: inset 0 0 0 1px var(--birincil-cizgi); }
 .hayalet, .dugme.hayalet { border-color: transparent; background: transparent; }
 .tehlike, .dugme.tehlike { background: var(--hata); border-color: var(--hata); color: var(--birincil-ustu); }
 .mini-dugme { min-height: 30px; padding: 0 var(--s-3); font-size: var(--yazi-sm); border-radius: var(--r-sm); }
