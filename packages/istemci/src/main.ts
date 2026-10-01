@@ -236,6 +236,16 @@ function baslat(): void {
           const h = p.simSaat();
           return h === null ? null : p.epochMs() + h * 3_600_000;
         };
+      // Küredeki mülk işaretleri: oyuncunun hücresi olan ilçelerin merkezleri (hiyerarşi bellekte; yalnız mülk kipinde)
+      const isaretle = (): void => {
+        const oz = document.hidden ? null : window.__harita?.baglanti()?.ozet?.();
+        if (!oz) return;
+        void import("./harita/veri").then(({ hiyerarsiYukle }) =>
+          hiyerarsiYukle().then((h) => s.mulkIsaretleriAyarla(oz.ilceHucre.flatMap(([k, n]) => (n > 0 && h.ilceler.get(k) ? [h.ilceler.get(k)!.merkez] : [])))),
+        );
+      };
+      isaretle();
+      window.setInterval(isaretle, 1500);
     },
   });
 
@@ -367,6 +377,7 @@ function baslat(): void {
   // Mülk kipi (sunucu bağlı ya da ?yerles=1): "Devlet seç" gösterilmez; giriş Yerleş ekranıyla başlar (bölge kipinde kalır).
   const mulkKipi = q.has("sunucu") || q.get("yerles") === "1";
   if (mulkKipi) document.body.classList.add("mulk-kipi");
+  s.mulkKipiAyarla(mulkKipi);
   devletAcici = () => {
     if (mulkKipi) bildir("Mülk kipinde devlet seçilmez: haritadan arsa alıp yapı kurarsın.", "bilgi");
     else devletKatmaniAc(benim !== -2);
