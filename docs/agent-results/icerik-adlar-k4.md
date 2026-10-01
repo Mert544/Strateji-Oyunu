@@ -37,3 +37,10 @@ Yok (yalniz gorunen ad degisimi; kimlikler ve sayilar degismedi, `kuralSurumu` v
 - Eski adlarin `packages/*/src` ve `packages/*/test` kullanimi (dondurulmus `fikstur-*` haric): yok; hicbir test degismedi.
 - Hedefli koşu (1 isci): `esik-budama-kanit`, `pazar-regresyon`, `sanayi-regresyon`, `mal-izdusumu-kanit`, `mulk-yapilar`, `teknoloji*`, `askeri*`, `packages/veri/test`, `harita-f4-yapi`: 20 dosya, 313 test gecti. Bolge altinlari birebir.
 - Not (T3'un etki notu, yamada degil): teknoloji adi "Mekanize tarim" ile yontem adi "Makineli tarim" tutarsiz; ayri karar.
+
+## Ucuncu commit: ad-degisim-3 (mekanize_tarim teknoloji adi)
+
+`SP/t3/ad-degisim-3.patch` (sha256 on 12 hane `7123303ac1d5`, uygulamadan once dogrulandi) DEGISTIRILMEDEN uygulandi: `icerik.json` `mekanize_tarim` teknolojisinin adi "Mekanize tarim" -> "Makineli tarim", aciklamasinda "mekanize tarim yontemini" -> "makineli tarim yontemini" (yontem adiyla tutarli). `mekanize_ordu` ayni kaldi.
+
+- Hedefli kosu (1 isci): bolge altinlari (`esik-budama-kanit`, `pazar-regresyon`, `sanayi-regresyon`), `mal-izdusumu-kanit`, `mulk-yapilar`, `teknoloji*`, `tarim*`, `packages/veri/test`, `harita-f4-yapi`: 23 dosya, 340 test gecti.
+- Kalan "Mekanize Tarim" metinleri yalniz dondurulmus `fikstur-b1/b2/icerik.json` kopyalarinda ve `botlar/src/onayarlar.ts` aciklama dizgelerinde (bot onayar metni, icerikten okunmuyor); degismedi.

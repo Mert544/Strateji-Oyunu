@@ -263,8 +263,8 @@
   ],
   "teknolojiler": [
     {
-      "id": "mekanize_tarim", "ad": "Mekanize tarım",
-      "aciklama": "Çiftliklerde mekanize tarım yöntemini açar: daha çok tahıl, daha az işçi; yakıt ve parça tüketir.",
+      "id": "mekanize_tarim", "ad": "Makineli tarım",
+      "aciklama": "Çiftliklerde makineli tarım yöntemini açar: daha çok tahıl, daha az işçi; yakıt ve parça tüketir.",
       "maliyet": 15000000, "sureGun": 2, "onKosullar": [],
       "acar": { "yontemler": ["mekanize_tarim"] }
     },
