@@ -27,6 +27,7 @@ Dünya sunucu kapalıyken de akar (sahip kararı, docs/12 §7). Varsayılan saat
 
 - **Yetişme:** açılışta son görüntü + kalan günlük uygulanır; dünya duvar saatinin gerisindeyse (`yetisiyor`) ana döngü 1 sim-saatlik adımlarla yetişir (uykusuz, her adımda olay döngüsüne nefes; görüntü 24 sim-saatte bir ve bitişte). İlerleme stdout'a `{"olay":"yetisme",...}` / `{"olay":"yetisti",...}` satırlarıyla (~1 sn'de bir) yazılır. Ölçü: sentetik harita + 2 bot, 30 gün ≈ 11 sn.
 - **Komut sözleşmesi:** yetişirken dışarıdan gelen yeni komut kuyruklanmaz, `yetisiyor` hata koduyla reddedilir (günlüğe girmez; işlenmiş anahtar ilk sonucuyla yanıtlanır). Bağlantı `hosgeldin.yetisiyor` ve sonraki `durum` mesajlarıyla ilerlemeyi ve bitişi öğrenir; istemci bitince aynı anahtarla yeniden dener. Sunucu botları yetişirken de karar verir (dünyanın zamanıyla damgalanır).
+- **Gerçek tarih için epoch:** mutlak saatli ve epoch'lu dünyada `hosgeldin.dunyaEpochMs` (epoch ms, isteğe bağlı alan; protokole yalnız ekleme) gelir: gerçek tarih = `dunyaEpochMs + simZamani`. Elle saatli (`--elle-saat`), birikimli/hızlı ya da epoch'suz dünyada alan HİÇ gönderilmez (test: `hosgeldin-epoch.test.ts`, `protokol.test.ts`).
 - **Monoton koruma:** duvar saati geri giderse (NTP) sim zamanı geri gitmez; saat eski değeri aşana kadar bekler, bir kez `uyari` olayı yazılır. Yeniden başlatmada duvar dünyadan gerideyse hata yoktur (`kurtarma.saatGeriMs`).
 - `--hiz` ≠ 1 ya da `--birikimli`: eski kapalıyken-duran saat (hızlandırılmış geliştirme dünyaları); `--elle-saat` ve testlerdeki `ElleSaat` değişmedi. `DuvarSaati`'na `duvar` işlevi enjekte edilebilir (testler sahte saatle koşar).
 - Henüz yok (çekirdek işi): kesinti adaleti (kesinti > 15 dk ise rastgele olumsuz olayların ön duyuru→etki geçişini kesinti kadar öteleme; canli-dunya-simulasyonu.md §2.2). Sunucu botlarının iç durumu görüntüye girmez, yeniden başlatmada sıfırlanır.
@@ -187,11 +188,37 @@ Ana iş parçacığındaki görüntü işi ≈ 100-112 ms → ≈ 15 ms (≈ 7 k
 ```sh
 BOLGE_AGIR_TEST=1 pnpm vitest run packages/sunucu/test/yuk.test.ts                                 # dosya deposu
 BOLGE_AGIR_TEST=1 BOLGE_YUK_DEPO=pg BOLGE_PG_URL=postgres://... pnpm vitest run packages/sunucu/test/yuk.test.ts
-# ayarlar: BOLGE_YUK_BOT (100), BOLGE_YUK_TUR (24), BOLGE_YUK_DEPO (bellek|dosya|pg), BOLGE_YUK_ABONE=0, BOLGE_YUK_GORUNTU_SAAT (6),
+# ayarlar: BOLGE_YUK_SENARYO (patlama|kademeli), BOLGE_YUK_BOT (100), BOLGE_YUK_TUR (24), BOLGE_YUK_DEPO (bellek|dosya|pg), BOLGE_YUK_ABONE=0, BOLGE_YUK_GORUNTU_SAAT (6),
 #          BOLGE_YUK_ISCI=0 (görüntü işçisi kapalı), BOLGE_YUK_ISINMA (4: ilk N tur ayrıca raporlanır), BOLGE_YUK_PROFIL=dosya.cpuprofile (ana iş parçacığı CPU profili)
 ```
 
 `@bolge/botlar` parsel botları (yalnız içe aktarılır, çekirdek/bot kodu değişmez) gerçek ws üzerinden bir sunucuya `katil` olur; her tur 6 sim-saat (zaman sıkıştırılmıştır: yük, canlı dünyadaki dakikalara değil birkaç saniyeye yığılır, bu yüzden bir gerçek yükün DÜŞMANCA üst sınırıdır). JSON rapor `raporlar/yuk/yuk-<zaman>.json` (git dışı) ve konsol özeti: uçtan uca komut gecikmesi (tüm komutlar, ilk `BOLGE_YUK_ISINMA` tur ve ısınma sonrası ayrı), sunucu commit gecikmesi, olay döngüsü gecikmesi (p50/p99/en büyük), CPU, bellek, görüntü maliyeti. Test düşerse aşama günlüğü, ortam ve pg durumu `=== YUK TESTI DUSTU: TANI ===` bloğunda basılır. `BOLGE_AGIR_TEST` yoksa test atlanır.
+
+**Senaryolar ve tek komutla tekrar** (G2'nin çekirdek maliyeti işi dahil önce/sonra ölçümü bununla alınır):
+
+```sh
+packages/sunucu/scripts/yuk.sh kademeli            # 100 bot, tur başına 5 bot katılır; dosya deposu
+packages/sunucu/scripts/yuk.sh patlama dosya 3     # mevcut patlama senaryosu, 3 tekrar
+BOLGE_PG_URL=postgres://... packages/sunucu/scripts/yuk.sh kademeli pg
+BOLGE_YUK_HEDEF_ZORUNLU=1 packages/sunucu/scripts/yuk.sh kademeli   # ısınmış p95 > 300 ms ise başarısız
+# ayarlar: BOLGE_YUK_KADEME (5; tur başına katılan bot), BOLGE_YUK_ISINMA (4), BOLGE_YUK_BOT (100), BOLGE_YUK_TUR, BOLGE_YUK_GORUNTU_SAAT, BOLGE_YUK_ISCI=0
+```
+
+Betik tek satırlık özet basar (senaryo, depo, tüm/katılım dönemi/ısınmış p50-p95, commit, olay döngüsü, makine yükü) ve ayrıntıyı `raporlar/yuk/*.json`'a yazar. Temiz bir çalışma ağacında (başka işlerin yarım değişiklikleri sonucu bozmasın) ve makine boşken koşun; sonuçta "yuk" (1 dk makine yük ortalaması) 4'ün çok üstündeyse mutlak değerler şişkindir, yalnız art arda alınan karşılaştırma anlamlıdır.
+- **patlama** (varsayılan): 100 bot baştan katılır; ilk turlarda hepsi aynı grup commit'inde pahalı kurulum komutları (parsel, yapı, ticaret) yollar. Gerçek trafiği değil, DÜŞMANCA üst sınırı ölçer.
+- **kademeli**: botlar tur başına `BOLGE_YUK_KADEME` (5) bot hızıyla katılır (1 tur = 6 sim-saat sıkıştırılmış zaman; "tur başına N bot" gerçek zamanda "dakikada N bot" ölçeğidir): 100 bot için 20 tur katılım dönemi, sonra `BOLGE_YUK_ISINMA` (4) tur ısınma, sonra 20 tur ısınmış durum. Rapor üç dilim verir: katılım dönemi, ilk turlar (katılım + ısınma) ve **ısınmış durum**.
+- **Hedef:** ısınmış durumda uçtan uca komut p95 ≤ 300 ms (`hedefP95Ms`, rapordaki `hedefIsinmisTuttu`). Alfa-0 için kabul edilen tanım budur; patlama için hedef yoktur (çekirdek maliyeti, aşağıda).
+
+Önce/sonra yerine iki senaryonun karşılaştırması (HEAD ce9a3ac; her hücre 6 koşunun medyanı, art arda koşuldu, **makine yükü 15-21 idi**: mutlak değerler yaklaşık 4 kat şişkin; ms):
+
+| Senaryo / depo | komut | tüm komutlar p95 (min-maks) | katılım dönemi p50 / p95 | ısınmış p50 / p95 (min-maks p95) | commit p95 (tüm) | olay döngüsü p99 / en büyük |
+| --- | --- | --- | --- | --- | --- | --- |
+| patlama, dosya | 1326 | 2118 (1111-2650) | - | 121 / 208 (171-283) | 1982 | 462 / 1020 |
+| patlama, pg | 1326 | 2191 (1424-2724) | - | 79 / 222 (128-334) | 2065 | 331 / 662 |
+| kademeli, dosya | 1275 | 429 (257-458) | 235 / 444 | 106 / 211 (118-302) | 379 | 379 / 879 |
+| kademeli, pg | 1275 | 340 (287-401) | 199 / 332 | 76 / 296 (99-361) | 308 | 382 / 560 |
+
+Okuma: kademeli katılımda tüm komutların p95'i patlamanın 1/5'i kadardır (kalan darboğaz katılım dönemindeki 5 botluk kurulum dalgaları); ısınmış p95 iki senaryoda da ≈ 210-300 ms (hedefin içinde, yüklü makinede bile; en kötü koşu 360 ms). Daha az yüklü bir koşuda (yük 11,5, `yuk.sh kademeli dosya`) tüm komutların p95'i 251 ms, ısınmış p95 117 ms çıktı (hedef tuttu). Boş makinede (bu ölçümlerin 4 kat altı yüklü) kademeli senaryonun tümünün 300 ms'in altına inmesi beklenir; çekirdek komut maliyeti işi (G2) bunu ve patlamayı iyileştirmelidir.
 
 **Ölçüm ortamı:** Intel Xeon 2.10 GHz, 4 çekirdek, 15.7 GB RAM, Linux 6.18, Node v22.22.2; sunucu, 100 bot ve test koşucusu AYNI süreçte ve aynı makinede (yerel pg 16, `fsync=off`; üretim donanımında diskli fsync commit'i yavaşlatır). Sentetik harita + sentetik-50 parsel (mülk kipi), 100 bot (95'inin `katil` komutu başarılı oldu), 24 tur, 1326-1588 komut (bot sürümüne göre), hiç protokol hatası yok. **Makine ölçüm sırasında başka geliştirme işleriyle paylaşıldı ve 4 çekirdeğe karşı ortalama 10-14 koşabilir iş vardı** (`yuk` sütunu): mutlak değerler yaklaşık 3 kat şişkindir, yalnız aynı koşulda art arda alınan "önce/sonra" karşılaştırması anlamlıdır.
 

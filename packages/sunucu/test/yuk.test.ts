@@ -9,6 +9,7 @@
  * commit gecikmesi (metrik histogramı), CPU ve bellek.
  *
  * Ortam: BOLGE_YUK_BOT (vars. 100), BOLGE_YUK_TUR (vars. 24 tur = 6 sim-günü), BOLGE_YUK_DEPO (bellek | dosya | pg; vars. dosya),
+ * BOLGE_YUK_SENARYO=kademeli (BOLGE_YUK_KADEME=5: tur başına katılan bot), BOLGE_YUK_ISINMA=4, BOLGE_YUK_HEDEF_ZORUNLU=1 (ısınmış p95 > 300 ms ise düşer),
  * BOLGE_YUK_ABONE=0 (ilçe aboneliği/kare yayını yok), BOLGE_YUK_GORUNTU_SAAT (görüntü aralığı, sim-saat; vars. 6), BOLGE_YUK_ISCI=0 (görüntü işçisi kapalı), BOLGE_YUK_PROFIL=dosya.cpuprofile (ana iş parçacığı CPU profili). Rapor: raporlar/yuk/yuk-<zaman>.json (git dışı) ve konsol özeti.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -40,13 +41,26 @@ import { SIR, token } from "./yardimci";
 const AGIR = process.env.BOLGE_AGIR_TEST === "1";
 const KOK = fileURLToPath(new URL("../../../", import.meta.url));
 const BOT = Number(process.env.BOLGE_YUK_BOT ?? 100);
-const TUR = Number(process.env.BOLGE_YUK_TUR ?? 24);
+/**
+ * Senaryo: "patlama" (vars.; tüm botlar baştan katılır, ilk turlarda hepsi aynı anda pahalı kurulum komutları yollar) ya da "kademeli"
+ * (botlar tur başına BOLGE_YUK_KADEME (vars. 5) bot hızıyla katılır; yük zamana yayılır). Yük turları sıkıştırılmıştır (1 tur = 6 sim-saat):
+ * "tur başına N bot" gerçek zamanda "dakikada N bot" ölçeğindedir. Kademeli kipte "ısınma" = katılımın bitişinden sonraki BOLGE_YUK_ISINMA tur.
+ */
+const SENARYO = process.env.BOLGE_YUK_SENARYO ?? "patlama";
+if (SENARYO !== "patlama" && SENARYO !== "kademeli") throw new Error(`BOLGE_YUK_SENARYO: patlama | kademeli (verilen: ${SENARYO})`);
+const KADEME = Math.max(1, Number(process.env.BOLGE_YUK_KADEME ?? 5));
+const KATILIM_BITIS = SENARYO === "kademeli" ? Math.ceil(Number(process.env.BOLGE_YUK_BOT ?? 100) / KADEME) : 0;
+/** Hedef p95 (ms): ısınmış durumda uçtan uca komut gecikmesi. BOLGE_YUK_HEDEF_ZORUNLU=1 ise aşılırsa test düşer (vars. yalnız raporlanır). */
+const HEDEF_P95_MS = 300;
 const DEPO = process.env.BOLGE_YUK_DEPO ?? "dosya";
 const ABONE = process.env.BOLGE_YUK_ABONE !== "0";
 /** Görüntü aralığı (sim-saat; vars. 6 = üretim varsayılanı). Yük turları 6 sim-saat/tur olduğundan 6'da HER turda görüntü alınır (sıkıştırılmış zaman). */
 const GORUNTU_SAAT = Number(process.env.BOLGE_YUK_GORUNTU_SAAT ?? 6);
 /** Isınma turları: ilk N tur (botların ilk parsel/tesis kurulum patlaması) ayrıca raporlanır; "ısınma sonrası" istatistikler sonrasını kapsar. */
 const ISINMA = Number(process.env.BOLGE_YUK_ISINMA ?? 4);
+/** Bu turdan (dahil) önceki komutlar "ilk turlar"a (patlama: ilk ISINMA tur; kademeli: katılım dönemi + ISINMA tur), sonrası "ısınmış"a yazılır. */
+const ISINMA_SON = KATILIM_BITIS + ISINMA;
+const TUR = Number(process.env.BOLGE_YUK_TUR ?? (SENARYO === "kademeli" ? ISINMA_SON + 20 : 24));
 /** Görüntü işçisi (worker_threads; vars. açık). BOLGE_YUK_ISCI=0: eşzamanlı (ana döngüde) görüntü: karşılaştırma için. */
 const ISCI = process.env.BOLGE_YUK_ISCI !== "0";
 /** Tanı anahtarları (vars. sunucu varsayılanı): BOLGE_YUK_DILIM = yazar uygulama dilimi ms (0 kapalı), BOLGE_YUK_PARCA = yayın parçası bağlantı sayısı (büyük değer = parçasız). */
@@ -176,30 +190,36 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
     }
     L(`${botlar.length} bot baglandi`);
 
-    // --- katılım: oyuncu kendi katilimini yapar (`katil {ilce}`) ---
+    // --- katılım: oyuncu kendi katilimini yapar (`katil {ilce}`); patlama: hepsi baştan, kademeli: tur başına KADEME bot ---
     let katilan = 0;
-    for (let i = 0; i < botlar.length; i += 10) {
-      await Promise.all(
-        botlar.slice(i, i + 10).map(async (b) => {
-          const r = await b.ist.katil(`katil-${b.id}`, b.bot.katilimIlcesi(yazar.sim));
-          if (r.tur === "komutSonucu" && r.sonuc.tamam) katilan++;
-        }),
-      );
-    }
-    L(`katilim: ${katilan}/${BOT} basarili`);
-    expect(katilan).toBeGreaterThanOrEqual(Math.floor(BOT * 0.9));
-    if (ABONE) {
-      for (const b of botlar) {
-        const o = yazar.sim.dunya.mulk?.oyuncular.find((x) => x.id === b.id);
-        const ilceler = (o?.ilceHucre ?? []).map((x) => x.ilce);
-        if (ilceler.length > 0) b.ist.gonder({ tur: "abone", ilceler });
+    const katil = async (grup: typeof botlar): Promise<void> => {
+      for (let i = 0; i < grup.length; i += 10) {
+        await Promise.all(
+          grup.slice(i, i + 10).map(async (b) => {
+            const r = await b.ist.katil(`katil-${b.id}`, b.bot.katilimIlcesi(yazar.sim));
+            if (r.tur === "komutSonucu" && r.sonuc.tamam) katilan++;
+          }),
+        );
       }
+      if (ABONE) {
+        for (const b of grup) {
+          const o = yazar.sim.dunya.mulk?.oyuncular.find((x) => x.id === b.id);
+          const ilceler = (o?.ilceHucre ?? []).map((x) => x.ilce);
+          if (ilceler.length > 0) b.ist.gonder({ tur: "abone", ilceler });
+        }
+      }
+    };
+    if (SENARYO === "patlama") {
+      await katil(botlar);
+      L(`katilim: ${katilan}/${BOT} basarili`);
+      expect(katilan).toBeGreaterThanOrEqual(Math.floor(BOT * 0.9));
     }
 
     // --- yük turları ---
     const gecikme: number[] = [];
     const gecikmeIlk: number[] = [];
     const gecikmeSicak: number[] = [];
+    const gecikmeKatilim: number[] = [];
     let isinmaSonuCommit = 0;
     let komut = 0;
     let basarili = 0;
@@ -235,6 +255,14 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
       const hedef = yazar.sim.dunya.zaman + 6 * SAAT;
       saat.ilerlet(hedef);
       await yazar.durgunlukBekle(hedef);
+      // Kademeli katılım: bu turun katılımcıları (katılım komutu gecikmeye girmez; botların ilk karar komutları girer).
+      if (SENARYO === "kademeli" && tur <= KATILIM_BITIS) {
+        await katil(botlar.slice((tur - 1) * KADEME, tur * KADEME));
+        if (tur === KATILIM_BITIS) {
+          L(`katilim: ${katilan}/${BOT} basarili (kademeli, tur basina ${KADEME})`);
+          expect(katilan).toBeGreaterThanOrEqual(Math.floor(BOT * 0.9));
+        }
+      }
       // Karar anı: dünya tutarlıdır (sunucu döngüsü yalnız `await` noktalarında ilerler); kararlar senkron verilir.
       const bas = performance.now();
       const gonderilecek: Array<{ b: (typeof botlar)[number]; komutlar: ReturnType<ParselBotu["karar"]> }> = [];
@@ -253,7 +281,8 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
             b.ist.komut(anahtar, k).then((r) => {
               const gk = performance.now() - g0;
               gecikme.push(gk);
-              (tur <= ISINMA ? gecikmeIlk : gecikmeSicak).push(gk);
+              (tur <= ISINMA_SON ? gecikmeIlk : gecikmeSicak).push(gk);
+              if (tur <= KATILIM_BITIS) gecikmeKatilim.push(gk);
               if (r.tur === "komutSonucu") {
                 if (r.sonuc.tamam) basarili++;
                 else basarisiz++;
@@ -266,7 +295,7 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
         });
       }
       await Promise.all(bekleyen);
-      if (tur === ISINMA) isinmaSonuCommit = yazar.metrikler.commit.sayi;
+      if (tur === ISINMA_SON) isinmaSonuCommit = yazar.metrikler.commit.sayi;
       L(`tur ${tur}/${TUR}: komut=${komut} seq=${yazar.seq} goruntu=${yazar.metrikler.goruntu} isci=${yazar.goruntuIsiSuruyor ? "mesgul" : "bos"}`);
       const m = process.memoryUsage();
       bellekler.push(m.heapUsed);
@@ -287,6 +316,7 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
     gecikme.sort((a, b) => a - b);
     gecikmeIlk.sort((a, b) => a - b);
     gecikmeSicak.sort((a, b) => a - b);
+    gecikmeKatilim.sort((a, b) => a - b);
     const ozet = (d: number[]) => ({ n: d.length, p50Ms: yuvarla(nicelik(d, 0.5)), p95Ms: yuvarla(nicelik(d, 0.95)), p99Ms: yuvarla(nicelik(d, 0.99)), maxMs: yuvarla(d.at(-1) ?? 0) });
     const commitSicak = [...((m.commit as { ornekler?: () => readonly number[] }).ornekler?.() ?? [])].slice(isinmaSonuCommit).sort((a, b) => a - b);
     // Görüntü maliyeti (son dünya): ana döngüde eşzamanlı üretim, gzip, yapısal kopya ve işçiye `postMessage` (ana iş parçacığında kalan iş).
@@ -320,7 +350,7 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
     const rapor = {
       tarih: new Date().toISOString(),
       makine: { cpu: cpus()[0]?.model ?? "?", cekirdek: cpus().length, bellekGB: yuvarla(totalmem() / 2 ** 30), node: process.version, platform: process.platform },
-      yapilandirma: { bot: BOT, tur: TUR, simSaatTur: 6, depo: DEPO, abone: ABONE, isci: ISCI, goruntuAraligiSimSaat: GORUNTU_SAAT, commitMs: yazar.commitAraligiMs, harita: "sentetik + sentetik-50 parsel (mulk kipi)" },
+      yapilandirma: { senaryo: SENARYO, bot: BOT, tur: TUR, simSaatTur: 6, depo: DEPO, abone: ABONE, isci: ISCI, goruntuAraligiSimSaat: GORUNTU_SAAT, commitMs: yazar.commitAraligiMs, harita: "sentetik + sentetik-50 parsel (mulk kipi)" },
       sonuc: {
         katilan,
         komut,
@@ -332,7 +362,12 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
         simGunu: yuvarla(yazar.sim.dunya.zaman / (24 * SAAT), 2),
         gecenSn: yuvarla(sureMs / 1000, 2),
         komutSn: yuvarla(komut / (sureMs / 1000), 1),
+        senaryo: SENARYO,
+        ...(SENARYO === "kademeli" ? { kademeTurBasinaBot: KADEME, katilimBitisTuru: KATILIM_BITIS, uctanUcaKatilimDonemi: ozet(gecikmeKatilim) } : {}),
         isinmaTurSayisi: ISINMA,
+        isinmaBitisTuru: ISINMA_SON,
+        hedefP95Ms: HEDEF_P95_MS,
+        hedefIsinmisTuttu: gecikmeSicak.length > 0 && nicelik(gecikmeSicak, 0.95) <= HEDEF_P95_MS,
         uctanUcaIlkTurlar: ozet(gecikmeIlk),
         uctanUcaIsinmaSonrasi: ozet(gecikmeSicak),
         commitIsinmaSonrasi: { p50Ms: yuvarla(nicelik(commitSicak, 0.5)), p95Ms: yuvarla(nicelik(commitSicak, 0.95)) },
@@ -363,6 +398,7 @@ async function yukGovdesi(L: (m: string) => void): Promise<void> {
     expect(yazar.olumculMu).toBe(false);
     expect(m.goruntuHatasi).toBe(0);
     expect(nicelik(gecikme, 0.95)).toBeLessThan(5000);
+    if (process.env.BOLGE_YUK_HEDEF_ZORUNLU === "1") expect(nicelik(gecikmeSicak, 0.95), `isinmis p95 hedefi (${HEDEF_P95_MS} ms)`).toBeLessThanOrEqual(HEDEF_P95_MS);
     expect(metin).toContain("bolge_commit_gecikme_ms_count");
 
     // Başarılı koşu: kapanış (bot bağlantıları, sunucu, pg satırları) `temizlik` kapatıcılarıyla, ters sırayla.

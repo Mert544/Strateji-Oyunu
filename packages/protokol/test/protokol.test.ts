@@ -95,6 +95,18 @@ describe("mesaj semalari", () => {
   });
 });
 
+describe("hosgeldin.dunyaEpochMs (yalniz ekleme)", () => {
+  const hos = { tur: "hosgeldin", protokolSurumu: PROTOKOL_SURUMU, kuralSurumu: "k", oyuncu: "o", yonetici: false, simZamani: 0, seq: 0, hiz: 1, dizin: { bolgeler: [], mallar: [], tesisTurleri: [], yontemler: [], birlikler: [], teknolojiler: [] } };
+  it("alan yoksa gecerli (eski/elle saatli sunucu); varsa tamsayi epoch ms gecerli; gecersiz tipler reddedilir", () => {
+    expect(sunucuMesajiCoz(JSON.stringify(hos)).tamam).toBe(true);
+    const r = sunucuMesajiCoz(JSON.stringify({ ...hos, dunyaEpochMs: 1_790_802_000_000 }));
+    expect(r.tamam).toBe(true);
+    expect(r.tamam && r.mesaj.tur === "hosgeldin" ? r.mesaj.dunyaEpochMs : null).toBe(1_790_802_000_000);
+    expect(sunucuMesajiCoz(JSON.stringify({ ...hos, dunyaEpochMs: "2026-09-30" })).tamam).toBe(false);
+    expect(sunucuMesajiCoz(JSON.stringify({ ...hos, dunyaEpochMs: 1.5 })).tamam).toBe(false);
+  });
+});
+
 describe("sen yokken (donus ozeti) mesajlari", () => {
   const ozet = {
     surum: 1 as const,

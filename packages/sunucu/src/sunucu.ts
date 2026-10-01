@@ -487,6 +487,8 @@ export async function sunucuBaslat(s: SunucuSecenekleri): Promise<CalisanSunucu>
         seq: yazar.seq,
         hiz: yazar.saat.hiz,
         ...(yazar.yetisiyor ? { yetisiyor: true, hedefZamani: yazar.yetismeDurumu().hedefZamani } : {}),
+        // Gerçek tarih için: yalnız mutlak saatli ve epoch'lu dünyada (elle saatte hiç gönderilmez).
+        ...(yazar.saat.mutlak && yazar.dunyaEpochMs !== null ? { dunyaEpochMs: yazar.dunyaEpochMs } : {}),
         ...(donusOzeti ? { donusOzeti } : {}),
         dizin: yazar.dizin(),
       });

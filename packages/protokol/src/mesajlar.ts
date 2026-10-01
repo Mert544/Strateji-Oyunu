@@ -179,6 +179,11 @@ export type SunucuMesaji =
       /** Yetişme hedefi (sim ms; duvar saatinin şimdiki sim zamanı). Yalnız yetişirken. */
       hedefZamani?: Ms;
       /**
+       * Dünyanın duvar saati epoch'u (epoch ms; bir Türkiye gece yarısı): mutlak saatli dünyada gerçek tarih = `dunyaEpochMs + simZamani`.
+       * Elle saatli ya da epoch'suz dünyada ALAN YOKTUR (istemci gerçek tarih göstermez). İsteğe bağlı: eski sunucularda da yok.
+       */
+      dunyaEpochMs?: number;
+      /**
        * "Sen yokken" özeti (yalnız oyuncu kimliği, yetişme bitmiş, yokluk ≥ 1 sa ve oyuncunun başka açık bağlantısı yokken). Yetişme sürüyorsa
        * yoktur: özet yetişme bitince ayrı `donusOzeti` mesajıyla gelir.
        */
@@ -327,6 +332,7 @@ export const SunucuMesajiSemasi = z.discriminatedUnion("tur", [
     hiz: z.number(),
     yetisiyor: z.boolean().optional(),
     hedefZamani: tam.optional(),
+    dunyaEpochMs: tam.optional(),
     donusOzeti: DonusOzetiSemasi.optional(),
     dizin: dizinSemasi,
   }),
