@@ -23,6 +23,9 @@
  *   ayrılmış hücre, artımlı fiyat) satın alınır, sonra `tesis_insa_hucre` kurallarıyla inşaat başlar. Arsa ve yapı bedeli tek
  *   hazine denetiminden geçer; ilde işletme yoksa aynı komutla açılır (etiket/rezerv il merkezinden, malzeme açılış kitinden
  *   denetlenir). Herhangi bir denetim başarısızsa hiçbir şey değişmez (başarısız komut yan etkisiz kuralı).
+ *   İsteğe bağlı `siniflar` (hücrelerle aynı uzunluk; `siniflar[i]`, `hucreler[i]`'nin sınıfı): verilirse her sahipsiz hücre KENDİ
+ *   sınıfında denetlenir ve fiyatlanır (iki sınıfa düşen yapı tek komutta atomik alınır); `sinif` yalnız geçerli bir değer olmalıdır, kullanılmaz.
+ *   Sahip olunan hücrelerin sınıfı denetlenmez (bugünkü `sinif` davranışı gibi). Verilmezse `sinif` davranışı birebir aynıdır.
  * - parsel_birak {ilce, hucreler}: oyuncunun, üzerinde yapı ya da inşaat olmayan hücreleri; hücre bedelinin
  *   `parselBirakIadePpm`'i (%70) hazineye iade edilir, hücreler sahipsiz olur; arazi değeri, ilçe hücre sayacı ve ilçenin
  *   `satilmisHucre`'si düşer (fiyat çarpanı geri iner). Yurt hücrelerinin bedeli 0'dır (iade 0). İşletme düğümü kalır.
@@ -149,7 +152,8 @@ function ayrilmisGun(mk: DerlenmisMulk): number {
 interface AlimPlani {
   ilce: IlceDurumu;
   liste: string[];
-  sinif: ArsaSinifi;
+  /** `liste` ile hizalı: her hücrenin alım sınıfı (tek sınıflı alımda hepsi aynıdır). */
+  siniflar: ArsaSinifi[];
   fiyat: Mili;
   /** Listedeki AYRILMIŞ hücre sayısı: taban fiyattan satılır, satış payı çarpanından muaftır (docs/06 §15.7). */
   ayrilmis: number;
@@ -159,22 +163,27 @@ interface AlimPlani {
  * `parsel_al` denetimleri (hazine dışında): hücreler fikstürde bu ilçede, uygun, komut sınıfında, sahipsiz, ayrılmışsa
  * yeni oyuncu; ilçe başına 72 / %25 sınırı; ilçede yeterli boş hücre. `liste` sıralı ve tekrarsız olmalıdır.
  */
-function alimPlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ilce: IlceDurumu, liste: string[], sinif: ArsaSinifi): AlimPlani | string {
+function alimPlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ilce: IlceDurumu, liste: string[], sinif: ArsaSinifi | readonly ArsaSinifi[]): AlimPlani | string {
   const p = mk.p;
+  // Tek sınıf (tüm hücreler aynı) ya da hücre başına sınıf (`liste` ile hizalı).
+  const siniflar: ArsaSinifi[] = typeof sinif === "string" ? liste.map(() => sinif) : [...sinif];
+  if (siniflar.length !== liste.length) return `siniflar hucrelerle ayni uzunlukta olmali (${siniflar.length} / ${liste.length})`;
   // Ayrılmış hücreler (yeni oyuncu hakkı): yalnız katılımının ilk `ayrilmisGun` gününde olanlara satılır.
   const katilma = oyuncuBul(d, oyuncu)?.katilmaZamani;
   const yeniOyuncuMu = katilma !== undefined && d.zaman < katilma + mk.ayrilmisSureMs;
   const mo0 = mulkOyuncuBul(d, oyuncu);
   // Çok hesaplı alıcıya karşı (docs/06 §15.1): ayrılmış hücre yalnız KATILIM ilçesinde satılır (kural parametreyle açıksa).
   const yalnizKatilimIlcesi = p.yeniOyuncu.ayrilmisYalnizKatilimIlcesi === true;
-  for (const id of liste) {
+  for (let i = 0; i < liste.length; i++) {
+    const id = liste[i] as string;
+    const sn = siniflar[i] as ArsaSinifi;
     const f = mk.hucreler.get(id);
     if (f === undefined || f.ilce !== ilce.id) return `hucre bu ilcede degil: ${id}`;
     if (!f.hucre.uygun) return `hucre satin alinamaz (${f.hucre.engel ?? "uygun degil"}): ${id}`;
     // Kamu arsası (docs/06 §15.6) satılmaz: mahalle paketi, ilçe merkezi, kıyı şeridi, hazine rezervi.
     const kamu = kamuBilgisi(d, ilce.id, id);
     if (kamu !== undefined) return `hucre kamu arsasi (satilmaz): ${id} (${kamu.tur}, ${kamu.sahip})`;
-    if (f.hucre.sinif !== sinif) return `hucre sinifi uyusmuyor: ${id} (${f.hucre.sinif}, komut ${sinif})`;
+    if (f.hucre.sinif !== sn) return `hucre sinifi uyusmuyor: ${id} (${f.hucre.sinif}, komut ${sn})`;
     const sahipli = hucreBul(d, id);
     if (sahipli !== undefined) return `hucre zaten sahipli: ${id} (${sahipli.sahip})`;
     if (!yeniOyuncuMu && mk.ayrilmis.has(id)) return `hucre yeni oyunculara ayrilmis (katilimin ilk ${ayrilmisGun(mk)} gunu): ${id}`;
@@ -203,10 +212,15 @@ function alimPlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ilce: IlceDuru
     const bugun = ilce.ayrilmisGunluk !== undefined && ilce.ayrilmisGunluk.gun === Math.floor(d.zaman / GUN) ? ilce.ayrilmisGunluk.adet : 0;
     if (bugun + ayrilmis > tavan) return `ilcede gunluk ayrilmis satis tavani asildi: ${ilce.id} (tavan ${tavan}, bugun ${bugun}, istenen ${ayrilmis})`;
   }
+  // Fiyat hücre başına, hücrenin KENDİ sınıfıyla (`alimUygula` ile aynı sıra: yalnız ayrılmamış hücreler artımlı eğriyi ilerletir).
   let fiyat = 0;
-  for (let k = 0; k < liste.length - ayrilmis; k++) fiyat += hucreFiyatiParametreyle(p, ilce, sinif, k, false);
-  fiyat += ayrilmis * hucreFiyatiParametreyle(p, ilce, sinif, 0, true);
-  return { ilce, liste, sinif, fiyat, ayrilmis };
+  let normal = 0;
+  for (let i = 0; i < liste.length; i++) {
+    fiyat += mk.ayrilmis.has(liste[i] as string)
+      ? hucreFiyatiParametreyle(p, ilce, siniflar[i] as ArsaSinifi, 0, true)
+      : hucreFiyatiParametreyle(p, ilce, siniflar[i] as ArsaSinifi, normal++, false);
+  }
+  return { ilce, liste, siniflar, fiyat, ayrilmis };
 }
 
 /** Satın almayı uygular: hazineden fiyatı düşer (önceden denetlenmiş olmalı), işletme düğümünü açar, hücreleri ekler. */
@@ -220,8 +234,9 @@ function alimUygula(d: Dunya, ctx: Baglam, mk: DerlenmisMulk, oyuncu: OyuncuId, 
   for (let i = 0; i < plan.liste.length; i++) {
     const id = plan.liste[i] as string;
     // Ayrılmış hücre taban fiyattan (satış payı çarpanından muaf); diğerleri artımlı (yalnız normal satışlar eğriyi ilerletir).
-    const deger = mk.ayrilmis.has(id) ? hucreFiyatiParametreyle(p, plan.ilce, plan.sinif, 0, true) : hucreFiyatiParametreyle(p, plan.ilce, plan.sinif, normal++, false);
-    const h: HucreDurumu = { id, ilce: plan.ilce.id, sinif: plan.sinif, sahip: oyuncu, degerMili: deger, alinma: d.zaman };
+    const sn = plan.siniflar[i] as ArsaSinifi;
+    const deger = mk.ayrilmis.has(id) ? hucreFiyatiParametreyle(p, plan.ilce, sn, 0, true) : hucreFiyatiParametreyle(p, plan.ilce, sn, normal++, false);
+    const h: HucreDurumu = { id, ilce: plan.ilce.id, sinif: sn, sahip: oyuncu, degerMili: deger, alinma: d.zaman };
     hucreEkle(m, h);
     mo.araziDegeriMili += deger;
   }
@@ -564,6 +579,18 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
       if (typeof yontem === "string") return hata(yontem);
       const liste = yapiHucreleri(tur, k.hucreler);
       if (typeof liste === "string") return hata(liste);
+      // Hücre başına sınıf (isteğe bağlı): `siniflar[i]` = `hucreler[i]`'nin sınıfı; `liste` sıralandığından kimliğe eşlenir.
+      let sinifOf: Map<string, ArsaSinifi> | null = null;
+      if (k.siniflar !== undefined) {
+        const sl: unknown = k.siniflar;
+        if (!Array.isArray(sl)) return hata("siniflar dizi olmali");
+        if (sl.length !== (k.hucreler as string[]).length) return hata(`siniflar hucrelerle ayni uzunlukta olmali (${sl.length} / ${(k.hucreler as string[]).length})`);
+        sinifOf = new Map();
+        for (let i = 0; i < sl.length; i++) {
+          if (!SINIFLAR.includes(sl[i] as ArsaSinifi)) return hata(`gecersiz arsa sinifi: ${String(sl[i])}`);
+          sinifOf.set((k.hucreler as string[])[i] as string, sl[i] as ArsaSinifi);
+        }
+      }
       const yeni: string[] = [];
       for (const id of liste) {
         const h = hucreBul(d, id);
@@ -575,7 +602,7 @@ export function mulkKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: MulkKomut
         if (h.ilce !== ilce.id) return hata(`hucre bu ilcede degil: ${id}`);
         if (h.tesis !== undefined || h.insaat !== undefined) return hata(`hucre bos degil: ${id}`);
       }
-      const alim = yeni.length > 0 ? alimPlani(d, mk, oyuncu, ilce, yeni, k.sinif) : null;
+      const alim = yeni.length > 0 ? alimPlani(d, mk, oyuncu, ilce, yeni, sinifOf === null ? k.sinif : yeni.map((id) => sinifOf.get(id) as ArsaSinifi)) : null;
       if (typeof alim === "string") return hata(alim);
       const plan = yapiPlani(d, ctx, mk, oyuncu, ilce, tur, liste, yeni.length > 0);
       if (typeof plan === "string") return hata(plan);

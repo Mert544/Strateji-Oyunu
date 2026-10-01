@@ -67,6 +67,8 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
     tesisTuru: kimlik,
     hucreler: z.array(kimlik).max(5),
     sinif: z.enum(["kirsal", "kasaba", "sehir"]),
+    // Hücre başına sınıf (yalnız ekleme): `hucreler` ile aynı uzunluk (çekirdek denetler); verilirse `sinif` yerine her hücre kendi sınıfıyla alınır.
+    siniflar: z.array(z.enum(["kirsal", "kasaba", "sehir"])).max(5).optional(),
     olcek: olcekSecimi.optional(),
     yontem: kimlik.optional(),
   }),

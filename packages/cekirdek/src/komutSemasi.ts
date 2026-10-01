@@ -59,7 +59,7 @@ export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   parsel_al: { yol: "oyuncu", alanlar: { ilce: "kimlik", hucreler: "kimlik", sinif: "secim" } },
   tesis_insa_hucre: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", olcek: "secim", yontem: "kimlik" } },
   insaat_iptal: { yol: "oyuncu", alanlar: { insaat: "kimlik" } },
-  yapi_yerlestir: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", sinif: "secim", olcek: "secim", yontem: "kimlik" } },
+  yapi_yerlestir: { yol: "oyuncu", alanlar: { ilce: "kimlik", tesisTuru: "kimlik", hucreler: "kimlik", sinif: "secim", siniflar: "secim", olcek: "secim", yontem: "kimlik" } },
   parsel_birak: { yol: "oyuncu", alanlar: { ilce: "kimlik", hucreler: "kimlik" } },
 };
 

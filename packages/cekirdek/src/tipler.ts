@@ -1028,7 +1028,8 @@ export type MulkKomutu =
   | { tur: "tesis_insa_hucre"; ilce: string; tesisTuru: string; hucreler: HucreId[]; olcek?: 0 | 1 | 2; yontem?: string }
   | { tur: "insaat_iptal"; insaat: number }
   // Atomik "yapı önce yerleşim": `hucreler` yapının TÜM hücreleri (kenar-bitişik, yuva sayısınca); oyuncunun olmayan (sahipsiz) hücreler
-  // `sinif` sınıfında satın alınır ve inşaat başlar; herhangi bir denetim başarısızsa hiçbir şey değişmez.
-  | { tur: "yapi_yerlestir"; ilce: string; tesisTuru: string; hucreler: HucreId[]; sinif: ArsaSinifi; olcek?: 0 | 1 | 2; yontem?: string }
+  // `sinif` sınıfında satın alınır ve inşaat başlar; herhangi bir denetim başarısızsa hiçbir şey değişmez. İsteğe bağlı `siniflar`
+  // (`hucreler` ile aynı uzunluk) verilirse her hücre kendi sınıfında denetlenir ve fiyatlanır (iki sınıfa düşen yapı tek komutta alınır).
+  | { tur: "yapi_yerlestir"; ilce: string; tesisTuru: string; hucreler: HucreId[]; sinif: ArsaSinifi; siniflar?: ArsaSinifi[]; olcek?: 0 | 1 | 2; yontem?: string }
   // Üzerinde yapı/inşaat olmayan kendi hücrelerini bırakır; hücre bedelinin `parselBirakIadePpm`'i (%70) iade edilir.
   | { tur: "parsel_birak"; ilce: string; hucreler: HucreId[] };
