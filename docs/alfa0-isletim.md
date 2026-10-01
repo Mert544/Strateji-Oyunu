@@ -14,7 +14,7 @@ Tek makinede (sunucu + Postgres 16, Docker Compose) açık alfayı işleten kiş
 2. `$D restart sunucu`: liste çalışırken yeniden yüklenmez. Liste bozuk, yok ya da boşsa sunucu açılmaz.
 3. Denetim: kontrol listesi adım 12 (`hazir` olayındaki `davetli` adedi). Davetsiz adrese aynı yanıt verilir ama posta gitmez: [KIMLIK.md, kayıt kapısı](../packages/sunucu/KIMLIK.md). Listeden çıkarmak açık oturumu kapatmaz.
 4. Alfa-0 bitince listeyi silin (KVKK).
-5. Hesap silme talebi: oyuncu oyun içinden ister, e-postasına gelen bağlantıyla onaylar; sunucu hesabı, oturumlarını ve adını siler. Mülk devredilmez, oyuncu günlükte anonim kalır (e-posta ve ad günlükte hiç yoktur). Sizin işiniz: silinen kişinin adresini davet listesinden çıkarmak (yukarıdaki madde 1-2). Adım adım denetim: kontrol listesi adım 15 ve [KIMLIK.md](../packages/sunucu/KIMLIK.md) §6. Kendiniz hesap ya da oyuncu satırı silmeyin.
+5. Hesap silme talebi: oyuncu oyun içinden ister, e-postasına gelen bağlantıyla onaylar; sunucu hesabı, oturumlarını ve adını siler. Mülk devredilmez, oyuncu günlükte anonim kalır (e-posta ve ad günlükte hiç yoktur). Sizin işiniz: silinen kişinin adresini davet listesinden çıkarmak (yukarıdaki madde 1-2). Adım adım denetim: kontrol listesi adım 15 ve [KIMLIK.md](../packages/sunucu/KIMLIK.md) §6. Kendiniz hesap ya da oyuncu satırı silmeyin. Ekrandan çalışması için ters vekil `/giris/*` yolunu sunucuya iletmeli ve `IZINLI_KOKENLER` istemcinin sunulduğu kökeni içermeli (aksi hâlde 403).
 
 ## 3. Test dünyası silme
 
