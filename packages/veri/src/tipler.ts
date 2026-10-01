@@ -554,6 +554,35 @@ export interface MulkEkYapiTanimi {
   emirYuvasi?: number;
 }
 
+/**
+ * Kamu arsası parametreleri (docs/12 §10, docs/06 §15.6). Tanımlıysa çekirdek mülk dünyasını KURARKEN her ilçenin kamu kümesini
+ * hesaplar ve dünya durumuna DONDURUR (satılmaz; sonradan parametre değişse de kayma olmaz). Tanımsızsa kamu kuralı yoktur
+ * (eski dünyalar ve testler). Değerler baş liderin kararıdır (docs/12 §10), kalibre edilmedi.
+ */
+export interface MulkKamuParametreleri {
+  /**
+   * Mahalle paketi: mahalle başına SABİT hücre; sırayla yerleştirilir (ilki mahalle merkezine en yakın). Varsayılan:
+   * meydan 5 + pazar 7 + park 8 = 20 hücre.
+   */
+  mahallePaketi: { tur: "meydan" | "pazar" | "park" | "hizmet" | "kiyi" | "sanayi_rezervi" | "hazine"; hucre: number }[];
+  /** Mahalle verisi YOKSA: ilçe başına kümelenecek mahalle sayısı = max(1, yuvarlama(uygun / bu değer)). */
+  mahalleHucreHedefi: number;
+  /** Hazine rezervi: ilçenin uygun hücrelerinin bu payı (ppm; aşağı yuvarlanır); dikdörtgen adalar olarak (kenar-bitişik, bütünlüklü). */
+  hazineRezerviPpm: number;
+  /** Hazine rezervi adalarının hedef boyutu (hücre); ada sayısı = min(ceil(rezerv / hazineAdaHucre), hazineEnFazlaAda). */
+  hazineAdaHucre: number;
+  /** Hazine rezervi ada sayısı tavanı (birkaç büyük dikdörtgen ada; küçük ilçede tek ada olur). */
+  hazineEnFazlaAda: number;
+  /** İlçe merkezi alanı (hücre, 8–12): ilçe merkezine (yurt seçimindeki tanım) en yakın kenar-bitişik küme. */
+  ilceMerkeziHucre: number;
+  /** Kıyı şeridi derinliği (hücre): su (`engel: "su"`) hücresine bu uzaklıktaki (Manhattan) uygun hücreler. 0 = kıyı şeridi yok. */
+  kiyiDerinlik: number;
+  /** Kıyı ilçesi sayılmak için ilçede en az bu kadar su hücresi (küçük göletler kıyı sayılmaz). */
+  kiyiIlceMinSuHucre: number;
+  /** Mülk kipinde oyuncuya KAPALI ek yapı kimlikleri (kamu yapısı; ör. "muhtarlik"). */
+  oyuncuyaKapaliYapilar: string[];
+}
+
 /** Mülk kipi parametreleri (S3). Para alanları mili-para (1 ₺ = 1000), oranlar ppm. */
 export interface MulkParametreleri {
   /** Hücre başına taban fiyat (mili-para), arsa sınıfına göre. */
@@ -608,6 +637,8 @@ export interface MulkParametreleri {
   ekYapilar?: Record<string, MulkEkYapiTanimi>;
   /** İşletme (oyuncu, il) başına temel ticaret emri yuvası; Ticaret ofisi `emirYuvasi` ekler. Yoksa emir sayısı sınırsızdır. */
   temelEmirYuvasi?: number;
+  /** Kamu arsası (docs/06 §15.6); yoksa kamu kuralı kapalıdır (dünya `mulk.kamu` taşımaz). */
+  kamu?: MulkKamuParametreleri;
   /** Hareketsizlik merdiveni (docs/11 §7.8): yalnız veri yeri; kurallar sonraki iş. */
   hareketsizlik: {
     uykuGun: number;

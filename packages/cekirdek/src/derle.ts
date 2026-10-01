@@ -5,7 +5,8 @@
 import type { ParselHucreTanimi, ParselIlceTanimi } from "@bolge/veri";
 import { carpBol } from "./sabit";
 import { GUN, PPM } from "./tipler";
-import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, HucreId } from "./tipler";
+import { kamuGrubuHucreKimlikleri, kamuKumeleriHesapla } from "./mulk/kamu";
+import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, HucreId, KamuKumesi } from "./tipler";
 
 /** Kimlik listesinden kimlik -> indeks eşlemesi; tekrarlanan kimlikte hata. Prototipsiz nesne (örn. "constructor" güvenli). */
 function indeksle(tur: string, kimlikler: readonly string[]): Record<string, number> {
@@ -147,9 +148,13 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
       emirYuvasi: t.emirYuvasi ?? 0,
     });
   }
-  const ayrilmis = ayrilmisHucreler(f.ilceler, p.yeniOyuncu.ayrilmisHucrePpm);
+  // Kamu arsası (`p.kamu`): her ilçenin kamu kümesi (mülk dünyası kurulurken dondurulur); ayrılmış hücre hesabından düşülür.
+  const kamu = p.kamu === undefined ? undefined : kamuKumeleriHesapla(f, p.kamu);
+  const ayrilmis = ayrilmisHucreler(f.ilceler, p.yeniOyuncu.ayrilmisHucrePpm, kamu);
   const ayrilmisSureMs = (p.yeniOyuncu.ayrilmisGun ?? AYRILMIS_GUN_VARSAYILAN) * GUN;
-  return { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisSureMs };
+  const sonuc: DerlenmisMulk = { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisSureMs };
+  if (kamu !== undefined) sonuc.kamu = kamu;
+  return sonuc;
 }
 
 /** Ayrılmış hücre süresinin varsayılanı (gün). */
@@ -169,11 +174,16 @@ export function hucreKarmasi(id: string): number {
  * Yeni oyunculara ayrılmış hücreler: her ilçenin uygun hücreleri (karma, kimlik) sırasıyla dizilir ve ilk
  * `floor(uygun × ayrilmisPpm / PPM)` tanesi ayrılır (karma kimlikten türediği için dağılım ilçeye yayılır, seçim deterministiktir).
  */
-function ayrilmisHucreler(ilceler: readonly ParselIlceTanimi[], ayrilmisPpm: number): Set<HucreId> {
+function ayrilmisHucreler(ilceler: readonly ParselIlceTanimi[], ayrilmisPpm: number, kamu?: ReadonlyMap<string, KamuKumesi>): Set<HucreId> {
   const kume = new Set<HucreId>();
   if (ayrilmisPpm <= 0) return kume;
   for (const c of ilceler) {
-    const uygun = c.hucreler.filter((h) => h.uygun).map((h) => ({ id: h.id, k: hucreKarmasi(h.id) }));
+    // Kamu arsası (satılmaz) ayrılmış hücre paydasına ve kümesine girmez.
+    const kk = kamu?.get(c.id);
+    const kamuKimlikleri = new Set<string>();
+    for (const gr of kk?.gruplar ?? []) for (const id of kamuGrubuHucreKimlikleri(gr)) kamuKimlikleri.add(id);
+    const kamuMu = (id: string): boolean => kamuKimlikleri.has(id);
+    const uygun = c.hucreler.filter((h) => h.uygun && !kamuMu(h.id)).map((h) => ({ id: h.id, k: hucreKarmasi(h.id) }));
     const adet = carpBol(uygun.length, ayrilmisPpm, PPM);
     if (adet <= 0) continue;
     uygun.sort((x, y) => x.k - y.k || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));

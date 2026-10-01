@@ -5,14 +5,33 @@
  * - `hucreler`: hücre kimliği, `ilceler`: ilçe kimliği, `oyuncular`: oyuncu kimliği, `isletmeler`: (oyuncu, il).
  * İşletme düğümünün bölge kimliği `<il>#<oyuncu>`'dur (il kimlikleri "#" içermez).
  */
+import { KAMU_ALGORITMA_SURUMU } from "./kamu";
 import type { DerlenmisMulk, Dunya, HucreDurumu, IlceDurumu, IsletmeDugumu, MulkDurumu, MulkOyuncuDurumu, Ms, OyuncuId } from "../tipler";
 
-/** Fikstürün tüm ilçeleriyle (kimliğe göre sıralı, satılmış 0) boş mülk durumu. */
+/**
+ * Fikstürün tüm ilçeleriyle (kimliğe göre sıralı, satılmış 0) boş mülk durumu. `mulk.kamu` parametresi varsa her ilçenin kamu
+ * kümesi burada DONDURULUR (`kamu`) ve `uygunHucre` kamu düşülmüş (satılabilir) sayıdır; yoksa `kamu` alanı hiç yazılmaz.
+ */
 export function mulkDurumuKur(m: DerlenmisMulk): MulkDurumu {
-  const ilceler: IlceDurumu[] = [...m.fikstur.ilceler]
-    .sort((a, b) => dizgeKarsilastir(a.id, b.id))
-    .map((c) => ({ id: c.id, il: c.il, seviye: c.seviye, uygunHucre: c.uygunHucre, satilmisHucre: 0 }));
-  return { hucreler: [], ilceler, isletmeler: [], oyuncular: [] };
+  const siralilar = [...m.fikstur.ilceler].sort((a, b) => dizgeKarsilastir(a.id, b.id));
+  const ilceler: IlceDurumu[] = siralilar.map((c) => ({
+    id: c.id,
+    il: c.il,
+    seviye: c.seviye,
+    uygunHucre: c.uygunHucre - (m.kamu?.get(c.id)?.sayi ?? 0),
+    satilmisHucre: 0,
+  }));
+  const durum: MulkDurumu = { hucreler: [], ilceler, isletmeler: [], oyuncular: [] };
+  const kamu = m.kamu;
+  if (kamu !== undefined && m.p.kamu !== undefined) {
+    durum.kamuParametre = structuredClone(m.p.kamu);
+    durum.kamuSurumu = KAMU_ALGORITMA_SURUMU;
+    durum.kamu = siralilar.map((c) => {
+      const k = kamu.get(c.id);
+      return { ilce: c.id, gruplar: (k?.gruplar ?? []).map((g) => ({ sahip: g.sahip, tur: g.tur, dikdortgenler: [...g.dikdortgenler] })) };
+    });
+  }
+  return durum;
 }
 
 /** JS dize sırası (oyuncuBul ile tutarlı). */

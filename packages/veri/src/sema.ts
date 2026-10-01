@@ -376,6 +376,22 @@ const mulkEkYapiSema = z
   })
   .strict();
 
+const mulkKamuSema = z
+  .object({
+    mahallePaketi: z
+      .array(z.object({ tur: z.enum(["meydan", "pazar", "park", "hizmet", "kiyi", "sanayi_rezervi", "hazine"]), hucre: pozitif }).strict())
+      .min(1, "mahalle paketi bos olamaz"),
+    mahalleHucreHedefi: pozitif,
+    hazineRezerviPpm: ppmSiniri,
+    hazineAdaHucre: pozitif,
+    hazineEnFazlaAda: pozitif,
+    ilceMerkeziHucre: negatifOlmayan,
+    kiyiDerinlik: negatifOlmayan.max(8, "en fazla 8 olabilir"),
+    kiyiIlceMinSuHucre: pozitif,
+    oyuncuyaKapaliYapilar: z.array(kimlik),
+  })
+  .strict();
+
 const mulkSema = z
   .object({
     hucreFiyati: z.object({ kirsal: negatifOlmayan, kasaba: negatifOlmayan, sehir: negatifOlmayan }).strict(),
@@ -402,6 +418,7 @@ const mulkSema = z
       .strict(),
     ekYapilar: z.record(kimlik, mulkEkYapiSema).optional(),
     temelEmirYuvasi: negatifOlmayan.optional(),
+    kamu: mulkKamuSema.optional(),
     hareketsizlik: z
       .object({
         uykuGun: negatifOlmayan,

@@ -26,6 +26,9 @@ export function mulkVeri(duzenle?: (v: CekirdekVeriPaketi) => void): CekirdekVer
 /** `mulkVeri` ile aynı, ama `parametreler.json`'daki yeni oyuncu paketi (yurt, indirim, ayrılmış hücre) açık. */
 export function mulkVeriTam(duzenle?: (v: CekirdekVeriPaketi) => void): CekirdekVeriPaketi {
   const v: CekirdekVeriPaketi = { ...miniVeriyiYukle(), parsel: parselFiksturuYukle("mini-6") };
+  // Kamu arsası (docs/06 §15.6) KAPALI: mini-6 ilçeleri ~85 uygun hücre; lider kararındaki 20 hücrelik mahalle paketi ilçenin ~%40'ını alırdı.
+  // Eski mülk testlerinin sayı ve hücre varsayımları (72/%25 sınırları, hücre seçimi, yurt) korunur; kamu kuralı `mulk-kamu.test.ts`'te sınanır.
+  delete v.param.mulk?.kamu;
   duzenle?.(v);
   return v;
 }

@@ -20,6 +20,7 @@ import type {
   IklimOlayTuru,
   KenarTuru,
   MalTanimi,
+  MulkKamuParametreleri,
   MulkParametreleri,
   Parametreler,
   ParselFiksturu,
@@ -95,10 +96,19 @@ export interface DerlenmisMulk {
   ekYapilar: DerlenmisEkYapi[];
   /** Ek yapı kimliği -> `ekYapilar` indeksi. */
   ekYapiIndeks: Map<string, number>;
-  /** Yeni oyunculara ayrılmış hücreler (ilçe başına hücre kimliği karmasıyla seçilmiş; durum değil, türetilmiş). */
+  /** Yeni oyunculara ayrılmış hücreler (ilçe başına hücre kimliği karmasıyla seçilmiş; durum değil, türetilmiş). Kamu hücreleri girmez. */
   ayrilmis: Set<HucreId>;
+  /** Kamu arsası (`p.kamu` tanımlıysa): ilçe kimliği -> türetilmiş kamu kümesi (dünya kurulurken donduruluyor); aksi halde tanımsız. */
+  kamu?: Map<string, KamuKumesi>;
   /** Ayrılmış hücrelerin satıldığı süre (ms, katılımdan itibaren). */
   ayrilmisSureMs: Ms;
+}
+
+/** Türetilmiş (derleme zamanı) ilçe kamu kümesi: kompakt gruplar ve toplam hücre sayısı. */
+export interface KamuKumesi {
+  gruplar: KamuGrubuDurumu[];
+  /** Toplam kamu hücresi. */
+  sayi: number;
 }
 
 /** Derlenmiş ek yapı tanımı (`MulkEkYapiTanimi`; maliyet mal indeksine çevrilmiş, sıralı). */
@@ -752,6 +762,62 @@ export interface MulkDurumu {
   isletmeler: IsletmeDugumu[];
   /** Oyuncu kimliğine göre sıralı. */
   oyuncular: MulkOyuncuDurumu[];
+  /**
+   * Kamu arsası (docs/06 §15.6): her ilçenin DONDURULMUŞ kamu kümesi (ilçe kimliğine göre sıralı; fikstürün her ilçesi için bir kayıt).
+   * Dünya kurulurken `mulk.kamu` parametresiyle bir kez hesaplanır ve sonra DEĞİŞMEZ (parametre değişse de kayma olmaz).
+   * Kamu hücreleri hiçbir zaman `hucreler`e girmez (satılmaz). `mulk.kamu` parametresi olmadan kurulmuş dünyada TANIMSIZDIR
+   * (kural kapalı; özet eskisiyle aynı).
+   */
+  kamu?: KamuIlceDurumu[];
+  /** Kamu kümesini dondururken kullanılan parametreler (`mulk.kamu`; denetim için; değişmez). `kamu` ile birlikte yazılır. */
+  kamuParametre?: MulkKamuParametreleri;
+  /** Kamu kümesini üreten algoritmanın sürümü (şimdi 1). `kamu` ile birlikte yazılır. */
+  kamuSurumu?: number;
+}
+
+/** Kamu sahibi kimliği önekleri: `k:mahalle:<id>`, `k:ilce:<id>`, `k:il:<id>`; oyuncu kimlikleri `k:` ile başlayamaz. */
+export const KAMU_SAHIP_ONEKI = "k:";
+
+/** Kamu türü (docs/06 §15.6): tür kodları veridir. */
+export type KamuTuru = "meydan" | "pazar" | "park" | "hizmet" | "kiyi" | "sanayi_rezervi" | "hazine";
+
+/** Bir ilçenin dondurulmuş kamu kümesi (dünya durumu; kompakt, kanonik). */
+export interface KamuIlceDurumu {
+  ilce: string;
+  /** (sahip, tür) sırasıyla (JS dize sırası), tekil çift. Kamusuz ilçede boş. */
+  gruplar: KamuGrubuDurumu[];
+}
+
+/**
+ * Aynı sahibe ve türe ait kamu hücreleri, DİKDÖRTGEN blok listesi olarak saklanır: `dikdortgenler` düz dörtlü listesidir
+ * `[x0, y0, x1, y1, x0, y0, x1, y1, ...]` (kapsayıcı köşeler; satırlarda x0 ≤ x1, y0 ≤ y1). Dikdörtgenler YALNIZ UYGUN kamu hücrelerini
+ * içerir (yol, su gibi uygunsuz hücre bloğun içine girmez; blok sayısı hücre sayısıyla değil geometriyle ölçeklenir). Kanonik: (y0, x0)
+ * ile kesin artan; gruplar içinde ve arasında ayrık. Kodlayıcının kuralı: ızgara satır satır taranır, aynı (sahip, tür) ve aynı [x0, x1]
+ * aralıklı ardışık satırlar tek dikdörtgende birleştirilir. Okuma API'si (`kamuHucreleri`, `kamuBilgisi`, `kamuHucreMi`,
+ * `kamuBloklari`) kodlamayı gizler; tüketiciler bu alana bağlanmamalıdır.
+ */
+export interface KamuGrubuDurumu {
+  /** `k:mahalle:<id>` (meydan, pazar, park) ya da `k:ilce:<id>` (ilçe merkezi, kıyı, hazine); ileride `k:il:<id>`. */
+  sahip: string;
+  tur: KamuTuru;
+  dikdortgenler: number[];
+}
+
+/** Okuma API'si: bir kamu bloğu (kapsayıcı dikdörtgen; yalnız uygun hücreleri kapsar). */
+export interface KamuBlok {
+  sahip: string;
+  tur: KamuTuru;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** Okuma API'sinin döndürdüğü açık biçim: aynı sahip ve türdeki hücre kimlikleri (JS dize sırasıyla sıralı). */
+export interface KamuGrubu {
+  sahip: string;
+  tur: KamuTuru;
+  hucreler: HucreId[];
 }
 
 /** Tesisin kapladığı hücreler (1–3). */

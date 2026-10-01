@@ -15,6 +15,8 @@ import type { CekirdekVeriPaketi, Komut } from "../src/tipler";
 
 function olcekKosusu(oyuncuSayisi: number, gun: number): Record<string, number> {
   const veri: CekirdekVeriPaketi = { ...varsayilanVeriyiYukle(), parsel: parselFiksturuYukle("sentetik-50") };
+  // Kamu arsası (docs/06 §15.6) KAPALI: betik hücreleri kamudan habersiz sırayla alır; bu test ölçek/akış sınar (kamu `mulk-kamu`'da).
+  delete veri.param.mulk?.kamu;
   const f = veri.parsel!;
   const etiket = new Map(veri.harita.bolgeler.map((b) => [b.id, b.etiketler]));
   const ilMerkez = new Map(f.iller.map((i) => [i.id, i.bolge]));

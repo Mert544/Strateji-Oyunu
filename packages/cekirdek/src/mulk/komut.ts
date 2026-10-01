@@ -4,8 +4,8 @@
  * Hepsi ya da hiçbiri: tüm denetimler önce yapılır, sonra durum değişir; başarısız komut dünyayı (hazinenin temsili dahil)
  * değiştirmez (docs/06 §14 başarısız komut sözleşmesi). Mülk kipi kapalıysa her mülk komutu reddedilir.
  *
- * - parsel_al {ilce, hucreler, sinif}: hücreler fikstürde bu ilçede, uygun ve komuttaki sınıfta olmalı, kimseye ait olmamalı,
- *   tekrarlanmamalı. Sınır: oyuncu ilçede en çok `ilceHucreTavani` (72) hücre ve uygun hücrelerin en çok `ilcePayTavaniPpm`
+ * - parsel_al {ilce, hucreler, sinif}: hücreler fikstürde bu ilçede, uygun, KAMU ARSASI OLMAYAN (docs/06 §15.6) ve komuttaki
+ *   sınıfta olmalı, kimseye ait olmamalı, tekrarlanmamalı. Sınır: oyuncu ilçede en çok `ilceHucreTavani` (72) hücre ve uygun hücrelerin en çok `ilcePayTavaniPpm`
  *   (%25) kadarı. Fiyat hücre başına artımlı: k. hücre için taban[sınıf] × (1 + 2 × (satılmış + k) / uygun), tamsayı
  *   (aşağı yuvarlanır; mili-para). Toplu alım indirim yaratmaz. İlk parsel ilde (oyuncu, il) işletme düğümünü açar.
  *   Bitişiklik (Earth2 kuralı) sunucunun coğrafi doğrulamasındadır; çekirdek denetlemez.
@@ -69,6 +69,7 @@ import {
   mulkOyuncuBul,
 } from "./durum";
 import { isletmeAl } from "./isletme";
+import { kamuBilgisi } from "./kamu";
 import { ekYapiSayisi } from "./yapi";
 
 function hata(mesaj: string): KomutSonucu {
@@ -131,6 +132,9 @@ function alimPlani(d: Dunya, mk: DerlenmisMulk, oyuncu: OyuncuId, ilce: IlceDuru
     const f = mk.hucreler.get(id);
     if (f === undefined || f.ilce !== ilce.id) return `hucre bu ilcede degil: ${id}`;
     if (!f.hucre.uygun) return `hucre satin alinamaz (${f.hucre.engel ?? "uygun degil"}): ${id}`;
+    // Kamu arsası (docs/06 §15.6) satılmaz: mahalle paketi, ilçe merkezi, kıyı şeridi, hazine rezervi.
+    const kamu = kamuBilgisi(d, ilce.id, id);
+    if (kamu !== undefined) return `hucre kamu arsasi (satilmaz): ${id} (${kamu.tur}, ${kamu.sahip})`;
     if (f.hucre.sinif !== sinif) return `hucre sinifi uyusmuyor: ${id} (${f.hucre.sinif}, komut ${sinif})`;
     const sahipli = hucreBul(d, id);
     if (sahipli !== undefined) return `hucre zaten sahipli: ${id} (${sahipli.sahip})`;
@@ -180,6 +184,8 @@ function yapiTuruCoz(ctx: Baglam, mk: DerlenmisMulk, tesisTuru: unknown): YapiTu
   const ei = ti === undefined && typeof tesisTuru === "string" ? mk.ekYapiIndeks.get(tesisTuru) : undefined;
   if (ti === undefined && ei === undefined) return `bilinmeyen tesis turu: ${String(tesisTuru)}`;
   const ek = ei === undefined ? undefined : (mk.ekYapilar[ei] as DerlenmisEkYapi);
+  // Kamu yapıları (ör. Muhtarlık) mülk kipinde oyuncuya kapalıdır (`mulk.kamu.oyuncuyaKapaliYapilar`).
+  if (ek !== undefined && mk.p.kamu?.oyuncuyaKapaliYapilar.includes(ek.id) === true) return `${ek.id} kamu yapisidir (oyuncuya kapali)`;
   const yuva = ek !== undefined ? ek.yuva : (mk.yuva[ti as number] as number);
   if (yuva <= 0) return `tesis turu mulk kipinde insa edilemez: ${String(tesisTuru)}`;
   return { ad: tesisTuru as string, ti, ek, yuva };

@@ -30,6 +30,7 @@ import {
   yalnizEkleDenetimi,
 } from "./goc";
 import type { EkleIhlali, IcerikKimlikTablosu } from "./goc";
+import { KAMU_ALGORITMA_SURUMU, kamuIndeksiAra, kamuIndeksiKur } from "./mulk/kamu";
 import { fnv1a64 } from "./ozet";
 import { OLAY_ONCELIGI } from "./tipler";
 import type { DerlenmisIcerik, Dunya, Ms } from "./tipler";
@@ -212,6 +213,8 @@ function tamsayiKurali(v: unknown, yol: string): void {
   }
   for (const k in v as Nesne) tamsayiKurali((v as Nesne)[k], `${yol}.${k}`);
 }
+
+const KAMU_TURLERI = ["meydan", "pazar", "park", "hizmet", "kiyi", "sanayi_rezervi", "hazine"] as const;
 
 const STOK_ALANLARI = ["miktar", "yerelOran", "gelenOran", "t0", "artik", "kapasite", "surum"] as const;
 
@@ -510,6 +513,66 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
     });
     return dize(o.id, `${y}.id`);
   });
+  // Kamu arsası (isteğe bağlı): ilçe kimliğine göre kesin artan; her grup (sahip, tür) kesin artan; kompakt satır aralıkları kanonik
+  if ((m.kamuParametre !== undefined || m.kamuSurumu !== undefined) && m.kamu === undefined) hata("$.mulk.kamu", "kamuParametre/kamuSurumu var ama kamu durumu yok");
+  if (m.kamu !== undefined) {
+    if (m.kamuParametre === undefined) hata("$.mulk.kamuParametre", "zorunlu alan eksik (kamu ile birlikte yazilir)");
+    nesne(m.kamuParametre, "$.mulk.kamuParametre");
+    tamsayi(m.kamuSurumu, "$.mulk.kamuSurumu", 1, KAMU_ALGORITMA_SURUMU);
+    const ilceKimlikleri = new Set(dizi(m.ilceler, "$.mulk.ilceler").map((c) => (c as Nesne).id as string));
+    const kamuDizisi = dizi(m.kamu, "$.mulk.kamu");
+    if (kamuDizisi.length !== ilceKimlikleri.size) hata("$.mulk.kamu", `kamu kaydi ${kamuDizisi.length}, ilce ${ilceKimlikleri.size} (her ilce icin bir kayit)`);
+    kesinArtan(kamuDizisi, "$.mulk.kamu", (k, y) => {
+      alanlar(k, y, ["ilce", "gruplar"]);
+      const ilce = dize(k.ilce, `${y}.ilce`);
+      if (!ilceKimlikleri.has(ilce)) hata(`${y}.ilce`, `bilinmeyen ilce: ${ilce}`);
+      let oncekiGrup: string | null = null;
+      const gruplar: { sahip: string; tur: string; dikdortgenler: number[] }[] = [];
+      dizi(k.gruplar, `${y}.gruplar`).forEach((gv, j) => {
+        const gy = `${y}.gruplar[${j}]`;
+        const g = nesne(gv, gy);
+        alanlar(g, gy, ["sahip", "tur", "dikdortgenler"]);
+        const sahip = dize(g.sahip, `${gy}.sahip`);
+        if (!sahip.startsWith("k:")) hata(`${gy}.sahip`, `kamu sahibi 'k:' ile baslamali: ${sahip}`);
+        const tur = dize(g.tur, `${gy}.tur`);
+        if (!(KAMU_TURLERI as readonly string[]).includes(tur)) hata(`${gy}.tur`, `gecersiz kamu turu: ${tur}`);
+        const anahtar = `${sahip}\u0000${tur}`;
+        if (oncekiGrup !== null && !(oncekiGrup < anahtar)) hata(gy, "gruplar (sahip, tur) siraliyla kesin artan olmali");
+        oncekiGrup = anahtar;
+        const dik = dizi(g.dikdortgenler, `${gy}.dikdortgenler`);
+        if (dik.length === 0 || dik.length % 4 !== 0) hata(`${gy}.dikdortgenler`, "bos olmayan [x0, y0, x1, y1] dortlusu listesi bekleniyordu");
+        const l: number[] = [];
+        let oy = -1;
+        let ox = -1;
+        for (let i = 0; i < dik.length; i += 4) {
+          const x0 = tamsayi(dik[i], `${gy}.dikdortgenler[${i}]`, 0, (1 << 20) - 1);
+          const y0 = tamsayi(dik[i + 1], `${gy}.dikdortgenler[${i + 1}]`, 0, (1 << 20) - 1);
+          const x1 = tamsayi(dik[i + 2], `${gy}.dikdortgenler[${i + 2}]`, 0, (1 << 20) - 1);
+          const y1 = tamsayi(dik[i + 3], `${gy}.dikdortgenler[${i + 3}]`, 0, (1 << 20) - 1);
+          if (x0 > x1 || y0 > y1) hata(`${gy}.dikdortgenler[${i}]`, `dikdortgen ters: (${x0},${y0})-(${x1},${y1})`);
+          // kanonik: (y0, x0) kesin artan
+          if (y0 < oy || (y0 === oy && x0 <= ox)) hata(`${gy}.dikdortgenler[${i}]`, "dikdortgenler (y0, x0) siraliyla kesin artan olmali");
+          oy = y0;
+          ox = x0;
+          l.push(x0, y0, x1, y1);
+        }
+        gruplar.push({ sahip, tur, dikdortgenler: l });
+      });
+      // gruplar arası çakışma ve sahipli hücrelerle çakışma
+      let ix;
+      try {
+        ix = kamuIndeksiKur(gruplar);
+      } catch (e) {
+        hata(`${y}.gruplar`, e instanceof Error ? e.message : String(e));
+      }
+      for (const [j, h] of (m.hucreler as Nesne[]).entries()) {
+        if (h.ilce !== ilce) continue;
+        const [hx, hy] = (h.id as string).split(":").map(Number) as [number, number];
+        if (kamuIndeksiAra(ix, hx, hy) >= 0) hata(`$.mulk.hucreler[${j}]`, `kamu hucresi sahipli: ${String(h.id)}`);
+      }
+      return ilce;
+    });
+  }
   // Her işletme düğümü kayıtlı olmalı
   let dugum = 0;
   for (const b of bolgeler) if ((b as Nesne).merkez !== undefined) dugum++;
@@ -572,8 +635,29 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
   if (d.mulk !== undefined && ic.mulk !== undefined) {
     const mk = ic.mulk;
     if (d.mulk.ilceler.length !== mk.ilceler.size) hata("$.mulk.ilceler", `ilce sayisi ${d.mulk.ilceler.length}, fiksturde ${mk.ilceler.size}`);
+    const kamuKaydi = new Map((d.mulk.kamu ?? []).map((k) => [k.ilce, k]));
+    if (d.mulk.kamu !== undefined && mk.p.kamu === undefined) hata("$.mulk.kamu", "kamu durumu var ama kamu parametresi (mulk.kamu) tanimli degil");
     d.mulk.ilceler.forEach((c, i) => {
-      if (!mk.ilceler.has(c.id)) hata(`$.mulk.ilceler[${i}].id`, `fiksturde olmayan ilce: ${c.id}`);
+      const tanim = mk.ilceler.get(c.id);
+      if (tanim === undefined) hata(`$.mulk.ilceler[${i}].id`, `fiksturde olmayan ilce: ${c.id}`);
+      // Kamu kuralıyla kurulmuş dünyada uygunHucre = fikstür uygun - kamu; kamu hücreleri fikstürde bu ilçenin UYGUN hücreleridir.
+      const kamu = kamuKaydi.get(c.id);
+      if (d.mulk?.kamu !== undefined) {
+        if (kamu === undefined) hata(`$.mulk.ilceler[${i}].id`, `kamu kaydi yok: ${c.id}`);
+        let sayi = 0;
+        for (const g of kamu.gruplar) {
+          for (let i = 0; i < g.dikdortgenler.length; i += 4) {
+            for (let yy = g.dikdortgenler[i + 1] as number; yy <= (g.dikdortgenler[i + 3] as number); yy++) {
+              for (let xx = g.dikdortgenler[i] as number; xx <= (g.dikdortgenler[i + 2] as number); xx++) {
+                const f = mk.hucreler.get(`${xx}:${yy}`);
+                if (f === undefined || f.ilce !== c.id || !f.hucre.uygun) hata(`$.mulk.kamu`, `kamu hucresi ilcede uygun hucre degil: ${xx}:${yy} (${c.id})`);
+                sayi++;
+              }
+            }
+          }
+        }
+        if (c.uygunHucre !== tanim.uygunHucre - sayi) hata(`$.mulk.ilceler[${i}].uygunHucre`, `uygunHucre ${c.uygunHucre}, beklenen ${tanim.uygunHucre - sayi} (fikstur ${tanim.uygunHucre} - kamu ${sayi})`);
+      }
     });
   }
   const tarimAcik = ic.param.tarim !== undefined;

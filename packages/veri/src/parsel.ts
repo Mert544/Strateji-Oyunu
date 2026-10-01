@@ -37,6 +37,14 @@ export type IlceSeviyesi = 0 | 1 | 2 | 3;
 export type HucreEngeli = "su" | "yol" | "askeri" | "koruma";
 export const HUCRE_ENGELLERI: readonly HucreEngeli[] = ["su", "yol", "askeri", "koruma"];
 
+/**
+ * Kamu arsası türü (docs/12 §10, docs/06 §15.6): satılmayan hücre. Mahalle paketi (`meydan`, `pazar`, `park`), ilçe merkezi
+ * (`hizmet`), kıyı şeridi (`kiyi`), hazine rezervi (`hazine`, `sanayi_rezervi`). Tür kodları veridir; çekirdek anlamı yalnız
+ * "satılmaz"dır, türün kendisi tahsis/ihale kurallarına (sonraki işler) anahtar olur.
+ */
+export type KamuTuru = "meydan" | "pazar" | "park" | "hizmet" | "kiyi" | "sanayi_rezervi" | "hazine";
+export const KAMU_TURLERI: readonly KamuTuru[] = ["meydan", "pazar", "park", "hizmet", "kiyi", "sanayi_rezervi", "hazine"];
+
 /** z20 karo koordinatlarının üst sınırı (2^20). */
 export const Z20_KENAR = 1 << 20;
 
@@ -53,6 +61,21 @@ export interface ParselHucreTanimi {
   /** Satın alınabilir mi. `false` ise `engel` zorunludur; `true` ise `engel` olmaz. */
   uygun: boolean;
   engel?: HucreEngeli;
+  /**
+   * Kamu işareti (isteğe bağlı): hücre satılmayan kamu arsasıdır. Yalnız UYGUN hücre taşıyabilir. Fikstür bir bileşen için işaret
+   * taşıyorsa (meydan/pazar/park = mahalle paketi, hizmet = ilçe merkezi, kiyi, hazine/sanayi_rezervi) çekirdek o bileşeni
+   * KURALLA ÜRETMEZ; işaret geçerlidir (docs/06 §15.6).
+   */
+  kamu?: KamuTuru;
+}
+
+/** İlçenin mahalle (küme) tanımı: mahalle paketi her mahallenin kendi hücrelerinden ayrılır. */
+export interface ParselMahalleTanimi {
+  /** Dünya genelinde benzersiz kimlik (kamu sahibi `k:mahalle:<id>`). */
+  id: string;
+  ad: string;
+  /** Mahallenin hücreleri (bu ilçeden; bir hücre en çok bir mahallede). */
+  hucreler: ParselHucreId[];
 }
 
 export interface ParselIlceTanimi {
@@ -72,6 +95,11 @@ export interface ParselIlceTanimi {
   uygunHucre: number;
   /** İlçenin hücreleri. Bir hücre yalnız bir ilçede bulunur. */
   hucreler: ParselHucreTanimi[];
+  /**
+   * Mahalleler (isteğe bağlı; veri hattından). Yoksa çekirdek ilçeyi açık bir kural ("dengeli kd-bölme", `mulk.kamu.mahalleHucreHedefi`)
+   * ile kümelere böler. Hücre bir mahalleye bağlı değilse mahalle paketi o hücreden çıkmaz.
+   */
+  mahalleler?: ParselMahalleTanimi[];
 }
 
 export interface ParselFiksturu {
@@ -123,6 +151,15 @@ const hucreSema = z
     sinif: arsaSinifi,
     uygun: z.boolean(),
     engel: z.enum(["su", "yol", "askeri", "koruma"]).optional(),
+    kamu: z.enum(["meydan", "pazar", "park", "hizmet", "kiyi", "sanayi_rezervi", "hazine"]).optional(),
+  })
+  .strict();
+
+const mahalleSema = z
+  .object({
+    id: kimlik,
+    ad: metin,
+    hucreler: z.array(z.string().regex(HUCRE_ID_BICIMI, 'hucre kimligi "x:y" biciminde olmali')).min(1, "mahallede en az 1 hucre olmali"),
   })
   .strict();
 
@@ -139,6 +176,7 @@ const ilceSema = z
     hucreSayisi: tamsayi.nonnegative(),
     uygunHucre: tamsayi.nonnegative(),
     hucreler: z.array(hucreSema).min(1, "ilcede en az 1 hucre olmali"),
+    mahalleler: z.array(mahalleSema).optional(),
   })
   .strict();
 
@@ -198,6 +236,8 @@ export function dogrulaParselFiksturu(ham: unknown, secenek: ParselDogrulamaSece
   const ilceSayisi = new Map<string, number>();
   /** hücre kimliği -> ilk görüldüğü ilçe */
   const hucreIlcesi = new Map<string, string>();
+  /** mahalle kimlikleri dünya genelinde benzersizdir (kamu sahibi `k:mahalle:<id>`). */
+  const mahalleKimlikleri = new Set<string>();
   const sinifSirasi: Record<ArsaSinifi, number> = { kirsal: 0, kasaba: 1, sehir: 2 };
   for (const [i, c] of f.ilceler.entries()) {
     const yer = `ilceler[${i}] (${c.id})`;
@@ -222,9 +262,21 @@ export function dogrulaParselFiksturu(ham: unknown, secenek: ParselDogrulamaSece
         uygun++;
         if (h.engel !== undefined) hatalar.push(`${yer}: uygun hucre "${h.id}" engel tasiyamaz ("${h.engel}")`);
       } else if (h.engel === undefined) hatalar.push(`${yer}: uygun olmayan hucre "${h.id}" icin engel nedeni zorunlu`);
+      if (h.kamu !== undefined && !h.uygun) hatalar.push(`${yer}: kamu isaretli hucre "${h.id}" uygun olmali (kamu arsasi uygun hucrelerden ayrilir)`);
       enYuksek = Math.max(enYuksek, sinifSirasi[h.sinif]);
     }
     if (c.uygunHucre !== uygun) hatalar.push(`${yer}: uygunHucre ${c.uygunHucre}, sayilan ${uygun}`);
+    const ilceHucreleri = new Set(c.hucreler.map((h) => h.id));
+    const mahalleHucresi = new Set<string>();
+    for (const mh of c.mahalleler ?? []) {
+      if (mahalleKimlikleri.has(mh.id)) hatalar.push(`${yer}: yinelenen mahalle kimligi "${mh.id}"`);
+      mahalleKimlikleri.add(mh.id);
+      for (const hid of mh.hucreler) {
+        if (!ilceHucreleri.has(hid)) hatalar.push(`${yer}: mahalle "${mh.id}" ilcede olmayan hucre iceriyor: "${hid}"`);
+        else if (mahalleHucresi.has(hid)) hatalar.push(`${yer}: hucre "${hid}" birden cok mahallede`);
+        mahalleHucresi.add(hid);
+      }
+    }
     if (enYuksek !== sinifSirasi[c.sinif]) hatalar.push(`${yer}: ilce sinifi "${c.sinif}" en yuksek hucre sinifiyla (${ARSA_SINIFLARI[enYuksek] ?? "-"}) ayni degil`);
   }
   for (const il of f.iller) if ((ilceSayisi.get(il.id) ?? 0) === 0) hatalar.push(`il "${il.id}": hic ilcesi yok`);

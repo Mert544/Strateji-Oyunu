@@ -204,6 +204,21 @@
       "kalkanGun": 14
     },
     "temelEmirYuvasi": 4,
+    "kamu": {
+      "mahallePaketi": [
+        { "tur": "meydan", "hucre": 5 },
+        { "tur": "pazar", "hucre": 7 },
+        { "tur": "park", "hucre": 8 }
+      ],
+      "mahalleHucreHedefi": 7000,
+      "hazineRezerviPpm": 40000,
+      "hazineAdaHucre": 400,
+      "hazineEnFazlaAda": 24,
+      "ilceMerkeziHucre": 10,
+      "kiyiDerinlik": 2,
+      "kiyiIlceMinSuHucre": 10,
+      "oyuncuyaKapaliYapilar": ["muhtarlik"]
+    },
     "ekYapilar": {
       "ambar": {
         "ad": "Ambar", "yuva": 1, "insaSaati": 3, "insaParasi": 3000000, "insaMaliyeti": { "celik": 15000, "parca": 5000 },

@@ -16,10 +16,12 @@
  * - Değer: yurt hücresinin `degerMili`'si 0'dır (arazi vergisi tabanına girmez); ilçenin `satilmisHucre` sayısına ve oyuncunun
  *   ilçe hücre sayısına (%25 / 72 sınırları) girer; ilk işletme düğümü (başlangıç kitiyle) açılır.
  */
-import { carpBol, tabanBol } from "../sabit";
+import { carpBol } from "../sabit";
 import { PPM } from "../tipler";
 import type { Baglam, DerlenmisIcerik, DerlenmisMulk, Dunya, HucreDurumu, IlceDurumu, OyuncuId } from "../tipler";
 import { hucreBul, hucreEkle, hucreXY, ilceBul, ilceHucreEkle, mulkOyuncuAl } from "./durum";
+import { dizge, ilceMerkezi, kumeSec } from "./geometri";
+import { kamuHucreMi } from "./kamu";
 import { isletmeAl } from "./isletme";
 
 export interface YurtPlani {
@@ -27,16 +29,6 @@ export interface YurtPlani {
   /** Kimliğe göre sıralı, kenar-bitişik hücreler. */
   hucreler: string[];
 }
-
-/** 4 komşuluk (kenar-bitişik), sabit sıra. */
-const KOMSULAR: readonly (readonly [number, number])[] = [
-  [0, -1],
-  [1, 0],
-  [0, 1],
-  [-1, 0],
-];
-
-const dizge = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** Orman kullanım bilgisi (fikstür şemasında isteğe bağlı, henüz üretilmeyen alan). */
 function ormanMi(h: unknown): boolean {
@@ -50,80 +42,24 @@ function ilcePlani(d: Dunya, mk: DerlenmisMulk, ilce: IlceDurumu, n: number): Yu
   if (n > carpBol(ilce.uygunHucre, p.ilcePayTavaniPpm, PPM)) return `ilce yurt icin cok kucuk: ${ilce.id}`;
   const tanim = mk.ilceler.get(ilce.id);
   if (tanim === undefined) return `bilinmeyen ilce: ${ilce.id}`;
-  // İlçe merkezi: kasaba/şehir sınıfı uygun hücrelerin ağırlık merkezi (yoksa tüm uygun hücrelerin).
-  const toplam = { sx: 0, sy: 0, n: 0 };
-  const yerlesik = { sx: 0, sy: 0, n: 0 };
+  // İlçe merkezi: kasaba/şehir sınıfı uygun hücrelerin ağırlık merkezi (yoksa tüm uygun hücrelerin); kamu ilçe merkeziyle AYNI tanım.
+  const [cx, cy] = ilceMerkezi(tanim);
   const bos: { id: string; x: number; y: number; orman: boolean }[] = [];
   for (const h of tanim.hucreler) {
     if (!h.uygun) continue;
-    const [x, y] = hucreXY(h.id);
-    toplam.sx += x;
-    toplam.sy += y;
-    toplam.n++;
-    if (h.sinif !== "kirsal") {
-      yerlesik.sx += x;
-      yerlesik.sy += y;
-      yerlesik.n++;
+    // Kamu arsası (satılmaz) yurt seçiminde atlanır.
+    if (hucreBul(d, h.id) === undefined && !kamuHucreMi(d, ilce.id, h.id)) {
+      const [x, y] = hucreXY(h.id);
+      bos.push({ id: h.id, x, y, orman: ormanMi(h) });
     }
-    if (hucreBul(d, h.id) === undefined) bos.push({ id: h.id, x, y, orman: ormanMi(h) });
   }
   if (bos.length < n) return `ilcede yeterli bos hucre yok: ${ilce.id} (${bos.length} < ${n})`;
-  const m = yerlesik.n > 0 ? yerlesik : toplam;
-  const cx = tabanBol(m.sx, m.n);
-  const cy = tabanBol(m.sy, m.n);
   // Orman hücreleri yalnız yetmezse kullanılır.
   const ormansiz = bos.filter((c) => !c.orman);
   const plan = ormansiz.length >= n ? kumeSec(ormansiz, n, cx, cy) : null;
   const sonuc = plan ?? kumeSec(bos, n, cx, cy);
   if (sonuc === null) return `ilcede ${n} hucrelik bitisik bos alan yok: ${ilce.id}`;
   return { ilce: ilce.id, hucreler: sonuc.sort(dizge) };
-}
-
-/** Adaylar arasında merkeze (cx, cy) en yakın tohumdan büyüyen `n` hücrelik kenar-bitişik küme; yoksa null. */
-function kumeSec(adaylar: readonly { id: string; x: number; y: number }[], n: number, cx: number, cy: number): string[] | null {
-  const uzak = (c: { x: number; y: number }): number => (c.x - cx) * (c.x - cx) + (c.y - cy) * (c.y - cy);
-  const sirali = adaylar.map((c) => ({ ...c, u: uzak(c) })).sort((a, b) => a.u - b.u || dizge(a.id, b.id));
-  const kimlik = new Map(sirali.map((c) => [c.id, c]));
-  const basarisiz = new Set<string>();
-  for (const tohum of sirali) {
-    if (basarisiz.has(tohum.id)) continue;
-    // Bağlı bileşen yeterince büyük mü? (taşkın doldurma)
-    const bilesen = new Set<string>([tohum.id]);
-    const yigin = [tohum.id];
-    while (yigin.length > 0) {
-      const c = kimlik.get(yigin.pop() as string) as { x: number; y: number };
-      for (const [dx, dy] of KOMSULAR) {
-        const k = `${c.x + dx}:${c.y + dy}`;
-        if (kimlik.has(k) && !bilesen.has(k)) {
-          bilesen.add(k);
-          yigin.push(k);
-        }
-      }
-    }
-    if (bilesen.size < n) {
-      for (const id of bilesen) basarisiz.add(id); // bileşen n'den küçük: içindeki hiçbir hücre tohum olamaz
-      continue;
-    }
-    // Merkeze en yakın komşuyu ekleyerek büyüt (kompakt küme).
-    const secilen = [tohum.id];
-    const secili = new Set(secilen);
-    while (secilen.length < n) {
-      let en: { id: string; u: number } | null = null;
-      for (const id of secilen) {
-        const c = kimlik.get(id) as { x: number; y: number };
-        for (const [dx, dy] of KOMSULAR) {
-          const k = `${c.x + dx}:${c.y + dy}`;
-          const a = kimlik.get(k);
-          if (a !== undefined && !secili.has(k) && (en === null || a.u < en.u || (a.u === en.u && dizge(a.id, en.id) < 0))) en = a;
-        }
-      }
-      if (en === null) break; // bileşen yeterli büyüklükte olduğundan olmaz
-      secilen.push(en.id);
-      secili.add(en.id);
-    }
-    if (secilen.length === n) return secilen;
-  }
-  return null;
 }
 
 /**

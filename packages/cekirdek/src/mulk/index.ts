@@ -9,11 +9,23 @@ export { INSAAT_ASAMALARI, insaatAsamasi } from "./insaat";
 export type { InsaatAsamasi } from "./insaat";
 export {
   hucreBul,
+  hucreXY,
   ilceBul,
   ilceHucreSayisi,
   isletmeBul,
   isletmeKimligi,
+  kenarBitisikMi,
   mulkDurumuKur,
   mulkOyuncuAl,
   mulkOyuncuBul,
 } from "./durum";
+export {
+  kamuBilgisi,
+  kamuBloklari,
+  kamuHucreMi,
+  kamuHucreleri,
+  kamuIlKimligi,
+  kamuIlceKimligi,
+  kamuMahalleKimligi,
+  kamuSahibiMi,
+} from "./kamu";

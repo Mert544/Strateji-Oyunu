@@ -17,12 +17,12 @@ import { ticaretDefteriBaslat } from "./pazar";
 import { politikaKomutu } from "./politika";
 import { sanayiKomutu, sondajBitti } from "./sanayi";
 import { iklimGunluk, tarimKomutu } from "./tarim";
-import { mulkKomutu, mulkOyuncuAl, mulkOyuncuBul } from "./mulk";
+import { kamuSahibiMi, mulkKomutu, mulkOyuncuAl, mulkOyuncuBul } from "./mulk";
 import { yurtPlanla, yurtUygula } from "./mulk/yurt";
 import type { YurtPlani } from "./mulk/yurt";
 import { eskimisEsikleriBuda, oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
 import { arastirmaBitti, teknolojiKomutu } from "./teknoloji";
-import { GUN, SAAT } from "./tipler";
+import { GUN, KAMU_SAHIP_ONEKI, SAAT } from "./tipler";
 import type {
   CekirdekVeriPaketi,
   DamgaliKomut,
@@ -253,6 +253,8 @@ export class Simulasyon {
     const ic = this.ic;
     const id = komut.oyuncu;
     if (typeof id !== "string" || id === "" || id === SISTEM_OYUNCUSU) return hata(`gecersiz oyuncu kimligi: ${id}`);
+    // Kamu sahibi kimlikleri (k:mahalle:<id>, k:ilce:<id>, k:il:<id>) oyuncu kimliği olamaz (docs/06 §15.6).
+    if (kamuSahibiMi(id)) return hata(`gecersiz oyuncu kimligi ('${KAMU_SAHIP_ONEKI}' oneki kamu sahiplerine ayrilmis): ${id}`);
     if (!Array.isArray(komut.bolgeler)) return hata("bolgeler bir dizi olmali");
     // Mülk kipi (S3): bölge sahipliği yoktur (merkezler kamudur); oyuncu bölgesiz katılır, hazinesi hibedir.
     const mulk = ic.mulk !== undefined && d.mulk !== undefined;
