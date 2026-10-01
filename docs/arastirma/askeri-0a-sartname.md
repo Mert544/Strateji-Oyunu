@@ -484,9 +484,9 @@ export function yagmaTavaniUygula(d: Dunya, ctx: Baglam, bi: number, oranPpm: nu
   const tavan = ic.param.askeri.kayipTavaniPpm;
   const sure = (ic.param.askeri.eskiya?.yagmaPenceresiSaat ?? ic.param.askeri.pencereSaat) * SAAT;
   const w = b.yagmaPenceresi;
-  const acik = w !== undefined && d.zaman < w.baslangic + sure;                     // süren pencere mi
-  const baslangic = acik ? w.baslangic : d.zaman;
-  const kullanilan = acik ? w.kullanilanPpm : 0;
+  const suren = w !== undefined && d.zaman < w.baslangic + sure ? w : undefined;   // süren pencere (yoksa yeni pencere açılır)
+  const baslangic = suren !== undefined ? suren.baslangic : d.zaman;
+  const kullanilan = suren !== undefined ? suren.kullanilanPpm : 0;
   const kalan = tavan > kullanilan ? tavan - kullanilan : 0;
   const f = oranPpm < kalan ? oranPpm : kalan;                                     // oranPpm < 0 çağıranın hatasıdır (Error); burada [0, PPM] varsayılır
   if (f > 0) b.yagmaPenceresi = { baslangic, kullanilanPpm: kullanilan + f };      // YENİ nesne (paylaşım yok); f = 0 ise yazılmaz
