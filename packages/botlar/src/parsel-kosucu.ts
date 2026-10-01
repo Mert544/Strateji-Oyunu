@@ -34,6 +34,11 @@ export interface ParselKosuSecenekleri {
   gozlem?: (sim: Simulasyon, t: Ms) => void;
   /** Mevcut bir simülasyondan devam et (verilmezse yeni oluşturulur). */
   sim?: Simulasyon;
+  /**
+   * Katılım reddedilirse (ör. hiçbir ilçe yurt veremiyor: kalabalık dünya) hata fırlatma; oyuncuyu "katılamadı" olarak kaydet ve
+   * koşuyu sürdür (vars. false: hata fırlatır).
+   */
+  katilimRedDevam?: boolean;
 }
 
 /** Bot (ya da sistem) komutunun günlük kaydı. */
@@ -64,6 +69,8 @@ export interface ParselKatilimKaydi {
   istenenIlce: string | undefined;
   /** Bot önerisi reddedildi ve ilçesiz yeniden denendi. */
   ilceGeriDusuldu: boolean;
+  /** `katilimRedDevam` ile reddedilen katılımın nedeni; katıldıysa tanımsız. */
+  reddedildi?: string;
 }
 
 export interface ParselKosuSonucu {
@@ -128,7 +135,13 @@ export function parselKos(secenek: ParselKosuSecenekleri): ParselKosuSonucu {
         geriDustu = true;
         r = sim.uygula({ t, oyuncu: SISTEM_OYUNCUSU, komut: { tur: "oyuncu_katil", oyuncu: o.id, bolgeler: [] } });
       }
-      if (!r.tamam) throw new Error(`parselKos: oyuncu katilamadi (${o.id}, t=${t}): ${r.hata}`);
+      if (!r.tamam) {
+        if (secenek.katilimRedDevam !== true) throw new Error(`parselKos: oyuncu katilamadi (${o.id}, t=${t}): ${r.hata}`);
+        // Katılamayan oyuncu bir daha denenmez; komut vermez.
+        katildi.add(o.id);
+        katilimlar[o.id] = { t, istenenIlce: ilce, ilceGeriDusuldu: geriDustu, reddedildi: r.hata };
+        continue;
+      }
       katildi.add(o.id);
       yeniKatilan.add(o.id);
       katilimlar[o.id] = { t, istenenIlce: ilce, ilceGeriDusuldu: geriDustu };

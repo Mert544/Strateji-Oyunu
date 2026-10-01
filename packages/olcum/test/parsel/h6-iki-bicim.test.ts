@@ -123,6 +123,14 @@ describe("H6 iki biçim: servet bileşenleri ve arındırma", () => {
     for (const k of [a, b, c]) expect(k.ikincil.arindirilmisServet.verdict).toBe(k.ikincil.ham.verdict);
   });
 
+  it("birincil karar emsal kuralı: tüm emsal üretimsizse BELİRSİZ (servet iyi olsa da); üreten emsal varsa karar verilir", () => {
+    const olgu = { servet: 150, ilceServetleri: [100, 200], hibeKitDegeri: HIBE_KIT };
+    const ucuz = ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 0 }]);
+    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 1_000, ilceGelirleri: [0, 0, 0] }]).birincil.verdict).toBe("belirsiz");
+    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 1_000, ilceGelirleri: [0, 0, 1_000] }]).birincil.verdict).toBe("gecti");
+    expect(h6ParselIkiBicim([olgu], ucuz, [{ gelir: 1, ilceGelirleri: [0, 0, 1_000] }]).birincil.verdict).toBe("kaldi");
+  });
+
   it("karar: Y7 sınırı (oyuncu payı %50) ve ucuz hücre koşulu birincilde; ölçülemeyen belirsiz", () => {
     const olgu = { servet: 150, ilceServetleri: [100, 200], hibeKitDegeri: HIBE_KIT };
     const ucuz = ucuzHucrePayi([{ uygunHucre: 100, satilmisHucre: 0 }]);

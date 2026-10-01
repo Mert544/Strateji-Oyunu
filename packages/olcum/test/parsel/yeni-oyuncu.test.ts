@@ -8,6 +8,7 @@ import {
   y3IlkSozlesme,
   y5AcilisCesitliligi,
   y6YonDegistirme,
+  uretenEmsal,
   y7UretimGeliri,
   yapiKatmani,
 } from "../../src/parsel";
@@ -154,6 +155,26 @@ describe("Y7 hibeden bağımsız net üretim geliri", () => {
     expect(y7UretimGeliri([{ gelir: 5, ilceGelirleri: [-4, 0] }]).olculebilir).toBe(false);
     const karisik = y7UretimGeliri([{ gelir: 5, ilceGelirleri: [] }, { gelir: 60, ilceGelirleri: [100] }]);
     expect(karisik).toMatchObject({ olcumDisi: 1, olculebilirOyuncu: 1, olguSayisi: 2 });
+  });
+
+  it("EMSAL KURALI: yalnız üreten (gelir > 0) emsal sayılır; 0 dışarıda, 1 içeride, negatif dışarıda", () => {
+    expect(uretenEmsal([-5, 0, 1, 2])).toEqual([1, 2]);
+    expect(uretenEmsal([0, 0])).toEqual([]);
+    expect(() => uretenEmsal([1.5])).toThrow(/tamsayi/);
+    // Üretimsiz emsaller medyanı aşağı çekmez: ham [0, 0, 0, 100] medyanı 0 olurdu (ölçülemez); üreten kümesi [100] -> medyan 100, eşik 50
+    expect(y7UretimGeliri([{ gelir: 50, ilceGelirleri: [0, 0, 0, 100] }])).toMatchObject({ olculebilir: true, ulasan: 1 });
+    expect(y7UretimGeliri([{ gelir: 49, ilceGelirleri: [0, 0, 0, 100] }])).toMatchObject({ olculebilir: true, ulasan: 0 });
+    // Gelir 1 olan emsal içeride: tek emsal 1 -> medyan 1, eşik %50: gelir 1 ulaşır (1·2 ≥ 1)
+    expect(y7UretimGeliri([{ gelir: 1, ilceGelirleri: [0, 1] }])).toMatchObject({ olculebilir: true, ulasan: 1 });
+    // Gelir 0 olan emsal dışarıda: yalnız 0'lardan oluşan küme boş -> ölçülemez
+    const r = y7UretimGeliri([{ gelir: 5, ilceGelirleri: [0] }]);
+    expect(r).toEqual({ olculebilir: false, neden: "uretim yapan (geliri > 0) ilce emsali yok" });
+  });
+
+  it("tüm emsal üretimsizse sonuç ölçülemez (BELİRSİZ); bir olgu ölçülebilirse diğeri ölçüm dışı sayılır", () => {
+    expect(y7UretimGeliri([{ gelir: 100, ilceGelirleri: [0, -3, 0] }]).olculebilir).toBe(false);
+    const k = y7UretimGeliri([{ gelir: 100, ilceGelirleri: [0, 0] }, { gelir: 100, ilceGelirleri: [0, 100] }]);
+    expect(k).toMatchObject({ olculebilir: true, olcumDisi: 1, olculebilirOyuncu: 1, ulasan: 1, olguSayisi: 2 });
   });
 
   it("büyük değerler taşmaz (BigInt karşılaştırma)", () => {

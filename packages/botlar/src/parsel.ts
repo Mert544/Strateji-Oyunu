@@ -1,5 +1,6 @@
 /**
- * Parsel botları (mülk kipi; docs/06 §15, docs/olcum/h1-h9-parsel-tanimlari.md): çiftçi, sanayici, tüccar, geç katılan, pasif.
+ * Parsel botları (mülk kipi; docs/06 §15, docs/olcum/h1-h9-parsel-tanimlari.md): çiftçi, sanayici, tüccar, geç katılan, pasif,
+ * tarım yönetimli çiftçi ve spekülatör.
  *
  * Bölge kipi botlarından (arketipler.ts) AYRIDIR: yalnız mülk komutlarıyla oynar ve yalnız parsel kipinde (`sim.ic.mulk`) çalışır.
  * Komut kümesi: `oyuncu_katil {ilce}` (koşucu, `katilimIlcesi`), `yapi_yerlestir` (arsa + yapı atomik), `ticaret_emri`.
@@ -7,20 +8,23 @@
  * Botlar durumsuzdur: her `karar` çağrısı yalnızca `sim`i okur (kendi geçmişini tutmaz); "yapıldı mı" sorusu dünyadan çözülür.
  *
  * Önayarlar (hepsi yeni oyuncu paketini kullanır: yurt, %30 indirimli ilk 5 yapı, 14 gün kalkan):
- *  - ciftci:     ova ilinde Çiftlik → Ahır → Çiftlik; fazla tahıl/gıda/gübreyi ihraç eder.
+ *  - ciftci:     ova ilinde Çiftlik → Ahır → Çiftlik (ova ili doluysa dağ ilinde Mera); fazla tahıl/gıda/gübreyi ihraç eder.
  *  - sanayici:   dağ ilinde Hidro santral → Cevher madeni (×2) → Ambar; cevheri ihraç eder, malzeme açığını ithal eder.
  *  - tuccar:     kıyı/ova ilinde üretim (Çiftlik/Mera) + Ticaret ofisi; ihracat emri yuvalarını (4 + ofis) doldurur.
  *  - pasif:      kur-unut: ilk kurulumu bir kez yapar (tek yapı + emirler), sonra hiçbir komut vermez.
+ *  - ciftci_tarim: çiftçi + tarım yönetimi (`ekim_plani`, `gubre_dozu`); `tarimYonetimi` / `bakimYonetimi` seçenekleri her önayara eklenebilir.
+ *  - spekulator: arsa biriktirir, üretmez; kit stoğunu satıp nakde çevirir, en ucuz sınıf ve en boş ilçelerden tavana (72 / ilçenin %25'i)
+ *    dayanana kadar `parsel_al`; kamu arsasını almaz; yeni oyuncuyken ayrılmış hücreleri önce tüketir; `baslangicGun` ile yaşlanınca başlar.
  *  - gec_katilan: `acilis` ∈ ciftci | sanayici | pazar (tuccar); aynı paket, farklı açılış (Ar-Ge `gec_ciftci/gec_sanayici/gec_pazar`).
  *    Yerleşiklerin bulunduğu (en çok sahipli) ilçeye katılır: ilçe medyanı ile karşılaştırılabilsin.
  */
-import { anlikHazine, anlikMiktar, isletmeBul, mulkOyuncuBul, parselFiyati, ticaretEmirYuvasi } from "@bolge/cekirdek";
+import { anlikHazine, anlikMiktar, isletmeBul, kamuHucreMi, mulkOyuncuBul, parselFiyati, ticaretEmirYuvasi } from "@bolge/cekirdek";
 import type { ArsaSinifi, BolgeDurumu, DerlenmisMulk, Dunya, HucreDurumu, Komut, OyuncuId, Simulasyon } from "@bolge/cekirdek";
 import { icerikBilgisi } from "./tablo";
 import type { IcerikBilgisi } from "./tablo";
 
-export type ParselOnayari = "ciftci" | "sanayici" | "tuccar" | "gec_katilan" | "pasif";
-export const PARSEL_ONAYARLARI: readonly ParselOnayari[] = ["ciftci", "sanayici", "tuccar", "gec_katilan", "pasif"];
+export type ParselOnayari = "ciftci" | "sanayici" | "tuccar" | "gec_katilan" | "pasif" | "ciftci_tarim" | "spekulator";
+export const PARSEL_ONAYARLARI: readonly ParselOnayari[] = ["ciftci", "sanayici", "tuccar", "gec_katilan", "pasif", "ciftci_tarim", "spekulator"];
 
 /** Geç katılanın açılışı: çiftçi, sanayici ya da pazar (tüccar) planı. */
 export type GecAcilis = "ciftci" | "sanayici" | "pazar";
@@ -43,6 +47,19 @@ export interface ParselBotu {
 export interface ParselBotSecenegi {
   /** `gec_katilan` için açılış (vars. "ciftci"). */
   acilis?: GecAcilis;
+  /**
+   * Tarım yönetimi: tarım tesisi olan bot `ekim_plani` (toprağa göre buğday/baklagil/nadas; histerezisli nöbet) ve `gubre_dozu`
+   * (gübre stoğuna göre) ile toprağı yönetir; toprak taban altına inmez. `ciftci_tarim` önayarında hep açık; `pasif` (kur-unut) ve
+   * `spekulator` için etkisiz. Vars. kapalı.
+   */
+  tarimYonetimi?: boolean;
+  /**
+   * Bakım yönetimi: tesislerin bakım parçası (yöntemin `bakim` girdisi) için parça ithalatı ve aşınma eşiği aşılınca `genel_onarim`.
+   * Etkisiz: `pasif`, `spekulator`. Vars. kapalı. (Kural: stok < 24 saatlik bakım ihtiyacıysa 72 saatliğe tamamlanır.)
+   */
+  bakimYonetimi?: boolean;
+  /** `spekulator`: arsa alımına başlama yaşı (gün; katılımdan itibaren). Vars. 0. 15 ⇒ ayrılmış hücre süresi (14 gün) bittikten sonra. */
+  baslangicGun?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,15 +81,20 @@ interface Tanim {
   yerlesikIlce: boolean;
 }
 
-const CIFTCI: Tanim = { acilisTurleri: ["ciftlik"], plan: ["ciftlik", "ahir", "ciftlik"], ilSirasi: "ova", birKez: false, ithalat: false, yerlesikIlce: false };
+// Ova ili dolunca (kalabalık dünya) dağ ilinde Mera kurar: plandaki uygun olmayan türler atlanır, yani ova ilinde davranış değişmez.
+const CIFTCI: Tanim = { acilisTurleri: ["ciftlik", "mera"], plan: ["ciftlik", "mera", "ahir", "ciftlik", "mera"], ilSirasi: "ova", birKez: false, ithalat: false, yerlesikIlce: false };
 const SANAYICI: Tanim = { acilisTurleri: ["hidro_santrali"], plan: ["hidro_santrali", "cevher_madeni", "cevher_madeni", "ambar"], ilSirasi: "dag", birKez: false, ithalat: true, yerlesikIlce: false };
 const TUCCAR: Tanim = { acilisTurleri: ["ciftlik", "mera"], plan: ["ciftlik", "mera", "ticaret_ofisi", "ahir"], ilSirasi: "kiyi_ova", birKez: false, ithalat: false, yerlesikIlce: false };
+const SPEKULATOR: Tanim = { acilisTurleri: [], plan: [], ilSirasi: "ova", birKez: false, ithalat: false, yerlesikIlce: false };
 const PASIF: Tanim = { acilisTurleri: ["ciftlik", "mera"], plan: ["ciftlik", "mera"], ilSirasi: "ova", birKez: true, ithalat: false, yerlesikIlce: false };
 
 function tanimSec(onayar: ParselOnayari, acilis: GecAcilis): Tanim {
   switch (onayar) {
     case "ciftci":
+    case "ciftci_tarim":
       return CIFTCI;
+    case "spekulator":
+      return SPEKULATOR;
     case "sanayici":
       return SANAYICI;
     case "tuccar":
@@ -223,7 +245,8 @@ function yerlesimBul(g: Gorunum, ilceId: string, yuva: number, kullanilan: Reado
   type Durum = "benim" | "alinabilir" | "dolu";
   const durumu = (id: string): Durum => {
     const f = tanim.get(id);
-    if (f === undefined || !f.uygun || kullanilan.has(id)) return "dolu";
+    // Kamu arsası (mahalle paketi, ilçe merkezi, kıyı, hazine rezervi; docs/06 §15.6) satılmaz: dolu sayılır.
+    if (f === undefined || !f.uygun || kullanilan.has(id) || kamuHucreMi(g.d, ilceId, id)) return "dolu";
     const s = g.sahipli.get(id);
     if (s === undefined) return !yeniOyuncu && g.mk.ayrilmis.has(id) ? "dolu" : "alinabilir";
     return s.sahip === g.oyuncu && s.tesis === undefined && s.insaat === undefined ? "benim" : "dolu";
@@ -298,7 +321,7 @@ function stok(g: Gorunum, b: BolgeDurumu, mal: number): number {
 // ---------------------------------------------------------------------------
 
 /** Tesis listesinden (biten + planlanan) mal başına net saatlik çıktı (mili-birim/saat; çıktı − girdi, tam kadro). */
-function netCikti(g: Gorunum, ekTurler: readonly string[]): Map<number, number> {
+function netCikti(g: Gorunum, ekTurler: readonly string[], gubreAyir = 0): Map<number, number> {
   const net = new Map<number, number>();
   const ekle = (yontem: number): void => {
     const y = g.bilgi.yontem[yontem]!;
@@ -314,6 +337,8 @@ function netCikti(g: Gorunum, ekTurler: readonly string[]): Map<number, number> 
     const ti = g.sim.ic.tesisTuruIndeks[tur];
     if (ti !== undefined) ekle((g.bilgi.tur[ti] as { yontemler: number[] }).yontemler[0] as number);
   }
+  // Tarım yönetimi: gübre ihraç edilmez, çiftlikte kalır (stok birikir, doz stoğa göre ayarlanır). Sınırsız ayırma = tümü.
+  if (gubreAyir !== 0 && g.bilgi.gubre >= 0) net.set(g.bilgi.gubre, 0); // 0 ⇒ var olan gübre ihracat emri silinir
   return net;
 }
 
@@ -321,8 +346,8 @@ function netCikti(g: Gorunum, ekTurler: readonly string[]): Map<number, number> 
  * İhracat emirleri: net çıktısı pozitif, depolanabilir her mal için net oranda ihracat (iç tüketim payı düşülür; böylece emir
  * kendi girdisini boşaltmaz). Yuva doluysa yeni mal eklenmez; net ≤ 0 olan eski emir silinir. Var olan emir aynıysa komut verilmez.
  */
-function ihracatEmirleri(g: Gorunum, dugum: BolgeDurumu, ekTurler: readonly string[]): Komut[] {
-  const net = netCikti(g, ekTurler);
+function ihracatEmirleri(g: Gorunum, dugum: BolgeDurumu, ekTurler: readonly string[], gubreAyir = 0): Komut[] {
+  const net = netCikti(g, ekTurler, gubreAyir);
   const yuva = ticaretEmirYuvasi(g.sim.ic, dugum);
   const emirler = dugum.ticaretEmirleri.filter((e) => e.yon === "ihracat");
   const bolge = dugum.id;
@@ -419,31 +444,259 @@ function adayIlceler(g: Gorunum, tanim: Tanim): string[] {
 }
 
 // ---------------------------------------------------------------------------
+// Tarım yönetimi (ekim planı ve gübre dozu)
+// ---------------------------------------------------------------------------
+
+/** Ekim planı şablonları (buğday / baklagil / nadas; toplam PPM). Bölge kipi planlayıcısıyla (planlayici.ts) aynı değerler. */
+const EKIM_A: readonly number[] = [1_000_000, 0, 0]; // monokültür: en yüksek çıktı, toprağı tüketir
+const EKIM_B: readonly number[] = [500_000, 250_000, 250_000]; // ekim nöbeti: toprağı korur
+const EKIM_C: readonly number[] = [200_000, 300_000, 500_000]; // toparlanma: toprağı yeniler
+
+function ayniPlan(a: readonly number[], b: readonly number[]): boolean {
+  return a.length === b.length && a.every((x, i) => x === b[i]);
+}
+
+/** Toprağa ve mevcut plana göre hedef ekim planı (histerezisli, deterministik; gübre dozu azamiyse monokültür sürdürülebilir). */
+export function hedefEkimPlani(toprakPpm: number, mevcut: readonly number[], gubreli: boolean): readonly number[] {
+  if (gubreli) return EKIM_A;
+  const cNde = ayniPlan(mevcut, EKIM_C);
+  const aDa = ayniPlan(mevcut, EKIM_A);
+  if (toprakPpm < 500_000) return EKIM_C;
+  if (toprakPpm < 700_000) return cNde && toprakPpm < 650_000 ? EKIM_C : EKIM_B;
+  if (toprakPpm < 900_000) return aDa ? EKIM_A : EKIM_B;
+  return EKIM_A;
+}
+
+/** Tarım tesisi (ekili, aktif, rezervli tarımsal yöntem) sayısı. */
+function ekiliCiftlikSayisi(g: Gorunum, dugum: BolgeDurumu): number {
+  let n = 0;
+  for (const t of dugum.tesisler) {
+    const y = g.sim.ic.yontemler[t.yontem];
+    if (t.aktif && y !== undefined && y.tarimsal === true && y.rezerv !== undefined) n++;
+  }
+  return n;
+}
+
+/** Gübre dozu: düğümdeki gübre stoğunun 48 saatlik tüketimi karşıladığı en yüksek doz (0..azami). */
+function gubreDozuHedefi(g: Gorunum, dugum: BolgeDurumu, ciftlik: number): number {
+  const tp = g.sim.ic.param.tarim;
+  if (tp === undefined || g.bilgi.gubre < 0 || ciftlik === 0) return 0;
+  const ihtiyacSaat = tp.gubreTuketimiSaat * ciftlik;
+  if (ihtiyacSaat <= 0) return 0;
+  return Math.max(0, Math.min(tp.azamiGubreDozu, Math.floor(stok(g, dugum, g.bilgi.gubre) / (ihtiyacSaat * 48))));
+}
+
+/** Toprak yönetimi komutları; `gubreAyir` ≠ 0 ise gübre ihraç edilmez (gübre dozu için stokta tutulur). */
+function tarimKomutlari(g: Gorunum, dugum: BolgeDurumu): { komutlar: Komut[]; gubreAyir: number } {
+  const tp = g.sim.ic.param.tarim;
+  const ts = dugum.tarim;
+  const urunler = g.sim.ic.icerik.tarimUrunleri ?? [];
+  if (tp === undefined || ts === undefined || urunler.length !== 3) return { komutlar: [], gubreAyir: 1 };
+  const ciftlik = ekiliCiftlikSayisi(g, dugum);
+  if (ciftlik === 0) return { komutlar: [], gubreAyir: 1 };
+  const komutlar: Komut[] = [];
+  let doz = gubreDozuHedefi(g, dugum, ciftlik);
+  // Histerezis: mevcut doz hâlâ en az 24 saatlik gübre stoğuyla karşılanıyorsa düşürülmez (her turda doz salınımı olmasın).
+  if (ts.gubreDozu > doz && stok(g, dugum, g.bilgi.gubre) >= ts.gubreDozu * tp.gubreTuketimiSaat * ciftlik * 24) doz = ts.gubreDozu;
+  const hedef = hedefEkimPlani(ts.toprakPpm, ts.ekimPpm, doz >= tp.azamiGubreDozu && tp.azamiGubreDozu > 0);
+  if (!ayniPlan(hedef, ts.ekimPpm)) komutlar.push({ tur: "ekim_plani", bolge: dugum.id, ekimPpm: [...hedef] });
+  if (doz !== ts.gubreDozu) komutlar.push({ tur: "gubre_dozu", bolge: dugum.id, doz });
+  return { komutlar, gubreAyir: 1 };
+}
+
+// ---------------------------------------------------------------------------
+// Bakım yönetimi (parça ithalatı + genel onarım)
+// ---------------------------------------------------------------------------
+
+/** Genel onarım eşiği: herhangi bir tesisin aşınması bu değeri (ppm) geçince. */
+const ONARIM_ESIGI_PPM = 400_000;
+const GENEL_ONARIM_MALIYET_PPM = 200_000;
+
+/**
+ * Bakım komutları: (a) tesislerin saatlik bakım malı (yöntem `bakim`) için stok 24 saatin altındaysa 72 saate tamamlayan açık
+ * (`acik`: ithalat emriyle kapatılır); (b) aşınma eşiği aşıldıysa ve onarım maliyeti (inşa maliyetinin %20'si) karşılanıyorsa `genel_onarim`
+ * (karşılanmıyorsa eksik malzeme `acik`a eklenir).
+ */
+function bakimKomutlari(g: Gorunum, dugum: BolgeDurumu): { komutlar: Komut[]; acik: Map<number, number> } {
+  const komutlar: Komut[] = [];
+  const acik = new Map<number, number>();
+  const saatlik = new Map<number, number>();
+  for (const t of dugum.tesisler) {
+    for (const [m, q] of g.bilgi.yontem[t.yontem]?.bakim ?? []) saatlik.set(m, (saatlik.get(m) ?? 0) + q);
+  }
+  for (const [m, q] of saatlik) {
+    const elde = stok(g, dugum, m);
+    if (elde < q * 24) acik.set(m, q * 72 - elde);
+  }
+  let hizmetVar = false;
+  for (const i of g.d.insaatlar) if (i.tur === "onarim" && i.bolge === dugum.indeks) hizmetVar = true;
+  const asinan = dugum.tesisler.filter((t) => (t.asinmaPpm ?? 0) >= ONARIM_ESIGI_PPM);
+  if (asinan.length > 0 && !hizmetVar) {
+    const onarilacak = dugum.tesisler.filter((t) => (t.asinmaPpm ?? 0) > 0);
+    const mal = new Map<number, number>();
+    let para = 0;
+    for (const t of onarilacak) {
+      const tur = g.bilgi.tur[t.tur];
+      if (tur === undefined) continue;
+      // Ölçek kademesi (S = 1,0x) varsayılır: botlar ölçek yükseltmez.
+      para += Math.floor((tur.para * GENEL_ONARIM_MALIYET_PPM) / 1_000_000);
+      for (const [m, q] of tur.maliyet) mal.set(m, (mal.get(m) ?? 0) + Math.floor((q * GENEL_ONARIM_MALIYET_PPM) / 1_000_000));
+    }
+    let yeter = anlikHazine(g.d, g.oyuncu) >= para;
+    for (const [m, q] of mal) {
+      if (stok(g, dugum, m) < q) {
+        yeter = false;
+        acik.set(m, Math.max(acik.get(m) ?? 0, q - stok(g, dugum, m)));
+      }
+    }
+    if (yeter) komutlar.push({ tur: "genel_onarim", bolge: dugum.id });
+  }
+  return { komutlar, acik };
+}
+
+// ---------------------------------------------------------------------------
+// Spekülatör: arsa biriktirir, üretmez
+// ---------------------------------------------------------------------------
+
+/** Spekülatörün bir ilçedeki alım adayı. */
+interface SpekAday {
+  ilce: string;
+  sinif: ArsaSinifi;
+  /** Satın alınabilir hücreler, alım sırasıyla (yeni oyuncuysa ayrılmış hücreler önce). */
+  hucreler: string[];
+  /** İlçede alınabilecek en çok hücre (72 ve %25 tavanı, ilçe doluluğu). */
+  oda: number;
+  satilmis: number;
+  uygun: number;
+}
+
+const SINIF_SIRASI: readonly ArsaSinifi[] = ["kirsal", "kasaba", "sehir"];
+
+function spekAdaylari(g: Gorunum, yeniOyuncu: boolean): SpekAday[] {
+  const p = g.mk.p;
+  const sonuc: SpekAday[] = [];
+  for (const durum of g.d.mulk!.ilceler) {
+    const tanim = g.mk.ilceler.get(durum.id);
+    if (tanim === undefined) continue;
+    const benim = ilceHucreleri(g, durum.id).length;
+    const tavan = Math.min(p.ilceHucreTavani, Math.floor((durum.uygunHucre * p.ilcePayTavaniPpm) / 1_000_000));
+    const oda = Math.min(tavan - benim, durum.uygunHucre - durum.satilmisHucre);
+    if (oda <= 0) continue;
+    // En ucuz sınıf (kırsal < kasaba < şehir) ve o sınıftan alınabilir hücreler.
+    let secilen: ArsaSinifi | null = null;
+    let adaylar: string[] = [];
+    for (const sinif of SINIF_SIRASI) {
+      const l = tanim.hucreler.filter((h) => h.uygun && h.sinif === sinif && !g.sahipli.has(h.id) && !kamuHucreMi(g.d, durum.id, h.id) && (yeniOyuncu || !g.mk.ayrilmis.has(h.id))).map((h) => h.id);
+      if (l.length > 0) {
+        secilen = sinif;
+        adaylar = l;
+        break;
+      }
+    }
+    if (secilen === null) continue;
+    // Yeni oyuncu ayrılmış hücreleri önce alır (yalnız yeni oyuncuya açık olanı tüketir); sıra fikstür sırası.
+    if (yeniOyuncu) adaylar = [...adaylar.filter((id) => g.mk.ayrilmis.has(id)), ...adaylar.filter((id) => !g.mk.ayrilmis.has(id))];
+    sonuc.push({ ilce: durum.id, sinif: secilen, hucreler: adaylar, oda, satilmis: durum.satilmisHucre, uygun: durum.uygunHucre });
+  }
+  // Ucuz sınıf, boş ilçe (düşük fiyat çarpanı), kimlik sırası.
+  return sonuc.sort((a, b) => {
+    const sa = SINIF_SIRASI.indexOf(a.sinif);
+    const sb = SINIF_SIRASI.indexOf(b.sinif);
+    const x = a.satilmis * b.uygun;
+    const y = b.satilmis * a.uygun;
+    return sa - sb || (x < y ? -1 : x > y ? 1 : 0) || dizgeSirala(a.ilce, b.ilce);
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Bot
 // ---------------------------------------------------------------------------
 
 class Bot implements ParselBotu {
   readonly acilis: GecAcilis | undefined;
   private readonly tanim: Tanim;
+  private readonly tarim: boolean;
+  private readonly bakim: boolean;
+  private readonly baslangicMs: number;
 
   constructor(
     readonly oyuncu: OyuncuId,
     readonly onayar: ParselOnayari,
     acilis: GecAcilis,
+    secenek: ParselBotSecenegi,
   ) {
     this.acilis = onayar === "gec_katilan" ? acilis : undefined;
     this.tanim = tanimSec(onayar, acilis);
+    this.tarim = onayar === "ciftci_tarim" || (secenek.tarimYonetimi === true && onayar !== "pasif" && onayar !== "spekulator");
+    this.bakim = secenek.bakimYonetimi === true && onayar !== "pasif" && onayar !== "spekulator";
+    const gun = secenek.baslangicGun ?? 0;
+    if (!Number.isSafeInteger(gun) || gun < 0) throw new Error(`parsel bot: baslangicGun negatif olmayan tamsayi olmali: ${String(secenek.baslangicGun)}`);
+    this.baslangicMs = gun * 86_400_000;
   }
 
   katilimIlcesi(sim: Simulasyon): string | undefined {
     const g = gorunumKur(sim, this.oyuncu);
-    return g === null ? undefined : adayIlceler(g, this.tanim)[0];
+    if (g === null) return undefined;
+    if (this.onayar === "spekulator") {
+      // Yurt verebilen, en çok boş uygun hücreli ilçe (alım odası geniş); eşitlikte kimlik sırası.
+      const bos = (c: string): number => {
+        const d = g.d.mulk!.ilceler.find((i) => i.id === c)!;
+        return d.uygunHucre - d.satilmisHucre;
+      };
+      return [...g.mk.ilceler.keys()].sort(dizgeSirala).filter((c) => yurtVerebilir(g, c)).sort((a, b) => bos(b) - bos(a) || dizgeSirala(a, b))[0];
+    }
+    return adayIlceler(g, this.tanim)[0];
+  }
+
+  /** Spekülatör: kit stoğunu satıp nakde çevirir; yaşı `baslangicGun`'ü geçince ilçe tavanlarına dayanana kadar arsa alır. */
+  private spekulatorKarar(g: Gorunum): Komut[] {
+    const komutlar: Komut[] = [];
+    const katilma = g.d.oyuncular.find((o) => o.id === this.oyuncu)?.katilmaZamani ?? 0;
+    const yas = g.d.zaman - katilma;
+    const yeniOyuncu = yas < g.mk.ayrilmisSureMs;
+    // 1. Kit satışı: işletme düğümündeki gıda/çelik/parça için 24 saatlik ihracat emri (üretmez, sadece nakde çevirir).
+    const ilce = anaIlce(g);
+    if (ilce !== null) {
+      const dugum = ilBolgesi(g, (g.mk.ilceler.get(ilce) as { il: string }).il);
+      const isl = dugum === undefined ? undefined : isletmeBul(g.d, g.oyuncu, (g.mk.ilceler.get(ilce) as { il: string }).il);
+      const b = isl === undefined ? undefined : g.d.bolgeler[isl.bolgeIndeksi];
+      if (b !== undefined) {
+        const yuva = ticaretEmirYuvasi(g.sim.ic, b);
+        let kullanilan = b.ticaretEmirleri.length;
+        for (const id of ["gida", "celik", "parca"]) {
+          const mi = g.sim.ic.malIndeks[id];
+          if (mi === undefined) continue;
+          const q = stok(g, b, mi);
+          const mevcut = b.ticaretEmirleri.find((e) => e.yon === "ihracat" && e.mal === mi);
+          if (q <= 0 || mevcut !== undefined || kullanilan >= yuva) continue;
+          kullanilan++;
+          komutlar.push({ tur: "ticaret_emri", bolge: b.id, mal: id, yon: "ihracat", oranSaat: Math.max(1, Math.ceil(q / 24)) });
+        }
+      }
+    }
+    // 2. Arsa: en ucuz sınıf ve en boş ilçelerden başlayıp tavana (72 / %25) dayanana kadar; hazinenin %5'i vergi tamponu.
+    if (yas >= this.baslangicMs) {
+      let hazine = Math.floor((anlikHazine(g.d, g.oyuncu) * 95) / 100);
+      let komut = 0;
+      for (const a of spekAdaylari(g, yeniOyuncu)) {
+        if (komut >= 3) break;
+        const taban = g.mk.p.hucreFiyati[a.sinif];
+        let n = Math.min(a.oda, a.hucreler.length);
+        while (n > 0 && parselFiyati(taban, g.mk.p.satisPayiCarpaniPpm, a.satilmis, a.uygun, n) > hazine) n--;
+        if (n <= 0) continue;
+        hazine -= parselFiyati(taban, g.mk.p.satisPayiCarpaniPpm, a.satilmis, a.uygun, n);
+        komutlar.push({ tur: "parsel_al", ilce: a.ilce, hucreler: a.hucreler.slice(0, n), sinif: a.sinif });
+        komut++;
+      }
+    }
+    return komutlar;
   }
 
   karar(sim: Simulasyon): Komut[] {
     const g = gorunumKur(sim, this.oyuncu);
     if (g === null) return [];
     if (!g.d.oyuncular.some((o) => o.id === this.oyuncu)) return [];
+    if (this.onayar === "spekulator") return this.spekulatorKarar(g);
     const komutlar: Komut[] = [];
     const ilce = anaIlce(g);
     if (ilce === null) return komutlar; // yurt verilemedi: hücre yok, yapacak bir şey yok
@@ -500,8 +753,17 @@ class Bot implements ParselBotu {
 
     // Ticaret emirleri (ihracat; sanayicide malzeme ithalatı). İşletme düğümü yalnız ilde bir kez açılmışsa mevcuttur.
     if (dugum !== undefined) {
-      komutlar.push(...ihracatEmirleri(g, dugum, ekTurler));
-      if (this.tanim.ithalat) komutlar.push(...ithalatEmirleri(g, dugum, acik));
+      const tarim = this.tarim ? tarimKomutlari(g, dugum) : { komutlar: [] as Komut[], gubreAyir: 0 };
+      komutlar.push(...tarim.komutlar);
+      const bakim = this.bakim ? bakimKomutlari(g, dugum) : { komutlar: [] as Komut[], acik: new Map<number, number>() };
+      komutlar.push(...bakim.komutlar);
+      komutlar.push(...ihracatEmirleri(g, dugum, ekTurler, tarim.gubreAyir));
+      if (this.tanim.ithalat || this.bakim) {
+        // Yapı malzemesi açığı ile bakım açığı birleştirilir (aynı mal için büyük olan).
+        const birlesik = new Map(acik);
+        for (const [m, q] of bakim.acik) birlesik.set(m, Math.max(birlesik.get(m) ?? 0, q));
+        komutlar.push(...ithalatEmirleri(g, dugum, birlesik));
+      }
     }
     return komutlar;
   }
@@ -509,5 +771,5 @@ class Bot implements ParselBotu {
 
 /** Önayardan parsel botu üretir. Deterministiktir; `gec_katilan` için `acilis` verilebilir (vars. ciftci). */
 export function parselBotuOlustur(onayar: ParselOnayari, oyuncu: OyuncuId, secenek: ParselBotSecenegi = {}): ParselBotu {
-  return new Bot(oyuncu, onayar, secenek.acilis ?? "ciftci");
+  return new Bot(oyuncu, onayar, secenek.acilis ?? "ciftci", secenek);
 }

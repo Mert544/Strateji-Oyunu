@@ -22,6 +22,58 @@ export interface ParselRaporMeta {
   bulgular: string;
   /** Koşuda kullanılan yerleşik bot sayıları ve geç katılan açılışları (rapor bağlamı). */
   duzen: { yerlesik: Record<string, number>; gec: readonly string[] };
+  /** Ölçüm haritası (vars. mini-6). */
+  harita?: string;
+  /** Tarım yönetimi açık mıydı (ekim planı + gübre dozu). */
+  tarimYonetimi?: boolean;
+  /** Bakım yönetimi açık mıydı (parça ithalatı + genel onarım). */
+  bakimYonetimi?: boolean;
+  /** Yaşlı spekülatörün alıma başladığı yaş (gün). */
+  spekulatorGun?: number;
+  /** Önceki koşuyla karşılaştırma (aynı geç katılan açılışları; Y7 ve servet oranları yan yana). */
+  karsilastirma?: ParselKarsilastirma;
+}
+
+/** Karşılaştırılacak önceki koşunun tohum sonuçları (JSON `tohumBasina`; yalnız H6 alanları okunur). */
+export interface ParselKarsilastirma {
+  /** Dosya adı (yol değil: rapor deterministik kalsın). */
+  kaynak: string;
+  etiket: string | undefined;
+  sonuclar: readonly ParselTohumSonucu[];
+}
+
+/** Geç katılan başına (açılış) ortalama gelir/emsal-medyan ve servet/emsal-medyan oranı (ppm) ve Y7 payı. */
+export interface OlguKarsilastirma {
+  gelirOranPpm: number | null;
+  servetOranPpm: number | null;
+  n: number;
+}
+
+function ppmOran(pay: number, payda: number | null): number | null {
+  if (payda === null || payda <= 0 || pay < 0) return null;
+  return Number((BigInt(pay) * 1_000_000n) / BigInt(payda));
+}
+
+export function olguKarsilastirmasi(sonuclar: readonly ParselTohumSonucu[]): Record<string, OlguKarsilastirma> {
+  const g = new Map<string, { gelir: number[]; servet: number[]; n: number }>();
+  for (const s of sonuclar) {
+    for (const o of s.h6.olgular) {
+      const k = o.acilis ?? o.gec;
+      const e = g.get(k) ?? { gelir: [], servet: [], n: 0 };
+      e.n++;
+      const a = ppmOran(o.gelir, o.emsalGelirMedyan);
+      const b = ppmOran(o.servetHam, o.emsalMedyanHam);
+      if (a !== null) e.gelir.push(a);
+      if (b !== null) e.servet.push(b);
+      g.set(k, e);
+    }
+  }
+  const sonuc: Record<string, OlguKarsilastirma> = {};
+  for (const k of [...g.keys()].sort()) {
+    const e = g.get(k) as { gelir: number[]; servet: number[]; n: number };
+    sonuc[k] = { gelirOranPpm: ortalama(e.gelir), servetOranPpm: ortalama(e.servet), n: e.n };
+  }
+  return sonuc;
 }
 
 export function yuzde(ppm: number | null | undefined): string {
@@ -136,6 +188,10 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
   k.push(`| Süre | ${meta.gun} sim günü (geç katılım ${meta.gecGun}. gün, ölçüm katılımdan ${meta.olcumGunu} gün sonra) |`);
   k.push(`| Düzen | ${Object.entries(meta.duzen.yerlesik).filter(([, n]) => n > 0).map(([a, n]) => `${n} ${a}`).join(", ")} yerleşik + geç katılan: ${meta.duzen.gec.map((a) => ACILIS_AD[a] ?? a).join(", ") || "yok"} |`);
   k.push(`| İklim | ${meta.iklim} (başlangıç ayı tohumla döner) |`);
+  k.push(`| Harita | ${meta.harita ?? "mini-6"} |`);
+  k.push(`| Tarım yönetimi | ${meta.tarimYonetimi === true ? "AÇIK (ekim planı + gübre dozu; pasif ve spekülatör hariç)" : "kapalı"} |`);
+  k.push(`| Bakım yönetimi | ${meta.bakimYonetimi === true ? "AÇIK (parça ithalatı + aşınma eşiğinde genel onarım; pasif ve spekülatör hariç)" : "kapalı"} |`);
+  if ((meta.duzen.yerlesik["spekulatorYasli"] ?? 0) > 0) k.push(`| Yaşlı spekülatör | ${meta.spekulatorGun ?? 15}. günden itibaren arsa alır (ayrılmış hücre süresi sonrası) |`);
   k.push(`| Ağır koşu | ${meta.agir ? "EVET (H6 tanımındaki gerçek 60. gün katılımı)" : "hayır (varsayılan; H6'nın 60. gün katılımı için `--agir`)"} |`);
   k.push("");
 
@@ -177,11 +233,11 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
     k.push("");
     k.push(
       tablo(
-        ["Geç katılan", "İlçe", "Emsal", "Üretim geliri (7 gün)", "Emsal geliri medyan", "Emsal medyanının ≥ %50'si"],
+        ["Geç katılan", "İlçe", "Emsal (üreten / toplam)", "Üretim geliri (7 gün)", "Üreten emsal geliri medyan", "Üreten emsal medyanının ≥ %50'si"],
         s.h6.olgular.map((o) => {
           const y = y7UretimGeliri([{ gelir: o.gelir, ilceGelirleri: o.emsalGelir }]);
           const ok = !y.olculebilir ? "ölçülemez" : y.ulasan === 1 ? "evet" : "hayır";
-          return [o.gec, o.ilce ?? "—", `${o.emsal.length}`, tl(o.gelir), tl(o.emsalGelirMedyan), ok];
+          return [o.gec, o.ilce ?? "—", `${o.emsalUretenSayisi} / ${o.emsal.length}`, tl(o.gelir), tl(o.emsalGelirMedyan), ok];
         }),
       ),
     );
@@ -226,7 +282,31 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
     ),
   );
   k.push("");
-  k.push("Not: botlar yalnızca yurt + birkaç hücre aldığından yoğunlaşma düşüktür; H8'in asıl sınavı spekülatör botuyla (henüz yok) yapılır. Yeniden satış mekanizması çekirdekte yok (`parsel_birak` devlete %70 iade); koşul 3 bu yüzden BELİRSİZ kalır.");
+  k.push(
+    (meta.duzen.yerlesik["spekulator"] ?? 0) + (meta.duzen.yerlesik["spekulatorYasli"] ?? 0) > 0
+      ? "Not: spekülatör botları (arsa biriktirir, üretmez) koşuda; Gini ve ilçe payı onların tavanlara (72 hücre / ilçenin %25'i) dayanmasıyla ölçülür. En büyük ilçe payı %25'e tam dayanabilir ama aşamaz (tavan çekirdekte); eşik \"> %25\" olduğundan tam %25 geçer."
+      : "Not: botlar yalnızca yurt + birkaç hücre aldığından yoğunlaşma düşüktür; H8'in asıl sınavı spekülatör botuyla yapılır (`--bot ...,spekulator=N`).",
+  );
+  k.push("");
+  k.push("**Koşul 3 (yeniden satış) BELİRSİZ kalır — neden:** çekirdekte oyuncular arası arsa devri/satışı yoktur; `parsel_birak` hücreyi devlete %70 iadeyle bırakır (hücre sahipsiz olur, fiyat oluşmaz). Yeniden satış fiyatı hiç oluşmadığından \"fiyat / haftalık arazi geliri\" oranı ölçülemez; H8 kararı diğer iki koşul tutsa bile BELİRSİZdir.");
+  k.push("");
+
+  // 3a. Ayrılmış hücre garantisi
+  k.push("## 3a. Ayrılmış hücre garantisi");
+  k.push("");
+  k.push("Ayrılmış hücreler (ilçenin uygun hücrelerinin %20'si) yalnız katılımın ilk 14 gününde olan oyuncuya satılır. İki yönlü ölçülür: **ihlal** (ayrılmış hücre sahibinin katılımından ≥ 14 gün sonra alınmış mı; 0 olmalı) ve **koruma** (geç gelen yeni oyuncu için ayrılmış hücre kalıyor mu: satılmamış / toplam).");
+  k.push("");
+  k.push(
+    tablo(
+      ["Tohum", "An", "Ayrılmış toplam", "Satılan", "Boş", "Kalan pay", "İhlal", "Güvence"],
+      sonuclar.flatMap((s) => [
+        [String(s.tohum), "geç katılımdan hemen önce", String(s.ayrilmis.gecOncesi.ayrilmisToplam), String(s.ayrilmis.gecOncesi.satilan), String(s.ayrilmis.gecOncesi.bos), yuzde(s.ayrilmis.gecOncesi.kalanPayPpm), String(s.ayrilmis.gecOncesi.ihlal), s.ayrilmis.gecOncesi.guvenceTuttu ? "tuttu" : "İHLAL"],
+        [String(s.tohum), "koşu sonu", String(s.ayrilmis.sonda.ayrilmisToplam), String(s.ayrilmis.sonda.satilan), String(s.ayrilmis.sonda.bos), yuzde(s.ayrilmis.sonda.kalanPayPpm), String(s.ayrilmis.sonda.ihlal), s.ayrilmis.sonda.guvenceTuttu ? "tuttu" : "İHLAL"],
+      ]),
+    ),
+  );
+  k.push("");
+  k.push("Okuma: İHLAL = 0 ise çekirdek kuralı (eski oyuncuya satmama) tutuyor. Kalan pay düşükse ayrılmış hücreler **önceki yeni oyuncular** (ör. ilk 14 günde alım yapan spekülatörler) tarafından tüketilmiş demektir: kural eski oyuncudan korur, aynı dönemdeki yeni oyuncudan korumaz.");
   k.push("");
 
   // 4. Y ölçütleri
@@ -267,10 +347,32 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
   if (ilk) {
     k.push(`## 5. Oyuncu özeti (tohum ${ilk.tohum})`);
     k.push("");
+    if (ilk.katilamayan.length > 0) {
+      k.push(`**Katılamayan oyuncular** (hiçbir ilçe yurt veremedi; ölçüm dışı): ${ilk.katilamayan.length} (${ilk.katilamayan.slice(0, 8).join(", ")}${ilk.katilamayan.length > 8 ? ", …" : ""})`);
+      k.push("");
+    }
+    if (ilk.yurtsuz > 0) {
+      k.push(`**Yurtsuz oyuncu:** ${ilk.yurtsuz} / ${ilk.oyuncular.length} (ilçelerde yurt kalmadı: katıldı ama hücresiz; bot komut veremez). Doluluk doygunluğa ulaştı.`);
+      k.push("");
+    }
+    if (ilk.oyuncular.length > 16) {
+      const gruplar = new Map<string, ParselTohumSonucu["oyuncular"]>();
+      for (const o of ilk.oyuncular) gruplar.set(o.id.replace(/_\d+$/, ""), [...(gruplar.get(o.id.replace(/_\d+$/, "")) ?? []), o]);
+      k.push(
+        tablo(
+          ["Grup", "Oyuncu", "Ort. hücre", "En çok hücre", "Ort. ham servet", "Ort. komut", "Reddedilen"],
+          [...gruplar.entries()].map(([ad, l]) => {
+            const servet = l.map((o) => o.servet.hazine + o.servet.stok + o.servet.arazi + o.servet.yapi);
+            return [ad, String(l.length), String(Math.floor(l.reduce((t, o) => t + o.hucre, 0) / l.length)), String(Math.max(...l.map((o) => o.hucre))), tl(ortalama(servet)), String(Math.floor(l.reduce((t, o) => t + o.komut, 0) / l.length)), String(l.reduce((t, o) => t + o.basarisiz, 0))];
+          }),
+        ),
+      );
+      k.push("");
+    }
     k.push(
       tablo(
         ["Oyuncu", "Katılım (gün)", "İlçe", "Hücre", "Yapı", "Komut", "Reddedilen", "Hazine", "Stok", "Arazi", "Yapı bedeli", "Ham servet"],
-        ilk.oyuncular.map((o) => [
+        ilk.oyuncular.slice(0, 16).map((o) => [
           o.id,
           String(o.katilmaGun),
           o.ilce ?? "—",
@@ -287,7 +389,39 @@ export function parselRaporUret(sonuclar: readonly ParselTohumSonucu[], meta: Pa
       ),
     );
     k.push("");
+    if (ilk.oyuncular.length > 16) k.push(`(Yalnız ilk 16 oyuncu gösterilir; toplam ${ilk.oyuncular.length}.)`);
     k.push("Not: tablodaki servet KOŞU SONUDUR (geç katılanlar için ölçüm anı katılım + " + meta.olcumGunu + " gündür; koşu bitişiyle aynı).");
+    k.push("");
+  }
+
+  // 5a. Önceki koşuyla karşılaştırma
+  if (meta.karsilastirma !== undefined) {
+    const kr = meta.karsilastirma;
+    const onceki = olguKarsilastirmasi(kr.sonuclar);
+    const simdi = olguKarsilastirmasi(sonuclar);
+    const ozOnce = parselOzetle(kr.sonuclar);
+    k.push(`## 5a. Önceki koşuyla karşılaştırma (${kr.etiket ?? kr.kaynak})`);
+    k.push("");
+    k.push(`Karşılaştırılan koşu: \`${kr.kaynak}\` (${kr.sonuclar.length} tohum). Aynı geç katılan açılışları; değerler tohumlar üzerinden ortalamadır. **Gelir/emsal** = geç katılanın son 7 günlük üretim geliri / üreten (geliri > 0) ilçe emsallerinin medyanı (Y7'nin ham oranı); **servet/emsal** = ikincil servet oranı.`);
+    k.push("");
+    const acilislar = [...new Set([...Object.keys(onceki), ...Object.keys(simdi)])].sort();
+    k.push(
+      tablo(
+        ["Geç katılan açılışı", "Gelir/emsal (önceki)", "Gelir/emsal (bu koşu)", "Servet/emsal (önceki)", "Servet/emsal (bu koşu)"],
+        acilislar.map((a) => [a, yuzde(onceki[a]?.gelirOranPpm), yuzde(simdi[a]?.gelirOranPpm), yuzde(onceki[a]?.servetOranPpm), yuzde(simdi[a]?.servetOranPpm)]),
+      ),
+    );
+    k.push("");
+    k.push(
+      tablo(
+        ["Ölçüt", "Önceki", "Bu koşu"],
+        [
+          ["Y7 oyuncu payı (≥ %50 emsal medyanı)", yuzde(ozOnce.h6.y7PayiPpm), yuzde(oz.h6.y7PayiPpm)],
+          ["Y7 kararı", verdictAd(ozOnce.h6.y7Verdict), verdictAd(oz.h6.y7Verdict)],
+          ["İkincil servet ulaşma", yuzde(ozOnce.h6.servetBasariPpm), yuzde(oz.h6.servetBasariPpm)],
+        ],
+      ),
+    );
     k.push("");
   }
 

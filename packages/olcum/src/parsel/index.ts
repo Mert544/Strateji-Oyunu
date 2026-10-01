@@ -12,3 +12,4 @@ export * from "./h7";
 export * from "./h8";
 export * from "./h9";
 export * from "./yeni-oyuncu";
+export * from "./ayrilmis";

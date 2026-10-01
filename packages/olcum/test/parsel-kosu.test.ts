@@ -2,7 +2,7 @@
  * Parsel kısa ölçüm koşusu (mini-6 parsel fikstürü): duman koşusu, determinizm, rapor ve komut satırı. Ağır koşu (H6 tanımındaki 60. gün
  * katılımı, tohum 1-10) `BOLGE_AGIR_TEST=1` arkasındadır.
  */
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -12,9 +12,11 @@ import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
 import {
   PARSEL_AGIR_GEC_GUN,
   PARSEL_AGIR_TOHUM,
+  KALABALIK_DAGILIM,
   ana,
   araziDegeriMili,
   hibeKitDegeri,
+  olguKarsilastirmasi,
   parselAna,
   parselArgumanAyristir,
   parselDuzeni,
@@ -85,6 +87,9 @@ describe("parsel kısa koşu: duman koşusu", () => {
     expect(r.h6.olgular.map((o) => o.gec)).toEqual(["gec_ciftci", "gec_sanayici", "gec_pazar"]);
     for (const o of r.h6.olgular) {
       expect(o.emsal.length, o.gec).toBeGreaterThan(0);
+      // Y7 emsal kuralı: medyan yalnız üreten (gelir > 0) emsallerden
+      expect(o.emsalUretenSayisi).toBe(o.emsalGelir.filter((x) => x > 0).length);
+      expect(o.emsalUretenSayisi).toBeLessThanOrEqual(o.emsal.length);
       expect(o.servetArindirilmis).toBe(o.servetHam - r.hibeKitDegeri);
       expect(o.ulastiHam).toBe(o.ulastiArindirilmis);
       // servet = bileşenlerin toplamı
@@ -102,16 +107,28 @@ describe("parsel kısa koşu: duman koşusu", () => {
     expect(r.h6.karar.birincil.kaynak).toBe("y7_gelir+ucuz_hucre");
   });
 
-  it("ucuz hücre: katılımdan hemen ÖNCE ilçe doluluğu (geç katılanın yurdu hariç); ayrılmış hücreler ayrıdır", () => {
+  it("ucuz hücre: katılımdan hemen ÖNCE ilçe doluluğu (geç katılanın yurdu hariç); ayrılmış hücreler ayrıdır ve garanti ayrıntısıyla tutarlıdır", () => {
     expect(r.h6.ilceler).toHaveLength(12);
     const satilmis = r.h6.ilceler.reduce((t, c) => t + c.satilmisHucre, 0);
     // 5 yerleşik × (6 yurt + en fazla birkaç hücre); geç katılanların 3 × 6 yurdu henüz verilmedi
     expect(satilmis).toBeGreaterThanOrEqual(30);
     expect(satilmis).toBeLessThan(30 + 5 * 4);
     const ayrilmis = r.h6.ilceler.reduce((t, c) => t + c.ayrilmisBos, 0);
-    expect(ayrilmis).toBeGreaterThan(150);
+    expect(ayrilmis).toBeGreaterThan(50);
+    expect(ayrilmis).toBe(r.ayrilmis.gecOncesi.bos); // aynı sayım iki yoldan
     expect(r.h6.ucuz.ayrilmisUcuz + r.h6.ucuz.genelUcuz).toBe(r.h6.ucuz.ucuzHucre);
-    expect(r.h6.ucuz.uygunHucre).toBe(1015);
+    expect(r.h6.ucuz.uygunHucre).toBe(r.h6.ilceler.reduce((t, c) => t + c.uygunHucre, 0));
+  });
+
+  it("ayrılmış hücre garantisi: ihlal yok; geç katılımdan önce ve sonda tutarlı sayım", () => {
+    for (const a of [r.ayrilmis.gecOncesi, r.ayrilmis.sonda]) {
+      expect(a.ihlal).toBe(0);
+      expect(a.guvenceTuttu).toBe(true);
+      expect(a.satilan + a.bos).toBe(a.ayrilmisToplam);
+    }
+    expect(r.ayrilmis.sonda.bos).toBeLessThanOrEqual(r.ayrilmis.gecOncesi.bos); // satış tek yönlü
+    expect(r.katilamayan).toEqual([]);
+    expect(r.yurtsuz).toBe(0);
   });
 
   it("H8: Gini ve ilçe payı hesaplanır; yeniden satış yok → karar belirsiz", () => {
@@ -168,6 +185,115 @@ describe("parsel kısa koşu: geç katılan yok ve sınır seçenekleri", () => 
   });
 });
 
+describe("parsel kısa koşu: spekülatör, ayrılmış hücre garantisi ve H8", () => {
+  const SPEK: ParselKosuSecenek = { tohumlar: [1], gecGun: 20, olcumGunu: 10, yerlesik: { ciftci: 2, sanayici: 1, tuccar: 1, pasif: 1, spekulator: 3, spekulatorYasli: 3 }, spekulatorGun: 15 };
+  const temel = parselTohumKos({ ...SPEK, yerlesik: { ciftci: 2, sanayici: 1, tuccar: 1, pasif: 1 } }, 1);
+  const r = parselTohumKos(SPEK, 1);
+
+  it("spekülatörler tavanlara dayanır: H8 ilçe payı ≤ %25 (tam %25 'aşmaz'), 72 hücre aşılmaz; yeniden satış yok → belirsiz (neden raporda)", () => {
+    expect(r.h8.ilce.enBuyukPayPpm).toBeLessThanOrEqual(250_000);
+    expect(r.h8.ilce.payAsanCift).toBe(0);
+    expect(r.h8.ilce.tavanAsanCift).toBe(0);
+    expect(r.h8.ilce.enBuyuk?.oyuncu.startsWith("spekulator")).toBe(true);
+    expect(r.h8.verdict).toBe("belirsiz");
+    expect(r.h8.yenidenSatis.satisSayisi).toBe(0);
+    const md = parselRaporUret([r], { etiket: "s", tohumlar: [1], gun: 30, gecGun: 20, olcumGunu: 10, iklim: "hizli", agir: false, sureMs: 1, bulgular: "b.md", duzen: { yerlesik: { ...SPEK.yerlesik } as Record<string, number>, gec: ["ciftci"] } });
+    expect(md).toContain("çekirdekte oyuncular arası arsa devri/satışı yoktur");
+    expect(md).toContain("spekülatör botları");
+  });
+
+  it("spekülatörler arsa Gini'sini yükseltir (hücresi olmayanlar dahil nüfus) ama eşiği (%60) aşmaz bu ölçekte", () => {
+    expect(r.h8.gini.degerGiniPpm).toBeGreaterThan(temel.h8.gini.degerGiniPpm);
+    expect(r.h8.gini.oyuncuSayisi).toBe(r.oyuncular.length);
+  });
+
+  it("ayrılmış hücre: ihlal 0 (eski oyuncuya satılmaz); yeni spekülatörler önceki yeni oyuncu olarak ayrılmışı tüketir (kalan pay tabana göre düşük)", () => {
+    expect(r.ayrilmis.gecOncesi.ihlal).toBe(0);
+    expect(r.ayrilmis.sonda.ihlal).toBe(0);
+    expect(r.ayrilmis.gecOncesi.kalanPayPpm).toBeLessThan(temel.ayrilmis.gecOncesi.kalanPayPpm);
+    expect(r.ayrilmis.gecOncesi.satilan).toBeGreaterThan(temel.ayrilmis.gecOncesi.satilan);
+  });
+
+  it("spekülatör kalabalığı geç katılan için ucuz hücre payını düşürür", () => {
+    expect(r.h6.ucuz.payPpm).toBeLessThan(temel.h6.ucuz.payPpm);
+  });
+
+  it("spekülatör koşusu deterministik ve reddedilen komut yok", () => {
+    expect(sabit(parselTohumKos(SPEK, 1))).toBe(sabit(r));
+    for (const o of r.oyuncular) expect(o.basarisiz, o.id).toBe(0);
+  });
+});
+
+describe("parsel kısa koşu: tarım ve bakım yönetimi seçenekleri ve karşılaştırma", () => {
+  const A: ParselKosuSecenek = { ...KISA, gecGun: 12, olcumGunu: 8 };
+  const yok = parselTohumKos(A, 1);
+  const yon = parselTohumKos({ ...A, tarimYonetimi: true, bakimYonetimi: true }, 1);
+
+  it("yönetim seçenekleri botlara akar (ekim planı / gübre / parça ithalatı); reddedilen komut yok; durum özeti değişir", () => {
+    expect(yon.komutTurleri["ekim_plani"]).toBeGreaterThan(0);
+    expect(yok.komutTurleri["ekim_plani"]).toBeUndefined();
+    expect(yon.durumOzeti).not.toBe(yok.durumOzeti);
+    for (const o of yon.oyuncular) expect(o.basarisiz, o.id).toBe(0);
+  });
+
+  it("olguKarsilastirmasi: açılış başına gelir/emsal ve servet/emsal ortalaması (ppm); medyan ≤ 0 olguları dışarıda", () => {
+    const k = olguKarsilastirmasi([yok]);
+    expect(Object.keys(k).sort()).toEqual(["ciftci", "pazar", "sanayici"]);
+    for (const v of Object.values(k)) {
+      expect(v.n).toBe(1);
+      expect(v.gelirOranPpm === null || v.gelirOranPpm >= 0).toBe(true);
+    }
+    // Sınır: gelir tam emsal medyanına eşitse oran 1.000.000
+    const o0 = yok.h6.olgular[0]!;
+    const sahte = { ...yok, h6: { ...yok.h6, olgular: [{ ...o0, gelir: 500, emsalGelirMedyan: 500 }] } };
+    expect(Object.values(olguKarsilastirmasi([sahte]))[0]?.gelirOranPpm).toBe(1_000_000);
+    const sifir = { ...yok, h6: { ...yok.h6, olgular: [{ ...o0, gelir: 500, emsalGelirMedyan: 0 }] } };
+    expect(Object.values(olguKarsilastirmasi([sifir]))[0]?.gelirOranPpm).toBeNull();
+  });
+
+  it("rapor: karşılaştırma bölümü, tarım/bakım satırları ve deterministik metin", () => {
+    const meta = { etiket: "yon", tohumlar: [1], gun: 20, gecGun: 12, olcumGunu: 8, iklim: "hizli", agir: false, sureMs: 1, bulgular: "b.md", tarimYonetimi: true, bakimYonetimi: true, duzen: { yerlesik: { ciftci: 2 } as Record<string, number>, gec: ["ciftci", "sanayici", "pazar"] as readonly string[] }, karsilastirma: { kaynak: "temel.json", etiket: "temel", sonuclar: [yok] } };
+    const md = parselRaporUret([yon], meta);
+    expect(md).toContain("## 5a. Önceki koşuyla karşılaştırma (temel)");
+    expect(md).toContain("Tarım yönetimi | AÇIK");
+    expect(md).toContain("Bakım yönetimi | AÇIK");
+    expect(md).toBe(parselRaporUret([yon], meta));
+    expect(parselRaporUret([yon], { ...meta, karsilastirma: undefined, tarimYonetimi: false, bakimYonetimi: false })).not.toContain("## 5a.");
+  });
+});
+
+describe("parsel kalabalık koşu", () => {
+  it("varsayılan kalabalık dağılımlar: mini-6 62, sentetik-50 310 yerleşik bot", () => {
+    const top = (d: Record<string, number>) => Object.values(d).reduce((t, x) => t + x, 0);
+    expect(top(KALABALIK_DAGILIM["mini-6"])).toBe(62);
+    expect(top(KALABALIK_DAGILIM["sentetik-50"])).toBe(310);
+  });
+
+  it("duman: mini-6'da kalabalık (yerleşik 40+) koşu tamamlanır; doluluk yüksek; yurtsuz oyuncular raporlanır; deterministik", () => {
+    const sec: ParselKosuSecenek = { tohumlar: [1], gecGun: 2, olcumGunu: 3, yerlesik: { ciftci: 14, sanayici: 6, tuccar: 6, pasif: 4, spekulator: 6, spekulatorYasli: 6 } };
+    const r = parselTohumKos(sec, 1);
+    expect(r.oyuncular.length).toBe(42 + 3);
+    const sat = r.h6.ilceler.reduce((t, c) => t + c.satilmisHucre, 0);
+    const uygun = r.h6.ilceler.reduce((t, c) => t + c.uygunHucre, 0);
+    expect(sat * 100).toBeGreaterThan(uygun * 25); // %25'ten fazla dolu
+    expect(r.h6.ucuz.payPpm).toBeLessThan(900_000);
+    expect(r.ayrilmis.sonda.ihlal).toBe(0);
+    expect(sabit(parselTohumKos(sec, 1))).toBe(sabit(r));
+    const md = parselRaporUret([r], { etiket: "k", tohumlar: [1], gun: 5, gecGun: 2, olcumGunu: 3, iklim: "hizli", agir: false, sureMs: 1, bulgular: "b.md", duzen: { yerlesik: sec.yerlesik as Record<string, number>, gec: ["ciftci", "sanayici", "pazar"] } });
+    expect(md).toContain("| Grup | Oyuncu |");
+    expect(md).toContain("Yalnız ilk 16 oyuncu gösterilir");
+  }, 120_000);
+
+  it.skipIf(process.env.BOLGE_AGIR_TEST !== "1")("AGIR: sentetik-50'de ~310 bot, 10 gün; süre raporlanır", () => {
+    const bas = Date.now();
+    const r = parselTohumKos({ tohumlar: [1], harita: "sentetik-50", gecGun: 6, olcumGunu: 4, yerlesik: { ...KALABALIK_DAGILIM["sentetik-50"] } }, 1);
+    const sure = Date.now() - bas;
+    console.log(`parsel kalabalik sentetik-50: ${r.oyuncular.length} oyuncu, ${r.sureGun} gun, ${(sure / 1000).toFixed(1)} sn, yurtsuz ${r.yurtsuz}, ayrilmis kalan ${r.ayrilmis.gecOncesi.kalanPayPpm}`);
+    expect(r.oyuncular.length).toBeGreaterThan(300);
+    expect(r.ayrilmis.sonda.ihlal).toBe(0);
+  }, 1_800_000);
+});
+
 describe("parsel raporu", () => {
   const r = parselTohumKos(KISA, 1);
   const meta = { etiket: "test", tohumlar: [1], gun: 6, gecGun: 2, olcumGunu: 4, iklim: "hizli", agir: false, sureMs: 1234, bulgular: "parsel-test-bulgular.md", duzen: { yerlesik: { ciftci: 2, sanayici: 1, tuccar: 1, pasif: 1 }, gec: ["ciftci", "sanayici", "pazar"] as readonly string[] } };
@@ -218,6 +344,35 @@ describe("parsel komut satırı", () => {
     expect(() => parselArgumanAyristir(["--bilinmeyen"])).toThrow(/bilinmeyen/);
     expect(() => parselArgumanAyristir(["--tohum"])).toThrow(/deger/);
   });
+
+  it("yeni seçenekler: --kalabalik, --harita, --tarim-yonetimi, --bakim-yonetimi, --spekulator-gun, --karsilastir ve hatalar", () => {
+    const a = parselArgumanAyristir(["--kalabalik", "--harita", "sentetik-50", "--tarim-yonetimi", "--bakim-yonetimi", "--spekulator-gun=20", "--karsilastir", "x.json", "--bot", "spekulator=2,spekulatorYasli=3"]);
+    expect(a).toMatchObject({ kalabalik: true, harita: "sentetik-50", tarimYonetimi: true, bakimYonetimi: true, spekulatorGun: 20, karsilastir: "x.json", bot: { spekulator: 2, spekulatorYasli: 3 } });
+    expect(parselArgumanAyristir([])).toMatchObject({ kalabalik: false, harita: "mini-6", tarimYonetimi: false, bakimYonetimi: false, spekulatorGun: undefined, karsilastir: undefined });
+    expect(() => parselArgumanAyristir(["--harita", "ankara"])).toThrow(/--harita/);
+    expect(() => parselArgumanAyristir(["--spekulator-gun", "-1"])).toThrow(/--spekulator-gun/);
+  });
+
+  it("kalabalık + tarım/bakım + karşılaştırma uçtan uca: iki dosya yazılır, karşılaştırma bölümü ve yurtsuz/grup tablosu raporda", () => {
+    const dizin = mkdtempSync(join(tmpdir(), "parsel-olcum-"));
+    geciciler.push(dizin);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const ortak = ["--tohum", "1", "--gec-gun", "2", "--olcum-gunu", "3", "--cikti", dizin];
+    parselAna([...ortak, "--ad", "temel"]);
+    parselAna([...ortak, "--kalabalik", "--tarim-yonetimi", "--bakim-yonetimi", "--karsilastir", join(dizin, "parsel-temel.json"), "--ad", "kal", "--bulgular", "parsel-x-bulgular.md"]);
+    const md = readFileSync(join(dizin, "parsel-kal.md"), "utf8");
+    expect(md).toContain("## 5a. Önceki koşuyla karşılaştırma");
+    expect(md).toContain("| Grup | Oyuncu |");
+    expect(md).toContain("[parsel-x-bulgular.md](parsel-x-bulgular.md)");
+    expect(md).not.toContain("Toplam süre");
+    const j = JSON.parse(readFileSync(join(dizin, "parsel-kal.json"), "utf8")) as { kalabalik: boolean; tarimYonetimi: boolean; bakimYonetimi: boolean; karsilastirma?: unknown; duzen: { yerlesik: Record<string, number> } };
+    expect(j).toMatchObject({ kalabalik: true, tarimYonetimi: true, bakimYonetimi: true });
+    expect(j.karsilastirma).toBeUndefined(); // önceki koşunun tamamı JSON'a kopyalanmaz
+    expect(j.duzen.yerlesik["spekulator"]).toBe(8);
+    expect(() => parselAna([...ortak, "--karsilastir", join(dizin, "yok.json"), "--ad", "z"])).toThrow();
+    writeFileSync(join(dizin, "bozuk.json"), "{}");
+    expect(() => parselAna([...ortak, "--karsilastir", join(dizin, "bozuk.json"), "--ad", "z"])).toThrow(/gecerli bir parsel/);
+  }, 120_000);
 
   it("--kip: parsel yönlenir (yardım basar, koşu yapmaz); geçersiz kip hata; kip verilmezse bölge yolu (yardım)", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});

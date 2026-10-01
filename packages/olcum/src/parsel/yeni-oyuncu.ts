@@ -53,7 +53,7 @@ export const Y_OLCUTLERI: readonly YOlcutTanimi[] = [
   { kod: "Y4", ad: "D1 / D7 geri dönüş", hedef: "D1 ≥ %35; D7 ≥ %15 (gözlem)", kaynak: "insan", turetilebilir: false, insanTesti: true, not: "OLÇÜLEMEZ: oturum telemetrisi gerekir (sunucu; R-Ü16); çekirdek durumunda yok." },
   { kod: "Y5", ad: "Açılış çeşitliliği", hedef: "hiçbir katman > %60", kaynak: "karma", turetilebilir: true, insanTesti: false, not: "İlk 24 saatte ikinci yapının katmanı; hibrit portföy oranı." },
   { kod: "Y6", ad: "Yön değiştirme maliyetsizliği", hedef: "≥ %10 yön değiştirir; D7 farkı ≥ −5 puan", kaynak: "insan", turetilebilir: true, insanTesti: true, not: "Yalnız oran (parsel_birak / insaat_iptal, ilk 7 gün) türetilir; D7 farkı oturum verisi ister (ölçülemez)." },
-  { kod: "Y7", ad: "14. gün net üretim geliri", hedef: "oyuncuların ≥ %50'si ilçe medyanının ≥ %50'sinde", kaynak: "karma", turetilebilir: true, insanTesti: false, not: "H6'nın BİRİNCİL ölçüsü (hibeden bağımsız): son 7 günün net üretim geliri (sermaye harcaması hariç hazine akışı)." },
+  { kod: "Y7", ad: "14. gün net üretim geliri", hedef: "oyuncuların ≥ %50'si ilçe medyanının ≥ %50'sinde", kaynak: "karma", turetilebilir: true, insanTesti: false, not: "H6'nın BİRİNCİL ölçüsü (hibeden bağımsız): son 7 günün net üretim geliri (sermaye harcaması hariç hazine akışı); emsal yalnız üreten (geliri > 0) yerleşikler." },
   { kod: "Y8", ad: "Defter etkileşimi", hedef: "Atla ≤ %30", kaynak: "insan", turetilebilir: false, insanTesti: true, not: "OLÇÜLEMEZ: Esnaf Defteri istemci telemetrisi." },
   { kod: "Y9", ad: "Rehberlik (Alfa-1)", hedef: "≥ %20; Rehberli D7 ≥ +5 puan", kaynak: "insan", turetilebilir: false, insanTesti: true, not: "OLÇÜLEMEZ: Rehberlik (A16) yok." },
   { kod: "Y10", ad: "Takılma", hedef: "≤ 1 / oyuncu", kaynak: "insan", turetilebilir: false, insanTesti: true, not: "OLÇÜLEMEZ: gerçek oyuncunun komutsuz bekleme anları; bot karar aralığı sabit olduğundan anlamsız." },
@@ -291,7 +291,19 @@ export function y6YonDegistirme(kayitlar: readonly YonKaydi[]): Y6Sonucu | Olcul
  */
 export interface UretimGeliriOlgusu {
   gelir: number;
+  /** İlçe emsallerinin gelirleri (HAM liste: üretimsizler dahil); `y7UretimGeliri` yalnız ÜRETENLERİ (gelir > 0) kullanır. */
   ilceGelirleri: readonly number[];
+}
+
+/**
+ * Y7 emsal kuralı (baş lider kararı): emsal YALNIZ ÜRETİM YAPAN (net üretim geliri > 0) yerleşik oyunculardır; geliri 0 ya da negatif
+ * olanlar (pasif, spekülatör, zarar eden) emsal medyanına girmez. Sınır: gelir 0 dışarıda, 1 içeride.
+ */
+export function uretenEmsal(gelirler: readonly number[]): number[] {
+  return gelirler.filter((e) => {
+    tamsayiDenetle(e, "emsalGelir");
+    return e > 0;
+  });
 }
 
 export interface Y7Sonucu {
@@ -300,7 +312,7 @@ export interface Y7Sonucu {
   oyuncuPayiPpm: number;
   ulasan: number;
   olculebilirOyuncu: number;
-  /** Emsal medyanı ≤ 0 ya da emsal yok: oran tanımsız (ölçülemez) oyuncu sayısı. */
+  /** Üreten emsal yok (emsal kümesi boş): oran tanımsız (ölçülemez) oyuncu sayısı. */
   olcumDisi: number;
   olguSayisi: number;
   hedefGecti: boolean;
@@ -308,7 +320,7 @@ export interface Y7Sonucu {
 
 /**
  * Y7: oyuncunun geliri, ilçe emsallerinin medyanının ≥ %50'sine ulaştı mı (kesirsiz: 2·gelir·PPM ≥ 2·medyan·pay).
- * Emsal yoksa ya da medyan ≤ 0 ise (pozitif gelirli emsal yok) o olgu ölçülemez. Hiçbiri ölçülemezse sonuç ölçülemez.
+ * Emsal = yalnız ÜRETEN yerleşikler (`uretenEmsal`: gelir > 0). Üreten emsal yoksa o olgu ölçülemez; hiçbiri ölçülemezse sonuç ölçülemez.
  */
 export function y7UretimGeliri(olgular: readonly UretimGeliriOlgusu[]): Y7Sonucu | Olculemez {
   let ulasan = 0;
@@ -316,23 +328,18 @@ export function y7UretimGeliri(olgular: readonly UretimGeliriOlgusu[]): Y7Sonucu
   let disi = 0;
   for (const o of olgular) {
     tamsayiDenetle(o.gelir, "gelir");
-    for (const e of o.ilceGelirleri) tamsayiDenetle(e, "emsalGelir");
-    const s = [...o.ilceGelirleri].sort((a, b) => a - b);
+    const s = uretenEmsal(o.ilceGelirleri).sort((a, b) => a - b);
     if (s.length === 0) {
       disi++;
       continue;
     }
     const orta = s.length >> 1;
     const m2 = s.length % 2 === 1 ? 2 * (s[orta] as number) : (s[orta - 1] as number) + (s[orta] as number);
-    if (m2 <= 0) {
-      disi++;
-      continue;
-    }
     olculen++;
     // gelir >= medyan × pay  <=>  2·gelir·PPM >= m2·pay (m2 = 2·medyan; BigInt)
     if (BigInt(2 * o.gelir) * BigInt(PPM) >= BigInt(m2) * BigInt(Y7_MEDYAN_PAYI_PPM)) ulasan++;
   }
-  if (olculen === 0) return olculemez("ilce emsali yok ya da emsal medyani pozitif degil");
+  if (olculen === 0) return olculemez("uretim yapan (geliri > 0) ilce emsali yok");
   const pay = oranPpm(ulasan, olculen);
   return { olculebilir: true, oyuncuPayiPpm: pay, ulasan, olculebilirOyuncu: olculen, olcumDisi: disi, olguSayisi: olgular.length, hedefGecti: pay >= Y7_OYUNCU_HEDEF_PPM };
 }
