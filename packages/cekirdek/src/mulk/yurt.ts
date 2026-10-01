@@ -20,8 +20,9 @@
 import { carpBol } from "../sabit";
 import { PPM } from "../tipler";
 import type { Baglam, DerlenmisIcerik, DerlenmisMulk, Dunya, HucreDurumu, IlceDurumu, OyuncuId } from "../tipler";
-import { hucreBul, hucreEkle, hucreXY, ilceBul, ilceHucreEkle, mulkOyuncuAl } from "./durum";
-import { dizge, ilceMerkezi, kumeSec } from "./geometri";
+import { hucreBul, hucreEkle, ilceBul, ilceHucreEkle, mulkOyuncuAl } from "./durum";
+import { dizge, kumeSec } from "./geometri";
+import { durumUygunMu } from "./hucreDizini";
 import { kamuHucreMi } from "./kamu";
 import { isletmeAl } from "./isletme";
 
@@ -31,10 +32,6 @@ export interface YurtPlani {
   hucreler: string[];
 }
 
-/** Orman kullanım bilgisi (fikstür şemasında isteğe bağlı, henüz üretilmeyen alan). */
-function ormanMi(h: unknown): boolean {
-  return (h as { kullanim?: unknown }).kullanim === "orman";
-}
 
 /** İlçede `n` hücrelik yurt planı ya da neden verilemediği (hata iletisi). Dünyayı değiştirmez. */
 function ilcePlani(d: Dunya, mk: DerlenmisMulk, ilce: IlceDurumu, n: number): YurtPlani | string {
@@ -44,16 +41,17 @@ function ilcePlani(d: Dunya, mk: DerlenmisMulk, ilce: IlceDurumu, n: number): Yu
   const tanim = mk.ilceler.get(ilce.id);
   if (tanim === undefined) return `bilinmeyen ilce: ${ilce.id}`;
   // İlçe merkezi: kasaba/şehir sınıfı uygun hücrelerin ağırlık merkezi (yoksa tüm uygun hücrelerin); kamu ilçe merkeziyle AYNI tanım.
-  const [cx, cy] = ilceMerkezi(tanim);
+  // Kompakt hücre dizininden (docs/06 §15.11): hücre başına nesne yok; yineleme fikstür sırasında, seçim (uzaklık², kimlik dizesi) tam sıralıdır.
+  const dz = mk.dizin;
+  const no = dz.ilceNo(ilce.id);
+  const [cx, cy] = dz.ilceMerkezi(no);
   const bos: { id: string; x: number; y: number; orman: boolean }[] = [];
-  for (const h of tanim.hucreler) {
-    if (!h.uygun) continue;
+  dz.gez(no, (x, y, b) => {
+    if (!durumUygunMu(b)) return;
+    const id = `${x}:${y}`;
     // Kamu arsası (satılmaz) yurt seçiminde atlanır.
-    if (hucreBul(d, h.id) === undefined && !kamuHucreMi(d, ilce.id, h.id)) {
-      const [x, y] = hucreXY(h.id);
-      bos.push({ id: h.id, x, y, orman: ormanMi(h) });
-    }
-  }
+    if (hucreBul(d, id) === undefined && !kamuHucreMi(d, ilce.id, id)) bos.push({ id, x, y, orman: dz.ormanMi(no, x, y) });
+  });
   if (bos.length < n) return `ilcede yeterli bos hucre yok: ${ilce.id} (${bos.length} < ${n})`;
   // Orman hücreleri yalnız yetmezse kullanılır.
   const ormansiz = bos.filter((c) => !c.orman);

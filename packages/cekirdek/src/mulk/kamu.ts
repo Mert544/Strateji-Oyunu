@@ -32,7 +32,9 @@ import { carpBol } from "../sabit";
 import { KAMU_SAHIP_ONEKI, PPM } from "../tipler";
 import type { Dunya, HucreId, KamuBlok, KamuGrubu, KamuGrubuDurumu, KamuIlceDurumu, KamuKumesi, KamuTuru } from "../tipler";
 import { hucreXY, sirali } from "./durum";
-import { ilceMerkeziXY } from "./geometri";
+import { ilceMerkeziDizi } from "./geometri";
+import { DIZI_KIRSAL_DEGIL, DIZI_SU, DIZI_UYGUN, HucreDizini, durumEngeli } from "./hucreDizini";
+import type { IlceHucreDizileri } from "./hucreDizini";
 
 /** Kamu algoritmasının sürümü (dünya durumuna yazılır; kümeyi üreten kural değişirse artırılır, eski dünyalar dondurulmuş kalır). */
 export const KAMU_ALGORITMA_SURUMU = 1;
@@ -414,6 +416,35 @@ function ayir(id: string, xy: Int32Array, k: number): void {
  * ilçelerin suyu da görülür). Sınırlayıcı kutu sınırı aşılırsa `Error` fırlatır.
  */
 export function ilceKamuHesapla(c: ParselIlceTanimi, su: Int32Array, kp: MulkKamuParametreleri): KamuKumesi {
+  return ilceKamuHesaplaDizi(fikstureDizi(c), su, kp);
+}
+
+/** Fikstür ilçesinden hesap girdisi (hücre dizisi sırasıyla): koordinatlar, bayraklar ve kamu işaretleri. */
+function fikstureDizi(c: ParselIlceTanimi): IlceHucreDizileri {
+  const n = c.hucreler.length;
+  const xy = new Int32Array(n * 2);
+  const xs = new Int32Array(n);
+  const ys = new Int32Array(n);
+  const bayrak = new Uint8Array(n);
+  const isaretler: { i: number; tur: KamuTuru }[] = [];
+  for (let i = 0; i < n; i++) {
+    const hc = c.hucreler[i] as ParselHucreTanimi;
+    ayir(hc.id, xy, i);
+    xs[i] = xy[2 * i] as number;
+    ys[i] = xy[2 * i + 1] as number;
+    let f = hc.uygun ? DIZI_UYGUN : 0;
+    if (hc.uygun && hc.sinif !== "kirsal") f |= DIZI_KIRSAL_DEGIL;
+    if (hc.engel === "su") f |= DIZI_SU;
+    bayrak[i] = f;
+    if (hc.kamu !== undefined && hc.uygun) isaretler.push({ i, tur: hc.kamu });
+  }
+  const o: IlceHucreDizileri = { id: c.id, n, xs, ys, bayrak, isaretler };
+  if (c.mahalleler !== undefined) o.mahalleler = c.mahalleler;
+  return o;
+}
+
+/** `ilceKamuHesapla` çekirdeği: hücre dizilerinden (fikstür ya da kompakt hücre dizini) hesap. */
+export function ilceKamuHesaplaDizi(c: IlceHucreDizileri, su: Int32Array, kp: MulkKamuParametreleri): KamuKumesi {
   const ilceSahip = kamuIlceKimligi(c.id);
   // --- Izgara ---
   let minx = Number.POSITIVE_INFINITY;
@@ -421,13 +452,10 @@ export function ilceKamuHesapla(c: ParselIlceTanimi, su: Int32Array, kp: MulkKam
   let maxx = -1;
   let maxy = -1;
   let uygunSayisi = 0;
-  const xy = new Int32Array(c.hucreler.length * 2);
-  for (let i = 0; i < c.hucreler.length; i++) {
-    const hc = c.hucreler[i] as ParselHucreTanimi;
-    ayir(hc.id, xy, i);
-    if (!hc.uygun) continue;
-    const x = xy[2 * i] as number;
-    const y = xy[2 * i + 1] as number;
+  for (let i = 0; i < c.n; i++) {
+    if (((c.bayrak[i] as number) & DIZI_UYGUN) === 0) continue;
+    const x = c.xs[i] as number;
+    const y = c.ys[i] as number;
     uygunSayisi++;
     if (x < minx) minx = x;
     if (x > maxx) maxx = x;
@@ -439,8 +467,8 @@ export function ilceKamuHesapla(c: ParselIlceTanimi, su: Int32Array, kp: MulkKam
   const h = maxy - miny + 1;
   if (w > KENAR_SINIRI || h > KENAR_SINIRI || w * h > ALAN_SINIRI) throw new Error(`ilceKamuHesapla: ilce sinirlayici kutusu cok buyuk (${w} x ${h}): ${c.id}`);
   const g: Izgara = { minx, miny, w, h, serbest: new Uint8Array(w * h), kod: new Int32Array(w * h) };
-  for (let i = 0; i < c.hucreler.length; i++) {
-    if ((c.hucreler[i] as ParselHucreTanimi).uygun) g.serbest[((xy[2 * i + 1] as number) - miny) * w + ((xy[2 * i] as number) - minx)] = 1;
+  for (let i = 0; i < c.n; i++) {
+    if (((c.bayrak[i] as number) & DIZI_UYGUN) !== 0) g.serbest[((c.ys[i] as number) - miny) * w + ((c.xs[i] as number) - minx)] = 1;
   }
   const idxOf = (x: number, y: number): number => (y - miny) * w + (x - minx);
   const yer = new Yerlestirici(g);
@@ -473,19 +501,19 @@ export function ilceKamuHesapla(c: ParselIlceTanimi, su: Int32Array, kp: MulkKam
   const mahalleSahibi = new Map<HucreId, string>();
   for (const m of c.mahalleler ?? []) for (const hid of m.hucreler) mahalleSahibi.set(hid, kamuMahalleKimligi(m.id));
   const isaretli = { paket: false, merkez: false, kiyi: false, hazine: false };
-  for (let i = 0; i < c.hucreler.length; i++) {
-    const hc = c.hucreler[i] as ParselHucreTanimi;
-    if (hc.kamu === undefined || !hc.uygun) continue;
-    const bilesen = BILESEN[hc.kamu];
+  for (const is of c.isaretler) {
+    const x = c.xs[is.i] as number;
+    const y = c.ys[is.i] as number;
+    const bilesen = BILESEN[is.tur];
     isaretli[bilesen] = true;
-    ata([idxOf(xy[2 * i] as number, xy[2 * i + 1] as number)], bilesen === "paket" ? (mahalleSahibi.get(hc.id) ?? ilceSahip) : ilceSahip, hc.kamu);
+    ata([idxOf(x, y)], bilesen === "paket" ? (mahalleSahibi.get(`${x}:${y}`) ?? ilceSahip) : ilceSahip, is.tur);
   }
   const serbestMi = (i: number): boolean => g.serbest[i] === 1;
 
   // --- 2. D: kıyı şeridi (kıyı ilçesi: en az `kiyiIlceMinSuHucre` su hücresi) ---
   if (!isaretli.kiyi && kp.kiyiDerinlik > 0) {
     let suSayisi = 0;
-    for (const hc of c.hucreler) if (hc.engel === "su") suSayisi++;
+    for (let i = 0; i < c.n; i++) if (((c.bayrak[i] as number) & DIZI_SU) !== 0) suSayisi++;
     if (suSayisi >= kp.kiyiIlceMinSuHucre) {
       const D = kp.kiyiDerinlik;
       const kiyi: number[] = [];
@@ -509,7 +537,7 @@ export function ilceKamuHesapla(c: ParselIlceTanimi, su: Int32Array, kp: MulkKam
   }
 
   // --- 3. C: ilçe merkezi alanı ---
-  const [mx, my] = ilceMerkeziXY(c, xy);
+  const [mx, my] = ilceMerkeziDizi(c);
   if (!isaretli.merkez && kp.ilceMerkeziHucre > 0 && serbestSayisi > 0) {
     ata(yer.yerlestir(Math.min(kp.ilceMerkeziHucre, serbestSayisi), mx, my, serbestMi), ilceSahip, "hizmet");
   }
@@ -686,7 +714,25 @@ export function ilceKamuHesapla(c: ParselIlceTanimi, su: Int32Array, kp: MulkKam
 }
 
 /** Fikstürün tüm ilçeleri için kamu kümeleri (derleme zamanında bir kez; `mulkDurumuKur` bunu dondurur). */
-export function kamuKumeleriHesapla(f: ParselFiksturu, kp: MulkKamuParametreleri): Map<string, KamuKumesi> {
+export function kamuKumeleriHesapla(f: ParselFiksturu | HucreDizini, kp: MulkKamuParametreleri): Map<string, KamuKumesi> {
+  const sonuc = new Map<string, KamuKumesi>();
+  if (f instanceof HucreDizini) {
+    // Kompakt dizin: ilçe başına geçici diziler (yineleme sırasıyla); su hücreleri önce tüm ilçelerden toplanır (kıyı komşu ilçenin suyunu da görür).
+    const suListe: number[] = [];
+    if (kp.kiyiDerinlik > 0) {
+      for (let no = 0; no < f.ilceSayisi; no++) {
+        f.gez(no, (x, y, b) => {
+          if ((b & 4) !== 0 && durumEngeli(b) === "su") suListe.push(x, y);
+        });
+      }
+    }
+    const su = Int32Array.from(suListe);
+    for (let no = 0; no < f.ilceSayisi; no++) {
+      const g = f.ilceDizileri(no);
+      sonuc.set(g.id, ilceKamuHesaplaDizi(g, su, kp));
+    }
+    return sonuc;
+  }
   // Fikstürün tüm su hücreleri (kıyı komşu ilçenin suyunu da görür).
   const suListe: number[] = [];
   if (kp.kiyiDerinlik > 0) {
@@ -700,7 +746,6 @@ export function kamuKumeleriHesapla(f: ParselFiksturu, kp: MulkKamuParametreleri
     }
   }
   const su = Int32Array.from(suListe);
-  const sonuc = new Map<string, KamuKumesi>();
   for (const c of f.ilceler) sonuc.set(c.id, ilceKamuHesapla(c, su, kp));
   return sonuc;
 }

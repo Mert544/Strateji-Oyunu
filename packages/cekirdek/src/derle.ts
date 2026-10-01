@@ -2,12 +2,13 @@
  * İçerik derleyici: VeriPaketi -> DerlenmisIcerik (kimlik -> indeks eşlemeleri, lojistik sırası, komşuluk).
  * Başlangıçta bir kez çalışır; sonuç salt okunurdur ve dünya durumuna girmez.
  */
-import type { ParselHucreTanimi, ParselIlceTanimi } from "@bolge/veri";
+import type { ParselFiksturu } from "@bolge/veri";
 import { carpBol } from "./sabit";
 import { GUN, PPM } from "./tipler";
-import { kamuGrubuHucreKimlikleri, kamuKumeleriHesapla } from "./mulk/kamu";
+import { HucreDizini } from "./mulk/hucreDizini";
+import { kamuKumeleriHesapla } from "./mulk/kamu";
 import { kamuIthalatCarpaniHesapla } from "./mulk/kamuFiyat";
-import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk, HucreId, KamuKumesi } from "./tipler";
+import type { CekirdekVeriPaketi, DerlenmisEkYapi, DerlenmisIcerik, DerlenmisMulk } from "./tipler";
 
 /** Kimlik listesinden kimlik -> indeks eşlemesi; tekrarlanan kimlikte hata. Prototipsiz nesne (örn. "constructor" güvenli). */
 function indeksle(tur: string, kimlikler: readonly string[]): Record<string, number> {
@@ -73,7 +74,7 @@ export function icerikDerle(veri: CekirdekVeriPaketi): DerlenmisIcerik {
   };
   odulTablosunuDogrula(ic);
   // Mülk kipi (S3): parametre ve parsel fikstürü BİRLİKTE verilirse açılır (tarımdaki iklim + tarim gibi); aksi halde alan yazılmaz.
-  if (param.mulk !== undefined && veri.parsel !== undefined) ic.mulk = mulkDerle(veri, ic);
+  if (param.mulk !== undefined && (veri.parsel !== undefined || veri.parselIzgara !== undefined)) ic.mulk = mulkDerle(veri, ic);
   // Mal ve yapı KİMLİK KİLİDİ burada DEĞİLDİR (docs/06 §15.8): veri doğrulaması (`dogrulaVeriPaketi`) ve yükleyiciler uygular; çekirdek (istemci
   // paketine girer) `@bolge/veri`den yalnız TİP alır (src'de çalışma zamanı importu yoktur; `veri-importu.test.ts` güvence).
   return ic;
@@ -113,7 +114,18 @@ function odulTablosunuDogrula(ic: DerlenmisIcerik): void {
  */
 function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk {
   const p = veri.param.mulk as NonNullable<CekirdekVeriPaketi["param"]["mulk"]>;
-  const f = veri.parsel as NonNullable<CekirdekVeriPaketi["parsel"]>;
+  if (veri.parsel !== undefined && veri.parselIzgara !== undefined) throw new Error("icerikDerle: parsel ve parselIzgara birlikte verilemez");
+  // Kompakt hücre dizini (docs/06 §15.11): JSON fikstüründen ya da BHI1 ızgaralarından; iki yol aynı API'yi ve aynı dünyayı kurar.
+  let hucreDizini: HucreDizini;
+  let f: ParselFiksturu;
+  if (veri.parsel !== undefined) {
+    f = veri.parsel;
+    hucreDizini = HucreDizini.fiksturden(f);
+  } else {
+    const g = veri.parselIzgara as NonNullable<CekirdekVeriPaketi["parselIzgara"]>;
+    hucreDizini = HucreDizini.izgaradan(g);
+    f = hucreDizini.fiksturOlustur(g);
+  }
   const ilMerkezi = new Map<string, number>();
   for (const il of f.iller) {
     const bi = ic.bolgeIndeks[il.bolge];
@@ -121,16 +133,11 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
     if (ilMerkezi.has(il.id)) throw new Error(`icerikDerle: tekrarlanan parsel ili: ${il.id}`);
     ilMerkezi.set(il.id, bi);
   }
-  const ilceler = new Map<string, ParselIlceTanimi>();
-  const hucreler = new Map<HucreId, { ilce: string; hucre: ParselHucreTanimi }>();
+  const ilceler = new Map<string, (typeof f.ilceler)[number]>();
   for (const c of f.ilceler) {
     if (!ilMerkezi.has(c.il)) throw new Error(`icerikDerle: ilce ${c.id} bilinmeyen ile bagli: ${c.il}`);
     if (ilceler.has(c.id)) throw new Error(`icerikDerle: tekrarlanan ilce: ${c.id}`);
     ilceler.set(c.id, c);
-    for (const h of c.hucreler) {
-      if (hucreler.has(h.id)) throw new Error(`icerikDerle: hucre iki kez tanimli: ${h.id}`);
-      hucreler.set(h.id, { ilce: c.id, hucre: h });
-    }
   }
   const yuva = ic.tesisTurleri.map(() => 0);
   const insaSaati = ic.tesisTurleri.map((t) => t.insaSuresiSaat);
@@ -187,10 +194,10 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
     });
   }
   // Kamu arsası (`p.kamu`): her ilçenin kamu kümesi (mülk dünyası kurulurken dondurulur); ayrılmış hücre hesabından düşülür.
-  const kamu = p.kamu === undefined ? undefined : kamuKumeleriHesapla(f, p.kamu);
-  const { kume: ayrilmis, sayilar: ayrilmisIlceSayisi } = ayrilmisHucreler(f.ilceler, p.yeniOyuncu.ayrilmisHucrePpm, kamu);
+  const kamu = p.kamu === undefined ? undefined : kamuKumeleriHesapla(hucreDizini, p.kamu);
+  const ayrilmisIlceSayisi = hucreDizini.ayrilmisKur(p.yeniOyuncu.ayrilmisHucrePpm, kamu);
   const ayrilmisSureMs = (p.yeniOyuncu.ayrilmisGun ?? AYRILMIS_GUN_VARSAYILAN) * GUN;
-  const sonuc: DerlenmisMulk = { p, fikstur: f, ilMerkezi, ilceler, hucreler, yuva, olcekHucre, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis, ayrilmisIlceSayisi, ayrilmisSureMs, kamuIthalatCarpaniPpm: kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar) };
+  const sonuc: DerlenmisMulk = { p, fikstur: f, dizin: hucreDizini, ilMerkezi, ilceler, hucreler: hucreDizini.hucreler, yuva, olcekHucre, insaSaati, baslangicStok, ekYapilar, ekYapiIndeks, ayrilmis: hucreDizini.ayrilmis, ayrilmisIlceSayisi, ayrilmisSureMs, kamuIthalatCarpaniPpm: kamuIthalatCarpaniHesapla(ic.param.pazar, ekYapilar) };
   if (kamu !== undefined) sonuc.kamu = kamu;
   return sonuc;
 }
@@ -206,32 +213,4 @@ export function hucreKarmasi(id: string): number {
     h = Math.imul(h, 0x01000193);
   }
   return h >>> 0;
-}
-
-/**
- * Yeni oyunculara ayrılmış hücreler: her ilçenin uygun hücreleri (karma, kimlik) sırasıyla dizilir ve ilk
- * `floor(uygun × ayrilmisPpm / PPM)` tanesi ayrılır (karma kimlikten türediği için dağılım ilçeye yayılır, seçim deterministiktir).
- */
-function ayrilmisHucreler(
-  ilceler: readonly ParselIlceTanimi[],
-  ayrilmisPpm: number,
-  kamu?: ReadonlyMap<string, KamuKumesi>,
-): { kume: Set<HucreId>; sayilar: Map<string, number> } {
-  const kume = new Set<HucreId>();
-  const sayilar = new Map<string, number>();
-  if (ayrilmisPpm <= 0) return { kume, sayilar };
-  for (const c of ilceler) {
-    // Kamu arsası (satılmaz) ayrılmış hücre paydasına ve kümesine girmez.
-    const kk = kamu?.get(c.id);
-    const kamuKimlikleri = new Set<string>();
-    for (const gr of kk?.gruplar ?? []) for (const id of kamuGrubuHucreKimlikleri(gr)) kamuKimlikleri.add(id);
-    const kamuMu = (id: string): boolean => kamuKimlikleri.has(id);
-    const uygun = c.hucreler.filter((h) => h.uygun && !kamuMu(h.id)).map((h) => ({ id: h.id, k: hucreKarmasi(h.id) }));
-    const adet = carpBol(uygun.length, ayrilmisPpm, PPM);
-    if (adet <= 0) continue;
-    uygun.sort((x, y) => x.k - y.k || (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
-    for (let i = 0; i < adet; i++) kume.add((uygun[i] as { id: string }).id);
-    sayilar.set(c.id, adet);
-  }
-  return { kume, sayilar };
 }

@@ -30,3 +30,5 @@ export {
   kamuMahalleKimligi,
   kamuSahibiMi,
 } from "./kamu";
+export { AyrilmisKumesi, HucreDizini, HucreDiziniBuyukHatasi, TEMBEL_HUCRE_SINIRI, hucreKarmasiXY } from "./hucreDizini";
+export type { HucreHaritasi, HucreKaydi } from "./hucreDizini";

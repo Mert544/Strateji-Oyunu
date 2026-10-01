@@ -24,13 +24,14 @@ import type {
   MulkParametreleri,
   Parametreler,
   ParselFiksturu,
-  ParselHucreTanimi,
   ParselIlceTanimi,
+  ParselIzgaraGirdisi,
   TeknolojiTanimi,
   TesisTuruTanimi,
   VeriPaketi,
   YontemTanimi,
 } from "@bolge/veri";
+import type { AyrilmisKumesi, HucreDizini, HucreHaritasi } from "./mulk/hucreDizini";
 
 export type Ms = number;
 export type Mili = number;
@@ -74,7 +75,14 @@ export interface DerlenmisIcerik {
 }
 
 /** Veri paketi + isteğe bağlı parsel fikstürü (mülk kipi). Bölge kipinde `parsel` verilmez. */
-export type CekirdekVeriPaketi = VeriPaketi & { parsel?: ParselFiksturu };
+export type CekirdekVeriPaketi = VeriPaketi & {
+  parsel?: ParselFiksturu;
+  /**
+   * Mülk kipi için JSON fikstürüne ALTERNATİF girdi: BHI1 ızgaraları (docs/06 §15.11). `parsel` ile birlikte verilemez; ikisi de aynı kompakt hücre dizinini
+   * (`DerlenmisMulk.dizin`) kurar ve aynı dünyayı verir.
+   */
+  parselIzgara?: ParselIzgaraGirdisi;
+};
 
 /** Derlenmiş mülk verisi (S3): parametreler ve parsel fikstüründen; dünya durumuna girmez. */
 export interface DerlenmisMulk {
@@ -84,8 +92,13 @@ export interface DerlenmisMulk {
   ilMerkezi: Map<string, number>;
   /** ilçe kimliği -> ilçe tanımı */
   ilceler: Map<string, ParselIlceTanimi>;
-  /** hücre kimliği -> (ilçe kimliği, hücre tanımı) */
-  hucreler: Map<HucreId, { ilce: string; hucre: ParselHucreTanimi }>;
+  /**
+   * Kompakt hücre dizini (docs/06 §15.11): hücre tanımları ilçe başına tek durum düzleminde; sıcak yol API'si (`hucreDurum`, `gez`, `ilceHucreleri`,
+   * `ayrilmisListe`) burada.
+   */
+  dizin: HucreDizini;
+  /** hücre kimliği -> (ilçe kimliği, hücre tanımı): eski `Map` yüzü (uyum katmanı; `dizin` üzerinde, hücre başına depolama yok). */
+  hucreler: HucreHaritasi;
   /** tesis türü indeksi -> yuva (0 = mülk kipinde inşa edilemez) */
   yuva: number[];
   /** tesis türü indeksi -> ölçeğe göre ayak izi `[S, M, L]` (`mulk.olcekHucre`; S = yuva); inşa edilemeyen türde boş dizi. */
@@ -99,7 +112,7 @@ export interface DerlenmisMulk {
   /** Ek yapı kimliği -> `ekYapilar` indeksi. */
   ekYapiIndeks: Map<string, number>;
   /** Yeni oyunculara ayrılmış hücreler (ilçe başına hücre kimliği karmasıyla seçilmiş; durum değil, türetilmiş). Kamu hücreleri girmez. */
-  ayrilmis: Set<HucreId>;
+  ayrilmis: AyrilmisKumesi;
   /** İlçe kimliği -> ayrılmış hücre sayısı (ayrılmış STOK; günlük ilçe tavanının tabanı). Ayrılmışı olmayan ilçe yazılmaz. */
   ayrilmisIlceSayisi: Map<string, number>;
   /** Kamu arsası (`p.kamu` tanımlıysa): ilçe kimliği -> türetilmiş kamu kümesi (dünya kurulurken donduruluyor); aksi halde tanımsız. */

@@ -30,6 +30,7 @@ import {
   yalnizEkleDenetimi,
 } from "./goc";
 import type { EkleIhlali, IcerikKimlikTablosu } from "./goc";
+import { durumIlceNo, durumUygunMu } from "./mulk/hucreDizini";
 import { KAMU_ALGORITMA_SURUMU, kamuIndeksiAra, kamuIndeksiKur } from "./mulk/kamu";
 import { fnv1a64 } from "./ozet";
 import { KASA_GIRIS_KALEMLERI, LAVABO_KALEMLERI, MUSLUK_KALEMLERI, OLAY_ONCELIGI, SAAT } from "./tipler";
@@ -729,8 +730,8 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
           for (let i = 0; i < g.dikdortgenler.length; i += 4) {
             for (let yy = g.dikdortgenler[i + 1] as number; yy <= (g.dikdortgenler[i + 3] as number); yy++) {
               for (let xx = g.dikdortgenler[i] as number; xx <= (g.dikdortgenler[i + 2] as number); xx++) {
-                const f = mk.hucreler.get(`${xx}:${yy}`);
-                if (f === undefined || f.ilce !== c.id || !f.hucre.uygun) hata(`$.mulk.kamu`, `kamu hucresi ilcede uygun hucre degil: ${xx}:${yy} (${c.id})`);
+                const hd = mk.dizin.hucreDurum(xx, yy);
+                if (hd < 0 || mk.dizin.ilceKimligi(durumIlceNo(hd)) !== c.id || !durumUygunMu(hd)) hata(`$.mulk.kamu`, `kamu hucresi ilcede uygun hucre degil: ${xx}:${yy} (${c.id})`);
                 sayi++;
               }
             }

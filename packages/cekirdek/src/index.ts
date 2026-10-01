@@ -153,11 +153,16 @@ export {
   kamuIlceKimligi,
   kamuMahalleKimligi,
   kamuSahibiMi,
+  AyrilmisKumesi,
+  HucreDizini,
+  HucreDiziniBuyukHatasi,
+  TEMBEL_HUCRE_SINIRI,
+  hucreKarmasiXY,
   ekYapiSayisi,
   ticaretEmirYuvasi,
   ticaretIndirimi,
 } from "./mulk";
-export type { InsaatAsamasi, YurtPlani, IlceFiyatDurumu } from "./mulk";
+export type { InsaatAsamasi, YurtPlani, IlceFiyatDurumu, HucreHaritasi, HucreKaydi } from "./mulk";
 export { bolgeIndeksiBul, haritaIndeksi, komsuKenarlariBul } from "./dugum";
 export { kuyrukSuz } from "./kuyruk";
 export { eskimisEsikleriBuda } from "./stok";

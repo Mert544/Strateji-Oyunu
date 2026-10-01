@@ -5,6 +5,7 @@
 import type { ParselIlceTanimi } from "@bolge/veri";
 import { tabanBol } from "../sabit";
 import { hucreXY } from "./durum";
+import type { IlceHucreDizileri } from "./hucreDizini";
 
 /** 4 komşuluk (kenar-bitişik), sabit sıra. */
 export const KOMSULAR: readonly (readonly [number, number])[] = [
@@ -63,6 +64,33 @@ export function ilceMerkeziXY(tanim: ParselIlceTanimi, xy: Int32Array): [number,
       yn++;
     }
   });
+  if (tn === 0) return [0, 0];
+  return yn > 0 ? [tabanBol(yx, yn), tabanBol(yy, yn)] : [tabanBol(tx, tn), tabanBol(ty, tn)];
+}
+
+/** `ilceMerkeziXY` ile aynı tanım; hücre dizilerinden (kompakt hücre dizini ya da fikstür; yineleme sırasından bağımsız toplamlar). */
+export function ilceMerkeziDizi(g: IlceHucreDizileri): [number, number] {
+  let tx = 0;
+  let ty = 0;
+  let tn = 0;
+  let yx = 0;
+  let yy = 0;
+  let yn = 0;
+  for (let i = 0; i < g.n; i++) {
+    const f = g.bayrak[i] as number;
+    if ((f & 1) === 0) continue; // DIZI_UYGUN
+    const x = g.xs[i] as number;
+    const y = g.ys[i] as number;
+    tx += x;
+    ty += y;
+    tn++;
+    if ((f & 2) !== 0) {
+      // DIZI_KIRSAL_DEGIL
+      yx += x;
+      yy += y;
+      yn++;
+    }
+  }
   if (tn === 0) return [0, 0];
   return yn > 0 ? [tabanBol(yx, yn), tabanBol(yy, yn)] : [tabanBol(tx, tn), tabanBol(ty, tn)];
 }
