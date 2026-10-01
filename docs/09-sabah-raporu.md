@@ -21,3 +21,8 @@ Kaynak: sahibin 30 Eylül akşamı talebi.
 | 21:55 | **A4 6 katman spesifikasyonu bitti:**<br>• docs/08, ~1780 satır; Teknoloji 17 düğüm, Devlet 7 yasa; B1–B6 sözleşme blokları hazır.<br>• Türkçe araştırma dokümanları docs/arastirma/'da.<br>• docs/00'a K17–K22 kararları işlendi. |
 | 21:57 | **Faz B1 Tarım v1 başladı** (çekirdeğin tek yazarı). |
 | 22:03 | Kontrol turu: veri hattı, 3D istemci ve Tarım çalışıyor. Görev listesi ajanı (docs/10) başladı. |
+| 22:10–01:05 | Oturum yaklaşık 3 saat askıda kaldı. Bu sırada veri hattı ve görev listesi ajanları bitti, ama raporları iletilemedi. 3D istemci ve Tarım ajanları yarıda kesildi. |
+| 01:05 | Kontrol turu: askıdaki raporlar günlüklerden alındı.<br>• **Gerçek dünya veri hattı commit'lendi:** 53 bölge, 4 kurgusal devlet / 2 blok; İstanbul ve Çanakkale boğazları dar geçit; 143 kenar; Natural Earth v5.1.2'ye sabitlendi.<br>• **Görev listesi commit'lendi** (docs/10): 17 epik, 136 görev.<br>• Kesilen iki ajan kaldığı yerden sürdürüldü. |
+| 01:15 | **3D istemci (Katman A) commit'lendi:**<br>• three.js küre, gerçek Karadeniz bölgeleri, GPU akış parçacıkları, dolaşma kamerası.<br>• Simülasyon tarayıcıda Web Worker'da koşuyor; tek HTML 297 KB gzip, 12 draw call. |
+| 01:21 | **B1 Tarım v1 commit'lendi:**<br>• İklim takvimi, toprak ve ekim nöbeti, yayılan iklim olayları, gübre ve hayvancılık, sulama; 74 yeni test.<br>• Regresyon kalkanı kanıtlı: tarım kapalıyken durum özeti birebir aynı.<br>• 555 testin hepsi geçiyor. |
+| 01:24 | Tarım alanı türetme ve doğrulayıcılar tarayıcı için `@bolge/veri/saf` modülüne ayrıldı. **B2 Sanayi v1** başladı (çekirdek tek yazar); 3D istemciye tarım/iklim görselleştirmesi ekleniyor. |
