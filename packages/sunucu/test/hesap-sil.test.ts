@@ -4,6 +4,7 @@
  * geçmez; silmeyle bütün oturumlar, biletler ve açık ws bağlantıları düşer; oyuncu günlükte ANONİM kalır, mülk devredilmez, durumOzeti değişmez; ad gider; aynı adresle
  * yeniden kayıt YENİ hesap + yeni oyuncu + yeni otomatik ad açar. G5'teki "silinen hesap" testlerinin devamıdır.
  */
+import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SAAT } from "@bolge/cekirdek";
 import { adKanonik } from "@bolge/cekirdek";
@@ -91,6 +92,38 @@ describe("istek: yalnız onay postası gider, HİÇBİR ŞEY silinmez", () => {
     expect((await t.istek("/giris/ben")).durum).toBe(200);
     expect((await t.istek("/giris/hesap-sil-onay?j=bozuk")).durum).toBe(400);
     expect((await t.istek("/giris/hesap-sil-onay")).durum).toBe(400);
+  });
+
+  it("silme sayfalari (onay, gecersiz, silindi): satir ici <style> CSP ozetiyle birebir eslesir (unsafe-inline yok); kart/dugme siniflari; betik ve olay isleyicisi yok; GET yine yan etkisiz", async () => {
+    const o = await kur();
+    const t = o.yeniTarayici();
+    await o.girisYap(t, "stil.sil@ornek.org");
+    const m = await silmeIste(o, t);
+    const onay = await t.istek(`/giris/hesap-sil-onay?j=${encodeURIComponent(m.jeton)}`);
+    const gecersiz = await t.istek("/giris/hesap-sil-onay?j=bozuk");
+    const denetle = (g: { baslik: Headers; govde: string }): void => {
+      const csp = g.baslik.get("content-security-policy") ?? "";
+      const stil = /<style>([^<]*)<\/style>/.exec(g.govde)?.[1] ?? "";
+      expect(stil).toContain(".gr-kart{");
+      expect(csp).toContain(`style-src 'sha256-${createHash("sha256").update(stil).digest("base64")}';`);
+      expect(csp).not.toContain("unsafe-inline");
+      expect(g.govde).not.toMatch(/<script|\son[a-z]+=|style="/i);
+      expect(g.govde).toContain('class="gr-kart"');
+      expect(g.govde).toContain('class="gr-baslik"');
+    };
+    denetle(onay);
+    denetle(gecersiz);
+    expect(onay.govde).toContain('class="gr-dugme"');
+    expect(onay.govde).toContain('class="gr-govde"');
+    expect(gecersiz.durum).toBe(400);
+    expect(gecersiz.govde).toContain('class="gr-hata"');
+    // GET'ler hesabi silmedi; formla onay "hesap silindi" sayfasini ayni stille dondurur.
+    expect(await o.hesapDeposu.hesapBulAnahtar("stil.sil@ornek.org")).not.toBeNull();
+    const silindi = await t.istek("/giris/hesap-sil-onay", { yontem: "POST", ham: `j=${encodeURIComponent(m.jeton)}` });
+    expect(silindi.durum).toBe(200);
+    expect(silindi.govde).toContain("hesap silindi");
+    denetle(silindi);
+    expect(await o.hesapDeposu.hesapBulAnahtar("stil.sil@ornek.org")).toBeNull();
   });
 
   it("hesap başına saatte 3 istek: dördüncüsü 429 hiz_siniri (posta gitmez); bir saat sonra yeniden", async () => {

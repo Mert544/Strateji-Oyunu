@@ -3,6 +3,7 @@
  * (gerçek beklemeye dayanan test yok). Kapsam: tam zincir, tek kullanım, süre, belirteç saldırıları, kullanıcı sızdırmama, hız
  * sınırları, Origin/CSRF, çerez nitelikleri, oturum süreleri, bilet (tek kullanım, süre, oturuma bağlılık, iptal), günlük/metrik gizliliği.
  */
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -127,6 +128,35 @@ describe("uctan uca giris", () => {
     const red = await t2.istek("/giris/onay", { yontem: "POST", ham: `j=${encodeURIComponent(j2)}` });
     expect(red.durum).toBe(303);
     expect(red.baslik.get("location")).toBe(`${IZINLI}/oyun`);
+  });
+
+  it("sunucu sayfalari: satir ici <style> CSP ozetiyle birebir eslesir (unsafe-inline yok); onay/sonuc/hata sayfalari kart sinifli; betik ve olay isleyicisi yok; GET yan etkisiz", async () => {
+    ortam = await girisOrtami();
+    const o = ortam;
+    const t = o.yeniTarayici();
+    const { jeton } = await o.baglantiIste(t, "stil@ornek.org");
+    const sayfalar = [
+      await t.istek(`/giris/onay?j=${encodeURIComponent(jeton)}`), // onay
+      await t.istek("/giris/onay?j=bag1.yanlis"), // gecersiz baglanti (400)
+      await t.istek("/giris/onay", { yontem: "POST", ham: "j=bag1.yanlis" }), // basarisiz sonuc (form)
+    ];
+    for (const g of sayfalar) {
+      const csp = g.baslik.get("content-security-policy") ?? "";
+      const stil = /<style>([^<]*)<\/style>/.exec(g.govde)?.[1] ?? "";
+      expect(stil).toContain(".gr-kart{");
+      const ozet = `'sha256-${createHash("sha256").update(stil).digest("base64")}'`;
+      expect(csp).toContain(`style-src ${ozet};`);
+      expect(csp).not.toContain("unsafe-inline");
+      expect(csp).toContain("default-src 'none'");
+      expect(g.govde).not.toMatch(/<script|\son[a-z]+=|style="/i);
+      expect(g.govde).toContain('class="gr-kart"');
+      expect(g.govde).toContain('class="gr-baslik"');
+    }
+    expect(sayfalar[0]?.govde).toContain('class="gr-dugme"');
+    expect(sayfalar[1]?.govde).toContain('class="gr-hata"');
+    // Stil eklemek GET'i yan etkili yapmadi: baglanti hala tuketilmemis, cerez yok.
+    expect(t.sonSetCookie.filter((c) => c.startsWith("bolge_oturum"))).toEqual([]);
+    expect(await o.hesapDeposu.sayilar()).toEqual({ hesap: 0, oturum: 0, baglanti: 1 });
   });
 });
 

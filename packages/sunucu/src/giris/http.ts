@@ -15,6 +15,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { GIRIS_TARAYICI_CEREZI, GIRIS_YOLLARI, GirisHesapSilOnayiSemasi, GirisIstegiSemasi, GirisOnayiSemasi, OTURUM_CEREZI } from "@bolge/protokol";
 import type { GirisHesapSilIstekYaniti, GirisAdOneriYaniti, GirisAdYaniti, GirisBenYaniti, GirisBiletYaniti, GirisHataKodu, GirisHatasi, GirisIstekYaniti, GirisOnayYaniti } from "@bolge/protokol";
 import type { GirisHizmeti, IptalOlayi } from "./hizmet";
+import { SAYFA_CSS, SAYFA_CSS_OZETI } from "./sayfa-css";
 import type { GirisSayaclari } from "./sayac";
 
 /** Sunucunun (`sunucu.ts`) giriş katmanından beklediği yüzey. */
@@ -83,11 +84,14 @@ const SAYFA_METNI: Partial<Record<GirisHataKodu, string>> = {
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
 
+/** Sayfa gövdesinde paragraf: `gr-govde` (düz metin) ya da `gr-hata` (başarısız sonuç); sınıflar `sayfa-css.ts` ile aynı adlardır. */
+const para = (metin: string, sinif: "gr-govde" | "gr-hata" = "gr-govde"): string => `<p class="${sinif}">${metin}</p>`;
+
 function sayfa(baslik: string, govde: string): string {
   return `<!doctype html>
 <html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>${esc(baslik)}</title>
-<style>body{font:16px/1.5 system-ui,sans-serif;margin:3rem auto;max-width:28rem;padding:0 1rem}button{font:inherit;padding:.6rem 1.2rem;cursor:pointer}</style></head>
-<body><h1>${esc(baslik)}</h1>${govde}</body></html>
+<style>${SAYFA_CSS}</style></head>
+<body><main class="gr-kart"><div class="gr-marka">bölge stratejisi</div><div class="gr-ekran"><h1 class="gr-baslik">${esc(baslik)}</h1>${govde}</div></main></body></html>
 `;
 }
 
@@ -97,7 +101,7 @@ const SAYFA_BASLIKLARI: Record<string, string> = {
   "referrer-policy": "no-referrer",
   "x-content-type-options": "nosniff",
   "x-frame-options": "DENY",
-  "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+  "content-security-policy": `default-src 'none'; style-src ${SAYFA_CSS_OZETI}; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
 };
 
 function cerezOku(istek: IncomingMessage, ad: string): string | undefined {
@@ -319,13 +323,13 @@ export class GirisUclari implements GirisBaglantisi {
     const j = url.searchParams.get("j") ?? "";
     if (!this.hizmet.baglantiGecerliMi(j)) {
       yanit.writeHead(400, SAYFA_BASLIKLARI);
-      return void yanit.end(sayfa("giriş bağlantısı geçersiz", `<p>${esc(SAYFA_METNI.baglanti_gecersiz as string)}</p>`));
+      return void yanit.end(sayfa("giriş bağlantısı geçersiz", para(esc(SAYFA_METNI.baglanti_gecersiz as string), "gr-hata")));
     }
     yanit.writeHead(200, SAYFA_BASLIKLARI);
     yanit.end(
       sayfa(
         "giriş onayı",
-        `<p>bölge stratejisi hesabına girmek için onaylayın.</p>\n<form method="post" action="${GIRIS_YOLLARI.onay}"><input type="hidden" name="j" value="${esc(j)}"><button type="submit">giriş yap</button></form>`,
+        `${para("bölge stratejisi hesabına girmek için onaylayın.")}\n<form method="post" action="${GIRIS_YOLLARI.onay}"><input type="hidden" name="j" value="${esc(j)}"><button type="submit" class="gr-dugme">giriş yap</button></form>`,
       ),
     );
   }
@@ -351,7 +355,7 @@ export class GirisUclari implements GirisBaglantisi {
         return void yanit.end();
       }
       yanit.writeHead(200, { ...SAYFA_BASLIKLARI, "set-cookie": cerezler });
-      return void yanit.end(sayfa("giriş yapıldı", "<p>giriş yapıldı. bu sekmeyi kapatıp oyuna dönebilirsiniz.</p>"));
+      return void yanit.end(sayfa("giriş yapıldı", para("giriş yapıldı. bu sekmeyi kapatıp oyuna dönebilirsiniz.")));
     }
     const govde: GirisOnayYaniti = { tamam: true, yeniHesap: r.yeniHesap, oyuncu: r.oyuncu, ...(r.ad !== undefined ? { ad: r.ad, adSecildi: r.adSecildi === true } : {}) };
     this.json(istek, yanit, 200, govde, { "set-cookie": cerezler });
@@ -360,7 +364,7 @@ export class GirisUclari implements GirisBaglantisi {
   private onayHatasi(istek: IncomingMessage, yanit: ServerResponse, form: boolean, kod: GirisHataKodu, beklemeSn?: number): void {
     if (!form) return this.hata(istek, yanit, kod, beklemeSn !== undefined ? { beklemeSn } : {});
     yanit.writeHead(HATA_DURUMU[kod], SAYFA_BASLIKLARI);
-    yanit.end(sayfa("giriş yapılamadı", `<p>${esc(SAYFA_METNI[kod] ?? "giriş yapılamadı.")}</p>`));
+    yanit.end(sayfa("giriş yapılamadı", para(esc(SAYFA_METNI[kod] ?? "giriş yapılamadı."), "gr-hata")));
   }
 
   /** Oturum çerezi kayan süreyle uzadıysa çerezi yeni ömürle yeniden verir. */
@@ -406,13 +410,13 @@ export class GirisUclari implements GirisBaglantisi {
     const j = url.searchParams.get("j") ?? "";
     if (!this.hizmet.hesapSilBaglantiGecerliMi(j)) {
       yanit.writeHead(400, SAYFA_BASLIKLARI);
-      return void yanit.end(sayfa("silme bağlantısı geçersiz", `<p>${esc(SAYFA_METNI.baglanti_gecersiz as string)}</p>`));
+      return void yanit.end(sayfa("silme bağlantısı geçersiz", para(esc(SAYFA_METNI.baglanti_gecersiz as string), "gr-hata")));
     }
     yanit.writeHead(200, SAYFA_BASLIKLARI);
     yanit.end(
       sayfa(
         "hesabı sil",
-        `<p>hesabınızı <strong>kalıcı olarak</strong> silmek üzeresiniz: e-posta adresiniz ve oturumlarınız silinir, oyundan çıkarılırsınız. oyuncu kimliğiniz oyun kayıtlarında anonim kalır; mülkleriniz başkasına devredilmez ve geri alınamaz.</p>\n<form method="post" action="${GIRIS_YOLLARI.hesapSilOnay}"><input type="hidden" name="j" value="${esc(j)}"><button type="submit">hesabımı kalıcı olarak sil</button></form>`,
+        `${para("hesabınızı <strong>kalıcı olarak</strong> silmek üzeresiniz: e-posta adresiniz ve oturumlarınız silinir, oyundan çıkarılırsınız. oyuncu kimliğiniz oyun kayıtlarında anonim kalır; mülkleriniz başkasına devredilmez ve geri alınamaz.")}\n<form method="post" action="${GIRIS_YOLLARI.hesapSilOnay}"><input type="hidden" name="j" value="${esc(j)}"><button type="submit" class="gr-dugme">hesabımı kalıcı olarak sil</button></form>`,
       ),
     );
   }
@@ -435,7 +439,7 @@ export class GirisUclari implements GirisBaglantisi {
     const temizle = { "set-cookie": [this.cerezSil(OTURUM_CEREZI)] };
     if (form) {
       yanit.writeHead(200, { ...SAYFA_BASLIKLARI, ...temizle });
-      return void yanit.end(sayfa("hesap silindi", "<p>hesabınız silindi. oturumlarınız kapatıldı.</p>"));
+      return void yanit.end(sayfa("hesap silindi", para("hesabınız silindi. oturumlarınız kapatıldı.")));
     }
     this.json(istek, yanit, 200, { tamam: true }, temizle);
   }
