@@ -2,7 +2,7 @@
 
 > **Durum.** 1 Ekim 2026, Ar-Ge görevi "askeri 0a şartnamesi" (A3). Taban: `entegrasyon` = `7553b55`; bütün `dosya:satır` göndermeleri bu tabana göredir (**doğrulandı: kod okuma**). Bu belge **kod yazmaz**; K3'ün (çekirdek ve `packages/veri/src`, tek yazar) **yorum yapmadan** kodlayabileceği kesinlikte yazılmıştır. Biçim ve ilke `docs/arastirma/p4-p5-sartname.md` ile aynıdır.
 >
-> **Teslim parçaları.** **Parça 1** (bu sürüm): §0–§8 (kapsam, kilitler, mevcut kod, kimlikler ve ad kilidi, veri şeması, düğüm düzeltmesi, Ordugâh şartı, ikmal, Nöbet Evi, olay adları, Parça 1 testleri, kararlar). **Parça 2:** yağma defteri durum şeması ve tek nokta, serileştirme ve göç, değişmez tablosu, kanıt planı (negatif kontrollerle), tam test listesi, bot ve ölçüm, sıra, rollere istek, geri dönüşü zor kararlar (GZ) ve açık sorular. Parça 2 başlıkları §9–§16'da yer tutucudur.
+> **Teslim parçaları.** **Parça 1:** §0–§8 (kapsam, kilitler, mevcut kod, kimlikler ve ad kilidi, veri şeması, düğüm düzeltmesi, Ordugâh şartı, ikmal, Nöbet Evi, olay adları). **Parça 2:** yağma defteri durum şeması ve tek nokta, serileştirme ve göç, değişmez tablosu, kanıt planı (negatif kontrollerle), tam test listesi, bot ve ölçüm, sıra, rollere istek, geri dönüşü zor kararlar (GZ) ve açık sorular. **Parça 2** (yağma defteri, serileştirme, değişmez tablosu, kanıt planı, testler, sıra ve roller, GZ, açık sorular): §9–§16 (bu sürümde teslim edildi).
 >
 > **Girdiler (hepsi okundu).** `docs/arastirma/askeri-katman-v1.md` (**onaylı**; `AK §n` = bu belgenin bölümü; sayılar öneridir, kalibre edilmedi); `docs/12-yon-taslagi.md` §13 (Y-35, Y-36); `docs/arastirma/oyun-tasarim-belgesi-v1.md` (Y-35 satırı `:693`, AÖ-19 `:1076`, AÖ-4 `:1061`); `docs/arastirma/argelider-sentez-2.md` (D4-5 `:280`, D4-6 `:281`, G-K7 `:336`, G-K14 `:348`); `docs/arastirma/kimlik-listesi-v1.md` §2.3; çekirdek `askeri/`, `mulk/`, `dugum.ts`, `tipler.ts`, `serilestir.ts`, `derle.ts`; veri `kimlik-listesi.json`, `parametreler.json`, `veri/src/{tipler,sema,kimlik-listesi}.ts`.
 >
@@ -19,14 +19,14 @@
 6. Ordugâh şartı ve kapasitesi
 7. İkmal: çarpan ve ek yapı ikmali
 8. Nöbet Evi (kamu hizmet hücresi) ve olay türü adları
-9. (Parça 2) Yağma defteri
-10. (Parça 2) Serileştirme ve göç
-11. (Parça 2) Değişmez tablosu
-12. (Parça 2) Kanıt planı ve negatif kontroller
-13. (Parça 2) Test listesi
-14. (Parça 2) Bot, ölçüm, sıra ve rollere istek
-15. (Parça 2) Geri dönüşü zor kararlar
-16. (Parça 2) Açık sorular
+9. Yağma defteri
+10. Serileştirme ve göç
+11. Değişmez tablosu
+12. Kanıt planı (kısa)
+13. Test listesi
+14. Sıra, rollere istek, bot ve ölçüm
+15. Geri dönüşü zor kararlar
+16. Açık sorular
 Ek A. Değişen dosya ve fonksiyonlar (`dosya:satır`)
 
 ---
@@ -75,7 +75,7 @@ Ek A. Değişen dosya ve fonksiyonlar (`dosya:satır`)
 1. Ek C'deki ek yapı alanları `nobetciGucu` ve `duyuruEkiSaat` **kaldırıldı**: değerlerin tek kaynağı `askeri.eskiya.karakolGuc[]` ve `askeri.eskiya.kuleEkiSaat`'tir (aynı sayının iki yerde durması çelişki doğurur). Ek yapıda yalnız `birlikKapasitesi` ve `ikmal` kalır.
 2. Ek C'deki `ganimet: { muhimmatMiliBoyBasina, yakitMiliBoyBasina }` yerine **`ganimet: Record<MalId, number>`** (mal kimliği → mili-birim / boy) kullanılır: çekirdekte sabit mal adı olmaz (mevcut `insaMaliyeti` kalıbı).
 3. AK §2.2'deki **arsa türü / komşuluk matrisi** (Ordugâh bahçe/konut/kıyıya kurulmaz, "ada başına ≤1", "konuta bitişik değil") **uygulanamaz**: parsel fikstüründe hücre için yalnız `sinif`, `uygun`, `engel`, `kamu` vardır; kullanım türü ve ada kavramı yoktur (**doğrulandı: kod okuma**, `veri/src/parsel.ts:58-104`). 0a'da yalnız `yuva`, `enFazlaIlBasina` ve mevcut kenar-bitişik kuralı geçerlidir (§4.2).
-4. AK §3.7 kalem 3'ün "ikmal ×0,25" değeri **veride 0a'da yazılır** (250 000), çünkü kapalı bayrak arkasında hiçbir mülk dünyasında birlik oluşamaz (§7); yani mülk altınlarını etkilemez.
+4. AK §3.7 kalem 3'ün "ikmal ×0,25" **değeri 0a verisinde yazılmaz** (Ar-Ge lideri kararı S-1: değer 0b'de bayrakla gelir); 0a'da yalnız şema ve çekirdek yolu vardır (`ikmalCarpaniPpm` yoksa çarpan 1 000 000). Böylece 0a'da `parametreler.json` bu alanı hiç taşımaz.
 
 ---
 
@@ -125,8 +125,8 @@ Ek A. Değişen dosya ve fonksiyonlar (`dosya:satır`)
 | Parametre | `param.askeri.ikmalCarpaniPpm` | aynı | **evet** |
 | Ek yapı alanı | `MulkEkYapiTanimi.birlikKapasitesi`, `.ikmal` | aynı | **evet** |
 | Çekirdek sabitleri | `ORDUGAH = "ordugah"`, `KARAKOL = "karakol"`, `GOZETLEME_KULESI = "gozetleme_kulesi"`, `NOBET_EVI = "nobet_evi"` | `cekirdek/src/askeri/kimlik.ts` (yeni) | **evet** |
-| Durum alanı | `BolgeDurumu.yagmaPenceresi?: { baslangic: Ms; kullanilanPpm: number }` | `tipler.ts` | **evet** (Parça 2 §9) |
-| Durum alanı (rezerv) | `Dunya.baskinlar?: BaskinDurumu[]` | `tipler.ts` | **hayır** (ad ve şekil rezervi; 0b; Parça 2 §9.5) |
+| Durum alanı | `BolgeDurumu.yagmaPenceresi?: { baslangic: Ms; kullanilanPpm: number }` | `tipler.ts` | **evet** (§9) |
+| Durum alanı (rezerv) | `Dunya.baskinlar?: BaskinDurumu[]` | `tipler.ts` | **hayır** (ad ve şekil rezervi; 0b; §9.3) |
 | Olay türü (rezerv) | `eskiya_gunluk`, `eskiya_pencere_ac`, `eskiya_pencere_kapa` | `tipler.ts` `OlayVerisi`, `OLAY_ONCELIGI` | **hayır** (§8.2) |
 | PvP parametresi (rezerv) | `param.askeri.yagmaIletimPpm` (Y-36: 600 000; yalnız mülk kipi PvP) | — | **hayır** (şemada alan YOK; adı rezerve) |
 | Protokol alanı (rezerv) | `kare.baskinlar` | `protokol/src/kare.ts` | **hayır** (0b) |
@@ -200,7 +200,7 @@ export interface AskeriEskiyaParametreleri {
 **Öneri değerleri (AK Ek C; T3 yazar):**
 
 ```jsonc
-"ikmalCarpaniPpm": 250000,
+// "ikmalCarpaniPpm": 0a verisinde YOK (S-1; 0b: bayrakla birlikte 250000)
 "eskiya": {
   "etkin": false,
   "servetEsigiMili": 250000000, "servetAdimiMili": 250000000, "enCokBoy": 8, "boyGucu": 100,
@@ -411,7 +411,7 @@ export function ikmalTalebi(d: Dunya, ctx: Baglam, bolge: number): Mili[] {
 ```
 
 - **Bölge kipinde ve harita bölgelerinde** `c = PPM` ve `ekYapilar` yok ⇒ fonksiyon bugünkü sonucu verir (aynı tamsayılar, aynı sıra; bölge kipi altınları).
-- **Mülk kipinde mevcut dünyalarda** hiçbir düğümde birlik ya da Karakol olamaz (B5; kapı §5): fonksiyon `0` dizisi döndürür ⇒ **0a verisinde `ikmalCarpaniPpm: 250 000` yazmak mülk kipi `durumOzeti`'ni ve davranışını değiştirmez**; yalnız `kuralSurumu` değişir (veri). Gerçek etki bayrak açılınca başlar (S-1).
+- **Mülk kipinde mevcut dünyalarda** hiçbir düğümde birlik ya da Karakol olamaz (B5; kapı §5): fonksiyon `0` dizisi döndürür. **Ar-Ge lideri kararı (S-1):** `ikmalCarpaniPpm` 0a verisinde **yazılmaz**; 0b'de bayrakla birlikte 250 000 yazılır. Bu yüzden 0a'da çarpan her yerde `PPM`'dir ve `ikmalTalebi` bugünkü sonucu verir (bölge kipi altınları ve mülk özetleri kesin korunur; çarpan yolu yalnız sentetik test verisinde sınanır).
 - Çarpan **bayraktan bağımsızdır**: bayrak sonradan kapatılırsa mevcut birlikler aynı ikmali ister (§5.3 sonu).
 - `ikmalKarsilanmaPpm` (`ekonomi/uretim.ts:627-628`) ve talep birleşimi (`:354`) **değişmez**; birlik maaşı (`lojistik/cozum.ts:162`) çarpana tabi değildir (para lavabosu, AK §3.6 madde 1).
 - `ikmalTablosu` önbelleği (`WeakMap<DerlenmisIcerik>`) içerik başınadır ve çarpan `ic.param`'dan okunduğu için etkilenmez.
@@ -447,9 +447,186 @@ export function nobetEviHucresi(d: Dunya, ilce: string): HucreId | undefined {
 
 ---
 
-## 9–16. Parça 2 (yer tutucu)
+## 9. Yağma defteri (AK kalem 5; K8)
 
-Parça 2 (yağma defteri `BolgeDurumu.yagmaPenceresi`, tek nokta `yagmaTavaniUygula`, serileştirme ve göç, değişmez tablosu, kanıt planı ve **her kanıtın negatif kontrolü**, tam test listesi, bot ve ölçüm, sıra, rollere istek, GZ, açık sorular) bu dosyaya aynı biçimle eklenecektir.
+**Amaç:** H5 "yağma ≤%25 / pencere" kuralını PvE (0b) ve PvP (Alfa-1) için **tek bir düğüm başına defterden** uygulamak; bugünkü savaş başına kural (`kayipTavaniUygula`, ilan kuralları (a)(b)(c)) bölge kipinde **aynen kalır**. 0a **durum alanını, tek noktayı ve doğrulayıcıyı** getirir; çağıran yoktur (ilk çağıran 0b `askeri/eskiya.ts`), bu yüzden hiçbir mevcut dünyada alan yazılmaz.
+
+### 9.1 Durum alanı
+
+`tipler.ts:299` `BolgeDurumu.ekYapilar?` alanından sonra:
+
+```ts
+/**
+ * Yağma defteri (askeri 0a; H5): bu düğümün son yağma penceresi. Pencere ilk yağmayla açılır ve `yagmaPencereMs` sürer; süre dolduktan sonraki ilk yağma
+ * yeni pencere açar. `kullanilanPpm`: pencerede yağmalarda uygulanmış TOPLAM oran (ppm; üst sınır `askeri.kayipTavaniPpm`). Yalnız işletme düğümlerinde,
+ * ilk yağmada oluşur; harita bölgelerinde ve bölge kipinde TANIMSIZDIR (özet değişmez).
+ */
+yagmaPenceresi?: { baslangic: Ms; kullanilanPpm: number };
+```
+
+**Pencere tipi (kayan değil, sabit):** pencere **ilk yağma anında açılır** ve `yagmaPencereMs` sonra kapanır (örtüşen pencere yok). Gerekçe: durum iki sayıdır, kayan pencere her yağmayı listelemeyi gerektirirdi; H5 payda tanımıyla uyumlu kalır (toplam kayıp ≤ %25 × pencere içi en yüksek stok, çünkü `Σ oran ≤ %25` ve her yağma anlık stoğun oranını alır: `Σ oran_i × S_i ≤ %25 × max S_i`; **doğrulandı: aritmetik**). AK §2.6 "24 sa kayan" ifadesi bu anlamda okunur (S-7 onay).
+
+`yagmaPencereMs` = `(ic.param.askeri.eskiya?.yagmaPenceresiSaat ?? ic.param.askeri.pencereSaat) × SAAT` (ikisi de bugün 24).
+
+### 9.2 Tek nokta `yagmaTavaniUygula`
+
+Yeni dosya `cekirdek/src/askeri/yagma.ts`; `askeri/index.ts` ve `src/index.ts`'ten dışa açılır:
+
+```ts
+/**
+ * Bu yağma olayına tanınan oran (ppm) ve defter yazımı. Çağıran, dönen oranı düğümün HER malına `kayipTavaniUygula(anlik, donen, PPM)` ile uygular:
+ * yağma yolundaki başka hiçbir kod tavanı kendisi uygulamaz. `oranPpm` zaten ilçe payıyla çarpılmış olay oranıdır (0b); [0, PPM].
+ */
+export function yagmaTavaniUygula(d: Dunya, ctx: Baglam, bi: number, oranPpm: number): number {
+  const ic = ctx.ic;
+  const b = d.bolgeler[bi] as BolgeDurumu;
+  if (b.merkez === undefined || ic.mulk === undefined) return 0;                  // yalnız mülk işletme düğümü: bölge kipinde ve harita bölgesinde defter YOKTUR
+  const tavan = ic.param.askeri.kayipTavaniPpm;
+  const sure = (ic.param.askeri.eskiya?.yagmaPenceresiSaat ?? ic.param.askeri.pencereSaat) * SAAT;
+  const w = b.yagmaPenceresi;
+  const acik = w !== undefined && d.zaman < w.baslangic + sure;                     // süren pencere mi
+  const baslangic = acik ? w.baslangic : d.zaman;
+  const kullanilan = acik ? w.kullanilanPpm : 0;
+  const kalan = tavan > kullanilan ? tavan - kullanilan : 0;
+  const f = oranPpm < kalan ? oranPpm : kalan;                                     // oranPpm < 0 çağıranın hatasıdır (Error); burada [0, PPM] varsayılır
+  if (f > 0) b.yagmaPenceresi = { baslangic, kullanilanPpm: kullanilan + f };      // YENİ nesne (paylaşım yok); f = 0 ise yazılmaz
+  return f;
+}
+```
+
+- **Kurallar:** (1) süren pencerede `kullanilanPpm + f ≤ kayipTavaniPpm` her zaman; (2) pencere süresi dolunca eski kayıt değişmeden durur ve ilk `f > 0` yağmada **tek atamayla** yenilenir (kanonik özet için eski kaydı silmeye gerek yok: aynı girdi aynı durum); (3) `f = 0` ise durum **yazılmaz** (başarısız/boş yağma izi bırakmaz); (4) deterministiktir (zaman `d.zaman`, aritmetik tamsayı, PRNG yok).
+- **Sıra sözleşmesi (0b için):** önce `oranPpm = carpBol(carpBol(olayOrani, ilcePayPpm, PPM), …)`, sonra `f = yagmaTavaniUygula(...)`, sonra her mal için `al = kayipTavaniUygula(anlik, f, PPM)` (bugünkü işlev, **değişmez**: `askeri/savas.ts:183-190`). PvP (Alfa-1) aynı üç adımı kullanır; bölge kipi PvP'si (`savasPencereKapa`, yağma `:263-282`) **bu işlevi çağırmaz** ve değişmez.
+- `kayipTavaniUygula` ve ilan kuralları (a)(b)(c) (`savas.ts:129-141`) **0a'da değişmez**.
+
+### 9.3 Rezerv: `Dunya.baskinlar` (ad ve şekil; kod 0b)
+
+Aşağıdaki biçim bu belgeyle **ad olarak** kilitlenir, 0a'da koda **girmez** (S-6): `Dunya.baskinlar?: BaskinDurumu[]` (`DUNYA_ISTEGE_BAGLI` birliğine `"baskinlar"` 0b'de eklenir, `serilestir.ts:244`).
+
+```ts
+interface BaskinDurumu {            // AK §3.7 kalem 6; alt alanlar 0b'de kesinleşir, üst düzey adlar kilitlidir
+  id: number; ilce: string; il: string;
+  boy: number; gb: number;          // baskın boyu ve gücü (tamsayı)
+  bant: number;                     // il dilimi indeksi [0, dilimSayisi)
+  duyuruZamani: Ms; pencereBaslangic: Ms; pencereBitis: Ms;
+  evre: "duyuru" | "pencere" | "bitti";
+  sonuc: null | { /* 0b */ };
+  katilimcilar: { oyuncu: string; dugum: number; guc: number }[];   // pencere açılışında kilitlenen anlık görüntü
+}
+```
+
+---
+
+## 10. Serileştirme ve göç
+
+| Alan | Konum | Ne zaman yazılır | Doğrulayıcı (`serilestir.ts`) |
+|---|---|---|---|
+| `BolgeDurumu.yagmaPenceresi?` | `tipler.ts:299` yanı | ilk `f > 0` yağmada (0b) | bölge döngüsünde (`:327-337` `ekYapilar` bloğunun hemen sonrası): `if (b.yagmaPenceresi !== undefined) { if (b.merkez === undefined) hata(`${y}.yagmaPenceresi`, "yagma defteri yalniz isletme dugumunde olabilir"); const yp = nesne(b.yagmaPenceresi, ...); alanlar(yp, ..., ["baslangic", "kullanilanPpm"]); tamsayi(yp.baslangic, ..., 0); tamsayi(yp.kullanilanPpm, ..., 0, 1_000_000); }` |
+| `mulk.ekYapilar` içerikte yeni türler | `ekYapilar[j].tur` | oyuncu yapınca (bayrak açık) | **değişmez**: `serilestir.ts:699-700` (`icerikte olmayan ek yapi`) üç yeni tür kimliğini `mulk.ekYapilar` kayıtlarından otomatik tanır |
+
+- `Dunya` üst düzeyine alan **eklenmez** (0a). `paraDurumuKur`, `isletmeAl` ve diğer kurucular yeni alanı **yaratmaz** (tembel: yağma olmadıkça yok).
+- **`fikstur-goc/{bolge-v1,mulk-v1,mulk-v2-g6oncesi}.json` yüklenmeye devam eder** ve yüklenen dünyanın özeti, göç anındaki meşru farklar (kural sürümü değişirse bir ek çözüm) dışında değişmez; yeni alanların hepsi isteğe bağlıdır. `kuralSurumu` 0a veri commit'inde değişir (veri); bölge kipi altınları değişmez.
+- **Bayrak açık → kapalı:** `yagmaPenceresi` ve kurulmuş askeri ek yapılar durumda kalır; yeni askeri komut ve inşa reddedilir (§5.3).
+- **Boyut:** düğüm başına ≤ 2 sayı (yalnız yağma görmüş düğümlerde); ihmal edilebilir (**doğrulanmadı**: ölçülmedi).
+
+---
+
+## 11. Değişmez tablosu
+
+| Değişmez | 0a'da nasıl sağlanır | Test (§13) |
+|---|---|---|
+| Deterministik çekirdek (tamsayı/PPM; `Math.random`/`Date`/kayan nokta yok) | `yagmaTavaniUygula` ve ikmal tamsayıdır (`carpBol`); PRNG kullanılmaz | `askeri-yagma-defteri` (aynı girdi iki kez aynı durum) |
+| Bölge kipi altınları birebir | `askeriMulkAcikMi` bölge kipinde `true`; `ikmalTalebi` çarpanı/ek yapı yolu `merkez` koşulunda; defter `merkez` koşulunda | K-A1 (§12) |
+| Bayrak kapalıyken no-op | blok yok ya da `etkin: false` ⇒ mülk kipinde üç komut `askeri kapali`, askeri ek yapı inşası reddedilir, hiçbir yeni durum alanı yazılmaz; mülk özetleri değişmez | K-A2 (§12) |
+| Başarısız komut durumu değiştirmez | kapı her komutun ilk satırıdır; Ordugâh şartı stok denetiminden önce | `askeri-dugum` (özet aynı) |
+| Parsel asla el değiştirmez | hiçbir askeri kod `d.mulk.hucreler`'e yazmaz (0a'da yeni yazma yolu yok) | K-A3 (§12) |
+| Para korunumu | 0a yeni para akışı **yaratmaz** (ikmal mal tüketimi, maaş mevcut lavabo); korunum eşitliği askeri komutlu mülk koşusunda tam | `askeri-dugum` korunum |
+| Tutar taşıyan komut yok | yeni komut yok; mevcut `birlik_uret` (`adet`), `savunma_emri` (`durus` secim) alanları değişmez | `para-guvenligi` komut sözlüğü (değişmez) |
+| Protokolde yalnız ekleme | 0a'da protokol/`kare` değişikliği **yok** (`kare.baskinlar` 0b) | `protokol` testleri değişmez |
+| Kilitsizlik (L4) | ek yapı şemasında seviye/teknoloji/önkoşul alanı yok (VE4); Ordugâh şartı yalnız sermaye/arsa/girdi | `askeri-eskiya-dogrulama` kilitsizlik taraması |
+| Yalnız-ekle / kimlik kalıcılığı | ek yapı kimlikleri `kimlik-listesi.json`'da kilitli; `nobet_evi` yalnız aşama güncellemesi | `kimlik-listesi.test`, `askeri-ad-kilidi` |
+
+---
+
+## 12. Kanıt planı (kısa; baş lider: "ilerleyiş önce")
+
+Bayrak **kapalıyken** davranışın korunduğunun üç kanıtı; her birinin farkı yakalayabildiği tek satırda belirtilir (şartname ilkesi; ek iş değildir). Hepsi yeni dosya `cekirdek/test/askeri-0a-kanit.test.ts` içindedir; "0a öncesi içerik" yardımcısı `askeri0aOncesi(veri)` güncel veriden `askeri.eskiya`, `askeri.ikmalCarpaniPpm` ve üç askeri ek yapı kaydını çıkarır (başka değişiklik yok; kimlik listesi eklenmez).
+
+| Kanıt | Düzenek | Negatif kontrol |
+|---|---|---|
+| **K-A1 bölge kipi** | mini-6, 4 bot (militarist dahil) + bulanık komut, tohum 3, 6 gün; `askeri0aOncesi` ↔ güncel içerik, **12 kontrol noktasında tam `durumOzeti`** (`kanitKaydi`/`esitNoktalar` kalıbı; bulanık komutlar iki dünyada AYNI içerikten: `ortakKomutluKos` kalıbı). Ek: `fikstur-b1/b2/kanit` ve `fikstur-goc/{bolge,mulk}-v1*` dosyalarında `git diff --exit-code` (O1) | aynı koşuda `askeri.birlikMaasiSaat` iki katına çıkarılırsa özet FARKLI (militarist bot birlik üretir: karşılaştırma askeri değişikliği görür) |
+| **K-A2 mülk kipi, bayrak kapalı** | mülk tohumlu koşu (`g6MulkKosusu` kalıbı: 3 oyuncu, rastgele ticaret/yapı/araştırma + her birine `birlik_uret`, `savunma_emri`, askeri ek yapı denemesi), 12 noktada `askeri0aOncesi` ↔ güncel (`etkin: false`) **aynı özet**; her askeri komut `askeri kapali`/`askeri kapali: <yapi>` ile reddedilir ve durum değişmez | aynı koşuda `etkin: true` (sentetik) ile Ordugâh + birlik kurulunca özet FARKLI |
+| **K-A3 parsel el değiştirmez** | `etkin: true` sentetik veri, 30 sim günü rastgele akış (Ordugâh/Karakol/Kule inşası, `birlik_uret`, `savunma_emri`, `parsel_al`): `d.mulk.hucreler[].sahip` yalnız oyuncunun kendi `parsel_al`/`parsel_birak` komutlarıyla değişir; askeri komut sonrası sahip listesi aynı | akışa bir `parsel_birak` eklenince sahip listesi FARKLI (test duyarlı) |
+
+**Kanıt dışı (mekanik, kapıda):** `pnpm typecheck`, tam vitest, `dunya.html` gzip ≤ 400 KB (0a payı < 0,3 KB: şema + üç sabit + iki küçük işlev; K3 ölçer, **doğrulanmadı**).
+
+---
+
+## 13. Test listesi (K3 yazar; hepsi hedefli, atlanmaz)
+
+| Test (dosya) | Ne sınar |
+|---|---|
+| `veri/test/askeri-eskiya-dogrulama.test.ts` (yeni) | blok yok geçerli; VA1–VA11 ret (bozuk bant, duyuru > planlama, tahmin aralığı, `karakolGuc` azalan değil, ganimet depolanamaz/bilinmeyen mal, `etkin: true` iken `ordugah` tanımsız); VE1–VE3; **kilitsizlik taraması** (ek yapı kaydında seviye/teknoloji/önkoşul anahtarı `.strict()` ile reddedilir); `ikmalCarpaniPpm` aralığı |
+| `veri/test/kimlik-listesi.test.ts` (güncel) | `nobet_evi` aşaması `A0-ops`; `ordugah`, `karakol`, `gozetleme_kulesi` `yapilar.ekYapilar` içinde; `mulk.ekYapilar` anahtarları listede; `dogrulaKimlikKilidi` geçer |
+| `cekirdek/test/askeri-dugum.test.ts` (yeni) | §5: bölge kipinde üç komutun iletileri **eskisiyle birebir** (mevcut `askeri-uretim`/`askeri-savas` testleri değişmeden geçer); mülk kipi bayrak kapalı: `askeri kapali` (üç komut + `askeri kapali: ordugah/karakol/gozetleme_kulesi`), durum değişmez; bayrak açık (sentetik): `<il>#<oyuncu>` ile `birlik_uret`/`savunma_emri` kabul, `bilinmeyen bolge` hâlâ bilinmeyende; **§6:** Ordugâh yokken `ordugah gerekli`; inşa süren Ordugâh sayılmaz; kapasite 12 (tek yapı), 24 (iki yapı), üretimdeki parti sayılır, `ordugah kapasitesi yetersiz: <k> + <a> > <kap>`; `partiBitti` düğümde birlik ekler; **§7:** çarpan `0,25` ile talep `carpBol(adet × miktar, 250000, PPM)`, çarpansız `PPM` bugünkü; Karakol ikmali eklenir ve çarpana tabi değil; bölge kipi talebi değişmez; **para korunumu** (askeri komutlu mülk koşusunda eşitlik tam) |
+| `cekirdek/test/askeri-yagma-defteri.test.ts` (yeni) | §9: pencere ilk yağmada açılır; süren pencerede `kullanilanPpm` birikir ve `kayipTavaniPpm`'i aşmaz (ardışık iki yağma toplamı ≤ %25); süre dolunca yenilenir; `f = 0` durum yazmaz; bölge/harita bölgesinde 0 döner ve yazmaz; determinizm; serileştirme gidiş-dönüş ve bozuk değer ret (negatif, > PPM, harita bölgesinde alan) |
+| `cekirdek/test/askeri-nobet.test.ts` (yeni) | `nobetEviHucresi`: kamu açık mini-6 ilçesinde `hizmet` bloğunun sol-üst hücresi, kamu kapalıyken `undefined`, sonuç tekrarlanabilir ve parametre değişse de aynı (dondurulmuş) |
+| `cekirdek/test/askeri-ad-kilidi.test.ts` (yeni) | `ORDUGAH`, `KARAKOL`, `GOZETLEME_KULESI`, `NOBET_EVI` sabitleri `kimlik-listesi.json` kimlikleriyle eşit; `AskeriEskiyaParametreleri` alan kümesi bu belgenin §4.1 listesiyle birebir (anahtar kümesi sabitlenir); `OLAY_ONCELIGI` anahtarlarında `eskiya_*` YOK (0a) |
+| `cekirdek/test/askeri-0a-kanit.test.ts` (yeni) | K-A1, K-A2, K-A3 (§12) |
+| uyarlama: `mulk-yapilar.test.ts:50-60` | ek yapı listesi 6 → 9 (`ordugah`, `karakol`, `gozetleme_kulesi` eklenir); başka mülk testlerinde ek yapı sayımı varsa güncellenir (**doğrulanmadı: tam liste**, K3 koşarak belirler) |
+| uyarlama: `veri/test/dogrulama.test.ts` | ek yapı sayısı ve `askeri` blok anahtar kümesi |
+
+Kural: testler **atlanmaz** (`skip`/`todo` yasak); yalnız kendi paketinin hedefli testleri koşulur, tam kapı O1'indir.
+
+---
+
+## 14. Sıra, rollere istek ve bot/ölçüm
+
+**Sıra (Ar-Ge lideri: "bir sonraki sprintte P5'ten sonra"; K3 tek yazar):** P4/P5 (G6–G8) kapısı yeşil → **0a-1** şema (K3: `veri/src/{tipler,sema,dogrula}.ts`, `MulkEkYapiTanimi`, `askeri.eskiya`; **hiçbir JSON değişmez**; altınlar aynı) → **0a-2** çekirdek (`askeri/{kimlik,nobet,yagma}.ts`, `birlikUret`/`savunmaEmri`/`savasIlan` kapı + düğüm, Ordugâh şartı, `ikmalTalebi`, `ekYapiToplami`, `yapiTuruCoz` kapısı, `serilestir.ts` doğrulayıcı, `derle.ts` iki alan; blok yokken no-op) → **0a-3** veri (T3 tek commit: `askeri.eskiya` `etkin: false`, üç ek yapı kaydı, `nobet_evi` aşaması; `kuralSurumu` ARTAR; mülk altınları gerekiyorsa TEK commit'te eski/yeni raporlu; bölge altınları BİREBİR) → **0a-4** kanıtlar ve test uyarlamaları. **Birleştirme çatışması:** `sema.ts`, `tipler.ts`, `derle.ts`, `serilestir.ts`, `parametreler.json` P4/P5 ile aynı dosyalardır; K3 sırayla yazar, 0a önceki dilimin kapısı yeşilken başlar.
+
+| Rol | İstek |
+|---|---|
+| **K3** | §4–§10 ve Ek A'daki değişiklikler; blok yokken no-op her yerde; testler §13; `askeri0aOncesi` yardımcısı; `veri-importu` kuralı (çekirdek `@bolge/veri` çalışma zamanı importu yok) korunur |
+| **T3** | **0a-3 tek commit:** `parametreler.json` `askeri.eskiya` (§4.1 değerleri; `etkin: false`; **`ikmalCarpaniPpm` YOK**) ve `mulk.ekYapilar.{ordugah,karakol,gozetleme_kulesi}` (§4.2); `kimlik-listesi.json` `nobet_evi` aşaması `A0-ops`. **K3'ün 0a-1 şeması birleşmeden önce yazma.** |
+| **O1** | 0a teslim kapısı + K-A1 dondurulmuş altın `git diff --exit-code` listesi |
+| **K1, K2, O2, O3** | **0a'da istek yok** (protokol/istemci/bot/ölçüm 0b) |
+
+**Bot ve ölçüm:** 0a'da botlar ve `olcum` **değişmez** (bayrak kapalı; mülk botları askeri komut vermez). H3/H5 parsel koşullarının Ordugâh şartıyla güncellenmesi, AH1–AH11 ve `komutan`/`tedarikci`/`askeri_yok` önayarları **0b**'dir (AK Ek B, §3.7 kalem 12).
+
+**0a teslim kapısı (O1):** tam kapı yeşil; `dunya.html` gzip ≤ 400 KB; bölge kipi altınları birebir (K-A1); mülk kipi bayrak kapalıyken özet aynı (K-A2); eski mülk görüntüleri yüklenir.
+
+---
+
+## 15. Geri dönüşü zor kararlar
+
+"Zor": canlı durumda ya da protokolde kalıcı iz bırakır, kimlikle bağlanır ya da yayımlanınca değiştirilemez. **Kolay geri dönüşlüler** (kilitlemeyin): `askeri.eskiya.*` sayı değerleri ve `etkin` bayrağı, `ikmalCarpaniPpm`, `karakolGuc`, ganimet tablosu (veri; kural sürümü dönemi).
+
+| # | Karar | Neden zor | Durum |
+|---|---|---|---|
+| GZ-A1 | **`askeri.eskiya` blok adı ve alan adları** (§4.1; tam küme) | parametre anahtarı yayımlanınca veri paketleri ve ölçüm betikleri ona bağlanır; alan adı değiştirmek veri göçüdür | önerilen (AÖ-19 yönü kilitli) |
+| GZ-A2 | **Ek yapı şeması alanları** `birlikKapasitesi`, `ikmal` (ve `nobetciGucu`/`duyuruEkiSaat` ALINMADI) | `MulkEkYapiTanimi` `.strict()` ve `DerlenmisEkYapi`; alan çıkarmak/yeniden adlandırmak göç ister | önerilen |
+| GZ-A3 | **`BolgeDurumu.yagmaPenceresi` şekli ve sabit pencere semantiği** (`{baslangic, kullanilanPpm}`, ilk yağmada açılır) | durum şemasına yazılır (K8); kayan pencereye geçmek durumu listeye çevirir | önerilen (S-7) |
+| GZ-A4 | **Mülk kipi kapısı** (`askeri kapali`) ve bayrak semantiği: bayrak = yeni komut/inşa kapısı, kurulmuş yapı kalır | oyuncu mülkü ile bayrak ilişkisi; sonradan "kapanınca yapılar silinir" demek oyuncuyu cezalandırır | baş lider (S-3 kapandı) |
+| GZ-A5 | **Ordugâh kapasitesi = tüm birlik türlerinin adet TOPLAMI** (tür ağırlığı yok), üretimdeki parti dahil | birlik envanteri ve bot/ölçüm bu sayıya göre kurulur; ağırlık eklemek kapasite anlamını değiştirir | önerilen |
+| GZ-A6 | **İkmal çarpanının yeri** (`ikmalTalebi`, yalnız mülk işletme düğümü; ek yapı ikmali çarpansız) | talep kimliği; çarpan bayraktan bağımsız (kurulmuş birlik aynı ikmali ister) | önerilen (değer 0b: S-1) |
+| GZ-A7 | **`nobet_evi` kimliği ve konum türetme kuralı** (ilk `hizmet` bloğunun sol-üst hücresi) | kimlik kilidi; istemci ikonu ve 0b savunma toplamı bu konuma bağlanır | baş lider (S-2 kapandı) |
+| GZ-A8 | **Olay adları** `eskiya_gunluk`, `eskiya_pencere_ac`, `eskiya_pencere_kapa` ve **`Dunya.baskinlar` adı/üst düzey şekli** | kuyrukta ve görüntüde serileştirilince kalıcı | önerilen (S-6) |
+| GZ-A9 | **`param.askeri.yagmaIletimPpm` adı** (Y-36; rezerv, şemada alan YOK) | PvP ekonomisinin kalıcı tanımı (K3 AK); alan çıkarmak değil adı bağlamak | kilitli yön (Y-36) |
+
+---
+
+## 16. Açık sorular
+
+| # | Soru | Varsayılan (K3 bunu uygular) | Kime |
+|---|---|---|---|
+| S-1 | ~~İkmal ×0,25 verisi 0a'da mı~~ **KAPANDI (Ar-Ge lideri):** değer 0b'de bayrakla gelir; 0a'da veri yok, yalnız şema ve çekirdek yolu | alan verisi yok | kapandı |
+| S-2 | ~~`nobet_evi` aşaması~~ **KAPANDI:** `A0-ops` | `A0-ops` | kapandı |
+| S-3 | ~~`savas_ilan` da mülk kapısından geçsin mi~~ **KAPANDI:** evet, aynı `askeri kapali` | evet | kapandı |
+| S-4 | AK §2.2 arsa türü/komşuluk matrisi parsel fikstüründe karşılıksız (kullanım türü yok); 0a'da uygulanmaz. O3 ileride hücre kullanım türü eklerse ayrı iş | uygulanmaz | baş lider, O3 |
+| S-5 | ~~Bayrak açılış tohumu~~ **KAPANDI (0b):** ilk `eskiya_gunluk` olayını kimin planladığı 0b tasarımıdır | 0a'da olay planlanmaz | kapandı (0b) |
+| S-6 | `Dunya.baskinlar` şeması 0a'ya mı 0b'ye mi | **0b** (0a'da yalnız ad ve şekil rezervi; dead alan eklenmez) | baş lider |
+| S-7 | Yağma penceresi **sabit** (ilk yağmada açılır) mi kayan mı (AK "24 sa kayan") | sabit (§9.1; H5 payda tanımıyla uyumu gösterildi) | baş lider |
+| S-8 | PvP yağma iletimi %60 (Y-36) ve `param.askeri.yagmaIletimPpm`: şemada alan 0a'da YOK, yalnız ad rezerve; uygulama Alfa-1 | rezerv | baş lider |
+| S-9 | AK'den sapmalar onayı: (1) ek yapıda `nobetciGucu`/`duyuruEkiSaat` yok (tek kaynak `eskiya.*`), (2) `ganimet` mal-kimlikli `Record`, (3) arsa matrisi yok (S-4) | sapmalar kabul | baş lider |
 
 ## Ek A. Değişen dosya ve fonksiyonlar (Parça 1; `dosya:satır`, taban `7553b55`)
 
@@ -459,7 +636,7 @@ Parça 2 (yağma defteri `BolgeDurumu.yagmaPenceresi`, tek nokta `yagmaTavaniUyg
 | `veri/src/tipler.ts:576-598` `MulkEkYapiTanimi` | K3 | `birlikKapasitesi?`, `ikmal?` |
 | `veri/src/sema.ts:532` (`askeri`), `:364-377` (`mulkEkYapiSema`) | K3 | şema karşılıkları (`.strict()`) |
 | `veri/src/dogrula.ts` (`dogrulaParametreler`, `:537-565` yanı) | K3 | VA1–VA11, VE1–VE3 |
-| `veri/icerik/parametreler.json` | **T3** | `askeri.ikmalCarpaniPpm`, `askeri.eskiya` (`etkin: false`), `mulk.ekYapilar.{ordugah,karakol,gozetleme_kulesi}` (§4) |
+| `veri/icerik/parametreler.json` | **T3** | `askeri.eskiya` (`etkin: false`) (`ikmalCarpaniPpm` YOK: S-1), `mulk.ekYapilar.{ordugah,karakol,gozetleme_kulesi}` (§4) |
 | `veri/icerik/kimlik-listesi.json` | **T3** | `nobet_evi` aşaması `A0-ops` |
 | `cekirdek/src/tipler.ts:124-136` `DerlenmisEkYapi` | K3 | `birlikKapasitesi`, `ikmal` |
 | `cekirdek/src/derle.ts:162-186` `mulkDerle` | K3 | iki alan (`ikmal` mal indeksine çevrilir) |
@@ -470,3 +647,7 @@ Parça 2 (yağma defteri `BolgeDurumu.yagmaPenceresi`, tek nokta `yagmaTavaniUyg
 | `cekirdek/src/askeri/nobet.ts` (YENİ), `askeri/index.ts`, `src/index.ts` | K3 | `nobetEviHucresi` ve dışa açma |
 | `cekirdek/src/mulk/yapi.ts:29` `ekYapiToplami` | K3 | alan birliğine `"birlikKapasitesi"` |
 | `cekirdek/src/mulk/komut.ts:262-279` `yapiTuruCoz` | K3 | askeri ek yapı kapısı (§5.3) |
+| `cekirdek/src/tipler.ts:299` `BolgeDurumu` | K3 | `yagmaPenceresi?: { baslangic: Ms; kullanilanPpm: number }` (§9.1) |
+| `cekirdek/src/askeri/yagma.ts` (YENİ), `askeri/index.ts`, `src/index.ts` | K3 | `yagmaTavaniUygula` (§9.2; çağıran yok: 0b) |
+| `cekirdek/src/serilestir.ts:327-337` (bölge döngüsü, `ekYapilar` bloğundan sonra) | K3 | `yagmaPenceresi` doğrulayıcısı (§10) |
+| `cekirdek/test/askeri-*.test.ts`, `veri/test/askeri-eskiya-dogrulama.test.ts` (YENİ) | K3 | §13 |
