@@ -109,6 +109,23 @@ async function hucreNoktasi(sayfa: Page, id: string): Promise<{ x: number; y: nu
   }, id);
 }
 
+/**
+ * Yöntem seçici maliyet kartını uzatır: hedef hücre kartın altında kalıyorsa harita kartın üstüne kaydırılır
+ * (fare hayaleti/tıklama kartı değil haritayı vursun). Güncel ekran noktasını döndürür.
+ */
+async function kartinUstunde(sayfa: Page, id: string): Promise<{ x: number; y: number }> {
+  let p = await hucreNoktasi(sayfa, id);
+  if (!p) throw new Error(`hücre ekranda değil: ${id}`);
+  const kutu = await sayfa.locator("#yapi-kart").boundingBox();
+  if (kutu && p.x >= kutu.x && p.x <= kutu.x + kutu.width && p.y >= kutu.y - 24) {
+    const dy = p.y - (kutu.y - 90);
+    await sayfa.evaluate((d) => window.__harita?.gorunum()?.ml.panBy([0, d], { duration: 0 }), dy);
+    await sayfa.waitForTimeout(400);
+    p = (await hucreNoktasi(sayfa, id)) ?? p;
+  }
+  return p;
+}
+
 async function haritaHazir(sayfa: Page, zaman = 90000): Promise<void> {
   await sayfa.waitForFunction(() => window.__harita?.hazir() === true, null, { timeout: zaman });
   await sayfa.waitForTimeout(250);
@@ -312,8 +329,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   // Geçerli: kendi arsanın hücreleri üzerinde
   const [h0, h1] = [arsa.hucreler[1]!, arsa.hucreler[2]!];
   void h1;
-  const p0 = await hucreNoktasi(sayfa, h0);
-  if (!p0) throw new Error("hücre noktası yok");
+  let p0 = await kartinUstunde(sayfa, h0);
   await sayfa.mouse.move(p0.x, p0.y);
   await sayfa.waitForTimeout(300);
   const plan1 = await sayfa.evaluate(() => {
@@ -338,8 +354,8 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   // Geçersiz: yol hücresi (turuncu taralı, neden ipucunda)
   const engel = await sayfa.evaluate(() => window.__harita?.gorunum()?.sinamaEngelli() ?? null);
   if (engel) {
-    const pe = await hucreNoktasi(sayfa, engel.id);
-    if (pe) {
+    const pe = await kartinUstunde(sayfa, engel.id);
+    {
       await sayfa.mouse.move(pe.x, pe.y);
       await sayfa.waitForTimeout(300);
       const ip = (await sayfa.locator("#harita-ipucu").innerText()).replace(/\s+/g, " ");
@@ -350,6 +366,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     }
   } else kontrol(`${e} yakında engelli hücre bulundu`, false);
   // Sabitle ve maliyet kartı
+  p0 = await kartinUstunde(sayfa, h0);
   await sayfa.mouse.move(p0.x, p0.y);
   await sayfa.waitForTimeout(200);
   await sayfa.mouse.click(p0.x, p0.y);
@@ -423,16 +440,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
       await tikla(sayfa, false, "#yapi-menu [data-yapi='ahir']");
       // Ahır çok yöntemlidir: varsayılan seçim YOK, yöntem seçilmeden "Kur" kapalı (yöntem seçici); tür varsayılanı (Ahır besi) seçilir: komuta yontem yazılmaz
       await tikla(sayfa, false, "#yapi-kart .ym-kart[data-yontem='ahir_besi']");
-      let pb = await hucreNoktasi(sayfa, bos.sol);
-      if (!pb) throw new Error("ahır hücresi ekranda değil");
-      // Yöntem seçici maliyet kartını uzatır (3 yöntem kartı): hedef hücre kartın altında kalıyorsa harita kartın üstüne kaydırılır (tıklama kartı değil haritayı vursun)
-      const kutu = await sayfa.locator("#yapi-kart").boundingBox();
-      if (kutu && pb.x >= kutu.x && pb.x <= kutu.x + kutu.width && pb.y >= kutu.y - 24) {
-        const dy = pb.y - (kutu.y - 90);
-        await sayfa.evaluate((d) => window.__harita?.gorunum()?.ml.panBy([0, d], { duration: 0 }), dy);
-        await sayfa.waitForTimeout(400);
-        pb = (await hucreNoktasi(sayfa, bos.sol)) ?? pb;
-      }
+      const pb = await kartinUstunde(sayfa, bos.sol);
       await sayfa.mouse.move(pb.x, pb.y);
       await sayfa.waitForTimeout(250);
       await sayfa.mouse.click(pb.x, pb.y);
