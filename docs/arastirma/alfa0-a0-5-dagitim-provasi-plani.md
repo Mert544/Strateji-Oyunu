@@ -1,22 +1,22 @@
 # A0-5 kural dönemi dağıtım provası ve 24 sa gölge yeniden oynatma: plan (O3)
 
-> **Durum.** Yalnız PLAN; hiçbir şey koşulmadı. Kaynak: A3 kalan kanıt tablosu (`alfa0-kalan-kanit.md`, A0-5 satırı), `docs/04` A0-5 satırı, README "Kural dönemi provası" ve "İçerik göçü". Ölçülmüş sayılar ayrı işaretlidir; geri kalanı **tahmin** ya da **ölçülecek**. "Gölge yeniden oynatma" tanımı bu planın yorumudur (aşağıda); baş lider ya da Ar-Ge farklı bir tanım isterse §1 değişir.
+> **Durum.** Yalnız PLAN; hiçbir şey koşulmadı. **Ar-Ge yanıtları işlendi (§8):** gölge tanımı doğrulandı (docs/11:580), komut kaynağı O2'nin üç ilçe günlüğü, sapma eşikleri kural olarak netleştirildi, `kural_surumu_gec` komutsuz. Kaynak: A3 kalan kanıt tablosu (`alfa0-kalan-kanit.md`, A0-5 satırı), `docs/04` A0-5 satırı, README "Kural dönemi provası" ve "İçerik göçü". Ölçülmüş sayılar ayrı işaretlidir; geri kalanı **tahmin** ya da **ölçülecek**. "Gölge yeniden oynatma" tanımı Ar-Ge tarafından doğrulandı (docs/11:580: yedekten kopya, aynı 24 sa akış, saat başı `durumOzeti`); canlıyla PARALEL gölge Alfa-0 kapsamı DIŞINDADIR.
 
 ## 1. Ne kanıtlanacak
 
-A0-5 = "kural dönemi dağıtım provası (24 sa gölge yeniden oynatma, sapma raporu)". Yorum: canlı dünyanın bir **yedeğinden** KOPYA (gölge) açılır, canlıyla **aynı 24 sim-saatlik komut akışı** gölgede yeniden oynatılır, her sim-saat başı `durumOzeti` karşılaştırılır; fark listesi = sapma raporu. İki kip:
+A0-5 = "kural dönemi dağıtım provası (24 sa gölge yeniden oynatma, sapma raporu)". Tanım: canlı dünyanın bir **yedeğinden** KOPYA (gölge) açılır, canlıyla **aynı 24 sim-saatlik komut akışı** gölgede yeniden oynatılır, her sim-saat başı `durumOzeti` karşılaştırılır; fark listesi = sapma raporu. İki kip:
 
-- **K-A, aynı içerik (determinizm):** gölge canlıyla aynı imaj ve içerikle açılır. Beklenen sapma **0** (yeniden oynatma kuralı: aynı günlük, aynı özet). Bu, dönem sınırından önce "yedek + yeniden oynatma güvenilir" kanıtıdır.
-- **K-B, yeni içerik göçü:** gölge yeni kural sürümüyle `BOLGE_GOC=1` açılır (yalnız sona ekleme), sonra aynı akış oynatılır. Sapma yalnız yeni kimliklerin etkilediği yerlerde **olabilir** ve yorumlanır (beklenmeyen sapma = göç hatası). Göç raporu (`kurtarma.goc`: `eklenen`, `ihlalSayisi` 0, `yenidenIndekslendi`) ve geri dönüş (`--yedekten-don`) de bu kipte denenir.
+- **K-A, aynı içerik (determinizm):** gölge canlıyla aynı imaj ve içerikle açılır. Sapma **0** bir determinizm KURALIDIR (sahip eşiği değil): tek fark bile HATA. (Yeniden oynatma kuralı: aynı günlük, aynı özet.) Bu, dönem sınırından önce "yedek + yeniden oynatma güvenilir" kanıtıdır.
+- **K-B, yeni içerik göçü:** gölge yeni kural sürümüyle `BOLGE_GOC=1` açılır (yalnız sona ekleme), sonra aynı akış oynatılır. Beklenen sapma YALNIZ yeni kimliklerin dokunduğu alanlarda olabilir ve önceden LİSTELENİR; listede olmayan her sapma = göç hatası. `ihlalSayisi` 0. Göç raporu (`kurtarma.goc`: `eklenen`, `ihlalSayisi` 0, `yenidenIndekslendi`) ve geri dönüş (`--yedekten-don`) de bu kipte denenir.
 
-`kural_surumu_gec` komutu kodda YOK (A3, AÖ-16 "yapılacak"): bu plan onsuz çalışır, dönem geçişi bugünkü yolla (kapat, yedek, `BOLGE_GOC=1`) yapılır; komut kapsamı sahip kararıdır.
+`kural_surumu_gec` komutu kodda YOK (A3, AÖ-16 "yapılacak"): Alfa-0'da kanıt komutsuz yapılır (kapat → yedek → `BOLGE_GOC=1`); komutun kendisi baş lider kapsam kararıdır.
 
 ## 2. Ne koşar
 
 | Parça | İçerik |
 |---|---|
 | Canlı düğüm | gerçek harita (`gercek`) + arsa ızgarası (Gemlik, Körfez, Gebze; `ilce=3`), pg 16, `--uretim`, e-posta kimliği; sunucu botları KULLANILAMAZ (`--botlar` ızgarayla birlikte olmaz) |
-| Komut akışı | **kayıt oynatma**: O2'nin üç ilçe koşusunun (ya da bu iş için elle yazılmış betiğin) komut günlüğü; bot yok. Kaynak komut günlüğü seçimi AÇIK (§8) |
+| Komut akışı | **kayıt oynatma**: O2'nin üç ilçe koşusunun komut günlüğü; bot yok. O2 günlüğü gelmeden Aşama 1 geçici olarak elle yazılmış kısa betikle koşabilir, ama **kanıt O2 günlüğüyle sayılır** (elle betik yalnız betik denemesidir). Günlük biçimi eşleştirmesini Operasyon lideri yapar; O3'ün ihtiyaçları §8'dedir |
 | Saat | K-A/K-B ana ölçüm **elle saat ile hızlandırılmış** 24 sim-saat; ayrıca daemon'lu makinede **gerçek zaman** 24 sa (`--hiz 1`) |
 | Gölge düğüm | yedekten (`deploy/yedek.sh` → `geri-yukle.sh --olustur`) ayrı veritabanı; ayrı port; canlıya yazmaz |
 | Karşılaştırma | her sim-saat başı `ozet` (`durumOzeti`, `seq`, `t`) iki düğümden; fark tablosu = sapma raporu |
@@ -47,11 +47,11 @@ CPU yükü tek çekirdeğe yakın (Node tek iş parçacığı + görüntü işç
 İzleme: iki düğümde de `/hazir` ve `/saglik` 200, `olumcul` olayı yok, `bolge_olumcul` 0; RSS ve tepe (`/proc/<pid>/status`); sim-saat başı `ozet` karşılaştırması betiği; pg boyutu ve `log`/`snapshots` satır sayısı; her adımın süresi. Betikler kapı kilidi, `kapi.ts`, Playwright/vitest süreci varken **başlamaz** ve adım başı yeniden denetler (yerel yedek tatbikatı betiğindeki gibi).
 
 Başarı ölçütü (öneri, sahibi onaylar):
-1. **K-A sapma = 0**: 24 sim-saatin her saatinde canlı ve gölge `durumOzeti` ve `seq` aynı.
-2. **K-B**: göç raporu `ihlalSayisi` 0, `eklenen` beklenen kimlikler; sapma tablosundaki her fark yeni kimliğe açıklanabilir; açıklanamayan fark = KIRIK.
+1. **K-A sapma = 0** (determinizm kuralı, eşik değil): 24 sim-saatin her saatinde canlı ve gölge `durumOzeti` ve `seq` aynı; tek fark hata.
+2. **K-B**: göç raporu `ihlalSayisi` 0, `eklenen` beklenen kimlikler; sapma tablosunda YALNIZ yeni kimliklerin dokunduğu (önceden listelenmiş) alanlar olabilir; listede olmayan her fark = göç hatası = KIRIK.
 3. Geri dönüş: `--yedekten-don` sonrası eski içerikle açılış, `durumOzeti` yedekle aynı (yalnız yeni kuralla komut kabul edilmediyse geçerli).
-4. Geri yükleme: yedekten açılış `/hazir` 200 ve `durumOzeti` aynı; süre ve boyut kayda geçer (eşik sahibin: öneri: geri yükleme + açılış < 5 dk).
-5. Bellek: 24 sim-saat boyunca RSS tepe < ~1 GB ve sınırsız artış yok (tahmin eşiği; tatbikat verisiyle güncellenir).
+4. Geri yükleme: yedekten açılış `/hazir` 200 ve `durumOzeti` aynı (kural); süre ve boyut kayda geçer; süre eşiği SAHİBİN (öneri: geri yükleme + açılış < 5 dk).
+5. Bellek: RSS tepe ve büyüme kayda geçer; eşik SAHİBİN (öneri: tepe < ~1 GB, sınırsız artış yok; tatbikat verisiyle güncellenir).
 6. Aşama 2 için ek: imaj derlenir, `$D up` sonrası tüm servisler healthy, Caddy kontrol listesi adım 16 geçer, 24 sa gerçek zamanda `olumcul` yok.
 
 ## 6. Pencere önerisi
@@ -64,10 +64,15 @@ Ağır parça (Aşama 1, hızlandırılmış K-A/K-B, ~30-60 dk): **P14 push'und
 2. K-A (aynı içerik, sapma 0). 3. K-B (yeni içerik göçü, dönem sınırı provası, geri dönüş). 4. Rapor: sapma tablosu, süreler, boyutlar, RSS.
 5. Daemon'lu makinede Aşama 2 (A0-3 geri yükleme tekrarı + imaj/compose/Caddy + gerçek zaman 24 sa).
 
-## 8. Açık sorular (sahip kararı)
+## 8. Ar-Ge yanıtları ve kalan kararlar
 
-- **Komut kaynağı:** hangi komut günlüğü oynatılacak? Seçenekler: O2'nin üç ilçe koşusunun günlüğü, elle yazılmış kısa betik, ya da `--dok` ile dökülmüş gerçek günlük. Bot yok (ızgarayla birlikte olmaz).
-- **Gölge tanımı** §1'deki yorum mu, yoksa "yeni imajla canlıyı paralel gölge koşturma" mu?
-- **`kural_surumu_gec`** kapsamı (A0-5 bu komutsuz mu kanıtlanır?).
-- **Eşikler** (§5.4-5.5): sahip belirler.
-- **Aşama 2 makinesi** kim, ne zaman.
+Karara bağlanan: (1) gölge tanımı §1'deki gibi (docs/11:580), canlıyla paralel gölge kapsam dışı; (2) komut kaynağı O2'nin üç ilçe koşusu günlüğü; (3) K-A sapma 0 kuraldır, K-B'de beklenmeyen her sapma göç hatasıdır, beklenenler yalnız yeni kimliklerin dokunduğu alanlar ve listelenir, `ihlalSayisi` 0; süre ve bellek eşikleri sahibin; (4) `kural_surumu_gec` komutsuz kanıtlanır, komut baş lider kapsam kararıdır; (5) Aşama 2 makinesi sahip kararıdır.
+
+**O2 günlüğünden O3'ün ihtiyacı** (eşleştirmeyi Operasyon lideri yapar):
+- Oynatılabilir komut günlüğü: sıra (`seq`), sim zamanı (`t`), oyuncu kimliği, `komut` nesnesi (çekirdek `Komut` biçimi), idempotans anahtarı ya da benzersiz anahtar; pg `log` tablosu (`dunya, seq, t, hesap, istemci, anahtar, komut jsonb, kural_sur, sema_sur`) ya da `--dok`'un dosya deposu biçimi olarak yüklenebilir, ya da sunucuya ws ile gönderilecek komut listesi.
+- Dünya kimliği: tohum, harita (`gercek` + ızgara manifesti sha256 ve `hiyerarsi.json`), kural sürümü (içerik karması), dünya epoch'u; günlüğün ait olduğu başlangıç durumu (sıfırdan mı, bir görüntüden mi).
+- Oyuncu kimlikleri ve ilçe eşlemesi (hangi oyuncu hangi ilçeye `katil`ır) ve oyuncu başına geliştirme token'ı gerekmiyorsa sistem yolu (`sistem` komutları) bilgisi.
+- Süre: günlüğün kapsadığı sim-saat (24 sa gerekir; saat başı kontrol noktaları) ve kendi kaydettiği saat başı `durumOzeti` ya da son özet (karşılaştırma için; yoksa canlı koşu O3'te yeniden üretilir).
+- Kişisel veri YOK (opak oyuncu kimliği, adres yok).
+
+Kalan: Aşama 2 makinesi (kim, ne zaman); süre ve bellek eşikleri.
