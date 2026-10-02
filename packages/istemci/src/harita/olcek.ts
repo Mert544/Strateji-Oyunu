@@ -114,8 +114,6 @@ export interface OlcekHedefi {
   malzeme: YapiMalzemesi[];
   /** Yükseltme süresi (saat; erken oyun çarpanı öncesi). */
   sureSaat: number;
-  /** Yeni oyuncunun ilk saatlerindeki hızlandırılmış süre tahmini (saat). */
-  ilkGunSureSaat: number;
 }
 
 /** Çekirdeğin mülk kipi yükseltme bedeli: `oran = hedef.insaPpm - mevcut.insaPpm`; para ve her malzeme `floor(x × oran / 1e6)`. */
@@ -134,7 +132,6 @@ export function olcekHedefi(ic: Icerik, tesis: Pick<OlcekTesisi, "tur" | "olcek"
   }
   const sureMs = carpBol(T.sureSaat * SAAT_MS, sn.olcekYukseltmeSureCarpaniPpm, PPM);
   const sureSaat = sureMs / SAAT_MS;
-  const carpan = (ic.param.erkenOyun?.baslangicCarpaniPpm ?? PPM) / PPM;
   return {
     olcek: hedef,
     ad: hedef === 1 ? "M" : "L",
@@ -143,7 +140,6 @@ export function olcekHedefi(ic: Icerik, tesis: Pick<OlcekTesisi, "tur" | "olcek"
     paraMili: carpBol(T.para, oran, PPM),
     malzeme,
     sureSaat,
-    ilkGunSureSaat: Math.max(1 / 60, sureSaat * carpan),
   };
 }
 
@@ -340,7 +336,7 @@ export function olcekPlani(g: OlcekGirdisi): OlcekPlani {
   const hedef = olcekHedefi(g.ic, g.tesis, g.hedef);
   if (!hedef) {
     const zaten = g.hedef <= g.tesis.olcek;
-    return { tesis: g.tesis, ekHucreler: [], alinacak: [], arsaMili: 0, yapiMili: 0, toplamMili: 0, gecerli: false, hedef: { olcek: g.hedef, ad: g.hedef === 1 ? "M" : "L", hucre: 0, ek: 0, paraMili: 0, malzeme: [], sureSaat: 0, ilkGunSureSaat: 0 }, neden: zaten ? "Tesis zaten bu ölçekte ya da daha büyük." : "Bu yapı büyütülemez." };
+    return { tesis: g.tesis, ekHucreler: [], alinacak: [], arsaMili: 0, yapiMili: 0, toplamMili: 0, gecerli: false, hedef: { olcek: g.hedef, ad: g.hedef === 1 ? "M" : "L", hucre: 0, ek: 0, paraMili: 0, malzeme: [], sureSaat: 0 }, neden: zaten ? "Tesis zaten bu ölçekte ya da daha büyük." : "Bu yapı büyütülemez." };
   }
   const hucre = ekHucrePlani({ ...g, gereken: hedef.ek });
   const yapiMili = hedef.paraMili;

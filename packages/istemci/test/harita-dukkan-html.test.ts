@@ -69,6 +69,11 @@ describe("D0 öneri kartı ve B7 Defter kartı", () => {
     expect(rafHtml(dukkan(), { malAdi, simdi: 0, kasaBirimSa: 120 })).toContain("Kasa saatte en çok 120 birim satar.");
     expect(maliyetSatirlariHtml({ tur: "bakkal", hucre: 1, esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9, indirim: { n: 3, yuzde: "%25" } })).toContain("Kalan 3 yapında %25 indirim var.");
     expect(maliyetSatirlariHtml({ tur: "bakkal", hucre: 1, esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 1, toplamMili: 1, hazineMili: 9 })).not.toContain("indirim var");
+    // T-4: süre satırı normal süreyi yazmaz yanılgısı: hızlı süre varsa "yeni oyuncu hızı; normalde"
+    const hizli = maliyetSatirlariHtml({ tur: "bakkal", hucre: 1, esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 4, hizliSureSaat: 0.4, toplamMili: 1, hazineMili: 9 });
+    expect(hizli).toContain("<dt>Süre</dt><dd>24 dk (yeni oyuncu hızı; normalde 4 sa)</dd>");
+    expect(hizli).not.toContain("ilk gün");
+    expect(maliyetSatirlariHtml({ tur: "bakkal", hucre: 1, esZamanliInsaat: 2, durum: "uygun", arsaMili: 0, dukkanMili: 1, celikAdet: 1, parcaAdet: 1, sureSaat: 4, toplamMili: 1, hazineMili: 9 })).toContain("<dt>Süre</dt><dd>4 sa</dd>");
     // eksik çelik/parça: yalnız stok-eksik durumunda uyarı, düğme kapalı
     const eksik = maliyetSatirlariHtml({ tur: "bakkal", hucre: 1, esZamanliInsaat: 2, durum: "stok-eksik", arsaMili: 0, dukkanMili: 1, celikAdet: 8, parcaAdet: 2, sureSaat: 1, toplamMili: 1, hazineMili: 9, stokEksik: { ad: "Çelik", var: 3, gereken: 8 } });
     expect(eksik).toContain("Çelik yetmiyor: 3 / 8.");

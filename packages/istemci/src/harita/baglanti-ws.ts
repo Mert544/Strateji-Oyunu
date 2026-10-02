@@ -23,6 +23,7 @@ import { hataHucresi, mulkHatasiTurkce, pazarHatasiTurkce, yontemHatasiTurkce } 
 import type { InsaatBilgisi } from "../yuru/arsa";
 import { parselToplamFiyatiMili } from "./fiyat";
 import { yapilardanInsaatlar } from "./yapi-yuruyus";
+import { sureCarpani } from "./yapi-sure";
 
 type Mesaj<T extends SunucuMesaji["tur"]> = Extract<SunucuMesaji, { tur: T }>;
 
@@ -617,6 +618,11 @@ export class WsBaglanti implements MulkBaglantisi {
       };
       bak();
     });
+  }
+
+  /** Erken oyun süre çarpanı (0, 1] şimdiki zamanda: oyuncu karesindeki formülden (`erkenOyun`; çekirdek `sureCarpaniPpm` ile aynı); kare/formül yoksa 1. */
+  erkenOyunCarpani(): number {
+    return sureCarpani(this.kare?.oyuncu?.erkenOyun, this.simZamani());
   }
 
   /** İstemcinin tahmini sim zamanı (ms). */

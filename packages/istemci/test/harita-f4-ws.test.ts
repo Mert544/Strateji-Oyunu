@@ -84,6 +84,9 @@ describe("WsBaglanti: gerçek sunucu", () => {
     expect(mulkOyuncuBul(ts.yazar.sim.dunya, "ayse")?.katilimIlcesi).toBe(ILCE);
     await bekle(() => b.isletme() !== null);
     expect(b.isletme()?.katilimIlcesi).toBe(ILCE);
+    // T-4: erken oyun süre çarpanı protokoldeki oyuncu formülünden (yeni katılan: başlangıç çarpanı %10)
+    await bekle(() => b.erkenOyunCarpani() < 1);
+    expect(b.erkenOyunCarpani()).toBeCloseTo(0.1, 6);
     const e = b.dunyaEpochMs();
     expect(e === null || Number.isSafeInteger(e)).toBe(true);
   });
@@ -223,7 +226,7 @@ describe("WsBaglanti: gerçek sunucu", () => {
     await v.sahiplikAl(ILCE);
     // veli iki hücreyi alır
     expect((await v.parselAl({ tur: "parsel_al", ilce: ILCE, hucreler: CIFT_B, sinif: "kirsal" })).tamam).toBe(true);
-    const ciftlik: YapiTanimi = { id: "ciftlik", ad: "Çiftlik", grup: "Tarım", yuva: 2, paraMili: 6_000_000, malzeme: [], sureSaat: 2, ilkGunSureSaat: 0.2 };
+    const ciftlik: YapiTanimi = { id: "ciftlik", ad: "Çiftlik", grup: "Tarım", yuva: 2, paraMili: 6_000_000, malzeme: [], sureSaat: 2 };
     const plan = (hucreler: string[], alinacak: string[]): YerlesimPlani => ({
       yapi: ciftlik,
       hucreler: hucreler.map((id) => ({ id, x: 0, y: 0, neden: null, benim: !alinacak.includes(id) })),

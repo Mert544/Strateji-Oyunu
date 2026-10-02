@@ -34,8 +34,6 @@ export interface YapiTanimi {
   paraMili: number;
   malzeme: YapiMalzemesi[];
   sureSaat: number;
-  /** Yeni oyuncunun ilk 24 saatindeki hızlandırılmış süre tahmini (saat). */
-  ilkGunSureSaat: number;
   gerekliEtiket?: string;
   gerekliTeknoloji?: string;
   gerekliRezerv?: string;
@@ -114,7 +112,6 @@ export const ETIKET_ADI: Readonly<Record<string, string>> = { liman: "Liman", da
 export function yapiKatalogu(ic: Icerik): YapiTanimi[] {
   const m = ic.param.mulk;
   if (!m) return [];
-  const carpan = (ic.param.erkenOyun?.baslangicCarpaniPpm ?? 1_000_000) / 1_000_000;
   const l: YapiTanimi[] = [];
   for (const [id, yuva] of Object.entries(m.yapiYuva)) {
     const t = ic.turler[ic.turIdx[id] ?? -1];
@@ -128,7 +125,6 @@ export function yapiKatalogu(ic: Icerik): YapiTanimi[] {
       paraMili: t.para,
       malzeme: t.maliyet.map(([mi, miktar]) => ({ id: ic.mallar[mi]?.id ?? String(mi), ad: ic.mallar[mi]?.ad ?? String(mi), miktar })),
       sureSaat,
-      ilkGunSureSaat: Math.max(1 / 60, sureSaat * carpan),
       ...(t.gerekliEtiket !== undefined ? { gerekliEtiket: t.gerekliEtiket } : {}),
       ...(t.gerekliTeknoloji !== undefined ? { gerekliTeknoloji: t.gerekliTeknoloji } : {}),
       ...(t.gerekliRezerv >= 0 ? { gerekliRezerv: ic.mallar[t.gerekliRezerv]?.id ?? "" } : {}),
@@ -149,7 +145,6 @@ export function yapiKatalogu(ic: Icerik): YapiTanimi[] {
         .filter(([, q]) => q > 0)
         .map(([mal, miktar]) => ({ id: mal, ad: ic.mallar[ic.malIdx[mal] ?? -1]?.ad ?? mal, miktar })),
       sureSaat: e.insaSaati,
-      ilkGunSureSaat: Math.max(1 / 60, e.insaSaati * carpan),
       ek: true,
       ...(e.enFazlaIlBasina !== undefined ? { enFazlaIlBasina: e.enFazlaIlBasina } : {}),
     });

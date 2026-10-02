@@ -19,7 +19,6 @@ const DUKKAN: YapiTanimi = {
     { id: "parca", ad: "Makine parçası", miktar: 2_000 },
   ],
   sureSaat: 1,
-  ilkGunSureSaat: 0.1,
   ek: true,
 };
 
@@ -282,8 +281,10 @@ describe("dukkanMaliyetDurumu / dukkanMaliyetGirdisi", () => {
     expect(g).toMatchObject({ tur: "bakkal", hucre: 1, durum: "uygun", celikAdet: 8, parcaAdet: 2, dukkanMili: 12_000_000, toplamMili: 12_000_000, hazineMili: 50_000_000, esZamanliInsaat: 2 });
     expect(g.indirim).toBeUndefined();
     expect(g.stokEksik).toBeUndefined();
-    expect(g.ilkGunSureSaat).toBe(0.1); // yapı tanımındaki ilk gün süresi (normal süreden kısaysa)
-    expect(dukkanMaliyetGirdisi(girdi({ yapi: { ...PENCERELI, sureSaat: 4, ilkGunSureSaat: 4 } }))!.ilkGunSureSaat).toBeUndefined(); // aynıysa yazılmaz
+    expect(g.hizliSureSaat).toBeUndefined(); // çarpan verilmedi: yeni oyuncu hızı yok, yalnız normal süre
+    expect(dukkanMaliyetGirdisi(girdi({ sureCarpani: 0.1 }))!.hizliSureSaat).toBeCloseTo(0.1, 9); // protokol çarpanı × normal süre (1 sa × 0,1)
+    expect(dukkanMaliyetGirdisi(girdi({ sureCarpani: 1 }))!.hizliSureSaat).toBeUndefined(); // çarpan 1: yazılmaz
+    expect(dukkanMaliyetGirdisi(girdi({ yapi: { ...PENCERELI, sureSaat: 4 }, sureCarpani: 0.1 }))!.hizliSureSaat).toBeCloseTo(0.4, 9); // 4 sa × 0,1 = 24 dk
     const i = dukkanMaliyetGirdisi(girdi({ plan: { ...girdi().plan, indirimli: true }, hazineMili: null }))!;
     expect(i.indirim).toEqual({ n: 2, yuzde: "%30" });
     expect(i.hazineMili).toBe(0);

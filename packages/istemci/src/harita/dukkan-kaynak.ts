@@ -17,6 +17,7 @@ import type { MaliyetDurumu, MaliyetGirdisi } from "./dukkan-html";
 import type { DukkanGorunumu, DukkanKaynagi, DukkanTuru } from "./dukkan-veri";
 import { indirimliTutar } from "./yapi";
 import type { YapiTanimi } from "./yapi";
+import { yapiSuresi } from "./yapi-sure";
 
 export interface DukkanKaynakGirdisi {
   /** Son birikimli kare (yok: null). */
@@ -200,7 +201,9 @@ export interface DukkanKartGirdisi {
   tur: DukkanTuru | null;
   bilgi: DukkanKurBilgisi;
   plan: DukkanKartPlani;
-  yapi: Pick<YapiTanimi, "sureSaat" | "ilkGunSureSaat">;
+  yapi: Pick<YapiTanimi, "sureSaat">;
+  /** Erken oyun süre çarpanı (0, 1] şimdiki zamanda (`MulkBaglantisi.erkenOyunCarpani`); yoksa 1 (yeni oyuncu hızı yok). */
+  sureCarpani?: number;
   hazineMili: number | null;
   surenInsaat: number;
   stokMili: (mal: string) => number;
@@ -230,6 +233,7 @@ export function dukkanEksikMalzeme(plan: Pick<DukkanKartPlani, "malzeme">, stokM
 export function dukkanMaliyetGirdisi(g: DukkanKartGirdisi): MaliyetGirdisi | null {
   if (g.tur === null) return null;
   const eksik = g.plan.malzeme.length > 0 ? dukkanEksikMalzeme(g.plan, g.stokMili) : null;
+  const hizli = yapiSuresi(g.yapi.sureSaat, g.sureCarpani ?? 1);
   const birim = (id: string): number => Math.ceil((g.plan.malzeme.find((m) => m.id === id)?.miktar ?? 0) / 1000);
   return {
     tur: g.tur,
@@ -243,7 +247,7 @@ export function dukkanMaliyetGirdisi(g: DukkanKartGirdisi): MaliyetGirdisi | nul
     ...(eksik !== null ? { stokEksik: { ad: eksik.ad, var: eksik.var, gereken: eksik.gereken } } : {}),
     g8Acik: g.bilgi.g8Acik,
     sureSaat: g.yapi.sureSaat,
-    ...(g.yapi.ilkGunSureSaat !== undefined && g.yapi.ilkGunSureSaat < g.yapi.sureSaat ? { ilkGunSureSaat: g.yapi.ilkGunSureSaat } : {}),
+    ...(hizli.hizli ? { hizliSureSaat: hizli.simdi } : {}),
     toplamMili: g.plan.toplamMili,
     hazineMili: g.hazineMili ?? 0,
     ...(g.plan.indirimli && g.bilgi.indirim !== undefined ? { indirim: { n: g.bilgi.indirim.n, yuzde: yuzde(g.bilgi.indirim.ppm / 10_000) } } : {}),

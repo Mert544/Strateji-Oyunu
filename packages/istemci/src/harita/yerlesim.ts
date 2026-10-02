@@ -22,6 +22,7 @@ import type { DukkanTuru } from "./dukkan-veri";
 import { hucreSiniri, noktadanHucre } from "./hucre";
 import type { Izgara } from "./hucre";
 import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yapiRengiCss, yerlesimPlani } from "./yapi";
+import { yapiSureHtml, yapiSuresi } from "./yapi-sure";
 import { ikon } from "../tasarim/ikon";
 import type { Icerik } from "../komut/tablo";
 import { sebekeFiyatlari } from "./sebeke-gider";
@@ -343,7 +344,7 @@ export class YerlesimKipi {
       if (!l) continue;
       html.push(`<h4>${esc(ad)}</h4>`);
       for (const y of l) {
-        const notlar: string[] = [`${y.yuva} hücre`, paraMili(y.paraMili, "yukari"), sureMetni(y.sureSaat)];
+        const notlar: string[] = [`${y.yuva} hücre`, paraMili(y.paraMili, "yukari"), sureMetni(yapiSuresi(y.sureSaat, this.g.baglanti.erkenOyunCarpani?.() ?? 1).simdi)];
         const koşul: string[] = [];
         if (y.gerekliEtiket) koşul.push(`${ETIKET_ADI[y.gerekliEtiket] ?? y.gerekliEtiket} ilinde`);
         if (y.gerekliTeknoloji) koşul.push("teknoloji gerekir");
@@ -576,7 +577,7 @@ export class YerlesimKipi {
   private govde(y: YapiTanimi, p: YerlesimPlani | null, sabit: boolean, oz: ReturnType<NonNullable<MulkBaglantisi["ozet"]>> | null): string {
     if (!p) return `<p class="yk-ipucu">${window.matchMedia("(pointer: coarse)").matches ? "Yerleştirmek için haritaya dokun." : "Haritada yeri seç: tıkla. R: döndür · Esc: vazgeç."}</p>`;
     const arsa = p.alinacak.length > 0 ? `${fmt(p.alinacak.length)} hücre alınacak · <b>${paraMili(p.arsaMili, "yukari")}</b>` : `Kendi arsan: <b>${para(0)}</b>`;
-    const sure = `${sureMetni(y.sureSaat)}${y.ilkGunSureSaat < y.sureSaat ? ` <small>(yeni oyuncuya ilk gün ≈ ${sureMetni(y.ilkGunSureSaat)})</small>` : ""}`;
+    const sure = yapiSureHtml(yapiSuresi(y.sureSaat, this.g.baglanti.erkenOyunCarpani?.() ?? 1));
     const malzeme = malzemeMetni({ malzeme: p.malzeme });
     return `<dl class="yk-satirlar">
         <dt>Arsa</dt><dd data-yk-alan="arsa">${arsa}</dd>
@@ -652,6 +653,7 @@ export class YerlesimKipi {
             bilgi: dk,
             plan: { gecerli: p.gecerli, hazineYetmez: p.hazineYetmez, arsaMili: p.arsaMili, yapiMili: p.yapiMili, toplamMili: p.toplamMili, indirimli: p.indirimli, malzeme: p.malzeme.map((m) => ({ id: m.id, ad: m.ad, miktar: m.miktar })) },
             yapi: y,
+            sureCarpani: this.g.baglanti.erkenOyunCarpani?.() ?? 1,
             hazineMili: oz?.hazineMili ?? null,
             surenInsaat: oz?.surenInsaat ?? 0,
             stokMili,

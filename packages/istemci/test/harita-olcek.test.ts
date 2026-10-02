@@ -86,7 +86,7 @@ describe("hedef bedeli: çekirdekle aynı yuvarlama (tür inşa bedeli × insaPp
       { id: "parca", ad: "Makine parçası", miktar: 15_000 },
     ]);
     expect(sM.sureSaat).toBe(2); // tür inşa süresi (4 sa; mülk kipi yapı süresi değil) × olcekYukseltmeSureCarpaniPpm 0,5
-    expect(sM.ilkGunSureSaat).toBeCloseTo(0.2, 6); // erken oyun çarpanı %10
+    expect(sM).not.toHaveProperty("ilkGunSureSaat"); // erken oyun süresi hedefte değil: protokol çarpanından (yapi-sure.ts)
     const sL = olcekHedefi(ic, TESIS, 2)!;
     expect(sL).toMatchObject({ ad: "L", hucre: 4, ek: 2, paraMili: 21_000_000 });
     expect(sL.malzeme.map((m) => m.miktar)).toEqual([105_000, 35_000]);

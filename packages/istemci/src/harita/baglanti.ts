@@ -294,6 +294,8 @@ export interface MulkBaglantisi {
   dukkanKomutu?(komut: Komut): Promise<DukkanKomutSonucu>;
   /** Oyuncu özeti (eşzamanlı; son bilinen). */
   ozet?(): MulkOzeti | null;
+  /** Erken oyun süre çarpanı (0, 1] şimdiki sim zamanında (protokol `erkenOyunCarpani`; yeni oyuncu hızı); formül bilinmiyorsa tanımsız (çağıran 1 sayar). */
+  erkenOyunCarpani?(): number;
   /** Esnaf Defteri (`defterIste` → `defter`); okunamazsa null. */
   defterAl?(): Promise<Defter | null>;
   /** Gösterilmemiş "Sen yokken" özeti (`hosgeldin.donusOzeti` ya da `donusOzeti` mesajı); yoksa null. */

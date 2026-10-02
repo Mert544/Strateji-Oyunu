@@ -67,7 +67,7 @@ export const DUKKAN_METIN = {
   "dukkan.D3.satir_parca": "Makine parçası · {n}",
   "dukkan.D3.satir_pencere": "Pencere · {n}",
   "dukkan.D3.satir_sure": "Süre · {sure}",
-  "dukkan.D3.satir_sure_ilk_gun": "Süre · {sure} (ilk gün; normalde {normal})",
+  "dukkan.D3.satir_sure_hizli": "Süre · {sure} (yeni oyuncu hızı; normalde {normal})",
   "dukkan.D3.satir_toplam": "Toplam",
   "dukkan.D3.stok_yetmiyor": "{mal} yetmiyor: {var} / {gereken}. Pazar'dan alabilir ya da üretebilirsin.",
   "dukkan.D3.yatirim_baslik": "Yatırım tahmini",

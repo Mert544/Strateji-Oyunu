@@ -224,8 +224,8 @@ export interface MaliyetGirdisi {
   /** G8 açık (`etkin.ts` `g8Acik`: içerikte pencere üreten yöntem var): eksik pencerede "üretebilirsin" metni (`pencere_yok_g8`). */
   g8Acik?: boolean;
   sureSaat: number;
-  /** İlk günde yeni oyuncuya kısaltılmış süre (saat); verilirse "Süre · 24 dk (ilk gün; normalde 4 sa)". */
-  ilkGunSureSaat?: number;
+  /** Yeni oyuncu hızıyla ŞİMDİKİ süre (saat; yapi-sure.ts, erken oyun çarpanı protokolden); verilirse "Süre · 24 dk (yeni oyuncu hızı; normalde 4 sa)". */
+  hizliSureSaat?: number;
   toplamMili: number;
   hazineMili: number;
   /** İlk yapı indirimi (kalan indirimli yapı hakkı ve yüzde metni); yoksa not yazılmaz. */
@@ -253,7 +253,7 @@ export function maliyetSatirlariHtml(g: MaliyetGirdisi): string {
   s += sat("dukkan.D3.satir_celik", { n: fmt(g.celikAdet) });
   s += sat("dukkan.D3.satir_parca", { n: fmt(g.parcaAdet) });
   if (g.pencere) s += `<dt>Pencere</dt><dd class="dk-stok" data-durum="${pencereEksik ? "eksik" : "yeter"}">${pencereEksik ? enc(g.g8Acik ? "dukkan.D3.pencere_yok_g8" : "dukkan.D3.pencere_yok", { n: g.pencere.gereken, var: g.pencere.var, tutar: yukari(g.pencere.tutarMili) }) : enc("dukkan.D3.pencere_yeter", { n: g.pencere.gereken })}</dd>`;
-  s += g.ilkGunSureSaat !== undefined && g.ilkGunSureSaat < g.sureSaat ? sat("dukkan.D3.satir_sure_ilk_gun", { sure: saatDakika(g.ilkGunSureSaat), normal: saatDakika(g.sureSaat) }) : sat("dukkan.D3.satir_sure", { sure: saatDakika(g.sureSaat) });
+  s += g.hizliSureSaat !== undefined && g.hizliSureSaat < g.sureSaat ? sat("dukkan.D3.satir_sure_hizli", { sure: saatDakika(g.hizliSureSaat), normal: saatDakika(g.sureSaat) }) : sat("dukkan.D3.satir_sure", { sure: saatDakika(g.sureSaat) });
   s += `<dt>${enc("dukkan.D3.satir_toplam")}</dt><dd>${yukari(g.toplamMili)}</dd><dt>${enc("dukkan.D3.satir_hazine")}</dt><dd>${paraMili(g.hazineMili, "asagi")}</dd></dl>`;
   if (g.indirim) s += `<p class="dk-not">${enc("dukkan.D3.indirim_notu", { n: g.indirim.n, yuzde: g.indirim.yuzde })}</p>`;
   if (g.durum === "pencere-bekliyor") s += `<p class="dk-not">${enc("dukkan.D3.pencere_bekleme")}</p>`;

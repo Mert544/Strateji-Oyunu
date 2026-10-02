@@ -9,7 +9,7 @@
 import type { Feature, FeatureCollection, Polygon } from "geojson";
 import type { GeoJSONSource, Map as MlHarita } from "maplibre-gl";
 import { bildir } from "../arayuz/bildirim";
-import { esc, fmt, paraMili, para, sureMetni } from "../arayuz/bicim";
+import { esc, fmt, paraMili, para } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import { ikon } from "../tasarim/ikon";
 import type { IlceSahipligi, MulkBaglantisi, YapiKaydi } from "./baglanti";
@@ -18,6 +18,7 @@ import type { Izgara } from "./hucre";
 import { olcekHedefleri, olcekPlani, olcekTesisi, OLCEK_AD } from "./olcek";
 import type { HedefOlcek, OlcekPlani, OlcekTesisi } from "./olcek";
 import type { YapiMalzemesi } from "./yapi";
+import { yapiSureHtml, yapiSuresi } from "./yapi-sure";
 import { KartDurumu, kapaliDugmeOznitelikleri } from "./kart-durum";
 import { SINIF_ADI } from "./fiyat";
 import type { AyrilmisHakki } from "./fiyat";
@@ -269,7 +270,7 @@ export class OlcekKipi {
     else if (p.ekHucreler.length > 0) arsa = `${fmt(p.ekHucreler.length)} hücre kendi arsan · <b>${para(0)}</b>`;
     else arsa = `Ek hücre gerekmiyor · <b>${para(0)}</b>`;
     const malzeme = malzemeSatiri(h.malzeme);
-    const sure = `${sureMetni(h.sureSaat)}${h.ilkGunSureSaat < h.sureSaat ? ` <small>(yeni oyuncuya ilk gün ≈ ${sureMetni(h.ilkGunSureSaat)})</small>` : ""}`;
+    const sure = yapiSureHtml(yapiSuresi(h.sureSaat, this.g.baglanti.erkenOyunCarpani?.() ?? 1));
     const ek = p.ekHucreler.length > 0 ? `<dt>Ek hücre</dt><dd data-ok-alan="ek">${fmt(p.ekHucreler.length)} bitişik hücre</dd>` : "";
     const govde = `<dl class="yk-satirlar">
         ${ek}

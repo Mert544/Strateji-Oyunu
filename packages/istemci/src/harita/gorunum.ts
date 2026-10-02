@@ -41,6 +41,7 @@ import type { YapiTanimi } from "./yapi";
 import { dukkanKaynagiKur, dukkanKurBilgisi, referansFiyati } from "./dukkan-kaynak";
 import { dukkanAdi } from "./dukkan-html";
 import { yapiEtiketMetni } from "./yapi-etiket";
+import { yapiSuresi } from "./yapi-sure";
 import { mulkMetni } from "./mulk-metin";
 import type { DukkanKurBilgisi } from "./dukkan-kaynak";
 import type { KopruGorunumu } from "./dukkan-kopru";
@@ -1260,7 +1261,9 @@ export class HaritaGorunumu {
       }
       return y.tur ? (this.katalog.find((k) => k.id === y.tur)?.ad ?? y.tur) : "Yapı";
     };
-    const sure = (y: (typeof yapilar)[number]): number => (this.katalog.find((k) => k.id === y.tur)?.ilkGunSureSaat ?? 1) * 3_600_000;
+    // Başlangıcı bilinmeyen inşaatın aşama tahmini: şimdiki (yeni oyuncu hızlı) süre; başlangıcı bilineni gerçek aralıktan (yapiAsamasi) hesaplanır
+    const carpan = this.baglanti.erkenOyunCarpani?.() ?? 1;
+    const sure = (y: (typeof yapilar)[number]): number => yapiSuresi(this.katalog.find((k) => k.id === y.tur)?.sureSaat ?? 1, carpan).simdi * 3_600_000;
     // Aşama ancak birkaç saatte bir değişir: iki saniyelik tazelemede aynıysa kaynak yeniden yüklenmez (harita boşta kalsın)
     const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.tur === "dukkan" ? etiketAdi(y) : ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${asinmaOzelligi(y.sahip, ben, y.asinmaPpm).w ?? 0}:${y.bitis === undefined ? 0 : 1}${cizim.etiket && y.bitis !== undefined && y.bitis > simdi ? `:${Math.ceil((y.bitis - simdi) / 60_000)}` : ""}`).join(";")}`; // etiketteki kalan süre dakikada bir tazelenir (B6)
     if (!zorla && imza === this.yapiImzasi) return;

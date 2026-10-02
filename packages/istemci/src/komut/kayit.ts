@@ -29,7 +29,7 @@ function gercekSure(b: Baglam, saat: number): number {
 
 function sureSatiri(b: Baglam, saat: number): OnizlemeSatiri {
   const g = gercekSure(b, saat);
-  return { metin: b.ben.sureCarpani < 1000 ? `Süre: ~${sureMetni(g)} (erken oyun hızlandırması; normalde ${sureMetni(saat)})` : `Süre: ${sureMetni(saat)}` };
+  return { metin: b.ben.sureCarpani < 1000 ? `Süre: ~${sureMetni(g)} (yeni oyuncu hızı; normalde ${sureMetni(saat)})` : `Süre: ${sureMetni(saat)}` };
 }
 
 const bolgeId = (b: Baglam): string => b.dizin.bolgeler[b.bolge]?.id ?? "";
