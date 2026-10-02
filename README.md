@@ -10,6 +10,14 @@ Gerçek dünya haritasında, **baştan paylaşılan ve kalıcı** bir parsel ve 
 
 Gereksinimler: Node.js ≥ 20 ve [pnpm](https://pnpm.io/).
 
+Bilgisayarında oynamak için proje klasöründe `pnpm install`, ardından
+`pnpm oyna` çalıştır. Tarayıcı otomatik açılır; açılmazsa
+<http://127.0.0.1:5173/oyna> adresine git. Gerçek oyun sunucusu ve istemci
+birlikte açılır; başlangıç ilçeni seçerek oynayabilirsin. Bu yerel oturumun
+kayıtları `raporlar/oyun-yerel` altında saklanır ve kapalıyken zamanı durur.
+Terminalde Ctrl+C ile kapatılır. Sokak/bina haritasının eksik PMTiles
+varlıkları bu başlatıcıyla tamamlanmaz.
+
 ```bash
 pnpm install          # bağımlılıkları kur
 pnpm kontrol          # tip kontrolü + lint + test

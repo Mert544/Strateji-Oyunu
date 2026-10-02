@@ -8,6 +8,7 @@
   },
   "packageManager": "pnpm@9.15.9",
   "scripts": {
+    "oyna": "node scripts/oyna.mjs",
     "test": "vitest run",
     "test:izle": "vitest",
     "tipkontrol": "tsc --noEmit -p tsconfig.json && pnpm --filter @bolge/istemci tipkontrol",
