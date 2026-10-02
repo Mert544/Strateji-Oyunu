@@ -240,7 +240,7 @@ export function mulkHazinePaneli(d: IsletmeDurumu | null, sebeke = ""): string {
   s += satir("Hazine", d.hazineMili !== null ? `<b data-alan="mulk-hazine">${paraMili(d.hazineMili)}</b>` : "—");
   if (d.hazineOraniMili !== null && d.hazineOraniMili !== 0) s += satir("Net akış", `${paraIsaretli(d.hazineOraniMili)}/sa`, "Gelir ve giderlerin saatlik toplamı.");
   if (d.araziDegeriMili !== null) s += satir("Arazi değeri", paraMili(d.araziDegeriMili), "Arsalarının satın alma bedeli toplamı.");
-  if (d.araziVergisiMili !== null) s += satir("Arazi vergisi", paraMili(d.araziVergisiMili), "Tahakkuk eden, henüz ödenmemiş.");
+  if (d.araziVergisiMili !== null) s += satir("Arazi vergisi", paraMili(d.araziVergisiMili, "yukari"), "Tahakkuk eden, henüz ödenmemiş.");
   s += `</dl>`;
   return s + sebeke;
 }
@@ -248,10 +248,12 @@ export function mulkHazinePaneli(d: IsletmeDurumu | null, sebeke = ""): string {
 export function mulkMalPaneli(d: IsletmeDurumu | null, ad: MulkAdlari): string {
   if (!d) return `<p class="ipucu-metin">Stok bilgisi yükleniyor…</p>`;
   if (!d.mallar.length) return `<div class="bos-durum">${ikon("package", 28)}<p class="ipucu-metin">Deponda henüz mal yok. Yapıların üretmeye başlayınca stok ve satış burada görünür.</p></div>`;
-  const m = (x: number): string => fmt(Math.round(x / 1000));
+  // B4: stok, üretim ve satış AŞAĞI, alış (ödenen) YUKARI; "en yakın" yok
+  const m = (x: number): string => fmt(Math.floor(x / 1000));
+  const yukari = (x: number): string => fmt(Math.ceil(x / 1000));
   let s = `<div class="tablo-kap"><table class="mini-tablo"><thead><tr><th>Mal</th><th class="sayi">Stok</th><th class="sayi">Üretim/sa</th><th class="sayi">Satış/sa</th></tr></thead><tbody>`;
   for (const x of d.mallar) {
-    s += `<tr><td>${esc(ad.mal(x.mal))}</td><td class="sayi">${m(x.stokMili)}</td><td class="sayi">${x.uretimMili ? m(x.uretimMili) : "—"}</td><td class="sayi">${x.satisMili ? m(x.satisMili) : x.alisMili ? `alış ${m(x.alisMili)}` : "—"}</td></tr>`;
+    s += `<tr><td>${esc(ad.mal(x.mal))}</td><td class="sayi">${m(x.stokMili)}</td><td class="sayi">${x.uretimMili ? m(x.uretimMili) : "—"}</td><td class="sayi">${x.satisMili ? m(x.satisMili) : x.alisMili ? `alış ${yukari(x.alisMili)}` : "—"}</td></tr>`;
     const ek = ad.pazar?.(x);
     if (ek) s += `<tr class="mal-eylem"><td colspan="4">${ek}</td></tr>`;
   }

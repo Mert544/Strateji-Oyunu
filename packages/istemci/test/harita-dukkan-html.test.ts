@@ -81,7 +81,7 @@ describe("D0 öneri kartı ve B7 Defter kartı", () => {
     expect(h).toContain(`class="dk-oneri" role="region" aria-labelledby="dk-oneri-baslik" data-tur="dukkan" data-durum="acik"`);
     expect(h).toContain(`id="dk-oneri-baslik">İlk dükkânın için malzemen hazır`);
     expect(h).toMatch(/class="[^"]*dk-oneri-kapat"[^>]*aria-label="Öneriyi kapat"/);
-    expect(h).toContain(`<p class="dk-oneri-not">Başlangıç gıdanı rafın için sakla.</p>`);
+    expect(h).toContain(`<p class="dk-oneri-not">Başlangıç gıdan ilk dükkânının rafı için gerekebilir.</p>`);
     expect(h).toContain(`<button type="button" class="eylem ton" data-eylem="dukkan-kur">Dükkân kur</button>`);
     expect(h).not.toContain("birincil");
     expect(h.replace(/<[^>]*>/g, "")).not.toMatch(/\d/); // metinde sayı ya da tutar yazılmaz
@@ -247,22 +247,25 @@ describe("D-3 maliyet satırları", () => {
 });
 
 describe("D0 kartı: ilk yapı inşadayken Defter satırı", () => {
-  it('Defter adımı "İlk yapını kur" iken yapı inşadaysa "İlk yapın kuruluyor; bitince Defter\'e işlenir."; değilse eski satır', () => {
+  it('ilk yapı inşadayken kartta tek satır "İlk yapın kuruluyor; bitince Defterine işlenir."; başka durumda Defter adımı kartta YOK (Defter bölümü tek sahip)', () => {
     const adim = { metin: "İlk yapını kur", odulHtml: "", kavram: "ilk_yapi" };
     const insada = ustKartHtml("dukkan", adim, true, true);
-    expect(insada).toContain("İlk yapın kuruluyor; bitince Defter&#39;e işlenir.");
+    expect(insada).toContain("İlk yapın kuruluyor; bitince Defterine işlenir.");
     expect(insada).not.toContain("İlk yapını kur");
-    expect(ustKartHtml("dukkan", adim, true, false)).toContain("İlk yapını kur");
-    // başka Defter adımında (ilk satış) inşa durumu satırı değiştirmez
-    expect(ustKartHtml("dukkan", { ...adim, kavram: "ilk_satis", metin: "Çiftliğinin tahılını Pazar'da sat." }, true, true)).toContain("Pazar&#39;da sat");
+    expect(ustKartHtml("dukkan", adim, true, false)).not.toContain("İlk yapını kur"); // Defter adımı kartta yok
+    expect(ustKartHtml("dukkan", adim, true, false)).not.toContain("oneri-defter");
+    // başka Defter adımında (ilk satış) inşa durumu satırı çıkmaz, Defter adımı da yazılmaz
+    const satis = ustKartHtml("dukkan", { ...adim, kavram: "ilk_satis", metin: "Çiftliğinin tahılını Pazar'da sat." }, true, true);
+    expect(satis).not.toContain("Pazar&#39;da sat");
+    expect(satis).not.toContain("oneri-defter");
   });
 });
 
 describe("D-8 özet: boş rafta gelir/gider/net gizli", () => {
   it("boş rafta yalnız yönlendirme (zarar gibi okunan net yok); dolu rafta dört satır", () => {
     const bos = ozetHtml(dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })], gelirMiliSa: 0, giderMiliSa: 132_000 }), null);
-    expect(bos).toContain("Raf boş: mal koy"); // öneri malı verilmezse
-    expect(ozetHtml(dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })], giderMiliSa: 132_000 }), null, false, "gıda")).toContain("Raf boş: gıda koy");
+    expect(bos).toContain("Rafın boş: mal koy"); // öneri malı verilmezse
+    expect(ozetHtml(dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })], giderMiliSa: 132_000 }), null, false, "gıda")).toContain("Rafın boş: gıda koy");
     expect(bos).toContain("Gider 132\u00a0₺/sa; raf boşken de sürer."); // gider olgu olarak, nedeniyle
     expect(bos).toContain(`data-eylem="dukkan-rafa" data-dukkan="7">Rafa git</button>`);
     expect(bos).not.toContain("Gelir");
@@ -479,10 +482,12 @@ describe("dukkan-duzelt: sabit sayı yok, D0 kartında Defter adımı, Dikkat yo
     expect(maliyetSatirlariHtml({ ...temel, esZamanliInsaat: 4 })).toContain("Aynı anda en çok 4 inşaat");
   });
 
-  it("D0 kartı Defter'in sıradaki adımını soluk satır olarak taşır; Defter adımı yoksa satır yok", () => {
+  it("D0 kartı Defter'in sıradaki adımını TAŞIMAZ (Defter bölümü tek sahip; D0.defter_adim kalktı); yalnız ilk yapı inşadayken tek satır", () => {
     const h = ustKartHtml("dukkan", { metin: "Çiftliğinin tahılını sat.", odulHtml: "" });
     expect(h).toContain(`data-tur="dukkan"`);
-    expect(h).toContain(`<p class="dk-oneri-defter-satir" data-alan="oneri-defter">Sıradaki adım: Çiftliğinin tahılını sat.</p>`);
+    expect(h).not.toContain("oneri-defter");
+    expect(h).not.toContain("Çiftliğinin tahılını sat.");
+    expect(h).toContain("Başlangıç gıdan ilk dükkânının rafı için gerekebilir.");
     expect(h).not.toContain(`data-tur="defter"`);
     expect(ustKartHtml("dukkan", null)).not.toContain("oneri-defter");
     expect(oneriKartiHtml()).not.toContain("oneri-defter");
@@ -529,7 +534,7 @@ describe("dukkan-duzelt 5-9", () => {
     expect(h.split(`data-dukkan="7"`)[1]?.split("</li>")[0]).not.toContain("net");
     expect(h).toContain("net ≈\u00a0+520\u00a0₺/sa");
     const o = ozetHtml(bosRaf({ gelirMiliSa: 0, giderMiliSa: 132_000 }), null);
-    expect(o).toContain("Raf boş: mal koy");
+    expect(o).toContain("Rafın boş: mal koy");
     expect(o).not.toContain("Henüz satış yok");
     expect(ozetHtml(dukkan({ gelirMiliSa: 0 }), null)).toContain("Henüz satış yok.");
   });
@@ -725,9 +730,9 @@ describe("yuva rakamları: istek ve satış ayrı, fırsat maliyetli net (A2 D5c
     expect(k).not.toContain("net ≈");
   });
 
-  it("katkı ≤ 0 (kampanya) sayı yok: 'pazara satmaktan az'; stoksuz yuvada katkı satırı yok", () => {
+  it("katkı ≤ 0 (kampanya) sayı yok: 'Pazar'a satmaktan az'; stoksuz yuvada katkı satırı yok", () => {
     const eksi = kademeHtml(yuva({ netMiliSaat: -221_400 }), { malAdi, kampanyaAcik: true, kampanya: { bitis: 0, kalanSaat: 4, kalanGun: 3 }, simdi: 0 });
-    expect(eksi).toContain("<dt>Katkı</dt><dd>pazara satmaktan az</dd>");
+    expect(eksi).toContain("<dt>Katkı</dt><dd>Pazar&#39;a satmaktan az</dd>");
     expect(eksi).not.toContain("221");
     expect(kademeHtml(yuva({ stokVar: false, netMiliSaat: 0, satisMiliSaat: 0 }), { malAdi, kampanyaAcik: true, kampanya: { bitis: 0, kalanSaat: 4, kalanGun: 3 }, simdi: 0 })).not.toContain("Katkı");
   });
@@ -738,23 +743,23 @@ describe("yuva rakamları: istek ve satış ayrı, fırsat maliyetli net (A2 D5c
     expect(h).toContain("Satış ≈\u00a050 birim/sa");
     expect(h).not.toContain("Müşteri isteği"); // istek yalnız raf detayında (Tasarım)
     expect(h).toContain("Net ≈\u00a0+631\u00a0₺/sa");
-    expect(h).toContain(`title="Net: malı pazara satmana göre kazancın; gider düşülmüş."`);
+    expect(h).toContain(`title="Net: malı Pazar&#39;a satmana göre kazancın; gider düşülmüş."`);
     expect(h).not.toContain("+4.909");
     expect(h).not.toContain("geri ödemez");
     expect(h).toContain(`<p class="dk-neden" data-neden="karsilanmiyor">Stoğun talebin yaklaşık %55 kadarını karşılıyor; stok eklersen satış artar.</p>`);
     expect(h).not.toContain("dk-kasa"); // karşılanma 0,55: satış kasayı doldurmaz
   });
 
-  it("net ≤ 0 (D5e): sayı YOK ('Net: şu an geri ödemez', uyarı), stok notu ve Rafa git; karşılanma tamsa 'pazara satmak daha kazançlı' notu", () => {
+  it("net ≤ 0 (D5e): sayı YOK ('Net: şu an geri ödemez', uyarı), stok notu ve Rafa git; karşılanma tamsa 'Pazar'a satmak daha kazançlı' notu", () => {
     const h = ozetHtml(d5e(), null);
-    expect(h).toContain(`<p class="dk-ozet-satir dk-uyari dk-net-yok" title="Net: malı pazara satmana göre kazancın; gider düşülmüş.">Net: şu an geri ödemez</p>`);
+    expect(h).toContain(`<p class="dk-ozet-satir dk-uyari dk-net-yok" title="Net: malı Pazar&#39;a satmana göre kazancın; gider düşülmüş.">Net: şu an geri ödemez</p>`);
     expect(h).toContain("Rafa daha çok stok koyunca düzelebilir.");
     expect(h).toContain(`data-eylem="dukkan-rafa" data-dukkan="7">Rafa git</button>`);
     expect(h).not.toContain("−56"); // negatif sayı ekranda görünmez
     expect(h).not.toContain("+372");
     expect(h).not.toContain("Net ≈");
     const tam = ozetHtml(dukkan({ netMiliSa: -1_000 }), null); // karşılanma tam
-    expect(tam).toContain("Bu malı pazara satmak şu an daha kazançlı; rafı değiştirebilirsin.");
+    expect(tam).toContain("Bu malı Pazar&#39;a satmak şu an daha kazançlı; rafı değiştirebilirsin.");
     expect(tam).not.toContain("Rafa daha çok stok");
     expect(ozetHtml(dukkan({ netMiliSa: 0 }), null)).toContain("Net: şu an geri ödemez"); // sıfır da geri ödemez
     expect(ozetHtml(dukkan({ netMiliSa: 1_000 }), null)).toContain("Net ≈\u00a0+1\u00a0₺/sa");

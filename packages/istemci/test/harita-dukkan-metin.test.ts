@@ -55,7 +55,7 @@ describe("dükkân metin tablosu (T1 son tablosu, A1 anahtarları)", () => {
   });
 
   it("T1 kararları: boş raf notu, kısa yuva nedenleri, Defter kartı başlığı", () => {
-    expect(DUKKAN_METIN["dukkan.D0.oneri_not"]).toBe("Başlangıç gıdanı rafın için sakla.");
+    expect(DUKKAN_METIN["dukkan.D0.oneri_not"]).toBe("Başlangıç gıdan ilk dükkânının rafı için gerekebilir.");
     expect(DUKKAN_METIN["dukkan.D5.yuva_stoksuz"]).toBe("stoğun yok");
     expect(DUKKAN_METIN["dukkan.D5.yuva_kampanya_bitti"]).toBe("kampanya bitti");
     expect(DUKKAN_METIN["defter.ust.baslik"]).toBe("Sıradaki adım");

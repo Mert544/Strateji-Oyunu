@@ -87,16 +87,15 @@ export function dukkanAdi(d: Pick<DukkanKaydi, "markaAd" | "tur">): string {
 // --- D-0 ve B7: üst kart -------------------------------------------------------------------------
 
 /** D-0 ilk dükkân önerisi (toast değil, Dikkat maddesi değil; kalıcı kart). Tek eylem "Dükkân kur" (`.eylem.ton`); kapat yalnız simgeli. */
-export function oneriKartiHtml(defterAdimi?: string, ilkYapiInsada = false): string {
+export function oneriKartiHtml(ilkYapiInsada = false): string {
   return (
     `<div class="dk-oneri" role="region" aria-labelledby="dk-oneri-baslik" data-tur="dukkan" data-durum="acik">` +
     `<button type="button" class="ikon-dugme dk-oneri-kapat" data-eylem="oneri-kapat" aria-label="${enc("dukkan.D0.oneri_kapat")}">${ikon("x", 18)}</button>` +
     `<h4 id="dk-oneri-baslik">${enc("dukkan.D0.oneri_baslik")}</h4>` +
     `<p>${enc("dukkan.D0.oneri_govde")}</p>` +
     `<p class="dk-oneri-not">${enc("dukkan.D0.oneri_not")}</p>` +
-    // Defter'in sıradaki adımı (ör. "Çiftliğinin tahılını sat.") kart varken de görünür kalır: tek soluk satır
-    // İlk yapı inşadayken "İlk yapını kur" demek yanlış olur: "İlk yapın kuruluyor; bitince Defter'e işlenir."
-    (ilkYapiInsada ? `<p class="dk-oneri-defter-satir" data-alan="oneri-defter">${enc("dukkan.D0.defter_adim_insada")}</p>` : defterAdimi ? `<p class="dk-oneri-defter-satir" data-alan="oneri-defter">${enc("dukkan.D0.defter_adim", { baslik: m("defter.ust.baslik"), adim: defterAdimi })}</p>` : "") +
+    // Defter'in sıradaki adımı kartta YOK (Tasarım: Defter bölümü tek sahip; D0.defter_adim kalktı). Yalnız ilk yapı inşadayken tek satır: "İlk yapın kuruluyor; bitince Defterine işlenir."
+    (ilkYapiInsada ? `<p class="dk-oneri-defter-satir" data-alan="oneri-defter">${enc("dukkan.D0.defter_adim_insada")}</p>` : "") +
     `<button type="button" class="eylem ton" data-eylem="dukkan-kur">${enc("dukkan.D0.oneri_dugme")}</button>` +
     `</div>`
   );
@@ -160,7 +159,7 @@ export function dukkanBolumuHtml(g: DukkanGorunumu | null, o: DukkanBolumuSecene
 
 /** İşletmem panelinin en üstüne (kimlik satırından sonra) gelecek kart: dükkân önerisi, Defter kartı ya da boş. */
 export function ustKartHtml(durum: "dukkan" | "defter" | null, defter?: { metin: string; odulHtml: string; kavram?: string } | null, dukkanKur = false, ilkYapiInsada = false): string {
-  if (durum === "dukkan") return oneriKartiHtml(defter?.metin, ilkYapiInsada && defter?.kavram === "ilk_yapi");
+  if (durum === "dukkan") return oneriKartiHtml(ilkYapiInsada && defter?.kavram === "ilk_yapi");
   if (durum === "defter" && defter) return defterKartiHtml(defter.metin, defter.odulHtml, dukkanKur && defter.kavram === "ilk_dukkan");
   return "";
 }
@@ -414,7 +413,7 @@ function etiketDeger(a: DukkanMetinAnahtari, yer: Record<string, string | number
 
 /**
  * D-6 raf detayı satırları (T1 yuva-kart-oneri §1.2, Tasarım): birim fiyat, İSTEK (kasa kırpmalı müşteri isteği), SATIŞ (istek x karşılanma), KATKI (yuvanın fırsat maliyetli neti) ve tek tahmin notu.
- * "Net" sözcüğü yalnız dükkân içindir; yuva için "katkı". Katkı ≤ 0: sayı yok ("pazara satmaktan az"); stoksuz yuvada (satış 0) katkı satırı yok.
+ * "Net" sözcüğü yalnız dükkân içindir; yuva için "katkı". Katkı ≤ 0: sayı yok ("Pazar'a satmaktan az"); stoksuz yuvada (satış 0) katkı satırı yok.
  */
 export function rafSatirlariHtml(y: DukkanYuvasi): string {
   const n = (mili: number): string => fmt(Math.round(mili / 1000));
@@ -561,12 +560,12 @@ export function ozetHtml(d: DukkanKaydi, toplamGelirMiliSa: number | null, yukle
   s += `<p class="dk-ozet-baslik">${enc("dukkan.D8.ozet_baslik")}</p>`;
   s += birim > 0 && d.gelirMiliSa > 0 ? `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_satis", { n: fmt(birim) })}</p>` : `<p class="dk-ozet-satir">${enc("dukkan.D8.satis_yok")}</p>`;
   s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_gelir", { gelir: paraMili(d.gelirMiliSa) })}</p>`;
-  s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_gider", { g: paraMili(d.giderMiliSa) })}</p>`;
+  s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_gider", { g: paraMili(d.giderMiliSa, "yukari") })}</p>`;
   const aciklama = esc(dukkanMetni("dukkan.D8.net_aciklama"));
   const stokYetmiyor = d.karsilanmaPpm < PPM;
   if (net > 0) s += `<p class="dk-ozet-satir" title="${aciklama}">${enc("dukkan.D8.kart_net", { net: netMetni(net) })}</p>`;
   else {
-    // Net ≤ 0: sayı YOK (uyarı tonu, ceza dili yok), neden ve seçenek yanında: stok yetmiyorsa "stok koy", değilse "pazara satmak daha kazançlı"
+    // Net ≤ 0: sayı YOK (uyarı tonu, ceza dili yok), neden ve seçenek yanında: stok yetmiyorsa "stok koy", değilse "Pazar'a satmak daha kazançlı"
     s += `<p class="dk-ozet-satir dk-uyari dk-net-yok" title="${aciklama}">${enc("dukkan.D8.kart_net_yok")}</p>`;
     s += `<p class="dk-ozet-satir">${enc(stokYetmiyor ? "dukkan.D8.net_yok_not" : "dukkan.D8.net_yok_not_talep")}</p>`;
     s += rafaGit;

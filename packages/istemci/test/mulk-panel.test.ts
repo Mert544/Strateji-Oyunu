@@ -82,7 +82,8 @@ describe("mülk kipi paneli", () => {
     expect(h).toContain("Arazi değeri");
     const m = mulkMalPaneli(durum(), ad);
     expect(m).toContain("Tahıl");
-    expect(m).toMatch(/<td class="sayi">13<\/td><td class="sayi">3<\/td><td class="sayi">2<\/td>/);
+    expect(m).toMatch(/<td class="sayi">12<\/td><td class="sayi">3<\/td><td class="sayi">2<\/td>/); // stok 12,5 → 12 (B4: stok AŞAĞI, "en yakın" yok)
+    expect(mulkMalPaneli(durum({ mallar: [{ mal: "tahil", stokMili: 0, uretimMili: 0, satisMili: 0, alisMili: 1_200 }] }), ad)).toContain("alış 2"); // alış (ödenen) YUKARI
     expect(mulkMalPaneli(durum({ mallar: [] }), ad)).toContain("Deponda henüz mal yok");
   });
 
