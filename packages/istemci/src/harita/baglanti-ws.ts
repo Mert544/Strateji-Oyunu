@@ -20,7 +20,9 @@ import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCo
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
 import type { DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
+import type { InsaatBilgisi } from "../yuru/arsa";
 import { parselToplamFiyatiMili } from "./fiyat";
+import { yapilardanInsaatlar } from "./yapi-yuruyus";
 
 type Mesaj<T extends SunucuMesaji["tur"]> = Extract<SunucuMesaji, { tur: T }>;
 
@@ -1018,7 +1020,7 @@ export class WsBaglanti implements MulkBaglantisi {
     const ben = this.ben.id;
     const hucreler = new Map<HucreId, HucreSahipligi>();
     const gruplar = new Map<string, YapiKaydi>();
-    for (const [id, sahip, sinif, tesis, insaat] of c.hucreler) {
+    for (const [id, sahip, sinif, tesis, insaat, tur] of c.hucreler) {
       const h: HucreSahipligi = { sahip, sinif, degerMili: 0, alinma: 0 };
       if (tesis >= 0) h.tesis = tesis;
       if (insaat >= 0) h.insaat = insaat;
@@ -1028,6 +1030,8 @@ export class WsBaglanti implements MulkBaglantisi {
       let y = gruplar.get(anahtar);
       if (!y) gruplar.set(anahtar, (y = { id: insaat >= 0 ? insaat : tesis, anahtar, durum: insaat >= 0 ? "insaat" : "tesis", sahip, hucreler: [] }));
       y.hucreler.push(id);
+      // Hücre türü ("dukkan") herkese açıktır: başkasının dükkânı da yürüyüşte dükkân olarak çizilir (tabela yoksa markasız)
+      if (tur === "dukkan" && y.tur === undefined) y.tur = "dukkan";
     }
     // Sahibine özel ayrıntı: tür adı (dizinden), inşaat bitişi ve (bu oturumda başlatıldıysa) başlangıcı
     const turler = this.hos?.dizin.tesisTurleri ?? [];
@@ -1064,6 +1068,9 @@ export class WsBaglanti implements MulkBaglantisi {
         if (olcek !== undefined) y.olcek = olcek;
         const asinma = t && kendi?.ozel ? tesisAsinmasi(kendi.ozel, t[0]) : undefined;
         if (asinma !== undefined) y.asinmaPpm = asinma;
+        // Biten tesisin üretim yöntemi (yürüyüşte imza silüeti): `ozel.tesisler[2]` yöntem indeksidir
+        const yontem = t ? this.hos?.dizin.yontemler[t[2]] : undefined;
+        if (yontem) y.yontem = yontem;
       }
     }
     // Ayrılmış hücre kümesi (liste istenmişse) ve para ile alınmış ayrılmış sayısı: karede `ayrilmisSatilmis` varsa kesin değer; yoksa
@@ -1089,6 +1096,24 @@ export class WsBaglanti implements MulkBaglantisi {
     };
   }
 
+  /** Biten dükkânın tabelası (herkese açık: `genel.dukkanlar` = `[kimlik, tür, ölçek, markaAd, simge, renk]`); dükkân değilse tanımsız. Markasız dükkânda renk yazılmaz. */
+  private dukkanTabelasi(id: number): { tur: string; markaRenk?: number } | undefined {
+    for (const b of this.kare?.bolgeler ?? []) {
+      const x = b.genel.dukkanlar?.find((d) => d[0] === id);
+      if (x) return { tur: x[1], ...(x[3] !== "" ? { markaRenk: x[5] } : {}) };
+    }
+    return undefined;
+  }
+
+  /**
+   * Yürüyüş için ilçenin yapıları (gerçek sunucu verisi): inşaat aşamaları, biten dükkânın türü ve marka rengi, biten tesisin yöntemi (silüet).
+   * Örnek yer tutucular yalnız sunucusuz kipte kalır (`ornekInsaatlar`; sahte bağdaştırıcıda bu uç yoktur). Aşınmayı sahne ekler.
+   */
+  async insaatlarAl(ilce: string): Promise<InsaatBilgisi[]> {
+    const sh = await this.sahiplikAl(ilce);
+    return yapilariEsle(sh, this.ozet()?.simZamani ?? this.kare?.t ?? 0, (id) => this.dukkanTabelasi(id));
+  }
+
   private degisti(): void {
     if (this.bildirimBekliyor) return;
     this.bildirimBekliyor = true;
@@ -1112,6 +1137,10 @@ function komutVarMi(k: Record<string, unknown>, alan?: string): boolean {
     komutOnbellek.set(anahtar, v);
   }
   return v;
+}
+
+function yapilariEsle(sh: IlceSahipligi | null, simdi: number, dukkan: (id: number) => { tur: string; markaRenk?: number } | undefined): InsaatBilgisi[] {
+  return yapilardanInsaatlar({ yapilar: sh?.yapilar ?? [], simdi, dukkan });
 }
 
 /** Sayfa adresinden sunucu seçenekleri: `?sunucu=ws://...&token=...`. `varsayilan` (kendi köken, `giris/kip.ts`) yalnız `?sunucu=` yokken geçer; ikisi de yoksa null (sahte bağdaştırıcı). */

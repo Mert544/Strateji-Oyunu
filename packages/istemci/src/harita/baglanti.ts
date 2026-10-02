@@ -123,7 +123,7 @@ export interface YapiKaydi {
    * hücrelerdir (ek hücre gerekmiyorsa boş). Hedef ölçek karede yoktur: bu oturumda istenmişse bağdaştırıcı bilir.
    */
   yukseltme?: { tesis: number; olcek?: 1 | 2 };
-  /** İnşaatta SEÇİLEN yöntemin kimliği (`kare.oyuncu.insaatYontem`; yalnız sahibinin yöntemli inşaatı; yoksa tanımsız = tür varsayılanı). */
+  /** İnşaatta SEÇİLEN yöntemin kimliği (`kare.oyuncu.insaatYontem`; yalnız sahibinin yöntemli inşaatı; yoksa tanımsız = tür varsayılanı); biten tesiste tesisin üretim yöntemi (`ozel.tesisler`; yalnız sahibine). */
   yontem?: string;
   /** Tesisin aşınması (ppm, > 0; `ozel.tesisAsinma`; yalnız sahibine). Ölçek büyütme inşaatında büyüyen tesisin aşınması. Aşınmasızsa tanımsız. */
   asinmaPpm?: number;
