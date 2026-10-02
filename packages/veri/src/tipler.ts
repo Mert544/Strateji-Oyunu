@@ -436,6 +436,17 @@ export interface PazarTemelParametreleri {
 /** Pazar parametreleri: özgün alanlar + (opsiyonel) B3 ek alanları. */
 export type PazarParametreleri = PazarTemelParametreleri & Partial<PazarEkAlanlari>;
 
+/** İç yol sevkinin taşıyıcı hizmet bedeli; depo yakıtı ayrıca tüketilmez. Yok/kapalı eski davranıştır. */
+export interface LojistikTasimaParametreleri {
+  etkin: boolean;
+  /** Yakıttan bağımsız hizmet: mili-para / (mal birimi × yol saati). */
+  isletmeBirimMili: number;
+  /** Yakıt birimi / (mal birimi × yol saati), ppm; canlı yakıt referans fiyatıyla çarpılır. */
+  yakitBirimPpm: number;
+  /** Kenar türü çarpanı (ppm); işletme ve yakıt bileşenlerinin ikisine de uygulanır. */
+  turCarpaniPpm: Record<KenarTuru, number>;
+}
+
 /** İlçe eşkıya PvE parametreleri; blok yok/etkin değilse baskın yok, mevcut ordu komutları korunur. */
 export interface AskeriEskiyaParametreleri {
   etkin: boolean;
@@ -542,6 +553,8 @@ export interface Parametreler {
     gelistirmeMaliyeti: Record<MalId, number>;
     gelistirmeParasi: number;
     gelistirmeSuresiSaat: number;
+    /** Yalnız iç yol sevki; NPC liman priminin veya şebeke bedelinin yerine geçmez. */
+    tasima?: LojistikTasimaParametreleri;
   };
   askeri: {
     ilanHazirlikSaatMin: number;

@@ -1,0 +1,179 @@
+{
+  "kaynak": "Gerçek standalone uygulama + gerçek Türkiye arsa manifesti. Varsayılan yeni oyuncu paketi; gerçek kabul edilmiş komutlar, inşaat ve piyasa çözümü. Özel fixture/hibe/stok/DOM enjeksiyonu yok.",
+  "masaustu": [
+    1440,
+    1000
+  ],
+  "komutlar": [
+    {
+      "komut": {
+        "tur": "parsel_al",
+        "ilce": "tr_16_gemlik",
+        "hucreler": [
+          "608850:394756"
+        ],
+        "sinif": "kirsal"
+      },
+      "sonuc": {
+        "tur": "komutSonucu",
+        "anahtar": "ic-sevk-1",
+        "seq": 2,
+        "t": 0,
+        "komut": {
+          "tur": "parsel_al",
+          "ilce": "tr_16_gemlik",
+          "hucreler": [
+            "608850:394756"
+          ],
+          "sinif": "kirsal"
+        },
+        "sonuc": {
+          "tamam": true
+        },
+        "tekrar": false
+      }
+    },
+    {
+      "komut": {
+        "tur": "tesis_insa_hucre",
+        "ilce": "tr_41_gebze",
+        "tesisTuru": "ciftlik",
+        "yontem": "geleneksel_tarim",
+        "hucreler": [
+          "610070:393780",
+          "610071:393780"
+        ]
+      },
+      "sonuc": {
+        "tur": "komutSonucu",
+        "anahtar": "ic-sevk-2",
+        "seq": 3,
+        "t": 0,
+        "komut": {
+          "tur": "tesis_insa_hucre",
+          "ilce": "tr_41_gebze",
+          "tesisTuru": "ciftlik",
+          "hucreler": [
+            "610070:393780",
+            "610071:393780"
+          ],
+          "yontem": "geleneksel_tarim"
+        },
+        "sonuc": {
+          "tamam": true
+        },
+        "tekrar": false
+      }
+    },
+    {
+      "komut": {
+        "tur": "ticaret_emri",
+        "bolge": "tr_16#ekran",
+        "mal": "tahil",
+        "yon": "ihracat",
+        "oranSaat": 100000
+      },
+      "sonuc": {
+        "tur": "komutSonucu",
+        "anahtar": "ic-sevk-3",
+        "seq": 4,
+        "t": 720000,
+        "komut": {
+          "tur": "ticaret_emri",
+          "bolge": "tr_16#ekran",
+          "mal": "tahil",
+          "yon": "ihracat",
+          "oranSaat": 100000
+        },
+        "sonuc": {
+          "tamam": true
+        },
+        "tekrar": false
+      }
+    }
+  ],
+  "actualFlow": {
+    "mal": "tahil",
+    "kaynak": "tr_41#ekran",
+    "hedef": "tr_16#ekran",
+    "oranMiliSaat": 196608,
+    "sureMs": 10800000,
+    "tasimaBedeliMiliSaat": 71686,
+    "yol": [
+      {
+        "tur": "kara",
+        "sureMs": 10800000
+      }
+    ]
+  },
+  "actualEconomy": {
+    "sonCozum": 14400000,
+    "simZamani": 14520000,
+    "yakitFiyatiMili": 111538,
+    "tasimaParametreleri": {
+      "etkin": true,
+      "isletmeBirimMili": 10,
+      "yakitBirimPpm": 1000,
+      "turCarpaniPpm": {
+        "kara": 1000000,
+        "deniz": 500000,
+        "hava": 3000000
+      }
+    },
+    "kaynakBedeliMiliSaat": 71686,
+    "hedefBedeliMiliSaat": 0,
+    "kaynakTahilStokMili": 170085,
+    "hedefTahilStokMili": 3220,
+    "hedefTahilGelenMiliSaat": 196608,
+    "hedefEmirleri": [
+      {
+        "mal": 0,
+        "yon": "ihracat",
+        "oranSaat": 100000,
+        "gerceklesenSaat": 100000
+      }
+    ]
+  },
+  "uiSnapshot": {
+    "lojistik": {
+      "sonCozum": 14400000,
+      "akislar": [
+        {
+          "mal": "tahil",
+          "kaynak": "tr_41#ekran",
+          "hedef": "tr_16#ekran",
+          "oranMiliSaat": 196608,
+          "sureMs": 10800000,
+          "tasimaBedeliMiliSaat": 71686
+        }
+      ],
+      "tasimaBedeliMiliSaat": 71686
+    },
+    "bolgeler": [
+      {
+        "id": "tr_41#ekran",
+        "ad": "tr_41",
+        "gelenOran": [],
+        "tasimaBedeliMiliSaat": 71686
+      },
+      {
+        "id": "tr_16#ekran",
+        "ad": "tr_16",
+        "gelenOran": [
+          [
+            "tahil",
+            196608
+          ]
+        ],
+        "tasimaBedeliMiliSaat": 0
+      }
+    ],
+    "gosterilenRotalar": [
+      "KocaeliBursaPlanlanan sevk196,608 birim/saatToplam yol süresi3 saTaşıma hizmeti bedeli72 ₺/saat"
+    ],
+    "gosterilenTasimaGideri": "İç sevkiyat hizmet gideriKocaeli · çıkan sevkler72 ₺/saatBütün işletmelerinin iç sevkleri72 ₺/saatBütün malların otomatik taşıma hizmeti; depodan ek yakıt düşmez. İthalatın liman primi ve tesis şebekesi ayrıdır.Son hesaplanan saatlik gider; toplam harcama değildir. Hazine’nin net akışına dahildir. Ücretli sevkiyat için pozitif nakit gerekir; yoldaki malın teslimi sürer."
+  },
+  "gosterilenBedel": "72 ₺/saat",
+  "pageErrors": [],
+  "consoleErrors": []
+}

@@ -427,6 +427,10 @@ export function dunyaDogrula(deger: unknown): Dunya {
       const st = nesne(b.sebekeTuketim, `${y}.sebekeTuketim`);
       for (const k of Object.keys(st)) tamsayi(st[k], `${y}.sebekeTuketim.${k}`, 1);
     }
+    if (b.tasimaBedeliMiliSaat !== undefined) {
+      tamsayi(b.tasimaBedeliMiliSaat, `${y}.tasimaBedeliMiliSaat`, 0);
+      if (d.mulk === undefined || b.merkez === undefined || b.sahip === null) hata(`${y}.tasimaBedeliMiliSaat`, "tasima bedeli yalniz sahipli mulk isletmesinde olabilir");
+    }
     if (b.yakitTedariki !== undefined) {
       const yy = `${y}.yakitTedariki`;
       if (b.merkez === undefined || d.mulk === undefined) hata(yy, "yakit tedariki yalniz mulk isletmesinde olabilir");
@@ -559,6 +563,7 @@ export function dunyaDogrula(deger: unknown): Dunya {
   mantik(l.cozumPlanli, "$.lojistik.cozumPlanli");
   tamsayi(l.sonCozum, "$.lojistik.sonCozum");
   tamsayi(l.cozumSayisi, "$.lojistik.cozumSayisi", 0);
+  const tasimaToplamlari = new Map<number, number>();
   dizi(l.akislar, "$.lojistik.akislar").forEach((v, i) => {
     const y = `$.lojistik.akislar[${i}]`;
     const a = nesne(v, y);
@@ -566,6 +571,22 @@ export function dunyaDogrula(deger: unknown): Dunya {
     indeks(a.kaynak, `${y}.kaynak`, n);
     indeks(a.hedef, `${y}.hedef`, n);
     dizi(a.yol, `${y}.yol`).forEach((k, j) => indeks(k, `${y}.yol[${j}]`, kSayisi));
+    if (a.tasimaBedeliMiliSaat !== undefined) {
+      const bedel = tamsayi(a.tasimaBedeliMiliSaat, `${y}.tasimaBedeliMiliSaat`, 0);
+      const kaynak = bolgeler[a.kaynak as number] as Nesne;
+      const hedef = bolgeler[a.hedef as number] as Nesne;
+      if (d.mulk === undefined || kaynak.merkez === undefined || hedef.merkez === undefined || kaynak.sahip !== a.sahip || hedef.sahip !== a.sahip) hata(`${y}.tasimaBedeliMiliSaat`, "tasima yalniz kendi mulk dugumleri arasinda olabilir");
+      if (kaynak.tasimaBedeliMiliSaat === undefined) hata(`${y}.tasimaBedeliMiliSaat`, "kaynak tasima toplami eksik");
+      if ((a.yol as unknown[]).length === 0 && bedel !== 0) hata(`${y}.tasimaBedeliMiliSaat`, "yolsuz havuz ucretsiz olmali");
+      tamsayi(a.oranSaat, `${y}.oranSaat`, 0);
+      const toplam = (tasimaToplamlari.get(a.kaynak as number) ?? 0) + bedel;
+      if (!Number.isSafeInteger(toplam)) hata(`${y}.tasimaBedeliMiliSaat`, "tasima toplami guvenli tamsayi olmali");
+      tasimaToplamlari.set(a.kaynak as number, toplam);
+    } else if ((bolgeler[a.kaynak as number] as Nesne).tasimaBedeliMiliSaat !== undefined) hata(`${y}.tasimaBedeliMiliSaat`, "tasima toplamli kaynakta akis bedeli eksik");
+  });
+  bolgeler.forEach((v, i) => {
+    const b = v as Nesne;
+    if (b.tasimaBedeliMiliSaat !== undefined && b.tasimaBedeliMiliSaat !== (tasimaToplamlari.get(i) ?? 0)) hata(`$.bolgeler[${i}].tasimaBedeliMiliSaat`, "kaynak tasima toplami akislarla tutarsiz");
   });
   dizi(l.kapsam, "$.lojistik.kapsam", n).forEach((satir, i) => dizi(satir, `$.lojistik.kapsam[${i}]`, m));
 
@@ -615,6 +636,16 @@ export function dunyaDogrula(deger: unknown): Dunya {
     if (!Object.prototype.hasOwnProperty.call(OLAY_ONCELIGI, tur)) hata(`${y}.veri.tur`, `bilinmeyen olay turu: ${tur}`);
     if (o.oncelik !== OLAY_ONCELIGI[tur as keyof typeof OLAY_ONCELIGI]) hata(`${y}.oncelik`, `olay turu ${tur} icin oncelik yanlis: ${String(o.oncelik)}`);
     if (tur === "saatlik_tik") tikVar = true;
+    if (tur === "tasima_hazine_esik") {
+      const oy = `${y}.veri`;
+      const izinli = ["tur", "oyuncu", "surum"];
+      alanlar(veri, oy, izinli);
+      for (const k of Object.keys(veri)) if (!izinli.includes(k)) hata(`${oy}.${k}`, "bilinmeyen tasima esik alani");
+      const id = dize(veri.oyuncu, `${oy}.oyuncu`);
+      if (!dizi(d.oyuncular, "$.oyuncular").some((o) => (o as Nesne).id === id)) hata(`${oy}.oyuncu`, "bilinmeyen oyuncu");
+      if (d.mulk === undefined) hata(oy, "tasima esigi yalniz mulk kipinde olabilir");
+      tamsayi(veri.surum, `${oy}.surum`, 0);
+    }
     if (tur === "oran_delta" || tur === "esik" || tur === "sondaj_bitti") {
       indeks(veri.bolge, `${y}.veri.bolge`, n);
       indeks(veri.mal, `${y}.veri.mal`, m);
@@ -780,6 +811,7 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
       tamsayi(pa.t0, `${y}.paraAkisi.t0`, 0);
       for (const k of ["ihracat", "nufus", "ithalat", "isletme", "vergi"] as const) tamsayi(pa[k], `${y}.paraAkisi.${k}`);
       if (pa.sebeke !== undefined) tamsayi(pa.sebeke, `${y}.paraAkisi.sebeke`, 1); // isteğe bağlı (şebeke > 0 iken yazılır)
+      if (pa.tasima !== undefined) tamsayi(pa.tasima, `${y}.paraAkisi.tasima`, 1);
       if (!MULKSUZ_PAKET && pa.yerel !== undefined) tamsayi(pa.yerel, `${y}.paraAkisi.yerel`, 1); // isteğe bağlı (yerel satış geliri > 0 iken yazılır; G7-2)
       let oncekiKasa: string | null = null;
       dizi(pa.kasa, `${y}.paraAkisi.kasa`).forEach((e, j) => {

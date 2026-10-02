@@ -192,6 +192,8 @@ export interface LojistikAkisGorunumu {
   oranMiliSaat: Mili;
   /** Çözümün kullandığı toplam yol süresi; kesin varış zamanı veya ilerleme göstergesi değildir. */
   sureMs: Ms;
+  /** Çekirdeğin bu sevk için son çözümde sabitlediği tam taşıma hizmeti gideri. 0 gerçek ücretsiz; yokluk bilinmeyen/kapalı kuraldır. */
+  tasimaBedeliMiliSaat?: Mili;
 }
 
 /** Yalnız sahibine giden bölge verisi (ham çekirdek birimleri). */
@@ -250,7 +252,12 @@ export interface OzelBolgeKaresi {
    * Çözüm zamanı dünya `lojistik.sonCozum` alanıdır; bağlam gerekmez. `akislar: []` bilinen sevk yokluğu, alan yokluğu eski sunucu/kapsam dışıdır.
    * Fiziksel yol/kapasite, kesin ETA ve yoldaki mal miktarı içermez; NPC ithalatı bu plana dahil değildir.
    */
-  lojistik?: { sonCozum: Ms; akislar: LojistikAkisGorunumu[] };
+  lojistik?: {
+    sonCozum: Ms;
+    akislar: LojistikAkisGorunumu[];
+    /** Bu kaynak düğümün gerçek rota bedelleri toplamı; etkin kuralda sevk yoksa 0. NPC ithalatı ve şebekeden ayrıdır. */
+    tasimaBedeliMiliSaat?: Mili;
+  };
   /**
    * Yalnız sahibinin mülk işletmesinde: depolanabilir malların stok `gelenOran` değerleri (yalnız > 0, mal indeksine göre).
    * Bu hız gecikmeli varış olayları uygulanınca değişir; güncel sevk planıyla aynı olmak zorunda değildir. NPC ithalatı yerel orandadır.
@@ -591,6 +598,7 @@ export function ilgiKaresiCikar(
   const d = kaynak.dunya;
   const bolgeler: BolgeKaresi[] = [];
   const gorunum = dukkanGorunumleri(kaynak, oyuncu);
+  const tasimaEtkin = kaynak.ic.param.lojistik.tasima?.etkin === true;
   // Akışlar tüm dünya için bir kez taranır; kaynak/hedefin gerçek sahipliği de doğrulanır.
   const kaynakAkislari = new Map<number, LojistikAkisGorunumu[]>();
   if (oyuncu !== null && kaynak.ic.mulk !== undefined) {
@@ -602,7 +610,10 @@ export function ilgiKaresiCikar(
       if (kaynakBolge?.sahip !== oyuncu || hedefBolge?.sahip !== oyuncu || kaynakBolge.merkez === undefined || hedefBolge.merkez === undefined || mal === undefined || mal.depolanabilir === false) continue;
       let liste = kaynakAkislari.get(a.kaynak);
       if (liste === undefined) kaynakAkislari.set(a.kaynak, (liste = []));
-      liste.push({ mal: mal.id, kaynak: kaynakBolge.id, hedef: hedefBolge.id, oranMiliSaat: a.oranSaat, sureMs: a.sureMs });
+      liste.push({
+        mal: mal.id, kaynak: kaynakBolge.id, hedef: hedefBolge.id, oranMiliSaat: a.oranSaat, sureMs: a.sureMs,
+        ...(tasimaEtkin && a.tasimaBedeliMiliSaat !== undefined ? { tasimaBedeliMiliSaat: a.tasimaBedeliMiliSaat } : {}),
+      });
     }
   }
   for (const i of bolgeIndeksleri) {
@@ -648,7 +659,11 @@ export function ilgiKaresiCikar(
             sebekeMiliSaat: yakit.sebekeMiliSaat,
           };
         }
-        girdi.ozel.lojistik = { sonCozum: d.lojistik.sonCozum, akislar: kaynakAkislari.get(i) ?? [] };
+        girdi.ozel.lojistik = {
+          sonCozum: d.lojistik.sonCozum,
+          akislar: kaynakAkislari.get(i) ?? [],
+          ...(tasimaEtkin && b.tasimaBedeliMiliSaat !== undefined ? { tasimaBedeliMiliSaat: b.tasimaBedeliMiliSaat } : {}),
+        };
         girdi.ozel.gelenOran = b.stoklar.flatMap((stok, mal): Array<[string, Mili]> => {
           const tanim = kaynak.ic.mallar[mal];
           return tanim !== undefined && tanim.depolanabilir !== false && stok.gelenOran > 0 ? [[tanim.id, stok.gelenOran]] : [];

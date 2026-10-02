@@ -84,7 +84,13 @@
     "gelistirmeArtisPpm": 500000,
     "gelistirmeMaliyeti": { "celik": 400000, "parca": 100000 },
     "gelistirmeParasi": 20000000,
-    "gelistirmeSuresiSaat": 12
+    "gelistirmeSuresiSaat": 12,
+    "tasima": {
+      "etkin": true,
+      "isletmeBirimMili": 10,
+      "yakitBirimPpm": 1000,
+      "turCarpaniPpm": { "kara": 1000000, "deniz": 500000, "hava": 3000000 }
+    }
   },
   "askeri": {
     "ilanHazirlikSaatMin": 12,

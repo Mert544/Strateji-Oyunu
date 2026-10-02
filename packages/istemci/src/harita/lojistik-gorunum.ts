@@ -1,5 +1,5 @@
 /** Sahibinin iç sevk planını ve hedefte uygulanmış gelen hızını ayrı gösteren saf görünüm. */
-import { esc, sayi, sureMetni } from "../arayuz/bicim";
+import { esc, paraMili, sayi, sureMetni } from "../arayuz/bicim";
 import { ikon } from "../tasarim/ikon";
 
 /** Son çözümün planladığı akış; mal miktarı değil mili-birim/saat hızıdır. */
@@ -10,12 +10,16 @@ export interface LojistikAkisGorunumu {
   oranMiliSaat: number;
   /** Kaynaktan hedefe toplam yol süresi; kalan varış süresi değildir. */
   sureMs: number;
+  /** Sunucunun bildirdiği tam rota bedeli; kaynak işletmenin mili-para/saat gideri. Yokluk bilinmiyor, 0 bilinen sıfır. */
+  tasimaBedeliMiliSaat?: number;
 }
 
 export interface LojistikPlanGorunumu {
   sonCozum: number;
   /** Yalnız sahibinin kendi kaynak ve hedefleri arasındaki akışlar. */
   akislar: readonly LojistikAkisGorunumu[];
+  /** Bütün mallar ve sahipli kaynaklar için doğrulanmış toplam; seçili mal veya işletmenin toplamı değildir. */
+  tasimaBedeliMiliSaat?: number;
 }
 
 export interface LojistikBolgeGorunumu {
@@ -59,13 +63,17 @@ export function lojistikGorunumuHtml(p: LojistikGorunumParam): string {
     if (!liste.length) return "";
     let s = `<section class="lg-yon"><h5>${baslik}</h5><ul class="lg-akislar">`;
     for (const a of liste) {
-      s += `<li><div class="lg-rota"><span>${esc(bolgeAdi(a.kaynak))}</span>${ikon("chevron-right", 14)}<span>${esc(bolgeAdi(a.hedef))}</span></div><dl class="lg-akis-veri"><div><dt>Planlanan sevk</dt><dd>${esc(hiz(a.oranMiliSaat))}</dd></div><div><dt>Toplam yol süresi</dt><dd>${esc(sureMetni(a.sureMs / 3_600_000))}</dd></div></dl></li>`;
+      const bedel = a.tasimaBedeliMiliSaat === undefined
+        ? '<span class="lg-bedel-bilinmiyor">Bedel bilinmiyor</span>'
+        : `${esc(paraMili(a.tasimaBedeliMiliSaat, "yukari"))}/saat`;
+      s += `<li><div class="lg-rota"><span>${esc(bolgeAdi(a.kaynak))}</span>${ikon("chevron-right", 14)}<span>${esc(bolgeAdi(a.hedef))}</span></div><dl class="lg-akis-veri"><div><dt>Planlanan sevk</dt><dd>${esc(hiz(a.oranMiliSaat))}</dd></div><div><dt>Toplam yol süresi</dt><dd>${esc(sureMetni(a.sureMs / 3_600_000))}</dd></div><div class="lg-bedel"><dt>Taşıma hizmeti bedeli</dt><dd>${bedel}</dd></div></dl></li>`;
     }
     return s + "</ul></section>";
   };
   if (!gelenPlan?.length && !cikanPlan?.length) h += '<p class="lg-bos">Bu mal için bu işletmeye bağlı iç sevk planı yok.</p>';
   h += listeHtml("Planlanan gelen sevkler", gelenPlan ?? []);
   h += listeHtml("Planlanan çıkan sevkler", cikanPlan ?? []);
+  if (gelenPlan?.length || cikanPlan?.length) h += '<p class="ipucu-metin">Taşıma bedeli kaynak işletmenin saatlik gideridir. Geçmiş ödeme toplamı değildir; pazar ithalatı ve şebeke gideri ayrıca gösterilir.</p>';
   h += '<p class="ipucu-metin">Yol süresi, güzergâhın toplam taşıma süresidir. Sevk planı değiştiğinde ulaşmış hız gecikmeyle değişebilir; sevk durmuş olsa bile önceki akışın gelişi sürebilir.</p>';
   return h + "</section>";
 }

@@ -6,5 +6,6 @@
 .lg-yon{margin:16px 0}.lg-yon>h5{font-size:.9em;margin:0 0 8px}.lg-akislar{list-style:none;padding:0;margin:0}.lg-akislar>li{min-width:0;padding:12px 0;border-top:1px solid var(--cizgi-ince)}
 .lg-rota{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:.9em;font-weight:600}.lg-rota .ikon{color:var(--murekkep-2)}
 .lg-akis-veri{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 0}.lg-akis-veri>div{min-width:0}.lg-bos{padding:10px;background:var(--yuzey-2);border-radius:var(--r-sm);font-size:.85em;color:var(--murekkep-2)}
+.lg-akis-veri>.lg-bedel{grid-column:1/-1;padding:8px 10px;border:1px solid var(--cizgi-ince);border-radius:var(--r-sm);background:var(--yuzey-2)}.lg-bedel dd{font-weight:650}.lg-bedel-bilinmiyor{font-weight:400;color:var(--murekkep-2)}
 @media(max-width:520px){.lg-ozet{grid-template-columns:minmax(0,1fr)}.lg-akis-veri{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.lg-panel,.lg-panel *{animation:none;transition:none;scroll-behavior:auto}}

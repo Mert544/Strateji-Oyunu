@@ -30,6 +30,17 @@ import type { TedarikDurumu } from "./tedarik-panel";
 
 type Mesaj<T extends SunucuMesaji["tur"]> = Extract<SunucuMesaji, { tur: T }>;
 
+/** Ücret çekirdekten gelir; bütün kendi kaynaklarının aynı çözümüne ait bedeller yalnız toplanır. */
+function tasimaGideriToplami(bolgeler: readonly IlgiKaresi["bolgeler"][number][]): number | undefined {
+  const sonCozum = bolgeler[0]?.ozel?.lojistik?.sonCozum;
+  if (sonCozum === undefined || !bolgeler.every((b) => {
+    const l = b.ozel?.lojistik;
+    return l !== undefined && l.sonCozum === sonCozum && l.tasimaBedeliMiliSaat !== undefined
+      && l.akislar.every((a) => a.tasimaBedeliMiliSaat !== undefined);
+  })) return undefined;
+  return bolgeler.reduce((toplam, b) => toplam + b.ozel!.lojistik!.tasimaBedeliMiliSaat!, 0);
+}
+
 export interface WsSecenekleri {
   url: string;
   /**
@@ -345,9 +356,11 @@ export class WsBaglanti implements MulkBaglantisi {
     const ilkLojistik = kendiIsletmeleri[0]?.ozel?.lojistik;
     const lojistikTam = ilkLojistik !== undefined && kendiIsletmeleri.every((b) => b.ozel?.lojistik !== undefined && b.ozel.lojistik.sonCozum === ilkLojistik.sonCozum);
     const kendiKimlikleri = new Set(kendiIsletmeleri.map((b) => b.id));
+    const tasimaBedeliMiliSaat = tasimaGideriToplami(kendiIsletmeleri);
     const lojistik = lojistikTam && ilkLojistik !== undefined ? {
       sonCozum: ilkLojistik.sonCozum,
       akislar: kendiIsletmeleri.flatMap((b) => b.ozel!.lojistik!.akislar.filter((a) => a.kaynak === b.id && kendiKimlikleri.has(a.hedef))),
+      ...(tasimaBedeliMiliSaat === undefined ? {} : { tasimaBedeliMiliSaat }),
     } : undefined;
     return {
       simZamani,
@@ -374,6 +387,7 @@ export class WsBaglanti implements MulkBaglantisi {
           ...(oz.yakitTedariki === undefined ? {} : { yakitTedariki: oz.yakitTedariki }),
           ...(oz.ithalatGiderleri === undefined ? {} : { ithalatGiderleri: oz.ithalatGiderleri }),
           ...(oz.gelenOran === undefined ? {} : { gelenOran: oz.gelenOran }),
+          ...(oz.lojistik?.tasimaBedeliMiliSaat === undefined ? {} : { tasimaBedeliMiliSaat: oz.lojistik.tasimaBedeliMiliSaat }),
           ...(yeniEmirUygun === undefined ? {} : { yeniEmirUygun }),
           ...(yeniEmirUygun === false ? { yeniEmirNedeni: `Satış ve alış emri yuvaların dolu (${yuva}). Bir emri bırak ya da Ticaret ofisi kur.` } : {}),
         };
@@ -652,6 +666,7 @@ export class WsBaglanti implements MulkBaglantisi {
     const sebeke = new Map<string, number>();
     const kendiIsletmeleri = k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`));
     const ilkYakit = kendiIsletmeleri[0]?.ozel?.yakitTedariki;
+    const tasimaGideriMiliSaat = tasimaGideriToplami(kendiIsletmeleri);
     const yakitCozumu = kendiIsletmeleri[0]?.ozel?.lojistik?.sonCozum;
     // Kaynak payları sunucunun tahsisidir; stok formülü veya sevk planından türetilmez.
     // Tüm düğümler aynı malın aynı çözümünü vermedikçe kısmi toplam gösterilmez.
@@ -812,6 +827,7 @@ export class WsBaglanti implements MulkBaglantisi {
       ...(sebeke.size > 0 ? { sebeke: [...sebeke.entries()] } : {}),
       ...(sebekeGiderleri === undefined ? {} : { sebekeGiderleri: [...sebekeGiderleri.values()].sort((a, b) => a.mal.localeCompare(b.mal)) }),
       ...(yakitTedariki === undefined ? {} : { yakitTedariki }),
+      ...(tasimaGideriMiliSaat === undefined ? {} : { tasimaGideriMiliSaat }),
       ...(ihracatEmriVar ? { ihracatEmriVar: true } : {}),
     };
   }

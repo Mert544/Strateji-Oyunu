@@ -343,6 +343,8 @@ export interface BolgeDurumu {
   sebekeTuketim?: Record<string, Mili>;
   /** L2 açıkken sıfır tüketim dahil bilinen sanayi tahsisi; eski/kapalı kuralda yok. */
   yakitTedariki?: YakitTedariki;
+  /** L3 son çözümde bu işletmeden sevk edilen akışların toplam hizmet bedeli; açık kuralda 0 bilinir. */
+  tasimaBedeliMiliSaat?: Mili;
   /**
    * Mülk kipi yerel pazar (G7-2, sartname §6.3 g): düğümün dükkân satış isteğinin karşılanma oranı = min(frD[m]) (dükkân isteği olan mallar). YALNIZ dükkân isteği varken
    * ve `< PPM` iken yazılır (`gidaKarsilanmaPpm` örüntüsü); aksi halde alan silinir/oluşmaz. "Neden satmıyor" bilgisini panele taşır.
@@ -666,6 +668,8 @@ export interface Akis {
   oranSaat: Mili;
   /** Yol boyunca toplam taşıma süresi */
   sureMs: Ms;
+  /** L3 gerçek sevk hizmet bedeli; çözüm fiyatı/rotasıyla sabitlenmiş, açık kuralda 0 dahil. */
+  tasimaBedeliMiliSaat?: Mili;
 }
 
 /** Kapsam görünümü: "nerede açık, neden". Bölge × mal. */
@@ -708,6 +712,7 @@ export interface LojistikDurumu {
 export const OLAY_ONCELIGI = {
   oran_delta: 1,
   esik: 2,
+  tasima_hazine_esik: 2,
   insaat_bitti: 3,
   parti_bitti: 3,
   arastirma_bitti: 3,
@@ -732,6 +737,7 @@ export type OlayVerisi =
   | { tur: "eskiya_toparlanma"; baskin: number }
   | { tur: "oran_delta"; bolge: number; mal: number; delta: Mili }
   | { tur: "esik"; bolge: number; mal: number; surum: number }
+  | { tur: "tasima_hazine_esik"; oyuncu: OyuncuId; surum: number }
   | { tur: "insaat_bitti"; insaat: number }
   | { tur: "parti_bitti"; parti: number }
   | { tur: "arastirma_bitti"; oyuncu: OyuncuId }
@@ -1088,7 +1094,7 @@ export const LAVABO_KALEMLERI: readonly LavaboKalemi[] = ["araziVergisi", "arast
  * İsteğe bağlı lavabo kalemi (G6; sartname §5.2.5, §11.1): şebeke bedelinin kasa payı dışında kalan (yanan) kısmı. Tembel: kalem YALNIZ ilk birikimde doğar (`paraDurumuKur`
  * yaratmaz; zorunlu `LAVABO_KALEMLERI` değişmez, böylece mevcut mülk dünyalarının özeti ve eski görüntüler aynı kalır).
  */
-export const LAVABO_ISTEGE_BAGLI: readonly "sebeke"[] = ["sebeke"];
+export const LAVABO_ISTEGE_BAGLI: readonly ("sebeke" | "tasima")[] = ["sebeke", "tasima"];
 
 /** Kasa girişi kalemleri (§4.1): arazi vergisi payı, ithalat makası payı, ithalat komisyonu payı. İHRACAT kaynağı YOKTUR. */
 export type KasaGirisZorunluKalemi = "vergi" | "ithalatMakas" | "ithalatKomisyon";
@@ -1101,7 +1107,7 @@ export type KasaGirisKalemi = KasaGirisZorunluKalemi | "sebeke";
 export interface ParaDurumu {
   surum: 1;
   musluk: Record<MuslukKalemi, ParaSayaci> & { yerelNpc?: ParaSayaci };
-  lavabo: Record<LavaboKalemi, ParaSayaci> & { sebeke?: ParaSayaci };
+  lavabo: Record<LavaboKalemi, ParaSayaci> & { sebeke?: ParaSayaci; tasima?: ParaSayaci };
   /** Sahip kimliğine göre sıralı; ilk gelire kadar yazılmaz. */
   kasalar: KasaDurumu[];
 }
@@ -1140,6 +1146,8 @@ export interface ParaAkisi {
   vergi: Mili;
   /** Şebeke bedeli (G6; lavabo + kasa payı): YALNIZ `> 0` iken yazılır (alan yoksa şebeke yok). */
   sebeke?: Mili;
+  /** L3 taşıyıcı hizmeti (lavabo, kasa payı yok); yalnız >0 iken yazılır. */
+  tasima?: Mili;
   /** Yerel pazar (dükkân) satış geliri (G7-2; musluk `yerelNpc`): YALNIZ `> 0` iken yazılır (alan yoksa yerel satış yok). */
   yerel?: Mili;
   /** Kasalara giden paylar (sahip, kalem sırasıyla): ithalat ve vergi içindeki payı; kalanı yanar. */

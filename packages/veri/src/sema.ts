@@ -622,6 +622,19 @@ export const ParametreSema = z
         gelistirmeMaliyeti: kayit,
         gelistirmeParasi: negatifOlmayan,
         gelistirmeSuresiSaat: pozitif,
+        tasima: z
+          .object({
+            etkin: z.boolean(),
+            isletmeBirimMili: negatifOlmayan,
+            yakitBirimPpm: ppmSiniri,
+            turCarpaniPpm: z.object({
+              kara: negatifOlmayan.max(10_000_000),
+              deniz: negatifOlmayan.max(10_000_000),
+              hava: negatifOlmayan.max(10_000_000),
+            }).strict(),
+          })
+          .strict()
+          .optional(),
       })
       .strict(),
     askeri: z

@@ -169,6 +169,33 @@ pay 3,999 ve şebeke açığı 6,001 birim/saat; yakıt şebeke gideri 621,103 �
 sayfa hatası yok. [Rafineri ve yakıt ekranları](../ekran-goruntuleri/2026-10-02-rafineri/README.md)
 ve gerçek veri özeti kaydedildi. L4 canlı sahne doğrulaması yapılmadı.
 
+### 2 Ekim — L3 iç taşıma hizmet bedeli tamamlandı
+
+Kullanıcının yedi ajanla devam talimatıyla mevcut altı uzman + koordinatör
+L3'e geçti. [Kesin sözleşme](codex-l3-tasima-sozlesmesi.md): gerçek iç sevk
+miktarı, yol süresi, taşıma türü ve canlı yakıt fiyatına bağlı hizmet gideri;
+depodan ayrıca yakıt tüketilmez. Sıfır bakiye ücretli yeni sevki durdurur,
+yoldaki teslim ve ücretsiz il içi havuz korunur. L1 çekirdek, A6 veri,
+B2 protokol/köprü, A3 Tedarik/Hazine, B4 rota görünümü, B6 tek doğrulama
+sahibidir. Yeni `kare-tasima.test.ts` içindeki üç entegre vaka ilk koşuda
+geçti: gerçek fiyat/yol/tür bedeli ve para korunumu; sıfır bakiye/eşik/ücretsiz
+kenar ve korunmuş transit; parçalı zaman/aynı-an çözüm/kayıt/replay;
+eski/bölge/gizlilik/kapatma göçü ve bozuk ücret kaydının reddi. Eski para
+korunumu yardımcısına isteğe bağlı taşıma sayacı eklendi; geniş suite koşulmadı.
+Kök/istemci tip kontrolü ve istemci derlemesi ilk koşuda geçti. Dünya gzip
+390,1KB/400KB, harita 494,3KB, yürüyüş 109,6KB. Bilinen eksik sokak PMTiles
+uyarıları sürüyor. B4, gerçek arsa alımı/çiftlik inşası/ihracat komutlarıyla
+Gebze→Gemlik tahıl sevkini görüntüledi: 196,608 birim/saat, 3 saat kara yolu,
+71,686 ₺/saat (arayüz 72). Core ve istemci bedeli/miktarı/süresi eşleşti;
+sayfa/konsol hatası yok. Ekran betiğinin ilk koşusundaki tek ilçe beklentisi,
+iki işletmeli dünyanın gerçek açılış seçimine uyarlandı; ürün/test/build
+tekrarı gerekmedi. [Taşıma ekranı ve gerçek veri](../ekran-goruntuleri/2026-10-02-tasima/README.md)
+kaydedildi. Yeni ajan açılmadı; altı mevcut uzman ve koordinatör çalıştı.
+
+A6, B2 ve A3 sonraki halk/kamu dilimini mevcut koddan inceledi:
+[kamu gıda siparişi Ar-Ge önerisi](codex-kamu-proje-arge.md). Kasa rezervi ve
+ödeme yardımcıları mevcut; makam/yetki/proje akışı uygulanmış sayılmaz.
+
 ### 2 Ekim — Harita ve sokak görünümü takibi
 
 Kullanıcının parsel ekranı hakkındaki sorusuyla harita akışı incelendi:
@@ -214,18 +241,21 @@ Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları ko
    dilimidir; mevcut sevk planından global kalan kapasite çıkarılmaz.
    **L2 tamamlandı:** rafineri ve sanayi yakıtının fiziksel kaynak önceliği,
    kalan şebeke açığı, gerçek gider görünümü, kural göçü ve replay aynı
-   teslimde uygulandı. Sonraki ekonomi kapsamı L3 iç taşıma bedelidir.
-3. **L3:** iç taşıma gideri için önce tek model seç. İlk aday yakıt fiyatına
-   bağlı otomatik taşıyıcı hizmet bedeli; aynı yakıt ayrıca stoktan düşülmez.
-   MCF'deki maliyet şu an süre olduğu için parasal gider gibi gösterilmez.
-   Mevcut dış ticaret liman primi ikinci kez nakliye diye alınmaz.
+   teslimde uygulandı. L3 iç taşıma bedeli aynı dalda uygulanıp hedefli kontrolden geçti.
+3. **L3 uygulandı:** yakıt fiyatına bağlı otomatik taşıyıcı hizmet bedeli;
+   fiziksel yakıt ayrıca düşülmez. Gerçek akış üzerinden ayrı para kalemi ve
+   nakit eşiği vardır. MCF hedefi halen süredir; ekonomik rota seçimi yoktur.
+   Dış ticaret liman primi ikinci kez alınmaz; başlangıç katsayılarının insan
+   oynanışıyla denge değerlendirmesi sonraki iştir.
 4. Harita hattı: gerçek Kilimli karo/araç girdilerini sağlayıp izole üretimi
    tamamla, canonical manifesti doğrulanmış veri olmadan genişletme.
 5. Askerî hat: [PvE kararı](codex-d4-pve-karari.md) kalan sayısal sözleşmesini
    kapat; sonra bayraklı ön duyuru/sonuç/serileştirme/özel-genel UI tek dilimi.
    D3 birlik/duruş açık kalır; PvE bayrağı yalnız baskını yönetir.
 6. Kamu hat: mevcut kasa yardımcıları oyuncuya makam/proje harcama yetkisi
-   vermiyor. İlk proje kataloğu+yetki+ödenek bağlantısı ayrı uygulanacak.
+   vermiyor. İlk oynanabilir aday sistem gıda siparişine yerel stok teslimi;
+   katalog/fiyat/takvim/teslim/rezerv sözleşmesi Ar-Ge raporundan kapanacak.
+   Oyuncunun kamu bütçesini yönetmesi ayrı makam/yetki dilimidir.
 7. Tarayıcı/mobil kabulü birleşik geliştirme sonunda; her adımda yeniden koşma.
 
 ## Gerçek sınırlar ve yeniden başlama
@@ -244,9 +274,10 @@ Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları ko
 - `isletmeAl` başlangıç rezervini her oyuncu/il düğümüne kopyalar. Batı
   Karadeniz kömürü 360.000 oyun birimi/oyuncudur; ortak jeolojik damar değildir.
   Ortak ilçe rezervine geçiş ayrı davranış/göç işidir.
-- NPC ithalatında ayrı fiziksel rota/yakıt bedeli yok. İç ağda kapasite/süre var,
-  akış başına nakit/yakıt tüketimi yok. Yakıt şebeke fiyatı canlı pazar değil
-  derlenmiş sabit formüldür. Ayrıntılar lojistik Ar-Ge raporunda kodla kanıtlı.
+- NPC ithalatında ayrı fiziksel rota/yakıt bedeli yok. L3 ile iç ağın gerçek
+  akışında taşıyıcı hizmeti nakit gideri var; fiziksel depo yakıtı ayrıca
+  tüketilmez. Bu gider canlı yakıt referans fiyatını kullanır. Sanayi yakıt
+  şebekesinin fiyatı ise derlenmiş sabit formüldür.
 - Oturum dışı kod geliştirme otomasyonu kurulmadı. Kullanıcı aktif oturumda
   her küçük iş için yeniden “devam” demek istemiyor; mevcut yetki içinde sırayı
   ilerlet. Önce gerçek dosya/ajan durumunu oku, aynı dosyaya iki yazar atama.

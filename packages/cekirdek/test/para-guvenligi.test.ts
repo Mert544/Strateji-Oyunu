@@ -97,6 +97,7 @@ function korunumOlc(s: Simulasyon): Korunum {
   let lavabo = 0n;
   for (const k of LAVABO_KALEMLERI) lavabo += sayacOlcekli(p.lavabo[k]);
   if (p.lavabo.sebeke !== undefined) lavabo += sayacOlcekli(p.lavabo.sebeke); // isteğe bağlı (şebeke; G6) kalem de toplanır
+  if (p.lavabo.tasima !== undefined) lavabo += sayacOlcekli(p.lavabo.tasima); // L3 taşıma hizmeti zorunlu kalem listesine eklenmez.
   let musluk = 0n;
   for (const k of MUSLUK_KALEMLERI) musluk += sayacOlcekli(p.musluk[k]);
   if (p.musluk.yerelNpc !== undefined) musluk += sayacOlcekli(p.musluk.yerelNpc); // isteğe bağlı (yerel pazar; G7-2) kalem de toplanır

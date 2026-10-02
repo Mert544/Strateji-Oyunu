@@ -130,6 +130,8 @@ export function paraMuhasebesi(d: Dunya, ic: DerlenmisIcerik): void {
       sayacOranEkle(para.lavabo.araziVergisi, a.vergi - vergiKasa, dt);
       // Şebeke bedeli (G6): oyuncunun hazinesinden DÜŞEN para; kasa payı kasaya, kalanı lavabo.sebeke'ye (yeni musluk yok). Tembel kalem.
       if (a.sebeke !== undefined && a.sebeke > 0) sayacOranEkle((para.lavabo.sebeke ??= sayacSifir()), a.sebeke - sebekeKasa, dt);
+      // Taşıyıcı hizmeti: fiziksel stok yakıtı ve kamu kasası payı yok; tembel, ayrı lavabo.
+      if (a.tasima !== undefined && a.tasima > 0) sayacOranEkle((para.lavabo.tasima ??= sayacSifir()), a.tasima, dt);
       // Yerel pazar (G7-2, §12.1): dükkân satış geliri NPC hane talebidir (yeni para): musluk `yerelNpc` (tembel) ve oyuncu `dukkanGeliri` AYNI oran ve süreyle artar (kasaya pay yok).
       if (!MULKSUZ_PAKET && a.yerel !== undefined && a.yerel > 0) {
         sayacOranEkle((para.musluk.yerelNpc ??= sayacSifir()), a.yerel, dt);
@@ -158,8 +160,9 @@ export function paraAkisiYaz(d: Dunya, oyuncu: string, akis: Omit<ParaAkisi, "t0
   if (mo === undefined) return;
   const kasa = akis.kasa.filter((e) => e.oran > 0);
   const sebeke = akis.sebeke ?? 0;
+  const tasima = akis.tasima ?? 0;
   const yerel = MULKSUZ_PAKET ? 0 : (akis.yerel ?? 0);
-  if (mo.paraAkisi === undefined && akis.ihracat === 0 && akis.nufus === 0 && akis.ithalat === 0 && akis.isletme === 0 && akis.vergi === 0 && sebeke === 0 && yerel === 0 && kasa.length === 0) return;
+  if (mo.paraAkisi === undefined && akis.ihracat === 0 && akis.nufus === 0 && akis.ithalat === 0 && akis.isletme === 0 && akis.vergi === 0 && sebeke === 0 && tasima === 0 && yerel === 0 && kasa.length === 0) return;
   // İlk satış anı (A0-11, §7.1): yerel satış oranı ilk kez > 0 olduğunda bir kez yazılır (muhasebe adım 0 ile işlenmiş; `d.zaman` = bu çözümün anı).
   if (yerel > 0) mo.ilkSatisT ??= d.zaman;
   const onceki = mo.paraAkisi;
@@ -177,6 +180,8 @@ export function paraAkisiYaz(d: Dunya, oyuncu: string, akis: Omit<ParaAkisi, "t0
     // `sebeke` > 0 iken yazılır, 0 iken alan SİLİNİR (kanonik özet: şebeke yokken alan yok).
     if (sebeke > 0) onceki.sebeke = sebeke;
     else delete onceki.sebeke;
+    if (tasima > 0) onceki.tasima = tasima;
+    else delete onceki.tasima;
     // `yerel` (G7-2) aynı kalıpla: > 0 iken yazılır, 0 iken alan SİLİNİR.
     if (yerel > 0) onceki.yerel = yerel;
     else delete onceki.yerel;
@@ -184,6 +189,7 @@ export function paraAkisiYaz(d: Dunya, oyuncu: string, akis: Omit<ParaAkisi, "t0
   }
   const yeni: ParaAkisi = { t0: d.zaman, ihracat: akis.ihracat, nufus: akis.nufus, ithalat: akis.ithalat, isletme: akis.isletme, vergi: akis.vergi, kasa };
   if (sebeke > 0) yeni.sebeke = sebeke;
+  if (tasima > 0) yeni.tasima = tasima;
   if (yerel > 0) yeni.yerel = yerel;
   mo.paraAkisi = yeni;
 }

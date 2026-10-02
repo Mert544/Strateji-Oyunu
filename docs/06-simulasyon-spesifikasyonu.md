@@ -119,6 +119,13 @@ tıklar arasında hazinenin tükenip mal gelmeye devam etmesini önlemek için l
   Kullanılmayan rezerv sivile açılmaz.
 - **Gecikme:** akış `f` kaynakta hemen düşülür; hedefe `t + yol süresi`nde `oran_delta(+f)` ile ulaşır.
   Sonraki çözüm akışı `f'` yaparsa fark `(f' − f)` aynı gecikmeyle planlanır; yoldaki mal korunur.
+- **Mülkte iç taşıma hizmeti (L3):** isteğe bağlı `lojistik.tasima.etkin` ile
+  gerçek sevk miktarı, kenar süreleri/türleri ve çözüm anındaki yakıt fiyatı
+  üzerinden saatlik bedel alınır. Depodan ayrıca yakıt düşmez; NPC liman primi
+  ve sanayi şebekesinden ayrıdır. Sıfır bakiye ücretli yeni sevki durdurur,
+  ücretsiz il içi havuz ve yoldaki teslimler sürer. Ücret akışta sabitlenir;
+  varış veya yeniden çözüm başına alınmaz. Para akışında ve birikimli defterde
+  ayrı `tasima` kalemidir. [Formül, kayıt ve bütçe sözleşmesi](agent-results/codex-l3-tasima-sozlesmesi.md).
 - **Kapsam ("nerede açık, neden"):** her bölge × mal için karşılanma oranı, en yakın kaynağa süre
   (çok kaynaklı Dijkstra) ve neden: `kapasite` (yol var ama kenar dolu), `girdi_eksik` (hiçbir yerde fazla yok),
   `mesafe` (kaynak > 72 saat), `erisim_yok` (yol yok), `yok` (karşılanıyor).

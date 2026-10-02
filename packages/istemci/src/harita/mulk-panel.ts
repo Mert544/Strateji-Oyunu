@@ -318,7 +318,9 @@ export function mulkHazinePaneli(d: IsletmeDurumu | null, sebeke = ""): string {
   if (d.araziDegeriMili !== null) s += satir("Arazi değeri", paraMili(d.araziDegeriMili), "Arsalarının satın alma bedeli toplamı.");
   if (d.araziVergisiMili !== null) s += satir("Arazi vergisi", paraMili(d.araziVergisiMili, "yukari"), "Tahakkuk eden, henüz ödenmemiş.");
   s += `</dl>`;
-  return s + sebeke;
+  const tasimaBedeli = d.tasimaGideriMiliSaat === undefined ? "Bilinmiyor" : `${paraMili(d.tasimaGideriMiliSaat, "yukari")}/saat`;
+  const tasima = `<section aria-label="İç sevkiyat hizmet gideri"><h3>İç sevkiyat hizmet gideri</h3><dl class="mulk-dl">${satir("Bütün işletmelerinin iç sevkleri", tasimaBedeli)}</dl><p class="ipucu-metin">Bütün malların otomatik taşıma hizmeti; depodan ek yakıt düşmez. İthalatın liman primi ve tesis şebekesi ayrıdır.</p><p class="ipucu-metin">Son hesaplanan saatlik gider; toplam harcama değildir. Hazine’nin net akışına dahildir. Ücretli sevkiyat için pozitif nakit gerekir; yoldaki malın teslimi sürer.</p></section>`;
+  return s + sebeke + tasima;
 }
 
 export function mulkMalPaneli(d: IsletmeDurumu | null, ad: MulkAdlari): string {

@@ -284,6 +284,8 @@ export interface IsletmeDurumu {
   sebekeGiderleri?: Array<{ mal: string; miktarMiliSaat: number; bedelMiliSaat: number }>;
   /** Bütün sahipli işletmelerin aynı çözümdeki sanayi yakıt tahsisi. Eksik alan veya farklı mal/çözüm varsa bilinmez; gerçek sıfır korunur. */
   yakitTedariki?: YakitTedarikiGorunumu;
+  /** Bütün sahipli işletmelerin aynı çözümdeki gerçek iç taşıma hizmeti gideri. Eksik kaynak/ücret varsa bilinmez; 0 gerçek sıfırdır. */
+  tasimaGideriMiliSaat?: number;
   /** Sahibinin karede doğrulanan düğüm bazlı satış kaynakları. */
   pazar?: PazarKaynagi[];
   /** Oyuncunun istenen oranı > 0 olan en az bir İHRACAT emri var mı (`kare.ozel.emirler`; yalnız true iken yazılır). Defter "satışın yolda" gösterimi için (`defter.ts` `ilkSatisBekliyor`). */

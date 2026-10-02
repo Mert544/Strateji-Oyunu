@@ -24,6 +24,7 @@ import { ppmUygula } from "../sabit";
 import type { Akis, Baglam, Dunya, Mili, OyuncuDurumu, OyuncuId } from "../tipler";
 import { BOS_DUGUMLER, oyuncuDugumleri } from "../dugum";
 import { minMaliyetAkis } from "./mcf";
+import { maliyetliTasimaKenari, tasimaEtkin } from "./tasima";
 import type { GrafKenari } from "./graf";
 
 /** Bir oyuncunun kompakt lojistik ağı. */
@@ -267,6 +268,7 @@ export function akisCoz(
   const girdi: number[] = [];
 
   for (const o of d.oyuncular) {
+    const tasimaKapali = tasimaEtkin(d, ic) && o.hazine.miktar <= 0;
     const ag = oyuncuAgiKur(d, ctx, o, sahipli?.get(o.id) ?? (sahipli ? BOS_DUGUMLER : undefined), ortak);
     agler.push(ag);
     const uyeler = ag.uyeler;
@@ -375,6 +377,7 @@ export function akisCoz(
       for (let i = 0; i < ag.kenarlar.length; i++) {
         const e = ag.kenarlar[i] as number;
         let kap = kalan[e] as number;
+        if (tasimaKapali && maliyetliTasimaKenari(d, ic, d.kenarlar[e]!)) kap = 0;
         if (!askeri) {
           const sv = (sivilTavan[i] as number) - (sivilKul[e] as number);
           if (sv < kap) kap = sv;

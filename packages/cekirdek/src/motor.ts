@@ -11,6 +11,7 @@ import { stokOncelikliYakit } from "./ekonomi/yakit";
 import { kuyrukBas, kuyrukCikar } from "./kuyruk";
 import { dunyaKur } from "./kurulum";
 import { lojistikCoz, lojistikKomutu } from "./lojistik/cozum";
+import { tasimaEtkin } from "./lojistik/tasima";
 import { durumOzeti } from "./ozet";
 import { anlikGoruntuCoz, anlikGoruntuUyarla, dunyaIcerikUyumu, kuralSurumuHesapla } from "./serilestir";
 import type { GocRaporu, GocSecenegi } from "./serilestir";
@@ -26,7 +27,7 @@ import { markaSifirla } from "./mulk/dukkanKomut";
 import { MULKSUZ_PAKET } from "./mulksuz";
 import { yurtPlanla, yurtUygula } from "./mulk/yurt";
 import type { YurtPlani } from "./mulk/yurt";
-import { eskimisEsikleriBuda, oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
+import { eskimisEsikleriBuda, hazineUzlastir, oyuncuBul, stokGelenEkle, stokUzlastir } from "./stok";
 import { arastirmaBitti, teknolojiKomutu } from "./teknoloji";
 import { GUN, KAMU_SAHIP_ONEKI, SAAT } from "./tipler";
 import type {
@@ -146,9 +147,12 @@ export class Simulasyon {
     // adımında uzlaştırılır; ardından yeni tahsis yazılır. Aynı kuralla yükleme dokunulmaz.
     const yakitGocu = goc.kuralDegisti && !MULKSUZ_PAKET &&
       dunya.bolgeler.some((b) => b.yakitTedariki !== undefined || stokOncelikliYakit(ic, b) >= 0);
-    if (yakitGocu) for (const b of dunya.bolgeler) for (let m = 0; m < b.stoklar.length; m++) stokUzlastir(dunya, b.indeks, m);
-    if (goc.yenidenIndekslendi || yakitGocu) s.baglam.kirlet(s.dunya, yakitGocu);
-    if (yakitGocu) s.calistirKadar(s.dunya.zaman);
+    const tasimaGocu = goc.kuralDegisti && !MULKSUZ_PAKET &&
+      (tasimaEtkin(dunya, ic) || dunya.bolgeler.some((b) => b.tasimaBedeliMiliSaat !== undefined) || dunya.mulk?.oyuncular.some((o) => o.paraAkisi?.tasima !== undefined) === true);
+    const tedarikGocu = yakitGocu || tasimaGocu;
+    if (tedarikGocu) for (const b of dunya.bolgeler) for (let m = 0; m < b.stoklar.length; m++) stokUzlastir(dunya, b.indeks, m);
+    if (goc.yenidenIndekslendi || tedarikGocu) s.baglam.kirlet(s.dunya, tedarikGocu);
+    if (tedarikGocu) s.calistirKadar(s.dunya.zaman);
     const sonuclar: KomutSonucu[] = [];
     for (const k of kalanGunluk) {
       const r = s.uygula(k);
@@ -209,7 +213,7 @@ export class Simulasyon {
       const mo = mulkOyuncuBul(d, k.oyuncu);
       if (mo !== undefined) mo.sonEtkinlik = k.t;
     }
-    ctx.kirlet(d);
+    ctx.kirlet(d, tasimaEtkin(d, this.ic));
     return sonuc;
   }
 
@@ -414,6 +418,14 @@ export class Simulasyon {
           stokUzlastir(d, v.bolge, v.mal);
           ctx.kirlet(d, v.mal === stokOncelikliYakit(ctx.ic, d.bolgeler[v.bolge]!));
         }
+        break;
+      }
+      case "tasima_hazine_esik": {
+        const o = oyuncuBul(d, v.oyuncu);
+        if (!tasimaEtkin(d, ctx.ic) || !o || o.hazine.surum !== v.surum || !d.lojistik.akislar.some((a) => a.sahip === o.id && (a.tasimaBedeliMiliSaat ?? 0) > 0)) break;
+        hazineUzlastir(d, o.id);
+        // Bakiye komutla artırılmışsa eski erken eşik ücretli sevki durdurmaz.
+        if (o.hazine.miktar === 0) ctx.kirlet(d, true);
         break;
       }
       case "insaat_bitti":

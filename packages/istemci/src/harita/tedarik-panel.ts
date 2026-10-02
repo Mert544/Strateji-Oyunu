@@ -35,6 +35,8 @@ export interface TedarikBolgesi {
   yakitTedariki?: YakitTedarikiGorunumu;
   /** İç ağdan ulaşmış hız; pazar ithalatından ayrıdır. [] bilinen sıfır, yokluk bilinmiyor. */
   gelenOran?: ReadonlyArray<readonly [mal: string, miliSaat: number]>;
+  /** Bu kaynaktan çıkan bütün mal sevklerinin son çözümdeki hizmet bedeli; yokluk bilinmiyor. */
+  tasimaBedeliMiliSaat?: number;
   /** Yalnız ithalat emirleri; ihracat emirleri burada yer almaz. */
   emirler: readonly TedarikEmri[];
   /** Sahiplik ve mülk kipi/liman şartının kaynaktan doğrulanmış sonucu. */
@@ -202,7 +204,9 @@ export class TedarikPaneli {
   }
 
   private lojistikHtml(d: TedarikDurumu, b: TedarikBolgesi, mal: string): string {
-    return lojistikGorunumuHtml({ bolgeId: b.id, mal, bolgeler: d.bolgeler, lojistik: d.lojistik });
+    const bedel = (n: number | undefined): string => n === undefined ? "Bilinmiyor" : `${paraMili(n, "yukari")}/saat`;
+    return lojistikGorunumuHtml({ bolgeId: b.id, mal, bolgeler: d.bolgeler, lojistik: d.lojistik })
+      + `<section class="tdr-akis" aria-label="İç sevkiyat hizmet gideri"><h5>İç sevkiyat hizmet gideri</h5><dl class="tdr-gider"><div><dt>${esc(b.ad)} · çıkan sevkler</dt><dd>${bedel(b.tasimaBedeliMiliSaat)}</dd></div><div class="tdr-gider-toplam"><dt>Bütün işletmelerinin iç sevkleri</dt><dd>${bedel(d.lojistik?.tasimaBedeliMiliSaat)}</dd></div></dl><p class="ipucu-metin">Bütün malların otomatik taşıma hizmeti; depodan ek yakıt düşmez. İthalatın liman primi ve tesis şebekesi ayrıdır.</p><p class="ipucu-metin">Son hesaplanan saatlik gider; toplam harcama değildir. Hazine’nin net akışına dahildir. Ücretli sevkiyat için pozitif nakit gerekir; yoldaki malın teslimi sürer.</p></section>`;
   }
 
   html(): string {

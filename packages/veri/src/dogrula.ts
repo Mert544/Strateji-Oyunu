@@ -655,6 +655,9 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
     const mallar = new Set(icerik.mallar.map((m) => m.id));
     const birlikler = new Set(icerik.birlikler.map((b) => b.id));
     const depolanamaz = new Set(icerik.mallar.filter((m) => m.depolanabilir === false).map((m) => m.id));
+    if (p.lojistik.tasima?.etkin === true && (!mallar.has("yakit") || depolanamaz.has("yakit"))) {
+      hatalar.push("lojistik.tasima.etkin: bilinen ve depolanabilir yakit mali gerekli");
+    }
     for (const [i, m] of (p.mulk?.sebeke?.mallar ?? []).entries()) {
       if (m.stokOncelikli === true && (!mallar.has(m.mal) || depolanamaz.has(m.mal))) {
         hatalar.push(`mulk.sebeke.mallar[${i}].stokOncelikli: bilinen ve depolanabilir yakit mali gerekli`);
