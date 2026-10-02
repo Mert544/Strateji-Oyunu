@@ -35,7 +35,7 @@ import { DukkanPaneli, dukkanPanelParam, panelEylemiOku } from "./dukkan-panel";
 import { dukkanTuruMallari } from "./etkin";
 import type { Defter } from "@bolge/protokol";
 import { bildir } from "../arayuz/bildirim";
-import { sebekeBolumuHtml, sebekeFiyatlari, sebekeSatirlari } from "./sebeke-gider";
+import { sebekeGercekBolumuHtml } from "./sebeke-gider";
 import { BekleyenOdak } from "./bekleyen-odak";
 import type { OdakKoku } from "./bekleyen-odak";
 import { PazarSatPaneli, pazarOrani, pazarSatEylemiOku } from "./pazar-sat";
@@ -595,7 +595,6 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     });
   }
   // Yöntem seçici ("Yöntemi değiştir") ve Hazine'de şebeke gideri: komut `yontem_degistir` bağdaştırıcının ucundan; sahte bağdaştırıcıda ve içerik olmadan çıkmaz.
-  const sebekeFiyat = sebekeFiyatlari(ic);
   // Bekleyen odak: kabuk çizimi erteleyebilir (fareyle basılıyken); hedef öğe çizimden sonra (`cizildi`) odaklanır, `setTimeout(focus)` değil (P13 f4:714)
   const pazarOlaylari = new AbortController();
   const odakKoku: OdakKoku = { querySelector: (q) => document.querySelector<HTMLElement>(q) };
@@ -784,7 +783,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
           return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch(), satisBekliyor) : undefined, { ust, dukkan });
         }
         case "hazine":
-          return mulkHazinePaneli(d, sebekeBolumuHtml(sebekeSatirlari(sebekeFiyat, d?.sebeke ?? []), ad.mal));
+          return mulkHazinePaneli(d, sebekeGercekBolumuHtml(d?.sebekeGiderleri, ad.mal));
         case "mal":
           return mulkMalPaneli(d, ad);
         case "uretim":

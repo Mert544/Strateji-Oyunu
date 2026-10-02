@@ -5,7 +5,9 @@
 ## Son tamamlanan iş
 
 D4: 12 ayrı GPT-6.1 Sol alt ajan iki dalgayla görevlerini bitirdi; ortam sınırı
-ana koordinatör dahil 7 eşzamanlı ajan. Çalışan uygulayıcı kalmadı.
+ana koordinatör dahil 7 eşzamanlı ajan. Ardından L1 gider dökümü başladı;
+mevcut altı ajan yeniden görevlendirildi. Kullanıcının son düzeltmesiyle yeni
+ajan açılmayacak, mevcut havuz kullanılacak.
 [Görevler](codex-d4-gorevler.md), [teslim/kanıt](codex-d4-2026-10-02.md),
 [lojistik Ar-Ge](codex-d4-lojistik-arge.md).
 
@@ -26,6 +28,34 @@ metin/görünüm değişikliklerinden sonra yalnız client tsc/build güncellend
 18 test/kök kontrol gereksiz tekrar edilmedi. Son dunya gzip 379,9KB/400KB.
 Tarayıcı/mobil, tam paket, lint ve Postgres bu dalgada çalıştırılmadı.
 
+D1–D4 GitHub'a gönderildi: `codex/cok-katmanli-gelistirme` dalı,
+`a6a3369` (`feat: üretim, tedarik, ilçe ve ordu katmanlarını geliştir`).
+Claude ana dalına merge veya dağıtım yapılmadı. Sonraki geliştirmeler aynı
+dalda devam eder; kullanıcı commit/push için yetki verdi.
+
+## L1 gider dökümü tamamlandı
+
+- Protokol: `l1_protokol`, özel karede gerçek şebeke gideri ve mevcut
+  gerçekleşen ithalat oranının fiyat kırılımı; çekirdek davranışı değişmez.
+- Köprü: `d4_b2_baglanti`, düğümde yuvarlanmış bedelleri toplar;
+  eksik alan bilinmeyen, boş liste bilinen sıfırdır.
+- Tedarik: `d4_a3_tedarik`, bölge/mal bazında gider görünümü.
+- Hazine: `d4_b4_gorsel`, sunucu bedellerini gösterir; kök entegrasyonu yapar.
+- Operasyon: `d4_b6_operasyon`, tek kısa hedefli doğrulama dalgası.
+- Ar-Ge: `d4_a6_arge`, gerçek rota/akış/süre/kapasite görünürlüğünün sonraki
+  dilimini B2 ve protokol sahibiyle hazırlar; tahmini teslimat icat edilmez.
+
+Üç hedefli protokol vakası doğrulandı: gerçek para akışıyla eşleşme, iki
+düğümde ayrı yuvarlama, sahibine özel veri/eski şema/bilinmeyen-sıfır ayrımı.
+İlk koşuda ikinci işletmenin test kurulum malzemesi eksikti; yalnız o fikstür
+düzeltilip başarısız vaka tekrarlandı. Kök ve istemci tip kontrolü, istemci
+derlemesi geçti; dünya gzip 379,9KB/400KB, harita 486,1KB. Tam test paketi,
+tarayıcı/mobil, lint ve Postgres çalıştırılmadı.
+
+Sonraki L1.2: aynı ajanlarla iç sevk planı, kaynak/hedef, gerçek yol süresi
+ve hedefte ulaşmış toplam gelen oran görünümü. ETA, sevkiyat ilerleme yüzdesi
+ve rota başına yoldaki miktar mevcut veriden türetilmeyecek.
+
 ## Güncel ürün yönü ve sıradaki somut dilimler
 
 Kullanıcı lojistik, petrol/yakıt ve tedarik aşamalarının atlanmamasını istiyor.
@@ -33,10 +63,9 @@ Birebir gerçek dünya beklemiyor; konum, rota, tedarik ve stok kararlarını
 anlamlı kılan detay, ihtiyaç oldukça açılan sunum ve genel Ar-Ge önemli.
 Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları korunur.
 
-1. **L1 kalan:** gerçek derlenmiş otomatik şebeke birim bedeli ve miktarını
-   özel karede tek kaynaktan taşı; Tedarik/Hazine ayrıntısına bağla. İthalat
-   fiyat kırılımını ayrıca göster. Sahibin gerçek ağ akışı/süre/kapasite bilgisi
-   mevcut karede yok; bunu net stok formülünden çıkarmadan ayrıca taşı.
+1. **L1 kalan:** gider dökümleri tamamlandı. Sahibin gerçek iç sevk planı,
+   kaynak/hedef, yol süresi ve ulaşmış toplam gelen oranını özel kareye taşı.
+   Kenar kapasitesi ayrı sonraki dilim; net stok formülünden akış çıkarılmaz.
 2. **L2:** rafineriyi mülk ayak izi/inşa tablosuyla aç; sanayi yakıtında
    stok öncelikli, kalan açık otomatik şebeke yaklaşımını tek çözücüde uygula.
    Ordu önceliği, mal/para korunumu ve kural dönemi/replay birlikte tasarlansın.
@@ -57,7 +86,8 @@ Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları ko
 ## Gerçek sınırlar ve yeniden başlama
 
 - Claude temeli HEAD `0e00abcf6ef7f06b818da27dcd6c4849c5292b9f`. D1–D4
-  katkıları yerel kirli çalışma ağacında. Commit/push/dağıtım yapılmadı.
+  katkıları `a6a3369` ile GitHub geliştirme dalında; L1 aynı dalda ilerliyor.
+  Dağıtım yapılmadı.
   Stash/reset/temizleme yok; ilk birleşim yedeği `/tmp/strateji-d2-integration`.
 - İdari veri 81 il/973 ilçe; oynanabilir arsa manifesti hâlâ 3 ilçe. Sokak/bina
   PMTiles dosyaları yok, arsa görünümüne geri dönüş sürüyor.

@@ -1,5 +1,6 @@
 /** Gerçek ticaret_emri/ithalat kaynağına bağlı sürekli tedarik yönetimi. */
 import type { Komut } from "@bolge/cekirdek";
+import type { IthalatGideri, SebekeGideri } from "@bolge/protokol";
 import { esc, paraMili, sayi, sureMetni } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import { ikon } from "../tasarim/ikon";
@@ -22,6 +23,9 @@ export interface TedarikBolgesi {
   stoklar: ReadonlyMap<string, number>;
   /** Sunucunun hesapladığı nakit ithalat çarpanı; eski sunucuda yoktur. */
   ithNetPpm?: number;
+  /** Son gerçekleşen akışın sunucudan gelen giderleri; [] bilinen sıfır, yokluk bilinmiyor. */
+  sebekeGiderleri?: readonly SebekeGideri[];
+  ithalatGiderleri?: readonly IthalatGideri[];
   /** Yalnız ithalat emirleri; ihracat emirleri burada yer almaz. */
   emirler: readonly TedarikEmri[];
   /** Sahiplik ve mülk kipi/liman şartının kaynaktan doğrulanmış sonucu. */
@@ -116,6 +120,35 @@ export class TedarikPaneli {
     return null;
   }
 
+  private ithalatGideriHtml(b: TedarikBolgesi, mal: string): string {
+    let h = '<section class="tdr-akis"><h5>Gerçekleşen ithalatın saatlik gideri</h5>';
+    if (b.ithalatGiderleri === undefined) return h + '<p class="ipucu-metin">Bu işletmenin gerçekleşen ithalat gideri bilinmiyor; sunucudan gider dökümü bekleniyor.</p></section>';
+    const g = b.ithalatGiderleri.find((x) => x.mal === mal);
+    if (!g) return h + `<p>Bu mal için gerçekleşen ithalat yok. Saatlik ithalat gideri: <b>${paraMili(0, "yukari")}/sa</b>.</p></section>`;
+    h += `<p>${esc(this.malAdi(mal))}: <b>${sayi(g.miktarMiliSaat / 1000, 3)} birim/sa</b> · Dünya referans fiyatı: ${paraMili(g.birimFiyatMili, "yukari")}/birim.</p>`;
+    const satir = (ad: string, miktar: number): string => `<div><dt>${ad}</dt><dd>${paraMili(miktar, "yukari")}/sa</dd></div>`;
+    h += '<dl class="tdr-gider">';
+    h += satir("Mal bedeli", g.malBedeliMiliSaat);
+    h += satir("Pazar makası", g.makasMiliSaat);
+    h += satir("Liman primi", g.limanPrimiMiliSaat);
+    h += satir("Komisyon", g.komisyonMiliSaat);
+    h += satir("Vergi / tarife (Hazine’ye geri yazılır)", g.vergiMiliSaat);
+    h += `<div class="tdr-gider-toplam"><dt>Toplam net ithalat gideri</dt><dd>${paraMili(g.netBedelMiliSaat, "yukari")}/sa</dd></div></dl>`;
+    h += '<p class="ipucu-metin">Sunucu bu dökümü son gerçekleşen ithalat hızı ve güncel fiyatlarla hesaplar. Geçmişte tahsil edilmiş tutarı göstermez. Vergi / tarife Hazine’ye geri yazıldığı için net giderin üzerine tekrar eklenmez.</p>';
+    return h + '</section>';
+  }
+
+  private sebekeGideriHtml(b: TedarikBolgesi, mal: string): string {
+    const g = b.sebekeGiderleri?.find((x) => x.mal === mal);
+    const sebekeMali = b.id.includes("#") && this.p.ic.param.mulk?.sebeke?.mallar.some((m) => m.mal === mal);
+    if (!g && !sebekeMali) return "";
+    let h = '<section class="tdr-akis"><h5>Tesislerin otomatik şebeke tedariki</h5>';
+    if (b.sebekeGiderleri === undefined) return h + '<p class="ipucu-metin">Bu malın şebeke tüketimi ve bedeli bilinmiyor; sunucudan gider bilgisi bekleniyor.</p></section>';
+    if (!g) return h + `<p>Bu mal için son çözümde şebeke tüketimi yok. Şebeke gideri: <b>${paraMili(0, "yukari")}/sa</b>.</p></section>`;
+    h += `<p>${esc(this.malAdi(mal))}: <b>${sayi(g.miktarMiliSaat / 1000, 3)} birim/sa</b> otomatik tüketim.</p><dl class="tdr-gider"><div><dt>Şebeke birim fiyatı</dt><dd>${paraMili(g.birimFiyatMili, "yukari")}/birim</dd></div><div class="tdr-gider-toplam"><dt>Şebeke gideri</dt><dd>${paraMili(g.bedelMiliSaat, "yukari")}/sa</dd></div></dl><p class="ipucu-metin">Son çözümün gerçek tüketimi ve şebeke fiyatıyla hesaplanır. Bu gider ithalat emrinin giderinden ayrıdır; ayrıntısı Hazine’de görünür.</p>`;
+    return h + '</section>';
+  }
+
   private ozetHtml(b: TedarikBolgesi, mal: string, metin: string): string {
     const emir = b.emirler.find((e) => e.mal === mal);
     const oran = tedarikOrani(metin);
@@ -127,6 +160,9 @@ export class TedarikPaneli {
         : '<p class="tdr-uyari">Bu malın stoğu ticarette ve stok gerektiren işlemlerde kullanılır. Tesislerin otomatik şebeke tedariki ayrıca Hazine’de görünür; bu stok onu azaltmaz.</p>';
     }
     if (emir && emir.gerceklesenSaat < emir.oranSaat) h += '<p class="tdr-uyari">İstenen miktarın tamamı karşılanmamış. Pazar arzı ve nakit durumu gerçekleşen tedariki sınırlayabilir.</p>';
+    h += this.ithalatGideriHtml(b, mal);
+    h += this.sebekeGideriHtml(b, mal);
+    h += '<section class="tdr-tahmin"><h5>Yeni emir için tahmin</h5>';
     const f = this.p.referans(mal, b.id);
     if (f && Number.isFinite(f.mili) && f.mili >= 0) {
       h += `<p>${f.yaklasik ? "Yaklaşık taban fiyatı" : "Güncel dünya referans fiyatı"}: <b>${paraMili(f.mili, "yukari")}/birim</b>. Referans fiyatı ödenecek nihai tutar değildir.</p>`;
@@ -135,6 +171,7 @@ export class TedarikPaneli {
         if (oran !== null) h += `<p>İstenen orana göre tahmini gider: <b>${paraMili(oran / 1000 * f.ithalatBirimMili, "yukari")}/sa</b>. Gerçek gider gerçekleşen miktara ve işlem fiyatına bağlıdır.</p>`;
       } else h += '<p class="ipucu-metin">İthalatın toplam birim maliyeti bilinmiyor; makas, komisyon ve varsa tarife nihai bedeli etkiler.</p>';
     } else h += '<p class="ipucu-metin">Birim fiyat bilgisi bekleniyor. Tedarik ücretlidir.</p>';
+    h += '</section>';
     const engel = this.engel(b, mal, oran);
     if (engel) h += `<p class="tdr-uyari">${esc(engel)}</p>`;
     return h;

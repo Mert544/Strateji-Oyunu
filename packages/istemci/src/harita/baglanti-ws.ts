@@ -359,6 +359,8 @@ export class WsBaglanti implements MulkBaglantisi {
           emirler: oz.emirler.flatMap(([mi, yon, oranSaat, gerceklesenSaat]) => yon !== 1 || dizin.mallar[mi] === undefined ? [] : [{ mal: dizin.mallar[mi]!, oranSaat, gerceklesenSaat }]),
           uygun: true,
           ...(oz.isletme?.ithNetPpm === undefined ? {} : { ithNetPpm: oz.isletme.ithNetPpm }),
+          ...(oz.sebekeGiderleri === undefined ? {} : { sebekeGiderleri: oz.sebekeGiderleri }),
+          ...(oz.ithalatGiderleri === undefined ? {} : { ithalatGiderleri: oz.ithalatGiderleri }),
           ...(yeniEmirUygun === undefined ? {} : { yeniEmirUygun }),
           ...(yeniEmirUygun === false ? { yeniEmirNedeni: `Satış ve alış emri yuvaların dolu (${yuva}). Bir emri bırak ya da Ticaret ofisi kur.` } : {}),
         };
@@ -633,6 +635,22 @@ export class WsBaglanti implements MulkBaglantisi {
     const mallar = this.hos?.dizin.mallar ?? [];
     const yontemler = this.hos?.dizin.yontemler ?? [];
     const sebeke = new Map<string, number>();
+    const kendiIsletmeleri = k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`));
+    // Tüm düğümler gider karesini vermeden kısmi toplamı gerçek toplam diye göstermeyiz.
+    // Hiç düğüm yoksa yeni alanın sunucuda desteklenip desteklenmediği bilinmez.
+    const sebekeGiderleri = kendiIsletmeleri.length > 0 && kendiIsletmeleri.every((b) => b.ozel?.sebekeGiderleri !== undefined)
+      ? new Map<string, { mal: string; miktarMiliSaat: number; bedelMiliSaat: number }>() : undefined;
+    if (sebekeGiderleri !== undefined) {
+      for (const b of kendiIsletmeleri) for (const g of b.ozel!.sebekeGiderleri!) {
+        let toplam = sebekeGiderleri.get(g.mal);
+        if (toplam === undefined) {
+          toplam = { mal: g.mal, miktarMiliSaat: 0, bedelMiliSaat: 0 };
+          sebekeGiderleri.set(g.mal, toplam);
+        }
+        toplam.miktarMiliSaat += g.miktarMiliSaat;
+        toplam.bedelMiliSaat += g.bedelMiliSaat;
+      }
+    }
     let ihracatEmriVar = false;
     const pazar: PazarKaynagi[] = [];
     // Net stok formülü gelenOran'ı ayrı taşımaz. Pozitif/negatif net oranı
@@ -765,6 +783,7 @@ export class WsBaglanti implements MulkBaglantisi {
       pazar,
       mallar: [...stok.entries()].sort((a, b) => a[0] - b[0]).map(([m, x]) => ({ mal: mallar[m] ?? String(m), ...x })),
       ...(sebeke.size > 0 ? { sebeke: [...sebeke.entries()] } : {}),
+      ...(sebekeGiderleri === undefined ? {} : { sebekeGiderleri: [...sebekeGiderleri.values()].sort((a, b) => a.mal.localeCompare(b.mal)) }),
       ...(ihracatEmriVar ? { ihracatEmriVar: true } : {}),
     };
   }

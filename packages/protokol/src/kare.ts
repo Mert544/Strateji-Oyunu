@@ -32,7 +32,7 @@
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { GUN, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, ikmalTalebi, ilceYasamGorunumu, kamuBloklari, teknolojiYayilimiPpm, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
+import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
 import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
 
 /** Dikdörtgen kamu bloğu: `[x0, y0, x1, y1]` = x0..x1 × y0..y1 (dört uç dahil) hücreleri ("x:y" kimliği), hepsi kamu arsası. */
@@ -100,6 +100,29 @@ export interface GenelBolgeKaresi {
   dukkanlar?: GenelDukkan[];
 }
 
+/** Son çözümdeki şebeke tüketiminin derlenmiş fiyatla saatlik gideri (düğüm başına çekirdekle aynı yuvarlama). */
+export interface SebekeGideri {
+  mal: string;
+  miktarMiliSaat: Mili;
+  birimFiyatMili: Mili;
+  bedelMiliSaat: Mili;
+}
+
+/** Gerçekleşen ithalat oranının güncel fiyatla dökümü; tarihsel ödenmiş tutar değildir. */
+export interface IthalatGideri {
+  mal: string;
+  miktarMiliSaat: Mili;
+  /** Dünya referans fiyatı; ithalatın net birim fiyatı değildir. */
+  birimFiyatMili: Mili;
+  malBedeliMiliSaat: Mili;
+  makasMiliSaat: Mili;
+  limanPrimiMiliSaat: Mili;
+  komisyonMiliSaat: Mili;
+  /** Hazineye geri yazılan tarife; net giderin üzerine tekrar eklenmez. */
+  vergiMiliSaat: Mili;
+  netBedelMiliSaat: Mili;
+}
+
 /** Yalnız sahibine giden bölge verisi (ham çekirdek birimleri). */
 export interface OzelBolgeKaresi {
   /** Mal indeksine göre stok formülleri. */
@@ -130,9 +153,21 @@ export interface OzelBolgeKaresi {
   /**
    * Yalnız ekleme (isteğe bağlı, yalnız sahibine; G6 şebeke, G9 faturası için): düğümün şebekeden SON ÇÖZÜMDE aldığı miktar `[mal kimliği, mili-birim/saat]`: önce elektrik
    * (`b.elektrik.sebekeMili`, depolanamaz anlık denge yolu), sonra stoksuz tüketim anı yolundaki depolanabilir mallar (`b.sebekeTuketim`; mal kimliğine göre sıralı). Yalnız `> 0`
-   * olanlar yazılır; şebeke bloğu yokken/alım yokken alan YAZILMAZ. Birim fiyat kareye girmez (veri paketinden `param.mulk.sebeke`); bedel = miktar x fiyat istemcide.
+   * olanlar yazılır; alım yokken alan YAZILMAZ. Bu eski demet korunur; doğrulanmış fiyat ve bedel `sebekeGiderleri` alanındadır.
    */
   sebeke?: Array<[mal: string, miliSaat: Mili]>;
+  /**
+   * Yalnız sahibinin mülk işletme düğümünde: son çözümün gerçek tüketimi ve `ic.mulk.sebeke` fiyatıyla giderler.
+   * Bağlam gerekmez. `[]` bilinen sıfır giderdir (kural kapalı veya alım yok); alanın yokluğu eski sunucu/kapsam dışı demektir.
+   * Yalnız pozitif tüketim listelenir; sıralama elektrik, ardından derlenmiş stoksuz mal sırası. Bedeller toplanmadan önce düğümde yuvarlanır.
+   */
+  sebekeGiderleri?: SebekeGideri[];
+  /**
+   * Yalnız sahibinin mülk işletmesinde ve çözüm bağlamı varken: mevcut pozitif gerçekleşen ithalat emirlerinin güncel referans fiyatla saatlik dökümü.
+   * Önce miktar × referans fiyat, ardından çekirdeğin makas/liman/tarife/komisyon yuvarlaması uygulanır; birim net fiyat × miktar hesabı değildir.
+   * `[]` gerçekleşen ithalat yok demektir; alan yoksa tutar bilinmiyor/kapsam dışı. Tarihsel tahsilat veya ayrı iç taşıma gideri değildir.
+   */
+  ithalatGiderleri?: IthalatGideri[];
   /**
    * Yalnız ekleme (isteğe bağlı NESNE alanı, yalnız sahibine; yalnız mülk işletme düğümünde; çözüm bağlamı yoksa YAZILMAZ): düğümün işletme bilgileri. Eski istemci (z.object bilinmeyen
    * anahtarı atar) alanı sessizce yok sayar; yeni değer eklemek demet büyütmez (`isletme` nesnesine yeni isteğe bağlı alan).
@@ -543,6 +578,22 @@ export function ilgiKaresiCikar(
         if (m > 0) sebeke.push([mal, m]);
       }
       if (sebeke.length > 0) girdi.ozel.sebeke = sebeke;
+      if (kaynak.ic.mulk !== undefined && b.merkez !== undefined) {
+        const giderler: SebekeGideri[] = [];
+        const sb = kaynak.ic.mulk.sebeke;
+        const ekle = (mal: number, miktar: Mili, fiyat: Mili): void => {
+          if (miktar <= 0) return;
+          giderler.push({
+            mal: (kaynak.ic.mallar[mal] as { id: string }).id,
+            miktarMiliSaat: miktar,
+            birimFiyatMili: fiyat,
+            bedelMiliSaat: carpBol(miktar, fiyat, MILI),
+          });
+        };
+        if (sb?.elektrik !== undefined) ekle(sb.elektrik.mal, b.elektrik?.sebekeMili ?? 0, sb.elektrik.birimFiyatMili);
+        for (const k of sb?.stoksuz ?? []) ekle(k.mal, b.sebekeTuketim?.[(kaynak.ic.mallar[k.mal] as { id: string }).id] ?? 0, k.birimFiyatMili);
+        girdi.ozel.sebekeGiderleri = giderler;
+      }
       // İşletme düğümü bilgileri (yalnız mülk düğümü: `merkez` tanımlı; çözüm bağlamı gerekir): etkin ihracat net çarpanı çekirdekten.
       const sahip = d.oyuncular.find((x) => x.id === oyuncu);
       if (kaynak.baglam !== undefined && b.merkez !== undefined && sahip !== undefined) {
@@ -552,6 +603,26 @@ export function ilgiKaresiCikar(
           ithNetPpm: nakitCarpanlari.ithalatPpm,
           emirYuvasi: ticaretEmirYuvasi(kaynak.ic, b),
         };
+        if (kaynak.ic.mulk !== undefined) {
+          const carp = ticaretCarpanlari(d, kaynak.baglam, sahip, b.merkez, b);
+          girdi.ozel.ithalatGiderleri = b.ticaretEmirleri.flatMap((e): IthalatGideri[] => {
+            if (e.yon !== "ithalat" || e.gerceklesenSaat <= 0) return [];
+            const fiyat = d.pazar.fiyat[e.mal] as Mili;
+            const brut = carpBol(e.gerceklesenSaat, fiyat, MILI);
+            const kr = ithalatKirilimi(brut, carp);
+            return [{
+              mal: (kaynak.ic.mallar[e.mal] as { id: string }).id,
+              miktarMiliSaat: e.gerceklesenSaat,
+              birimFiyatMili: fiyat,
+              malBedeliMiliSaat: brut,
+              makasMiliSaat: kr.makas,
+              limanPrimiMiliSaat: kr.prim,
+              komisyonMiliSaat: kr.komisyon,
+              vergiMiliSaat: kr.vergi,
+              netBedelMiliSaat: kr.nakit,
+            }];
+          });
+        }
       }
     }
     bolgeler.push(girdi);

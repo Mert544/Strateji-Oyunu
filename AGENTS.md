@@ -111,6 +111,15 @@ Dalga ve dosya sahipliği `docs/agent-results/codex-d4-gorevler.md` içindedir.
 Önceki 4 lider + 2 uzman düzeni bu genişletilmiş havuz için zorunlu aktif
 kadro sayısı değildir; görev ve iletişim kuralları geçerliliğini korur.
 
+## Mevcut ajanları yeniden kullanma — son kullanıcı düzeltmesi
+
+Kullanıcı mevcut ajan sayısının yeterli olduğunu, sürekli yeni ajan açılmamasını
+ve aynı anda yedi ajanın çalışmasını istedi. Yeni ajan oluşturma; mevcut
+ajanlara bağımlılığı çözülmüş uygulama, Ar-Ge ve entegrasyon görevleri ver.
+Ortam sınırı ana koordinatör dahil yedidir: altı alt ajan + koordinatör.
+Dosya sahipliği ve anlamlı görev ilkesi sürer; yalnız doluluk için yinelenen
+test veya rapor üretme. Bitiren ajan uygun sonraki görevde yeniden kullanılır.
+
 ## Lojistik ve anlamlı ayrıntı — kullanıcının son yönü
 
 - Üretim/tedarik genişletmelerinde petrol→yakıt, taşıma kapasitesi/süresi,

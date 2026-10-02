@@ -280,6 +280,8 @@ export interface IsletmeDurumu {
   }>;
   /** Şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (`kare.ozel.sebeke`; işletme düğümleri toplanmış; alım yoksa tanımsız). Bedel istemcide: miktar x şebeke fiyatı. */
   sebeke?: Array<[mal: string, miliSaat: number]>;
+  /** Bütün sahipli işletmelerin gerçek şebeke dökümü. Bedeller düğümde yuvarlanıp toplanır; eksik özel kare/alan varsa tanımsız, [] bilinen sıfırdır. */
+  sebekeGiderleri?: Array<{ mal: string; miktarMiliSaat: number; bedelMiliSaat: number }>;
   /** Sahibinin karede doğrulanan düğüm bazlı satış kaynakları. */
   pazar?: PazarKaynagi[];
   /** Oyuncunun istenen oranı > 0 olan en az bir İHRACAT emri var mı (`kare.ozel.emirler`; yalnız true iken yazılır). Defter "satışın yolda" gösterimi için (`defter.ts` `ilkSatisBekliyor`). */

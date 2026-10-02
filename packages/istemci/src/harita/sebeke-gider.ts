@@ -1,14 +1,16 @@
 /**
- * Şebeke gideri (saf; DOM yok): şebekeden alınan mal (elektrik, yakıt) için birim fiyat, yöntem başına TAHMİNİ saatlik gider ve işletmenin gerçekleşen şebeke alımının (`kare.ozel.sebeke`) bedeli.
+ * Şebeke gideri (saf; DOM yok): nominal yöntem tahminleri ve sunucunun gerçekleşen şebeke alımı/gideri ayrı tutulur.
  *
  * - Birim fiyat veride ayrı alan DEĞİL, çekirdekte türetilir (`derle.ts`: `carpBol(carpBol(taban, kamuIthalatCarpaniPpm, PPM), tavanOraniPpm, PPM)`; `kamuIthalatCarpaniPpm` =
  *   `mulk/kamuFiyat.ts`). İstemcide derlenmiş içerik yoktur ve çekirdek derleyicisini içe almak yapı kodunu pakete sürükler; bu yüzden formül BURADA kopyadır ve
  *   `test/harita-yontem-secici.test.ts` gerçek çekirdek derlemesiyle (`Simulasyon.ic.mulk.sebeke`) eşitliği bağlar (sürüklenirse test kırılır).
- * - Yöntem gideri: yöntemin şebeke malı girdileri (saatte, S ölçek) x birim fiyat; "tam kapasite tahmini". Gerçekleşen alım düğüm düzeyindedir (protokolde tesis kırılımı yok): Hazine yalnız toplamı gösterir.
+ * - Yöntem gideri: yöntemin şebeke malı girdileri (saatte, S ölçek) x birim fiyat; "tam kapasite tahmini".
+ * - Hazine gerçek gideri: `sebekeGiderleri` sunucuda düğüm başına yuvarlanıp toplanmıştır; renderer yeniden fiyatla çarpmaz. Tesis kırılımı yoktur.
  * - Tutarlar mili-₺; gider maliyettir: ekranda `paraMili(…, "yukari")`.
  */
-import { esc, fmt, paraMili } from "../arayuz/bicim";
+import { esc, fmt, paraMili, sayi } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
+import type { IsletmeDurumu } from "./baglanti";
 import { yontemMetni } from "./yontem-metin";
 import { carpBol } from "./olcek";
 
@@ -111,4 +113,25 @@ export function sebekeBolumuHtml(satirlar: readonly SebekeSatiri[], malAdi: (mal
   }
   h += `<li><b>${esc(yontemMetni("sebeke.toplam", { gider: paraMili(satirlar.reduce((t, s) => t + s.bedelMili, 0), "yukari") }))}</b></li>`;
   return h + `</ul><p class="ipucu-metin">${esc(yontemMetni("sebeke.not"))}</p>`;
+}
+
+/** Sahibinin bütün işletmelerine ait, sunucudan gelen gerçekleşen saatlik miktar ve bedel. */
+export type SebekeGercekSatiri = NonNullable<IsletmeDurumu["sebekeGiderleri"]>[number];
+
+/**
+ * Hazine gerçek şebeke dökümü. Bedelleri yeniden fiyatlamadan toplar; miktarları fiyatla çarpmak düğüm başına yuvarlamayı kaybettirir.
+ * `undefined`: bütün işletmelerin bedeli bilinmiyor; `[]`: sunucunun doğruladığı sıfır alım/gider.
+ */
+export function sebekeGercekBolumuHtml(satirlar: readonly SebekeGercekSatiri[] | undefined, malAdi: (mal: string) => string): string {
+  let h = `<section aria-label="Şebeke gideri"><h3>${esc(yontemMetni("sebeke.baslik"))}</h3>`;
+  if (satirlar === undefined) return h + '<p class="ipucu-metin" role="status">Şebeke gideri bilinmiyor; tüm işletmelere ait gider dökümü henüz alınmadı.</p></section>';
+  h += '<ul class="mulk-liste" data-alan="sebeke">';
+  if (satirlar.length === 0) h += `<li>${esc(yontemMetni("sebeke.yok"))}</li>`;
+  let toplamMili = 0;
+  for (const s of satirlar) {
+    toplamMili += s.bedelMiliSaat;
+    h += `<li>${esc(malAdi(s.mal))} · ${esc(sayi(s.miktarMiliSaat / 1000, 3))} birim/saat · ${esc(paraMili(s.bedelMiliSaat, "yukari"))}/saat</li>`;
+  }
+  h += `<li><b>Toplam şebeke gideri: ${esc(paraMili(toplamMili, "yukari"))}/saat</b></li></ul>`;
+  return h + '<p class="ipucu-metin">Son sunucu özeti: bütün sahipli işletmelerin gerçekleşen şebeke alımı ve buna ait saatlik gider. Bu oranlar stok miktarı veya birikmiş ödeme değildir.</p></section>';
 }
