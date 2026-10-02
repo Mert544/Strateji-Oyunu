@@ -868,7 +868,7 @@ export interface BaskinDurumu {
 export type Komut =
   // Ekonomi
   | { tur: "tesis_insa"; bolge: string; tesisTuru: string }
-  | { tur: "yontem_degistir"; bolge: string; tesis: number; yontem: string }
+  | { tur: "yontem_degistir"; bolge: string; tesis: number; yontem: string; oncekiYontem?: string }
   | { tur: "tesis_durum"; bolge: string; tesis: number; aktif: boolean }
   | { tur: "ticaret_emri"; bolge: string; mal: string; yon: TicaretYonu; oranSaat: Mili }
   | { tur: "vergi_ayarla"; oranPpm: number }
@@ -892,7 +892,7 @@ export type Komut =
   | { tur: "savas_ilan"; saldiranBolge: string; hedefBolge: string }
   | { tur: "savunma_emri"; bolge: string; durus: SavunmaDurusu }
   // Teknoloji
-  | { tur: "arastir"; teknoloji: string }
+  | { tur: "arastir"; teknoloji: string; maliyetMili?: Mili }
   // Politika
   | { tur: "anlasma_teklif"; karsi: OyuncuId; anlasma: AnlasmaTuru }
   | { tur: "anlasma_feshet"; karsi: OyuncuId; anlasma: AnlasmaTuru }

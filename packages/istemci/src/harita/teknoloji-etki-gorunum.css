@@ -1,0 +1,24 @@
+.te-etki{margin-top:12px;border-top:1px solid var(--cizgi);padding-top:10px;min-width:0}
+.te-etki>summary{cursor:pointer;font-weight:600;min-height:44px;display:list-item;align-content:center;padding:8px 4px;box-sizing:border-box}
+.te-etki>summary:focus-visible,.te-git:focus-visible{outline:2px solid var(--birincil-ink);outline-offset:3px}
+.te-bilgi{font-size:12px;line-height:1.5;color:var(--murekkep-2);margin:8px 0;overflow-wrap:anywhere}
+.te-tesis{margin-top:12px;border:1px solid var(--cizgi);border-radius:8px;padding:12px;min-width:0}
+.te-tesis h5{font-size:14px;line-height:1.4;margin:0 0 6px;overflow-wrap:anywhere}
+.te-durum{font-size:12px;font-weight:600;color:var(--birincil-ink);margin:4px 0 10px}
+.te-yontemler{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:12px}
+.te-yontemler span{display:block;font-size:11px;color:var(--murekkep-2);margin-bottom:4px}
+.te-yontemler strong{display:block;font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.te-tarife{margin-top:12px;min-width:0}
+.te-tarife h6{font-size:12px;line-height:1.4;margin:0 0 6px}
+.te-tarife table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:12px}
+.te-tarife th,.te-tarife td{padding:6px 3px;border-bottom:1px solid var(--cizgi);line-height:1.4;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.te-tarife th{text-align:left;font-weight:500}
+.te-tarife thead th{font-size:11px;color:var(--murekkep-2)}
+.te-tarife td,.te-tarife thead th:not(:first-child){text-align:right}
+.te-tarife th:first-child{width:40%}
+.te-git{display:block;width:100%;min-height:44px;margin-top:12px;padding:10px 8px;white-space:normal;line-height:1.4}
+.te-git:disabled{cursor:default}
+@media(prefers-reduced-motion:reduce){.te-etki,.te-git{transition:none;animation:none}}
+
+.te-git{border:1px solid var(--birincil);border-radius:var(--r-sm);background:var(--birincil);color:var(--birincil-ustu);font:inherit;font-size:12px;cursor:pointer}.te-git:disabled{border-color:var(--cizgi);background:var(--yuzey-2);color:var(--murekkep-2)}
+.te-caption{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}

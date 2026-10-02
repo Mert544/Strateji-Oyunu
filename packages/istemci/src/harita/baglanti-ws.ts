@@ -353,9 +353,12 @@ export class WsBaglanti implements MulkBaglantisi {
   /** Biten tesisin yöntemini değiştirir (`yontem_degistir`): ücretsiz ve anlık; ret nedeni Türkçe (`yontemHatasiTurkce`, A1 `yontem.ret.*`). */
   async yontemDegistir(i: YontemDegistirIstegi): Promise<TesisSonucu> {
     try {
-      const r = await this.komutGonder({ tur: "yontem_degistir", bolge: i.bolge, tesis: i.tesis, yontem: i.yontem });
+      const r = await this.komutGonder({ tur: "yontem_degistir", bolge: i.bolge, tesis: i.tesis, yontem: i.yontem, ...(i.oncekiYontem === undefined ? {} : { oncekiYontem: i.oncekiYontem }) });
       if (r.tamam) return { tamam: true, t: r.t };
-      return { tamam: false, hata: "sunucu", mesaj: yontemHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)) };
+      const mesaj = r.hata === "tesisin yontemi degisti" ? "Tesisin yöntemi değişmiş. Güncel yöntemleri yeniden inceleyin."
+        : r.hata === "gecersiz onceki yontem" ? "Görülen yöntem bilgisi geçersiz. Yöntem seçicisini yeniden açın."
+        : yontemHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x));
+      return { tamam: false, hata: "sunucu", mesaj };
     } catch (e) {
       return this.agHatasi(e);
     }
@@ -506,11 +509,13 @@ export class WsBaglanti implements MulkBaglantisi {
     };
   }
 
-  async arastirmaBaslat(teknoloji: string): Promise<ArastirmaSonucu> {
+  async arastirmaBaslat(teknoloji: string, maliyetMili?: number): Promise<ArastirmaSonucu> {
     try {
-      const r = await this.komutGonder({ tur: "arastir", teknoloji });
+      const r = await this.komutGonder({ tur: "arastir", teknoloji, ...(maliyetMili === undefined ? {} : { maliyetMili }) });
       if (r.tamam) return { tamam: true };
-      const mesaj = r.hata === "hazine yetersiz" ? "Araştırma için hazinen yeterli değil."
+      const mesaj = r.hata === "arastirma maliyeti degisti" ? "Araştırma bedeli değişmiş. Güncel bedeli yeniden inceleyin."
+        : r.hata === "gecersiz arastirma maliyeti" ? "Görülen araştırma bedeli geçersiz. Araştırma kartını yeniden açın."
+        : r.hata === "hazine yetersiz" ? "Araştırma için hazinen yeterli değil."
         : r.hata === "devam eden bir arastirma var" ? "Zaten devam eden bir araştırman var."
         : r.hata.startsWith("on kosul eksik") ? "Önce bu teknolojinin ön koşullarını araştırmalısın."
         : r.hata.startsWith("teknoloji zaten acik") ? "Bu teknolojiyi zaten araştırdın."

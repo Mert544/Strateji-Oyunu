@@ -84,6 +84,11 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
       if (yi === undefined) return hata(`bilinmeyen yontem: ${k.yontem}`);
       if (!(tb.tur[ts.tur] as { yontemler: number[] }).yontemler.includes(yi)) return hata(`yontem bu tesis turunde yok: ${k.yontem}`);
       if (!yontemAcikMi(d, ctx, oyuncu, yi)) return hata(`yontem acik degil: ${k.yontem}`);
+      // Seçicinin gördüğü yöntemi korur; canlı değişimi sessizce yeni bir onay saymaz.
+      if (k.oncekiYontem !== undefined) {
+        if (typeof k.oncekiYontem !== "string" || k.oncekiYontem.length === 0) return hata("gecersiz onceki yontem");
+        if (k.oncekiYontem !== ic.yontemler[ts.yontem]?.id) return hata("tesisin yontemi degisti");
+      }
       ts.yontem = yi;
       return TAMAM;
     }

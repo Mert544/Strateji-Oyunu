@@ -17,3 +17,13 @@
 **Sonraki yönetim dilimi.** Ürün §7.6 aktif parsel sahibi, hesap başına bir oy ve 14 günlük ilçe dönemi önerir. Hesap güvence düzeyi 2 kodda yoktur; e-posta oturumu bu düzey sayılamaz. Önce güvenilir hesap güvencesi, seçmen dondurma, adaylık, gizli oy, dönem/beraberlik/oy yokluğu ve çekirdek makam yetkisi kapatılır. Sonra İlçe Başkanı “gıda tedariki / bütçeyi koru” kararını yalnız yeni K1 ilanına uygulayabilir; mevcut sözleşme ve kasa sınırları korunur. İlk gelen başkan veya keyfî ödeme yoktur. Y39: Muhtar mahalle, İlçe Başkanı ilçe, Vali il.
 
 **Kapsam dışında.** Kamu arsası hakkı/ihale, AI kamu karar ajanı ve savunma bonusu. Mevcut kenar geliştirmesi kapasiteyi artırır fakat oyuncu uç sahipliği kamu merkezinde belediye yetkisi sağlamaz; 400 çelik + 100 parça + 20 bin TL, taban fiyatla yaklaşık 86 bin TL'dir. İlk projeye uydurmak için maliyet sessizce düşürülmez.
+
+**K2b karar boşluğu — güvence2.** `imza-mekanikleri-ve-yonelimler.md §5.1`
+K-16 ve §5.2, seçimleri güvence düzeyi 2'ye bağlar; düzeyin edinim
+prosedürünü tanımlamaz. E-posta, telefon/ödeme veya yüksek güvence alternatifleri
+tek başına telefon/kimlik/ödeme zorunluluğu koymaz. Gerçek
+`sunucu/src/depo/tipler.ts` `HesapKaydi`, hesap/e-posta/tek oyuncu bağını;
+`giris/auth-kimligi.ts` ise imzalı bilet ve oturumu doğrular, düzey2 kanıtı
+taşımaz. Hangi kanıtın güvenilir sunucu onay/iptal kaydı üreteceği, ardından
+bu kaydın seçim uygunluğuna deterministik taşınması ayrı root kararıdır.
+Kayıt veya edinim yöntemi icat edilmez; e-posta girişi güvence2 sayılmaz.

@@ -27,7 +27,8 @@ export interface YontemPaneliParam {
 }
 
 /** Panel eylemi (DOM'dan okunur): düğme, onay, vazgeç ya da kart seçimi. */
-export type YontemEylemi = { eylem: "ac"; tesis: string } | { eylem: "onayla" } | { eylem: "vazgec" } | { eylem: "sec"; yontem: string };
+export type YontemEylemi = { eylem: "ac"; tesis: string; oncekiYontem?: string } | { eylem: "onayla" } | { eylem: "vazgec" } | { eylem: "sec"; yontem: string };
+interface YontemOnayi { tesis: string; bolge: string; yontem: string; oncekiYontem: string }
 
 /** `tikla`: tıklanan öğeden yöntem eylemi (yoksa null). */
 export function yontemEylemiOku(t: HTMLElement): YontemEylemi | null {
@@ -35,7 +36,7 @@ export function yontemEylemiOku(t: HTMLElement): YontemEylemi | null {
   if (d) {
     const e = d.dataset["eylem"];
     if (d.getAttribute("aria-disabled") === "true") return null;
-    if (e === "yontem-degistir") return { eylem: "ac", tesis: d.dataset["tesis"] ?? "" };
+    if (e === "yontem-degistir") return { eylem: "ac", tesis: d.dataset["tesis"] ?? "", ...(d.dataset["oncekiYontem"] !== undefined ? { oncekiYontem: d.dataset["oncekiYontem"] } : {}) };
     return { eylem: e === "yontem-onayla" ? "onayla" : "vazgec" };
   }
   const k = t.closest<HTMLElement>(".ym-degistir .ym-kart");
@@ -50,6 +51,9 @@ export class YontemPaneli {
   private onayAcik = false;
   private gonderiyor = false;
   private hata: string | null = null;
+  private oncekiYontem: string | null = null;
+  private gorulenAcma: Extract<YontemEylemi, { eylem: "ac" }> | null = null;
+  private gorulenOnay: YontemOnayi | null = null;
 
   constructor(private readonly p: YontemPaneliParam) {}
 
@@ -63,7 +67,45 @@ export class YontemPaneli {
   }
 
   private tesis(anahtar: string): IsletmeYapisi | undefined {
+    if (!/^t\d+$/.test(anahtar) || !Number.isSafeInteger(Number(anahtar.slice(1)))) return undefined;
     return this.p.isletme()?.yapilar.find((y) => y.anahtar === anahtar && y.durum === "tesis");
+  }
+
+  /** Dış yönlendirme yalnız gerçek seçiciyi açar; yöntem seçmez ve aynı tesisi kapatmaz. */
+  ac(anahtar: string, yontem?: string): boolean {
+    if (this.gonderiyor) return false;
+    const y = this.tesis(anahtar);
+    const sec = y ? this.secenekler(y.tur) : [];
+    if (!y || y.bolge === undefined || y.yontem === undefined || !seciciGorunur(sec) || !sec.some((s) => s.id === y.yontem) || (yontem !== undefined && !sec.some((s) => s.id === yontem))) return false;
+    if (this.acik !== anahtar) {
+      this.acik = anahtar;
+      this.oncekiYontem = y.yontem;
+      this.secili = y.yontem;
+      this.onayAcik = false;
+      this.hata = null;
+    }
+    this.p.degisti();
+    return true;
+  }
+
+  /** Basma başlangıcındaki yöntem/onay canlı kareden yeniden üretilmez. */
+  teklifYakala(t: HTMLElement): void {
+    const e = yontemEylemiOku(t);
+    this.gorulenAcma = e?.eylem === "ac" ? e : null;
+    const b = t.closest<HTMLElement>("[data-yontem-onayi]");
+    this.gorulenOnay = null;
+    if (!b || b.getAttribute("aria-disabled") === "true") return;
+    try {
+      const o: unknown = JSON.parse(b.dataset["yontemOnayi"] ?? "null");
+      if (o && typeof o === "object" && "tesis" in o && "bolge" in o && "yontem" in o && "oncekiYontem" in o && typeof o.tesis === "string" && typeof o.bolge === "string" && typeof o.yontem === "string" && typeof o.oncekiYontem === "string") this.gorulenOnay = { tesis: o.tesis, bolge: o.bolge, yontem: o.yontem, oncekiYontem: o.oncekiYontem };
+    } catch { /* Geçersiz onay verisi tutulmaz. */ }
+  }
+
+  eylemOku(t: HTMLElement): YontemEylemi | null {
+    const e = yontemEylemiOku(t);
+    const gorulen = this.gorulenAcma;
+    this.gorulenAcma = null;
+    return e?.eylem === "ac" && gorulen ? gorulen : e;
   }
 
   /**
@@ -80,17 +122,20 @@ export class YontemPaneli {
     const ad = this.p.yapiAdi(y.tur);
     const id = Number(y.anahtar.slice(1));
     const acik = this.acik === y.anahtar;
-    const dugme = `<button type="button" class="eylem mini-dugme" data-eylem="yontem-degistir" data-tesis="${esc(y.anahtar)}" aria-expanded="${acik}" aria-label="${esc(yontemMetni("yontem.degistir.dugme_etiket", { yapi: ad }))}"${this.gonderiyor ? ` aria-disabled="true"` : ""}>${esc(yontemMetni("yontem.degistir.dugme"))}</button>`;
+    const dugme = `<button type="button" class="eylem mini-dugme" data-eylem="yontem-degistir" data-tesis="${esc(y.anahtar)}" data-onceki-yontem="${esc(y.yontem)}" aria-expanded="${acik}" aria-label="${esc(yontemMetni("yontem.degistir.dugme_etiket", { yapi: ad }))}"${this.gonderiyor ? ` aria-disabled="true"` : ""}>${esc(yontemMetni("yontem.degistir.dugme"))}</button>`;
     if (!acik) return { dugme, alt: "" };
     const kilitli = this.onayAcik || this.gonderiyor;
-    const mevcut = sec.find((s) => s.id === y.yontem);
+    const onceki = this.oncekiYontem ?? y.yontem;
+    const mevcut = sec.find((s) => s.id === onceki);
     const baslik = yontemMetni("yontem.degistir.baslik", { yapi: ad });
     let h = `<div class="ym-degistir" data-tesis="${esc(y.anahtar)}"${this.gonderiyor ? ` data-durum="gonderiliyor"` : ""}>`;
-    h += `<p class="soluk">${esc(yontemMetni("yontem.degistir.simdiki", { yontem: mevcut?.ad ?? y.yontem }))}</p>`;
+    if (onceki !== y.yontem) h += '<p class="dk-hata" role="alert">Tesisin yöntemi değişmiş. Seçiciyi kapatıp güncel yöntemleri yeniden incele.</p>';
+    h += `<p class="soluk">${esc(onceki !== y.yontem ? `Seçiciyi açarken: ${mevcut?.ad ?? onceki}` : yontemMetni("yontem.degistir.simdiki", { yontem: mevcut?.ad ?? onceki }))}</p>`;
     h += yontemSeciciHtml({ yapiAd: ad, secenekler: sec, secili: this.secili ?? y.yontem, mevcut: y.yontem, kilitli, kimlik: `t${id}`, baslik });
     const yeni = sec.find((s) => s.id === this.secili);
-    if (this.onayAcik && yeni && yeni.id !== y.yontem) {
-      h += `<div class="ym-onay" role="alertdialog" aria-labelledby="ym-onay-${id}"><p class="ym-onay-ozet" id="ym-onay-${id}">${esc(yontemMetni("yontem.degistir.ozet", { eski: mevcut?.ad ?? y.yontem, yeni: yeni.ad }))}</p><p class="soluk">${esc(yontemMetni("yontem.degistir.onay"))} ${esc(yontemMetni("yontem.degistir.bedel_yok"))}</p><div class="ym-eylemler"><button type="button" class="birincil" data-eylem="yontem-onayla"${this.gonderiyor ? ` aria-disabled="true"` : ""}>${esc(yontemMetni("yontem.degistir.dugme_onay"))}</button><button type="button" class="eylem" data-eylem="yontem-vazgec" data-varsayilan-odak="1"${this.gonderiyor ? ` aria-disabled="true"` : ""}>${esc(yontemMetni("yontem.degistir.vazgec"))}</button></div></div>`;
+    if (this.onayAcik && yeni && yeni.id !== onceki) {
+      const onay = esc(JSON.stringify({ tesis: y.anahtar, bolge: y.bolge, yontem: yeni.id, oncekiYontem: onceki }));
+      h += `<div class="ym-onay" role="alertdialog" aria-labelledby="ym-onay-${id}"><p class="ym-onay-ozet" id="ym-onay-${id}">${esc(yontemMetni("yontem.degistir.ozet", { eski: mevcut?.ad ?? onceki, yeni: yeni.ad }))}</p><p class="soluk">${esc(yontemMetni("yontem.degistir.onay"))} ${esc(yontemMetni("yontem.degistir.bedel_yok"))}</p><div class="ym-eylemler"><button type="button" class="birincil" data-eylem="yontem-onayla" data-yontem-onayi="${onay}"${this.gonderiyor ? ` aria-disabled="true"` : ""}>${esc(yontemMetni("yontem.degistir.dugme_onay"))}</button><button type="button" class="eylem" data-eylem="yontem-vazgec" data-varsayilan-odak="1"${this.gonderiyor ? ` aria-disabled="true"` : ""}>${esc(yontemMetni("yontem.degistir.vazgec"))}</button></div></div>`;
     }
     if (this.hata) h += `<p class="dk-hata" role="alert">${esc(this.hata)}</p>`;
     return { dugme, alt: h + `</div>` };
@@ -104,8 +149,11 @@ export class YontemPaneli {
         // Aynı düğme tekrar: kapanır
         if (this.acik === e.tesis) return this.kapat();
         const y = this.tesis(e.tesis);
+        if (!y || y.bolge === undefined || y.yontem === undefined || !seciciGorunur(this.secenekler(y.tur))) return;
+        if (e.oncekiYontem !== undefined && !this.secenekler(y.tur).some((s) => s.id === e.oncekiYontem)) return;
         this.acik = e.tesis;
-        this.secili = y?.yontem ?? null;
+        this.oncekiYontem = e.oncekiYontem ?? y.yontem;
+        this.secili = this.oncekiYontem;
         this.onayAcik = false;
         this.hata = null;
         return this.p.degisti();
@@ -117,7 +165,7 @@ export class YontemPaneli {
         if (!y || !s || s.kilitli) return;
         this.secili = s.id;
         this.hata = null;
-        this.onayAcik = s.id !== y.yontem; // mevcut yöntem seçiliyse onay yok
+        this.onayAcik = s.id !== this.oncekiYontem; // açılışta görülen yöntem seçiliyse onay yok
         return this.p.degisti();
       }
       case "vazgec":
@@ -129,16 +177,17 @@ export class YontemPaneli {
 
   /** Esc ya da vazgeç: onay açıksa yalnız onay kapanır (seçim mevcuda döner), değilse seçici kapanır. */
   kapat(): void {
+    if (this.gonderiyor) return;
     if (this.onayAcik) {
-      const y = this.acik ? this.tesis(this.acik) : undefined;
       this.onayAcik = false;
-      this.secili = y?.yontem ?? null;
+      this.secili = this.oncekiYontem;
       this.hata = null;
       return this.p.degisti();
     }
     if (this.acik === null) return;
     this.acik = null;
     this.secili = null;
+    this.oncekiYontem = null;
     this.hata = null;
     this.p.degisti();
   }
@@ -152,22 +201,30 @@ export class YontemPaneli {
 
   private async gonder(): Promise<void> {
     const y = this.acik ? this.tesis(this.acik) : undefined;
-    if (!y || y.bolge === undefined || this.secili === null || this.secili === y.yontem || !this.onayAcik) return;
+    const gorulen = this.gorulenOnay;
+    this.gorulenOnay = null;
+    if (!y || y.bolge === undefined || this.secili === null || this.oncekiYontem === null || this.secili === this.oncekiYontem || !this.onayAcik) return;
+    if (gorulen && (gorulen.tesis !== y.anahtar || gorulen.bolge !== y.bolge || gorulen.yontem !== this.secili || gorulen.oncekiYontem !== this.oncekiYontem)) {
+      this.hata = "Yöntem seçimi değişmiş. Seçimini yeniden incele ve onayla.";
+      this.p.degisti();
+      return;
+    }
     const yeni = this.secenekler(y.tur).find((s) => s.id === this.secili);
     if (!yeni || yeni.kilitli) return;
     this.gonderiyor = true;
     this.hata = null;
     this.p.degisti();
     try {
-      const r = await this.p.komut({ bolge: y.bolge, tesis: Number(y.anahtar.slice(1)), yontem: yeni.id });
+      const r = await this.p.komut({ bolge: y.bolge, tesis: Number(y.anahtar.slice(1)), yontem: yeni.id, oncekiYontem: this.oncekiYontem });
       if (r.tamam) {
         this.acik = null;
         this.secili = null;
+        this.oncekiYontem = null;
         this.onayAcik = false;
         this.p.bildir(yontemMetni("yontem.degistir.tamam", { yontem: yeni.ad }), "bilgi");
       } else {
         this.onayAcik = false;
-        this.secili = y.yontem ?? null;
+        this.secili = this.oncekiYontem;
         this.hata = r.mesaj;
       }
     } catch (e) {

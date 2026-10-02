@@ -74,6 +74,11 @@ export function teknolojiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komu
   // Yayılım maliyeti ve süreyi, erken oyun hızlandırması yalnızca süreyi kısaltır.
   const yayilim = teknolojiYayilimiPpm(d, ctx, oyuncu, ti);
   const maliyet = carpBol(tek.maliyet, yayilim, PPM);
+  // Görülen bedel koruması ödeme tutarını belirlemez; yalnız güncel çekirdek hesabıyla eşleşir.
+  if (k.maliyetMili !== undefined) {
+    if (!Number.isSafeInteger(k.maliyetMili) || k.maliyetMili < 0) return hata("gecersiz arastirma maliyeti");
+    if (k.maliyetMili !== maliyet) return hata("arastirma maliyeti degisti");
+  }
   if (!hazineEkle(d, oyuncu, -maliyet, "arastirma")) return hata("hazine yetersiz");
   const sure = carpliSure(carpBol(tek.sureGun * GUN, yayilim, PPM), sureCarpaniPpm(d, ctx, oyuncu));
   const bitis = d.zaman + sure;

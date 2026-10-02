@@ -1,0 +1,129 @@
+{
+  "kaynak": "Gerçek standalone oyun, Türkiye manifesti, varsayılan 6 Gebze başlangıç hücresi ve kabul edilen çiftlik inşa komutu. Araştırma ve yöntem onayı native UI ile gönderildi. Özel hibe/stok/kasa/DOM enjeksiyonu yok.",
+  "masaustu": [
+    1440,
+    1000
+  ],
+  "commands": [
+    {
+      "komut": {
+        "tur": "tesis_insa_hucre",
+        "ilce": "tr_41_gebze",
+        "tesisTuru": "ciftlik",
+        "yontem": "geleneksel_tarim",
+        "hucreler": [
+          "610070:393780",
+          "610071:393780"
+        ]
+      },
+      "sonuc": {
+        "tur": "komutSonucu",
+        "anahtar": "t1-ciftlik",
+        "seq": 2,
+        "t": 0,
+        "komut": {
+          "tur": "tesis_insa_hucre",
+          "ilce": "tr_41_gebze",
+          "tesisTuru": "ciftlik",
+          "hucreler": [
+            "610070:393780",
+            "610071:393780"
+          ],
+          "yontem": "geleneksel_tarim"
+        },
+        "sonuc": {
+          "tamam": true
+        },
+        "tekrar": false
+      }
+    }
+  ],
+  "before": {
+    "zaman": 720000,
+    "tesis": {
+      "id": 146,
+      "yontem": "geleneksel_tarim"
+    },
+    "hazineMili": 45800000
+  },
+  "researchStarted": {
+    "zaman": 720000,
+    "teknoloji": "mekanize_tarim",
+    "bitis": 18000000,
+    "gorulenBedelMili": 15000000,
+    "hazineMili": 30800000
+  },
+  "screenshotState": {
+    "teknolojiAcik": true,
+    "yapilar": [
+      {
+        "anahtar": "t146",
+        "durum": "tesis",
+        "tur": "ciftlik",
+        "il": "tr_41",
+        "ilce": "tr_41_gebze",
+        "hucre": 2,
+        "aktif": true,
+        "verimPpm": 1000000,
+        "yontem": "geleneksel_tarim",
+        "bolge": "tr_41#ekran"
+      }
+    ],
+    "kart": "Makineli tarım Üretim seçenekleri: Makineli tarım.AraştırıldıBenim tesislerimdeNominal saatlik tarifeler · S ölçeği, tam kapasite. Gösterilen miktarlar gerçek üretim veya tüketim sonucu değildir.Çiftlik · GebzeYöntem açıldıMevcut yöntemGeleneksel tarımAçılan yöntemMakineli tarımGirdiler · birim/saatGirdiler · birim/saat: mevcut yöntem ve açılan yöntem karşılaştırması, birim/saatMalMevcutAçılanMakine parçası04Yakıt020Elektrik08Çıktılar · birim/saatÇıktılar · birim/saat: mevcut yöntem ve açılan yöntem karşılaştırması, birim/saatMalMevcutAçılanTahıl200320Temel bakım tarifi · birim/saatTemel bakım tarifi · birim/saat: mevcut yöntem ve açılan yöntem karşılaştırması, birim/saatMalMevcutAçılanMakine parçası0,51,5Ölçek ve bakım ayarları gerçek bakım tüketimini değiştirir. Araştırma tesisin yöntemini otomatik değiştirmez.Tesiste yöntemleri gör",
+    "detayAcik": true
+  },
+  "shownConfirmation": {
+    "tesis": "t146",
+    "bolge": "tr_41#ekran",
+    "yontem": "mekanize_tarim",
+    "oncekiYontem": "geleneksel_tarim"
+  },
+  "responses": [
+    {
+      "tur": "komutSonucu",
+      "anahtar": "106qgwa3o5-3-93g95",
+      "seq": 3,
+      "t": 720000,
+      "komut": {
+        "tur": "arastir",
+        "teknoloji": "mekanize_tarim",
+        "maliyetMili": 15000000
+      },
+      "sonuc": {
+        "tamam": true
+      },
+      "tekrar": false
+    },
+    {
+      "tur": "komutSonucu",
+      "anahtar": "106qgwa3o5-5-gbhya",
+      "seq": 6,
+      "t": 18000000,
+      "komut": {
+        "tur": "yontem_degistir",
+        "bolge": "tr_41#ekran",
+        "tesis": 146,
+        "yontem": "mekanize_tarim",
+        "oncekiYontem": "geleneksel_tarim"
+      },
+      "sonuc": {
+        "tamam": true
+      },
+      "tekrar": false
+    }
+  ],
+  "after": {
+    "zaman": 18000000,
+    "tesis": {
+      "id": 146,
+      "yontem": "mekanize_tarim"
+    },
+    "teknolojiler": [
+      "mekanize_tarim"
+    ],
+    "hazineMili": 30912000
+  },
+  "pageErrors": [],
+  "consoleErrors": [],
+  "sinir": "PNG araştırma tamamlandıktan sonra tesis hâlâ geleneksel yöntemdeyken çekildi; sonraki manuel yöntem onayı ve gerçek değişim JSON ile doğrulanır. Tarifeler temel S/tam kapasite nominaldir; gerçek çıktı/kâr/bakım gideri değildir."
+}

@@ -14,6 +14,8 @@ export interface YontemT {
   ad: string;
   girdi: MalMiktar;
   cikti: MalMiktar;
+  /** Temel saatlik bakım tarifesi; eski tablolarda yoksa bilinmiyor. */
+  bakim?: MalMiktar;
   isci: number;
   gerekliTeknoloji?: string;
 }
@@ -116,6 +118,7 @@ export function icerikTablosu(ic: IcerikDosyasi, param: Parametreler): Icerik {
       ad: y.ad,
       girdi: malMiktar(y.girdiler, malIdx),
       cikti: malMiktar(y.ciktilar, malIdx),
+      ...(y.bakim === undefined ? {} : { bakim: malMiktar(y.bakim, malIdx) }),
       isci: y.isci,
       ...(y.gerekliTeknoloji !== undefined ? { gerekliTeknoloji: y.gerekliTeknoloji } : {}),
     }),

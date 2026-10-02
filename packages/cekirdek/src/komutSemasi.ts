@@ -30,7 +30,7 @@ export interface KomutBilgisi<K extends KomutTuru> {
 export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   // Ekonomi
   tesis_insa: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesisTuru: "kimlik" } },
-  yontem_degistir: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", yontem: "kimlik" } },
+  yontem_degistir: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", yontem: "kimlik", oncekiYontem: "kimlik" } },
   tesis_durum: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", aktif: "bayrak" } },
   ticaret_emri: { yol: "oyuncu", alanlar: { bolge: "kimlik", mal: "kimlik", yon: "secim", oranSaat: "miktar" } },
   vergi_ayarla: { yol: "oyuncu", alanlar: { oranPpm: "oran" } },
@@ -52,7 +52,7 @@ export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   savas_ilan: { yol: "oyuncu", alanlar: { saldiranBolge: "kimlik", hedefBolge: "kimlik" } },
   savunma_emri: { yol: "oyuncu", alanlar: { bolge: "kimlik", durus: "secim" } },
   // Teknoloji
-  arastir: { yol: "oyuncu", alanlar: { teknoloji: "kimlik" } },
+  arastir: { yol: "oyuncu", alanlar: { teknoloji: "kimlik", maliyetMili: "miktar" } },
   // Politika
   anlasma_teklif: { yol: "oyuncu", alanlar: { karsi: "kimlik", anlasma: "secim" } },
   anlasma_feshet: { yol: "oyuncu", alanlar: { karsi: "kimlik", anlasma: "secim" } },

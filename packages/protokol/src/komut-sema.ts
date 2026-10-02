@@ -24,7 +24,7 @@ const anlasma = z.enum(["ticaret", "ortak_altyapi"]);
 export const KomutSemasi = z.discriminatedUnion("tur", [
   // Ekonomi
   z.object({ tur: z.literal("tesis_insa"), bolge: kimlik, tesisTuru: kimlik }),
-  z.object({ tur: z.literal("yontem_degistir"), bolge: kimlik, tesis: tamsayi, yontem: kimlik }),
+  z.object({ tur: z.literal("yontem_degistir"), bolge: kimlik, tesis: tamsayi, yontem: kimlik, oncekiYontem: kimlik.optional() }),
   z.object({ tur: z.literal("tesis_durum"), bolge: kimlik, tesis: tamsayi, aktif: z.boolean() }),
   z.object({ tur: z.literal("ticaret_emri"), bolge: kimlik, mal: kimlik, yon: z.enum(["ihracat", "ithalat"]), oranSaat: tamsayi }),
   z.object({ tur: z.literal("vergi_ayarla"), oranPpm: tamsayi }),
@@ -52,7 +52,7 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
   z.object({ tur: z.literal("savas_ilan"), saldiranBolge: kimlik, hedefBolge: kimlik }),
   z.object({ tur: z.literal("savunma_emri"), bolge: kimlik, durus: z.enum(["normal", "savunma", "geri_cekil"]) }),
   // Teknoloji
-  z.object({ tur: z.literal("arastir"), teknoloji: kimlik }),
+  z.object({ tur: z.literal("arastir"), teknoloji: kimlik, maliyetMili: tamsayi.nonnegative().optional() }),
   // Politika
   z.object({ tur: z.literal("anlasma_teklif"), karsi: kimlik, anlasma }),
   z.object({ tur: z.literal("anlasma_feshet"), karsi: kimlik, anlasma }),

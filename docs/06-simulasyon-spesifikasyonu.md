@@ -189,8 +189,39 @@ tıklar arasında hazinenin tükenip mal gelmeye devam etmesini önlemek için l
 
 ## 7. Teknoloji (sığ, veri güdümlü)
 
-6 düğüm; her biri **yeni yöntem, tesis türü veya karar** açar, yüzde artış vermez.
+Mevcut içerikte 7 düğüm; her biri **yeni yöntem, tesis türü, birlik veya karar** açar, yüzde artış vermez.
 `arastir` maliyeti hazineden düşer; `sureGun` sonra açılır. Aynı anda tek araştırma. Süre erken oyun çarpanıyla, maliyet ve süre teknoloji yayılımıyla kısalır (§10.1, §10.3).
+
+**Araştırmadan kendi tesisinde karara (T1).** Teknoloji kartındaki “Benim
+tesislerimde” ayrıntısı yalnız `tur.yontemler` içindeki `gerekliTeknoloji`
+ile kendi gerçek `IsletmeDurumu.yapilar` kayıtlarını eşler. Bilgi alınmadı,
+uygun tesis yok, inşaat, bilinmeyen yöntem ve hedef yöntemin zaten kullanılması
+ayrıdır. Tamamlanmış tesiste mevcut/hedef nominal girdi, çıktı ve bakım
+tarifeleri S ölçeği/tam kapasite temelinde karşılaştırılır; gerçek üretim,
+kâr, maaş tasarrufu veya gerçekleşmiş şebeke gideri değildir. İşçi farkı
+gösterilmez. Araştırma tesisi otomatik dönüştürmez. “Tesiste yöntemleri gör”
+gerçek tesis anahtarıyla mevcut Yapılar seçicisini idempotent açıp odaklar;
+yöntem seçmez veya komut göndermez. Araştırma öncesinde kilitli yöntem
+incelenebilir. Stok eksikliği yöntem değiştirme hakkını engellemez; gerçek
+üretim sonrasında mevcut tedarik/verim kurallarına bağlıdır. Üretim→Teknoloji
+geçişinde teknoloji kimliği ve ilgili kart odağı korunur. Sulama yeni tesis,
+mekanize ordu birlik açar; tesis yöntemi gibi gösterilmez.
+
+**Görülen bedel / mevcut yöntem koruması (T2).** `arastir` optional
+`maliyetMili?:number` taşır (güvenli tamsayı ≥0). Çekirdek güncel yayılım
+maliyetini kendisi hesaplar; görülen değer verilmişse eşleşmeden ödeme
+yapılmaz. İstemci tutarı ödenecek fiyatın kaynağı değildir. Süre guard'ı yoktur:
+yayılan teknoloji/erken oyun hızı başlangıç anındaki süreyi değiştirebilir.
+`yontem_degistir` optional `oncekiYontem?:string` taşır; verilmişse tesisteki
+gerçek yöntem içerik kimliğiyle eşleşmeden tesis değiştirilmez. Eski alanları
+taşımayan çağrılar mevcut davranıştadır. Yeni istemci görülen bedeli ve
+seçicinin açılışındaki yöntemi canlı güncellemede sessizce değiştirmez;
+pointer/klavye başlangıcı ile click arasındaki ekran değişimi de korunur.
+Eski bedel/yöntem açık ret ve yeniden inceleme gerektirir, otomatik tekrar
+yoktur. Her iki ret mutasyon öncesidir; yeni persist, gelir, tarifeler,
+araştırma yuvası veya ekonomik kural eklenmez.
+[Kesin T1–T2 sözleşmesi](agent-results/codex-t1-t2-teknoloji-sozlesmesi.md);
+[tarife teknik notu](agent-results/codex-teknoloji-uygulama-arge.md).
 
 ## 8. Politika (sığ)
 

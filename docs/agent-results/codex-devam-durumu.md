@@ -2,6 +2,46 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — T1–T2 teknoloji ve yöntem kararı
+
+L4 `d7dba3a` ile gönderildi. Kullanıcının uzun süreli çalışma talimatıyla
+aynı altı ajan iki bağlı dilime geçti. [Kesin sözleşme](codex-t1-t2-teknoloji-sozlesmesi.md):
+araştırmanın kendi tesislerinde açtığı yöntemlerin nominal karşılaştırması,
+gerçek yöntem seçicisine yönlendirme ve görülen araştırma bedeli/önceki
+yöntem için mutasyon öncesi koruma. Yeni kalıcı durum veya fiyat kuralı yok.
+
+L1 core guard, B2 protokol/bridge, A3 controller/odak, B4 etki görünümü ve
+gerçek ekran, A6 ürün/Ar-Ge, B6 birleşik hedefli kontrol sahibi. Root kapsam
+ve entegrasyonu yönetir. K2b incelemesi K-16'nın güvence2 edinim yöntemini
+tanımlamadığını gösterdi; e-posta oturumuna kendiliğinden seçim yetkisi
+verilmiyor. Uygulama tamamlandı. Teknoloji kartı oyuncunun gerçek tesisinde
+mevcut ve açılan yöntemin nominal girdisini, çıktısını ve temel bakım
+tarifesini gösteriyor; mevcut yöntem seçicisine gidiyor. Araştırma tesisi
+kendiliğinden dönüştürmüyor. Bedel veya önceki yöntem değişirse yeni istemci
+komutu mutasyon öncesinde reddediliyor; eski alan taşımayan çağrılar korunuyor.
+
+Birleşik kontrolde `kare-teknoloji-yontem.test.ts` iki farklı senaryosu
+başarılı: gerçek araştırma bedeli/bitişi, manuel yöntem geçişi, yakıt/üretim,
+kayıt/replay, özel kare, değişmiş bedel/yöntem reddi ve eski çağrı uyumu.
+İlk koşuda yalnız testin `yontemAcikMi` importu public index yerine mevcut
+kaynak modülünden alınacak şekilde düzeltildi; sadece başarısız vaka ve
+bu importtan etkilenen kök tip kontrolü tekrarlandı. Ürün düzeltmesi gerekmedi.
+Kök/istemci tip kontrolleri ve tek son build başarılı. Dünya gzip
+392,4KB/400KB, harita 504,4KB. Tam paket ve mobil matris çalıştırılmadı.
+Gerçek ekran koşusu ilk çalıştırmada başarılı: varsayılan Gebze başlangıcında
+kurulan çiftlikte görülen 15.000 ₺ araştırma bedeli aynen alındı; araştırma
+bittiğinde yöntem hâlâ gelenekseldi. Mevcut seçicide ayrı oyuncu onayından
+sonra gerçek tesis makineli tarıma geçti. İki komut sunucuda kabul edildi;
+sayfa/konsol hatası yok. Root PNG ve gerçek sonuç JSON'unu inceledi.
+[Gerçek teknoloji ekranı ve veri](../ekran-goruntuleri/2026-10-02-teknoloji/README.md).
+
+Sonraki öneri: Üretim kartından kendi koyun/tekstil tesisinin mevcut yöntem
+seçicisine aynı güvenli geçişi bağlamak. Balıkçılık ve yün→iplik→kumaş→hazır
+giyim tarifeleri kodda var; tek tekstil tesisi bütün aşamaları aynı anda
+çalıştırmaz. Kendi rezerv görünürlüğü ikinci öneri; Kilimli pilotu için gerçek
+arsa/karo verisi eksik. [Kaynaklı Ar-Ge sıralaması](codex-teknoloji-uygulama-arge.md).
+Bu sonraki öneriler henüz uygulanmadı.
+
 ## Güncel teslim — L4 yol ve kapasite görünürlüğü tamamlandı
 
 K2a `a153c56` ile GitHub'a gönderildi. Aynı altı ajan L4'e geçti;

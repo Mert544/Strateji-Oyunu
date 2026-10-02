@@ -70,6 +70,8 @@ export interface YontemDegistirIstegi {
   bolge: string;
   tesis: number;
   yontem: string;
+  /** Seçici açılırken görülen yöntem; verilirse sunucu değişmediğini doğrular. */
+  oncekiYontem?: string;
 }
 
 /** Pazar'da sat (`ticaret_emri`, ihracat): SÜREKLİ saatlik emir. `oranSaat` mili-birim/sa (tamsayı; 0 = emri kaldırır). `bolge`: işletme düğümü kimliği (`<il>#<oyuncu>`). */
@@ -332,7 +334,8 @@ export interface MulkBaglantisi {
   orduDurumu?(): OrduDurumu | null;
   orduKomutu?(komut: Extract<Komut, { tur: "birlik_uret" | "savunma_emri" }>): Promise<OrduSonucu>;
   arastirmaDurumu?(): TeknolojiDurumu | null;
-  arastirmaBaslat?(teknoloji: string): Promise<ArastirmaSonucu>;
+  /** Görülen bedel verilirse sunucunun güncel maliyetiyle tam eşleşmelidir. */
+  arastirmaBaslat?(teknoloji: string, maliyetMili?: number): Promise<ArastirmaSonucu>;
   /** Bu bağlantıda (sunucuda) atomik yerleşim komutu var mı? Yoksa zincir (iki komut) kullanılır. */
   atomikYerlestirme?(): boolean;
   /** Onaydan sonra geri alma (`insaat_iptal` + `parsel_birak`). Tanımsızsa "Geri al" gösterilmez. */
