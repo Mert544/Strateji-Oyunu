@@ -204,14 +204,16 @@ describe("dukkanKurBilgisi", () => {
   });
 
   it("ilçe ve il sayaçları görünümden; ilçesi bilinmeyen dükkân sayılmaz; sınırlar içerikten", () => {
-    const b = g({ gorunum: gorunum([kayit("a"), kayit("b"), kayit("c"), kayit(undefined)]) })!;
+    const b = g({ gorunum: gorunum([kayit("a"), kayit("b"), kayit("c"), kayit(undefined)]), indirim: { ppm: 300_000, kalan: 2 } })!;
     expect(b.ilceSayi).toBe(1);
     expect(b.ilSayi).toBe(2); // a ve b aynı ilde
     expect(b.ilceSinir).toBe(2);
     expect(b.ilSinir).toBe(6);
     expect(b.hucre).toBe(1);
     expect(b.esZamanliInsaat).toBe(2);
-    expect(b.indirim).toEqual({ n: 2, ppm: 300_000 });
+    expect(b.indirim).toEqual({ n: 2, ppm: 300_000 }); // n = KALAN indirimli yapı hakkı
+    expect(g({ indirim: { ppm: 300_000, kalan: 0 } })!.indirim).toBeUndefined(); // hak bitti: not yok
+    expect(g()!.indirim).toBeUndefined();
     expect(b.turler).toEqual(["bakkal", "sekerci"]);
   });
 
@@ -230,13 +232,25 @@ describe("dukkanKurBilgisi", () => {
     expect(g({ stokMili: () => 9_000 })!.pencere?.tutarMili).toBe(0);
   });
 
+  it("yapı market: çelik ve parça var ama pencere ve cam yok → kısmi; pencere de varsa var; stok hiç yoksa yok; diğer türlerde bir mal yeter", () => {
+    const ic = icerikKurma();
+    (ic.param as unknown as { mulk: { perakende: { dukkanTurleri: unknown[] } } }).mulk.perakende.dukkanTurleri = [
+      { id: "bakkal", mallar: ["gida"] },
+      { id: "yapi_market", mallar: ["cam", "pencere", "celik", "parca"] },
+    ];
+    const u = (stok: Record<string, number>) => dukkanKurBilgisi({ ic, katalog: [PENCERELI], gorunum: gorunum([]), ilce: "a", ilceIl: () => null, stokMili: (m) => stok[m] ?? 0, indirim: undefined, referans: () => undefined })!.uyum;
+    expect(u({ celik: 5_000, parca: 2_000 })).toEqual({ bakkal: false, yapi_market: "kismi" });
+    expect(u({ celik: 5_000, pencere: 1_000 })).toEqual({ bakkal: false, yapi_market: true });
+    expect(u({ gida: 1_000 })).toEqual({ bakkal: true, yapi_market: false });
+  });
+
   it("katalogda pencere malzemesi yoksa pencere satırı tanımsız", () => {
     expect(g({ katalog: [DUKKAN] })!.pencere).toBeUndefined();
   });
 });
 
 describe("dukkanMaliyetDurumu / dukkanMaliyetGirdisi", () => {
-  const bilgi = () => dukkanKurBilgisi({ ic: icerikKurma(), katalog: [PENCERELI], gorunum: gorunum([]), ilce: "a", ilceIl: (i) => ILCE_IL[i] ?? null, stokMili: () => 99_000, indirim: undefined, referans: () => ({ mili: 30_000, yaklasik: false }) })!;
+  const bilgi = () => dukkanKurBilgisi({ ic: icerikKurma(), katalog: [PENCERELI], gorunum: gorunum([]), ilce: "a", ilceIl: (i) => ILCE_IL[i] ?? null, stokMili: () => 99_000, indirim: { ppm: 300_000, kalan: 2 }, referans: () => ({ mili: 30_000, yaklasik: false }) })!;
   const stok99 = (): number => 99_000;
   const girdi = (o: Partial<DukkanKartGirdisi> = {}): DukkanKartGirdisi => ({
     tur: "bakkal",
@@ -268,6 +282,8 @@ describe("dukkanMaliyetDurumu / dukkanMaliyetGirdisi", () => {
     expect(g).toMatchObject({ tur: "bakkal", hucre: 1, durum: "uygun", celikAdet: 8, parcaAdet: 2, dukkanMili: 12_000_000, toplamMili: 12_000_000, hazineMili: 50_000_000, esZamanliInsaat: 2 });
     expect(g.indirim).toBeUndefined();
     expect(g.stokEksik).toBeUndefined();
+    expect(g.ilkGunSureSaat).toBe(0.1); // yapı tanımındaki ilk gün süresi (normal süreden kısaysa)
+    expect(dukkanMaliyetGirdisi(girdi({ yapi: { ...PENCERELI, sureSaat: 4, ilkGunSureSaat: 4 } }))!.ilkGunSureSaat).toBeUndefined(); // aynıysa yazılmaz
     const i = dukkanMaliyetGirdisi(girdi({ plan: { ...girdi().plan, indirimli: true }, hazineMili: null }))!;
     expect(i.indirim).toEqual({ n: 2, yuzde: "%30" });
     expect(i.hazineMili).toBe(0);

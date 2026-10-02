@@ -40,9 +40,9 @@ describe("dükkân metin tablosu (T1 son tablosu, A1 anahtarları)", () => {
   });
 
   it("yer tutucular tek yerde doldurulur; verilmeyen olduğu gibi kalır", () => {
-    expect(dukkanMetni("dukkan.D2.ilce_sayac", { n: 1, ilce_enfazla: 2 })).toBe("Bu ilçede dükkânın: 1 / 2");
+    expect(dukkanMetni("dukkan.D2.sayac", { n: 1, ilce_enfazla: 2, il_n: 3, il_enfazla: 6 })).toBe("Bu ilçede 1 / 2, bu ilde 3 / 6 dükkânın var.");
     expect(dukkanMetni("dukkan.D1.satir_insaat", { kalan: "40 dk" })).toBe("İnşa sürüyor · 40 dk kaldı");
-    expect(dukkanMetni("dukkan.D2.ilce_sayac")).toBe("Bu ilçede dükkânın: {n} / {ilce_enfazla}");
+    expect(dukkanMetni("dukkan.D2.sayac")).toBe("Bu ilçede {n} / {ilce_enfazla}, bu ilde {il_n} / {il_enfazla} dükkânın var.");
   });
 
   it("ret kodları anahtara çevrilir (belirsiz DUK-19 yok: üç ileti bağlama göre seçilir)", () => {

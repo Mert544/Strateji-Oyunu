@@ -148,17 +148,17 @@ describe("D-1 Dükkânlarım", () => {
 });
 
 describe("D-2 tür seçimi", () => {
-  it("tür kartları: aria-pressed, simge, sayı ('bu ilçede 1 / 2'), tür uyumu işareti", () => {
+  it("tür kartları: aria-pressed, simge, tür uyumu işareti; sayaç kartlarda yok, altta tek satır", () => {
     const h = turSecimiHtml({ hucre: 1, secili: "firin", ilceSayi: 1, ilceSinir: 2, ilSayi: 1, ilSinir: 6, uyum: { bakkal: true, firin: false, sekerci: false } });
     expect(h).toContain(`<button type="button" class="dk-tur" data-tur="firin" aria-pressed="true">`);
     expect(h).toContain(`data-tur="bakkal" aria-pressed="false"`);
     expect(h).toContain("Bakkal · gündelik mallar");
-    expect(h).toContain("bu ilçede 1 / 2");
+    expect(h).not.toContain("bu ilçede 1 / 2");
     expect(h).toContain(`data-uyum="var">depondaki malla satabilirsin`);
     expect(h).toContain(`data-uyum="yok">malın yok`);
     expect(h).toContain(`data-uyum="ithal">malın yok; Pazar&#39;dan alabilirsin`);
-    expect(h).toContain("Bu ilçede dükkânın: 1 / 2");
-    expect(h).toContain("Bu ilde dükkânın: 1 / 6");
+    expect(h).toContain(`<p class="dk-sinir">Bu ilçede 1 / 2, bu ilde 1 / 6 dükkânın var.</p>`);
+    expect(h.match(/class="dk-sinir"/g)).toHaveLength(1);
     expect(h).toContain(`<p class="dk-neden" id="dk-neden" role="status"></p>`);
   });
 
@@ -186,8 +186,7 @@ describe("D-2 tür seçimi", () => {
     expect(turAdi("yapi_market")).toBe("Yapı market");
     expect(turAdi("bakkal")).toBe("Bakkal");
     expect(h).toContain("Dükkân 2 hücre kaplar. Sahip olduğun boş bir hücreyi seç.");
-    expect(h).toContain("Bu ilçede dükkânın: 1 / 3");
-    expect(h).toContain("Bu ilde dükkânın: 2 / 7");
+    expect(h).toContain("Bu ilçede 1 / 3, bu ilde 2 / 7 dükkânın var.");
     expect(h).not.toMatch(/\{[a-z_]+\}/);
   });
 
@@ -243,10 +242,23 @@ describe("D-3 maliyet satırları", () => {
   });
 });
 
+describe("D-8 özet: boş rafta gelir/gider/net gizli", () => {
+  it("boş rafta yalnız yönlendirme (zarar gibi okunan net yok); dolu rafta dört satır", () => {
+    const bos = ozetHtml(dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })], gelirMiliSa: 0, giderMiliSa: 132_000 }), null);
+    expect(bos).toContain("Rafın boş: bir yuvaya mal koyunca satış başlar.");
+    expect(bos).not.toContain("Gelir");
+    expect(bos).not.toContain("Gider");
+    expect(bos).not.toContain("Net");
+    const dolu = ozetHtml(dukkan(), null);
+    expect(dolu).toContain("Gelir ≈");
+    expect(dolu).toContain("Net ≈");
+  });
+});
+
 describe("D-4 inşa etiketi", () => {
-  it("aşama ve kalan süre", () => {
-    expect(insaatEtiketi("İskele", 0.5)).toBe("Dükkân · iskele · 30 dk");
-    expect(insaatEtiketi("Gövde", 2)).toBe("Dükkân · gövde · 2 sa");
+  it("ad, aşama ve kalan süre (tür ya da marka bilinmiyorsa ad Dükkân)", () => {
+    expect(insaatEtiketi("Dükkân", "İskele", saatDakika(0.5))).toBe("Dükkân · İskele · 30 dk");
+    expect(insaatEtiketi("Bakkal", "Gövde", saatDakika(2))).toBe("Bakkal · Gövde · 2 sa");
   });
   it("süre biçimleri", () => {
     expect(saatDakika(3 + 20 / 60)).toBe("3 sa 20 dk");
@@ -289,11 +301,13 @@ describe("D-5 raf", () => {
 
   it("dükkân düzeyi neden satırda; boş rafta uyarı; gönderirken aria-busy ve yuvalar aria-disabled; yükleniyor", () => {
     const kasa = rafHtml(dukkan({ kasaPpm: 1_000_000 }), { malAdi, simdi: 0, kasaBirimSa: 90 });
-    expect(kasa).toContain(`data-neden="kasa_dolu">Kasa dolu: satış kasa sınırında.`);
+    // kasa dolu ve boş raf iletileri kart özetindedir; raf altında yinelenmez
+    expect(kasa).not.toContain("Kasa dolu");
+    expect(kasa).toContain(`data-neden=""`);
     const karsilanmiyor = rafHtml(dukkan({ karsilanmaPpm: 400_000 }), { malAdi, simdi: 0, kasaBirimSa: 90 });
     expect(karsilanmiyor).toContain("Stoğun talebi karşılamıyor; satış düşüyor.");
     const bos = rafHtml(dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })] }), { malAdi, simdi: 0, kasaBirimSa: 90 });
-    expect(bos).toContain("Rafın boş: bir yuvaya mal koyunca satış başlar.");
+    expect(bos).not.toContain("Rafın boş");
     expect(bos).toContain(`data-neden=""`);
     const g = rafHtml(dukkan(), { malAdi, simdi: 0, kasaBirimSa: 90, gonderiyor: true });
     expect(g).toContain(`class="dk-raf" aria-busy="true"`);
@@ -337,7 +351,8 @@ describe("D-6 kademe ve kampanya", () => {
     expect(h).toContain(`class="segment" role="group" aria-label="Gıda" data-durum="serbest">`);
     expect([...h.matchAll(/data-kademe="(\d)" aria-pressed="(\w+)"/g)].map((m) => `${m[1]}:${m[2]}`)).toEqual(["0:false", "1:false", "2:true", "3:false"]);
     expect(h).toContain("Normal fiyat, çoğu zaman en iyi dengedir.");
-    expect(h).toContain("3\u00a0₺ · ≈\u00a012 birim/sa · net ≈\u00a0+20\u00a0₺/sa");
+    expect(h).toContain("3\u00a0₺ · ≈\u00a012 birim/sa");
+    expect(h).not.toContain("net ≈"); // yuva satırında net yazılmaz (formül A3'ten gelene dek; kartta tek net)
     const kapali = kademeHtml(yuva(), { malAdi, kampanyaAcik: false, kampanya: kamp, simdi: 0 });
     expect(kapali).toContain(`data-sutun="3"`);
     expect(kapali).not.toContain(`data-kademe="0"`);
@@ -530,7 +545,7 @@ describe("dukkan-duzelt 5-9", () => {
     expect(h).toContain(`data-yuva="0" data-durum="bos" data-mal="" data-bekleme="1" aria-disabled="true"`);
     expect(h).toContain("değişim: 3 sa 20 dk sonra");
     expect(h).toContain(`data-yuva="1" data-durum="bos" data-mal="" data-bekleme="0"><`);
-    expect(h).toContain("Rafın boş: bir yuvaya mal koyunca satış başlar."); // bir yuva serbest: normal yönlendirme
+    expect(h).not.toContain("Rafın boş"); // bir yuva serbest: yönlendirme kart özetinde, raf altında yok
     const hepsi = bosRaf({ yuvalar: [yuva({ mal: null, beklemeSaat: 5 }), yuva({ mal: null, beklemeSaat: 2.5 }), yuva({ mal: null, beklemeSaat: 3 }), yuva({ mal: null, beklemeSaat: 4 })] });
     expect(rafHtml(hepsi, { malAdi, simdi: 0, kasaBirimSa: 90 })).toContain("Rafın boş. En erken 2 sa 30 dk sonra bir yuvaya mal koyabilirsin.");
   });

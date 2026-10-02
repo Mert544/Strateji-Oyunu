@@ -9,7 +9,7 @@
 import { yuzde } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import type { DukkanKaresi } from "./baglanti";
-import { g8Acik, turUyumlari } from "./etkin";
+import { dukkanTuruMallari, g8Acik, turUyumlari } from "./etkin";
 import { dukkanGorunumuKur, ithNetPpm } from "./dukkan-kopru";
 import type { KopruParam, KopruSonucu, ReferansFiyati } from "./dukkan-kopru";
 import { DUKKAN_TURLERI } from "./dukkan-veri";
@@ -97,13 +97,13 @@ export interface DukkanKurBilgisi {
   ilceSinir: number;
   ilSayi: number;
   ilSinir: number;
-  /** Tür başına depoda satabileceği mal var mı (D2 tür uyumu). */
-  uyum: Partial<Record<DukkanTuru, boolean>>;
+  /** Tür başına depoda satabileceği mal var mı (D2 tür uyumu); `"kismi"`: bazı mallar var, bazıları (yapı market: pencere ve cam) üretilmeli. */
+  uyum: Partial<Record<DukkanTuru, boolean | "kismi">>;
   /** G8 açık (D3 pencere metni). */
   g8Acik: boolean;
   /** Aynı anda en çok inşaat (`param.mulk.esZamanliInsaat`; yoksa 2). */
   esZamanliInsaat: number;
-  /** İlk yapı indirimi notu: kaç yapı, yüzde (ppm'den); parametre yoksa tanımsız. */
+  /** İlk yapı indirimi notu: KALAN indirimli yapı hakkı (`indirimliYapiKalan`) ve oran (ppm); parametre ya da hak yoksa tanımsız. */
   indirim?: { n: number; ppm: number };
   /** Maliyet kartında pencere satırı: gereken (indirimli), depo stoğu, eksik pencerenin yaklaşık bedeli; malzemede pencere yoksa tanımsız. */
   pencere?: { gereken: number; var: number; tutarMili: number };
@@ -120,6 +120,25 @@ export interface DukkanKurBilgisiGirdisi {
   stokMili: (mal: string) => number;
   indirim: { ppm: number; kalan: number } | undefined;
   referans: ReferansFiyati;
+}
+
+/**
+ * D2 tür uyumu: türün mallarından en az biri depoda mı (`turUyumlari`); yapı marketin grubunda (cam, pencere, çelik, parça) çelik ve parça gibi bazıları var ama pencere ve cam
+ * yoksa "kısmi" (tam "var" demek yanıltır: pencere ve cam üretilmeden satış tamam olmaz). Diğer türlerde bir mal yeter.
+ */
+function turUyumlariKismi(ic: Icerik, turler: readonly DukkanTuru[], stokMili: (mal: string) => number): Partial<Record<DukkanTuru, boolean | "kismi">> {
+  const temel = turUyumlari(ic, (m) => stokMili(m) > 0);
+  const sonuc: Partial<Record<DukkanTuru, boolean | "kismi">> = {};
+  for (const t of turler) {
+    let u: boolean | "kismi" = temel[t] ?? false;
+    if (u === true && t === "yapi_market") {
+      const mallar = dukkanTuruMallari(ic, t);
+      const ureticiler = mallar.filter((m) => m === "pencere" || m === "cam");
+      if (ureticiler.length > 0 && !ureticiler.some((m) => stokMili(m) > 0)) u = "kismi";
+    }
+    sonuc[t] = u;
+  }
+  return sonuc;
 }
 
 /** Yapı kurma kartı için dükkân bilgisi; dünyada dükkân yoksa tanımsız. Sayaçlar köprü görünümünden (karede hücre yoksa ilçesi bilinmeyen dükkân sayılmaz). */
@@ -155,10 +174,10 @@ export function dukkanKurBilgisi(g: DukkanKurBilgisiGirdisi): DukkanKurBilgisi |
     ilceSinir: pk.ilceBasinaEnFazla,
     ilSayi,
     ilSinir: yapi.enFazlaIlBasina ?? Number.MAX_SAFE_INTEGER,
-    uyum: turUyumlari(g.ic, (m) => g.stokMili(m) > 0),
+    uyum: turUyumlariKismi(g.ic, turler, g.stokMili),
     g8Acik: g8Acik(g.ic),
     esZamanliInsaat: g.ic.param.mulk?.esZamanliInsaat ?? 2,
-    ...(g.ic.param.mulk?.yeniOyuncu?.ilkYapiIndirimPpm ? { indirim: { n: g.ic.param.mulk.yeniOyuncu.indirimliYapiSayisi, ppm: g.ic.param.mulk.yeniOyuncu.ilkYapiIndirimPpm } } : {}),
+    ...(indirimli && g.indirim !== undefined ? { indirim: { n: g.indirim.kalan, ppm: g.indirim.ppm } } : {}),
     ...(pencere !== undefined ? { pencere } : {}),
   };
 }
@@ -181,7 +200,7 @@ export interface DukkanKartGirdisi {
   tur: DukkanTuru | null;
   bilgi: DukkanKurBilgisi;
   plan: DukkanKartPlani;
-  yapi: Pick<YapiTanimi, "sureSaat">;
+  yapi: Pick<YapiTanimi, "sureSaat" | "ilkGunSureSaat">;
   hazineMili: number | null;
   surenInsaat: number;
   stokMili: (mal: string) => number;
@@ -224,6 +243,7 @@ export function dukkanMaliyetGirdisi(g: DukkanKartGirdisi): MaliyetGirdisi | nul
     ...(eksik !== null ? { stokEksik: { ad: eksik.ad, var: eksik.var, gereken: eksik.gereken } } : {}),
     g8Acik: g.bilgi.g8Acik,
     sureSaat: g.yapi.sureSaat,
+    ...(g.yapi.ilkGunSureSaat !== undefined && g.yapi.ilkGunSureSaat < g.yapi.sureSaat ? { ilkGunSureSaat: g.yapi.ilkGunSureSaat } : {}),
     toplamMili: g.plan.toplamMili,
     hazineMili: g.hazineMili ?? 0,
     ...(g.plan.indirimli && g.bilgi.indirim !== undefined ? { indirim: { n: g.bilgi.indirim.n, yuzde: yuzde(g.bilgi.indirim.ppm / 10_000) } } : {}),
