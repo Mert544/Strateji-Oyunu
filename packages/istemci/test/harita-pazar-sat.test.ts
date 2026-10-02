@@ -83,19 +83,19 @@ describe("satır eki: düğme, durum, depolanamaz mal", () => {
     expect(p.satirEki(tahil({ satisEmirMili: 100_000, satisMili: 0, stokMili: 0, uretimMili: 0 }))).toContain("Satışta: saatte 100 birim · şu an satılacak mal yok");
   });
 
-  it("bekliyor: emir var, gerçekleşen 0, satılacak mal VAR => 'Satış saat başında yapılır · ilk gelir ≈ {sure} sonra' (süre sunucunun sim zamanından bir sonraki tam saate, yukarı yuvarlı dk); 'satılacak mal yok' ÇIKMAZ", () => {
+  it("bekliyor: emir var, gerçekleşen 0, satılacak mal VAR => 'Satış emirleri saat başında işlenir · bir sonraki işlem ≈ {sure} sonra' (süre sunucunun sim zamanından bir sonraki tam saate, yukarı yuvarlı dk); 'satılacak mal yok' ÇIKMAZ", () => {
     const x = tahil({ satisEmirMili: 100_000, satisMili: 0 });
     const SA = 3_600_000;
     const dk = (simZamani: number): string => kur([x], { simZamani }).p.satirEki(x);
-    expect(dk(5 * SA + 30 * 60_000)).toContain("Satış saat başında yapılır · ilk gelir ≈ 30 dk sonra");
-    expect(dk(5 * SA)).toContain("ilk gelir ≈ 1 sa sonra"); // tam saatte: bir sonraki tık 1 sa sonra
-    expect(dk(5 * SA + 59 * 60_000 + 30_000)).toContain("ilk gelir ≈ 1 dk sonra"); // 30 sn -> yukarı: 1 dk
-    expect(dk(5 * SA + 10 * 60_000)).toContain("ilk gelir ≈ 50 dk sonra");
+    expect(dk(5 * SA + 30 * 60_000)).toContain("Satış emirleri saat başında işlenir · bir sonraki işlem ≈ 30 dk sonra");
+    expect(dk(5 * SA)).toContain("bir sonraki işlem ≈ 1 sa sonra"); // tam saatte: bir sonraki tık 1 sa sonra
+    expect(dk(5 * SA + 59 * 60_000 + 30_000)).toContain("bir sonraki işlem ≈ 1 dk sonra"); // 30 sn -> yukarı: 1 dk
+    expect(dk(5 * SA + 10 * 60_000)).toContain("bir sonraki işlem ≈ 50 dk sonra");
     expect(dk(5 * SA + 30 * 60_000)).not.toContain("satılacak mal yok");
     expect(dk(5 * SA + 30 * 60_000)).not.toContain("Satışta: saatte");
     // yalnız üretim varsa da (stok 0) bekleyiş; tık gerçekleştirince normal durum satırı
     const uretimli = tahil({ satisEmirMili: 100_000, satisMili: 0, stokMili: 0 });
-    expect(kur([uretimli], { simZamani: 5 * SA + 30 * 60_000 }).p.satirEki(uretimli)).toContain("ilk gelir ≈ 30 dk sonra");
+    expect(kur([uretimli], { simZamani: 5 * SA + 30 * 60_000 }).p.satirEki(uretimli)).toContain("bir sonraki işlem ≈ 30 dk sonra");
     const gerceklesti = tahil({ satisEmirMili: 100_000, satisMili: 100_000 });
     expect(kur([gerceklesti], { simZamani: 6 * SA + 1000 }).p.satirEki(gerceklesti)).toContain("Satışta: saatte 100 birim · şu an 100 birim/sa");
   });
@@ -122,9 +122,9 @@ describe("form: açma, hızlı seçim, doğrulama", () => {
     expect(h).toContain("Saatte kaç birim satılsın? Satış sen bırakana kadar sürer.");
     expect(h).toContain("Üretimin kadar: 200 birim/sa");
     expect(h).toContain("Depodaki kadar: 38 birim/sa");
-    expect(h).toContain('type="number" inputmode="numeric" min="1" max="1000000" step="1" value="200"');
+    expect(h).toContain('type="text" inputmode="decimal" autocomplete="off" aria-describedby="pz-birim" value="200"');
     expect(h).toContain(">Satış emri ver<");
-    expect(h.match(/class="birincil"/g)).toHaveLength(1);
+    expect(h.match(/class="eylem birincil"/g)).toHaveLength(1);
     expect(h).not.toContain("Satışı bırak"); // emir yok
   });
 
@@ -161,25 +161,25 @@ describe("form: açma, hızlı seçim, doğrulama", () => {
     expect(n(y.p.ozetHtml("tahil"))).toContain("Piyasa fiyatı ≈ 30 ₺ (veri henüz gelmedi)");
   });
 
-  it("oran boş ya da 0: 'Saatte en az 1 birim yaz.' ve birincil aria-disabled; tavandan büyük: ret metni; geçerli oranda uyarı yok", async () => {
+  it("oran boş: 'Geçerli bir saatlik miktar yaz; 0 mevcut emri iptal eder.' ve birincil aria-disabled; tavandan büyük: ret metni; geçerli oranda uyarı yok", async () => {
     const { p, komutlar } = kur([tahil({ uretimMili: 0 })]);
     await p.eylem({ eylem: "ac", mal: "tahil" });
     expect(p.durum.girdi).toBe(""); // üretim yok: alan boş
     let h = p.satirEki(tahil({ uretimMili: 0 }));
-    expect(h).toContain("Saatte en az 1 birim yaz.");
+    expect(h).toContain("Geçerli bir saatlik miktar yaz; 0 mevcut emri iptal eder.");
     expect(h).toContain('data-eylem="pazar-ver" aria-disabled="true"');
     p.girdi("0");
-    expect(p.ozetHtml("tahil")).toContain("Saatte en az 1 birim yaz.");
+    expect(p.ozetHtml("tahil")).not.toContain("data-alan=\"pazar-gerekli\"");
     p.girdi("2000000");
-    expect(p.ozetHtml("tahil")).toContain("Saatte 1 ile 1.000.000 arasında bir sayı yaz.");
+    expect(p.ozetHtml("tahil")).toContain("Saatte 0 ile 1.000.000 arasında bir sayı yaz.");
     p.girdi("12");
     expect(p.ozetHtml("tahil")).not.toContain("en az 1 birim");
     h = p.satirEki(tahil({ uretimMili: 0 }));
     expect(h).not.toContain('aria-disabled="true"');
     p.girdi("0");
     await p.eylem({ eylem: "ver" });
-    expect(komutlar).toHaveLength(0); // geçersiz oranla komut gitmez
-    expect([pazarOrani(""), pazarOrani("1,5"), pazarOrani("abc"), pazarOrani("1"), pazarOrani("1000000"), pazarOrani("1000001")]).toEqual([null, null, null, 1, 1_000_000, null]);
+    expect(komutlar).toEqual([{ bolge: "sn_m_ova#ali", mal: "tahil", oranSaat: 0 }]); // 0 mevcut emri iptal eder
+    expect([pazarOrani(""), pazarOrani("1,5"), pazarOrani("abc"), pazarOrani("1"), pazarOrani("1000000"), pazarOrani("1000001")]).toEqual([null, 1.5, null, 1, 1_000_000, null]);
   });
 
   it("gıda: 'Depodaki kadar' kısayolu YOK, tek cümle uyarı (ilk dükkân satışı yokken); dükkân satışı olduysa uyarı da yok; tahılda uyarı yok", async () => {
@@ -206,7 +206,7 @@ describe("form: açma, hızlı seçim, doğrulama", () => {
     const b = kur([bekleyen], { ilkSatisOdulu: () => 500_000, simZamani: 1800_000 });
     await b.p.eylem({ eylem: "ac", mal: "tahil" });
     const hb = b.p.satirEki(bekleyen);
-    expect(hb).toContain("ilk gelir ≈ 30 dk sonra");
+    expect(hb).toContain("bir sonraki işlem ≈ 30 dk sonra");
     expect(hb).not.toContain("Defterine"); // bekliyor satırı varken defter notu yok
     const y = kur([tahil()], { ilkSatisOdulu: () => 500_000 });
     await y.p.eylem({ eylem: "ac", mal: "tahil" });
@@ -235,7 +235,7 @@ describe("gönderim: sürekli saatlik emir", () => {
     await p.eylem({ eylem: "ac", mal: "tahil" });
     await p.eylem({ eylem: "ver" }); // alan üretimin kadar: 200
     const kareyok = p.satirEki(tahil());
-    expect(kareyok).toContain("Satış saat başında yapılır · ilk gelir ≈ 1 sa sonra"); // iyimser emir: gerçekleşen henüz 0, mal var -> bekliyor
+    expect(kareyok).toContain("Satış emirleri saat başında işlenir · bir sonraki işlem ≈ 1 sa sonra"); // iyimser emir: gerçekleşen henüz 0, mal var -> bekliyor
     expect(kareyok).toContain(">Satışı değiştir<");
     expect(p.satirEki(tahil({ satisEmirMili: 200_000, satisMili: 200_000 }))).toContain("şu an 200 birim/sa"); // kare yetişti
     expect(p.satirEki(tahil())).not.toContain("Satışta"); // kare artık emir göstermiyor: iyimser silindi
@@ -253,7 +253,7 @@ describe("gönderim: sürekli saatlik emir", () => {
     const h = p.satirEki(x);
     expect(h).toContain(">Emri güncelle<");
     expect(h).toContain('data-eylem="pazar-birak"');
-    expect(h.match(/class="birincil"/g)).toHaveLength(1);
+    expect(h.match(/class="eylem birincil"/g)).toHaveLength(1);
     await p.eylem({ eylem: "oran", oran: "80" });
     await p.eylem({ eylem: "ver" });
     expect(komutlar.at(-1)).toEqual({ bolge: "sn_m_ova#ali", mal: "tahil", oranSaat: 80_000 });
@@ -314,7 +314,7 @@ describe("metin tablosu ve ret eşlemesi", () => {
   it("çekirdek ret iletileri Türkçe: yuva dolu (Ticaret ofisi), depolanamaz, geçersiz oran, sahip değil, liman; tanınmayan ileti genel eşlemeye düşer", () => {
     expect(pazarHatasiTurkce("ticaret emri yuvasi dolu (4); Ticaret ofisi yuva ekler")).toBe("Satış ve alış emri yuvaların dolu (4). Bir emri bırak ya da Ticaret ofisi kur.");
     expect(pazarHatasiTurkce("depolanamaz mal ticarete konu olamaz: elektrik")).toBe("Bu mal depolanamadığı için satılamaz.");
-    expect(pazarHatasiTurkce("gecersiz oran: -5 (0..1000000000)")).toBe("Saatte 1 ile 1.000.000 arasında bir sayı yaz.");
+    expect(pazarHatasiTurkce("gecersiz oran: -5 (0..1000000000)")).toBe("Saatte 0 ile 1.000.000 arasında bir sayı yaz.");
     expect(pazarHatasiTurkce("bolge oyuncunun degil: sn_m_ova#veli")).toBe("Bu işletme senin değil.");
     expect(pazarHatasiTurkce("bolge liman degil: m_ova")).toBe("Bu bölgede Pazar'a satış yapılamaz.");
     expect(pazarHatasiTurkce("bilinmeyen mal: x")).toBe("Bu mal bulunamadı.");

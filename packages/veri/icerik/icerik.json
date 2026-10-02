@@ -24,7 +24,12 @@
     { "id": "findik", "ad": "Kabuklu fındık", "kategori": "ham", "tabanFiyat": 85000, "lojistikOnceligi": 4, "bozulmaPpmGun": 3000 },
     { "id": "findik_urunu", "ad": "Fındık içi", "kategori": "ara", "tabanFiyat": 240000, "lojistikOnceligi": 4, "bozulmaPpmGun": 4000 },
     { "id": "sekerleme", "ad": "Şekerleme", "kategori": "tuketim", "tabanFiyat": 180000, "lojistikOnceligi": 3, "bozulmaPpmGun": 5000 },
-    { "id": "kepek", "ad": "Kepek", "kategori": "ara", "tabanFiyat": 18000, "lojistikOnceligi": 4, "bozulmaPpmGun": 6000 }
+    { "id": "kepek", "ad": "Kepek", "kategori": "ara", "tabanFiyat": 18000, "lojistikOnceligi": 4, "bozulmaPpmGun": 6000 },
+    { "id": "balik", "ad": "Balık", "kategori": "ham", "tabanFiyat": 65000, "lojistikOnceligi": 1, "bozulmaPpmGun": 60000 },
+    { "id": "yun", "ad": "Yün ve tiftik", "kategori": "ham", "tabanFiyat": 60000, "lojistikOnceligi": 4, "bozulmaPpmGun": 1000 },
+    { "id": "iplik", "ad": "İplik", "kategori": "ara", "tabanFiyat": 130000, "lojistikOnceligi": 4, "bozulmaPpmGun": 1000 },
+    { "id": "kumas", "ad": "Kumaş", "kategori": "ara", "tabanFiyat": 200000, "lojistikOnceligi": 4, "bozulmaPpmGun": 1000 },
+    { "id": "hazir_giyim", "ad": "Hazır giyim", "kategori": "tuketim", "tabanFiyat": 340000, "lojistikOnceligi": 3, "bozulmaPpmGun": 1000 }
   ],
   "yontemler": [
     {
@@ -176,6 +181,31 @@
       "id": "celik_dograma", "ad": "Çelik doğrama",
       "girdiler": { "celik": 24000, "cam": 32000, "parca": 5000, "elektrik": 15000 }, "ciktilar": { "pencere": 30000 }, "isci": 7000,
       "bakim": { "parca": 1000 }, "kirlilikPpmSaat": 20, "mulkKipi": true
+    },
+    {
+      "id": "kiyi_balikciligi", "ad": "Kıyı balıkçılığı",
+      "girdiler": { "yakit": 15000, "elektrik": 5000 }, "ciktilar": { "balik": 100000 }, "isci": 6000,
+      "bakim": { "parca": 800 }, "kirlilikPpmSaat": 10
+    },
+    {
+      "id": "mera_koyun_yun", "ad": "Koyun yetiştiriciliği",
+      "girdiler": {}, "ciktilar": { "yun": 40000, "gubre": 3000 }, "isci": 9000,
+      "bakim": { "parca": 500 }, "tarimsal": true, "kirlilikPpmSaat": 10, "mulkKipi": true
+    },
+    {
+      "id": "yun_egirme", "ad": "Yün eğirme",
+      "girdiler": { "yun": 40000, "elektrik": 7000 }, "ciktilar": { "iplik": 27000 }, "isci": 3000,
+      "bakim": { "parca": 500 }, "kirlilikPpmSaat": 20
+    },
+    {
+      "id": "kumas_dokuma", "ad": "Kumaş dokuma",
+      "girdiler": { "iplik": 80000, "elektrik": 25000 }, "ciktilar": { "kumas": 76000 }, "isci": 9000,
+      "bakim": { "parca": 800 }, "kirlilikPpmSaat": 20
+    },
+    {
+      "id": "konfeksiyon", "ad": "Konfeksiyon",
+      "girdiler": { "kumas": 76000, "elektrik": 15000 }, "ciktilar": { "hazir_giyim": 60000 }, "isci": 14000,
+      "bakim": { "parca": 800 }, "kirlilikPpmSaat": 20
     }
   ],
   "tesisTurleri": [
@@ -248,7 +278,7 @@
     {
       "id": "mera", "ad": "Mera",
       "insaMaliyeti": { "celik": 20000, "parca": 5000 }, "insaParasi": 4000000, "insaSuresiSaat": 4,
-      "yontemler": ["mera_hayvancilik"], "gerekliEtiket": "dag", "tarimTesisi": true
+      "yontemler": ["mera_hayvancilik", "mera_koyun_yun"], "gerekliEtiket": "dag", "tarimTesisi": true
     },
     {
       "id": "gubre_fabrikasi", "ad": "Gübre fabrikası",
@@ -269,6 +299,16 @@
       "id": "sulama_kanali", "ad": "Sulama kanalı",
       "insaMaliyeti": { "celik": 50000, "parca": 20000 }, "insaParasi": 8000000, "insaSuresiSaat": 8,
       "yontemler": ["sulama_pompasi"], "gerekliTeknoloji": "sulama_sistemi"
+    },
+    {
+      "id": "balikcilik", "ad": "Balıkçılık tesisi",
+      "insaMaliyeti": { "celik": 30000, "parca": 15000 }, "insaParasi": 8000000, "insaSuresiSaat": 4,
+      "yontemler": ["kiyi_balikciligi"], "gerekliEtiket": "liman"
+    },
+    {
+      "id": "hafif_sanayi", "ad": "Tekstil üretimhanesi",
+      "insaMaliyeti": { "celik": 60000, "parca": 25000 }, "insaParasi": 10000000, "insaSuresiSaat": 6,
+      "yontemler": ["yun_egirme", "kumas_dokuma", "konfeksiyon"]
     }
   ],
   "teknolojiler": [

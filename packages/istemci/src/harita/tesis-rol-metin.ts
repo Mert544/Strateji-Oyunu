@@ -4,12 +4,14 @@
  */
 export const TESIS_ROL = {
   "tesis.rol.ahir": "Tahılını gıdaya çevirir; dükkânının rafı için gıda buradan gelir, yan ürün olarak gübre de verir.",
+  "tesis.rol.mera": "Dağ otlağında gıda ya da yün üretir; koyun yetiştiriciliğinden çıkan yünü satabilir veya ipliğe çevirebilirsin.",
   "tesis.rol.ciftlik": "Tarlada tahıl yetiştirir; Pazar'da satabilir, un ve ahır zincirine de verebilirsin.",
   "tesis.rol.gida_fabrikasi": "Tahılı gıdaya, una ya da ekmeğe çevirir; dükkânında satacağın mal buradan gelir.",
   "tesis.rol.cevher_madeni": "Demir cevheri çıkarır; çelikhane bunu çeliğe çevirir.",
   "tesis.rol.komur_ocagi": "Kömür çıkarır; çelikhane ve kömür santrali kullanır.",
   "tesis.rol.celikhane": "Demir cevherinden çelik üretir; yapıların ve makine parçasının malzemesi çeliktir.",
   "tesis.rol.parca_fabrikasi": "Çelikten makine parçası, ayrıca cam ve pencere üretir; yapı ve dükkân malzemen buradan gelir.",
+  "tesis.rol.hafif_sanayi": "Yünü ipliğe, ipliği kumaşa veya kumaşı hazır giyime çevirir; her aşamayı ayrı tesiste üretir, Pazar'da satabilirsin.",
   "tesis.rol.santral": "Elektrik üretir; fabrikaların ve madenlerin girdisi olur, şebekeden almak zorunda kalmazsın.",
 } as const;
 

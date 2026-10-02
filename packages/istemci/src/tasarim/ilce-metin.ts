@@ -4,6 +4,7 @@
  * büyük harf yalnız cümle başında. Dükkân düzeyi: G6 (dükkân yok) `neden`; G7 açıkken `nedenG7`; G8 açıkken açılışta `acilisG8`.
  */
 import { fmt, fmt1 } from "../arayuz/bicim";
+import type { Icerik } from "../komut/tablo";
 
 export type AcilisOnerisi = "tarim" | "sanayi" | "pazar";
 /** Dükkân düzeyi: G7 (dükkân açık), G8 (cam ve pencere açık). G8 açıkken G7 de açıktır. */
@@ -30,7 +31,7 @@ export const ILCE_ORTAK: Readonly<{ acilis: Readonly<Record<AcilisOnerisi, strin
     pazar: "Çiftlikle başla; sonra gıda fabrikasında un ve ekmek yap, dükkânında sat.",
   },
   acilisG8: {
-    sanayi: "Çiftlikle başla; sonra parça fabrikasında makine parçası, cam ve pencere yap.",
+    sanayi: "Çiftlikle başla; sonra çelikten makine parçası üret. Cam ve pencere yöntemlerini yapı kurarken inceleyebilirsin.",
   },
 };
 
@@ -46,7 +47,7 @@ export const ILCE_METIN: Readonly<Record<string, IlceMetni>> = {
   tr_41_kandira: { ad: "Kandıra", bilinenYani: "Manda yoğurdu, karpuz", neden: "Süt ve karpuzuyla bilinir; ahır ve çiftlikle başlarsın.", nedenG7: "Süt ve karpuzuyla bilinir; ahır ve çiftlikle başlarsın.", oneri: "tarim" },
   tr_41_karamursel: { ad: "Karamürsel", bilinenYani: "Karamürsel sepeti", neden: "Orta boy ilçe; üretimle başla.", nedenG7: "Orta boy ilçe; dükkân yavaş döner, üretimle başla.", oneri: "tarim" },
   tr_41_kartepe: { ad: "Kartepe", bilinenYani: null, neden: "Kalabalık ilçe; mallarına alıcı bulursun.", nedenG7: "Kalabalık ilçe; dükkânına müşteri bulursun.", oneri: "pazar" },
-  tr_41_korfez: { ad: "Körfez", bilinenYani: "Rafineri, petrokimya", neden: "Rafineri ve petrokimyasıyla bilinir; çiftlikten sonra sanayiye geçersin.", nedenG7: "Rafineri ve petrokimyasıyla bilinir; çiftlikten sonra sanayiye geçersin.", oneri: "sanayi" },
+  tr_41_korfez: { ad: "Körfez", bilinenYani: "Hereke halısı, İzmit Rafinerisi", neden: "Sanayisiyle bilinen, kalabalık ilçe; üretimle başlayabilirsin.", nedenG7: "Sanayisiyle bilinen, kalabalık ilçe; üretim ve dükkân için bir başlangıç.", oneri: "sanayi" },
   tr_54_adapazari: { ad: "Adapazarı", bilinenYani: "Otomotiv, mısır", neden: "Sakarya'nın kalabalık merkezi; mallarına çok alıcı bulursun.", nedenG7: "Sakarya'nın kalabalık merkezi; dükkânına çok müşteri bulursun.", oneri: "pazar" },
   tr_54_akyazi: { ad: "Akyazı", bilinenYani: "Fındık", neden: "Fındığıyla bilinir, kalabalık; çiftlikten sonra un ve ekmeğe geçersin.", nedenG7: "Fındığıyla bilinir, kalabalık; çiftlikten sonra un, ekmek ve dükkâna geçersin.", oneri: "pazar" },
   tr_54_arifiye: { ad: "Arifiye", bilinenYani: "Otomotiv", neden: "Otomotiviyle bilinir; çiftlikten sonra parça fabrikası yakışır.", nedenG7: "Otomotiviyle bilinir; çiftlikten sonra parça fabrikası yakışır.", oneri: "sanayi" },
@@ -105,6 +106,14 @@ export function acilisMetni(oneri: AcilisOnerisi, duzey: DukkanDuzeyi = {}): str
     if (t) return t;
   }
   return ILCE_ORTAK.acilis[oneri];
+}
+
+/** Yalnız dünyada bulunan ve araştırması açık yöntemler örneklenir; kıyı/rezerv/kurulum uygunluğu ayrıca doğrulanır. */
+export function acilisUretimMetni(oneri: AcilisOnerisi, ic: Icerik, acik: ReadonlySet<string> | null): string {
+  const mallar = oneri === "sanayi" ? ["makine_parcasi", "cam", "pencere"] : oneri === "pazar" ? ["un", "ekmek"] : ["tahil"];
+  const yontemler = ic.yontemler.filter((y) => (!y.gerekliTeknoloji || acik?.has(y.gerekliTeknoloji)) && ic.turler.some((t) => t.yontemler.includes(y.indeks) && (!t.gerekliTeknoloji || acik?.has(t.gerekliTeknoloji))) && y.cikti.some(([mi]) => mallar.includes(ic.mallar[mi]?.id ?? "")));
+  const ornekler = yontemler.slice(0, 2).map((y) => y.ad).join(", ");
+  return ornekler ? `Çiftlikle başla. Üretim örnekleri: ${ornekler}. Uygun yer ve girdileri yapı kurarken görebilirsin.` : "Çiftlikle başla. Üretim seçeneklerini yapı kurarken inceleyebilirsin.";
 }
 
 /** "Bilinen yanı" satırı (etiket ve değer); `bilinenYani` null ise satır yok (null döner). */

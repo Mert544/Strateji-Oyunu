@@ -32,7 +32,7 @@
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { GUN, PPM, anlikMiktar, carpBol, kamuBloklari, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
+import { GUN, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, ikmalTalebi, ilceYasamGorunumu, kamuBloklari, teknolojiYayilimiPpm, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
 import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
 
 /** Dikdörtgen kamu bloğu: `[x0, y0, x1, y1]` = x0..x1 × y0..y1 (dört uç dahil) hücreleri ("x:y" kimliği), hepsi kamu arsası. */
@@ -63,7 +63,7 @@ export interface KareKaynagi {
   readonly dunya: Readonly<Dunya>;
   readonly ic: DerlenmisIcerik;
   /**
-   * Çözüm bağlamı (`Simulasyon` sağlar): yalnız perakende okuma API'si (`yerelPazarGorunumu`) için; yoksa dükkân ayrıntı alanları (`OzelBolgeKaresi.dukkanlar`,
+   * Çözüm bağlamı (`Simulasyon` sağlar): perakende okuma API'si ve araştırma yayılımı için; yoksa araştırma teklif çarpanları ve dükkân ayrıntı alanları (`OzelBolgeKaresi.dukkanlar`,
    * `IlceKaresi.talep`) YAZILMAZ (genel `dukkanlar` ve `OyuncuKaresi.markalar` durumdan okunur, bağlam gerekmez).
    */
   readonly baglam?: Baglam;
@@ -139,12 +139,16 @@ export interface OzelBolgeKaresi {
    * - `ihrNetPpm`: bu düğümde 1 birim malın İHRACATTA eline geçen nakit çarpanı (tamsayı ppm) = çekirdek `ticaretNakitCarpanlari(...).ihracatPpm` (makas x (1 - liman primi) x (1 - komisyon);
    *   yeni oyuncu kalkanında komisyon 0; düğümdeki Ticaret ofisi indirimi dahil; ihracat vergisi hazineye geri yazıldığından girmez). Prim düğümün merkez bölgesine bağlıdır: çok ilçeli
    *   oyuncuda düğümden düğüme değişir. İstemci formül KOPYALAMAZ; alan yoksa (eski sunucu) dükkân köprüsü `param.pazar`dan 0,891 hesabına döner.
+   * - `emirYuvasi`: ithalat ve ihracat için ortak toplam emir kapasitesi; çekirdek `ticaretEmirYuvasi` sonucu. Kural sınırsızsa `Number.MAX_SAFE_INTEGER`; eski sunucuda yoktur.
+   * - `ithNetPpm`: bu düğümde ithalat için etkin nakit maliyeti çarpanı; çekirdek `ticaretNakitCarpanlari(...).ithalatPpm`. Eski sunucuda yoktur.
    */
-  isletme?: { ihrNetPpm: number };
+  isletme?: { ihrNetPpm: number; emirYuvasi?: number; ithNetPpm?: number };
   /** `[mal, yön (0 ihracat, 1 ithalat), istenen oran, gerçekleşen oran]` (mili-birim/saat) */
   emirler: Array<[mal: number, yon: 0 | 1, oranSaat: Mili, gerceklesenSaat: Mili]>;
   /** Birlik indeksine göre adet. */
   birlikler: number[];
+  /** Yalnız mülk işletmesinin sahibine: tamamlanan Ordugâh kapasitesi ve gerçek saatlik ikmal talebi. */
+  ordu?: { kapasite: number; ordugahSayisi: number; ikmalSaat?: Array<[mal: number, miliSaat: Mili]> };
   gidaPpm: number;
   ikmalPpm: number;
   /** Mal indeksine göre kalan rezerv (mili-birim). */
@@ -200,6 +204,18 @@ export interface IlceKaresi {
    * (mal kimliğine göre sıralı; boş yuva ve talebi 0 olan mal yazılmaz); hiç yoksa alan YAZILMAZ. Esnaf payı gösterimi için (G9); G7 kabulünü bağlamaz.
    */
   talep?: Array<[mal: string, qMiliSaat: Mili]>;
+  /** Genel ilçe görünümü: kaynak nüfus ve tüm tanımlı hane mallarının mevcut oyun talebi; işletme stoğu değildir. */
+  yasam?: {
+    nufus: number;
+    nufusKaynak: "kayit" | "esdeger";
+    talep: Array<[mal: string, miliSaat: Mili]>;
+    /** Son çözümde kayıtlı ilçe dükkân satışının hane talebindeki payı; stok/gelir veya toplam tüketim değildir. Eski sunucuda alan yoktur. */
+    karsilanma?: Array<{ mal: string; talepMiliSaat: Mili; satisMiliSaat: Mili; karsilanmaPpm: number }>;
+    /** Kamu kasasının kayıtlı sayaçları; yoksa kamu muhasebesi açık değildir. */
+    kamuKasa?: { bakiyeMili: Mili; vergiToplamMili: Mili; girisToplamMili: Mili; cikisToplamMili: Mili; rezervMili: Mili };
+    /** Sayaçların ortak muhasebe alt zaman sınırı (sim ms); ara değer formülü değildir. */
+    muhasebeT?: Ms;
+  };
 }
 
 /** Oyuncunun mülk kaydı (yalnız kendisine). */
@@ -232,12 +248,16 @@ export interface OyuncuKaresi {
   askeriRezervPpm: number;
   teknolojiler: number[];
   arastirma: { teknoloji: number; bitis: Ms } | null;
+  /** Teknoloji dizini sırasıyla maliyet/süre yayılım çarpanı; yalnız sahibine, eski sunucuda olmayabilir. */
+  arastirmaYayilimPpm?: number[];
   korumaBitis: Ms;
   /**
    * `[kimlik, tür, bölge, hedef, bitiş, başlangıç?, ekYapı?]`; tür: "tesis" | "kenar" | "olcek" | "onarim". `başlangıç`
    * (mülk kipi hücreli inşaat; yoksa -1) aşama hesabı içindir; `ekYapı` ek yapı inşaatında `mulk.ekYapilar` kimliğidir.
    */
   insaatlar: Array<[id: number, tur: string, bolge: number, hedef: number, bitis: Ms, baslangic?: Ms, ekYapi?: string]>;
+  /** Yalnız sahibine süren birlik üretimleri. Bölge/birlik dünya/içerik indeksidir; mevcut demetler değişmez. */
+  partiler?: Array<{ id: number; bolge: number; birlik: number; adet: number; bitis: Ms }>;
   /**
    * Yalnız ekleme (isteğe bağlı; mülk kipi, G6): inşaatta SEÇİLEN yöntemin KİMLİĞİ (çekirdek `InsaatDurumu.yontem`): `[inşaat kimliği, yöntem kimliği]`. Yalnız komutta
    * `yontem` verilmiş (alan yazılmış) KENDİ inşaatları listelenir; yöntemsiz inşaat (tür varsayılanı) ve hiç yoksa alan YAZILMAZ. `insaatlar` demetine öğe EKLENMEZ
@@ -472,6 +492,15 @@ export function ilgiKaresiCikar(
         ikmalPpm: b.ikmalKarsilanmaPpm,
         rezervKalan: [...b.rezervKalan],
       };
+      if (kaynak.ic.mulk !== undefined && b.merkez !== undefined) {
+        girdi.ozel.ordu = {
+          kapasite: ekYapiToplami(kaynak.ic, b, "birlikKapasitesi"),
+          ordugahSayisi: ekYapiSayisi(b, "ordugah"),
+        };
+        if (kaynak.baglam !== undefined) {
+          girdi.ozel.ordu.ikmalSaat = ikmalTalebi(d as Dunya, kaynak.baglam, i).flatMap((miktar, mal): Array<[number, Mili]> => miktar > 0 ? [[mal, miktar]] : []);
+        }
+      }
       const olcekler = b.tesisler.flatMap((x): Array<[number, 1 | 2]> => (x.olcek === 1 || x.olcek === 2 ? [[x.id, x.olcek]] : []));
       if (olcekler.length > 0) girdi.ozel.tesisOlcek = olcekler;
       if (dukkanlar.length > 0) {
@@ -517,7 +546,12 @@ export function ilgiKaresiCikar(
       // İşletme düğümü bilgileri (yalnız mülk düğümü: `merkez` tanımlı; çözüm bağlamı gerekir): etkin ihracat net çarpanı çekirdekten.
       const sahip = d.oyuncular.find((x) => x.id === oyuncu);
       if (kaynak.baglam !== undefined && b.merkez !== undefined && sahip !== undefined) {
-        girdi.ozel.isletme = { ihrNetPpm: ticaretNakitCarpanlari(d, kaynak.baglam, sahip, b.merkez, b).ihracatPpm };
+        const nakitCarpanlari = ticaretNakitCarpanlari(d, kaynak.baglam, sahip, b.merkez, b);
+        girdi.ozel.isletme = {
+          ihrNetPpm: nakitCarpanlari.ihracatPpm,
+          ithNetPpm: nakitCarpanlari.ithalatPpm,
+          emirYuvasi: ticaretEmirYuvasi(kaynak.ic, b),
+        };
       }
     }
     bolgeler.push(girdi);
@@ -539,6 +573,7 @@ export function ilgiKaresiCikar(
         askeriRezervPpm: o.askeriRezervPpm,
         teknolojiler: [...o.teknolojiler],
         arastirma: o.arastirma ? { teknoloji: o.arastirma.teknoloji, bitis: o.arastirma.bitis } : null,
+        ...(kaynak.baglam ? { arastirmaYayilimPpm: kaynak.ic.teknolojiler.map((_, i) => teknolojiYayilimiPpm(d, kaynak.baglam!, oyuncu, i)) } : {}),
         korumaBitis: o.korumaBitis,
         insaatlar: d.insaatlar
           .filter((x) => x.sahip === oyuncu)
@@ -550,6 +585,8 @@ export function ilgiKaresiCikar(
           }),
       };
       const yontemler = d.insaatlar.filter((x) => x.sahip === oyuncu && x.yontem !== undefined).map((x): [number, string] => [x.id, x.yontem as string]);
+      // Boş liste de gönderilir: son parti bittiğinde istemcide eski kuyruk kalmaz.
+      kare.oyuncu.partiler = d.partiler.filter((x) => x.sahip === oyuncu).map((x) => ({ id: x.id, bolge: x.bolge, birlik: x.birlik, adet: x.adet, bitis: x.bitis }));
       if (yontemler.length > 0) kare.oyuncu.insaatYontem = yontemler;
       const eo = kaynak.ic.param.erkenOyun;
       if (eo) kare.oyuncu.erkenOyun = [o.katilmaZamani, eo.baslangicCarpaniPpm, eo.sabitSaat * 3_600_000, eo.bitisSaat * 3_600_000];
@@ -617,6 +654,15 @@ export function ilgiKaresiCikar(
       .filter((c) => istenen.has(c.id))
       .map((c) => {
         const girdi: IlceKaresi = { id: c.id, il: c.il, seviye: c.seviye, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, hucreler: hucreler.get(c.id) ?? [] };
+        const yasam = ilceYasamGorunumu(d as Dunya, kaynak.ic, c.id);
+        if (yasam !== undefined) {
+          girdi.yasam = { nufus: yasam.nufus, nufusKaynak: yasam.nufusKaynak, talep: yasam.talep, karsilanma: yasam.karsilanma };
+          if (yasam.kamuKasa !== undefined) {
+            const { muhasebeT, ...kamuKasa } = yasam.kamuKasa;
+            girdi.yasam.kamuKasa = kamuKasa;
+            girdi.yasam.muhasebeT = muhasebeT;
+          }
+        }
         if ((c.ayrilmisSatilmis ?? 0) > 0) girdi.ayrilmisSatilmis = c.ayrilmisSatilmis as number;
         const ayrilmis = mk ? ayrilmisHucreler(mk, c.id) : undefined;
         if (ayrilmis) {

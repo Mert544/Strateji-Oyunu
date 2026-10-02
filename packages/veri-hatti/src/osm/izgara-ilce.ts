@@ -7,6 +7,8 @@
  *   ızgara: izgaraUret (>= %50 yol/su, askeri kesişim; su hücreleri kota dışı) -> BHI1 (gzip -9) + şerit PMTiles
  * Girdiler sabit (yapı tarihi, kilitli sınır) ve hat tamsayı/sıralı olduğundan çıktı bayt bayt aynıdır.
  * Kamu kuralı çekirdektedir; bu hat yalnız uygunluk (yol/su/askeri) üretir.
+ * Açık yerel sınır seçimi `yerelTopojsonHalkalari` ile okunup `sinir` seçeneğinden geçirilir; nicemlenmiş bu
+ * girdi ham OSM ile aynı çıktı sayılmaz. CLI yerel üretimi ayrı hedef ve manifestte tutar.
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -140,7 +142,7 @@ export interface UretimSecenegi {
   hedef?: string;
   /** Karo özütü yolu. Varsayılan .onbellek/karolar/<kimlik>-z15.pmtiles; yoksa özütlenir. */
   karoYolu?: string;
-  /** Daha önce okunmuş sınır (birden çok ilçede dosya tekrar okunmasın). */
+  /** Daha önce okunmuş sınır. Yerel TopoJSON için `yerelTopojsonHalkalari` gerçek dosya SHA256'sıyla bu biçimi üretir. */
   sinir?: { halkalar: Halka[]; kaynak: SinirKaynagi };
 }
 

@@ -185,6 +185,7 @@ export interface DerlenmisEkYapi {
   komisyonIndirimPpm: number;
   makasIndirimPpm: number;
   emirYuvasi: number;
+  birlikKapasitesi: number;
 }
 
 // ---------------------------------------------------------------------------

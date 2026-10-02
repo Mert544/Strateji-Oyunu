@@ -18,6 +18,9 @@ import { arsaSinifi, bitisikMi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyati
 import { durumAl, engelNedeni, hucreId, idCoz, izgaraSay } from "./hucre";
 import type { Izgara } from "./hucre";
 import { kamuAlani, kamuGrubuBul, kamuNedeni, ornekKamu } from "./kamu";
+import type { ArastirmaSonucu, TeknolojiDurumu } from "./teknoloji-panel";
+import type { OrduDurumu, OrduSonucu } from "./ordu-panel";
+import type { TedarikDurumu } from "./tedarik-panel";
 
 export type ParselKomutu = Extract<MulkKomutu, { tur: "parsel_al" }>;
 
@@ -220,6 +223,31 @@ export interface IsletmeYapisi {
   bolge?: string;
 }
 
+/** Satış emri belirli bir çıkış düğümüne aittir; mal bütün sahipli işletme ağından karşılanabilir. */
+export interface PazarKaynagi {
+  bolge: string;
+  il: string;
+  mal: string;
+  /** Yalnız çıkış ilindeki stok ve brüt üretim; satış uygunluğu bunlarla sınırlanmaz. */
+  stokMili: number;
+  uretimMili: number;
+  /** Çıkış düğümündeki istenen ihracat oranı (mili-birim/saat). */
+  emirMili: number;
+  /** Çıkış düğümündeki son gerçekleşen ihracat oranı; gelir veya kâr değildir. */
+  gerceklesenMili?: number;
+  /** Aynı sim anında yalnız sahibinin işletme düğümlerinden toplamlar.
+   * Gelen akış ayrı bildirilmediyse null: net stok oranından güvenle çıkarılamaz.
+   * Alan yoksa eski bağdaştırıcının yerel stok/üretimi kullanılır.
+   */
+  ag?: { stokMili: number; uretimMili: number; gelenMili: number | null };
+  /** Seçilen çıkışın sunucudan gelen net nakit çarpanı; bilinmiyorsa gösterilmez. */
+  netPpm?: number;
+  uygun: boolean;
+  neden?: string;
+}
+export interface PazarSatisIstegi { bolge: string; mal: string; oranSaat: number }
+export type PazarSatisSonucu = { tamam: true; t: number } | { tamam: false; mesaj: string };
+
 /** Oyuncunun işletme özeti (mülk kipi kabuğu): hazine, kalkan, arsalar, yapılar, stok ve satış. Yalnız okunur. */
 export interface IsletmeDurumu {
   simZamani: number;
@@ -252,6 +280,8 @@ export interface IsletmeDurumu {
   }>;
   /** Şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (`kare.ozel.sebeke`; işletme düğümleri toplanmış; alım yoksa tanımsız). Bedel istemcide: miktar x şebeke fiyatı. */
   sebeke?: Array<[mal: string, miliSaat: number]>;
+  /** Sahibinin karede doğrulanan düğüm bazlı satış kaynakları. */
+  pazar?: PazarKaynagi[];
   /** Oyuncunun istenen oranı > 0 olan en az bir İHRACAT emri var mı (`kare.ozel.emirler`; yalnız true iken yazılır). Defter "satışın yolda" gösterimi için (`defter.ts` `ilkSatisBekliyor`). */
   ihracatEmriVar?: boolean;
 }
@@ -276,12 +306,23 @@ export interface MulkBaglantisi {
   tesisInsa?(komut: TesisKomutu): Promise<TesisSonucu>;
   /** Atomik yerleşim (`yapi_yerlestir`): arsa + inşaat tek komut. Yalnız `atomikYerlestirme()` doğruysa kullanılır. */
   yapiYerlestir?(i: YerlestirIstegi): Promise<TesisSonucu>;
+  /** Mevcut ticaret_emri komutu; oranSaat mili-birim/saat, 0 iptal eder. */
+  pazarSatis?(i: PazarSatisIstegi): Promise<PazarSatisSonucu>;
   /** Biten tesisin yöntemini değiştirir (`yontem_degistir`; ücretsiz, anlık). Tanımsızsa "Yöntemi değiştir" gösterilmez. Ret nedeni Türkçe (`yontem.ret.*`). */
   yontemDegistir?(i: YontemDegistirIstegi): Promise<TesisSonucu>;
   /** Pazar'da sat (`ticaret_emri`, ihracat; mülk kipinde liman şartı yok): sürekli saatlik emir ver/güncelle (`oranSaat` 0 = kaldır). Tanımsızsa Mal sekmesinde "Pazar'da sat" gösterilmez. Ret nedeni Türkçe (`pazar.ret.*`). */
   ticaretEmri?(i: TicaretEmriIstegi): Promise<TesisSonucu>;
+  /** Sahibinin işletmelerindeki gerçek stok ve sürekli ithalat emirleri. */
+  tedarikDurumu?(): TedarikDurumu | null;
+  /** Sürekli ithalat emri ver/güncelle; oranSaat mili-birim/saat, 0 emri kaldırır. */
+  tedarikKomutu?(i: TicaretEmriIstegi): Promise<TesisSonucu>;
   /** Oyuncunun araştırdığı teknolojilerin kimlikleri (yöntem seçicide kilitli/açık ayrımı); bilinmiyorsa tanımsız/null (teknoloji isteyen yöntem kilitli sayılır; teknolojisiz yöntemler her zaman açıktır). */
   acikTeknolojiler?(): ReadonlySet<string> | null;
+  /** Sahibinin araştırmaları ve sunucudan alınan yayılım teklifi. */
+  orduDurumu?(): OrduDurumu | null;
+  orduKomutu?(komut: Extract<Komut, { tur: "birlik_uret" | "savunma_emri" }>): Promise<OrduSonucu>;
+  arastirmaDurumu?(): TeknolojiDurumu | null;
+  arastirmaBaslat?(teknoloji: string): Promise<ArastirmaSonucu>;
   /** Bu bağlantıda (sunucuda) atomik yerleşim komutu var mı? Yoksa zincir (iki komut) kullanılır. */
   atomikYerlestirme?(): boolean;
   /** Onaydan sonra geri alma (`insaat_iptal` + `parsel_birak`). Tanımsızsa "Geri al" gösterilmez. */

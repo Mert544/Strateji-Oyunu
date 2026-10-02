@@ -266,9 +266,10 @@ const bolgeKaresiSemasi = z.object({
       // Yalnız ekleme: şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (demete öğe eklenmez; eski istemci bilinmeyen anahtarı atar).
       sebeke: z.array(z.tuple([z.string(), tam])).optional(),
       // Yalnız ekleme: işletme düğümü bilgileri (nesne alanı; yeni isteğe bağlı alan eklemek demet büyütmez). ihrNetPpm: etkin ihracat net çarpanı (tamsayı ppm, çekirdekten).
-      isletme: z.object({ ihrNetPpm: tam }).optional(),
+      isletme: z.object({ ihrNetPpm: tam, emirYuvasi: tam.optional(), ithNetPpm: tam.optional() }).optional(),
       emirler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
       birlikler: z.array(tam),
+      ordu: z.object({ kapasite: tam, ordugahSayisi: tam, ikmalSaat: z.array(z.tuple([tam, tam])).optional() }).optional(),
       gidaPpm: tam,
       ikmalPpm: tam,
       rezervKalan: z.array(tam),
@@ -291,6 +292,14 @@ const insaatKaresiSemasi = z.union([
 ]);
 const ilceKaresiSemasi = z.object({
   id: z.string(),
+  yasam: z.object({
+    nufus: tam,
+    nufusKaynak: z.enum(["kayit", "esdeger"]),
+    talep: z.array(z.tuple([z.string(), tam])),
+    karsilanma: z.array(z.object({ mal: z.string(), talepMiliSaat: tam, satisMiliSaat: tam, karsilanmaPpm: tam })).optional(),
+    kamuKasa: z.object({ bakiyeMili: tam, vergiToplamMili: tam, girisToplamMili: tam, cikisToplamMili: tam, rezervMili: tam }).optional(),
+    muhasebeT: tam.optional(),
+  }).optional(),
   il: z.string(),
   seviye: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
   uygunHucre: tam,
@@ -320,8 +329,10 @@ const oyuncuKaresiSemasi = z.object({
   askeriRezervPpm: tam,
   teknolojiler: z.array(tam),
   arastirma: z.object({ teknoloji: tam, bitis: tam }).nullable(),
+  arastirmaYayilimPpm: z.array(z.number().int().min(0).max(1_000_000)).optional(),
   korumaBitis: tam,
   insaatlar: z.array(insaatKaresiSemasi),
+  partiler: z.array(z.object({ id: tam, bolge: tam, birlik: tam, adet: tam, bitis: tam })).optional(),
   insaatYontem: z.array(z.tuple([tam, z.string()])).optional(),
   erkenOyun: z.tuple([tam, tam, tam, tam]).optional(),
   mulk: z

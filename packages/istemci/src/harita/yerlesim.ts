@@ -24,6 +24,7 @@ import type { Izgara } from "./hucre";
 import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yapiRengiCss, yerlesimPlani } from "./yapi";
 import { yapiSureHtml, yapiSuresi } from "./yapi-sure";
 import { ikon } from "../tasarim/ikon";
+import { icerikMetni } from "../tasarim/icerik-metin";
 import type { Icerik } from "../komut/tablo";
 import { sebekeFiyatlari } from "./sebeke-gider";
 import { komutYontemi, onayAcik, seciciGorunur, seciciTusu, tekSecilebilir, yontemSecenekleri, yontemSecimiTamam, yontemSeciciHtml } from "./yontem-secici";
@@ -168,7 +169,7 @@ export class YerlesimKipi {
       }
       const ym = hedef.closest("button.ym-kart") as HTMLButtonElement | null;
       if (ym) {
-        if (ym.getAttribute("aria-disabled") !== "true") this.yontemSec(ym.dataset["yontem"] ?? "");
+        if (ym.getAttribute("aria-disabled") !== "true") this.yontemSec(ym.dataset["yontem"] ?? "", true);
         return;
       }
       const b = hedef.closest("button[data-yk]") as HTMLButtonElement | null;
@@ -351,7 +352,7 @@ export class YerlesimKipi {
         if (y.gerekliTeknoloji) koşul.push("teknoloji gerekir");
         if (y.enFazlaIlBasina) koşul.push(`ilde en çok ${y.enFazlaIlBasina}`);
         html.push(
-          `<button type="button" role="menuitem" data-yapi="${esc(y.id)}"><span class="yapi-ad"><i class="yapi-nokta" style="--kr:${yapiRengiCss(y.id)}"></i>${esc(y.ad)}${y.id === this.oneriId ? ' <i class="oneri-rozet">Önerilen</i>' : ""}</span><small>${esc(notlar.join(" · "))}</small>${koşul.length ? `<small class="yapi-kosul">${esc(koşul.join(" · "))}</small>` : ""}</button>`,
+          `<button type="button" role="menuitem" data-yapi="${esc(y.id)}"><span class="yapi-ad"><i class="yapi-nokta" style="--kr:${yapiRengiCss(y.id)}"></i>${y.id === "ordugah" ? `${ikon("shield", 16)} ` : ""}${esc(y.ad)}${y.id === this.oneriId ? ' <i class="oneri-rozet">Önerilen</i>' : ""}</span><small>${esc(notlar.join(" · "))}</small>${koşul.length ? `<small class="yapi-kosul">${esc(koşul.join(" · "))}</small>` : ""}</button>`,
         );
       }
     }
@@ -526,7 +527,7 @@ export class YerlesimKipi {
     const p = this.plan;
     const oz = this.g.baglanti.ozet?.() ?? null;
     const sabit = this.sabit !== null && p !== null;
-    const baslik = `<div class="yk-baslik"><div><b>${esc(y.ad)}</b><small>${esc(y.grup)} · ${y.yuva} hücre${y.ek ? "" : ""}</small></div><button type="button" data-yk="vazgec" aria-label="Vazgeç (Esc)" title="Vazgeç (Esc)">${ikon("x", 18)}</button></div>`;
+    const baslik = `<div class="yk-baslik"><div><b>${y.id === "ordugah" ? `${ikon("shield", 16)} ` : ""}${esc(y.ad)}</b><small>${esc(y.grup)} · ${y.yuva} hücre${y.ek ? "" : ""}</small></div><button type="button" data-yk="vazgec" aria-label="Vazgeç (Esc)" title="Vazgeç (Esc)">${ikon("x", 18)}</button></div>`;
     const dk = y.id === "dukkan" ? this.g.dukkan?.() : undefined;
     if (dk) {
       this.dukkanKartiYaz(y, p, sabit, baslik, dk, oz);
@@ -541,11 +542,14 @@ export class YerlesimKipi {
     const stok = isl ? (mal: string): number => isl.mallar.find((x) => x.mal === mal)?.stokMili ?? 0 : undefined;
     const secici = yontemSeciciHtml({ yapiAd: y.ad, secenekler: yontemler, secili: this.yontem, kilitli: this.uygulaniyor, kimlik: "yapi", ...(stok ? { stok } : {}) });
     // T-3: yöntemli tesiste (seçici görünürken) rolü anlatan tek satır: başlığın hemen altında, seçicinin üstünde
-    const rol = seciciGorunur(yontemler) ? tesisRolu(y.id) : null;
+    const askeriMetin = y.id === "ordugah" ? icerikMetni("yapi", y.id) : undefined;
+    const rol = askeriMetin ? `${askeriMetin.aciklama} ${askeriMetin.ipucu ?? ""}` : seciciGorunur(yontemler) ? tesisRolu(y.id) : null;
     const rolHtml = rol ? `<p class="yk-rol">${esc(rol)}</p>` : "";
     const kur = this.uygulaniyor ? "Kuruluyor…" : `${esc(y.ad)} kur`;
+    const odakYontem = document.activeElement instanceof HTMLElement && this.kart.contains(document.activeElement) ? document.activeElement.dataset["yontem"] : undefined;
     this.kart.innerHTML = `${baslik}${rolHtml}${secici}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(onayAcik({ gecerli: !!p?.gecerli, sabit, uygulaniyor: this.uygulaniyor, yontemTamam }), !!p?.neden || (!yontemTamam && !!p?.gecerli && sabit))}>${kur}</button></div>`;
     this.nedenBolgesi.yerlestir(this.kart);
+    if (odakYontem) [...this.kart.querySelectorAll<HTMLElement>(".ym-kart")].find((e) => e.dataset["yontem"] === odakYontem)?.focus({ preventScroll: true });
     this.kart.hidden = false;
     this.konumAyarla();
   }

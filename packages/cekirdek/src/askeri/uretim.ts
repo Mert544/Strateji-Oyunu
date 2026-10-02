@@ -1,10 +1,13 @@
 /**
  * Askeri üretim: birlik üretim partileri ve ordunun ikmal talebi (spesifikasyon §6).
  */
+import { bolgeIndeksiBul } from "../dugum";
 import { hizlandirilmisSure } from "../erkenOyun";
+import { ekYapiSayisi, ekYapiToplami } from "../mulk/yapi";
+import { carpBol } from "../sabit";
 import { anlikMiktar, oyuncuBul, stokEkle } from "../stok";
 import { birlikAcikMi } from "../teknoloji";
-import { SAAT } from "../tipler";
+import { PPM, SAAT } from "../tipler";
 import type { Baglam, DerlenmisIcerik, Dunya, Komut, KomutSonucu, Mili, OyuncuId } from "../tipler";
 
 /** Tek komutta üretilebilecek en fazla birlik adedi. */
@@ -25,7 +28,7 @@ export function birlikUret(
   k: Extract<Komut, { tur: "birlik_uret" }>,
 ): KomutSonucu {
   const ic = ctx.ic;
-  const bi = ic.bolgeIndeks[k.bolge];
+  const bi = bolgeIndeksiBul(d, ic, k.bolge);
   const bolge = bi === undefined ? undefined : d.bolgeler[bi];
   if (bi === undefined || !bolge) return hata(`bilinmeyen bolge: ${k.bolge}`);
   if (bolge.sahip !== oyuncu) return hata(`bolge oyuncunun degil: ${k.bolge}`);
@@ -35,6 +38,18 @@ export function birlikUret(
   if (!oyuncuBul(d, oyuncu) || !birlikAcikMi(d, ctx, oyuncu, birlikIdx)) return hata(`birlik acik degil: ${k.birlik}`);
   if (!Number.isSafeInteger(k.adet) || k.adet < 1 || k.adet > EN_COK_PARTI_ADEDI) {
     return hata(`gecersiz adet: ${k.adet} (1..${EN_COK_PARTI_ADEDI})`);
+  }
+
+  // Yalnız işletme düğümleri: süren inşaat kapasite sağlamaz; süren partiler kapasite tüketir.
+  if (ic.mulk !== undefined && bolge.merkez !== undefined) {
+    if (ekYapiSayisi(bolge, "ordugah") === 0) return hata(`ordugah gerekli: ${k.bolge}`);
+    const kapasite = ekYapiToplami(ic, bolge, "birlikKapasitesi");
+    let kullanilan = 0;
+    for (const adet of bolge.birlikler) kullanilan += adet;
+    for (const parti of d.partiler) if (parti.bolge === bi) kullanilan += parti.adet;
+    if (kullanilan + k.adet > kapasite) {
+      return hata(`ordugah kapasitesi yetersiz: ${kullanilan} + ${k.adet} > ${kapasite}`);
+    }
   }
 
   // Önce tüm malların yeterliliği denetlenir (atomik), sonra düşülür.
@@ -100,11 +115,15 @@ export function ikmalTalebi(d: Dunya, ctx: Baglam, bolge: number): Mili[] {
   const sonuc = new Array<number>(ic.mallar.length).fill(0);
   const b = d.bolgeler[bolge];
   if (!b) return sonuc;
+  const carpan = ic.mulk !== undefined && b.merkez !== undefined ? (ic.param.askeri.ikmalCarpaniPpm ?? PPM) : PPM;
   const tablo = ikmalTablosu(ic);
   for (let bi = 0; bi < b.birlikler.length; bi++) {
     const adet = b.birlikler[bi] ?? 0;
     if (adet <= 0) continue;
-    for (const [mal, miktar] of tablo[bi] ?? []) sonuc[mal] = (sonuc[mal] as number) + adet * miktar;
+    for (const [mal, miktar] of tablo[bi] ?? []) {
+      const talep = adet * miktar;
+      sonuc[mal] = (sonuc[mal] as number) + (carpan === PPM ? talep : carpBol(talep, carpan, PPM));
+    }
   }
   return sonuc;
 }

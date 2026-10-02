@@ -5,17 +5,23 @@
  *   tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --rapor        # manifestten boyut tablosu (markdown)
  *   tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --kontrol      # manifest + dosya sha256 doğrulaması
  *   tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --nufus        # manifestteki ilçelere yapilandirma/ilce-nufus.json'dan nufus yazar (ağ gerekmez)
+ *   tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --ilce tr_67_kilimli --hazirlik
+ *   tsx packages/veri-hatti/src/osm/izgara-ilce-cli.ts --ilce tr_67_kilimli --sinir-topojson <dosya> --hedef <odbl-disindaki-dizin> --manifest <hedef/manifest.json> [--hazirlik]
  *
  * Çıktılar packages/veri/haritalar/odbl/izgara/ altına (ODbL dizini) ve manifest.json'a yazılır. Karo özütü yoksa
  * `pmtiles extract` ile sabitlenmiş Protomaps yapısından alınır (ağ). Erişilemezse hat durur; veri uydurulmaz.
  * --dogrula: ilçeyi iki ayrı dizine üretir ve bayt bayt karşılaştırır; fark varsa çıkış kodu 1.
+ * --hazirlik: salt okunur çevrimdışı önkontrol; eksik girdi ve araçları topluca raporlar.
+ * Yerel TopoJSON nicemlenmiş bir girdidir; ham OSM çıktısıyla aynı baytlar vaat edilmez. Yerel üretim izole kalır.
  */
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { ONBELLEK } from "../yollar";
 import { ilceNufusu } from "./ilce-nufus";
 import { IzgaraManifestSemasi, IZGARA_MANIFEST_YOLU, manifestOku, manifestiDogrula, sha256Hex, type IlceIzgarasi, type IzgaraManifesti } from "./izgara-manifest";
-import { KARO_KAYNAK_URL, KARO_YAPISI, idariHalkalar, ilceBilgisi, ilceIzgarasiUret, type IlceUretimi } from "./izgara-ilce";
+import { KARO_KAYNAK_URL, KARO_YAPISI, idariHalkalar, ilceBilgisi, ilceIzgarasiUret, type IlceBilgisi, type IlceUretimi, type SinirKaynagi } from "./izgara-ilce";
+import { izgaraHazirligi } from "./izgara-hazirlik";
+import { yerelTopojsonHalkalari, type IlceSiniri } from "./izgara-yerel-sinir";
 import { VARSAYILAN_SECENEKLER } from "./izgara-uygunluk";
 import { ODBL_DIZINI, OSM_ATIF } from "./ortak";
 
@@ -33,11 +39,57 @@ const ESKI_KONUM: Record<string, { bhi: string; seritler: string }> = {
 function argumanlar(ad: string): string[] {
   const r: string[] = [];
   process.argv.forEach((a, i) => {
-    if (a === `--${ad}`) r.push(process.argv[i + 1]!);
+    if (a === `--${ad}`) {
+      const deger = process.argv[i + 1];
+      if (!deger || deger.startsWith("--")) throw new Error(`--${ad} deger gerektirir`);
+      r.push(deger);
+    }
   });
   return r;
 }
 const bayrak = (ad: string): boolean => process.argv.includes(`--${ad}`);
+
+const tekArguman = (ad: string): string | undefined => {
+  const degerler = argumanlar(ad);
+  if (degerler.length > 1) throw new Error(`--${ad} yalniz bir kez kullanilabilir`);
+  return degerler[0];
+};
+
+/** Henüz oluşmamış yollar için de mevcut ebeveyn symlink'lerini çözer. */
+function gercekYol(yol: string): string {
+  const tam = resolve(yol);
+  if (existsSync(tam)) return realpathSync(tam);
+  // existsSync kırık symlink için false döner; böyle bir yazım hedefini güvenli bir dizin gibi kabul etmeyiz.
+  try {
+    if (lstatSync(tam).isSymbolicLink()) throw new Error(`kirik symlink cikti yolu: ${tam}`);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
+  const ebeveyn = dirname(tam);
+  if (ebeveyn === tam) return tam;
+  return resolve(gercekYol(ebeveyn), relative(ebeveyn, tam));
+}
+
+function icinde(yol: string, kok: string): boolean {
+  const r = relative(gercekYol(kok), gercekYol(yol));
+  return r === "" || (!isAbsolute(r) && r !== ".." && !r.startsWith("../") && !r.startsWith("..\\"));
+}
+
+function kaynakAyni(a: SinirKaynagi, b: SinirKaynagi): boolean {
+  return a.dosya === b.dosya && a.osmZamani === b.osmZamani && a.sha256 === b.sha256;
+}
+
+/** Tek kaynak alanıyla farklı sınırlar karıştırılmaz; kontrol her türlü çıktı yazımından önce yapılır. */
+function kaynakUyumunuDogrula(bilgiler: readonly IlceBilgisi[], sinirlar: ReadonlyMap<string, IlceSiniri>, manifestYolu: string): void {
+  const ilk = sinirlar.get(bilgiler[0]!.kimlik)?.kaynak;
+  if (!ilk || bilgiler.some((b) => !sinirlar.has(b.kimlik))) throw new Error("uretim icin tum ilce sinirlari gerekli");
+  if (bilgiler.some((b) => !kaynakAyni(ilk, sinirlar.get(b.kimlik)!.kaynak)))
+    throw new Error("tek manifestte farkli sinir kaynaklari birlestirilemez; ayri --hedef ve --manifest kullanin");
+  if (!existsSync(manifestYolu)) return;
+  const mevcut = manifestOku(manifestYolu);
+  if (!kaynakAyni(mevcut.kaynak.sinir, ilk))
+    throw new Error("mevcut manifestin sinir kaynagi farkli; ayri --hedef ve --manifest kullanin");
+}
 
 /** Manifest girdisine `nufus` (veride kimliği varsa; yoksa alan hiç yazılmaz: isteğe bağlı). */
 const nufusAlani = (kimlik: string): { nufus?: number } => {
@@ -61,8 +113,16 @@ function ilceKaydi(u: IlceUretimi, bhiYol: string, seritYol: string): IlceIzgara
   };
 }
 
-function yaz(u: IlceUretimi): IlceIzgarasi {
+function yaz(u: IlceUretimi, izoleHedef?: string): IlceIzgarasi {
   const k = u.bilgi.kimlik;
+  if (izoleHedef) {
+    const bhi = resolve(izoleHedef, `${k}.bhi.gz`);
+    const serit = resolve(izoleHedef, `${k}-seritler.pmtiles`);
+    copyFileSync(u.bhiYol, bhi);
+    copyFileSync(u.seritYol, serit);
+    // Manifest yolları mevcut şemada her zaman odbl/ köküne göredir; izole çıktı da bu anlamı korur.
+    return ilceKaydi(u, relative(ODBL_DIZINI, bhi).replaceAll("\\", "/"), relative(ODBL_DIZINI, serit).replaceAll("\\", "/"));
+  }
   const eski = ESKI_KONUM[k];
   if (eski) {
     const eskiBhi = resolve(ODBL_DIZINI, eski.bhi);
@@ -80,8 +140,8 @@ function yaz(u: IlceUretimi): IlceIzgarasi {
   return ilceKaydi(u, bhi, serit);
 }
 
-function manifestYaz(kayitlar: IlceIzgarasi[], u: IlceUretimi[]): void {
-  const var_ = existsSync(IZGARA_MANIFEST_YOLU) ? manifestOku().ilceler : [];
+function manifestYaz(kayitlar: IlceIzgarasi[], u: IlceUretimi[], manifestYolu: string): void {
+  const var_ = existsSync(manifestYolu) ? manifestOku(manifestYolu).ilceler : [];
   const birlesik = new Map<string, IlceIzgarasi>(var_.map((i) => [i.kimlik, i]));
   for (const k of kayitlar) birlesik.set(k.kimlik, k);
   const ilk = u[0]!;
@@ -99,8 +159,8 @@ function manifestYaz(kayitlar: IlceIzgarasi[], u: IlceUretimi[]): void {
     ilceler: [...birlesik.values()].sort((a, b) => (a.kimlik < b.kimlik ? -1 : a.kimlik > b.kimlik ? 1 : 0)),
   };
   IzgaraManifestSemasi.parse(m);
-  mkdirSync(IZGARA_DIZINI, { recursive: true });
-  writeFileSync(IZGARA_MANIFEST_YOLU, `${JSON.stringify(m, null, 2)}\n`);
+  mkdirSync(dirname(manifestYolu), { recursive: true });
+  writeFileSync(manifestYolu, `${JSON.stringify(m, null, 2)}\n`);
 }
 
 const kb = (b: number): string => (b / 1024).toFixed(1);
@@ -140,16 +200,26 @@ function nufusGuncelle(): void {
 }
 
 function main(): void {
+  const sinirTopojson = tekArguman("sinir-topojson");
+  const hedefArgumani = tekArguman("hedef");
+  const manifestArgumani = tekArguman("manifest");
+  const manifestYolu = manifestArgumani ? resolve(manifestArgumani) : IZGARA_MANIFEST_YOLU;
+  const modlar = ["nufus", "rapor", "kontrol", "hazirlik"].filter(bayrak);
+  if (modlar.length > 1) throw new Error(`ayni anda tek mod secin: ${modlar.map((m) => `--${m}`).join(", ")}`);
   if (bayrak("nufus")) {
+    if (sinirTopojson || hedefArgumani || manifestArgumani || bayrak("dogrula") || argumanlar("ilce").length > 0)
+      throw new Error("--nufus diger uretim veya izole cikti secenekleriyle kullanilamaz");
     nufusGuncelle();
     return;
   }
   if (bayrak("rapor")) {
-    console.log(rapor(manifestOku()));
+    if (sinirTopojson || hedefArgumani) throw new Error("--rapor sinir veya hedef secenegi almaz");
+    console.log(rapor(manifestOku(manifestYolu)));
     return;
   }
   if (bayrak("kontrol")) {
-    const hata = manifestiDogrula(manifestOku());
+    if (sinirTopojson || hedefArgumani) throw new Error("--kontrol sinir veya hedef secenegi almaz");
+    const hata = manifestiDogrula(manifestOku(manifestYolu));
     if (hata.length > 0) {
       console.error(hata.join("\n"));
       process.exit(1);
@@ -159,33 +229,81 @@ function main(): void {
   }
   const ilceler = argumanlar("ilce");
   if (ilceler.length === 0) throw new Error("--ilce <kimlik> gerekli (ornek: --ilce tr_16_gemlik --ilce tr_41_korfez)");
-  const bilgiler = ilceler.map(ilceBilgisi);
-  // Ülke başına sınır dosyası bir kez okunur
-  const ulkeler = [...new Set(bilgiler.map((b) => b.ulke))];
-  const sinirlar = new Map<number, { halkalar: ReturnType<typeof idariHalkalar>["halkalar"] extends Map<number, infer H> ? H : never; kaynak: ReturnType<typeof idariHalkalar>["kaynak"] }>();
-  for (const ulke of ulkeler) {
-    const ids = bilgiler.filter((b) => b.ulke === ulke).map((b) => b.osmIliski);
-    const s = idariHalkalar(ulke, ids);
-    for (const id of ids) sinirlar.set(id, { halkalar: s.halkalar.get(id)!, kaynak: s.kaynak });
+  if (new Set(ilceler).size !== ilceler.length) throw new Error("yinelenen --ilce kimligi");
+  if (Boolean(hedefArgumani) !== Boolean(manifestArgumani)) throw new Error("izole uretim icin --hedef ve --manifest birlikte gerekli");
+  if (sinirTopojson && !hedefArgumani && !bayrak("hazirlik"))
+    throw new Error("yerel TopoJSON uretimi icin odbl disinda --hedef ve hedef altinda --manifest gerekli");
+  const hedef = hedefArgumani ? resolve(hedefArgumani) : undefined;
+  if (hedef) {
+    if (icinde(hedef, ODBL_DIZINI) || icinde(manifestYolu, ODBL_DIZINI) || !icinde(manifestYolu, hedef) || gercekYol(manifestYolu) === gercekYol(hedef))
+      throw new Error("izole --hedef odbl disinda, --manifest bu hedefin altinda bir dosya olmali");
+    // Önceden oluşturulmuş symlink'ler de canonical çıktılara yönelmeyebilir.
+    for (const k of ilceler) {
+      if (!/^[a-z][a-z0-9_]*$/.test(k)) throw new Error(`gecersiz ilce kimligi: ${k}`);
+      for (const dizin of [hedef, resolve(hedef, k), resolve(hedef, `${k}-ikinci`)]) {
+        const yollar = [dizin, ...[`${k}.bhi.gz`, `${k}-seritler.pmtiles`, `${k}-seritler.geojsonseq`].map((ad) => resolve(dizin, ad))];
+        if (yollar.some((y) => icinde(y, ODBL_DIZINI) || !icinde(y, hedef)))
+          throw new Error(`izole cikti yolu hedef disina veya odbl agacina yoneliyor: ${k}`);
+      }
+      if (icinde(manifestYolu, resolve(hedef, k)) || icinde(manifestYolu, resolve(hedef, `${k}-ikinci`)) ||
+          [`${k}.bhi.gz`, `${k}-seritler.pmtiles`].some((ad) => gercekYol(manifestYolu) === gercekYol(resolve(hedef, ad))))
+        throw new Error(`manifest yolu ilce ciktilariyla cakisiyor: ${k}`);
+    }
   }
+  const sorunlar: string[] = [];
+  const bilgiler: IlceBilgisi[] = [];
+  for (const k of ilceler) {
+    try { bilgiler.push(ilceBilgisi(k)); }
+    catch (e) { sorunlar.push(e instanceof Error ? e.message : String(e)); }
+  }
+  const sinirlar = new Map<string, IlceSiniri>();
+  if (sinirTopojson) {
+    for (const b of bilgiler) {
+      try { sinirlar.set(b.kimlik, yerelTopojsonHalkalari(sinirTopojson, [b]).get(b.kimlik)!); }
+      catch (e) { sorunlar.push(`${b.kimlik}: ${e instanceof Error ? e.message : String(e)}`); }
+    }
+  } else {
+    // Varsayılan ham OSM yolu ve kilit doğrulaması korunur; ülke başına dosya bir kez okunur.
+    for (const ulke of new Set(bilgiler.map((b) => b.ulke))) {
+      const grup = bilgiler.filter((b) => b.ulke === ulke);
+      try {
+        const s = idariHalkalar(ulke, grup.map((b) => b.osmIliski));
+        for (const b of grup) sinirlar.set(b.kimlik, { halkalar: s.halkalar.get(b.osmIliski)!, kaynak: s.kaynak });
+      } catch (e) { sorunlar.push(e instanceof Error ? e.message : String(e)); }
+    }
+  }
+  if (bilgiler.length > 0 && sinirlar.size === bilgiler.length) {
+    try { kaynakUyumunuDogrula(bilgiler, sinirlar, manifestYolu); }
+    catch (e) { sorunlar.push(e instanceof Error ? e.message : String(e)); }
+  }
+  const hazirlik = izgaraHazirligi(bilgiler, sinirlar, sorunlar);
+  if (bayrak("hazirlik")) {
+    console.log(JSON.stringify({ ...hazirlik, manifestYolu, hedef: hedef ?? null, sinirTuru: sinirTopojson ? "yerel-topojson" : "kilitli-ham-osm" }, null, 2));
+    if (!hazirlik.hazir) process.exitCode = 1;
+    return;
+  }
+  // Karo yoksa eski üretim yolu özütleyebilir; araç ve sınır sorunları ise yazım başlamadan durdurur.
+  const engeller = [...sorunlar, ...hazirlik.araclar.filter((a) => a.gerekli && !a.var).map((a) => `${a.ad}: calistirilabilir arac yok (${a.yol})`)];
+  if (engeller.length > 0) throw new Error(engeller.join("\n"));
   const uretimler: IlceUretimi[] = [];
   for (const b of bilgiler) {
-    const sinir = sinirlar.get(b.osmIliski)!;
+    const sinir = sinirlar.get(b.kimlik)!;
     console.log(`[${b.kimlik}] ${b.ad}: uretiliyor`);
-    const u = ilceIzgarasiUret(b, { sinir });
+    const u = ilceIzgarasiUret(b, { sinir, ...(hedef ? { hedef: resolve(hedef, b.kimlik) } : {}) });
     console.log(`  ${u.sureMs} ms, icerde ${u.istatistik.icerdeTum}, kara ${u.istatistik.toplam}, uygun ${u.istatistik.satinAlinabilir}, bhi.gz ${u.bhiBayt} B, serit ${u.seritBayt} B, eksik karo ${u.eksikKaro}`);
     if (u.eksikKaro > 0) throw new Error(`${b.kimlik}: ${u.eksikKaro} karo ozutte yok; ozet tutarsiz`);
     if (bayrak("dogrula")) {
-      const t = ilceIzgarasiUret(b, { sinir, hedef: resolve(ONBELLEK, "izgara", `${b.kimlik}-ikinci`) });
+      const ikinciHedef = resolve(hedef ?? resolve(ONBELLEK, "izgara"), `${b.kimlik}-ikinci`);
+      const t = ilceIzgarasiUret(b, { sinir, hedef: ikinciHedef });
       const tamam = t.bhiSha256 === u.bhiSha256 && t.seritSha256 === u.seritSha256;
       console.log(`  ikinci uretim: bhi ${t.bhiSha256 === u.bhiSha256 ? "AYNI" : "FARKLI"}, serit ${t.seritSha256 === u.seritSha256 ? "AYNI" : "FARKLI"}`);
-      rmSync(resolve(ONBELLEK, "izgara", `${b.kimlik}-ikinci`), { recursive: true, force: true });
+      rmSync(ikinciHedef, { recursive: true, force: true });
       if (!tamam) process.exit(1);
     }
     uretimler.push(u);
   }
-  manifestYaz(uretimler.map(yaz), uretimler);
-  console.log(`manifest yazildi: ${IZGARA_MANIFEST_YOLU}`);
+  manifestYaz(uretimler.map((u) => yaz(u, hedef)), uretimler, manifestYolu);
+  console.log(`manifest yazildi: ${manifestYolu}`);
 }
 
 try {

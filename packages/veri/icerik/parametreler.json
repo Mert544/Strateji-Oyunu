@@ -49,12 +49,14 @@
     "emilimSaat": {
       "tahil": 360000, "gida": 300000, "cevher": 360000, "komur": 450000, "celik": 300000,
       "bakir": 200000, "silis": 240000, "parca": 200000, "elektronik": 120000,
-      "petrol": 400000, "yakit": 300000, "muhimmat": 120000, "gubre": 200000, "un": 300000, "ekmek": 250000, "cam": 140000, "pencere": 100000, "sut": 200000, "sut_urunu": 130000, "findik": 180000, "findik_urunu": 100000, "sekerleme": 80000, "kepek": 120000
+      "petrol": 400000, "yakit": 300000, "muhimmat": 120000, "gubre": 200000, "un": 300000, "ekmek": 250000, "cam": 140000, "pencere": 100000, "sut": 200000, "sut_urunu": 130000, "findik": 180000, "findik_urunu": 100000, "sekerleme": 80000, "kepek": 120000, "balik": 120000,
+      "yun": 80000, "iplik": 110000, "kumas": 100000, "hazir_giyim": 80000
     },
     "arzSaat": {
       "tahil": 240000, "gida": 200000, "cevher": 150000, "komur": 150000, "celik": 260000,
       "bakir": 120000, "silis": 100000, "parca": 170000, "elektronik": 100000,
-      "petrol": 240000, "yakit": 260000, "muhimmat": 100000, "gubre": 150000, "un": 200000, "ekmek": 160000, "cam": 90000, "pencere": 60000, "sut": 130000, "sut_urunu": 90000, "findik": 110000, "findik_urunu": 65000, "sekerleme": 50000, "kepek": 80000
+      "petrol": 240000, "yakit": 260000, "muhimmat": 100000, "gubre": 150000, "un": 200000, "ekmek": 160000, "cam": 90000, "pencere": 60000, "sut": 130000, "sut_urunu": 90000, "findik": 110000, "findik_urunu": 65000, "sekerleme": 50000, "kepek": 80000, "balik": 80000,
+      "yun": 55000, "iplik": 90000, "kumas": 85000, "hazir_giyim": 60000
     },
     "ithalatCarpaniPpm": 1100000,
     "ihracatCarpaniPpm": 900000,
@@ -93,7 +95,8 @@
     "yeniOyuncuKorumasiGun": 7,
     "araziSavunmaPpm": { "kiyi": 1000000, "dag": 1500000, "ova": 1000000, "liman": 1100000, "dar_gecit": 1800000 },
     "savunmaDurusuCarpaniPpm": 1300000,
-    "birlikMaasiSaat": 8000
+    "birlikMaasiSaat": 8000,
+    "ikmalCarpaniPpm": 250000
   },
   "teknoloji": {
     "yayilimIndirimiPpm": 500000
@@ -201,13 +204,13 @@
       "ciftlik": 2, "ahir": 2, "mera": 3, "sulama_kanali": 1, "gida_fabrikasi": 2,
       "cevher_madeni": 2, "komur_ocagi": 2, "bakir_madeni": 2, "silis_ocagi": 2, "petrol_kuyusu": 1,
       "celikhane": 3, "parca_fabrikasi": 2, "elektronik_fabrikasi": 2, "santral": 3, "hidro_santrali": 3,
-      "gubre_fabrikasi": 2, "muhimmat_fabrikasi": 2
+      "gubre_fabrikasi": 2, "muhimmat_fabrikasi": 2, "balikcilik": 2, "hafif_sanayi": 2
     },
     "yapiInsaSaati": {
       "ciftlik": 2, "ahir": 4, "mera": 2, "sulama_kanali": 6, "gida_fabrikasi": 6,
       "cevher_madeni": 6, "komur_ocagi": 6, "bakir_madeni": 6, "silis_ocagi": 6, "petrol_kuyusu": 6,
       "celikhane": 10, "parca_fabrikasi": 8, "elektronik_fabrikasi": 10, "santral": 10, "hidro_santrali": 10,
-      "gubre_fabrikasi": 8, "muhimmat_fabrikasi": 8
+      "gubre_fabrikasi": 8, "muhimmat_fabrikasi": 8, "balikcilik": 4, "hafif_sanayi": 6
     },
     "olcekHucre": {
       "ciftlik": [2, 3, 4], "ahir": [2, 3, 4], "mera": [3, 4, 5],
@@ -215,7 +218,7 @@
       "komur_ocagi": [2, 3, 4], "bakir_madeni": [2, 3, 4], "silis_ocagi": [2, 3, 4],
       "petrol_kuyusu": [1, 2, 3], "celikhane": [3, 4, 5], "parca_fabrikasi": [2, 3, 4],
       "elektronik_fabrikasi": [2, 3, 4], "santral": [3, 4, 5], "hidro_santrali": [3, 4, 5],
-      "gubre_fabrikasi": [2, 3, 4], "muhimmat_fabrikasi": [2, 3, 4]
+      "gubre_fabrikasi": [2, 3, 4], "muhimmat_fabrikasi": [2, 3, 4], "balikcilik": [2, 3, 4], "hafif_sanayi": [2, 3, 4]
     },
     "olcekInsaSureCarpaniPpm": [1000000, 1500000, 2000000],
     "yeniOyuncu": {
@@ -288,6 +291,10 @@
       "dukkan": {
         "ad": "Dükkân", "yuva": 1, "insaSaati": 4, "insaParasi": 6000000, "insaMaliyeti": { "celik": 20000, "parca": 8000, "pencere": 4000 },
         "enFazlaIlBasina": 6, "olcekHucre": [1, 2, 3]
+      },
+      "ordugah": {
+        "ad": "Ordugâh", "yuva": 3, "insaSaati": 12, "insaParasi": 20000000, "insaMaliyeti": { "celik": 80000, "parca": 30000 },
+        "enFazlaIlBasina": 2, "birlikKapasitesi": 12
       }
     },
     "perakende": {

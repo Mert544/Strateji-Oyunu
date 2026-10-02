@@ -56,6 +56,11 @@ const KONUMSAL = ARGLAR.filter((a, i) => !a.startsWith("--") && ARGLAR[i - 1] !=
 const EKRAN = resolve(KONUMSAL[0] ?? process.env["F4_EKRAN"] ?? join(DEPO, "raporlar", "f4"));
 
 function chromeBul(): string {
+  const ozel = process.env["CHROMIUM_PATH"];
+  if (ozel) {
+    if (!existsSync(ozel) || !statSync(ozel).isFile()) throw new Error(`CHROMIUM_PATH geçerli bir dosya değil: ${ozel}`);
+    return ozel;
+  }
   const kok = "/opt/pw-browsers";
   for (const d of readdirSync(kok)) {
     const y = join(kok, d, "chrome-linux", "chrome");

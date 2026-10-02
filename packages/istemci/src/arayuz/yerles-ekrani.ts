@@ -8,7 +8,8 @@
  */
 import { esc, yuzde } from "./bicim";
 import type { MulkBaglantisi } from "../harita/baglanti";
-import { acilisMetni, bilinenYaniSatiri, ilceMetni, ilceNedeni } from "../tasarim/ilce-metin";
+import { acilisMetni, bilinenYaniSatiri, ilceMetni, ilceNedeni, nufusMetni } from "../tasarim/ilce-metin";
+import izgaraManifesti from "../../../veri/haritalar/odbl/izgara/manifest.json";
 import type { DukkanDuzeyi } from "../tasarim/ilce-metin";
 import { ACILIS, ACILIS_SIRASI, ayrilmisDurumu, durumRozeti, YERLES_ADAYLARI, yerlesOner } from "../harita/yerles";
 import type { Acilis, AdayDurumu } from "../harita/yerles";
@@ -29,6 +30,8 @@ export interface YerlesGirdisi {
   yuva?: (yapi: string) => number;
   /** Dükkân düzeyi (G7: dükkân açık, G8: cam ve pencere açık); ilçe sözlüğü metinleri buna göre seçilir. Verilmezse G6 (dükkân yok). */
   dukkanDuzeyi?: () => DukkanDuzeyi;
+  /** Mevcut içerik/araştırmadan doğrulanan üretim örnekleri; konumda kurulum garantisi değildir. */
+  uretimMetni?: (acilis: Acilis) => string;
 }
 
 export interface YerlesEkrani {
@@ -68,11 +71,12 @@ export const yerlesOnerisi = (d: Pick<AdayDurumu, "aday">): Acilis => ilceMetni(
  * İlçe kartı (sözleşme H.1; SAF dizge). Sıra: ad, neden, bilinen yanı, açılış, doluluk, ayrılmış hücre, rozet. Satır yoksa hiç yazılmaz
  * (boş yer yok): sözlükte olmayan ilçede neden ve bilinen yanı, ızgarasız ilçede doluluk, bilinmeyen ayrılmışta ayrılmış satırı.
  */
-export function yerlesKartiHtml(d: AdayDurumu, secili: boolean, duzey: DukkanDuzeyi = {}): string {
+export function yerlesKartiHtml(d: AdayDurumu, secili: boolean, duzey: DukkanDuzeyi = {}, uretim?: string): string {
   const yog = d.doluluk;
   const neden = ilceNedeni(d.aday.ilce, duzey);
   const bilinen = bilinenYaniSatiri(d.aday.ilce);
   const oneri = yerlesOnerisi(d);
+  const nufus = nufusMetni(izgaraManifesti.ilceler.find((i) => i.kimlik === d.aday.ilce)?.nufus);
   const doluluk = !d.izgara
     ? ""
     : yog === null
@@ -83,10 +87,11 @@ export function yerlesKartiHtml(d: AdayDurumu, secili: boolean, duzey: DukkanDuz
   const rozet = durumRozeti(d);
   return `<button type="button" class="yr-kart" role="radio" aria-checked="${secili}" data-ilce="${esc(d.aday.ilce)}">
       <span class="yr-ad">${esc(d.ad)} <small>${esc(d.il)}</small></span>
+      ${nufus ? `<span class="yr-neden">${esc(yerlesMetni("yerles.kart.nufus", { n: nufus }))}</span>` : ""}
       ${neden ? `<span class="yr-neden">${esc(neden)}</span>` : ""}
       ${bilinen ? `<span class="yr-imza">${esc(bilinen.etiket)}: ${esc(bilinen.deger)}</span>` : ""}
       <span class="yr-onerilen">${yerlesMetniHtml("yerles.kart.acilis", { ad: `<b>${esc(yerlesMetni(`yerles.acilis.${oneri}`))}</b>` })}</span>
-      <span class="yr-onerilen">${esc(acilisMetni(oneri, duzey))}</span>
+      <span class="yr-onerilen">${esc(uretim ?? acilisMetni(oneri, duzey))}</span>
       ${doluluk}${ayrilmis}
       <span class="yr-durum ${rozet === "hazir" ? "iyi" : "zayif"}">${esc(yerlesMetni(`yerles.kart.${rozet}`))}</span>
     </button>`;
@@ -116,7 +121,7 @@ export async function yerlesAc(g: YerlesGirdisi): Promise<YerlesEkrani> {
   };
 
   const duzey = (): DukkanDuzeyi => g.dukkanDuzeyi?.() ?? {};
-  const kartHtml = (d: AdayDurumu): string => yerlesKartiHtml(d, d.aday.ilce === secili, duzey());
+  const kartHtml = (d: AdayDurumu): string => yerlesKartiHtml(d, d.aday.ilce === secili, duzey(), g.uretimMetni?.(yerlesOnerisi(d)));
 
   // Giriş hareketi yalnız "hazırlanıyor" kutusunda (.gir): seçim değişince kutu yeniden çizilir ama yeniden belirmez
   const ciz = (hata = ""): void => {
@@ -129,7 +134,7 @@ export async function yerlesAc(g: YerlesGirdisi): Promise<YerlesEkrani> {
       <fieldset class="yr-acilis">
         <legend>${esc(yerlesMetni("yerles.acilis.baslik"))}</legend>
         <div class="segment" role="group" aria-label="${esc(yerlesMetni("yerles.acilis.baslik"))}">
-          ${ACILIS_SIRASI.map((a) => `<button type="button" data-acilis="${a}" aria-pressed="${a === acilis}" title="${esc(acilisMetni(a, duzey()))}">${esc(yerlesMetni(`yerles.acilis.${a}`))}</button>`).join("")}
+          ${ACILIS_SIRASI.map((a) => `<button type="button" data-acilis="${a}" aria-pressed="${a === acilis}" title="${esc(g.uretimMetni?.(a) ?? acilisMetni(a, duzey()))}">${esc(yerlesMetni(`yerles.acilis.${a}`))}</button>`).join("")}
         </div>
         <p class="yr-not">${esc(yerlesMetni("yerles.acilis.not"))}</p>
       </fieldset>

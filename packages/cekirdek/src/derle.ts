@@ -211,6 +211,7 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
       komisyonIndirimPpm: t.komisyonIndirimPpm ?? 0,
       makasIndirimPpm: t.makasIndirimPpm ?? 0,
       emirYuvasi: t.emirYuvasi ?? 0,
+      birlikKapasitesi: t.birlikKapasitesi ?? 0,
     });
   }
   // Kamu arsası (`p.kamu`): her ilçenin kamu kümesi (mülk dünyası kurulurken dondurulur); ayrılmış hücre hesabından düşülür.

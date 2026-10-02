@@ -37,8 +37,8 @@ function durum(ek: Partial<IsletmeDurumu> = {}): IsletmeDurumu {
 }
 
 describe("mülk kipi paneli", () => {
-  it("sekmeler: İşletmem, Hazine, Mal, Dikkat, Olaylar; Bölge, Devlet ve Savaş yok", () => {
-    expect(MULK_SEKMELERI.map((s) => s.ad)).toEqual(["İşletmem", "Hazine", "Mal", "Dikkat", "Olaylar"]);
+  it("sekmeler: İşletmem, Hazine, Mal, Üretim, Tedarik, İlçe, Teknoloji, Ordu, Dikkat, Olaylar", () => {
+    expect(MULK_SEKMELERI.map((s) => s.ad)).toEqual(["İşletmem", "Hazine", "Mal", "Üretim", "Tedarik", "İlçe", "Teknoloji", "Ordu", "Dikkat", "Olaylar"]);
   });
 
   it("İşletmem: kimlik, kalkan ve ayrılmış hücre (savaş dili yok), ilçe ilçe arsa, yapılar, rehber boş durumu", () => {
@@ -66,7 +66,7 @@ describe("mülk kipi paneli", () => {
     const bitenler = new Map([["9", { tur: "ciftlik", ilce: "tr_41_gebze", bitis: 98 * SA }], ["1", { tur: "ahir", bitis: 10 * SA }]]);
     const l = mulkDikkatMaddeleri(durum(), ad, bitenler);
     expect(l.map((m) => m.tur)).toEqual(["eksik", "bosta", "bitti"]);
-    expect(l[0]!.baslik).toBe("Gebze: Çiftlik: girdi eksik");
+    expect(l[0]!.baslik).toBe("Gebze: Çiftlik: verim düşük");
     expect(l[1]!.baslik).toBe("Kocaeli: Çiftlik boşta");
     expect(l[2]!.baslik).toBe("Gebze: Çiftlik hazır.");
     expect(l[2]!.ayrinti).toBe("2 sa önce");
@@ -216,4 +216,3 @@ describe("inşa bitişi bildirimi (nötr toast; Dikkat ile aynı cümle)", () =>
     expect(insaatlariIzle(iz, [], 105 * SA).map(([id]) => id)).toEqual(["2", "1"]);
   });
 });
-

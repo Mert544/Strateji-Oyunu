@@ -16,6 +16,8 @@
  *   KAPI_ENTEGRASYON_DIZIN  `entegrasyon` dalının worktree'si (varsayılan: git worktree listesinden bulunur)
  *   KAPI_KARO               yürüyüş karosu (gebze-z15.pmtiles) kaynağı (varsayılan: ana ağaçtaki dist/harita-verisi/karolar)
  *   KAPI_BEKLE_SN           kilit için en çok bekleme (varsayılan 7200)
+ *   KAPI_ATIF_SAGLAYICI     claude | codex; açık yapılandırmada oturum satırıyla birlikte zorunlu
+ *   KAPI_OTURUM_SATIRI      sağlayıcıya ait gerçek oturum satırı; ayrıntılar scripts/kapi-atif.md
  */
 import { spawn, spawnSync } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
@@ -24,6 +26,8 @@ import { hostname, loadavg } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
+import { atifMesajEksikleri, atifYapilandirmaOku } from "./kapi-atif.ts";
+import type { AtifYapilandirma } from "./kapi-atif.ts";
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Sabitler
@@ -562,9 +566,6 @@ function worktreeler(cwd: string): WorktreeBilgi[] {
   return sonuc;
 }
 
-/** Her commit mesajında bulunması gereken oturum satırı (baş lider kararı; bkz. SP/takim/ortak.md). */
-const OTURUM_SATIRI = process.env["KAPI_OTURUM_SATIRI"] ?? "Claude-Session: https://claude.ai/code/session_01YQaN9Xy6JqWQSadMfNhyVn";
-
 interface AtifSonucu {
   incelenen: number;
   eksik: string[];
@@ -572,19 +573,17 @@ interface AtifSonucu {
 }
 
 /**
- * Atıf denetimi: `entegrasyon..<dal>` aralığındaki her commit mesajında tam oturum satırı ve bir "Co-Authored-By: Claude ..."
- * satırı olmalı (model adı denetlenmez; adres noreply@anthropic.com olmalı).
+ * Atıf denetimi: `entegrasyon..<dal>` aralığındaki her commit mesajında yapılandırılmış sağlayıcının
+ * tam oturum satırı ve ortak yazar satırı olmalı (Claude için model adı denetlenmez).
  */
-function atifDenetle(cwd: string, taban: string, dal: string): AtifSonucu {
+function atifDenetle(cwd: string, taban: string, dal: string, yapilandirma: AtifYapilandirma): AtifSonucu {
   const sonuc: AtifSonucu = { incelenen: 0, eksik: [], ayrinti: [] };
   const liste = gitOk(cwd, ["rev-list", `${taban}..${dal}`]).split("\n").filter(Boolean);
   for (const sha of liste) {
     sonuc.incelenen++;
     const mesaj = gitOk(cwd, ["show", "-s", "--format=%B", sha]);
     const satirlar = mesaj.split(/\r?\n/).map((l) => l.trimEnd());
-    const eksik: string[] = [];
-    if (!satirlar.includes(OTURUM_SATIRI)) eksik.push("Claude-Session");
-    if (!satirlar.some((l) => /^Co-Authored-By: Claude\b.*<noreply@anthropic\.com>$/i.test(l))) eksik.push("Co-Authored-By: Claude <model> <noreply@anthropic.com>");
+    const eksik = atifMesajEksikleri(mesaj, yapilandirma);
     if (eksik.length > 0) {
       sonuc.eksik.push(sha.slice(0, 7));
       sonuc.ayrinti.push({ sha, konu: satirlar[0] ?? "", eksik });
@@ -932,6 +931,12 @@ async function ileriSarKomutu(dal: string, entegDizin: string, sonucDizin: strin
 
 async function main(): Promise<number> {
   const sec = seceneklerOku(process.argv.slice(2));
+  let atifYapilandirma: AtifYapilandirma;
+  try {
+    atifYapilandirma = atifYapilandirmaOku(process.env);
+  } catch (e) {
+    throw new Kullanim(e instanceof Error ? e.message : String(e));
+  }
   sakla = sec.sakla;
   const betikDizin = dirname(fileURLToPath(import.meta.url));
   const wts = worktreeler(betikDizin);
@@ -1093,11 +1098,11 @@ async function main(): Promise<number> {
       }
       const basla = Date.now();
       d.dal_dosyalari = git(entegDizin, ["diff", "--name-only", "--no-renames", `${d.taban}...${d.sha}`]).cikti.split("\n").filter(Boolean);
-      d.atif = atifDenetle(entegDizin, d.taban, d.sha);
+      d.atif = atifDenetle(entegDizin, d.taban, d.sha, atifYapilandirma);
       const atifTamam = d.atif.eksik.length === 0;
       adimlar.push({
         ad: `atif${sonek(d)}`,
-        komut: `git rev-list ${d.taban.slice(0, 7)}..${d.sha.slice(0, 7)} (oturum satırı + Co-Authored-By: Claude <model> <noreply@anthropic.com>)`,
+        komut: `git rev-list ${d.taban.slice(0, 7)}..${d.sha.slice(0, 7)} (sağlayıcı=${atifYapilandirma.saglayici}; oturum satırı + ${atifYapilandirma.ortakYazarSatiri})`,
         durum: atifTamam ? "gecti" : "kirik",
         kod: atifTamam ? 0 : 1,
         sure_sn: yuvarla1((Date.now() - basla) / 1000),
@@ -1492,7 +1497,7 @@ async function main(): Promise<number> {
     tekrar: sec.tekrar,
     kademe: sec.kademe,
     sonuc_kodu: gecti ? (sec.sadece ? "gecti_kismi" : pgBekliyor ? "gecti_pg_bekliyor" : "gecti") : duzeltme ? "duzeltme_gerekli" : "kirik",
-    atif: { incelenen: dalKayitlari.reduce((t, d) => t + d.atif.incelenen, 0), eksik: atifEksik, ayrinti: dalKayitlari.flatMap((d) => d.atif.ayrinti.map((a) => ({ dal: d.dal, ...a }))) },
+    atif: { saglayici: atifYapilandirma.saglayici, oturum_satiri: atifYapilandirma.oturumSatiri, incelenen: dalKayitlari.reduce((t, d) => t + d.atif.incelenen, 0), eksik: atifEksik, ayrinti: dalKayitlari.flatMap((d) => d.atif.ayrinti.map((a) => ({ dal: d.dal, ...a }))) },
     buyuk_dosya: {
       sinir_bayt: BUYUK_SINIR,
       bulunan: dalKayitlari.flatMap((d) => d.buyuk.bulunan.map((b) => ({ dal: d.dal, ...b }))),

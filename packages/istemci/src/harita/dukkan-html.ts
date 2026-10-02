@@ -606,6 +606,8 @@ export interface DukkanDikkati {
   tur: "eksik" | "bosta";
   baslik: string;
   ilce?: string;
+  /** Rafa ilişkin maddede açılacak bitmiş dükkânın ek yapı kimliği; inşaatta yoktur. */
+  rafaGit?: number;
 }
 
 /**
@@ -624,12 +626,12 @@ export function dukkanDikkatMaddeleri(g: DukkanGorunumu | null, malAdi: (mal: st
       continue;
     }
     const doluYuva = d.yuvalar.filter((y) => y.mal !== null);
-    if (doluYuva.length === 0) l.push({ tur: "bosta", baslik: m(stokVar ? "dukkan.D4.raf_oneri" : "dukkan.D5.bos_raf_uyari"), ...ilce });
+    if (doluYuva.length === 0) l.push({ tur: "bosta", baslik: m(stokVar ? "dukkan.D4.raf_oneri" : "dukkan.D5.bos_raf_uyari"), ...ilce, rafaGit: d.id });
     else if (d.yuvalar.some((y) => y.mal === null)) {
       const raftakiler = new Set(doluYuva.map((y) => y.mal));
-      if ([...g.satilabilirMallar].some((x) => !raftakiler.has(x) && rafaKonabilir(x))) l.push({ tur: "bosta", baslik: m("dukkan.D8.dikkat_mal_var"), ...ilce });
+      if ([...g.satilabilirMallar].some((x) => !raftakiler.has(x) && rafaKonabilir(x))) l.push({ tur: "bosta", baslik: m("dukkan.D8.dikkat_mal_var"), ...ilce, rafaGit: d.id });
     }
-    for (const y of d.yuvalar) if (y.mal !== null && !y.stokVar) l.push({ tur: "eksik", baslik: m("dukkan.D8.dikkat_stok", { mal: malAdi(y.mal) }), ...ilce });
+    for (const y of d.yuvalar) if (y.mal !== null && !y.stokVar) l.push({ tur: "eksik", baslik: m("dukkan.D8.dikkat_stok", { mal: malAdi(y.mal) }), ...ilce, rafaGit: d.id });
     if (kasaDoluMu(d)) l.push({ tur: "bosta", baslik: m("dukkan.D8.dikkat_kasa"), ...ilce });
     if (d.yuvalar.some((y) => y.kademe === 0 && y.etkinKademe !== 0)) l.push({ tur: "bosta", baslik: m("dukkan.D8.dikkat_kampanya"), ...ilce });
   }

@@ -75,7 +75,7 @@ body.mulk-paneli #harita-hazine .hz-saat { padding-left: 0; border-left: 0; }
 .pz-eylemler { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .pz-eylemler .birincil { flex: 1 1 100%; }
 .pz-eylemler [data-eylem="pazar-birak"] { color: var(--murekkep-3); }
-.pz-form [aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
+.pz-form [aria-disabled="true"] { cursor: not-allowed; }
 @media (min-width: 821px) {
   .pz-eylemler .birincil { flex: none; }
 }

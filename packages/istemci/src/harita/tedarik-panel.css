@@ -1,0 +1,10 @@
+.tdr-panel{padding:var(--s-3);border:1px solid var(--cizgi-ince);border-radius:var(--r-lg);background:var(--yuzey);margin:16px 0}
+.tdr-panel h3,.tdr-panel h4{margin:0 0 12px}.tdr-panel h4{margin-top:24px}.tdr-panel p{line-height:1.5}
+.tdr-secimler{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.tdr-secimler label{display:grid;gap:8px}
+.tdr-panel select,.tdr-panel input{min-height:44px;min-width:0;max-width:100%;padding:8px;font:inherit;color:inherit;background:var(--yuzey);border:1px solid var(--cizgi-ince);border-radius:var(--r-md)}
+.tdr-form{padding:12px;border:1px solid var(--cizgi-ince);border-radius:var(--r-md);background:var(--yuzey-2)}.tdr-form>label{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.tdr-form input{width:130px;font-variant-numeric:tabular-nums}
+.tdr-ozet{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}.tdr-ozet dt{font-size:.85em;opacity:.75}.tdr-ozet dd{margin:4px 0;font-variant-numeric:tabular-nums}
+.tdr-eylemler{display:flex;flex-wrap:wrap;gap:8px}.tdr-panel .eylem{min-height:44px}.tdr-panel .eylem:disabled{opacity:.55;cursor:default}.tdr-panel :is(input,select,button):focus-visible{outline:2px solid var(--basari);outline-offset:3px}
+.tdr-sonuc{padding:10px;border-inline-start:3px solid var(--basari)}.tdr-hata,.tdr-uyari{padding-inline-start:10px;border-inline-start:3px solid var(--hata)}.tdr-kesinlik{font-size:.85em;padding:3px 6px;border:1px solid var(--cizgi-ince);border-radius:var(--r-md)}
+.tdr-emirler{list-style:none;margin:12px 0;padding:0}.tdr-emirler li{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:12px 0;border-bottom:1px solid var(--cizgi-ince)}.tdr-emirler li>div{display:grid;gap:6px;min-width:0}.tdr-emirler b{overflow-wrap:anywhere}.tdr-emirler span{font-variant-numeric:tabular-nums}
+@media(max-width:480px){.tdr-panel{padding:12px}.tdr-secimler{grid-template-columns:minmax(0,1fr)}.tdr-ozet{grid-template-columns:minmax(0,1fr)}.tdr-eylemler .eylem{flex:1 1 100%}}

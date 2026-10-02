@@ -9,6 +9,7 @@ import "./giris.css";
 import type { MulkBaglantisi } from "../harita/baglanti";
 import type { Izgara } from "../harita/hucre";
 import { veriKoku } from "../harita/veri";
+import { yayinlananYuruyusKarolari, yuruyusKaroYolu } from "../harita/yuruyus-kaynak";
 import { KOPRU_ADI, THREE_KOPRU } from "./three-kopru";
 
 type YuruModulu = typeof import("./sahne");
@@ -34,21 +35,26 @@ function yuruModulu(): Promise<YuruModulu> {
   return import("./sahne");
 }
 
-/** Protomaps z15 özütü: `?yuru-karo=<url>` (ya da haritanın `?altlik=`), yoksa `harita-verisi/karolar/gebze-z15.pmtiles`. */
-export function yuruKaroUrl(): string {
+/** Açık URL tercih edilir; varsayılan kaynak seçilen ilçenindir, başka ilçeye dönülmez. */
+export function yuruKaroUrl(ilce: string | null = null): string {
   const q = new URLSearchParams(location.search);
   const u = q.get("yuru-karo") ?? q.get("altlik");
-  return new URL(u ?? veriKoku() + "karolar/gebze-z15.pmtiles", location.href).href;
+  const yol = ilce ? yuruyusKaroYolu(ilce) : null;
+  if (!u && !yol) throw new Error("Bu ilçenin sokak verisi henüz hazır değil. Strateji haritasından devam edebilirsin.");
+  return new URL(u ?? veriKoku() + yol!, location.href).href;
 }
 
 let modul: Promise<YuruModulu> | null = null;
 
 export async function yuruAc(sahneKap: HTMLElement, a: YuruAcma): Promise<void> {
   if (location.protocol === "file:") throw new Error("Sokak yürüyüşü file:// altında açılamaz; sayfayı bir HTTP sunucusundan açın.");
+  const q = new URLSearchParams(location.search);
+  if (!q.get("yuru-karo") && !q.get("altlik") && (!a.ilce || !(await yayinlananYuruyusKarolari(veriKoku())).includes(a.ilce)))
+    throw new Error(`${a.ilceAd || "Bu ilçe"} için sokak verisi henüz hazır değil. Strateji haritasından devam edebilirsin.`);
   modul ??= yuruModulu().catch((e: unknown) => {
     modul = null;
     throw e;
   });
   const m = await modul;
-  await m.yuruSahnesi(sahneKap).ac({ ...a, karoUrl: yuruKaroUrl() });
+  await m.yuruSahnesi(sahneKap).ac({ ...a, karoUrl: yuruKaroUrl(a.ilce) });
 }

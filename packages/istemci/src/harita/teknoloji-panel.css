@@ -1,0 +1,10 @@
+.tk-liste{display:grid;gap:12px;margin:16px 0}
+.tk-kart{border:1px solid var(--cizgi-ince);border-radius:var(--r-lg);padding:var(--s-3);background:var(--yuzey)}
+.tk-kart h4{margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.tk-kart p{line-height:1.5;margin:8px 0}
+.tk-kart .eylem{margin-top:4px;min-height:44px}
+.tk-tamam{border-inline-start:3px solid var(--basari)}
+.tk-bedel{margin:12px 0}.tk-bedel dt{font-size:.85em;opacity:.75}.tk-bedel dd{margin:4px 0;font-variant-numeric:tabular-nums}
+.tk-etkin{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s-2);padding:var(--s-3);border-radius:var(--r-md);background:var(--yuzey-2)}
+.tk-sonuc{padding:10px;border-inline-start:3px solid var(--basari)}
+.tk-hata{border-inline-start-color:var(--hata)}

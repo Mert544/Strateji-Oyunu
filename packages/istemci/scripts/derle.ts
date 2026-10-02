@@ -13,7 +13,7 @@
  *      Protomaps z15 özütü varsa (veri-hatti önbelleği, gitignore'lu) harita-verisi/karolar/ altına kopyalanır.
  * Ardından boyut özeti yazdırılır.
  */
-import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
@@ -21,6 +21,7 @@ import { build } from "vite";
 import type { Plugin } from "vite";
 import { haritaVerisiDosyalari } from "./harita-verisi-listesi";
 import type { IzgaraManifesti } from "./harita-verisi-listesi";
+import { YURUYUS_KAROLARI } from "../src/harita/yuruyus-kaynak";
 
 const AYRI = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEPO = resolve(AYRI, "..", "..");
@@ -127,20 +128,33 @@ async function main(): Promise<void> {
   // Yazı tipi (Inter alt kümesi, OFL; tek dosyaya gömülmez: bütçe) ve simge lisansı sayfanın yanına
   cpSync(join(AYRI, "public", "yazi"), join(hedefKlasor, "yazi"), { recursive: true });
   copyFileSync(join(AYRI, "src", "tasarim", "LUCIDE-LISANS.txt"), join(hedefKlasor, "yazi", "LUCIDE-LISANS.txt"));
-  // Yürüyüş karoları (Protomaps z15 özütü, ODbL; repo dışı önbellek): varsa sayfanın yanına
-  const ozut = join(DEPO, "packages", "veri-hatti", ".onbellek", "karolar", "gebze-z15.pmtiles");
-  if (existsSync(ozut))
-    for (const kok of [join(AYRI, "dist", "harita-verisi"), join(hedefKlasor, "harita-verisi")]) {
-      mkdirSync(join(kok, "karolar"), { recursive: true });
-      copyFileSync(ozut, join(kok, "karolar", "gebze-z15.pmtiles"));
+  // Bina/sokak altlığı: yalnız gerçek Protomaps z15 özütlerini yayımla. Arsa şeritleri bu katmanın yerine geçmez.
+  const haritaKokleri = [join(AYRI, "dist", "harita-verisi"), join(hedefKlasor, "harita-verisi")];
+  const karoOnbellek = join(DEPO, "packages", "veri-hatti", ".onbellek", "karolar");
+  const hazirKarolar: { ilce: string; dosya: string }[] = [];
+  for (const karo of YURUYUS_KAROLARI) {
+    const ozut = join(karoOnbellek, karo.dosya);
+    if (!existsSync(ozut)) {
+      console.warn(`  uyarı: ${karo.ilce} için ${karo.dosya} yok; bina/sokak altlığı yayımlanmadı`);
+      continue;
     }
-  else console.warn("  uyarı: gebze-z15.pmtiles yok; yürüyüş karoları için ?yuru-karo=<url> verin");
+    for (const kok of haritaKokleri) {
+      mkdirSync(join(kok, "karolar"), { recursive: true });
+      copyFileSync(ozut, join(kok, "karolar", karo.dosya));
+    }
+    hazirKarolar.push({ ilce: karo.ilce, dosya: karo.dosya });
+  }
+  // Eksik ilçeler manifestte yer almaz: istemci başka ilçenin karosunu sessizce kullanmaz.
+  for (const kok of haritaKokleri) {
+    mkdirSync(join(kok, "karolar"), { recursive: true });
+    writeFileSync(join(kok, "karolar", "manifest.json"), JSON.stringify({ surum: 1, ilceler: hazirKarolar }, null, 2) + "\n");
+  }
   // Harita verisi (ODbL; il/ilçe sınırları, arsa ızgarası örneği) sayfanın yanına: harita/veri.ts fetch eder.
   const odbl = join(DEPO, "packages", "veri", "haritalar", "odbl");
   // Izgara dosyaları manifestten (sunucu ve istemci aynı kaydı okur): her ilçenin BHI1'i ve şerit katmanı.
   const izgara = JSON.parse(readFileSync(join(odbl, "izgara", "manifest.json"), "utf8")) as IzgaraManifesti;
   const haritaDosyalari = haritaVerisiDosyalari(izgara);
-  for (const kok of [join(AYRI, "dist", "harita-verisi"), join(hedefKlasor, "harita-verisi")])
+  for (const kok of haritaKokleri)
     for (const d of haritaDosyalari) cpSync(join(odbl, d), join(kok, d), { recursive: true });
 
   console.log("\nBoyutlar (ham / gzip):");

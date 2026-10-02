@@ -21,8 +21,8 @@ export interface DefterMetni {
 
 /** `defter.kavram.<kavram>` şablonları. */
 export const DEFTER_METINLERI: Readonly<Record<string, DefterMetni>> = {
-  "defter.kavram.ilk_yapi": { kazanildi: "İlk yapın kuruldu; kolay gelsin.", siradaki: "İlk yapını kur" },
-  "defter.kavram.ilk_satis": { kazanildi: "İlk satışın yapıldı; bereketli olsun.", siradaki: "Çiftliğinin tahılını Pazar'da sat." },
+  "defter.kavram.ilk_yapi": { kazanildi: "İlk yapın kuruldu; kolay gelsin.", siradaki: "Çiftliğini kur; tahıl üretimin başlasın." },
+  "defter.kavram.ilk_satis": { kazanildi: "İlk satışın yapıldı; bereketli olsun.", siradaki: "Çiftliğinin tahılını Pazar'da sat. Saatlik emrin kabulü satış değildir; gerçekleşen satışın geliri hazinene yansır." },
   "defter.kavram.ilk_isleme": { kazanildi: "Ham malı işledin; ilk işlenmiş ürünün hayırlı olsun.", siradaki: "Ham malı işle (ör. tahılı gıdaya çevir)" },
   "defter.kavram.ilk_ekmek": { kazanildi: "İlk ekmeğin fırından çıktı; sıcağı sıcağına.", siradaki: "Unu fırında ekmeğe çevir." },
   "defter.kavram.zincir_kapandi": { kazanildi: "Zincir kapandı: bir yapının çıktısı öbürünün girdisi oldu.", siradaki: "Zinciri kapat: bir yapının çıktısını öbürüne girdi yap" },
@@ -147,6 +147,17 @@ export function gosterilecekSiradaki(d: Defter, bekliyor: boolean): DefterSirada
   return sonuc;
 }
 
+/** Kimlikli kısayollar; mevcut eylemi İşletmem bağlar, burada komut verilmez. */
+function defterEylemi(kavram: string): string {
+  const eylemler: Readonly<Record<string, { eylem: string; metin: string }>> = {
+    ilk_yapi: { eylem: "yapi", metin: "Yapı kur" },
+    ilk_satis: { eylem: "satis", metin: "Mal'a git" },
+    ilk_dukkan: { eylem: "dukkan", metin: "Dükkânı incele" },
+  };
+  const e = eylemler[kavram];
+  return e ? `<button type="button" class="eylem mini-dugme" data-defter-eylem="${e.eylem}">${esc(e.metin)}</button>` : "";
+}
+
 /** B7 "sıradaki adım" kartı için ilk etkin sıradaki adım (metin ve ödül sütunu); yoksa null. `bekliyor`: "satışın yolda" (bkz. `ilkSatisBekliyor`). */
 export function defterUstKarti(d: Defter | null, malAdi: (m: string) => string, bekliyor = false): { metin: string; odulHtml: string; kavram: string } | null {
   const x = d ? gosterilecekSiradaki(d, bekliyor)[0] : undefined;
@@ -159,13 +170,16 @@ export function defterHtml(d: Defter | null, malAdi: (m: string) => string, epoc
   if (!d) return s + `<p class="ipucu-metin">Defter yükleniyor…</p>`;
   // Ödül çubuğu ve tavan yok (ZK-1); toplam yalnız tek satır: işlenen ödüllerin değeri (çoğu mal olduğu için "değerinde")
   if (d.toplamOdulMili > 0) s += `<p class="defter-islenen soluk" data-alan="defter-islenen">${esc(cerceve("defter.islenen", { tutar: paraMili(d.toplamOdulMili, "asagi") }))}</p>`;
-  const siradaki = gosterilecekSiradaki(d, bekliyor);
+  const siradaki = gosterilecekSiradaki(d, bekliyor).slice(0, 2);
   if (siradaki.length) {
     s += `<p class="defter-baslik">Sıradaki adımlar</p><ul class="mulk-liste defter-liste">`;
     for (const x of siradaki)
-      s += `<li data-kavram="${esc(x.kavram)}"><span class="ml-ad"><b>${esc(siradakiMetni(x, bekliyor))}</b></span><span class="defter-tutar">${odulSutunu(x.odul, malAdi)}</span></li>`;
+      s += `<li data-kavram="${esc(x.kavram)}"><span class="ml-ad"><b>${esc(siradakiMetni(x, bekliyor))}</b>${defterEylemi(x.kavram)}</span><span class="defter-tutar">${odulSutunu(x.odul, malAdi)}</span></li>`;
     s += `</ul>`;
   }
+  // İki öneri çiftlik ve dükkân olabilir; satışa erişim üçüncü bir öneri açmadan korunur.
+  if (d.siradaki.some((x) => x.etkin && x.kavram === "ilk_satis") && !siradaki.some((x) => x.kavram === "ilk_satis"))
+    s += `<p>${defterEylemi("ilk_satis")}</p>`;
   if (d.kazanilan.length) {
     s += `<p class="defter-baslik">Defterine işlenenler</p><ul class="mulk-liste defter-liste">`;
     const sirali = [...d.kazanilan].sort((a, b) => (b.t ?? -1) - (a.t ?? -1));

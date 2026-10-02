@@ -1,8 +1,8 @@
 /**
  * MapLibre görünümü (L1 il, L2 ilçe, L3 arsa). Bu modül ve maplibre-gl + pmtiles yalnız `import()` ile yüklenir.
  *
- * Temel harita yok: düz sakin zemin + il/ilçe sınırları (OSM, ODbL). İsteğe bağlı Protomaps altlığı
- * `?altlik=<pmtiles url>` ile açılır. L3'te arsa ızgarası S6'nın `seritler` PMTiles katmanından çizilir
+ * Düz sakin zemin + il/ilçe sınırları (OSM, ODbL). Yayımlanmış ilçe sokak özütü varsa Protomaps altlığı
+ * kendiliğinden açılır; `?altlik=<pmtiles url>` ile değiştirilebilir. L3'te arsa ızgarası S6'nın `seritler` PMTiles katmanından çizilir
  * (yalnız z15 karoları; MapLibre büyütür). Tıklanan hücre istemcide hesaplanır, uygunluk BHI1'den okunur.
  * Çizim durağandır: harita yalnız etkileşimde yeniden çizilir (MapLibre boşta 0 fps), sürekli animasyon yok.
  */
@@ -71,7 +71,8 @@ import {
 import type { Izgara, Sinir } from "./hucre";
 import { Secim, secilemezNedeni } from "./secim";
 import type { SecimBaglami } from "./secim";
-import { disKaraCoz, ilceleriYukle, izgaraYukle, OSM_ATIF_HTML, seritUrl } from "./veri";
+import { disKaraCoz, ilceleriYukle, izgaraYukle, OSM_ATIF_HTML, seritUrl, veriKoku } from "./veri";
+import { yayinlananYuruyusKarolari, yuruyusKaroYolu } from "./yuruyus-kaynak";
 import dunyaUlkeler from "../veri/dunya-ulkeler.topo.json";
 import type { Hiyerarsi, SinirKatmani } from "./veri";
 
@@ -79,6 +80,7 @@ export { baglantiKur } from "./baglanti-kur";
 export { yerlesAc } from "../arayuz/yerles-ekrani";
 export { mulkPaneliKur } from "./mulk-panel";
 export { donusuGoster } from "./donus-ekrani";
+export { acilisUretimMetni } from "../tasarim/ilce-metin";
 
 export interface GorunumSecenekleri {
   hiyerarsi: Hiyerarsi;
@@ -401,6 +403,29 @@ export class HaritaGorunumu {
   // --- stil ------------------------------------------------------------------------------------------
 
   private altlikVar = new URLSearchParams(location.search).get("altlik");
+  private altlikEksikleri = new Set<string>();
+
+  /** İlçe değişince yalnız gerçek sokak/bina kaynağı değişir; arsa şeridi asla altlık sayılmaz. */
+  private async altlikAyarla(ilce: string | null): Promise<void> {
+    if (new URLSearchParams(location.search).get("altlik")) return;
+    const yayinda = ilce !== null && (await yayinlananYuruyusKarolari(veriKoku())).includes(ilce);
+    const yol = yayinda ? yuruyusKaroYolu(ilce) : null;
+    const url = yol ? new URL(yol, veriKoku()).href : null;
+    if (ilce && !yayinda && yuruyusKaroYolu(ilce) && !this.altlikEksikleri.has(ilce)) {
+      this.altlikEksikleri.add(ilce);
+      bildir(`${this.s.hiyerarsi.ilceler.get(ilce)?.ad ?? "Bu ilçe"}: sokak verisi henüz hazır değil; arsa haritasından devam edebilirsin.`, "bilgi");
+    }
+    if (url === this.altlikVar) return;
+    const h = this.harita;
+    for (const katman of altlikKatmanlari(renk)) if (h.getLayer(katman.id)) h.removeLayer(katman.id);
+    if (h.getSource("altlik")) h.removeSource("altlik");
+    this.altlikVar = url;
+    if (url) {
+      h.addSource("altlik", { type: "vector", url: "pmtiles://" + url });
+      for (const katman of altlikKatmanlari(renk)) h.addLayer(katman, SERIT_ONCESI);
+    }
+    this.seritYuklu = "";
+  }
 
   /** Stilin tüm katmanları (tema değişince aynı listeden yeniden boyanır; serit ve hayalet ayrıca). */
   private katmanlar(): LayerSpecification[] {
@@ -571,6 +596,10 @@ export class HaritaGorunumu {
     void this.yuklendi.then(() => this.sahiplikBoya());
   }
 
+  seciliIlce(): string | null {
+    return this.ilceKimlik;
+  }
+
   mulklerim(): { ilce: string; hucre: number }[] {
     const ben = this.baglanti.ben.id;
     const l: { ilce: string; hucre: number }[] = [];
@@ -623,6 +652,7 @@ export class HaritaGorunumu {
       h.setFilter("ortu-il", ["!=", ["get", "kimlik"], hedef.il]);
     }
     if (hedef.ilce !== this.ilceKimlik) {
+      await this.altlikAyarla(hedef.ilce);
       this.ilceKimlik = hedef.ilce;
       this.secim.temizle();
       this.kartHucre = null;

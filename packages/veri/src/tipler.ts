@@ -518,6 +518,8 @@ export interface Parametreler {
     savunmaDurusuCarpaniPpm: number;
     /** Para lavabosu: birlik başına maaş (mili-para/saat). */
     birlikMaasiSaat: number;
+    /** Yalnız mülk işletme düğümlerinde birlik ikmali çarpanı (ppm); yoksa 1x. */
+    ikmalCarpaniPpm?: number;
   };
   teknoloji: {
     /**
@@ -598,6 +600,8 @@ export interface MulkEkYapiTanimi {
   makasIndirimPpm?: number;
   /** Ticaret ofisi: işletmenin ticaret emri yuvasına eklenir (`temelEmirYuvasi` ile birlikte). */
   emirYuvasi?: number;
+  /** Biten her yapı başına birlik kapasitesi; kuyruktaki üretim de kapasiteyi kullanır. */
+  birlikKapasitesi?: number;
   /**
    * Ölçeğe göre kapladığı hücre sayısı `[S, M, L]` (yalnız `dukkan` kullanır; sartname §4.2): `[0] = yuva`, `[1] >= [0]`, `[2] >= [1]`, hepsi en çok 5.
    * Yoksa ek yapı ölçeklenmez (mevcut davranış).

@@ -15,7 +15,7 @@ import { S } from "./karo-geometri";
 import { MARKA_RENK_SAYISI } from "../tasarim/marka";
 import { ASINMA_SOLMA, asinmaKademesi } from "../tasarim/asinma";
 import { hucreDunya } from "./koordinat";
-import { SILUET_RENK, SILUET_RENK_ILK, SILUETLI_YONTEMLER, siluetKutulari, siluetliMi } from "./siluet";
+import { SILUET_RENK, SILUET_RENK_ILK, SILUETLI_YONTEMLER, ekYapiKutulari, siluetKutulari, siluetliMi } from "./siluet";
 import type { Cerceve, Orijin } from "./koordinat";
 import type { Rgb, YuruPaleti } from "./palet";
 
@@ -33,6 +33,8 @@ export interface InsaatBilgisi {
   dukkan?: { tur: string; markaRenk?: number };
   /** Bitmiş (Tamam) yapının üretim yöntemi kimliği (G6/G8): imza silüetini belirler (siluet.ts). Yoksa genel gövde. */
   yontem?: string;
+  /** Bitmiş ek yapının gerçek türü (ör. Ordugâh); üretim yöntemi değildir. */
+  ekYapi?: string;
   /**
    * Tesisin aşınması (ppm; kare `ozel.tesisAsinma`; yalnız oyuncunun kendi tesisinde ve aşınma > 0 iken). Bitmiş yapıda malzeme
    * rengi kademeye göre soluklaşır (tasarim/asinma.ts); yoksa görünüm aynen.
@@ -423,11 +425,12 @@ export class ArsaKatmani {
       // Bitmiş yapı: dükkân (marka rengi, tabela, raf) ya da yöntem silüeti; ikisi de yoksa genel gövde
       const dukkan = ins.asama === 3 ? ins.dukkan : undefined;
       const siluet = ins.asama === 3 && !dukkan && siluetliMi(ins.yontem) ? ins.yontem : null;
+      const ekYapi = ins.asama === 3 && !dukkan && !siluet ? ekYapiKutulari(ins.ekYapi, k) : null;
       const mr = dukkan?.markaRenk;
       // Aşınma: yalnız bitmiş tesiste (dükkân hariç); malzeme rengi açık beton tonuna doğru soluklaşır (kademe 0: değişmez)
       const solma = ins.asama === 3 && !dukkan ? ASINMA_SOLMA[asinmaKademesi(ins.asinmaPpm)] : 0;
       const marka: Rgb = mr === undefined ? this.palet.insaat[2] : this.markaRengi(mr);
-      for (const [x, y, z, sx, sy, sz, r] of dukkan ? dukkanKutulari(k) : siluet ? siluetKutulari(siluet, k) : asamaKutulari(ins.asama, k)) {
+      for (const [x, y, z, sx, sy, sz, r] of dukkan ? dukkanKutulari(k) : siluet ? siluetKutulari(siluet, k) : ekYapi ?? asamaKutulari(ins.asama, k)) {
         let renk: Rgb =
           r === 4
             ? [this.palet.sinif[S.BINA_CATI * 3]!, this.palet.sinif[S.BINA_CATI * 3 + 1]!, this.palet.sinif[S.BINA_CATI * 3 + 2]!]

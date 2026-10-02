@@ -1,5 +1,13 @@
 # Oyun Tasarım Belgesi v1 (GDD v1): Odak Denetimi ve Tek Doğruluk Kaynağı
 
+> **2 Ekim 2026 çalışma yönü:** kullanıcı, son Claude/GitHub ilerlemesi üzerine
+> önce plan yaparak harita/grafik, üretim çeşitliliği, teknoloji, halk/politika
+> ve askerî katmanları birlikte geliştirmeyi istedi. Güncel kod/taslak ayrımı,
+> kaynak commit'i ve takım teslim sırası
+> [çok katmanlı geliştirme planında](../16-cok-katmanli-gelistirme-plani.md).
+> Aşağıdaki tarihsel “kodda var / P0” ifadeleri tek başına güncel tamamlanma
+> kanıtı değildir; bu ek yeni sistemlerin uygulanmış olduğunu belirtmez.
+
 > **Durum.** 1 Ekim 2026, Ar-Ge dalgası 4. Bu belge **karar vermez; kararları toplar, çelişkileri işaretler.** Yeni öneri yalnız §5.2 (odak) ve §6.4 (Alfa-0 öncesi şartlar) içinde ve kısadır. Kod, veri ve başka belge değiştirilmedi; yalnız bu dosya yazıldı.
 >
 > **Okunan kaynaklar.** docs/00–12 (karar ve çelişki içeren bölümler tam; docs/06, 08, 10 bölüm bölüm), docs/arastirma/ altındaki 26 dosya (25 rapor + argelider-sentez-1): özet, karar, Alfa-0 ve açık soru bölümleri tam; teknik raporlar (3d-teknoloji, açık kaynak ve veri, altı katman rakipleri, karo ve ızgara denemesi, sokak seviyesi 3B, paylaşılan dünya mimarisi) özet ve başlık düzeyinde; ortak brif ve sahip sözleri; `packages/cekirdek/src/{mulk,ekonomi,pazar,motor,tipler}`, `packages/sunucu`, `packages/protokol`, `packages/istemci/src/{harita,yuru,arayuz}`, `packages/veri/icerik/*.json` (commit edilmemiş "çalışma ağacı" dosyaları dahil; ayrıca anılır). Raporlardaki sayıların hiçbiri bu belgede yeniden doğrulanmadı.

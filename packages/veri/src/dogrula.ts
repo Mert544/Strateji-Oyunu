@@ -562,6 +562,9 @@ function mulkKontrolu(hatalar: string[], k: NonNullable<Parametreler["mulk"]>, s
   if (c[1] < c[0] || c[2] < c[1]) hatalar.push("mulk.olcekInsaSureCarpaniPpm: kademeler azalamaz (S <= M <= L)");
   // Ek yapi olcek ayak izi (sartname §4.2; yalniz `dukkan` kullanir): tesis tablosuyla ayni kurallar, en cok ENCOK_AYAK_IZI hucre.
   for (const [ad, e] of Object.entries(k.ekYapilar ?? {})) {
+    if ((e.birlikKapasitesi ?? 0) > 0 && e.enFazlaIlBasina === undefined) {
+      hatalar.push(`mulk.ekYapilar.${ad}: birlikKapasitesi icin enFazlaIlBasina gerekli`);
+    }
     const o = e.olcekHucre;
     if (o === undefined) continue;
     if (o[0] !== e.yuva) hatalar.push(`mulk.ekYapilar.${ad}.olcekHucre[0]: S ayak izi yuva degerine (${e.yuva}) esit olmali (bulunan ${o[0]})`);

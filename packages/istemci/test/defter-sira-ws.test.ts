@@ -87,8 +87,9 @@ describe("Defter sırası: sunucu = yerel yol", () => {
     // Defter listesi (etkin olanlar) siradaki sırasıyla: ilk_dukkan satırı ilk_isleme satırından ÖNCE
     const html = defterHtml(d, (m) => m);
     const sirali = [...html.matchAll(/data-kavram="(\w+)"/g)].map((m) => m[1]);
-    expect(sirali).toEqual(d.siradaki.filter((s) => s.etkin).map((s) => s.kavram));
-    expect(sirali.indexOf("ilk_dukkan")).toBeLessThan(sirali.indexOf("ilk_isleme"));
+    expect(sirali).toEqual(d.siradaki.filter((s) => s.etkin).slice(0, 2).map((s) => s.kavram));
+    expect(sirali).toContain("ilk_dukkan");
+    expect(sirali).not.toContain("ilk_isleme"); // en çok iki öneri
   }, 30_000);
 });
 

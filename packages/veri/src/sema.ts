@@ -374,6 +374,7 @@ const mulkEkYapiSema = z
     komisyonIndirimPpm: ppmSiniri.optional(),
     makasIndirimPpm: ppmSiniri.optional(),
     emirYuvasi: negatifOlmayan.optional(),
+    birlikKapasitesi: negatifOlmayan.optional(),
     olcekHucre: z.tuple([pozitif, pozitif, pozitif]).optional(),
   })
   .strict();
@@ -603,6 +604,7 @@ export const ParametreSema = z
           .strict(),
         savunmaDurusuCarpaniPpm: pozitif,
         birlikMaasiSaat: negatifOlmayan,
+        ikmalCarpaniPpm: pozitif.max(1_000_000).optional(),
       })
       .strict(),
     teknoloji: z

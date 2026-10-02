@@ -26,14 +26,16 @@
   {"id": "findik_urunu", "ad": "Fındık İçi", "asama": "A0", "taban": 240},
   {"id": "sekerleme", "ad": "Şekerleme", "asama": "A0", "taban": 180},
   {"id": "kepek", "ad": "Kepek (yan ürün)", "asama": "A0", "taban": 18},
+  {"id": "balik", "ad": "Balık", "asama": "A0", "taban": 65},
+  {"id": "yun", "ad": "Yün ve Tiftik (birleşik)", "asama": "A1", "taban": 60},
+  {"id": "iplik", "ad": "İplik (birleşik)", "asama": "A1", "taban": 130},
+  {"id": "kumas", "ad": "Kumaş", "asama": "A1", "taban": 200},
+  {"id": "hazir_giyim", "ad": "Hazır Giyim", "asama": "A1", "taban": 340},
   {"id": "cimento", "ad": "Çimento", "asama": "A0-ops", "taban": 45},
   {"id": "boksit", "ad": "Boksit", "asama": "A0-ops", "taban": 40},
   {"id": "alumina", "ad": "Alümina", "asama": "A0-ops", "taban": 125},
   {"id": "aluminyum", "ad": "Alüminyum", "asama": "A0-ops", "taban": 350},
   {"id": "pamuk", "ad": "Pamuk", "asama": "A1", "taban": 70},
-  {"id": "iplik", "ad": "İplik (birleşik)", "asama": "A1", "taban": 130},
-  {"id": "kumas", "ad": "Kumaş", "asama": "A1", "taban": 200},
-  {"id": "hazir_giyim", "ad": "Hazır Giyim", "asama": "A1", "taban": 340},
   {"id": "misir", "ad": "Mısır", "asama": "A1", "taban": 28},
   {"id": "arpa", "ad": "Arpa", "asama": "A1", "taban": 32},
   {"id": "yem", "ad": "Hayvan Yemi", "asama": "A1", "taban": 45},
@@ -41,7 +43,6 @@
   {"id": "kasaplik", "ad": "Kasaplık Hayvan", "asama": "A1", "taban": 70},
   {"id": "et", "ad": "Et (birleşik)", "asama": "A1", "taban": 110},
   {"id": "yumurta", "ad": "Yumurta", "asama": "A1", "taban": 50},
-  {"id": "yun", "ad": "Yün ve Tiftik (birleşik)", "asama": "A1", "taban": 60},
   {"id": "deri", "ad": "Ham Deri (yan ürün)", "asama": "A1", "taban": 60},
   {"id": "islenmis_deri", "ad": "İşlenmiş Deri", "asama": "A1", "taban": 135},
   {"id": "ayakkabi", "ad": "Ayakkabı", "asama": "A1", "taban": 300},
@@ -69,7 +70,6 @@
   {"id": "baharat", "asama": "ileride"},
   {"id": "bakliyat", "asama": "ileride"},
   {"id": "bal", "asama": "ileride"},
-  {"id": "balik", "asama": "ileride"},
   {"id": "beyaz_esya", "asama": "ileride"},
   {"id": "bor", "asama": "ileride"},
   {"id": "cay", "asama": "ileride"},
@@ -133,6 +133,7 @@
    {"id": "santral", "asama": "A0"},
    {"id": "hidro_santrali", "asama": "A0"},
    {"id": "sulama_kanali", "asama": "A0"},
+   {"id": "balikcilik", "asama": "A0"},
    {"id": "hafif_sanayi", "asama": "A1"}
   ],
   "ekYapilar": [
@@ -196,7 +197,12 @@
   {"id": "kepek_gubresi", "evSahibi": "ahir", "asama": "A0", "mulkKipi": true},
   {"id": "sut_kepekli", "evSahibi": "ahir", "asama": "A0", "mulkKipi": true},
   {"id": "cam_firini", "evSahibi": "parca_fabrikasi", "asama": "A0", "mulkKipi": true},
-  {"id": "celik_dograma", "evSahibi": "parca_fabrikasi", "asama": "A0", "mulkKipi": true}
+  {"id": "celik_dograma", "evSahibi": "parca_fabrikasi", "asama": "A0", "mulkKipi": true},
+  {"id": "kiyi_balikciligi", "evSahibi": "balikcilik", "asama": "A0"},
+  {"id": "mera_koyun_yun", "evSahibi": "mera", "asama": "A1", "mulkKipi": true},
+  {"id": "yun_egirme", "evSahibi": "hafif_sanayi", "asama": "A1"},
+  {"id": "kumas_dokuma", "evSahibi": "hafif_sanayi", "asama": "A1"},
+  {"id": "konfeksiyon", "evSahibi": "hafif_sanayi", "asama": "A1"}
  ],
  "yasakli": {
   "mallar": [

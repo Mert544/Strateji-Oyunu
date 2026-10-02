@@ -18,12 +18,12 @@ import { z } from "zod";
  */
 export const DEFTER_ODUL_SIRASI = ["ilk_yapi", "ilk_satis", "ilk_isleme", "ilk_ekmek", "zincir_kapandi", "ilk_dukkan", "ilk_pencere", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"] as const;
 /**
- * Defter'de GÖSTERİM sırası (sunucu `siradaki` listesini bu sırayla yazar; istemcinin yerel yolu da aynısını kullanır): çiftlik → Pazar'da sat → dükkân → ham malı işle → ekmek → zincir → pencere
+ * Defter'de GÖSTERİM sırası (sunucu `siradaki` listesini bu sırayla yazar; istemcinin yerel yolu da aynısını kullanır): çiftlik → dükkân → Pazar'da sat → ham malı işle → ekmek → zincir → pencere
  * (A1 ilk saat akışı: ilk satış beklenirken dükkân kurulur). `DEFTER_ODUL_SIRASI`nın PERMÜTASYONUDUR (eksik/fazla kavram yok; test korur); `DEFTER_ODUL_SIRASI`, şema ve ödül kazanımı DEĞİŞMEZ:
  * ödül olaya bağlıdır (hangi sırayla yapılırsa yapılsın aynı tutar), sıra yalnız `siradaki` listesinin dizilişidir ("kilit yok, seçim var").
  * Eski istemci `siradaki`yi sunucunun yazdığı sırayla çizer (yeniden sıralamaz): yeni sırayı AYNEN gösterir, bozulan bir şey yoktur.
  */
-export const DEFTER_GOSTERIM_SIRASI = ["ilk_yapi", "ilk_satis", "ilk_dukkan", "ilk_isleme", "ilk_ekmek", "zincir_kapandi", "ilk_pencere", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"] as const;
+export const DEFTER_GOSTERIM_SIRASI = ["ilk_yapi", "ilk_dukkan", "ilk_satis", "ilk_isleme", "ilk_ekmek", "zincir_kapandi", "ilk_pencere", "ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"] as const;
 /**
  * Para ve mal taşımayan (yalnız profilde damga olarak tutulan) kavramlar. YALNIZ EKLEME, SONA: mevcut indeksler (istemci `DEFTER_DAMGALARI[0]` = `ilk_parsel`) kaymaz;
  * `ilk_raf` (dükkân rafında mal seçili) ve `ilk_cam` (ilk cam üretimi) isteğe bağlı yeni damgalardır, `kazanilan[].kavram` serbest dize olduğundan şema DEĞİŞMEZ.

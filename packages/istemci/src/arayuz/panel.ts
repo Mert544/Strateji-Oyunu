@@ -285,7 +285,7 @@ export class Panel {
 
   private formOdakta(): boolean {
     const a = document.activeElement;
-    return a !== null && a.matches("#sekme-icerik select, #sekme-icerik input");
+    return a !== null && (a.matches("#sekme-icerik select, #sekme-icerik input") || a.closest("[data-pazar-form]") !== null);
   }
 
   /** Bir formun değerlerini oyun durumuna kaydeder (yeniden çizimde korunur). */

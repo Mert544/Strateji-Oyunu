@@ -23,6 +23,7 @@
  * - Pencere sırasında hedef bölgenin sahibi değiştiyse (veya boşaldıysa), ya da saldıran bölge artık
  *   saldıranın değilse, savaş SONUÇSUZ biter: kazanan = savunan (ilandaki), güçler 0, stok/birlik kaybı yok.
  */
+import { bolgeIndeksiBul } from "../dugum";
 import { carpBol, carpBolTavan, ppmUygula } from "../sabit";
 import { oyuncuBul, stokEkle, stokUzlastir } from "../stok";
 import { PPM, SAAT } from "../tipler";
@@ -76,7 +77,7 @@ export function savunmaEmri(
   oyuncu: OyuncuId,
   k: Extract<Komut, { tur: "savunma_emri" }>,
 ): KomutSonucu {
-  const bi = ctx.ic.bolgeIndeks[k.bolge];
+  const bi = bolgeIndeksiBul(d, ctx.ic, k.bolge);
   const bolge = bi === undefined ? undefined : d.bolgeler[bi];
   if (!bolge) return hata(`bilinmeyen bolge: ${k.bolge}`);
   if (bolge.sahip !== oyuncu) return hata(`bolge oyuncunun degil: ${k.bolge}`);

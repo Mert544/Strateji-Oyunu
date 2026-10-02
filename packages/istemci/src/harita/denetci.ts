@@ -398,6 +398,8 @@ export class HaritaDenetci {
         hiyerarsi: h,
         git: (ilce, acilis, yapi) => this.yerlesGit(ilce, acilis, yapi),
         yuva: (yapi) => g.yapiKatalogu().find((k) => k.id === yapi)?.yuva ?? 1,
+        dukkanDuzeyi: () => ({ g7: g.tablo.param.mulk?.perakende !== undefined, g8: g.tablo.yontemler.some((y) => y.cikti.some(([mi]) => g.tablo.mallar[mi]?.id === "pencere")) }),
+        uretimMetni: (oneri) => m.acilisUretimMetni(oneri, g.tablo, g.baglanti.acikTeknolojiler?.() ?? null),
         kapandi: () => {
           this.yerlesEkrani = null;
         },

@@ -44,13 +44,13 @@ function ekle(s: Simulasyon, tur: string, hucre: string): Komut {
 }
 
 describe("ek yapı tanımları", () => {
-  it("docs/11'deki 6 yapı + G7 dükkânı (7) parametrede tanımlı; hepsi 1 yuvalı; tesis türleriyle çakışmaz; Ordugâh yok", () => {
+  it("ek yapılar parametrede tanımlı; Ordugâh 3 yuvalı ve 12 birlik kapasiteli; tesis türleriyle çakışmaz", () => {
     const s = mulkSim([], bolVeri());
     const ids = s.ic.mulk!.ekYapilar.map((y) => y.id);
-    expect(ids).toEqual(["ambar", "atolye_lab", "dukkan", "garaj", "konut", "muhtarlik", "ticaret_ofisi"]); // G7-4: dukkan (6 -> 7)
-    expect(s.ic.mulk!.ekYapilar.every((y) => y.yuva === 1 && y.insaMaliyeti.length > 0)).toBe(true);
+    expect(ids).toEqual(["ambar", "atolye_lab", "dukkan", "garaj", "konut", "muhtarlik", "ordugah", "ticaret_ofisi"]);
+    expect(s.ic.mulk!.ekYapilar.every((y) => y.yuva === (y.id === "ordugah" ? 3 : 1) && y.insaMaliyeti.length > 0)).toBe(true);
     for (const id of ids) expect(s.ic.tesisTuruIndeks[id]).toBeUndefined();
-    expect(ids).not.toContain("ordugah");
+    expect(s.ic.mulk!.ekYapilar.find((y) => y.id === "ordugah")!.birlikKapasitesi).toBe(12);
   });
 
   it("icerik.json'a dokunulmaz: tesis türü sayısı aynı; bölge kipinde ek yapı kurulamaz", () => {
@@ -123,7 +123,7 @@ describe("inşaat: hücreli inşaat mekanizması", () => {
     const once = s.durumOzeti();
     expect(ver(s, "a", { tur: "tesis_insa_hucre", ilce: ILCE, tesisTuru: "ambar", hucreler: [hs[0]!, hs[1]!] }).tamam).toBe(false);
     expect(ver(s, "a", { tur: "tesis_insa_hucre", ilce: ILCE, tesisTuru: "ambar", hucreler: ["1:1"] }).tamam).toBe(false);
-    expect(ver(s, "a", { tur: "tesis_insa_hucre", ilce: ILCE, tesisTuru: "ordugah", hucreler: [hs[0]!] })).toEqual({ tamam: false, hata: "bilinmeyen tesis turu: ordugah" });
+    expect(ver(s, "a", { tur: "tesis_insa_hucre", ilce: ILCE, tesisTuru: "olmayan_yapi", hucreler: [hs[0]!] })).toEqual({ tamam: false, hata: "bilinmeyen tesis turu: olmayan_yapi" });
     expect(s.durumOzeti()).toBe(once);
     tamam(s, "a", ekle(s, "muhtarlik", hs[0]!));
     // aynı hücre dolu
@@ -289,7 +289,7 @@ describe("etkisiz yer tutucular ve serileştirme", () => {
     expect(y.durumOzeti()).toBe(s.durumOzeti());
     // bozuk: bilinmeyen ek yapı türü
     const boz = JSON.parse(metin) as { bolgeler: { ekYapilar?: { tur: string }[] }[] };
-    boz.bolgeler.find((b) => b.ekYapilar !== undefined)!.ekYapilar![0]!.tur = "ordugah";
+    boz.bolgeler.find((b) => b.ekYapilar !== undefined)!.ekYapilar![0]!.tur = "olmayan_yapi";
     expect(() => Simulasyon.yukle(bolVeri(), dunyaCoz(JSON.stringify(boz)))).toThrow(/ek yapi/);
   });
 

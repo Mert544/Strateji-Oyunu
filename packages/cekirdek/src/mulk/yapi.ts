@@ -28,7 +28,7 @@ export function ekYapiSayisi(b: BolgeDurumu, tur: string): number {
 }
 
 /** Ek yapı tanımındaki sayısal etki alanlarını düğümdeki biten yapılar üzerinden toplar. */
-export function ekYapiToplami(ic: DerlenmisIcerik, b: BolgeDurumu, alan: "komisyonIndirimPpm" | "makasIndirimPpm" | "emirYuvasi" | "depoKapasiteEkiMili"): number {
+export function ekYapiToplami(ic: DerlenmisIcerik, b: BolgeDurumu, alan: "komisyonIndirimPpm" | "makasIndirimPpm" | "emirYuvasi" | "depoKapasiteEkiMili" | "birlikKapasitesi"): number {
   const mk = ic.mulk;
   if (mk === undefined || b.ekYapilar === undefined) return 0;
   let t = 0;

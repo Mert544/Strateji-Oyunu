@@ -1,5 +1,5 @@
 /**
- * Defter GÖSTERİM sırası (`DEFTER_GOSTERIM_SIRASI`): çiftlik → Pazar'da sat → dükkân → ham malı işle → ekmek → zincir → pencere. `DEFTER_ODUL_SIRASI` (ve onu pinleyen donmuş testler),
+ * Defter GÖSTERİM sırası (`DEFTER_GOSTERIM_SIRASI`): çiftlik → dükkân → Pazar'da sat → ham malı işle → ekmek → zincir → pencere. `DEFTER_ODUL_SIRASI` (ve onu pinleyen donmuş testler),
  * `DefterSemasi` ve ödül kazanımı DEĞİŞMEZ: gösterim sırası eskisinin PERMÜTASYONUDUR (eksik/fazla kavram yok); eski istemci `siradaki`yi sunucunun yazdığı sırayla çizer.
  */
 import { describe, expect, it } from "vitest";
@@ -16,7 +16,7 @@ describe("DEFTER_GOSTERIM_SIRASI", () => {
 
   it("A1 ilk saat akisi: ciftlik, Pazar'da sat, dukkan, ham mali isle, ekmek, zincir, pencere; kalanlar eski goreli sirada", () => {
     const g = [...DEFTER_GOSTERIM_SIRASI] as string[];
-    expect(g.slice(0, 7)).toEqual(["ilk_yapi", "ilk_satis", "ilk_dukkan", "ilk_isleme", "ilk_ekmek", "zincir_kapandi", "ilk_pencere"]);
+    expect(g.slice(0, 7)).toEqual(["ilk_yapi", "ilk_dukkan", "ilk_satis", "ilk_isleme", "ilk_ekmek", "zincir_kapandi", "ilk_pencere"]);
     expect(g.indexOf("ilk_dukkan")).toBeLessThan(g.indexOf("ilk_isleme")); // isleme dukkandan SONRA
     // Degismeyen kavramlarin goreli sirasi eskisiyle ayni (sozlesme, ikinci ilce, arastirma sonda)
     const kalan = (l: readonly string[]) => l.filter((k) => ["ilk_sozlesme", "ikinci_ilce", "ilk_arastirma"].includes(k));

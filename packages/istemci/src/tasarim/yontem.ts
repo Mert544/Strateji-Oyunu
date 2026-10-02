@@ -9,6 +9,11 @@ export const YONTEM_SIMGELERI: Readonly<Record<string, string>> = {
   sut_kepekli: "milk",
   cam_firini: "glass-water",
   celik_dograma: "frame",
+  kiyi_balikciligi: "package", // balık kasası; özgün barınak/iskele/ağ silüeti yürüyüşte
+  mera_koyun_yun: "leaf", // mera; ağıl, çit ve koyun sürüsü yürüyüşte
+  yun_egirme: "circle", // makara sarımı
+  kumas_dokuma: "layers", // katlı kumaş
+  konfeksiyon: "tag", // sevke hazır giysi
 };
 
 /** Yöntemin L3 simgesi; eşlemesi olmayan yöntem için `null` (simge çizilmez, bugünkü görünüm). */

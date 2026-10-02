@@ -16,14 +16,17 @@
  * Hazine ve stok formülle gelir (`stokAraDeger`): gösterilen sayı sunucudakiyle bit bit aynıdır.
  */
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
-import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
+import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, erkenOyunCarpani, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
-import type { DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
+import type { PazarKaynagi, PazarSatisIstegi, PazarSatisSonucu, DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce, pazarHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
 import type { InsaatBilgisi } from "../yuru/arsa";
 import { parselToplamFiyatiMili } from "./fiyat";
 import { yapilardanInsaatlar } from "./yapi-yuruyus";
 import { sureCarpani } from "./yapi-sure";
+import type { ArastirmaSonucu, TeknolojiDurumu } from "./teknoloji-panel";
+import type { OrduDurumu, OrduSonucu } from "./ordu-panel";
+import type { TedarikDurumu } from "./tedarik-panel";
 
 type Mesaj<T extends SunucuMesaji["tur"]> = Extract<SunucuMesaji, { tur: T }>;
 
@@ -312,12 +315,151 @@ export class WsBaglanti implements MulkBaglantisi {
     }
   }
 
+  /** Aynı ticaret komutunun ithalat yönü; kabul ve ret gerçek sunucu yanıtından gelir. */
+  async tedarikKomutu(i: TicaretEmriIstegi): Promise<TesisSonucu> {
+    try {
+      const r = await this.komutGonder({ tur: "ticaret_emri", bolge: i.bolge, mal: i.mal, yon: "ithalat", oranSaat: i.oranSaat });
+      if (r.tamam) return { tamam: true, t: r.t };
+      const mesaj = r.hata.startsWith("depolanamaz mal ticarete konu olamaz") ? "Bu mal depolanamadığı için ithal edilemez."
+        : r.hata.startsWith("bolge liman degil") ? "Bu bölgede ithalat yapılamaz."
+        : r.hata.startsWith("gecersiz yon") ? "Tedarik emrinin yönü geçersiz."
+        : /^(gecersiz oran|bilinmeyen mal|ticaret emri yuvasi dolu|bolge oyuncunun degil|bilinmeyen bolge)/.test(r.hata)
+          ? pazarHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x))
+          : "Tedarik emri uygulanamadı. Güncel durumunu kontrol edip yeniden deneyebilirsin.";
+      return { tamam: false, hata: "sunucu", mesaj };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
+  /** Yalnız sahibinin mülk işletme düğümleri; oran ve stok değerleri sunucu karesinden okunur. */
+  tedarikDurumu(): TedarikDurumu | null {
+    const k = this.kare;
+    const o = k?.oyuncu;
+    const dizin = this.hos?.dizin;
+    if (!k || !o || !dizin) return null;
+    const simZamani = this.simZamani();
+    return {
+      simZamani,
+      bolgeler: k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`) && b.ozel !== undefined).map((b) => {
+        const oz = b.ozel!;
+        const il = b.id.slice(0, -(o.id.length + 1));
+        // Eski sunucu kapasiteyi bildirmezse yeni emir uygunluğu bilinmez;
+        // gerçek komut yolu güncelleme/silme ve son doğrulamayı korur.
+        const yuva = oz.isletme?.emirYuvasi;
+        const yeniEmirUygun = yuva === undefined ? undefined : oz.emirler.length < yuva;
+        return {
+          id: b.id,
+          il,
+          ad: il,
+          stoklar: new Map(dizin.mallar.flatMap((mal, mi): Array<[string, number]> => {
+            const f = oz.stoklar[mi];
+            return f === undefined ? [] : [[mal, Math.max(0, stokAraDeger(f, simZamani))]];
+          })),
+          emirler: oz.emirler.flatMap(([mi, yon, oranSaat, gerceklesenSaat]) => yon !== 1 || dizin.mallar[mi] === undefined ? [] : [{ mal: dizin.mallar[mi]!, oranSaat, gerceklesenSaat }]),
+          uygun: true,
+          ...(oz.isletme?.ithNetPpm === undefined ? {} : { ithNetPpm: oz.isletme.ithNetPpm }),
+          ...(yeniEmirUygun === undefined ? {} : { yeniEmirUygun }),
+          ...(yeniEmirUygun === false ? { yeniEmirNedeni: `Satış ve alış emri yuvaların dolu (${yuva}). Bir emri bırak ya da Ticaret ofisi kur.` } : {}),
+        };
+      }),
+    };
+  }
+
+  /** Eski istemci çağrıları da aynı ticaret_emri köprüsünü kullanır. */
+  async pazarSatis(i: PazarSatisIstegi): Promise<PazarSatisSonucu> {
+    const r = await this.ticaretEmri(i);
+    return r.tamam ? r : { tamam: false, mesaj: r.mesaj };
+  }
+
   /** Oyuncunun araştırdığı teknolojilerin kimlikleri (`oyuncu.teknolojiler` dizin indeksleri); oyuncu karesi ya da dizin yoksa null. */
   acikTeknolojiler(): ReadonlySet<string> | null {
     const o = this.kare?.oyuncu;
     const dizin = this.hos?.dizin.teknolojiler;
     if (!o || !dizin) return null;
     return new Set(o.teknolojiler.flatMap((i) => (dizin[i] === undefined ? [] : [dizin[i] as string])));
+  }
+
+  arastirmaDurumu(): TeknolojiDurumu | null {
+    const o = this.kare?.oyuncu;
+    const dizin = this.hos?.dizin.teknolojiler;
+    const acik = this.acikTeknolojiler();
+    if (!o || !dizin || !acik) return null;
+    const simZamani = this.simZamani();
+    return {
+      simZamani,
+      acik,
+      arastirma: o.arastirma ? { teknoloji: dizin[o.arastirma.teknoloji] ?? "Bilinmeyen araştırma", bitis: o.arastirma.bitis } : null,
+      ...(o.arastirmaYayilimPpm ? { yayilimPpm: new Map(dizin.flatMap((id, i): Array<[string, number]> => {
+        const ppm = o.arastirmaYayilimPpm?.[i];
+        return ppm === undefined ? [] : [[id, ppm]];
+      })) } : {}),
+      erkenOyunPpm: o.erkenOyun ? erkenOyunCarpani(o.erkenOyun, simZamani) : 1_000_000,
+      hazineMili: stokAraDeger(o.hazine, simZamani),
+    };
+  }
+
+  async arastirmaBaslat(teknoloji: string): Promise<ArastirmaSonucu> {
+    try {
+      const r = await this.komutGonder({ tur: "arastir", teknoloji });
+      if (r.tamam) return { tamam: true };
+      const mesaj = r.hata === "hazine yetersiz" ? "Araştırma için hazinen yeterli değil."
+        : r.hata === "devam eden bir arastirma var" ? "Zaten devam eden bir araştırman var."
+        : r.hata.startsWith("on kosul eksik") ? "Önce bu teknolojinin ön koşullarını araştırmalısın."
+        : r.hata.startsWith("teknoloji zaten acik") ? "Bu teknolojiyi zaten araştırdın."
+        : r.hata.startsWith("bilinmeyen teknoloji") ? "Bu teknoloji bulunamadı."
+        : "Araştırma başlatılamadı. Güncel durumunu kontrol edip yeniden deneyebilirsin.";
+      return { tamam: false, mesaj };
+    } catch {
+      return { tamam: false, mesaj: "Sunucuya ulaşılamadı. Bağlantı kurulunca yeniden deneyebilirsin." };
+    }
+  }
+
+  /** Yalnız oyuncunun kendi işletme düğümleri; özel kapasite gelmeden üretim gösterilmez. */
+  orduDurumu(): OrduDurumu | null {
+    const o = this.kare?.oyuncu;
+    const dizin = this.hos?.dizin;
+    const teknolojiler = this.acikTeknolojiler();
+    if (!o || !dizin || !teknolojiler) return null;
+    const simZamani = this.simZamani();
+    return {
+      simZamani,
+      erkenOyunPpm: o.erkenOyun ? erkenOyunCarpani(o.erkenOyun, simZamani) : 1_000_000,
+      teknolojiler,
+      bolgeler: (this.kare?.bolgeler ?? []).filter((b) => b.genel.sahip === o.id && b.id.endsWith("#" + o.id) && b.ozel?.ordu !== undefined).map((b) => {
+        const oz = b.ozel!;
+        const ordu = oz.ordu!;
+        return {
+          id: b.id,
+          ad: b.id.slice(0, -(o.id.length + 1)),
+          birlikler: new Map(dizin.birlikler.map((id, i) => [id, oz.birlikler[i] ?? 0])),
+          stoklar: new Map(dizin.mallar.map((id, i) => [id, oz.stoklar[i] ? Math.max(0, stokAraDeger(oz.stoklar[i]!, simZamani)) : 0])),
+          kapasite: ordu.kapasite,
+          ordugahSayisi: ordu.ordugahSayisi,
+          ikmalPpm: oz.ikmalPpm,
+          ...(ordu.ikmalSaat ? { ikmalSaat: new Map(ordu.ikmalSaat.flatMap(([mi, q]): Array<[string, number]> => dizin.mallar[mi] === undefined ? [] : [[dizin.mallar[mi]!, q]])) } : {}),
+          durus: b.genel.durus === 1 ? "savunma" as const : b.genel.durus === 2 ? "geri_cekil" as const : "normal" as const,
+          partiler: (o.partiler ?? []).filter((p) => p.bolge === b.i).map((p) => ({ id: p.id, birlik: dizin.birlikler[p.birlik] ?? "Bilinmeyen birlik", adet: p.adet, bitis: p.bitis })),
+        };
+      }),
+    };
+  }
+
+  async orduKomutu(komut: Extract<Komut, { tur: "birlik_uret" | "savunma_emri" }>): Promise<OrduSonucu> {
+    try {
+      const r = await this.komutGonder(komut);
+      if (r.tamam) return { tamam: true };
+      const mesaj = r.hata.startsWith("ordugah gerekli") ? "Önce bu ilde bir Ordugâh tamamlamalısın."
+        : r.hata.startsWith("ordugah kapasitesi yetersiz") ? "Ordugâh kapasitesi dolu; eğitimdeki birlikler de yer kaplar."
+        : r.hata.startsWith("stok yetersiz") ? "Bu ilde birlik eğitimi için yeterli malzeme yok."
+        : r.hata.startsWith("birlik acik degil") ? "Önce birliğin gerekli teknolojisini araştırmalısın."
+        : r.hata.startsWith("bolge oyuncunun degil") ? "Yalnız kendi birliklerini yönetebilirsin."
+        : r.hata.startsWith("gecersiz adet") ? "1 ile 100 arasında tam sayı girmelisin."
+        : "Ordu emri uygulanamadı. Güncel durumunu kontrol edip yeniden deneyebilirsin.";
+      return { tamam: false, mesaj };
+    } catch (e) {
+      return { tamam: false, mesaj: this.agHatasi(e).mesaj };
+    }
   }
 
   /** Dükkân görünümü için son birikimli kare. */
@@ -492,6 +634,16 @@ export class WsBaglanti implements MulkBaglantisi {
     const yontemler = this.hos?.dizin.yontemler ?? [];
     const sebeke = new Map<string, number>();
     let ihracatEmriVar = false;
+    const pazar: PazarKaynagi[] = [];
+    // Net stok formülü gelenOran'ı ayrı taşımaz. Pozitif/negatif net oranı
+    // "gelen" diye etiketlemeyiz; belirsizlik istemcide kesin stok reddi doğurmaz.
+    const pazarDugumleri = k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`) && b.ozel !== undefined);
+    const agMallari = mallar.map((_, mi) => ({
+      stokMili: pazarDugumleri.reduce((n, b) => n + (b.ozel!.stoklar[mi] ? Math.max(0, stokAraDeger(b.ozel!.stoklar[mi]!, t)) : 0), 0),
+      uretimMili: pazarDugumleri.reduce((n, b) => n + Math.max(0, b.ozel!.uretimOrani[mi] ?? 0), 0),
+      gelenMili: null,
+    }));
+    const agEmirleri = new Set(pazarDugumleri.flatMap((b) => b.ozel!.emirler.filter(([, yon, oran]) => yon === 0 && oran > 0).map(([mi]) => mi)));
     // Yapı → ilçe ve hücre sayısı: abone olunan ilçe karelerinden (bilinmiyorsa yalnız il)
     const yer = new Map<string, { ilce: string; hucre: number }>();
     for (const c of k.ilceler ?? [])
@@ -539,8 +691,21 @@ export class WsBaglanti implements MulkBaglantisi {
     const satisAdayi = new Map<number, number>();
     for (const b of k.bolgeler) {
       const oz = b.ozel;
-      if (!oz) continue;
+      if (!oz || b.genel.sahip !== o.id) continue;
       const il = b.id.split("#")[0];
+      // Mülk düğümleri yerel NPC pazarına satabilir (liman gerekmez).
+      const uygun = o.mulk !== undefined && b.id.endsWith(`#${o.id}`);
+      for (let mi = 0; mi < mallar.length; mi++) {
+        const stokMili = oz.stoklar[mi] ? Math.max(0, stokAraDeger(oz.stoklar[mi]!, t)) : 0;
+        const uretimMili = oz.uretimOrani[mi] ?? 0;
+        const emir = oz.emirler.find(([m, yon]) => m === mi && yon === 0);
+        const emirMili = emir?.[2] ?? 0;
+        const gerceklesenMili = emir?.[3] ?? 0;
+        const ag = uygun ? agMallari[mi]! : { stokMili, uretimMili, gelenMili: null };
+        // Her sahipli çıkış ilinde ağın bilinen malları seçilebilir; yerel stok0
+        // başka ildeki malın satılmasını engellemez. Aktif emir her durumda kalır.
+        if (ag.stokMili > 0 || ag.uretimMili > 0 || agEmirleri.has(mi) || emirMili > 0 || (oz.stoklar[mi]?.[1] ?? 0) !== 0) pazar.push({ bolge: b.id, il: il ?? b.id, mal: mallar[mi]!, stokMili, uretimMili, emirMili, gerceklesenMili, ag, uygun, ...(oz.isletme?.ihrNetPpm !== undefined ? { netPpm: oz.isletme.ihrNetPpm } : {}), ...(uygun ? {} : { neden: "Bu bölgede pazar satışı doğrulanamadı." }) });
+      }
       for (const demet of oz.tesisler) {
         const [id, tur, yontemIdx, aktif, verim] = demet;
         const anahtar = `t${id}`;
@@ -552,8 +717,8 @@ export class WsBaglanti implements MulkBaglantisi {
       for (const [m, q] of oz.sebeke ?? []) if (q > 0) sebeke.set(m, (sebeke.get(m) ?? 0) + q);
       oz.stoklar.forEach((f, m) => {
         const v = stokAraDeger(f, t);
-        if (v > 0) {
-          mal(m).stokMili += v;
+        if (v > 0 || f[1] !== 0) {
+          mal(m).stokMili += Math.max(0, v);
           if (mal(m).satisEmirMili === undefined && v > (satisAdayi.get(m) ?? 0)) {
             satisAdayi.set(m, v);
             mal(m).satisBolge = b.id;
@@ -597,6 +762,7 @@ export class WsBaglanti implements MulkBaglantisi {
       katilimIlcesi: this.katilimIlcesi(),
       indirimliYapiKalan: mk?.indirimliYapiKalan ?? null,
       yapilar,
+      pazar,
       mallar: [...stok.entries()].sort((a, b) => a[0] - b[0]).map(([m, x]) => ({ mal: mallar[m] ?? String(m), ...x })),
       ...(sebeke.size > 0 ? { sebeke: [...sebeke.entries()] } : {}),
       ...(ihracatEmriVar ? { ihracatEmriVar: true } : {}),

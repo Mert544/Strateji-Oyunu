@@ -34,6 +34,7 @@ export { tabanBol, carpBolTavan, tamsayiKarekok, kelepce, ppmUygula } from "./sa
 export { kanonikSerilestir, fnv1a64 } from "./ozet";
 export { sureCarpaniPpm, hizlandirilmisSure } from "./erkenOyun";
 export { teknolojiYayilimiPpm } from "./teknoloji";
+export { ikmalTalebi } from "./askeri/uretim";
 
 // --- Tarım katmanı (B1) ---
 export { iklimGunluk, takvimGunu, takvimAyi, mutlakTakvimGunu, hasatEnterpole, hasatGunlukNormallestir, tarimTablosu, tarimCiktiCarpani } from "./tarim";
@@ -117,9 +118,9 @@ export {
   dugumIlcesi,
 } from "./mulk/kasa";
 // Perakende (G7-2, sartname §6.8): saf okuma API'si (durumu değiştirmez; arayüz, ölçüm ve kare alanları için)
-export { dukkanSatisMili, yerelPazarGorunumu } from "./mulk/perakende";
+export { dukkanSatisMili, yerelPazarGorunumu, ilceYasamGorunumu } from "./mulk/perakende";
 export { ADSIZ_MARKA, ilcedeDukkanSayisi } from "./mulk/dukkanKomut";
-export type { DukkanGorunumu, YerelYuvaGorunumu } from "./mulk/perakende";
+export type { DukkanGorunumu, YerelYuvaGorunumu, IlceYasamGorunumu } from "./mulk/perakende";
 // Kalıcı kimlik ve içerik göçü (G8, docs/06 §14): kimlik tablosu, yalnız-ekle denetimi
 export {
   KIMLIK_TABLOSU_ADLARI,
@@ -164,6 +165,7 @@ export {
   TEMBEL_HUCRE_SINIRI,
   hucreKarmasiXY,
   ekYapiSayisi,
+  ekYapiToplami,
   ticaretEmirYuvasi,
   ticaretIndirimi,
 } from "./mulk";

@@ -97,7 +97,7 @@ describe("Esnaf Defteri", () => {
     expect(defterMetni("defter.kavram.ilk_dukkan", "ilk_dukkan")).toEqual({ kazanildi: "Dükkânından da satış geldi; tezgâhın açıldı.", siradaki: "Kendi tezgâhın: bir dükkân kur ve rafından satış yap." });
     expect(defterMetni("defter.kavram.ilk_raf", "ilk_raf").siradaki).toBe("Rafına ilk malını koy.");
     expect(defterMetni("defter.kavram.ilk_satis.bekliyor", "ilk_satis").siradaki).toBe("Satışın yolda; beklerken dükkânını kur.");
-    expect(defterMetni("defter.kavram.ilk_satis", "ilk_satis").siradaki).toBe("Çiftliğinin tahılını Pazar'da sat."); // normal metin değişmez
+    expect(defterMetni("defter.kavram.ilk_satis", "ilk_satis").siradaki).toBe("Çiftliğinin tahılını Pazar'da sat. Saatlik emrin kabulü satış değildir; gerçekleşen satışın geliri hazinene yansır.");
     for (const m of Object.values(DEFTER_METINLERI)) expect(m.kazanildi + m.siradaki).not.toMatch(/Defter'e/);
   });
 
@@ -112,7 +112,7 @@ describe("Esnaf Defteri", () => {
     expect((await b.parselAl({ tur: "parsel_al", ilce: "i", hucreler: [hucreId(1005, 2005)], sinif: "kirsal" })).tamam).toBe(true);
     const d = (await b.defterAl())!;
     expect(d.kazanilan.map((k) => [k.kavram, k.tur])).toEqual([["ilk_parsel", "damga"]]);
-    expect(d.siradaki.map((k) => [k.kavram, k.etkin])).toEqual([["ilk_yapi", true], ["ilk_satis", true], ["ilk_dukkan", false]]);
+    expect(d.siradaki.map((k) => [k.kavram, k.etkin])).toEqual([["ilk_yapi", true], ["ilk_dukkan", false], ["ilk_satis", true]]);
     expect(d.tavanMili).toBe(8_000_000);
     expect(await new SahteBaglanti({ izgaraAl: async () => iz }).defterAl()).toBeNull();
   });

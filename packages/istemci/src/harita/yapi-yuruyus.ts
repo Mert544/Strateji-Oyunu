@@ -30,6 +30,7 @@ export function yapilardanInsaatlar(g: YuruyusYapiGirdisi): InsaatBilgisi[] {
     for (const hucre of y.hucreler) {
       const b: InsaatBilgisi = { hucre, asama };
       if (asama === 3) {
+        if (y.tur === "ordugah") b.ekYapi = "ordugah";
         if (dukkan) b.dukkan = dukkan;
         else if (y.yontem !== undefined) b.yontem = y.yontem;
       }

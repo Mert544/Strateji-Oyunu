@@ -49,6 +49,7 @@ const GRUP: Record<string, string> = {
   sulama_kanali: "Tarım",
   gubre_fabrikasi: "Tarım",
   gida_fabrikasi: "Gıda",
+  balikcilik: "Gıda",
   cevher_madeni: "Madencilik",
   komur_ocagi: "Madencilik",
   bakir_madeni: "Madencilik",
@@ -57,9 +58,11 @@ const GRUP: Record<string, string> = {
   celikhane: "Sanayi",
   parca_fabrikasi: "Sanayi",
   elektronik_fabrikasi: "Sanayi",
+  hafif_sanayi: "Sanayi",
   santral: "Enerji",
   hidro_santrali: "Enerji",
   muhimmat_fabrikasi: "Askeri",
+  ordugah: "Askeri",
 };
 
 /**
@@ -73,6 +76,7 @@ const KATMAN: Record<string, "tarim" | "sanayi" | "lojistik" | "teknoloji" | "pa
   sulama_kanali: "tarim",
   gubre_fabrikasi: "tarim",
   gida_fabrikasi: "tarim",
+  balikcilik: "tarim",
   cevher_madeni: "sanayi",
   komur_ocagi: "sanayi",
   bakir_madeni: "sanayi",
@@ -81,9 +85,11 @@ const KATMAN: Record<string, "tarim" | "sanayi" | "lojistik" | "teknoloji" | "pa
   celikhane: "sanayi",
   parca_fabrikasi: "sanayi",
   elektronik_fabrikasi: "sanayi",
+  hafif_sanayi: "sanayi",
   santral: "sanayi",
   hidro_santrali: "sanayi",
   muhimmat_fabrikasi: "askeri",
+  ordugah: "askeri",
 };
 
 export function yapiKatmani(id: string | undefined): (typeof KATMAN)[string] | null {
@@ -138,7 +144,7 @@ export function yapiKatalogu(ic: Icerik): YapiTanimi[] {
     l.push({
       id,
       ad: e.ad,
-      grup: "Kent ve altyapı",
+      grup: GRUP[id] ?? "Kent ve altyapı",
       yuva: e.yuva,
       paraMili: e.insaParasi,
       malzeme: Object.entries(e.insaMaliyeti)

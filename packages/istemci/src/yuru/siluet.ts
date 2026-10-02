@@ -12,7 +12,7 @@ export const SILUET_RENK_ILK = 10;
 export const SILUET_RENK = { isik: 10, cuval: 11, metal: 12, tugla: 13, toprak: 14, cam: 15 } as const;
 
 /** Yöntem kimliği (`icerik.yontemler[].id`) -> silüet; kimlik tanımsızsa `null` (genel bitmiş gövde çizilir). */
-export const SILUETLI_YONTEMLER = ["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma"] as const;
+export const SILUETLI_YONTEMLER = ["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma", "kiyi_balikciligi", "mera_koyun_yun", "yun_egirme", "kumas_dokuma", "konfeksiyon"] as const;
 export type SiluetliYontem = (typeof SILUETLI_YONTEMLER)[number];
 
 export function siluetliMi(y: string | undefined): y is SiluetliYontem {
@@ -35,6 +35,86 @@ export function siluetKutulari(yontem: SiluetliYontem, c: number): SiluetKutusu[
     k.push([x, y0, z, sx, h, sz, 3], [x - 0.3, y0 + h, z - 0.3, sx + 0.6, 0.35, sz + 0.6, 4]);
   };
   switch (yontem) {
+    case "mera_koyun_yun": {
+      govde(x0, z0, gen * 0.4, gen * 0.55, 3.2); // alçak ağıl; açık mera yanında
+      const px = x0 + gen * 0.48;
+      const pz = z0 + gen * 0.08;
+      const pw = gen * 0.5;
+      const pd = gen * 0.86;
+      // Güneyde açık giriş; U biçimli çit ve dört köşe kazığı.
+      k.push([px, y0 + 0.9, pz, pw, 0.28, 0.22, 1], [px, y0 + 0.9, pz, 0.22, 0.28, pd, 1], [px + pw - 0.22, y0 + 0.9, pz, 0.22, 0.28, pd, 1]);
+      for (const dx of [0, pw - 0.3]) for (const dz of [0, pd - 0.3]) k.push([px + dx, y0, pz + dz, 0.3, 1.6, 0.3, 1]);
+      // Sürü kimliği: iki sabit koyun, açık renk yün gövdesi + koyu baş ve bacaklar.
+      // Bunlar stok adedi göstermez; yeni hareketli nesne oluşturulmaz.
+      for (let i = 0; i < 2; i++) {
+        const sx = px + pw * (0.18 + i * 0.44);
+        const sz = pz + pd * (0.27 + i * 0.3);
+        k.push([sx, y0 + 0.55, sz, gen * 0.12, 0.85, gen * 0.085, SILUET_RENK.cuval], [sx + gen * 0.105, y0 + 0.8, sz + gen * 0.02, gen * 0.045, 0.5, gen * 0.045, SILUET_RENK.metal]);
+        for (const dx of [0.02, gen * 0.085]) k.push([sx + dx, y0, sz + gen * 0.02, 0.22, 0.6, gen * 0.06, SILUET_RENK.metal]);
+      }
+      k.push([x0 + gen * 0.07, y0, z0 + gen * 0.7, gen * 0.2, 1.2, gen * 0.16, SILUET_RENK.cuval], [px + pw * 0.12, y0, pz + pd * 0.8, pw * 0.65, 0.45, 0.6, 1]); // yün balyası + yemlik
+      break;
+    }
+    case "yun_egirme": {
+      govde(x0, z0, gen, gen * 0.62, 4.6);
+      for (let i = 0; i < 3; i++) k.push([x0 + gen * (0.12 + i * 0.28), y0 + 4.95, z0 + gen * 0.22, gen * 0.16, 0.7, gen * 0.22, SILUET_RENK.metal]); // çatı havalandırmaları
+      // Cephede üç büyük iplik makarası: metal alt/üst yanak, açık renk sarım.
+      for (let i = 0; i < 3; i++) {
+        const sx = x0 + gen * (0.12 + i * 0.28);
+        const sz = z0 + gen * 0.76;
+        k.push([sx, y0, sz, gen * 0.16, 0.22, gen * 0.16, SILUET_RENK.metal], [sx + gen * 0.025, y0 + 0.22, sz + gen * 0.025, gen * 0.11, 1.8, gen * 0.11, SILUET_RENK.cuval], [sx, y0 + 2.02, sz, gen * 0.16, 0.22, gen * 0.16, SILUET_RENK.metal]);
+      }
+      for (let i = 0; i < 2; i++) k.push([x0 + gen * (0.05 + i * 0.2), y0, z0 + gen * 0.64, gen * 0.16, 0.8, gen * 0.09, SILUET_RENK.cuval]); // gelen yün balyaları
+      break;
+    }
+    case "kumas_dokuma": {
+      govde(x0, z0, gen, gen * 0.55, 5.4);
+      for (let i = 0; i < 3; i++) k.push([x0 + gen * i / 3, y0 + 5.75, z0 + gen * 0.12, gen / 3 - 0.15, 0.6 + i * 0.45, gen * 0.27, 4]); // kademeli sanayi çatısı
+      const lx = x0 + gen * 0.1;
+      const lz = z0 + gen * 0.64;
+      const lw = gen * 0.48;
+      // Açık dokuma tezgâhı: çerçeve içinde çözgü telleri; sağda katlı kumaşlar.
+      k.push([lx, y0, lz, lw, 0.25, 0.5, SILUET_RENK.metal], [lx, y0 + 3.1, lz, lw, 0.25, 0.5, SILUET_RENK.metal], [lx, y0, lz, 0.25, 3.1, 0.5, SILUET_RENK.metal], [lx + lw - 0.25, y0, lz, 0.25, 3.1, 0.5, SILUET_RENK.metal]);
+      for (let i = 1; i <= 4; i++) k.push([lx + lw * i / 5, y0 + 0.25, lz + 0.18, 0.1, 2.85, 0.1, SILUET_RENK.cuval]);
+      for (let i = 0; i < 3; i++) k.push([x0 + gen * 0.69, y0 + i * 0.45, z0 + gen * 0.69, gen * (0.25 - i * 0.035), 0.4, gen * 0.2, i === 1 ? 2 : SILUET_RENK.cuval]);
+      break;
+    }
+    case "konfeksiyon": {
+      govde(x0, z0, gen, gen * 0.66, 4.8);
+      k.push([x0 + gen * 0.12, y0 + 3.0, z0 + gen * 0.65, gen * 0.76, 0.25, gen * 0.19, SILUET_RENK.metal], [x0 + gen * 0.15, y0 + 3.25, z0 + gen * 0.66, gen * 0.7, 0.85, 0.15, SILUET_RENK.isik]); // işlik sundurması + aydınlık cephe
+      const rx = x0 + gen * 0.1;
+      const rz = z0 + gen * 0.86;
+      const rw = gen * 0.5;
+      k.push([rx, y0, rz, 0.22, 2.8, 0.22, SILUET_RENK.metal], [rx + rw, y0, rz, 0.22, 2.8, 0.22, SILUET_RENK.metal], [rx, y0 + 2.6, rz, rw + 0.22, 0.2, 0.22, SILUET_RENK.metal]); // giysi askılığı
+      for (let i = 0; i < 2; i++) {
+        const gx = rx + rw * (0.18 + i * 0.45);
+        const renk = i === 0 ? SILUET_RENK.cuval : 2;
+        k.push([gx, y0 + 0.9, rz + 0.04, gen * 0.13, 1.35, 0.2, renk], [gx - gen * 0.025, y0 + 1.9, rz + 0.04, gen * 0.18, 0.4, 0.2, renk], [gx + gen * 0.05, y0 + 2.3, rz + 0.05, gen * 0.035, 0.3, 0.15, SILUET_RENK.metal]); // gövde, omuz/kollar, askı
+      }
+      for (let i = 0; i < 3; i++) k.push([x0 + gen * 0.73, y0 + i * 0.55, z0 + gen * 0.78, gen * 0.2, 0.5, gen * 0.16, SILUET_RENK.cuval]); // sevke hazır paketler
+      break;
+    }
+    case "kiyi_balikciligi": {
+      govde(x0, z0, gen * 0.47, gen * 0.45, 3.6); // alçak balıkçı barınağı
+      const px = x0 + gen * 0.56;
+      const pz = z0 + gen * 0.55;
+      const pw = gen * 0.44;
+      const pd = gen * 0.45;
+      const py = y0 + 1.1;
+      k.push([px, py, pz, pw, 0.3, pd, SILUET_RENK.cuval]); // yükseltilmiş iskele
+      for (const dx of [0.15, pw - 0.55]) for (const dz of [0.15, pd - 0.55]) {
+        k.push([px + dx, y0, pz + dz, 0.4, 1.1, 0.4, SILUET_RENK.metal]);
+      }
+      // Açık ağ askısı: iki dikme ve ince kafes; gövdeyi kapatan yeni bir bina değil.
+      const nx = x0 + gen * 0.6;
+      const nz = z0 + gen * 0.12;
+      const nw = gen * 0.32;
+      k.push([nx, y0, nz, 0.24, 4.0, 0.24, SILUET_RENK.metal], [nx + nw, y0, nz, 0.24, 4.0, 0.24, SILUET_RENK.metal], [nx, y0 + 3.8, nz, nw + 0.24, 0.2, 0.24, SILUET_RENK.metal]);
+      for (let i = 1; i <= 3; i++) k.push([nx + nw * i / 4, y0 + 0.9, nz + 0.08, 0.08, 2.8, 0.08, SILUET_RENK.metal]);
+      for (let i = 1; i <= 2; i++) k.push([nx, y0 + 0.9 + i * 0.9, nz + 0.08, nw, 0.08, 0.08, SILUET_RENK.metal]);
+      for (let i = 0; i < 3; i++) k.push([x0 + gen * (0.08 + i * 0.14), y0, z0 + gen * 0.64, gen * 0.12, 0.9, gen * 0.13, SILUET_RENK.cuval]); // balık kasaları
+      break;
+    }
     case "degirmen": {
       govde(x0, z0, gen * 0.62, gen, 6.5);
       const sx = x0 + gen * 0.66;
@@ -88,5 +168,34 @@ export function siluetKutulari(yontem: SiluetliYontem, c: number): SiluetKutusu[
       break;
     }
   }
+  return k;
+}
+
+/** Üretim yöntemi olmayan bitmiş ek yapı; gerçek yapı türü aktarılmazsa genel görünüm kalır. */
+export function ekYapiKutulari(ekYapi: string | undefined, c: number): SiluetKutusu[] | null {
+  if (ekYapi !== "ordugah") return null;
+  const m = c * 0.15;
+  const w = c * 0.7;
+  const x0 = m + 0.6;
+  const z0 = m + 0.6;
+  const gen = w - 1.2;
+  const y0 = 0.45;
+  const k: SiluetKutusu[] = [[m, 0, m, w, y0, w, 0]];
+  // İki alçak koğuş, önde açık talim avlusu.
+  for (let i = 0; i < 2; i++) {
+    const z = z0 + gen * (0.08 + i * 0.32);
+    k.push([x0 + gen * 0.08, y0, z, gen * 0.53, 3.6, gen * 0.22, 3], [x0 + gen * 0.08 - 0.3, y0 + 3.6, z - 0.3, gen * 0.53 + 0.6, 0.35, gen * 0.22 + 0.6, 4]);
+  }
+  const tx = x0 + gen * 0.73;
+  const tz = z0 + gen * 0.1;
+  const tw = gen * 0.18;
+  // Dört ayaklı gözetleme kulesi; sürekli animasyon veya ek çizim nesnesi yok.
+  for (const dx of [0, tw - 0.3]) for (const dz of [0, tw - 0.3]) k.push([tx + dx, y0, tz + dz, 0.3, 6.5, 0.3, SILUET_RENK.metal]);
+  k.push([tx, y0 + 6.5, tz, tw, 1.7, tw, 3], [tx - 0.25, y0 + 8.2, tz - 0.25, tw + 0.5, 0.35, tw + 0.5, 4]);
+  k.push([x0, y0 + 1, z0, gen, 0.35, 0.22, SILUET_RENK.metal], [x0, y0 + 1, z0, 0.22, 0.35, gen, SILUET_RENK.metal], [x0 + gen - 0.22, y0 + 1, z0, 0.22, 0.35, gen, SILUET_RENK.metal]);
+  const gx = x0 + gen * 0.4;
+  const gz = z0 + gen * 0.96;
+  k.push([gx, y0, gz, 0.35, 3.8, 0.35, SILUET_RENK.metal], [gx + gen * 0.25, y0, gz, 0.35, 3.8, 0.35, SILUET_RENK.metal], [gx, y0 + 3.5, gz, gen * 0.25 + 0.35, 0.3, 0.35, SILUET_RENK.metal]); // giriş kapısı
+  for (let i = 0; i < 2; i++) k.push([x0 + gen * 0.76, y0 + i * 0.9, z0 + gen * 0.73, gen * 0.14, 0.85, gen * 0.14, SILUET_RENK.cuval]); // ikmal sandıkları
   return k;
 }

@@ -17,6 +17,96 @@ import { SAAT, PPM } from "../tipler";
 import type { Baglam, BolgeDurumu, DerlenmisIcerik, DukkanDurumu, Dunya, EkYapiDurumu, Mili, OyuncuId, RafYuvasi, Stok } from "../tipler";
 import { etkinKademe, yerelPazarHesapla, yerelTalep } from "../perakende/yerelPazar";
 import type { YerelDukkan, YerelIlce, YerelPazarSonucu, YerelSatir, YerelYuva } from "../perakende/yerelPazar";
+import { kasaBakiyesi, kasaBul, kasaGirisi } from "./kasa";
+import { kamuIlceKimligi } from "./kamu";
+
+/** İlçenin mevcut hane talebi; aynı hesap hem pazar çözümünde hem oyuncu görünümünde kullanılır. */
+function ilceHaneTalebi(d: Dunya, ic: DerlenmisIcerik, ilce: string): [string, Mili][] {
+  const pk = ic.mulk?.perakende;
+  const taban = pk?.talepTaban.get(ilce);
+  if (pk === undefined || taban === undefined) return [];
+  const ay = takvimAyi(ic, d.zaman);
+  const sonuc: [string, Mili][] = [];
+  for (let m = 0; m < ic.mallar.length; m++) {
+    const tm = taban[m] ?? 0;
+    if (tm === 0) continue;
+    const g = pk.malGrubu[m] as number;
+    const q = yerelTalep(tm, pk.grupTakvim[g] as number[], ay, pk.grupBayram[g] ?? undefined, pk.bayramGunleri, d.zaman);
+    if (q > 0) sonuc.push([(ic.mallar[m] as { id: string }).id, q]);
+  }
+  return sonuc;
+}
+
+export interface IlceYasamGorunumu {
+  nufus: number;
+  nufusKaynak: "kayit" | "esdeger";
+  /** Hane talebi, mili-birim/saat. Dükkân satış miktarı veya karşılanma oranı değildir. */
+  talep: [string, Mili][];
+  /** Son çözümde kayıtlı dükkân satışının mevcut hane talebindeki payı; görünmez esnaf veya toplam hane tüketimi değildir. */
+  karsilanma: {
+    mal: string;
+    talepMiliSaat: Mili;
+    satisMiliSaat: Mili;
+    /** Talep içindeki kayıtlı dükkân satışı payı (0..PPM). */
+    karsilanmaPpm: number;
+  }[];
+  /** Yalnız gerçek muhasebe kaydı olan ilçe kasası; kayıt yoksa alan yoktur. */
+  kamuKasa?: {
+    bakiyeMili: Mili;
+    vergiToplamMili: Mili;
+    girisToplamMili: Mili;
+    cikisToplamMili: Mili;
+    rezervMili: Mili;
+    /** Kayıtlı para sayaçlarına ilgili sürekli akışların işlendiği en eski zaman. */
+    muhasebeT: number;
+  };
+}
+
+/** Saf ilçe okuması: nüfus, hane talebi, kayıtlı dükkân satış payı ve gerçek kamu kasası; dünyayı uzlaştırmaz. */
+export function ilceYasamGorunumu(d: Dunya, ic: DerlenmisIcerik, ilce: string): IlceYasamGorunumu | undefined {
+  const mk = ic.mulk;
+  const tanim = mk?.ilceler.get(ilce);
+  const nufus = tanim?.nufus ?? mk?.perakende?.ilceNufus.get(ilce);
+  if (tanim === undefined || nufus === undefined || d.mulk === undefined) return undefined;
+  const talep = ilceHaneTalebi(d, ic, ilce);
+  const satis = new Map<string, Mili>();
+  // ekYapilar yalnız tamamlanmış yapıları taşır; inşaatlar ve özel stok/gelir okunmaz.
+  for (const k of dukkanlariTopla(d, ic)) {
+    if (k.ilce !== ilce) continue;
+    for (const y of k.d.raf) {
+      if (y.mal === undefined || y.satisOran === undefined) continue;
+      satis.set(y.mal, (satis.get(y.mal) ?? 0) + y.satisOran);
+    }
+  }
+  const sonuc: IlceYasamGorunumu = {
+    nufus,
+    nufusKaynak: tanim.nufus === undefined ? "esdeger" : "kayit",
+    talep,
+    karsilanma: talep.map(([mal, talepMiliSaat]) => {
+      const satisMiliSaat = satis.get(mal) ?? 0;
+      return { mal, talepMiliSaat, satisMiliSaat, karsilanmaPpm: Math.min(PPM, carpBol(satisMiliSaat, PPM, talepMiliSaat)) };
+    }),
+  };
+  const para = d.mulk.para;
+  const sahip = kamuIlceKimligi(ilce);
+  const kasa = para === undefined ? undefined : kasaBul(para, sahip);
+  if (kasa !== undefined) {
+    let muhasebeT = d.zaman;
+    for (const o of d.mulk.oyuncular) {
+      const a = o.paraAkisi;
+      if (a !== undefined && a.kasa.some((k) => k.sahip === sahip && k.oran > 0)) muhasebeT = Math.min(muhasebeT, a.t0);
+    }
+    sonuc.kamuKasa = {
+      bakiyeMili: kasaBakiyesi(kasa),
+      vergiToplamMili: kasa.giris.vergi.n,
+      girisToplamMili: kasaGirisi(kasa),
+      cikisToplamMili: kasa.cikisOyuncu + kasa.cikisNpc,
+      rezervMili: kasa.rezervOyuncu + kasa.rezervNpc,
+      muhasebeT,
+    };
+  }
+  return sonuc;
+}
 
 /** Çözümde taşınan bir dükkân kaydı: yuva yazımı ve okuma için durum referansı. */
 export interface YerelDukkanKaydi {
@@ -111,7 +201,6 @@ export function yerelPazarCoz(d: Dunya, ctx: Baglam, sahipli?: ReadonlyMap<Oyunc
     }
     return v;
   };
-  const ay = takvimAyi(ic, t);
   const ilceDukkan = new Map<string, YerelDukkan[]>();
   const kayitlar: YerelDukkanKaydi[] = [];
   for (const k of dukkanlar) {
@@ -139,21 +228,9 @@ export function yerelPazarCoz(d: Dunya, ctx: Baglam, sahipli?: ReadonlyMap<Oyunc
   const talep = new Map<string, Map<string, number>>();
   const ilceler: YerelIlce[] = [];
   for (const [ilce, dk] of ilceDukkan) {
-    const taban = pk.talepTaban.get(ilce);
-    const tl: { mal: string; q: number }[] = [];
-    const qHarita = new Map<string, number>();
-    if (taban !== undefined) {
-      for (let m = 0; m < tb.malSayisi; m++) {
-        const tm = taban[m] as number;
-        if (tm === 0) continue;
-        const g = pk.malGrubu[m] as number;
-        const q = yerelTalep(tm, pk.grupTakvim[g] as number[], ay, pk.grupBayram[g] ?? undefined, pk.bayramGunleri, t);
-        if (q <= 0) continue;
-        const id = (ic.mallar[m] as { id: string }).id;
-        tl.push({ mal: id, q });
-        qHarita.set(id, q);
-      }
-    }
+    const haneTalebi = ilceHaneTalebi(d, ic, ilce);
+    const tl = haneTalebi.map(([mal, q]) => ({ mal, q }));
+    const qHarita = new Map(haneTalebi);
     talep.set(ilce, qHarita);
     ilceler.push({ ilce, talep: tl, dukkanlar: dk });
   }
