@@ -312,3 +312,8 @@ body.donus-acik #harita-gezgin { visibility: hidden; }
   .ym-eylemler :is(.eylem, .birincil) { width: 100%; }
   .ym-degistir .eylem, .ym-degistir .mini-dugme { min-height: 44px; }
 }
+/* K2 yöntem seçici incelemesi (c9720b9): onay kartındaki soru ve "ücret yok" satırı `p.soluk` olarak geliyor; soru soluk olmasın (ana metin rengi), Yöntemi değiştir düğmesi 44 px */
+.ym-onay > p:not(.ym-onay-ozet) { margin: 0; color: var(--murekkep); }
+.ym-degistir > p.soluk { margin: 0; }
+.ym-not { overflow-wrap: anywhere; }
+.mulk-liste [data-eylem="yontem-degistir"], [data-eylem="yontem-degistir"].eylem { min-height: 44px; }
