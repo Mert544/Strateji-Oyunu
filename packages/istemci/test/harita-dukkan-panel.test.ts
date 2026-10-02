@@ -70,6 +70,15 @@ describe("DukkanPaneli: seçim ve raf", () => {
     expect(p.html()).toBe("");
   });
 
+  it('"Rafa git" (Dikkat): dükkânı her zaman açar (Raf düğmesi gibi kapatmaz)', async () => {
+    const { p } = kur(gorunum([dukkan()]));
+    await p.eylem({ eylem: "dukkan-rafa", dukkan: 7 });
+    expect(p.durum.secili).toBe(7);
+    await p.eylem({ eylem: "dukkan-rafa", dukkan: 7 });
+    expect(p.durum.secili).toBe(7);
+    expect(p.html()).toContain('class="dk-panel" data-dukkan="7"');
+  });
+
   it("boş yuva: seçici açılır (türün malları, stokluya fiyat); mal seçince dukkan_raf gider ve seçici kapanır", async () => {
     const t = kur(gorunum([dukkan()]));
     await t.p.eylem({ eylem: "dukkan-sec", dukkan: 7 });

@@ -79,7 +79,7 @@ export interface PanelEylemi {
   kapali?: boolean;
 }
 
-const EYLEMLER: ReadonlySet<string> = new Set(["dukkan-sec", "marka-ac", "marka-kaydet", "marka-yok", "kampanya", "yuva-bosalt", "yuva-bosalt-onayla", "onay-vazgec", "dukkan-kaldir", "dukkan-kaldir-onayla", "insaat-iptal", "insaat-iptal-onayla", "yapi-kur"]);
+const EYLEMLER: ReadonlySet<string> = new Set(["dukkan-sec", "dukkan-rafa", "marka-ac", "marka-kaydet", "marka-yok", "kampanya", "yuva-bosalt", "yuva-bosalt-onayla", "onay-vazgec", "dukkan-kaldir", "dukkan-kaldir-onayla", "insaat-iptal", "insaat-iptal-onayla", "yapi-kur"]);
 
 /** Tıklanan öğeden panel eylemi (`data-*`); dükkân paneli dışı öğede null. */
 export function panelEylemiOku(t: Element): PanelEylemi | null {
@@ -231,9 +231,10 @@ export class DukkanPaneli {
     if (g === null || g.kapali) return false;
     // Kapalı öğe (aria-disabled): boş yuvada neden söylenir; başka öğede hiçbir şey olmaz (neden zaten yazılıdır)
     if (e.kapali === true && e.eylem !== "yuva") return true;
-    if (e.eylem === "dukkan-sec") {
+    if (e.eylem === "dukkan-sec" || e.eylem === "dukkan-rafa") {
       if (e.dukkan === undefined) return false;
-      this.sifirla(this.secili === e.dukkan ? null : e.dukkan);
+      // "Rafa git" (Dikkat maddesi) dükkânı her zaman açar; Raf düğmesi açıkken kapatır
+      this.sifirla(e.eylem === "dukkan-sec" && this.secili === e.dukkan ? null : e.dukkan);
       this.g.degisti();
       return true;
     }

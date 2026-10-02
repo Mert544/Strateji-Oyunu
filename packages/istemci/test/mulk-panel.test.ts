@@ -126,4 +126,23 @@ describe("İşletmem dükkân yüzeyleri (G9 iskeleti)", () => {
     expect(l.some((m) => m.baslik.includes("rafta satılmıyor"))).toBe(true);
     expect(l.length).toBe(mulkDikkatMaddeleri(durum(), ad, new Map()).length + 1);
   });
+
+  it('Dikkat: biten dükkân inşaatı "Dükkânın hazır." ve "Rafa git" (dükkân ayrıntısını açar); başka yapıda eskisi gibi', () => {
+    const adD: MulkAdlari = { ...ad, dukkanRafa: (ilce) => (ilce === "tr_41_gebze" ? 7 : null) };
+    const biten = new Map([
+      ["11", { tur: "dukkan", ilce: "tr_41_gebze", bitis: 99 * SA }],
+      ["12", { tur: "ciftlik", ilce: "tr_41_gebze", bitis: 99 * SA }],
+    ]);
+    const l = mulkDikkatMaddeleri(durum(), adD, biten);
+    const d = l.find((m) => m.baslik.includes("Dükkânın hazır."))!;
+    expect(d.baslik).toBe("Gebze: Dükkânın hazır.");
+    expect(d.rafaGit).toEqual({ dukkan: 7, etiket: "Rafa git" });
+    expect(l.find((m) => m.baslik.includes("Çiftlik inşaatı bitti"))?.rafaGit).toBeUndefined();
+    const h = mulkDikkatPaneli(l);
+    expect(h).toContain('data-eylem="dukkan-rafa" data-dukkan="7">Rafa git</button>');
+    // dükkân bulunamazsa ("açık dükkân yok") metin kalır, düğme yok
+    const yok = mulkDikkatMaddeleri(durum(), { ...ad, dukkanRafa: () => null }, biten).find((m) => m.baslik.includes("Dükkânın hazır."))!;
+    expect(yok.rafaGit).toBeUndefined();
+    expect(mulkDikkatPaneli([yok])).not.toContain("Rafa git");
+  });
 });

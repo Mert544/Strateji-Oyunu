@@ -157,7 +157,12 @@ export class Panel {
     this.komutOlaylariniBagla();
     $("sekme-icerik").addEventListener("click", (e) => {
       const t = e.target as HTMLElement;
-      if (this.mulk?.tikla(t) || this.komutTikla(t)) return;
+      if (this.mulk?.tikla(t)) {
+        const sekme = this.mulk.sekmeIstegi?.();
+        if (sekme) this.sekmeSec(sekme);
+        return;
+      }
+      if (this.komutTikla(t)) return;
       const mal = t.closest("[data-mal]") as HTMLElement | null;
       const mercek = t.closest("[data-mercek]") as HTMLElement | null;
       const bolge = t.closest("[data-bolge]") as HTMLElement | null;

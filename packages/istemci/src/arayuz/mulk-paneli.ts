@@ -19,6 +19,8 @@ export interface MulkPaneli {
   simSaat(): number | null;
   /** Dünya epoch'u (ms): sunucu bildirdiyse o (`hosgeldin.dunyaEpochMs`), yoksa varsayılan. Gerçek an = epoch + t. */
   epochMs(): number;
+  /** Son tıklamanın açılmasını istediği sekme (okununca sıfırlanır); yoksa null ("Rafa git": Dikkat'ten İşletmem'e). */
+  sekmeIstegi?(): string | null;
   /** Panel içi tık (veri öznitelikleri); işlendiyse true. */
   tikla(t: HTMLElement): boolean;
   /** Veri değişince çağrılır; dönen işlev aboneliği kaldırır. */

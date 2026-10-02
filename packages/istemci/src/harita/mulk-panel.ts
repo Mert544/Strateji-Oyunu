@@ -57,6 +57,8 @@ export interface MulkDikkatMaddesi {
   ayrinti: string;
   ilce?: string;
   sira: number;
+  /** Madde bir dükkânın hazır olduğunu söylüyorsa "Rafa git" eylemi (dükkânın ayrıntısını İşletmem'de açar). */
+  rafaGit?: { dukkan: number; etiket: string };
 }
 
 const SIMGE: Record<MulkDikkatMaddesi["tur"], { ikon: IkonAdi; ad: string }> = {
@@ -76,6 +78,8 @@ export interface MulkAdlari {
   ayrilmisGun?: number;
   /** İlk yapı indirimi yüzdesi ("%30"; `mulk.yeniOyuncu.ilkYapiIndirimPpm`'den); yoksa metin yüzdesiz. */
   indirimYuzde?: string;
+  /** İlçedeki (açık) dükkânın kimliği ("Dükkânın hazır" maddesindeki "Rafa git"); dükkân yoksa null. */
+  dukkanRafa?: (ilce?: string) => number | null;
   /** Tesis satırında "Büyüt" gösterilsin mi (`olcek.ts` `olcekBuyutulebilir`); tanımsızsa gösterilmez. */
   buyut?: (y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]) => boolean;
 }
@@ -103,6 +107,12 @@ export function mulkDikkatMaddeleri(
   for (const [, b] of bitenler) {
     if (t - b.bitis > BITTI_SAAT * SAAT || t < b.bitis) continue;
     const yer = b.ilce ? `${ad.ilce(b.ilce)}: ` : "";
+    // Biten dükkân inşaatı: "Dükkânın hazır." ve raf düzenlemeye giden "Rafa git" (A1 bulgusu: metinler kodda kullanılmıyordu)
+    const hazirDukkan = b.tur === "dukkan" && !b.yukseltme ? (ad.dukkanRafa?.(b.ilce) ?? null) : null;
+    if (b.tur === "dukkan" && !b.yukseltme) {
+      l.push({ tur: "bitti", baslik: `${yer}${dukkanMetni("dukkan.D4.hazir")}`, ayrinti: t - b.bitis >= SAAT ? `${sure(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis, ...(hazirDukkan !== null ? { rafaGit: { dukkan: hazirDukkan, etiket: dukkanMetni("dukkan.D4.dugme_rafa_git") } } : {}) });
+      continue;
+    }
     l.push({ tur: "bitti", baslik: `${yer}${ad.yapi(b.tur)} ${b.yukseltme ? "büyütmesi" : "inşaatı"} bitti`, ayrinti: t - b.bitis >= SAAT ? `${sure(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis });
   }
   l.push(...dukkan);
@@ -228,7 +238,7 @@ export function mulkDikkatPaneli(l: MulkDikkatMaddesi[]): string {
   s += `<ol class="dikkat-liste">`;
   for (const m of l.slice(0, 5)) {
     const r = SIMGE[m.tur];
-    s += `<li class="dikkat-satir" data-tur="${m.tur}"><span class="rozet-simge ${m.tur}" role="img" aria-label="${esc(r.ad)}">${ikon(r.ikon, 15, "kalin")}</span><div class="dikkat-metin"><b>${esc(m.baslik)}</b><br><span class="soluk">${esc(m.ayrinti)}</span></div><div class="dikkat-dugme">${gitDugmesi(m.ilce)}</div></li>`;
+    s += `<li class="dikkat-satir" data-tur="${m.tur}"><span class="rozet-simge ${m.tur}" role="img" aria-label="${esc(r.ad)}">${ikon(r.ikon, 15, "kalin")}</span><div class="dikkat-metin"><b>${esc(m.baslik)}</b><br><span class="soluk">${esc(m.ayrinti)}</span></div><div class="dikkat-dugme">${m.rafaGit ? `<button type="button" class="eylem" data-eylem="dukkan-rafa" data-dukkan="${m.rafaGit.dukkan}">${esc(m.rafaGit.etiket)}</button>` : ""}${gitDugmesi(m.ilce)}</div></li>`;
   }
   s += `</ol>`;
   if (l.length > 5) s += `<p class="ipucu-metin">+${l.length - 5} madde daha.</p>`;
@@ -314,6 +324,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     il: (il) => s.hiyerarsi.iller.get(il)?.ad ?? il,
     ayrilmisGun: ic.param.mulk?.yeniOyuncu.ayrilmisGun ?? 14,
     ...(ic.param.mulk?.yeniOyuncu.ilkYapiIndirimPpm ? { indirimYuzde: yuzde(ic.param.mulk.yeniOyuncu.ilkYapiIndirimPpm / 10_000) } : {}),
+    dukkanRafa: (ilce) => dukkanKaynagi?.gorunum()?.dukkanlar.find((x) => x.durum === "acik" && (ilce === undefined || x.ilce === ilce))?.id ?? null,
     ...(b.olcekYukselt ? { buyut: (y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]) => olcekBuyutulebilir(ic, y, tumu) } : {}),
   };
   // Biten inşaatlar: bir inşaat listeden düşünce (ya da bitişi geçince) bu oturumda hatırlanır
@@ -359,6 +370,8 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   const depo = tarayiciDeposu();
   const ilkSatis = new IlkSatisIzleyici(depo);
   let yenile: (() => void) | null = null;
+  /** Bir tıklamanın istediği sekme (kabuk `tikla` sonrası okur ve geçer). */
+  let sekmeIstegi: string | null = null;
   const ekYapiMi = (tur: string): boolean => katalog.find((k) => k.id === tur)?.ek === true;
   const ustDurum = (d: IsletmeDurumu | null): "dukkan" | "defter" | null => {
     if (!d) return null;
@@ -500,6 +513,11 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       return t === undefined ? null : t / SAAT;
     },
     epochMs: epoch,
+    sekmeIstegi() {
+      const i = sekmeIstegi;
+      sekmeIstegi = null;
+      return i;
+    },
     tikla(t) {
       // Üst kart eylemleri: öneriyi kapat, "Dükkân kur", Defter kartını atla (tercih yerel; kart yeniden çizilir)
       const eylem = t.closest<HTMLElement>("[data-eylem]")?.dataset["eylem"];
@@ -519,6 +537,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       }
       const pe = dukkanPaneli ? panelEylemiOku(t) : null;
       if (pe && dukkanPaneli) {
+        if (pe.eylem === "dukkan-rafa") sekmeIstegi = "isletme"; // Dikkat'ten "Rafa git": dükkân ayrıntısı İşletmem'dedir
         void dukkanPaneli.eylem(pe);
         return true;
       }
