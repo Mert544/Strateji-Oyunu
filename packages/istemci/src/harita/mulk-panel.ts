@@ -51,6 +51,7 @@ import baskinCss from "./baskin-gorunum.css?inline";
 import { IlceYasamPaneli } from "./ilce-yasam-panel";
 import ilceCss from "./ilce-yasam-panel.css?inline";
 import kamuSiparisCss from "./kamu-siparis.css?inline";
+import meclisKatilimCss from "./meclis-katilim.css?inline";
 import { TedarikPaneli, tedarikEylemiOku } from "./tedarik-panel";
 import tedarikCss from "./tedarik-panel.css?inline";
 import lojistikCss from "./lojistik-gorunum.css?inline";
@@ -451,7 +452,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   if (!document.getElementById("mulk-panel-stil")) {
     const st = document.createElement("style");
     st.id = "mulk-panel-stil";
-    st.textContent = mulkCss + dukkanCss + teknolojiCss + orduCss + orduSavunmaCss + baskinCss + ilceCss + kamuSiparisCss + tedarikCss + lojistikCss + uretimAgiCss;
+    st.textContent = mulkCss + dukkanCss + teknolojiCss + orduCss + orduSavunmaCss + baskinCss + ilceCss + kamuSiparisCss + meclisKatilimCss + tedarikCss + lojistikCss + uretimAgiCss;
     document.head.append(st);
   }
   isletmeDugmesiKur();
@@ -651,6 +652,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     ilAdi: ad.il,
     malAdi: ad.mal,
     ...(b.kamuTeslim ? { komut: b.kamuTeslim.bind(b) } : {}),
+    ...(b.meclisKatil ? { meclisKomutu: b.meclisKatil.bind(b) } : {}),
     degisti: () => { yenidenCiz(); ilcePaneli.yamala(document); },
   });
   document.addEventListener("pointerdown", (e) => {
@@ -848,6 +850,11 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       return i;
     },
     tikla(t) {
+      const meclisEylemi = ilcePaneli.meclisEylemOku(t);
+      if (meclisEylemi) {
+        void ilcePaneli.mecliseKatil(meclisEylemi);
+        return true;
+      }
       const kamuEylemi = ilcePaneli.eylemOku(t);
       if (kamuEylemi) {
         void ilcePaneli.eylem(kamuEylemi);

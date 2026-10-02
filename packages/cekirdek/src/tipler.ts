@@ -872,6 +872,7 @@ export type Komut =
   | { tur: "tesis_durum"; bolge: string; tesis: number; aktif: boolean }
   | { tur: "ticaret_emri"; bolge: string; mal: string; yon: TicaretYonu; oranSaat: Mili }
   | { tur: "vergi_ayarla"; oranPpm: number }
+  | { tur: "meclis_katil"; ilce: string; oncekiIlce: string | null }
   | { tur: "kamu_teslim"; siparis: string; bolge: string; bedelMili: number; teslimSirasi: number }
   // Tarım (B1)
   | { tur: "ekim_plani"; bolge: string; ekimPpm: number[] }
@@ -1016,6 +1017,8 @@ export interface MulkOyuncuDurumu {
   araziVergisi: Stok;
   /** Son başarılı komutun anı (hareketsizlik merdiveni için; kurallar sonraki iş). */
   sonEtkinlik: Ms;
+  /** Tek siyasi ilçe ve başarılı komut günleri; oy/makam/kasa yetkisi değildir. */
+  meclis?: MeclisKatilimi;
   /** İlk-yapı indirimiyle başlatılmış (ve iptal edilmemiş) yapı sayısı; yalnız >0 iken yazılır. */
   indirimliYapi?: number;
   /** Para defteri (docs/06 §15.7): son lojistik çözümde yazılan saatlik para akışları. `mulk.para` açıkken ilk çözümde oluşur. */
@@ -1309,5 +1312,25 @@ export interface KamuTeslimGorunumu {
   bedelMili: number;
   teslimSirasi: number;
   uygun: boolean;
+  engel?: string;
+}
+
+export interface MeclisKatilimi {
+  ilce: string;
+  kayitZamani: Ms;
+  /** Artan, eşsiz, en fazla yedi simülasyon günü; yalnız başarılı oyuncu komutuyla yazılır. */
+  etkinGunler: number[];
+}
+export interface MeclisGorunumu {
+  ilce: string;
+  kayitliIlce?: string;
+  kayitZamani?: Ms;
+  etkinGunSayisi: number;
+  gerekliGun: 3;
+  pencereGun: 7;
+  kayitliIlcedeArsa: boolean;
+  buIlcedeArsa: boolean;
+  katilimKosulu: boolean;
+  kayitUygun: boolean;
   engel?: string;
 }

@@ -1,13 +1,15 @@
 /** İlçenin nüfusu, kamu muhasebesi ve gerçek siparişlere oyuncunun teslimi. */
-import type { IlceKaresi } from "@bolge/protokol";
+import type { IlceKaresi, MeclisKaresi } from "@bolge/protokol";
 import type { Komut } from "@bolge/cekirdek";
 import { esc, fmt, paraMili, sayi } from "../arayuz/bicim";
 import { ikon } from "../tasarim/ikon";
 import type { DukkanKaresi, TesisSonucu } from "./baglanti";
 import { baskinGorunumuHtml } from "./baskin-gorunum";
 import { kamuSiparisHtml } from "./kamu-siparis";
+import { meclisKatilimHtml } from "./meclis-katilim";
 import "./baskin-gorunum.css";
 import "./kamu-siparis.css";
+import "./meclis-katilim.css";
 
 export interface IlceYasamGorunumu {
   id: string;
@@ -27,6 +29,8 @@ export interface IlceYasamGorunumu {
   /** Yalnız seçili ilçenin duyurulmuş genel baskın verisi. */
   pve?: IlceKaresi["pve"];
   kamuSiparis?: IlceKaresi["kamuSiparis"];
+  /** Yalnız kendi oyuncumuzun seçili ilçe için bildirilen katılım görünümü. */
+  meclis?: MeclisKaresi;
 }
 
 /** Harita seçimi varsa onu korur; seçilen ilçe henüz karede yoksa başka ilçenin sayılarını göstermez. */
@@ -42,6 +46,8 @@ export function ilceYasamGorunumuKur(kare: DukkanKaresi | null, secili: string |
   const talep = y?.talep ?? c?.talep;
   const g: IlceYasamGorunumu = { id, secim: secili ? "harita" : katilim ? "katilim" : "mulk" };
   if (kare) g.simZamani = kare.t;
+  const meclis = kare?.oyuncu?.meclis?.find((x) => x.ilce === id);
+  if (meclis !== undefined) g.meclis = meclis;
   if (c) {
     g.il = c.il;
     if (c.pve !== undefined) g.pve = c.pve;
@@ -77,7 +83,7 @@ function sayiKarti(ad: string, deger: string, aciklama?: string): string {
 }
 
 /** Belirsiz değerler sıfırla doldurulmaz; kamu kasası verilmediyse kasa bölümü çıkmaz. */
-export function ilceYasamHtml(g: IlceYasamGorunumu | null, ad: IlceYasamAdlari, ek = ""): string {
+export function ilceYasamHtml(g: IlceYasamGorunumu | null, ad: IlceYasamAdlari, ek = "", katilim = ""): string {
   if (!g) return `<div class="iy-bos">${ikon("map-pin", 26)}<p>Haritadan bir ilçe seçerek nüfusunu ve yerel pazarını incele.</p></div>`;
   const yer = ad.ilceAdi(g.id);
   const il = g.il ? ad.ilAdi(g.il) : "";
@@ -117,6 +123,7 @@ export function ilceYasamHtml(g: IlceYasamGorunumu | null, ad: IlceYasamAdlari, 
     s += "</section>";
   }
 
+  s += katilim;
   const k = g.kamuKasa;
   if (k !== undefined) {
     s += `<section class="iy-bolum"><h4>${ikon("landmark", 17)} İlçe kamu kasası</h4><dl class="iy-sayilar iy-kasa">`;
@@ -139,6 +146,7 @@ export interface IlceYasamPanelParam extends IlceYasamAdlari {
   /** Haritada seçilen ilçe; il/bölge görünümünde null. */
   ilce: () => string | null;
   komut?: (komut: Extract<Komut, { tur: "kamu_teslim" }>) => Promise<TesisSonucu>;
+  meclisKomutu?: (komut: Extract<Komut, { tur: "meclis_katil" }>) => Promise<TesisSonucu>;
   degisti?: () => void;
 }
 
@@ -148,6 +156,22 @@ export interface KamuSiparisEylemi {
   bolge: string;
   bedelMili: number;
   teslimSirasi: number;
+}
+
+export interface MeclisKatilimEylemi {
+  ilce: string;
+  oncekiIlce: string | null;
+}
+
+export function meclisKatilimEylemiOku(hedef: HTMLElement): MeclisKatilimEylemi | null {
+  const b = hedef.closest<HTMLButtonElement>('button[data-meclis-eylem="katil"]');
+  if (!b || b.disabled) return null;
+  const ilce = b.dataset["ilce"], onceki = b.dataset["oncekiIlce"];
+  if (!ilce || onceki === undefined) return null;
+  try {
+    const oncekiIlce: unknown = JSON.parse(onceki);
+    return oncekiIlce === null || (typeof oncekiIlce === "string" && oncekiIlce.length > 0) ? { ilce, oncekiIlce } : null;
+  } catch { return null; }
 }
 
 /** Yalnız oyuncunun gördüğü paket teklifi gönderilir; yeni fiyat sessizce yerine konmaz. */
@@ -168,6 +192,12 @@ export class IlceYasamPaneli {
   private sonucIlce: string | null = null;
   private readonly acikDetaylar = new Set<string>();
   private gorulenTeklif: KamuSiparisEylemi | null = null;
+  private gorulenMeclis: MeclisKatilimEylemi | null = null;
+  private meclisBekliyor = false;
+  private meclisSonuc = "";
+  private meclisHata = false;
+  private meclisSonucIlce: string | null = null;
+  private meclisKaydiBeklenen: MeclisKatilimEylemi | null = null;
   /** Kabul edilmiş aynı paket teklifi yeni teslim özeti gelene kadar tekrar gönderilmez. */
   private teslimEdilen: KamuSiparisEylemi | null = null;
   constructor(private readonly p: IlceYasamPanelParam) {}
@@ -175,6 +205,7 @@ export class IlceYasamPaneli {
   /** Basma ile click arasındaki canlı fiyat güncellemesi görülen bedeli değiştirmez. */
   teklifYakala(hedef: HTMLElement): void {
     this.gorulenTeklif = kamuSiparisEylemiOku(hedef);
+    this.gorulenMeclis = meclisKatilimEylemiOku(hedef);
   }
 
   eylemOku(hedef: HTMLElement): KamuSiparisEylemi | null {
@@ -184,30 +215,45 @@ export class IlceYasamPaneli {
     return simdiki && gorulen && simdiki.ilce === gorulen.ilce && simdiki.siparis === gorulen.siparis && simdiki.bolge === gorulen.bolge ? gorulen : simdiki;
   }
 
+  meclisEylemOku(hedef: HTMLElement): MeclisKatilimEylemi | null {
+    const simdiki = meclisKatilimEylemiOku(hedef);
+    const gorulen = this.gorulenMeclis;
+    this.gorulenMeclis = null;
+    return simdiki && gorulen ? gorulen : simdiki;
+  }
+
   private kartHtml(g: IlceYasamGorunumu): string {
     const kaynaklar = this.p.kare()?.oyuncu?.kamuTeslim;
     const son = this.teslimEdilen;
     const html = kamuSiparisHtml({
       ilce: g.id,
       ilan: g.kamuSiparis,
-      kaynaklar: kaynaklar?.map((k) => son && k.siparis === son.siparis && k.bolge === son.bolge && k.teslimSirasi === son.teslimSirasi
-        ? { ...k, uygun: false, engel: "Teslim alındı; güncel paket bilgisi bekleniyor." } : k),
+      kaynaklar: kaynaklar?.map((k) => this.meclisBekliyor ? { ...k, uygun: false, engel: "Meclis katılım işleminin bitmesini bekle." }
+        : son && k.siparis === son.siparis && k.bolge === son.bolge && k.teslimSirasi === son.teslimSirasi
+          ? { ...k, uygun: false, engel: "Teslim alındı; güncel paket bilgisi bekleniyor." } : k),
       bekliyor: this.bekliyor,
       sonuc: this.sonucIlce === g.id ? this.sonuc : "",
       hata: this.hata,
       malAdi: this.p.malAdi,
       destek: this.p.komut !== undefined,
     });
-    return html.replace(/<details\b([^>]*)>/g, (etiket: string, ozellikler: string) => {
-      const d = /data-kamu-siparis-(detay|toplam)="([^"]*)"/.exec(ozellikler);
-      return d && this.acikDetaylar.has(`${d[1]}:${d[2]}`) ? etiket.slice(0, -1) + " open>" : etiket;
-    });
+    return this.detayAcikliginiKoru(html);
+  }
+
+  private meclisHtml(g: IlceYasamGorunumu): string {
+    let katilim = g.meclis;
+    if (katilim && this.meclisKaydiBeklenen && (katilim.kayitliIlce ?? null) !== this.meclisKaydiBeklenen.oncekiIlce)
+      this.meclisKaydiBeklenen = null;
+    if (katilim && this.bekliyor) katilim = { ...katilim, kayitUygun: false, engel: "Süren teslim işleminin bitmesini bekle." };
+    else if (katilim && this.meclisKaydiBeklenen?.ilce === g.id && (katilim.kayitliIlce ?? null) === this.meclisKaydiBeklenen.oncekiIlce)
+      katilim = { ...katilim, kayitUygun: false, engel: "Katılım kaydı alındı; güncel bilgi bekleniyor." };
+    return this.detayAcikliginiKoru(meclisKatilimHtml({ ilce: g.id, katilim, bekliyor: this.meclisBekliyor, sonuc: this.meclisSonucIlce === g.id ? this.meclisSonuc : "", hata: this.meclisHata, ilceAdi: this.p.ilceAdi, destek: this.p.meclisKomutu !== undefined }));
   }
 
   html(): string {
     if (typeof document !== "undefined") this.detaylariYakala(document);
     const g = ilceYasamGorunumuKur(this.p.kare(), this.p.ilce());
-    return ilceYasamHtml(g, this.p, g ? `<div data-ilce-kamu-siparis="${esc(g.id)}">${this.kartHtml(g)}</div>` : "");
+    return ilceYasamHtml(g, this.p, g ? `<div data-ilce-kamu-siparis="${esc(g.id)}">${this.kartHtml(g)}</div>` : "", g ? `<div data-ilce-meclis="${esc(g.id)}">${this.meclisHtml(g)}</div>` : "");
   }
 
   private bildir(ilce: string, mesaj: string, hata = true): void {
@@ -218,7 +264,7 @@ export class IlceYasamPaneli {
   }
 
   async eylem(i: KamuSiparisEylemi): Promise<void> {
-    if (this.bekliyor) return;
+    if (this.bekliyor || this.meclisBekliyor) return;
     const kare = this.p.kare();
     const g = ilceYasamGorunumuKur(kare, this.p.ilce());
     if (!g || g.id !== i.ilce) {
@@ -257,14 +303,52 @@ export class IlceYasamPaneli {
     }
   }
 
-  /** Sipariş kartını dar günceller; diğer İlçe bölümlerini ve seçimi yeniden kurmaz. */
+  async mecliseKatil(i: MeclisKatilimEylemi): Promise<void> {
+    if (this.bekliyor || this.meclisBekliyor) return;
+    const g = ilceYasamGorunumuKur(this.p.kare(), this.p.ilce());
+    const katilim = g?.meclis;
+    const hata = (mesaj: string): void => {
+      this.meclisSonucIlce = i.ilce;
+      this.meclisSonuc = mesaj;
+      this.meclisHata = true;
+      this.p.degisti?.();
+    };
+    if (!g || g.id !== i.ilce) { hata("İlçe seçimi değişti. Katılmak istediğin ilçeyi yeniden aç."); return; }
+    if (!this.p.meclisKomutu) { hata("Bu bağlantıda meclis katılım kaydı yapılamıyor."); return; }
+    if (!katilim) { hata("Meclis katılım bilgisi henüz alınmadı."); return; }
+    if ((katilim.kayitliIlce ?? null) !== i.oncekiIlce) { hata("Kayıtlı ilçen değişti. Güncel kaydı inceleyip yeniden dene."); return; }
+    if (!katilim.kayitUygun || !katilim.buIlcedeArsa) { hata(katilim.engel || "Katılım kaydı için bu ilçede kendi parselin bulunmalı."); return; }
+    if (this.meclisKaydiBeklenen?.ilce === i.ilce && this.meclisKaydiBeklenen.oncekiIlce === i.oncekiIlce) return;
+    this.meclisBekliyor = true;
+    this.meclisSonucIlce = g.id;
+    this.meclisSonuc = "";
+    this.meclisHata = false;
+    this.p.degisti?.();
+    try {
+      const r = await this.p.meclisKomutu({ tur: "meclis_katil", ilce: i.ilce, oncekiIlce: i.oncekiIlce });
+      if (r.tamam) this.meclisKaydiBeklenen = i;
+      this.meclisHata = !r.tamam;
+      this.meclisSonuc = r.tamam ? i.oncekiIlce === null ? `${this.p.ilceAdi(i.ilce)} meclisine katılım kaydın yapıldı.` : `Kaydın ${this.p.ilceAdi(i.ilce)} ilçesine taşındı; önceki katılım günlerin sıfırlandı.` : r.mesaj;
+    } catch {
+      this.meclisHata = true;
+      this.meclisSonuc = "Kayıt sonucu alınamadı. Kayıtlı ilçeni kontrol ederek yeniden deneyebilirsin.";
+    } finally {
+      this.meclisBekliyor = false;
+      this.p.degisti?.();
+    }
+  }
+
+  /** Sipariş ve katılım kartlarını dar günceller; diğer İlçe bölümlerini ve seçimi yeniden kurmaz. */
   yamala(kok: ParentNode): boolean {
     const g = ilceYasamGorunumuKur(this.p.kare(), this.p.ilce());
+    if (!g) return false;
     const slot = kok.querySelector<HTMLElement>("[data-ilce-kamu-siparis]");
-    if (!g || !slot || slot.dataset["ilceKamuSiparis"] !== g.id) return false;
+    const meclis = kok.querySelector<HTMLElement>("[data-ilce-meclis]");
+    if (slot?.dataset["ilceKamuSiparis"] !== g.id && meclis?.dataset["ilceMeclis"] !== g.id) return false;
     this.detaylariYakala(kok);
     const geriOdak = this.odagiYakala(kok);
-    slot.innerHTML = this.kartHtml(g);
+    if (slot?.dataset["ilceKamuSiparis"] === g.id) slot.innerHTML = this.kartHtml(g);
+    if (meclis?.dataset["ilceMeclis"] === g.id) meclis.innerHTML = this.meclisHtml(g);
     geriOdak?.();
     return true;
   }
@@ -273,6 +357,23 @@ export class IlceYasamPaneli {
     this.detaylariYakala(kok);
     const aktif = typeof document === "undefined" ? null : document.activeElement;
     if (!(aktif instanceof HTMLElement)) return null;
+    const meclis = kok.querySelector<HTMLElement>("[data-ilce-meclis]");
+    if (meclis?.contains(aktif) && aktif.matches("summary")) {
+      const ilce = meclis.dataset["ilceMeclis"];
+      return () => {
+        const slot = kok.querySelector<HTMLElement>("[data-ilce-meclis]");
+        if (slot?.dataset["ilceMeclis"] === ilce) slot?.querySelector<HTMLElement>("details[data-meclis-detay] summary")?.focus({ preventScroll: true });
+      };
+    }
+    if (meclis?.contains(aktif) && aktif.matches('[data-meclis-eylem="katil"]')) {
+      const ilce = meclis.dataset["ilceMeclis"];
+      return () => {
+        const slot = kok.querySelector<HTMLElement>("[data-ilce-meclis]");
+        if (!slot || slot.dataset["ilceMeclis"] !== ilce) return;
+        const b = slot.querySelector<HTMLButtonElement>('[data-meclis-eylem="katil"]');
+        if (b && !b.disabled) b.focus({ preventScroll: true });
+      };
+    }
     const slot = kok.querySelector<HTMLElement>("[data-ilce-kamu-siparis]");
     if (!slot?.contains(aktif)) return null;
     if (aktif.matches("summary")) {
@@ -295,13 +396,21 @@ export class IlceYasamPaneli {
   }
 
   private detaylariYakala(kok: ParentNode): void {
-    for (const d of kok.querySelectorAll<HTMLDetailsElement>("[data-ilce-kamu-siparis] details")) {
-      const tip = d.hasAttribute("data-kamu-siparis-detay") ? "detay" : "toplam";
-      const id = d.getAttribute(`data-kamu-siparis-${tip}`);
+    for (const d of kok.querySelectorAll<HTMLDetailsElement>("[data-ilce-kamu-siparis] details, [data-ilce-meclis] details")) {
+      const tip = ["data-kamu-siparis-detay", "data-kamu-siparis-toplam", "data-meclis-detay"].find((a) => d.hasAttribute(a));
+      if (!tip) continue;
+      const id = d.getAttribute(tip);
       if (id === null) continue;
       const anahtar = `${tip}:${esc(id)}`;
       if (d.open) this.acikDetaylar.add(anahtar);
       else this.acikDetaylar.delete(anahtar);
     }
+  }
+
+  private detayAcikliginiKoru(html: string): string {
+    return html.replace(/<details\b([^>]*)>/g, (etiket: string, ozellikler: string) => {
+      const d = /(data-kamu-siparis-(?:detay|toplam)|data-meclis-detay)="([^"]*)"/.exec(ozellikler);
+      return d && this.acikDetaylar.has(`${d[1]}:${d[2]}`) ? etiket.slice(0, -1) + " open>" : etiket;
+    });
   }
 }

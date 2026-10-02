@@ -1,29 +1,19 @@
-# İlk kamu dilimi: ilçe gıda siparişine tedarik
+# Kamu tedarikinden ilçe katılımına
 
-**Güncel durum:** Bu Ar-Ge önerisinin ilk tedarik dilimi K1'de uygulandı;
-[kesin fiyat/rezerv/teslim sözleşmesi](codex-k1-kamu-sozlesmesi.md) ve
-[kabul kaydı](codex-devam-durumu.md) günceldir. Aşağıdaki ilk inceleme
-makam/yetki ile sistem siparişini ayıran kararın gerekçesidir.
+**Güncel sınır.** İlk kamu tedarik dilimi K1'de uygulandı; [kesin sözleşme](codex-k1-kamu-sozlesmesi.md) fiyat/rezerv/teslim davranışını belirler. K2a'nın [meclis katılım sözleşmesi](codex-k2a-meclis-sozlesmesi.md) kesinleşti. Uygulama ve kabul kanıtı [devam kaydındadır](codex-devam-durumu.md); bu not bağımsız test veya seçimlerin hazır olduğu iddiası değildir.
 
-**İlk öneri.** Sistem ilçe kasasından tek gıda talebi açar; oyuncu “stoğumu kamuya mı, üretim/ticarete mi ayırayım?” kararını alır. Politik yönetim hazır değildir; proje önceliğini oyuncunun seçmesi ayrı makam/yetki dilimini gerektirir.
+**K1'de gerçek oyuncu kararı.** Sistem ilçe kasasından bütçeli gıda talebi açar. Oyuncu “stoğumu kamuya mı, üretim/ticarete mi ayırayım?” seçimini yapar; ilçede gerçek arsası varsa aynı ildeki kendi işletme deposundan paket teslim eder. Gerçek gıda eksilir ve kasadan oyuncuya para aktarılır; yeni para basılmaz. Siparişe ait rezerv ve teslim sırası korunur, ilan üstünü aşmayan canlı teklif bedeli komutla eşleşir; kullanılmayan ödenek çözülür. Halk etkisinin kaydı **kamu dağıtımına teslim edilen gıdadır**; mutluluk/nüfus/verim/açlık bonusu değildir.
 
-**Mevcut / taslak ayrımı.**
-- `packages/cekirdek/src/mulk/kasa.ts:384–494`: alıcı/rezerv/iptal/ödeme/fiyat tavanı çalışır; oyuncuya ödeme kasadan transfer, NPC ödemesi `kamuNpc` lavabosudur. Rezervler toplamdır; projeye özel sahiplik yoktur.
-- Mevcut korumalar: tek alım kullanılabilir bakiyenin %40'ını, haftalık kullanım 28 günlük girişin %25'ini, oyuncu ödemesi/rezervi aynı girişin %50'sini aşamaz. Bu sayılar değişmeden kullanılmalı.
-- `tipler.ts:1115` makamları yalnız kasa açıklamasında taşır; görev sahibi/seçmen/dönem/proje yok. `komutSemasi.ts` ve `protokol/src/komut-sema.ts` kamu komutu sunmaz. Kasa kimliği yetki değildir.
-- `docs/16-cok-katmanli-gelistirme-plani.md`, Dalga 3, makam/yetki sözleşmesini proje kararının önüne koyar. `docs/arastirma/kamu-ve-kamu-arazileri.md §2.1` katalog, takvim, meclis ve gıda tetikleyicilerini önerir; çalışan seçim/ilan motoru değildir.
-- `mulk/perakende.ts:23–87` hane talebini ve kayıtlı dükkân satış payını bilir; toplam halk tüketimini veya yedi günlük açlık geçmişini ölçmez. “Gıda payı %80 altında → otomatik yardım” mevcut veriyle gerekçelendirilemez.
+**Korunan ekonomi.** `mulk/kasa.ts` rezerv/iptal/ödeme/fiyat tavanı sağlar: tek alım kullanılabilir bakiyenin %40'ını, haftalık kullanım 28 günlük girişin %25'ini, oyuncu ödemesi/rezervi aynı girişin %50'sini aşamaz. K1/K2a sınırları veya kasa kaynaklarını değiştirmez. Kasa ID'si makam yetkisi değildir. Perakende yalnız hane talebi ve kayıtlı dükkân satış payını ölçer; teslimi toplam ihtiyaç karşılama oranına dönüştürmek desteklenmez.
 
-**En dar uygulama sırası.**
-1. Root katalog/fiyat/takvim/yerel teslim sözleşmesini kapatır. Sistem güvenilir çekirdek olayıyla talep açar; oyuncuya sistem komutu/keyfî ödeme/kasa seçimi açılmaz. Ödeneksiz ilan yok; yeni kasa geliri/hibe yok.
-2. Optional durum: ilçe/sipariş kimliği, mal, paket miktarı, fiyat sözleşmesi, vade, kalan miktar, **siparişe ait kalan rezerv**, teslim/ödeme toplamı, durum. Tek açık sipariş; mili-birimli güvenli tamsayılar. Sipariş defteri başka siparişin rezervinin harcanmasını engeller.
-3. Öneri `kamu_teslim {siparis, bolge}`: oyuncunun aynı ilçedeki kendi stoğundan katalog paketi. Çekirdek stok zamanını uzlaştırır; sahiplik/stok/süre/fiyat tavanını doğrular; **atomik** stok tüketimi + rezerv azaltımı + kasa→oyuncu transferi yapar. Eksikte kısmi işlem yok; bitişte kullanılmamış rezerv çözülür. Uzak taşıma/ithalat taklit edilmez.
-4. İşletmem → İlçe → kasa altında kart: hedef/teslim/kalan gıda, ödenek/harcama/süre; tedarikçiye kendi stoku ve bedeli. Halk etkisi **“kamu dağıtımına teslim edilen X birim gıda”** kaydıdır; mutluluk/nüfus/verim/karşılama bonusu değildir. Başkalarının stokları veya hane talebi/satış payıyla birleşik sonuç gösterilmez.
+**K2a'nın somut dilimi.**
 
-**Makamlı devam.** İlçe→İlçe Başkanı→dönem kaydı ve çekirdek yetki kontrolünden sonra “siparişi aç / bütçeyi koru” kararı gelir. Muhtar/Vali yetkisi ve seçim sayıları yorumlardan türetilmez. Sistem talebi + oyuncu tedariki makam olmadan oynanabilir.
+- `meclis_katil {ilce, oncekiIlce}`: bilinen ilçede gerçek kendi parseli gerekir. Tek siyasi kayıt: optional `meclis: {ilce, kayitZamani, etkinGunler}`. Koşullu yeni-oyuncu `katilimIlcesi`, işletme düğümü veya hücre sayısı özeti siyasi aidiyet değildir.
+- İlk kayıtta `oncekiIlce:null`; taşımada mevcut ilçe tam eşleşir. Aynı ilçeye tekrar/eski bilgi reddedilir. **Seçimsiz dönemde taşıma serbest; günler sıfırlanır ve yeni ilçede o gün kaydedilir.** UI sıfırlamayı önceden gösterir; ileride seçmen dondurma ayrı sözleşmedir.
+- İlk kayıt ve sonraki başarılı sistem dışı komutlar, kayıtlı ilçede gerçek parsel varken sim gününü bir kez yazar. Son 7 gün `bugun-6..bugun`, en çok 7 artan eşsiz gün. `sonEtkinlik` tek zaman damgasıdır, geçmiş üç gün üretmez. Otomatik satış/saatlik olay/sistem/ret gün kazandırmaz; günlük yoklama/ödül yoktur.
+- Son parsel bırakılırsa geçmiş korunur, koşul düşer ve yeni gün kazanılmaz. Yeniden arsa edinildiğinde pencereye giren gerçek geçmiş sayılır. Saf görünüm eski günleri filtreler; okuma/yükleme dünya veya kuyruğu değiştirmez.
+- Yalnız kendi oyuncu karesinde ilçe, arsa şartı ve 3/7 ilerlemesi görünür. **3 gün + mevcut arsa yalnız katılım koşuludur; oy/adaylık uygunluğu değildir.** Farklı ilçenin geçmişi yerel ilerleme sayılmaz; UI “Seçimler henüz açık değil” der.
 
-**Root kararları.** Paket/ilan ömrü/açılma koşulu/yerel teslim sınırı; canlı `kamuFiyatGecerli` tavanıyla ilan fiyatının teslimde bağdaşması. Sabit fiyat, piyasa düşüşünde ithal-al/kamuya-sat marjını tek başına engellemez; sözleşme kapanmadan fiyat dondurulmaz.
+**Sonraki yönetim dilimi.** Ürün §7.6 aktif parsel sahibi, hesap başına bir oy ve 14 günlük ilçe dönemi önerir. Hesap güvence düzeyi 2 kodda yoktur; e-posta oturumu bu düzey sayılamaz. Önce güvenilir hesap güvencesi, seçmen dondurma, adaylık, gizli oy, dönem/beraberlik/oy yokluğu ve çekirdek makam yetkisi kapatılır. Sonra İlçe Başkanı “gıda tedariki / bütçeyi koru” kararını yalnız yeni K1 ilanına uygulayabilir; mevcut sözleşme ve kasa sınırları korunur. İlk gelen başkan veya keyfî ödeme yoktur. Y39: Muhtar mahalle, İlçe Başkanı ilçe, Vali il.
 
-**Kapsam / kabul.** Makamsız dilim yaklaşık **16 ürün dosyası**: veri tipi/şema/doğrulama/parametre (4), çekirdek tip/komut/motor/serileştirme/yeni kamu modülü (5), protokol kare/komut şeması (2), sunucu özet (1), istemci kare/bağlantı/ilçe kartı/komut kaydı (4); test dosyaları ayrıca. Kabul: ödeneksiz ilan yok; yetkisiz stok kullanımı ve tekrarlı teslim reddedilir; teslim miktarı kadar stok eksilir; oyuncu artışı=kasa çıkışı; kapanan rezerv serbest; save/load/replay aynı defteri verir; mevcut kasalar ve perakende davranışı korunur.
-
-**İlk dilime alınmayan gerçek alternatif.** `lojistik/cozum.ts:400` kenar geliştirme ve `ekonomi/insaat.ts:74` kapasite artışı çalışır; fakat oyuncu uç sahipliği mülkün kamu merkezine yetki sağlamaz. Mevcut 400 çelik + 100 parça + 20 bin TL, taban fiyatla yaklaşık 86 bin TL'dir; küçük ilçe kasasına uygun ilk proje diye ucuzlatılmaz. Kamu arsası hakkı/ihale, AI karar ajanı ve kamu savunma bonusu da bu dilimin dışında kalır.
+**Kapsam dışında.** Kamu arsası hakkı/ihale, AI kamu karar ajanı ve savunma bonusu. Mevcut kenar geliştirmesi kapasiteyi artırır fakat oyuncu uç sahipliği kamu merkezinde belediye yetkisi sağlamaz; 400 çelik + 100 parça + 20 bin TL, taban fiyatla yaklaşık 86 bin TL'dir. İlk projeye uydurmak için maliyet sessizce düşürülmez.

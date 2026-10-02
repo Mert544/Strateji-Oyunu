@@ -2,6 +2,30 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — K2a meclis katılımı tamamlandı
+
+[Kesin sözleşme](codex-k2a-meclis-sozlesmesi.md): tek siyasi ilçe kaydı,
+gerçek parsel sahipliği ve son yedi simülasyon günündeki başarılı oyuncu
+işlemlerinden otomatik etkinlik kaydı. Seçim, makam ve bütçe yetkisi ayrı
+sonraki dilimdir; mevcut `sonEtkinlik` alanından geçmiş günler uydurulmaz.
+Meclis kaydı taşınabilir; önceki ilçe koruması vardır ve taşıma etkinlik
+ilerlemesini sıfırlar. Yeni günlük yoklama veya ödül eklenmez.
+
+Aynı altı ajan yeniden görev aldı: L1 çekirdek, B2 protokol/bağlantı,
+A3 panel entegrasyonu, B4 görünüm/ekran, A6 şartname, B6 tek doğrulama dalgası.
+Root sözleşme ve entegrasyonu yönetir. Uygulama tamamlandı. B6'nın tek
+kontrol dalgasında `kare-meclis.test.ts` üç senaryosu, kök/istemci tip
+kontrolleri ve istemci derlemesi ilk çalıştırmada geçti. Kayıt/taşıma,
+gün sınırları, gerçek parsel kaybı, değişmez ret, save/load/replay ve özel
+kare sınırı doğrulandı. Dünya gzip 392,3KB/400KB, harita 499,8KB.
+Tam paket, mobil matris ve K1 tekrar kontrolü çalıştırılmadı; bilinen eksik
+sokak PMTiles uyarıları sürüyor. B4'ün gerçek Gebze başlangıcında İlçe
+düğmesiyle gönderdiği `meclis_katil` ilk çalıştırmada kabul edildi; kendi
+kaydında Gebze ve tek etkin gün, arayüzde aynı durum görüldü. Sayfa/konsol
+hatası yok. [Gerçek ekran ve komut kanıtı](../ekran-goruntuleri/2026-10-02-meclis/README.md)
+kaydedildi; root görüntüyü ve JSON sonucunu inceledi. Kayıt ilk gündür;
+üç günlük koşulun sağlandığı veya seçimin açıldığı iddia edilmez.
+
 ## Son tamamlanan iş
 
 D4: 12 ayrı GPT-6.1 Sol alt ajan iki dalgayla görevlerini bitirdi; ortam sınırı
@@ -279,9 +303,11 @@ Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları ko
    D3 birlik/duruş açık kalır; PvE bayrağı yalnız baskını yönetir.
 6. **K1 tamamlandı:** sistemin bütçeli kamu gıda siparişine kendi il
    deposundan paket teslimi, fiyat/sıra koruması ve kasa transferi oynanabilir.
-   Sonraki kamu işi makam/yetki/karar döngüsünün açık sözleşmesidir; mevcut
-   tedarikçi eylemi kamu bütçesini yönetme yetkisi değildir. Halk etkisi
-   şimdilik gerçek dağıtıma teslim miktarıdır, refah bonusu yoktur.
+   **K2a uygulandı:** tek siyasi ilçe kaydı/taşıma ve başarılı oyuncu
+   işlemlerinden son yedi gün etkinliği. Sonraki kamu işi güvenilir hesap
+   güvencesi ve seçmen dondurma/adaylık/oy/dönem/makam sözleşmesidir; mevcut
+   tedarikçi ve meclis kaydı kamu bütçesini yönetme yetkisi değildir.
+   Halk etkisi şimdilik gerçek dağıtıma teslim miktarıdır, refah bonusu yoktur.
 7. Tarayıcı/mobil kabulü birleşik geliştirme sonunda; her adımda yeniden koşma.
 
 ## Gerçek sınırlar ve yeniden başlama

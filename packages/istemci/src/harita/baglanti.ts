@@ -324,6 +324,8 @@ export interface MulkBaglantisi {
   tedarikKomutu?(i: TicaretEmriIstegi): Promise<TesisSonucu>;
   /** Kamuya tek gıda paketi teslim eder; görülen bedel ve teslim sırası sunucuda korunur. Kasa/ödenek istemciden alınmaz. */
   kamuTeslim?(komut: Extract<Komut, { tur: "kamu_teslim" }>): Promise<TesisSonucu>;
+  /** Meclis ilçesine kayıt/taşıma; görülen önceki ilçe sunucuda doğrulanır. Oy veya makam yetkisi vermez. */
+  meclisKatil?(komut: Extract<Komut, { tur: "meclis_katil" }>): Promise<TesisSonucu>;
   /** Oyuncunun araştırdığı teknolojilerin kimlikleri (yöntem seçicide kilitli/açık ayrımı); bilinmiyorsa tanımsız/null (teknoloji isteyen yöntem kilitli sayılır; teknolojisiz yöntemler her zaman açıktır). */
   acikTeknolojiler?(): ReadonlySet<string> | null;
   /** Sahibinin araştırmaları ve sunucudan alınan yayılım teklifi. */

@@ -1,0 +1,89 @@
+{
+  "kaynak": "Gerçek standalone oyun + gerçek Türkiye manifesti ve varsayılan Gebze başlangıç paketi. Kayıt native İlçe düğmesi üzerinden kabul edilen meclis_katil komutuyla yapıldı. Stok/kasa/etkinlik/DOM enjeksiyonu ve özel fixture yok.",
+  "masaustu": [
+    1440,
+    1000
+  ],
+  "simZamani": 0,
+  "gercekParseller": [
+    "610070:393780",
+    "610070:393781",
+    "610070:393782",
+    "610071:393780",
+    "610071:393781",
+    "610071:393782"
+  ],
+  "before": {
+    "ilce": "tr_41_gebze",
+    "etkinGunSayisi": 0,
+    "gerekliGun": 3,
+    "pencereGun": 7,
+    "kayitliIlcedeArsa": false,
+    "buIlcedeArsa": true,
+    "katilimKosulu": false,
+    "kayitUygun": true
+  },
+  "domCommand": {
+    "ilce": "tr_41_gebze",
+    "oncekiIlce": null,
+    "text": "Bu ilçeye kaydol"
+  },
+  "responses": [
+    {
+      "tur": "komutSonucu",
+      "anahtar": "peqxnicwtb-3-bsdai",
+      "seq": 2,
+      "t": 0,
+      "komut": {
+        "tur": "meclis_katil",
+        "ilce": "tr_41_gebze",
+        "oncekiIlce": null
+      },
+      "sonuc": {
+        "tamam": true
+      },
+      "tekrar": false
+    }
+  ],
+  "registration": {
+    "ilce": "tr_41_gebze",
+    "kayitZamani": 0,
+    "etkinGunler": [
+      0
+    ]
+  },
+  "after": {
+    "ilce": "tr_41_gebze",
+    "etkinGunSayisi": 1,
+    "gerekliGun": 3,
+    "pencereGun": 7,
+    "kayitliIlcedeArsa": true,
+    "buIlcedeArsa": true,
+    "katilimKosulu": false,
+    "kayitUygun": false,
+    "kayitliIlce": "tr_41_gebze",
+    "kayitZamani": 0,
+    "engel": "Bu ilçe meclisine zaten kayıtlısınız."
+  },
+  "uiSnapshot": {
+    "meclis": [
+      {
+        "ilce": "tr_41_gebze",
+        "kayitliIlce": "tr_41_gebze",
+        "kayitZamani": 0,
+        "etkinGunSayisi": 1,
+        "gerekliGun": 3,
+        "pencereGun": 7,
+        "kayitliIlcedeArsa": true,
+        "buIlcedeArsa": true,
+        "katilimKosulu": false,
+        "kayitUygun": false,
+        "engel": "Bu ilçe meclisine zaten kayıtlısınız."
+      }
+    ],
+    "kartMetni": " İlçe meclisine katılımSeçimler henüz açık değil.Gebze meclisine katılım kaydın yapıldı.Kayıtlı ilçeGebzeGebze ilçesinde arsanVarGebze kaydının etkinliği1 etkin gün · gereken 3Etkinlik dönemiSon 7 oyun günüEtkinlik koşulu için son 7 oyun gününün 3’ünde etkin olmalısın.Etkinlik nasıl sayılır?Kayıtlı ilçede arsan varsa, farklı oyun günlerindeki başarılı işlemlerin etkinlik kaydına sayılır. Bir oyun günü 24 saattir; aynı günün işlemleri tek gün sayılır. Otomatik satışlar bu kaydı artırmaz.Bu kayıt ve etkinlik koşulu, oy hakkı veya kamu kasasını yönetme yetkisi vermez."
+  },
+  "pageErrors": [],
+  "consoleErrors": [],
+  "sinir": "Bu ekran ilk gerçek kayıt ve 1/3 etkinlik gününü gösterir; seçim/oy hakkı/kamu kasası yetkisi veya 3 günlük etkinlik başarısı göstermez."
+}

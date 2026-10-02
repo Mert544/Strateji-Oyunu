@@ -35,7 +35,7 @@ import { KAMU_ALGORITMA_SURUMU, kamuIndeksiAra, kamuIndeksiKur } from "./mulk/ka
 import { fnv1a64 } from "./ozet";
 import { adKanonik } from "./ad";
 import { MULKSUZ_PAKET } from "./mulksuz";
-import { KASA_GIRIS_ISTEGE_BAGLI, KASA_GIRIS_KALEMLERI, LAVABO_ISTEGE_BAGLI, LAVABO_KALEMLERI, MUSLUK_ISTEGE_BAGLI, MUSLUK_KALEMLERI, OLAY_ONCELIGI, PPM, SAAT } from "./tipler";
+import { KASA_GIRIS_ISTEGE_BAGLI, KASA_GIRIS_KALEMLERI, LAVABO_ISTEGE_BAGLI, LAVABO_KALEMLERI, MUSLUK_ISTEGE_BAGLI, MUSLUK_KALEMLERI, OLAY_ONCELIGI, PPM, SAAT, GUN } from "./tipler";
 import type { DerlenmisIcerik, Dunya, Ms } from "./tipler";
 
 /** Serileştirme/çözme hatası: `yol` hatalı değerin JSON yolu ($ = kök). */
@@ -789,6 +789,25 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number, zaman: number, 
     if (o.indirimliYapi !== undefined) tamsayi(o.indirimliYapi, `${y}.indirimliYapi`, 1);
     if (o.ayrilmisHucre !== undefined) tamsayi(o.ayrilmisHucre, `${y}.ayrilmisHucre`, 1);
     if (o.katilimIlcesi !== undefined) dize(o.katilimIlcesi, `${y}.katilimIlcesi`);
+    if (o.meclis !== undefined) {
+      const my = `${y}.meclis`;
+      const r = nesne(o.meclis, my);
+      alanlar(r, my, ["ilce", "kayitZamani", "etkinGunler"]);
+      for (const k of Object.keys(r)) if (k !== "ilce" && k !== "kayitZamani" && k !== "etkinGunler") hata(`${my}.${k}`, "bilinmeyen meclis alani");
+      const ilce = dize(r.ilce, `${my}.ilce`);
+      if (!(m.ilceler as Nesne[]).some((c) => c.id === ilce)) hata(`${my}.ilce`, "kayitli olmayan meclis ilcesi");
+      const kayit = tamsayi(r.kayitZamani, `${my}.kayitZamani`, 0, zaman);
+      const gunler = dizi(r.etkinGunler, `${my}.etkinGunler`);
+      if (gunler.length < 1 || gunler.length > 7) hata(`${my}.etkinGunler`, "etkinlik kaydi bir ila yedi gun icermeli");
+      let son = -1;
+      for (const [i, gv] of gunler.entries()) {
+        const g = tamsayi(gv, `${my}.etkinGunler[${i}]`, Math.floor(kayit / GUN), Math.floor(zaman / GUN));
+        if (g <= son) hata(`${my}.etkinGunler[${i}]`, "gunler artan ve essiz olmali");
+        son = g;
+      }
+      if (son - (gunler[0] as number) > 6) hata(`${my}.etkinGunler`, "yazilmis gunler yedi gunluk pencereye sigmali");
+      // Zaman ilerledikçe günler stale kalabilir: okuma/yükleme yazmadığından bugun-6 alt sınırı uygulanmaz.
+    }
     // Perakende (G7-2; sartname §11.1): isteğe bağlı, yalnız kullanılınca yazılır.
     if (!MULKSUZ_PAKET && o.dukkanGeliri !== undefined) sayacDogrula(o.dukkanGeliri, `${y}.dukkanGeliri`);
     if (!MULKSUZ_PAKET && o.ilkSatisT !== undefined) tamsayi(o.ilkSatisT, `${y}.ilkSatisT`, 0);
@@ -1073,6 +1092,7 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     }
     // Marka sınırları (G7-3; sartname §11.1-11.2): perakende tanımlıyken sayı <= `marka.hesapBasinaEnFazla`, simge < `simgeSayisi`, renk < `renkSayisi`; perakende yokken marka olamaz.
     d.mulk.oyuncular.forEach((o, i) => {
+      if (o.meclis !== undefined && !mk.ilceler.has(o.meclis.ilce)) hata(`$.mulk.oyuncular[${i}].meclis.ilce`, "icerikte olmayan meclis ilcesi");
       if (MULKSUZ_PAKET || o.markalar === undefined) return;
       const y = `$.mulk.oyuncular[${i}].markalar`;
       const pk = mk.perakende;

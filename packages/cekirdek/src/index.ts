@@ -179,3 +179,5 @@ export { kuyrukSuz } from "./kuyruk";
 export { eskimisEsikleriBuda } from "./stok";
 
 export { kamuSiparisGorunumu, kamuTeslimGorunumu } from "./mulk/kamuSiparis";
+
+export { meclisGorunumu } from "./mulk/meclis";

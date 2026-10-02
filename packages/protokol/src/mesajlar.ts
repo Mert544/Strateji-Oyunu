@@ -413,6 +413,13 @@ const oyuncuKaresiSemasi = z.object({
   id: z.string(),
   pve: pveOyuncuSemasi.optional(),
   kamuTeslim: z.array(kamuTeslimSemasi).optional(),
+  // Oyuncunun kendi meclis katılımı; genel ilçede etkinlik veya üyelik listesi yayımlanmaz.
+  meclis: z.array(z.object({
+    ilce: z.string(), kayitliIlce: z.string().optional(), kayitZamani: tam.optional(),
+    etkinGunSayisi: tam.min(0).max(7), gerekliGun: z.literal(3), pencereGun: z.literal(7),
+    kayitliIlcedeArsa: z.boolean(), buIlcedeArsa: z.boolean(),
+    katilimKosulu: z.boolean(), kayitUygun: z.boolean(), engel: z.string().optional(),
+  })).optional(),
   hazine: stokFormuluSemasi,
   vergiPpm: tam,
   askeriRezervPpm: tam,

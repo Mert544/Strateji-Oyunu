@@ -24,6 +24,7 @@ import { odulVer } from "./odul";
 import { hibeKaydet } from "./paraSayac";
 import { kamuSahibiMi, mulkKomutu, mulkOyuncuAl, mulkOyuncuBul } from "./mulk";
 import { kamuSiparisKuraliUyarla, kamuSiparisSaatlik, kamuTeslim } from "./mulk/kamuSiparis";
+import { meclisGunKaydet, meclisKatil } from "./mulk/meclis";
 import { markaSifirla } from "./mulk/dukkanKomut";
 import { MULKSUZ_PAKET } from "./mulksuz";
 import { yurtPlanla, yurtUygula } from "./mulk/yurt";
@@ -214,6 +215,7 @@ export class Simulasyon {
     if (d.mulk !== undefined && k.oyuncu !== SISTEM_OYUNCUSU) {
       const mo = mulkOyuncuBul(d, k.oyuncu);
       if (mo !== undefined) mo.sonEtkinlik = k.t;
+      if (!MULKSUZ_PAKET) meclisGunKaydet(d, k.oyuncu);
     }
     ctx.kirlet(d, tasimaEtkin(d, this.ic));
     return sonuc;
@@ -224,6 +226,8 @@ export class Simulasyon {
     const d = this.dunya;
     const ctx = this.baglam;
     switch (komut.tur) {
+      case "meclis_katil":
+        return MULKSUZ_PAKET ? hata("Meclis katılımı yalnız mülk dünyasında kullanılabilir.") : meclisKatil(d, ctx.ic, oyuncu, komut);
       case "kamu_teslim":
         return MULKSUZ_PAKET ? hata("Kamu siparişleri kapalı.") : kamuTeslim(d, ctx, oyuncu, komut);
       case "tesis_insa":

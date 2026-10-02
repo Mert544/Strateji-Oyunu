@@ -32,14 +32,15 @@
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, kamuSiparisGorunumu, kamuTeslimGorunumu, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
-import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, IlceKamuSiparisGorunumu, KamuGrubu, KamuTeslimGorunumu, IlceSeviyesi, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok, YakitTedariki } from "@bolge/cekirdek";
+import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, kamuSiparisGorunumu, kamuTeslimGorunumu, meclisGorunumu, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
+import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, IlceKamuSiparisGorunumu, KamuGrubu, KamuTeslimGorunumu, IlceSeviyesi, MeclisGorunumu, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok, YakitTedariki } from "@bolge/cekirdek";
 
 /** Güvenli çekirdek projeksiyonu: planlı baskınlar ve yabancı özel sonuçlar içermez. Yokluğu eski sunucu/kural bilinmezliğidir. */
 export type PveIlceKaresi = EskiyaIlceGorunumu;
 export type PveOyuncuKaresi = EskiyaOyuncuGorunumu;
 export type KamuSiparisleriKaresi = IlceKamuSiparisGorunumu;
 export type KamuTeslimKaresi = KamuTeslimGorunumu;
+export type MeclisKaresi = MeclisGorunumu;
 
 /** Kamu ilanına yalnız genel alanlar alınır; defter, üretici ve özel depo kayıtları tel nesnesine taşınmaz. */
 function kamuSiparisTelKaresi(g: KamuSiparisleriKaresi): KamuSiparisleriKaresi {
@@ -403,6 +404,8 @@ export type ErkenOyunFormulu = [katilma: Ms, baslangicPpm: number, sabitMs: Ms, 
 export interface OyuncuKaresi {
   /** Yalnız bu oyuncunun ilgi alanındaki kamu ilanları için kendi il deposundan teslim uygunluğu. [] bilinen kaynak yokluğudur. */
   kamuTeslim?: KamuTeslimKaresi[];
+  /** Yalnız oyuncunun ilgi alanındaki ilçelerde kendi meclis katılımı ve gerçek etkinlik koşulu; oy/seçim yetkisi değildir. */
+  meclis?: MeclisKaresi[];
   id: OyuncuId;
   /** Yalnız kendisinin duyuru ilgisi, gerçekleşmiş sonuçları ve revir hakları; kapalı bayrak geçmiş hakları silmez. */
   pve?: PveOyuncuKaresi;
@@ -892,6 +895,22 @@ export function ilgiKaresiCikar(
       .filter((c) => istenen.has(c.id))
       .map((c) => {
         const girdi: IlceKaresi = { id: c.id, il: c.il, seviye: c.seviye, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, hucreler: hucreler.get(c.id) ?? [] };
+        if (oyuncu !== null && kare.oyuncu !== undefined) {
+          const meclis = meclisGorunumu(d, kaynak.ic, oyuncu, c.id);
+          if (meclis !== undefined && meclis.ilce === c.id) (kare.oyuncu.meclis ??= []).push({
+            ilce: meclis.ilce,
+            etkinGunSayisi: meclis.etkinGunSayisi,
+            gerekliGun: meclis.gerekliGun,
+            pencereGun: meclis.pencereGun,
+            kayitliIlcedeArsa: meclis.kayitliIlcedeArsa,
+            buIlcedeArsa: meclis.buIlcedeArsa,
+            katilimKosulu: meclis.katilimKosulu,
+            kayitUygun: meclis.kayitUygun,
+            ...(meclis.kayitliIlce === undefined ? {} : { kayitliIlce: meclis.kayitliIlce }),
+            ...(meclis.kayitZamani === undefined ? {} : { kayitZamani: meclis.kayitZamani }),
+            ...(meclis.engel === undefined ? {} : { engel: meclis.engel }),
+          });
+        }
         const pve = eskiyaIlceGorunumu(d, kaynak.ic, c.id);
         if (pve !== undefined) girdi.pve = { etkin: pve.etkin, olaylar: pveTelOlaylari(pve.olaylar, d.zaman).filter((x) => x.ilce === c.id) };
         const kamuSiparis = kamuSiparisGorunumu(d, kaynak.ic, c.id);

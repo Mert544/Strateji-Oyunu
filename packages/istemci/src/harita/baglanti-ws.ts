@@ -46,6 +46,16 @@ const KAMU_TESLIM_RET_MESAJLARI = new Set([
   "Sipariş ödeneği yetersiz.",
 ]);
 
+const MECLIS_KATILIM_RET_MESAJLARI = new Set([
+  "Meclis katılımı yalnız mülk dünyasında kullanılabilir.",
+  "İlçe bulunamadı.",
+  "Oyuncunun mülk kaydı bulunamadı.",
+  "Önceki ilçe kaydı geçersiz.",
+  "Meclis kaydınız değişmiş; güncel kaydı yenileyin.",
+  "Bu ilçe meclisine zaten kayıtlısınız.",
+  "Katılmak için bu ilçede size ait en az bir arsa gerekiyor.",
+]);
+
 /** Ücret çekirdekten gelir; bütün kendi kaynaklarının aynı çözümüne ait bedeller yalnız toplanır. */
 function tasimaGideriToplami(bolgeler: readonly IlgiKaresi["bolgeler"][number][]): number | undefined {
   const sonCozum = bolgeler[0]?.ozel?.lojistik?.sonCozum;
@@ -367,6 +377,17 @@ export class WsBaglanti implements MulkBaglantisi {
       const mesaj = KAMU_TESLIM_RET_MESAJLARI.has(r.hata) ? r.hata
         : "Kamuya teslim uygulanamadı. Güncel sipariş ve deponu kontrol edip yeniden deneyebilirsin.";
       return { tamam: false, hata: "sunucu", mesaj };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
+  /** Tek siyasi ilçe kaydı; eski önceki-ilçe verisiyle gelen istek sunucuda reddedilir. */
+  async meclisKatil(komut: Extract<Komut, { tur: "meclis_katil" }>): Promise<TesisSonucu> {
+    try {
+      const r = await this.komutGonder(komut);
+      if (r.tamam) return { tamam: true, t: r.t };
+      return { tamam: false, hata: "sunucu", mesaj: MECLIS_KATILIM_RET_MESAJLARI.has(r.hata) ? r.hata : "Meclis kaydı uygulanamadı. Güncel kayıt ve bu ilçedeki arsanı kontrol edip yeniden deneyebilirsin." };
     } catch (e) {
       return this.agHatasi(e);
     }
