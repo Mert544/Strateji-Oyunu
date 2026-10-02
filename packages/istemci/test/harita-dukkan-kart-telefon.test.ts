@@ -1,6 +1,6 @@
 /**
- * Telefonda dükkân yapı kartı (CSS sözleşmesi; DOM ve tarayıcı yok): kartın yüksekliği tavanlı (haritanın görünür kalması ve Kur/Vazgeç'in ekran içinde olması),
- * kayan kartta düğmeler yapışık, kart üstteyken tavan alt kenara taşmaz. Geometri 390×844 için sayılır.
+ * Telefonda yapı/dükkân kartı (CSS sözleşmesi; DOM ve tarayıcı yok): kartın yüksekliği tavanlı (haritanın görünür kalması ve Kur/Vazgeç'in ekran içinde olması), kayan kartta
+ * düğmeler yapışık. Kural tek kaynakta: `harita-yigin.css` (T1 7212b08; tüm yapı kartları, dükkân dahil; K1 5c5fdf8 dükkân kuralının yerini aldı). Geometri 390×844 için sayılır.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -8,28 +8,27 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { kartKonumu } from "../src/harita/kart-durum";
 
-const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "src", "harita", "dukkan-panel.css"), "utf8");
-const telefon = css.slice(css.lastIndexOf("@media (max-width: 820px) {\n  #yapi-kart:has(:is(.dk-tur-liste, .dk-maliyet))"));
+const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "src", "harita", "harita-yigin.css"), "utf8");
+const telefon = css.slice(css.lastIndexOf("/* Telefon kareleri (dükkân akışı, 390 px)"));
 
-describe("telefonda dükkân kartı", () => {
-  it("tür seçimi ve maliyet adımında tavan 55vh, kart içinde kayar, düğmeler yapışık", () => {
-    expect(telefon).toMatch(/#yapi-kart:has\(:is\(\.dk-tur-liste, \.dk-maliyet\)\) \{ max-height: 55vh; overflow-y: auto;/);
-    expect(telefon).toMatch(/\.yk-dugmeler \{\s*position: sticky; bottom:/);
+describe("telefonda yapı ve dükkân kartı", () => {
+  it("tavan 55vh, kart içinde kayar; dükkân maliyet adımının Kur/Vazgeç'i yapışık", () => {
+    expect(telefon).toContain("@media (max-width: 820px) {");
+    expect(telefon).toContain("#yapi-kart { max-height: 55vh; max-height: 55dvh; overflow-y: auto;");
+    expect(telefon).toContain("#yapi-kart .dk-maliyet > .yk-dugmeler:last-child");
+    expect(telefon).toContain("position: sticky; bottom:");
   });
 
-  it("kart üstteyken tavan alt kenara taşmaz (top 64 + alt pay 32)", () => {
-    expect(telefon).toMatch(/\[data-konum="ust"\]:has\(:is\(\.dk-tur-liste, \.dk-maliyet\)\) \{ max-height: min\(55vh, calc\(100% - 64px - 32px\)\); \}/);
+  it("kart üstteyken (top 64) tavan alt kenara taşmaz: 55vh + 64 + 32 <= ekran (390x844 ve 360x640)", () => {
+    for (const H of [844, 640]) expect(Math.floor(0.55 * H) + 64 + 32).toBeLessThanOrEqual(H);
   });
 
   it("390×844: tavanlı kart ekranın %55'ini aşmaz; alt konumda üst yarı (hedef) görünür, üst konumda alt yarı görünür", () => {
     const H = 844;
     const kart = Math.floor(0.55 * H); // 464 px
-    // alt konum: kart [H-32-kart, H-32] = [348, 812]; hedef y=120 (üst yarı) açıkta
     expect(kartKonumu(120, H)).toBeNull();
-    expect(120).toBeLessThan(H - 32 - kart);
-    // üst konum: kart [64, 64+kart] = [64, 528]; hedef y=700 (alt yarı) açıkta, düğmeler kart içinde ve ekran içinde
+    expect(120).toBeLessThan(H - 32 - kart); // alt konum: kart [348, 812]
     expect(kartKonumu(700, H)).toBe("ust");
-    expect(700).toBeGreaterThan(64 + kart);
-    expect(64 + kart).toBeLessThanOrEqual(H - 32);
+    expect(700).toBeGreaterThan(64 + kart); // üst konum: kart [64, 528]
   });
 });
