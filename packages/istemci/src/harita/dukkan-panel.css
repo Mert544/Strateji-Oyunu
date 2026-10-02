@@ -178,8 +178,8 @@
 .dk-tur-liste { margin-bottom: var(--s-2); }
 .dk-maliyet > .yk-baslik { margin-top: var(--s-3); }
 .dk-maliyet .yk-satirlar + .dk-not { margin-top: var(--s-2); }
-.dk-maliyet .yk-satirlar > dt:nth-last-child(4) { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; align-self: end; color: var(--murekkep-2); }
-.dk-maliyet .yk-satirlar > dd:nth-last-child(3) { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; font-size: var(--yazi-xl); font-weight: 600; }
+.dk-maliyet .yk-satirlar > dt:nth-last-child(4) { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; align-self: stretch; line-height: 24px; color: var(--murekkep-2); }
+.dk-maliyet .yk-satirlar > dd:nth-last-child(3) { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; font-size: var(--yazi-xl); font-weight: 600; line-height: 24px; }
 /* D3: maliyet adımında kart (tür kartları + satırlar) 811 px'e çıkıp üstteki bildirimin altına giriyor ve kapat düğmesini örtüyordu (900 px yükseklik).
    Masaüstünde kartın tavanı: alt boşluk 36 px + üstte bildirim şeridi payı 148 px; taşarsa kart içinde kayar, Kur/Vazgeç altta yapışık (yr-alt-satir ile aynı yöntem) */
 @media (min-width: 821px) {

@@ -137,7 +137,7 @@
 .yk-baslik b { font-size: var(--yazi-lg); font-weight: 600; display: block; letter-spacing: -0.005em; }
 .yk-baslik small { color: var(--murekkep-3); font-size: var(--yazi-xs); }
 .yk-satirlar small { color: var(--murekkep-3); font-size: var(--yazi-xs); }
-.yk-satirlar .yk-toplam { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; align-self: end; }
+.yk-satirlar .yk-toplam { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; align-self: stretch; line-height: 24px; }
 .yk-satirlar dd.yk-toplam b { font-size: var(--yazi-xl); font-weight: 600; }
 .yk-ipucu { margin: var(--s-1) 0 0; color: var(--murekkep-2); font-size: var(--yazi-sm); }
 .yk-uyari { display: flex; align-items: center; gap: 6px; margin: var(--s-2) 0 0; color: var(--uyari-ink); background: var(--uyari-tint); border: 0; border-radius: var(--r-md); padding: 6px var(--s-3); font-size: var(--yazi-sm); }
@@ -232,7 +232,7 @@ body.yerles-acik #harita-gezgin { visibility: hidden; }
   .yr-birincil { flex: 1 1 100%; margin-left: 0; order: -1; }
   .yr-ikincil { flex: 1; }
   /* Telefonda "Burada başla" kaydırmadan erişilsin */
-  .yr-alt-satir { position: sticky; bottom: -16px; background: var(--yuzey); padding: var(--s-3) 0 var(--s-1); margin-top: var(--s-3); }
+  .yr-alt-satir { position: sticky; bottom: -16px; background: var(--yuzey); padding: var(--s-3) 0 max(var(--s-3), env(safe-area-inset-bottom)); margin-top: var(--s-3); }
 }
 
 /* Sunucu yetişirken sakin bilgi şeridi (uyarı değil: komutlar bekler, sonra gider) */
@@ -381,3 +381,13 @@ body.donus-acik #harita-gezgin { visibility: hidden; }
 
 /* Giriş, ilçe kartı doluluk çubuğu: iz zemini (yuzey-3) seçili kartın tint zemininde görünmüyordu (~1,1:1); çerçeveli iz */
 .yr-cubuk { height: 6px; background: var(--yuzey); box-shadow: inset 0 0 0 1px var(--cizgi-guclu); }
+
+/* Telefon kareleri (dükkân akışı, 390 px): yapı/dükkân kartı ekranı dolduruyor, üstü taşıp başlık ve kapat düğmesi görünmüyordu (kart ~800 px / 844 px).
+   Tavan %55 (kart içinde kayar), Kur/Vazgeç altta yapışık (yalnız son .yk-dugmeler; ölçek hedef seçici üstte kalır). Harita ilk yarıda açık: hücre seçilebilir. */
+@media (max-width: 820px) {
+  #yapi-kart { max-height: 55vh; max-height: 55dvh; overflow-y: auto; overscroll-behavior: contain; }
+  #yapi-kart > .yk-dugmeler:last-child, #yapi-kart .dk-maliyet > .yk-dugmeler:last-child {
+    position: sticky; bottom: calc(-1 * var(--s-4)); z-index: 1; margin: var(--s-2) 0 calc(-1 * var(--s-4)); padding: var(--s-2) 0 var(--s-4);
+    background: var(--yuzey); box-shadow: 0 -1px 0 var(--cizgi-ince);
+  }
+}

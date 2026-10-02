@@ -442,6 +442,8 @@ body.oyuncu-kipi .marka { display: none; }
   .oyuncu-dugme .ocad { display: none; }
   #ust .marka { display: none; }
   #ust .kart-zaman { flex: 1; min-width: 0; justify-content: space-between; gap: 6px; }
+  /* Boşluk öğesi de flex:1: boş yeri zamanla yarı yarıya bölüyor, tarih/hasat çipi ~65 px'e daralıp "%90" çip dışına taşıyordu (390 px); telefonda kalkar, çip tüm boşluğu alır */
+  #ust .bosluk { display: none; }
   #ust .kart-sag { gap: 0; }
   #dunya-dugme, #kuzey { display: none; }
 }
