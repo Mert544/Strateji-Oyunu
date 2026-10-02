@@ -99,4 +99,39 @@ describe("kartYerlesimi (kartın ölçülen yüksekliği)", () => {
       expect(y - 36.5 < son && y + 36.5 > bas, `hedef ${y}`).toBe(false);
     }
   });
+
+  // T3 kart-ortme-kapsam.md: kart x cihaz tablosu (hücre ~84 px kare ölçüsü; yarısı 42). Her satır: H, ustPx, altPx, kart yüksekliği.
+  const T3: Array<[string, number, number, number, number]> = [
+    ["Çiftlik 2 yöntem masaüstü (~400)", 900, 72, 36, 400],
+    ["Ahır 3 yöntem masaüstü (~430)", 900, 72, 36, 430],
+    ["Parça fabrikası 4 yöntem masaüstü (~510)", 900, 72, 36, 510],
+    ["masaüstü tavanı (540)", 900, 72, 36, 540],
+    ["Dükkân D3 masaüstü (716)", 900, 72, 36, 716],
+    ["Dükkân D3 masaüstü ölçülü (727)", 900, 72, 36, 727],
+    ["telefon 390x844 tavan (464)", 844, 64, 32, 464],
+    ["telefon 390x844 yöntem kartı (500, tavan öncesi doğal)", 844, 64, 32, 500],
+    ["telefon 360x640 tavan (352)", 640, 64, 32, 352],
+    ["telefon 360x640 doğal 464", 640, 64, 32, 464],
+  ];
+  it.each(T3)("T3 tablosu: %s: hedef ekran boyunca (hücre 84 px) kart örtmez ya da yeterli açık alanda sınırlanır", (_ad, kap, ustPx, altPx, h) => {
+    for (let y = 60; y <= kap - 60; y += 4) {
+      const o = olcu(h, { kapYukseklik: kap, ustPx, altPx, hedefYari: 42 });
+      const r = kartYerlesimi(y, o);
+      const [bas, son] = kartAraligi(r, o);
+      const orter = y - 42 < son && y + 42 > bas;
+      // Alan 140 px'in altına inen uç bölgeler (hedef ekran kenarında; açık taraf zaten karşıda) için en az 140 kuralı geçerlidir: yalnız o durumda örtmeye izin
+      const sinirAlti = r.enYuksek === 140;
+      expect(orter && !sinirAlti, `${_ad}: hedef ${y} → ${JSON.stringify(r)}`).toBe(false);
+    }
+  });
+
+  it("T3: %44 ölü bandı (iki konumda da örten h): ortadaki hedefte kart sınırlanır, sınırsız kalmaz", () => {
+    for (const [kap, ustPx, altPx] of [[900, 72, 36], [844, 64, 32]] as const) {
+      const h = Math.ceil(0.46 * kap); // eşiğin üstü: 414 / 389
+      const r = kartYerlesimi(kap / 2, olcu(h, { kapYukseklik: kap, ustPx, altPx, hedefYari: 42 }));
+      expect(r.enYuksek, `H ${kap}`).not.toBeNull();
+      expect(r.enYuksek!).toBeLessThan(h);
+    }
+  });
 });
+

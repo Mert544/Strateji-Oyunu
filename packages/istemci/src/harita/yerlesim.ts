@@ -561,12 +561,14 @@ export class YerlesimKipi {
     delete this.kart.dataset["konum"];
     this.kart.style.maxHeight = "";
     this.kart.style.overflowY = "";
+    delete this.kart.dataset["sinirli"];
     const telefon = window.matchMedia("(max-width: 820px)").matches;
     const r = kartYerlesimi(y, { kartYukseklik: this.kart.hidden ? 0 : this.kart.offsetHeight, kapYukseklik: kap, ustPx: telefon ? 64 : 72, altPx: telefon ? 32 : 36, hedefYari: yari });
     if (r.konum) this.kart.dataset["konum"] = r.konum;
     if (r.enYuksek !== null) {
       this.kart.style.maxHeight = `${r.enYuksek}px`;
       this.kart.style.overflowY = "auto";
+      this.kart.dataset["sinirli"] = "1"; // CSS: Kur/Vazgeç satırı yapışık
     }
   }
 

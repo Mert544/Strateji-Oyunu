@@ -32,3 +32,21 @@ describe("telefonda yapı ve dükkân kartı", () => {
     expect(700).toBeGreaterThan(64 + kart); // üst konum: kart [64, 528]
   });
 });
+
+describe("sınırlanan kart (ekran genişliğinden bağımsız)", () => {
+  const sinirli = css.slice(css.lastIndexOf("/* Sınırlanan kart"));
+  const yerlesim = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "src", "harita", "yerlesim.ts"), "utf8");
+
+  it("sınırlı kartta eylem satırı (Kur/Vazgeç) yapışık: medya sorgusuz kural, hem standart hem dükkân maliyet adımı", () => {
+    expect(sinirli).toContain('#yapi-kart[data-sinirli] > .yk-dugmeler:last-child');
+    expect(sinirli).toContain('#yapi-kart[data-sinirli] .dk-maliyet > .yk-dugmeler:last-child');
+    expect(sinirli).toContain("position: sticky; bottom:");
+    expect(sinirli).not.toContain("@media");
+  });
+
+  it("yerlesim.ts kartı sınırlarken data-sinirli koyar, sınır kalkınca siler", () => {
+    expect(yerlesim).toContain('this.kart.dataset["sinirli"] = "1"');
+    expect(yerlesim).toContain('delete this.kart.dataset["sinirli"]');
+  });
+});
+
