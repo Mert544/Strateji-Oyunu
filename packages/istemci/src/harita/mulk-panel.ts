@@ -105,6 +105,61 @@ export function gecenSureMetni(ms: number): string {
   return sa < 24 ? `yaklaşık ${sa} sa` : `yaklaşık ${Math.round(sa / 24)} gün`;
 }
 
+/** Biten inşaat kaydı (oturum içinde izlenir): tür, ilçe, bitiş (sim ms), büyütme mi. */
+export interface BitenInsaatKaydi {
+  tur: string;
+  ilce?: string;
+  bitis: number;
+  yukseltme?: boolean;
+}
+
+/**
+ * "Biten inşaat" cümlesi: Dikkat maddesinin başlığı VE inşa bitişi bildirimi aynı kaynaktan (`dikkat.insaat_bitti` "Gebze: Çiftlik hazır."; dükkânda `dukkan.D4.hazir` "Gebze: Dükkânın hazır.").
+ * Ton bilgi verici: kutlama ya da ödül sözü yok.
+ */
+export function insaatBittiMetni(b: Pick<BitenInsaatKaydi, "tur" | "ilce" | "yukseltme">, ad: Pick<MulkAdlari, "yapi" | "ilce">): string {
+  if (b.tur === "dukkan" && !b.yukseltme) return `${b.ilce ? `${ad.ilce(b.ilce)}: ` : ""}${dukkanMetni("dukkan.D4.hazir")}`;
+  const yapiAd = `${ad.yapi(b.tur)}${b.yukseltme ? " büyütmesi" : ""}`;
+  return b.ilce ? mulkMetni("dikkat.insaat_bitti", { ilce: ad.ilce(b.ilce), ad: yapiAd }) : `${yapiAd} hazır.`;
+}
+
+/** İnşaatın listeden düşerken bitmiş sayılması için izin verilen saat payı (ms): sunucu dönüşümü ve istemci saat tahmini küçük sapar; iptal (bitişe çok var) bitmiş sayılmaz. */
+const BITIS_PAYI_MS = 2 * 60_000;
+
+/** İnşaat izleme durumu (oturum): devam edenler, biten (Dikkat) kayıtları ve bitiş bildirimi yapılmış kimlikler. */
+export interface InsaatIzleme {
+  insaatlar: Map<string, BitenInsaatKaydi>;
+  bitenler: Map<string, BitenInsaatKaydi>;
+  duyurulan: Set<string>;
+}
+
+/**
+ * Oturum içi inşaat geçişi (saf; bir okuma turu): devam eden inşaatlar kaydedilir, listeden düşenlerden bitişi geçmiş olanlar `bitenler`e (Dikkat, bir saat payla) girer. Dönen liste
+ * inşa bitişi bildirimi (toast) içindir: yalnız bu oturumda "devam eden" görülüp biten (bitişi geçmiş ya da kısa payla geçmek üzere; iptal edilen dönmez) ve daha önce duyurulmamış
+ * yapılar, bitişe göre sıralı. Açılışta zaten bitmiş olanlar hiç "devam eden" görülmediği için dönmez: sayfa yenilenince toast tekrarlanmaz (Dikkat maddesi yerinde kalır).
+ */
+export function insaatlariIzle(izleme: InsaatIzleme, yapilar: readonly IsletmeYapisi[], t: number): Array<[string, BitenInsaatKaydi]> {
+  const simdi = new Set<string>();
+  for (const y of yapilar) {
+    const id = y.anahtar.slice(1);
+    if (y.durum === "insaat") {
+      simdi.add(id);
+      izleme.insaatlar.set(id, { tur: y.tur, ...(y.ilce ? { ilce: y.ilce } : {}), bitis: y.bitis ?? t, ...(y.yukseltme ? { yukseltme: true } : {}) });
+    } else if (y.bitis !== undefined && !izleme.bitenler.has(id) && t - y.bitis <= BITTI_SAAT * SAAT) izleme.bitenler.set(id, { tur: y.tur, ...(y.ilce ? { ilce: y.ilce } : {}), bitis: y.bitis });
+  }
+  const duyurulacak: Array<[string, BitenInsaatKaydi]> = [];
+  for (const [id, x] of izleme.insaatlar) {
+    if (simdi.has(id)) continue;
+    izleme.insaatlar.delete(id);
+    if (x.bitis <= t + SAAT) izleme.bitenler.set(id, { ...x, bitis: Math.min(x.bitis, t) });
+    if (x.bitis <= t + BITIS_PAYI_MS && !izleme.duyurulan.has(id)) {
+      izleme.duyurulan.add(id);
+      duyurulacak.push([id, x]);
+    }
+  }
+  return duyurulacak.sort((p, q) => p[1].bitis - q[1].bitis);
+}
+
 /** Dikkat maddeleri (saf): yalnız oyuncunun kendi yapılarından. `bitenler`: bu oturumda biten inşaatlar (anahtar → bitiş). */
 export function mulkDikkatMaddeleri(
   d: IsletmeDurumu,
@@ -125,15 +180,13 @@ export function mulkDikkatMaddeleri(
   }
   for (const [, b] of bitenler) {
     if (t - b.bitis > BITTI_SAAT * SAAT || t < b.bitis) continue;
-    const yer = b.ilce ? `${ad.ilce(b.ilce)}: ` : "";
     // Biten dükkân inşaatı: "Dükkânın hazır." ve raf düzenlemeye giden "Rafa git" (A1 bulgusu: metinler kodda kullanılmıyordu)
     const hazirDukkan = b.tur === "dukkan" && !b.yukseltme ? (ad.dukkanRafa?.(b.ilce) ?? null) : null;
     if (b.tur === "dukkan" && !b.yukseltme) {
-      l.push({ tur: "bitti", baslik: `${yer}${dukkanMetni("dukkan.D4.hazir")}`, ayrinti: t - b.bitis >= SAAT ? `${gecenSureMetni(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis, ...(hazirDukkan !== null ? { rafaGit: { dukkan: hazirDukkan, etiket: dukkanMetni("dukkan.D4.dugme_rafa_git") } } : {}) });
+      l.push({ tur: "bitti", baslik: insaatBittiMetni(b, ad), ayrinti: t - b.bitis >= SAAT ? `${gecenSureMetni(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis, ...(hazirDukkan !== null ? { rafaGit: { dukkan: hazirDukkan, etiket: dukkanMetni("dukkan.D4.dugme_rafa_git") } } : {}) });
       continue;
     }
-    const yapiAd = `${ad.yapi(b.tur)}${b.yukseltme ? " büyütmesi" : ""}`;
-    l.push({ tur: "bitti", baslik: b.ilce ? mulkMetni("dikkat.insaat_bitti", { ilce: ad.ilce(b.ilce), ad: yapiAd }) : `${yapiAd} hazır.`, ayrinti: t - b.bitis >= SAAT ? `${gecenSureMetni(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis });
+    l.push({ tur: "bitti", baslik: insaatBittiMetni(b, ad), ayrinti: t - b.bitis >= SAAT ? `${gecenSureMetni(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis });
   }
   l.push(...dukkan);
   return l.sort((a, b) => TUR_SIRA[a.tur] - TUR_SIRA[b.tur] || a.sira - b.sira);
@@ -356,8 +409,8 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     ...(b.olcekYukselt ? { buyut: (y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]) => olcekBuyutulebilir(ic, y, tumu) } : {}),
   };
   // Biten inşaatlar: bir inşaat listeden düşünce (ya da bitişi geçince) bu oturumda hatırlanır
-  const insaatlar = new Map<string, { tur: string; ilce?: string; bitis: number; yukseltme?: boolean }>();
-  const bitenler = new Map<string, { tur: string; ilce?: string; bitis: number; yukseltme?: boolean }>();
+  const izleme: InsaatIzleme = { insaatlar: new Map(), bitenler: new Map(), duyurulan: new Set() };
+  const bitenler = izleme.bitenler;
   let son: IsletmeDurumu | null = null;
   // Esnaf Defteri: açılışta, yirmi saniyede bir ve yapı/hücre değişince okunur; yeni kazanılan için sakin bildirim
   let defter: Defter | null = null;
@@ -568,19 +621,8 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   const oku = (): IsletmeDurumu | null => {
     const d = b.isletme?.() ?? null;
     if (!d) return son;
-    const simdi = new Set<string>();
-    for (const y of d.yapilar) {
-      const id = y.anahtar.slice(1);
-      if (y.durum === "insaat") {
-        simdi.add(id);
-        insaatlar.set(id, { tur: y.tur, ...(y.ilce ? { ilce: y.ilce } : {}), bitis: y.bitis ?? d.simZamani, ...(y.yukseltme ? { yukseltme: true } : {}) });
-      } else if (y.bitis !== undefined && !bitenler.has(id) && d.simZamani - y.bitis <= BITTI_SAAT * SAAT) bitenler.set(id, { tur: y.tur, ...(y.ilce ? { ilce: y.ilce } : {}), bitis: y.bitis });
-    }
-    for (const [id, x] of insaatlar)
-      if (!simdi.has(id)) {
-        insaatlar.delete(id);
-        if (x.bitis <= d.simZamani + SAAT) bitenler.set(id, { ...x, bitis: Math.min(x.bitis, d.simZamani) });
-      }
+    // Biten inşaat: nötr bilgi toast'ı (Dikkat maddesiyle aynı cümle; Defter bildirimi bunun ardından okunur, kuyruk tek tek gösterir)
+    for (const [, x] of insaatlariIzle(izleme, d.yapilar, d.simZamani)) bildir(insaatBittiMetni(x, ad), "bilgi");
     son = d;
     return d;
   };

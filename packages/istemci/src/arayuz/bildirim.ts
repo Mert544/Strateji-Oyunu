@@ -1,7 +1,7 @@
 /**
- * Kısa bildirimler (toast). Kural: toast YALNIZ oyuncunun kendi eyleminin sonucu içindir (komut sonucu, form
- * hatası). Başka her olay (savaş ilanı, biten inşaat, iklim uyarısı) "Bildirimler" gelen kutusuna düşer
- * (arayuz/gelen-kutusu.ts) ve açılır pencere olarak gösterilmez.
+ * Kısa bildirimler (toast). Kural: toast oyuncunun kendi eyleminin sonucu içindir (komut sonucu, form hatası); tek istisna kendi inşaatının bitişidir
+ * (nötr bilgi: "Gebze: Çiftlik hazır.", Dikkat maddesiyle aynı cümle; mulk-panel.ts `insaatBittiMetni`, bir yapı için bir kez). Başka her olay (savaş ilanı,
+ * iklim uyarısı) "Bildirimler" gelen kutusuna düşer (arayuz/gelen-kutusu.ts) ve açılır pencere olarak gösterilmez.
  *
  * Aynı anda DOM'da yalnız BİR bildirim vardır (masaüstünde de; A5); gerisi `BildirimKuyrugu`nda bekler, süreleri görünür olunca başlar,
  * hata öne geçer, Defter bildirimleri birleşir (bildirim-kuyrugu.ts). İşi süren işlemin ("… kuruluyor") bildirimi `bilgi` türündedir;

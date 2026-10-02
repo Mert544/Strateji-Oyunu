@@ -4,8 +4,8 @@
  */
 import { describe, expect, it } from "vitest";
 import type { IsletmeDurumu } from "../src/harita/baglanti";
-import { gecenSureMetni, isletmePaneli, korumaSatirlari, MULK_SEKMELERI, mulkDikkatMaddeleri, mulkDikkatPaneli, mulkHazinePaneli, mulkMalPaneli } from "../src/harita/mulk-panel";
-import type { MulkAdlari } from "../src/harita/mulk-panel";
+import { gecenSureMetni, insaatBittiMetni, insaatlariIzle, isletmePaneli, korumaSatirlari, MULK_SEKMELERI, mulkDikkatMaddeleri, mulkDikkatPaneli, mulkHazinePaneli, mulkMalPaneli } from "../src/harita/mulk-panel";
+import type { InsaatIzleme, MulkAdlari } from "../src/harita/mulk-panel";
 
 const SA = 3_600_000;
 const ad: MulkAdlari = {
@@ -162,3 +162,58 @@ describe("İşletmem dükkân yüzeyleri (G9 iskeleti)", () => {
     expect(mulkDikkatMaddeleri(durum(), ad, biten).find((m) => m.baslik.includes("Çiftlik hazır"))?.ayrinti).toBe("1 sa 36 dk önce");
   });
 });
+
+describe("inşa bitişi bildirimi (nötr toast; Dikkat ile aynı cümle)", () => {
+  const izleme = (): InsaatIzleme => ({ insaatlar: new Map(), bitenler: new Map(), duyurulan: new Set() });
+  const yap = (anahtar: string, durum: "insaat" | "tesis", ek: Record<string, unknown> = {}): IsletmeDurumu["yapilar"][number] =>
+    ({ anahtar, durum, tur: "ciftlik", ilce: "tr_41_gebze", ...ek }) as IsletmeDurumu["yapilar"][number];
+
+  it("cümle Dikkat maddesinin başlığıyla aynı kaynaktan: 'Gebze: Çiftlik hazır.'; dükkân 'Gebze: Dükkânın hazır.'; büyütme; ilçesiz", () => {
+    expect(insaatBittiMetni({ tur: "ciftlik", ilce: "tr_41_gebze" }, ad)).toBe("Gebze: Çiftlik hazır.");
+    expect(insaatBittiMetni({ tur: "dukkan", ilce: "tr_41_gebze" }, ad)).toBe("Gebze: Dükkânın hazır.");
+    expect(insaatBittiMetni({ tur: "ciftlik", ilce: "tr_41_gebze", yukseltme: true }, ad)).toBe("Gebze: Çiftlik büyütmesi hazır.");
+    expect(insaatBittiMetni({ tur: "ahir" }, ad)).toBe("Ahır hazır.");
+    // Dikkat maddesi aynı cümleyi taşır
+    const dk = mulkDikkatMaddeleri(durum({ yapilar: [] }), ad, new Map([["9", { tur: "ciftlik", ilce: "tr_41_gebze", bitis: 99 * SA }]]));
+    expect(dk.find((x) => x.tur === "bitti")?.baslik).toBe(insaatBittiMetni({ tur: "ciftlik", ilce: "tr_41_gebze" }, ad));
+    // ton bilgi verici: kutlama/ödül sözü yok
+    expect(insaatBittiMetni({ tur: "ciftlik", ilce: "tr_41_gebze" }, ad)).not.toMatch(/tebrik|harika|kutla|ödül|!/i);
+  });
+
+  it("devam eden inşaat bitip listeden düşünce BİR KEZ duyurulur; sonraki turlarda tekrar yok", () => {
+    const iz = izleme();
+    expect(insaatlariIzle(iz, [yap("i7", "insaat", { bitis: 103 * SA })], 101 * SA)).toEqual([]);
+    const biten = insaatlariIzle(iz, [yap("t3", "tesis", { bitis: 103 * SA })], 103 * SA + 5000);
+    expect(biten.map(([id]) => id)).toEqual(["7"]);
+    expect(biten[0]![1]).toMatchObject({ tur: "ciftlik", ilce: "tr_41_gebze" });
+    expect(insaatlariIzle(iz, [yap("t3", "tesis", { bitis: 103 * SA })], 104 * SA)).toEqual([]);
+    expect(insaatlariIzle(iz, [yap("t3", "tesis", { bitis: 103 * SA })], 110 * SA)).toEqual([]);
+    expect(iz.duyurulan.has("7")).toBe(true);
+  });
+
+  it("sayfa yenilenince (açılışta zaten bitmiş yapı; yeni izleme durumu) toast çıkmaz; Dikkat maddesi için biten kaydı yine tutulur", () => {
+    const iz = izleme();
+    expect(insaatlariIzle(iz, [yap("t3", "tesis", { bitis: 103 * SA })], 105 * SA)).toEqual([]);
+    expect(iz.bitenler.has("3")).toBe(true);
+  });
+
+  it("açılışta inşa sürüyorsa ve sonra biterse (yenilemeden sonra) bir kez duyurulur", () => {
+    const iz = izleme();
+    insaatlariIzle(iz, [yap("i8", "insaat", { bitis: 106 * SA })], 105 * SA);
+    expect(insaatlariIzle(iz, [], 106 * SA + 1000).map(([id]) => id)).toEqual(["8"]);
+  });
+
+  it("iptal edilen inşaat (bitişe çok var) duyurulmaz", () => {
+    const iz = izleme();
+    insaatlariIzle(iz, [yap("i9", "insaat", { bitis: 110 * SA })], 101 * SA);
+    expect(insaatlariIzle(iz, [], 102 * SA)).toEqual([]);
+    expect(iz.duyurulan.size).toBe(0);
+  });
+
+  it("birden çok yapı aynı turda: bitişe göre sıralı (önce erken biten)", () => {
+    const iz = izleme();
+    insaatlariIzle(iz, [yap("i1", "insaat", { bitis: 104 * SA }), yap("i2", "insaat", { bitis: 103 * SA, tur: "ahir" })], 101 * SA);
+    expect(insaatlariIzle(iz, [], 105 * SA).map(([id]) => id)).toEqual(["2", "1"]);
+  });
+});
+

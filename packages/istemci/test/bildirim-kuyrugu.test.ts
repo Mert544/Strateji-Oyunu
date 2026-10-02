@@ -185,3 +185,18 @@ describe("Defter birleştirme (2 sn pencere)", () => {
     expect(o.k.bekleyen).toBe(2);
   });
 });
+
+describe("inşa bitişi bildirimi ve Defter bildirimi sırası", () => {
+  it("önce 'hazır', sonra Defter: kuyruk tek tek gösterir (Defter bildirimi sonradan gelir, öne geçmez)", () => {
+    const o = ortam();
+    o.k.ekle(oge("Gebze: Çiftlik hazır.")); // mulk-panel oku(): inşa bitişi önce
+    o.k.ekle(oge("Defterine bir satır işlendi", "bilgi", defter(0))); // defterOku(): okuma sonrası
+    expect(o.k.gorunenMesaj).toBe("Gebze: Çiftlik hazır.");
+    expect(o.k.bekleyen).toBe(1);
+    o.ilerle(1500);
+    o.ilerle(220);
+    expect(o.k.gorunenMesaj).toBe("Defterine bir satır işlendi");
+    expect(o.gunluk.filter((g) => g.startsWith("+"))).toEqual(["+Gebze: Çiftlik hazır.", "+Defterine bir satır işlendi"]);
+  });
+});
+

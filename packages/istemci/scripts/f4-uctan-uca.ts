@@ -632,6 +632,19 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
 
   // Zaman ilerler: çiftlik (2 sa × %10 = 12 dk): +5 dk -> İskele; +12 dk -> Tamam
   const t0 = ts.yazar.sim.dunya.zaman;
+  // Bildirimler tek tek görünür: inşa bitişi ("…: Çiftlik hazır.") ve Defter sırası için görünen bildirim metinleri gözlenir (her yeni bildirim bir kez)
+  await sayfa.evaluate(() => {
+    const w = window as unknown as { __toastGunluk?: string[] };
+    w.__toastGunluk = [];
+    const gorulen = new WeakSet<Element>();
+    new MutationObserver(() => {
+      for (const el of document.querySelectorAll("#bildirimler .bildirim")) {
+        if (gorulen.has(el)) continue;
+        gorulen.add(el);
+        w.__toastGunluk?.push((el.textContent ?? "").replace(/\s+/g, " ").trim());
+      }
+    }).observe(document.getElementById("bildirimler")!, { childList: true, subtree: true });
+  });
   await ts.yonetici.zamanIlerlet(t0 + 5 * 60_000);
   // Elle saatte zaman yalnız değişiklikle gelir: istemci eşitlemeyi hemen ister (gerçek saatli sunucuda 20 sn'lik döngü yeter)
   await sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { zamanEsitle?: () => Promise<void> }).zamanEsitle?.());
@@ -665,6 +678,13 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.waitForFunction(() => /Defter/.test(document.getElementById("bildirimler")?.textContent ?? ""), null, { timeout: 25000 }).catch(() => undefined);
   const bildirimler = (await sayfa.locator("#bildirimler").textContent()) ?? "";
   kontrol(`${e} Defter: ilk yapı defterine işlendi (tarih ve çelik ödülü), sıradakilerden düştü; bildirim geldi`, /Defterine işlenenler/.test(defterM) && /İlk yapın kuruldu; kolay gelsin\. \d{1,2} (Ekim|Kasım) · 5 çelik/.test(defterM) && !/İlk yapını kur/.test(defterM) && /Defter: İlk yapın kuruldu|Defterine \d+ adım işlendi/.test(bildirimler), defterM.slice(defterM.indexOf("Defter"), defterM.indexOf("Defter") + 320));
+  {
+    const gunluk = (await sayfa.evaluate(() => (window as unknown as { __toastGunluk?: string[] }).__toastGunluk ?? [])) as string[];
+    const hazirI = gunluk.findIndex((x) => /: Çiftlik hazır\./.test(x));
+    const defterI = gunluk.findIndex((x) => /Defter/.test(x));
+    const hazirN = gunluk.filter((x) => /: Çiftlik hazır\./.test(x)).length;
+    kontrol(`${e} inşa bitişi: nötr toast "…: Çiftlik hazır." (Dikkat cümlesiyle aynı), yapı başına bir kez (en çok iki yapı), Defter bildiriminden ÖNCE`, hazirI >= 0 && hazirN >= 1 && hazirN <= 2 && (defterI < 0 || hazirI < defterI), JSON.stringify(gunluk));
+  }
   await ekran("13b-defter");
 
   kontrol(`${e}/[veli] veli de tamamlananı görüyor (delta)`, veli2.tesis === 2 && veli2.insaat === 0, JSON.stringify(veli2));
