@@ -168,7 +168,7 @@ export class DukkanPaneli {
     if (d.durum === "acik") {
       const ilceSayi = g.dukkanlar.filter((x) => x.ilce !== undefined && x.ilce === d.ilce).length;
       const toplam = g.dukkanlar.length > 1 ? g.dukkanlar.reduce((t, x) => t + (x.durum === "acik" ? x.gelirMiliSa : 0), 0) : null;
-      s += ozetHtml(d, toplam);
+      s += ozetHtml(d, toplam, false, this.oneriMal(d));
       s += rafHtml(d, { malAdi: this.g.malAdi, simdi, gonderiyor: this.gonderiyor, ...(this.yuva !== null ? { seciliYuva: this.yuva } : {}), kasaBirimSa: this.g.param.kasaBirimSa });
       const y = this.yuva !== null ? d.yuvalar[this.yuva] : undefined;
       if (y && y.mal !== null) {
@@ -189,6 +189,12 @@ export class DukkanPaneli {
     }
     if (this.hata) s += `<p class="dk-hata" role="alert">${esc(this.hata)}</p>`;
     return s + `</div>`;
+  }
+
+  /** Boş rafta öneri malı: türün malları içinde stoğu en çok olan (stok yoksa null); küçük harfli ad ("gıda"). */
+  oneriMal(d: DukkanKaydi): string | null {
+    const en = this.adaylar(d).filter((a) => a.stokMili > 0).sort((x, y) => y.stokMili - x.stokMili)[0];
+    return en ? this.g.malAdi(en.mal).toLocaleLowerCase("tr") : null;
   }
 
   /** Mal seçicisinin adayları: türün malları, başka yuvada olmayanlar. */

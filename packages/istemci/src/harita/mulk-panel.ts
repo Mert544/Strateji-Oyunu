@@ -650,7 +650,12 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       const pe = dukkanPaneli ? panelEylemiOku(t) : null;
       if (pe && dukkanPaneli) {
         if (pe.eylem === "dukkan-rafa") sekmeIstegi = "isletme"; // Dikkat'ten "Rafa git": dükkân ayrıntısı İşletmem'dedir
-        void dukkanPaneli.eylem(pe);
+        const rafaGit = pe.eylem === "dukkan-rafa";
+        const kok = t.ownerDocument;
+        void dukkanPaneli.eylem(pe).then(() => {
+          // Kartın "Rafa git" düğmesi: ayrıntı zaten açıksa yeniden çizim sonrası raf görünür alana kaydırılır (açıkken bir şey yapmayan düğme olmasın)
+          if (rafaGit) setTimeout(() => kok.querySelector('[data-ekran="d5"]')?.scrollIntoView({ block: "nearest" }), 0);
+        });
         return true;
       }
       const pz = pazarSat ? pazarSatEylemiOku(t) : null;
