@@ -14,8 +14,12 @@ import { Simulasyon } from "../src/motor";
 import { anlikGoruntuCoz, anlikGoruntuOlustur, kuralSurumuHesapla } from "../src/serilestir";
 import { GUN } from "../src/tipler";
 import { G6_YONTEMLER, g6KorunumTutar, g6Veri, p4Oncesi } from "./g6-yardimci";
+import { G8_YONTEMLER } from "./g8-yardimci";
 import { KAMU_KUCUK } from "./kamu-yardimci";
 import { mulkVeriTam } from "./mulk-yardimci";
+
+/** Göç eden yeni yöntemler: G6'nın dördü, ardından G8'in ikisi (gerçek içerik G8-1 sonrası altı `mulkKipi` yöntemi taşır; sona, sırayla). */
+const YENI_YONTEMLER = [...G6_YONTEMLER, ...G8_YONTEMLER] as const;
 
 const FIKSTUR = new URL("./fikstur-goc/", import.meta.url);
 const oku = (ad: string): string => readFileSync(new URL(ad, FIKSTUR), "utf8");
@@ -61,7 +65,7 @@ for (const dosya of ["bolge-v1", "mulk-v1"] as const) {
       expect(r.goc.ihlaller).toEqual([]);
       expect(r.goc.yalnizEkle).toBe(true);
       expect(r.goc.kuralDegisti).toBe(true);
-      expect(r.goc.eklenen.yontemler).toEqual([...G6_YONTEMLER]);
+      expect(r.goc.eklenen.yontemler).toEqual([...YENI_YONTEMLER]);
       expect(r.goc.eskiDurumOzeti).toBe(ust.ozet);
       expect(r.sim.dunya.zaman).toBe(ust.zaman);
       // yöntem uzayı durumda indeksli dizi olarak YER ALMAZ: yeni yöntemler özeti DEĞİŞTİRMEZ (fikstür P3 öncesi yazıldığı için mutlak özet fikstürdekinden

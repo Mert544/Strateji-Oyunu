@@ -73,7 +73,7 @@ async function eskiBolgeDunyasi(): Promise<{ depo: ReturnType<typeof bellekDepos
 
 const tesisYontemleri = (y: DunyaYazari): string[] => y.sim.dunya.bolgeler.filter((b) => b.sahip === "ali" && b.merkez !== undefined).flatMap((b) => b.tesisler).map((t) => y.sim.ic.yontemler[t.yontem]?.id ?? "?");
 
-describe("yontem sona ekleme gocu: mulk kipi (G6 oncesi icerik = guncel icerik - 4 yontem)", () => {
+describe("yontem sona ekleme gocu: mulk kipi (G6 oncesi icerik = guncel icerik - 6 yontem)", () => {
   it("kural surumu degisir; bayraksiz acilis durur (eski icerikle acilis calisir); bayrakla goc: yalniz-ekle, eklenen yontemler listelenir, tesis yontemini korur, zaman/seq ayni", async () => {
     const e = await eskiMulkDunyasi();
     const eskiKural = kuralSurumuHesapla(eskiIcerikliMulkVerisi());
@@ -190,7 +190,7 @@ describe("G6 oncesi DONDURULMUS mulk goruntusu (gercek eski cekirdek ciktisi; pa
     return d;
   };
 
-  it("gercek kural surumu degisti (G6-3): bayraksiz acilis kural uyusmuyor; gocIzni + eski tablo ile yalniz-ekle goc, 4 yeni yontem, para defteri ve kasalar yerinde, ozet denetimi gecti", async () => {
+  it("gercek kural surumu degisti (G6-3): bayraksiz acilis kural uyusmuyor; gocIzni + eski tablo ile yalniz-ekle goc, 6 yeni yontem (G6-3 dortlusu + G8-1 ikilisi), para defteri ve kasalar yerinde, ozet denetimi gecti", async () => {
     expect(kuralSurumuHesapla(guncel())).not.toBe(ust.kural);
     await expect(ac(depoKur(), guncel(), new ElleSaat())).rejects.toThrow(/kural surumu uyusmuyor/);
     const depo = depoKur();

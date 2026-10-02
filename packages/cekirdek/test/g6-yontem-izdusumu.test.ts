@@ -19,6 +19,7 @@ import { kuralSurumuHesapla } from "../src/serilestir";
 import { GUN } from "../src/tipler";
 import { esitNoktalar, kanitKaydi, NOKTA_SAYISI } from "./esik-budama-kanit";
 import { G6_YONTEMLER, g6Dugum, g6Dunya, g6MulkVeri, g6Veri, mulkParam, ortakKomutluKos, p4Oncesi, sebekeMiliOku } from "./g6-yardimci";
+import { G8_YONTEMLER } from "./g8-yardimci";
 
 const SAAT = 3_600_000;
 
@@ -83,14 +84,15 @@ describe("K-1: yöntem izdüşümü (bölge kipi): P4 öncesi ↔ güncel içeri
     expect(c.noktalar.some((n, i) => n.durum !== a.noktalar[i]!.durum)).toBe(true); // bayrak yoksa kanıt KIRILIR: yöntem izdüşümü duyarlı
   }, 180_000);
 
-  it("P4 öncesi ve güncel içerik gerçekten farklı: kural sürümü farklı, kimlik tablosu 4 yöntem uzun, içerik/tür listeleri tutarlı", () => {
+  it("P4 öncesi ve güncel içerik gerçekten farklı: kural sürümü farklı, kimlik tablosu G6+G8 yöntemleri (6) kadar uzun, içerik/tür listeleri tutarlı", () => {
     const guncel = g6Veri(miniVeriyiYukle());
     const eski = p4Oncesi(guncel);
     expect(kuralSurumuHesapla(guncel)).not.toBe(kuralSurumuHesapla(eski));
     const sg = Simulasyon.olustur(guncel, 1);
     const se = Simulasyon.olustur(eski, 1);
-    expect(sg.ic.yontemler.length - se.ic.yontemler.length).toBe(G6_YONTEMLER.length);
-    expect(icerikKimlikTablosuOlustur(sg.ic).yontemler.length).toBe(icerikKimlikTablosuOlustur(se.ic).yontemler.length + G6_YONTEMLER.length);
+    const yeni = G6_YONTEMLER.length + G8_YONTEMLER.length; // gerçek içerik G8-1 sonrası altı `mulkKipi` yöntemi taşır (süzgeç hepsini çıkarır)
+    expect(sg.ic.yontemler.length - se.ic.yontemler.length).toBe(yeni);
+    expect(icerikKimlikTablosuOlustur(sg.ic).yontemler.length).toBe(icerikKimlikTablosuOlustur(se.ic).yontemler.length + yeni);
     // Yeni yöntemler SONA eklendi: eski yöntemlerin indeksleri aynı (indeks kayması yok)
     se.ic.yontemler.forEach((y, i) => expect(sg.ic.yontemler[i]!.id).toBe(y.id));
     expect(Object.keys(mulkParam(eski)!)).not.toContain("sebeke");

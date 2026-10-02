@@ -123,6 +123,9 @@ export function p4Oncesi<V extends VeriPaketi>(v: V): V {
     const atolye = (ek?.["atolye_lab"] as { ad?: string } | undefined);
     if (atolye !== undefined) atolye.ad = ESKI_ADLAR.parametreler["mulk.ekYapilar.atolye_lab.ad"];
   }
+  // G8-1: odul tablosuna eklenen iki kavram (ilk_ekmek, ilk_pencere) P4 öncesinde yoktu (kural sürümü dondurulmuş görüntüyle aynı kalsın).
+  const odulKavramlar = (c.param as unknown as { odul?: { kavramlar?: Record<string, unknown> } }).odul?.kavramlar;
+  if (odulKavramlar !== undefined) for (const k of ["ilk_ekmek", "ilk_pencere"]) delete odulKavramlar[k];
   // icerik-adlar (T3 ad-degisim 1-3) ÖNCESİ görünen adlar: kural sürümü (içerik özeti adı da kapsar) dondurulmuş P4 öncesi görüntüyle aynı kalsın.
   const icerik = c.icerik as unknown as Record<string, { id: string; ad?: string; aciklama?: string }[]>;
   for (const [koleksiyon, kayitlar] of Object.entries(ESKI_ADLAR.icerik)) {

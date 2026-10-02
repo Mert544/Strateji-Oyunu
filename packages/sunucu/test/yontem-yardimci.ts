@@ -1,15 +1,15 @@
 /**
  * G6 sunucu testleri için GERÇEK G6-3 içeriği (K4/T3: `degirmen`, `ekmek_firini`, `kepek_gubresi`, `sut_kepekli`; hepsi `mulkKipi: true`, listelerin SONUNDA).
- * "Eski" (G6 öncesi) içerik, aynı içerikten bu dört yöntemin ve tür listelerindeki girdilerinin çıkarılmasıyla türetilir (`g6Oncesi`): yöntem uzayı SONA eklemeyle büyüdüğü için
- * eski = yeni - son dört yöntemdir. Dondurulmuş gerçek eski görüntü (`cekirdek/test/fikstur-goc/mulk-v2-g6oncesi.json`) `yontem-goc.test.ts`'te ayrıca yüklenir.
+ * "Eski" (G6 öncesi) içerik, aynı içerikten bu altı yöntemin ve tür listelerindeki girdilerinin çıkarılmasıyla türetilir (`g6Oncesi`): yöntem uzayı SONA eklemeyle büyüdüğü için
+ * eski = yeni - son altı yöntemdir (G6-3 dördü + G8-1 ikisi). Dondurulmuş gerçek eski görüntü (`cekirdek/test/fikstur-goc/mulk-v2-g6oncesi.json`) `yontem-goc.test.ts`'te ayrıca yüklenir.
  */
 import type { CekirdekVeriPaketi, Simulasyon } from "@bolge/cekirdek";
 import { kamuKumesi, mulkVerisi } from "./yardimci";
 
 export const DEGIRMEN = "degirmen";
 export const FIRIN = "ekmek_firini";
-/** G6-3'ün sona eklediği yöntemler (içerik sırasıyla). */
-export const YONTEM_KIMLIKLERI = ["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli"];
+/** Sona eklenen yöntemler (içerik sırasıyla): G6-3'ün dördü, ardından G8-1'in `cam_firini` ve `celik_dograma`'sı (hepsi `mulkKipi: true`; "eski" içerik bunların hepsi çıkarılmış hâlidir). */
+export const YONTEM_KIMLIKLERI = ["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma"];
 
 /** İçerikten G6-3 yöntemlerini (ve tür listelerindeki girdilerini) çıkarır: "G6 öncesi" içerik. Yerinde değiştirir. */
 export function g6Oncesi(v: CekirdekVeriPaketi): CekirdekVeriPaketi {
