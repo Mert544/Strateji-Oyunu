@@ -32,7 +32,7 @@
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { GUN, PPM, anlikMiktar, carpBol, kamuBloklari, yerelPazarGorunumu } from "@bolge/cekirdek";
+import { GUN, PPM, anlikMiktar, carpBol, kamuBloklari, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
 import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
 
 /** Dikdörtgen kamu bloğu: `[x0, y0, x1, y1]` = x0..x1 × y0..y1 (dört uç dahil) hücreleri ("x:y" kimliği), hepsi kamu arsası. */
@@ -133,6 +133,14 @@ export interface OzelBolgeKaresi {
    * olanlar yazılır; şebeke bloğu yokken/alım yokken alan YAZILMAZ. Birim fiyat kareye girmez (veri paketinden `param.mulk.sebeke`); bedel = miktar x fiyat istemcide.
    */
   sebeke?: Array<[mal: string, miliSaat: Mili]>;
+  /**
+   * Yalnız ekleme (isteğe bağlı NESNE alanı, yalnız sahibine; yalnız mülk işletme düğümünde; çözüm bağlamı yoksa YAZILMAZ): düğümün işletme bilgileri. Eski istemci (z.object bilinmeyen
+   * anahtarı atar) alanı sessizce yok sayar; yeni değer eklemek demet büyütmez (`isletme` nesnesine yeni isteğe bağlı alan).
+   * - `ihrNetPpm`: bu düğümde 1 birim malın İHRACATTA eline geçen nakit çarpanı (tamsayı ppm) = çekirdek `ticaretNakitCarpanlari(...).ihracatPpm` (makas x (1 - liman primi) x (1 - komisyon);
+   *   yeni oyuncu kalkanında komisyon 0; düğümdeki Ticaret ofisi indirimi dahil; ihracat vergisi hazineye geri yazıldığından girmez). Prim düğümün merkez bölgesine bağlıdır: çok ilçeli
+   *   oyuncuda düğümden düğüme değişir. İstemci formül KOPYALAMAZ; alan yoksa (eski sunucu) dükkân köprüsü `param.pazar`dan 0,891 hesabına döner.
+   */
+  isletme?: { ihrNetPpm: number };
   /** `[mal, yön (0 ihracat, 1 ithalat), istenen oran, gerçekleşen oran]` (mili-birim/saat) */
   emirler: Array<[mal: number, yon: 0 | 1, oranSaat: Mili, gerceklesenSaat: Mili]>;
   /** Birlik indeksine göre adet. */
@@ -506,6 +514,11 @@ export function ilgiKaresiCikar(
         if (m > 0) sebeke.push([mal, m]);
       }
       if (sebeke.length > 0) girdi.ozel.sebeke = sebeke;
+      // İşletme düğümü bilgileri (yalnız mülk düğümü: `merkez` tanımlı; çözüm bağlamı gerekir): etkin ihracat net çarpanı çekirdekten.
+      const sahip = d.oyuncular.find((x) => x.id === oyuncu);
+      if (kaynak.baglam !== undefined && b.merkez !== undefined && sahip !== undefined) {
+        girdi.ozel.isletme = { ihrNetPpm: ticaretNakitCarpanlari(d, kaynak.baglam, sahip, b.merkez, b).ihracatPpm };
+      }
     }
     bolgeler.push(girdi);
   }

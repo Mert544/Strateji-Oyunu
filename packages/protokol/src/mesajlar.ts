@@ -265,6 +265,8 @@ const bolgeKaresiSemasi = z.object({
       tesisAsinma: z.array(z.tuple([tam, tam])).optional(),
       // Yalnız ekleme: şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (demete öğe eklenmez; eski istemci bilinmeyen anahtarı atar).
       sebeke: z.array(z.tuple([z.string(), tam])).optional(),
+      // Yalnız ekleme: işletme düğümü bilgileri (nesne alanı; yeni isteğe bağlı alan eklemek demet büyütmez). ihrNetPpm: etkin ihracat net çarpanı (tamsayı ppm, çekirdekten).
+      isletme: z.object({ ihrNetPpm: tam }).optional(),
       emirler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
       birlikler: z.array(tam),
       gidaPpm: tam,

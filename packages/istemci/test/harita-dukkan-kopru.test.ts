@@ -207,6 +207,7 @@ describe("kare -> DukkanGorunumu (gerçek sunucu karesi)", () => {
     const ref = referansOku(s, k);
     const sonuc = dukkanGorunumuKur({ kare: k, param, referans: ref, kurmaKarsilaniyor: false })!;
     const ham = k.bolgeler.flatMap((b) => b.ozel?.dukkanlar ?? []).find((x) => x[0] === e.id)!;
+    const dugumIhrNet = k.bolgeler.find((b) => b.ozel?.dukkanlar?.some((x) => x[0] === e.id))?.ozel?.isletme?.ihrNetPpm; // sunucunun düğüm için yazdığı etkin ihracat net çarpanı
     const d = sonuc.gorunum.dukkanlar[0]!;
     let gelir = 0;
     const netler: number[] = [];
@@ -217,7 +218,7 @@ describe("kare -> DukkanGorunumu (gerçek sunucu karesi)", () => {
       expect(y.etkinKademe).toBe(r[2]);
       const R = r[0] === "" ? 0 : ref(r[0])!.mili;
       expect(y.fiyatMili).toBe(Math.floor((R * param.perakende!.fiyatKademeleriPpm[r[2]]!) / PPM));
-      const m = yuvaMili({ dolu: r[0] !== "", mevcut: r[3] === 1, istekMiliSaat: r[4], etkinKademe: r[2], referansMili: R }, ham[4], param.perakende!.fiyatKademeleriPpm, param.pazar);
+      const m = yuvaMili({ dolu: r[0] !== "", mevcut: r[3] === 1, istekMiliSaat: r[4], etkinKademe: r[2], referansMili: R }, ham[4], param.perakende!.fiyatKademeleriPpm, param.pazar, dugumIhrNet);
       expect(y.netMiliSaat).toBe(m.netMiliSaat);
       gelir += m.gelirMiliSaat;
       netler.push(m.netMiliSaat);
@@ -230,6 +231,45 @@ describe("kare -> DukkanGorunumu (gerçek sunucu karesi)", () => {
     ham[1].forEach((r, i) => expect(d.yuvalar[i]!.satisMiliSaat).toBe(r[3] === 1 && r[0] !== "" ? Math.floor((r[4] * ham[4]) / PPM) : 0)); // satış = istek x karşılanma
     expect(sonuc.yaklasik).toBe(false);
     expect(sonuc.gorunum.kurmaKarsilaniyor).toBe(false);
+  });
+
+  it("ihracat net çarpanı DÜĞÜM değeri: sunucunun yazdığı ozel.isletme.ihrNetPpm alternatifte kullanılır (liman primi, kalkan çekirdekten); alan yoksa param.pazar 0,891 hesabına döner; çarpan istemcide kopyalanmaz", () => {
+    const { s, e } = kur();
+    const k = kare(s, "a");
+    const param = paramOku(s);
+    const ref = referansOku(s, k);
+    const dugum = k.bolgeler.find((b) => b.ozel?.dukkanlar?.some((x) => x[0] === e.id))!;
+    const alan = dugum.ozel!.isletme!.ihrNetPpm; // çekirdekten (kalkanda: komisyon yok, 900 000 x (1 - prim))
+    expect(alan).not.toBe(ihrNetPpm(param.pazar)); // kalkanda 0,891 YANLIŞ: komisyon yok
+    const netAlanli = dukkanGorunumuKur({ kare: k, param, referans: ref, kurmaKarsilaniyor: false })!.dukkanNetMili[e.id]!;
+    // Aynı kare, alan SİLİNMİŞ (eski sunucu): 0,891 geri dönüşü
+    const eski = structuredClone(k);
+    delete (eski.bolgeler.find((b) => b.i === dugum.i)!.ozel as { isletme?: unknown }).isletme;
+    const netEski = dukkanGorunumuKur({ kare: eski, param, referans: ref, kurmaKarsilaniyor: false })!.dukkanNetMili[e.id]!;
+    expect(netEski).not.toBe(netAlanli);
+    // Her iki durumda net, ilgili çarpanla yuvaMili toplamından türer (yuva satırlarından bağımsız yeniden hesap)
+    const ham = dugum.ozel!.dukkanlar!.find((x) => x[0] === e.id)!;
+    const topla = (ihr: number | undefined): number =>
+      dukkanNetMili(
+        ham[1].map((r) => yuvaMili({ dolu: r[0] !== "", mevcut: r[3] === 1, istekMiliSaat: r[4], etkinKademe: r[2], referansMili: r[0] === "" ? 0 : ref(r[0])!.mili }, ham[4], param.perakende!.fiyatKademeleriPpm, param.pazar, ihr).netMiliSaat),
+        param.perakende!.olcekler[0]!.giderMiliSaat,
+      );
+    expect(netAlanli).toBe(topla(alan));
+    expect(netEski).toBe(topla(undefined));
+    // Daha yüksek net çarpanı (kalkan) alternatif geliri artırır, yuva netini düşürür: alanlı net eskisinden KÜÇÜK
+    expect(alan).toBeGreaterThan(ihrNetPpm(param.pazar));
+    expect(netAlanli).toBeLessThan(netEski);
+  });
+
+  it("yuvaMili: 5. parametre (düğüm ihracat net çarpanı) verilmezse 0,891 (param.pazar); verilirse alternatif onunla (A2 örneği: 862 042 ve 870 750)", () => {
+    const y = { dolu: true, mevcut: true, istekMiliSaat: ISTEK, etkinKademe: 2, referansMili: R_EKMEK };
+    expect(yuvaMili(y, PPM, KADEMELER, PAZAR).altMiliSaat).toBe(yuvaMili(y, PPM, KADEMELER, PAZAR, undefined).altMiliSaat);
+    expect(yuvaMili(y, PPM, KADEMELER, PAZAR).altMiliSaat).toBe(4_811_400); // 90 x 60 x 0,891
+    for (const ihr of [862_042, 870_750]) {
+      const m = yuvaMili(y, PPM, KADEMELER, PAZAR, ihr);
+      expect(m.altMiliSaat).toBe(Math.floor((5_400_000 * ihr) / PPM));
+      expect(m.netMiliSaat).toBe(m.gelirMiliSaat - m.altMiliSaat);
+    }
   });
 
   it("referans fiyat bilinmiyorsa net 0 ve 'yaklaşık' işareti; başkası/izleyici karesi: dükkân yok / null", () => {

@@ -100,14 +100,18 @@ export interface YuvaMili {
   netMiliSaat: number;
 }
 
-/** Bir yuvanın §6.8b değerleri (mili-₺/saat). `karsilanmaPpm` düğümün en düşük karşılama oranıdır (muhafazakâr, yaklaşık). Boş ya da stoksuz yuvada hepsi 0. */
-export function yuvaMili(y: YuvaGirdisi, karsilanmaPpm: number, kademelerPpm: readonly number[], pazar: KopruPazar): YuvaMili {
+/**
+ * Bir yuvanın §6.8b değerleri (mili-₺/saat). `karsilanmaPpm` düğümün en düşük karşılama oranıdır (muhafazakâr, yaklaşık). Boş ya da stoksuz yuvada hepsi 0.
+ * `ihrNetDugumPpm`: sunucunun bu DÜĞÜM için yazdığı etkin ihracat net çarpanı (`BolgeKaresi.ozel.isletme.ihrNetPpm`; liman primi, kalkan, Ticaret ofisi çekirdekten); YOKSA
+ * (eski sunucu) `param.pazar`dan 0,891 hesabına (`ihrNetPpm`) döner. İstemcide formül kopyası yoktur.
+ */
+export function yuvaMili(y: YuvaGirdisi, karsilanmaPpm: number, kademelerPpm: readonly number[], pazar: KopruPazar, ihrNetDugumPpm?: number): YuvaMili {
   if (!y.dolu || !y.mevcut) return { satisMiliSaat: 0, gelirMiliSaat: 0, altMiliSaat: 0, netMiliSaat: 0 };
   const satis = carpBol(y.istekMiliSaat, karsilanmaPpm, PPM);
   const brut = carpBol(satis, y.referansMili, 1000);
   const kademe = kademelerPpm[y.etkinKademe] ?? PPM;
   const gelir = carpBol(brut, kademe, PPM);
-  const alt = carpBol(brut, ihrNetPpm(pazar), PPM);
+  const alt = carpBol(brut, ihrNetDugumPpm ?? ihrNetPpm(pazar), PPM);
   return { satisMiliSaat: satis, gelirMiliSaat: gelir, altMiliSaat: alt, netMiliSaat: gelir - alt };
 }
 
@@ -254,7 +258,7 @@ export function dukkanGorunumuKur(g: KopruGirdisi): KopruSonucu | null {
       const ref = dolu ? g.referans(mal) : undefined;
       if (dolu && (ref === undefined || ref.yaklasik)) yaklasik = true;
       const R = ref?.mili ?? 0;
-      const m = yuvaMili({ dolu, mevcut: mevcut === 1, istekMiliSaat: istek, etkinKademe: etkin, referansMili: R }, karsilanmaPpm, pk.fiyatKademeleriPpm, g.param.pazar);
+      const m = yuvaMili({ dolu, mevcut: mevcut === 1, istekMiliSaat: istek, etkinKademe: etkin, referansMili: R }, karsilanmaPpm, pk.fiyatKademeleriPpm, g.param.pazar, b.ozel?.isletme?.ihrNetPpm);
       gelir += m.gelirMiliSaat;
       netler.push(m.netMiliSaat);
       const kademe = kademeye(fiyat, pk.varsayilanFiyatKademesi);
