@@ -7,6 +7,10 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { WsBaglanti, insaatYontemi, tesisAsinmasi } from "../src/harita/baglanti-ws";
+import { miniVeriyiYukle } from "@bolge/veri";
+import type { IlgiKaresi } from "@bolge/protokol";
+import { icerikTablosu } from "../src/komut/tablo";
+import { BakimPaneli } from "../src/harita/bakim-panel";
 
 type Dinleyici = (e: { data?: string; code?: number }) => void;
 
@@ -117,6 +121,73 @@ async function bagla(ek: KareEk = {}): Promise<{ b: WsBaglanti; ws: SahteWs }> {
 
 afterEach(() => {
   SahteWs.ornekler = [];
+});
+
+it("M1 bakım onayı: bilinmeyen ve 0 ayrılır; seçim/Vazgeç komutsuz, frozen/stale/pending korunur, bridge gerçek ack/ret bekler", async () => {
+  const { b, ws } = await bagla();
+  try {
+    const v = miniVeriyiYukle();
+    const p = new BakimPaneli({ ic: icerikTablosu(v.icerik, v.param), isletme: () => b.isletme(), komut: (i) => b.bakimDuzeyiDegistir(i), degisti: () => {} });
+    let rev = 1;
+    const guncelle = (duzey: 0 | 1 | 2) => {
+      const m = kare({}, ++rev), k = m["kare"] as unknown as IlgiKaresi;
+      k.oyuncu!.bakimDuzeyi = duzey;
+      k.bolgeler[0]!.ozel!.tesisler[0]![3] = 0;
+      ws.mesaj(m);
+    };
+    const komutlar = () => ws.gonderilen.filter((k) => k["tur"] === "komut");
+    const teklif = { oncekiDuzey: 0 as const, duzey: 2 as 0 | 1 | 2 };
+    expect(b.isletme()).not.toHaveProperty("bakimDuzeyi");
+    await p.eylem({ eylem: "sec", onay: teklif });
+    expect(p.durum.onay).toBeNull();
+    guncelle(0);
+    expect(b.isletme()!.bakimDuzeyi).toBe(0);
+    await p.eylem({ eylem: "sec", onay: teklif });
+    teklif.duzey = 1;
+    expect(p.durum.onay).toEqual({ oncekiDuzey: 0, duzey: 2 });
+    await p.eylem({ eylem: "vazgec" });
+    expect(p.durum.onay).toBeNull();
+    expect(komutlar()).toEqual([]);
+    const onay = { oncekiDuzey: 0 as const, duzey: 2 as const };
+    await p.eylem({ eylem: "sec", onay });
+    guncelle(1);
+    await p.eylem({ eylem: "onayla", onay });
+    expect(komutlar()).toEqual([]);
+    expect(p.durum.hata).toContain("değişmiş");
+    p.kapat(); guncelle(0);
+    await p.eylem({ eylem: "sec", onay });
+    await p.eylem({ eylem: "onayla", onay: { oncekiDuzey: 0, duzey: 1 } });
+    expect(komutlar()).toEqual([]);
+    const bekleyen = p.eylem({ eylem: "onayla", onay });
+    expect(p.durum.bekliyor).toBe(true);
+    await p.eylem({ eylem: "onayla", onay });
+    p.kapat();
+    expect(p.durum.onay).toEqual(onay);
+    expect(komutlar()).toHaveLength(1);
+    const k = komutlar()[0]!;
+    expect(k["komut"]).toEqual({ tur: "bakim_duzeyi", duzey: 2, oncekiDuzey: 0 });
+    ws.mesaj({ tur: "komutSonucu", anahtar: k["anahtar"], seq: 1, t: 1, komut: k["komut"], sonuc: { tamam: true }, tekrar: false });
+    await bekleyen;
+    expect(p.durum).toMatchObject({ onay: null, bekliyor: false });
+    expect(b.isletme()!.bakimDuzeyi).toBe(0); // Ack kaynak karesini optimistik değiştirmez.
+    guncelle(1); p.html(); // Başka oturumun güncel tercihi ack hedefinden farklı olabilir.
+    await p.eylem({ eylem: "sec", onay: { oncekiDuzey: 1, duzey: 0 } });
+    expect(p.durum.onay).toEqual({ oncekiDuzey: 1, duzey: 0 });
+    expect(komutlar()).toHaveLength(1);
+    p.kapat(); guncelle(2);
+    const sahiplik = await b.sahiplikAl("i1");
+    expect(sahiplik!.yapilar!.find((y) => y.anahtar === "t3")!.aktif).toBe(false);
+    expect(sahiplik!.yapilar!.find((y) => y.anahtar === "i7")).not.toHaveProperty("aktif");
+    const sifir = { oncekiDuzey: 2 as const, duzey: 0 as const };
+    await p.eylem({ eylem: "sec", onay: sifir });
+    const ret = p.eylem({ eylem: "onayla", onay: sifir }), son = komutlar().at(-1)!;
+    expect(son["komut"]).toEqual({ tur: "bakim_duzeyi", duzey: 0, oncekiDuzey: 2 });
+    ws.mesaj({ tur: "komutSonucu", anahtar: son["anahtar"], seq: 2, t: 2, komut: son["komut"], sonuc: { tamam: false, hata: "bakim duzeyi degisti" }, tekrar: false });
+    await ret;
+    expect(p.durum.hata).toContain("değişmiş");
+    expect(b.isletme()!.bakimDuzeyi).toBe(2);
+    expect(b.sunucuHatalari).toEqual([]);
+  } finally { b.kapat(); }
 });
 
 describe("insaatYontem -> yapı kaydı (inşaat kimliğiyle eşlenir)", () => {

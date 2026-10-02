@@ -51,6 +51,10 @@ export function sanayiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut):
       const o = oyuncuBul(d, oyuncu);
       if (!o) return hata(`bilinmeyen oyuncu: ${oyuncu}`);
       if (k.duzey !== 0 && k.duzey !== 1 && k.duzey !== 2) return hata(`gecersiz bakim duzeyi: ${String(k.duzey)} (0, 1 veya 2)`);
+      if (k.oncekiDuzey !== undefined) {
+        if (k.oncekiDuzey !== 0 && k.oncekiDuzey !== 1 && k.oncekiDuzey !== 2) return hata("gecersiz onceki bakim duzeyi");
+        if (k.oncekiDuzey !== (o.bakimDuzeyi ?? 1)) return hata("bakim duzeyi degisti");
+      }
       o.bakimDuzeyi = k.duzey;
       return TAMAM;
     }

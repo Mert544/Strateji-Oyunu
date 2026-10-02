@@ -26,13 +26,22 @@ Elektrik ve stokla ikame edilmeyen şebeke girdisi ithalata yönlendirilmez.
 Üç uygulayıcının entegrasyonu incelendi. B6'nın iki hedefli N1 vakası, istemci
 tip kontrolü ve derlemesi başarılı; kapsam ve sınırlar devam kaydında.
 
-## Sonraki uygulama sırası
+## M1–H1 uygulama güncellemesi
 
-1. **Oyuncu genelinde bakım düzeyi.** Hazır `bakim_duzeyi` komutunu gerçek
+[N1 sonrası M1–H1](codex-m1-h1-bakim-harita-sozlesmesi.md) tamamlandı;
+üç hedefli vaka, kök/istemci tip kontrolü ve derleme ilk koşuda geçti. Oyuncu genelinde bakım düzeyi gerçek özel durum ve
+ayrı görülen-düzey onayıyla bağlandı. Haritada kendi tesisinin gerçek hücre
+çerçevesine odak ve sunucudaki durdurulmuş üretim işareti eklendi. Bakımın
+tüketim/işletme gideri ve aşınma kuralları aynı; genel onarım/sondaj bu
+kontrolün parçası değildir. Kabul sonucu devam kaydında tutulur.
+
+## Uygulama sırası ve kalan kapsam
+
+1. **Oyuncu genelinde bakım düzeyi — M1 uygulandı.** Hazır `bakim_duzeyi` komutunu gerçek
    mevcut düzey ve bütün kendi işletmelerine etkisiyle aç. Bakım girdisi/
    işletme gideri–günlük aşınma tercihidir; kıtlık yüksek bakımın iyileşmesini
    engelleyebilir. Önce private mevcut düzey ve görülen düzey koruması.
-2. **Gerçek tesise harita odağı ve durma işareti.** Mevcut tesis kimliği/
+2. **Gerçek tesise harita odağı ve durma işareti — H1 uygulandı.** Mevcut tesis kimliği/
    hücrelerinden kesin hedefle; yalnız ilçeye uçuş tesis odağı değildir.
    Paused işareti aktif bilgisinden gelir, girdi/verim düşüklüğüyle karışmaz.
 3. **Genel onarım ve sondaj, ayrı teklifler.** `genel_onarim` aşınmış tesislerin

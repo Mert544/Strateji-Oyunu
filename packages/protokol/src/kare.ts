@@ -419,6 +419,8 @@ export interface OyuncuKaresi {
   hazine: StokFormulu;
   vergiPpm: number;
   askeriRezervPpm: number;
+  /** Sanayi açıkken yalnız sahibine oyuncu-geneli etkin bakım düzeyi; ayarsızsa normal (1), alan yokluğu eski/kapalı özellik demektir. */
+  bakimDuzeyi?: 0 | 1 | 2;
   teknolojiler: number[];
   arastirma: { teknoloji: number; bitis: Ms } | null;
   /** Teknoloji dizini sırasıyla maliyet/süre yayılım çarpanı; yalnız sahibine, eski sunucuda olmayabilir. */
@@ -835,6 +837,7 @@ export function ilgiKaresiCikar(
         hazine: stokFormulu(o.hazine),
         vergiPpm: o.vergiPpm,
         askeriRezervPpm: o.askeriRezervPpm,
+        ...(kaynak.ic.param.sanayi === undefined ? {} : { bakimDuzeyi: o.bakimDuzeyi ?? 1 }),
         teknolojiler: [...o.teknolojiler],
         arastirma: o.arastirma ? { teknoloji: o.arastirma.teknoloji, bitis: o.arastirma.bitis } : null,
         ...(kaynak.baglam ? { arastirmaYayilimPpm: kaynak.ic.teknolojiler.map((_, i) => teknolojiYayilimiPpm(d, kaynak.baglam!, oyuncu, i)) } : {}),

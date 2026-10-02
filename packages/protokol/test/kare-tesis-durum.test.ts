@@ -51,6 +51,55 @@ function kopyala(s: SimT, v: CekirdekVeriPaketi): SimT {
 }
 
 describe("S3 tesisin gerçek çalışma durumu", () => {
+  it("M1 bakım: gerçek 0/2/1 tüketimi ve özel etkin değer; stale saf ret, legacy çağrı, arada yükleme ve replay aynı dünyayı korur", () => {
+    const { s, v } = kur();
+    const normal = -stok(s, "parca").yerelOran;
+    expect(normal).toBeGreaterThan(0);
+    expect(kare(s, "a").oyuncu!.bakimDuzeyi).toBe(1);
+    const legacy = kopyala(s, v);
+    for (const kotu of [null, 3, "0"]) {
+      const k = { tur: "bakim_duzeyi", duzey: 0, oncekiDuzey: kotu } as unknown as Komut;
+      expect(KomutSemasi.safeParse(k).success).toBe(false);
+      retDegismez(s, "a", k, /gecersiz onceki bakim duzeyi/);
+    }
+    retDegismez(s, "a", { tur: "bakim_duzeyi", duzey: 0, oncekiDuzey: 0 }, /bakim duzeyi degisti/);
+    let oncekiDuzey: 0 | 1 | 2 = 1;
+    let yuklenen: SimT | undefined;
+    for (const [duzey, oran] of [[0, normal / 2], [2, normal * 3 / 2], [1, normal]] as const) {
+      const k = { tur: "bakim_duzeyi" as const, duzey, oncekiDuzey };
+      expect(KomutSemasi.parse(k)).toEqual(k);
+      tamam(s, "a", k);
+      tamam(legacy, "a", { tur: "bakim_duzeyi", duzey });
+      if (yuklenen) tamam(yuklenen, "a", k);
+      const hedef = s.dunya.zaman + 6 * DAKIKA;
+      for (const y of [s, legacy, ...(yuklenen ? [yuklenen] : [])]) {
+        y.calistirKadar(y.dunya.zaman);
+        expect(-stok(y, "parca").yerelOran).toBe(oran);
+        expect(kare(y, "a").oyuncu!.bakimDuzeyi).toBe(duzey);
+        expect(kare(y, "b").oyuncu!.bakimDuzeyi).toBe(1);
+        expect(kare(y, "b").bolgeler.find((b) => b.id === BOLGE)!.ozel).toBeUndefined();
+        expect(kare(y, null).oyuncu).toBeUndefined();
+        const parca = miktar(y, "parca");
+        y.calistirKadar(hedef);
+        expect(parca - miktar(y, "parca")).toBe(oran / 10);
+      }
+      expect(legacy.durumOzeti()).toBe(s.durumOzeti());
+      if (yuklenen) expect(yuklenen.durumOzeti()).toBe(s.durumOzeti());
+      else yuklenen = kopyala(s, v);
+      retDegismez(s, "a", { tur: "bakim_duzeyi", duzey: oncekiDuzey, oncekiDuzey }, /bakim duzeyi degisti/);
+      oncekiDuzey = duzey;
+    }
+    expect(KomutSemasi.parse({ tur: "bakim_duzeyi", duzey: 0 })).not.toHaveProperty("oncekiDuzey");
+    expect(IlgiKaresiSemasi.parse(kare(s, "a"))).toEqual(kare(s, "a"));
+    const r = Simulasyon.yenidenOynat(v, TOHUM, s.gunluk);
+    r.calistirKadar(s.dunya.zaman);
+    expect(r.durumOzeti()).toBe(s.durumOzeti());
+    const kapaliVeri = structuredClone(v);
+    delete kapaliVeri.param.sanayi;
+    const kapali = mulkSim(["a"], kapaliVeri, TOHUM);
+    expect(kare(kapali, "a").oyuncu).not.toHaveProperty("bakimDuzeyi");
+  });
+
   it("durdur üretim ve un/yakıt girdisini keser, bakım sürer; yükleme sonrası başlat gerçek akışları geri getirir ve replay eşleşir", () => {
     const { s, v } = kur();
     const ciktiMal = Object.entries(s.ic.yontemler[tesis(s).yontem]!.ciktilar).find(([, q]) => q > 0)![0];

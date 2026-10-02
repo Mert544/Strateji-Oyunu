@@ -115,6 +115,7 @@ export class HaritaDenetci {
   readonly kap: HTMLElement;
   private gecmisteMi = false;
   private yukleniyor = false;
+  private gezinmeSurumu = 0;
   private yerlesEkrani: YerlesEkrani | null = null;
   private baglantiSozu: Promise<MulkBaglantisi | undefined> | null = null;
   private mulkPaneliKuruldu = false;
@@ -220,6 +221,9 @@ export class HaritaDenetci {
   /** Kürede bölge seçimi değişti (main.ts). */
   bolgeAyarla(kimlik: string | null): void {
     if (this.durum.duzey !== 0) return;
+    this.gezinmeSurumu++;
+    this.yukleniyor = false;
+    this.durumYazi.textContent = "";
     this.durum.bolge = kimlik;
     this.ciz();
     // Sessiz: veri yoksa (ör. file://) il çipleri görünmez; hata ancak harita/arama denenince yazılır.
@@ -238,17 +242,53 @@ export class HaritaDenetci {
   // --- gezinme --------------------------------------------------------------------------------------
 
   async ilAc(il: string): Promise<void> {
+    const surum = ++this.gezinmeSurumu;
     const h = await this.hiyerarsiAl().catch((e: unknown) => this.hataYaz(e));
+    if (surum !== this.gezinmeSurumu) return;
     const bilgi = h?.iller.get(il);
-    if (!bilgi) return;
-    await this.git({ duzey: 1, bolge: bilgi.bolge, il, ilce: null });
+    if (!bilgi) {
+      this.yukleniyor = false;
+      if (h) this.durumYazi.textContent = "";
+      this.ciz();
+      return;
+    }
+    await this.git({ duzey: 1, bolge: bilgi.bolge, il, ilce: null }, surum);
   }
 
   async ilceAc(ilce: string): Promise<void> {
+    const surum = ++this.gezinmeSurumu;
     const h = await this.hiyerarsiAl().catch((e: unknown) => this.hataYaz(e));
+    if (surum !== this.gezinmeSurumu) return;
     const bilgi = h?.ilceler.get(ilce);
-    if (!h || !bilgi) return;
-    await this.git({ duzey: 2, bolge: h.iller.get(bilgi.il)?.bolge ?? null, il: bilgi.il, ilce });
+    if (!h || !bilgi) {
+      this.yukleniyor = false;
+      if (h) this.durumYazi.textContent = "";
+      this.ciz();
+      return;
+    }
+    await this.git({ duzey: 2, bolge: h.iller.get(bilgi.il)?.bolge ?? null, il: bilgi.il, ilce }, surum);
+  }
+
+  /** Panelin Git isteği: son seçimi koruyarak ilçe açılışından sonra gerçek tesis odağı. */
+  private async mulkIlcesineGit(ilce: string, anahtar?: string): Promise<void> {
+    const acilis = this.ilceAc(ilce);
+    const surum = this.gezinmeSurumu;
+    const gecerli = (): boolean => surum === this.gezinmeSurumu && !this.kap.hidden
+      && this.durum.ilce === ilce && this.durum.duzey >= 2;
+    await acilis;
+    if (!gecerli()) return;
+    const g = this.gorunum;
+    if (!g) return;
+    if (anahtar === undefined) {
+      g.mulkeUc();
+      return;
+    }
+    try {
+      const bulundu = await g.tesiseUc(ilce, anahtar, gecerli);
+      if (!bulundu && gecerli()) bildir("Tesisin güncel konumu bulunamadı; ilçe görünümü açıldı.", "bilgi");
+    } catch {
+      if (gecerli()) bildir("Tesisin güncel konumu alınamadı; ilçe görünümü açıldı.", "bilgi");
+    }
   }
 
   /** Bir üst düzey: L3 -> L2 -> L1 -> L0 (bölge seçili kalır). */
@@ -260,15 +300,17 @@ export class HaritaDenetci {
   }
 
   private kureyeDon(bolge: string | null): void {
+    const surum = ++this.gezinmeSurumu;
     // Harita açıksa kâğıt örtüyle geç (tuval değişimi örtünün altında)
     if (!this.kap.hidden) {
-      void ortuIle(() => this.kureyeDonHemen(bolge));
+      void ortuIle(() => { if (surum === this.gezinmeSurumu) this.kureyeDonHemen(bolge); });
       return;
     }
     this.kureyeDonHemen(bolge);
   }
 
   private kureyeDonHemen(bolge: string | null): void {
+    this.yukleniyor = false;
     this.durum = { duzey: 0, bolge, il: null, ilce: null };
     this.kap.hidden = true;
     document.body.classList.remove("harita-acik");
@@ -287,7 +329,8 @@ export class HaritaDenetci {
     this.ciz();
   }
 
-  private async git(hedef: HaritaDurumu): Promise<void> {
+  private async git(hedef: HaritaDurumu, surum = ++this.gezinmeSurumu): Promise<void> {
+    if (surum !== this.gezinmeSurumu) return;
     if (hedef.duzey === 0) {
       this.kureyeDon(hedef.bolge);
       return;
@@ -296,8 +339,10 @@ export class HaritaDenetci {
     this.durumYazi.textContent = "Harita yükleniyor…";
     try {
       const g = await this.gorunumAl();
+      if (surum !== this.gezinmeSurumu) return;
       const ilkAcilis = this.kap.hidden;
       const ac = (): void => {
+        if (surum !== this.gezinmeSurumu) return;
         this.kap.hidden = false;
         document.body.classList.add("harita-acik");
         this.kure.kureyiAskiyaAl(true);
@@ -305,6 +350,7 @@ export class HaritaDenetci {
       // Küre → harita: kâğıt örtü (240 ms) gelir, harita altında açılır ve ilk kadraja oturur, örtü çekilir
       if (ilkAcilis) await ortuIle(ac);
       else ac();
+      if (surum !== this.gezinmeSurumu) return;
       if (!this.gecmisteMi) {
         try {
           history.pushState({ ...(history.state as object | null), harita: 1 }, "");
@@ -316,15 +362,19 @@ export class HaritaDenetci {
       this.durum = { ...hedef };
       this.ciz();
       await g.goster(hedef, ilkAcilis);
+      if (surum !== this.gezinmeSurumu) return;
       this.durumYazi.textContent = "";
     } catch (e) {
+      if (surum !== this.gezinmeSurumu) return;
       const m = e instanceof Error ? e.message : String(e);
       this.durumYazi.textContent = m;
       bildir(`Harita açılamadı: ${m}`, "hata");
       if (this.kap.hidden) this.durum = { duzey: 0, bolge: this.durum.bolge, il: null, ilce: null };
     } finally {
-      this.yukleniyor = false;
-      this.ciz();
+      if (surum === this.gezinmeSurumu) {
+        this.yukleniyor = false;
+        this.ciz();
+      }
     }
   }
 
@@ -390,7 +440,7 @@ export class HaritaDenetci {
       if (this.kure.mulkPaneli && !this.mulkPaneliKuruldu) {
         this.mulkPaneliKuruldu = true;
         const [m, h] = await Promise.all([gorunumModulu(), this.hiyerarsiAl()]);
-        this.kure.mulkPaneli(m.mulkPaneliKur({ gorunum: g, hiyerarsi: h, ilceAc: (ilce) => this.ilceAc(ilce).then(() => this.gorunum?.mulkeUc()) }));
+        this.kure.mulkPaneli(m.mulkPaneliKur({ gorunum: g, hiyerarsi: h, ilceAc: (ilce, anahtar) => this.mulkIlcesineGit(ilce, anahtar) }));
       }
       await g.baglanti.hazirBekle?.();
       // "Sen yokken": gösterilmemiş dönüş özeti varsa önce o (kapanınca devam); ilk girişte özet yoktur. Yetişme bitince

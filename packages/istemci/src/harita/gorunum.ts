@@ -41,6 +41,7 @@ import type { YapiTanimi } from "./yapi";
 import { dukkanKaynagiKur, dukkanKurBilgisi, referansFiyati } from "./dukkan-kaynak";
 import { dukkanAdi } from "./dukkan-html";
 import { yapiEtiketMetni } from "./yapi-etiket";
+import { tesisOdakCercevesi, uretimDurduruldu } from "./tesis-odak";
 import { yapiSuresi } from "./yapi-sure";
 import { mulkMetni } from "./mulk-metin";
 import type { DukkanKurBilgisi } from "./dukkan-kaynak";
@@ -158,6 +159,7 @@ export class HaritaGorunumu {
   private duzey: Duzey = 1;
   private gorunur = false;
   private gorunumSurumu = 0;
+  private tesisOdakSurumu = 0;
   private etiketler: maplibregl.Marker[] = [];
   private izgara: Izgara | null = null;
   private sahiplik: IlceSahipligi | null = null;
@@ -628,6 +630,24 @@ export class HaritaGorunumu {
       c = c ? cerceveBirlestir(c, b) : b;
     }
     if (c) this.harita.fitBounds(sinirdanKutu(c), { padding: 80, maxZoom: 18, duration: hareketAzMi() ? 0 : 800 });
+  }
+
+  /** İlçe açıldıktan sonra gerçek own tesis ayak izine uç; eski istek yeni seçimi ezmez. */
+  async tesiseUc(ilce: string, anahtar: string, istekGecerli: () => boolean = () => true): Promise<boolean> {
+    const odak = ++this.tesisOdakSurumu;
+    const surum = this.gorunumSurumu;
+    const gecerli = (): boolean => istekGecerli() && this.gorunur && this.ilceKimlik === ilce
+      && surum === this.gorunumSurumu && odak === this.tesisOdakSurumu;
+    if (!gecerli() || !this.izgara) return false;
+    const sahiplik = await this.baglanti.sahiplikAl(ilce);
+    if (!gecerli()) return false;
+    const sinir = tesisOdakCercevesi(sahiplik, ilce, this.baglanti.ben.id, anahtar);
+    if (!sinir) return false;
+    this.sahiplik = sahiplik;
+    if (sahiplik) this.tumSahiplik.set(ilce, sahiplik);
+    this.sahiplikCiz();
+    this.harita.fitBounds(sinirdanKutu(sinir), { padding: 80, maxZoom: 18, duration: hareketAzMi() ? 0 : 800 });
+    return true;
   }
 
   /** Harita gizlenince: ipucu, kart ve alt çubuk kapanır. */
@@ -1316,7 +1336,7 @@ export class HaritaGorunumu {
     const carpan = this.baglanti.erkenOyunCarpani?.() ?? 1;
     const sure = (y: (typeof yapilar)[number]): number => yapiSuresi(this.katalog.find((k) => k.id === y.tur)?.sureSaat ?? 1, carpan).simdi * 3_600_000;
     // Aşama ancak birkaç saatte bir değişir: iki saniyelik tazelemede aynıysa kaynak yeniden yüklenmez (harita boşta kalsın)
-    const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.tur === "dukkan" ? etiketAdi(y) : ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${asinmaOzelligi(y.sahip, ben, y.asinmaPpm).w ?? 0}:${y.bitis === undefined ? 0 : 1}${cizim.etiket && y.bitis !== undefined && y.bitis > simdi ? `:${Math.ceil((y.bitis - simdi) / 60_000)}` : ""}`).join(";")}`; // etiketteki kalan süre dakikada bir tazelenir (B6)
+    const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.tur === "dukkan" ? etiketAdi(y) : ""}:${y.hucreler.join(",")}:${uretimDurduruldu(y, ben, this.tablo) ? 1 : 0}:${yapiAsamasi(y, simdi, sure(y))}:${asinmaOzelligi(y.sahip, ben, y.asinmaPpm).w ?? 0}:${y.bitis === undefined ? 0 : 1}${cizim.etiket && y.bitis !== undefined && y.bitis > simdi ? `:${Math.ceil((y.bitis - simdi) / 60_000)}` : ""}`).join(";")}`; // etiketteki kalan süre dakikada bir tazelenir (B6)
     if (!zorla && imza === this.yapiImzasi) return;
     this.yapiImzasi = imza;
     for (const m of this.yapiEtiketleri) m.remove();
@@ -1349,6 +1369,12 @@ export class HaritaGorunumu {
       e.setAttribute("aria-hidden", "true");
       const ad = etiketAdi(y);
       e.textContent = yapiEtiketMetni({ ad, asama: a, yukseltme: !!y.yukseltme, dukkan: y.tur === "dukkan", ...(y.bitis !== undefined ? { kalanMs: y.bitis - simdi } : { bitisBilinmiyor: true }) });
+      if (uretimDurduruldu(y, ben, this.tablo)) {
+        const durum = document.createElement("small");
+        durum.className = "yapi-uretim-durumu";
+        durum.textContent = " · Üretim durduruldu";
+        e.append(durum);
+      }
       this.yapiEtiketleri.push(new maplibregl.Marker({ element: e, anchor: "center" }).setLngLat([xtenBoylam(sx / y.hucreler.length), ytenEnlem(sy / y.hucreler.length)]).addTo(this.harita));
     }
     src.setData({ type: "FeatureCollection", features: f });

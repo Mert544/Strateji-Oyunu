@@ -2,6 +2,36 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — M1 bakım tercihi ve H1 tesis odağı
+
+N1 `832064c` üstüne mevcut altı uzmanla [M1–H1](codex-m1-h1-bakim-harita-sozlesmesi.md)
+tamamlandı. İşletmem'de düşük/normal/yüksek bakım, sunucunun gerçek özel
+mevcut düzeyiyle ve ayrı görülen-düzey onayıyla değişir. Bilinmeyen değer
+normal sayılmaz, 0 korunur; eski onay çekirdekte mutasyon öncesi reddedilir.
+Oyuncunun bütün işletmelerine etkisi, girdiler/gider ve aşınma tercihi
+anlatılır; mevcut denge, ücretler ve günlük bakım kuralları değişmedi.
+
+Tesis Git eylemi güncel sahiplikte gerçek tesis hücrelerine odaklanır;
+başka yapıların parselleri çerçeveye katılmaz. Asenkron eski gezinme yeni
+seçimi ezmez, iptal edilen yükleme temizlenir. Tesis bulunamazsa ilçe
+fallback'i açıkça bildirilir. Kendi gerçek durdurulmuş üretim tesisinde
+harita etiketi “Üretim durduruldu” gösterir; eksik bilgi veya inşaat için
+bu durum uydurulmaz.
+
+B6'nın tek seçili koşusunda üç vaka ilk denemede geçti, eski 26 vaka
+atlandı: gerçek 0/2/1 bakım parça tüketimi, özel kare/legacy/stale saf ret,
+save/load/replay; gerçek controller→WS köprüsüyle seçim/iptal/frozen onay,
+0/pending/ack/ret ve başka oturumun yeni düzeyi; doğru iki hücrelik tesis
+çerçevesi ve geçersiz/başkasına ait ayak izi, durdurulmuş üretim ayrımı.
+Kök ve istemci tip kontrolleri, son istemci derlemesi birer kez başarılı.
+Dünya gzip 392,7KB/400KB, harita 513,7KB, toplam JS 934,5KB. Root birleşik
+kaynakları inceledi. Tarayıcı/ekran, geniş test veya önceki paket tekrarı yok;
+DOM odağı/kamera animasyonu gerçek tarayıcıda sınanmadı.
+
+Sıradaki hazır iş: genel onarım ve sondajı gerçek hedef, maliyet ve sonuç
+bilgili ayrı tekliflere bağlamak. K2b/PvP/sokak varlıkları ile muhasebe sınır
+borcu ortak Ar-Ge kaydında ayrı kalır.
+
 ## Güncel teslim — ortak Ar-Ge ve N1 kaynaklı tedarik
 
 S3 `95b3bef` üstüne mevcut altı uzman üretim/sanayi, lojistik, kamu/yönetim,

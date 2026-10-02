@@ -882,7 +882,7 @@ export type Komut =
   // sahipsizler `sinif` sınıfında atomik satın alınır); bölge kipinde ikisi de verilemez.
   | { tur: "tesis_olcek_yukselt"; bolge: string; tesis: number; olcek: 1 | 2; ekHucreler?: HucreId[]; sinif?: ArsaSinifi }
   | { tur: "genel_onarim"; bolge: string }
-  | { tur: "bakim_duzeyi"; duzey: 0 | 1 | 2 }
+  | { tur: "bakim_duzeyi"; duzey: 0 | 1 | 2; oncekiDuzey?: 0 | 1 | 2 }
   | { tur: "arama_sondaji"; bolge: string; mal: string }
   // Lojistik
   | { tur: "kenar_gelistir"; kenar: number }

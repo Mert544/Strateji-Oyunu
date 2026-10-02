@@ -428,6 +428,7 @@ const oyuncuKaresiSemasi = z.object({
   hazine: stokFormuluSemasi,
   vergiPpm: tam,
   askeriRezervPpm: tam,
+  bakimDuzeyi: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
   teknolojiler: z.array(tam),
   arastirma: z.object({ teknoloji: tam, bitis: tam }).nullable(),
   arastirmaYayilimPpm: z.array(z.number().int().min(0).max(1_000_000)).optional(),

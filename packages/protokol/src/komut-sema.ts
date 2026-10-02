@@ -42,7 +42,7 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
     sinif: z.enum(["kirsal", "kasaba", "sehir"]).optional(),
   }),
   z.object({ tur: z.literal("genel_onarim"), bolge: kimlik }),
-  z.object({ tur: z.literal("bakim_duzeyi"), duzey: z.union([z.literal(0), z.literal(1), z.literal(2)]) }),
+  z.object({ tur: z.literal("bakim_duzeyi"), duzey: z.union([z.literal(0), z.literal(1), z.literal(2)]), oncekiDuzey: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional() }),
   z.object({ tur: z.literal("arama_sondaji"), bolge: kimlik, mal: kimlik }),
   // Lojistik
   z.object({ tur: z.literal("kenar_gelistir"), kenar: tamsayi }),

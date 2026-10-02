@@ -82,6 +82,12 @@ export interface TesisDurumDegistirIstegi {
   oncekiAktif: boolean;
 }
 
+/** Oyuncunun bütün tesislerine uygulanan bakım tercihi; görülen düzey sunucuda korunur. */
+export interface BakimDuzeyiDegistirIstegi {
+  duzey: 0 | 1 | 2;
+  oncekiDuzey: 0 | 1 | 2;
+}
+
 /** Pazar'da sat (`ticaret_emri`, ihracat): SÜREKLİ saatlik emir. `oranSaat` mili-birim/sa (tamsayı; 0 = emri kaldırır). `bolge`: işletme düğümü kimliği (`<il>#<oyuncu>`). */
 export interface TicaretEmriIstegi {
   bolge: string;
@@ -131,6 +137,8 @@ export interface YapiKaydi {
   durum: "insaat" | "tesis";
   sahip: OyuncuId;
   hucreler: HucreId[];
+  /** Yalnız sahibinin tamamlanmış tesisindeki gerçek çalışma durumu; eksik bilgi veya inşaatta verilmez. */
+  aktif?: boolean;
   /** Tesis türü kimliği (yalnız sahibine bilinir; başkasının yapısı için tanımsız). */
   tur?: string;
   /** İnşaat başlangıcı ve bitişi (sim ms); biliniyorsa. */
@@ -261,6 +269,8 @@ export type PazarSatisSonucu = { tamam: true; t: number } | { tamam: false; mesa
 /** Oyuncunun işletme özeti (mülk kipi kabuğu): hazine, kalkan, arsalar, yapılar, stok ve satış. Yalnız okunur. */
 export interface IsletmeDurumu {
   simZamani: number;
+  /** Sunucunun oyuncuya ait etkin bakım düzeyi; alan yoksa bilinmiyor, 0 gerçek düşük bakımdır. */
+  bakimDuzeyi?: 0 | 1 | 2;
   hazineMili: number | null;
   /** Hazinenin net akışı (mili-₺/saat; biliniyorsa). */
   hazineOraniMili: number | null;
@@ -332,6 +342,8 @@ export interface MulkBaglantisi {
   yontemDegistir?(i: YontemDegistirIstegi): Promise<TesisSonucu>;
   /** Mevcut tesis_durum komutu; görülen çalışma durumu sunucuda doğrulanır. */
   tesisDurumDegistir?(i: TesisDurumDegistirIstegi): Promise<TesisSonucu>;
+  /** Global bakım tercihi; bölge seçilmez ve görülen önceki düzey aynen aktarılır. */
+  bakimDuzeyiDegistir?(i: BakimDuzeyiDegistirIstegi): Promise<TesisSonucu>;
   /** Pazar'da sat (`ticaret_emri`, ihracat; mülk kipinde liman şartı yok): sürekli saatlik emir ver/güncelle (`oranSaat` 0 = kaldır). Tanımsızsa Mal sekmesinde "Pazar'da sat" gösterilmez. Ret nedeni Türkçe (`pazar.ret.*`). */
   ticaretEmri?(i: TicaretEmriIstegi): Promise<TesisSonucu>;
   /** Sahibinin işletmelerindeki gerçek stok ve sürekli ithalat emirleri. */
@@ -661,6 +673,7 @@ export class SahteBaglanti implements MulkBaglantisi {
       tur: i.tur,
       baslangic: i.baslangic,
       bitis: i.bitis,
+      ...(i.bitis <= simdi ? { aktif: true } : {}),
       ...(i.bitis <= simdi && i.olcek !== undefined ? { olcek: i.olcek } : {}),
       ...(i.yukseltme ? { yukseltme: { ...i.yukseltme } } : {}),
     }));

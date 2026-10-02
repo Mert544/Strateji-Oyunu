@@ -18,7 +18,7 @@
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, erkenOyunCarpani, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, LojistikKenarGorunumu, SunucuMesaji } from "@bolge/protokol";
-import type { PazarKaynagi, PazarSatisIstegi, PazarSatisSonucu, DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisDurumDegistirIstegi, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
+import type { BakimDuzeyiDegistirIstegi, PazarKaynagi, PazarSatisIstegi, PazarSatisSonucu, DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisDurumDegistirIstegi, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce, pazarHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
 import type { InsaatBilgisi } from "../yuru/arsa";
 import { parselToplamFiyatiMili } from "./fiyat";
@@ -345,6 +345,23 @@ export class WsBaglanti implements MulkBaglantisi {
       }
       const hucre = hataHucresi(r.hata);
       return { tamam: false, hata: "sunucu", mesaj: mulkHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)), ...(hucre ? { hucre } : {}) };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
+  /** Oyuncunun global bakım tercihi; görülen düzey istemcide yeniden hesaplanmaz. */
+  async bakimDuzeyiDegistir(i: BakimDuzeyiDegistirIstegi): Promise<TesisSonucu> {
+    try {
+      const r = await this.komutGonder({ tur: "bakim_duzeyi", duzey: i.duzey, oncekiDuzey: i.oncekiDuzey });
+      if (r.tamam) return { tamam: true, t: r.t };
+      const mesaj = r.hata === "bakim duzeyi degisti" ? "Bakım düzeyi değişmiş. Güncel tercihi yeniden inceleyin."
+        : r.hata === "gecersiz onceki bakim duzeyi" ? "Görülen bakım düzeyi geçersiz. Bakım tercihlerini yeniden açın."
+        : r.hata.startsWith("gecersiz bakim duzeyi") ? "İstenen bakım düzeyi geçersiz. Bakım tercihlerini yeniden açın."
+        : r.hata.startsWith("bilinmeyen oyuncu") ? "Oyuncunun bakım bilgisi bulunamadı. Güncel durumu kontrol edin."
+        : r.hata === "sanayi katmani kapali" ? "Sanayi katmanı kapalı; bakım tercihi şu anda kullanılamıyor."
+        : "Bakım düzeyi değiştirilemedi. Güncel tercihi kontrol edip yeniden deneyin.";
+      return { tamam: false, hata: "sunucu", mesaj };
     } catch (e) {
       return this.agHatasi(e);
     }
@@ -920,6 +937,7 @@ export class WsBaglanti implements MulkBaglantisi {
     const mk = o.mulk;
     return {
       simZamani: t,
+      ...(o.bakimDuzeyi === undefined ? {} : { bakimDuzeyi: o.bakimDuzeyi }),
       hazineMili: stokAraDeger(o.hazine, t),
       hazineOraniMili: o.hazine[1],
       araziDegeriMili: mk?.araziDegeriMili ?? null,
@@ -1443,6 +1461,7 @@ export class WsBaglanti implements MulkBaglantisi {
         }
       } else {
         const t = kendi?.ozel?.tesisler.find((x) => x[0] === y.id);
+        if (kendi?.genel.sahip === ben && t !== undefined && (t[3] === 0 || t[3] === 1)) y.aktif = t[3] === 1;
         const tur = t ? turler[t[1]] : undefined;
         if (tur) y.tur = tur;
         const olcek = t && kendi?.ozel ? tesisOlcegi(kendi.ozel, t[0]) : undefined;

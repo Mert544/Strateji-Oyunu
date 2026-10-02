@@ -1,0 +1,17 @@
+.bkp-panel{min-width:0;max-width:100%;box-sizing:border-box;margin:18px 0;padding:14px;border:1px solid var(--cizgi);border-radius:var(--r-md);background:var(--yuzey);overflow-wrap:anywhere}
+.bkp-panel>h4{margin:0 0 6px;font-size:1em;line-height:1.5}
+.bkp-panel .bkp-kapsam,.bkp-panel .bkp-guncel,.bkp-panel .bkp-bilgi,.bkp-panel .bkp-hata,.bkp-panel .bkp-sonuc{font-size:.85em;line-height:1.55;margin:8px 0;overflow-wrap:anywhere}
+.bkp-panel .bkp-kapsam,.bkp-panel .bkp-bilgi{color:var(--murekkep-2)}
+.bkp-panel .bkp-duzeyler{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:12px 0}
+.bkp-panel .bkp-duzey{display:block;text-align:left;min-width:0;width:100%;min-height:44px;box-sizing:border-box;padding:10px 12px;border:1px solid var(--cizgi);border-radius:var(--r-sm);background:var(--yuzey-2);color:var(--murekkep);font:inherit;font-size:.85em;line-height:1.5;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.bkp-panel .bkp-duzey strong,.bkp-panel .bkp-duzey span{display:block}.bkp-panel .bkp-duzey span{margin-top:4px;font-size:.9em;color:var(--murekkep-2)}
+.bkp-panel .bkp-duzey[aria-pressed=true]{border-color:var(--birincil);background:var(--birincil-tint);color:var(--birincil-ink)}
+.bkp-panel .bkp-duzey:disabled{cursor:default}.bkp-panel .bkp-hata{color:var(--hata-ink)}
+.bkp-panel .bkp-onay{margin-top:12px;padding:12px;min-width:0;border:1px solid var(--cizgi-guclu);border-radius:var(--r-sm);background:var(--yuzey-2)}
+.bkp-panel .bkp-onay h5{margin:0 0 8px;font-size:.9em;line-height:1.5}
+.bkp-panel .bkp-eylemler{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;min-width:0}
+.bkp-panel .bkp-dugme{flex:1 1 100px;min-width:0;min-height:44px;box-sizing:border-box;padding:10px 12px;border:1px solid var(--cizgi);border-radius:var(--r-sm);background:var(--yuzey);color:var(--murekkep);font:inherit;font-size:.85em;line-height:1.4;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.bkp-panel .bkp-onayla{background:var(--birincil);color:var(--birincil-ustu);border-color:var(--birincil)}
+.bkp-panel .bkp-dugme:disabled{background:var(--yuzey);color:var(--murekkep-2);border-color:var(--cizgi);cursor:default}
+.bkp-panel button:focus-visible,.bkp-panel [data-bakim-baslik]:focus-visible{outline:2px solid var(--odak);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.bkp-panel,.bkp-panel *{animation:none;transition:none}}

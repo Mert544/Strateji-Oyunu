@@ -10,16 +10,17 @@ import paramHam from "../../veri/icerik/parametreler.json";
 import { icerikTablosu } from "../src/komut/tablo";
 import { SahteBaglanti } from "../src/harita/baglanti";
 import type { MulkBaglantisi } from "../src/harita/baglanti";
-import type { HucreSahipligi, IlceSahipligi } from "../src/harita/baglanti";
+import type { HucreSahipligi, IlceSahipligi, YapiKaydi } from "../src/harita/baglanti";
 import { parselFiyatiMili, TABAN_FIYAT } from "../src/harita/fiyat";
 import { hataHucresi, mulkHatasiTurkce } from "../src/harita/hata-mulk";
-import { Bit, hucreId } from "../src/harita/hucre";
+import { Bit, hucreId, hucreSiniri } from "../src/harita/hucre";
 import type { Izgara } from "../src/harita/hucre";
 import { Secim } from "../src/harita/secim";
 import type { SecimBaglami } from "../src/harita/secim";
 import { ayakIzi, malzemeMetni, yapiKatalogu, yerlesimPlani } from "../src/harita/yapi";
 import type { YapiTanimi, YerlesimBaglami, YerlesimPlani } from "../src/harita/yapi";
 import { yerlesimiUygula } from "../src/harita/zincir";
+import { tesisOdakCercevesi, uretimDurduruldu } from "../src/harita/tesis-odak";
 
 const ic = icerikTablosu(icerikHam as unknown as IcerikDosyasi, paramHam as unknown as Parametreler);
 const katalog = yapiKatalogu(ic);
@@ -35,6 +36,26 @@ function izgara(g = 30, y = 20, f?: (x: number, y: number) => number): Izgara {
   return { x0, y0, genislik: g, yukseklik: y, durum };
 }
 const id = (i: number, j: number): string => hucreId(x0 + i, y0 + j);
+
+it("H1 tesis odağı yalnız doğrulanmış kendi ayak izidir; eski/eksik/yabancı hedef ve bilinmeyen aktif durum durdurulmuş sayılmaz", () => {
+  const h = [id(4, 3), id(5, 3)];
+  const y: YapiKaydi = { id: 12, anahtar: "t12", durum: "tesis", sahip: "ben", hucreler: h, tur: "gida_fabrikasi", yontem: "ekmek_firini", aktif: false };
+  const s = baglam(izgara(), h.map((k) => [k, { sahip: "ben", tesis: 12 }] as [string, Partial<HucreSahipligi> & { sahip: string }])).sahiplik;
+  s.hucreler.set(id(20, 15), { sahip: "ben", tesis: 55, sinif: "kirsal", degerMili: 0, alinma: 0 });
+  s.yapilar = [y, { ...y, id: 55, anahtar: "t55", hucreler: [id(20, 15)] }];
+  const once = structuredClone(s), sol = hucreSiniri(x0 + 4, y0 + 3), sag = hucreSiniri(x0 + 5, y0 + 3);
+  expect(tesisOdakCercevesi(s, "i", "ben", "t12")).toEqual([sol[0], sol[1], sag[2], sol[3]]);
+  expect(s).toEqual(once);
+  expect(uretimDurduruldu(y, "ben", ic)).toBe(true);
+  for (const kotu of [{ ...y, aktif: undefined }, { ...y, aktif: true }, { ...y, sahip: "baska" }, { ...y, durum: "insaat" as const }, { ...y, yontem: "geleneksel_tarim" }]) expect(uretimDurduruldu(kotu, "ben", ic)).toBe(false);
+  for (const [ilce, ben, key] of [["eski_ilce", "ben", "t12"], ["i", "baska", "t12"], ["i", "ben", "t012"], ["i", "ben", "t999"]]) expect(tesisOdakCercevesi(s, ilce!, ben!, key!)).toBeNull();
+  const eksik = structuredClone(s); eksik.hucreler.delete(h[1]!);
+  const yabanci = structuredClone(s); yabanci.hucreler.get(h[1]!)!.sahip = "baska";
+  const baskaTesis = structuredClone(s); baskaTesis.hucreler.get(h[1]!)!.tesis = 55;
+  const insaat = structuredClone(s); insaat.yapilar![0]!.durum = "insaat";
+  const yinelenen = structuredClone(s); yinelenen.yapilar![0]!.hucreler.push(h[0]!);
+  for (const kotu of [eksik, yabanci, baskaTesis, insaat, yinelenen]) expect(tesisOdakCercevesi(kotu, "i", "ben", "t12")).toBeNull();
+});
 
 function baglam(iz: Izgara, hucreler: Array<[string, Partial<HucreSahipligi> & { sahip: string }]> = [], ek: Partial<YerlesimBaglami> = {}): YerlesimBaglami {
   const m = new Map<string, HucreSahipligi>();
