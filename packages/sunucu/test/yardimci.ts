@@ -48,10 +48,10 @@ export interface TestSunucusu {
   kapat(): Promise<void>;
 }
 
-export async function testSunucusu(s: { hizSiniri?: HizSiniriSecenekleri; tohum?: number; veri?: CekirdekVeriPaketi; sunucu?: Partial<SunucuSecenekleri> } = {}): Promise<TestSunucusu> {
+export async function testSunucusu(s: { hizSiniri?: HizSiniriSecenekleri; tohum?: number; veri?: CekirdekVeriPaketi; sunucu?: Partial<SunucuSecenekleri>; odul?: boolean } = {}): Promise<TestSunucusu> {
   const depo = bellekDeposu();
   const saat = new ElleSaat();
-  const yazar = await DunyaYazari.ac({ veri: s.veri ?? veri(), tohum: s.tohum ?? 1, depo, saat, commitAraligiMs: 15, goruntuAraligiMs: 1e12 });
+  const yazar = await DunyaYazari.ac({ veri: s.veri ?? veri(), tohum: s.tohum ?? 1, depo, saat, commitAraligiMs: 15, goruntuAraligiMs: 1e12, ...(s.odul ? { odul: true } : {}) });
   const sunucu = await sunucuBaslat({
     yazar,
     kimlik: new GelistirmeKimligi(SIR),

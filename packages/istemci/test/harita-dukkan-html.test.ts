@@ -565,7 +565,7 @@ describe("dukkan-duzelt 5-9", () => {
   });
 
   it("8) B7 Defter kartına 'Dükkân kur' yalnız kur eylemi bağlıyken ve adım ilk_dukkan iken; Atla kalır", () => {
-    const adim = { metin: "Kendi tezgâhın: bir dükkân kur ve oradan ilk satışını yap.", odulHtml: "", kavram: "ilk_dukkan" };
+    const adim = { metin: "Kendi tezgâhın: bir dükkân kur ve rafından satış yap.", odulHtml: "", kavram: "ilk_dukkan" };
     const var1 = ustKartHtml("defter", adim, true);
     expect(var1).toContain(`<button type="button" class="eylem" data-eylem="dukkan-kur">Dükkân kur</button>`);
     expect(var1).toContain(`data-eylem="defter-atla"`);

@@ -11,7 +11,7 @@
  * `parselAl`/`sahiplikAl` kullanan tüketiciler etkilenmez.
  */
 import type { ArsaSinifi, HucreId, Komut, Mili, MulkKomutu, OyuncuId } from "@bolge/cekirdek";
-import { DEFTER_DAMGALARI, DEFTER_ODUL_SIRASI, defterSablonu } from "@bolge/protokol";
+import { DEFTER_DAMGALARI, DEFTER_GOSTERIM_SIRASI, defterSablonu } from "@bolge/protokol";
 import type { Defter, DefterKazanilan, DefterOdulu, DonusOzeti, IlgiKaresi, KamuGrubuKaresi } from "@bolge/protokol";
 import { kavramEtkinBos } from "./etkin";
 import { arsaSinifi, bitisikMi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili } from "./fiyat";
@@ -252,6 +252,8 @@ export interface IsletmeDurumu {
   }>;
   /** Şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (`kare.ozel.sebeke`; işletme düğümleri toplanmış; alım yoksa tanımsız). Bedel istemcide: miktar x şebeke fiyatı. */
   sebeke?: Array<[mal: string, miliSaat: number]>;
+  /** Oyuncunun istenen oranı > 0 olan en az bir İHRACAT emri var mı (`kare.ozel.emirler`; yalnız true iken yazılır). Defter "satışın yolda" gösterimi için (`defter.ts` `ilkSatisBekliyor`). */
+  ihracatEmriVar?: boolean;
 }
 
 /** Dükkân görünümünün kaynağı olan karenin gereken kısmı (`dukkan-kopru.ts` girdisi). */
@@ -489,7 +491,7 @@ export class SahteBaglanti implements MulkBaglantisi {
     if (hucre > 0) kazanilan.push({ kavram: DEFTER_DAMGALARI[0], sablon: defterSablonu(DEFTER_DAMGALARI[0]), tur: "damga", t: this.ilkParselT ?? simdi });
     if (bitenT !== null) kazanilan.push({ kavram: "ilk_yapi", sablon: defterSablonu("ilk_yapi"), tur: "odul", t: bitenT, ...(t.kavramlar["ilk_yapi"] ? { odul: t.kavramlar["ilk_yapi"] } : {}) });
     const alinan = new Set(kazanilan.map((k) => k.kavram));
-    const siradaki = DEFTER_ODUL_SIRASI.filter((k) => !alinan.has(k) && t.kavramlar[k]).map((k) => ({ kavram: k, sablon: defterSablonu(k), etkin: (this.s.defterEtkin ?? kavramEtkinBos)(k), odul: t.kavramlar[k]! }));
+    const siradaki = DEFTER_GOSTERIM_SIRASI.filter((k) => !alinan.has(k) && t.kavramlar[k]).map((k) => ({ kavram: k, sablon: defterSablonu(k), etkin: (this.s.defterEtkin ?? kavramEtkinBos)(k), odul: t.kavramlar[k]! }));
     const toplam = kazanilan.reduce((s, k) => s + (k.odul?.degerMili ?? 0), 0);
     return { kazanilan, siradaki, toplamOdulMili: toplam, tavanMili: t.tavanMili };
   }

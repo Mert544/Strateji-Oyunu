@@ -4,7 +4,7 @@
  */
 import { alinanOdulDegeri, odulDegeri } from "@bolge/cekirdek";
 import type { DerlenmisIcerik, Dunya } from "@bolge/cekirdek";
-import { DEFTER_ODUL_SIRASI, defterSablonu } from "@bolge/protokol";
+import { DEFTER_GOSTERIM_SIRASI, defterSablonu } from "@bolge/protokol";
 import type { Defter, DefterKazanilan, DefterOdulu, DefterSiradaki } from "@bolge/protokol";
 import type { Damga } from "../depo/tipler";
 import { kavramEtkin } from "./etkin";
@@ -41,8 +41,8 @@ export function defterKur(ic: DerlenmisIcerik, d: Readonly<Dunya>, oyuncu: strin
   kazanilan.sort((a, b) => (a.t ?? Number.POSITIVE_INFINITY) - (b.t ?? Number.POSITIVE_INFINITY) || (a.kavram < b.kavram ? -1 : a.kavram > b.kavram ? 1 : 0));
   const siradaki: DefterSiradaki[] = [];
   if (tablo !== undefined) {
-    const bilinen = new Set<string>(DEFTER_ODUL_SIRASI);
-    const sira = [...DEFTER_ODUL_SIRASI, ...Object.keys(tablo.kavramlar).filter((k) => !bilinen.has(k)).sort()];
+    const bilinen = new Set<string>(DEFTER_GOSTERIM_SIRASI);
+    const sira = [...DEFTER_GOSTERIM_SIRASI, ...Object.keys(tablo.kavramlar).filter((k) => !bilinen.has(k)).sort()];
     for (const kavram of sira) {
       if (alinan.has(kavram)) continue;
       const odul = defterOdulu(ic, kavram);

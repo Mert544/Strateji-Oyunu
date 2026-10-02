@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { SAAT, SISTEM_OYUNCUSU, Simulasyon, alinanOdulDegeri, odulDegeri } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
-import { DEFTER_ODUL_SIRASI, SunucuMesajiSemasi } from "@bolge/protokol";
+import { DEFTER_GOSTERIM_SIRASI, SunucuMesajiSemasi } from "@bolge/protokol";
 import { bellekDeposu } from "../src/depo/bellek";
 import { kavramEtkin } from "../src/odul/etkin";
 import { postgresDeposu } from "../src/depo/postgres";
@@ -183,8 +183,8 @@ describe("kavram saptama ve odulun gunluge girisi", () => {
       if (k.tur === "odul") expect(k.odul?.degerMili).toBe(odulDegeri(y.sim.ic, k.kavram));
       else expect(k.odul).toBeUndefined();
     }
-    // siradaki: sabit siradan (DEFTER_ODUL_SIRASI), alinmayan ve tabloda olan kavramlar; etkin kurali (P4/P5): beklenti icerikten turetilir (kavramEtkin); yer tutucu (ilk_sozlesme) hep false.
-    const siradaki = DEFTER_ODUL_SIRASI.filter((k) => !KAVRAMLAR_ALI.includes(k as never) && odulDegeri(y.sim.ic, k) !== undefined);
+    // siradaki: gosterim siradan (DEFTER_GOSTERIM_SIRASI), alinmayan ve tabloda olan kavramlar; etkin kurali (P4/P5): beklenti icerikten turetilir (kavramEtkin); yer tutucu (ilk_sozlesme) hep false.
+    const siradaki = DEFTER_GOSTERIM_SIRASI.filter((k) => !KAVRAMLAR_ALI.includes(k as never) && odulDegeri(y.sim.ic, k) !== undefined);
     expect(siradaki).toEqual(expect.arrayContaining(["ilk_ekmek", "ilk_pencere"])); // G8 tablosu (T3 g8-icerik)
     expect(d?.siradaki.map((s) => [s.kavram, s.etkin])).toEqual(siradaki.map((k) => [k, k === "ilk_sozlesme" ? false : kavramEtkin(y.sim.ic, k)]));
     expect(kavramEtkin(y.sim.ic, "ilk_dukkan")).toBe(true); // G7-4 sonrasi gercek icerik dukkan verisi tasir: ilk_dukkan etkin
@@ -441,7 +441,7 @@ describe("defterIste (WebSocket)", () => {
     if (m.tur !== "defter") throw new Error("defter bekleniyordu");
     expect(m.istek).toBe(42);
     expect(m.kazanilan).toEqual([]);
-    expect(m.siradaki.map((s) => s.kavram)).toEqual(DEFTER_ODUL_SIRASI.filter((k) => odulDegeri(y.sim.ic, k) !== undefined)); // sabit sira; G8 ile ilk_ekmek ve ilk_pencere sirada (10 kavram)
+    expect(m.siradaki.map((s) => s.kavram)).toEqual(DEFTER_GOSTERIM_SIRASI.filter((k) => odulDegeri(y.sim.ic, k) !== undefined)); // gosterim sirasi (dukkan, ham mali isleden once); G8 ile ilk_ekmek ve ilk_pencere sirada (10 kavram)
     expect(m.siradaki).toHaveLength(10);
     expect(m.siradaki.find((s) => s.kavram === "ilk_yapi")?.odul).toEqual({ mal: { celik: 5000 }, degerMili: odulDegeri(y.sim.ic, "ilk_yapi") });
     expect(m.tavanMili).toBe(8_000_000);

@@ -8,7 +8,7 @@
  * gösterilmez. Ödül çubuğu ve tavan YOKTUR (ZK-1; sıradaki adımlarda "ödül: ..."; toplam yalnız "Defterine işlenen ödüller: ≈ ... değerinde"
  * satırı). Yeni kazanılan ödül için sakin bir bildirim (`yeniKazanilanlar`); yakın zamandaki Defter bildirimleri tek bildirimde birleşir.
  */
-import type { Defter, DefterKazanilan, DefterOdulu } from "@bolge/protokol";
+import type { Defter, DefterKazanilan, DefterOdulu, DefterSiradaki } from "@bolge/protokol";
 import { DUNYA_EPOCH_MS, esc, fmt, gercekTarih, paraMili, tarihMetni } from "../arayuz/bicim";
 import { ikon } from "../tasarim/ikon";
 
@@ -26,14 +26,16 @@ export const DEFTER_METINLERI: Readonly<Record<string, DefterMetni>> = {
   "defter.kavram.ilk_isleme": { kazanildi: "Ham malı işledin; ilk işlenmiş ürünün hayırlı olsun.", siradaki: "Ham malı işle (ör. tahılı gıdaya çevir)" },
   "defter.kavram.ilk_ekmek": { kazanildi: "İlk ekmeğin fırından çıktı; sıcağı sıcağına.", siradaki: "Unu fırında ekmeğe çevir." },
   "defter.kavram.zincir_kapandi": { kazanildi: "Zincir kapandı: bir yapının çıktısı öbürünün girdisi oldu.", siradaki: "Zinciri kapat: bir yapının çıktısını öbürüne girdi yap" },
-  "defter.kavram.ilk_dukkan": { kazanildi: "İlk satışını dükkânından yaptın.", siradaki: "Kendi tezgâhın: bir dükkân kur ve oradan ilk satışını yap." },
+  "defter.kavram.ilk_dukkan": { kazanildi: "Dükkânından da satış geldi; tezgâhın açıldı.", siradaki: "Kendi tezgâhın: bir dükkân kur ve rafından satış yap." },
   "defter.kavram.ilk_pencere": { kazanildi: "İlk pencerenin hazır; çelik, cam ve emek.", siradaki: "Çelik ve camdan pencere yap; camı önce silisten üret." },
+  // Gösterim varyantı (şema alanı değil): ilk ihracat emri verildi, satış saat başında gerçekleşir; sıradaki adım dükkândır (`ilkSatisBekliyor`)
+  "defter.kavram.ilk_satis.bekliyor": { kazanildi: "İlk satışın yapıldı; bereketli olsun.", siradaki: "Satışın yolda; beklerken dükkânını kur." },
   "defter.kavram.ilk_sozlesme": { kazanildi: "İlk sözleşmen imzalandı; hayırlı olsun.", siradaki: "İlk sözleşmeni yap" },
   "defter.kavram.ikinci_ilce": { kazanildi: "Komşu ilçeye selam: ikinci ilçende de yerin var.", siradaki: "Komşu bir ilçede yer edin" },
   "defter.kavram.ilk_arastirma": { kazanildi: "İlk araştırman tamamlandı.", siradaki: "İlk araştırmanı yap" },
   "defter.kavram.ilk_parsel": { kazanildi: "İlk arsan; hayırlı olsun.", siradaki: "İlk arsanı al." },
   "defter.kavram.ilk_uretim": { kazanildi: "İlk ürün depoda; hayırlı olsun.", siradaki: "İlk ürününü al." },
-  "defter.kavram.ilk_raf": { kazanildi: "Rafına ilk malını koydun; kolay gelsin.", siradaki: "Dükkânının rafına mal koy." },
+  "defter.kavram.ilk_raf": { kazanildi: "Rafına ilk malını koydun; kolay gelsin.", siradaki: "Rafına ilk malını koy." },
   "defter.kavram.ilk_cam": { kazanildi: "İlk cam fırından çıktı; ışık girsin.", siradaki: "Cam fırınında ilk camını üret." },
   "defter.kavram.ilk_donus": { kazanildi: "Sen yokken de dünya işledi; döndüğünde defter seni bekliyordu.", siradaki: "Bir süre ara ver, sonra dön." },
 };
@@ -116,23 +118,52 @@ export function defterBirlesikMetni(n: number, degerMili: number): string {
   return degerMili > 0 ? cerceve("defter.bildirim.birlesik", { n: fmt(n), tutar: paraMili(degerMili, "asagi") }) : cerceve("defter.bildirim.birlesik_tutarsiz", { n: fmt(n) });
 }
 
-/** B7 "sıradaki adım" kartı için ilk etkin sıradaki adım (metin ve ödül sütunu); yoksa null. */
-export function defterUstKarti(d: Defter | null, malAdi: (m: string) => string): { metin: string; odulHtml: string; kavram: string } | null {
-  const x = d?.siradaki.find((y) => y.etkin);
-  return x ? { metin: defterMetni(x.sablon, x.kavram).siradaki, odulHtml: odulSutunu(x.odul, malAdi), kavram: x.kavram } : null;
+/**
+ * "Satışın yolda" durumu (YALNIZ gösterim; sunucunun `siradaki` listesi ve ödül kazanımı değişmez): `ilk_satis` henüz kazanılmadı (sıradakide) VE oyuncunun istenen oranı > 0 olan bir ihracat
+ * emri var. Satış saat başında gerçekleşir; o ana kadar Defter "Satışın yolda; beklerken dükkânını kur." der ve sıradaki adım dükkândır. Emir 0'a çekilirse ya da ilk satış kazanılırsa normal metin.
+ */
+export function ilkSatisBekliyor(d: Defter | null, ihracatEmriVar: boolean): boolean {
+  return ihracatEmriVar && d !== null && d.siradaki.some((x) => x.kavram === "ilk_satis");
+}
+
+/** Sıradaki adımın görünen metni; "satışın yolda" iken `ilk_satis` bekleme varyantını yazar. */
+export function siradakiMetni(x: DefterSiradaki, bekliyor: boolean): string {
+  return defterMetni(bekliyor && x.kavram === "ilk_satis" ? `${x.sablon}.bekliyor` : x.sablon, x.kavram).siradaki;
+}
+
+/**
+ * Gösterilecek sıradaki adımlar (etkin olanlar). Sunucu sırası (`DEFTER_GOSTERIM_SIRASI`) korunur; "satışın yolda" iken `ilk_satis` etkin `ilk_dukkan`ın hemen ARKASINA geçer (ilk etkin adım dükkân olur).
+ * Etkin `ilk_dukkan` yoksa (dükkân kuralı kapalı ya da kazanıldı) sıra değişmez.
+ */
+export function gosterilecekSiradaki(d: Defter, bekliyor: boolean): DefterSiradaki[] {
+  const l = d.siradaki.filter((x) => x.etkin);
+  if (!bekliyor) return l;
+  const s = l.findIndex((x) => x.kavram === "ilk_satis");
+  const dk = l.findIndex((x) => x.kavram === "ilk_dukkan");
+  if (s < 0 || dk < 0 || s > dk) return l;
+  const sonuc = [...l];
+  const [satis] = sonuc.splice(s, 1);
+  sonuc.splice(dk, 0, satis as DefterSiradaki); // dk, silme sonrası ilk_dukkan'ın indeksidir; ilk_satis hemen arkasına
+  return sonuc;
+}
+
+/** B7 "sıradaki adım" kartı için ilk etkin sıradaki adım (metin ve ödül sütunu); yoksa null. `bekliyor`: "satışın yolda" (bkz. `ilkSatisBekliyor`). */
+export function defterUstKarti(d: Defter | null, malAdi: (m: string) => string, bekliyor = false): { metin: string; odulHtml: string; kavram: string } | null {
+  const x = d ? gosterilecekSiradaki(d, bekliyor)[0] : undefined;
+  return x ? { metin: siradakiMetni(x, bekliyor), odulHtml: odulSutunu(x.odul, malAdi), kavram: x.kavram } : null;
 }
 
 /** "Defter" bölümü (İşletmem'de). `epochMs`: tarihleri gerçek takvime çevirmek için. */
-export function defterHtml(d: Defter | null, malAdi: (m: string) => string, epochMs = DUNYA_EPOCH_MS): string {
+export function defterHtml(d: Defter | null, malAdi: (m: string) => string, epochMs = DUNYA_EPOCH_MS, bekliyor = false): string {
   let s = `<h3>Defter</h3>`;
   if (!d) return s + `<p class="ipucu-metin">Defter yükleniyor…</p>`;
   // Ödül çubuğu ve tavan yok (ZK-1); toplam yalnız tek satır: işlenen ödüllerin değeri (çoğu mal olduğu için "değerinde")
   if (d.toplamOdulMili > 0) s += `<p class="defter-islenen soluk" data-alan="defter-islenen">${esc(cerceve("defter.islenen", { tutar: paraMili(d.toplamOdulMili, "asagi") }))}</p>`;
-  const siradaki = d.siradaki.filter((x) => x.etkin);
+  const siradaki = gosterilecekSiradaki(d, bekliyor);
   if (siradaki.length) {
     s += `<p class="defter-baslik">Sıradaki adımlar</p><ul class="mulk-liste defter-liste">`;
     for (const x of siradaki)
-      s += `<li data-kavram="${esc(x.kavram)}"><span class="ml-ad"><b>${esc(defterMetni(x.sablon, x.kavram).siradaki)}</b></span><span class="defter-tutar">${odulSutunu(x.odul, malAdi)}</span></li>`;
+      s += `<li data-kavram="${esc(x.kavram)}"><span class="ml-ad"><b>${esc(siradakiMetni(x, bekliyor))}</b></span><span class="defter-tutar">${odulSutunu(x.odul, malAdi)}</span></li>`;
     s += `</ul>`;
   }
   if (d.kazanilan.length) {

@@ -24,7 +24,7 @@ import type { Hiyerarsi } from "./veri";
 import { ASAMA_ADI, yapiAsamasi } from "./yapi";
 import { OLCEK_AD, olcekBuyutulebilir } from "./olcek";
 import { mulkMetni } from "./mulk-metin";
-import { defterBirlesikMetni, defterHtml, defterUstKarti, kazanimBildirimleri, yeniKazanilanlar } from "./defter";
+import { defterBirlesikMetni, defterHtml, defterUstKarti, ilkSatisBekliyor, kazanimBildirimleri, yeniKazanilanlar } from "./defter";
 import { dukkanBolumuHtml, dukkanDikkatMaddeleri, ustKartHtml } from "./dukkan-html";
 import { dukkanMetni } from "./dukkan-metin";
 import { DEFTER_ATLA_ANAHTARI, IlkSatisIzleyici, ONERI_KAPALI_ANAHTARI, oneriDurumu, rafaKonabilirStok, tarayiciDeposu } from "./dukkan-veri";
@@ -412,7 +412,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       dukkanKurulabilir: dukkanKurulabilir(),
       oneriKapatildi: depo.oku(ONERI_KAPALI_ANAHTARI) === "1",
       defterAtlandi: depo.oku(DEFTER_ATLA_ANAHTARI) === "1",
-      defterSiradaki: defterUstKarti(defter, ad.mal) !== null,
+      defterSiradaki: defterUstKarti(defter, ad.mal, ilkSatisBekliyor(defter, oku()?.ihracatEmriVar === true)) !== null,
     });
   };
   /** Telefonda alt sayfa kapalıyken İşletmem düğmesindeki öneri noktası ve erişilebilir adı (yalnız dükkân önerisinde; Defter kartı nokta çıkarmaz). */
@@ -594,9 +594,10 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
           oneriIsareti(durum);
           // İlk yapı (üretim tesisi) inşadayken D0 kartındaki Defter satırı "İlk yapını kur" demez (D0.defter_adim_insada)
           const ilkYapiInsada = d?.yapilar.some((y) => y.durum === "insaat" && !ekYapiMi(y.tur)) ?? false;
-          const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal), dukkanKurulabilir(), ilkYapiInsada);
+          const satisBekliyor = ilkSatisBekliyor(defter, d?.ihracatEmriVar === true);
+          const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal, satisBekliyor), dukkanKurulabilir(), ilkYapiInsada);
           const dukkan = dukkanBolumuHtml(dukkanGorunumu(), { ilceAdi: ad.ilce, simdi: d?.simZamani ?? 0, secili: dukkanPaneli?.durum.secili ?? null }) + (dukkanPaneli?.html() ?? "");
-          return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch()) : undefined, { ust, dukkan });
+          return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch(), satisBekliyor) : undefined, { ust, dukkan });
         }
         case "hazine":
           return mulkHazinePaneli(d, sebekeBolumuHtml(sebekeSatirlari(sebekeFiyat, d?.sebeke ?? []), ad.mal));
@@ -696,7 +697,9 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       void defterOku(f);
       const z = window.setInterval(() => {
         const d = oku();
-        const imza = d ? `${d.yapilar.filter((y) => y.durum === "tesis").length}|${d.yapilar.length}|${d.ilceHucre.map(([i, n]) => `${i}:${n}`).join(",")}` : "";
+        // Defter yapı/hücre değişince, ihracat emri açılıp kapanınca ve HER SİM SAATİNDE tazelenir: ödül dedektörü saat ızgarasında çalışır (ilk satış saat sınırında kazanılır), 20 sn'lik döngüyü beklemeden
+        // "Çiftliğinin tahılını Pazar'da sat" adımı satıştan hemen sonra düşer (T-6).
+        const imza = d ? `${d.yapilar.filter((y) => y.durum === "tesis").length}|${d.yapilar.length}|${d.ilceHucre.map(([i, n]) => `${i}:${n}`).join(",")}|${d.ihracatEmriVar === true ? 1 : 0}|${Math.floor(d.simZamani / 3_600_000)}` : "";
         if (imza !== defterImza || Date.now() - defterSonT > 20_000) {
           defterImza = imza;
           void defterOku(f);

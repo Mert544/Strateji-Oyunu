@@ -490,6 +490,7 @@ export class WsBaglanti implements MulkBaglantisi {
     const mallar = this.hos?.dizin.mallar ?? [];
     const yontemler = this.hos?.dizin.yontemler ?? [];
     const sebeke = new Map<string, number>();
+    let ihracatEmriVar = false;
     // Yapı → ilçe ve hücre sayısı: abone olunan ilçe karelerinden (bilinmiyorsa yalnız il)
     const yer = new Map<string, { ilce: string; hucre: number }>();
     for (const c of k.ilceler ?? [])
@@ -567,6 +568,7 @@ export class WsBaglanti implements MulkBaglantisi {
           x.satisMili += gercek;
           if (x.satisEmirMili === undefined) x.satisBolge = b.id; // ilk emri olan düğüm (mal başına tek emir; çok düğümde toplam oran)
           x.satisEmirMili = (x.satisEmirMili ?? 0) + oran;
+          if (oran > 0) ihracatEmriVar = true;
         } else mal(m).alisMili += gercek;
       }
     }
@@ -596,6 +598,7 @@ export class WsBaglanti implements MulkBaglantisi {
       yapilar,
       mallar: [...stok.entries()].sort((a, b) => a[0] - b[0]).map(([m, x]) => ({ mal: mallar[m] ?? String(m), ...x })),
       ...(sebeke.size > 0 ? { sebeke: [...sebeke.entries()] } : {}),
+      ...(ihracatEmriVar ? { ihracatEmriVar: true } : {}),
     };
   }
 

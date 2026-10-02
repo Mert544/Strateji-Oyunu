@@ -93,6 +93,14 @@ describe("Esnaf Defteri", () => {
     }
   });
 
+  it("ilk saat metin kararları (T3/Tasarım): ilk_dukkan kazanıldı/sıradaki, ilk_raf sıradaki, 'satışın yolda' varyantı; 'Defterine' yazımı", () => {
+    expect(defterMetni("defter.kavram.ilk_dukkan", "ilk_dukkan")).toEqual({ kazanildi: "Dükkânından da satış geldi; tezgâhın açıldı.", siradaki: "Kendi tezgâhın: bir dükkân kur ve rafından satış yap." });
+    expect(defterMetni("defter.kavram.ilk_raf", "ilk_raf").siradaki).toBe("Rafına ilk malını koy.");
+    expect(defterMetni("defter.kavram.ilk_satis.bekliyor", "ilk_satis").siradaki).toBe("Satışın yolda; beklerken dükkânını kur.");
+    expect(defterMetni("defter.kavram.ilk_satis", "ilk_satis").siradaki).toBe("Çiftliğinin tahılını Pazar'da sat."); // normal metin değişmez
+    for (const m of Object.values(DEFTER_METINLERI)) expect(m.kazanildi + m.siradaki).not.toMatch(/Defter'e/);
+  });
+
   it("sahte bağdaştırıcı örnek defter verir: arsa alınınca ilk arsa damgası; sıradakiler kritik yol sırasıyla", async () => {
     const G = 20;
     const durum = new Uint8Array(G * G).fill(Bit.ICERIDE | (1 << 5));
