@@ -99,7 +99,7 @@ export function sebekeSatirlari(f: SebekeFiyatlari | null, alimlar: ReadonlyArra
 }
 
 /**
- * Hazine sekmesi "Şebeke gideri" bölümü (A1 §3; Tasarım: tesis başına satır YOK, protokolde kırılım yok): elektrik ve yakıt satırları (miktar aşağı, gider YUKARI) ve (birden çok satır varsa) toplam.
+ * Hazine sekmesi "Şebeke gideri" bölümü (A1 §3; Tasarım: tesis başına satır YOK, protokolde kırılım yok): elektrik ve yakıt satırları (miktar aşağı, gider YUKARI) ve HER ZAMAN toplam (tek satırda da; Tasarım son kararı). TESİS kırılımı yok.
  * Alım yoksa boş dize (bölüm gizlenir). `malAdi`: mal kimliği -> ad (elektrik/yakıt dışı şebeke malı için).
  */
 export function sebekeBolumuHtml(satirlar: readonly SebekeSatiri[], malAdi: (mal: string) => string): string {
@@ -109,6 +109,6 @@ export function sebekeBolumuHtml(satirlar: readonly SebekeSatiri[], malAdi: (mal
   for (const s of satirlar) {
     h += `<li>${esc(yontemMetni(anahtar(s.mal), { mal: malAdi(s.mal), n: fmt(Math.floor(s.miktarMili / 1000)), gider: paraMili(s.bedelMili, "yukari") }))}</li>`;
   }
-  if (satirlar.length > 1) h += `<li><b>${esc(yontemMetni("sebeke.toplam", { gider: paraMili(satirlar.reduce((t, s) => t + s.bedelMili, 0), "yukari") }))}</b></li>`;
+  h += `<li><b>${esc(yontemMetni("sebeke.toplam", { gider: paraMili(satirlar.reduce((t, s) => t + s.bedelMili, 0), "yukari") }))}</b></li>`;
   return h + `</ul><p class="ipucu-metin">${esc(yontemMetni("sebeke.not"))}</p>`;
 }

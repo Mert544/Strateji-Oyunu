@@ -134,7 +134,7 @@ describe("şebeke gideri: birim fiyat çekirdek derlemesiyle AYNI; yöntem gider
     expect(h).toMatch(/Yakıt · 5 birim\/sa/);
     expect(h).toContain("Toplam ≈");
     expect(sebekeBolumuHtml([], malAdi)).toBe(""); // alım yok: bölüm gizlenir
-    expect(sebekeBolumuHtml(sebekeSatirlari(sebeke, [["elektrik", 1_000]]), malAdi)).not.toContain("Toplam ≈"); // tek satırda toplam yok
+    expect(sebekeBolumuHtml(sebekeSatirlari(sebeke, [["elektrik", 1_000]]), malAdi)).toContain("Toplam ≈"); // tek satırda da toplam yazılır (Tasarım son kararı)
     expect(sebekeSatirlari(null, [["elektrik", 1_000]])).toEqual([]);
   });
 });
