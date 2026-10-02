@@ -66,6 +66,14 @@ body.harita-acik #harita-gezgin { top: 64px; }
 .il-cip:hover { color: var(--birincil-ink); box-shadow: 0 0 0 1.5px var(--birincil-cizgi), var(--golge-2); }
 .harita-mercek { display: inline-flex; box-shadow: var(--golge-2); background: var(--yuzey-saydam); }
 .harita-mercek[hidden] { display: none; }
+.harita-gezinme { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); max-width: 100%; padding: var(--s-1); border-radius: var(--r-md); background: var(--yuzey-saydam); box-shadow: var(--golge-2); }
+.harita-gezinme[hidden], .harita-gezinme button[hidden] { display: none; }
+.harita-gezinme button { min-height: 44px; padding: 0 var(--s-3); border: 1px solid var(--cizgi-ince); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); font: inherit; font-size: var(--yazi-sm); cursor: pointer; }
+.harita-gezinme button:hover:not(:disabled) { border-color: var(--birincil-cizgi); color: var(--birincil-ink); }
+.harita-gezinme button:disabled { opacity: .65; cursor: default; }
+.harita-gezinme button:focus-visible { outline: 2px solid var(--odak); outline-offset: 2px; }
+#harita-sokak-durum { flex: 1 1 180px; max-width: 100%; padding: 0 var(--s-1); color: var(--murekkep-2); font-size: var(--yazi-xs); line-height: 1.4; }
+#harita-sokak-durum:empty { display: none; }
 .harita-durum { font-size: var(--yazi-xs); color: var(--murekkep-2); background: var(--yuzey-saydam); padding: 2px var(--s-2); border-radius: var(--r-sm); }
 .harita-durum:empty { display: none; }
 

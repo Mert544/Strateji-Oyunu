@@ -22,6 +22,8 @@ export interface YuruAcma {
   izgaraAl: () => Promise<Izgara | null>;
   baglanti: MulkBaglantisi | null;
   donus: () => void;
+  /** Kaynak/yığın yüklenirken seçim değiştiyse eski sahneyi açma. */
+  gecerliMi?: () => boolean;
 }
 
 function yuruModulu(): Promise<YuruModulu> {
@@ -38,7 +40,7 @@ function yuruModulu(): Promise<YuruModulu> {
 /** Açık URL tercih edilir; varsayılan kaynak seçilen ilçenindir, başka ilçeye dönülmez. */
 export function yuruKaroUrl(ilce: string | null = null): string {
   const q = new URLSearchParams(location.search);
-  const u = q.get("yuru-karo") ?? q.get("altlik");
+  const u = q.get("yuru-karo") || q.get("altlik");
   const yol = ilce ? yuruyusKaroYolu(ilce) : null;
   if (!u && !yol) throw new Error("Bu ilçenin sokak verisi henüz hazır değil. Strateji haritasından devam edebilirsin.");
   return new URL(u ?? veriKoku() + yol!, location.href).href;
@@ -47,14 +49,20 @@ export function yuruKaroUrl(ilce: string | null = null): string {
 let modul: Promise<YuruModulu> | null = null;
 
 export async function yuruAc(sahneKap: HTMLElement, a: YuruAcma): Promise<void> {
+  if (a.gecerliMi?.() === false) return;
   if (location.protocol === "file:") throw new Error("Sokak yürüyüşü file:// altında açılamaz; sayfayı bir HTTP sunucusundan açın.");
   const q = new URLSearchParams(location.search);
-  if (!q.get("yuru-karo") && !q.get("altlik") && (!a.ilce || !(await yayinlananYuruyusKarolari(veriKoku())).includes(a.ilce)))
-    throw new Error(`${a.ilceAd || "Bu ilçe"} için sokak verisi henüz hazır değil. Strateji haritasından devam edebilirsin.`);
+  if (!q.get("yuru-karo") && !q.get("altlik")) {
+    const ilceler = await yayinlananYuruyusKarolari(veriKoku());
+    if (a.gecerliMi?.() === false) return;
+    if (!a.ilce || !ilceler.includes(a.ilce))
+      throw new Error(`${a.ilceAd || "Bu ilçe"} için sokak verisi henüz hazır değil. Strateji haritasından devam edebilirsin.`);
+  }
   modul ??= yuruModulu().catch((e: unknown) => {
     modul = null;
     throw e;
   });
   const m = await modul;
+  if (a.gecerliMi?.() === false) return;
   await m.yuruSahnesi(sahneKap).ac({ ...a, karoUrl: yuruKaroUrl(a.ilce) });
 }

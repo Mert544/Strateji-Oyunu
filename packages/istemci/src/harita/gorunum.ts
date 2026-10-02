@@ -156,6 +156,8 @@ export class HaritaGorunumu {
   private il: string | null = null;
   private ilceKimlik: string | null = null;
   private duzey: Duzey = 1;
+  private gorunur = false;
+  private gorunumSurumu = 0;
   private etiketler: maplibregl.Marker[] = [];
   private izgara: Izgara | null = null;
   private sahiplik: IlceSahipligi | null = null;
@@ -350,7 +352,7 @@ export class HaritaGorunumu {
    * Başka ilçedeyse çağıran önce ilçeyi açar (`mulk-panel.ts`).
    */
   olcekBaslat(anahtar: string): boolean {
-    return this.olcek?.baslat(anahtar) ?? false;
+    return this.gorunur && (this.olcek?.baslat(anahtar) ?? false);
   }
 
   /** Sınama kancası: ölçek büyütme kipi. */
@@ -406,9 +408,10 @@ export class HaritaGorunumu {
   private altlikEksikleri = new Set<string>();
 
   /** İlçe değişince yalnız gerçek sokak/bina kaynağı değişir; arsa şeridi asla altlık sayılmaz. */
-  private async altlikAyarla(ilce: string | null): Promise<void> {
+  private async altlikAyarla(ilce: string | null, surum: number): Promise<void> {
     if (new URLSearchParams(location.search).get("altlik")) return;
     const yayinda = ilce !== null && (await yayinlananYuruyusKarolari(veriKoku())).includes(ilce);
+    if (!this.gorunur || surum !== this.gorunumSurumu) return;
     const yol = yayinda ? yuruyusKaroYolu(ilce) : null;
     const url = yol ? new URL(yol, veriKoku()).href : null;
     if (ilce && !yayinda && yuruyusKaroYolu(ilce) && !this.altlikEksikleri.has(ilce)) {
@@ -588,6 +591,7 @@ export class HaritaGorunumu {
 
   /** Klavye: yapı yerleşiminde R, Enter, Esc. İşlendiyse true. */
   tusIsle(e: KeyboardEvent): boolean {
+    if (!this.gorunur) return false;
     return this.olcek?.tus(e) || (this.yerlesim?.tus(e) ?? false);
   }
 
@@ -628,6 +632,11 @@ export class HaritaGorunumu {
 
   /** Harita gizlenince: ipucu, kart ve alt çubuk kapanır. */
   uyut(): void {
+    // MapLibre'ın geç moveend olayları ve bekleyen sahiplik yanıtları küre üstüne araç açamaz.
+    this.gorunur = false;
+    this.gorunumSurumu++;
+    this.duzey = 0;
+    this.harita.stop();
     this.yerlesim?.iptal();
     this.olcek?.iptal();
     this.varisAyarla(null);
@@ -640,19 +649,25 @@ export class HaritaGorunumu {
   }
 
   async goster(hedef: HaritaDurumu, ilkAcilis: boolean): Promise<void> {
+    const surum = ++this.gorunumSurumu;
+    this.gorunur = true;
     await this.yuklendi;
+    if (!this.gorunur || surum !== this.gorunumSurumu) return;
     if (ilkAcilis) this.harita.resize();
     const h = this.harita;
     if (hedef.il && hedef.il !== this.il) {
+      const ilce = await ilceleriYukle(hedef.il);
+      if (!this.gorunur || surum !== this.gorunumSurumu) return;
       this.il = hedef.il;
-      this.ilce = await ilceleriYukle(hedef.il);
+      this.ilce = ilce;
       (h.getSource("ilceler") as GeoJSONSource).setData(this.ilce.fc);
       (h.getSource("ilce-sinir") as GeoJSONSource).setData(this.ilce.sinir ?? BOS);
       h.setFilter("il-secili", ["==", ["get", "kimlik"], hedef.il]);
       h.setFilter("ortu-il", ["!=", ["get", "kimlik"], hedef.il]);
     }
-    if (hedef.ilce !== this.ilceKimlik) {
-      await this.altlikAyarla(hedef.ilce);
+    if (hedef.ilce !== this.ilceKimlik || (hedef.ilce && this.izgaraVar(hedef.ilce) && !this.izgara)) {
+      await this.altlikAyarla(hedef.ilce, surum);
+      if (!this.gorunur || surum !== this.gorunumSurumu) return;
       this.ilceKimlik = hedef.ilce;
       this.secim.temizle();
       this.kartHucre = null;
@@ -672,6 +687,7 @@ export class HaritaGorunumu {
       if (hedef.ilce && this.izgaraVar(hedef.ilce)) {
         this.baglanti.ilgi?.("harita", [hedef.ilce]);
         const [iz, sh] = await Promise.all([izgaraYukle(hedef.ilce), this.baglanti.sahiplikAl(hedef.ilce)]);
+        if (!this.gorunur || surum !== this.gorunumSurumu) return;
         this.izgara = iz;
         this.sahiplik = sh;
         if (sh) this.tumSahiplik.set(hedef.ilce, sh);
@@ -694,7 +710,10 @@ export class HaritaGorunumu {
     const bitti = new Promise<void>((coz) => h.once("moveend", () => coz()));
     h.fitBounds(sinirdanKutu(kutu), { padding: { top: ust, bottom: pad + 24, left: pad, right: pad }, maxZoom: hedef.duzey === 1 ? 11 : 14.2, duration: sure });
     await bitti;
+    if (!this.gorunur || surum !== this.gorunumSurumu) return;
     this.duzeyGuncelle();
+    // Gizliyken atlanan canlı yenilemeler, aynı ilçeye dönüşte de tamamlanır.
+    if (ilkAcilis) void this.sahiplikYenile();
   }
 
   private ilCercevesi(): Sinir | undefined {
@@ -749,6 +768,7 @@ export class HaritaGorunumu {
   // --- düzey ve çizim --------------------------------------------------------------------------------
 
   private duzeyGuncelle(): void {
+    if (!this.gorunur) return;
     if (!this.ilceKimlik) {
       this.duzey = 1;
       this.alt.hidden = true;
@@ -931,7 +951,7 @@ export class HaritaGorunumu {
   /** Alt çubuk: hazır arsa seçiliyse arsa satın alma; hücre seçiliyse hücre satın alma; yoksa ipucu. */
   private altCiz(): void {
     const sayi = this.sayilar();
-    if (this.duzey !== 3 || !this.ilceKimlik || this.altGizli) {
+    if (!this.gorunur || this.duzey !== 3 || !this.ilceKimlik || this.altGizli) {
       this.alt.hidden = true;
       return;
     }
@@ -1021,7 +1041,7 @@ export class HaritaGorunumu {
   private kartCiz(): void {
     const id = this.kartHucre;
     const c = id ? idCoz(id) : null;
-    if (!id || !c || !this.izgara || this.duzey !== 3) {
+    if (!this.gorunur || !id || !c || !this.izgara || this.duzey !== 3) {
       this.kart.hidden = true;
       return;
     }
@@ -1239,10 +1259,11 @@ export class HaritaGorunumu {
       return;
     }
     this.canliBirak = this.baglanti.dinle(() => {
-      if (this.canliBekliyor || this.kap.hidden) return;
+      if (this.canliBekliyor || !this.gorunur || this.kap.hidden) return;
       this.canliBekliyor = true;
       window.setTimeout(() => {
         this.canliBekliyor = false;
+        if (!this.gorunur) return;
         void this.sahiplikYenile();
       }, 50);
     });
@@ -1360,11 +1381,12 @@ export class HaritaGorunumu {
    * (`mulk-panel.ts` önce ilçeyi açar). Başlayamazsa false.
    */
   dukkanKurBaslat(): boolean {
-    return this.dukkanKurulabilir() && (this.yerlesim?.sec("dukkan") ?? false);
+    return this.gorunur && this.dukkanKurulabilir() && (this.yerlesim?.sec("dukkan") ?? false);
   }
 
   /** Yapı menüsünü açar (stoksuz dükkân rafında "Yapı kur" yönlendirmesi); menü düğmesi görünür değilse etkisiz. */
   yapiMenusuAc(): void {
+    if (!this.gorunur) return;
     this.yerlesim?.menuAc(true);
   }
 
@@ -1531,6 +1553,7 @@ export class HaritaGorunumu {
   // --- ipucu ---------------------------------------------------------------------------------------
 
   private ipucuGoster(html: string, x: number, y: number, uyari = false, sure = 0): void {
+    if (!this.gorunur) return;
     const e = this.ipucu;
     e.innerHTML = html;
     e.classList.toggle("uyari", uyari);
@@ -1850,10 +1873,11 @@ export class HaritaGorunumu {
 
   /** Sahipliği yeniden al ve çiz (ör. sokak yürüyüşünde satın alma sonrası haritaya dönünce). */
   async sahiplikYenile(): Promise<void> {
+    const surum = this.gorunumSurumu;
     const ilce = this.ilceKimlik;
-    if (!ilce || !this.izgara) return;
+    if (!this.gorunur || !ilce || !this.izgara) return;
     const sh = await this.baglanti.sahiplikAl(ilce);
-    if (ilce !== this.ilceKimlik) return;
+    if (!this.gorunur || surum !== this.gorunumSurumu || ilce !== this.ilceKimlik) return;
     this.sahiplik = sh;
     if (sh) this.tumSahiplik.set(ilce, sh);
     this.sahiplikCiz();

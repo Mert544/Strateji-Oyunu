@@ -1,5 +1,7 @@
 # Oyunun gerçek ekran görüntüleri
 
+[Türkiye genel haritası, ilçe ve parsel gezinmesi](../2026-10-02-harita/README.md)
+
 2 Ekim 2026, `b246c09` sürümü. Yerel örnek dünya, gerçek sunucu ve oyun
 komutlarıyla hazırlanmıştır. Masaüstü 1440×1000, mobil 390×844.
 Baskın sistemi varsayılan olarak kapalıdır; aktif baskın gösterilmez.

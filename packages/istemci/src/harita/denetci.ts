@@ -17,7 +17,8 @@ import { kokenSunucusu } from "../giris/kip";
 import type { MulkBaglantisi } from "./baglanti";
 import type { MulkPaneli } from "../arayuz/mulk-paneli";
 import { noktadakiOzellik } from "./geometri";
-import { aramaKayitlari, hiyerarsiYukle, illerYukle, izgaraYukle, OSM_ATIF } from "./veri";
+import { aramaKayitlari, hiyerarsiYukle, illerYukle, izgaraYukle, OSM_ATIF, veriKoku } from "./veri";
+import { yayinlananYuruyusKarolari } from "./yuruyus-kaynak";
 import { yuruAc } from "../yuru/giris";
 import { ortuIle } from "../tasarim/ortu";
 import type { Hiyerarsi } from "./veri";
@@ -103,6 +104,14 @@ export class HaritaDenetci {
   private cipler: HTMLElement;
   private durumYazi: HTMLElement;
   private mercek: HTMLElement;
+  private gezinme: HTMLElement;
+  private sokakDugme: HTMLButtonElement;
+  private ilceGorunumuDugme: HTMLButtonElement;
+  private sokakDurumYazi: HTMLElement;
+  private sokakIlce: string | null = null;
+  private sokakDurumu: "bekliyor" | "hazir" | "yok" = "bekliyor";
+  private sokakKontrolu = 0;
+  private sokakAciliyor = false;
   readonly kap: HTMLElement;
   private gecmisteMi = false;
   private yukleniyor = false;
@@ -163,6 +172,11 @@ export class HaritaDenetci {
         <button type="button" data-mercek="arazi" aria-pressed="true" title="Arazi sınıfı">Arazi</button>
         <button type="button" data-mercek="sahiplik" aria-pressed="false" title="Sahiplik merceği (7)">Sahiplik</button>
       </div>
+      <div class="harita-gezinme" id="harita-gezinme" role="group" aria-label="Mekân gezintisi" hidden>
+        <button type="button" id="harita-ilce-gorunumu" title="Seçili ilçenin tamamını göster" hidden>İlçe görünümü</button>
+        <button type="button" id="harita-sokak" aria-describedby="harita-sokak-durum" disabled>Sokakta yürü</button>
+        <span id="harita-sokak-durum" role="status"></span>
+      </div>
       <div class="harita-durum" id="harita-durum" aria-live="polite"></div>`;
     sahneKap.append(this.kap, this.gezgin);
     const $ = <T extends HTMLElement>(id: string): T => this.gezgin.querySelector(`#${id}`) as T;
@@ -180,6 +194,10 @@ export class HaritaDenetci {
     this.cipler = $("harita-cipler");
     this.durumYazi = $("harita-durum");
     this.mercek = $("harita-mercek");
+    this.gezinme = $("harita-gezinme");
+    this.sokakDugme = $("harita-sokak");
+    this.ilceGorunumuDugme = $("harita-ilce-gorunumu");
+    this.sokakDurumYazi = $("harita-sokak-durum");
 
     this.olaylariBagla();
     this.uzunBasmaBagla();
@@ -441,6 +459,13 @@ export class HaritaDenetci {
 
   private olaylariBagla(): void {
     this.geri.addEventListener("click", () => this.ustDuzey());
+    this.ilceGorunumuDugme.addEventListener("click", () => {
+      if (this.durum.duzey === 3) this.ustDuzey();
+    });
+    this.sokakDugme.addEventListener("click", () => {
+      const m = this.gorunum?.ml.getCenter();
+      if (m && this.durum.duzey >= 2) void this.yuruBaslat(m.lng, m.lat);
+    });
     this.kirinti.addEventListener("click", (e) => {
       const b = (e.target as HTMLElement).closest("button[data-duzey]") as HTMLButtonElement | null;
       if (!b) return;
@@ -533,7 +558,8 @@ export class HaritaDenetci {
       else if ((e.key === "y" || e.key === "Y") && this.durum.duzey >= 2 && this.gorunum) {
         // Kısayol: harita merkezinde sokak yürüyüşü (L4)
         const m = this.gorunum.ml.getCenter();
-        this.yuruBaslat(m.lng, m.lat);
+        e.preventDefault();
+        void this.yuruBaslat(m.lng, m.lat);
       }
     });
     // Tarayıcının geri tuşu: harita açıkken bir üst düzey (geçmişte tek nöbetçi kayıt tutulur)
@@ -583,24 +609,78 @@ export class HaritaDenetci {
   }
 
   /** L4 sokak yürüyüşü (ilçe görünümünde: kart düğmesi, uzun basma ya da Y). Harita altta kalır. */
-  private yuruBaslat(boylam: number, enlem: number): void {
+  private async yuruBaslat(boylam: number, enlem: number): Promise<void> {
     const ilce = this.durum.ilce;
+    if (!ilce || this.durum.duzey < 2 || this.kap.hidden || this.sokakAciliyor) return;
+    this.sokakAciliyor = true;
+    this.sokakAraclariniCiz();
+    const kontrol = this.sokakKontrolu;
+    const gecerliMi = (): boolean => kontrol === this.sokakKontrolu && this.durum.ilce === ilce && this.durum.duzey >= 2 && !this.kap.hidden;
     this.durumYazi.textContent = "Sokak yükleniyor…";
-    ortuIle(() => yuruAc(this.sahneKap, {
-      boylam,
-      enlem,
-      ilce,
-      ilceAd: ilce ? (this.hiyerarsi?.ilceler.get(ilce)?.ad ?? "") : "",
-      izgaraAl: () => (ilce ? izgaraYukle(ilce) : Promise.resolve(null)),
-      baglanti: this.gorunum?.baglanti ?? null,
-      donus: () => {
-        this.ciz();
-        void this.gorunum?.sahiplikYenile();
-      },
-    })).then(
-      () => (this.durumYazi.textContent = ""),
-      (e: unknown) => this.hataYaz(e),
-    );
+    try {
+      const hazir = this.sokakKaynakAcik() || (await yayinlananYuruyusKarolari(veriKoku())).includes(ilce);
+      // Önceki ilçenin geç tamamlanan kaynak kontrolü yeni seçimi açmaz.
+      if (!gecerliMi()) return;
+      if (!hazir) {
+        this.durumYazi.textContent = "Bu ilçede sokak görünümü henüz hazır değil.";
+        return;
+      }
+      await ortuIle(() => {
+        if (!gecerliMi()) return;
+        return yuruAc(this.sahneKap, {
+          boylam, enlem, ilce, gecerliMi,
+          ilceAd: this.hiyerarsi?.ilceler.get(ilce)?.ad ?? "",
+          izgaraAl: () => izgaraYukle(ilce),
+          baglanti: this.gorunum?.baglanti ?? null,
+          donus: () => {
+            this.ciz();
+            void this.gorunum?.sahiplikYenile();
+          },
+        });
+      });
+      if (gecerliMi() && !this.yukleniyor) this.durumYazi.textContent = "";
+    } catch (e) {
+      if (gecerliMi()) this.hataYaz(e);
+    } finally {
+      this.sokakAciliyor = false;
+      this.sokakAraclariniCiz();
+    }
+  }
+
+  private sokakKaynakAcik(): boolean {
+    const q = new URLSearchParams(location.search);
+    return Boolean(q.get("yuru-karo") || q.get("altlik"));
+  }
+
+  private sokakAraclariniCiz(): void {
+    const ilce = this.durum.ilce;
+    this.gezinme.hidden = this.durum.duzey < 2 || ilce === null;
+    this.ilceGorunumuDugme.hidden = this.durum.duzey !== 3;
+    if (this.gezinme.hidden || ilce === null) {
+      this.sokakKontrolu++;
+      this.sokakIlce = null;
+      return;
+    }
+    const yeniIlce = this.sokakIlce !== ilce;
+    if (yeniIlce) {
+      this.sokakIlce = ilce;
+      this.sokakKontrolu++;
+    }
+    if (this.sokakKaynakAcik()) {
+      this.sokakDurumu = "hazir";
+    } else if (yeniIlce) {
+      this.sokakDurumu = "bekliyor";
+      const kontrol = this.sokakKontrolu;
+      void yayinlananYuruyusKarolari(veriKoku()).then((ilceler) => {
+        if (kontrol !== this.sokakKontrolu || this.durum.ilce !== ilce || this.durum.duzey < 2) return;
+        this.sokakDurumu = ilceler.includes(ilce) ? "hazir" : "yok";
+        this.sokakAraclariniCiz();
+      });
+    }
+    const mesaj = this.sokakAciliyor ? "Sokak yükleniyor…" : this.sokakDurumu === "bekliyor" ? "Sokak görünümü kontrol ediliyor…" : this.sokakDurumu === "yok" ? "Bu ilçede sokak görünümü henüz hazır değil." : "";
+    this.sokakDugme.disabled = this.sokakAciliyor || this.sokakDurumu !== "hazir";
+    this.sokakDugme.title = mesaj || "Seçili ilçede sokak görünümünü aç (Y)";
+    this.sokakDurumYazi.textContent = mesaj;
   }
 
   /** İlçe görünümünde haritaya uzun basma (≥ 650 ms, kıpırdamadan): basılan noktada yürüyüş. */
@@ -721,6 +801,7 @@ export class HaritaDenetci {
     }
     if (s.duzey === 3) parca.push(sayfa("Arsa"));
     this.kirinti.innerHTML = parca.join("");
+    this.kirinti.querySelector('button[data-duzey="0"]')?.setAttribute("title", "Dünya genel bakışı: küreye dön");
     this.geri.hidden = s.duzey === 0;
     // Telefonda kısa geri etiketi: "‹ Gebze"
     const ust = s.duzey === 3 ? s.ilce : s.duzey === 2 ? s.il : null;
@@ -731,6 +812,7 @@ export class HaritaDenetci {
     this.cipler.hidden = iller.length === 0;
     this.cipler.innerHTML = iller.map((k) => `<button type="button" class="il-cip" data-il="${esc(k)}" title="İl haritasını aç">${esc(h?.iller.get(k)?.ad ?? k)}</button>`).join("");
     this.mercek.hidden = s.duzey < 2 || !(this.gorunum?.izgaraVar(s.ilce) ?? false);
+    this.sokakAraclariniCiz();
   }
 
   private atifEkle(): void {

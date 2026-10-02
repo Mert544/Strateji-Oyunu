@@ -141,6 +141,37 @@ tarayıcı/mobil kabul testi değildir; aktif baskın senaryosu görüntülenmed
 
 ## Güncel ürün yönü ve sıradaki somut dilimler
 
+### 2 Ekim — Harita ve sokak görünümü takibi
+
+Kullanıcının parsel ekranı hakkındaki sorusuyla harita akışı incelendi:
+L0 küre, L1 il, L2 ilçe, L3 arsa ve L4 karakterle yürüyüş kaynakları mevcut.
+Önceki ekranlar oyuncunun arsasına yakınlaştırılmış L3 görünümüydü.
+L3'teki opak sınıf mozaiği, eksik sokak/bina altlığıyla kareleri öne çıkarıyor;
+bu nedenle salt çizgi veya dolgu azaltmak gerçek şehir görünümünü geri getirmez.
+
+Gebze/Gemlik/Körfez ham sokak arşivleri (toplam 17.984.902 bayt) önceki
+Claude çalışmasında gitignore'lu `.onbellek/karolar/` altında üretilmiş.
+Erişilebilir Git geçmişi, iki uzak dal, LFS, yerel önbellek ve GitHub releases
+içinde bulunamadı. Kayıtlı 20260930 Protomaps kaynağı bu ortamın ağ vekilinde
+403 ile engellendi; yeni sokak verisi indirilmedi. Mevcut parsel arşivleri
+sokak arşivinin yerine kullanılamaz. Kurtarma için `odbl/izgara/manifest.json`
+içindeki ilçe bbox, bayt ve SHA256 kayıtları esas alınmalı; yalnız ham z15
+özütlerini almak yeterli, arsa üretimini yeniden çalıştırmak gerekmiyor.
+
+A3 görünür Sokakta yürü ve İlçe görünümü eylemlerini ekledi; sokak kaynağı
+olmayan ilçede açık durum gösteriliyor. Yükleme sırasında ilçe değişirse eski
+yürüyüş isteği sahneyi açmıyor. L1, küreye dönüşten sonra gecikmiş MapLibre ve
+sahiplik yanıtlarının arsa araçlarını yeniden açmasını engelledi; haritaya
+dönüşte görünüm ve sahiplik yenileniyor. B4 gerçek il/ilçe/küre ekranlarını
+hazırladı. Core/simülasyon ve parsel geometrisi değişmiyor.
+
+B6 tek istemci tip kontrolü ve derlemesini çalıştırdı, ikisi geçti. Dünya
+gzip 387,7KB/400KB; harita 492,0KB. Kök tip kontrolü ve test paketi gereksiz
+tekrarlanmadı. B4 son gerçek kontrolde L3 düğmesiyle L2'ye geçişi ve L0'a
+dönüşten 2,4 saniye sonra hem Yapı kur hem arsa alt bandının kapalı kaldığını
+doğruladı; sayfa hatası yok. [Yeni harita ekranları](../ekran-goruntuleri/2026-10-02-harita/README.md)
+GitHub'dan açılabilir. L4 canlı doğrulaması eksik sokak verisine bağlıdır.
+
 Kullanıcı lojistik, petrol/yakıt ve tedarik aşamalarının atlanmamasını istiyor.
 Birebir gerçek dünya beklemiyor; konum, rota, tedarik ve stok kararlarını
 anlamlı kılan detay, ihtiyaç oldukça açılan sunum ve genel Ar-Ge önemli.
