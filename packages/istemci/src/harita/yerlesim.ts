@@ -551,7 +551,7 @@ export class YerlesimKipi {
   /** Standart maliyet gövdesi: ipucu (yer seçilmedi) ya da arsa/yapı/süre/toplam satırları ve neden yeri. */
   private govde(y: YapiTanimi, p: YerlesimPlani | null, sabit: boolean, oz: ReturnType<NonNullable<MulkBaglantisi["ozet"]>> | null): string {
     if (!p) return `<p class="yk-ipucu">${window.matchMedia("(pointer: coarse)").matches ? "Yerleştirmek için haritaya dokun." : "Haritada yeri seç: tıkla. R: döndür · Esc: vazgeç."}</p>`;
-    const arsa = p.alinacak.length > 0 ? `${fmt(p.alinacak.length)} hücre alınacak · <b>${paraMili(p.arsaMili, "yukari")}</b>` : `Kendi arsan · <b>${para(0)}</b>`;
+    const arsa = p.alinacak.length > 0 ? `${fmt(p.alinacak.length)} hücre alınacak · <b>${paraMili(p.arsaMili, "yukari")}</b>` : `Kendi arsan: <b>${para(0)}</b>`;
     const sure = `${sureMetni(y.sureSaat)}${y.ilkGunSureSaat < y.sureSaat ? ` <small>(yeni oyuncuya ilk gün ≈ ${sureMetni(y.ilkGunSureSaat)})</small>` : ""}`;
     const malzeme = malzemeMetni({ malzeme: p.malzeme });
     return `<dl class="yk-satirlar">

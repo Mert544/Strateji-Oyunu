@@ -215,7 +215,7 @@ export class YuruSahnesi {
       <button type="button" class="yuru-hap" data-eylem="kart" hidden>${mobil ? "" : "<kbd>E</kbd>"}<span></span></button>
       <button type="button" class="yuru-zipla yalniz-dokunma" data-eylem="zipla" aria-label="Zıpla">Zıpla</button>
       <section class="yuru-kart" aria-label="Parsel kartı" hidden></section>
-      <div class="yuru-ipucu">${mobil ? "Solda sürükle: koş · sağda sürükle: kamera · dokun: git" : "WASD: koş · Shift: depar · Boşluk: zıpla · sağ tık sürükle: kamera · tekerlek: yakınlaş · E: etkileşim"}</div>
+      <div class="yuru-ipucu">${mobil ? "Solda sürükle: koş · sağda sürükle: kamera · dokun: git" : "WASD: yürü · Shift: koş · Boşluk: zıpla · sağ tık sürükle: kamera · tekerlek: yakınlaş · E: etkileşim"}</div>
       <div class="yuru-atif"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap katkıcıları</a> · <a href="https://protomaps.com" target="_blank" rel="noopener">Protomaps</a> · Karakter: Quaternius (CC0)</div>
       <div class="yuru-durum" role="status" aria-live="polite"></div>`;
     this.kap.append(this.mini.tuval);

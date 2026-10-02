@@ -629,7 +629,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   // Bildirimler tek tek görünür (kuyruk); Defter bildirimi sıra gelince belirir
   await sayfa.waitForFunction(() => /Defter/.test(document.getElementById("bildirimler")?.textContent ?? ""), null, { timeout: 25000 }).catch(() => undefined);
   const bildirimler = (await sayfa.locator("#bildirimler").textContent()) ?? "";
-  kontrol(`${e} Defter: ilk yapı defterine işlendi (tarih ve çelik ödülü), sıradakilerden düştü; bildirim geldi`, /Defterine işlenenler/.test(defterM) && /İlk yapın kuruldu; kolay gelsin\. \d{1,2} (Ekim|Kasım) · 5 çelik/.test(defterM) && !/İlk yapını kur/.test(defterM) && /Defter: İlk yapın kuruldu|Defterine \d+ satır işlendi/.test(bildirimler), defterM.slice(defterM.indexOf("Defter"), defterM.indexOf("Defter") + 320));
+  kontrol(`${e} Defter: ilk yapı defterine işlendi (tarih ve çelik ödülü), sıradakilerden düştü; bildirim geldi`, /Defterine işlenenler/.test(defterM) && /İlk yapın kuruldu; kolay gelsin\. \d{1,2} (Ekim|Kasım) · 5 çelik/.test(defterM) && !/İlk yapını kur/.test(defterM) && /Defter: İlk yapın kuruldu|Defterine \d+ adım işlendi/.test(bildirimler), defterM.slice(defterM.indexOf("Defter"), defterM.indexOf("Defter") + 320));
   await ekran("13b-defter");
   kontrol(`${e}/[veli] veli de tamamlananı görüyor (delta)`, veli2.tesis === 2 && veli2.insaat === 0, JSON.stringify(veli2));
   await sayfa.evaluate((h) => {

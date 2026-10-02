@@ -958,8 +958,7 @@ export class HaritaGorunumu {
     }
     // 4) Boşta
     const hazirlaniyor = this.izgara && !this.arsaK ? " Arsalar hazırlanıyor…" : "";
-    const ipucu = window.matchMedia("(pointer: coarse)").matches ? "Bir hazır arsaya dokun" : "Bir hazır arsaya tıkla";
-    this.alt.innerHTML = `<span class="alt-ipucu">${ipucu} ya da “Yapı kur” ile yapıyı seçip yerleştir.${hazirlaniyor}</span>
+    this.alt.innerHTML = `<span class="alt-ipucu">Boş bir arsa seç ya da “Yapı kur” ile yapı seç.${hazirlaniyor}</span>
       <span class="alt-sayi"><small>Bu ilçede hücre sınırın</small><b>${fmt(sayi.benim)} / ${fmt(ilceTavani(sayi.uygun))}</b></span>
       <div class="alt-dugmeler">${yapiDugme}${aracDugme}</div>`;
   }

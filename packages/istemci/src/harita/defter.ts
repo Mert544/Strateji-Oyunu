@@ -46,8 +46,8 @@ export function defterMetni(sablon: string, kavram: string): DefterMetni {
 export const DEFTER_CERCEVE = {
   "defter.odul": "ödül: {odul}",
   "defter.islenen": "Defterine işlenen ödüller: ≈ {tutar} değerinde",
-  "defter.bildirim.birlesik": "Defterine {n} satır işlendi · ≈ {tutar} değerinde",
-  "defter.bildirim.birlesik_tutarsiz": "Defterine {n} satır işlendi",
+  "defter.bildirim.birlesik": "Defterine {n} adım işlendi · ≈ {tutar} değerinde",
+  "defter.bildirim.birlesik_tutarsiz": "Defterine {n} adım işlendi",
 } as const;
 
 /** "≈ {tutar}" kalıbında "≈" ile sayı bölünmez boşlukla birleşir (satır sonunda "≈" yalnız kalmasın). */
@@ -111,7 +111,7 @@ export function kazanimBildirimleri(yeni: readonly DefterKazanilan[], malAdi: (m
   return yeni.map((k) => ({ mesaj: kazanimBildirimi(k, malAdi), deger: k.odul?.degerMili ?? 0 }));
 }
 
-/** Birleşik Defter bildirimi: "Defterine 2 satır işlendi · ≈ 600 ₺ değerinde" (değer yoksa tutarsız biçim; tutar aşağı yuvarlı). */
+/** Birleşik Defter bildirimi: "Defterine 2 adım işlendi · ≈ 600 ₺ değerinde" (değer yoksa tutarsız biçim; tutar aşağı yuvarlı). */
 export function defterBirlesikMetni(n: number, degerMili: number): string {
   return degerMili > 0 ? cerceve("defter.bildirim.birlesik", { n: fmt(n), tutar: paraMili(degerMili, "asagi") }) : cerceve("defter.bildirim.birlesik_tutarsiz", { n: fmt(n) });
 }

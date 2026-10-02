@@ -84,9 +84,9 @@ describe("Esnaf Defteri", () => {
   });
 
   it("birleşik bildirim metni: değer aşağı yuvarlı ve '≈' bölünmez; değer yoksa tutarsız biçim; çerçeve metinlerinde büyük harfli sözcük yok", () => {
-    expect(defterBirlesikMetni(2, 600_000)).toBe("Defterine 2 satır işlendi · ≈\u00a0600\u00a0₺ değerinde");
-    expect(defterBirlesikMetni(3, 600_999)).toBe("Defterine 3 satır işlendi · ≈\u00a0600\u00a0₺ değerinde");
-    expect(defterBirlesikMetni(2, 0)).toBe("Defterine 2 satır işlendi");
+    expect(defterBirlesikMetni(2, 600_000)).toBe("Defterine 2 adım işlendi · ≈\u00a0600\u00a0₺ değerinde");
+    expect(defterBirlesikMetni(3, 600_999)).toBe("Defterine 3 adım işlendi · ≈\u00a0600\u00a0₺ değerinde");
+    expect(defterBirlesikMetni(2, 0)).toBe("Defterine 2 adım işlendi");
     for (const [k, v] of Object.entries(DEFTER_CERCEVE)) {
       expect(v, k).not.toMatch(/\b[A-ZÇĞİÖŞÜ]{2,}\b/);
       expect(/₺|\bTL\b/.test(v), k).toBe(false);

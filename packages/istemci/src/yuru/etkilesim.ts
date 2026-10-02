@@ -1,7 +1,7 @@
 /**
  * `[E]` etkileşim hapı: karakterin bulunduğu hücreye göre bağlamsal eylem (saf).
  *   kendi yapın → "Yapını yönet" · kendi boş arsan → "Yapı kur" · başkasının parseli/yapısı → "Bilgi"
- *   satın alınabilir boş hücre → "Satın al" (fiyatla) · yol/su/askerî → "Parsel bilgisi" · ilçe dışı → hap yok
+ *   satın alınabilir boş hücre → "Satın al" (fiyatla) · yol/su/askerî → "Arsa bilgisi" · ilçe dışı → hap yok
  */
 export interface EtkilesimGirdisi {
   /** Hücrenin BHI1 durum baytı (bit0: ilçede). */
@@ -29,7 +29,7 @@ const ETIKET: Record<EtkilesimTuru, string> = {
   kur: "Arsanda yapı kur",
   bilgi: "Bilgi",
   "satin-al": "Satın al",
-  parsel: "Parsel bilgisi",
+  parsel: "Arsa bilgisi",
 };
 
 export function etkilesimSec(g: EtkilesimGirdisi): Etkilesim | null {

@@ -12,6 +12,10 @@ export const MULK_METIN = {
   "mulk.koruma.indirim": "İlk yapı indirimi {yuzde} · {n} yapı daha",
   /** Yüzde bilinmiyorsa (parametre yok): yer tutucusuz biçim. */
   "mulk.koruma.indirim_yuzdesiz": "İlk yapı indirimi · {n} yapı daha",
+  /** Dikkat maddesi: biten yapı ("Gebze: Çiftlik hazır."); K1 mulk-panel.ts:116, dikkat.ts:135, gelen-kutusu.ts:53 literal "inşaatı bitti" yerine bunu kullanır (sahip eki yok: ad çekimsiz). */
+  "dikkat.insaat_bitti": "{ilce}: {ad} hazır.",
+  /** Harita alt çubuğu ilçe hücre sınırı (gorunum.ts:940/961/976 "Bu ilçede hücre sınırın 6 / 72" yerine): 72 sınırdır, toplam değil. */
+  "harita.hint.hucre_siniri": "Bu ilçede {n} hücren var; en çok {tavan}.",
 } as const;
 
 export type MulkMetinAnahtari = keyof typeof MULK_METIN;

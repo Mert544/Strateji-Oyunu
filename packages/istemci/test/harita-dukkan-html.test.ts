@@ -204,7 +204,7 @@ describe("D-3 maliyet satırları", () => {
     const h = maliyetSatirlariHtml(temel);
     expect(h).toContain(`data-durum="uygun"`);
     expect(h).toContain("<b>Bakkal · 1 hücre</b>");
-    expect(h).toContain("<dt>Arsa</dt><dd>kendi arsan: 0\u00a0₺</dd>");
+    expect(h).toContain("<dt>Arsa</dt><dd>Kendi arsan: 0\u00a0₺</dd>");
     expect(h).toContain("<dt>Dükkân</dt><dd>12.000\u00a0₺</dd>");
     expect(h).toContain("<dt>Toplam</dt><dd>12.001\u00a0₺</dd>");
     expect(h).toContain("<dt>Süre</dt><dd>1 sa 12 dk</dd>");
