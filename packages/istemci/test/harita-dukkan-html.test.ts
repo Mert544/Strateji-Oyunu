@@ -307,7 +307,7 @@ describe("D-5 raf", () => {
     const h = rafHtml(d, { malAdi, simdi: 0, kasaBirimSa: 90 });
     expect(h.match(/class="dk-yuva"/g)?.length).toBe(4);
     expect(h).toContain(`data-yuva="0" data-durum="dolu-saglikli" data-mal="gida" data-bekleme="0"`);
-    expect(h).toContain("Gıda · Normal · 2,50 ₺".replace("2,50 ₺", "3\u00a0₺") /* para() tam lira yukarı */);
+    expect(h).toContain("Gıda · Normal · 2\u00a0₺"); // satış birim fiyatı AŞAĞI (B4: 2,50 → 2 ₺)
     expect(h).toContain("satış ≈\u00a012 birim/sa"); // yuva satırı gerçek SATIŞ; istek yalnız raf detayında
     expect(h).toContain(`data-yuva="1" data-durum="dolu-stoksuz"`);
     expect(h).toContain(`<span class="dk-yuva-neden">stoğun yok</span>`);
@@ -377,7 +377,7 @@ describe("D-6 kademe ve kampanya", () => {
     expect([...h.matchAll(/data-kademe="(\d)" aria-pressed="(\w+)"/g)].map((m) => `${m[1]}:${m[2]}`)).toEqual(["0:false", "1:false", "2:true", "3:false"]);
     expect(h).toContain("Normal fiyat, çoğu zaman en iyi dengedir.");
     // Raf detayı: etiket/değer satırları (T1 §1.2): birim fiyat, istek, satış, katkı (yuva neti; "net" sözcüğü yalnız dükkân için) ve tek tahmin notu
-    expect(h).toContain("<dt>Birim fiyat</dt><dd>3\u00a0₺</dd>");
+    expect(h).toContain("<dt>Birim fiyat</dt><dd>2\u00a0₺</dd>");
     expect(h).toContain(`<dt title="Müşterinin kasa sınırına kadar saatte almak istediği miktar.">İstek</dt><dd>≈\u00a012 birim/sa</dd>`);
     expect(h).toContain("<dt>Satış</dt><dd>≈\u00a012 birim/sa</dd>");
     expect(h).toContain("<dt>Katkı</dt><dd>≈\u00a0+20\u00a0₺/sa</dd>");
@@ -441,7 +441,7 @@ describe("D-8 özet ve menü", () => {
     expect(h).toContain("Gider 120\u00a0₺/sa");
     expect(h).toContain("Net ≈\u00a0+520\u00a0₺/sa");
     expect(h).toContain(`<p class="dk-ozet-toplam">Dükkânlardan toplam gelir: 600\u00a0₺/sa</p>`);
-    expect(h).toContain(`<p class="dk-kasa" data-yuzde="100">Kasa %100 dolu: satış kasa sınırında</p>`);
+    expect(h).toContain(`<p class="dk-kasa" data-yuzde="100">Kasa dolu: satış kasa sınırında</p>`);
     expect(ozetHtml(dukkan(), null)).not.toContain("dk-ozet-toplam");
     expect(ozetHtml(dukkan(), null)).not.toContain("dk-kasa");
   });
@@ -758,6 +758,26 @@ describe("yuva rakamları: istek ve satış ayrı, fırsat maliyetli net (A2 D5c
     expect(tam).not.toContain("Rafa daha çok stok");
     expect(ozetHtml(dukkan({ netMiliSa: 0 }), null)).toContain("Net: şu an geri ödemez"); // sıfır da geri ödemez
     expect(ozetHtml(dukkan({ netMiliSa: 1_000 }), null)).toContain("Net ≈\u00a0+1\u00a0₺/sa");
+  });
+
+  it("B4: satış birim fiyatı AŞAĞI: 101,85 → '101 ₺' yuva satırında, raf detayında ve mal seçicide (maliyet/gider yukarı kalır)", () => {
+    const y = yuva({ fiyatMili: 101_850 });
+    expect(rafHtml(dukkan({ yuvalar: [y, yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })] }), { malAdi, simdi: 0, kasaBirimSa: 90 })).toContain("Gıda · Normal · 101\u00a0₺");
+    expect(kademeHtml(y, { malAdi, kampanyaAcik: false, kampanya: { bitis: 0, kalanSaat: 4, kalanGun: 3 }, simdi: 0 })).toContain("<dt>Birim fiyat</dt><dd>101\u00a0₺</dd>");
+    expect(seciciHtml([{ mal: "gida", stokMili: 5_000, fiyatMili: 101_850 }], malAdi, 0, 90)).toContain("101\u00a0₺");
+    expect(ozetHtml(dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })], giderMiliSa: 132_500 }), null)).toContain("Gider 133\u00a0₺/sa"); // gider (maliyet) yukarı
+  });
+
+  it("kasa dolu üç yerde (yuva kısası + title, kart, Dikkat) yalnız karşılanma tam VE kasa doluluğu ≥ %100 iken; ikisinden biri eksikse yok", () => {
+    const tam = dukkan({ kasaPpm: 1_000_000, karsilanmaPpm: 1_000_000 });
+    expect(rafHtml(tam, { malAdi, simdi: 0, kasaBirimSa: 90 })).toContain(`<span class="dk-yuva-neden">kasa dolu</span>`);
+    expect(ozetHtml(tam, null)).toContain("Kasa dolu: satış kasa sınırında");
+    expect(dukkanDikkatMaddeleri(gorunum({ dukkanlar: [tam] }), malAdi, () => true).map((x) => x.baslik)).toContain("Kasa dolu: fiyatı yükseltmeyi düşünebilirsin");
+    for (const d of [dukkan({ kasaPpm: 999_999, karsilanmaPpm: 1_000_000 }), dukkan({ kasaPpm: 1_000_000, karsilanmaPpm: 999_999 })]) {
+      expect(rafHtml(d, { malAdi, simdi: 0, kasaBirimSa: 90 })).not.toContain("kasa dolu");
+      expect(ozetHtml(d, null)).not.toContain("dk-kasa");
+      expect(dukkanDikkatMaddeleri(gorunum({ dukkanlar: [d] }), malAdi, () => true).map((x) => x.baslik)).not.toContain("Kasa dolu: fiyatı yükseltmeyi düşünebilirsin");
+    }
   });
 
   it("net yuvarlama: aşağı (floor): +631,439 → +631; −55,656 → −56; −0,5 → −1; sıfır 0 (D6 katkı ve D1 net pozitifte aynı)", () => {

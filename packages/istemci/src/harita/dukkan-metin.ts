@@ -215,7 +215,7 @@ export const DUKKAN_METIN = {
   "dukkan.D8.net_yok_not": "Rafa daha çok stok koyunca düzelebilir.",
   "dukkan.D8.net_yok_not_talep": "Bu malı pazara satmak şu an daha kazançlı; rafı değiştirebilirsin.",
   "dukkan.D8.ozet_baslik": "Saatlik tahmin",
-  "dukkan.D8.kasa": "Kasa %{n} dolu: satış kasa sınırında",
+  "dukkan.D8.kasa": "Kasa dolu: satış kasa sınırında",
   "dukkan.D8.ozet_satiri": "{ad} · net ≈ {net}/sa",
   "dukkan.D8.satis_yok": "Henüz satış yok.",
   "dukkan.D8.sen_yokken": "Dükkânından gelir: {tutar}.",

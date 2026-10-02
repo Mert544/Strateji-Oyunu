@@ -331,7 +331,7 @@ function yuvaHtml(d: DukkanKaydi, y: DukkanYuvasi, i: number, o: RafSecenegi): s
   const icerik =
     y.mal === null
       ? `<span class="dk-yuva-satir">${enc("dukkan.D5.bos_yuva")}</span>`
-      : `<span class="dk-yuva-satir"><b>${enc("dukkan.D5.yuva_satiri", { mal, kademe: m(KADEME_ANAHTARI[y.etkinKademe]), fiyat: paraMili(y.fiyatMili, "yukari") })}</b></span><span class="dk-yuva-stok">${enc("dukkan.D5.yuva_satis", { n: fmt(Math.round(y.satisMiliSaat / 1000)) })}</span>`;
+      : `<span class="dk-yuva-satir"><b>${enc("dukkan.D5.yuva_satiri", { mal, kademe: m(KADEME_ANAHTARI[y.etkinKademe]), fiyat: paraMili(y.fiyatMili, "asagi") })}</b></span><span class="dk-yuva-stok">${enc("dukkan.D5.yuva_satis", { n: fmt(Math.round(y.satisMiliSaat / 1000)) })}</span>`;
   // Boş yuva pencere sürerken doldurulamaz (boşaltma fiyatT'yi silmez): "mal koy" soluk ve aria-disabled (odak kalır)
   const kapali = o.gonderiyor || o.yukleniyor || (y.mal === null && y.beklemeSaat > 0);
   return `<button type="button" class="dk-yuva" data-yuva="${i}" data-durum="${durum}" data-mal="${esc(y.mal ?? "")}" data-bekleme="${y.beklemeSaat > 0 ? "1" : "0"}"${kapali ? ` aria-disabled="true"` : ""}${uzun ? ` title="${esc(uzun)}" aria-describedby="${nedenKimlik}"` : ""}${o.seciliYuva === i ? ` aria-pressed="true"` : ""}>${icerik}${neden}${uzun ? `<span class="dk-yuva-tam" id="${nedenKimlik}" hidden>${esc(uzun)}</span>` : ""}</button>`;
@@ -372,7 +372,7 @@ export function seciciHtml(adaylar: readonly SeciciMali[], malAdi: (mal: string)
   const sirali = [...adaylar].sort((x, y) => (y.stokMili > 0 ? 1 : 0) - (x.stokMili > 0 ? 1 : 0) || (x.stokMili > 0 && y.stokMili > 0 ? y.stokMili - x.stokMili : 0));
   for (const a of sirali) {
     const kapali = a.stokMili <= 0;
-    s += `<button type="button" class="dk-mal" data-mal="${esc(a.mal)}"${kapali ? ` aria-disabled="true"` : ""}><span>${enc("dukkan.D5.mal_satiri", { mal: malAdi(a.mal), n: fmt(Math.round(Math.max(0, a.stokMili) / 1000)), fiyat: paraMili(a.fiyatMili, "yukari") })}</span>${kapali ? `<span class="soluk">${enc("dukkan.D5.stoksuz_mal")}</span>` : ""}</button>`;
+    s += `<button type="button" class="dk-mal" data-mal="${esc(a.mal)}"${kapali ? ` aria-disabled="true"` : ""}><span>${enc("dukkan.D5.mal_satiri", { mal: malAdi(a.mal), n: fmt(Math.round(Math.max(0, a.stokMili) / 1000)), fiyat: paraMili(a.fiyatMili, "asagi") })}</span>${kapali ? `<span class="soluk">${enc("dukkan.D5.stoksuz_mal")}</span>` : ""}</button>`;
   }
   return s + `<p class="dk-not soluk">${enc("dukkan.D5.bilgi", { n: fmt(kasaBirimSa) })}</p></div>`;
 }
@@ -418,8 +418,8 @@ function etiketDeger(a: DukkanMetinAnahtari, yer: Record<string, string | number
  */
 export function rafSatirlariHtml(y: DukkanYuvasi): string {
   const n = (mili: number): string => fmt(Math.round(mili / 1000));
-  let s = `<dl class="yk-satirlar dk-raf-satirlar">`;
-  s += etiketDeger("dukkan.D6.satir_fiyat", { fiyat: paraMili(y.fiyatMili, "yukari") });
+  let s = `<dl class="yk-satirlar dk-satirlar dk-raf-satirlar">`;
+  s += etiketDeger("dukkan.D6.satir_fiyat", { fiyat: paraMili(y.fiyatMili, "asagi") });
   s += etiketDeger("dukkan.D6.satir_istek", { n: n(y.istekMiliSaat) }, m("dukkan.D6.istek_aciklama"));
   s += etiketDeger("dukkan.D6.satir_satis", { n: n(y.satisMiliSaat) });
   if (y.stokVar) s += y.netMiliSaat > 0 ? etiketDeger("dukkan.D6.satir_katki", { katki: netMetni(y.netMiliSaat) }) : etiketDeger("dukkan.D6.satir_katki_yok", {});
@@ -574,7 +574,7 @@ export function ozetHtml(d: DukkanKaydi, toplamGelirMiliSa: number | null, yukle
   // Stok nedeni kartta TEK yerde (yuvada kısa "stok yetmiyor"); kasa dolu ile birlikte yazılmaz (önce stok)
   if (stokYetmiyor) s += `<p class="dk-neden" data-neden="karsilanmiyor">${enc("dukkan.D5.neden_karsilanmiyor", { yuzde: karsilanmaYuzdesi(d) })}</p>`;
   if (toplamGelirMiliSa !== null) s += `<p class="dk-ozet-toplam">${enc("dukkan.D8.toplam_satis", { n: paraMili(toplamGelirMiliSa) })}</p>`;
-  if (kasaDoluMu(d)) s += `<p class="dk-kasa" data-yuzde="100">${enc("dukkan.D8.kasa", { n: 100 })}</p>`;
+  if (kasaDoluMu(d)) s += `<p class="dk-kasa" data-yuzde="100">${enc("dukkan.D8.kasa")}</p>`;
   return s + `</div>`;
 }
 
