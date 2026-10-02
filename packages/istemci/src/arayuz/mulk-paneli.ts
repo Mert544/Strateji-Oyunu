@@ -21,6 +21,8 @@ export interface MulkPaneli {
   epochMs(): number;
   /** Son tıklamanın açılmasını istediği sekme (okununca sıfırlanır); yoksa null ("Rafa git": Dikkat'ten İşletmem'e). */
   sekmeIstegi?(): string | null;
+  /** Kabuk sekme içeriğini DOM'a yazdıktan (ya da yazılacak içerik zaten güncelken) hemen sonra çağrılır: ertelenen çizimden sonra bekleyen odak (Pazar formu, yöntem seçimi) burada verilir. */
+  cizildi?(): void;
   /** Panel içi tık (veri öznitelikleri); işlendiyse true. */
   tikla(t: HTMLElement): boolean;
   /** Veri değişince çağrılır; dönen işlev aboneliği kaldırır. */

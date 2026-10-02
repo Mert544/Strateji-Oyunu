@@ -630,7 +630,10 @@ export class Panel {
         h = devletPaneli(d);
         break;
     }
-    if (h === this.sonIcerik) return;
+    if (h === this.sonIcerik) {
+      this.mulk?.cizildi?.();
+      return;
+    }
     this.sonIcerik = h;
     const kap = $("sekme-icerik");
     const ust = kap.scrollTop;
@@ -646,5 +649,6 @@ export class Panel {
     }
     kap.innerHTML = h;
     kap.scrollTop = ust;
+    this.mulk?.cizildi?.(); // ertelenen çizimden sonra bekleyen odak (fareyle açılan Pazar formu, yöntem seçimi) şimdi verilir
   }
 }
