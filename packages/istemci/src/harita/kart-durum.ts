@@ -52,3 +52,47 @@ export function dugmeBasili(yapiSecili: boolean, seritAcik: boolean): boolean {
 export function kartKonumu(hedefY: number | null, yukseklik: number): "ust" | null {
   return hedefY !== null && yukseklik > 0 && hedefY > yukseklik / 2 ? "ust" : null;
 }
+
+/** Kartın ölçüsü ve kenar payları (px; hepsi harita kabına göre). `hedefYari`: hedef hücrenin ekrandaki yüksekliğinin yarısı. */
+export interface KartOlcusu {
+  /** Kartın doğal (kırpılmamış) yüksekliği. */
+  kartYukseklik: number;
+  /** Harita kabının yüksekliği. */
+  kapYukseklik: number;
+  /** Üst konumda kartın üst kenarının kaptan uzaklığı (üst HUD'un altı). */
+  ustPx: number;
+  /** Alt konumda kartın alt kenarının kaptan uzaklığı. */
+  altPx: number;
+  hedefYari: number;
+}
+
+export interface KartYerlesimi {
+  konum: "ust" | null;
+  /** İki konum da hedefi örtüyorsa kartın izinli en büyük yüksekliği (px; fazlası kart içinde kayar); aksi hâlde null. */
+  enYuksek: number | null;
+}
+
+/** Hedefle kart arasında bırakılan boşluk (px) ve sınırlanan kartın alt sınırı. */
+const KART_BOSLUK = 8;
+const KART_EN_AZ = 140;
+
+/**
+ * Kartın ÖLÇÜLEN yüksekliğiyle konum seçimi: hedef hücreyi örtmeyen taraf seçilir (üst: kart [ustPx, ustPx+h]; alt: [kap-altPx-h, kap-altPx]).
+ * İkisi de örtmüyorsa eski kural (`kartKonumu`: hedef alt yarıdaysa üst; konum titremesin). İkisi de örtüyorsa açık alanı (hedefin üstü ya da altı) büyük olan taraf seçilir
+ * ve kartın en büyük yüksekliği o alana sınırlanır (`enYuksek`; kart içinde kayar): hedef görünür ve tıklanabilir kalır.
+ */
+export function kartYerlesimi(hedefY: number | null, o: KartOlcusu): KartYerlesimi {
+  const eski = kartKonumu(hedefY, o.kapYukseklik);
+  if (hedefY === null || o.kapYukseklik <= 0 || o.kartYukseklik <= 0) return { konum: eski, enYuksek: null };
+  const ust = hedefY - o.hedefYari;
+  const alt = hedefY + o.hedefYari;
+  const ustOrter = ust < o.ustPx + o.kartYukseklik && alt > o.ustPx;
+  const altBas = o.kapYukseklik - o.altPx - o.kartYukseklik;
+  const altOrter = alt > altBas && ust < o.kapYukseklik - o.altPx;
+  if (!ustOrter && !altOrter) return { konum: eski, enYuksek: null };
+  if (!ustOrter) return { konum: "ust", enYuksek: null };
+  if (!altOrter) return { konum: null, enYuksek: null };
+  const ustAlan = ust - KART_BOSLUK - o.ustPx;
+  const altAlan = o.kapYukseklik - o.altPx - (alt + KART_BOSLUK);
+  return ustAlan >= altAlan ? { konum: "ust", enYuksek: Math.max(KART_EN_AZ, Math.floor(ustAlan)) } : { konum: null, enYuksek: Math.max(KART_EN_AZ, Math.floor(altAlan)) };
+}

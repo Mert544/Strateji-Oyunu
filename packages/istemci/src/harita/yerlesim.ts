@@ -12,7 +12,7 @@ import { bildir } from "../arayuz/bildirim";
 import { esc, fmt, para, paraMili, sureMetni } from "../arayuz/bicim";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import { geriSeridiGorunur, yapiBittiMi } from "./gorunurluk";
-import { dugmeBasili, KartDurumu, kapaliDugmeOznitelikleri, kartKonumu } from "./kart-durum";
+import { dugmeBasili, KartDurumu, kapaliDugmeOznitelikleri, kartYerlesimi } from "./kart-durum";
 import type { AyrilmisHakki } from "./fiyat";
 import { dukkanMaliyetDurumu, dukkanMaliyetGirdisi } from "./dukkan-kaynak";
 import type { DukkanKurBilgisi } from "./dukkan-kaynak";
@@ -521,7 +521,6 @@ export class YerlesimKipi {
       this.kart.hidden = true;
       return;
     }
-    this.konumAyarla();
     const p = this.plan;
     const oz = this.g.baglanti.ozet?.() ?? null;
     const sabit = this.sabit !== null && p !== null;
@@ -541,19 +540,34 @@ export class YerlesimKipi {
     this.kart.innerHTML = `${baslik}${secici}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(onayAcik({ gecerli: !!p?.gecerli, sabit, uygulaniyor: this.uygulaniyor, yontemTamam }), !!p?.neden || (!yontemTamam && !!p?.gecerli && sabit))}>${kur}</button></div>`;
     this.nedenBolgesi.yerlestir(this.kart);
     this.kart.hidden = false;
+    this.konumAyarla();
   }
 
-  /** Kart konumu: hedef hücre (sabitlenen ya da imlecin altındaki) ekranın alt yarısındaysa `data-konum="ust"`, değilse öznitelik silinir (kart hedefi örtmesin). */
+  /**
+   * Kart konumu: hedef hücreyi (sabitlenen ya da imlecin altındaki) örtmeyen taraf (`data-konum="ust"` ya da varsayılan alt). Kartın ÖLÇÜLEN yüksekliği kullanılır
+   * (`kartYerlesimi`): iki taraf da örtüyorsa kartın en büyük yüksekliği hedefin üstündeki/altındaki alana sınırlanır (iç kaydırma). Kart yazıldıktan sonra çağrılır.
+   */
   private konumAyarla(): void {
     const c = this.sabit ?? this.sonHover;
+    const kap = this.g.ml.getContainer().clientHeight;
     let y: number | null = null;
+    let yari = 0;
     if (c) {
       const [b, g, d, k] = hucreSiniri(c.x, c.y);
       y = this.g.ml.project([(b + d) / 2, (g + k) / 2]).y;
+      yari = Math.abs(this.g.ml.project([b, g]).y - this.g.ml.project([d, k]).y) / 2;
     }
-    const konum = kartKonumu(y, this.g.ml.getContainer().clientHeight);
-    if (konum) this.kart.dataset["konum"] = konum;
-    else delete this.kart.dataset["konum"];
+    // Doğal yükseklik: önceki konum/sınır kalkınca ölçülür (gizliyse ölçü yok: eski kural)
+    delete this.kart.dataset["konum"];
+    this.kart.style.maxHeight = "";
+    this.kart.style.overflowY = "";
+    const telefon = window.matchMedia("(max-width: 820px)").matches;
+    const r = kartYerlesimi(y, { kartYukseklik: this.kart.hidden ? 0 : this.kart.offsetHeight, kapYukseklik: kap, ustPx: telefon ? 64 : 72, altPx: telefon ? 32 : 36, hedefYari: yari });
+    if (r.konum) this.kart.dataset["konum"] = r.konum;
+    if (r.enYuksek !== null) {
+      this.kart.style.maxHeight = `${r.enYuksek}px`;
+      this.kart.style.overflowY = "auto";
+    }
   }
 
   /** Standart maliyet gövdesi: ipucu (yer seçilmedi) ya da arsa/yapı/süre/toplam satırları ve neden yeri. */
@@ -655,6 +669,7 @@ export class YerlesimKipi {
     this.kart.innerHTML = html;
     this.nedenBolgesi.yerlestir(this.kart);
     this.kart.hidden = false;
+    this.konumAyarla();
   }
 
   private async onayla(): Promise<boolean> {
