@@ -15,10 +15,11 @@ import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
-import { miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
+import { gercekVeriyiYukle, miniVeriyiYukle, parselFiksturuYukle } from "@bolge/veri";
 import type { ParselFiksturu, ParselHucreTanimi, ParselIlceTanimi } from "@bolge/veri";
 import type { CekirdekVeriPaketi } from "@bolge/cekirdek";
 import { bellekDeposu } from "../../sunucu/src/depo/bellek";
+import { hiyerarsiOku, izgaraGirdisiKur, izgaraManifestiOku, izgaralariYukle, izgarayiVeriyeBagla, varsayilanIzgaraBagimliliklari, varsayilanIzgaraKoku } from "../../sunucu/src/izgara/manifest";
 import { GelistirmeKimligi, gelistirmeTokeni } from "../../sunucu/src/kimlik";
 import { SunucuIstemcisi } from "../../sunucu/src/istemci";
 import { DuvarSaati, ElleSaat } from "../../sunucu/src/saat";
@@ -101,11 +102,24 @@ export interface F4SunucuSecenekleri {
   gercekSaat?: boolean;
   /** Gebze'siz hızlı kipi (testler): mini-6 fikstürü. */
   fikstur?: ParselFiksturu;
+  /** Gerçek arsa ızgaraları (Gebze, Gemlik, Körfez): sunucu CLI'siyle aynı kurulum (`izgara/manifest.ts`: manifest → BHI1 → veri); Gebze fikstürü kullanılmaz. */
+  manifestIzgara?: boolean;
+}
+
+/** CLI'nin `--izgara-manifest` kurulumunun aynısı: gerçek veri paketi + manifestteki bütün ilçeler. */
+export function manifestVerisi(): CekirdekVeriPaketi {
+  const manifestYolu = join(DEPO, "packages", "veri", "haritalar", "odbl", "izgara", "manifest.json");
+  const kok = varsayilanIzgaraKoku(manifestYolu);
+  const yuklenen = izgaralariYukle(izgaraManifestiOku(manifestYolu), kok, varsayilanIzgaraBagimliliklari);
+  const veri: CekirdekVeriPaketi = gercekVeriyiYukle();
+  if (veri.param.mulk === undefined) throw new Error("gercek veri paketinde param.mulk yok");
+  izgarayiVeriyeBagla(veri, izgaraGirdisiKur(yuklenen, { ad: "izgara-manifest", harita: veri.harita.ad, hiyerarsi: hiyerarsiOku(join(kok, "hiyerarsi.json")), haritaBolgeleri: new Set(veri.harita.bolgeler.map((b) => b.id)) }));
+  return veri;
 }
 
 export async function f4SunucuBaslat(s: F4SunucuSecenekleri = {}): Promise<F4Sunucu> {
-  const veri: CekirdekVeriPaketi = miniVeriyiYukle();
-  veri.parsel = s.fikstur ?? gebzeFiksturu();
+  const veri: CekirdekVeriPaketi = s.manifestIzgara ? manifestVerisi() : miniVeriyiYukle();
+  if (!s.manifestIzgara) veri.parsel = s.fikstur ?? gebzeFiksturu();
   if (s.yurtsuz && veri.param.mulk) veri.param.mulk.yeniOyuncu.yurtHucre = 0;
   // Esnaf Defteri ödül dedektörü açık (CLI varsayılanı gibi): kavramlar sim-saat sınırında saptanır.
   // Gerçek saat: birikimli kip (açıkken akar; kapalıyken durur). Mutlak duvar saati (varsayılan DuvarSaati(1)) kapalı süreyi yetiştirir.

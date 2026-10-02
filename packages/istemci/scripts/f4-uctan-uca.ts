@@ -874,6 +874,51 @@ async function sahteYerles(tarayici: Browser, adres: string, konsol: string[]): 
   await mb.close();
 }
 
+/**
+ * DERYA (masaüstü): Gemlik'e yerleş (gerçek arsa ızgarası, CLI ile aynı kurulumlu ayrı sunucu; yurtsuz). Yerleş kartı "hazır" (ızgara var: "Arsa ızgarası yakında" yok), "Burada başla",
+ * varışta hazır arsa seçili, tek tıkla satın alma, sunucuda sahiplik; Yapı kur menüsü açılır.
+ */
+async function derya(tarayici: Browser, adres: string, konsol: string[]): Promise<void> {
+  const e = "[derya/masaüstü]";
+  const ts2 = await f4SunucuBaslat({ manifestIzgara: true, yurtsuz: true });
+  const GEMLIK = "tr_16_gemlik";
+  const baglam = await tarayici.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, colorScheme: "light" });
+  try {
+    const sayfa = await sayfaAc(baglam, adres, ts2, "derya", konsol);
+    await sayfa.waitForFunction(() => window.__harita?.yerles() != null, null, { timeout: 120000 });
+    await sayfa.evaluate(() => window.__olcum?.duraklat(true));
+    // Gemlik kartı ilk üçte değilse "Başka ilçe öner" ile aranır
+    for (let i = 0; i < 3 && (await sayfa.locator(`.yr-kart[data-ilce='${GEMLIK}']`).count()) === 0; i++) await sayfa.locator("[data-yr='baska']").click();
+    const kartSatiri = sayfa.locator(`.yr-kart[data-ilce='${GEMLIK}']`);
+    const kartMetni = ((await kartSatiri.count()) > 0 ? await kartSatiri.innerText() : "").replace(/\s+/g, " ");
+    kontrol(`${e} Yerleş'te Gemlik kartı var; ızgara hazır ("Hazır arsalar var"), "Arsa ızgarası yakında" yok`, /Gemlik/.test(kartMetni) && /Hazır arsalar var/.test(kartMetni) && !/ızgarası yakında/.test(kartMetni), kartMetni);
+    await kartSatiri.click();
+    kontrol(`${e} Gemlik seçilince birincil düğme "Burada başla"`, /Burada başla/.test(await sayfa.locator("[data-yr='basla']").innerText()));
+    await sayfa.locator("[data-yr='basla']").click();
+    await sayfa.waitForFunction((i) => window.__harita?.durum().ilce === i && window.__harita?.durum().duzey === 3 && window.__harita?.gorunum()?.seciliArsa() != null, GEMLIK, { timeout: 120000 });
+    await haritaHazir(sayfa);
+    await sayfa.waitForTimeout(500);
+    kontrol(`${e} Yerleş kapandı, harita Gemlik L3'te; önerilen hazır arsa seçili`, (await sayfa.locator("#yerles").count()) === 0 && /Hazır arsa/.test(await alt(sayfa)), await alt(sayfa));
+    const katilim = mulkOyuncuBul(ts2.yazar.sim.dunya, "derya")?.katilimIlcesi;
+    kontrol(`${e} çekirdekte katılım ilçesi Gemlik (yurtsuz: hücre yok)`, katilim === GEMLIK, String(katilim));
+    await tikla(sayfa, false, "[data-eylem='arsa-al']");
+    await sayfa.waitForSelector("#bildirimler .bildirim.tamam", { timeout: 30000 });
+    const toast = (await sayfa.locator("#bildirimler .bildirim.tamam").last().innerText()).replace(/\s+/g, " ");
+    kontrol(`${e} Gemlik'te arsa satın alındı bildirimi`, /Arsa satın alındı: \d+ hücre, [\d.]+\s₺\./.test(toast), toast);
+    const sahip = (): number => (ts2.yazar.sim.dunya.mulk ? ts2.yazar.sim.dunya.mulk.hucreler.filter((h) => h.sahip === "derya").length : 0);
+    await sayfa.waitForTimeout(600);
+    kontrol(`${e} sunucuda derya Gemlik arsasına sahip`, sahip() >= 4, `${sahip()} hücre`);
+    await tikla(sayfa, false, "#yapi-menu-dugme");
+    const menu = (await sayfa.locator("#yapi-menu").innerText()).replace(/\s+/g, " ");
+    kontrol(`${e} Yapı kur menüsü Gemlik'te açılır (Çiftlik)`, /Çiftlik/.test(menu), menu.slice(0, 120));
+    await sayfa.screenshot({ path: join(EKRAN, "f4-gemlik-1-yapi-menusu.png") });
+    kontrol(`${e} konsol hatası yok`, konsol.filter((x) => x.includes("[derya]")).length === 0, konsol.filter((x) => x.includes("[derya]")).slice(0, 3).join(" | "));
+  } finally {
+    await baglam.close();
+    await ts2.kapat();
+  }
+}
+
 async function main(): Promise<void> {
   for (const d of ["dunya.html", "harita.js", "harita-verisi/hiyerarsi.json"]) if (!existsSync(join(KOK, d))) throw new Error(`Önce derleyin (pnpm dunya): ${d} yok`);
   mkdirSync(EKRAN, { recursive: true });
@@ -918,8 +963,9 @@ async function main(): Promise<void> {
     kontrol("[veli] yetişme bitince şerit kalkar", await veli.locator("#harita-yetisme").isHidden());
     await ayse(tarayici, adres, ts, konsol);
     await gBaglam.close();
+    await derya(tarayici, adres, konsol);
     await sahteYerles(tarayici, adres, konsol);
-    const k = konsol.filter((x) => !x.includes("[ali]") && !x.includes("[can]") && !x.includes("[ayse]") && !x.includes("[sahte]"));
+    const k = konsol.filter((x) => !x.includes("[ali]") && !x.includes("[can]") && !x.includes("[ayse]") && !x.includes("[derya]") && !x.includes("[sahte]"));
     kontrol("[veli] konsol hatası yok", k.length === 0, k.slice(0, 3).join(" | "));
     const sunucuSorun = ts.yazar.sim.dunya.mulk ? "" : "mülk kipi kapalı";
     kontrol("sunucu mülk kipinde", sunucuSorun === "", sunucuSorun);

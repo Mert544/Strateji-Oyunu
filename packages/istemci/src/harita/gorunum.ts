@@ -1763,7 +1763,7 @@ export class HaritaGorunumu {
     }
     // Seçili ilçede tık: ızgara varsa tıklanan yere arsa düzeyine in
     if (this.izgara) this.harita.easeTo({ center: e.lngLat, zoom: 16.6, duration: hareketAzMi() ? 0 : 700 });
-    else this.ipucuGoster("Bu ilçenin arsa ızgarası henüz yok (örnek: Gebze)", e.point.x, e.point.y, true, 2600);
+    else this.ipucuGoster("Bu ilçenin arsa ızgarası henüz yok", e.point.x, e.point.y, true, 2600);
   }
 
   private async satinAl(): Promise<void> {
