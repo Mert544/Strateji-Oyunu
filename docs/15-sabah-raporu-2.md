@@ -6,6 +6,15 @@
 
 **Dükkân artık oynanıyor ve üç ilçe açık.** Oyuncu bedava yurdunda çiftliğini kurup tahılını satabiliyor; ilk dükkânını kurup rafını doldurabiliyor, fiyat kademesini seçip ilk satışı görebiliyor. Gebze, Gemlik ve Körfez'de başlanabiliyor. Ekmek zinciri (değirmen, fırın) ve cam → pencere hattı artık **ekrandan seçilebiliyor**: yapı kurarken yöntem seçici son pakette (03:41 UTC) girdi.
 
+## Son durum (05:40 UTC)
+
+- **GitHub'da:**
+  - P12a ve P12b;
+  - pilot, davet ve Alfa-0 kanıt belgeleri;
+  - yedek tatbikatı: yerel Postgres ve gerçek haritada yedek alınıp silinen dünya geri yüklendi, dünya özeti birebir aynı çıktı; Docker'lı makinede tekrarı gerekiyor.
+- **P13 kodu henüz GitHub'da değil** (Pazar'da sat, yeni Defter, yuva rakamları, inşa süresi ve bildirimi, telefon düzeltmeleri). Uçtan uca test gerçek bir ürün hatası yakaladı: fareyle açılan Pazar formunda ve yöntem seçicide sayı alanına odak verilmiyordu. Kök neden bulundu ve düzeltildi; paket (P13b) 05:33 UTC'den beri kapıda. Geçerse push edilecek.
+- **100 bot yük ölçümü, gerçek ızgara, kısa koşu, 6 sim günü:** çözüm süresi p95 8 ms (hedef ≤300 ms), bellek 267 MB ve büyümüyor, başarısız komut 0. 30 günlük koşu sırada.
+
 ## Sabah eki (05:00 UTC): bu rapordan sonra ne değişti
 
 > Önce bunu oku. Aşağıdaki bölümlerde düzeltilen satırlar "(ek)" ile işaretli.
