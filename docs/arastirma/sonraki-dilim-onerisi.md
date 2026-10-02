@@ -42,8 +42,8 @@
 | 2 (paralel enstrüman) | Ekonomi metrikleri K2-8…K2-9 + O2-1…O2-3 | Oynanış değil enstrüman; K2-1…K2-7 girdi (bc6087c). Alfa-0 haftasından önce E4/E5/E11 ilçe başına okunmalı: K3'ün ölçüm yolu budur |
 | 3 (paralel kanıt) | Kabul tablosundaki ölçülmemiş A0 maddeleri (A0-1, 3, 5, 7, 9, 15, 16, 17) | Çoğunun testi kapıda zaten var (örn. `mulk-kamu`, `yedek-geri-yukle`, `zaman-yayini`, `harita-f4-yetisme`); iş kanıtı A0 numarasına eşlemektir (A0-9, A0-17 bu dilimde ilçe başına kapanır); sahipleri O1/O3 |
 | 4 | Süt ve fındık | Baş lider kararıyla Alfa-0 sonrası; A0-11 kapsamı ekmek + cam → pencere; `findik` P1'de çıkmaz-mal uyarısı |
-| 5 (tetikli) | Alfa-1 fiyat esnekliği | Ölçüm koşullu: tetik A0-12 (prim > 1,30 ya da 1,15 payı > %19, iki ardışık hafta); canlı veri olmadan ayar yok (`alfa1-talep-esnekligi.md`) |
-| 6 (tetikli) | Seyrek oyuncu için koşullu yapı emri | A2 kâğıdı uçurum görmüyor (gün 14 servet %81, gün 30 %92; parametre önerisi yok); yeni bir "ben yokken" yetki katmanı "kilit yok" ilkesine yük bindirir; tetik: canlıda gün 14 servet oranı < %80 |
+| 5 (tetikli) | Alfa-1 fiyat esnekliği | Ölçüm koşullu. **Onaylı tetik (baş lider; `alfa1-talep-esnekligi.md` 2e4ea27, `alfa0-ekonomi-izleme.md` 28b1537):** E11 pratik alarmı (1,15 payı ≥ %60 ve prim ≥ 1,25) iki ardışık pencerede sürer ve çok rakipli ilçelerde görülürse `fiyatUssu` kararı baş liderdedir; yalnız az rakipli ilçede görülürse değişiklik yok. Canlı veri olmadan ayar yok |
+| 6 (tetikli) | Seyrek oyuncu için koşullu yapı emri | A2 kâğıdı uçurum görmüyor (gün 14 servet %81, gün 30 %92; parametre önerisi yok); yeni bir "ben yokken" yetki katmanı "kilit yok" ilkesine yük bindirir; tetik: canlıda gün 14 servet oranı < %80 **(öneri, karar yok: A3 önerisi; onaylı tetik değil)** |
 | 7 | Askeri 0b (bayraklı eşkıya) | 0a belgesi kabul edildi; 0b Alfa-0 sonrası, bayrak kapısı A0-18 (AH1/AH2/AH4/H5) kapıdan 3 hafta önce karar ister |
 
 ## 6. Sonuç
