@@ -50,3 +50,14 @@ describe("sınırlanan kart (ekran genişliğinden bağımsız)", () => {
   });
 });
 
+describe("masaüstü dükkân D3 kartı tavanı", () => {
+  const dukkanCss = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "src", "harita", "dukkan-panel.css"), "utf8");
+
+  it("tavan %60 ile bildirim payı tavanının küçüğü; kart içinde kayar, Kur/Vazgeç yapışık", () => {
+    expect(dukkanCss).toContain("#yapi-kart:has(.dk-maliyet) { max-height: min(60%, calc(100% - 36px - 148px)); overflow-y: auto;");
+    expect(dukkanCss).toMatch(/#yapi-kart:has\(\.dk-maliyet\) \.dk-maliyet > \.yk-dugmeler \{\s+position: sticky;/);
+    // 900 px yükseklikte: %60 = 540 (eski tavan 716'ydı)
+    expect(Math.min(0.6 * 900, 900 - 36 - 148)).toBe(540);
+  });
+});
+

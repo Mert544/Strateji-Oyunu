@@ -181,9 +181,9 @@
 .dk-maliyet .yk-satirlar > dt:nth-last-child(4) { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; align-self: stretch; line-height: 24px; color: var(--murekkep-2); }
 .dk-maliyet .yk-satirlar > dd:nth-last-child(3) { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; font-size: var(--yazi-xl); font-weight: 600; line-height: 24px; }
 /* D3: maliyet adımında kart (tür kartları + satırlar) 811 px'e çıkıp üstteki bildirimin altına giriyor ve kapat düğmesini örtüyordu (900 px yükseklik).
-   Masaüstünde kartın tavanı: alt boşluk 36 px + üstte bildirim şeridi payı 148 px; taşarsa kart içinde kayar, Kur/Vazgeç altta yapışık (yr-alt-satir ile aynı yöntem) */
+   Masaüstünde kartın tavanı: %60 (T3 kart-ortme-kapsam: hedef ortada iken kartın örtmesini azaltır; 900 px'te 540) ve alt boşluk 36 px + üstte bildirim şeridi payı 148 px'in küçüğü; taşarsa kart içinde kayar, Kur/Vazgeç altta yapışık (yr-alt-satir ile aynı yöntem) */
 @media (min-width: 821px) {
-  #yapi-kart:has(.dk-maliyet) { max-height: calc(100% - 36px - 148px); overflow-y: auto; overscroll-behavior: contain; }
+  #yapi-kart:has(.dk-maliyet) { max-height: min(60%, calc(100% - 36px - 148px)); overflow-y: auto; overscroll-behavior: contain; }
   #yapi-kart:has(.dk-maliyet) .dk-maliyet > .yk-dugmeler {
     position: sticky; bottom: calc(-1 * var(--s-4)); z-index: 1; margin: var(--s-2) 0 calc(-1 * var(--s-4)); padding: var(--s-2) 0 var(--s-4);
     background: var(--yuzey); box-shadow: 0 -1px 0 var(--cizgi-ince);
