@@ -34,6 +34,8 @@ import { DukkanPaneli, dukkanPanelParam, panelEylemiOku } from "./dukkan-panel";
 import { dukkanTuruMallari } from "./etkin";
 import type { Defter } from "@bolge/protokol";
 import { bildir } from "../arayuz/bildirim";
+import { sebekeBolumuHtml, sebekeFiyatlari, sebekeSatirlari } from "./sebeke-gider";
+import { YontemPaneli, yontemEylemiOku } from "./yontem-panel";
 import mulkCss from "./mulk-panel.css?inline";
 import dukkanCss from "./dukkan-panel.css?inline";
 
@@ -82,6 +84,8 @@ export interface MulkAdlari {
   dukkanRafa?: (ilce?: string) => number | null;
   /** Tesis satırında "Büyüt" gösterilsin mi (`olcek.ts` `olcekBuyutulebilir`); tanımsızsa gösterilmez. */
   buyut?: (y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]) => boolean;
+  /** Tesis satırı için "Yöntemi değiştir" parçaları (`yontem-panel.ts`: düğme satırın düğmeleri arasında, seçici ve onay satırın altında); tanımsızsa hiçbiri çıkmaz. */
+  yontem?: (y: IsletmeYapisi) => { dugme: string; alt: string };
 }
 
 const sure = (ms: number): string => sureMetni(Math.max(0, ms) / SAAT);
@@ -202,7 +206,8 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
     for (const y of sirali) {
       const yer = y.ilce ? ad.ilce(y.ilce) : y.il ? ad.il(y.il) : "";
       const buyut = ad.buyut?.(y, d.yapilar) ? `<button type="button" class="eylem" data-mulk-buyut="${esc(y.anahtar)}" data-mulk-buyut-ilce="${esc(y.ilce ?? "")}" title="Tesisi bir üst ölçeğe büyüt">${ikon("hammer", 15)}Büyüt</button>` : "";
-      s += `<li data-yapi-durum="${y.durum}"><span class="ml-ad"><b>${esc(ad.yapi(y.tur))}</b><span class="soluk">${esc(yapiDurumu(y, d.simZamani))}${yer ? ` · ${esc(yer)}` : ""}</span></span>${buyut}${gitDugmesi(y.ilce)}</li>`;
+      const yp = ad.yontem?.(y) ?? { dugme: "", alt: "" };
+      s += `<li data-yapi-durum="${y.durum}"><span class="ml-ad"><b>${esc(ad.yapi(y.tur))}</b><span class="soluk">${esc(yapiDurumu(y, d.simZamani))}${yer ? ` · ${esc(yer)}` : ""}</span></span>${buyut}${yp.dugme}${gitDugmesi(y.ilce)}${yp.alt}</li>`;
     }
     s += `</ul>`;
   }
@@ -211,7 +216,7 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
   return s;
 }
 
-export function mulkHazinePaneli(d: IsletmeDurumu | null): string {
+export function mulkHazinePaneli(d: IsletmeDurumu | null, sebeke = ""): string {
   if (!d) return `<p class="ipucu-metin">Hazine bilgisi yükleniyor…</p>`;
   const satir = (k: string, v: string, a = ""): string => `<dt>${k}</dt><dd>${v}${a ? `<br><span class="soluk">${a}</span>` : ""}</dd>`;
   let s = `<dl class="mulk-dl">`;
@@ -220,7 +225,7 @@ export function mulkHazinePaneli(d: IsletmeDurumu | null): string {
   if (d.araziDegeriMili !== null) s += satir("Arazi değeri", paraMili(d.araziDegeriMili), "Arsalarının satın alma bedeli toplamı.");
   if (d.araziVergisiMili !== null) s += satir("Arazi vergisi", paraMili(d.araziVergisiMili), "Tahakkuk eden, henüz ödenmemiş.");
   s += `</dl>`;
-  return s;
+  return s + sebeke;
 }
 
 export function mulkMalPaneli(d: IsletmeDurumu | null, ad: MulkAdlari): string {
@@ -450,6 +455,43 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       void dukkanPaneli.eylem(o).then(() => window.setTimeout(() => document.querySelectorAll<HTMLElement>(simge ? ".dk-simge" : ".dk-renk")[yeni]?.focus(), 0));
     });
   }
+  // Yöntem seçici ("Yöntemi değiştir") ve Hazine'de şebeke gideri: komut `yontem_degistir` bağdaştırıcının ucundan; sahte bağdaştırıcıda ve içerik olmadan çıkmaz.
+  const sebekeFiyat = sebekeFiyatlari(ic);
+  const yenidenCiz = (): void => {
+    const geri = yontemPaneli?.odagiYakala(document);
+    yenile?.();
+    if (geri) window.setTimeout(geri, 0);
+  };
+  const yontemPaneli: YontemPaneli | undefined = b.yontemDegistir
+    ? new YontemPaneli({
+        ic,
+        yapiAdi: ad.yapi,
+        isletme: () => son ?? b.isletme?.() ?? null,
+        acikTeknolojiler: () => b.acikTeknolojiler?.() ?? null,
+        komut: (i) => b.yontemDegistir!(i),
+        degisti: yenidenCiz,
+        bildir: (metin, tur) => bildir(metin, tur),
+      })
+    : undefined;
+  if (yontemPaneli) {
+    ad.yontem = (y) => yontemPaneli.satirParcalari(y);
+    // Yöntem seçici klavyesi (radiogroup, "Yöntemi değiştir" açıkken): oklar/Home/End seçimi ve odağı taşır, Boşluk/Enter seçer; Esc vazgeçer
+    document.addEventListener("keydown", (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement) || !t.closest(".ym-degistir")) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        yontemPaneli.kapat();
+        return;
+      }
+      const kart = t.closest<HTMLElement>(".ym-kart");
+      if (!kart) return;
+      const id = yontemPaneli.tus(e.key, kart.dataset["yontem"] ?? null);
+      if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End", " ", "Spacebar", "Enter"].includes(e.key)) return;
+      e.preventDefault();
+      if (id !== null) void yontemPaneli.eylem({ eylem: "sec", yontem: id }).then(() => window.setTimeout(() => document.querySelector<HTMLElement>(`.ym-degistir .ym-kart[data-yontem="${id.replace(/"/g, "")}"]`)?.focus(), 0));
+    });
+  }
   const dukkanDikkat = (): MulkDikkatMaddesi[] =>
     dukkanDikkatMaddeleri(dukkanGorunumu(), ad.mal, (mal) => (son?.mallar.find((x) => x.mal === mal)?.stokMili ?? 0) > 0).map((x, i) => ({ tur: x.tur, baslik: x.baslik, ayrinti: "", ...(x.ilce ? { ilce: x.ilce } : {}), sira: i }));
   const epoch = (): number => b.dunyaEpochMs?.() ?? DUNYA_EPOCH_MS;
@@ -485,7 +527,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
           return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch()) : undefined, { ust, dukkan });
         }
         case "hazine":
-          return mulkHazinePaneli(d);
+          return mulkHazinePaneli(d, sebekeBolumuHtml(sebekeSatirlari(sebekeFiyat, d?.sebeke ?? []), ad.mal));
         case "mal":
           return mulkMalPaneli(d, ad);
         case "dikkat":
@@ -541,6 +583,11 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         void dukkanPaneli.eylem(pe);
         return true;
       }
+      const ye = yontemPaneli ? yontemEylemiOku(t) : null;
+      if (ye && yontemPaneli) {
+        void yontemPaneli.eylem(ye);
+        return true;
+      }
       const bd = t.closest("[data-mulk-buyut]") as HTMLElement | null;
       if (bd) {
         // "Büyüt": telefonda alt sayfa kapanır, harita tesisin ilçesine gider, ek hücre planı ve maliyet kartı açılır
@@ -569,7 +616,9 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         }
         const g = dukkanGorunumu();
         if (g && ilkSatis.kontrol(g.ilkSatisT)) bildir(dukkanMetni("dukkan.D8.ilk_satis"), "bilgi");
+        const geri = yontemPaneli?.odagiYakala(document); // yeniden çizim (inşaat süreleri) açık seçicinin odağını düşürmesin
         f();
+        if (geri) window.setTimeout(geri, 0);
       }, 2000);
       return () => {
         yenile = null;

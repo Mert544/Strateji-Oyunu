@@ -421,6 +421,8 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     const ahirKur = async (ilk: boolean): Promise<void> => {
       await tikla(sayfa, false, "#yapi-menu-dugme");
       await tikla(sayfa, false, "#yapi-menu [data-yapi='ahir']");
+      // Ahır çok yöntemlidir: varsayılan seçim YOK, yöntem seçilmeden "Kur" kapalı (yöntem seçici); tür varsayılanı (Ahır besi) seçilir: komuta yontem yazılmaz
+      await tikla(sayfa, false, "#yapi-kart .ym-kart[data-yontem='ahir_besi']");
       const pb = await hucreNoktasi(sayfa, bos.sol);
       if (!pb) throw new Error("ahır hücresi ekranda değil");
       await sayfa.mouse.move(pb.x, pb.y);

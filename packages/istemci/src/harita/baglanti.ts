@@ -58,6 +58,15 @@ export interface YerlestirIstegi {
   siniflar?: ArsaSinifi[];
   /** Dükkân türü kimliği (`tesisTuru` `dukkan` iken zorunlu; başka yapıda verilmez). */
   dukkanTuru?: string;
+  /** Üretim yöntemi kimliği (yalnız tesis türünde; tür birden çok yöntemliyse seçici koyar). Tanımsız = tür varsayılanı (alan komuta yazılmaz: bugünkü davranış). */
+  yontem?: string;
+}
+
+/** "Yöntemi değiştir" isteği (çekirdek `yontem_degistir`): `bolge` işletme düğümünün kimliği (`<il>#<oyuncu>`), `tesis` tesis kimliği, `yontem` yeni yöntemin kimliği. Ücretsiz ve anlıktır. */
+export interface YontemDegistirIstegi {
+  bolge: string;
+  tesis: number;
+  yontem: string;
 }
 
 /**
@@ -200,6 +209,8 @@ export interface IsletmeYapisi {
   yontem?: string;
   /** Tesisin aşınması (ppm, > 0; `ozel.tesisAsinma`); ölçek büyütme inşaatında büyüyen tesisin aşınması. Aşınmasızsa tanımsız. */
   asinmaPpm?: number;
+  /** İşletme düğümünün kimliği (`<il>#<oyuncu>`; yalnız biten tesiste; `yontem_degistir` komutunun `bolge` alanı). */
+  bolge?: string;
 }
 
 /** Oyuncunun işletme özeti (mülk kipi kabuğu): hazine, kalkan, arsalar, yapılar, stok ve satış. Yalnız okunur. */
@@ -221,6 +232,8 @@ export interface IsletmeDurumu {
   yapilar: IsletmeYapisi[];
   /** Mal kimliği başına stok (mili-birim), üretim ve satış/alış oranı (mili-birim/saat). */
   mallar: Array<{ mal: string; stokMili: number; uretimMili: number; satisMili: number; alisMili: number }>;
+  /** Şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (`kare.ozel.sebeke`; işletme düğümleri toplanmış; alım yoksa tanımsız). Bedel istemcide: miktar x şebeke fiyatı. */
+  sebeke?: Array<[mal: string, miliSaat: number]>;
 }
 
 /** Dükkân görünümünün kaynağı olan karenin gereken kısmı (`dukkan-kopru.ts` girdisi). */
@@ -243,6 +256,10 @@ export interface MulkBaglantisi {
   tesisInsa?(komut: TesisKomutu): Promise<TesisSonucu>;
   /** Atomik yerleşim (`yapi_yerlestir`): arsa + inşaat tek komut. Yalnız `atomikYerlestirme()` doğruysa kullanılır. */
   yapiYerlestir?(i: YerlestirIstegi): Promise<TesisSonucu>;
+  /** Biten tesisin yöntemini değiştirir (`yontem_degistir`; ücretsiz, anlık). Tanımsızsa "Yöntemi değiştir" gösterilmez. Ret nedeni Türkçe (`yontem.ret.*`). */
+  yontemDegistir?(i: YontemDegistirIstegi): Promise<TesisSonucu>;
+  /** Oyuncunun araştırdığı teknolojilerin kimlikleri (yöntem seçicide kilitli/açık ayrımı); bilinmiyorsa tanımsız/null (teknoloji isteyen yöntem kilitli sayılır; teknolojisiz yöntemler her zaman açıktır). */
+  acikTeknolojiler?(): ReadonlySet<string> | null;
   /** Bu bağlantıda (sunucuda) atomik yerleşim komutu var mı? Yoksa zincir (iki komut) kullanılır. */
   atomikYerlestirme?(): boolean;
   /** Onaydan sonra geri alma (`insaat_iptal` + `parsel_birak`). Tanımsızsa "Geri al" gösterilmez. */

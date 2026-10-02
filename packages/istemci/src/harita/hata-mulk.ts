@@ -4,6 +4,7 @@
  */
 import { paraMili } from "../arayuz/bicim";
 import { dukkanMetni } from "./dukkan-metin";
+import { YONTEM_RET_KALIPLARI, yontemMetni } from "./yontem-metin";
 import { KAMU_TUR_ADI } from "./kamu";
 import type { KamuTuru } from "./kamu";
 import { ETIKET_ADI } from "./yapi";
@@ -57,8 +58,16 @@ const DUKKAN_KURALLARI: Kural[] = [
   [/^dukkan bulunamadi/, () => dukkanMetni("dukkan.D81.yok")],
 ];
 
+/**
+ * Yöntem seçimi (`yapi_yerlestir`/`tesis_insa_hucre` `yontem?`, `yontem_degistir`): yalnız yöntem iletileri (A1 `yontem.ret.*`). Ortak iletiler (`bolgede boyle bir tesis yok`,
+ * `bolge oyuncunun degil`) genel kurallarda kalır (ölçek büyütmeyle aynı metin); `yontemHatasiTurkce` bunları yöntem bağlamında A1 metniyle söyler.
+ */
+const ORTAK_YONTEM_IKI: ReadonlySet<string> = new Set(["yontem.ret.tesis_yok", "yontem.ret.sahip_degil"]);
+const YONTEM_KURALLARI: Kural[] = YONTEM_RET_KALIPLARI.filter(([, a]) => !ORTAK_YONTEM_IKI.has(a)).map(([re, a]): Kural => [re, () => yontemMetni(a)]);
+
 const KURALLAR: Kural[] = [
   ...DUKKAN_KURALLARI,
+  ...YONTEM_KURALLARI,
   [/^mulk kipi kapali/, () => "Bu dünya mülk kipinde değil."],
   [/^bilinmeyen ilce/, () => "Bu ilçe sunucunun dünyasında yok."],
   [/^gecersiz arsa sinifi/, () => "Geçersiz arsa sınıfı."],
@@ -121,6 +130,12 @@ export function mulkHatasiTurkce(ham: string, ad: (id: string) => string = (x) =
     if (m) return f(m, ad);
   }
   return `Sunucu isteği reddetti: ${ham}`;
+}
+
+/** `yontem_degistir` reddi: yöntem bağlamında altı çekirdek iletisinin tamamı A1 `yontem.ret.*` metniyle (tesis yok, sahip değil dahil); tanınmayan metin genel eşlemeye düşer. */
+export function yontemHatasiTurkce(ham: string, ad: (id: string) => string = (x) => x): string {
+  for (const [re, a] of YONTEM_RET_KALIPLARI) if (re.test(ham)) return yontemMetni(a);
+  return mulkHatasiTurkce(ham, ad);
 }
 
 /** Hücre kimliği ("x:y") ham metinde geçiyorsa çıkarır (hata hücresini işaretlemek için). */

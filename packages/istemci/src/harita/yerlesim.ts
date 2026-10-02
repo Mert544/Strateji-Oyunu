@@ -23,6 +23,11 @@ import { hucreSiniri, noktadanHucre } from "./hucre";
 import type { Izgara } from "./hucre";
 import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yapiRengiCss, yerlesimPlani } from "./yapi";
 import { ikon } from "../tasarim/ikon";
+import type { Icerik } from "../komut/tablo";
+import { sebekeFiyatlari } from "./sebeke-gider";
+import { komutYontemi, seciciTusu, tekSecilebilir, yontemSecenekleri, yontemSecimiTamam, yontemSeciciHtml } from "./yontem-secici";
+import type { YontemSecenegi } from "./yontem-secici";
+import { yontemMetni } from "./yontem-metin";
 import type { YapiTanimi, YerlesimPlani } from "./yapi";
 import { yerlesimiUygula } from "./zincir";
 import { yurtPlani } from "./yurt";
@@ -60,6 +65,8 @@ export interface YerlesimGirdisi {
   indirim?: () => { ppm: number; kalan: number } | undefined;
   /** Dükkân kurma bilgisi (D2 tür seçimi, D3 satırları); dünyada dükkân yoksa tanımsız: `dukkan` yapısı düz yapı kartıyla çıkar. */
   dukkan?: () => DukkanKurBilgisi | undefined;
+  /** İçerik tablosu (yöntem seçici: tesis türünün yöntemleri içerikten okunur); tanımsızsa seçici hiç çıkmaz (bugünkü davranış). */
+  tablo?: Icerik;
 }
 
 const BOS: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -86,6 +93,8 @@ export class YerlesimKipi {
   private oneriId: string | null = null;
   /** Dükkân kurulurken seçilen tür (D2); `sec` her yapı seçiminde sıfırlar. */
   private dukkanTuru: DukkanTuru | null = null;
+  /** Yapı kurulurken seçilen üretim yöntemi (çok yöntemli türde; VARSAYILAN YOK: seçilene dek "Kur" kapalı). `sec` ve `iptal` sıfırlar. */
+  private yontem: string | null = null;
   /** İmlecin son hücresi (sabitlenmeden R'ye basılırsa hayalet burada döner). */
   private sonHover: { x: number; y: number } | null = null;
   /** Son başarılı işlem: 5 dk içinde "Geri al" (bağdaştırıcı `yapiGeriAl` sunuyorsa). */
@@ -153,12 +162,28 @@ export class YerlesimKipi {
         this.pazarHatirlat();
         return;
       }
+      const ym = hedef.closest("button.ym-kart") as HTMLButtonElement | null;
+      if (ym) {
+        if (ym.getAttribute("aria-disabled") !== "true") this.yontemSec(ym.dataset["yontem"] ?? "");
+        return;
+      }
       const b = hedef.closest("button[data-yk]") as HTMLButtonElement | null;
       const ey = b?.dataset["yk"];
       if (b?.getAttribute("aria-disabled") === "true") return; // kapalı onay düğmesi: tıklama/Enter etkisiz (neden bölgede okunur)
       if (ey === "don") this.dondur();
       else if (ey === "vazgec") this.iptal();
       else if (ey === "onayla") void this.onayla();
+    });
+    // Yöntem seçici klavyesi (radiogroup): oklar/Home/End odağı ve seçimi taşır, Boşluk/Enter seçer; olay haritanın global tuşlarına (Enter = kur, R, Esc) KABARMAZ
+    this.kart.addEventListener("keydown", (e) => {
+      const kartEl = (e.target as HTMLElement).closest("button.ym-kart") as HTMLButtonElement | null;
+      if (!kartEl) return;
+      const id = seciciTusu(e.key, this.yontemler(), kartEl.dataset["yontem"] ?? null);
+      if (e.key === "Escape") return; // Esc yapı kipinden vazgeçer (global)
+      e.stopPropagation();
+      if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End", " ", "Spacebar", "Enter"].includes(e.key)) return;
+      e.preventDefault();
+      if (id !== null) this.yontemSec(id, true);
     });
     document.addEventListener("pointerdown", (e) => {
       if (this.menuAcik && !(e.target as HTMLElement).closest("#yapi-menu, #yapi-menu-dugme")) this.menuAc(false);
@@ -209,6 +234,8 @@ export class YerlesimKipi {
     this.plan = yp.plan;
     this.hayaletCiz(yp.plan);
     this.kartiYaz();
+    // Çok yöntemli türde yöntem seçilmeden otomatik kurulmaz (varsayılan yok): kip yurt hücrelerinde açık kalır, oyuncu seçip "Kur"a basar
+    if (!yontemSecimiTamam(this.yontemler(), this.yontem)) return { tamam: false, neden: yontemMetni("yontem.secici.sec") };
     const tamam = await this.onayla();
     return { tamam };
   }
@@ -353,6 +380,8 @@ export class YerlesimKipi {
     this.g.basliyor?.();
     this.yapi = y;
     this.dukkanTuru = null;
+    // Çok yöntemli türde seçici açılır, hiçbiri seçili gelmez; seçilebilir (kilitsiz) yöntem TEK ise o seçili gelir (gizlenecek alternatif yok)
+    this.yontem = tekSecilebilir(this.yontemler())?.id ?? null;
     this.donus = 0;
     this.sabit = null;
     this.sonHover = null;
@@ -371,6 +400,7 @@ export class YerlesimKipi {
     if (!this.yapi) return;
     this.yapi = null;
     this.dukkanTuru = null;
+    this.yontem = null;
     this.sabit = null;
     this.plan = null;
     this.g.kap.classList.remove("yapi-kipi");
@@ -493,9 +523,13 @@ export class YerlesimKipi {
       return;
     }
     const govde = this.govde(y, p, sabit, oz);
-    this.nedenBolgesi.yaz(p?.neden ?? null);
+    const yontemler = this.yontemler();
+    const yontemTamam = yontemSecimiTamam(yontemler, this.yontem);
+    // Yöntem seçilmeden "Kur" kapalı: neden bölgesi (düğmenin aria-describedby'ı) "Bir yöntem seç." der; plan nedeni varsa o önce gelir
+    this.nedenBolgesi.yaz(p?.neden ?? (!yontemTamam && p?.gecerli && sabit ? yontemMetni("yontem.secici.sec") : null));
+    const secici = yontemSeciciHtml({ yapiAd: y.ad, secenekler: yontemler, secili: this.yontem, kilitli: this.uygulaniyor, kimlik: "yapi" });
     const kur = this.uygulaniyor ? "Kuruluyor…" : `${esc(y.ad)} kur`;
-    this.kart.innerHTML = `${baslik}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(!!p?.gecerli && sabit && !this.uygulaniyor, !!p?.neden)}>${kur}</button></div>`;
+    this.kart.innerHTML = `${baslik}${secici}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(!!p?.gecerli && sabit && !this.uygulaniyor && yontemTamam, !!p?.neden || (!yontemTamam && !!p?.gecerli && sabit))}>${kur}</button></div>`;
     this.nedenBolgesi.yerlestir(this.kart);
     this.kart.hidden = false;
   }
@@ -513,6 +547,25 @@ export class YerlesimKipi {
         <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${paraMili(p.toplamMili, "yukari")}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili, "asagi")}</small>` : ""}</dd>
       </dl>
       ${p.neden ? `<span data-yk-neden-yer></span>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için tıkla.</p>`}`;
+  }
+
+  /** Seçili yapının yöntemleri (içerikten; ek yapı ve içerik yoksa boş). Teknolojisi açık olmayanlar kilitli; açık teknolojiler bilinmiyorsa (sahte bağdaştırıcı, kare henüz yok) teknoloji isteyen yöntem temkinli biçimde kilitli sayılır (sunucu zaten reddederdi). */
+  private yontemler(): YontemSecenegi[] {
+    const y = this.yapi;
+    const ic = this.g.tablo;
+    if (!y || !ic || y.ek) return [];
+    const acik = this.g.baglanti.acikTeknolojiler?.() ?? null;
+    return yontemSecenekleri(ic, y.id, { acik: (t) => acik !== null && acik.has(t), sebeke: sebekeFiyatlari(ic) });
+  }
+
+  /** Yöntem seçimi (kart ya da klavye): kilitsiz bir yöntem; kart yenilenir ve odak (klavyede) seçilen karta döner. */
+  private yontemSec(id: string, odakla = false): void {
+    if (this.uygulaniyor) return;
+    const s = this.yontemler().find((x) => x.id === id);
+    if (!s || s.kilitli) return;
+    this.yontem = id;
+    this.kartiYaz();
+    if (odakla) this.kart.querySelector<HTMLElement>(`.ym-kart[data-yontem="${id.replace(/"/g, "")}"]`)?.focus();
   }
 
   /** Dükkân seçimi (D2): tür seçilince kart yenilenir (maliyet satırları D3). */
@@ -572,6 +625,8 @@ export class YerlesimKipi {
     const p = this.plan;
     const ilce = this.g.ilce();
     if (!p || !p.gecerli || !this.sabit || !ilce || this.uygulaniyor) return false;
+    const yontemler = this.yontemler();
+    if (!yontemSecimiTamam(yontemler, this.yontem)) return false; // çok yöntemli türde yöntem seçilmeden kurulmaz (kapalı düğme ile aynı koşul; Enter de buradan geçer)
     // Dükkân: tür seçilmeden ve sınırlar/malzeme uygun değilken kurulmaz (kapalı düğme ile aynı koşul; Enter de buradan geçer)
     const dk = p.yapi.id === "dukkan" ? this.g.dukkan?.() : undefined;
     if (dk) {
@@ -584,7 +639,7 @@ export class YerlesimKipi {
     this.uygulaniyor = true;
     this.kartiYaz();
     try {
-      const r = await yerlesimiUygula(this.g.baglanti, ilce, p, this.dukkanTuru ?? undefined);
+      const r = await yerlesimiUygula(this.g.baglanti, ilce, p, this.dukkanTuru ?? undefined, komutYontemi(yontemler, this.yontem));
       // "… kuruluyor": iş bitmedi, bilgi (başarı simgesi yalnız biten işin bildirimidir)
       bildir(r.mesaj, r.tamam ? "bilgi" : "hata");
       await this.g.yenile();

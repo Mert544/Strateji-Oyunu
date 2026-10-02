@@ -18,8 +18,8 @@
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
-import type { DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi } from "./baglanti";
-import { hataHucresi, mulkHatasiTurkce } from "./hata-mulk";
+import type { DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
+import { hataHucresi, mulkHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
 import { parselToplamFiyatiMili } from "./fiyat";
 
 type Mesaj<T extends SunucuMesaji["tur"]> = Extract<SunucuMesaji, { tur: T }>;
@@ -275,7 +275,7 @@ export class WsBaglanti implements MulkBaglantisi {
   async yapiYerlestir(i: YerlestirIstegi): Promise<TesisSonucu> {
     try {
       // Çekirdek tipinde henüz olmayan komut: şema sürümüne göre sunucu kabul eder (`atomikYerlestirme`).
-      const r = await this.komutGonder({ tur: "yapi_yerlestir", ilce: i.ilce, tesisTuru: i.tesisTuru, hucreler: i.hucreler, sinif: i.sinif, ...(i.siniflar ? { siniflar: i.siniflar } : {}), ...(i.dukkanTuru ? { dukkanTuru: i.dukkanTuru } : {}) } as unknown as Komut);
+      const r = await this.komutGonder({ tur: "yapi_yerlestir", ilce: i.ilce, tesisTuru: i.tesisTuru, hucreler: i.hucreler, sinif: i.sinif, ...(i.siniflar ? { siniflar: i.siniflar } : {}), ...(i.dukkanTuru ? { dukkanTuru: i.dukkanTuru } : {}), ...(i.yontem ? { yontem: i.yontem } : {}) } as unknown as Komut);
       if (r.tamam) {
         for (const h of i.hucreler) this.insaBaslangic.set(h, r.t);
         return { tamam: true, t: r.t };
@@ -285,6 +285,25 @@ export class WsBaglanti implements MulkBaglantisi {
     } catch (e) {
       return this.agHatasi(e);
     }
+  }
+
+  /** Biten tesisin yöntemini değiştirir (`yontem_degistir`): ücretsiz ve anlık; ret nedeni Türkçe (`yontemHatasiTurkce`, A1 `yontem.ret.*`). */
+  async yontemDegistir(i: YontemDegistirIstegi): Promise<TesisSonucu> {
+    try {
+      const r = await this.komutGonder({ tur: "yontem_degistir", bolge: i.bolge, tesis: i.tesis, yontem: i.yontem });
+      if (r.tamam) return { tamam: true, t: r.t };
+      return { tamam: false, hata: "sunucu", mesaj: yontemHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)) };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
+  /** Oyuncunun araştırdığı teknolojilerin kimlikleri (`oyuncu.teknolojiler` dizin indeksleri); oyuncu karesi ya da dizin yoksa null. */
+  acikTeknolojiler(): ReadonlySet<string> | null {
+    const o = this.kare?.oyuncu;
+    const dizin = this.hos?.dizin.teknolojiler;
+    if (!o || !dizin) return null;
+    return new Set(o.teknolojiler.flatMap((i) => (dizin[i] === undefined ? [] : [dizin[i] as string])));
   }
 
   /** Dükkân görünümü için son birikimli kare. */
@@ -456,6 +475,8 @@ export class WsBaglanti implements MulkBaglantisi {
     const t = this.simZamani();
     const turler = this.hos?.dizin.tesisTurleri ?? [];
     const mallar = this.hos?.dizin.mallar ?? [];
+    const yontemler = this.hos?.dizin.yontemler ?? [];
+    const sebeke = new Map<string, number>();
     // Yapı → ilçe ve hücre sayısı: abone olunan ilçe karelerinden (bilinmiyorsa yalnız il)
     const yer = new Map<string, { ilce: string; hucre: number }>();
     for (const c of k.ilceler ?? [])
@@ -504,12 +525,14 @@ export class WsBaglanti implements MulkBaglantisi {
       if (!oz) continue;
       const il = b.id.split("#")[0];
       for (const demet of oz.tesisler) {
-        const [id, tur, , aktif, verim] = demet;
+        const [id, tur, yontemIdx, aktif, verim] = demet;
         const anahtar = `t${id}`;
         const olcek = tesisOlcegi(oz, id);
         const asinma = tesisAsinmasi(oz, id);
-        yapilar.push({ anahtar, durum: "tesis", tur: turler[tur] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), aktif: aktif === 1, verimPpm: verim, ...(olcek !== undefined ? { olcek } : {}), ...(asinma !== undefined ? { asinmaPpm: asinma } : {}) });
+        const yontem = yontemler[yontemIdx];
+        yapilar.push({ anahtar, durum: "tesis", tur: turler[tur] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), aktif: aktif === 1, verimPpm: verim, ...(olcek !== undefined ? { olcek } : {}), ...(asinma !== undefined ? { asinmaPpm: asinma } : {}), ...(yontem !== undefined ? { yontem } : {}), bolge: b.id });
       }
+      for (const [m, q] of oz.sebeke ?? []) if (q > 0) sebeke.set(m, (sebeke.get(m) ?? 0) + q);
       oz.stoklar.forEach((f, m) => {
         const v = stokAraDeger(f, t);
         if (v > 0) mal(m).stokMili += v;
@@ -537,6 +560,7 @@ export class WsBaglanti implements MulkBaglantisi {
       indirimliYapiKalan: mk?.indirimliYapiKalan ?? null,
       yapilar,
       mallar: [...stok.entries()].sort((a, b) => a[0] - b[0]).map(([m, x]) => ({ mal: mallar[m] ?? String(m), ...x })),
+      ...(sebeke.size > 0 ? { sebeke: [...sebeke.entries()] } : {}),
     };
   }
 

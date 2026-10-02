@@ -382,6 +382,7 @@ export class HaritaGorunumu {
       ayrilmisHakki: () => this.ayrilmisHakki(),
       indirim: () => this.ilkYapiIndirimi(),
       dukkan: () => this.dukkanKurBilgisi(),
+      tablo: this.tablo,
     });
     this.yerlesim = y;
     // Alt arsa şeridi açıkken "Yapı kur" düğmesi basılı/tonlu (tek birincil kuralı); `hidden` değişimini izle
