@@ -15,7 +15,11 @@
  *   - AYŞE (mobil 390×844, dokunma): Yerleş → arsa → Yapı kur → hayalet → kur.
  * Ekran görüntüleri: scratchpad/f4/ (ya da ilk argüman / F4_EKRAN). Hata olursa süreç kodu 1 ile çıkar.
  *
- *   pnpm dunya && tsx scripts/f4-uctan-uca.ts [ekran-klasoru]
+ *   pnpm dunya && tsx scripts/f4-uctan-uca.ts [ekran-klasoru] [--uretim [--ilce gebze|gemlik|korfez]]
+ *     --uretim   sunucu ÜRETİM yapılandırmasında açılır (gerçek harita + gerçek arsa ızgarası manifesti = sunucu CLI'sinde BOLGE_HARITA=gercek +
+ *                BOLGE_IZGARA_MANIFEST); katılım yurtlu; zaman aşımları sunucu açılışı (~3 sn) ve bellek (~0,3 GB) payıyla genişler.
+ *                Varsayılan (bayraksız) davranış DEĞİŞMEZ: Gebze fikstürlü sınama sunucusu. Ortam: F4_URETIM=1, F4_ILCE=...
+ *     --ilce     veli'nin yurdunun ilçesi (varsayılan gebze; yalnız --uretim ile gebze dışı seçilebilir: bayraksız sunucuda yalnız Gebze var)
  */
 import { createReadStream, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { createServer } from "node:http";
@@ -26,7 +30,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
 import type { Browser, BrowserContext, Page } from "playwright-core";
 import { anlikHazine, mulkOyuncuBul } from "@bolge/cekirdek";
-import { f4SunucuBaslat, GEBZE } from "./f4-sunucu";
+import { f4SunucuBaslat, GEBZE, URETIM_ILCELERI } from "./f4-sunucu";
 import type { F4Sunucu } from "./f4-sunucu";
 
 declare global {
@@ -37,7 +41,18 @@ declare global {
 
 const DEPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const KOK = join(DEPO, "istemci");
-const EKRAN = resolve(process.argv[2] ?? process.env["F4_EKRAN"] ?? join(DEPO, "raporlar", "f4"));
+// Komut satırı: ekran klasörü (ilk konumsal argüman) + seçenekler (--uretim, --ilce <ad>).
+const ARGLAR = process.argv.slice(2);
+const URETIM = ARGLAR.includes("--uretim") || process.env["F4_URETIM"] === "1";
+const ILCE_ADI = (ARGLAR.includes("--ilce") ? ARGLAR[ARGLAR.indexOf("--ilce") + 1] : process.env["F4_ILCE"]) ?? "gebze";
+if (!(ILCE_ADI in URETIM_ILCELERI)) throw new Error(`bilinmeyen --ilce: ${ILCE_ADI} (gebze|gemlik|korfez)`);
+if (ILCE_ADI !== "gebze" && !URETIM) throw new Error("--ilce gebze dışında yalnız --uretim ile seçilebilir (bayraksız sınama sunucusunda yalnız Gebze var)");
+/** Veli'nin (önceden katılmış gözlemci) yurt ilçesi: varsayılan Gebze (senaryo adımları Gebze varsayar). */
+const ILCE_ID = URETIM_ILCELERI[ILCE_ADI as keyof typeof URETIM_ILCELERI];
+/** Üretimde sunucu açılışı (~3 sn) ve süreç belleği (~0,3 GB) tarayıcı yüklemesini yavaşlatır: zaman aşımı payı. */
+const ZAMAN_CARPANI = URETIM ? 2 : 1;
+const KONUMSAL = ARGLAR.filter((a, i) => !a.startsWith("--") && ARGLAR[i - 1] !== "--ilce");
+const EKRAN = resolve(KONUMSAL[0] ?? process.env["F4_EKRAN"] ?? join(DEPO, "raporlar", "f4"));
 
 function chromeBul(): string {
   const kok = "/opt/pw-browsers";
@@ -90,6 +105,7 @@ function statikSunucu(): Promise<{ sunucu: Server; adres: string }> {
 
 async function sayfaAc(baglam: BrowserContext, adres: string, ts: F4Sunucu, oyuncu: string, konsol: string[]): Promise<Page> {
   const sayfa = await baglam.newPage();
+  if (URETIM) sayfa.setDefaultTimeout(30_000 * ZAMAN_CARPANI); // açık `timeout` verilmeyen beklemeler (Playwright varsayılanı 30 sn) üretimde 2 kat
   await sayfa.addInitScript("window.__name = (f) => f; window.__bildirimCarpan = 6;");
   sayfa.on("pageerror", (e) => konsol.push(`[${oyuncu}] pageerror: ${e.message}`));
   sayfa.on("console", (m) => m.type() === "error" && konsol.push(`[${oyuncu}] ${m.text()}`));
@@ -1031,10 +1047,10 @@ async function main(): Promise<void> {
   for (const d of ["dunya.html", "harita.js", "harita-verisi/hiyerarsi.json"]) if (!existsSync(join(KOK, d))) throw new Error(`Önce derleyin (pnpm dunya): ${d} yok`);
   mkdirSync(EKRAN, { recursive: true });
   const t0 = Date.now();
-  const ts = await f4SunucuBaslat();
-  console.log(`sunucu hazır (${Date.now() - t0} ms): ${ts.url}`);
-  // Veli önceden katılmış: bedava yurt Gebze'de
-  await ts.katil("veli", GEBZE);
+  const ts = await f4SunucuBaslat(URETIM ? { manifestIzgara: true } : {});
+  console.log(`sunucu hazır (${Date.now() - t0} ms): ${ts.url}${URETIM ? ` — ÜRETİM yapılandırması (gerçek harita + ızgara manifesti), veli yurdu: ${ILCE_ID}` : ""}`);
+  // Veli önceden katılmış: bedava yurt (varsayılan Gebze; --uretim --ilce ile Gemlik/Körfez)
+  await ts.katil("veli", ILCE_ID);
   const { sunucu, adres } = await statikSunucu();
   const tarayici = await chromium.launch({
     executablePath: chromeBul(),
@@ -1045,11 +1061,11 @@ async function main(): Promise<void> {
     // Gözlemci (veli): kendi yurduna açılır; ali'nin işlemlerini canlı izler
     const gBaglam = await tarayici.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, colorScheme: "light" });
     const veli = await sayfaAc(gBaglam, adres, ts, "veli", konsol);
-    await veli.waitForFunction(() => window.__harita?.durum().ilce === "tr_41_gebze", null, { timeout: 120000 });
+    await veli.waitForFunction((i) => window.__harita?.durum().ilce === i, ILCE_ID, { timeout: 120000 * ZAMAN_CARPANI });
     await haritaHazir(veli);
     await veli.evaluate(() => window.__olcum?.duraklat(true));
     const vz = await veli.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.ilceHucre ?? []);
-    kontrol("[veli] yurdu olan oyuncu Yerleş görmeden doğrudan haritada (Gebze)", (await veli.locator("#yerles").count()) === 0 && vz.some(([i, n]) => i === "tr_41_gebze" && n === 6), JSON.stringify(vz));
+    kontrol(`[veli] yurdu olan oyuncu Yerleş görmeden doğrudan haritada (${ILCE_ADI})`, (await veli.locator("#yerles").count()) === 0 && vz.some(([i, n]) => i === ILCE_ID && n === 6), JSON.stringify(vz));
     await ali(tarayici, adres, ts, konsol, veli);
     await can(tarayici, adres, ts, konsol);
     // Sunucu yetişme durumu (protokol `durum` mesajı): sakin bilgi şeridi. Gerçek yetişme için mutlak saatli sunucu kapalı

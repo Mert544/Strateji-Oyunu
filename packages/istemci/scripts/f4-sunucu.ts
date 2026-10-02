@@ -6,8 +6,10 @@
  * üretir: il `tr_41` -> mini haritanın `m_ova` bölgesi (ova + tahıl rezervi: Çiftlik kurulabilir), ilçe `tr_41_gebze`; mini-6'nın
  * öteki illeri olduğu gibi kalır. Hücre sınıfı istemcinin `arsaSinifi` eşlemesiyle aynıdır (komut sınıfı uyuşsun diye).
  *
- *   tsx scripts/f4-sunucu.ts [--port 8787] [--yurtsuz] [--gercek-saat]
+ *   tsx scripts/f4-sunucu.ts [--port 8787] [--yurtsuz] [--gercek-saat] [--uretim]
  *     --yurtsuz     bedava yurdu kapat (yurtHucre 0)
+ *     --uretim      ÜRETİM yapılandırması: gerçek harita + gerçek arsa ızgarası manifesti (Gebze, Gemlik, Körfez; sunucu CLI'sinde BOLGE_HARITA=gercek +
+ *                   BOLGE_IZGARA_MANIFEST ile aynı kurulum); Gebze fikstürü kullanılmaz; yurtlu katılım (yurtHucre gerçek paketten)
  *     --gercek-saat sim saati gerçek zamanda ilerler (varsayılan: elle saat; yönetici zamanIlerlet ile)
  * Çıktı: ws adresi ve ali/veli/ayse için token'lı sayfa adresleri (sayfa: pnpm dunya + yerel HTTP sunucusu).
  */
@@ -33,6 +35,9 @@ import type { Izgara } from "../src/harita/hucre";
 const DEPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 export const SIR = "f4-sinama-sirri-0123456789";
 export const GEBZE = "tr_41_gebze";
+
+/** Üretim yapılandırmasının üç Alfa-0 ilçesi (`--ilce` kısa adı -> ilçe kimliği; manifest sırası). */
+export const URETIM_ILCELERI: Readonly<Record<"gebze" | "gemlik" | "korfez", string>> = { gebze: GEBZE, gemlik: "tr_16_gemlik", korfez: "tr_41_korfez" };
 
 export function gebzeIzgarasi(): Izgara {
   // Gebze ızgarasının yolu manifestten (tek kaynak; el ile "ornek/..." yolu tutulmaz)
@@ -153,8 +158,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   const port = Number(arg[arg.indexOf("--port") + 1]) || 8787;
   void (async () => {
     const t0 = Date.now();
-    const ts = await f4SunucuBaslat({ port, yurtsuz: arg.includes("--yurtsuz"), gercekSaat: arg.includes("--gercek-saat") });
-    console.log(`F4 sunucusu hazır (${Date.now() - t0} ms): ${ts.url} — Gebze (${GEBZE}), mülk kipi`);
+    const uretim = arg.includes("--uretim");
+    const ts = await f4SunucuBaslat({ port, yurtsuz: arg.includes("--yurtsuz"), gercekSaat: arg.includes("--gercek-saat"), manifestIzgara: uretim });
+    console.log(`F4 sunucusu hazır (${Date.now() - t0} ms): ${ts.url} — ${uretim ? `ÜRETİM (gerçek harita + ızgara manifesti: ${Object.values(URETIM_ILCELERI).join(", ")})` : `Gebze (${GEBZE})`}, mülk kipi`);
     for (const o of ["ali", "veli", "ayse"]) console.log(`  ${o}: ?sunucu=${encodeURIComponent(ts.url)}&token=${ts.token(o)}`);
     console.log("Oyuncuları dünyaya katmak için yönetici komutu gerekir (oyuncu_katil); sayfa tek başına katılamaz.");
     process.on("SIGINT", () => void ts.kapat().then(() => process.exit(0)));
