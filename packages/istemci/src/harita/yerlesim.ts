@@ -12,7 +12,7 @@ import { bildir } from "../arayuz/bildirim";
 import { esc, fmt, para, paraMili, sureMetni } from "../arayuz/bicim";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
 import { geriSeridiGorunur } from "./gorunurluk";
-import { dugmeBasili, KartDurumu, kapaliDugmeOznitelikleri } from "./kart-durum";
+import { dugmeBasili, KartDurumu, kapaliDugmeOznitelikleri, kartKonumu } from "./kart-durum";
 import type { AyrilmisHakki } from "./fiyat";
 import { dukkanMaliyetDurumu, dukkanMaliyetGirdisi } from "./dukkan-kaynak";
 import type { DukkanKurBilgisi } from "./dukkan-kaynak";
@@ -513,6 +513,7 @@ export class YerlesimKipi {
       this.kart.hidden = true;
       return;
     }
+    this.konumAyarla();
     const p = this.plan;
     const oz = this.g.baglanti.ozet?.() ?? null;
     const sabit = this.sabit !== null && p !== null;
@@ -532,6 +533,19 @@ export class YerlesimKipi {
     this.kart.innerHTML = `${baslik}${secici}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(onayAcik({ gecerli: !!p?.gecerli, sabit, uygulaniyor: this.uygulaniyor, yontemTamam }), !!p?.neden || (!yontemTamam && !!p?.gecerli && sabit))}>${kur}</button></div>`;
     this.nedenBolgesi.yerlestir(this.kart);
     this.kart.hidden = false;
+  }
+
+  /** Kart konumu: hedef hücre (sabitlenen ya da imlecin altındaki) ekranın alt yarısındaysa `data-konum="ust"`, değilse öznitelik silinir (kart hedefi örtmesin). */
+  private konumAyarla(): void {
+    const c = this.sabit ?? this.sonHover;
+    let y: number | null = null;
+    if (c) {
+      const [b, g, d, k] = hucreSiniri(c.x, c.y);
+      y = this.g.ml.project([(b + d) / 2, (g + k) / 2]).y;
+    }
+    const konum = kartKonumu(y, this.g.ml.getContainer().clientHeight);
+    if (konum) this.kart.dataset["konum"] = konum;
+    else delete this.kart.dataset["konum"];
   }
 
   /** Standart maliyet gövdesi: ipucu (yer seçilmedi) ya da arsa/yapı/süre/toplam satırları ve neden yeri. */

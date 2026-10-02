@@ -44,3 +44,11 @@ export function kapaliDugmeOznitelikleri(hazir: boolean, nedenVar: boolean): str
 export function dugmeBasili(yapiSecili: boolean, seritAcik: boolean): boolean {
   return yapiSecili || seritAcik;
 }
+
+/**
+ * Yapı maliyet kartının konumu: hedef hücre ekranın ALT yarısındaysa kart üste alınır (`#yapi-kart[data-konum="ust"]`; CSS T1'in), aksi hâlde ya da hedef yokken
+ * varsayılan (alt) konum. `hedefY`: hedef hücre merkezinin harita kabındaki dikey konumu (px, üstten); `yukseklik`: harita kabının yüksekliği (px).
+ */
+export function kartKonumu(hedefY: number | null, yukseklik: number): "ust" | null {
+  return hedefY !== null && yukseklik > 0 && hedefY > yukseklik / 2 ? "ust" : null;
+}
