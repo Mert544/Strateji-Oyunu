@@ -427,6 +427,20 @@ export function dunyaDogrula(deger: unknown): Dunya {
       const st = nesne(b.sebekeTuketim, `${y}.sebekeTuketim`);
       for (const k of Object.keys(st)) tamsayi(st[k], `${y}.sebekeTuketim.${k}`, 1);
     }
+    if (b.yakitTedariki !== undefined) {
+      const yy = `${y}.yakitTedariki`;
+      if (b.merkez === undefined || d.mulk === undefined) hata(yy, "yakit tedariki yalniz mulk isletmesinde olabilir");
+      const yt = nesne(b.yakitTedariki, yy);
+      const adlar = ["mal", "tuketimMiliSaat", "stokMiliSaat", "sebekeMiliSaat"];
+      alanlar(yt, yy, adlar);
+      for (const k of Object.keys(yt)) if (!adlar.includes(k)) hata(`${yy}.${k}`, "bilinmeyen yakit tedariki alani");
+      if (dize(yt.mal, `${yy}.mal`) !== "yakit") hata(`${yy}.mal`, "yakit kimligi bekleniyordu");
+      const tuketim = tamsayi(yt.tuketimMiliSaat, `${yy}.tuketimMiliSaat`, 0);
+      const stok = tamsayi(yt.stokMiliSaat, `${yy}.stokMiliSaat`, 0, tuketim);
+      const sebeke = tamsayi(yt.sebekeMiliSaat, `${yy}.sebekeMiliSaat`, 0, tuketim);
+      if (stok + sebeke !== tuketim) hata(yy, "stok ve sebeke toplami tuketime esit olmali");
+      if (sebeke !== ((b.sebekeTuketim as Nesne | undefined)?.yakit ?? 0)) hata(yy, "sebeke tuketimi ile yakit tahsisi tutarsiz");
+    }
     // Mülk kipi yerel pazar (G7-2; sartname §11.1): dükkân isteği karşılanma oranı, yalnız < PPM iken yazılır; yalnız işletme düğümünde.
     if (!MULKSUZ_PAKET && b.yerelKarsilanmaPpm !== undefined) {
       tamsayi(b.yerelKarsilanmaPpm, `${y}.yerelKarsilanmaPpm`, 0, PPM - 1);
@@ -921,6 +935,10 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     }
     // Şebeke stoksuz tüketimi (G6): mal KİMLİĞİ anahtarları içerikte olmalı.
     for (const mid of Object.keys(b.sebekeTuketim ?? {})) if (ic.malIndeks[mid] === undefined) hata(`${y}.sebekeTuketim.${mid}`, `icerikte olmayan mal: ${mid}`);
+    if (b.yakitTedariki !== undefined) {
+      const m = ic.malIndeks[b.yakitTedariki.mal];
+      if (m === undefined || ic.mallar[m]?.depolanabilir === false) hata(`${y}.yakitTedariki.mal`, "icerikte depolanabilir yakit gerekli");
+    }
     b.tesisler.forEach((t, j) => {
       indeks(t.tur, `${y}.tesisler[${j}].tur`, ic.tesisTurleri.length);
       indeks(t.yontem, `${y}.tesisler[${j}].yontem`, ic.yontemler.length);

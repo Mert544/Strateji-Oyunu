@@ -6,6 +6,7 @@ import { IKONLAR, ikon } from "../tasarim/ikon";
 import type { IkonAdi } from "../tasarim/ikon";
 import { yontemSimgesi } from "../tasarim/yontem";
 import type { IsletmeDurumu } from "./baglanti";
+import { yakitTedarikiHtml } from "./sebeke-gider";
 
 export interface UretimAgiPanelParam {
   ic: Icerik;
@@ -128,9 +129,10 @@ export class UretimAgiPaneli {
     const sebekeGirdileri = y.girdi.filter(([mi, q]) => q > 0 && sebekeMallari.some((m) => m.mal === this.p.ic.mallar[mi]?.id));
     const stoksuzGirdiler = sebekeGirdileri.flatMap(([mi]) => {
       const mal = this.p.ic.mallar[mi];
-      return mal && mal.id !== "elektrik" ? [mal.ad] : [];
+      return mal && mal.id !== "elektrik" && mal.id !== "yakit" ? [mal.ad] : [];
     });
-    if (stoksuzGirdiler.length) h += `<p class="ua-sebeke-notu">${ikon("info", 14)}<span>${esc(stoksuzGirdiler.join(", "))}: mülk oyunundaki tesisler bu girdileri otomatik ücretli şebekeden karşılar. Gösterilen mal stoku bu şebeke giderini düşürmez.</span></p>`;
+    if (stoksuzGirdiler.length) h += `<p class="ua-sebeke-notu">${ikon("info", 14)}<span>${esc(stoksuzGirdiler.join(", "))}: tesisler bu girdileri otomatik ücretli şebekeden karşılar; stok bu gideri azaltmaz.</span></p>`;
+    if (sebekeGirdileri.some(([mi]) => this.p.ic.mallar[mi]?.id === "yakit")) h += `<p class="ua-sebeke-notu">${ikon("info", 14)}<span>${d?.yakitTedariki?.mal === "yakit" ? "Sanayi yakıtı önce depo ve ulaşmış tedarikten karşılanır. Yalnız eksik kısım otomatik ücretli şebekeden alınır; tarifedeki miktar gerçek tüketim değildir." : "Yakıt kaynak payları bilinmiyor; sunucu dökümü alınmadı. Eski veya kapalı stok önceliği kuralında tesis yakıtı otomatik ücretli şebekeden alınır; stok bu gideri azaltmaz."}</span></p>`;
     if (sebekeGirdileri.some(([mi]) => this.p.ic.mallar[mi]?.id === "elektrik")) h += `<p class="ua-sebeke-notu">${ikon("info", 14)}<span>Mülk oyununda kendi elektrik üretiminin karşılamadığı ihtiyaç otomatik ücretli şebekeden alınır.</span></p>`;
     if (y.gerekliTeknoloji) h += this.teknoloji(y.gerekliTeknoloji, acik);
     else h += '<p class="ua-durum">Yöntem için araştırma gerekmiyor.</p>';
@@ -169,7 +171,8 @@ export class UretimAgiPaneli {
     if (d) {
       h += `<dl><div><dt>${mal.depolanabilir ? "Stok" : "Depolanamaz"}</dt><dd>${mal.depolanabilir ? sayi((veri?.stokMili ?? 0) / 1000, 3) + " birim" : "Anlık akış"}</dd></div><div><dt>Gerçek brüt üretim</dt><dd>${sayi((veri?.uretimMili ?? 0) / 1000, 3)} birim/saat</dd></div><div><dt>Gerçekleşen pazar alışı</dt><dd>${sayi((veri?.alisMili ?? 0) / 1000, 3)} birim/saat</dd></div></dl>`;
       const sebeke = d.sebeke?.find(([id]) => id === mal.id);
-      if (sebeke) h += `<p class="ua-aciklama">Şebekeden alınan: ${sayi(sebeke[1] / 1000, 3)} birim/saat.</p>`;
+      if (mal.id === "yakit" && (ic.param.mulk?.sebeke?.mallar.some((m) => m.mal === mal.id) || d.yakitTedariki?.mal === mal.id)) h += yakitTedarikiHtml({ mal: mal.id, tedarik: d.yakitTedariki, giderler: d.sebekeGiderleri, malAdi: (id) => ic.mallar[ic.malIdx[id] ?? -1]?.ad ?? id });
+      else if (sebeke) h += `<p class="ua-aciklama">Şebekeden alınan: ${sayi(sebeke[1] / 1000, 3)} birim/saat.</p>`;
       h += '<p class="ua-aciklama">Son sunucu işletme özeti; bütün sahipli işletmelerin toplamı. Üretim, satış veya kâr anlamına gelmez.</p>';
     } else h += '<p role="status">İşletme verisi bekleniyor. Aşağıdaki tarifeler içerik bilgisidir.</p>';
     if (mal.depolanabilir) h += `<button type="button" class="eylem" data-uretim-tedarik="${esc(mal.id)}">${ikon("truck", 16)} ${esc(mal.ad)} tedarikine git</button>`;

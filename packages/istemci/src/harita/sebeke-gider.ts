@@ -10,11 +10,42 @@
  */
 import { esc, fmt, paraMili, sayi } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
+import type { YakitTedarikiGorunumu } from "@bolge/protokol";
 import type { IsletmeDurumu } from "./baglanti";
 import { yontemMetni } from "./yontem-metin";
 import { carpBol } from "./olcek";
+export type { YakitTedarikiGorunumu } from "@bolge/protokol";
 
 const PPM = 1_000_000;
+
+/** Yalnız depolanabilir yakıt bu kuralda fiziksel tedarike öncelik verir. */
+export function yakitStokOncelikliMi(ic: Icerik, mal: string): boolean {
+  return mal === "yakit" && ic.mallar[ic.malIdx[mal] ?? -1]?.depolanabilir === true
+    && ic.param.mulk?.sebeke?.mallar.some((m) => m.mal === mal && m.stokOncelikli === true) === true;
+}
+
+export function yakitTedarikiHtml(p: {
+  mal: string;
+  tedarik: YakitTedarikiGorunumu | undefined;
+  giderler: readonly { mal: string; bedelMiliSaat: number; miktarMiliSaat?: number; birimFiyatMili?: number }[] | undefined;
+  malAdi: (mal: string) => string;
+}): string {
+  let h = '<section class="tdr-akis yakit-tedariki"><h5>Sanayi yakıtının gerçek kaynakları</h5>';
+  const t = p.tedarik;
+  const miktar = (n: number): string => `${sayi(n / 1000, 3)} birim/saat`;
+  const gider = p.giderler?.find((g) => g.mal === p.mal);
+  const bedel = p.giderler === undefined ? "Bilinmiyor" : `${paraMili(gider?.bedelMiliSaat ?? 0, "yukari")}/saat`;
+  const fiyatSatiri = gider?.birimFiyatMili === undefined ? "" : `<div><dt>Şebeke birim fiyatı</dt><dd>${paraMili(gider.birimFiyatMili, "yukari")}/birim</dd></div>`;
+  if (!t || t.mal !== p.mal) {
+    h += '<p class="ipucu-metin">Kaynak payları bilinmiyor; sunucu yakıt dökümü bildirmiyor. Eski veya kapalı kuralda tesis yakıtı otomatik ücretli şebekeden alınır ve stok bu gideri azaltmaz.</p><dl class="tdr-gider">';
+    if (p.giderler !== undefined) h += `<div><dt>Şebekeden alınan</dt><dd>${gider === undefined ? miktar(0) : gider.miktarMiliSaat === undefined ? "Bilinmiyor" : miktar(gider.miktarMiliSaat)}</dd></div>`;
+    return h + `${fiyatSatiri}<div><dt>Gerçek şebeke gideri</dt><dd>${bedel}</dd></div></dl><p class="ipucu-metin">Şebeke dökümü kaynak paylarından ayrıdır; son sunucu çözümünün saatlik alımı ve gideridir, geçmiş ödeme değildir.</p></section>`;
+  }
+  h += `<p>${esc(p.malAdi(t.mal))} · son gerçekleşen sanayi tüketimi</p><dl class="tdr-gider"><div><dt>Toplam tüketim</dt><dd>${miktar(t.tuketimMiliSaat)}</dd></div><div><dt>Depo ve ulaşmış tedarikten</dt><dd>${miktar(t.stokMiliSaat)}</dd></div><div><dt>Şebekeden tamamlanan açık</dt><dd>${miktar(t.sebekeMiliSaat)}</dd></div>`;
+  h += `${fiyatSatiri}<div><dt>Gerçek şebeke gideri</dt><dd>${bedel}</dd></div></dl>`;
+  h += '<p class="ipucu-metin">Depo, yerli üretim, ithalat ve hedefe ulaşmış akışın sanayiye ayrılan payı birlikte gösterilir. Yoldaki mal henüz kullanılmaz. Yalnız kalan açık için şebeke bedeli alınır; ithalat bedeli ayrıdır. Bunlar son çözümün saatlik hızlarıdır, stok miktarı veya geçmiş ödeme değildir.</p>';
+  return h + '<p class="ipucu-metin">Birliklerin ikmali gerçek yakıt stoğu ve ulaşmış tedarik gerektirir; sanayinin şebeke alımı ordu açığını kapatmaz.</p></section>';
+}
 
 export interface SebekeFiyatlari {
   /** Mal kimliği -> birim fiyat (mili-₺ / birim; miktar mili-birimle `carpBol(miktar, fiyat, 1000)`). */
@@ -61,7 +92,7 @@ export function sebekeBedeli(f: SebekeFiyatlari, mal: string, miktarMili: number
   return fiyat === undefined || miktarMili <= 0 ? 0 : carpBol(miktarMili, fiyat, 1000);
 }
 
-/** Yöntemin tahmini şebeke gideri (mili-₺/saat; S ölçek, tam kapasite): şebeke malı girdilerinin bedeli toplamı; şebeke malı girdisi yoksa 0 (satır çıkmaz). */
+/** Bütün şebeke girdileri dışarıdan alınırsa tam kapasite gider tahmini; stok öncelikli yakıtta gerçek gider daha düşük olabilir. */
 export function yontemSebekeGideri(ic: Icerik, f: SebekeFiyatlari | null, yontemId: string): number {
   if (f === null) return 0;
   const y = ic.yontemler[ic.yontemIdx[yontemId] ?? -1];
@@ -112,7 +143,7 @@ export function sebekeBolumuHtml(satirlar: readonly SebekeSatiri[], malAdi: (mal
     h += `<li>${esc(yontemMetni(anahtar(s.mal), { mal: malAdi(s.mal), n: fmt(Math.floor(s.miktarMili / 1000)), gider: paraMili(s.bedelMili, "yukari") }))}</li>`;
   }
   h += `<li><b>${esc(yontemMetni("sebeke.toplam", { gider: paraMili(satirlar.reduce((t, s) => t + s.bedelMili, 0), "yukari") }))}</b></li>`;
-  return h + `</ul><p class="ipucu-metin">${esc(yontemMetni("sebeke.not"))}</p>`;
+  return h + '</ul><p class="ipucu-metin">Şebekeden alınan miktarın tahmini bedeli; depo veya ulaşmış tedarikten karşılanan yakıta ayrıca şebeke bedeli eklenmez.</p>';
 }
 
 /** Sahibinin bütün işletmelerine ait, sunucudan gelen gerçekleşen saatlik miktar ve bedel. */

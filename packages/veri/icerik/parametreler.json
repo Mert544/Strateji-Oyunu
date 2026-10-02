@@ -236,13 +236,13 @@
     "yapiYuva": {
       "ciftlik": 2, "ahir": 2, "mera": 3, "sulama_kanali": 1, "gida_fabrikasi": 2,
       "cevher_madeni": 2, "komur_ocagi": 2, "bakir_madeni": 2, "silis_ocagi": 2, "petrol_kuyusu": 1,
-      "celikhane": 3, "parca_fabrikasi": 2, "elektronik_fabrikasi": 2, "santral": 3, "hidro_santrali": 3,
+      "celikhane": 3, "parca_fabrikasi": 2, "elektronik_fabrikasi": 2, "rafineri": 2, "santral": 3, "hidro_santrali": 3,
       "gubre_fabrikasi": 2, "muhimmat_fabrikasi": 2, "balikcilik": 2, "hafif_sanayi": 2
     },
     "yapiInsaSaati": {
       "ciftlik": 2, "ahir": 4, "mera": 2, "sulama_kanali": 6, "gida_fabrikasi": 6,
       "cevher_madeni": 6, "komur_ocagi": 6, "bakir_madeni": 6, "silis_ocagi": 6, "petrol_kuyusu": 6,
-      "celikhane": 10, "parca_fabrikasi": 8, "elektronik_fabrikasi": 10, "santral": 10, "hidro_santrali": 10,
+      "celikhane": 10, "parca_fabrikasi": 8, "elektronik_fabrikasi": 10, "rafineri": 10, "santral": 10, "hidro_santrali": 10,
       "gubre_fabrikasi": 8, "muhimmat_fabrikasi": 8, "balikcilik": 4, "hafif_sanayi": 6
     },
     "olcekHucre": {
@@ -250,7 +250,7 @@
       "sulama_kanali": [1, 2, 3], "gida_fabrikasi": [2, 3, 4], "cevher_madeni": [2, 3, 4],
       "komur_ocagi": [2, 3, 4], "bakir_madeni": [2, 3, 4], "silis_ocagi": [2, 3, 4],
       "petrol_kuyusu": [1, 2, 3], "celikhane": [3, 4, 5], "parca_fabrikasi": [2, 3, 4],
-      "elektronik_fabrikasi": [2, 3, 4], "santral": [3, 4, 5], "hidro_santrali": [3, 4, 5],
+      "elektronik_fabrikasi": [2, 3, 4], "rafineri": [2, 3, 4], "santral": [3, 4, 5], "hidro_santrali": [3, 4, 5],
       "gubre_fabrikasi": [2, 3, 4], "muhimmat_fabrikasi": [2, 3, 4], "balikcilik": [2, 3, 4], "hafif_sanayi": [2, 3, 4]
     },
     "olcekInsaSureCarpaniPpm": [1000000, 1500000, 2000000],
@@ -270,7 +270,7 @@
       "kalkanGun": 14
     },
     "temelEmirYuvasi": 4,
-    "sebeke": { "surum": 1, "mallar": [{ "mal": "elektrik", "tavanOraniPpm": 1000000 }, { "mal": "yakit", "tavanOraniPpm": 1000000 }], "kasaPayiPpm": 120000 },
+    "sebeke": { "surum": 1, "mallar": [{ "mal": "elektrik", "tavanOraniPpm": 1000000 }, { "mal": "yakit", "tavanOraniPpm": 1000000, "stokOncelikli": true }], "kasaPayiPpm": 120000 },
     "yontemGecersizKilma": { "standart_gida_isleme": { "ciktiPpm": 1000000 } },
     "kasa": {
       "vergiPayi": { "mahallePpm": 200000, "ilcePpm": 400000, "ilPpm": 150000 },

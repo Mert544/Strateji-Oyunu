@@ -1,5 +1,13 @@
 # D4 A6/B2 — Yakıt zinciri ve lojistik kararları
 
+**Sonraki uygulama notu (2 Ekim, L2):** Aşağıdaki D4 incelemesi tarihsel
+bulgudur. L1 gider/akış görünürlüğü ve L2 rafineri/stok önceliği uygulandı.
+Rafineri artık mülkte kurulabilir; yakıt kaydında `stokOncelikli:true` ile
+sanayi önce fiziksel yakıtı kullanır, kalan açık şebekeden alınır.
+Güncel kurallar [L2 sözleşmesinde](codex-l2-yakit-sozlesmesi.md), teslim
+kanıtı [devam kaydında](codex-devam-durumu.md) tutulur. İç taşımanın ayrı
+yakıt/nakit gideri ise henüz eklenmedi.
+
 2 Ekim 2026. A6 kaynak incelemesi; B2 ile doğrudan ortak karar alındı.
 Amaç: fiyat/girdi/konum/stok tercihleriyle oyuncuyu içine çeken ekonomik detay.
 Gerçek dünya işletmeciliği, her sevki elle yönetme veya yeni evrak yükü hedef değil.

@@ -39,14 +39,15 @@ export class BaglamUygulamasi implements Baglam {
    * - Kaynak komut/tik/inşaat/araştırma/parti/savaş ise çözüm AYNI t'dedir.
    * - Kaynak eşik/oran_delta ise çözüm en erken sonCozum + enAzCozumAraligiDakika'dadır
    *   (hiç çözüm yapılmadıysa d.zaman).
+   * - `aninda`: L2 yakıt tükenmesi/ulaşması için bu gecikme uygulanmaz.
    * Kuyrukta zaten bir çözüm bekliyorsa yenisi eklenmez; istisna: anında çözüm isteniyor ama
    * bekleyen çözüm gecikmeli (gelecekte) ise ek bir çözüm d.zaman'a planlanır. Fazla kalan çözüm
    * olayı kirli değilse motor tarafından zararsızca yok sayılır.
    */
-  kirlet(d: Dunya): void {
+  kirlet(d: Dunya, aninda = false): void {
     const l = d.lojistik;
     l.kirli = true;
-    const gecikmeli = gecikmeliKaynakMi(this.islenenOlay);
+    const gecikmeli = !aninda && gecikmeliKaynakMi(this.islenenOlay);
     const aralikMs = this.ic.param.lojistik.enAzCozumAraligiDakika * DAKIKA;
     const gecikmeSiniri = l.cozumSayisi > 0 ? l.sonCozum + aralikMs : d.zaman;
     if (!l.cozumPlanli) {

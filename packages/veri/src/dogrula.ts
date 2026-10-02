@@ -577,6 +577,9 @@ function mulkKontrolu(hatalar: string[], k: NonNullable<Parametreler["mulk"]>, s
     benzersizlikKontrolu(hatalar, "mulk.sebeke.mallar", k.sebeke.mallar.map((m) => m.mal));
     for (const [i, m] of k.sebeke.mallar.entries()) {
       if (m.tavanOraniPpm > 1_000_000) hatalar.push(`mulk.sebeke.mallar[${i}] ("${m.mal}").tavanOraniPpm: en fazla 1000000 olabilir (sebeke kamu tavaninin ustunde satamaz)`);
+      if (m.stokOncelikli === true && m.mal !== "yakit") {
+        hatalar.push(`mulk.sebeke.mallar[${i}].stokOncelikli: yalniz yakit icin etkinlestirilebilir`);
+      }
     }
   }
   // Yontem gecersiz kilma (sartname §4.8): ciktiPpm (0, 2 000 000]. Yontem kimligi icerikte olmali kurali Node dogrulayicisindadir (V17).
@@ -652,6 +655,11 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
     const mallar = new Set(icerik.mallar.map((m) => m.id));
     const birlikler = new Set(icerik.birlikler.map((b) => b.id));
     const depolanamaz = new Set(icerik.mallar.filter((m) => m.depolanabilir === false).map((m) => m.id));
+    for (const [i, m] of (p.mulk?.sebeke?.mallar ?? []).entries()) {
+      if (m.stokOncelikli === true && (!mallar.has(m.mal) || depolanamaz.has(m.mal))) {
+        hatalar.push(`mulk.sebeke.mallar[${i}].stokOncelikli: bilinen ve depolanabilir yakit mali gerekli`);
+      }
+    }
     if (eskiya !== undefined) {
       for (const mal of Object.keys(eskiya.ganimet)) {
         if (!mallar.has(mal) || depolanamaz.has(mal)) {

@@ -33,7 +33,7 @@
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
 import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
-import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok } from "@bolge/cekirdek";
+import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok, YakitTedariki } from "@bolge/cekirdek";
 
 /** Güvenli çekirdek projeksiyonu: planlı baskınlar ve yabancı özel sonuçlar içermez. Yokluğu eski sunucu/kural bilinmezliğidir. */
 export type PveIlceKaresi = EskiyaIlceGorunumu;
@@ -166,6 +166,9 @@ export interface SebekeGideri {
   bedelMiliSaat: Mili;
 }
 
+/** Son çözümün gerçek sanayi yakıt tahsisi; stok payı depo ve ulaşmış fiziksel kaynakların toplamıdır. */
+export type YakitTedarikiGorunumu = YakitTedariki;
+
 /** Gerçekleşen ithalat oranının güncel fiyatla dökümü; tarihsel ödenmiş tutar değildir. */
 export interface IthalatGideri {
   mal: string;
@@ -230,6 +233,12 @@ export interface OzelBolgeKaresi {
    * Yalnız pozitif tüketim listelenir; sıralama elektrik, ardından derlenmiş stoksuz mal sırası. Bedeller toplanmadan önce düğümde yuvarlanır.
    */
   sebekeGiderleri?: SebekeGideri[];
+  /**
+   * Yalnız sahibinin mülk işletmesinde, stok öncelikli yakıt kuralı açıkken: gerçek sanayi tüketimi ve kaynak payları.
+   * Nüfus, ordu ve bakım dahil değildir. Sıfır nesnesi bilinen tüketim yokluğu; alan yokluğu eski/kapalı kural veya eksik çözüm verisidir.
+   * Şebeke bedeli `sebekeGiderleri` alanındadır; fiziksel paya ayrıca şebeke bedeli yazılmaz.
+   */
+  yakitTedariki?: YakitTedarikiGorunumu;
   /**
    * Yalnız sahibinin mülk işletmesinde ve çözüm bağlamı varken: mevcut pozitif gerçekleşen ithalat emirlerinin güncel referans fiyatla saatlik dökümü.
    * Önce miktar × referans fiyat, ardından çekirdeğin makas/liman/tarife/komisyon yuvarlaması uygulanır; birim net fiyat × miktar hesabı değildir.
@@ -630,6 +639,15 @@ export function ilgiKaresiCikar(
         rezervKalan: [...b.rezervKalan],
       };
       if (kaynak.ic.mulk !== undefined && b.merkez !== undefined) {
+        const yakit = b.yakitTedariki;
+        if (yakit !== undefined && kaynak.ic.mulk.sebeke?.stoksuz.some((x) => x.stokOncelikli === true && kaynak.ic.mallar[x.mal]?.id === yakit.mal)) {
+          girdi.ozel.yakitTedariki = {
+            mal: yakit.mal,
+            tuketimMiliSaat: yakit.tuketimMiliSaat,
+            stokMiliSaat: yakit.stokMiliSaat,
+            sebekeMiliSaat: yakit.sebekeMiliSaat,
+          };
+        }
         girdi.ozel.lojistik = { sonCozum: d.lojistik.sonCozum, akislar: kaynakAkislari.get(i) ?? [] };
         girdi.ozel.gelenOran = b.stoklar.flatMap((stok, mal): Array<[string, Mili]> => {
           const tanim = kaynak.ic.mallar[mal];

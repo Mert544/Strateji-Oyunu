@@ -488,7 +488,11 @@ const mulkSema = z
     perakende: perakendeSema.optional(),
     temelEmirYuvasi: negatifOlmayan.optional(),
     sebeke: z
-      .object({ surum: z.literal(1), mallar: z.array(z.object({ mal: kimlik, tavanOraniPpm: pozitif }).strict()).min(1, "sebeke.mallar bos olamaz"), kasaPayiPpm: ppmSiniri })
+      .object({
+        surum: z.literal(1),
+        mallar: z.array(z.object({ mal: kimlik, tavanOraniPpm: pozitif, stokOncelikli: z.boolean().optional() }).strict()).min(1, "sebeke.mallar bos olamaz"),
+        kasaPayiPpm: ppmSiniri,
+      })
       .strict()
       .optional(),
     yontemGecersizKilma: z.record(kimlik, z.object({ ciktiPpm: pozitif }).strict()).optional(),

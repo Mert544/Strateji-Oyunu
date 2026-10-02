@@ -12,7 +12,7 @@
  */
 import type { ArsaSinifi, HucreId, Komut, Mili, MulkKomutu, OyuncuId } from "@bolge/cekirdek";
 import { DEFTER_DAMGALARI, DEFTER_GOSTERIM_SIRASI, defterSablonu } from "@bolge/protokol";
-import type { Defter, DefterKazanilan, DefterOdulu, DonusOzeti, IlgiKaresi, KamuGrubuKaresi } from "@bolge/protokol";
+import type { Defter, DefterKazanilan, DefterOdulu, DonusOzeti, IlgiKaresi, KamuGrubuKaresi, YakitTedarikiGorunumu } from "@bolge/protokol";
 import { kavramEtkinBos } from "./etkin";
 import { arsaSinifi, bitisikMi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili } from "./fiyat";
 import { durumAl, engelNedeni, hucreId, idCoz, izgaraSay } from "./hucre";
@@ -282,6 +282,8 @@ export interface IsletmeDurumu {
   sebeke?: Array<[mal: string, miliSaat: number]>;
   /** Bütün sahipli işletmelerin gerçek şebeke dökümü. Bedeller düğümde yuvarlanıp toplanır; eksik özel kare/alan varsa tanımsız, [] bilinen sıfırdır. */
   sebekeGiderleri?: Array<{ mal: string; miktarMiliSaat: number; bedelMiliSaat: number }>;
+  /** Bütün sahipli işletmelerin aynı çözümdeki sanayi yakıt tahsisi. Eksik alan veya farklı mal/çözüm varsa bilinmez; gerçek sıfır korunur. */
+  yakitTedariki?: YakitTedarikiGorunumu;
   /** Sahibinin karede doğrulanan düğüm bazlı satış kaynakları. */
   pazar?: PazarKaynagi[];
   /** Oyuncunun istenen oranı > 0 olan en az bir İHRACAT emri var mı (`kare.ozel.emirler`; yalnız true iken yazılır). Defter "satışın yolda" gösterimi için (`defter.ts` `ilkSatisBekliyor`). */

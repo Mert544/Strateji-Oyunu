@@ -6,6 +6,8 @@ import type { Icerik } from "../komut/tablo";
 import { ikon } from "../tasarim/ikon";
 import { lojistikGorunumuHtml } from "./lojistik-gorunum";
 import type { LojistikPlanGorunumu } from "./lojistik-gorunum";
+import { yakitTedarikiHtml } from "./sebeke-gider";
+import type { YakitTedarikiGorunumu } from "./sebeke-gider";
 import "./lojistik-gorunum.css";
 
 const SAAT = 3_600_000;
@@ -29,6 +31,8 @@ export interface TedarikBolgesi {
   /** Son gerçekleşen akışın sunucudan gelen giderleri; [] bilinen sıfır, yokluk bilinmiyor. */
   sebekeGiderleri?: readonly SebekeGideri[];
   ithalatGiderleri?: readonly IthalatGideri[];
+  /** Gerçek sanayi yakıtı tahsisi; sıfır nesnesi bilinen sıfır, yokluk eski/kapalı/bilinmiyor. */
+  yakitTedariki?: YakitTedarikiGorunumu;
   /** İç ağdan ulaşmış hız; pazar ithalatından ayrıdır. [] bilinen sıfır, yokluk bilinmiyor. */
   gelenOran?: ReadonlyArray<readonly [mal: string, miliSaat: number]>;
   /** Yalnız ithalat emirleri; ihracat emirleri burada yer almaz. */
@@ -149,7 +153,13 @@ export class TedarikPaneli {
   private sebekeGideriHtml(b: TedarikBolgesi, mal: string): string {
     const g = b.sebekeGiderleri?.find((x) => x.mal === mal);
     const sebekeMali = b.id.includes("#") && this.p.ic.param.mulk?.sebeke?.mallar.some((m) => m.mal === mal);
-    if (!g && !sebekeMali) return "";
+    if (!g && !sebekeMali && b.yakitTedariki?.mal !== mal) return "";
+    if (mal === "yakit") return yakitTedarikiHtml({ mal, tedarik: b.yakitTedariki, giderler: b.sebekeGiderleri, malAdi: (id) => this.malAdi(id) });
+    return this.eskiSebekeGideriHtml(b, mal);
+  }
+
+  private eskiSebekeGideriHtml(b: TedarikBolgesi, mal: string): string {
+    const g = b.sebekeGiderleri?.find((x) => x.mal === mal);
     let h = '<section class="tdr-akis"><h5>Tesislerin otomatik şebeke tedariki</h5>';
     if (b.sebekeGiderleri === undefined) return h + '<p class="ipucu-metin">Bu malın şebeke tüketimi ve bedeli bilinmiyor; sunucudan gider bilgisi bekleniyor.</p></section>';
     if (!g) return h + `<p>Bu mal için son çözümde şebeke tüketimi yok. Şebeke gideri: <b>${paraMili(0, "yukari")}/sa</b>.</p></section>`;
@@ -164,7 +174,9 @@ export class TedarikPaneli {
     let h = `<dl class="tdr-ozet"><div><dt>Bu ilde işletme stoğu</dt><dd>${stok === undefined ? "Bilinmiyor" : `${sayi(stok / 1000, 3)} birim`}</dd></div><div><dt>İstenen ithalat</dt><dd>${sayi((emir?.oranSaat ?? 0) / 1000, 3)} birim/sa</dd></div><div><dt>Son gerçekleşen ithalat</dt><dd>${sayi((emir?.gerceklesenSaat ?? 0) / 1000, 3)} birim/sa</dd></div></dl>`;
     if (b.id.includes("#") && this.depolanabilir(mal) && this.p.ic.param.mulk?.sebeke?.mallar.some((m) => m.mal === mal)) {
       h += mal === "yakit"
-        ? '<p class="tdr-uyari">Bu yakıt stoğu birlikler ve ticaret için kullanılır. Tesislerin otomatik yakıt tedariki ayrıca Hazine’de görünür; bu stok onu azaltmaz.</p>'
+        ? b.yakitTedariki?.mal === mal
+          ? '<p class="tdr-uyari">Sanayi yakıtı önce depo ve ulaşmış tedarikten karşılanır; yalnız kalan açık otomatik ücretli şebekeden alınır. İthal yakıt zaman içinde gelir; gerçek kaynak payı sunucu dökümünde görünür.</p>'
+          : '<p class="tdr-uyari">Yakıt kaynak payları bilinmiyor; sunucu dökümü alınmadı. Eski veya kapalı kuralda bu stok birlikler ve ticaret için kullanılır; tesislerin otomatik şebeke giderini azaltmaz.</p>'
         : '<p class="tdr-uyari">Bu malın stoğu ticarette ve stok gerektiren işlemlerde kullanılır. Tesislerin otomatik şebeke tedariki ayrıca Hazine’de görünür; bu stok onu azaltmaz.</p>';
     }
     if (emir && emir.gerceklesenSaat < emir.oranSaat) h += '<p class="tdr-uyari">İstenen miktarın tamamı karşılanmamış. Pazar arzı ve nakit durumu gerçekleşen tedariki sınırlayabilir.</p>';

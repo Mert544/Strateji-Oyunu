@@ -11,8 +11,8 @@ const c = 29;
 const say = (y: (typeof SILUETLI_YONTEMLER)[number], r: number): number => siluetKutulari(y, c).filter((b) => b[6] === r).length;
 
 describe("yöntem silüetleri", () => {
-  it("on bir yöntem tanımlı; bilinmeyen ya da tanımsız yöntem silüetsiz", () => {
-    expect([...SILUETLI_YONTEMLER]).toEqual(["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma", "kiyi_balikciligi", "mera_koyun_yun", "yun_egirme", "kumas_dokuma", "konfeksiyon"]);
+  it("on iki yöntem tanımlı; bilinmeyen ya da tanımsız yöntem silüetsiz", () => {
+    expect([...SILUETLI_YONTEMLER]).toEqual(["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma", "kiyi_balikciligi", "mera_koyun_yun", "yun_egirme", "kumas_dokuma", "konfeksiyon", "standart_rafineri"]);
     expect(siluetliMi("degirmen")).toBe(true);
     expect(siluetliMi("standart_gida_isleme")).toBe(false);
     expect(siluetliMi(undefined)).toBe(false);
@@ -51,7 +51,7 @@ describe("yöntem silüetleri", () => {
 describe("kutu bütçesi (örneklenmiş kutu çizimi; çizim çağrısı değil, köşe/örnek yükü)", () => {
   // Sabitlenmiş sayılar: biri değişirse bilerek güncellenmeli (sokak 22/19 çizim çağrısı bütçesi örnek sayısından bağımsızdır,
   // ama telefonda üçgen/örnek yükü yapı başına bu sayılarla orantılıdır)
-  const BEKLENEN = { degirmen: 11, ekmek_firini: 7, kepek_gubresi: 7, sut_kepekli: 9, cam_firini: 11, celik_dograma: 18, kiyi_balikciligi: 19, mera_koyun_yun: 20, yun_egirme: 17, kumas_dokuma: 17, konfeksiyon: 17 } as const;
+  const BEKLENEN = { degirmen: 11, ekmek_firini: 7, kepek_gubresi: 7, sut_kepekli: 9, cam_firini: 11, celik_dograma: 18, kiyi_balikciligi: 19, mera_koyun_yun: 20, yun_egirme: 17, kumas_dokuma: 17, konfeksiyon: 17, standart_rafineri: 19 } as const;
   it("yöntem silüeti başına kutu sayısı sabit ve ≤ 20", () => {
     for (const y of SILUETLI_YONTEMLER) {
       expect(siluetKutulari(y, c).length, y).toBe(BEKLENEN[y]);

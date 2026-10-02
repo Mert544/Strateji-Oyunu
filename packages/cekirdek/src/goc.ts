@@ -189,6 +189,7 @@ export function dunyaTabloUyumu(tablo: IcerikKimlikTablosu, d: Dunya, hata: GocH
     uzunluk(b.stoklar, m, `${y}.stoklar`, "mal");
     for (const k of ["israf", "uretimToplam", "uretimOrani", "rezervIlk", "rezervKalan"] as const) uzunluk(b[k], m, `${y}.${k}`, "mal");
     if (b.kesifSayisi !== undefined) uzunluk(b.kesifSayisi, m, `${y}.kesifSayisi`, "mal");
+    if (b.yakitTedariki !== undefined && !tablo.mallar.includes(b.yakitTedariki.mal)) throw hata(`${y}.yakitTedariki.mal`, "kimlik tablosunda olmayan yakit");
     uzunluk(b.birlikler, nb, `${y}.birlikler`, "birlik");
     if (b.tarim !== undefined) uzunluk(b.tarim.ekimPpm, nu, `${y}.tarim.ekimPpm`, "tarim urunu");
     b.tesisler.forEach((t, j) => {

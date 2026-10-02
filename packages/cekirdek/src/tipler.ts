@@ -158,7 +158,7 @@ export interface DerlenmisSebeke {
   /** Elektrik kaydı (anlık denge yolu; depolanamaz) ya da tanımsız (listede yok). `birimFiyatMili`: mili-para / (mili-birim = 1000'e bölünür; bkz. `carpBol(mili, fiyat, MILI)`). */
   elektrik?: { mal: number; birimFiyatMili: number };
   /** Stoksuz tüketim anı yolu: depolanabilir mallar (mal indeksine göre sıralı). */
-  stoksuz: { mal: number; birimFiyatMili: number }[];
+  stoksuz: { mal: number; birimFiyatMili: number; stokOncelikli?: boolean }[];
   /** Mal indeksi -> `stoksuz` kaydının indeksi ya da -1. */
   stoksuzIndeks: number[];
   /** Toplam bedelin ilçe kasasına giden payı (ppm). */
@@ -293,6 +293,14 @@ export interface BolgeElektrikDurumu {
   sebekeMili?: Mili;
 }
 
+/** Son çözümdeki gerçek sanayi yakıtı: fiziksel depo/tedarik ve şebeke payları. */
+export interface YakitTedariki {
+  mal: string;
+  tuketimMiliSaat: Mili;
+  stokMiliSaat: Mili;
+  sebekeMiliSaat: Mili;
+}
+
 export interface BolgeDurumu {
   indeks: number;
   id: string;
@@ -333,6 +341,8 @@ export interface BolgeDurumu {
    * (yalnız `> 0` olanlar; hiç yoksa alan yazılmaz). Kimlik anahtarlıdır: `dunyaYenidenIndeksle` kapsamına girmez.
    */
   sebekeTuketim?: Record<string, Mili>;
+  /** L2 açıkken sıfır tüketim dahil bilinen sanayi tahsisi; eski/kapalı kuralda yok. */
+  yakitTedariki?: YakitTedariki;
   /**
    * Mülk kipi yerel pazar (G7-2, sartname §6.3 g): düğümün dükkân satış isteğinin karşılanma oranı = min(frD[m]) (dükkân isteği olan mallar). YALNIZ dükkân isteği varken
    * ve `< PPM` iken yazılır (`gidaKarsilanmaPpm` örüntüsü); aksi halde alan silinir/oluşmaz. "Neden satmıyor" bilgisini panele taşır.
@@ -907,8 +917,8 @@ export interface Baglam {
   readonly ic: DerlenmisIcerik;
   /** Olay planla (t >= dunya.zaman olmalı). */
   planla(d: Dunya, t: Ms, veri: OlayVerisi): void;
-  /** Lojistiği kirli işaretle ve (gerekirse) aynı t'ye çözüm planla. */
-  kirlet(d: Dunya): void;
+  /** Lojistiği kirli işaretle; `aninda` yakıt sınırı gibi kesin olaylarda çözüm gecikmesini kaldırır. */
+  kirlet(d: Dunya, aninda?: boolean): void;
   /** Alt sistem akışından [0, 2^32) tamsayı çek. */
   rastgele(d: Dunya, akis: PrngAkisi): number;
   /** Alt sistem akışından [0, n) tamsayı çek. */

@@ -15,7 +15,7 @@ import { ikon } from "../tasarim/ikon";
 import type { IkonAdi } from "../tasarim/ikon";
 import { yontemSimgesi } from "../tasarim/yontem";
 import type { Icerik, MalMiktar } from "../komut/tablo";
-import { yontemSebekeGideri, yontemSebekeMalliMi } from "./sebeke-gider";
+import { yontemSebekeGideri, yontemSebekeMalliMi, yakitStokOncelikliMi } from "./sebeke-gider";
 import type { SebekeFiyatlari } from "./sebeke-gider";
 import { yontemMetni } from "./yontem-metin";
 
@@ -40,9 +40,13 @@ export interface YontemSecenegi {
   giderMili?: number;
   /** Girdisinde şebeke malı (elektrik, yakıt) var. */
   sebekeli: boolean;
+  /** Nominal tüketimin tamamı şebekeden alınırsa gider; gerçekleşen bedel değildir. */
+  giderTumuSebekeden?: boolean;
+  sebekeNotu?: string;
+  stokOncelikliYakit?: boolean;
   aciklama?: string;
   ipucu?: string;
-  /** Girdi malları (şebeke malı elektrik/yakıt HARİÇ: o depodan değil şebekeden gelir); depoda yoksa seçili yöntemin altına "Depoda {mal} yok." yazılır (T-3). Mal adı küçük harf. */
+  /** Depodan kullanılan girdiler; stok öncelikli yakıt dahildir, elektrik ve eski stoksuz şebeke girdileri değildir. */
   girdiMallar: ReadonlyArray<{ id: string; ad: string }>;
 }
 
@@ -70,6 +74,9 @@ export function yontemSecenekleri(ic: Icerik, turId: string, b: SeciciBaglami): 
     const tk = y.gerekliTeknoloji;
     const m = icerikMetni("yontem", y.id);
     const sebekeli = yontemSebekeMalliMi(ic, b.sebeke, y.id);
+    const yakitli = y.girdi.some(([mi, q]) => q > 0 && ic.mallar[mi]?.id === "yakit" && b.sebeke?.birim.has("yakit"));
+    const stokOncelikliYakit = yakitli && yakitStokOncelikliMi(ic, "yakit");
+    const elektrikli = y.girdi.some(([mi, q]) => q > 0 && ic.mallar[mi]?.id === "elektrik" && b.sebeke?.birim.has("elektrik"));
     const gider = sebekeli ? yontemSebekeGideri(ic, b.sebeke, y.id) : 0;
     const t: YontemSecenegi = {
       id: y.id,
@@ -80,8 +87,13 @@ export function yontemSecenekleri(ic: Icerik, turId: string, b: SeciciBaglami): 
       simge: yontemSimgesi(y.id),
       kilitli: tk !== undefined && !b.acik(tk),
       sebekeli,
-      girdiMallar: y.girdi.filter(([mi]) => !b.sebeke?.birim.has(ic.mallar[mi]?.id ?? "")).map(([mi]) => ({ id: ic.mallar[mi]?.id ?? String(mi), ad: (ic.mallar[mi]?.ad ?? String(mi)).toLocaleLowerCase("tr") })),
+      girdiMallar: y.girdi.filter(([mi]) => !b.sebeke?.birim.has(ic.mallar[mi]?.id ?? "") || (stokOncelikliYakit && ic.mallar[mi]?.id === "yakit")).map(([mi]) => ({ id: ic.mallar[mi]?.id ?? String(mi), ad: (ic.mallar[mi]?.ad ?? String(mi)).toLocaleLowerCase("tr") })),
     };
+    if (sebekeli) t.sebekeNotu = [elektrikli ? yontemMetni("yontem.secici.sebeke_not") : "", yakitli ? yontemMetni(stokOncelikliYakit ? "yontem.secici.yakit_stok" : "yontem.secici.yakit_eski") : ""].filter(Boolean).join(" ");
+    if (stokOncelikliYakit) {
+      t.stokOncelikliYakit = true;
+      t.giderTumuSebekeden = true;
+    }
     if (tk !== undefined) t.teknoloji = { id: tk, ad: ic.teknolojiler[ic.teknolojiIdx[tk] ?? -1]?.ad ?? tk };
     if (gider > 0) t.giderMili = gider;
     if (m?.aciklama) t.aciklama = m.aciklama;
@@ -151,7 +163,7 @@ function kart(s: YontemSecenegi, g: SeciciGirdisi, tab: string | null): string {
   const kilit = s.kilitli || g.kilitli === true;
   const simge = s.simge !== null ? `<span class="ym-simge">${ikon(s.simge as IkonAdi, 20)}</span>` : "";
   const isaret = secili ? `<span class="ym-isaret">${ikon("check", 14)}${esc(yontemMetni("yontem.secici.secili"))}</span>` : "";
-  const gider = s.giderMili !== undefined ? `<span class="ym-satir ym-gider">${esc(yontemMetni("yontem.secici.gider", { gider: paraMili(s.giderMili, "yukari") }))}</span>` : "";
+  const gider = s.giderMili !== undefined ? `<span class="ym-satir ym-gider">${esc(yontemMetni(s.giderTumuSebekeden ? "yontem.secici.gider_tumu" : "yontem.secici.gider", { gider: paraMili(s.giderMili, "yukari") }))}</span>` : "";
   const neden = s.kilitli ? `<span class="ym-satir ym-neden">${esc(yontemMetni("yontem.secici.teknoloji"))}</span>` : "";
   return `<button type="button" class="ym-kart" role="radio" data-yontem="${esc(s.id)}" data-durum="${durum}" aria-checked="${secili}"${kilit ? ` aria-disabled="true"` : ""}${g.mevcut === s.id ? ` aria-current="true"` : ""} tabindex="${tab === s.id ? 0 : -1}">${simge}<span class="ym-ad">${esc(s.ad)}</span>${isaret}<span class="ym-satir ym-ozet">${esc(ozet)}</span>${gider}${neden}</button>`;
 }
@@ -164,9 +176,9 @@ export function seciciNotu(g: Pick<SeciciGirdisi, "secenekler" | "secili" | "sto
   else {
     if (s.ipucu) satirlar.push(s.ipucu);
     // T-3: seçilen yöntemin girdisi depoda yoksa soluk not (kaynağı ipucunda: "Kepeği gıda fabrikasının değirmen yöntemi verir.")
-    if (g.stok) for (const m of s.girdiMallar) if (g.stok(m.id) <= 0) satirlar.push(yontemMetni("yontem.secici.stok_yok", { mal: m.ad }));
+    if (g.stok) for (const m of s.girdiMallar) if (g.stok(m.id) <= 0) satirlar.push(m.id === "yakit" && s.stokOncelikliYakit ? yontemMetni("yontem.secici.yakit_stok_yok") : yontemMetni("yontem.secici.stok_yok", { mal: m.ad }));
     if (s.tarimsal) satirlar.push(yontemMetni("yontem.secici.degisir"));
-    if (s.sebekeli) satirlar.push(yontemMetni("yontem.secici.sebeke_not"));
+    if (s.sebekeli && s.sebekeNotu) satirlar.push(s.sebekeNotu);
     if (ZINCIR_YONTEMLERI.has(s.id)) satirlar.push(yontemMetni("yontem.secici.zincir_not"));
   }
   satirlar.push(yontemMetni("yontem.secici.alt"));

@@ -141,6 +141,34 @@ tarayıcı/mobil kabul testi değildir; aktif baskın senaryosu görüntülenmed
 
 ## Güncel ürün yönü ve sıradaki somut dilimler
 
+### L2 — Rafineri ve stok öncelikli sanayi yakıtı tamamlandı
+
+[Uygulama sözleşmesi](codex-l2-yakit-sozlesmesi.md) mevcut altı ajanla
+kesinleştirildi. L1 tek çekirdek yazarı; A6 veri/rafineri ayak izi;
+B2 gerçek yakıt tahsisi protokolü; A3 Tedarik/Üretim/yöntem açıklamaları;
+B4 Sanayi grubu ve rafineri silüeti; B6 tek hedefli doğrulama sahibi.
+Rafineri 2/3/4 hücre, mevcut 10 saat ve mevcut maliyet/tarifle açılır.
+Şebeke yakıt kaydındaki `stokOncelikli:true` gerçek sanayi tüketimini önce
+fiziksel stok/ulaşmış akıştan, kalanını şebekeden karşılar. Ordu önceliği,
+stok ve para korunumu, anlık tükenme, kayıt/göç/replay birlikte ele alınır.
+Üç hedefli entegre vaka geçti: gerçek rafineri ve yakıt tükenmesi/şebeke
+geçişi/tek ödeme, stok kıtlığında ordu önceliği, kapalı kural/bölge uyumu
+ve iki yönlü izinli kural göçü. Aynı kuralda kayıt kuyruğu korunuyor;
+yeniden yükleme/tekrar oynatma stok, nakit ve dünya özetinde eşleşiyor.
+İlk kontrollerde testin piyasa saatini beklememesi ve muhasebe okumasının
+yalnız bir dünyayı uzlaştırması düzeltildi; yalnız başarısız vakalar
+tekrarlandı. Ürün kusuru nedeniyle bir tekrar olmadı. Yeni rafineri silüeti
+için mevcut testin yöntem listesi/sayı tablosu güncellendi.
+Kök ve istemci tip kontrolü ile derleme geçti: dünya gzip 388,7KB/400KB,
+harita 493,4KB, yürüyüş 109,6KB. Yeni ajan açılmadı; geniş test turu yok.
+B4 gerçek kabul edilmiş inşaat ve ithalat komutlarıyla rafineri ve parça
+fabrikasını kurdu. Ekran senaryosunda stok/piyasa saati önkoşulları düzeltildi;
+ürün kodu değişmedi. Gerçek sanayi tüketimi 10 birim/saat, rafineriden fiziksel
+pay 3,999 ve şebeke açığı 6,001 birim/saat; yakıt şebeke gideri 621,103 ₺/saat
+(arayüz yukarı yuvarlayarak 622 gösterir). Sunucu ve iki ekran dökümü eşleşti,
+sayfa hatası yok. [Rafineri ve yakıt ekranları](../ekran-goruntuleri/2026-10-02-rafineri/README.md)
+ve gerçek veri özeti kaydedildi. L4 canlı sahne doğrulaması yapılmadı.
+
 ### 2 Ekim — Harita ve sokak görünümü takibi
 
 Kullanıcının parsel ekranı hakkındaki sorusuyla harita akışı incelendi:
@@ -181,13 +209,12 @@ Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları ko
    [Uygulama sözleşmesi](codex-s2-pve-sozlesmesi.md) sayısal kararları ve
    kapsamı tutar. Canlı açılış/denge kabulü ayrıdır; bayrağı sessizce açma.
    Mevcut mülk işletmesi için PvP ilan yolu yoktur; ileride açılırsa aynı
-   24 saatlik yağma defterine bağlanmalıdır. Sonraki geliştirme odağı L2'dir.
+   24 saatlik yağma defterine bağlanmalıdır. L2 yakıt geliştirmesi bu dalda tamamlandı.
 2. **Lojistik kalan:** kendi kenar tahsisi/toplam kapasite görünümü L1'in ayrı
    dilimidir; mevcut sevk planından global kalan kapasite çıkarılmaz.
-   **L2:** rafineriyi mülk ayak izi/inşa tablosuyla aç; sanayi yakıtında
-   stok öncelikli, kalan açık otomatik şebeke yaklaşımını tek çözücüde uygula.
-   Ordu önceliği, mal/para korunumu ve kural dönemi/replay birlikte tasarlansın.
-   Rafineri tek başına açılırsa bugünkü şebeke sanayi stokunu kullanmaz.
+   **L2 tamamlandı:** rafineri ve sanayi yakıtının fiziksel kaynak önceliği,
+   kalan şebeke açığı, gerçek gider görünümü, kural göçü ve replay aynı
+   teslimde uygulandı. Sonraki ekonomi kapsamı L3 iç taşıma bedelidir.
 3. **L3:** iç taşıma gideri için önce tek model seç. İlk aday yakıt fiyatına
    bağlı otomatik taşıyıcı hizmet bedeli; aynı yakıt ayrıca stoktan düşülmez.
    MCF'deki maliyet şu an süre olduğu için parasal gider gibi gösterilmez.

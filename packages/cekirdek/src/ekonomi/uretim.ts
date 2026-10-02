@@ -11,6 +11,7 @@
  */
 import { ikmalTalebi } from "../askeri";
 import { icerikTablosu } from "./tablo";
+import { stokOncelikliYakit } from "./yakit";
 import type { IcerikTablosu } from "./tablo";
 import { kitlikCarpani, temelKarsilanmaHesapla } from "../pazar";
 import { pazarTablosu } from "../pazar/tablo";
@@ -27,7 +28,7 @@ import { MULKSUZ_PAKET } from "../mulksuz";
 import { tarimTablosu } from "../tarim/tablo";
 import type { TarimTablosu } from "../tarim/tablo";
 import { PPM, SAAT } from "../tipler";
-import type { Baglam, BolgeDurumu, DerlenmisSebeke, Dunya, Mili } from "../tipler";
+import type { Baglam, BolgeDurumu, DerlenmisSebeke, Dunya, Mili, YakitTedariki } from "../tipler";
 
 /** Bir bölgenin tek çözümlük hesabı. Mal dizileri mal indeksine göre, tesis dizileri tesis sırasına göredir. */
 export interface BolgeHesabi {
@@ -91,6 +92,9 @@ export interface BolgeHesabi {
   sebekeMili: Mili;
   /** Mülk kipi şebeke stoksuz tedarik (G6, §5.2.2b): mal indeksine göre şebekeden alınan GERÇEK tüketim (mili-birim/saat; geçici; şebekeli olmayan mallar 0). */
   sebekeStoksuz: Mili[];
+  yakitTedariki: YakitTedariki | null;
+  /** Kural kapama göçünde eski fiziksel oran küçük fark toleransından da geçirilmez. */
+  yakitKapanisi: boolean;
 }
 
 /** Stok bu kadar saatlik açığı karşılayabiliyorsa tüketim kısılmaz; altında stok bu ufka yayılarak tüketilir. */
@@ -171,6 +175,8 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
       elektrik: null,
       sebekeMili: 0,
       sebekeStoksuz: sifirlar(nm),
+      yakitTedariki: null,
+      yakitKapanisi: false,
     };
     havuz[r] = h;
     return h;
@@ -208,6 +214,8 @@ function hesapAl(anahtar: object, nm: number, r: number, tesisSayisi: number): B
   h.elektrik = null;
   h.sebekeMili = 0;
   h.sebekeStoksuz.fill(0);
+  h.yakitTedariki = null;
+  h.yakitKapanisi = false;
   return h;
 }
 
@@ -282,9 +290,11 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
   const t = d.zaman;
   const tesisSayisi = b.tesisler.length;
   const stoksuz = sebekeStoksuzTablo(ctx, b);
+  const yakit = stokOncelikliYakit(ctx.ic, b);
 
   const h = hesapAl(ctx.ic, nm, r, tesisSayisi);
   h.bolge = b;
+  h.yakitKapanisi = yakit < 0 && b.yakitTedariki !== undefined;
   // Tarım (B1): tarım açıksa ve bölge tarım alanına sahipse tarımsal tesislere çıktı çarpanı ve gübre talebi uygulanır.
   const tt = tarimTablosu(ctx.ic);
   const tarimli = tt !== null && b.tarim !== undefined;
@@ -383,7 +393,7 @@ export function bolgeHesapla(d: Dunya, ctx: Baglam, r: number, odemePpm: number 
     if (pot > 0) {
       for (const [m, q] of y.girdi) {
         // Şebekeli (stoksuz) mal stoktan talep EDİLMEZ (§5.2.2b Y-a): tüketim anında şebekeden alınır.
-        if (stoksuz !== null && (stoksuz[m] as number) >= 0) continue;
+        if (stoksuz !== null && (stoksuz[m] as number) >= 0 && m !== yakit) continue;
         const qo = olcekCikti === PPM ? q : carpBol(q, olcekCikti, PPM);
         h.girdiPot[m] = (h.girdiPot[m] as number) + carpBol(qo, planPot, PPM);
       }
@@ -422,6 +432,51 @@ function oranPpm(a: number, bolen: number): number {
   if (a >= bolen) return PPM;
   if (a <= 0) return 0;
   return carpBol(a, PPM, bolen);
+}
+
+/** Son verimin girdisi; potansiyel/ağ isteği gerçek tüketim yerine kullanılmaz. */
+function gercekYakitGirdisi(tb: IcerikTablosu, h: BolgeHesabi, mal: number): Mili {
+  let toplam = 0;
+  for (let i = 0; i < h.bolge.tesisler.length; i++) {
+    const v = h.verimPpm[i] as number;
+    if (v <= 0) continue;
+    const y = tb.yontem[h.bolge.tesisler[i]!.yontem]!;
+    const olcek = h.olcekPpm[i] as number;
+    for (const [m, q] of y.girdi) if (m === mal) toplam += carpBol(olcek === PPM ? q : carpBol(q, olcek, PPM), v, PPM);
+  }
+  return toplam;
+}
+
+/**
+ * Pozitif stok oranla tükenir; sıfır stokta yalnız ulaşmış fiziksel arz dağıtılır.
+ * Önce nüfus/ordu ve bakım, sonra sanayi, dükkân ve ihracat. Şebeke yalnız sanayi açığını tamamlar.
+ */
+function yakitPaylastir(tb: IcerikTablosu, h: BolgeHesabi, m: number, giden: Mili): void {
+  const tuketim = gercekYakitGirdisi(tb, h, m);
+  let stok = tuketim;
+  if ((h.stok[m] as number) > 0) {
+    h.fr1[m] = h.fr2[m] = h.fr3[m] = h.frD[m] = h.fr4[m] = PPM;
+  } else {
+    let a = Math.max(0, (h.ciktiGercek[m] as number) + (h.ithalat[m] as number) + h.bolge.stoklar[m]!.gelenOran - giden);
+    const nufus = h.nufusTuketim[m] as number;
+    const ikmal = h.ikmal[m] as number;
+    h.fr1[m] = oranPpm(a, nufus + ikmal);
+    // Aynı yuvarlanmış tüketimler stok denkleminde de kullanılır; kalan mili ikinci kez tahsis edilmez.
+    a -= carpBol(nufus, h.fr1[m] as number, PPM) + carpBol(ikmal, h.fr1[m] as number, PPM);
+    const bakim = h.bakim[m] as number;
+    h.fr2[m] = oranPpm(a, bakim);
+    a -= carpBol(bakim, h.fr2[m] as number, PPM);
+    stok = Math.min(a, tuketim);
+    a -= stok;
+    h.fr3[m] = oranPpm(stok, tuketim);
+    const dukkan = h.dukkan[m] as number;
+    h.frD[m] = oranPpm(a, dukkan);
+    a -= carpBol(dukkan, h.frD[m] as number, PPM);
+    h.fr4[m] = oranPpm(a, h.ihracat[m] as number);
+  }
+  const sebeke = tuketim - stok;
+  h.sebekeStoksuz[m] = sebeke;
+  h.yakitTedariki = { mal: "yakit", tuketimMiliSaat: tuketim, stokMiliSaat: stok, sebekeMiliSaat: sebeke };
 }
 
 /**
@@ -495,6 +550,7 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
   // Mülk kipi şebekesi (G6): elektrik açığı şebekeden (anlık denge) ve stoksuz mallar (yakıt) tüketim anında; blok yoksa/bölge kipinde null.
   const sebeke = sn === null ? null : sebekeElektrikYolu(ctx, b);
   const stoksuz = sebekeStoksuzTablo(ctx, b);
+  const yakit = stokOncelikliYakit(ctx.ic, b);
 
   // Başlangıç: verim = potansiyel (sanayi açıksa elektrik dağıtımıyla ölçeklenmiş).
   for (let i = 0; i < tesisSayisi; i++) h.verimOn[i] = h.potansiyelPpm[i] as number;
@@ -513,6 +569,11 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
 
     let paylasim = false;
     for (let m = 0; m < nm; m++) {
+      if (m === yakit) {
+        yakitPaylastir(tb, h, m, giden[m] as number);
+        if (h.fr1[m] !== PPM || h.fr2[m] !== PPM || h.fr3[m] !== PPM || h.frD[m] !== PPM || h.fr4[m] !== PPM) paylasim = true;
+        continue;
+      }
       const s = b.stoklar[m] as BolgeDurumu["stoklar"][number];
       const d1 = (h.nufusTuketim[m] as number) + (h.ikmal[m] as number);
       const d2 = h.bakim[m] as number;
@@ -598,6 +659,7 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
     const carpan = h.ciktiCarpan[i] as number;
     for (const [m, q] of y.cikti) h.ciktiGercek[m] = (h.ciktiGercek[m] as number) + ciktiOlcekle(q, v, carpan);
   }
+  if (yakit >= 0) yakitPaylastir(tb, h, yakit, giden[yakit] as number);
   // İhracat 0 ise gerçek ihracat 0 (carpBol(0, x, PPM) = 0): çağrı atlanır.
   for (let m = 0; m < nm; m++) h.ihracatGercek[m] = (h.ihracat[m] as number) === 0 ? 0 : carpBol(h.ihracat[m] as number, h.fr4[m] as number, PPM);
   // Gerçekleşen yerel (dükkân) satışı (G7-2): stoktan çıkan oran (bolgeOranlariUygula) ve gelirin girdisi; dükkân yokken 0.
@@ -610,7 +672,7 @@ export function bolgeVerimCoz(ctx: Baglam, h: BolgeHesabi, giden: readonly Mili[
       const y = tb.yontem[(b.tesisler[i] as BolgeDurumu["tesisler"][number]).yontem] as IcerikTablosu["yontem"][number];
       const olcek = h.olcekPpm[i] as number;
       for (const [m, q] of y.girdi) {
-        if ((stoksuz[m] as number) < 0) continue;
+        if ((stoksuz[m] as number) < 0 || m === yakit) continue;
         const qo = olcek === PPM ? q : carpBol(q, olcek, PPM);
         h.sebekeStoksuz[m] = (h.sebekeStoksuz[m] as number) + carpBol(qo, v, PPM);
       }
@@ -639,6 +701,11 @@ export function bolgeUykuHesapla(d: Dunya, ctx: Baglam, r: number): BolgeHesabi 
  */
 export function bolgeUykuUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi): void {
   const b = h.bolge;
+  yakitTedarikiYaz(ctx, h);
+  if (stokOncelikliYakit(ctx.ic, b) >= 0 && b.sebekeTuketim?.yakit !== undefined) {
+    delete b.sebekeTuketim.yakit;
+    if (Object.keys(b.sebekeTuketim).length === 0) delete b.sebekeTuketim;
+  }
   for (const ts of b.tesisler) {
     ts.isciPpm = 0;
     ts.verimPpm = 0;
@@ -670,6 +737,7 @@ function santraliVarMi(ctx: Baglam, b: BolgeDurumu): boolean {
 export function bolgeDurumunaYaz(ctx: Baglam, h: BolgeHesabi): void {
   const tb = icerikTablosu(ctx.ic);
   const b = h.bolge;
+  yakitTedarikiYaz(ctx, h);
   for (let i = 0; i < b.tesisler.length; i++) {
     const ts = b.tesisler[i] as BolgeDurumu["tesisler"][number];
     ts.isciPpm = h.isciPpm[i] as number;
@@ -738,6 +806,14 @@ export function bolgeDurumunaYaz(ctx: Baglam, h: BolgeHesabi): void {
   else if (!MULKSUZ_PAKET && b.yerelKarsilanmaPpm !== undefined) delete b.yerelKarsilanmaPpm;
 }
 
+function yakitTedarikiYaz(ctx: Baglam, h: BolgeHesabi): void {
+  if (stokOncelikliYakit(ctx.ic, h.bolge) >= 0) {
+    h.bolge.yakitTedariki = h.yakitTedariki === null
+      ? { mal: "yakit", tuketimMiliSaat: 0, stokMiliSaat: 0, sebekeMiliSaat: 0 }
+      : { ...h.yakitTedariki };
+  } else if (h.bolge.yakitTedariki !== undefined) delete h.bolge.yakitTedariki;
+}
+
 /**
  * Adım 5: stok yerel oranları ve üretim oranı.
  * yerelOran = Σ çıktı×verim − Σ girdi×verim − nüfus/ordu − bakım − ihracat + ithalat − giden − bozulma.
@@ -748,7 +824,9 @@ export function bolgeOranlariUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi, giden
   const b = h.bolge;
   const tt = tarimTablosu(ctx.ic);
   const stoksuz = sebekeStoksuzTablo(ctx, b);
+  const yakit = stokOncelikliYakit(ctx.ic, b);
   const girdiGercek = sifirlar(nm);
+  if (yakit >= 0) girdiGercek[yakit] = h.yakitTedariki?.stokMiliSaat ?? 0;
   for (let i = 0; i < b.tesisler.length; i++) {
     const v = h.verimPpm[i] as number;
     if (v <= 0) continue;
@@ -787,7 +865,7 @@ export function bolgeOranlariUygula(d: Dunya, ctx: Baglam, h: BolgeHesabi, giden
     const fark = yerel > mevcut ? yerel - mevcut : mevcut - yerel;
     const mutlak = yerel < 0 ? -yerel : yerel;
     const tolerans = mutlak >> 8 > ORAN_TOLERANSI_TABAN ? mutlak >> 8 : ORAN_TOLERANSI_TABAN;
-    if (fark > tolerans) stokOranAyarla(d, ctx, h.indeks, m, yerel);
+    if (m === yakit || (h.yakitKapanisi && m === ctx.ic.malIndeks.yakit) || fark > tolerans) stokOranAyarla(d, ctx, h.indeks, m, yerel);
   }
 }
 

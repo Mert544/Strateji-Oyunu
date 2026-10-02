@@ -371,6 +371,7 @@ export class WsBaglanti implements MulkBaglantisi {
           uygun: true,
           ...(oz.isletme?.ithNetPpm === undefined ? {} : { ithNetPpm: oz.isletme.ithNetPpm }),
           ...(oz.sebekeGiderleri === undefined ? {} : { sebekeGiderleri: oz.sebekeGiderleri }),
+          ...(oz.yakitTedariki === undefined ? {} : { yakitTedariki: oz.yakitTedariki }),
           ...(oz.ithalatGiderleri === undefined ? {} : { ithalatGiderleri: oz.ithalatGiderleri }),
           ...(oz.gelenOran === undefined ? {} : { gelenOran: oz.gelenOran }),
           ...(yeniEmirUygun === undefined ? {} : { yeniEmirUygun }),
@@ -650,6 +651,18 @@ export class WsBaglanti implements MulkBaglantisi {
     const yontemler = this.hos?.dizin.yontemler ?? [];
     const sebeke = new Map<string, number>();
     const kendiIsletmeleri = k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`));
+    const ilkYakit = kendiIsletmeleri[0]?.ozel?.yakitTedariki;
+    const yakitCozumu = kendiIsletmeleri[0]?.ozel?.lojistik?.sonCozum;
+    // Kaynak payları sunucunun tahsisidir; stok formülü veya sevk planından türetilmez.
+    // Tüm düğümler aynı malın aynı çözümünü vermedikçe kısmi toplam gösterilmez.
+    const yakitTedariki = ilkYakit !== undefined && yakitCozumu !== undefined && kendiIsletmeleri.every((b) => b.ozel?.yakitTedariki?.mal === ilkYakit.mal && b.ozel?.lojistik?.sonCozum === yakitCozumu)
+      ? kendiIsletmeleri.reduce((toplam, b) => {
+        const yakit = b.ozel!.yakitTedariki!;
+        toplam.tuketimMiliSaat += yakit.tuketimMiliSaat;
+        toplam.stokMiliSaat += yakit.stokMiliSaat;
+        toplam.sebekeMiliSaat += yakit.sebekeMiliSaat;
+        return toplam;
+      }, { mal: ilkYakit.mal, tuketimMiliSaat: 0, stokMiliSaat: 0, sebekeMiliSaat: 0 }) : undefined;
     // Tüm düğümler gider karesini vermeden kısmi toplamı gerçek toplam diye göstermeyiz.
     // Hiç düğüm yoksa yeni alanın sunucuda desteklenip desteklenmediği bilinmez.
     const sebekeGiderleri = kendiIsletmeleri.length > 0 && kendiIsletmeleri.every((b) => b.ozel?.sebekeGiderleri !== undefined)
@@ -798,6 +811,7 @@ export class WsBaglanti implements MulkBaglantisi {
       mallar: [...stok.entries()].sort((a, b) => a[0] - b[0]).map(([m, x]) => ({ mal: mallar[m] ?? String(m), ...x })),
       ...(sebeke.size > 0 ? { sebeke: [...sebeke.entries()] } : {}),
       ...(sebekeGiderleri === undefined ? {} : { sebekeGiderleri: [...sebekeGiderleri.values()].sort((a, b) => a.mal.localeCompare(b.mal)) }),
+      ...(yakitTedariki === undefined ? {} : { yakitTedariki }),
       ...(ihracatEmriVar ? { ihracatEmriVar: true } : {}),
     };
   }

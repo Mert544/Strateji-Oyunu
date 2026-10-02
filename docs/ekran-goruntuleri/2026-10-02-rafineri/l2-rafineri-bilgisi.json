@@ -1,0 +1,182 @@
+{
+  "kaynak": "Gerçek standalone uygulama, yerel gerçek çekirdek ve kabul edilmiş oyuncu komutları; DOM veya stok enjeksiyonu yok",
+  "simZamani": 46860000,
+  "masaustu": [
+    1440,
+    1000
+  ],
+  "uretim": {
+    "yapilar": [
+      {
+        "anahtar": "t147",
+        "durum": "tesis",
+        "tur": "parca_fabrikasi",
+        "il": "tr_41",
+        "ilce": "tr_41_gebze",
+        "hucre": 2,
+        "aktif": true,
+        "verimPpm": 1000000,
+        "yontem": "standart_parca",
+        "bolge": "tr_41#ekran"
+      },
+      {
+        "anahtar": "t148",
+        "durum": "tesis",
+        "tur": "rafineri",
+        "il": "tr_41",
+        "ilce": "tr_41_gebze",
+        "hucre": 2,
+        "aktif": true,
+        "verimPpm": 33333,
+        "yontem": "standart_rafineri",
+        "bolge": "tr_41#ekran"
+      }
+    ],
+    "mallar": [
+      {
+        "mal": "gida",
+        "stokMili": 197839,
+        "uretimMili": 0,
+        "satisMili": 0,
+        "alisMili": 0,
+        "satisBolge": "tr_41#ekran",
+        "satisNetPpm": 870750
+      },
+      {
+        "mal": "celik",
+        "stokMili": 335,
+        "uretimMili": 0,
+        "satisMili": 0,
+        "alisMili": 40000,
+        "satisBolge": "tr_41#ekran",
+        "satisNetPpm": 870750
+      },
+      {
+        "mal": "parca",
+        "stokMili": 29083,
+        "uretimMili": 40000,
+        "satisMili": 0,
+        "alisMili": 2000,
+        "satisBolge": "tr_41#ekran",
+        "satisNetPpm": 870750
+      },
+      {
+        "mal": "petrol",
+        "stokMili": 0,
+        "uretimMili": 0,
+        "satisMili": 0,
+        "alisMili": 5000
+      },
+      {
+        "mal": "yakit",
+        "stokMili": 0,
+        "uretimMili": 3999,
+        "satisMili": 0,
+        "alisMili": 0
+      },
+      {
+        "mal": "pencere",
+        "stokMili": 3000,
+        "uretimMili": 0,
+        "satisMili": 0,
+        "alisMili": 0,
+        "satisBolge": "tr_41#ekran",
+        "satisNetPpm": 870750
+      }
+    ],
+    "yakitTedariki": {
+      "mal": "yakit",
+      "tuketimMiliSaat": 10000,
+      "stokMiliSaat": 3999,
+      "sebekeMiliSaat": 6001
+    },
+    "sebekeGiderleri": [
+      {
+        "mal": "elektrik",
+        "miktarMiliSaat": 12833,
+        "bedelMiliSaat": 132821
+      },
+      {
+        "mal": "yakit",
+        "miktarMiliSaat": 6001,
+        "bedelMiliSaat": 621103
+      }
+    ]
+  },
+  "tedarik": {
+    "emirler": [
+      {
+        "mal": "celik",
+        "oranSaat": 40000,
+        "gerceklesenSaat": 40000
+      },
+      {
+        "mal": "parca",
+        "oranSaat": 2000,
+        "gerceklesenSaat": 2000
+      },
+      {
+        "mal": "petrol",
+        "oranSaat": 5000,
+        "gerceklesenSaat": 5000
+      }
+    ],
+    "ithalatGiderleri": [
+      {
+        "mal": "celik",
+        "miktarMiliSaat": 40000,
+        "birimFiyatMili": 147692,
+        "malBedeliMiliSaat": 5907680,
+        "makasMiliSaat": 590768,
+        "limanPrimiMiliSaat": 211199,
+        "komisyonMiliSaat": 0,
+        "vergiMiliSaat": 0,
+        "netBedelMiliSaat": 6709647
+      },
+      {
+        "mal": "parca",
+        "miktarMiliSaat": 2000,
+        "birimFiyatMili": 205411,
+        "malBedeliMiliSaat": 410822,
+        "makasMiliSaat": 41082,
+        "limanPrimiMiliSaat": 14686,
+        "komisyonMiliSaat": 0,
+        "vergiMiliSaat": 0,
+        "netBedelMiliSaat": 466590
+      },
+      {
+        "mal": "petrol",
+        "miktarMiliSaat": 5000,
+        "birimFiyatMili": 90937,
+        "malBedeliMiliSaat": 454685,
+        "makasMiliSaat": 45468,
+        "limanPrimiMiliSaat": 16254,
+        "komisyonMiliSaat": 0,
+        "vergiMiliSaat": 0,
+        "netBedelMiliSaat": 516407
+      }
+    ],
+    "yakitTedariki": {
+      "mal": "yakit",
+      "tuketimMiliSaat": 10000,
+      "stokMiliSaat": 3999,
+      "sebekeMiliSaat": 6001
+    },
+    "sebekeGiderleri": [
+      {
+        "mal": "elektrik",
+        "miktarMiliSaat": 12833,
+        "birimFiyatMili": 10350,
+        "bedelMiliSaat": 132821
+      },
+      {
+        "mal": "yakit",
+        "miktarMiliSaat": 6001,
+        "birimFiyatMili": 103500,
+        "bedelMiliSaat": 621103
+      }
+    ]
+  },
+  "errors": [],
+  "l4": "Sokak PMTiles eksik; canlı silüet doğrulaması yapılmadı"
+}

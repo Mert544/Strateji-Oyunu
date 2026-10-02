@@ -12,7 +12,7 @@ export const SILUET_RENK_ILK = 10;
 export const SILUET_RENK = { isik: 10, cuval: 11, metal: 12, tugla: 13, toprak: 14, cam: 15 } as const;
 
 /** Yöntem kimliği (`icerik.yontemler[].id`) -> silüet; kimlik tanımsızsa `null` (genel bitmiş gövde çizilir). */
-export const SILUETLI_YONTEMLER = ["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma", "kiyi_balikciligi", "mera_koyun_yun", "yun_egirme", "kumas_dokuma", "konfeksiyon"] as const;
+export const SILUETLI_YONTEMLER = ["degirmen", "ekmek_firini", "kepek_gubresi", "sut_kepekli", "cam_firini", "celik_dograma", "kiyi_balikciligi", "mera_koyun_yun", "yun_egirme", "kumas_dokuma", "konfeksiyon", "standart_rafineri"] as const;
 export type SiluetliYontem = (typeof SILUETLI_YONTEMLER)[number];
 
 export function siluetliMi(y: string | undefined): y is SiluetliYontem {
@@ -35,6 +35,29 @@ export function siluetKutulari(yontem: SiluetliYontem, c: number): SiluetKutusu[
     k.push([x, y0, z, sx, h, sz, 3], [x - 0.3, y0 + h, z - 0.3, sx + 0.6, 0.35, sz + 0.6, 4]);
   };
   switch (yontem) {
+    case "standart_rafineri": {
+      govde(x0, z0 + gen * 0.08, gen * 0.43, gen * 0.34, 3.6); // alçak kontrol binası
+      // İki farklı yükseklikte damıtma kolonu; bantlar metal gövdeden çatı tonuyla ayrılır.
+      for (let i = 0; i < 2; i++) {
+        const tx = x0 + gen * (0.62 + i * 0.22);
+        const tz = z0 + gen * 0.12;
+        const tw = gen * 0.12;
+        const h = 8 + i * 3;
+        k.push([tx, y0, tz, tw, h, tw, SILUET_RENK.metal], [tx - 0.15, y0 + h, tz - 0.15, tw + 0.3, 0.3, tw + 0.3, 4]);
+        for (const oran of [0.35, 0.7]) k.push([tx - 0.1, y0 + h * oran, tz - 0.1, tw + 0.2, 0.25, tw + 0.2, 4]);
+      }
+      // Sabit tanklar tesis kimliğini anlatır; stok miktarını veya doluluk oranını temsil etmez.
+      for (let i = 0; i < 2; i++) {
+        const tx = x0 + gen * (0.08 + i * 0.29);
+        const tz = z0 + gen * 0.72;
+        const tw = gen * 0.23;
+        k.push([tx, y0, tz, tw, 2.8, gen * 0.22, SILUET_RENK.metal], [tx - 0.1, y0 + 2.8, tz - 0.1, tw + 0.2, 0.25, gen * 0.22 + 0.2, 4]);
+      }
+      const pz = z0 + gen * 0.56;
+      for (const oran of [0.16, 0.81]) k.push([x0 + gen * oran, y0, pz, 0.3, 3.6, 0.3, SILUET_RENK.metal]);
+      k.push([x0 + gen * 0.1, y0 + 3.6, pz, gen * 0.82, 0.3, 0.3, SILUET_RENK.metal], [x0 + gen * 0.87, y0 + 3.6, z0 + gen * 0.2, 0.3, 0.3, gen * 0.36, SILUET_RENK.metal]); // kolonları bağlayan boru rafı
+      break;
+    }
     case "mera_koyun_yun": {
       govde(x0, z0, gen * 0.4, gen * 0.55, 3.2); // alçak ağıl; açık mera yanında
       const px = x0 + gen * 0.48;

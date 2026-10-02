@@ -13,7 +13,11 @@ export const YONTEM_METIN = {
   "yontem.secici.girdisiz": "girdi istemez",
   "yontem.secici.degisir": "Toprağa ve iklime göre değişir.",
   "yontem.secici.gider": "Şebeke gideri ≈ {gider}/sa",
-  "yontem.secici.sebeke_not": "Elektrik ve yakıt şebekeden gelir; santral kurman gerekmez.",
+  "yontem.secici.gider_tumu": "Tümü şebekeden alınırsa ≈ {gider}/sa",
+  "yontem.secici.sebeke_not": "Kendi üretiminin karşılamadığı elektrik ihtiyacı şebekeden gelir; santral kurman gerekmez.",
+  "yontem.secici.yakit_stok": "Sanayi yakıtı önce depo ve ulaşmış tedarikten alınır; eksik kısım ücretli şebekeden tamamlanır.",
+  "yontem.secici.yakit_eski": "Bu kuralda tesis yakıtı otomatik ücretli şebekeden alınır; stok bu gideri azaltmaz.",
+  "yontem.secici.yakit_stok_yok": "Depoda yakıt yok; ulaşmış tedarik varsa kullanılır, kalan sanayi ihtiyacı ücretli şebekeden karşılanır.",
   "yontem.secici.zincir_not": "Ekmek için bir değirmen ve bir fırın gerekir; ikisi ayrı fabrikadır.",
   "yontem.secici.teknoloji": "Teknolojisini açman gerekir.",
   "yontem.secici.sec": "Bir yöntem seç.",
@@ -48,7 +52,7 @@ export const YONTEM_METIN = {
   /** (ek) Elektrik ve yakıt dışındaki şebeke malı (veri `mulk.sebeke.mallar` genişlerse): mal adı sözlükten. */
   "sebeke.satir_mal": "{mal} · {n} birim/sa · {gider}/sa",
   "sebeke.toplam": "Toplam ≈ {gider}/sa",
-  "sebeke.not": "Elektrik ve yakıt şebekeden gelir; santral kurman gerekmez.",
+  "sebeke.not": "Bu gider yalnız şebekeden alınan miktara aittir; elektrik ve sanayi yakıtının kaynakları ayrı değerlendirilir.",
   "sebeke.yok": "Şebekeden alım yok.",
 } as const;
 

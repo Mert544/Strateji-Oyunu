@@ -737,8 +737,8 @@ export interface MulkPerakendeParametreleri {
 /** Şebekeden otomatik alınan bir mal (`MulkSebekeParametreleri.mallar[]`). */
 export interface SebekeMali {
   /**
-   * Mal kimliği. "elektrik" (depolanamaz) anlık denge yoluyla, diğer depolanabilir mallar (örn. yakıt) stoksuz tüketim anı yoluyla çözülür
-   * (çekirdek yolu G6-2'de; bu şema yalnız veridir).
+   * Mal kimliği. "elektrik" (depolanamaz) anlık denge yoluyla, diğer depolanabilir mallar stoksuz tüketim anı yoluyla çözülür;
+   * yakıtta `stokOncelikli` etkinse önce fiziksel stok/tedarik, yalnız kalan açık şebekeden karşılanır.
    */
   mal: string;
   /**
@@ -746,6 +746,8 @@ export interface SebekeMali {
    * (`tabanFiyat x kamuIthalatCarpaniPpm x tavanOraniPpm`); canlı pazar fiyatı yolu yoktur.
    */
   tavanOraniPpm: number;
+  /** L2: yalnız depolanabilir "yakit" için; yok/false eski stoksuz davranışı korur. Elektrik dengesi değişmez. */
+  stokOncelikli?: boolean;
 }
 
 /**

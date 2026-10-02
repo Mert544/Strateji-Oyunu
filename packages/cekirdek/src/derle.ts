@@ -224,19 +224,21 @@ function mulkDerle(veri: CekirdekVeriPaketi, ic: DerlenmisIcerik): DerlenmisMulk
   // Şebeke (sartname §4.6, §5.2.4): blok yoksa alan OLUŞMAZ. Birim fiyat TABANDAN derleme zamanında bir kez sabitlenir:
   // tabanFiyat x kamuIthalatCarpaniPpm x tavanOraniPpm (canlı pazar fiyatı yolu YOKTUR). Elektrik anlık denge yolu, diğer (depolanabilir) mallar stoksuz tüketim anı yolu.
   if (p.sebeke !== undefined) {
-    const kayitlar: { mal: number; birimFiyatMili: number; elektrik: boolean }[] = [];
+    const kayitlar: { mal: number; birimFiyatMili: number; elektrik: boolean; stokOncelikli?: boolean }[] = [];
     const gorulen = new Set<string>();
     for (const m of p.sebeke.mallar) {
       const mi = ic.malIndeks[m.mal];
       if (mi === undefined) throw new Error(`icerikDerle: mulk.sebeke.mallar bilinmeyen mal: ${m.mal}`);
       if (gorulen.has(m.mal)) throw new Error(`icerikDerle: mulk.sebeke.mallar tekrarlanan mal: ${m.mal}`);
+      if (m.stokOncelikli !== undefined && typeof m.stokOncelikli !== "boolean") throw new Error(`icerikDerle: mulk.sebeke.mallar.${m.mal}.stokOncelikli mantik olmali`);
+      if (m.stokOncelikli === true && (m.mal !== "yakit" || ic.mallar[mi]?.depolanabilir === false)) throw new Error("icerikDerle: stokOncelikli yalniz depolanabilir yakit icin olabilir");
       gorulen.add(m.mal);
       if (!Number.isSafeInteger(m.tavanOraniPpm) || m.tavanOraniPpm <= 0 || m.tavanOraniPpm > PPM) throw new Error(`icerikDerle: mulk.sebeke.mallar.${m.mal}.tavanOraniPpm (0, ${PPM}] araliginda tamsayi olmali`);
       const taban = (ic.mallar[mi] as { tabanFiyat: number }).tabanFiyat;
-      kayitlar.push({ mal: mi, birimFiyatMili: carpBol(carpBol(taban, kamuIthalatCarpaniPpm, PPM), m.tavanOraniPpm, PPM), elektrik: m.mal === "elektrik" });
+      kayitlar.push({ mal: mi, birimFiyatMili: carpBol(carpBol(taban, kamuIthalatCarpaniPpm, PPM), m.tavanOraniPpm, PPM), elektrik: m.mal === "elektrik", ...(m.stokOncelikli === true ? { stokOncelikli: true } : {}) });
     }
     if (!Number.isSafeInteger(p.sebeke.kasaPayiPpm) || p.sebeke.kasaPayiPpm < 0 || p.sebeke.kasaPayiPpm > PPM) throw new Error(`icerikDerle: mulk.sebeke.kasaPayiPpm [0, ${PPM}] araliginda tamsayi olmali`);
-    const stoksuz = kayitlar.filter((k) => !k.elektrik).sort((a, b) => a.mal - b.mal).map((k) => ({ mal: k.mal, birimFiyatMili: k.birimFiyatMili }));
+    const stoksuz = kayitlar.filter((k) => !k.elektrik).sort((a, b) => a.mal - b.mal).map((k) => ({ mal: k.mal, birimFiyatMili: k.birimFiyatMili, ...(k.stokOncelikli === true ? { stokOncelikli: true } : {}) }));
     const stoksuzIndeks = ic.mallar.map(() => -1);
     stoksuz.forEach((k, i) => (stoksuzIndeks[k.mal] = i));
     const sebeke: DerlenmisSebeke = { stoksuz, stoksuzIndeks, kasaPayiPpm: p.sebeke.kasaPayiPpm };

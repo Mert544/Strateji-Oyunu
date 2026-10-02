@@ -7,6 +7,7 @@ import { icerikDerle } from "./derle";
 import { askeriKomutu, partiBitti, savasPencereAc, savasPencereKapa } from "./askeri";
 import { eskiyaDuyuru, eskiyaGunluk, eskiyaPencereAc, eskiyaPencereKapa, eskiyaTakvimiUyarla, eskiyaToparlanma } from "./askeri/eskiya";
 import { ekonomiKomutu, insaatBitti, saatlikTik } from "./ekonomi";
+import { stokOncelikliYakit } from "./ekonomi/yakit";
 import { kuyrukBas, kuyrukCikar } from "./kuyruk";
 import { dunyaKur } from "./kurulum";
 import { lojistikCoz, lojistikKomutu } from "./lojistik/cozum";
@@ -141,7 +142,13 @@ export class Simulasyon {
     const ic = icerikDerle(veri);
     const { dunya, goc } = anlikGoruntuUyarla(g, ic, kuralSurumuHesapla(veri), secenek);
     const s = Simulasyon.yukleDerlenmis(ic, dunya);
-    if (goc.yenidenIndekslendi) s.baglam.kirlet(s.dunya);
+    // L2 dönem geçişinde kayıt anına kadarki eski stok/para oranları çözümün muhasebe
+    // adımında uzlaştırılır; ardından yeni tahsis yazılır. Aynı kuralla yükleme dokunulmaz.
+    const yakitGocu = goc.kuralDegisti && !MULKSUZ_PAKET &&
+      dunya.bolgeler.some((b) => b.yakitTedariki !== undefined || stokOncelikliYakit(ic, b) >= 0);
+    if (yakitGocu) for (const b of dunya.bolgeler) for (let m = 0; m < b.stoklar.length; m++) stokUzlastir(dunya, b.indeks, m);
+    if (goc.yenidenIndekslendi || yakitGocu) s.baglam.kirlet(s.dunya, yakitGocu);
+    if (yakitGocu) s.calistirKadar(s.dunya.zaman);
     const sonuclar: KomutSonucu[] = [];
     for (const k of kalanGunluk) {
       const r = s.uygula(k);
@@ -394,16 +401,18 @@ export class Simulasyon {
     const ctx = this.baglam;
     const v = olay.veri;
     switch (v.tur) {
-      case "oran_delta":
+      case "oran_delta": {
         stokGelenEkle(d, ctx, v.bolge, v.mal, v.delta);
-        ctx.kirlet(d);
+        const b = d.bolgeler[v.bolge];
+        ctx.kirlet(d, b !== undefined && v.mal === stokOncelikliYakit(ctx.ic, b));
         break;
+      }
       case "esik": {
         const s = d.bolgeler[v.bolge]?.stoklar[v.mal];
         // Surum eşleşmiyorsa eşik eskimiştir (oran sonradan değişmiş): yok say.
         if (s && s.surum === v.surum) {
           stokUzlastir(d, v.bolge, v.mal);
-          ctx.kirlet(d);
+          ctx.kirlet(d, v.mal === stokOncelikliYakit(ctx.ic, d.bolgeler[v.bolge]!));
         }
         break;
       }

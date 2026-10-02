@@ -267,6 +267,8 @@ const bolgeKaresiSemasi = z.object({
       sebeke: z.array(z.tuple([z.string(), tam])).optional(),
       // Yalnız sahibine: [] bilinen sıfır, alan yokluğu bilinmeyen/kapsam dışı. Eski şebeke demeti büyütülmez.
       sebekeGiderleri: z.array(z.object({ mal: z.string(), miktarMiliSaat: tam, birimFiyatMili: tam, bedelMiliSaat: tam })).optional(),
+      // Sanayinin gerçek yakıt tahsisi; sıfır nesnesi bilinen sıfır, absent eski/kapalı/bilinmeyen.
+      yakitTedariki: z.object({ mal: z.string(), tuketimMiliSaat: tam, stokMiliSaat: tam, sebekeMiliSaat: tam }).optional(),
       // Gerçekleşen son ithalat oranının güncel fiyatla dökümü; tarihsel ödeme değildir. Tarife net bedele tekrar eklenmez.
       ithalatGiderleri: z.array(z.object({
         mal: z.string(),
