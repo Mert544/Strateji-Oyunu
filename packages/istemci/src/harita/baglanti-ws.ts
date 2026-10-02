@@ -570,10 +570,10 @@ export class WsBaglanti implements MulkBaglantisi {
         } else mal(m).alisMili += gercek;
       }
     }
-    // Pazar'da sat: emrin yerindeki düğümün ihracat net çarpanı (sunucu `ozel.ihrNetPpm`, isteğe bağlı: yoksa alan YAZILMAZ ve istemci "Eline geçen"i göstermez)
+    // Pazar'da sat: emrin yerindeki düğümün ihracat net çarpanı (sunucu `ozel.isletme.ihrNetPpm` (K2), isteğe bağlı: yoksa alan YAZILMAZ ve istemci "Eline geçen"i göstermez)
     const dugumNet = new Map<string, number>();
     for (const b of k.bolgeler) {
-      const n = (b.ozel as { ihrNetPpm?: unknown } | undefined)?.ihrNetPpm;
+      const n = (b.ozel as { isletme?: { ihrNetPpm?: unknown } } | undefined)?.isletme?.ihrNetPpm;
       if (typeof n === "number" && Number.isFinite(n) && n > 0) dugumNet.set(b.id, n);
     }
     for (const x of stok.values()) {

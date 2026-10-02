@@ -247,7 +247,7 @@ export interface IsletmeDurumu {
     /** Pazar'da sat: satış emrinin yeri (emri olan ya da malı en çok tutan işletme düğümü) ve emrin oranı (mili-birim/sa; emir yoksa tanımsız). `satisMili` GERÇEKLEŞEN orandır. */
     satisBolge?: string;
     satisEmirMili?: number;
-    /** Emrin yerindeki işletme düğümünün ihracat net çarpanı (ppm; sunucunun `ozel.ihrNetPpm`'i: makas x (1 - liman primi) x (1 - komisyon), Ticaret ofisi indirimi dahil). Sunucu vermiyorsa tanımsız: "Eline geçen" satırı GİZLENİR (sabit çarpanla rakam gösterilmez). */
+    /** Emrin yerindeki işletme düğümünün ihracat net çarpanı (ppm; sunucunun `ozel.isletme.ihrNetPpm`'i: makas x (1 - liman primi) x (1 - komisyon), Ticaret ofisi indirimi dahil). Sunucu vermiyorsa tanımsız: "Eline geçen" satırı GİZLENİR (sabit çarpanla rakam gösterilmez). */
     satisNetPpm?: number;
   }>;
   /** Şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (`kare.ozel.sebeke`; işletme düğümleri toplanmış; alım yoksa tanımsız). Bedel istemcide: miktar x şebeke fiyatı. */

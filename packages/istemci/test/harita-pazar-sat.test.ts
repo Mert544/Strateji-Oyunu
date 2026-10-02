@@ -377,7 +377,7 @@ function kare(netVar = true): Record<string, unknown> {
     i,
     id,
     genel: { sahip: "ali", nufus: 0, tesisler: [], durus: 0 },
-    ozel: { stoklar, uretimOrani: [], tesisler: [], emirler, birlikler: [], gidaPpm: 0, ikmalPpm: 0, rezervKalan: [], ...(i === 2 && netVar ? { ihrNetPpm: 862_000 } : {}) },
+    ozel: { stoklar, uretimOrani: [], tesisler: [], emirler, birlikler: [], gidaPpm: 0, ikmalPpm: 0, rezervKalan: [], ...(i === 2 && netVar ? { isletme: { ihrNetPpm: 862_000 } } : {}) },
   });
   return {
     tur: "kare",
@@ -423,15 +423,15 @@ describe("WsBaglanti: Pazar'da sat", () => {
     expect(g.satisBolge).toBe("il2#ali"); // gıda stoku yalnız il2'de
   });
 
-  // Protokol şeması `ozel.ihrNetPpm`'i henüz tanımıyor (K2 `takim/k2/ihr-net`; bilinmeyen alan ayrıştırmada düşer): K2 dalı gelince `skip` kalkar.
-  it.skip("sunucunun düğüm başına ihracat net çarpanı (ozel.ihrNetPpm) emrin yerindeki düğümden mal satırına taşınır", async () => {
+  // Protokol şeması `ozel.isletme.ihrNetPpm`'i henüz tanımıyor (K2 `takim/k2/ihr-net` cf58799; bilinmeyen alan ayrıştırmada düşer): K2 dalı gelince `skip` kalkar.
+  it.skip("sunucunun düğüm başına ihracat net çarpanı (ozel.isletme.ihrNetPpm) emrin yerindeki düğümden mal satırına taşınır", async () => {
     const { b } = await bagla(true);
     const m = b.isletme()!.mallar;
     expect(m.find((x) => x.mal === "tahil")!.satisNetPpm).toBe(862_000);
     expect(m.find((x) => x.mal === "gida")!.satisNetPpm).toBe(862_000);
   });
 
-  it("ozel.ihrNetPpm YOKSA (eski sunucu): mal satırında satisNetPpm alanı YOK (istemci 'Eline geçen'i göstermez)", async () => {
+  it("ozel.isletme.ihrNetPpm YOKSA (eski sunucu): mal satırında satisNetPpm alanı YOK (istemci 'Eline geçen'i göstermez)", async () => {
     const { b } = await bagla(false);
     for (const x of b.isletme()!.mallar) expect("satisNetPpm" in x).toBe(false);
   });
