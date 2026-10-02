@@ -154,6 +154,32 @@ async function yerSabitMi(sayfa: Page): Promise<boolean> {
   return !/Yeri sabitlemek için/.test(await kart(sayfa));
 }
 
+/**
+ * Hücreye imleç götürüp tıklar: kart imleçle birlikte oturur (maliyet satırları gelince uzar, konum değişebilir), bu yüzden nokta kart oturduktan sonra yeniden hesaplanır
+ * (en çok 3 tur). Son noktada haritadan başka bir şey (kart) varsa sessiz geçmez: HATA yazar ve durur.
+ */
+async function yerTikla(sayfa: Page, id: string, etiket: string): Promise<void> {
+  let p = await kartinUstunde(sayfa, id);
+  for (let i = 0; i < 3; i++) {
+    await sayfa.mouse.move(p.x, p.y);
+    await sayfa.waitForTimeout(300);
+    const q = await kartinUstunde(sayfa, id);
+    const ayni = Math.abs(q.x - p.x) < 1 && Math.abs(q.y - p.y) < 1;
+    p = q;
+    if (ayni) break;
+  }
+  const ust = await sayfa.evaluate(({ x, y }) => {
+    const el = document.elementFromPoint(x, y);
+    return el?.classList.contains("maplibregl-canvas") ? null : `${el?.tagName ?? "?"}#${el?.id ?? ""}.${el?.className ?? ""}`;
+  }, p);
+  if (ust !== null) {
+    kontrol(`${etiket}: tıklama noktası haritada açıkta (kart örtmüyor)`, false, `(${Math.round(p.x)}, ${Math.round(p.y)}) üstünde ${ust}`);
+    throw new Error(`${etiket}: tıklama noktası kartın içine düşüyor`);
+  }
+  await sayfa.mouse.click(p.x, p.y);
+  await sayfa.waitForTimeout(350);
+}
+
 async function haritaHazir(sayfa: Page, zaman = 90000): Promise<void> {
   await sayfa.waitForFunction(() => window.__harita?.hazir() === true, null, { timeout: zaman });
   await sayfa.waitForTimeout(250);
@@ -222,7 +248,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.waitForSelector("#sekme-icerik .defter-liste", { timeout: 20000 }).catch(() => undefined);
   const isletme = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
   kontrol(`${e} İşletmem: ad, kalkan ve ayrılmış hücre (savaş dili yok), Gebze arsası`, /\bali\b/.test(isletme) && /Yeni oyuncu kalkanı/.test(isletme) && /Gebze/.test(isletme) && !/savaş|Cumhuriyet|bölge/i.test(isletme), isletme.slice(0, 260));
-  kontrol(`${e} Esnaf Defteri: ödül çubuğu ve tavan YOK; sıradaki adımlar "ödül: ..." ile (ilk yapı: çelik), ilk satış "Çiftliğinin tahılını sat."; yer tutucular gizli`, !/Defter ödülleri/.test(isletme) && !/\/ 8\.000\s₺/.test(isletme) && (await sayfa.locator("#sekme-icerik .defter-cubuk").count()) === 0 && /İlk yapını kur/.test(isletme) && /ödül: [^ ]* ?çelik/.test(isletme) && /Çiftliğinin tahılını sat\./.test(isletme) && !/dükkânını aç|sözleşmeni yap/.test(isletme), isletme.slice(isletme.indexOf("Defter"), isletme.indexOf("Defter") + 240));
+  kontrol(`${e} Esnaf Defteri: ödül çubuğu ve tavan YOK; sıradaki adımlar "ödül: ..." ile (ilk yapı: çelik), ilk satış "Çiftliğinin tahılını Pazar'da sat."; yer tutucular gizli`, !/Defter ödülleri/.test(isletme) && !/\/ 8\.000\s₺/.test(isletme) && (await sayfa.locator("#sekme-icerik .defter-cubuk").count()) === 0 && /İlk yapını kur/.test(isletme) && /ödül: [^ ]* ?çelik/.test(isletme) && /Çiftliğinin tahılını Pazar'da sat\./.test(isletme) && !/dükkânını aç|sözleşmeni yap/.test(isletme), isletme.slice(isletme.indexOf("Defter"), isletme.indexOf("Defter") + 240));
   const cubuk = (await sayfa.locator("#oyuncu-cubuk").innerText()).replace(/\s+/g, " ");
   kontrol(`${e} üst çubukta oyuncu adı ve hazine (devlet adı yok)`, /ali/.test(cubuk) && /50\.000\s₺/.test(cubuk), cubuk);
   const tarih = `${await sayfa.locator("#takvim-gun").innerText()} · ${await sayfa.locator("#takvim-yil").innerText()}`;
@@ -357,7 +383,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   // Geçerli: kendi arsanın hücreleri üzerinde
   const [h0, h1] = [arsa.hucreler[1]!, arsa.hucreler[2]!];
   void h1;
-  let p0 = await kartinUstunde(sayfa, h0);
+  const p0 = await kartinUstunde(sayfa, h0);
   await sayfa.mouse.move(p0.x, p0.y);
   await sayfa.waitForTimeout(300);
   const plan1 = await sayfa.evaluate(() => {
@@ -394,11 +420,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     }
   } else kontrol(`${e} yakında engelli hücre bulundu`, false);
   // Sabitle ve maliyet kartı
-  p0 = await kartinUstunde(sayfa, h0);
-  await sayfa.mouse.move(p0.x, p0.y);
-  await sayfa.waitForTimeout(200);
-  await sayfa.mouse.click(p0.x, p0.y);
-  await sayfa.waitForTimeout(300);
+  await yerTikla(sayfa, h0, `${e} çiftlik`);
   kontrol(`${e} çiftlik: tıklama yeri sabitledi ("Yeri sabitlemek için seç" ipucu kayboldu)`, await yerSabitMi(sayfa), await kart(sayfa));
   const k1 = await kart(sayfa);
   kontrol(`${e} maliyet kartı: arsa + yapı bedeli + süre + toplam`, /Arsa/.test(k1) && /Yapı/.test(k1) && /Süre/.test(k1) && /Toplam/.test(k1) && /4\.200\s₺/.test(k1) && /Kendi arsan/.test(k1), k1);
@@ -469,11 +491,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
       await tikla(sayfa, false, "#yapi-menu [data-yapi='ahir']");
       // Ahır çok yöntemlidir: varsayılan seçim YOK, yöntem seçilmeden "Kur" kapalı (yöntem seçici); tür varsayılanı (Ahır besi) seçilir: komuta yontem yazılmaz
       await tikla(sayfa, false, "#yapi-kart .ym-kart[data-yontem='ahir_besi']");
-      const pb = await kartinUstunde(sayfa, bos.sol);
-      await sayfa.mouse.move(pb.x, pb.y);
-      await sayfa.waitForTimeout(250);
-      await sayfa.mouse.click(pb.x, pb.y);
-      await sayfa.waitForTimeout(350);
+      await yerTikla(sayfa, bos.sol, `${e} ahır`);
       kontrol(`${e} ahır: tıklama yeri sabitledi ("Yeri sabitlemek için seç" ipucu kayboldu)`, await yerSabitMi(sayfa), await kart(sayfa));
       const k2 = await kart(sayfa);
       const planB = await sayfa.evaluate(() => {
