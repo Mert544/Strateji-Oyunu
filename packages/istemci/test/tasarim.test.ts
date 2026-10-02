@@ -40,6 +40,11 @@ describe("kontrast (WCAG 2.2)", () => {
         ["birincil-ustu", "birincil"],
         ["birincil-ustu", "birincil-hover"],
         ["birincil", "yuzey"],
+        ["birincil-ink", "birincil-tint"], // .ym-isaret ("Seçili") seçili yöntem kartında
+        ["murekkep", "birincil-tint"], // .ym-ad seçili kartta
+        ["murekkep-2", "birincil-tint"], // .ym-satir seçili kartta
+        ["uyari-ink", "yuzey-2"], // .ym-neden (kapalı yöntem)
+        ["murekkep-3", "yuzey-2"], // .ym-kart[aria-disabled]
         ["basari-ink", "birincil-tint"], // .dk-tur-uyum[data-uyum=var] seçili tür kartında
         ["uyari-ink", "birincil-tint"], // .dk-tur-uyum[data-uyum=yok]
         ["bilgi-ink", "birincil-tint"], // .dk-tur-uyum[data-uyum=ithal]
