@@ -423,8 +423,8 @@ describe("WsBaglanti: Pazar'da sat", () => {
     expect(g.satisBolge).toBe("il2#ali"); // gıda stoku yalnız il2'de
   });
 
-  // Protokol şeması `ozel.isletme.ihrNetPpm`'i henüz tanımıyor (K2 `takim/k2/ihr-net` cf58799; bilinmeyen alan ayrıştırmada düşer): K2 dalı gelince `skip` kalkar.
-  it.skip("sunucunun düğüm başına ihracat net çarpanı (ozel.isletme.ihrNetPpm) emrin yerindeki düğümden mal satırına taşınır", async () => {
+  // Protokol şeması `ozel.isletme.ihrNetPpm`'i tanır (K2 ihr-net): alan ayrıştırmada düşmez.
+  it("sunucunun düğüm başına ihracat net çarpanı (ozel.isletme.ihrNetPpm) emrin yerindeki düğümden mal satırına taşınır", async () => {
     const { b } = await bagla(true);
     const m = b.isletme()!.mallar;
     expect(m.find((x) => x.mal === "tahil")!.satisNetPpm).toBe(862_000);
