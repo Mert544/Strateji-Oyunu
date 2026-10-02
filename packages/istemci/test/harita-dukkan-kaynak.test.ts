@@ -122,7 +122,7 @@ describe("dükkân komutu ret çevirisi (DUK-xx / MRK-xx → metin tablosu)", ()
   const t = (ham: string): string => mulkHatasiTurkce(ham);
   it("tür, ölçek ve sınır", () => {
     expect(t("perakende kapali")).toBe("Bu dünyada dükkân henüz açık değil.");
-    expect(t("dukkan turu gerekli (dukkanTuru)")).toBe("Dükkân türünü seçmelisin.");
+    expect(t("dukkan turu gerekli (dukkanTuru)")).toBe("Bir dükkân türü seç.");
     expect(t("bilinmeyen dukkan turu: x")).toBe("Bu dükkân türü yok.");
     expect(t("dukkan olcegi henuz acik degil: M")).toBe("Bu dükkân boyu henüz açılmadı.");
     expect(t("bakkal dukkani M olceginde kurulamaz")).toBe("Bu dükkân türü bu boyda kurulamaz.");

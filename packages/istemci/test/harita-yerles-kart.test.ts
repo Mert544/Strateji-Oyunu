@@ -121,8 +121,8 @@ describe("metin tablosu", () => {
       expect(/₺|\bTL\b/.test(v), k).toBe(false);
     }
     expect(yerlesMetni("yerles.kart.acilis", { ad: "Tarım" })).toBe("Açılış önerisi: Tarım");
-    expect(yerlesMetni("yerles.acilis.not", { ad: "Sanayi", cumle: "Çiftlikle başla." })).toBe("Sanayi: Çiftlikle başla. Bu yalnız bir öneri; istediğin zaman başka yöne dönebilirsin.");
-    expect(yerlesMetniHtml("yerles.acilis.not", { ad: "<b>Sanayi</b>", cumle: "x" })).toBe("<b>Sanayi</b>: x Bu yalnız bir öneri; istediğin zaman başka yöne dönebilirsin.");
+    expect(yerlesMetni("yerles.acilis.not", { ad: "Sanayi", cumle: "Çiftlikle başla." })).toBe("Bu yalnız bir öneri; istediğin zaman başka yöne dönebilirsin.");
+    expect(yerlesMetniHtml("yerles.acilis.not", { ad: "<b>Sanayi</b>", cumle: "x" })).toBe("Bu yalnız bir öneri; istediğin zaman başka yöne dönebilirsin.");
     expect(yerlesMetniHtml("yerles.kart.acilis", { ad: "<b>&</b>" })).toBe("Açılış önerisi: <b>&</b>");
   });
 });

@@ -93,10 +93,10 @@ describe("yurtPlani: ilk yapı yurda sığar mı", () => {
 
   it("Tasarım metinleri birebir", () => {
     expect(YURT_METIN.baslik).toBe("Yurdun hazır");
-    expect(YURT_METIN.aciklama(6)).toBe("Yurdun 6 hücre ve ücretsiz. İlk yapın buraya sığar.");
+    expect(YURT_METIN.aciklama(6)).toBe("Yurdun hazır: 6 hücre, ücretsiz. İlk yapın buraya sığar.");
     expect(YURT_METIN.aciklamaYapi("Çiftlik", 2, 6)).toBe("Çiftlik 2 hücre ister; yurdunda 6 boş hücre var.");
     expect(YURT_METIN.birincil).toBe("Yurdunda kur");
-    expect(YURT_METIN.birincilNot).toBe("ücretsiz");
+    expect(YURT_METIN.birincilNot).toBe("");
     expect(YURT_METIN.ikincil).toBe("Arsa satın al");
     expect(YURT_METIN.genislet).toBe("Genişlet: yanındaki arsayı al");
   });

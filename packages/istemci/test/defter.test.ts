@@ -60,7 +60,7 @@ describe("Esnaf Defteri", () => {
     expect(h).not.toContain("8.000");
     expect(h).not.toMatch(/\bwidth:/);
     expect(h).toContain('<p class="defter-islenen soluk" data-alan="defter-islenen">Defterine işlenen ödüller: ≈\u00a0600\u00a0₺ değerinde</p>');
-    expect(h).toContain("Çiftliğinin tahılını sat.");
+    expect(h).toContain("Çiftliğinin tahılını Pazar&#39;da sat.");
     expect(h).toContain("ödül: 500\u00a0₺");
     expect(h).not.toContain("ilk_dukkan");
     expect(h).toContain("İlk yapın kuruldu; kolay gelsin.");

@@ -24,7 +24,7 @@ export const YERLES_METIN = {
   "yerles.acilis.sanayi": "Sanayi",
   "yerles.acilis.pazar": "Pazar",
   "yerles.acilis.baslik": "Açılış önerisi",
-  "yerles.acilis.not": "{ad}: {cumle} Bu yalnız bir öneri; istediğin zaman başka yöne dönebilirsin.",
+  "yerles.acilis.not": "Bu yalnız bir öneri; istediğin zaman başka yöne dönebilirsin.",
   "yerles.dugme.basla": "Burada başla",
   "yerles.dugme.izgara": "İlçeyi gez",
   "yerles.dugme.hazirlaniyor": "Hazırlanıyor…",

@@ -22,7 +22,7 @@ export interface DefterMetni {
 /** `defter.kavram.<kavram>` şablonları. */
 export const DEFTER_METINLERI: Readonly<Record<string, DefterMetni>> = {
   "defter.kavram.ilk_yapi": { kazanildi: "İlk yapın kuruldu; kolay gelsin.", siradaki: "İlk yapını kur" },
-  "defter.kavram.ilk_satis": { kazanildi: "İlk satışın yapıldı; bereketli olsun.", siradaki: "Çiftliğinin tahılını sat." },
+  "defter.kavram.ilk_satis": { kazanildi: "İlk satışın yapıldı; bereketli olsun.", siradaki: "Çiftliğinin tahılını Pazar'da sat." },
   "defter.kavram.ilk_isleme": { kazanildi: "Ham malı işledin; ilk işlenmiş ürünün hayırlı olsun.", siradaki: "Ham malı işle (ör. tahılı gıdaya çevir)" },
   "defter.kavram.ilk_ekmek": { kazanildi: "İlk ekmeğin fırından çıktı; sıcağı sıcağına.", siradaki: "Unu fırında ekmeğe çevir." },
   "defter.kavram.zincir_kapandi": { kazanildi: "Zincir kapandı: bir yapının çıktısı öbürünün girdisi oldu.", siradaki: "Zinciri kapat: bir yapının çıktısını öbürüne girdi yap" },

@@ -67,6 +67,7 @@ describe("kontrast (WCAG 2.2)", () => {
         ["murekkep-2", "yuzey-3"], // .dk-palet-kart / .dk-mal hover
         ["murekkep", "birincil-tint"],
         ["hata-ink", "yuzey-2"], // .gr-hata alan zemini
+        ["hata-ink", "yuzey-3"], // .dk-menu-liste yıkıcı öğe (Dükkânı kaldır, İptal et) üzerine gelince
         ["uyari-ink", "ikincil-tint"],
       ];
       for (const [a, b] of ciftler) expect(kontrast(r(t, a), r(t, b)), `${a} / ${b}`).toBeGreaterThanOrEqual(4.5);

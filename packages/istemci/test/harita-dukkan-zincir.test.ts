@@ -52,7 +52,7 @@ describe("dükkân kurulum komutu", () => {
     const r = await yerlesimiUygula(s.b, "ilce", plan("dukkan", "Dükkân"));
     expect(r.tamam).toBe(false);
     expect(r.gonderilen).toBe(0);
-    expect(r.mesaj).toBe("Dükkân türünü seçmelisin. Hiçbir şey değişmedi.");
+    expect(r.mesaj).toBe("Bir dükkân türü seç. Hiçbir şey değişmedi.");
     expect(s.yerlestirilen).toHaveLength(0);
     expect(s.insa).toHaveLength(0);
   });

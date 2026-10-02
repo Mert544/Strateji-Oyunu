@@ -200,3 +200,6 @@
     background: var(--yuzey); box-shadow: 0 -1px 0 var(--cizgi-ince);
   }
 }
+
+/* Dükkân kare bulguları 24: yıkıcı menü öğeleri (Dükkânı kaldır, İptal et) hata tonunda metin; renk tek başına anlam taşımaz (sözcük zaten "kaldır"/"iptal") */
+.dk-menu-liste :is([data-eylem="dukkan-kaldir"], [data-eylem="insaat-iptal"]) { color: var(--hata-ink); }

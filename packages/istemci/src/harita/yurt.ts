@@ -12,10 +12,10 @@ import type { YapiTanimi, YerlesimBaglami, YerlesimPlani } from "./yapi";
 /** Varış kartı metinleri (Tasarım lideri; sade Türkçe, büyük harfsiz). */
 export const YURT_METIN = {
   baslik: "Yurdun hazır",
-  aciklama: (n: number): string => `Yurdun ${n} hücre ve ücretsiz. İlk yapın buraya sığar.`,
+  aciklama: (n: number): string => `Yurdun hazır: ${n} hücre, ücretsiz. İlk yapın buraya sığar.`,
   aciklamaYapi: (yapi: string, k: number, b: number): string => `${yapi} ${k} hücre ister; yurdunda ${b} boş hücre var.`,
   birincil: "Yurdunda kur",
-  birincilNot: "ücretsiz",
+  birincilNot: "",
   ikincil: "Arsa satın al",
   genislet: "Genişlet: yanındaki arsayı al",
   yerYok: "Yurdunda bu yapıya yer yok. Yanındaki arsayı alarak genişletebilirsin.",
