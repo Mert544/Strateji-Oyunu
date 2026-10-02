@@ -18,7 +18,8 @@
  *   pnpm dunya && tsx scripts/f4-uctan-uca.ts [ekran-klasoru] [--uretim [--ilce gebze|gemlik|korfez]]
  *     --uretim   sunucu ÜRETİM yapılandırmasında açılır (gerçek harita + gerçek arsa ızgarası manifesti = sunucu CLI'sinde BOLGE_HARITA=gercek +
  *                BOLGE_IZGARA_MANIFEST); katılım yurtlu; zaman aşımları sunucu açılışı (~3 sn) ve bellek (~0,3 GB) payıyla genişler.
- *                Varsayılan (bayraksız) davranış DEĞİŞMEZ: Gebze fikstürlü sınama sunucusu. Ortam: F4_URETIM=1, F4_ILCE=...
+ *                Ek olarak ilçe başına yurtlu yeni oyuncu, masaüstü + telefon (3 ilçe × 2 = 6 koşu; `yurtluIlce`, oyuncu `yu-<ilce>-<cihaz>`).
+                Varsayılan (bayraksız) davranış DEĞİŞMEZ: Gebze fikstürlü sınama sunucusu. Ortam: F4_URETIM=1, F4_ILCE=...
  *     --ilce     veli'nin yurdunun ilçesi (varsayılan gebze; yalnız --uretim ile gebze dışı seçilebilir: bayraksız sunucuda yalnız Gebze var)
  */
 import { createReadStream, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
@@ -1043,6 +1044,72 @@ async function derya(tarayici: Browser, adres: string, konsol: string[]): Promis
   }
 }
 
+/**
+ * ÜRETİM (`--uretim`): ilçe başına yurtlu yeni oyuncu, masaüstü ve telefon (3 ilçe × 2 cihaz = 6 koşu; P14-1).
+ * Her koşu kendi oyuncusudur (`yu-<ilce>-<cihaz>`): Yerleş (ilçe kartı + açılış Tarım) → varışta "Yurdun hazır: 6 hücre, ücretsiz" →
+ * "Yurdunda kur": sunucuda yurt o ilçede 6 bitişik hücre, bedel yalnız yapı (arsa parası yok), çiftlik inşaatı açıldı; telefonda yatay taşma yok.
+ * Kasıtlı olarak küçük ve ayrı: Gebze senaryoları (ali/can/ayşe) bu bloktan etkilenmez; varsayılan (bayraksız) koşuda çağrılmaz.
+ */
+async function yurtluIlce(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: string[], ilceAd: keyof typeof URETIM_ILCELERI, mobil: boolean): Promise<void> {
+  const ilce = URETIM_ILCELERI[ilceAd];
+  const oyuncu = `yu-${ilceAd}-${mobil ? "mobil" : "masa"}`;
+  const e = `[${oyuncu}]`;
+  const baglam = await tarayici.newContext(
+    mobil
+      ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, colorScheme: "light" }
+      : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, colorScheme: "light" },
+  );
+  try {
+    const sayfa = await sayfaAc(baglam, adres, ts, oyuncu, konsol);
+    const ekran = (ad: string): Promise<Buffer> => sayfa.screenshot({ path: join(EKRAN, `f4-yurtlu-${ilceAd}-${mobil ? "mobil" : "masaustu"}-${ad}.png`) });
+    const tasmaVar = (): Promise<boolean> => sayfa.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    await sayfa.waitForFunction(() => window.__harita?.yerles() != null, null, { timeout: 120000 });
+    await sayfa.evaluate(() => window.__olcum?.duraklat(true));
+    // İlçe kartı ilk önerilerde değilse "Başka ilçe öner" ile aranır (üretimde üç ilçe de adaydır)
+    for (let i = 0; i < 3 && (await sayfa.locator(`.yr-kart[data-ilce='${ilce}']`).count()) === 0; i++) await tikla(sayfa, mobil, "[data-yr='baska']");
+    const kartSatiri = sayfa.locator(`.yr-kart[data-ilce='${ilce}']`);
+    kontrol(`${e} Yerleş'te ${ilceAd} kartı var`, (await kartSatiri.count()) > 0, (await sayfa.locator(".yr-kartlar").innerText().catch(() => "")).replace(/\s+/g, " "));
+    if (mobil) kontrol(`${e} Yerleş: yatay taşma yok`, !(await tasmaVar()));
+    await tikla(sayfa, mobil, `.yr-kart[data-ilce='${ilce}']`);
+    await tikla(sayfa, mobil, "[data-acilis='tarim']");
+    await ekran("1-yerles");
+    await tikla(sayfa, mobil, "[data-yr='basla']");
+    await sayfa.waitForFunction((i) => window.__harita?.gorunum()?.varisKartiAcik === true && window.__harita?.durum().ilce === i && window.__harita?.durum().duzey === 3, ilce, { timeout: 120000 * ZAMAN_CARPANI });
+    await haritaHazir(sayfa);
+    await sayfa.waitForTimeout(800);
+    const v = (await alt(sayfa)).replace(/\s+/g, " ");
+    kontrol(
+      `${e} varışta "Yurdun hazır: 6 hücre, ücretsiz": birincil "Yurdunda kur", ikincil "Arsa satın al"${mobil ? "; taşma yok" : ""}`,
+      /Yurdun hazır: 6 hücre, ücretsiz\./.test(v) && (await sayfa.locator("[data-eylem='yurt-kur']").isVisible()) && (await sayfa.locator("[data-eylem='varis-arsa']").isVisible()) && (!mobil || !(await tasmaVar())),
+      v,
+    );
+    await ekran("2-yurt-karti");
+    // Sunucu tarafı: yurt o ilçede, 6 hücre, bedava, işletme/katılım ilçesi doğru
+    const mulk = ts.yazar.sim.dunya.mulk;
+    const yurt = (mulk?.hucreler ?? []).filter((h) => h.sahip === oyuncu);
+    kontrol(`${e} sunucuda yurt ${ilceAd} ilçesinde: 6 hücre, bedel 0`, yurt.length === 6 && yurt.every((h) => h.ilce === ilce && h.degerMili === 0), `${yurt.length} hücre, ilçeler ${[...new Set(yurt.map((h) => h.ilce))].join(",")}`);
+    kontrol(`${e} çekirdekte katılım ilçesi ${ilceAd}`, mulkOyuncuBul(ts.yazar.sim.dunya, oyuncu)?.katilimIlcesi === ilce, String(mulkOyuncuBul(ts.yazar.sim.dunya, oyuncu)?.katilimIlcesi));
+    const hazine0 = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
+    const insaat0 = ts.yazar.sim.dunya.insaatlar.length;
+    await tikla(sayfa, mobil, "[data-eylem='yurt-kur']");
+    await sayfa.waitForSelector("#bildirimler .bildirim >> text=Çiftlik kuruluyor", { timeout: 30000 });
+    const t = (await sayfa.locator("#bildirimler .bildirim.bilgi", { hasText: "Çiftlik kuruluyor" }).last().innerText()).replace(/\s+/g, " ");
+    const bedel = /Çiftlik kuruluyor; bedel ([\d.]+)\s₺\./.exec(t)?.[1];
+    kontrol(`${e} tek tıkla Çiftlik yurtta: bedel gösterilir, sunucuda inşaat açıldı`, bedel !== undefined && ts.yazar.sim.dunya.insaatlar.length === insaat0 + 1, t);
+    await sayfa.waitForFunction(() => (window.__harita?.baglanti()?.ozet?.()?.surenInsaat ?? 0) >= 1, null, { timeout: 15000 });
+    const hazine1 = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
+    kontrol(`${e} hazineden yalnız yapı bedeli düştü (arsa parası yok): ${bedel ?? "?"} ₺ birebir`, bedel !== undefined && hazine0 - hazine1 === Number(bedel.replace(/\./g, "")) * 1000, `${hazine0} - ${hazine1}`);
+    const yurtKimlik = new Set(yurt.map((h) => h.id));
+    const ins = ts.yazar.sim.dunya.insaatlar.find((x) => x.sahip === oyuncu);
+    kontrol(`${e} yeni yapı yalnız yurt hücrelerinde`, !!ins?.hucreler && ins.hucreler.length > 0 && ins.hucreler.every((h) => yurtKimlik.has(h)), JSON.stringify(ins?.hucreler ?? null));
+    if (mobil) kontrol(`${e} yurtta kurulduktan sonra yatay taşma yok`, !(await tasmaVar()));
+    await ekran("3-yurtta-kuruldu");
+    kontrol(`${e} konsol hatası yok`, konsol.filter((x) => x.includes(`[${oyuncu}]`)).length === 0, konsol.filter((x) => x.includes(`[${oyuncu}]`)).slice(0, 3).join(" | "));
+  } finally {
+    await baglam.close();
+  }
+}
+
 async function main(): Promise<void> {
   for (const d of ["dunya.html", "harita.js", "harita-verisi/hiyerarsi.json"]) if (!existsSync(join(KOK, d))) throw new Error(`Önce derleyin (pnpm dunya): ${d} yok`);
   mkdirSync(EKRAN, { recursive: true });
@@ -1089,7 +1156,9 @@ async function main(): Promise<void> {
     await gBaglam.close();
     await derya(tarayici, adres, konsol);
     await sahteYerles(tarayici, adres, konsol);
-    const k = konsol.filter((x) => !x.includes("[ali]") && !x.includes("[can]") && !x.includes("[ayse]") && !x.includes("[derya]") && !x.includes("[sahte]"));
+    // Üretim: ilçe başına yurtlu yeni oyuncu, masaüstü ve telefon (bayraksız koşuda çağrılmaz)
+    if (URETIM) for (const ilceAd of Object.keys(URETIM_ILCELERI) as Array<keyof typeof URETIM_ILCELERI>) for (const mobil of [false, true]) await yurtluIlce(tarayici, adres, ts, konsol, ilceAd, mobil);
+    const k = konsol.filter((x) => !x.includes("[ali]") && !x.includes("[can]") && !x.includes("[ayse]") && !x.includes("[derya]") && !x.includes("[sahte]") && !x.includes("[yu-"));
     kontrol("[veli] konsol hatası yok", k.length === 0, k.slice(0, 3).join(" | "));
     const sunucuSorun = ts.yazar.sim.dunya.mulk ? "" : "mülk kipi kapalı";
     kontrol("sunucu mülk kipinde", sunucuSorun === "", sunucuSorun);
