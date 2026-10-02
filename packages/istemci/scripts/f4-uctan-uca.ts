@@ -650,7 +650,19 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   kontrol(`${e} Defter: ilk yapı defterine işlendi (tarih ve çelik ödülü), sıradakilerden düştü; bildirim geldi`, /Defterine işlenenler/.test(defterM) && /İlk yapın kuruldu; kolay gelsin\. \d{1,2} (Ekim|Kasım) · 5 çelik/.test(defterM) && !/İlk yapını kur/.test(defterM) && /Defter: İlk yapın kuruldu|Defterine \d+ adım işlendi/.test(bildirimler), defterM.slice(defterM.indexOf("Defter"), defterM.indexOf("Defter") + 320));
   await ekran("13b-defter");
 
-  // --- Pazar'da sat (T-1; alfa-0 ilk saat): Mal sekmesi -> "Pazar'da sat" -> saatlik emir -> kasa artar -> Defter "ilk satış". Gebze düğümü bu sunucuda `m_ova` (LİMANSIZ):
+  kontrol(`${e}/[veli] veli de tamamlananı görüyor (delta)`, veli2.tesis === 2 && veli2.insaat === 0, JSON.stringify(veli2));
+  await sayfa.evaluate((h) => {
+    const c = h.split(":").map(Number) as [number, number];
+    const lng = (c[0]! / 2 ** 20) * 360 - 180;
+    const n = Math.PI - (2 * Math.PI * c[1]!) / 2 ** 20;
+    window.__harita?.gorunum()?.ml.jumpTo({ center: [lng, (Math.atan(Math.sinh(n)) * 180) / Math.PI], zoom: 17.2 });
+  }, insaatHucreler[0]!);
+  await haritaHazir(sayfa);
+  await sayfa.waitForTimeout(600);
+  await ekran("13-tamamlandi");
+  await gozlemci.screenshot({ path: join(EKRAN, "f4-masaustu-14-veli-gorur-tamam.png") });
+  kontrol(`${e} konsol hatası yok`, konsol.filter((x) => x.includes("[ali]")).length === 0, konsol.filter((x) => x.includes("[ali]")).slice(0, 3).join(" | "));
+  // --- Pazar'da sat (T-1; alfa-0 ilk saat; ali()'nin SONUNDA: sim zamanını 2+ saat ileri aldığı için önceki adımları etkilemesin): Mal sekmesi -> "Pazar'da sat" -> saatlik emir -> kasa artar -> Defter "ilk satış". Gebze düğümü bu sunucuda `m_ova` (LİMANSIZ):
   // mülk kipinde liman şartı yoktur. Süre sim-saatiyle ilerler (yönetici zamanIlerlet); dedektör sim-saat sınırında çalışır.
   {
     const SA = 3_600_000;
@@ -691,18 +703,6 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     kontrol(`${e} gerçekleşince durum satırı "Satışta: saatte N birim · şu an G birim/sa"`, /Satışta: saatte \d+ birim · şu an \d+ birim\/sa/.test(durumSonra), durumSonra);
     await sayfa.locator("#sek-isletme").click();
   }
-  kontrol(`${e}/[veli] veli de tamamlananı görüyor (delta)`, veli2.tesis === 2 && veli2.insaat === 0, JSON.stringify(veli2));
-  await sayfa.evaluate((h) => {
-    const c = h.split(":").map(Number) as [number, number];
-    const lng = (c[0]! / 2 ** 20) * 360 - 180;
-    const n = Math.PI - (2 * Math.PI * c[1]!) / 2 ** 20;
-    window.__harita?.gorunum()?.ml.jumpTo({ center: [lng, (Math.atan(Math.sinh(n)) * 180) / Math.PI], zoom: 17.2 });
-  }, insaatHucreler[0]!);
-  await haritaHazir(sayfa);
-  await sayfa.waitForTimeout(600);
-  await ekran("13-tamamlandi");
-  await gozlemci.screenshot({ path: join(EKRAN, "f4-masaustu-14-veli-gorur-tamam.png") });
-  kontrol(`${e} konsol hatası yok`, konsol.filter((x) => x.includes("[ali]")).length === 0, konsol.filter((x) => x.includes("[ali]")).slice(0, 3).join(" | "));
   await baglam.close();
   return { arsa, insaatHucreler };
 }
