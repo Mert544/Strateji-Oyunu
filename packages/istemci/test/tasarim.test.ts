@@ -78,6 +78,7 @@ describe("kontrast (WCAG 2.2)", () => {
     it(`${ad}: arayüz bileşenleri ve anlam taşıyan grafik ≥ 3:1`, () => {
       const ciftler: [string, string][] = [
         ["cizgi-guclu", "yuzey"],
+        ["cizgi-guclu", "birincil-tint"], // .yr-cubuk çerçevesi seçili ilçe kartında (iz zemini görünmezdi)
         ["odak", "yuzey"],
         ["odak", "zemin"],
         ["odak", "yuzey-2"], // segment, gr-girdi/dk-girdi zemini

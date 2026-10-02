@@ -165,6 +165,31 @@
   .dk-panel { padding: var(--s-3); }
 }
 
+/* Dükkân akışı kare bulguları (uç 2103af0, T1): */
+/* L3: öneri kartında başlık (h4#dk-oneri-baslik) ve gövde (p) sınıfsız geliyor; tarayıcı varsayılan kenar boşlukları (~19 px + ~13 px) araya 30-60 px boşluk ve gövdeyi yazı boyutunda büyük koyuyordu */
+.dk-oneri > h4 { margin: 0; font-size: var(--yazi-md); font-weight: 600; line-height: var(--satir-md); }
+.dk-oneri > p:not([class]) { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); color: var(--murekkep-2); }
+/* İşletmem dükkân satırı: dar panelde (≈ 340 px) ad ile iki düğme yan yana sığmıyor ("İnşa sürüyor · 24 / dk"); düğmeler gerekince alt satıra iner */
+@media (min-width: 421px) {
+  .dk-satir { flex-wrap: wrap; justify-content: flex-end; }
+  .dk-satir .ml-ad { flex: 1 1 120px; }
+}
+/* D3 maliyet adımı: kartlar ile "Bakkal · 1 hücre" başlığı arasında boşluk; Toplam satırı yapı kartıyla aynı vurguda (ayırıcı çizgi, büyük ve kalın tutar) */
+.dk-tur-liste { margin-bottom: var(--s-2); }
+.dk-maliyet > .yk-baslik { margin-top: var(--s-3); }
+.dk-maliyet .yk-satirlar + .dk-not { margin-top: var(--s-2); }
+.dk-maliyet .yk-satirlar > dt:nth-last-child(4) { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; align-self: end; color: var(--murekkep-2); }
+.dk-maliyet .yk-satirlar > dd:nth-last-child(3) { border-top: 1px solid var(--cizgi-ince); padding-top: var(--s-2); margin-top: 2px; font-size: var(--yazi-xl); font-weight: 600; }
+/* D3: maliyet adımında kart (tür kartları + satırlar) 811 px'e çıkıp üstteki bildirimin altına giriyor ve kapat düğmesini örtüyordu (900 px yükseklik).
+   Masaüstünde kartın tavanı: alt boşluk 36 px + üstte bildirim şeridi payı 148 px; taşarsa kart içinde kayar, Kur/Vazgeç altta yapışık (yr-alt-satir ile aynı yöntem) */
+@media (min-width: 821px) {
+  #yapi-kart:has(.dk-maliyet) { max-height: calc(100% - 36px - 148px); overflow-y: auto; overscroll-behavior: contain; }
+  #yapi-kart:has(.dk-maliyet) .dk-maliyet > .yk-dugmeler {
+    position: sticky; bottom: calc(-1 * var(--s-4)); z-index: 1; margin: var(--s-2) 0 calc(-1 * var(--s-4)); padding: var(--s-2) 0 var(--s-4);
+    background: var(--yuzey); box-shadow: 0 -1px 0 var(--cizgi-ince);
+  }
+}
+
 /* Telefon (≤ 820 px): dükkân yapı kartı (tür seçimi ve maliyet adımı) tavansızdı; 390×844'te ~1100-1600 px olup haritayı örtüyor (hücre seçilemez) ve kart üstteyken
    (data-konum="ust") Kur/Vazgeç ekran dışına taşıyordu. Tavan 55vh (kompakt yöntem kartıyla aynı), taşarsa kart içinde kayar, Kur/Vazgeç altta yapışık. */
 @media (max-width: 820px) {
