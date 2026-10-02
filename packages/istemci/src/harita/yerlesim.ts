@@ -25,7 +25,7 @@ import { ETIKET_ADI, GRUP_SIRASI, malzemeMetni, yapiRengiCss, yerlesimPlani } fr
 import { ikon } from "../tasarim/ikon";
 import type { Icerik } from "../komut/tablo";
 import { sebekeFiyatlari } from "./sebeke-gider";
-import { komutYontemi, seciciTusu, tekSecilebilir, yontemSecenekleri, yontemSecimiTamam, yontemSeciciHtml } from "./yontem-secici";
+import { komutYontemi, onayAcik, seciciTusu, tekSecilebilir, yontemSecenekleri, yontemSecimiTamam, yontemSeciciHtml } from "./yontem-secici";
 import type { YontemSecenegi } from "./yontem-secici";
 import { yontemMetni } from "./yontem-metin";
 import type { YapiTanimi, YerlesimPlani } from "./yapi";
@@ -529,7 +529,7 @@ export class YerlesimKipi {
     this.nedenBolgesi.yaz(p?.neden ?? (!yontemTamam && p?.gecerli && sabit ? yontemMetni("yontem.secici.sec") : null));
     const secici = yontemSeciciHtml({ yapiAd: y.ad, secenekler: yontemler, secili: this.yontem, kilitli: this.uygulaniyor, kimlik: "yapi" });
     const kur = this.uygulaniyor ? "Kuruluyor…" : `${esc(y.ad)} kur`;
-    this.kart.innerHTML = `${baslik}${secici}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(!!p?.gecerli && sabit && !this.uygulaniyor && yontemTamam, !!p?.neden || (!yontemTamam && !!p?.gecerli && sabit))}>${kur}</button></div>`;
+    this.kart.innerHTML = `${baslik}${secici}${govde}<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button><button type="button" data-yk="vazgec">Vazgeç</button><button type="button" class="birincil" data-yk="onayla" ${kapaliDugmeOznitelikleri(onayAcik({ gecerli: !!p?.gecerli, sabit, uygulaniyor: this.uygulaniyor, yontemTamam }), !!p?.neden || (!yontemTamam && !!p?.gecerli && sabit))}>${kur}</button></div>`;
     this.nedenBolgesi.yerlestir(this.kart);
     this.kart.hidden = false;
   }

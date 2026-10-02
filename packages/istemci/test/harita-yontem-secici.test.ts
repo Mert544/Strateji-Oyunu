@@ -12,7 +12,7 @@ import { mulkVerisi } from "../../sunucu/test/yardimci";
 import { icerikTablosu } from "../src/komut/tablo";
 import { carpBol } from "../src/harita/olcek";
 import { sebekeBedeli, sebekeFiyatlari, sebekeSatirlari, sebekeBolumuHtml, yontemSebekeGideri } from "../src/harita/sebeke-gider";
-import { komutYontemi, seciciGorunur, seciciNotu, seciciTusu, tekSecilebilir, yontemSecenekleri, yontemSecimiTamam, yontemSeciciHtml } from "../src/harita/yontem-secici";
+import { komutYontemi, onayAcik, seciciGorunur, seciciNotu, seciciTusu, tekSecilebilir, yontemSecenekleri, yontemSecimiTamam, yontemSeciciHtml } from "../src/harita/yontem-secici";
 import type { SeciciBaglami } from "../src/harita/yontem-secici";
 import { YONTEM_METIN, YONTEM_RET_KALIPLARI, yontemMetni } from "../src/harita/yontem-metin";
 import { yontemHatasiTurkce, mulkHatasiTurkce } from "../src/harita/hata-mulk";
@@ -94,6 +94,22 @@ describe("yöntem listesi içerikten", () => {
     const kilitli = yontemSecenekleri(ic, "ciftlik", HICBIRI_ACIK_DEGIL);
     const kilitliId = kilitli.find((s) => s.kilitli)!.id;
     expect(yontemSecimiTamam(kilitli, kilitliId)).toBe(false);
+  });
+
+  it("onay düğmesi: yöntem seçili VE yer sabit VE plan geçerli iken açılır; dört koşuldan biri eksikse kapalı (yer sabitlenmeden yöntem seçimi tek başına yetmez)", () => {
+    const gida = yontemSecenekleri(ic, "gida_fabrikasi", HEPSI_ACIK);
+    const tamam = (secili: string | null): boolean => yontemSecimiTamam(gida, secili);
+    const hepsi = { gecerli: true, sabit: true, uygulaniyor: false };
+    expect(onayAcik({ ...hepsi, yontemTamam: tamam(gida[0]!.id) })).toBe(true);
+    expect(onayAcik({ ...hepsi, yontemTamam: tamam(gida[1]!.id) })).toBe(true);
+    expect(onayAcik({ ...hepsi, yontemTamam: tamam(null) })).toBe(false); // yöntem seçilmedi
+    expect(onayAcik({ ...hepsi, sabit: false, yontemTamam: tamam(gida[0]!.id) })).toBe(false); // yer sabitlenmedi ("Yeri sabitlemek için tıkla.")
+    expect(onayAcik({ ...hepsi, gecerli: false, yontemTamam: tamam(gida[0]!.id) })).toBe(false); // plan geçersiz
+    expect(onayAcik({ ...hepsi, uygulaniyor: true, yontemTamam: tamam(gida[0]!.id) })).toBe(false); // gönderim sürüyor
+    // Tek yöntemli tür: seçici yok, yöntem koşulu hep tamam; yalnız yer ve plan belirler
+    const tek = yontemSecenekleri(ic, "elektronik_fabrikasi", HEPSI_ACIK);
+    expect(onayAcik({ ...hepsi, yontemTamam: yontemSecimiTamam(tek, null) })).toBe(true);
+    expect(onayAcik({ ...hepsi, sabit: false, yontemTamam: yontemSecimiTamam(tek, null) })).toBe(false);
   });
 });
 

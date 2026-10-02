@@ -110,20 +110,48 @@ async function hucreNoktasi(sayfa: Page, id: string): Promise<{ x: number; y: nu
 }
 
 /**
- * Yöntem seçici maliyet kartını uzatır: hedef hücre kartın altında kalıyorsa harita kartın üstüne kaydırılır
- * (fare hayaleti/tıklama kartı değil haritayı vursun). Güncel ekran noktasını döndürür.
+ * Hedef hücrenin ekran noktası harita tuvaline (canvas) değil üstündeki bir arayüze (maliyet kartı, üst çubuk, bildirim) denk
+ * geliyorsa harita, tuvalin açıkta kaldığı en yakın noktaya kaydırılır; fare hayaleti/tıklaması arayüze değil haritaya gitsin.
+ * (Yöntem seçici kartı uzatır; ayrıca kartın üstündeki şerit üst çubukla örtüşebilir: yalnız karttan kaçmak yetmez.)
+ * Güncel ekran noktasını döndürür; tuval açıkta noktası bulunamazsa hata fırlatır.
  */
 async function kartinUstunde(sayfa: Page, id: string): Promise<{ x: number; y: number }> {
-  let p = await hucreNoktasi(sayfa, id);
+  const p = await hucreNoktasi(sayfa, id);
   if (!p) throw new Error(`hücre ekranda değil: ${id}`);
-  const kutu = await sayfa.locator("#yapi-kart").boundingBox();
-  if (kutu && p.x >= kutu.x && p.x <= kutu.x + kutu.width && p.y >= kutu.y - 24) {
-    const dy = p.y - (kutu.y - 90);
-    await sayfa.evaluate((d) => window.__harita?.gorunum()?.ml.panBy([0, d], { duration: 0 }), dy);
-    await sayfa.waitForTimeout(400);
-    p = (await hucreNoktasi(sayfa, id)) ?? p;
-  }
-  return p;
+  const bak = (): Promise<{ x: number; y: number } | { dx: number; dy: number } | null> =>
+    sayfa.evaluate(
+      ({ x, y }) => {
+        const tuvalde = (a: number, b: number): boolean => document.elementFromPoint(a, b)?.classList.contains("maplibregl-canvas") === true;
+        // Bir noktanın etrafındaki 24 px'lik alan da açıkta olmalı (hayalet 2 hücre; kenar titremesi tıklamayı çalmasın)
+        const acik = (a: number, b: number): boolean => [[0, 0], [24, 0], [-24, 0], [0, 24], [0, -24]].every(([u, v]) => tuvalde(a + u!, b + v!));
+        if (acik(x, y)) return { x, y };
+        const r = document.getElementById("harita-kap")?.getBoundingClientRect();
+        if (!r) return null;
+        let en: { x: number; y: number; d: number } | null = null;
+        for (let a = r.left + 40; a <= r.right - 40; a += 20) {
+          for (let b = r.top + 40; b <= r.bottom - 40; b += 20) {
+            if (!acik(a, b)) continue;
+            const d = (a - x) ** 2 + (b - y) ** 2;
+            if (!en || d < en.d) en = { x: a, y: b, d };
+          }
+        }
+        return en ? { dx: x - en.x, dy: y - en.y } : null;
+      },
+      p,
+    );
+  const sonuc = await bak();
+  if (!sonuc) throw new Error(`harita tuvalinde açıkta nokta yok (kart/üst çubuk örtüyor): ${id}`);
+  if ("x" in sonuc) return p;
+  await sayfa.evaluate(({ dx, dy }) => window.__harita?.gorunum()?.ml.panBy([dx, dy], { duration: 0 }), sonuc);
+  await sayfa.waitForTimeout(400);
+  const q = await hucreNoktasi(sayfa, id);
+  if (!q) throw new Error(`hücre kaydırmadan sonra ekranda değil: ${id}`);
+  return q;
+}
+
+/** Yeri sabitlemek için tıklandıktan sonra kartta "Yeri sabitlemek için tıkla." ipucu kalmamalı (sabitlenmedi → "Kur" kapalı kalır). */
+async function yerSabitMi(sayfa: Page): Promise<boolean> {
+  return !/Yeri sabitlemek için tıkla/.test(await kart(sayfa));
 }
 
 async function haritaHazir(sayfa: Page, zaman = 90000): Promise<void> {
@@ -371,6 +399,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.waitForTimeout(200);
   await sayfa.mouse.click(p0.x, p0.y);
   await sayfa.waitForTimeout(300);
+  kontrol(`${e} çiftlik: tıklama yeri sabitledi ("Yeri sabitlemek için tıkla" ipucu kayboldu)`, await yerSabitMi(sayfa), await kart(sayfa));
   const k1 = await kart(sayfa);
   kontrol(`${e} maliyet kartı: arsa + yapı bedeli + süre + toplam`, /Arsa/.test(k1) && /Yapı/.test(k1) && /Süre/.test(k1) && /Toplam/.test(k1) && /4\.200\s₺/.test(k1) && /Kendi arsan/.test(k1), k1);
   await ekran("8-maliyet-karti");
@@ -445,6 +474,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
       await sayfa.waitForTimeout(250);
       await sayfa.mouse.click(pb.x, pb.y);
       await sayfa.waitForTimeout(350);
+      kontrol(`${e} ahır: tıklama yeri sabitledi ("Yeri sabitlemek için tıkla" ipucu kayboldu)`, await yerSabitMi(sayfa), await kart(sayfa));
       const k2 = await kart(sayfa);
       const planB = await sayfa.evaluate(() => {
         const p = window.__harita?.gorunum()?.yerlesimKipi?.gecerliPlan;
