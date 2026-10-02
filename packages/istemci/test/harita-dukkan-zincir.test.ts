@@ -12,6 +12,7 @@ const plan = (id: string, ad: string, alinacak: string[] = []): YerlesimPlani =>
     parseller: alinacak.length ? [{ sinif: "kirsal", hucreler: alinacak, mili: 1_000 }] : [],
     arsaMili: alinacak.length ? 1_000 : 0,
     yapiMili: 12_000_000,
+    toplamMili: 12_000_000 + (alinacak.length ? 1_000 : 0),
   }) as unknown as YerlesimPlani;
 
 function sahte(atomik: boolean) {
@@ -37,7 +38,7 @@ describe("dükkân kurulum komutu", () => {
     const r = await yerlesimiUygula(s.b, "ilce", plan("dukkan", "Dükkân", ["1:1"]), "bakkal");
     expect(r.tamam).toBe(true);
     expect(s.yerlestirilen[0]).toMatchObject({ tesisTuru: "dukkan", dukkanTuru: "bakkal" });
-    expect(r.mesaj).toMatch(/^Dükkân kuruluyor: arsa 1 hücre/);
+    expect(r.mesaj).toMatch(/^Dükkân kuruluyor; bedel 12\.001\s₺\.$/);
   });
 
   it("arsasız yol (atomik komut yok): tesis_insa_hucre komutuna dukkanTuru girer", async () => {

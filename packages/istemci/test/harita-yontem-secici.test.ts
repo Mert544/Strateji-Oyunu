@@ -103,7 +103,7 @@ describe("yöntem listesi içerikten", () => {
     expect(onayAcik({ ...hepsi, yontemTamam: tamam(gida[0]!.id) })).toBe(true);
     expect(onayAcik({ ...hepsi, yontemTamam: tamam(gida[1]!.id) })).toBe(true);
     expect(onayAcik({ ...hepsi, yontemTamam: tamam(null) })).toBe(false); // yöntem seçilmedi
-    expect(onayAcik({ ...hepsi, sabit: false, yontemTamam: tamam(gida[0]!.id) })).toBe(false); // yer sabitlenmedi ("Yeri sabitlemek için tıkla.")
+    expect(onayAcik({ ...hepsi, sabit: false, yontemTamam: tamam(gida[0]!.id) })).toBe(false); // yer sabitlenmedi ("Yeri sabitlemek için seç.")
     expect(onayAcik({ ...hepsi, gecerli: false, yontemTamam: tamam(gida[0]!.id) })).toBe(false); // plan geçersiz
     expect(onayAcik({ ...hepsi, uygulaniyor: true, yontemTamam: tamam(gida[0]!.id) })).toBe(false); // gönderim sürüyor
     // Tek yöntemli tür: seçici yok, yöntem koşulu hep tamam; yalnız yer ve plan belirler

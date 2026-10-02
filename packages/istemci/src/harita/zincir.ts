@@ -6,7 +6,7 @@
  *   - Hazır arsa satın alma (`parselZinciri`): sınıf başına `parsel_al`; yapı içermez, her adım kendi başına bir alımdır.
  * Sonuç, oyuncuya gösterilecek Türkçe bildirimle döner. Bağdaştırıcı sahte ya da gerçek olabilir (aynı `MulkBaglantisi`).
  */
-import { fmt, paraMili } from "../arayuz/bicim";
+import { paraMili } from "../arayuz/bicim";
 import type { MulkBaglantisi, ParselSonucu } from "./baglanti";
 import { dukkanMetni } from "./dukkan-metin";
 import type { ParselAdimi, YerlesimPlani } from "./yapi";
@@ -64,8 +64,7 @@ export async function yerlesimiUygula(b: MulkBaglantisi, ilce: string, plan: Yer
     const siniflar = plan.parseller.length > 1 ? hucreler.map((id) => sinifOf.get(id) ?? sinif) : undefined;
     const r = await b.yapiYerlestir({ ilce, tesisTuru: plan.yapi.id, hucreler, sinif, ...(siniflar ? { siniflar } : {}), ...tur, ...yon });
     if (!r.tamam) return { tamam: false, asama: "insa", yol: "atomik", alinan: [], odenenMili: 0, gonderilen: 1, neden: r.mesaj, mesaj: `${ad} kurulamadı: ${nokta(r.mesaj)} Hiçbir şey değişmedi.` };
-    const arsa = plan.alinacak.length > 0 ? `arsa ${fmt(plan.alinacak.length)} hücre, ${paraMili(plan.arsaMili, "yukari")} + ` : "";
-    return { tamam: true, yol: "atomik", alinan: [...plan.alinacak], odenenMili: plan.arsaMili, gonderilen: 1, mesaj: `${ad} kuruluyor: ${arsa}yapı ${paraMili(plan.yapiMili, "yukari")}.` };
+    return { tamam: true, yol: "atomik", alinan: [...plan.alinacak], odenenMili: plan.arsaMili, gonderilen: 1, mesaj: dukkanMetni("dukkan.D3.bildirim_kuruluyor", { ad, tutar: paraMili(plan.toplamMili, "yukari") }) };
   }
   // Atomik komut yok: arsa alan yerleşim yapılmaz (yarım alım olmasın); arsasız yerleşim (yurt) yalnız inşaat komutudur
   if (plan.alinacak.length > 0 || !b.tesisInsa) {
@@ -73,5 +72,5 @@ export async function yerlesimiUygula(b: MulkBaglantisi, ilce: string, plan: Yer
   }
   const r = await b.tesisInsa({ tur: "tesis_insa_hucre", ilce, tesisTuru: plan.yapi.id, hucreler: plan.hucreler.map((h) => h.id), ...tur, ...yon });
   if (!r.tamam) return { tamam: false, asama: "insa", yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 1, neden: r.mesaj, mesaj: `${ad} kurulamadı: ${nokta(r.mesaj)}` };
-  return { tamam: true, yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 1, mesaj: `${ad} kuruluyor: yapı ${paraMili(plan.yapiMili, "yukari")}.` };
+  return { tamam: true, yol: "zincir", alinan: [], odenenMili: 0, gonderilen: 1, mesaj: dukkanMetni("dukkan.D3.bildirim_kuruluyor", { ad, tutar: paraMili(plan.toplamMili, "yukari") }) };
 }

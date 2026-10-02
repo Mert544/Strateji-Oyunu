@@ -3,7 +3,7 @@
  * işlemin ilçesinde ve ilçe/arsa düzeyinde görünür, süre dolunca hiç görünmez.
  */
 import { describe, expect, it } from "vitest";
-import { geriSeridiGorunur, yapiCizimi } from "../src/harita/gorunurluk";
+import { geriSeridiGorunur, yapiBittiMi, yapiCizimi } from "../src/harita/gorunurluk";
 
 const GEBZE = "tr_41_gebze";
 const IZMIT = "tr_41_izmit";
@@ -66,5 +66,22 @@ describe("geriSeridiGorunur: 5 dakikalık geri al şeridi", () => {
     expect(goster(120_000, 2, IZMIT)).toBe(false);
     expect(goster(180_000, 2, GEBZE)).toBe(true);
     expect(goster(bitis, 3, GEBZE)).toBe(false);
+  });
+});
+
+describe("yapiBittiMi (Geri al şeridi inşaat bitince kapanır)", () => {
+  const sh = new Map<string, { tesis?: number; insaat?: number }>([
+    ["1:1", { insaat: 7 }],
+    ["2:1", { insaat: 7 }],
+    ["3:3", { tesis: 4 }],
+    ["4:3", { tesis: 4 }],
+  ]);
+  const h = (id: string) => sh.get(id);
+  it("süren inşaatta false; hepsi tesis olunca true; hücre bilgisi yoksa false", () => {
+    expect(yapiBittiMi(h, ["1:1", "2:1"])).toBe(false);
+    expect(yapiBittiMi(h, ["3:3", "4:3"])).toBe(true);
+    expect(yapiBittiMi(h, ["3:3", "1:1"])).toBe(false); // biri hâlâ inşada
+    expect(yapiBittiMi(h, ["9:9"])).toBe(false);
+    expect(yapiBittiMi(h, [])).toBe(false);
   });
 });

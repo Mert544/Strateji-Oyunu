@@ -256,7 +256,7 @@ describe("WsBaglanti: gerçek sunucu", () => {
     // 3) tam başarı: TEK komut (arsa + yapı)
     const k3 = await yerlesimiUygula(a, ILCE, plan([CIFT_A[0]!, CIFT_A[1]!], [CIFT_A[0]!, CIFT_A[1]!]));
     expect(k3).toMatchObject({ tamam: true, yol: "atomik", gonderilen: 1, alinan: [CIFT_A[0], CIFT_A[1]] });
-    expect(k3.mesaj).toMatch(/^Çiftlik kuruluyor: arsa 2 hücre, [\d.]+\u00a0₺ \+ yapı 6\.000\u00a0₺\.$/);
+    expect(k3.mesaj).toMatch(/^Çiftlik kuruluyor; bedel [\d.]+\s₺\.$/);
     expect(insaatSayisi()).toBe(1);
     expect(aliHucre()).toBe(2);
     expect((await ts!.depo.gunluk.oku(0)).filter((x) => x.komut.tur === "parsel_al")).toHaveLength(1); // yalnız veli'nin hazırlık alımı; ali tek komut gönderdi

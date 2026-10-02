@@ -11,7 +11,7 @@ import type { GeoJSONSource, Map as MlHarita, MapMouseEvent } from "maplibre-gl"
 import { bildir } from "../arayuz/bildirim";
 import { esc, fmt, para, paraMili, sureMetni } from "../arayuz/bicim";
 import type { IlceSahipligi, MulkBaglantisi } from "./baglanti";
-import { geriSeridiGorunur } from "./gorunurluk";
+import { geriSeridiGorunur, yapiBittiMi } from "./gorunurluk";
 import { dugmeBasili, KartDurumu, kapaliDugmeOznitelikleri, kartKonumu } from "./kart-durum";
 import type { AyrilmisHakki } from "./fiyat";
 import { dukkanMaliyetDurumu, dukkanMaliyetGirdisi } from "./dukkan-kaynak";
@@ -93,6 +93,8 @@ export class YerlesimKipi {
   private oneriId: string | null = null;
   /** Dükkân kurulurken seçilen tür (D2); `sec` her yapı seçiminde sıfırlar. */
   private dukkanTuru: DukkanTuru | null = null;
+  /** Oyuncu tür seçmeden "Dükkânı kur"a basmayı denedi: `D2.tur_gerekli` ancak o zaman gösterilir (seçim denenmeden ret tonu yok). */
+  private turDenendi = false;
   /** Yapı kurulurken seçilen üretim yöntemi (çok yöntemli türde; VARSAYILAN YOK: seçilene dek "Kur" kapalı). `sec` ve `iptal` sıfırlar. */
   private yontem: string | null = null;
   /** İmlecin son hücresi (sabitlenmeden R'ye basılırsa hayalet burada döner). */
@@ -169,7 +171,11 @@ export class YerlesimKipi {
       }
       const b = hedef.closest("button[data-yk]") as HTMLButtonElement | null;
       const ey = b?.dataset["yk"];
-      if (b?.getAttribute("aria-disabled") === "true") return; // kapalı onay düğmesi: tıklama/Enter etkisiz (neden bölgede okunur)
+      if (b?.getAttribute("aria-disabled") === "true") {
+        // kapalı onay düğmesi: tıklama/Enter etkisiz (neden bölgede okunur); tür seçilmeden dükkân kurma denemesi nedeni gösterir
+        if (ey === "onayla") this.turDeneniyor();
+        return;
+      }
       if (ey === "don") this.dondur();
       else if (ey === "vazgec") this.iptal();
       else if (ey === "onayla") void this.onayla();
@@ -380,6 +386,7 @@ export class YerlesimKipi {
     this.g.basliyor?.();
     this.yapi = y;
     this.dukkanTuru = null;
+    this.turDenendi = false;
     // Çok yöntemli türde seçici açılır, hiçbiri seçili gelmez; seçilebilir (kilitsiz) yöntem TEK ise o seçili gelir (gizlenecek alternatif yok)
     this.yontem = tekSecilebilir(this.yontemler())?.id ?? null;
     this.donus = 0;
@@ -400,6 +407,7 @@ export class YerlesimKipi {
     if (!this.yapi) return;
     this.yapi = null;
     this.dukkanTuru = null;
+    this.turDenendi = false;
     this.yontem = null;
     this.sabit = null;
     this.plan = null;
@@ -582,10 +590,24 @@ export class YerlesimKipi {
     if (odakla) this.kart.querySelector<HTMLElement>(`.ym-kart[data-yontem="${id.replace(/"/g, "")}"]`)?.focus();
   }
 
+  /** Tür seçilmeden kur denendi: neden gösterilir (yalnız dükkân kartında). */
+  private turDeneniyor(): void {
+    if (this.yapi?.id !== "dukkan" || this.dukkanTuru !== null) return;
+    this.turDenendi = true;
+    this.kartiYaz();
+  }
+
+  /** Dükkân kartında tür seçilene dek maliyet satırı yok (D2'de yinelenmez; yalnız D3'te): yalnız yer ipucu ve (varsa) neden yeri. */
+  private dukkanIpucu(y: YapiTanimi, p: YerlesimPlani | null, sabit: boolean, oz: ReturnType<NonNullable<MulkBaglantisi["ozet"]>> | null): string {
+    if (!p) return this.govde(y, null, sabit, oz);
+    return p.neden ? `<span data-yk-neden-yer></span>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için seç.</p>`;
+  }
+
   /** Dükkân seçimi (D2): tür seçilince kart yenilenir (maliyet satırları D3). */
   private turSec(tur: DukkanTuru): void {
     if (this.yapi?.id !== "dukkan" || this.uygulaniyor) return;
     this.dukkanTuru = tur;
+    this.turDenendi = false;
     this.kartiYaz();
   }
 
@@ -603,7 +625,7 @@ export class YerlesimKipi {
   private dukkanKartiYaz(y: YapiTanimi, p: YerlesimPlani | null, sabit: boolean, baslik: string, dk: DukkanKurBilgisi, oz: ReturnType<NonNullable<MulkBaglantisi["ozet"]>> | null): void {
     const stokMili = (m: string): number => this.g.baglanti.isletme?.()?.mallar.find((x) => x.mal === m)?.stokMili ?? 0;
     const sinirDolu = dk.ilceSayi >= dk.ilceSinir || dk.ilSayi >= dk.ilSinir;
-    const turNeden = !sinirDolu && this.dukkanTuru === null && p?.gecerli === true && sabit;
+    const turNeden = !sinirDolu && this.dukkanTuru === null && this.turDenendi;
     let html = baslik + turSecimiHtml({ secili: this.dukkanTuru, hucre: dk.hucre, turler: dk.turler, ilceSayi: dk.ilceSayi, ilceSinir: dk.ilceSinir, ilSayi: dk.ilSayi, ilSinir: dk.ilSinir, uyum: dk.uyum, ...(turNeden ? { neden: "dukkan.D2.tur_gerekli" as const } : {}) });
     const don = dk.hucre > 1 ? `<div class="yk-dugmeler"><button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button></div>` : "";
     let neden: string | null = p?.neden ?? null;
@@ -627,7 +649,7 @@ export class YerlesimKipi {
       html += don + maliyetSatirlariHtml(d3) + (neden ? `<span data-yk-neden-yer></span>` : "");
     } else {
       const kapali = `aria-disabled="true" aria-describedby="dk-neden"`;
-      html += this.govde(y, p, sabit, oz) + `<div class="yk-dugmeler">${dk.hucre > 1 ? `<button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button>` : ""}<button type="button" data-yk="vazgec">${esc(dukkanMetni("dukkan.D3.dugme_vazgec"))}</button><button type="button" class="birincil" data-yk="onayla" ${kapali}>${esc(dukkanMetni("dukkan.D3.dugme_kur"))}</button></div>`;
+      html += this.dukkanIpucu(y, p, sabit, oz) + `<div class="yk-dugmeler">${dk.hucre > 1 ? `<button type="button" data-yk="don" title="Döndür (R)">${ikon("rotate-cw", 16)}Döndür <kbd>R</kbd></button>` : ""}<button type="button" data-yk="vazgec">${esc(dukkanMetni("dukkan.D3.dugme_vazgec"))}</button><button type="button" class="birincil" data-yk="onayla" ${kapali}>${esc(dukkanMetni("dukkan.D3.dugme_kur"))}</button></div>`;
     }
     this.nedenBolgesi.yaz(neden);
     this.kart.innerHTML = html;
@@ -644,7 +666,10 @@ export class YerlesimKipi {
     // Dükkân: tür seçilmeden ve sınırlar/malzeme uygun değilken kurulmaz (kapalı düğme ile aynı koşul; Enter de buradan geçer)
     const dk = p.yapi.id === "dukkan" ? this.g.dukkan?.() : undefined;
     if (dk) {
-      if (this.dukkanTuru === null) return false;
+      if (this.dukkanTuru === null) {
+        this.turDeneniyor();
+        return false;
+      }
       const oz = this.g.baglanti.ozet?.() ?? null;
       const stokMili = (m: string): number => this.g.baglanti.isletme?.()?.mallar.find((x) => x.mal === m)?.stokMili ?? 0;
       const durum = dukkanMaliyetDurumu({ tur: this.dukkanTuru, bilgi: dk, plan: { gecerli: p.gecerli, hazineYetmez: p.hazineYetmez, arsaMili: p.arsaMili, yapiMili: p.yapiMili, toplamMili: p.toplamMili, indirimli: p.indirimli, malzeme: p.malzeme }, yapi: p.yapi, hazineMili: oz?.hazineMili ?? null, surenInsaat: oz?.surenInsaat ?? 0, stokMili, gonderiyor: false });
@@ -688,6 +713,9 @@ export class YerlesimKipi {
   private geriYaz(): void {
     const s = this.sonIslem;
     if (!s || Date.now() >= s.bitis) return this.geriGizle();
+    // İnşaat bitti (hücreler tesis oldu): geri alınacak inşaat kalmadı, şerit kapanır
+    const sh = this.g.sahiplik();
+    if (sh && sh.ilce === s.ilce && yapiBittiMi((id) => sh.hucreler.get(id), s.hucreler)) return this.geriGizle();
     const kalan = Math.ceil((s.bitis - Date.now()) / 1000);
     // Küre ve il düzeyinde ya da başka ilçede gizli (sayaç sürer; işlemin ilçesine dönülünce yeniden görünür)
     const gorunur = geriSeridiGorunur(this.duzeyNo, this.g.ilce(), s.ilce, s.bitis - Date.now());

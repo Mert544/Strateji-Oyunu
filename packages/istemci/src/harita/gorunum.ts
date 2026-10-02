@@ -18,7 +18,7 @@ import type { DefterOdulu, KamuGrubuKaresi } from "@bolge/protokol";
 import icerikHam from "../../../veri/icerik/icerik.json";
 import parametreHam from "../../../veri/icerik/parametreler.json";
 import { bildir } from "../arayuz/bildirim";
-import { esc, fmt, kalanSureMetni, para, paraMili, simSaatMetni, yuzde } from "../arayuz/bicim";
+import { esc, fmt, para, paraMili, simSaatMetni, yuzde } from "../arayuz/bicim";
 import { icerikTablosu } from "../komut/tablo";
 import type { Icerik } from "../komut/tablo";
 import { arsaFiyati, arsaKenarlari, arsalariTuret, arsaSinirlari, arsaSiniflari, hucredenArsa, kamuBilgisi, kamuBloklari, onerilenArsa } from "./arsa";
@@ -33,13 +33,17 @@ import type { AyrilmisHakki } from "./fiyat";
 import type { IlceSayilari } from "./fiyat";
 import { parselZinciri } from "./zincir";
 import { kavramEtkin } from "./etkin";
-import { ASAMA_ADI, yapiAsamasi, yapiKatalogu, yapiKatmani, yapiRengiCss } from "./yapi";
+import { yapiAsamasi, yapiKatalogu, yapiKatmani, yapiRengiCss } from "./yapi";
 import { altlikKatmanlari, ayrilmisKatmanlari, boyalar, IZGARA_CIZGI_ZOOM, L3_ZOOM, oyunKatmanlari, sahiplikBoyasi, SERIT_ONCESI, seritRengi, sinirKatmanlari, zeminKatmanlari } from "./stil";
 import { asinmaOzelligi } from "../tasarim/asinma";
 import { ikon } from "../tasarim/ikon";
 import type { YapiTanimi } from "./yapi";
 import { dukkanKaynagiKur, dukkanKurBilgisi, referansFiyati } from "./dukkan-kaynak";
+import { dukkanAdi } from "./dukkan-html";
+import { yapiEtiketMetni } from "./yapi-etiket";
+import { mulkMetni } from "./mulk-metin";
 import type { DukkanKurBilgisi } from "./dukkan-kaynak";
+import type { KopruGorunumu } from "./dukkan-kopru";
 import { YerlesimKipi } from "./yerlesim";
 import { yapiCizimi } from "./gorunurluk";
 import { OlcekKipi } from "./olcek-kipi";
@@ -939,7 +943,7 @@ export class HaritaGorunumu {
           <span class="alt-sayi"><small>Hazır arsa</small><b data-alan="arsa-hucre">${fmt(a.hucreler.length)} hücre</b></span>
           <span class="alt-sayi"><small>Fiyat bölgesi</small><b data-alan="arsa-sinif">${esc(siniflar)}</b></span>
           <span class="alt-sayi alt-toplam"><small>Fiyat</small><b data-alan="arsa-toplam">${paraMili(o.mili, "yukari")}</b></span>
-          <span class="alt-sayi"><small>Bu ilçede hücre sınırın</small><b>${fmt(o.benimSonra)} / ${fmt(ilceTavani(sayi.uygun))}</b></span>
+          <span class="alt-ipucu" data-alan="hucre-siniri">${esc(mulkMetni("harita.hint.hucre_siniri", { n: fmt(sayi.benim), tavan: fmt(ilceTavani(sayi.uygun)) }))}</span>
           <div class="alt-dugmeler">${yapiDugme}<button type="button" data-eylem="temizle">Temizle</button><button type="button" class="birincil" data-eylem="arsa-al" ${sinir || this.satinAliniyor ? "disabled" : ""}>Satın al</button></div>
           <ul class="alt-uyari">${sinir ? `<li>${esc(sinir)}</li>` : ""}</ul>`;
       } else if (d.durum === "benim") {
@@ -959,7 +963,7 @@ export class HaritaGorunumu {
     // 4) Boşta
     const hazirlaniyor = this.izgara && !this.arsaK ? " Arsalar hazırlanıyor…" : "";
     this.alt.innerHTML = `<span class="alt-ipucu">Boş bir arsa seç ya da “Yapı kur” ile yapı seç.${hazirlaniyor}</span>
-      <span class="alt-sayi"><small>Bu ilçede hücre sınırın</small><b>${fmt(sayi.benim)} / ${fmt(ilceTavani(sayi.uygun))}</b></span>
+      <span class="alt-ipucu" data-alan="hucre-siniri">${esc(mulkMetni("harita.hint.hucre_siniri", { n: fmt(sayi.benim), tavan: fmt(ilceTavani(sayi.uygun)) }))}</span>
       <div class="alt-dugmeler">${yapiDugme}${aracDugme}</div>`;
   }
 
@@ -974,7 +978,7 @@ export class HaritaGorunumu {
       <span class="alt-sayi"><small>Fiyat bölgesi</small><b data-alan="sinif">${esc(sinifMetni)}</b></span>
       <span class="alt-sayi"><small>Hücre fiyatı</small><b>${o.hucreFiyati ? para(o.hucreFiyati) : "—"}</b></span>
       <span class="alt-sayi alt-toplam"><small>Toplam</small><b data-alan="toplam">${para(o.toplam)}</b></span>
-      <span class="alt-sayi"><small>Bu ilçede hücre sınırın</small><b>${fmt(o.sinir.sonra)} / ${fmt(o.sinir.tavan)}</b></span>
+      <span class="alt-ipucu" data-alan="hucre-siniri">${esc(mulkMetni("harita.hint.hucre_siniri", { n: fmt(sayi.benim), tavan: fmt(o.sinir.tavan) }))}</span>
       <div class="alt-dugmeler">
         ${aracDugme}${coklu}
         <button type="button" data-eylem="temizle">Temizle</button>
@@ -1247,9 +1251,18 @@ export class HaritaGorunumu {
     const yapilar = cizim.dolgu ? (this.sahiplik?.yapilar ?? []) : [];
     const simdi = this.baglanti.ozet?.()?.simZamani ?? 0;
     const ben = this.baglanti.ben.id;
+    // Etiket adı: dükkânda marka adı → tür adı → "Dükkân" (kare yoksa katalog adı); öteki yapılarda katalog adı, tür bilinmiyorsa "Yapı"
+    const dukkanlar = cizim.etiket && yapilar.some((y) => y.tur === "dukkan") ? (this.dukkanGorunumuAl()?.dukkanlar ?? []) : [];
+    const etiketAdi = (y: (typeof yapilar)[number]): string => {
+      if (y.tur === "dukkan") {
+        const d = dukkanlar.find((x) => y.hucreler.some((h) => x.hucreler.includes(h)));
+        return d ? dukkanAdi(d) : (this.katalog.find((k) => k.id === "dukkan")?.ad ?? "Dükkân");
+      }
+      return y.tur ? (this.katalog.find((k) => k.id === y.tur)?.ad ?? y.tur) : "Yapı";
+    };
     const sure = (y: (typeof yapilar)[number]): number => (this.katalog.find((k) => k.id === y.tur)?.ilkGunSureSaat ?? 1) * 3_600_000;
     // Aşama ancak birkaç saatte bir değişir: iki saniyelik tazelemede aynıysa kaynak yeniden yüklenmez (harita boşta kalsın)
-    const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${asinmaOzelligi(y.sahip, ben, y.asinmaPpm).w ?? 0}:${y.bitis === undefined ? 0 : 1}${cizim.etiket && y.bitis !== undefined && y.bitis > simdi ? `:${Math.ceil((y.bitis - simdi) / 60_000)}` : ""}`).join(";")}`; // etiketteki kalan süre dakikada bir tazelenir (B6)
+    const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.tur === "dukkan" ? etiketAdi(y) : ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${asinmaOzelligi(y.sahip, ben, y.asinmaPpm).w ?? 0}:${y.bitis === undefined ? 0 : 1}${cizim.etiket && y.bitis !== undefined && y.bitis > simdi ? `:${Math.ceil((y.bitis - simdi) / 60_000)}` : ""}`).join(";")}`; // etiketteki kalan süre dakikada bir tazelenir (B6)
     if (!zorla && imza === this.yapiImzasi) return;
     this.yapiImzasi = imza;
     for (const m of this.yapiEtiketleri) m.remove();
@@ -1280,9 +1293,8 @@ export class HaritaGorunumu {
       e.style.setProperty("--kr", yapiRengiCss(y.tur));
       e.dataset["yapi"] = y.anahtar;
       e.setAttribute("aria-hidden", "true");
-      const ad = y.tur ? (this.katalog.find((k) => k.id === y.tur)?.ad ?? y.tur) : "Yapı";
-      const kalan = y.bitis !== undefined && y.bitis > simdi ? ` · ${kalanSureMetni(y.bitis - simdi)}` : ""; // B6: "Çiftlik · İskele · 7 dk"
-      e.textContent = y.yukseltme ? `${ad} · Büyütme${kalan}` : a === 3 ? ad : `${ad} · ${y.bitis === undefined ? "İnşaat" : ASAMA_ADI[a]}${kalan}`;
+      const ad = etiketAdi(y);
+      e.textContent = yapiEtiketMetni({ ad, asama: a, yukseltme: !!y.yukseltme, dukkan: y.tur === "dukkan", ...(y.bitis !== undefined ? { kalanMs: y.bitis - simdi } : { bitisBilinmiyor: true }) });
       this.yapiEtiketleri.push(new maplibregl.Marker({ element: e, anchor: "center" }).setLngLat([xtenBoylam(sx / y.hucreler.length), ytenEnlem(sy / y.hucreler.length)]).addTo(this.harita));
     }
     src.setData({ type: "FeatureCollection", features: f });
@@ -1327,19 +1339,25 @@ export class HaritaGorunumu {
    * Yapı kurma kartı için dükkân bilgisi (D2 tür seçimi, D3 pencere satırı, sayaçlar): kare köprüden görünüme çevrilir; kare ya da dünyada dükkân yoksa tanımsız
    * (`dukkan` yapısı düz yapı kartıyla çıkar). Bu ilçedeki ve ilindeki dükkân sayısı kendi dükkânlarındır.
    */
-  private dukkanKurBilgisi(): DukkanKurBilgisi | undefined {
+  /** Dükkân görünümü (kare → köprü); kare ya da dükkân kuralı yoksa null. */
+  private dukkanGorunumuAl(): KopruGorunumu | null {
     const stokMili = (mal: string): number => this.baglanti.isletme?.()?.mallar.find((x) => x.mal === mal)?.stokMili ?? 0;
     const kare = this.baglanti.dukkanKaresi?.() ?? null;
     const indirim = this.ilkYapiIndirimi();
-    const kaynak = dukkanKaynagiKur({ kare: () => kare, ic: this.tablo, katalog: this.katalog, hazineMili: () => this.baglanti.ozet?.()?.hazineMili ?? null, stokMili, indirim: () => indirim });
+    return dukkanKaynagiKur({ kare: () => kare, ic: this.tablo, katalog: this.katalog, hazineMili: () => this.baglanti.ozet?.()?.hazineMili ?? null, stokMili, indirim: () => indirim }).sonuc()?.gorunum ?? null;
+  }
+
+  private dukkanKurBilgisi(): DukkanKurBilgisi | undefined {
+    const stokMili = (mal: string): number => this.baglanti.isletme?.()?.mallar.find((x) => x.mal === mal)?.stokMili ?? 0;
+    const kare = this.baglanti.dukkanKaresi?.() ?? null;
     return dukkanKurBilgisi({
       ic: this.tablo,
       katalog: this.katalog,
-      gorunum: kaynak.gorunum(),
+      gorunum: this.dukkanGorunumuAl(),
       ilce: this.ilceKimlik,
       ilceIl: (i) => this.s.hiyerarsi.ilceler.get(i)?.il ?? null,
       stokMili,
-      indirim,
+      indirim: this.ilkYapiIndirimi(),
       referans: referansFiyati(this.tablo, kare),
     });
   }
@@ -1426,9 +1444,9 @@ export class HaritaGorunumu {
     const sigar = yp?.plan?.gecerli === true;
     const aciklama = sigar ? YURT_METIN.aciklama(sayi.benim) : (yp?.plan?.neden ?? yp?.neden ?? YURT_METIN.yerYok);
     this.alt.innerHTML = `
-      <span class="alt-sayi"><small>${esc(YURT_METIN.baslik)}</small><b data-alan="yurt-hucre">${fmt(sayi.benim)} hücre</b></span>
+      ${sigar ? "" : `<span class="alt-sayi"><small>${esc(YURT_METIN.baslik)}</small><b data-alan="yurt-hucre">${fmt(sayi.benim)} hücre</b></span>`}
       <span class="alt-ipucu" data-alan="yurt-aciklama">${esc(aciklama)}</span>
-      <div class="alt-dugmeler"><button type="button" data-eylem="varis-arsa">${esc(YURT_METIN.ikincil)}</button><button type="button" class="birincil" data-eylem="yurt-kur" ${sigar && !this.yurtKuruluyor ? "" : "disabled"}>${esc(YURT_METIN.birincil)} <small>${esc(YURT_METIN.birincilNot)}</small></button></div>`;
+      <div class="alt-dugmeler"><button type="button" data-eylem="varis-arsa">${esc(YURT_METIN.ikincil)}</button><button type="button" class="birincil" data-eylem="yurt-kur" ${sigar && !this.yurtKuruluyor ? "" : "disabled"}>${esc(YURT_METIN.birincil)}${YURT_METIN.birincilNot ? ` <small>${esc(YURT_METIN.birincilNot)}</small>` : ""}</button></div>`;
   }
 
   /** "Yurdunda kur": önerilen yapı yurda yerleşir ve tek işlemde kurulur (arsa parası yok); sonra "Genişlet" önerisi. */

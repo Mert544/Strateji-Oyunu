@@ -25,3 +25,15 @@ export function yapiCizimi(ilce: string | null, duzey: number): YapiCizimi {
 export function geriSeridiGorunur(duzey: number, simdikiIlce: string | null, islemIlcesi: string, kalanMs: number): boolean {
   return kalanMs > 0 && duzey >= 2 && simdikiIlce !== null && simdikiIlce === islemIlcesi;
 }
+
+/**
+ * Yapının inşaatı bitti mi (hepsi tesis, hiçbiri süren inşaat)? Bitince "Geri al" şeridi kapanır (geri alınacak inşaat kalmadı); hücre bilgisi yoksa false (şerit süresini sürdürür).
+ * `hucre`: hücre kimliği → `{ tesis?, insaat? }` (sahiplik hücreleri).
+ */
+export function yapiBittiMi(hucre: (id: string) => { tesis?: number; insaat?: number } | undefined, hucreler: readonly string[]): boolean {
+  if (hucreler.length === 0) return false;
+  return hucreler.every((id) => {
+    const h = hucre(id);
+    return h !== undefined && h.tesis !== undefined && h.insaat === undefined;
+  });
+}

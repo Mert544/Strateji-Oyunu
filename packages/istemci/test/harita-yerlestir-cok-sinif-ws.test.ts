@@ -143,7 +143,7 @@ describe("çok sınıflı yerleşim: gerçek sunucu", () => {
     const sunucuSinif = new Map(ts!.yazar.sim.dunya.mulk!.hucreler.filter((h) => h.sahip === "ali").map((h) => [h.id, h.sinif]));
     for (const id of plan.alinacak) expect(sunucuSinif.get(id), id).toBe(sinifOf.get(id));
     expect(ts!.yazar.sim.dunya.insaatlar).toHaveLength(1);
-    expect(r.mesaj).toMatch(/^Ahır kuruluyor: arsa 2 hücre, [\d.]+ ₺ \+ yapı [\d.]+ ₺\.$/);
+    expect(r.mesaj).toMatch(/^Ahır kuruluyor; bedel [\d.]+\s₺\.$/);
     expect(a.sunucuHatalari).toEqual([]);
   });
 

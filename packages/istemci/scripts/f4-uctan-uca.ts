@@ -149,9 +149,9 @@ async function kartinUstunde(sayfa: Page, id: string): Promise<{ x: number; y: n
   return q;
 }
 
-/** Yeri sabitlemek için tıklandıktan sonra kartta "Yeri sabitlemek için tıkla." ipucu kalmamalı (sabitlenmedi → "Kur" kapalı kalır). */
+/** Yer tıklandıktan sonra kartta "Yeri sabitlemek için seç." ipucu kalmamalı (sabitlenmedi → "Kur" kapalı kalır; ipucu cihazdan bağımsız: "tıkla" değil "seç"). */
 async function yerSabitMi(sayfa: Page): Promise<boolean> {
-  return !/Yeri sabitlemek için tıkla/.test(await kart(sayfa));
+  return !/Yeri sabitlemek için/.test(await kart(sayfa));
 }
 
 async function haritaHazir(sayfa: Page, zaman = 90000): Promise<void> {
@@ -190,7 +190,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const kartlar = (await sayfa.locator(".yr-kartlar").innerText()).replace(/\s+/g, " ");
   kontrol(`${e} kartlarda neden, bilinen yanı, doluluk ve ayrılmış arsa (sayı yok)`, /dolu/.test(kartlar) && /Bilinen yanı:/.test(kartlar) && /Yeni oyunculara ayrılmış arsa/.test(kartlar) && !/İmza:/.test(kartlar) && !/hücre yeni oyunculara/.test(kartlar), kartlar.slice(0, 160));
   const not = (await sayfa.locator(".yr-acilis").innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} açılış önerisi: Tarım/Sanayi/Pazar, her biri "Çiftlikle başla" ve "yalnız bir öneri, istediğin zaman dönebilirsin"`, /Tarım/.test(not) && /Sanayi/.test(not) && /Pazar/.test(not) && /Çiftlikle başla/.test(not) && /yalnız bir öneri/.test(not) && /istediğin zaman/.test(not), not.slice(0, 200));
+  kontrol(`${e} açılış önerisi: kartta "Açılış önerisi: …" ve "Çiftlikle başla" cümlesi; seçicide Tarım/Sanayi/Pazar ve "yalnız bir öneri, istediğin zaman dönebilirsin" (cümle kartta, notta yinelenmez)`, /Açılış önerisi/.test(kartlar) && /Çiftlikle başla/.test(kartlar) && /Tarım/.test(not) && /Sanayi/.test(not) && /Pazar/.test(not) && !/Çiftlikle başla/.test(not) && /yalnız bir öneri/.test(not) && /istediğin zaman/.test(not), `${kartlar.slice(0, 160)} | ${not.slice(0, 160)}`);
   await sayfa.locator(".yr-kart[data-ilce='tr_41_gebze']").click();
   await sayfa.locator("[data-acilis='tarim']").click();
   await sayfa.waitForTimeout(150);
@@ -399,7 +399,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.waitForTimeout(200);
   await sayfa.mouse.click(p0.x, p0.y);
   await sayfa.waitForTimeout(300);
-  kontrol(`${e} çiftlik: tıklama yeri sabitledi ("Yeri sabitlemek için tıkla" ipucu kayboldu)`, await yerSabitMi(sayfa), await kart(sayfa));
+  kontrol(`${e} çiftlik: tıklama yeri sabitledi ("Yeri sabitlemek için seç" ipucu kayboldu)`, await yerSabitMi(sayfa), await kart(sayfa));
   const k1 = await kart(sayfa);
   kontrol(`${e} maliyet kartı: arsa + yapı bedeli + süre + toplam`, /Arsa/.test(k1) && /Yapı/.test(k1) && /Süre/.test(k1) && /Toplam/.test(k1) && /4\.200\s₺/.test(k1) && /Kendi arsan/.test(k1), k1);
   await ekran("8-maliyet-karti");
@@ -417,7 +417,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await tikla(sayfa, false, "#yapi-kart [data-yk='onayla']");
   await sayfa.waitForSelector("#bildirimler .bildirim >> text=Çiftlik kuruluyor", { timeout: 20000 });
   const t2 = (await sayfa.locator("#bildirimler .bildirim").last().innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} onay: Çiftlik kuruluyor (arsa zaten senin: tek komut; ilk yapı indirimli 4.200\s₺)`, /Çiftlik kuruluyor: yapı 4\.200\s₺\./.test(t2), t2);
+  kontrol(`${e} onay: Çiftlik kuruluyor (arsa zaten senin: tek komut; ilk yapı indirimli 4.200\s₺)`, /Çiftlik kuruluyor; bedel 4\.200\s₺\./.test(t2), t2);
   kontrol(`${e} sunucuda inşaat başladı (hücreli)`, ts.yazar.sim.dunya.insaatlar.length === insaOnce + 1 && (ts.yazar.sim.dunya.insaatlar.at(-1)?.hucreler?.length ?? 0) === 2, `${ts.yazar.sim.dunya.insaatlar.length} inşaat; yeni komut ${ts.yazar.seq - sunucuKomut}`);
   const insaatHucreler = [...(ts.yazar.sim.dunya.insaatlar.at(-1)?.hucreler ?? [])];
   await sayfa.waitForTimeout(700);
@@ -474,7 +474,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
       await sayfa.waitForTimeout(250);
       await sayfa.mouse.click(pb.x, pb.y);
       await sayfa.waitForTimeout(350);
-      kontrol(`${e} ahır: tıklama yeri sabitledi ("Yeri sabitlemek için tıkla" ipucu kayboldu)`, await yerSabitMi(sayfa), await kart(sayfa));
+      kontrol(`${e} ahır: tıklama yeri sabitledi ("Yeri sabitlemek için seç" ipucu kayboldu)`, await yerSabitMi(sayfa), await kart(sayfa));
       const k2 = await kart(sayfa);
       const planB = await sayfa.evaluate(() => {
         const p = window.__harita?.gorunum()?.yerlesimKipi?.gecerliPlan;
@@ -500,7 +500,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
       await sayfa.waitForSelector("#bildirimler .bildirim >> text=Ahır kuruluyor", { timeout: 20000 });
       const t3 = (await sayfa.locator("#bildirimler .bildirim").last().innerText()).replace(/\s+/g, " ");
       if (ilk) {
-        kontrol(`${e} Ahır: arsa + yapı tek işlemde, bildirim Türkçe`, /Ahır kuruluyor: arsa 2 hücre, [\d.]+\s₺ \+ yapı 5\.600\s₺\./.test(t3), t3);
+        kontrol(`${e} Ahır: arsa + yapı tek işlemde, bildirim Türkçe`, /Ahır kuruluyor; bedel [\d.]+\s₺\./.test(t3), t3);
         const gonderilen = await sayfa.evaluate(() => (window as unknown as { __gonderilen?: string[] }).__gonderilen ?? []);
         kontrol(`${e} komut yolu: ${atomik ? "tek atomik yapi_yerlestir" : "zincir (parsel_al + tesis_insa_hucre)"}`, atomik ? gonderilen.join() === "yapi_yerlestir" : gonderilen.join() === "parsel_al,tesis_insa_hucre", `istemci komutları: ${gonderilen.join(", ")}`);
       }
@@ -670,7 +670,7 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const esitle = (): Promise<void> => sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { zamanEsitle?: () => Promise<void> }).zamanEsitle?.());
   const ustBirincil = (): Promise<boolean | null> => sayfa.evaluate(() => document.getElementById("yapi-menu-dugme")?.classList.contains("birincil") ?? null);
   const v1 = (await alt(sayfa)).replace(/\s+/g, " ");
-  kontrol(`${e} varışta "Yurdun hazır": yurt 6 hücre ve ücretsiz; birincil "Yurdunda kur · ücretsiz", ikincil "Arsa satın al"`, /Yurdun hazır/.test(v1) && /Yurdun 6 hücre ve ücretsiz\. İlk yapın buraya sığar\./.test(v1) && /Yurdunda kur\s*ücretsiz/.test(v1) && /Arsa satın al/.test(v1), v1);
+  kontrol(`${e} varışta "Yurdun hazır: 6 hücre, ücretsiz. İlk yapın buraya sığar."; birincil "Yurdunda kur", ikincil "Arsa satın al"; başlık yinelenmez`, /Yurdun hazır: 6 hücre, ücretsiz\. İlk yapın buraya sığar\./.test(v1) && (v1.match(/Yurdun hazır/g) ?? []).length === 1 && /Yurdunda kur/.test(v1) && !/Yurdunda kur\s*ücretsiz/.test(v1) && /Arsa satın al/.test(v1), v1);
   const birincilSinif = (await sayfa.locator("[data-eylem='yurt-kur']").getAttribute("class")) ?? "";
   const ikincilSinif = (await sayfa.locator("[data-eylem='varis-arsa']").getAttribute("class")) ?? "";
   kontrol(`${e} tek birincil: kart düğmesi "birincil", ikincil sınıfsız, üstteki "Yapı kur" birincil değil`, /\bbirincil\b/.test(birincilSinif) && ikincilSinif.trim() === "" && (await ustBirincil()) === false, `kart="${birincilSinif}" ikincil="${ikincilSinif}" üst=${await ustBirincil()}`);
@@ -682,7 +682,7 @@ async function can(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   await sayfa.waitForSelector("#bildirimler .bildirim >> text=Çiftlik kuruluyor", { timeout: 30000 });
   // "kuruluyor" bildirimi bilgi türündedir (yerlesim.ts: tamam ? "bilgi"); `.tamam` yalnız satın alma ve geri alma bildirimlerindedir
   const tYurt = (await sayfa.locator("#bildirimler .bildirim.bilgi", { hasText: "Çiftlik kuruluyor" }).last().innerText()).replace(/\s+/g, " ");
-  kontrol(`${e} tek tıkla Çiftlik yurtta: arsa yok, indirimli yapı 4.200 ₺`, /Çiftlik kuruluyor: yapı 4\.200\s₺\./.test(tYurt) && ts.yazar.sim.dunya.insaatlar.length === insaat0 + 1, tYurt);
+  kontrol(`${e} tek tıkla Çiftlik yurtta: arsa yok, indirimli yapı 4.200 ₺`, /Çiftlik kuruluyor; bedel 4\.200\s₺\./.test(tYurt) && ts.yazar.sim.dunya.insaatlar.length === insaat0 + 1, tYurt);
   await sayfa.waitForFunction(() => (window.__harita?.baglanti()?.ozet?.()?.surenInsaat ?? 0) >= 1, null, { timeout: 15000 });
   const hazine1 = await sayfa.evaluate(() => window.__harita?.baglanti()?.ozet?.()?.hazineMili ?? -1);
   kontrol(`${e} hazineden yalnız yapı düştü (arsa parası yok): 4.200 ₺ birebir`, hazine0 - hazine1 === 4_200_000, `${hazine0} - ${hazine1}`);

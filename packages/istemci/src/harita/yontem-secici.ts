@@ -117,7 +117,7 @@ export function yontemSecimiTamam(sec: readonly YontemSecenegi[], secili: string
 
 /**
  * Yapı kartındaki onay ("... kur") düğmesi açık mı: plan geçerli, YER SABİTLENMİŞ (tıklandı/dokunuldu), gönderim sürmüyor ve yöntem seçimi tamam.
- * Dört koşuldan biri eksikse düğme kapalı kalır; kartın yazdığı neden ayrıca gösterilir (yer sabit değilse "Yeri sabitlemek için tıkla.").
+ * Dört koşuldan biri eksikse düğme kapalı kalır; kartın yazdığı neden ayrıca gösterilir (yer sabit değilse "Yeri sabitlemek için seç.").
  */
 export function onayAcik(k: { gecerli: boolean; sabit: boolean; uygulaniyor: boolean; yontemTamam: boolean }): boolean {
   return k.gecerli && k.sabit && !k.uygulaniyor && k.yontemTamam;

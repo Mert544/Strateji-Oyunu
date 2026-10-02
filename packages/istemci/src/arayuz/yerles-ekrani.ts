@@ -85,7 +85,8 @@ export function yerlesKartiHtml(d: AdayDurumu, secili: boolean, duzey: DukkanDuz
       <span class="yr-ad">${esc(d.ad)} <small>${esc(d.il)}</small></span>
       ${neden ? `<span class="yr-neden">${esc(neden)}</span>` : ""}
       ${bilinen ? `<span class="yr-imza">${esc(bilinen.etiket)}: ${esc(bilinen.deger)}</span>` : ""}
-      <span class="yr-onerilen">${yerlesMetniHtml("yerles.kart.acilis", { ad: `<b>${esc(yerlesMetni(`yerles.acilis.${oneri}`))}</b>` })}<span> ${esc(acilisMetni(oneri, duzey))}</span></span>
+      <span class="yr-onerilen">${yerlesMetniHtml("yerles.kart.acilis", { ad: `<b>${esc(yerlesMetni(`yerles.acilis.${oneri}`))}</b>` })}</span>
+      <span class="yr-onerilen">${esc(acilisMetni(oneri, duzey))}</span>
       ${doluluk}${ayrilmis}
       <span class="yr-durum ${rozet === "hazir" ? "iyi" : "zayif"}">${esc(yerlesMetni(`yerles.kart.${rozet}`))}</span>
     </button>`;
@@ -130,7 +131,7 @@ export async function yerlesAc(g: YerlesGirdisi): Promise<YerlesEkrani> {
         <div class="segment" role="group" aria-label="${esc(yerlesMetni("yerles.acilis.baslik"))}">
           ${ACILIS_SIRASI.map((a) => `<button type="button" data-acilis="${a}" aria-pressed="${a === acilis}" title="${esc(acilisMetni(a, duzey()))}">${esc(yerlesMetni(`yerles.acilis.${a}`))}</button>`).join("")}
         </div>
-        <p class="yr-not">${yerlesMetniHtml("yerles.acilis.not", { ad: `<b>${esc(yerlesMetni(`yerles.acilis.${acilis}`))}</b>`, cumle: esc(acilisMetni(acilis, duzey())) })}</p>
+        <p class="yr-not">${esc(yerlesMetni("yerles.acilis.not"))}</p>
       </fieldset>
       ${hata ? `<p class="yr-hata" role="alert">${esc(hata)}</p>` : ""}
       <div class="yr-alt-satir">

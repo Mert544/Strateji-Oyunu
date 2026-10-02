@@ -234,7 +234,7 @@ describe("komut yolu (sahte bağdaştırıcı)", () => {
     const plan = await planYap(b, "ciftlik", 3, 3);
     const r = await yerlesimiUygula(b, "i", plan);
     expect(r).toMatchObject({ tamam: true, yol: "atomik", gonderilen: 1, alinan: [id(3, 3), id(4, 3)] });
-    expect(r.mesaj).toMatch(/^Çiftlik kuruluyor: arsa 2 hücre, [\d.]+\u00a0₺ \+ yapı 6\.000\u00a0₺\.$/);
+    expect(r.mesaj).toMatch(/^Çiftlik kuruluyor; bedel [\d.]+\s₺\.$/);
     expect(b.ozet().hazineMili).toBe(50_000_000 - plan.arsaMili - 6_000_000);
     const s = (await b.sahiplikAl("i"))!;
     expect(s.yapilar).toHaveLength(1);
