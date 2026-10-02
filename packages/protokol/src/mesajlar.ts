@@ -279,6 +279,13 @@ const bolgeKaresiSemasi = z.object({
         vergiMiliSaat: tam,
         netBedelMiliSaat: tam,
       })).optional(),
+      // Yalnız sahibine: son çözümün kendi işletmeleri arasındaki sevk planı; kesin varış zamanı değildir.
+      lojistik: z.object({
+        sonCozum: tam,
+        akislar: z.array(z.object({ mal: z.string(), kaynak: z.string(), hedef: z.string(), oranMiliSaat: tam, sureMs: tam })),
+      }).optional(),
+      // Gecikmeli varışları uygulanmış gerçek stok ağ giriş hızı; NPC ithalatını içermez. [] bilinen yok, absent bilinmeyen.
+      gelenOran: z.array(z.tuple([z.string(), tam])).optional(),
       // Yalnız ekleme: işletme düğümü bilgileri (nesne alanı; yeni isteğe bağlı alan eklemek demet büyütmez). ihrNetPpm: etkin ihracat net çarpanı (tamsayı ppm, çekirdekten).
       isletme: z.object({ ihrNetPpm: tam, emirYuvasi: tam.optional(), ithNetPpm: tam.optional() }).optional(),
       emirler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),

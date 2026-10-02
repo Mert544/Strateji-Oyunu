@@ -30,8 +30,8 @@ Tarayıcı/mobil, tam paket, lint ve Postgres bu dalgada çalıştırılmadı.
 
 D1–D4 GitHub'a gönderildi: `codex/cok-katmanli-gelistirme` dalı,
 `a6a3369` (`feat: üretim, tedarik, ilçe ve ordu katmanlarını geliştir`).
-Claude ana dalına merge veya dağıtım yapılmadı. Sonraki geliştirmeler aynı
-dalda devam eder; kullanıcı commit/push için yetki verdi.
+Claude ana dalına merge veya dağıtım yapılmadı. L1 gider dökümü de `189722c`
+ile aynı dala pushlandı. Kullanıcının commit/push yetkisi sürüyor.
 
 ## L1 gider dökümü tamamlandı
 
@@ -52,9 +52,23 @@ düzeltilip başarısız vaka tekrarlandı. Kök ve istemci tip kontrolü, istem
 derlemesi geçti; dünya gzip 379,9KB/400KB, harita 486,1KB. Tam test paketi,
 tarayıcı/mobil, lint ve Postgres çalıştırılmadı.
 
-Sonraki L1.2: aynı ajanlarla iç sevk planı, kaynak/hedef, gerçek yol süresi
-ve hedefte ulaşmış toplam gelen oran görünümü. ETA, sevkiyat ilerleme yüzdesi
-ve rota başına yoldaki miktar mevcut veriden türetilmeyecek.
+L1.2 aynı ajanlarla uygulandı: iç sevk planı, kaynak/hedef, gerçek yol süresi
+ve hedefte ulaşmış toplam gelen oran Tedarik içindeki açılır bölümde görünüyor.
+Sevk durmuş olsa da gecikmeli gelen hız devam edebilir; bunlar ayrı kaynaklardan
+gösterilir. Alanlar yalnız sahibinin kaynak/hedefleri için gönderilir; eksik
+veri ve boş plan ayrımı korunur. ETA, ilerleme yüzdesi veya yoldaki stok
+türetilmez. İki hedefli lojistik testi, kök/istemci tip kontrolleri ve derleme
+geçti. Sevk→gecikmeli varış→sevk durduktan sonra gelen akış→gecikmeli kesilme,
+iki uç/sahip gizliliği ve eski şema kabulü doğrulandı. İlk test fikstüründe
+sevk oluşmadan ölçüm alınmıştı; çiftliğin tamamlanması ve ilk pazar işlemi
+bekletilip yalnız yeni test dosyası tekrarlandı. Önceki gider testleri ve
+başarılı tip/derleme kontrolleri tekrar edilmedi. Dünya gzip 379,9KB/400KB,
+harita 487,2KB. Tarayıcı/mobil, tam paket, lint ve Postgres çalıştırılmadı.
+
+L1.2 görevleri: aynı protokol/bridge/Tedarik/görünüm/operasyon sahipleri;
+Ar-Ge gerçek rota sözleşmesini tamamladı ve sonraki askerî dilimi hazırladı.
+Yeni ajan açılmadı. Kullanıcının düzeltmesinden sonra tüm çalışmalar mevcut
+havuzdan altı ajan ve koordinatörle yürüdü.
 
 ## Güncel ürün yönü ve sıradaki somut dilimler
 
@@ -63,10 +77,13 @@ Birebir gerçek dünya beklemiyor; konum, rota, tedarik ve stok kararlarını
 anlamlı kılan detay, ihtiyaç oldukça açılan sunum ve genel Ar-Ge önemli.
 Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları korunur.
 
-1. **L1 kalan:** gider dökümleri tamamlandı. Sahibin gerçek iç sevk planı,
-   kaynak/hedef, yol süresi ve ulaşmış toplam gelen oranını özel kareye taşı.
-   Kenar kapasitesi ayrı sonraki dilim; net stok formülünden akış çıkarılmaz.
-2. **L2:** rafineriyi mülk ayak izi/inşa tablosuyla aç; sanayi yakıtında
+1. **Askerî sonraki dar teslim:** [Ordu savunma gücü kartı](codex-sonraki-askeri-dilim.md).
+   Mevcut hazır kuvvet, ikmal, arazi ve duruş hesabını tek çekirdek yardımcıdan
+   salt okunur sun; rastgele sapma veya PvE zafer tahmini üretme. Yeni denge
+   sayısı gerektirmez. Protokol/arayüz aynı sözleşmeyi kullanır.
+2. **Lojistik kalan:** kendi kenar tahsisi/toplam kapasite görünümü L1'in ayrı
+   dilimidir; mevcut sevk planından global kalan kapasite çıkarılmaz.
+   **L2:** rafineriyi mülk ayak izi/inşa tablosuyla aç; sanayi yakıtında
    stok öncelikli, kalan açık otomatik şebeke yaklaşımını tek çözücüde uygula.
    Ordu önceliği, mal/para korunumu ve kural dönemi/replay birlikte tasarlansın.
    Rafineri tek başına açılırsa bugünkü şebeke sanayi stokunu kullanmaz.

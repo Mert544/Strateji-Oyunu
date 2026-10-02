@@ -4,6 +4,9 @@ import type { IthalatGideri, SebekeGideri } from "@bolge/protokol";
 import { esc, paraMili, sayi, sureMetni } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import { ikon } from "../tasarim/ikon";
+import { lojistikGorunumuHtml } from "./lojistik-gorunum";
+import type { LojistikPlanGorunumu } from "./lojistik-gorunum";
+import "./lojistik-gorunum.css";
 
 const SAAT = 3_600_000;
 /** Çekirdek ekonomi/komut.ts: 1_000_000_000 mili-birim/saat. */
@@ -26,6 +29,8 @@ export interface TedarikBolgesi {
   /** Son gerçekleşen akışın sunucudan gelen giderleri; [] bilinen sıfır, yokluk bilinmiyor. */
   sebekeGiderleri?: readonly SebekeGideri[];
   ithalatGiderleri?: readonly IthalatGideri[];
+  /** İç ağdan ulaşmış hız; pazar ithalatından ayrıdır. [] bilinen sıfır, yokluk bilinmiyor. */
+  gelenOran?: ReadonlyArray<readonly [mal: string, miliSaat: number]>;
   /** Yalnız ithalat emirleri; ihracat emirleri burada yer almaz. */
   emirler: readonly TedarikEmri[];
   /** Sahiplik ve mülk kipi/liman şartının kaynaktan doğrulanmış sonucu. */
@@ -38,6 +43,8 @@ export interface TedarikBolgesi {
 export interface TedarikDurumu {
   simZamani: number;
   bolgeler: readonly TedarikBolgesi[];
+  /** Bütün bilinen sahipli kaynakların aynı son çözümdeki iç sevk planı. */
+  lojistik?: LojistikPlanGorunumu;
 }
 export interface TedarikFiyati {
   /** Dünya referans fiyatı veya taban tahmini; mili-para/birim. */
@@ -94,6 +101,7 @@ export class TedarikPaneli {
   private gonderiliyor = false;
   private sonuc = "";
   private hata = false;
+  private icSevkiyatAcik = false;
 
   constructor(private readonly p: TedarikPanelParam) {}
 
@@ -181,7 +189,13 @@ export class TedarikPaneli {
     return this.sonuc ? `<p class="tdr-sonuc${this.hata ? " tdr-hata" : ""}" role="${this.hata ? "alert" : "status"}">${esc(this.sonuc)}</p>` : "";
   }
 
+  private lojistikHtml(d: TedarikDurumu, b: TedarikBolgesi, mal: string): string {
+    return lojistikGorunumuHtml({ bolgeId: b.id, mal, bolgeler: d.bolgeler, lojistik: d.lojistik });
+  }
+
   html(): string {
+    const oncekiSevkiyat = typeof document === "undefined" ? null : document.querySelector<HTMLDetailsElement>("details[data-tedarik-ic-sevkiyat]");
+    if (oncekiSevkiyat) this.icSevkiyatAcik = oncekiSevkiyat.open;
     const d = this.p.durum();
     if (!d) return '<p class="ipucu-metin">Tedarik bilgisi yükleniyor…</p>';
     const b = this.secili(d), mal = this.mal;
@@ -196,6 +210,7 @@ export class TedarikPaneli {
     const taslak = this.taslak(b, mal), emir = b.emirler.find((e) => e.mal === mal);
     h += `<div class="tdr-form"><label>Saatlik ithalat miktarı <input type="text" inputmode="decimal" autocomplete="off" data-tedarik-oran value="${esc(taslak)}"${this.gonderiliyor ? " readonly" : ""}><span>birim/saat</span></label><p class="ipucu-metin">Emir durdurulana kadar sürer. 0 emri kaldırır; en çok 1.000.000 birim/sa ve üç ondalık girilebilir.</p><div data-tedarik-ozet aria-live="polite">${this.ozetHtml(b, mal, taslak)}</div>`;
     h += `<div class="tdr-eylemler"><button type="button" class="eylem birincil" data-tedarik-eylem="ver"${this.gonderiliyor || this.engel(b, mal, tedarikOrani(taslak)) ? " disabled" : ""}>${this.gonderiliyor ? "İşleniyor…" : emir ? "Tedariki güncelle" : "Tedarik emri ver"}</button><button type="button" class="eylem" data-tedarik-eylem="durdur"${this.gonderiliyor || !emir || !b.uygun ? " disabled" : ""}>Tedariki durdur</button></div></div>`;
+    h += `<details class="tdr-sevkiyat" data-tedarik-ic-sevkiyat${this.icSevkiyatAcik ? " open" : ""}><summary data-tedarik-sevkiyat-baslik>İç sevkiyat · ${esc(this.malAdi(mal))}</summary><div data-tedarik-lojistik>${this.lojistikHtml(d, b, mal)}</div></details>`;
     h += `<p class="ipucu-metin">Sonraki pazar işlemine simülasyon zamanıyla ${esc(sureMetni((SAAT - d.simZamani % SAAT) / SAAT))} kaldı. Pozitif nakit ve pazar arzı gerekir; emrin kabulü bütün miktarın sağlanacağını garanti etmez.</p>`;
     const emirler = d.bolgeler.flatMap((x) => x.emirler.map((e) => ({ b: x, e })));
     if (emirler.length) {
@@ -262,6 +277,14 @@ export class TedarikPaneli {
     }
     const ozet = panel.querySelector<HTMLElement>("[data-tedarik-ozet]");
     if (ozet) ozet.innerHTML = b && mal !== null ? this.ozetHtml(b, mal, taslak) : '<p class="tdr-uyari">Seçilen işletmenin tedarik bilgisi bulunamadı. Geçerli bir işletme seç.</p>';
+    const sevkiyat = panel.querySelector<HTMLDetailsElement>("details[data-tedarik-ic-sevkiyat]");
+    if (sevkiyat) {
+      this.icSevkiyatAcik = sevkiyat.open;
+      const baslik = sevkiyat.querySelector<HTMLElement>("summary");
+      if (baslik) baslik.textContent = `İç sevkiyat${mal === null ? "" : ` · ${this.malAdi(mal)}`}`;
+      const lojistik = sevkiyat.querySelector<HTMLElement>("[data-tedarik-lojistik]");
+      if (lojistik) lojistik.innerHTML = d && b && mal !== null ? this.lojistikHtml(d, b, mal) : '<p class="ipucu-metin">Seçilen işletmenin iç sevkiyat bilgisi bulunamadı.</p>';
+    }
     const emir = b && mal !== null ? b.emirler.find((e) => e.mal === mal) : undefined;
     const ver = panel.querySelector<HTMLButtonElement>("button[data-tedarik-eylem='ver']");
     if (ver) {
@@ -295,14 +318,17 @@ export class TedarikPaneli {
   }
 
   odagiYakala(kok: ParentNode): (() => void) | null {
+    const sevkiyat = kok.querySelector<HTMLDetailsElement>("details[data-tedarik-ic-sevkiyat]");
+    if (sevkiyat) this.icSevkiyatAcik = sevkiyat.open;
     const a = typeof document === "undefined" ? null : document.activeElement;
     if (!(a instanceof HTMLElement) || ![...kok.querySelectorAll(".tdr-panel")].some((x) => x.contains(a))) return null;
     const oran = a instanceof HTMLInputElement && a.hasAttribute("data-tedarik-oran");
+    const sevkiyatBasligi = a.hasAttribute("data-tedarik-sevkiyat-baslik");
     const secim = a.dataset["tedarikSecim"], eylem = a.dataset["tedarikEylem"], bolge = a.dataset["bolge"], mal = a.dataset["mal"];
     const bas = oran ? a.selectionStart : null, son = oran ? a.selectionEnd : null;
     if (oran && this.bolge !== null && this.mal !== null) this.taslaklar.set(anahtar(this.bolge, this.mal), a.value);
     return () => {
-      const y = oran ? kok.querySelector<HTMLInputElement>("input[data-tedarik-oran]") : secim ? [...kok.querySelectorAll<HTMLSelectElement>("select[data-tedarik-secim]")].find((x) => x.dataset["tedarikSecim"] === secim) : [...kok.querySelectorAll<HTMLButtonElement>("button[data-tedarik-eylem]")].find((x) => x.dataset["tedarikEylem"] === eylem && x.dataset["bolge"] === bolge && x.dataset["mal"] === mal);
+      const y = sevkiyatBasligi ? kok.querySelector<HTMLElement>("summary[data-tedarik-sevkiyat-baslik]") : oran ? kok.querySelector<HTMLInputElement>("input[data-tedarik-oran]") : secim ? [...kok.querySelectorAll<HTMLSelectElement>("select[data-tedarik-secim]")].find((x) => x.dataset["tedarikSecim"] === secim) : [...kok.querySelectorAll<HTMLButtonElement>("button[data-tedarik-eylem]")].find((x) => x.dataset["tedarikEylem"] === eylem && x.dataset["bolge"] === bolge && x.dataset["mal"] === mal);
       if (!y) return;
       y.focus({ preventScroll: true });
       if (y instanceof HTMLInputElement && bas !== null && son !== null) y.setSelectionRange(bas, son);

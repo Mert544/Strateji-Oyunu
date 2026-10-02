@@ -339,9 +339,20 @@ export class WsBaglanti implements MulkBaglantisi {
     const dizin = this.hos?.dizin;
     if (!k || !o || !dizin) return null;
     const simZamani = this.simZamani();
+    const kendiIsletmeleri = k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`));
+    // Plan, bütün kaynakların aynı çözüm karesi mevcutsa bilinir. Gelen hız
+    // düğümden bağımsız okunur; gecikmeli teslim sürerken plan boş olabilir.
+    const ilkLojistik = kendiIsletmeleri[0]?.ozel?.lojistik;
+    const lojistikTam = ilkLojistik !== undefined && kendiIsletmeleri.every((b) => b.ozel?.lojistik !== undefined && b.ozel.lojistik.sonCozum === ilkLojistik.sonCozum);
+    const kendiKimlikleri = new Set(kendiIsletmeleri.map((b) => b.id));
+    const lojistik = lojistikTam && ilkLojistik !== undefined ? {
+      sonCozum: ilkLojistik.sonCozum,
+      akislar: kendiIsletmeleri.flatMap((b) => b.ozel!.lojistik!.akislar.filter((a) => a.kaynak === b.id && kendiKimlikleri.has(a.hedef))),
+    } : undefined;
     return {
       simZamani,
-      bolgeler: k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`) && b.ozel !== undefined).map((b) => {
+      ...(lojistik === undefined ? {} : { lojistik }),
+      bolgeler: kendiIsletmeleri.filter((b) => b.ozel !== undefined).map((b) => {
         const oz = b.ozel!;
         const il = b.id.slice(0, -(o.id.length + 1));
         // Eski sunucu kapasiteyi bildirmezse yeni emir uygunluğu bilinmez;
@@ -361,6 +372,7 @@ export class WsBaglanti implements MulkBaglantisi {
           ...(oz.isletme?.ithNetPpm === undefined ? {} : { ithNetPpm: oz.isletme.ithNetPpm }),
           ...(oz.sebekeGiderleri === undefined ? {} : { sebekeGiderleri: oz.sebekeGiderleri }),
           ...(oz.ithalatGiderleri === undefined ? {} : { ithalatGiderleri: oz.ithalatGiderleri }),
+          ...(oz.gelenOran === undefined ? {} : { gelenOran: oz.gelenOran }),
           ...(yeniEmirUygun === undefined ? {} : { yeniEmirUygun }),
           ...(yeniEmirUygun === false ? { yeniEmirNedeni: `Satış ve alış emri yuvaların dolu (${yuva}). Bir emri bırak ya da Ticaret ofisi kur.` } : {}),
         };

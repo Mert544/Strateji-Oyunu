@@ -123,6 +123,16 @@ export interface IthalatGideri {
   netBedelMiliSaat: Mili;
 }
 
+/** Son çözümün sahibine ait iç sevk planı; oran gönderim hızıdır, hedefe ulaşmış hız değildir. */
+export interface LojistikAkisGorunumu {
+  mal: string;
+  kaynak: string;
+  hedef: string;
+  oranMiliSaat: Mili;
+  /** Çözümün kullandığı toplam yol süresi; kesin varış zamanı veya ilerleme göstergesi değildir. */
+  sureMs: Ms;
+}
+
 /** Yalnız sahibine giden bölge verisi (ham çekirdek birimleri). */
 export interface OzelBolgeKaresi {
   /** Mal indeksine göre stok formülleri. */
@@ -168,6 +178,18 @@ export interface OzelBolgeKaresi {
    * `[]` gerçekleşen ithalat yok demektir; alan yoksa tutar bilinmiyor/kapsam dışı. Tarihsel tahsilat veya ayrı iç taşıma gideri değildir.
    */
   ithalatGiderleri?: IthalatGideri[];
+  /**
+   * Yalnız sahibinin mülk işletmesinde: bu kaynaktan yine sahibinin işletmelerine son çözümde planlanan iç sevkler.
+   * Çözüm zamanı dünya `lojistik.sonCozum` alanıdır; bağlam gerekmez. `akislar: []` bilinen sevk yokluğu, alan yokluğu eski sunucu/kapsam dışıdır.
+   * Fiziksel yol/kapasite, kesin ETA ve yoldaki mal miktarı içermez; NPC ithalatı bu plana dahil değildir.
+   */
+  lojistik?: { sonCozum: Ms; akislar: LojistikAkisGorunumu[] };
+  /**
+   * Yalnız sahibinin mülk işletmesinde: depolanabilir malların stok `gelenOran` değerleri (yalnız > 0, mal indeksine göre).
+   * Bu hız gecikmeli varış olayları uygulanınca değişir; güncel sevk planıyla aynı olmak zorunda değildir. NPC ithalatı yerel orandadır.
+   * `[]` bilinen ulaşmış akış yokluğu; alan yokluğu eski sunucu/kapsam dışıdır. Bağlam gerekmez.
+   */
+  gelenOran?: Array<[mal: string, miliSaat: Mili]>;
   /**
    * Yalnız ekleme (isteğe bağlı NESNE alanı, yalnız sahibine; yalnız mülk işletme düğümünde; çözüm bağlamı yoksa YAZILMAZ): düğümün işletme bilgileri. Eski istemci (z.object bilinmeyen
    * anahtarı atar) alanı sessizce yok sayar; yeni değer eklemek demet büyütmez (`isletme` nesnesine yeni isteğe bağlı alan).
@@ -494,6 +516,20 @@ export function ilgiKaresiCikar(
   const d = kaynak.dunya;
   const bolgeler: BolgeKaresi[] = [];
   const gorunum = dukkanGorunumleri(kaynak, oyuncu);
+  // Akışlar tüm dünya için bir kez taranır; kaynak/hedefin gerçek sahipliği de doğrulanır.
+  const kaynakAkislari = new Map<number, LojistikAkisGorunumu[]>();
+  if (oyuncu !== null && kaynak.ic.mulk !== undefined) {
+    for (const a of d.lojistik.akislar) {
+      if (a.sahip !== oyuncu || a.oranSaat <= 0) continue;
+      const kaynakBolge = d.bolgeler[a.kaynak];
+      const hedefBolge = d.bolgeler[a.hedef];
+      const mal = kaynak.ic.mallar[a.mal];
+      if (kaynakBolge?.sahip !== oyuncu || hedefBolge?.sahip !== oyuncu || kaynakBolge.merkez === undefined || hedefBolge.merkez === undefined || mal === undefined || mal.depolanabilir === false) continue;
+      let liste = kaynakAkislari.get(a.kaynak);
+      if (liste === undefined) kaynakAkislari.set(a.kaynak, (liste = []));
+      liste.push({ mal: mal.id, kaynak: kaynakBolge.id, hedef: hedefBolge.id, oranMiliSaat: a.oranSaat, sureMs: a.sureMs });
+    }
+  }
   for (const i of bolgeIndeksleri) {
     const b = d.bolgeler[i];
     if (!b) continue;
@@ -528,6 +564,11 @@ export function ilgiKaresiCikar(
         rezervKalan: [...b.rezervKalan],
       };
       if (kaynak.ic.mulk !== undefined && b.merkez !== undefined) {
+        girdi.ozel.lojistik = { sonCozum: d.lojistik.sonCozum, akislar: kaynakAkislari.get(i) ?? [] };
+        girdi.ozel.gelenOran = b.stoklar.flatMap((stok, mal): Array<[string, Mili]> => {
+          const tanim = kaynak.ic.mallar[mal];
+          return tanim !== undefined && tanim.depolanabilir !== false && stok.gelenOran > 0 ? [[tanim.id, stok.gelenOran]] : [];
+        });
         girdi.ozel.ordu = {
           kapasite: ekYapiToplami(kaynak.ic, b, "birlikKapasitesi"),
           ordugahSayisi: ekYapiSayisi(b, "ordugah"),

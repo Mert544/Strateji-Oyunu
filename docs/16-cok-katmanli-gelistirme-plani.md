@@ -188,3 +188,21 @@ birlik yönetimi uygulanmıştır. D3-3 içindeki PvE hâlâ sonraki iştir; bir
 Güncel görev kuyruğu `agent-results/codex-devam-durumu.md` içindedir.
 Üstteki mevcut/eksik tablosu plan çıkarıldığı andaki temel incelemesidir;
 sonraki teslimlerin tamamlanma kanıtı dalga raporlarından okunur.
+
+## 8. D4 ve L1 uygulama güncellemesi — 2 Ekim
+
+D4 üretim ağı, tedarik emirleri, ilçe satış katkısı ve ikmal stok görünümüyle
+tamamlandı. D1–D4 `a6a3369` ile `codex/cok-katmanli-gelistirme` dalına
+pushlandı. L1 gider dökümü `189722c` ile aynı dala gönderildi: Hazine gerçek
+şebeke bedellerini, Tedarik gerçekleşen ithalat hızının fiyat kırılımını gösterir.
+
+L1.2 aynı ekiple uygulandı: kendi iç sevk planı, kaynak/hedef, yol süresi
+ve hedefte gerçekten ulaşmış ağ akışı. Kenar kapasitesi, fiziksel taşıma
+gideri ve sanayi yakıtının stoktan ikamesi ayrı dilimlerdir. Sonraki adımların
+kod dayanağı `agent-results/codex-d4-lojistik-arge.md` ve
+`agent-results/codex-l1-rota-arge.md` içindedir.
+
+Kullanıcının son kadro talimatı yeni ajan açmadan mevcut ajanları kullanmaktır.
+Ortam sınırı koordinatör dahil yedidir; altı uzman aynı anda bağımsız dosya
+alanlarında ilerler, tamamlanan ajan sıradaki uygun görevde yeniden kullanılır.
+Üstteki tarihsel rol tablosu zorunlu aktif kadro değildir.
