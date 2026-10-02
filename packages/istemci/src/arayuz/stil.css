@@ -466,6 +466,8 @@ body.oyuncu-kipi .marka { display: none; }
   .hasat { display: none; }
   /* A3 (P4 denetimi): telefonda "%90" etiketsiz kalıyordu; "hasat" sözcüğü yüzdenin altında kalır (iki satır, genişlik artmaz) */
   #ust .kart-zaman { padding: 2px var(--s-2); gap: 6px; }
+  /* L9: çip içeriğinden küçülmesin (hazine tutarı uzayınca "%90 hasat" çip dışına taşıyordu); sığmazsa #ust satır sarar, taşma olmaz */
+  #ust .kart-zaman { flex: 1 0 auto; }
 }
 @media (max-width: 380px) {
   /* 44 px düğmeler (3 × 44) dar telefonda yer ister: boşluklar kısılır, hasat yüzdesi gizlenir; tarih ve saat kalır, taşma olmaz */
