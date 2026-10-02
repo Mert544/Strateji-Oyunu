@@ -13,10 +13,11 @@
 export const TOAST_ARALIK = 12;
 
 /**
- * Altına inilmemesi gereken yüzeyler: yapı maliyet kartı, satın alma alt çubuğu, parsel kartı ve telefonda açık İşletmem alt
- * sayfası (`body.isletme-acik`; öbür kiplerde panelin kendi konum kuralları vardır, CSS).
+ * Altına inilmemesi gereken yüzeyler: yapı maliyet kartı, satın alma alt çubuğu, parsel kartı, telefonda açık İşletmem alt
+ * sayfası (`body.isletme-acik`; öbür kiplerde panelin kendi konum kuralları vardır, CSS) ve telefonda gezgin sütununun altındaki
+ * "geri alma" şeridi (`#yapi-geri`: alt sayfanın peek kenarına yakın durur, toast onun üstüne binmesin; toast şeridin 12 px üstüne oturur).
  */
-const ENGELLER = ["#yapi-kart", "#harita-alt", "#parsel-kart", "#panel"];
+const ENGELLER = ["#yapi-kart", "#harita-alt", "#parsel-kart", "#yapi-geri", "#panel"];
 
 function gorunur(e: HTMLElement): boolean {
   if (e.hidden) return false;
