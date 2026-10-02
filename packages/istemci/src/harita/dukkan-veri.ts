@@ -23,8 +23,10 @@ export interface DukkanYuvasi {
   etkinKademe: Kademe;
   /** Rafta stok var mı (yok ise yuva çekime girmez: "stoğun yok"). */
   stokVar: boolean;
-  /** Tahmini satış (mili-birim/saat; kasa kırpmalı istek). */
+  /** Müşteri isteği (mili-birim/saat; kasa kırpmalı; satış DEĞİL: stok talebi karşılamıyorsa satış bundan düşüktür). */
   istekMiliSaat: number;
+  /** Tahmini satış (mili-birim/saat) = istek x düğümün karşılanma oranı (§6.8b `satisMili`; yaklaşık: düğümün en düşük frD'si). Gelir ve net bundan türer. */
+  satisMiliSaat: number;
   /** Raftaki birim fiyat (mili-₺). */
   fiyatMili: number;
   /** Bu yuvanın tahmini net getirisi (mili-₺/saat). */
@@ -52,9 +54,11 @@ export interface DukkanKaydi {
   /** Kasa doluluğu (ppm) ve stoğun talebi karşılama oranı (ppm). */
   kasaPpm: number;
   karsilanmaPpm: number;
-  /** Tahmini gelir ve gider (mili-₺/saat); net = gelir - gider. (Birim satışı yuvaların `istekMiliSaat` toplamıdır.) */
+  /** Tahmini gelir ve gider (mili-₺/saat). (Birim satışı yuvaların `satisMiliSaat` toplamıdır.) */
   gelirMiliSa: number;
   giderMiliSa: number;
+  /** Dükkân neti (mili-₺/saat) = Σ yuva neti (fırsat maliyetli: aynı mal NPC'ye gitseydi) - gider (§6.8b `dukkanNetMili`). GELİR - GİDER DEĞİLDİR. */
+  netMiliSa: number;
   /** Kampanya: bitiş (0 yok), bugün kalan saat, bu hafta kalan gün. */
   kampanya: { bitis: number; kalanSaat: number; kalanGun: number };
 }

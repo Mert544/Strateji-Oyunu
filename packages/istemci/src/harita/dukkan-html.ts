@@ -20,6 +20,27 @@ import type { DukkanGorunumu, DukkanKaydi, DukkanTuru, DukkanYuvasi, Kademe } fr
 const PPM = 1_000_000;
 /** Kasa doluluğu bu eşikten sonra `D6.ipucu_kasa_dolu` gösterilir (T3 akış okuması 7; tek sabit, A2 doğrular). */
 export const KASA_DOLU_IPUCU_ESIGI_PPM = 950_000;
+
+/**
+ * Etkin kasa doluluğu (ppm): satış kasaya YALNIZ stok talebi tam karşılandığında ulaşır (satış = istek x karşılanma; istek zaten kasa kırpmalıdır).
+ * Karşılanma < 1 iken satış kasayı doldurmaz: "kasa dolu" denmez, neden stok yetmezliğidir (A2 dukkan-yuva-rakam: önce karşılanma, sonra kasa).
+ */
+export function etkinKasaPpm(d: Pick<DukkanKaydi, "kasaPpm" | "karsilanmaPpm">): number {
+  return d.karsilanmaPpm < PPM ? 0 : d.kasaPpm;
+}
+
+/**
+ * Net (işaretli, mili-₺/saat) tam liraya AŞAĞI yuvarlanır (B4: net aşağı; §6.8b `floor`): negatifte de matematiksel floor (-55,66 → "−56 ₺"), sıfıra doğru kırpma değil
+ * (zarar olduğundan küçük görünmesin). Pozitifte `paraIsaretli` ile aynıdır.
+ */
+export function netMetni(mili: number): string {
+  return paraIsaretli(Math.floor(mili / 1000) * 1000);
+}
+
+/** Kasa dolu mu (yalnız karşılanma tam iken; bkz. `etkinKasaPpm`). */
+export function kasaDoluMu(d: Pick<DukkanKaydi, "kasaPpm" | "karsilanmaPpm">): boolean {
+  return etkinKasaPpm(d) >= PPM;
+}
 const SAAT_MS = 3_600_000;
 
 /** Tür simgeleri (Tasarım lideri kararı); genel dükkân simgesi `store`. */
@@ -116,7 +137,7 @@ function satirMetni(d: DukkanKaydi, simdi: number): string {
   if (d.durum === "insaat") return `<b>${esc(dukkanAdi(d))}</b><span class="soluk">${enc("dukkan.D1.satir_insaat", { kalan: saatDakika(Math.max(0, (d.bitis ?? simdi) - simdi) / SAAT_MS) })}</span>`;
   // Rafı tamamen boş yeni dükkân "net −132 ₺/sa" ile açılmasın: neden söylenir (raf boş), zarar gibi görünmez
   if (d.yuvalar.every((y) => y.mal === null)) return `<b>${enc("dukkan.D1.satir_bos_raf", { ad: dukkanAdi(d), dukkan: dukkanAdi(d) })}</b>`;
-  return `<b>${enc("dukkan.D1.satir_acik", { ad: dukkanAdi(d), net: paraIsaretli(d.gelirMiliSa - d.giderMiliSa) })}</b>`;
+  return `<b>${enc("dukkan.D1.satir_acik", { ad: dukkanAdi(d), net: netMetni(d.netMiliSa) })}</b>`;
 }
 
 /** D-1 İşletmem bölümü; dünyada dükkân kapalıysa (DUK-00) ya da veri yoksa HİÇ yazılmaz. */
@@ -252,15 +273,15 @@ export function insaatEtiketi(ad: string, asama: string, sure: string): string {
 
 export type YuvaDurumu = "yukleniyor" | "bos" | "dolu-saglikli" | "dolu-stoksuz" | "dolu-karsilanmiyor" | "dolu-kasa-dolu" | "dolu-kampanya-bitti" | "gonderiliyor";
 
-/** Yuva durumu: gönderme > yuva düzeyi (stoksuz, kampanya bitti) > dükkân düzeyi (kasa dolu, karşılanmıyor) > sağlıklı. */
+/** Yuva durumu: gönderme > yuva düzeyi (stoksuz, kampanya bitti) > dükkân düzeyi (karşılanmıyor, kasa dolu) > sağlıklı. */
 export function yuvaDurumu(d: Pick<DukkanKaydi, "kasaPpm" | "karsilanmaPpm">, y: DukkanYuvasi, gonderiyor = false, yukleniyor = false): YuvaDurumu {
   if (yukleniyor) return "yukleniyor";
   if (gonderiyor) return "gonderiliyor";
   if (y.mal === null) return "bos";
   if (!y.stokVar) return "dolu-stoksuz";
   if (y.kademe === 0 && y.etkinKademe !== 0) return "dolu-kampanya-bitti";
-  if (d.kasaPpm >= PPM) return "dolu-kasa-dolu";
   if (d.karsilanmaPpm < PPM) return "dolu-karsilanmiyor";
+  if (d.kasaPpm >= PPM) return "dolu-kasa-dolu";
   return "dolu-saglikli";
 }
 
@@ -296,7 +317,7 @@ function yuvaHtml(d: DukkanKaydi, y: DukkanYuvasi, i: number, o: RafSecenegi): s
   const icerik =
     y.mal === null
       ? `<span class="dk-yuva-satir">${enc("dukkan.D5.bos_yuva")}</span>`
-      : `<span class="dk-yuva-satir"><b>${enc("dukkan.D5.yuva_satiri", { mal, kademe: m(KADEME_ANAHTARI[y.etkinKademe]), fiyat: paraMili(y.fiyatMili, "yukari") })}</b></span><span class="dk-yuva-stok">${enc("dukkan.D5.tahmini_satis", { n: fmt(Math.round(y.istekMiliSaat / 1000)) })}</span>`;
+      : `<span class="dk-yuva-satir"><b>${enc("dukkan.D5.yuva_satiri", { mal, kademe: m(KADEME_ANAHTARI[y.etkinKademe]), fiyat: paraMili(y.fiyatMili, "yukari") })}</b></span><span class="dk-yuva-stok">${enc("dukkan.D5.tahmini_satis", { n: fmt(Math.round(y.satisMiliSaat / 1000)) })}</span>`;
   // Boş yuva pencere sürerken doldurulamaz (boşaltma fiyatT'yi silmez): "mal koy" soluk ve aria-disabled (odak kalır)
   const kapali = o.gonderiyor || o.yukleniyor || (y.mal === null && y.beklemeSaat > 0);
   return `<button type="button" class="dk-yuva" data-yuva="${i}" data-durum="${durum}" data-mal="${esc(y.mal ?? "")}" data-bekleme="${y.beklemeSaat > 0 ? "1" : "0"}"${kapali ? ` aria-disabled="true"` : ""}${uzun ? ` title="${esc(uzun)}" aria-describedby="${nedenKimlik}"` : ""}${o.seciliYuva === i ? ` aria-pressed="true"` : ""}>${icerik}${neden}${uzun ? `<span class="dk-yuva-tam" id="${nedenKimlik}" hidden>${esc(uzun)}</span>` : ""}</button>`;
@@ -310,8 +331,8 @@ export function rafHtml(d: DukkanKaydi, o: RafSecenegi): string {
   d.yuvalar.forEach((y, i) => (s += yuvaHtml(d, y, i, o)));
   s += `</div>`;
   // Dükkân düzeyi neden: yalnız "karşılanmıyor" (rafta mal varken). "Kasa dolu" ve "rafın boş" iletileri kart özetindedir (D-8): burada yinelenmez.
-  const neden: "karsilanmiyor" | null = !bos && d.kasaPpm < PPM && d.karsilanmaPpm < PPM ? "karsilanmiyor" : null;
-  s += `<p class="dk-neden" data-neden="${neden ?? ""}">${neden ? enc("dukkan.D5.neden_karsilanmiyor") : ""}</p>`;
+  const neden: "karsilanmiyor" | null = !bos && d.karsilanmaPpm < PPM ? "karsilanmiyor" : null;
+  s += `<p class="dk-neden" data-neden="${neden ?? ""}">${neden ? enc("dukkan.D5.neden_karsilanmiyor", { n: fmt(Math.floor((d.karsilanmaPpm * 100) / PPM)) }) : ""}</p>`;
   if (bos) {
     // Rafın bütün yuvaları bekleme penceresindeyse (boşaltma fiyatT'yi silmez) süre söylenir (özette yok); "mal koy" yönlendirmesi özettedir
     const bekleyen = d.yuvalar.filter((y) => y.beklemeSaat > 0).map((y) => y.beklemeSaat);
@@ -381,7 +402,7 @@ export function kademeHtml(y: DukkanYuvasi, o: KademeSecenegi): string {
   let s = `<div class="segment" role="group" aria-label="${esc(o.malAdi(y.mal))}" data-durum="${durum}"${kademeler.length === 3 ? ` data-sutun="3"` : ""}>`;
   for (const k of kademeler) s += `<button type="button" data-kademe="${k}" aria-pressed="${y.kademe === k}"${kapaliDurum ? ` aria-disabled="true"` : ""}>${enc(KADEME_ANAHTARI[k])}</button>`;
   s += `</div>`;
-  s += `<p class="dk-fiyat-satiri">${esc(paraMili(y.fiyatMili, "yukari"))} · ${enc("dukkan.D5.tahmini_satis", { n: fmt(Math.round(y.istekMiliSaat / 1000)) })}</p>`;
+  s += `<p class="dk-fiyat-satiri">${esc(paraMili(y.fiyatMili, "yukari"))} · ${enc("dukkan.D5.tahmini_satis", { n: fmt(Math.round(y.satisMiliSaat / 1000)) })}</p>`;
   s += `<p class="dk-ipucu">${enc("dukkan.D6.ipucu_kademe")}</p>`;
   if (y.kademe === 2) s += `<p class="dk-sinir-sure">${enc("dukkan.D6.ipucu_normal")}</p>`;
   if ((o.kasaPpm ?? 0) >= KASA_DOLU_IPUCU_ESIGI_PPM) s += `<p class="dk-ipucu">${enc("dukkan.D6.ipucu_kasa_dolu")}</p>`;
@@ -493,18 +514,21 @@ export function bosaltOnayHtml(y: Pick<DukkanYuvasi, "fiyatT">, o: { simdi: numb
  */
 export function ozetHtml(d: DukkanKaydi, toplamGelirMiliSa: number | null, yukleniyor = false): string {
   if (yukleniyor) return `<div class="dk-ozet" aria-busy="true"><p class="dk-ozet-satir">${enc("dukkan.D8.yukleniyor")}</p></div>`;
-  const net = d.gelirMiliSa - d.giderMiliSa;
-  const birim = Math.round(d.yuvalar.reduce((t, y) => t + (y.mal !== null ? y.istekMiliSaat : 0), 0) / 1000);
+  const net = d.netMiliSa;
+  const birim = Math.round(d.yuvalar.reduce((t, y) => t + (y.mal !== null ? y.satisMiliSaat : 0), 0) / 1000);
+  const istek = Math.round(d.yuvalar.reduce((t, y) => t + (y.mal !== null ? y.istekMiliSaat : 0), 0) / 1000);
   let s = `<div class="dk-ozet">`;
   const bosRaf = d.yuvalar.every((y) => y.mal === null);
   // Boş rafta gelir/gider/net yazılmaz (mal koymadan "net -132 ₺/sa" zarar gibi okunur): yalnız yön gösteren uyarı
-  if (bosRaf) return s + `<p class="dk-ozet-satir">${enc("dukkan.D5.bos_raf_uyari")}</p>` + (d.kasaPpm >= PPM ? `<p class="dk-kasa" data-yuzde="100">${enc("dukkan.D8.kasa", { n: 100 })}</p>` : "") + `</div>`;
+  if (bosRaf) return s + `<p class="dk-ozet-satir">${enc("dukkan.D5.bos_raf_uyari")}</p>` + (kasaDoluMu(d) ? `<p class="dk-kasa" data-yuzde="100">${enc("dukkan.D8.kasa", { n: 100 })}</p>` : "") + `</div>`;
   s += birim > 0 && d.gelirMiliSa > 0 ? `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_satis", { n: fmt(birim) })}</p>` : `<p class="dk-ozet-satir">${enc("dukkan.D8.satis_yok")}</p>`;
+  if (birim > 0 && istek > birim) s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_istek", { n: fmt(istek) })}</p>`;
   s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_gelir", { gelir: paraMili(d.gelirMiliSa) })}</p>`;
   s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_gider", { g: paraMili(d.giderMiliSa) })}</p>`;
-  s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_net", { net: paraIsaretli(net) })}</p>`;
+  s += `<p class="dk-ozet-satir">${enc("dukkan.D8.kart_net", { net: netMetni(net) })}</p>`;
+  if (net <= 0) s += `<p class="dk-ozet-satir dk-uyari">${enc("dukkan.D8.geri_odemez")}</p>`;
   if (toplamGelirMiliSa !== null) s += `<p class="dk-ozet-toplam">${enc("dukkan.D8.toplam_satis", { n: paraMili(toplamGelirMiliSa) })}</p>`;
-  if (d.kasaPpm >= PPM) s += `<p class="dk-kasa" data-yuzde="100">${enc("dukkan.D8.kasa", { n: 100 })}</p>`;
+  if (kasaDoluMu(d)) s += `<p class="dk-kasa" data-yuzde="100">${enc("dukkan.D8.kasa", { n: 100 })}</p>`;
   return s + `</div>`;
 }
 
@@ -561,7 +585,7 @@ export function dukkanDikkatMaddeleri(g: DukkanGorunumu | null, malAdi: (mal: st
       if ([...g.satilabilirMallar].some((x) => !raftakiler.has(x) && rafaKonabilir(x))) l.push({ tur: "bosta", baslik: m("dukkan.D8.dikkat_mal_var"), ...ilce });
     }
     for (const y of d.yuvalar) if (y.mal !== null && !y.stokVar) l.push({ tur: "eksik", baslik: m("dukkan.D8.dikkat_stok", { mal: malAdi(y.mal) }), ...ilce });
-    if (d.kasaPpm >= PPM) l.push({ tur: "bosta", baslik: m("dukkan.D8.dikkat_kasa"), ...ilce });
+    if (kasaDoluMu(d)) l.push({ tur: "bosta", baslik: m("dukkan.D8.dikkat_kasa"), ...ilce });
     if (d.yuvalar.some((y) => y.kademe === 0 && y.etkinKademe !== 0)) l.push({ tur: "bosta", baslik: m("dukkan.D8.dikkat_kampanya"), ...ilce });
   }
   return l;

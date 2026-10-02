@@ -54,6 +54,24 @@ describe("§6.8b: yuva neti, dükkân neti, kendini ödeme süresi (A2 örneği)
     expect(odemeSaat(11_225_000, net)).toBe(16); // indirimsiz 15,45 -> 16 (A2 "15": yuvarlamaz)
   });
 
+  it("A2 dukkan-yuva-rakam D5c/D5e: gıda R = 97 ₺, normal kademe, gider 132, istek 90; karşılanma 0,55 → satış 49,5, yuva +763, dükkân +631; 0,055 → dükkân −55,66 (−56), geri ödemez", () => {
+    const R = 97_000;
+    const c = yuvaMili({ dolu: true, mevcut: true, istekMiliSaat: ISTEK, etkinKademe: 2, referansMili: R }, 550_000, KADEMELER, PAZAR);
+    expect(c.satisMiliSaat).toBe(49_500);
+    expect(Math.floor(c.gelirMiliSaat / 1000)).toBe(5_041); // ekranda gelir 5.040-5.041 ₺/sa (A2 5.040)
+    expect(Math.floor(c.netMiliSaat / 1000)).toBe(763);
+    const netC = dukkanNetMili([c.netMiliSaat, 0, 0, 0], GIDER_S);
+    expect(asagiTL(netC)).toBe(631);
+    expect(Math.floor((c.gelirMiliSaat - GIDER_S) / 1000)).toBe(4_909); // gelir - gider: ekrandaki YANLIŞ sayı (A2 +4.908)
+    const e = yuvaMili({ dolu: true, mevcut: true, istekMiliSaat: ISTEK, etkinKademe: 2, referansMili: R }, 55_000, KADEMELER, PAZAR);
+    expect(e.satisMiliSaat).toBe(4_950);
+    const netE = dukkanNetMili([e.netMiliSaat, 0, 0, 0], GIDER_S);
+    expect(asagiTL(netE)).toBe(-56);
+    expect(Math.floor((e.gelirMiliSaat - GIDER_S) / 1000)).toBe(372); // gelir - gider: ekrandaki YANLIŞ sayı (A2 +370)
+    expect(odemeSaat(8_945_000, netE)).toBeNull(); // geri ödemez
+    expect(odemeSaat(8_945_000, netC)).toBe(Math.ceil(8_945_000 / netC));
+  });
+
   it("kademe 0,85 (kampanya) NEGATİF net: yuva -221,4 ₺/sa, dükkân -353,4 ₺/sa (A2 -353); geri ödemez (null)", () => {
     const y = yuvaMili({ dolu: true, mevcut: true, istekMiliSaat: ISTEK, etkinKademe: 0, referansMili: R_EKMEK }, PPM, KADEMELER, PAZAR);
     expect(y.netMiliSaat).toBe(-221_400);
@@ -208,6 +226,8 @@ describe("kare -> DukkanGorunumu (gerçek sunucu karesi)", () => {
     expect(d.kasaPpm).toBe(ham[2]);
     expect(d.karsilanmaPpm).toBe(ham[4]);
     expect(sonuc.dukkanNetMili[e.id]).toBe(dukkanNetMili(netler, param.perakende!.olcekler[0]!.giderMiliSaat));
+    expect(d.netMiliSa).toBe(sonuc.dukkanNetMili[e.id]); // kartta gösterilen net = köprünün fırsat maliyetli dükkân neti (gelir - gider değil)
+    ham[1].forEach((r, i) => expect(d.yuvalar[i]!.satisMiliSaat).toBe(r[3] === 1 && r[0] !== "" ? Math.floor((r[4] * ham[4]) / PPM) : 0)); // satış = istek x karşılanma
     expect(sonuc.yaklasik).toBe(false);
     expect(sonuc.gorunum.kurmaKarsilaniyor).toBe(false);
   });

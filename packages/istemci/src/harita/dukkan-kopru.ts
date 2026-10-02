@@ -264,6 +264,7 @@ export function dukkanGorunumuKur(g: KopruGirdisi): KopruSonucu | null {
         etkinKademe: kademeye(etkin, kademe),
         stokVar: mevcut === 1,
         istekMiliSaat: istek,
+        satisMiliSaat: m.satisMiliSaat,
         fiyatMili: carpBol(R, pk.fiyatKademeleriPpm[etkin] ?? PPM, PPM),
         netMiliSaat: m.netMiliSaat,
         fiyatT,
@@ -271,7 +272,8 @@ export function dukkanGorunumuKur(g: KopruGirdisi): KopruSonucu | null {
       };
     });
     const gider = pk.olcekler[olcek]?.giderMiliSaat ?? 0;
-    net[id] = dukkanNetMili(netler, gider);
+    const dukNet = dukkanNetMili(netler, gider);
+    net[id] = dukNet;
     const k: KopruDukkanKaydi = {
       id,
       tur,
@@ -283,6 +285,7 @@ export function dukkanGorunumuKur(g: KopruGirdisi): KopruSonucu | null {
       karsilanmaPpm,
       gelirMiliSa: gelir,
       giderMiliSa: gider,
+      netMiliSa: dukNet,
       kampanya: { bitis: kamp[0], kalanSaat: kamp[1], kalanGun: kamp[2] },
     };
     if (hc !== undefined) k.ilce = hc.ilce;
@@ -309,6 +312,7 @@ export function dukkanGorunumuKur(g: KopruGirdisi): KopruSonucu | null {
       karsilanmaPpm: 0,
       gelirMiliSa: 0,
       giderMiliSa: 0,
+      netMiliSa: 0,
       kampanya: { bitis: 0, kalanSaat: 0, kalanGun: 0 },
     });
   }

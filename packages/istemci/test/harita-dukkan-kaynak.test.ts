@@ -188,7 +188,7 @@ function icerikKurma(): Icerik {
   return ic;
 }
 
-const kayit = (ilce: string | undefined): DukkanKaydi => ({ id: 1, tur: "bakkal", durum: "acik", ...(ilce !== undefined ? { ilce } : {}), markaAd: "", yuvalar: [], kasaPpm: 0, karsilanmaPpm: 0, gelirMiliSa: 0, giderMiliSa: 0, kampanya: { bitis: 0, kalanSaat: 0, kalanGun: 0 } });
+const kayit = (ilce: string | undefined): DukkanKaydi => ({ id: 1, tur: "bakkal", durum: "acik", ...(ilce !== undefined ? { ilce } : {}), markaAd: "", yuvalar: [], kasaPpm: 0, karsilanmaPpm: 0, gelirMiliSa: 0, giderMiliSa: 0, netMiliSa: 0, kampanya: { bitis: 0, kalanSaat: 0, kalanGun: 0 } });
 const gorunum = (dukkanlar: DukkanKaydi[], kapali = false): DukkanGorunumu => ({ kapali, dukkanlar, markalar: [], ilkSatisT: null, satilabilirMallar: new Set(), kurmaKarsilaniyor: true, kampanyaAcik: false });
 const ILCE_IL: Record<string, string> = { a: "il1", b: "il1", c: "il2" };
 

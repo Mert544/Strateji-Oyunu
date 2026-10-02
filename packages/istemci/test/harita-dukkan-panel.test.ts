@@ -7,7 +7,7 @@ import { DukkanPaneli, dukkanPanelParam } from "../src/harita/dukkan-panel";
 import type { DukkanPaneliGirdisi } from "../src/harita/dukkan-panel";
 import type { DukkanGorunumu, DukkanKaydi, DukkanYuvasi } from "../src/harita/dukkan-veri";
 
-const yuva = (o: Partial<DukkanYuvasi> = {}): DukkanYuvasi => ({ mal: null, kademe: 2, etkinKademe: 2, stokVar: true, istekMiliSaat: 0, fiyatMili: 0, netMiliSaat: 0, fiyatT: 0, beklemeSaat: 0, ...o });
+const yuva = (o: Partial<DukkanYuvasi> = {}): DukkanYuvasi => ({ mal: null, kademe: 2, etkinKademe: 2, stokVar: true, istekMiliSaat: 0, satisMiliSaat: 0, fiyatMili: 0, netMiliSaat: 0, fiyatT: 0, beklemeSaat: 0, ...o });
 const dukkan = (o: Partial<DukkanKaydi> = {}): DukkanKaydi => ({
   id: 7,
   tur: "bakkal",
@@ -19,6 +19,7 @@ const dukkan = (o: Partial<DukkanKaydi> = {}): DukkanKaydi => ({
   karsilanmaPpm: 1_000_000,
   gelirMiliSa: 1_000,
   giderMiliSa: 100,
+  netMiliSa: 900,
   kampanya: { bitis: 0, kalanSaat: 4, kalanGun: 3 },
   ...o,
 });

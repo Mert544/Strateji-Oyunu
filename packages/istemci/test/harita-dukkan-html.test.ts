@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   dakikaSaniye,
+  etkinKasaPpm,
+  kasaDoluMu,
+  netMetni,
   defterKartiHtml,
   dukkanAdi,
   dukkanBolumuHtml,
@@ -32,7 +35,7 @@ const SAAT = 3_600_000;
 const malAdi = (m: string): string => ({ gida: "Gıda", ekmek: "Ekmek", tahil: "Tahıl" })[m] ?? m;
 
 function yuva(ek: Partial<DukkanYuvasi> = {}): DukkanYuvasi {
-  return { mal: "gida", kademe: 2, etkinKademe: 2, stokVar: true, istekMiliSaat: 12_000, fiyatMili: 2_500, netMiliSaat: 20_000, fiyatT: 0, beklemeSaat: 0, ...ek };
+  return { mal: "gida", kademe: 2, etkinKademe: 2, stokVar: true, istekMiliSaat: 12_000, satisMiliSaat: 12_000, fiyatMili: 2_500, netMiliSaat: 20_000, fiyatT: 0, beklemeSaat: 0, ...ek };
 }
 
 function dukkan(ek: Partial<DukkanKaydi> = {}): DukkanKaydi {
@@ -42,11 +45,12 @@ function dukkan(ek: Partial<DukkanKaydi> = {}): DukkanKaydi {
     durum: "acik",
     ilce: "kadikoy",
     markaAd: "",
-    yuvalar: [yuva(), yuva({ mal: null, istekMiliSaat: 0 }), yuva({ mal: null }), yuva({ mal: null })],
+    yuvalar: [yuva(), yuva({ mal: null, istekMiliSaat: 0, satisMiliSaat: 0 }), yuva({ mal: null }), yuva({ mal: null })],
     kasaPpm: 400_000,
     karsilanmaPpm: 1_000_000,
     gelirMiliSa: 640_000,
     giderMiliSa: 120_000,
+    netMiliSa: 520_000,
     kampanya: { bitis: 0, kalanSaat: 4, kalanGun: 3 },
     ...ek,
   };
@@ -281,7 +285,7 @@ describe("D-4 inşa etiketi", () => {
 });
 
 describe("D-5 raf", () => {
-  it("yuva durumu önceliği: gönderiyor > stoksuz > kampanya bitti > kasa dolu > karşılanmıyor > sağlıklı", () => {
+  it("yuva durumu önceliği: gönderiyor > stoksuz > kampanya bitti > karşılanmıyor > kasa dolu > sağlıklı", () => {
     const d = { kasaPpm: 400_000, karsilanmaPpm: 1_000_000 };
     expect(yuvaDurumu(d, yuva({ mal: null }))).toBe("bos");
     expect(yuvaDurumu(d, yuva())).toBe("dolu-saglikli");
@@ -291,6 +295,8 @@ describe("D-5 raf", () => {
     expect(yuvaDurumu(d, yuva({ kademe: 0, etkinKademe: 2 }))).toBe("dolu-kampanya-bitti");
     expect(yuvaDurumu({ ...d, kasaPpm: 1_000_000 }, yuva())).toBe("dolu-kasa-dolu");
     expect(yuvaDurumu({ ...d, karsilanmaPpm: 500_000 }, yuva())).toBe("dolu-karsilanmiyor");
+    // karşılanma < 1 iken satış kasayı doldurmaz: kasa doluluğu (istek kasaya kırpılmış) "kasa dolu" DEMEZ, önce stok yetmezliği
+    expect(yuvaDurumu({ kasaPpm: 1_000_000, karsilanmaPpm: 550_000 }, yuva())).toBe("dolu-karsilanmiyor");
   });
 
   it("4 yuva: öznitelikler, kısa neden yuvada, tam cümle title/aria-describedby", () => {
@@ -317,7 +323,7 @@ describe("D-5 raf", () => {
     expect(kasa).not.toContain("Kasa dolu");
     expect(kasa).toContain(`data-neden=""`);
     const karsilanmiyor = rafHtml(dukkan({ karsilanmaPpm: 400_000 }), { malAdi, simdi: 0, kasaBirimSa: 90 });
-    expect(karsilanmiyor).toContain("Stoğun talebi karşılamıyor; satış düşüyor.");
+    expect(karsilanmiyor).toContain("Stoğun talebi karşılamıyor (karşılama %40); satış düşüyor.");
     const bos = rafHtml(dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })] }), { malAdi, simdi: 0, kasaBirimSa: 90 });
     expect(bos).not.toContain("Rafın boş");
     expect(bos).toContain(`data-neden=""`);
@@ -665,5 +671,89 @@ describe("D-7 marka formu", () => {
     expect(h).toContain(`data-renk="0" style="--renk:var(--oyuncu-0)" aria-label="gül kurusu"`);
     // sınır dışı indeks modülle döner
     expect(f({ simge: 9, renk: 13 })).toContain(`aria-checked="true" tabindex="0" data-simge="1"`);
+  });
+});
+
+/**
+ * A2 dukkan-yuva-rakam (D5c, D5e): kasa kırpmalı İSTEK (90 birim/sa) ile gerçek SATIŞ (istek x karşılanma) ayrı; kart neti fırsat maliyetli dükkân neti (gelir - gider DEĞİL);
+ * karşılanma < 1 iken "kasa dolu" denmez, neden stok yetmezliğidir; net ≤ 0 ise "geri ödemez".
+ */
+describe("yuva rakamları: istek ve satış ayrı, fırsat maliyetli net (A2 D5c/D5e)", () => {
+  // D5c: karşılanma 0,55; satış 49,5 birim/sa; gelir 5.041 ₺/sa; yuva neti +763; dükkân neti +631 (gider 132)
+  const d5c = (): DukkanKaydi =>
+    dukkan({
+      yuvalar: [yuva({ istekMiliSaat: 90_000, satisMiliSaat: 49_500, fiyatMili: 102_000, netMiliSaat: 763_439 }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })],
+      kasaPpm: 1_000_000,
+      karsilanmaPpm: 550_000,
+      gelirMiliSa: 5_041_575,
+      giderMiliSa: 132_000,
+      netMiliSa: 631_439,
+    });
+  // D5e: karşılanma 0,055; satış 4,95 birim/sa; gelir 504 ₺/sa; dükkân neti -55,66 → "−56" (floor); geri ödemez
+  const d5e = (): DukkanKaydi =>
+    dukkan({
+      yuvalar: [yuva({ istekMiliSaat: 90_000, satisMiliSaat: 4_950, fiyatMili: 102_000, netMiliSaat: 76_344 }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })],
+      kasaPpm: 1_000_000,
+      karsilanmaPpm: 55_000,
+      gelirMiliSa: 504_157,
+      giderMiliSa: 132_000,
+      netMiliSa: -55_656,
+    });
+
+  it("yuva satırı gerçek satışı yazar (≈ 50), isteği (90) değil", () => {
+    const h = rafHtml(d5c(), { malAdi, simdi: 0, kasaBirimSa: 90 });
+    expect(h).toContain("≈\u00a050 birim/sa");
+    expect(h).not.toContain("≈\u00a090 birim/sa");
+    expect(rafHtml(d5e(), { malAdi, simdi: 0, kasaBirimSa: 90 })).toContain("≈\u00a05 birim/sa");
+  });
+
+  it("kart: satış ≈ 50, istek ayrı satırda (90), net +631 ₺/sa (gelir - gider = +4.909 DEĞİL); geri ödemez notu yok", () => {
+    const h = ozetHtml(d5c(), null);
+    expect(h).toContain("Tahmini satış ≈\u00a050 birim/sa");
+    expect(h).toContain("Müşteri isteği ≈\u00a090 birim/sa");
+    expect(h).toContain("Net ≈\u00a0+631\u00a0₺/sa");
+    expect(h).not.toContain("+4.909");
+    expect(h).not.toContain("geri ödemez");
+    expect(h).not.toContain("dk-kasa"); // karşılanma 0,55: satış kasayı doldurmaz
+  });
+
+  it("net ≤ 0 (D5e): −56 ₺/sa (floor; gelir - gider = +372 DEĞİL) ve 'geri ödemez'", () => {
+    const h = ozetHtml(d5e(), null);
+    expect(h).toContain("Net ≈\u00a0−56\u00a0₺/sa");
+    expect(h).toContain("geri ödemez");
+    expect(h).not.toContain("+372");
+    expect(ozetHtml(dukkan({ netMiliSa: 0 }), null)).toContain("geri ödemez"); // sıfır da geri ödemez
+    expect(ozetHtml(dukkan({ netMiliSa: 1_000 }), null)).not.toContain("geri ödemez");
+  });
+
+  it("istek = satış iken (karşılanma tam) ayrı istek satırı çıkmaz", () => {
+    expect(ozetHtml(dukkan(), null)).not.toContain("Müşteri isteği");
+  });
+
+  it("net yuvarlama: aşağı (floor): +631,439 → +631; −55,656 → −56; −0,5 → −1; sıfır 0", () => {
+    expect(netMetni(631_439)).toBe("+631\u00a0₺");
+    expect(netMetni(-55_656)).toBe("−56\u00a0₺");
+    expect(netMetni(-500)).toBe("−1\u00a0₺");
+    expect(netMetni(0)).toBe("0\u00a0₺");
+  });
+
+  it("neden satırı stok yetmezliğidir (karşılama %55), 'Kasa dolu' değil; kasa dolu yalnız karşılanma tam iken", () => {
+    const raf = rafHtml(d5c(), { malAdi, simdi: 0, kasaBirimSa: 90 });
+    expect(raf).toContain("Stoğun talebi karşılamıyor (karşılama %55); satış düşüyor.");
+    expect(raf).toContain(`data-durum="dolu-karsilanmiyor"`);
+    expect(raf).not.toContain("Kasa dolu");
+    expect(kasaDoluMu({ kasaPpm: 1_000_000, karsilanmaPpm: 550_000 })).toBe(false);
+    expect(etkinKasaPpm({ kasaPpm: 1_000_000, karsilanmaPpm: 550_000 })).toBe(0);
+    expect(kasaDoluMu({ kasaPpm: 1_000_000, karsilanmaPpm: 1_000_000 })).toBe(true);
+    expect(kasaDoluMu({ kasaPpm: 999_999, karsilanmaPpm: 1_000_000 })).toBe(false);
+    // özet ve Dikkat: kasa dolu iletisi yalnız karşılanma tam iken
+    expect(ozetHtml(dukkan({ kasaPpm: 1_000_000 }), null)).toContain("dk-kasa");
+    expect(ozetHtml(dukkan({ kasaPpm: 1_000_000, karsilanmaPpm: 550_000 }), null)).not.toContain("dk-kasa");
+    expect(dukkanDikkatMaddeleri(gorunum({ dukkanlar: [dukkan({ kasaPpm: 1_000_000, karsilanmaPpm: 550_000 })] }), malAdi, () => true).map((x) => x.baslik)).not.toContain("Kasa dolu: fiyatı yükseltmeyi düşünebilirsin");
+  });
+
+  it("D1 satırı fırsat maliyetli net: +631 (gelir - gider değil)", () => {
+    const h = dukkanBolumuHtml(gorunum({ dukkanlar: [d5c()] }), { ilceAdi, simdi: 0 });
+    expect(h).toContain("net ≈\u00a0+631\u00a0₺/sa");
   });
 });

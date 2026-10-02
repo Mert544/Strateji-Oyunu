@@ -13,7 +13,7 @@ import { esc, yuzde } from "../arayuz/bicim";
 import { adHatasi } from "../giris/ad";
 import type { Icerik } from "../komut/tablo";
 import type { DukkanKomutSonucu } from "./baglanti";
-import { bosaltOnayHtml, dukkanAdi, dukkanMenusuHtml, kademeHtml, kaldirOnayHtml, markaFormuHtml, ozetHtml, rafHtml, saatDakika, seciciHtml } from "./dukkan-html";
+import { bosaltOnayHtml, dukkanAdi, dukkanMenusuHtml, kademeHtml, kaldirOnayHtml, markaFormuHtml, etkinKasaPpm, ozetHtml, rafHtml, saatDakika, seciciHtml } from "./dukkan-html";
 import type { SeciciMali } from "./dukkan-html";
 import { fiyatKomutu, markaKomutu, rafKomutu } from "./dukkan-kopru";
 import type { ReferansFiyati } from "./dukkan-kopru";
@@ -178,7 +178,7 @@ export class DukkanPaneli {
           kampanya: d.kampanya,
           simdi,
           gonderiyor: this.gonderiyor,
-          kasaPpm: d.kasaPpm,
+          kasaPpm: etkinKasaPpm(d),
           ilceDukkanSayisi: ilceSayi,
           ...(this.g.param.esnafPayiYuzde ? { esnafPayiYuzde: this.g.param.esnafPayiYuzde } : {}),
         });
