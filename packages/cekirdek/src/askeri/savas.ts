@@ -46,7 +46,7 @@ function hata(mesaj: string): KomutSonucu {
 }
 
 /** Bir bölgenin birlik dizisinden toplam savaş gücü: Σ adet × guc. */
-function hamGuc(d: Dunya, ctx: Baglam, bolge: number): number {
+function hamGuc(d: Readonly<Dunya>, ctx: Baglam, bolge: number): number {
   const b = d.bolgeler[bolge];
   if (!b) return 0;
   let toplam = 0;
@@ -56,6 +56,43 @@ function hamGuc(d: Dunya, ctx: Baglam, bolge: number): number {
     if (adet > 0 && tanim) toplam += adet * tanim.guc;
   }
   return toplam;
+}
+
+/** Mevcut duruşun sapma öncesi savunma hesabı; hazır birlikler ve son ikmal karşılanması kullanılır. */
+export interface SavunmaGucuGorunumu {
+  hamGuc: number;
+  ikmalPpm: number;
+  araziPpm: number;
+  /** Normalde PPM, savunmada mevcut parametre, geri çekilmede 0. */
+  durusPpm: number;
+  guc: number;
+}
+
+/** Salt okuma: dünyayı/RNG'yi değiştirmez; savaşın savunan güç hesabıyla aynı sıralı tamsayı yuvarlamasını kullanır. */
+export function savunmaGucuGorunumu(d: Readonly<Dunya>, ctx: Baglam, bolge: number): SavunmaGucuGorunumu | undefined {
+  const b = d.bolgeler[bolge];
+  if (b === undefined) return undefined;
+  const a = ctx.ic.param.askeri;
+  let arazi = PPM;
+  let araziVar = false;
+  for (const e of b.etiketler) {
+    const p = a.araziSavunmaPpm[e];
+    if (p !== undefined && (!araziVar || p > arazi)) {
+      arazi = p;
+      araziVar = true;
+    }
+  }
+  let carpan = carpBol(b.ikmalKarsilanmaPpm, arazi, PPM);
+  if (b.savunma.durus === "savunma") carpan = carpBol(carpan, a.savunmaDurusuCarpaniPpm, PPM);
+  const ham = hamGuc(d, ctx, bolge);
+  const geriCekil = b.savunma.durus === "geri_cekil";
+  return {
+    hamGuc: ham,
+    ikmalPpm: b.ikmalKarsilanmaPpm,
+    araziPpm: arazi,
+    durusPpm: geriCekil ? 0 : b.savunma.durus === "savunma" ? a.savunmaDurusuCarpaniPpm : PPM,
+    guc: geriCekil ? 0 : carpBol(ham, carpan, PPM),
+  };
 }
 
 function birlikSayisi(d: Dunya, bolge: number): number {
@@ -227,20 +264,8 @@ export function savasPencereKapa(d: Dunya, ctx: Baglam, savasId: number): void {
 
   const saldiranGuc = ppmUygula(carpBol(hamGuc(d, ctx, savas.saldiranBolge), sb.ikmalKarsilanmaPpm, PPM), saldiranSapma);
 
-  let arazi = PPM;
-  let araziVar = false;
-  for (const e of hb.etiketler) {
-    const p = a.araziSavunmaPpm[e];
-    if (p !== undefined && (!araziVar || p > arazi)) {
-      arazi = p;
-      araziVar = true;
-    }
-  }
-  let savunanCarpan = carpBol(hb.ikmalKarsilanmaPpm, arazi, PPM);
-  if (hb.savunma.durus === "savunma") savunanCarpan = carpBol(savunanCarpan, a.savunmaDurusuCarpaniPpm, PPM);
-  const savunanGuc = geriCekil
-    ? 0
-    : ppmUygula(carpBol(hamGuc(d, ctx, savas.hedefBolge), savunanCarpan, PPM), savunanSapma);
+  const savunma = savunmaGucuGorunumu(d, ctx, savas.hedefBolge)!; // hedefin varlığı yukarıda doğrulandı
+  const savunanGuc = geriCekil ? 0 : ppmUygula(savunma.guc, savunanSapma);
 
   const saldiranKazandi = saldiranGuc > savunanGuc;
 

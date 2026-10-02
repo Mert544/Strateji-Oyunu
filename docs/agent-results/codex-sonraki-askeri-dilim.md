@@ -65,3 +65,23 @@ Mevcut arazi/duruş parametreleri kullanılır; yeni değer, önkoşul veya gü�
 4. Bu teslimin ardından root yukarıdaki PvE sayılarını **bir** uygulama brief'inde
    kapatıp deterministik duyuru→sonuç dilimini atar; yeni rapor dalgası gerekmez.
    Duruş kartının bitmesi PvE/AH kapısının geçtiği anlamına gelmez.
+
+## S1 uygulama karar notu — kaynak okuma kabulü
+
+- Etiket kaynağı: `kurulum.ts:131` harita bölgesinin etiketlerini dünyaya kopyalar;
+  `mulk/isletme.ts:38` işletme düğümü bağlı merkezden devralır. Parsel eğimi,
+  ilçe topoğrafyası veya oyuncunun Ordugâh hücresi okunmaz. Veri hattında dağ/
+  ova/geçit oyun etiketleri elle, kıyı/liman türetme+düzeltmeyle gelir (`uret.ts:149`).
+- Gerçek hiyerarşide Kocaeli/Sakarya'nın merkez bölgesi izmit, Bursa'nınki
+  guney_marmara'dır; şehir merkezinin ölçülmüş arazisi iddia edilemez.
+  Koordinatörün son UI kararı B4 tarafından uygulandı: **“Bölgesel savunma
+  etkisi”**; detayda oyun bölgesinin arazi özelliklerinden geldiği, parsel
+  ölçümü olmadığı açıklanır. Teknik kaynak bağlı merkezin etiketleridir.
+- Yeni `savunmaGucuGorunumu` ve savaş çağrısı kaynakta incelendi: ilk tanımlı
+  etiket+en büyük çarpan, birleşik ikmal→arazi→duruş yuvarlaması, son ham güç
+  çarpımı ve saldıran→savunan RNG çekim sırası eski kodla aynı; fark bulunmadı.
+- Geri çekilme hazır birlikleri silmez/taşımaz: mevcut savunma göstergesi ve
+  savunan birlik kaybı 0; ikmal/maaş sürer, stok yağma koruması vermez.
+  Doğru UI anlamı “Birlikler savunmaya katılmıyor”; tatil/tam muafiyet değildir.
+- Kabul burada yalnız kod okuma/formül-dil uyumudur. B6 davranış/regresyon
+  kontrolü ayrı; bu görevde test/build çalıştırılmadı, canlı PvE doğrulanmadı.

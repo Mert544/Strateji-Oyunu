@@ -206,3 +206,16 @@ Kullanıcının son kadro talimatı yeni ajan açmadan mevcut ajanları kullanma
 Ortam sınırı koordinatör dahil yedidir; altı uzman aynı anda bağımsız dosya
 alanlarında ilerler, tamamlanan ajan sıradaki uygun görevde yeniden kullanılır.
 Üstteki tarihsel rol tablosu zorunlu aktif kadro değildir.
+
+## 9. S1 — Ordu savunma gücü görünümü
+
+Mevcut ekip, Ordu ekranına hazır kuvvet → ikmal/bölgesel savunma/duruş
+etkileri → mevcut savunma gücü kartını ekledi. Çekirdekte aynı salt okuma
+yardımcısı savaş hesabında da kullanılır; tamsayı yuvarlaması ve rastgele
+sapma çekim sırası korunur. Kart yalnız sahibinin işletmesinde görünür;
+eski sunucuda bilinmeyen güç sıfır gibi gösterilmez.
+
+Üretim alanına yazarken savunma verisi ve duruş düğmeleri yerinde yenilenir.
+Bölgesel etki bağlı oyun bölgesinin etiketleridir, parsel ölçümü değildir.
+PvE baskını açılmadı; bu teslim mevcut ordu kararlarını görünür kılar.
+Doğrulama ve teslim sonucu `agent-results/codex-devam-durumu.md` kaydındadır.

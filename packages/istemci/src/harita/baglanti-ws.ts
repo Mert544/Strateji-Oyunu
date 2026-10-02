@@ -451,6 +451,7 @@ export class WsBaglanti implements MulkBaglantisi {
           kapasite: ordu.kapasite,
           ordugahSayisi: ordu.ordugahSayisi,
           ikmalPpm: oz.ikmalPpm,
+          ...(ordu.savunma === undefined ? {} : { savunma: ordu.savunma }),
           ...(ordu.ikmalSaat ? { ikmalSaat: new Map(ordu.ikmalSaat.flatMap(([mi, q]): Array<[string, number]> => dizin.mallar[mi] === undefined ? [] : [[dizin.mallar[mi]!, q]])) } : {}),
           durus: b.genel.durus === 1 ? "savunma" as const : b.genel.durus === 2 ? "geri_cekil" as const : "normal" as const,
           partiler: (o.partiler ?? []).filter((p) => p.bolge === b.i).map((p) => ({ id: p.id, birlik: dizin.birlikler[p.birlik] ?? "Bilinmeyen birlik", adet: p.adet, bitis: p.bitis })),

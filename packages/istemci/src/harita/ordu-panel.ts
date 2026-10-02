@@ -4,6 +4,8 @@ import type { Komut } from "@bolge/cekirdek";
 import { esc, fmt, kalanSureMetni, paraMili, sayi, sureMetni, yuzde } from "../arayuz/bicim";
 import type { BirlikT, Icerik } from "../komut/tablo";
 import { ikon } from "../tasarim/ikon";
+import { savunmaGorunumuHtml } from "./ordu-savunma-gorunum";
+import "./ordu-savunma-gorunum.css";
 
 const SAAT = 3_600_000;
 const EN_COK_ADET = 100;
@@ -16,6 +18,8 @@ export interface OrduBolgesi {
   kapasite: number;
   ordugahSayisi: number;
   ikmalPpm: number;
+  /** Sunucunun mevcut duruş için hesapladığı sapma öncesi savunma; yokluğu bilinmiyor. */
+  savunma?: { hamGuc: number; ikmalPpm: number; araziPpm: number; durusPpm: number; guc: number };
   /** Sunucunun gerçek ikmal talebi; eski sunucuda bilinmiyorsa yoktur. */
   ikmalSaat?: ReadonlyMap<string, number>;
   durus: OrduDurusu;
@@ -78,6 +82,8 @@ export class OrduPaneli {
   private malAdi(indeks: number): string { return this.p.ic.mallar[indeks]?.ad ?? "Mal"; }
   private birlikAdi(id: string): string { return this.p.ic.birlikler.find((b) => b.id === id)?.ad ?? id; }
   private adetMetni(bolge: string, birlik: string): string { return this.girdiler.get(anahtar(bolge, birlik)) ?? "1"; }
+  /** Eski sunucu için yalnız mevcut ham birlik gücü; savunma çarpanları hesaplanmaz. */
+  private hamKuvvet(b: OrduBolgesi): number { return this.p.ic.birlikler.reduce((t, birlik) => t + (b.birlikler.get(birlik.id) ?? 0) * birlik.guc, 0); }
 
   private engel(b: OrduBolgesi, birlik: BirlikT, adet: number | null, d: OrduDurumu): string | null {
     if (b.ordugahSayisi < 1) return "Önce bu işletmenin bulunduğu ilde bir Ordugâh kur.";
@@ -133,12 +139,13 @@ export class OrduPaneli {
     for (const b of d.bolgeler) {
       const mevcut = [...b.birlikler.values()].reduce((t, a) => t + a, 0);
       const kuyruk = b.partiler.reduce((t, a) => t + a.adet, 0);
-      const guc = this.p.ic.birlikler.reduce((t, birlik) => t + (b.birlikler.get(birlik.id) ?? 0) * birlik.guc, 0);
-      h += `<section class="ord-bolge"><h4>${esc(b.ad)}</h4><dl class="ord-ozet"><div><dt>Hazır birlik</dt><dd>${fmt(mevcut)}</dd></div><div><dt>Üretimde</dt><dd>${fmt(kuyruk)}</dd></div><div><dt>Kapasite</dt><dd>${fmt(mevcut + kuyruk)} / ${fmt(b.kapasite)}</dd></div><div><dt>Ordugâh</dt><dd>${fmt(b.ordugahSayisi)}</dd></div><div><dt>Temel kuvvet</dt><dd>${fmt(guc)}</dd></div><div><dt>Birlik maaşı</dt><dd>${paraMili(mevcut * this.p.ic.param.askeri.birlikMaasiSaat, "yukari")}/sa</dd></div></dl>`;
+      const ikmalPpm = b.savunma?.ikmalPpm ?? b.ikmalPpm;
+      h += `<section class="ord-bolge" data-ordu-bolge="${esc(b.id)}"><h4>${esc(b.ad)}</h4><dl class="ord-ozet"><div><dt>Hazır birlik</dt><dd>${fmt(mevcut)}</dd></div><div><dt>Üretimde</dt><dd>${fmt(kuyruk)}</dd></div><div><dt>Kapasite</dt><dd>${fmt(mevcut + kuyruk)} / ${fmt(b.kapasite)}</dd></div><div><dt>Ordugâh</dt><dd>${fmt(b.ordugahSayisi)}</dd></div><div data-ordu-ham-fallback${b.savunma !== undefined ? " hidden" : ""}><dt>Temel kuvvet (ham)</dt><dd>${b.savunma === undefined ? fmt(this.hamKuvvet(b)) : ""}</dd></div><div><dt>Birlik maaşı</dt><dd>${paraMili(mevcut * this.p.ic.param.askeri.birlikMaasiSaat, "yukari")}/sa</dd></div></dl>`;
+      h += `<div data-ordu-savunma>${savunmaGorunumuHtml({ savunma: b.savunma, durus: b.durus })}</div>`;
+      h += `<p data-ordu-ikmal-fallback${b.savunma !== undefined || mevcut === 0 ? " hidden" : ""}>İkmal karşılanması: <b>${yuzde(ikmalPpm / 10_000)}</b>.</p>`;
+      h += `<div data-ordu-ikmal-uyari>${mevcut > 0 && ikmalPpm < PPM ? '<p class="ord-uyari">İkmal eksik. Bu işletmenin stoklarını ve tedarikini kontrol et; ikmal karşılanması kuvveti etkiler.</p>' : ""}</div>`;
       if (mevcut > 0) {
-        h += `<p>İkmal karşılanması: <b>${yuzde(b.ikmalPpm / 10_000)}</b>.</p>`;
         h += this.ikmalHtml(b);
-        if (b.ikmalPpm < PPM) h += '<p class="ord-uyari">İkmal eksik. Bu işletmenin stoklarını ve tedarikini kontrol et; ikmal karşılanması kuvveti etkiler.</p>';
       }
       h += '<ul class="ord-envanter">';
       for (const birlik of this.p.ic.birlikler) {
@@ -166,6 +173,46 @@ export class OrduPaneli {
       h += '</div><p class="ipucu-metin">Tercihin çevrimdışıyken de saklanır. Duruş değişikliği ikmal tüketimini artırmaz.</p></section>';
     }
     return h;
+  }
+
+  /** Form odağı nedeniyle tam çizim ertelenirken yalnız sunucu savunma kartı ve duruşu yenilenir. */
+  yamala(kok: ParentNode): boolean {
+    const d = this.p.durum();
+    if (!d) return false;
+    let bulundu = false;
+    for (const panel of kok.querySelectorAll<HTMLElement>("[data-ordu-bolge]")) {
+      const b = d.bolgeler.find((x) => x.id === panel.dataset["orduBolge"]);
+      const slot = panel.querySelector<HTMLElement>("[data-ordu-savunma]");
+      if (!slot) continue;
+      bulundu = true;
+      if (!b) {
+        slot.innerHTML = '<p class="ipucu-metin">Bu işletmenin savunma bilgisi artık bulunamadı.</p>';
+        for (const dugme of panel.querySelectorAll<HTMLButtonElement>("button[data-ordu-eylem='durus']")) dugme.disabled = true;
+        continue;
+      }
+      slot.innerHTML = savunmaGorunumuHtml({ savunma: b.savunma, durus: b.durus });
+      const ham = panel.querySelector<HTMLElement>("[data-ordu-ham-fallback]");
+      if (ham) {
+        ham.hidden = b.savunma !== undefined;
+        const deger = ham.querySelector<HTMLElement>("dd");
+        if (deger) deger.textContent = b.savunma === undefined ? fmt(this.hamKuvvet(b)) : "";
+      }
+      const mevcut = [...b.birlikler.values()].reduce((t, a) => t + a, 0);
+      const ikmalPpm = b.savunma?.ikmalPpm ?? b.ikmalPpm;
+      const ikmal = panel.querySelector<HTMLElement>("[data-ordu-ikmal-fallback]");
+      if (ikmal) {
+        ikmal.hidden = b.savunma !== undefined || mevcut === 0;
+        ikmal.innerHTML = `İkmal karşılanması: <b>${yuzde(ikmalPpm / 10_000)}</b>.`;
+      }
+      const uyari = panel.querySelector<HTMLElement>("[data-ordu-ikmal-uyari]");
+      if (uyari) uyari.innerHTML = mevcut > 0 && ikmalPpm < PPM ? '<p class="ord-uyari">İkmal eksik. Bu işletmenin stoklarını ve tedarikini kontrol et; ikmal karşılanması kuvveti etkiler.</p>' : "";
+      for (const dugme of panel.querySelectorAll<HTMLButtonElement>("button[data-ordu-eylem='durus']")) {
+        const secili = dugme.dataset["durus"] === b.durus;
+        dugme.setAttribute("aria-pressed", String(secili));
+        dugme.disabled = this.gonderiliyor || secili;
+      }
+    }
+    return bulundu;
   }
 
   /** Yazım sırasında yalnız teklif ve düğme güncellenir; input odağı korunur. */

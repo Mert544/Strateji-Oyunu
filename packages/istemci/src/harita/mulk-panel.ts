@@ -645,14 +645,14 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     ilAdi: ad.il,
     malAdi: ad.mal,
   });
-  const orduPaneli = b.orduDurumu && b.orduKomutu ? new OrduPaneli({
+  const orduPaneli: OrduPaneli | undefined = b.orduDurumu && b.orduKomutu ? new OrduPaneli({
     ic,
     durum: () => {
       const d = b.orduDurumu!();
       return d ? { ...d, bolgeler: d.bolgeler.map((x) => ({ ...x, ad: ad.il(x.ad) })) } : null;
     },
     komut: (k) => b.orduKomutu!(k),
-    degisti: yenidenCiz,
+    degisti: () => { yenidenCiz(); orduPaneli?.yamala(document); },
   }) : undefined;
   ad.ordu = orduPaneli !== undefined;
   if (orduPaneli) document.addEventListener("input", (e) => {
@@ -979,7 +979,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
             if (g && ilkSatis.kontrol(g.ilkSatisT)) bildir(dukkanMetni("dukkan.D8.ilk_satis"), "bilgi");
           },
         },
-        () => { f(); pazarYamala(); tedarikPaneli?.yamala(document); },
+        () => { f(); pazarYamala(); tedarikPaneli?.yamala(document); orduPaneli?.yamala(document); },
       );
       return () => { pazarOlaylari.abort(); b.ilgi?.("ilce-yasam", []); birak(); };
     },

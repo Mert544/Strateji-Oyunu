@@ -30,8 +30,9 @@ Tarayıcı/mobil, tam paket, lint ve Postgres bu dalgada çalıştırılmadı.
 
 D1–D4 GitHub'a gönderildi: `codex/cok-katmanli-gelistirme` dalı,
 `a6a3369` (`feat: üretim, tedarik, ilçe ve ordu katmanlarını geliştir`).
-Claude ana dalına merge veya dağıtım yapılmadı. L1 gider dökümü de `189722c`
-ile aynı dala pushlandı. Kullanıcının commit/push yetkisi sürüyor.
+Claude ana dalına merge veya dağıtım yapılmadı. L1 gider dökümü `189722c`,
+L1.2 iç sevkiyat görünümü `1f3addd` ile aynı dala pushlandı. Kullanıcının
+commit/push yetkisi sürüyor.
 
 ## L1 gider dökümü tamamlandı
 
@@ -70,6 +71,36 @@ Ar-Ge gerçek rota sözleşmesini tamamladı ve sonraki askerî dilimi hazırlad
 Yeni ajan açılmadı. Kullanıcının düzeltmesinden sonra tüm çalışmalar mevcut
 havuzdan altı ajan ve koordinatörle yürüdü.
 
+## S1 — Ordu savunma gücü kartı tamamlandı
+
+Kullanıcının mevcut ajanlar ve uzmanlıklarla devam talimatıyla aynı altı
+GPT-6.1 Sol ajan yeniden görevlendirildi; yeni ajan oluşturulmadı.
+
+- `l1_protokol`: tek çekirdek yazarı; mevcut savunan kuvvet hesabını ortak
+  salt okuma yardımcıya çıkarır, savaş ve özel kare aynı hesabı kullanır.
+- `d4_b2_baglanti`: sunucu dökümünü Ordu verisine aynen taşır.
+- `d4_a3_tedarik`: Ordu paneline kartı bağlar, eski sunucu bilgisizliğini
+  korur; form odağı sırasında kart ve duruş durumunu yerinde günceller.
+- `d4_b4_gorsel`: savunma kartı ve mobil uyumlu stiller.
+- `d4_b6_operasyon`: yeni dar protokol senaryoları ve ilgili mevcut savaş
+  vakaları; tek birleşik tip/derleme kontrolü.
+- `d4_a6_arge`: arazi/duruş anlamının ürün dilini mevcut kodla eşleştirir.
+- Ana koordinatör: panel yenileme entegrasyonu, kapsam ve GitHub teslimi.
+
+Rastgele sapma, savaş sonucu, kural parametreleri veya PvE açılışı değişmedi.
+Kart; hazır kuvvet, ikmal yüzdesi, bölgesel etki, duruş ve sunucunun mevcut
+gücünü gösteriyor. Geri çekilmede savunma sıfır, ikmal/maaş sürüyor. Bölgesel
+etki parselin ölçümü değil, bağlı oyun bölgesinin etiketlerinden geliyor.
+
+Doğrulama ilk birleşik koşuda geçti: 2 yeni protokol/helper vakası, 1 dar
+arayüz yama vakası ve 3 seçili mevcut savaş vakası (toplam 6). Sıralı tamsayı
+yuvarlama, okumanın dünya/RNG saflığı, gerçek duruş komutu/özel kare/delta,
+yabancıya görünmeme, ikmalin %100/%50 gösterimi ve formun korunması sınandı.
+Arayüz vakası birim testindeki DOM yüzeyidir; gerçek tarayıcı kanıtı değildir.
+Kök/istemci tip kontrolü ve derleme geçti. Dünya gzip 380,0KB/400KB,
+harita 488,0KB. Tam paket, tarayıcı/mobil, lint ve Postgres çalıştırılmadı.
+Çalışma aynı GitHub geliştirme dalında teslim edilir; dağıtım yapılmaz.
+
 ## Güncel ürün yönü ve sıradaki somut dilimler
 
 Kullanıcı lojistik, petrol/yakıt ve tedarik aşamalarının atlanmamasını istiyor.
@@ -77,10 +108,11 @@ Birebir gerçek dünya beklemiyor; konum, rota, tedarik ve stok kararlarını
 anlamlı kılan detay, ihtiyaç oldukça açılan sunum ve genel Ar-Ge önemli.
 Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları korunur.
 
-1. **Askerî sonraki dar teslim:** [Ordu savunma gücü kartı](codex-sonraki-askeri-dilim.md).
-   Mevcut hazır kuvvet, ikmal, arazi ve duruş hesabını tek çekirdek yardımcıdan
-   salt okunur sun; rastgele sapma veya PvE zafer tahmini üretme. Yeni denge
-   sayısı gerektirmez. Protokol/arayüz aynı sözleşmeyi kullanır.
+1. **Askerî sonraki teslim:** S1 kartı tamamlandı. Koordinatör
+   [askerî kayıt](codex-sonraki-askeri-dilim.md) ve [PvE kararı](codex-d4-pve-karari.md)
+   içindeki eksik sayısal maddeleri tek uygulama brief'inde kapatır; ardından
+   deterministik baskın duyurusu/sonucu dilimi atanır. Eski bölge savaşını
+   doğrudan NPC baskını diye açma; yeni genel rapor dalgası üretme.
 2. **Lojistik kalan:** kendi kenar tahsisi/toplam kapasite görünümü L1'in ayrı
    dilimidir; mevcut sevk planından global kalan kapasite çıkarılmaz.
    **L2:** rafineriyi mülk ayak izi/inşa tablosuyla aç; sanayi yakıtında

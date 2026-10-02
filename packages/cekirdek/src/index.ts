@@ -35,6 +35,8 @@ export { kanonikSerilestir, fnv1a64 } from "./ozet";
 export { sureCarpaniPpm, hizlandirilmisSure } from "./erkenOyun";
 export { teknolojiYayilimiPpm } from "./teknoloji";
 export { ikmalTalebi } from "./askeri/uretim";
+export { savunmaGucuGorunumu } from "./askeri/savas";
+export type { SavunmaGucuGorunumu } from "./askeri/savas";
 
 // --- Tarım katmanı (B1) ---
 export { iklimGunluk, takvimGunu, takvimAyi, mutlakTakvimGunu, hasatEnterpole, hasatGunlukNormallestir, tarimTablosu, tarimCiktiCarpani } from "./tarim";

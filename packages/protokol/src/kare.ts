@@ -32,8 +32,8 @@
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
-import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, Stok } from "@bolge/cekirdek";
+import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
+import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok } from "@bolge/cekirdek";
 
 /** Dikdörtgen kamu bloğu: `[x0, y0, x1, y1]` = x0..x1 × y0..y1 (dört uç dahil) hücreleri ("x:y" kimliği), hepsi kamu arsası. */
 export type KamuBlogu = [x0: number, y0: number, x1: number, y1: number];
@@ -204,8 +204,12 @@ export interface OzelBolgeKaresi {
   emirler: Array<[mal: number, yon: 0 | 1, oranSaat: Mili, gerceklesenSaat: Mili]>;
   /** Birlik indeksine göre adet. */
   birlikler: number[];
-  /** Yalnız mülk işletmesinin sahibine: tamamlanan Ordugâh kapasitesi ve gerçek saatlik ikmal talebi. */
-  ordu?: { kapasite: number; ordugahSayisi: number; ikmalSaat?: Array<[mal: number, miliSaat: Mili]> };
+  /**
+   * Yalnız mülk işletmesinin sahibine: tamamlanan Ordugâh kapasitesi ve gerçek saatlik ikmal talebi.
+   * `savunma` bağlam varsa mevcut duruşun çekirdekten sapma öncesi kuvvet hesabıdır; yokluğu bilinmeyendir, güç 0 gerçek sıfırdır.
+   * İstemci bileşenleri yeniden çarpmaz (çekirdekte yuvarlama sıralıdır); bu gösterge PvE/baskın gücü veya zafer olasılığı değildir.
+   */
+  ordu?: { kapasite: number; ordugahSayisi: number; ikmalSaat?: Array<[mal: number, miliSaat: Mili]>; savunma?: SavunmaGucuGorunumu };
   gidaPpm: number;
   ikmalPpm: number;
   /** Mal indeksine göre kalan rezerv (mili-birim). */
@@ -575,6 +579,7 @@ export function ilgiKaresiCikar(
         };
         if (kaynak.baglam !== undefined) {
           girdi.ozel.ordu.ikmalSaat = ikmalTalebi(d as Dunya, kaynak.baglam, i).flatMap((miktar, mal): Array<[number, Mili]> => miktar > 0 ? [[mal, miktar]] : []);
+          girdi.ozel.ordu.savunma = savunmaGucuGorunumu(d, kaynak.baglam, i);
         }
       }
       const olcekler = b.tesisler.flatMap((x): Array<[number, 1 | 2]> => (x.olcek === 1 || x.olcek === 2 ? [[x.id, x.olcek]] : []));

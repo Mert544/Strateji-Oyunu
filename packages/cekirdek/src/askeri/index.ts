@@ -7,7 +7,8 @@ import type { Baglam, Dunya, Komut, KomutSonucu, OyuncuId } from "../tipler";
 import { savasIlan, savunmaEmri } from "./savas";
 import { birlikUret } from "./uretim";
 
-export { savasPencereAc, savasPencereKapa } from "./savas";
+export { savasPencereAc, savasPencereKapa, savunmaGucuGorunumu } from "./savas";
+export type { SavunmaGucuGorunumu } from "./savas";
 export { partiBitti, ikmalTalebi } from "./uretim";
 
 /** Askeri komutlar: birlik_uret, savas_ilan, savunma_emri. */

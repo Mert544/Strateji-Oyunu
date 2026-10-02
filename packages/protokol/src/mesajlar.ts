@@ -290,7 +290,12 @@ const bolgeKaresiSemasi = z.object({
       isletme: z.object({ ihrNetPpm: tam, emirYuvasi: tam.optional(), ithNetPpm: tam.optional() }).optional(),
       emirler: z.array(z.tuple([tam, z.union([z.literal(0), z.literal(1)]), tam, tam])),
       birlikler: z.array(tam),
-      ordu: z.object({ kapasite: tam, ordugahSayisi: tam, ikmalSaat: z.array(z.tuple([tam, tam])).optional() }).optional(),
+      ordu: z.object({
+        kapasite: tam,
+        ordugahSayisi: tam,
+        ikmalSaat: z.array(z.tuple([tam, tam])).optional(),
+        savunma: z.object({ hamGuc: tam, ikmalPpm: tam, araziPpm: tam, durusPpm: tam, guc: tam }).optional(),
+      }).optional(),
       gidaPpm: tam,
       ikmalPpm: tam,
       rezervKalan: z.array(tam),
