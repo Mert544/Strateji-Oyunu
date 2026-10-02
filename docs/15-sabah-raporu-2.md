@@ -69,7 +69,7 @@ Tam set (yaklaşık 60 kare, açık/koyu, masaüstü/telefon) ekipte duruyor; is
 7. **Caddy (istemci sunumu)** yapılandırıldı ama gerçek makinede denenmedi (bu ortamda Docker yok).
 8. **Yürüyüş (sokak) görünümü** canlıda oyuncunun gerçek yapılarını değil örnek yapıları çiziyor; harita (2B) görünümü doğru. Bağlama işi sırada.
 9. **Dükkân ekranında küçük kusurlar** (ekran setinden 24 madde): haritada dükkânın etiketi "Yapı" yazıyor; kasa/boş raf iletileri iki yerde; yuva satırındaki gelir rakamı (satış × fiyat ile tutmuyor) incelenene kadar gizleniyor. Düzeltmeler hazırlanıyor.
-10. **Gemlik/Körfez ve sunucu ayarı:** istemci üç ilçeyi açıyor ve uçtan uca testte Gemlik'e yerleşme geçti; ancak sunucu ızgara dosyalarıyla başlatılmazsa kartta "henüz açık değil" görünüyor (ekran setinde böyle çıktı). Kurulum kılavuzunda bunun varsayılan olduğu doğrulanıyor.
+10. **Gemlik/Körfez ve sunucu ayarı:** istemci üç ilçeyi açıyor ve uçtan uca testte Gemlik'e yerleşme geçti. Ancak belgelenmiş Alfa-0 kurulumu (compose) bugün sunucuyu sentetik test haritasıyla ve ızgara dosyası olmadan başlatıyor; bu hâliyle kartta "henüz açık değil" görünür (ekran setinde böyle çıktı). Kararım: Alfa-0 dünyası **gerçek Karadeniz haritası + üç ilçenin ızgarası** olacak; ayar ve kılavuz adımı hazır, yerel açılış kanıtıyla birlikte sıradaki pakette.
 
 ## 5. Senden beklenen kararlar
 
