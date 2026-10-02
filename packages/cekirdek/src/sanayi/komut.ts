@@ -16,6 +16,7 @@ import { PPM, SAAT } from "../tipler";
 import type { Baglam, BolgeDurumu, Dunya, HucreDurumu, InsaatDurumu, Komut, KomutSonucu, OyuncuId } from "../tipler";
 import { olcekKademesi } from "./carpan";
 import { sanayiTablosu } from "./tablo";
+import { genelOnarimGorunumu, genelOnarimTeklifiGecerliMi, genelOnarimTeklifleriAyniMi } from "./onarim";
 
 function hata(mesaj: string): KomutSonucu {
   return { tamam: false, hata: mesaj };
@@ -118,23 +119,22 @@ export function sanayiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut):
       const b = sahipliBolge(d, ctx, oyuncu, k.bolge);
       if (typeof b === "string") return hata(b);
       if (d.insaatlar.some((i) => i.tur === "onarim" && i.bolge === b.indeks)) return hata(`bolgede onarim suruyor: ${k.bolge}`);
-      // Onarılacak tesisler: aşınması olanlar. Maliyet: onların inşa maliyetinin (ölçek dahil) %20'si (para + mal).
-      const onarilacak = b.tesisler.filter((t) => (t.asinmaPpm ?? 0) > 0);
-      if (onarilacak.length === 0) return hata(`onarilacak asinma yok: ${k.bolge}`);
-      const toplamMal = new Map<number, number>();
-      let para = 0;
-      for (const ts of onarilacak) {
-        const tur = tb.tur[ts.tur];
-        if (!tur) continue;
-        const oran = carpBol(olcekKademesi(sn, ts).insaPpm, sn.p.bakim.genelOnarimMaliyetPpm, PPM);
-        for (const [m, q] of malOlcekle(tur.insaMaliyeti, oran)) toplamMal.set(m, (toplamMal.get(m) ?? 0) + q);
-        para += carpBol(tur.insaParasi, oran, PPM);
+      const teklif = genelOnarimGorunumu(d, ic, oyuncu, b.id)?.teklif;
+      if (k.gorulenTeklif !== undefined) {
+        if (!genelOnarimTeklifiGecerliMi(k.gorulenTeklif)) return hata("gecersiz onarim teklifi");
+        if (teklif === undefined || !genelOnarimTeklifleriAyniMi(k.gorulenTeklif, teklif)) return hata("onarim teklifi degisti");
       }
-      const mal: Array<[number, number]> = [...toplamMal.entries()].sort((x, y) => x[0] - y[0]);
+      if (teklif === undefined) return hata(`onarilacak asinma yok: ${k.bolge}`);
+      // Tel teklifi mal kimliği sıralıdır; stok düşümü ve eşik olayları legacy içerik indeks sırasını korur.
+      const mal: Array<[number, number]> = teklif.mal.map(([id, q]) => [ic.malIndeks[id]!, q]);
+      mal.sort((x, y) => x[0] - y[0]);
+      const para = teklif.paraMili;
       const eksik = maliyetYeterliMi(d, b.indeks, oyuncu, mal, para);
       if (eksik !== null) return hata(eksik);
       if (!maliyetiDus(d, ctx, b.indeks, oyuncu, mal, para)) return hata("yetersiz hazine");
-      const dur = sn.p.bakim.genelOnarimDurusSaat * SAAT;
+      const hedefler = new Set(teklif.tesisler.map((x) => x.tesis));
+      const onarilacak = b.tesisler.filter((x) => hedefler.has(x.id));
+      const dur = teklif.durusMs;
       const bitis = d.zaman + dur;
       for (const ts of onarilacak) {
         ts.asinmaPpm = 0;

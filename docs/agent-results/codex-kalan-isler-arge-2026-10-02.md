@@ -35,6 +35,15 @@ ayrı görülen-düzey onayıyla bağlandı. Haritada kendi tesisinin gerçek h�
 tüketim/işletme gideri ve aşınma kuralları aynı; genel onarım/sondaj bu
 kontrolün parçası değildir. Kabul sonucu devam kaydında tutulur.
 
+## O1 uygulama güncellemesi
+
+[O1 genel onarım](codex-o1-genel-onarim-sozlesmesi.md) tamamlandı:
+sunucuda tek saf teklif hesabı, gerçek hedef/bedel/duruş, görülen teklif
+koruması ve ayrı onay. Sondajı başlatan komut hazır olsa da başarısızlık ve
+sonuç geçmişi kalıcı olarak kaydedilmiyor; sondajın sonuç sözleşmesi ayrı
+[hazır](codex-sondaj-sonuc-arge.md). Rezerv değişiminden sonuç uydurulmayacak.
+O1 iki hedefli kontrol, kök/istemci tip kontrolü ve derleme ilk koşuda geçti.
+
 ## Uygulama sırası ve kalan kapsam
 
 1. **Oyuncu genelinde bakım düzeyi — M1 uygulandı.** Hazır `bakim_duzeyi` komutunu gerçek

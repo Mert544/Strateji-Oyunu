@@ -18,7 +18,7 @@
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, erkenOyunCarpani, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, LojistikKenarGorunumu, SunucuMesaji } from "@bolge/protokol";
-import type { BakimDuzeyiDegistirIstegi, PazarKaynagi, PazarSatisIstegi, PazarSatisSonucu, DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisDurumDegistirIstegi, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
+import type { BakimDuzeyiDegistirIstegi, PazarKaynagi, PazarSatisIstegi, PazarSatisSonucu, DukkanKaresi, DukkanKomutSonucu, GenelOnarimIstegi, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisDurumDegistirIstegi, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce, pazarHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
 import type { InsaatBilgisi } from "../yuru/arsa";
 import { parselToplamFiyatiMili } from "./fiyat";
@@ -345,6 +345,33 @@ export class WsBaglanti implements MulkBaglantisi {
       }
       const hucre = hataHucresi(r.hata);
       return { tamam: false, hata: "sunucu", mesaj: mulkHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)), ...(hucre ? { hucre } : {}) };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
+  /** Sunucu teklifini aynı hedef ve tutarlarla kopyalar; istemcide onarım maliyeti hesaplanmaz. */
+  async genelOnarim(i: GenelOnarimIstegi): Promise<TesisSonucu> {
+    try {
+      const teklif = i.gorulenTeklif;
+      const r = await this.komutGonder({ tur: "genel_onarim", bolge: i.bolge, gorulenTeklif: {
+        tesisler: teklif.tesisler.map(({ tesis, tur, olcek }) => ({ tesis, tur, olcek })),
+        paraMili: teklif.paraMili,
+        mal: teklif.mal.map(([mal, miktar]): [string, number] => [mal, miktar]),
+        durusMs: teklif.durusMs,
+      } });
+      if (r.tamam) return { tamam: true, t: r.t };
+      const mesaj = r.hata === "onarim teklifi degisti" ? "Onarım teklifi değişmiş. Güncel hedefleri ve bedeli yeniden inceleyin."
+        : r.hata === "gecersiz onarim teklifi" ? "Görülen onarım teklifi geçersiz. Onarım kartını yeniden açın."
+        : r.hata.startsWith("bolgede onarim suruyor") ? "Bu işletmede onarım zaten sürüyor. Bitiş bilgisini kontrol edin."
+        : r.hata.startsWith("onarilacak asinma yok") ? "Bu işletmede onarılacak aşınmış tesis yok."
+        : r.hata.startsWith("yetersiz stok") ? "Onarım için gereken mallar bu işletmenin deposunda yeterli değil."
+        : r.hata === "yetersiz hazine" ? "Onarım için hazineniz yeterli değil."
+        : r.hata.startsWith("bolge oyuncunun degil") ? "Bu işletme size ait değil."
+        : r.hata.startsWith("bilinmeyen bolge") ? "Onarılacak işletme bulunamadı. Güncel tesis kayıtlarını kontrol edin."
+        : r.hata === "sanayi katmani kapali" ? "Sanayi katmanı kapalı; onarım şu anda kullanılamıyor."
+        : "Onarım başlatılamadı. Güncel teklifi kontrol edip yeniden deneyin.";
+      return { tamam: false, hata: "sunucu", mesaj };
     } catch (e) {
       return this.agHatasi(e);
     }
@@ -784,6 +811,9 @@ export class WsBaglanti implements MulkBaglantisi {
     const sebeke = new Map<string, number>();
     const kendiIsletmeleri = k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`));
     const rezervDizini = this.hos?.dizin.mallar;
+    const onarimTeklifleri: IsletmeDurumu["onarimTeklifleri"] = o.mulk === undefined ? undefined : kendiIsletmeleri.map((b) => ({
+      bolge: b.id, il: b.id.split("#")[0]!, ...(b.ozel?.onarim === undefined ? {} : { onarim: b.ozel.onarim }),
+    }));
     // Rezerv muhasebesinin zamanı wire'da yoktur; yalnız kaydedilmiş değerler aktarılır.
     // Özel verisi eksik kaynaklar görünür kalır, public merkezden rezerv kopyalanmaz.
     const rezervler: IsletmeDurumu["rezervler"] = o.mulk === undefined || rezervDizini === undefined ? undefined : kendiIsletmeleri.map((b) => {
@@ -898,7 +928,9 @@ export class WsBaglanti implements MulkBaglantisi {
         const olcek = tesisOlcegi(oz, id);
         const asinma = tesisAsinmasi(oz, id);
         const yontem = yontemler[yontemIdx];
-        yapilar.push({ anahtar, durum: "tesis", tur: turler[tur] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), aktif: aktif === 1, verimPpm: verim, ...(olcek !== undefined ? { olcek } : {}), ...(asinma !== undefined ? { asinmaPpm: asinma } : {}), ...(yontem !== undefined ? { yontem } : {}), bolge: b.id });
+        const surenOnarim = oz.onarim?.suruyor;
+        const onarimBitis = uygun && surenOnarim?.tesisler.includes(id) ? surenOnarim.bitis : undefined;
+        yapilar.push({ anahtar, durum: "tesis", tur: turler[tur] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), aktif: aktif === 1, verimPpm: verim, ...(olcek !== undefined ? { olcek } : {}), ...(asinma !== undefined ? { asinmaPpm: asinma } : {}), ...(yontem !== undefined ? { yontem } : {}), ...(onarimBitis === undefined ? {} : { onarimBitis }), bolge: b.id });
       }
       for (const [m, q] of oz.sebeke ?? []) if (q > 0) sebeke.set(m, (sebeke.get(m) ?? 0) + q);
       oz.stoklar.forEach((f, m) => {
@@ -938,6 +970,7 @@ export class WsBaglanti implements MulkBaglantisi {
     return {
       simZamani: t,
       ...(o.bakimDuzeyi === undefined ? {} : { bakimDuzeyi: o.bakimDuzeyi }),
+      ...(onarimTeklifleri === undefined ? {} : { onarimTeklifleri }),
       hazineMili: stokAraDeger(o.hazine, t),
       hazineOraniMili: o.hazine[1],
       araziDegeriMili: mk?.araziDegeriMili ?? null,

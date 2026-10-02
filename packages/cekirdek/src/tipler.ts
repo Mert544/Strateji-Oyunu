@@ -210,6 +210,22 @@ export interface Stok {
   surum: number;
 }
 
+/** Genel onarımın kanonik, görülen ödeme ve hedef sözleşmesi; aşınma yüzdesi maliyeti değiştirmez. */
+export interface GenelOnarimTeklifi {
+  tesisler: Array<{ tesis: number; tur: string; olcek: 0 | 1 | 2 }>;
+  paraMili: Mili;
+  mal: Array<[mal: string, miktarMili: Mili]>;
+  durusMs: Ms;
+}
+
+/** Yalnız sahibine saf onarım görünümü; yokluğu kapalı özellik veya kapsam dışıdır. */
+export interface GenelOnarimGorunumu {
+  teklif?: GenelOnarimTeklifi;
+  suruyor?: { bitis: Ms; tesisler: number[] };
+  uygun: boolean;
+  engel?: string;
+}
+
 export interface TesisDurumu {
   id: number;
   /** tesisTurleri indeksi */
@@ -881,7 +897,7 @@ export type Komut =
   // Mülk kipinde (docs/06 §15.10) ayak izi büyür: `ekHucreler` yükseltmenin gerektirdiği EK bitişik hücrelerdir (oyuncunun boş hücresi ya da sahipsiz hücre:
   // sahipsizler `sinif` sınıfında atomik satın alınır); bölge kipinde ikisi de verilemez.
   | { tur: "tesis_olcek_yukselt"; bolge: string; tesis: number; olcek: 1 | 2; ekHucreler?: HucreId[]; sinif?: ArsaSinifi }
-  | { tur: "genel_onarim"; bolge: string }
+  | { tur: "genel_onarim"; bolge: string; gorulenTeklif?: GenelOnarimTeklifi }
   | { tur: "bakim_duzeyi"; duzey: 0 | 1 | 2; oncekiDuzey?: 0 | 1 | 2 }
   | { tur: "arama_sondaji"; bolge: string; mal: string }
   // Lojistik

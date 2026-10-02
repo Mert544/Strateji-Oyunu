@@ -11,6 +11,8 @@ import { miniVeriyiYukle } from "@bolge/veri";
 import type { IlgiKaresi } from "@bolge/protokol";
 import { icerikTablosu } from "../src/komut/tablo";
 import { BakimPaneli } from "../src/harita/bakim-panel";
+import { OnarimPaneli } from "../src/harita/onarim-panel";
+import type { GenelOnarimGorunumu, GenelOnarimTeklifi } from "../src/harita/baglanti";
 
 type Dinleyici = (e: { data?: string; code?: number }) => void;
 
@@ -121,6 +123,70 @@ async function bagla(ek: KareEk = {}): Promise<{ b: WsBaglanti; ws: SahteWs }> {
 
 afterEach(() => {
   SahteWs.ornekler = [];
+});
+
+it("O1 onarım onayı: teklif derin dondurulur; iptal ve stale komutsuzdur, exact WS/pending/ack/ret kaynağı optimistik değiştirmez", async () => {
+  const { b, ws } = await bagla();
+  try {
+    const bolge = "il1#ali";
+    const q: GenelOnarimTeklifi = { tesisler: [{ tesis: 3, tur: "gida_fabrikasi", olcek: 0 }, { tesis: 4, tur: "ciftlik", olcek: 0 }], paraMili: 1_000_000, mal: [["parca", 500]], durusMs: 21_600_000 };
+    const onay = { bolge, gorulenTeklif: structuredClone(q) };
+    let rev = 1;
+    const guncelle = (onarim?: GenelOnarimGorunumu) => {
+      const m = kare({}, ++rev), k = m["kare"] as unknown as IlgiKaresi;
+      if (onarim) k.bolgeler[0]!.ozel!.onarim = structuredClone(onarim);
+      ws.mesaj(m);
+    };
+    const komutlar = () => ws.gonderilen.filter((k) => k["tur"] === "komut");
+    const p = new OnarimPaneli({ isletme: () => b.isletme(), komut: (i) => b.genelOnarim(i), degisti: () => {} });
+    expect(b.isletme()!.onarimTeklifleri).toEqual([{ bolge, il: "il1" }]);
+    await p.eylem({ eylem: "ac", onay });
+    expect(p.durum.onay).toBeNull();
+    guncelle({ teklif: q, uygun: true });
+    await p.eylem({ eylem: "ac", onay });
+    onay.gorulenTeklif.tesisler[0]!.olcek = 2;
+    onay.gorulenTeklif.mal[0]![1] = 999;
+    expect(p.durum.onay!.gorulenTeklif).toEqual(q);
+    await p.eylem({ eylem: "vazgec", bolge });
+    expect(p.durum.onay).toBeNull();
+    expect(komutlar()).toEqual([]);
+    const teklif = { bolge, gorulenTeklif: structuredClone(q) };
+    await p.eylem({ eylem: "ac", onay: teklif });
+    guncelle({ teklif: { ...q, paraMili: q.paraMili + 1 }, uygun: true });
+    await p.eylem({ eylem: "onayla", onay: teklif });
+    expect(p.durum.hata).toContain("değişmiş");
+    expect(komutlar()).toEqual([]);
+    p.kapat(bolge);
+    guncelle();
+    await p.eylem({ eylem: "ac", onay: teklif });
+    expect(p.durum.onay).toBeNull();
+    expect(komutlar()).toEqual([]);
+    guncelle({ teklif: q, uygun: true });
+    await p.eylem({ eylem: "ac", onay: teklif });
+    const bekleyen = p.eylem({ eylem: "onayla", onay: teklif });
+    expect(p.durum.bekliyor).toBe(true);
+    await p.eylem({ eylem: "onayla", onay: teklif });
+    p.kapat(bolge);
+    expect(p.durum.onay).toEqual(teklif);
+    expect(komutlar()).toHaveLength(1);
+    const k = komutlar()[0]!;
+    expect(k["komut"]).toEqual({ tur: "genel_onarim", bolge, gorulenTeklif: q });
+    ws.mesaj({ tur: "komutSonucu", anahtar: k["anahtar"], seq: 1, t: 1, komut: k["komut"], sonuc: { tamam: true }, tekrar: false });
+    await bekleyen;
+    expect(p.durum).toMatchObject({ onay: null, bekliyor: false });
+    expect(b.isletme()!.onarimTeklifleri![0]!.onarim!.suruyor).toBeUndefined();
+    guncelle({ uygun: false, suruyor: { bitis: 21_600_001, tesisler: [3] } });
+    expect(b.isletme()!.yapilar.find((y) => y.anahtar === "t3")!.onarimBitis).toBe(21_600_001);
+    expect(b.isletme()!.yapilar.find((y) => y.anahtar === "t4")).not.toHaveProperty("onarimBitis");
+    guncelle({ teklif: q, uygun: true });
+    await p.eylem({ eylem: "ac", onay: teklif });
+    const ret = p.eylem({ eylem: "onayla", onay: teklif }), son = komutlar().at(-1)!;
+    ws.mesaj({ tur: "komutSonucu", anahtar: son["anahtar"], seq: 2, t: 2, komut: son["komut"], sonuc: { tamam: false, hata: "onarim teklifi degisti" }, tekrar: false });
+    await ret;
+    expect(p.durum.hata).toContain("değişmiş");
+    expect(b.isletme()!.onarimTeklifleri![0]!.onarim!.teklif).toEqual(q);
+    expect(b.sunucuHatalari).toEqual([]);
+  } finally { b.kapat(); }
 });
 
 it("M1 bakım onayı: bilinmeyen ve 0 ayrılır; seçim/Vazgeç komutsuz, frozen/stale/pending korunur, bridge gerçek ack/ret bekler", async () => {

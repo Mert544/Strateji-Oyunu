@@ -12,7 +12,8 @@
  */
 import type { ArsaSinifi, HucreId, Komut, Mili, MulkKomutu, OyuncuId } from "@bolge/cekirdek";
 import { DEFTER_DAMGALARI, DEFTER_GOSTERIM_SIRASI, defterSablonu } from "@bolge/protokol";
-import type { Defter, DefterKazanilan, DefterOdulu, DonusOzeti, IlgiKaresi, KamuGrubuKaresi, YakitTedarikiGorunumu } from "@bolge/protokol";
+import type { Defter, DefterKazanilan, DefterOdulu, DonusOzeti, GenelOnarimGorunumu, GenelOnarimTeklifi, IlgiKaresi, KamuGrubuKaresi, YakitTedarikiGorunumu } from "@bolge/protokol";
+export type { GenelOnarimGorunumu, GenelOnarimTeklifi } from "@bolge/protokol";
 import { kavramEtkinBos } from "./etkin";
 import { arsaSinifi, bitisikMi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili } from "./fiyat";
 import { durumAl, engelNedeni, hucreId, idCoz, izgaraSay } from "./hucre";
@@ -86,6 +87,12 @@ export interface TesisDurumDegistirIstegi {
 export interface BakimDuzeyiDegistirIstegi {
   duzey: 0 | 1 | 2;
   oncekiDuzey: 0 | 1 | 2;
+}
+
+/** İşletme düğümünün genel onarımı; teklif sunucudan görüldüğü hâliyle gönderilir. */
+export interface GenelOnarimIstegi {
+  bolge: string;
+  gorulenTeklif: GenelOnarimTeklifi;
 }
 
 /** Pazar'da sat (`ticaret_emri`, ihracat): SÜREKLİ saatlik emir. `oranSaat` mili-birim/sa (tamsayı; 0 = emri kaldırır). `bolge`: işletme düğümü kimliği (`<il>#<oyuncu>`). */
@@ -239,6 +246,8 @@ export interface IsletmeYapisi {
   asinmaPpm?: number;
   /** İşletme düğümünün kimliği (`<il>#<oyuncu>`; yalnız biten tesiste; `yontem_degistir` komutunun `bolge` alanı). */
   bolge?: string;
+  /** Sunucunun bu tesisi kapsayan gerçek genel onarım bitişi; diğer tesislere genellenmez. */
+  onarimBitis?: number;
 }
 
 /** Satış emri belirli bir çıkış düğümüne aittir; mal bütün sahipli işletme ağından karşılanabilir. */
@@ -271,6 +280,8 @@ export interface IsletmeDurumu {
   simZamani: number;
   /** Sunucunun oyuncuya ait etkin bakım düzeyi; alan yoksa bilinmiyor, 0 gerçek düşük bakımdır. */
   bakimDuzeyi?: 0 | 1 | 2;
+  /** Sahibinin düğüm başına sunucu onarım görünümü; eksik özel veri kaynak satırını gizlemez. */
+  onarimTeklifleri?: Array<{ bolge: string; il: string; onarim?: GenelOnarimGorunumu }>;
   hazineMili: number | null;
   /** Hazinenin net akışı (mili-₺/saat; biliniyorsa). */
   hazineOraniMili: number | null;
@@ -344,6 +355,8 @@ export interface MulkBaglantisi {
   tesisDurumDegistir?(i: TesisDurumDegistirIstegi): Promise<TesisSonucu>;
   /** Global bakım tercihi; bölge seçilmez ve görülen önceki düzey aynen aktarılır. */
   bakimDuzeyiDegistir?(i: BakimDuzeyiDegistirIstegi): Promise<TesisSonucu>;
+  /** Gerçek genel_onarim komutu; görülen hedefler, mal/para bedeli ve duruş süresi aynen korunur. */
+  genelOnarim?(i: GenelOnarimIstegi): Promise<TesisSonucu>;
   /** Pazar'da sat (`ticaret_emri`, ihracat; mülk kipinde liman şartı yok): sürekli saatlik emir ver/güncelle (`oranSaat` 0 = kaldır). Tanımsızsa Mal sekmesinde "Pazar'da sat" gösterilmez. Ret nedeni Türkçe (`pazar.ret.*`). */
   ticaretEmri?(i: TicaretEmriIstegi): Promise<TesisSonucu>;
   /** Sahibinin işletmelerindeki gerçek stok ve sürekli ithalat emirleri. */

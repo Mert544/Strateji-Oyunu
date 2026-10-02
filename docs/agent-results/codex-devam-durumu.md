@@ -2,6 +2,38 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — O1 gerçek teklifli genel onarım
+
+M1–H1 `c0e77ef` üstüne mevcut altı uzmanla [O1](codex-o1-genel-onarim-sozlesmesi.md)
+tamamlandı. İşletmem'de bakım altında il işletmesi bazında gerçek aşınmış
+hedefler, toplam para/malzeme bedeli ve duruş süresi gösterilir. Teklif
+sunucudaki ortak saf hesaptan gelir; ayrı görülen-teklif onayıyla gönderilir.
+Hedef/tür/ölçek, bedel, malzemeler veya süre değişmişse çekirdek mutasyon
+öncesinde reddeder. Eski komut çağrısı aynı maliyet/ödeme sırasını korur.
+
+Onarım bütün aşınmış hedefleri, üretimi kapalı olanlar dahil, kapsar.
+Aşınma hemen sıfırlanır fakat gerçek 6 sim saatlik duruş sürer. Aktif tercihi
+değişmez; bakım ve aktif tesis işletme gideri sürer. Tesis satırında gerçek
+onarım duruşu ve üretim tercihi ayrı gösterilir. Yabancı/eksik özel veri
+kullanılmaz. UI maliyeti hesaplamaz, ödeme veya bitişi tahmin ederek yazmaz.
+
+B6 tek O1 seçiminde iki vaka ilk koşuda geçti, eski 8 vaka atlandı: doğal
+aşınmış iki gerçek tesis (biri durmuş), kesin para/mal ödemesi, eski/bozuk
+teklif ve sahiplik için saf ret, gerçek duruş ve üretime dönüş, legacy kol,
+save/load/replay, özel kare; gerçek controller→WS onayı, deep frozen teklif,
+iptal, değişmiş/bilinmeyen kaynak, pending tekrar engeli ve gerçek ack/ret.
+Kök/istemci tip kontrolleri ve son istemci derlemesi birer kez başarılı.
+Dünya gzip 393,4KB/400KB, harita 517,0KB, toplam JS 938,5KB. Root birleşik
+kaynakları inceledi. Tarayıcı/ekran veya geniş test tekrarı yok; gerçek DOM
+odağı/tıklama akışı bu teslimde tarayıcıda sınanmadı. Önceden bilinen eksik
+PMTiles varlıkları ve derleme uyarıları sürüyor, yeni sokak varlığı eklenmedi.
+
+Sondajda kullanılan haklar ve kuyruk kayıtlı olsa da kalıcı başarı/başarısızlık
+sonucu bulunmuyor. [Sondaj sonuç sözleşmesi](codex-sondaj-sonuc-arge.md) hazır;
+sondaj başlatma arayüzü bu teslimde açılmadı. Sıradaki iş, mevcut iki RNG
+çekimini ve rezerv hesabını koruyarak iş kimliği/pending/sonuç kaydını,
+özel görünümü ve kayıt uyumunu hazırlamak; sonra gerçek teklifli sondaj UI.
+
 ## Güncel teslim — M1 bakım tercihi ve H1 tesis odağı
 
 N1 `832064c` üstüne mevcut altı uzmanla [M1–H1](codex-m1-h1-bakim-harita-sozlesmesi.md)

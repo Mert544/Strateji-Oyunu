@@ -34,6 +34,8 @@
  */
 import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, kamuSiparisGorunumu, kamuTeslimGorunumu, lojistikYolGorunumu, meclisGorunumu, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
 import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, IlceKamuSiparisGorunumu, KamuGrubu, KamuTeslimGorunumu, IlceSeviyesi, LojistikKenarGorunumu as CekirdekLojistikKenarGorunumu, MeclisGorunumu, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok, YakitTedariki } from "@bolge/cekirdek";
+import { genelOnarimGorunumu } from "@bolge/cekirdek";
+import type { GenelOnarimGorunumu as CekirdekGenelOnarimGorunumu, GenelOnarimTeklifi as CekirdekGenelOnarimTeklifi } from "@bolge/cekirdek";
 
 /** Güvenli çekirdek projeksiyonu: planlı baskınlar ve yabancı özel sonuçlar içermez. Yokluğu eski sunucu/kural bilinmezliğidir. */
 export type PveIlceKaresi = EskiyaIlceGorunumu;
@@ -42,6 +44,23 @@ export type KamuSiparisleriKaresi = IlceKamuSiparisGorunumu;
 export type KamuTeslimKaresi = KamuTeslimGorunumu;
 export type MeclisKaresi = MeclisGorunumu;
 export type LojistikKenarGorunumu = CekirdekLojistikKenarGorunumu;
+export type GenelOnarimTeklifi = CekirdekGenelOnarimTeklifi;
+export type GenelOnarimGorunumu = CekirdekGenelOnarimGorunumu;
+
+/** Sahip onarım görünümü yalnız izinli alanları taşır; çekirdek nesneleri tele paylaşılmaz. */
+function onarimTelKaresi(g: GenelOnarimGorunumu): GenelOnarimGorunumu {
+  return {
+    uygun: g.uygun,
+    ...(g.engel === undefined ? {} : { engel: g.engel }),
+    ...(g.teklif === undefined ? {} : { teklif: {
+      tesisler: g.teklif.tesisler.map((x) => ({ tesis: x.tesis, tur: x.tur, olcek: x.olcek })),
+      paraMili: g.teklif.paraMili,
+      mal: g.teklif.mal.map(([m, q]): [string, number] => [m, q]),
+      durusMs: g.teklif.durusMs,
+    } }),
+    ...(g.suruyor === undefined ? {} : { suruyor: { bitis: g.suruyor.bitis, tesisler: [...g.suruyor.tesisler] } }),
+  };
+}
 
 /** Kamu ilanına yalnız genel alanlar alınır; defter, üretici ve özel depo kayıtları tel nesnesine taşınmaz. */
 function kamuSiparisTelKaresi(g: KamuSiparisleriKaresi): KamuSiparisleriKaresi {
@@ -247,6 +266,8 @@ export interface OzelBolgeKaresi {
    * Demete öğe eklenmez; eski istemci (z.object bilinmeyen anahtarı atar) alanı sessizce yok sayar.
    */
   tesisAsinma?: Array<[id: number, asinmaPpm: number]>;
+  /** Yalnız sahip mülk düğümüne ortak saf onarım teklifi ve gerçek duruş hedefleri; alan yokluğu eski/kapalı özellik demektir. */
+  onarim?: GenelOnarimGorunumu;
   /**
    * Yalnız ekleme (isteğe bağlı, yalnız sahibine; G6 şebeke, G9 faturası için): düğümün şebekeden SON ÇÖZÜMDE aldığı miktar `[mal kimliği, mili-birim/saat]`: önce elektrik
    * (`b.elektrik.sebekeMili`, depolanamaz anlık denge yolu), sonra stoksuz tüketim anı yolundaki depolanabilir mallar (`b.sebekeTuketim`; mal kimliğine göre sıralı). Yalnız `> 0`
@@ -697,6 +718,8 @@ export function ilgiKaresiCikar(
         rezervKalan: [...b.rezervKalan],
       };
       if (kaynak.ic.mulk !== undefined && b.merkez !== undefined) {
+        const onarim = genelOnarimGorunumu(d, kaynak.ic, oyuncu, b.id);
+        if (onarim !== undefined) girdi.ozel.onarim = onarimTelKaresi(onarim);
         const yakit = b.yakitTedariki;
         if (yakit !== undefined && kaynak.ic.mulk.sebeke?.stoksuz.some((x) => x.stokOncelikli === true && kaynak.ic.mallar[x.mal]?.id === yakit.mal)) {
           girdi.ozel.yakitTedariki = {

@@ -21,6 +21,14 @@ const tamsayi = z.number().int().safe();
 const olcekSecimi = z.union([z.literal(0), z.literal(1), z.literal(2)]);
 const anlasma = z.enum(["ticaret", "ortak_altyapi"]);
 
+/** Komutta görülen ve sahip karesinde gösterilen onarım teklifi aynı biçimi kullanır. */
+export const GenelOnarimTeklifiSemasi = z.object({
+  tesisler: z.array(z.object({ tesis: tamsayi.nonnegative(), tur: kimlik, olcek: olcekSecimi }).strict()).min(1),
+  paraMili: tamsayi.nonnegative(),
+  mal: z.array(z.tuple([kimlik, tamsayi.positive()])),
+  durusMs: tamsayi.nonnegative(),
+}).strict();
+
 export const KomutSemasi = z.discriminatedUnion("tur", [
   // Ekonomi
   z.object({ tur: z.literal("tesis_insa"), bolge: kimlik, tesisTuru: kimlik }),
@@ -41,7 +49,7 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
     ekHucreler: z.array(kimlik).max(5).optional(),
     sinif: z.enum(["kirsal", "kasaba", "sehir"]).optional(),
   }),
-  z.object({ tur: z.literal("genel_onarim"), bolge: kimlik }),
+  z.object({ tur: z.literal("genel_onarim"), bolge: kimlik, gorulenTeklif: GenelOnarimTeklifiSemasi.optional() }),
   z.object({ tur: z.literal("bakim_duzeyi"), duzey: z.union([z.literal(0), z.literal(1), z.literal(2)]), oncekiDuzey: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional() }),
   z.object({ tur: z.literal("arama_sondaji"), bolge: kimlik, mal: kimlik }),
   // Lojistik

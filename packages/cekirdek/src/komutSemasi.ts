@@ -41,7 +41,7 @@ export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   gubre_dozu: { yol: "oyuncu", alanlar: { bolge: "kimlik", doz: "secim" } },
   // Sanayi
   tesis_olcek_yukselt: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", olcek: "secim", ekHucreler: "kimlik", sinif: "secim" } },
-  genel_onarim: { yol: "oyuncu", alanlar: { bolge: "kimlik" } },
+  genel_onarim: { yol: "oyuncu", alanlar: { bolge: "kimlik", gorulenTeklif: "miktar" } },
   bakim_duzeyi: { yol: "oyuncu", alanlar: { duzey: "secim", oncekiDuzey: "secim" } },
   arama_sondaji: { yol: "oyuncu", alanlar: { bolge: "kimlik", mal: "kimlik" } },
   // Lojistik

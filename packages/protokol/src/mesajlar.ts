@@ -14,7 +14,7 @@
  */
 import { z } from "zod";
 import type { Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
-import { KomutSemasi } from "./komut-sema";
+import { GenelOnarimTeklifiSemasi, KomutSemasi } from "./komut-sema";
 import { DefterSemasi } from "./defter";
 import type { Defter } from "./defter";
 import { DonusOzetiSemasi } from "./donus";
@@ -263,6 +263,12 @@ const bolgeKaresiSemasi = z.object({
         .optional(),
       // Yalnız ekleme: aşınması > 0 olan tesislerin aşınması (ppm). Demete öğe eklenmez; eski istemci bilinmeyen anahtarı atar.
       tesisAsinma: z.array(z.tuple([tam, tam])).optional(),
+      onarim: z.object({
+        teklif: GenelOnarimTeklifiSemasi.optional(),
+        suruyor: z.object({ bitis: z.number().int().safe().nonnegative(), tesisler: z.array(z.number().int().safe().nonnegative()) }).optional(),
+        uygun: z.boolean(),
+        engel: z.string().optional(),
+      }).optional(),
       // Yalnız ekleme: şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (demete öğe eklenmez; eski istemci bilinmeyen anahtarı atar).
       sebeke: z.array(z.tuple([z.string(), tam])).optional(),
       // Yalnız sahibine: [] bilinen sıfır, alan yokluğu bilinmeyen/kapsam dışı. Eski şebeke demeti büyütülmez.

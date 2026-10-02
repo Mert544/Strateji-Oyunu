@@ -47,6 +47,7 @@ export type { TarimTablosu } from "./tarim";
 // --- Sanayi katmanı (B2) ---
 export {
   sanayiKomutu,
+  genelOnarimGorunumu,
   sondajBitti,
   sanayiSaatlik,
   sanayiGunluk,

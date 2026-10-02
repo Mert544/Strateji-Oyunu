@@ -4,6 +4,7 @@
  * üretim çarpanı zinciri ve elektrik uygulaması ekonomi/uretim.ts içindedir.
  */
 export { sanayiKomutu } from "./komut";
+export { genelOnarimGorunumu } from "./onarim";
 export { sondajBitti } from "./damar";
 export { sanayiSaatlik, sanayiGunluk } from "./gunluk";
 export { elektrikDagit } from "./elektrik";

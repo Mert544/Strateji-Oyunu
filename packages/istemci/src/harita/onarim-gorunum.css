@@ -1,0 +1,18 @@
+.onr-panel{min-width:0;max-width:100%;box-sizing:border-box;margin:18px 0;padding:14px;border:1px solid var(--cizgi);border-radius:var(--r-md);background:var(--yuzey);overflow-wrap:anywhere}
+.onr-panel>h4{margin:0 0 6px;font-size:1em;line-height:1.5}
+.onr-panel .onr-kaynak{margin:12px 0 0;padding:12px;min-width:0;border:1px solid var(--cizgi);border-radius:var(--r-sm)}
+.onr-panel .onr-kaynak>h5,.onr-panel .onr-onay>h5{margin:0 0 8px;font-size:.9em;line-height:1.5}
+.onr-panel .onr-bilgi,.onr-panel .onr-hata,.onr-panel .onr-sonuc,.onr-panel .onr-durus{margin:8px 0;font-size:.85em;line-height:1.55;overflow-wrap:anywhere}
+.onr-panel .onr-bilgi{color:var(--murekkep-2)}.onr-panel .onr-hata{color:var(--hata-ink)}
+.onr-panel .onr-hedefler,.onr-panel .onr-mallar{display:block;list-style:none;margin:8px 0;padding:0;min-width:0;font-size:.85em;line-height:1.5}
+.onr-panel .onr-hedefler>li,.onr-panel .onr-mallar>li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;margin:4px 0;min-width:0;overflow-wrap:anywhere}
+.onr-panel .onr-hedefler>li>span:last-child{color:var(--murekkep-2)}
+.onr-panel .onr-bedel{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin:10px 0;font-size:.85em;line-height:1.5}
+.onr-panel .onr-bedel>div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;min-width:0}.onr-panel .onr-bedel dt{color:var(--murekkep-2)}.onr-panel .onr-bedel dd{margin:0;font-weight:600}
+.onr-panel .onr-onay{margin-top:12px;padding:12px;min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--cizgi-guclu);border-radius:var(--r-sm);background:var(--yuzey-2)}
+.onr-panel .onr-eylemler{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;min-width:0}
+.onr-panel .onr-dugme{min-width:0;max-width:100%;min-height:44px;box-sizing:border-box;padding:10px 12px;border:1px solid var(--cizgi);border-radius:var(--r-sm);background:var(--yuzey);color:var(--murekkep);font:inherit;font-size:.85em;line-height:1.4;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.onr-panel .onr-eylemler .onr-dugme{flex:1 1 100px}.onr-panel .onr-onayla{background:var(--birincil);color:var(--birincil-ustu);border-color:var(--birincil)}
+.onr-panel .onr-dugme:disabled{background:var(--yuzey);color:var(--murekkep-2);border-color:var(--cizgi);cursor:default}
+.onr-panel button:focus-visible,.onr-panel [data-onarim-baslik]:focus-visible{outline:2px solid var(--odak);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.onr-panel,.onr-panel *{animation:none;transition:none}}
