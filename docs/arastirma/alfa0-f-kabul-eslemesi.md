@@ -1,0 +1,27 @@
+# A0-1: F0–F4 kabul ölçütleri ↔ kod/test eşlemesi
+
+> **Durum.** Yalnız belge; hiçbir şey koşulmadı. Taban 5c8e704 (dosya:satır bu ağaçtan; assertion satırları açılıp okundu, "okunmadı" yazılan yoktur). Ölçütlerin kaynağı `docs/11` §5 tablosunun "Kabul" sütunu (= `docs/04` F-fazları); A0-1 "F0, F1, F2 (Alfa illeri), F3 ve F4 kabul ölçütlerinin hepsi geçti". O3 `belge-a0-02` tablosu (`docs/10` §5A) görev durumunu verir, ölçüt eşlemesi vermez: bu belge ona dokunmaz, ölçüt düzeyinde ayrı kurulur. **Durum:** kanıtlı = ölçütü doğrudan sınayan test/koşu görüldü; kısmen = bir kısmı sınanıyor ya da araç var sonuç yok; yok = kanıt bulunamadı. Eksikler varsayımla kapatılmadı.
+
+| Faz | Kabul maddesi | Karşılayan kod / test (dosya:satır) | A0 | Durum |
+|---|---|---|---|---|
+| F0 | `pnpm kontrol` yeşil | P11 tam kapı GEÇTİ, entegrasyon = 5c8e704 (`SP/takim/kuyruk.md` satır 131); kapı: `scripts/kapi.ts` | A0-2 | **kanıtlı** |
+| F0 | Açık ve koyu temada ekran görüntüsü | `docs/toplanti/3/*-acik-*.png` ve `*-koyu-*.png` (masaüstü + telefon; ör. `D2-tur-kartlari-acik-masaustu.png`, `D00-isletmem-koyu-telefon.png`); üretici `istemci/scripts/tasarim-ekran.ts` | A0-6 | **kanıtlı** (görüntülerin varlığı; sakin küre karesi ayrıca incelenmedi) |
+| F0 | Çizim çağrısı artmıyor | Ölçüm aracı var: `istemci/scripts/olcum.ts:129-131` (`cizimCagrisi` min/maks/ort), `kure/sahne.ts:44`; **önce/sonra kıyası ya da eşik testi yok** | A0-6 | **kısmen** |
+| F1 | Rastgele noktalarda serileştir/yükle → özet eşit | `cekirdek/test/serilestir-kurtarma-nokta.test.ts:14-31` (20 rastgele nokta; `:24` her noktada `yuklenen.durumOzeti() = orijinal`, `:30` sona kadar, `:31` günlük eşit); `serilestir-temel.test.ts:58-62,68-73` (bayt bayt, gidiş-dönüş) | A0-2 | **kanıtlı** |
+| F1 | Başarısızlar atılıp yeniden oynatılınca özet eşit | Aynı test `:35-39` (her adımın `tamam` sonucu yeniden oynatmada aynı; `ry` = `ra`) | A0-2 | **kanıtlı** |
+| F1 | kill -9 → anlık görüntü + kuyruk → aynı özet | `sunucu/test/kurtarma-sureci.test.ts:82` (gerçek `SIGKILL`, `sinyal` doğrulanır), `:124-163` (aynı t'de aynı özet, onaylanan komut kaybolmaz, `kurtarma.seq` eşit); çekirdek benzetimi `cekirdek/test/serilestir-kurtarma-kill9-gercek.test.ts` (+ `-ortak.ts`) | A0-3, A0-5 | **kanıtlı** |
+| F1 | İki istemci aynı dünyayı görür | `sunucu/test/iki-istemci.test.ts:33,52` (genel kareler eşit, özet eşit), `mulk-iki-istemci.test.ts` | A0-6 | **kanıtlı** |
+| F2 | 81 il, ~973 ilçe | `veri-hatti/test/osm-hiyerarsi.test.ts:57-64` (81 il, plakalar TR-01…81, ilçe 960–990; repodaki `odbl/` çıktısı) | A0-1 | **kanıtlı** |
+| F2 | İl → bölge eşleme testi | `osm-hiyerarsi.test.ts:97` (her il tam bir oyun bölgesine, admin-1 listesinde) | A0-1 | **kanıtlı** |
+| F2 | Bayt bayt determinizm | `veri-hatti/test/osm-deterministik.test.ts:25-29`, `izgara-determinizm.test.ts` | A0-1 | **kanıtlı** |
+| F2 | İlçe başına karo ≤ 150 KB (hedef, ölçülecek) | Kocaeli: `docs/arastirma/karo-ve-izgara-denemesi.md:62` (en kötü karo z12 94 KB, z15 71 KB); araç `veri-hatti/src/osm/izgara-olcum.ts:7,46` (`butceAsan`). **Bursa (Gemlik) ve Sakarya karo ölçümü raporlanmadı** (`docs/olcum/izgara-boyut-g3.md` yalnız toplam KB) | A0-1 | **kısmen** |
+| F2 ("Alfa illeri") | Kocaeli + Sakarya + Bursa (~40 ilçe) | Hiyerarşi tüm TR'de; ızgara yalnız 3 ilçe (`izgara/manifest.json`: Gemlik, Gebze, Körfez) | A0-1 | **kısmen** (Alfa-0 oyunu üç ilçedir; "~40 ilçe" yalnız hiyerarşi düzeyinde) |
+| F3 | Bölge kipinde tüm eski testler yeşil (regresyon kalkanı) | Aynı tam kapı (satır 131), altınlar birebir | A0-2 | **kanıtlı** |
+| F3 | mini-6 parsel fikstüründe özellik testleri | `cekirdek/test/mulk-ozellik.test.ts:1-5` (mini-6 parsel fikstürü), `:27,39,50,64,77,104,115,129...` (bayrak, katılım, fiyat, %25/72 sınırı, inşaat, iptal, vergi) ve `mulk-*.test.ts` ailesi | A0-2 | **kanıtlı** |
+| F3 | 1k botla 30 günlük koşu, 21–22 sn'den yavaş değil (hedef) | **Bulunamadı.** Yalnız 100 botla ölçüm: `cekirdek/bench/komut-maliyeti.ts:25-27` (BOT=100, TUR=44 = ~11 sim günü) ve `docs/agent-results/dukkan-yuk-o2.md` (100 bot, çözüm p95); 21–22 sn temeli `docs/11:193` 4 botlu gerçek harita | A0-4 | **yok** |
+| F4 | Playwright: giriş → Yerleş → hücre al → Tarla kur → tamamlanır → satış görünür | `istemci/scripts/f4-uctan-uca.ts`: Yerleş `:194,:663`; arsa/Çiftlik; tamamlanma `:634,:643`; kapıda `scripts/kapi.ts:62`. **Betikte e-posta girişi adımı ve tahıl satışı/"satış görünür" adımı yok** (grep: giriş/satış/ihracat/nakit boş; yalnız Defter metni `:225`) | A0-6 | **kısmen** |
+| F4 | Mobil düzen | `f4-uctan-uca.ts:766-857` (`ayse`: 390×844, dokunma; Yerleş tek sütun `:773`, Yapı kur, hayalet, kur) | A0-6 | **kanıtlı** |
+
+**Not (kabul listesinde değil, içerikte):** F3 "hareketsizlik merdiveni" için yalnız `sonEtkinlik` verisi yazılıyor (`cekirdek/src/motor.ts:197-203`); merdiven kodu bulunamadı. F0 "kenar_gelistir/askeri_rezerv formları kalkar": `istemci/src/komut/{hata,tablo,gizli}.ts` hâlâ anıyor (gizli olduğu doğrulanmadı). İkisi kabul ölçütü olmadığından durumu etkilemedi; A0-1 kapsamına alınıp alınmayacağı sahip kararı.
+
+**Sonuç: A0-1 "kısmen".** 18 maddeden 12'si kanıtlı; eksik 4 madde: **F0 çizim çağrısı kıyası** (O2/T2: `olcum.ts` önce/sonra), **F2 karo ≤ 150 KB Bursa ve Sakarya** (O3: `izgara-olcum` raporu), **F3 1k bot 30 gün** (O2; P14-6 100 botla yetmez, ayrı AĞIR koşu ya da hedefi 100 bota indirme sahip kararı), **F4 giriş + satış adımı** (K4, P14-1 ile aynı betik: iki kontrol satırı); ek: F2 "Alfa illeri ~40 ilçe" kapsam yorumu (sahip kararı).
