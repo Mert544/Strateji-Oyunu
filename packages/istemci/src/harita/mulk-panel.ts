@@ -377,6 +377,49 @@ export interface MulkPaneliSecenekleri {
   dukkan?: DukkanKaynagi;
 }
 
+/** `mulkDinleKur` girdileri (saf: DOM ve zamanlayıcı dışarıdan verilir; sınama sahte verir). */
+export interface MulkDinleGirdisi {
+  /** Bağdaştırıcının kare/delta dinleyicisi (yoksa tanımsız). */
+  bDinle?: (f: () => void) => (() => void) | void;
+  /** Defteri okur ve okununca çizimi çağırır. */
+  defterOku: (f: () => void) => Promise<void>;
+  /** Her zamanlayıcı turunda çizimden önce yapılan iş (Defter imzası, ilk satış bildirimi); Defter'i okurken KORUMALI çizimi (`ciz`) verir. */
+  tik: (ciz: () => void) => void;
+  /** Açık seçicinin / sayı alanının odağını (imleçle) yakalar; geri yükleyici ya da yoksa null. */
+  yakala: () => (() => void) | null | undefined;
+  /** Yinelenen zamanlayıcı; döndürdüğü işlev durdurur. */
+  zamanla: (f: () => void, ms: number) => () => void;
+  /** Yenile bağlantısı (panelin başka eylemleri bu çizimi kullanır). */
+  yenileAyarla: (f: (() => void) | null) => void;
+}
+
+/**
+ * Panelin yeniden çizim yolları (kare/delta, Defter okuma, iki saniyelik tur) TEK korumalı çizimden geçer: çizimden önce odak yakalanır, çizimden hemen sonra (eşzamanlı) geri verilir.
+ * Önceden yalnız zamanlayıcı yolu korunuyordu; kare ve Defter yolu `#pz-oran` alanını yeniden kurup yazan oyuncunun odağını düşürüyordu (P13 f4).
+ */
+export function mulkDinleKur(g: MulkDinleGirdisi, f: () => void): () => void {
+  const ciz = (): void => {
+    const geri = g.yakala();
+    try {
+      f();
+    } finally {
+      geri?.();
+    }
+  };
+  const birak = g.bDinle?.(ciz);
+  g.yenileAyarla(ciz);
+  void g.defterOku(ciz);
+  const durdur = g.zamanla(() => {
+    g.tik(ciz);
+    ciz();
+  }, 2000);
+  return () => {
+    g.yenileAyarla(null);
+    if (typeof birak === "function") birak();
+    durdur();
+  };
+}
+
 /** Kabuğa verilen sağlayıcı. */
 export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   if (!document.getElementById("mulk-panel-stil")) {
@@ -534,9 +577,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   // Yöntem seçici ("Yöntemi değiştir") ve Hazine'de şebeke gideri: komut `yontem_degistir` bağdaştırıcının ucundan; sahte bağdaştırıcıda ve içerik olmadan çıkmaz.
   const sebekeFiyat = sebekeFiyatlari(ic);
   const yenidenCiz = (): void => {
-    const geri = yontemPaneli?.odagiYakala(document) ?? pazarSat?.odagiYakala(document);
-    yenile?.();
-    if (geri) window.setTimeout(geri, 0);
+    yenile?.(); // korumalı çizim (`mulkDinleKur`): odak yakalanır ve çizimden hemen sonra geri verilir
   };
   const yontemPaneli: YontemPaneli | undefined = b.yontemDegistir
     ? new YontemPaneli({
@@ -733,30 +774,34 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       return true;
     },
     dinle(f) {
-      // Bağdaştırıcı değişince (kare, delta) ve inşaat aşamaları için iki saniyede bir; defter yapı/hücre değişince ya da 20 sn'de bir
-      const birak = b.dinle?.(f);
-      yenile = f;
-      void defterOku(f);
-      const z = window.setInterval(() => {
-        const d = oku();
-        // Defter yapı/hücre değişince, ihracat emri açılıp kapanınca ve HER SİM SAATİNDE tazelenir: ödül dedektörü saat ızgarasında çalışır (ilk satış saat sınırında kazanılır), 20 sn'lik döngüyü beklemeden
-        // "Çiftliğinin tahılını Pazar'da sat" adımı satıştan hemen sonra düşer (T-6).
-        const imza = d ? `${d.yapilar.filter((y) => y.durum === "tesis").length}|${d.yapilar.length}|${d.ilceHucre.map(([i, n]) => `${i}:${n}`).join(",")}|${d.ihracatEmriVar === true ? 1 : 0}|${Math.floor(d.simZamani / 3_600_000)}` : "";
-        if (imza !== defterImza || Date.now() - defterSonT > 20_000) {
-          defterImza = imza;
-          void defterOku(f);
-        }
-        const g = dukkanGorunumu();
-        if (g && ilkSatis.kontrol(g.ilkSatisT)) bildir(dukkanMetni("dukkan.D8.ilk_satis"), "bilgi");
-        const geri = yontemPaneli?.odagiYakala(document) ?? pazarSat?.odagiYakala(document); // yeniden çizim (inşaat süreleri) açık seçicinin / sayı alanının odağını düşürmesin
-        f();
-        if (geri) window.setTimeout(geri, 0);
-      }, 2000);
-      return () => {
-        yenile = null;
-        birak?.();
-        window.clearInterval(z);
-      };
+      // Bağdaştırıcı değişince (kare, delta) ve inşaat aşamaları için iki saniyede bir; defter yapı/hücre değişince ya da 20 sn'de bir. Üç yol da `mulkDinleKur`un tek korumalı çiziminden geçer.
+      return mulkDinleKur(
+        {
+          ...(b.dinle ? { bDinle: (cb: () => void) => b.dinle?.(cb) } : {}),
+          defterOku,
+          yakala: () => yontemPaneli?.odagiYakala(document) ?? pazarSat?.odagiYakala(document), // açık seçicinin / sayı alanının odağı yeniden çizimde düşmesin
+          zamanla: (fn, ms) => {
+            const z = window.setInterval(fn, ms);
+            return () => window.clearInterval(z);
+          },
+          yenileAyarla: (y) => {
+            yenile = y;
+          },
+          tik: (ciz) => {
+            const d = oku();
+            // Defter yapı/hücre değişince, ihracat emri açılıp kapanınca ve HER SİM SAATİNDE tazelenir: ödül dedektörü saat ızgarasında çalışır (ilk satış saat sınırında kazanılır), 20 sn'lik döngüyü beklemeden
+            // "Çiftliğinin tahılını Pazar'da sat" adımı satıştan hemen sonra düşer (T-6).
+            const imza = d ? `${d.yapilar.filter((y) => y.durum === "tesis").length}|${d.yapilar.length}|${d.ilceHucre.map(([i, n]) => `${i}:${n}`).join(",")}|${d.ihracatEmriVar === true ? 1 : 0}|${Math.floor(d.simZamani / 3_600_000)}` : "";
+            if (imza !== defterImza || Date.now() - defterSonT > 20_000) {
+              defterImza = imza;
+              void defterOku(ciz);
+            }
+            const g = dukkanGorunumu();
+            if (g && ilkSatis.kontrol(g.ilkSatisT)) bildir(dukkanMetni("dukkan.D8.ilk_satis"), "bilgi");
+          },
+        },
+        f,
+      );
     },
   };
 }
