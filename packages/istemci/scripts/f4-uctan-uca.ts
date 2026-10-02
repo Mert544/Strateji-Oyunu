@@ -423,8 +423,16 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
       await tikla(sayfa, false, "#yapi-menu [data-yapi='ahir']");
       // Ahır çok yöntemlidir: varsayılan seçim YOK, yöntem seçilmeden "Kur" kapalı (yöntem seçici); tür varsayılanı (Ahır besi) seçilir: komuta yontem yazılmaz
       await tikla(sayfa, false, "#yapi-kart .ym-kart[data-yontem='ahir_besi']");
-      const pb = await hucreNoktasi(sayfa, bos.sol);
+      let pb = await hucreNoktasi(sayfa, bos.sol);
       if (!pb) throw new Error("ahır hücresi ekranda değil");
+      // Yöntem seçici maliyet kartını uzatır (3 yöntem kartı): hedef hücre kartın altında kalıyorsa harita kartın üstüne kaydırılır (tıklama kartı değil haritayı vursun)
+      const kutu = await sayfa.locator("#yapi-kart").boundingBox();
+      if (kutu && pb.x >= kutu.x && pb.x <= kutu.x + kutu.width && pb.y >= kutu.y - 24) {
+        const dy = pb.y - (kutu.y - 90);
+        await sayfa.evaluate((d) => window.__harita?.gorunum()?.ml.panBy([0, d], { duration: 0 }), dy);
+        await sayfa.waitForTimeout(400);
+        pb = (await hucreNoktasi(sayfa, bos.sol)) ?? pb;
+      }
       await sayfa.mouse.move(pb.x, pb.y);
       await sayfa.waitForTimeout(250);
       await sayfa.mouse.click(pb.x, pb.y);
