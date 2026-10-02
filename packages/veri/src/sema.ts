@@ -514,6 +514,42 @@ const mulkSema = z
   })
   .strict();
 
+const askeriEskiyaSema = z
+  .object({
+    etkin: z.boolean(),
+    servetEsigiMili: pozitif,
+    servetAdimiMili: pozitif,
+    enCokBoy: pozitif,
+    boyGucu: pozitif,
+    gunlukOlasilikPpm: pozitif.max(1_000_000),
+    beklemeGun: negatifOlmayan,
+    bantBaslangicSaat: negatifOlmayan.max(23),
+    dilimSayisi: pozitif,
+    dilimSaat: pozitif,
+    planlamaOncesiGun: pozitif,
+    duyuruSaat: pozitif,
+    kuleEkiSaat: negatifOlmayan,
+    tahminAltPpm: ppmSiniri,
+    tahminUstPpm: negatifOlmayan.max(2_000_000),
+    kuleTahminAltPpm: ppmSiniri,
+    kuleTahminUstPpm: negatifOlmayan.max(2_000_000),
+    nobetEviGuc: negatifOlmayan,
+    karakolGuc: z.tuple([negatifOlmayan, negatifOlmayan]),
+    yagmaOraniPpm: ppmSiniri,
+    yagmaPenceresiSaat: pozitif,
+    yapiDevreDisiPpm: ppmSiniri,
+    yapiDevreDisiSaat: pozitif,
+    yenilgiKayipPpm: ppmSiniri,
+    galibiyetKayipPpm: ppmSiniri,
+    reviriGeriPpm: ppmSiniri,
+    reviriGeriSaat: pozitif,
+    kalkanSonrasiYagmaPpm: ppmSiniri,
+    ganimetKatkiAltPpm: ppmSiniri,
+    ganimet: z.record(kimlik, pozitif),
+    ilceHaftalikGanimetTavaniMili: negatifOlmayan,
+  })
+  .strict();
+
 export const ParametreSema = z
   .object({
     surum: z.literal(1),
@@ -605,6 +641,7 @@ export const ParametreSema = z
         savunmaDurusuCarpaniPpm: pozitif,
         birlikMaasiSaat: negatifOlmayan,
         ikmalCarpaniPpm: pozitif.max(1_000_000).optional(),
+        eskiya: askeriEskiyaSema.optional(),
       })
       .strict(),
     teknoloji: z

@@ -1,4 +1,4 @@
-.sv-panel{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;margin:16px 0;padding:12px;border:1px solid var(--cizgi);border-radius:var(--r-md);background:var(--yuzey-2)}
+.sv-panel{container-type:inline-size;min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;margin:16px 0;padding:12px;border:1px solid var(--cizgi);border-radius:var(--r-md);background:var(--yuzey-2)}
 .sv-panel>h5{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:1em}.sv-panel .ikon{flex-shrink:0}.sv-durus{font-size:.85em;color:var(--murekkep-2);margin:0 0 12px}
 .sv-akis{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,2fr) auto minmax(0,1fr);align-items:center;gap:8px;margin:12px 0}.sv-akis dl{min-width:0;margin:0}.sv-akis dt{font-size:.8em;line-height:1.5;color:var(--murekkep-2)}.sv-akis dd{margin:6px 0 0;font-variant-numeric:tabular-nums;font-weight:650;line-height:1.3}
 .sv-temel,.sv-toplam{padding:12px;border:1px solid var(--cizgi);border-radius:var(--r-md);background:var(--yuzey)}.sv-toplam{border-inline-start:3px solid var(--birincil);background:var(--birincil-tint)}.sv-toplam dd{font-size:1.25em;color:var(--birincil-ink)}
@@ -6,4 +6,6 @@
 .sv-bilinmiyor,.sv-geri-cekil{padding:10px;font-size:.85em;line-height:1.5;color:var(--murekkep-2);background:var(--yuzey);border-radius:var(--r-sm)}.sv-geri-cekil{border-inline-start:3px solid var(--uyari)}
 @media(max-width:640px){.sv-akis{grid-template-columns:minmax(0,1fr)}.sv-ok{justify-self:center;transform:rotate(90deg)}.sv-etkiler{grid-template-columns:repeat(3,minmax(0,1fr))}.sv-etkiler dt{align-items:flex-start}}
 @media(max-width:420px){.sv-etkiler{grid-template-columns:minmax(0,1fr)}}
+@container(max-width:520px){.sv-akis{grid-template-columns:minmax(0,1fr)}.sv-ok{justify-self:center;transform:rotate(90deg)}.sv-etkiler{grid-template-columns:repeat(3,minmax(0,1fr))}.sv-etkiler dt{display:block}.sv-etkiler dt .ikon{display:block;margin-bottom:4px}}
+@container(max-width:240px){.sv-etkiler{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.sv-panel,.sv-panel *{animation:none;transition:none;scroll-behavior:auto}}

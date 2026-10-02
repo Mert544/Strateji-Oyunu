@@ -317,6 +317,8 @@ export interface BolgeDurumu {
   ticaretEmirleri: TicaretEmri[];
   /** birlik indeksine göre adet */
   birlikler: number[];
+  /** İlk yağmada başlayan sabit pencere; yalnız mülk işletmesinde ve kullanıldığında yazılır. */
+  yagmaPenceresi?: { baslangic: Ms; kullanilanPpm: number };
   savunma: SavunmaEmri;
   /** Nüfusun gıda karşılanma oranı (ppm), son çözümden */
   gidaKarsilanmaPpm: number;
@@ -701,6 +703,11 @@ export const OLAY_ONCELIGI = {
   arastirma_bitti: 3,
   savas_pencere_ac: 4,
   savas_pencere_kapa: 4,
+  eskiya_duyuru: 4,
+  eskiya_pencere_ac: 4,
+  eskiya_pencere_kapa: 4,
+  eskiya_toparlanma: 3,
+  eskiya_gunluk: 5,
   saatlik_tik: 5,
   iklim_gunluk: 5,
   sondaj_bitti: 3,
@@ -708,6 +715,11 @@ export const OLAY_ONCELIGI = {
 } as const;
 
 export type OlayVerisi =
+  | { tur: "eskiya_gunluk" }
+  | { tur: "eskiya_duyuru"; baskin: number }
+  | { tur: "eskiya_pencere_ac"; baskin: number }
+  | { tur: "eskiya_pencere_kapa"; baskin: number }
+  | { tur: "eskiya_toparlanma"; baskin: number }
   | { tur: "oran_delta"; bolge: number; mal: number; delta: Mili }
   | { tur: "esik"; bolge: number; mal: number; surum: number }
   | { tur: "insaat_bitti"; insaat: number }
@@ -747,6 +759,9 @@ export interface Dunya {
   oyuncular: OyuncuDurumu[];
   pazar: PazarDurumu;
   savaslar: SavasDurumu[];
+  /** PvE kayıtları yalnız özellik açıldığında doğar; sonuçlar yeniden ödeme kaynağı değildir. */
+  baskinlar?: BaskinDurumu[];
+  eskiyaTakvim?: { sonGun: number; etkin: boolean };
   anlasmalar: AnlasmaDurumu[];
   yaptirimlar: YaptirimDurumu[];
   insaatlar: InsaatDurumu[];
@@ -761,6 +776,73 @@ export interface Dunya {
   sayac: { olay: number; kimlik: number };
   /** İkili yığın dizisi olarak olay kuyruğu */
   kuyruk: Olay[];
+}
+
+export interface EskiyaGenelGorunumu {
+  id: number;
+  il: string;
+  ilce: string;
+  evre: "duyuru" | "pencere" | "bitti" | "iptal";
+  duyuruZamani: Ms;
+  pencereBaslangic: Ms;
+  pencereBitis: Ms;
+  tahminAltGuc: number;
+  tahminUstGuc: number;
+  sonuc?: { kazandi: boolean; baskinGucu: number; savunmaGucu: number };
+}
+
+export interface EskiyaOyuncuSonucu {
+  baskin: number;
+  il: string;
+  ilce: string;
+  dugum: string;
+  zaman: Ms;
+  kazandi: boolean;
+  katkiGuc: number;
+  birlikKaybi: [birlik: string, adet: number][];
+  malKaybi: [mal: string, miktarMili: Mili][];
+  ganimet: [mal: string, miktarMili: Mili][];
+  ganimetTasma: [mal: string, miktarMili: Mili][];
+  onarim: [tesis: number, bitis: Ms][];
+}
+
+export interface EskiyaRevirGorunumu {
+  baskin: number;
+  dugum: string;
+  donusZamani: Ms;
+  birlikler: [birlik: string, adet: number][];
+  evre: "bekliyor" | "dondu" | "iptal";
+}
+
+export interface EskiyaIlceGorunumu { etkin: boolean; olaylar: EskiyaGenelGorunumu[] }
+export interface EskiyaOyuncuGorunumu extends EskiyaIlceGorunumu { sonuclar: EskiyaOyuncuSonucu[]; revir: EskiyaRevirGorunumu[] }
+
+export interface BaskinDurumu {
+  id: number;
+  il: string;
+  ilce: string;
+  boy: number;
+  gb: number;
+  bant: number;
+  duyuruZamani: Ms;
+  pencereBaslangic: Ms;
+  pencereBitis: Ms;
+  tahminAltGuc: number;
+  tahminUstGuc: number;
+  evre: "planli" | "duyuru" | "pencere" | "bitti" | "iptal";
+  /** Duyuru öncesi iptal edilen plan sonraki karelerde de gizli kalır. */
+  duyuruldu: boolean;
+  katilimcilar: { oyuncu: string; dugum: string; guc: number; birlikler: [string, number][] }[];
+  hedefler: { oyuncu: string; dugum: string; payPpm: number; tesisler: [number, number][] }[];
+  sonuc: null | {
+    kazandi: boolean;
+    baskinGucu: number;
+    savunmaGucu: number;
+    kamuGucu: number;
+    /** Verildiği andaki taban fiyatlarla gerçek ganimet değeri; hafta bütçesi tekrar fiyatlanmaz. */
+    ganimetDegeriMili: Mili;
+    oyuncular: { oyuncu: string; kayit: EskiyaOyuncuSonucu; revir?: EskiyaRevirGorunumu }[];
+  };
 }
 
 // ---------------------------------------------------------------------------

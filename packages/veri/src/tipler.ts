@@ -436,6 +436,45 @@ export interface PazarTemelParametreleri {
 /** Pazar parametreleri: özgün alanlar + (opsiyonel) B3 ek alanları. */
 export type PazarParametreleri = PazarTemelParametreleri & Partial<PazarEkAlanlari>;
 
+/** İlçe eşkıya PvE parametreleri; blok yok/etkin değilse baskın yok, mevcut ordu komutları korunur. */
+export interface AskeriEskiyaParametreleri {
+  etkin: boolean;
+  /** Servet ve boy adımı (mili-para); eşik üstünde boy en az 1 olur. */
+  servetEsigiMili: number;
+  servetAdimiMili: number;
+  enCokBoy: number;
+  boyGucu: number;
+  gunlukOlasilikPpm: number;
+  /** Son gerçekleşen baskın gününden itibaren planlama beklemesi. */
+  beklemeGun: number;
+  bantBaslangicSaat: number;
+  dilimSayisi: number;
+  dilimSaat: number;
+  planlamaOncesiGun: number;
+  duyuruSaat: number;
+  kuleEkiSaat: number;
+  tahminAltPpm: number;
+  tahminUstPpm: number;
+  kuleTahminAltPpm: number;
+  kuleTahminUstPpm: number;
+  nobetEviGuc: number;
+  karakolGuc: [number, number];
+  yagmaOraniPpm: number;
+  /** İlk yağmada başlayan sabit pencere süresi. */
+  yagmaPenceresiSaat: number;
+  yapiDevreDisiPpm: number;
+  yapiDevreDisiSaat: number;
+  yenilgiKayipPpm: number;
+  galibiyetKayipPpm: number;
+  reviriGeriPpm: number;
+  reviriGeriSaat: number;
+  kalkanSonrasiYagmaPpm: number;
+  ganimetKatkiAltPpm: number;
+  /** Mal kimliği -> mili-birim / boy; para ödülü değildir. */
+  ganimet: Record<MalId, number>;
+  ilceHaftalikGanimetTavaniMili: number;
+}
+
 /**
  * Ayarlanabilir parametreler. PDF'deki süre aralıkları başlangıç varsayımıdır;
  * simülasyonda bu dosyadan okunur.
@@ -520,6 +559,8 @@ export interface Parametreler {
     birlikMaasiSaat: number;
     /** Yalnız mülk işletme düğümlerinde birlik ikmali çarpanı (ppm); yoksa 1x. */
     ikmalCarpaniPpm?: number;
+    /** Yalnız PvE baskın bayrağı; blok yoksa kapalıdır. */
+    eskiya?: AskeriEskiyaParametreleri;
   };
   teknoloji: {
     /**

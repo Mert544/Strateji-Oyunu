@@ -114,10 +114,11 @@ body.oyuncu-kipi .marka { display: none; }
   min-height: 0; display: flex; flex-direction: column; background: var(--yuzey); color: var(--murekkep);
   border-left: 1px solid var(--cizgi-ince); z-index: var(--z-panel);
 }
-#sekmeler { display: flex; border-bottom: 1px solid var(--cizgi-ince); flex: none; overflow-x: auto; scrollbar-width: none; padding: 0 var(--s-1); }
+/* Sekme adları dar panelde sıkışmaz; sığmayan sekmelere yatay kaydırarak ulaşılır. */
+#sekmeler { display: flex; gap: var(--s-1); min-width: 0; border-bottom: 1px solid var(--cizgi-ince); flex: none; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; padding: 0 var(--s-1); }
 #sekmeler button {
-  position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  border: 0; background: transparent; padding: var(--s-2) 0 var(--s-2); color: var(--murekkep-3); min-height: 54px;
+  position: relative; flex: 0 0 auto; min-width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border: 0; background: transparent; padding: var(--s-2); color: var(--murekkep-3); min-height: 54px;
   font-size: var(--yazi-xs); font-weight: 500; white-space: nowrap; transition: color var(--sure-hizli) var(--ease-standart);
 }
 #sekmeler button .ikon { width: 18px; height: 18px; }

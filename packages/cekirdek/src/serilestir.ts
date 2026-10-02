@@ -244,7 +244,119 @@ const DUNYA_ZORUNLU = [
   "sayac",
   "kuyruk",
 ] as const;
-const DUNYA_ISTEGE_BAGLI = ["iklim", "mulk"] as const;
+const DUNYA_ISTEGE_BAGLI = ["iklim", "mulk", "baskinlar", "eskiyaTakvim"] as const;
+
+/** Yeni PvE kayıtları strict'tir; bilinmeyen alt alan sessizce kabul edilmez. */
+function pveNesne(v: unknown, yol: string, zorunlu: readonly string[], istegeBagli: readonly string[] = []): Nesne {
+  const n = nesne(v, yol);
+  alanlar(n, yol, zorunlu);
+  const izinli = new Set([...zorunlu, ...istegeBagli]);
+  for (const k of Object.keys(n)) if (!izinli.has(k)) hata(`${yol}.${k}`, "bilinmeyen PvE alani");
+  return n;
+}
+
+function pveCiftler(v: unknown, yol: string, kimlik: "dize" | "sayi", enAz = 1): void {
+  const gorulen = new Set<string | number>();
+  dizi(v, yol).forEach((c, i) => {
+    const cy = `${yol}[${i}]`;
+    const t = dizi(c, cy, 2);
+    const id = kimlik === "dize" ? dize(t[0], `${cy}[0]`) : tamsayi(t[0], `${cy}[0]`, 0);
+    if (gorulen.has(id)) hata(cy, "tekrarlanan PvE kimligi");
+    gorulen.add(id);
+    tamsayi(t[1], `${cy}[1]`, enAz);
+  });
+}
+
+function baskinlariDogrula(d: Nesne, zaman: number): Set<number> {
+  const kimlikler = new Set<number>();
+  let sonKimlik = 0;
+  if (d.eskiyaTakvim !== undefined) {
+    const t = pveNesne(d.eskiyaTakvim, "$.eskiyaTakvim", ["sonGun", "etkin"]);
+    tamsayi(t.sonGun, "$.eskiyaTakvim.sonGun", -1, Math.floor(zaman / 86_400_000));
+    mantik(t.etkin, "$.eskiyaTakvim.etkin");
+  }
+  if (d.baskinlar === undefined) {
+    if (d.eskiyaTakvim !== undefined) hata("$.baskinlar", "takvim varken baskin kaydi gerekli");
+    return kimlikler;
+  }
+  if (d.mulk === undefined || d.eskiyaTakvim === undefined) hata("$.baskinlar", "baskinlar yalniz mulk ve takvimle olabilir");
+  const dugumler = new Set(dizi(d.bolgeler, "$.bolgeler").map((b) => dize(nesne(b, "$.bolgeler[]").id, "$.bolgeler[].id")));
+  const oyuncular = new Set(dizi(d.oyuncular, "$.oyuncular").map((o) => dize(nesne(o, "$.oyuncular[]").id, "$.oyuncular[].id")));
+  const bag = (oyuncu: unknown, dugum: unknown, y: string): void => {
+    if (!oyuncular.has(dize(oyuncu, `${y}.oyuncu`))) hata(`${y}.oyuncu`, "bilinmeyen oyuncu");
+    if (!dugumler.has(dize(dugum, `${y}.dugum`))) hata(`${y}.dugum`, "bilinmeyen dugum");
+  };
+  dizi(d.baskinlar, "$.baskinlar").forEach((v, i) => {
+    const y = `$.baskinlar[${i}]`;
+    const b = pveNesne(v, y, ["id", "il", "ilce", "boy", "gb", "bant", "duyuruZamani", "pencereBaslangic", "pencereBitis", "tahminAltGuc", "tahminUstGuc", "evre", "duyuruldu", "katilimcilar", "hedefler", "sonuc"]);
+    const id = tamsayi(b.id, `${y}.id`, sonKimlik + 1, tamsayi(nesne(d.sayac, "$.sayac").kimlik, "$.sayac.kimlik") - 1);
+    sonKimlik = id;
+    if (kimlikler.has(id)) hata(`${y}.id`, "tekrarlanan baskin kimligi");
+    kimlikler.add(id);
+    mantik(b.duyuruldu, `${y}.duyuruldu`);
+    dize(b.il, `${y}.il`); dize(b.ilce, `${y}.ilce`);
+    tamsayi(b.boy, `${y}.boy`, 1); tamsayi(b.gb, `${y}.gb`, 1); tamsayi(b.bant, `${y}.bant`, 0);
+    const duyuru = tamsayi(b.duyuruZamani, `${y}.duyuruZamani`, 0);
+    const bas = tamsayi(b.pencereBaslangic, `${y}.pencereBaslangic`, duyuru);
+    const bit = tamsayi(b.pencereBitis, `${y}.pencereBitis`, bas + 1);
+    const alt = tamsayi(b.tahminAltGuc, `${y}.tahminAltGuc`, 0);
+    tamsayi(b.tahminUstGuc, `${y}.tahminUstGuc`, alt);
+    if (!["planli", "duyuru", "pencere", "bitti", "iptal"].includes(dize(b.evre, `${y}.evre`))) hata(`${y}.evre`, "gecersiz baskin evresi");
+    if (b.evre === "bitti" && bit > zaman) hata(`${y}.pencereBitis`, "biten baskin gelecekte");
+    if ((b.evre === "bitti") !== (b.sonuc !== null)) hata(`${y}.sonuc`, "sonuc yalniz biten baskinda gerekli");
+    if (["duyuru", "pencere", "bitti"].includes(b.evre as string) && b.duyuruldu !== true) hata(`${y}.duyuruldu`, "duyuru olmadan acik baskin");
+    const kaynaklar = new Set<string>();
+    dizi(b.katilimcilar, `${y}.katilimcilar`).forEach((v, j) => {
+      const ky = `${y}.katilimcilar[${j}]`;
+      const k = pveNesne(v, ky, ["oyuncu", "dugum", "guc", "birlikler"]);
+      bag(k.oyuncu, k.dugum, ky);
+      const dugum = k.dugum as string;
+      if (kaynaklar.has(dugum)) hata(`${ky}.dugum`, "yinelenen katilimci");
+      kaynaklar.add(dugum);
+      tamsayi(k.guc, `${ky}.guc`, 0); pveCiftler(k.birlikler, `${ky}.birlikler`, "dize");
+    });
+    const hedefler = new Set<string>();
+    dizi(b.hedefler, `${y}.hedefler`).forEach((v, j) => {
+      const hy = `${y}.hedefler[${j}]`;
+      const h = pveNesne(v, hy, ["oyuncu", "dugum", "payPpm", "tesisler"]);
+      bag(h.oyuncu, h.dugum, hy);
+      if (hedefler.has(h.dugum as string)) hata(`${hy}.dugum`, "yinelenen hedef");
+      hedefler.add(h.dugum as string);
+      tamsayi(h.payPpm, `${hy}.payPpm`, 0, PPM); pveCiftler(h.tesisler, `${hy}.tesisler`, "sayi");
+    });
+    if (b.sonuc === null) return;
+    const sy = `${y}.sonuc`;
+    const s = pveNesne(b.sonuc, sy, ["kazandi", "baskinGucu", "savunmaGucu", "kamuGucu", "ganimetDegeriMili", "oyuncular"]);
+    mantik(s.kazandi, `${sy}.kazandi`);
+    for (const alan of ["baskinGucu", "savunmaGucu", "kamuGucu", "ganimetDegeriMili"]) tamsayi(s[alan], `${sy}.${alan}`, 0);
+    const sonucDugumler = new Set<string>();
+    dizi(s.oyuncular, `${sy}.oyuncular`).forEach((v, j) => {
+      const oy = `${sy}.oyuncular[${j}]`;
+      const o = pveNesne(v, oy, ["oyuncu", "kayit"], ["revir"]);
+      const ky = `${oy}.kayit`;
+      const k = pveNesne(o.kayit, ky, ["baskin", "il", "ilce", "dugum", "zaman", "kazandi", "katkiGuc", "birlikKaybi", "malKaybi", "ganimet", "ganimetTasma", "onarim"]);
+      bag(o.oyuncu, k.dugum, oy);
+      if (sonucDugumler.has(k.dugum as string)) hata(`${ky}.dugum`, "yinelenen sonuc dugumu");
+      sonucDugumler.add(k.dugum as string);
+      if (k.baskin !== id || k.il !== b.il || k.ilce !== b.ilce || k.kazandi !== s.kazandi) hata(ky, "baskin sonuc baglantisi tutarsiz");
+      if (!kaynaklar.has(k.dugum as string) && !hedefler.has(k.dugum as string)) hata(ky, "kilitlenmemis sonuc dugumu");
+      const kilitler = [...dizi(b.katilimcilar, `${y}.katilimcilar`), ...dizi(b.hedefler, `${y}.hedefler`)];
+      if (!kilitler.some((v) => { const h = nesne(v, y); return h.dugum === k.dugum && h.oyuncu === o.oyuncu; })) hata(ky, "sonuc sahibi kilitle uyumsuz");
+      tamsayi(k.zaman, `${ky}.zaman`, bit, zaman); tamsayi(k.katkiGuc, `${ky}.katkiGuc`, 0);
+      for (const alan of ["birlikKaybi", "malKaybi", "ganimet", "ganimetTasma"]) pveCiftler(k[alan], `${ky}.${alan}`, "dize");
+      pveCiftler(k.onarim, `${ky}.onarim`, "sayi", bit);
+      if (o.revir !== undefined) {
+        const ry = `${oy}.revir`;
+        const r = pveNesne(o.revir, ry, ["baskin", "dugum", "donusZamani", "birlikler", "evre"]);
+        if (r.baskin !== id || r.dugum !== k.dugum) hata(ry, "revir sonuc baglantisi tutarsiz");
+        tamsayi(r.donusZamani, `${ry}.donusZamani`, bit);
+        pveCiftler(r.birlikler, `${ry}.birlikler`, "dize");
+        if (!["bekliyor", "dondu", "iptal"].includes(dize(r.evre, `${ry}.evre`))) hata(`${ry}.evre`, "gecersiz revir evresi");
+      }
+    });
+  });
+  return kimlikler;
+}
 
 const BOLGE_ZORUNLU = [
   "indeks",
@@ -338,6 +450,12 @@ export function dunyaDogrula(deger: unknown): Dunya {
     });
     alanlar(nesne(b.savunma, `${y}.savunma`), `${y}.savunma`, ["durus"]);
     if (b.merkez !== undefined) indeks(b.merkez, `${y}.merkez`, n);
+    if (b.yagmaPenceresi !== undefined) {
+      if (b.merkez === undefined || d.mulk === undefined) hata(`${y}.yagmaPenceresi`, "yagma penceresi yalniz mulk isletmesinde olabilir");
+      const w = pveNesne(b.yagmaPenceresi, `${y}.yagmaPenceresi`, ["baslangic", "kullanilanPpm"]);
+      tamsayi(w.baslangic, `${y}.yagmaPenceresi.baslangic`, 0, zaman);
+      tamsayi(w.kullanilanPpm, `${y}.yagmaPenceresi.kullanilanPpm`, 1, PPM);
+    }
     if (b.ekYapilar !== undefined) {
       if (b.merkez === undefined) hata(`${y}.ekYapilar`, "ek yapi yalniz isletme dugumunde olabilir");
       dizi(b.ekYapilar, `${y}.ekYapilar`).forEach((e, j) => {
@@ -459,6 +577,8 @@ export function dunyaDogrula(deger: unknown): Dunya {
   const olaySayaci = tamsayi(sayac.olay, "$.sayac.olay", 0);
   tamsayi(sayac.kimlik, "$.sayac.kimlik", 0);
   const kuyruk = dizi(d.kuyruk, "$.kuyruk");
+  const baskinKimlikleri = baskinlariDogrula(d, zaman);
+  let eskiyaGunlukSayisi = 0;
   const siralar = new Set<number>();
   let tikVar = false;
   for (let i = 0; i < kuyruk.length; i++) {
@@ -470,6 +590,14 @@ export function dunyaDogrula(deger: unknown): Dunya {
     siralar.add(sira);
     const veri = nesne(o.veri, `${y}.veri`);
     const tur = dize(veri.tur, `${y}.veri.tur`);
+    if (tur === "eskiya_gunluk") {
+      pveNesne(veri, `${y}.veri`, ["tur"]);
+      if (d.eskiyaTakvim === undefined || ++eskiyaGunlukSayisi > 1) hata(`${y}.veri`, "takvim olmadan ya da birden cok gunluk olay");
+      if ((o.t as number) % 86_400_000 !== 0) hata(`${y}.t`, "eskiya gunlugu oyun gun sinirinda olmali");
+    } else if (tur.startsWith("eskiya_")) {
+      pveNesne(veri, `${y}.veri`, ["tur", "baskin"]);
+      if (!baskinKimlikleri.has(tamsayi(veri.baskin, `${y}.veri.baskin`, 1))) hata(`${y}.veri.baskin`, "bilinmeyen baskin");
+    }
     if (!Object.prototype.hasOwnProperty.call(OLAY_ONCELIGI, tur)) hata(`${y}.veri.tur`, `bilinmeyen olay turu: ${tur}`);
     if (o.oncelik !== OLAY_ONCELIGI[tur as keyof typeof OLAY_ONCELIGI]) hata(`${y}.oncelik`, `olay turu ${tur} icin oncelik yanlis: ${String(o.oncelik)}`);
     if (tur === "saatlik_tik") tikVar = true;
@@ -868,6 +996,30 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
   }
   const tarimAcik = ic.param.tarim !== undefined;
   if (tarimAcik !== (d.iklim !== undefined)) hata("$.iklim", tarimAcik ? "tarim acik ama iklim durumu yok" : "tarim kapali ama iklim durumu var");
+  for (const [i, b] of (d.baskinlar ?? []).entries()) {
+    const y = `$.baskinlar[${i}]`;
+    if (ic.mulk?.ilceler.get(b.ilce)?.il !== b.il) hata(`${y}.ilce`, "baskin ilcesi ve il icerikte uyumsuz");
+    const dugum = (id: string, oyuncu: string, yol: string): void => {
+      const e = d.mulk?.isletmeler.find((e) => d.bolgeler[e.bolgeIndeksi]?.id === id);
+      // Geçmiş sahipliği kilitte tutulur; güncel sahiplik sonuç/dönüş sırasında tekrar denetlenir.
+      if (e === undefined || e.il !== b.il || !d.oyuncular.some((o) => o.id === oyuncu)) hata(yol, "baskin dugumu/oyuncusu/ili uyumsuz");
+    };
+    const birlikler = (ciftler: readonly [string, number][], yol: string): void => {
+      for (const [id] of ciftler) if (ic.birlikIndeks[id] === undefined) hata(yol, `icerikte olmayan birlik: ${id}`);
+    };
+    const mallar = (ciftler: readonly [string, number][], yol: string): void => {
+      for (const [id] of ciftler) { const m = ic.mallar[ic.malIndeks[id]!]; if (m === undefined || m.depolanabilir === false) hata(yol, `icerikte olmayan/depolanamaz mal: ${id}`); }
+    };
+    for (const [j, k] of b.katilimcilar.entries()) { dugum(k.dugum, k.oyuncu, `${y}.katilimcilar[${j}]`); birlikler(k.birlikler, `${y}.katilimcilar[${j}].birlikler`); }
+    for (const [j, h] of b.hedefler.entries()) dugum(h.dugum, h.oyuncu, `${y}.hedefler[${j}]`);
+    for (const [j, s] of (b.sonuc?.oyuncular ?? []).entries()) {
+      const sy = `${y}.sonuc.oyuncular[${j}]`;
+      dugum(s.kayit.dugum, s.oyuncu, sy);
+      birlikler(s.kayit.birlikKaybi, `${sy}.kayit.birlikKaybi`);
+      mallar(s.kayit.malKaybi, `${sy}.kayit.malKaybi`); mallar(s.kayit.ganimet, `${sy}.kayit.ganimet`); mallar(s.kayit.ganimetTasma, `${sy}.kayit.ganimetTasma`);
+      if (s.revir !== undefined) birlikler(s.revir.birlikler, `${sy}.revir.birlikler`);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

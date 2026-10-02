@@ -1,11 +1,14 @@
 /** Sahibinin işletme düğümündeki gerçek birlikleri, üretim partileri ve savunma tercihleri. */
 import { carpBol, PPM } from "@bolge/cekirdek";
 import type { Komut } from "@bolge/cekirdek";
+import type { PveOyuncuKaresi } from "@bolge/protokol";
 import { esc, fmt, kalanSureMetni, paraMili, sayi, sureMetni, yuzde } from "../arayuz/bicim";
 import type { BirlikT, Icerik } from "../komut/tablo";
 import { ikon } from "../tasarim/ikon";
 import { savunmaGorunumuHtml } from "./ordu-savunma-gorunum";
 import "./ordu-savunma-gorunum.css";
+import { baskinGorunumuHtml } from "./baskin-gorunum";
+import "./baskin-gorunum.css";
 
 const SAAT = 3_600_000;
 const EN_COK_ADET = 100;
@@ -30,6 +33,8 @@ export interface OrduDurumu {
   erkenOyunPpm: number;
   teknolojiler: ReadonlySet<string>;
   bolgeler: readonly OrduBolgesi[];
+  /** Yalnız sahibinin duyurulmuş ilgisi ve gerçekleşmiş sonuçları; yokluğu bilinmiyor. */
+  pve?: PveOyuncuKaresi;
 }
 export type OrduSonucu = { tamam: true } | { tamam: false; mesaj: string };
 export interface OrduPanelParam {
@@ -37,6 +42,7 @@ export interface OrduPanelParam {
   durum: () => OrduDurumu | null;
   komut: (komut: Extract<Komut, { tur: "birlik_uret" | "savunma_emri" }>) => Promise<OrduSonucu>;
   degisti: () => void;
+  ilceAdi?: (id: string) => string;
 }
 export type OrduEylemi =
   | { eylem: "uret"; bolge: string; birlik: string; adet: string }
@@ -85,6 +91,36 @@ export class OrduPaneli {
   /** Eski sunucu için yalnız mevcut ham birlik gücü; savunma çarpanları hesaplanmaz. */
   private hamKuvvet(b: OrduBolgesi): number { return this.p.ic.birlikler.reduce((t, birlik) => t + (b.birlikler.get(birlik.id) ?? 0) * birlik.guc, 0); }
 
+  private bekleyenRevir(bolge: string, d: OrduDurumu): number | null {
+    if (d.pve === undefined) return null;
+    return d.pve.revir.filter((r) => r.dugum === bolge && r.evre === "bekliyor").reduce((t, r) => t + r.birlikler.reduce((n, [, adet]) => n + adet, 0), 0);
+  }
+
+  private baskinHtml(d: OrduDurumu): string {
+    return baskinGorunumuHtml({
+      gorunum: "ordu", pve: d.pve,
+      malAdi: (id) => this.p.ic.mallar[this.p.ic.malIdx[id] ?? -1]?.ad ?? id,
+      birlikAdi: (id) => this.birlikAdi(id),
+      ilceAdi: this.p.ilceAdi,
+      dugumAdi: (id) => d.bolgeler.find((b) => b.id === id)?.ad ?? "İşletme",
+    });
+  }
+
+  private baskinGorunumunuYakala(kok: ParentNode): (() => void) | null {
+    const detaylar = [...kok.querySelectorAll<HTMLDetailsElement>("[data-ordu-baskin] details[data-baskin-detay]")];
+    if (!detaylar.length) return null;
+    const aciklik = new Map(detaylar.map((d) => [d.dataset["baskinDetay"], d.open]));
+    const aktif = typeof document === "undefined" ? null : document.activeElement;
+    const odak = detaylar.find((d) => d.querySelector("summary") === aktif)?.dataset["baskinDetay"];
+    return () => {
+      for (const d of kok.querySelectorAll<HTMLDetailsElement>("[data-ordu-baskin] details[data-baskin-detay]")) {
+        const id = d.dataset["baskinDetay"];
+        if (aciklik.has(id)) d.open = aciklik.get(id)!;
+        if (odak !== undefined && id === odak) d.querySelector<HTMLElement>("summary")?.focus({ preventScroll: true });
+      }
+    };
+  }
+
   private engel(b: OrduBolgesi, birlik: BirlikT, adet: number | null, d: OrduDurumu): string | null {
     if (b.ordugahSayisi < 1) return "Önce bu işletmenin bulunduğu ilde bir Ordugâh kur.";
     if (birlik.gerekliTeknoloji && !d.teknolojiler.has(birlik.gerekliTeknoloji)) {
@@ -94,7 +130,8 @@ export class OrduPaneli {
     if (adet === null) return `1–${EN_COK_ADET} arasında tam sayı yaz.`;
     const mevcut = [...b.birlikler.values()].reduce((t, a) => t + a, 0);
     const kuyruk = b.partiler.reduce((t, a) => t + a.adet, 0);
-    if (mevcut + kuyruk + adet > b.kapasite) return `Kapasite yetersiz: ${fmt(Math.max(0, b.kapasite - mevcut - kuyruk))} boş yer var. Yeni Ordugâh kapasite ekler.`;
+    const revir = this.bekleyenRevir(b.id, d) ?? 0;
+    if (mevcut + kuyruk + revir + adet > b.kapasite) return `Kapasite yetersiz: ${fmt(Math.max(0, b.kapasite - mevcut - kuyruk - revir))} boş yer var. Bekleyen revir dönüşleri de yer ayırır; yeni Ordugâh kapasite ekler.`;
     const eksik = birlik.maliyet.filter(([mal, miktar]) => (b.stoklar.get(this.p.ic.mallar[mal]?.id ?? "") ?? 0) < miktar * adet);
     if (eksik.length) return `Bu işletmede gereken stok eksik: ${eksik.map(([mal]) => this.malAdi(mal)).join(", ")}. Bu ildeki işletme stoğunda gereken malları biriktir.`;
     return null;
@@ -134,13 +171,15 @@ export class OrduPaneli {
     const d = this.p.durum();
     if (!d) return '<p class="ipucu-metin">Birlik bilgisi yükleniyor…</p>';
     let h = `<h3>${ikon("shield", 18)} Birliklerim</h3><p class="ipucu-metin">Ordugâh kur, işletmenin stoklarından birlik üret ve savunma duruşunu seç.</p>`;
+    h += `<div data-ordu-baskin>${this.baskinHtml(d)}</div>`;
     if (this.sonuc) h += `<p class="ord-sonuc${this.hata ? " ord-hata" : ""}" role="${this.hata ? "alert" : "status"}">${esc(this.sonuc)}</p>`;
     if (!d.bolgeler.length) return h + '<p>Birlik yönetimi için önce arsa edinip bir işletme kur.</p>';
     for (const b of d.bolgeler) {
       const mevcut = [...b.birlikler.values()].reduce((t, a) => t + a, 0);
       const kuyruk = b.partiler.reduce((t, a) => t + a.adet, 0);
+      const revir = this.bekleyenRevir(b.id, d);
       const ikmalPpm = b.savunma?.ikmalPpm ?? b.ikmalPpm;
-      h += `<section class="ord-bolge" data-ordu-bolge="${esc(b.id)}"><h4>${esc(b.ad)}</h4><dl class="ord-ozet"><div><dt>Hazır birlik</dt><dd>${fmt(mevcut)}</dd></div><div><dt>Üretimde</dt><dd>${fmt(kuyruk)}</dd></div><div><dt>Kapasite</dt><dd>${fmt(mevcut + kuyruk)} / ${fmt(b.kapasite)}</dd></div><div><dt>Ordugâh</dt><dd>${fmt(b.ordugahSayisi)}</dd></div><div data-ordu-ham-fallback${b.savunma !== undefined ? " hidden" : ""}><dt>Temel kuvvet (ham)</dt><dd>${b.savunma === undefined ? fmt(this.hamKuvvet(b)) : ""}</dd></div><div><dt>Birlik maaşı</dt><dd>${paraMili(mevcut * this.p.ic.param.askeri.birlikMaasiSaat, "yukari")}/sa</dd></div></dl>`;
+      h += `<section class="ord-bolge" data-ordu-bolge="${esc(b.id)}"><h4>${esc(b.ad)}</h4><dl class="ord-ozet"><div><dt>Hazır birlik</dt><dd>${fmt(mevcut)}</dd></div><div><dt>Üretimde</dt><dd>${fmt(kuyruk)}</dd></div><div><dt>Kapasite</dt><dd data-ordu-kapasite-kullanimi>${fmt(mevcut + kuyruk + (revir ?? 0))} / ${fmt(b.kapasite)}${revir === null ? " · revir bilinmiyor" : ""}</dd></div><div><dt>Revirde ayrılan yer</dt><dd data-ordu-revir-rezerv>${revir === null ? "Bilinmiyor" : fmt(revir)}</dd></div><div><dt>Ordugâh</dt><dd>${fmt(b.ordugahSayisi)}</dd></div><div data-ordu-ham-fallback${b.savunma !== undefined ? " hidden" : ""}><dt>Temel kuvvet (ham)</dt><dd>${b.savunma === undefined ? fmt(this.hamKuvvet(b)) : ""}</dd></div><div><dt>Birlik maaşı</dt><dd>${paraMili(mevcut * this.p.ic.param.askeri.birlikMaasiSaat, "yukari")}/sa</dd></div></dl>`;
       h += `<div data-ordu-savunma>${savunmaGorunumuHtml({ savunma: b.savunma, durus: b.durus })}</div>`;
       h += `<p data-ordu-ikmal-fallback${b.savunma !== undefined || mevcut === 0 ? " hidden" : ""}>İkmal karşılanması: <b>${yuzde(ikmalPpm / 10_000)}</b>.</p>`;
       h += `<div data-ordu-ikmal-uyari>${mevcut > 0 && ikmalPpm < PPM ? '<p class="ord-uyari">İkmal eksik. Bu işletmenin stoklarını ve tedarikini kontrol et; ikmal karşılanması kuvveti etkiler.</p>' : ""}</div>`;
@@ -180,6 +219,13 @@ export class OrduPaneli {
     const d = this.p.durum();
     if (!d) return false;
     let bulundu = false;
+    const baskin = kok.querySelector<HTMLElement>("[data-ordu-baskin]");
+    if (baskin) {
+      const gorunumuGeriKur = this.baskinGorunumunuYakala(kok);
+      baskin.innerHTML = this.baskinHtml(d);
+      gorunumuGeriKur?.();
+      bulundu = true;
+    }
     for (const panel of kok.querySelectorAll<HTMLElement>("[data-ordu-bolge]")) {
       const b = d.bolgeler.find((x) => x.id === panel.dataset["orduBolge"]);
       const slot = panel.querySelector<HTMLElement>("[data-ordu-savunma]");
@@ -198,6 +244,11 @@ export class OrduPaneli {
         if (deger) deger.textContent = b.savunma === undefined ? fmt(this.hamKuvvet(b)) : "";
       }
       const mevcut = [...b.birlikler.values()].reduce((t, a) => t + a, 0);
+      const revir = this.bekleyenRevir(b.id, d);
+      const rezerv = panel.querySelector<HTMLElement>("[data-ordu-revir-rezerv]");
+      if (rezerv) rezerv.textContent = revir === null ? "Bilinmiyor" : fmt(revir);
+      const kapasite = panel.querySelector<HTMLElement>("[data-ordu-kapasite-kullanimi]");
+      if (kapasite) kapasite.textContent = `${fmt(mevcut + b.partiler.reduce((t, a) => t + a.adet, 0) + (revir ?? 0))} / ${fmt(b.kapasite)}${revir === null ? " · revir bilinmiyor" : ""}`;
       const ikmalPpm = b.savunma?.ikmalPpm ?? b.ikmalPpm;
       const ikmal = panel.querySelector<HTMLElement>("[data-ordu-ikmal-fallback]");
       if (ikmal) {
@@ -210,6 +261,16 @@ export class OrduPaneli {
         const secili = dugme.dataset["durus"] === b.durus;
         dugme.setAttribute("aria-pressed", String(secili));
         dugme.disabled = this.gonderiliyor || secili;
+      }
+      for (const kart of panel.querySelectorAll<HTMLElement>(".ord-uret")) {
+        const input = kart.querySelector<HTMLInputElement>("input[data-ordu-adet]");
+        const birlik = this.p.ic.birlikler.find((x) => x.id === input?.dataset["birlik"]);
+        if (!input || !birlik) continue;
+        this.girdiler.set(anahtar(b.id, birlik.id), input.value);
+        const teklif = kart.querySelector<HTMLElement>("[data-ordu-teklif]");
+        if (teklif) teklif.innerHTML = this.teklifHtml(b, birlik, d);
+        const uret = kart.querySelector<HTMLButtonElement>("button[data-ordu-eylem='uret']");
+        if (uret) uret.disabled = this.gonderiliyor || this.engel(b, birlik, birlikAdedi(input.value), d) !== null;
       }
     }
     return bulundu;
@@ -235,11 +296,13 @@ export class OrduPaneli {
   }
 
   odagiYakala(kok: ParentNode): (() => void) | null {
+    const baskinGorunumunuGeriKur = this.baskinGorunumunuYakala(kok);
     const a = typeof document === "undefined" ? null : document.activeElement;
-    if (!(a instanceof HTMLInputElement) || !a.hasAttribute("data-ordu-adet")) return null;
+    if (!(a instanceof HTMLInputElement) || !a.hasAttribute("data-ordu-adet")) return baskinGorunumunuGeriKur;
     const bolge = a.dataset["bolge"], birlik = a.dataset["birlik"], bas = a.selectionStart, son = a.selectionEnd;
     this.girdiler.set(anahtar(bolge ?? "", birlik ?? ""), a.value);
     return () => {
+      baskinGorunumunuGeriKur?.();
       const y = [...kok.querySelectorAll<HTMLInputElement>("input[data-ordu-adet]")].find((i) => i.dataset["bolge"] === bolge && i.dataset["birlik"] === birlik);
       if (!y) return;
       y.focus({ preventScroll: true });

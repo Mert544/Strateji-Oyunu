@@ -4,6 +4,7 @@
 import { bolgeIndeksiBul } from "../dugum";
 import { hizlandirilmisSure } from "../erkenOyun";
 import { ekYapiSayisi, ekYapiToplami } from "../mulk/yapi";
+import { askeriUykudaMi, revirKapasiteRezervi } from "./durum";
 import { carpBol } from "../sabit";
 import { anlikMiktar, oyuncuBul, stokEkle } from "../stok";
 import { birlikAcikMi } from "../teknoloji";
@@ -45,6 +46,7 @@ export function birlikUret(
     if (ekYapiSayisi(bolge, "ordugah") === 0) return hata(`ordugah gerekli: ${k.bolge}`);
     const kapasite = ekYapiToplami(ic, bolge, "birlikKapasitesi");
     let kullanilan = 0;
+    kullanilan += revirKapasiteRezervi(d, bolge.id, oyuncu);
     for (const adet of bolge.birlikler) kullanilan += adet;
     for (const parti of d.partiler) if (parti.bolge === bi) kullanilan += parti.adet;
     if (kullanilan + k.adet > kapasite) {
@@ -115,6 +117,7 @@ export function ikmalTalebi(d: Dunya, ctx: Baglam, bolge: number): Mili[] {
   const sonuc = new Array<number>(ic.mallar.length).fill(0);
   const b = d.bolgeler[bolge];
   if (!b) return sonuc;
+  if (b.merkez !== undefined && b.sahip !== null && askeriUykudaMi(d, ic, b.sahip)) return sonuc;
   const carpan = ic.mulk !== undefined && b.merkez !== undefined ? (ic.param.askeri.ikmalCarpaniPpm ?? PPM) : PPM;
   const tablo = ikmalTablosu(ic);
   for (let bi = 0; bi < b.birlikler.length; bi++) {

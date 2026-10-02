@@ -440,6 +440,7 @@ export class WsBaglanti implements MulkBaglantisi {
       simZamani,
       erkenOyunPpm: o.erkenOyun ? erkenOyunCarpani(o.erkenOyun, simZamani) : 1_000_000,
       teknolojiler,
+      ...(o.pve === undefined ? {} : { pve: o.pve }),
       bolgeler: (this.kare?.bolgeler ?? []).filter((b) => b.genel.sahip === o.id && b.id.endsWith("#" + o.id) && b.ozel?.ordu !== undefined).map((b) => {
         const oz = b.ozel!;
         const ordu = oz.ordu!;

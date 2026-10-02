@@ -46,10 +46,13 @@ import { TeknolojiPaneli } from "./teknoloji-panel";
 import teknolojiCss from "./teknoloji-panel.css?inline";
 import { OrduPaneli, orduEylemiOku } from "./ordu-panel";
 import orduCss from "./ordu-panel.css?inline";
+import orduSavunmaCss from "./ordu-savunma-gorunum.css?inline";
+import baskinCss from "./baskin-gorunum.css?inline";
 import { IlceYasamPaneli } from "./ilce-yasam-panel";
 import ilceCss from "./ilce-yasam-panel.css?inline";
 import { TedarikPaneli, tedarikEylemiOku } from "./tedarik-panel";
 import tedarikCss from "./tedarik-panel.css?inline";
+import lojistikCss from "./lojistik-gorunum.css?inline";
 import { UretimAgiPaneli, uretimAgiEylemiOku } from "./uretim-agi-panel";
 import uretimAgiCss from "./uretim-agi-panel.css?inline";
 
@@ -445,7 +448,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   if (!document.getElementById("mulk-panel-stil")) {
     const st = document.createElement("style");
     st.id = "mulk-panel-stil";
-    st.textContent = mulkCss + dukkanCss + teknolojiCss + orduCss + ilceCss + tedarikCss + uretimAgiCss;
+    st.textContent = mulkCss + dukkanCss + teknolojiCss + orduCss + orduSavunmaCss + baskinCss + ilceCss + tedarikCss + lojistikCss + uretimAgiCss;
     document.head.append(st);
   }
   isletmeDugmesiKur();
@@ -647,6 +650,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   });
   const orduPaneli: OrduPaneli | undefined = b.orduDurumu && b.orduKomutu ? new OrduPaneli({
     ic,
+    ilceAdi: ad.ilce,
     durum: () => {
       const d = b.orduDurumu!();
       return d ? { ...d, bolgeler: d.bolgeler.map((x) => ({ ...x, ad: ad.il(x.ad) })) } : null;

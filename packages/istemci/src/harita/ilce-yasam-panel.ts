@@ -3,6 +3,8 @@ import type { IlceKaresi } from "@bolge/protokol";
 import { esc, fmt, paraMili, sayi } from "../arayuz/bicim";
 import { ikon } from "../tasarim/ikon";
 import type { DukkanKaresi } from "./baglanti";
+import { baskinGorunumuHtml } from "./baskin-gorunum";
+import "./baskin-gorunum.css";
 
 export interface IlceYasamGorunumu {
   id: string;
@@ -19,6 +21,8 @@ export interface IlceYasamGorunumu {
   kamuKasa?: NonNullable<IlceKaresi["yasam"]>["kamuKasa"];
   muhasebeT?: number;
   simZamani?: number;
+  /** Yalnız seçili ilçenin duyurulmuş genel baskın verisi. */
+  pve?: IlceKaresi["pve"];
 }
 
 /** Harita seçimi varsa onu korur; seçilen ilçe henüz karede yoksa başka ilçenin sayılarını göstermez. */
@@ -36,6 +40,7 @@ export function ilceYasamGorunumuKur(kare: DukkanKaresi | null, secili: string |
   if (kare) g.simZamani = kare.t;
   if (c) {
     g.il = c.il;
+    if (c.pve !== undefined) g.pve = c.pve;
     // Çok hücreli dükkân bir kez sayılır. İnşa hâlindeki dükkân sayılmaz.
     g.dukkanSayisi = new Set(c.hucreler.filter((h) => h[3] >= 0 && h[5] === "dukkan").map((h) => h[3])).size;
     if (c.kamuAdet !== undefined) g.kamuHucre = c.kamuAdet;
@@ -59,6 +64,7 @@ export interface IlceYasamAdlari {
   ilceAdi: (id: string) => string;
   ilAdi: (id: string) => string;
   malAdi: (id: string) => string;
+  birlikAdi?: (id: string) => string;
 }
 
 function sayiKarti(ad: string, deger: string, aciklama?: string): string {
@@ -78,6 +84,7 @@ export function ilceYasamHtml(g: IlceYasamGorunumu | null, ad: IlceYasamAdlari):
   if (g.kamuHucre !== undefined) s += sayiKarti("Kamu arazisi", `${fmt(g.kamuHucre)} <span>hücre</span>`, "Satışa kapalı ortak alanlar");
   s += "</dl>";
   if (g.nufus === undefined) s += '<p class="ipucu-metin">İlçe nüfusu sunucudan bekleniyor.</p>';
+  s += `<div data-ilce-baskin="${esc(g.id)}">${baskinGorunumuHtml({ gorunum: "ilce", pve: g.pve, ilceAdi: ad.ilceAdi, malAdi: ad.malAdi, birlikAdi: ad.birlikAdi })}</div>`;
 
   if (g.talep !== undefined) {
     const raf = g.talepKapsami === "raf";

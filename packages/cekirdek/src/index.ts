@@ -37,6 +37,8 @@ export { teknolojiYayilimiPpm } from "./teknoloji";
 export { ikmalTalebi } from "./askeri/uretim";
 export { savunmaGucuGorunumu } from "./askeri/savas";
 export type { SavunmaGucuGorunumu } from "./askeri/savas";
+export { eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, yagmaTavaniUygula } from "./askeri/eskiya";
+export { revirKapasiteRezervi } from "./askeri/durum";
 
 // --- Tarım katmanı (B1) ---
 export { iklimGunluk, takvimGunu, takvimAyi, mutlakTakvimGunu, hasatEnterpole, hasatGunlukNormallestir, tarimTablosu, tarimCiktiCarpani } from "./tarim";

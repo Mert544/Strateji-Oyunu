@@ -316,8 +316,48 @@ const insaatKaresiSemasi = z.union([
   z.tuple([...insaatTaban, tam]),
   z.tuple([...insaatTaban, tam, z.string()]),
 ]);
+// Ayrı genel/özel şema: planlı evre telde yoktur; kayıp/ganimet/revir ilçe genel verisine girmez.
+const pveOlaySemasi = z.object({
+  id: tam,
+  il: z.string(),
+  ilce: z.string(),
+  evre: z.enum(["duyuru", "pencere", "bitti", "iptal"]),
+  duyuruZamani: tam,
+  pencereBaslangic: tam,
+  pencereBitis: tam,
+  tahminAltGuc: tam,
+  tahminUstGuc: tam,
+  sonuc: z.object({ kazandi: z.boolean(), baskinGucu: tam, savunmaGucu: tam }).optional(),
+});
+const pveIlceSemasi = z.object({ etkin: z.boolean(), olaylar: z.array(pveOlaySemasi) });
+const pveOyuncuSemasi = z.object({
+  etkin: z.boolean(),
+  olaylar: z.array(pveOlaySemasi),
+  sonuclar: z.array(z.object({
+    baskin: tam,
+    il: z.string(),
+    ilce: z.string(),
+    dugum: z.string(),
+    zaman: tam,
+    kazandi: z.boolean(),
+    katkiGuc: tam,
+    birlikKaybi: z.array(z.tuple([z.string(), tam])),
+    malKaybi: z.array(z.tuple([z.string(), tam])),
+    ganimet: z.array(z.tuple([z.string(), tam])),
+    ganimetTasma: z.array(z.tuple([z.string(), tam])),
+    onarim: z.array(z.tuple([tam, tam])),
+  })),
+  revir: z.array(z.object({
+    baskin: tam,
+    dugum: z.string(),
+    donusZamani: tam,
+    birlikler: z.array(z.tuple([z.string(), tam])),
+    evre: z.enum(["bekliyor", "dondu", "iptal"]),
+  })),
+});
 const ilceKaresiSemasi = z.object({
   id: z.string(),
+  pve: pveIlceSemasi.optional(),
   yasam: z.object({
     nufus: tam,
     nufusKaynak: z.enum(["kayit", "esdeger"]),
@@ -350,6 +390,7 @@ const ilceKaresiSemasi = z.object({
 });
 const oyuncuKaresiSemasi = z.object({
   id: z.string(),
+  pve: pveOyuncuSemasi.optional(),
   hazine: stokFormuluSemasi,
   vergiPpm: tam,
   askeriRezervPpm: tam,

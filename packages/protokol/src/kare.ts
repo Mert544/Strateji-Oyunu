@@ -32,8 +32,66 @@
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
-import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok } from "@bolge/cekirdek";
+import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
+import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok } from "@bolge/cekirdek";
+
+/** Güvenli çekirdek projeksiyonu: planlı baskınlar ve yabancı özel sonuçlar içermez. Yokluğu eski sunucu/kural bilinmezliğidir. */
+export type PveIlceKaresi = EskiyaIlceGorunumu;
+export type PveOyuncuKaresi = EskiyaOyuncuGorunumu;
+
+/** Yalnız izinli görünüm alanları kopyalanır; çekirdek plan/katılımcı nesnesi tel nesnesine yayılmaz. */
+function pveTelOlaylari(olaylar: PveIlceKaresi["olaylar"], simZamani: Ms): PveIlceKaresi["olaylar"] {
+  const duyurulan = olaylar.filter((x) => x.duyuruZamani <= simZamani && (x.evre === "duyuru" || x.evre === "pencere" || x.evre === "bitti" || x.evre === "iptal"));
+  const aktif = duyurulan.filter((x) => x.evre === "duyuru" || x.evre === "pencere");
+  const gecmis = duyurulan.filter((x) => x.evre === "bitti" || x.evre === "iptal").sort((a, b) => a.pencereBitis - b.pencereBitis || a.id - b.id).slice(-10);
+  return [...aktif, ...gecmis].sort((a, b) => a.id - b.id).map((x) => ({
+    id: x.id,
+    il: x.il,
+    ilce: x.ilce,
+    evre: x.evre,
+    duyuruZamani: x.duyuruZamani,
+    pencereBaslangic: x.pencereBaslangic,
+    pencereBitis: x.pencereBitis,
+    tahminAltGuc: x.tahminAltGuc,
+    tahminUstGuc: x.tahminUstGuc,
+    ...(x.evre === "bitti" && x.sonuc !== undefined ? { sonuc: {
+      kazandi: x.sonuc.kazandi,
+      baskinGucu: x.sonuc.baskinGucu,
+      savunmaGucu: x.sonuc.savunmaGucu,
+    } } : {}),
+  }));
+}
+
+function pveOyuncuTelKaresi(pve: PveOyuncuKaresi, simZamani: Ms): PveOyuncuKaresi {
+  const siraliSonuclar = [...pve.sonuclar].sort((a, b) => a.zaman - b.zaman || a.baskin - b.baskin || (a.dugum < b.dugum ? -1 : a.dugum > b.dugum ? 1 : 0));
+  const sonBaskinlar = new Set([...new Set(siraliSonuclar.map((x) => x.baskin))].slice(-10));
+  return {
+    etkin: pve.etkin,
+    olaylar: pveTelOlaylari(pve.olaylar, simZamani),
+    sonuclar: siraliSonuclar.filter((x) => sonBaskinlar.has(x.baskin)).map((x) => ({
+      baskin: x.baskin,
+      il: x.il,
+      ilce: x.ilce,
+      dugum: x.dugum,
+      zaman: x.zaman,
+      kazandi: x.kazandi,
+      katkiGuc: x.katkiGuc,
+      birlikKaybi: x.birlikKaybi.map(([birlik, adet]): [string, number] => [birlik, adet]),
+      malKaybi: x.malKaybi.map(([mal, miktar]): [string, number] => [mal, miktar]),
+      ganimet: x.ganimet.map(([mal, miktar]): [string, number] => [mal, miktar]),
+      ganimetTasma: x.ganimetTasma.map(([mal, miktar]): [string, number] => [mal, miktar]),
+      onarim: x.onarim.map(([tesis, bitis]): [number, number] => [tesis, bitis]),
+    })),
+    // Revir hakkı son sonuçlar sınırından bağımsızdır; bayrak kapalıyken de korunur.
+    revir: pve.revir.map((x) => ({
+      baskin: x.baskin,
+      dugum: x.dugum,
+      donusZamani: x.donusZamani,
+      birlikler: x.birlikler.map(([birlik, adet]): [string, number] => [birlik, adet]),
+      evre: x.evre,
+    })),
+  };
+}
 
 /** Dikdörtgen kamu bloğu: `[x0, y0, x1, y1]` = x0..x1 × y0..y1 (dört uç dahil) hücreleri ("x:y" kimliği), hepsi kamu arsası. */
 export type KamuBlogu = [x0: number, y0: number, x1: number, y1: number];
@@ -240,6 +298,8 @@ export interface IlceKaresi {
   uygunHucre: number;
   satilmisHucre: number;
   hucreler: HucreKaresi[];
+  /** Yalnız duyurulmuş genel baskınlar. etkin:false kapalı bayraktır; geçmiş sonuçlar korunabilir. */
+  pve?: PveIlceKaresi;
   /** Kamu arsası hücre sayısı (satılmaz; kamu kuralı kapalıysa ya da ilçede kamu yoksa alan yok). */
   kamuAdet?: number;
   /**
@@ -304,6 +364,8 @@ export type ErkenOyunFormulu = [katilma: Ms, baslangicPpm: number, sabitMs: Ms, 
 /** Oyuncunun kendi durumu (yalnız kendisine). */
 export interface OyuncuKaresi {
   id: OyuncuId;
+  /** Yalnız kendisinin duyuru ilgisi, gerçekleşmiş sonuçları ve revir hakları; kapalı bayrak geçmiş hakları silmez. */
+  pve?: PveOyuncuKaresi;
   hazine: StokFormulu;
   vergiPpm: number;
   askeriRezervPpm: number;
@@ -704,6 +766,8 @@ export function ilgiKaresiCikar(
       const yontemler = d.insaatlar.filter((x) => x.sahip === oyuncu && x.yontem !== undefined).map((x): [number, string] => [x.id, x.yontem as string]);
       // Boş liste de gönderilir: son parti bittiğinde istemcide eski kuyruk kalmaz.
       kare.oyuncu.partiler = d.partiler.filter((x) => x.sahip === oyuncu).map((x) => ({ id: x.id, bolge: x.bolge, birlik: x.birlik, adet: x.adet, bitis: x.bitis }));
+      const pve = eskiyaOyuncuGorunumu(d, kaynak.ic, oyuncu);
+      if (pve !== undefined) kare.oyuncu.pve = pveOyuncuTelKaresi(pve, d.zaman);
       if (yontemler.length > 0) kare.oyuncu.insaatYontem = yontemler;
       const eo = kaynak.ic.param.erkenOyun;
       if (eo) kare.oyuncu.erkenOyun = [o.katilmaZamani, eo.baslangicCarpaniPpm, eo.sabitSaat * 3_600_000, eo.bitisSaat * 3_600_000];
@@ -771,6 +835,8 @@ export function ilgiKaresiCikar(
       .filter((c) => istenen.has(c.id))
       .map((c) => {
         const girdi: IlceKaresi = { id: c.id, il: c.il, seviye: c.seviye, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, hucreler: hucreler.get(c.id) ?? [] };
+        const pve = eskiyaIlceGorunumu(d, kaynak.ic, c.id);
+        if (pve !== undefined) girdi.pve = { etkin: pve.etkin, olaylar: pveTelOlaylari(pve.olaylar, d.zaman).filter((x) => x.ilce === c.id) };
         const yasam = ilceYasamGorunumu(d as Dunya, kaynak.ic, c.id);
         if (yasam !== undefined) {
           girdi.yasam = { nufus: yasam.nufus, nufusKaynak: yasam.nufusKaynak, talep: yasam.talep, karsilanma: yasam.karsilanma };

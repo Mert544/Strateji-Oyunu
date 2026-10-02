@@ -606,6 +606,30 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
   if (p.askeri.ilanHazirlikSaatMin > p.askeri.ilanHazirlikSaatMax) {
     hatalar.push("askeri.ilanHazirlikSaatMin: ilanHazirlikSaatMax degerinden buyuk olamaz");
   }
+  const eskiya = p.askeri.eskiya;
+  if (eskiya !== undefined) {
+    if (eskiya.bantBaslangicSaat + eskiya.dilimSayisi * eskiya.dilimSaat > 24) {
+      hatalar.push("askeri.eskiya: baskin bandi gune sigmiyor");
+    }
+    if (eskiya.duyuruSaat + eskiya.kuleEkiSaat > eskiya.planlamaOncesiGun * 24) {
+      hatalar.push("askeri.eskiya: duyuru suresi planlama oncesinden uzun");
+    }
+    if (
+      eskiya.tahminAltPpm > eskiya.kuleTahminAltPpm || eskiya.kuleTahminAltPpm > 1_000_000 ||
+      eskiya.kuleTahminUstPpm < 1_000_000 || eskiya.kuleTahminUstPpm > eskiya.tahminUstPpm
+    ) {
+      hatalar.push("askeri.eskiya: kule tahmin araligi genel araligin icinde olmali");
+    }
+    if (eskiya.karakolGuc[1] > eskiya.karakolGuc[0]) {
+      hatalar.push("askeri.eskiya.karakolGuc: [birinci, ikinci] azalan olmali");
+    }
+    if (eskiya.kalkanSonrasiYagmaPpm > eskiya.yagmaOraniPpm) {
+      hatalar.push("askeri.eskiya: kalkan sonrasi yagma genel yagmadan buyuk olamaz");
+    }
+    if (eskiya.etkin && p.mulk?.ekYapilar?.["ordugah"] === undefined) {
+      hatalar.push("askeri.eskiya.etkin: mulk.ekYapilar.ordugah tanimsiz");
+    }
+  }
   // ilanHazirlikSaatMin >= 1 ve tamponSaat >= 1 şemada (sema.ts) denetlenir.
   if (p.erkenOyun.bitisSaat < p.erkenOyun.sabitSaat) {
     hatalar.push("erkenOyun.bitisSaat: sabitSaat degerinden kucuk olamaz");
@@ -628,6 +652,13 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
     const mallar = new Set(icerik.mallar.map((m) => m.id));
     const birlikler = new Set(icerik.birlikler.map((b) => b.id));
     const depolanamaz = new Set(icerik.mallar.filter((m) => m.depolanabilir === false).map((m) => m.id));
+    if (eskiya !== undefined) {
+      for (const mal of Object.keys(eskiya.ganimet)) {
+        if (!mallar.has(mal) || depolanamaz.has(mal)) {
+          hatalar.push(`askeri.eskiya.ganimet: bilinmeyen ya da depolanamaz mal: ${mal}`);
+        }
+      }
+    }
     if (p.sanayi !== undefined) {
       if (!depolanamaz.has("elektrik")) hatalar.push('sanayi: icerikte depolanabilir: false "elektrik" mali gerekli');
       const teknolojiler = new Set(icerik.teknolojiler.map((t) => t.id));

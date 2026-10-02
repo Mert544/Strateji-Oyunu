@@ -99,7 +99,45 @@ yabancıya görünmeme, ikmalin %100/%50 gösterimi ve formun korunması sınand
 Arayüz vakası birim testindeki DOM yüzeyidir; gerçek tarayıcı kanıtı değildir.
 Kök/istemci tip kontrolü ve derleme geçti. Dünya gzip 380,0KB/400KB,
 harita 488,0KB. Tam paket, tarayıcı/mobil, lint ve Postgres çalıştırılmadı.
-Çalışma aynı GitHub geliştirme dalında teslim edilir; dağıtım yapılmaz.
+S1 `d8dd66e` ile aynı GitHub geliştirme dalına pushlandı; dağıtım yapılmadı.
+
+## S2 — Bayraklı ilçe baskını tamamlandı
+
+Kesin [uygulama sözleşmesi](codex-s2-pve-sozlesmesi.md) koordinatör tarafından
+yazıldı. Mevcut altı ajan yeniden görevlendirildi; yeni ajan açılmadı.
+`l1_protokol` tek çekirdek yazarı (olaylar/durum/yağma/revir/kayıt),
+`d4_a6_arge` veri tipi/şema/kapalı varsayılan parametreler,
+`d4_b2_baglanti` protokol ve WS köprüsü, `d4_a3_tedarik` Ordu/İlçe
+entegrasyonu, `d4_b4_gorsel` baskın kartları, `d4_b6_operasyon` hedefli
+doğrulama sahibidir. Kök kapsamı, birleşimi ve teslimi yönetir.
+
+Varsayılan bayrak kapalıdır. D3 ordu üretimi/duruş açık kalır. Günlük plan,
+ön duyuru, savunma penceresi, mal ganimeti/yağması, geçici tesis onarımı ve
+revir dönüşü gerçek olay kuyruğuna bağlandı. Uyku askerî ikmal ve maaşı
+durdurur; bekleyen revir yeni birlik üretiminde kapasite ayırır. Kayıtlar,
+kuyruk referansları ve içerik kimlikleri doğrulanır. Oyuncuya yalnız kendi
+sonuçları gider; duyurulmamış plan ve gerçek sonuç öncesi güç gizlidir.
+Bu aşama canlı baskın açılışı veya denge kabulü değildir.
+
+İki hedefli test geçti: bayrak yok/kapalı eşdeğerliği ve aynı tohum/günlükle
+gerçek kazanma/kaybetme akışı; duyuru gizliliği, dört aşamada kayıt/yükleme,
+yeniden oynatma, yinelenen kapanışta ödül tekilliği, kayıp/revir ve bayrak
+kapalıyken kazanılmış dönüş hakkı. İlk koşuda testin isteğe bağlı
+`depolanabilir` alanını zorunlu sanan beklentisi düzeltildi; yalnız başarısız
+vaka tekrarlandı. Kök/istemci tip kontrolü ve derleme geçti. Dünya gzip
+386,9KB/400KB, harita 491,8KB. Geniş test paketi, lint ve Postgres çalışmadı.
+
+Kullanıcının ekran görüntüsü talebiyle B4 gerçek yerel sunucu ve Chromium'da
+örnek dünyayı komutlarla kurdu; Üretim, Tedarik, Ordu ve dar ekran görüntüleri
+`/workspace/artifacts/oyun-ekranlari/` altında hazırlandı. Görsel kontrol,
+sekme adlarının sıkışmasını ve tek dosyalı dağıtımda savunma/lojistik CSS'inin
+yüklenmemesini ortaya çıkardı. A3 sekmeleri yatay kaydırılabilir yaptı ve
+programatik seçimi görünür tuttu; kök bu iki kartın ve yeni baskın kartının
+CSS'ini mevcut inline yükleme yoluna ekledi. Son derleme `dunya.html` yoluyla
+1440×1000 ve 390×844 boyutlarında görüntülendi; sayfa hatası yok. Gerçek
+ithalat ve üretim komutlarıyla 1 piyade, %100 ikmal, 143 savunma gücü ve
+saatte 2 birim mühimmat ithalatı gösterildi. Bu kısa ekran kontrolü geniş
+tarayıcı/mobil kabul testi değildir; aktif baskın senaryosu görüntülenmedi.
 
 ## Güncel ürün yönü ve sıradaki somut dilimler
 
@@ -108,11 +146,11 @@ Birebir gerçek dünya beklemiyor; konum, rota, tedarik ve stok kararlarını
 anlamlı kılan detay, ihtiyaç oldukça açılan sunum ve genel Ar-Ge önemli.
 Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları korunur.
 
-1. **Askerî sonraki teslim:** S1 kartı tamamlandı. Koordinatör
-   [askerî kayıt](codex-sonraki-askeri-dilim.md) ve [PvE kararı](codex-d4-pve-karari.md)
-   içindeki eksik sayısal maddeleri tek uygulama brief'inde kapatır; ardından
-   deterministik baskın duyurusu/sonucu dilimi atanır. Eski bölge savaşını
-   doğrudan NPC baskını diye açma; yeni genel rapor dalgası üretme.
+1. **Askerî durum:** S1 kartı ve bayraklı S2 baskın akışı tamamlandı.
+   [Uygulama sözleşmesi](codex-s2-pve-sozlesmesi.md) sayısal kararları ve
+   kapsamı tutar. Canlı açılış/denge kabulü ayrıdır; bayrağı sessizce açma.
+   Mevcut mülk işletmesi için PvP ilan yolu yoktur; ileride açılırsa aynı
+   24 saatlik yağma defterine bağlanmalıdır. Sonraki geliştirme odağı L2'dir.
 2. **Lojistik kalan:** kendi kenar tahsisi/toplam kapasite görünümü L1'in ayrı
    dilimidir; mevcut sevk planından global kalan kapasite çıkarılmaz.
    **L2:** rafineriyi mülk ayak izi/inşa tablosuyla aç; sanayi yakıtında

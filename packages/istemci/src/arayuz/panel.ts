@@ -216,6 +216,19 @@ export class Panel {
     $("sekmeler").innerHTML = (this.mulk?.sekmeler ?? SEKMELER.filter((s) => oyuncu || !s.oyuncu))
       .map((s) => `<button type="button" role="tab" id="sek-${s.id}" data-sekme="${s.id}" aria-selected="${s.id === this.sekme}">${sekmeIcerik(s)}</button>`)
       .join("");
+    this.seciliSekmeyiGoster();
+  }
+
+  /** Yalnız sekme şeridini kaydırır; içerik ve sayfanın dikey konumunu korur. */
+  private seciliSekmeyiGoster(): void {
+    const nav = $("sekmeler");
+    const secili = nav.querySelector<HTMLElement>('button[aria-selected="true"]');
+    if (!secili || nav.clientWidth <= 0) return;
+    const dugme = secili.getBoundingClientRect();
+    const sol = nav.getBoundingClientRect().left + nav.clientLeft;
+    const sag = sol + nav.clientWidth;
+    if (dugme.left < sol) nav.scrollLeft += dugme.left - sol;
+    else if (dugme.right > sag) nav.scrollLeft += dugme.right - sag;
   }
 
   /** Oyuncu kipini açar: komut arayüzü durumunu kurar, "Devlet" sekmesini ekler ve ona geçer. */
@@ -409,6 +422,7 @@ export class Panel {
     this.sonIcerik = "";
     this.icerikCiz(true);
     if (window.matchMedia("(max-width: 820px)").matches) this.panelKapali(false);
+    this.seciliSekmeyiGoster();
   }
 
   // --- zaman (⚙ menüsü) ve takvim --------------------------------------------------------------

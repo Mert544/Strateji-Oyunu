@@ -5,6 +5,7 @@
 import { BaglamUygulamasi } from "./baglam";
 import { icerikDerle } from "./derle";
 import { askeriKomutu, partiBitti, savasPencereAc, savasPencereKapa } from "./askeri";
+import { eskiyaDuyuru, eskiyaGunluk, eskiyaPencereAc, eskiyaPencereKapa, eskiyaTakvimiUyarla, eskiyaToparlanma } from "./askeri/eskiya";
 import { ekonomiKomutu, insaatBitti, saatlikTik } from "./ekonomi";
 import { kuyrukBas, kuyrukCikar } from "./kuyruk";
 import { dunyaKur } from "./kurulum";
@@ -70,6 +71,7 @@ export class Simulasyon {
     readonly gunluk: DamgaliKomut[],
   ) {
     this.baglam = new BaglamUygulamasi(ic);
+    if (!MULKSUZ_PAKET) eskiyaTakvimiUyarla(dunya, this.baglam);
   }
 
   /** İçeriği derler, dünyayı haritadan kurar, ilk saatlik tıkı (t=0) ve ilk çözümü planlar. */
@@ -420,7 +422,23 @@ export class Simulasyon {
       case "savas_pencere_kapa":
         savasPencereKapa(d, ctx, v.savas);
         break;
+      case "eskiya_gunluk":
+        eskiyaGunluk(d, ctx);
+        break;
+      case "eskiya_duyuru":
+        eskiyaDuyuru(d, ctx, v.baskin);
+        break;
+      case "eskiya_pencere_ac":
+        eskiyaPencereAc(d, ctx, v.baskin);
+        break;
+      case "eskiya_pencere_kapa":
+        eskiyaPencereKapa(d, ctx, v.baskin);
+        break;
+      case "eskiya_toparlanma":
+        eskiyaToparlanma(d, ctx, v.baskin);
+        break;
       case "saatlik_tik": {
+        if (!MULKSUZ_PAKET && d.eskiyaTakvim !== undefined && ctx.ic.param.askeri.eskiya?.etkin !== true) eskiyaTakvimiUyarla(d, ctx);
         saatlikTik(d, ctx);
         // Sonraki tam saate yeni tık (d.zaman tam saat değilse de sonraki tam saate denk gelir).
         ctx.planla(d, (Math.floor(d.zaman / SAAT) + 1) * SAAT, { tur: "saatlik_tik" });

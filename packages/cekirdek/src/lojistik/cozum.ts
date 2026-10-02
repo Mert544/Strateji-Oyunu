@@ -35,6 +35,7 @@ import {
   uretimMuhasebesi,
 } from "../ekonomi/uretim";
 import { defterOranYaz, pazarMuhasebesi, sifirKalemler, ticaretCarpanlari, ihracatKirilimi, ithalatKirilimi } from "../pazar";
+import { askeriUykudaMi } from "../askeri/durum";
 import { pazarTablosu } from "../pazar/tablo";
 import { BOS_DUGUMLER, oyuncuDugumleri } from "../dugum";
 import { dugumIlcesi, kasaOranlari, kasaOranlariOdenene, paraAkisiYaz, paraMuhasebesi } from "../mulk/kasa";
@@ -206,7 +207,7 @@ function hazineKalemleri(
     for (const t of b.tesisler) if (t.aktif) aktifTesis++;
     let birlik = 0;
     for (const a of b.birlikler) birlik += a;
-    gider += aktifTesis * p.ekonomi.tesisIsletmeParasiSaat + birlik * p.askeri.birlikMaasiSaat;
+    gider += aktifTesis * p.ekonomi.tesisIsletmeParasiSaat + (b.merkez !== undefined && askeriUykudaMi(d, ctx.ic, o.id) ? 0 : birlik * p.askeri.birlikMaasiSaat);
     // Sanayi (B2): işletme gideri ölçek ve bakım düzeyi çarpanıyla değişir (normal düzey, S ölçek = özgün gider).
     if (sn !== null && p.ekonomi.tesisIsletmeParasiSaat > 0) {
       const duzey = bakimDuzeyiIndeksi(d, b);
