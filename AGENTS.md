@@ -135,3 +135,11 @@ test veya rapor üretme. Bitiren ajan uygun sonraki görevde yeniden kullanılı
   sanayi yakıtı stoktan ikame edilmez; NPC ithalatına ayrı fiziksel rota yok.
   Yeni uygulamada bu tarihsel bulguları yeniden kodla karşılaştır.
   Sonraki sıra `docs/agent-results/codex-d4-lojistik-arge.md` içindedir.
+
+## Son kullanıcı yönü — rutin ekran görüntüsü yok
+
+Her teslimde ekran görüntüsü veya tarayıcı senaryosu çalıştırma. Kullanıcı
+2 Ekim'de sürekli ekran alınmasını istemediğini belirtti. Geliştirmeyi
+sürdür; davranış riskine uygun hedefli kontrol ve gerekli derleme yeterlidir.
+Yeni ekran ancak kullanıcı isterse veya somut görsel sorunu çözmek için
+gerçekten gerekiyorsa alınır. Tamamlanma ölçütü ekran galerisi değildir.

@@ -18,7 +18,7 @@
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, erkenOyunCarpani, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, LojistikKenarGorunumu, SunucuMesaji } from "@bolge/protokol";
-import type { PazarKaynagi, PazarSatisIstegi, PazarSatisSonucu, DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
+import type { PazarKaynagi, PazarSatisIstegi, PazarSatisSonucu, DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisDurumDegistirIstegi, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce, pazarHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
 import type { InsaatBilgisi } from "../yuru/arsa";
 import { parselToplamFiyatiMili } from "./fiyat";
@@ -345,6 +345,24 @@ export class WsBaglanti implements MulkBaglantisi {
       }
       const hucre = hataHucresi(r.hata);
       return { tamam: false, hata: "sunucu", mesaj: mulkHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)), ...(hucre ? { hucre } : {}) };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
+  /** Görülen durumu aynen taşıyan tesis_durum köprüsü; yalnız gerçek sunucu yanıtı döner. */
+  async tesisDurumDegistir(i: TesisDurumDegistirIstegi): Promise<TesisSonucu> {
+    try {
+      const r = await this.komutGonder({ tur: "tesis_durum", bolge: i.bolge, tesis: i.tesis, aktif: i.aktif, oncekiAktif: i.oncekiAktif });
+      if (r.tamam) return { tamam: true, t: r.t };
+      const mesaj = r.hata === "tesisin calisma durumu degisti" ? "Tesisin çalışma durumu değişmiş. Güncel durumu yeniden inceleyin."
+        : r.hata === "gecersiz onceki aktif degeri" ? "Görülen çalışma durumu geçersiz. Tesis kaydını yeniden açın."
+        : r.hata.startsWith("gecersiz aktif degeri") ? "İstenen çalışma durumu geçersiz. Tesis kaydını yeniden açın."
+        : r.hata.startsWith("bolge oyuncunun degil") ? "Bu işletme size ait değil."
+        : r.hata.startsWith("bilinmeyen bolge") ? "İşletme düğümü bulunamadı. Güncel tesis kaydını kontrol edin."
+        : r.hata.startsWith("bolgede boyle bir tesis yok") ? "Bu işletmede tesis bulunamadı. Güncel tesis kaydını kontrol edin."
+        : "Tesisin çalışma durumu değiştirilemedi. Güncel durumu kontrol edip yeniden deneyin.";
+      return { tamam: false, hata: "sunucu", mesaj };
     } catch (e) {
       return this.agHatasi(e);
     }

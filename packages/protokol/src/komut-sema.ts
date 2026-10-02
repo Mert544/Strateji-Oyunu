@@ -25,7 +25,7 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
   // Ekonomi
   z.object({ tur: z.literal("tesis_insa"), bolge: kimlik, tesisTuru: kimlik }),
   z.object({ tur: z.literal("yontem_degistir"), bolge: kimlik, tesis: tamsayi, yontem: kimlik, oncekiYontem: kimlik.optional() }),
-  z.object({ tur: z.literal("tesis_durum"), bolge: kimlik, tesis: tamsayi, aktif: z.boolean() }),
+  z.object({ tur: z.literal("tesis_durum"), bolge: kimlik, tesis: tamsayi, aktif: z.boolean(), oncekiAktif: z.boolean().optional() }),
   z.object({ tur: z.literal("ticaret_emri"), bolge: kimlik, mal: kimlik, yon: z.enum(["ihracat", "ithalat"]), oranSaat: tamsayi }),
   z.object({ tur: z.literal("vergi_ayarla"), oranPpm: tamsayi }),
   // Tarım

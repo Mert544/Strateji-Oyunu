@@ -74,6 +74,14 @@ export interface YontemDegistirIstegi {
   oncekiYontem?: string;
 }
 
+/** Görülen çalışma durumunu koruyarak gerçek tesisin üretimini durdurur/başlatır. */
+export interface TesisDurumDegistirIstegi {
+  bolge: string;
+  tesis: number;
+  aktif: boolean;
+  oncekiAktif: boolean;
+}
+
 /** Pazar'da sat (`ticaret_emri`, ihracat): SÜREKLİ saatlik emir. `oranSaat` mili-birim/sa (tamsayı; 0 = emri kaldırır). `bolge`: işletme düğümü kimliği (`<il>#<oyuncu>`). */
 export interface TicaretEmriIstegi {
   bolge: string;
@@ -322,6 +330,8 @@ export interface MulkBaglantisi {
   pazarSatis?(i: PazarSatisIstegi): Promise<PazarSatisSonucu>;
   /** Biten tesisin yöntemini değiştirir (`yontem_degistir`; ücretsiz, anlık). Tanımsızsa "Yöntemi değiştir" gösterilmez. Ret nedeni Türkçe (`yontem.ret.*`). */
   yontemDegistir?(i: YontemDegistirIstegi): Promise<TesisSonucu>;
+  /** Mevcut tesis_durum komutu; görülen çalışma durumu sunucuda doğrulanır. */
+  tesisDurumDegistir?(i: TesisDurumDegistirIstegi): Promise<TesisSonucu>;
   /** Pazar'da sat (`ticaret_emri`, ihracat; mülk kipinde liman şartı yok): sürekli saatlik emir ver/güncelle (`oranSaat` 0 = kaldır). Tanımsızsa Mal sekmesinde "Pazar'da sat" gösterilmez. Ret nedeni Türkçe (`pazar.ret.*`). */
   ticaretEmri?(i: TicaretEmriIstegi): Promise<TesisSonucu>;
   /** Sahibinin işletmelerindeki gerçek stok ve sürekli ithalat emirleri. */

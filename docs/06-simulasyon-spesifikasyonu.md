@@ -76,6 +76,20 @@ Ham (rezervden çıkarılır): `tahil, cevher, komur, bakir, silis, petrol`.
 - Ham çıkarımda verim ayrıca `sqrt(rezervKalan / rezervIlk)` ile çarpılır (tamsayı karekök, ppm).
   Rezerv her saatlik tıkta üretilen miktar kadar azalır.
 
+**Kendi üretim tesisini durdur / başlat (S3).** İşletmem → Yapılar kontrolü
+yalnız gerçek kendi tamamlanmış tesiste, türün desteklediği bilinen mevcut
+yöntem ve pozitif çıktı varsa sunulur; yardımcı yapı, Ordugâh veya depo kontrolü
+değildir. `tesis_durum {bolge, tesis, aktif, oncekiAktif?}` açık hedef durumu
+uygular. Onay gerçek tesis kimliğini, konumunu ve görülen aktif durumunu
+sabitler; `oncekiAktif` verilmişse çekirdek mevcut booleanla eşleşmeden
+mutasyon yapmaz. Eski alanı taşımayan komutun davranışı korunur.
+Pasif tesiste üretim girdisi/çıktısı, işçi tahsisi ve tesis işletme gideri
+durur; bakım tüketimi sürer, günlük aşınma/iyileşme durur. Mevcut stok,
+ticaret emirleri, arazi vergisi, birliklerin ikmal/maaş/kapasitesi ve taşıma
+kenar kapasitesi bu eylemle kaldırılmaz. Başlatmak tedarik, onarım veya verim
+sorunlarını çözmez; mevcut üretim hesabına yeniden katılmasını sağlar.
+[S3 sözleşmesi](agent-results/codex-s3-tesis-kontrol-sozlesmesi.md).
+
 **Sahipsiz bölgeler "uykuda" (v0.1 düzeltmesi):** sahibi olmayan bir bölgede üretim, tüketim, bozulma ve rezerv tükenmesi yoktur:
 lojistik çözümde hesapları sıfırdır (tüm stok yerel oranları 0, `uretimOrani` 0, tesis verimi 0, karşılanma %100), saatlik tıkta
 nüfusu sabit kalır. Stok ve rezerv ilk değerinde donar; geç katılan oyuncu tükenmemiş bölgeye başlar. Bölgeyi biri sahiplenince

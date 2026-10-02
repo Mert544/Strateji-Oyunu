@@ -60,6 +60,9 @@ import { UretimAgiPaneli } from "./uretim-agi-panel";
 import { uretimTesisleri } from "./uretim-tesisleri";
 import uretimAgiCss from "./uretim-agi-panel.css?inline";
 import rezervCss from "./rezerv-gorunum.css?inline";
+import { TesisDurumPaneli } from "./tesis-durum-panel";
+import tesisDurumCss from "./tesis-durum-gorunum.css?inline";
+import "./tesis-durum-gorunum.css";
 
 const SAAT = 3_600_000;
 /** Biten inşaat Dikkat'te bu kadar sim saati kalır. */
@@ -113,6 +116,8 @@ export interface MulkAdlari {
   buyut?: (y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]) => boolean;
   /** Tesis satırı için "Yöntemi değiştir" parçaları (`yontem-panel.ts`: düğme satırın düğmeleri arasında, seçici ve onay satırın altında); tanımsızsa hiçbiri çıkmaz. */
   yontem?: (y: IsletmeYapisi) => { dugme: string; alt: string };
+  /** Yalnız gerçek üretim tesisinin ayrı durdur/başlat onayı. */
+  tesisDurum?: (y: IsletmeYapisi) => { dugme: string; alt: string };
   /** Mal satırının altındaki ek satırın içeriği (`pazar-sat.ts` `satirEki`: emir durumu, "Pazar'da sat", form); boş dizge = ek satır yok; tanımsızsa Mal sekmesi salt okunur. */
   pazar?: (x: IsletmeDurumu["mallar"][number]) => string;
   ordu?: boolean;
@@ -304,8 +309,9 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
       const yer = y.ilce ? ad.ilce(y.ilce) : y.il ? ad.il(y.il) : "";
       const buyut = ad.buyut?.(y, d.yapilar) ? `<button type="button" class="eylem" data-mulk-buyut="${esc(y.anahtar)}" data-mulk-buyut-ilce="${esc(y.ilce ?? "")}" title="Tesisi bir üst ölçeğe büyüt">${ikon("hammer", 15)}Büyüt</button>` : "";
       const yp = ad.yontem?.(y) ?? { dugme: "", alt: "" };
+      const td = ad.tesisDurum?.(y) ?? { dugme: "", alt: "" };
       const ordu = ad.ordu && y.tur === "ordugah" && y.durum === "tesis" ? `<button class="eylem" type="button" data-mulk-ordu>${ikon("shield", 15)}Orduyu yönet</button>` : "";
-      s += `<li data-yapi-durum="${y.durum}"><span class="ml-ad"><b>${esc(ad.yapi(y.tur))}</b><span class="soluk">${esc(yapiDurumu(y, d.simZamani))}${yer ? `\u00a0· ${esc(yer)}` : ""}</span></span>${buyut}${yp.dugme}${ordu}${gitDugmesi(y.ilce)}${yp.alt}</li>`;
+      s += `<li data-yapi-durum="${y.durum}"><span class="ml-ad"><b>${esc(ad.yapi(y.tur))}</b><span class="soluk">${esc(yapiDurumu(y, d.simZamani))}${yer ? `\u00a0· ${esc(yer)}` : ""}</span></span>${buyut}${yp.dugme}${td.dugme}${ordu}${gitDugmesi(y.ilce)}${yp.alt}${td.alt}</li>`;
     }
     s += `</ul>`;
   }
@@ -455,7 +461,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   if (!document.getElementById("mulk-panel-stil")) {
     const st = document.createElement("style");
     st.id = "mulk-panel-stil";
-    st.textContent = mulkCss + dukkanCss + teknolojiCss + teknolojiEtkiCss + orduCss + orduSavunmaCss + baskinCss + ilceCss + kamuSiparisCss + meclisKatilimCss + tedarikCss + lojistikCss + uretimAgiCss + rezervCss;
+    st.textContent = mulkCss + dukkanCss + teknolojiCss + teknolojiEtkiCss + orduCss + orduSavunmaCss + baskinCss + ilceCss + kamuSiparisCss + meclisKatilimCss + tedarikCss + lojistikCss + uretimAgiCss + rezervCss + tesisDurumCss;
     document.head.append(st);
   }
   isletmeDugmesiKur();
@@ -667,10 +673,10 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     degisti: () => { yenidenCiz(); ilcePaneli.yamala(document); },
   });
   document.addEventListener("pointerdown", (e) => {
-    if (e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); }
+    if (e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); tesisDurumPaneli?.teklifYakala(e.target); }
   }, { signal: pazarOlaylari.signal, capture: true });
   document.addEventListener("keydown", (e) => {
-    if (!e.repeat && (e.key === "Enter" || e.key === " ") && e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); }
+    if (!e.repeat && (e.key === "Enter" || e.key === " ") && e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); tesisDurumPaneli?.teklifYakala(e.target); }
   }, { signal: pazarOlaylari.signal, capture: true });
   const orduPaneli: OrduPaneli | undefined = b.orduDurumu && b.orduKomutu ? new OrduPaneli({
     ic,
@@ -730,6 +736,27 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     bekleyenOdak.iste(hedef);
     return true;
   };
+  const tesisDurumPaneli = b.tesisDurumDegistir ? new TesisDurumPaneli({
+    ic,
+    isletme: () => b.isletme?.() ?? null,
+    tesisAdi: (y) => `${ad.yapi(y.tur)}${y.ilce ? ` · ${ad.ilce(y.ilce)}` : y.il ? ` · ${ad.il(y.il)}` : ""} · Tesis #${Number(y.anahtar.slice(1))}`,
+    komut: (istek) => b.tesisDurumDegistir!(istek),
+    degisti: yenidenCiz,
+    bildir: (metin, tur) => bildir(metin, tur),
+    odak: (tesis, onay) => bekleyenOdak.iste(onay ? `[data-tesis-durum="${CSS.escape(tesis)}"] [data-tesis-durum-varsayilan-odak]` : `[data-tesis-durum-eylem="ac"][data-tesis="${CSS.escape(tesis)}"]`),
+  }) : undefined;
+  if (tesisDurumPaneli) {
+    ad.tesisDurum = (y) => tesisDurumPaneli.satirParcalari(y);
+    document.addEventListener("keydown", (e) => {
+      const t = e.target;
+      if (e.key !== "Escape" || !(t instanceof HTMLElement)) return;
+      const onay = t.closest<HTMLElement>(".tsd-onay[data-tesis-durum]");
+      if (!onay || onay.dataset["tesisDurum"] !== tesisDurumPaneli.durum.onay?.tesis) return;
+      e.preventDefault();
+      e.stopPropagation();
+      tesisDurumPaneli.kapat();
+    }, { signal: pazarOlaylari.signal });
+  }
   // Pazar'da sat (Mal sekmesi): `ticaret_emri` (ihracat; mülk kipinde liman şartı yok) bağdaştırıcının ucundan; sahte bağdaştırıcıda çıkmaz.
   // Kabuk form odağında çizimi ertelediğinde controller durumunu aynı satırda yamala.
   const pazarYamala = (): void => {
@@ -863,7 +890,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       return t === undefined ? null : t / SAAT;
     },
     epochMs: epoch,
-    odagiYakala: () => pazarSat?.odagiYakala(document) ?? yontemPaneli?.odagiYakala(document) ?? orduPaneli?.odagiYakala(document) ?? tedarikPaneli?.odagiYakala(document) ?? teknolojiPaneli?.odagiYakala(document) ?? uretimPaneli.odagiYakala(document) ?? ilcePaneli.odagiYakala(document),
+    odagiYakala: () => pazarSat?.odagiYakala(document) ?? tesisDurumPaneli?.odagiYakala(document) ?? yontemPaneli?.odagiYakala(document) ?? orduPaneli?.odagiYakala(document) ?? tedarikPaneli?.odagiYakala(document) ?? teknolojiPaneli?.odagiYakala(document) ?? uretimPaneli.odagiYakala(document) ?? ilcePaneli.odagiYakala(document),
     cizildi() {
       bekleyenOdak.cizildi(odakKoku);
     },
@@ -873,6 +900,11 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       return i;
     },
     tikla(t) {
+      const tesisDurumu = tesisDurumPaneli?.eylemOku(t);
+      if (tesisDurumu && tesisDurumPaneli) {
+        void tesisDurumPaneli.eylem(tesisDurumu);
+        return true;
+      }
       const meclisEylemi = ilcePaneli.meclisEylemOku(t);
       if (meclisEylemi) {
         void ilcePaneli.mecliseKatil(meclisEylemi);
@@ -1026,7 +1058,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         {
           ...(b.dinle ? { bDinle: (cb: () => void) => b.dinle?.(cb) } : {}),
           defterOku,
-          yakala: () => pazarSat?.odagiYakala(document) ?? yontemPaneli?.odagiYakala(document) ?? orduPaneli?.odagiYakala(document) ?? tedarikPaneli?.odagiYakala(document) ?? teknolojiPaneli?.odagiYakala(document) ?? uretimPaneli.odagiYakala(document) ?? ilcePaneli.odagiYakala(document), // açık seçicinin / sayı alanının odağı yeniden çizimde düşmesin
+          yakala: () => pazarSat?.odagiYakala(document) ?? tesisDurumPaneli?.odagiYakala(document) ?? yontemPaneli?.odagiYakala(document) ?? orduPaneli?.odagiYakala(document) ?? tedarikPaneli?.odagiYakala(document) ?? teknolojiPaneli?.odagiYakala(document) ?? uretimPaneli.odagiYakala(document) ?? ilcePaneli.odagiYakala(document), // açık seçicinin / sayı alanının odağı yeniden çizimde düşmesin
           zamanla: (fn, ms) => {
             const z = window.setInterval(fn, ms);
             return () => window.clearInterval(z);

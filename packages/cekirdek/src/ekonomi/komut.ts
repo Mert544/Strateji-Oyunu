@@ -98,6 +98,10 @@ export function ekonomiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut)
       const ts = b.tesisler.find((t) => t.id === k.tesis);
       if (!ts) return hata(`bolgede boyle bir tesis yok: ${k.tesis}`);
       if (typeof k.aktif !== "boolean") return hata(`gecersiz aktif degeri: ${String(k.aktif)}`);
+      if (k.oncekiAktif !== undefined) {
+        if (typeof k.oncekiAktif !== "boolean") return hata("gecersiz onceki aktif degeri");
+        if (k.oncekiAktif !== ts.aktif) return hata("tesisin calisma durumu degisti");
+      }
       ts.aktif = k.aktif;
       return TAMAM;
     }

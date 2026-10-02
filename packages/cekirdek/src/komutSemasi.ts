@@ -31,7 +31,7 @@ export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   // Ekonomi
   tesis_insa: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesisTuru: "kimlik" } },
   yontem_degistir: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", yontem: "kimlik", oncekiYontem: "kimlik" } },
-  tesis_durum: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", aktif: "bayrak" } },
+  tesis_durum: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", aktif: "bayrak", oncekiAktif: "bayrak" } },
   ticaret_emri: { yol: "oyuncu", alanlar: { bolge: "kimlik", mal: "kimlik", yon: "secim", oranSaat: "miktar" } },
   vergi_ayarla: { yol: "oyuncu", alanlar: { oranPpm: "oran" } },
   meclis_katil: { yol: "oyuncu", alanlar: { ilce: "kimlik", oncekiIlce: "kimlik" } },

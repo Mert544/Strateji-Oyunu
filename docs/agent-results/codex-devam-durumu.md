@@ -2,6 +2,24 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — S3 üretim tesisini durdur / başlat
+
+R1 `142bcc4` GitHub'a gönderildi. Kullanıcının son yönüyle rutin ekran alma
+kaldırıldı; AGENTS.md güncellendi. [S3 sözleşmesi](codex-s3-tesis-kontrol-sozlesmesi.md)
+mevcut `tesis_durum` komutunu kendi üretim tesislerinde açık onaya bağlar.
+Üretim dururken bakımın sürmesi ve ticaret emirlerinin değişmemesi açıklanır;
+görülen aktif durum değişmişse mutasyon öncesi ret eklendi. Üretim tesisi
+numarası/konumu ile ayrı onay, bekleyen işlem koruması ve klavye odağı bağlandı.
+İnşaat ve üretim çıktısı olmayan yardımcı yapıda kontrol sunulmuyor.
+
+`kare-tesis-durum.test.ts` iki hedefli senaryosu ilk koşuda başarılı: gerçek
+fırında durma/yeniden başlama, un/yakıt girdilerinin kesilmesi, parça bakımının
+sürmesi, save/load/replay, özel kare ve sahiplik sınırı, eski durum/bozuk
+boolean saf reddi ve legacy çağrı uyumu. Kök/istemci tip kontrolleri başarılı.
+Tek son istemci derlemesi de başarılı; dünya gzip 392,4KB/400KB,
+harita 508,8KB. Kullanıcı yönüne uygun tarayıcı/ekran alınmadı;
+önceki test paketleri tekrarlanmadı.
+
 ## Güncel teslim — R1 kendi işletmesinin maden rezervi
 
 U1 `6a1ee0d` GitHub'a gönderildi. [R1 sözleşmesi](codex-r1-rezerv-sozlesmesi.md)

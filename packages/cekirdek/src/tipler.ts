@@ -869,7 +869,7 @@ export type Komut =
   // Ekonomi
   | { tur: "tesis_insa"; bolge: string; tesisTuru: string }
   | { tur: "yontem_degistir"; bolge: string; tesis: number; yontem: string; oncekiYontem?: string }
-  | { tur: "tesis_durum"; bolge: string; tesis: number; aktif: boolean }
+  | { tur: "tesis_durum"; bolge: string; tesis: number; aktif: boolean; oncekiAktif?: boolean }
   | { tur: "ticaret_emri"; bolge: string; mal: string; yon: TicaretYonu; oranSaat: Mili }
   | { tur: "vergi_ayarla"; oranPpm: number }
   | { tur: "meclis_katil"; ilce: string; oncekiIlce: string | null }
