@@ -688,7 +688,7 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
     await sayfa.locator("#sek-mal").click();
     await sayfa.waitForTimeout(300);
     const durumSonra = (await sayfa.locator("[data-alan='pazar-durum']").first().innerText().catch(() => "")).replace(/\s+/g, " ");
-    kontrol(`${e} gerçekleşince durum satırı "Satışta: saatte N birim · şu an G/sa"`, /Satışta: saatte \d+ birim · şu an \d+\/sa/.test(durumSonra), durumSonra);
+    kontrol(`${e} gerçekleşince durum satırı "Satışta: saatte N birim · şu an G birim/sa"`, /Satışta: saatte \d+ birim · şu an \d+ birim\/sa/.test(durumSonra), durumSonra);
     await sayfa.locator("#sek-isletme").click();
   }
   kontrol(`${e}/[veli] veli de tamamlananı görüyor (delta)`, veli2.tesis === 2 && veli2.insaat === 0, JSON.stringify(veli2));

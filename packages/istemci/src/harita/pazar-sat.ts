@@ -11,6 +11,7 @@ import { esc, paraMili } from "../arayuz/bicim";
 import type { Icerik } from "../komut/tablo";
 import type { IsletmeDurumu, TesisSonucu, TicaretEmriIstegi } from "./baglanti";
 import { saatDakika } from "./dukkan-html";
+import { mulkMetni } from "./mulk-metin";
 import { PAZAR_EN_COK_BIRIM_SAAT, pazarMetni } from "./pazar-sat-metin";
 
 type MalSatiri = IsletmeDurumu["mallar"][number];
@@ -167,7 +168,7 @@ export class PazarSatPaneli {
         h += `<p class="soluk">${esc(pazarMetni("pazar.sat.net", { net: paraMili(net) }))}</p>`;
         if (oran !== null) h += `<p class="soluk" data-alan="pazar-gelir">${esc(pazarMetni("pazar.sat.gelir", { gelir: paraMili(oran * net) }))}</p>`;
       }
-      if (this.p.kalkan()) h += `<p class="soluk">${esc(pazarMetni("pazar.sat.kalkan"))}</p>`;
+      if (this.p.kalkan()) h += `<p class="soluk">${esc(mulkMetni("mulk.koruma.kalkan_ayrinti"))}</p>`;
     }
     if (x.mal === "gida" && !this.p.ilkDukkanSatisi()) h += `<p>${esc(pazarMetni("pazar.sat.gida_not"))}</p>`;
     const odul = this.p.ilkSatisOdulu();

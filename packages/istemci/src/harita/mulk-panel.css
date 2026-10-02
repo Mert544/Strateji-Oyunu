@@ -79,3 +79,8 @@ body.mulk-paneli #harita-hazine .hz-saat { padding-left: 0; border-left: 0; }
 @media (min-width: 821px) {
   .pz-eylemler .birincil { flex: none; }
 }
+/* Telefonda hızlı seçimler tam genişlik (T1 §3b) */
+@media (max-width: 820px) {
+  .pz-hizli { align-items: stretch; }
+  .pz-hizli .mini-dugme { width: 100%; justify-content: center; }
+}

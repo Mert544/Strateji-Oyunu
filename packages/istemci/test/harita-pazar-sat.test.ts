@@ -77,7 +77,7 @@ describe("satır eki: düğme, durum, depolanamaz mal", () => {
   it("emir varken: durum satırı 'Satışta: saatte N birim · şu an G/sa' ve düğme 'Satışı değiştir'; gerçekleşen 0 ve satılacak mal (stok, üretim) yoksa 'satılacak mal yok'", () => {
     const { p } = kur([]);
     const h = p.satirEki(tahil({ satisEmirMili: 100_000, satisMili: 100_000 }));
-    expect(h).toContain("Satışta: saatte 100 birim · şu an 100/sa");
+    expect(h).toContain("Satışta: saatte 100 birim · şu an 100 birim/sa");
     expect(h).toContain(">Satışı değiştir<");
     expect(h).not.toContain(">Pazar&#39;da sat<");
     expect(p.satirEki(tahil({ satisEmirMili: 100_000, satisMili: 0, stokMili: 0, uretimMili: 0 }))).toContain("Satışta: saatte 100 birim · şu an satılacak mal yok");
@@ -97,7 +97,7 @@ describe("satır eki: düğme, durum, depolanamaz mal", () => {
     const uretimli = tahil({ satisEmirMili: 100_000, satisMili: 0, stokMili: 0 });
     expect(kur([uretimli], { simZamani: 5 * SA + 30 * 60_000 }).p.satirEki(uretimli)).toContain("ilk gelir ≈ 30 dk sonra");
     const gerceklesti = tahil({ satisEmirMili: 100_000, satisMili: 100_000 });
-    expect(kur([gerceklesti], { simZamani: 6 * SA + 1000 }).p.satirEki(gerceklesti)).toContain("Satışta: saatte 100 birim · şu an 100/sa");
+    expect(kur([gerceklesti], { simZamani: 6 * SA + 1000 }).p.satirEki(gerceklesti)).toContain("Satışta: saatte 100 birim · şu an 100 birim/sa");
   });
 
   it("mulkMalPaneli: kanca yokken tablo eskisi gibi (ek satır yok); kanca varken satırın altında <tr class=mal-eylem>", () => {
@@ -237,7 +237,7 @@ describe("gönderim: sürekli saatlik emir", () => {
     const kareyok = p.satirEki(tahil());
     expect(kareyok).toContain("Satış saat başında yapılır · ilk gelir ≈ 1 sa sonra"); // iyimser emir: gerçekleşen henüz 0, mal var -> bekliyor
     expect(kareyok).toContain(">Satışı değiştir<");
-    expect(p.satirEki(tahil({ satisEmirMili: 200_000, satisMili: 200_000 }))).toContain("şu an 200/sa"); // kare yetişti
+    expect(p.satirEki(tahil({ satisEmirMili: 200_000, satisMili: 200_000 }))).toContain("şu an 200 birim/sa"); // kare yetişti
     expect(p.satirEki(tahil())).not.toContain("Satışta"); // kare artık emir göstermiyor: iyimser silindi
     await p.eylem({ eylem: "ac", mal: "tahil" });
     await p.eylem({ eylem: "ver" });
