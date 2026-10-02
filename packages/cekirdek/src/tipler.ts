@@ -1334,3 +1334,20 @@ export interface MeclisGorunumu {
   kayitUygun: boolean;
   engel?: string;
 }
+
+/** Genel fiziksel kenar ve yalnız sahibinin son plandaki bütün mal/iki yön yükü. */
+export interface LojistikKenarGorunumu {
+  indeks: number;
+  a: string;
+  b: string;
+  tur: KenarTuru;
+  sureMs: Ms;
+  kapasiteMiliSaat: Mili;
+  kendiYukMiliSaat: Mili;
+}
+/** Saf sahip toplamı; akış indeksleri yalnız core snapshot eşleşmesidir, wire'a çıkmaz. */
+export interface LojistikYolGorunumu {
+  guncellemeBekliyor: boolean;
+  akislar: { indeks: number; yol?: number[] }[];
+  kenarlar: LojistikKenarGorunumu[];
+}

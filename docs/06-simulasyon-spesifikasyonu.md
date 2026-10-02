@@ -126,6 +126,35 @@ tıklar arasında hazinenin tükenip mal gelmeye devam etmesini önlemek için l
   ücretsiz il içi havuz ve yoldaki teslimler sürer. Ücret akışta sabitlenir;
   varış veya yeniden çözüm başına alınmaz. Para akışında ve birikimli defterde
   ayrı `tasima` kalemidir. [Formül, kayıt ve bütçe sözleşmesi](agent-results/codex-l3-tasima-sozlesmesi.md).
+- **Mülkte yol ve kendi kapasite kullanımı (L4, saf görünüm):** sahibin
+  gerçek iç sevk satırına optional `yol:number[]`, kaynak özel `lojistik`
+  görünümüne birlikte `kenarlar` ve `guncellemeBekliyor` eklenir.
+  Kenar sözlüğü `{indeks,a,b,tur,sureMs,kapasiteMiliSaat,kendiYukMiliSaat}`
+  satırlarıdır; yalnız kaynağın doğrulanmış yollarındaki kenarlar, artan
+  indeksle tekil gönderilir. `a/b` gerçek harita merkez kimlikleri,
+  `indeks` yalnız eşleştirme anahtarıdır. Yol sırası gerçek `Akis.yol`dur;
+  kaynak/hedef merkezi ile kenar bağlantısı geçersizse eksik toplam
+  göstermemek için sahibin yeni yol görünümü bütünüyle bilinmiyor kalır.
+  Sahip ve iki gerçek uç sahipliği doğrulanan **tüm** final akışlar üzerinden
+  kenar başına `oranSaat` pozitif toplanır: tüm kaynaklar, tüm mallar ve
+  iki yön dahil; yönler birbirinden çıkarılmaz, kopya sözlük yükleri yeniden
+  toplanmaz. Askerî/sivil ayrımı, başka sahibin yükü veya global kullanım
+  gönderilmez. Bu, seçili akışın yükü değil **son planda kendi toplam yüküdür**.
+  Kapasite güncel `d.kenarlar` değeridir; tahsis zamanı `sonCozum`dur.
+  `guncellemeBekliyor=d.lojistik.kirli`; kuyruktaki no-op çözüm bekleme sayılmaz.
+  Bridge `kapasiteZamani`nı mevcut `kare.t` değerinden alır; kaynak özel
+  wire'a sürekli değişen kapasite zamanı eklenmez. Eski tahsis güncel
+  kapasiteyi aşarsa sayılar kesilmez. Aynı çözüm/kapasite anından gelmeyen,
+  aynı indeks için çelişen veya yeni alanı eksik kaynaklar birleştirilerek
+  güvenilir yol bilgisi üretilmez; mevcut sevk özeti korunur.
+  UI "Son planda kendi yükün / Güncel toplam kapasite" der; toplam
+  kapasiteden kendi yükü çıkararak **boş kapasite/global doluluk** hesaplamaz.
+  Belirli kenara kesin darboğaz atfetmez; mevcut `kapsam.neden` bölge/mal
+  açıklamasıdır. Gerçek il içi havuz `yol:[]` olabilir; alan yokluğu bilinmiyor
+  demektir. ETA, yolda stok, parsel/sokak rotası, rota seçimi veya yeni
+  geliştirme yetkisi eklenmez. Okuma PRNG/çözüm/durum/para değiştirmez;
+  yeni persist, göç, parametre veya L3 ücret kuralı yoktur.
+  [Kesin yol sözleşmesi](agent-results/codex-l4-yol-sozlesmesi.md).
 - **Kapsam ("nerede açık, neden"):** her bölge × mal için karşılanma oranı, en yakın kaynağa süre
   (çok kaynaklı Dijkstra) ve neden: `kapasite` (yol var ama kenar dolu), `girdi_eksik` (hiçbir yerde fazla yok),
   `mesafe` (kaynak > 72 saat), `erisim_yok` (yol yok), `yok` (karşılanıyor).

@@ -2,6 +2,38 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — L4 yol ve kapasite görünürlüğü tamamlandı
+
+K2a `a153c56` ile GitHub'a gönderildi. Aynı altı ajan L4'e geçti;
+[kesin sözleşme](codex-l4-yol-sozlesmesi.md) gerçek yol kenarları ve
+oyuncunun tüm mallardaki kendi kenar kullanımını mevcut Tedarik görünümüne
+ekler. Yeni taşıma ücreti, rota seçimi veya kalıcı durum yoktur.
+
+L1 saf çekirdek helper, B2 özel kare/bridge, A3 Tedarik entegrasyonu,
+B4 yol görünümü/gerçek ekran, A6 şartname, B6 tek hedefli kontrol sahibi.
+Root sözleşme ve teslimi yönetir. Kapasite güncel, kullanım son plandandır;
+global boş kapasite veya kesin darboğaz çıkarılmaz. B2'nin delta trafiği
+itirazı kabul edildi: kaynak başına saat alanı yerine mevcut kare zamanı
+kullanılır. Uygulama tamamlandı. B6'nın `kare-lojistik-yol.test.ts`
+iki senaryosu geçti: gerçek aynı kenarı paylaşan akışlar/ters yön/havuz,
+kendi kullanımının yabancı yükten ayrımı, canlı kapasite/son plan farkı,
+salt okuma, geçersiz yol ve eski veri sınırları. İlk koşuda ikinci ilin
+fabrika malzemeleri test kurulumunda eksikti; gerçek malzeme ithalatı ile
+tamamlanıp yalnız başarısız iki vaka tekrarlandı. Ürün düzeltmesi gerekmedi.
+Kök/istemci tip kontrolü ve son build başarılı; dünya gzip 392,3KB/400KB,
+harita 501,2KB. Tam paket ve mobil matris çalıştırılmadı; önceki başarılı
+kontroller tekrarlanmadı.
+
+B4 gerçek Gebze→Gemlik tahıl sevkinde Yol ve kapasite ayrıntısını açtı:
+Güney Marmara↔İzmit Körfezi kara bağlantısı, 3 saat, kendi yükü
+196,608 birim/saat, toplam kapasite 690 birim/saat. Core ve bridge aynı
+gerçek kenarı, yükü ve bedeli (71,686 ₺/saat) gösterdi; plan 04:00 ve
+kapasite verisi 04:02 ayrı. Ekran betiğinin eski üst summary seçicisi yeni
+alt ayrıntıyı da seçtiği için yalnız betikte doğrudan çocuk seçicisine
+daraltıldı; ürün/test/build tekrarı gerekmedi. Son koşu başarılı,
+sayfa/konsol hatası yok. Root görüntü ve JSON sonucunu inceledi.
+[Gerçek yol ekranı ve veri](../ekran-goruntuleri/2026-10-02-yol/README.md).
+
 ## Güncel teslim — K2a meclis katılımı tamamlandı
 
 [Kesin sözleşme](codex-k2a-meclis-sozlesmesi.md): tek siyasi ilçe kaydı,
@@ -286,8 +318,8 @@ Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları ko
    kapsamı tutar. Canlı açılış/denge kabulü ayrıdır; bayrağı sessizce açma.
    Mevcut mülk işletmesi için PvP ilan yolu yoktur; ileride açılırsa aynı
    24 saatlik yağma defterine bağlanmalıdır. L2 yakıt geliştirmesi bu dalda tamamlandı.
-2. **Lojistik kalan:** kendi kenar tahsisi/toplam kapasite görünümü L1'in ayrı
-   dilimidir; mevcut sevk planından global kalan kapasite çıkarılmaz.
+2. **L4 uygulandı:** gerçek yol bacakları ve kendi kenar tahsisi/toplam
+   kapasite görünümü Tedarik'e bağlandı; global kalan kapasite çıkarılmaz.
    **L2 tamamlandı:** rafineri ve sanayi yakıtının fiziksel kaynak önceliği,
    kalan şebeke açığı, gerçek gider görünümü, kural göçü ve replay aynı
    teslimde uygulandı. L3 iç taşıma bedeli aynı dalda uygulanıp hedefli kontrolden geçti.

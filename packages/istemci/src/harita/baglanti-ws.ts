@@ -17,7 +17,7 @@
  */
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, erkenOyunCarpani, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
-import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
+import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, LojistikKenarGorunumu, SunucuMesaji } from "@bolge/protokol";
 import type { PazarKaynagi, PazarSatisIstegi, PazarSatisSonucu, DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce, pazarHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
 import type { InsaatBilgisi } from "../yuru/arsa";
@@ -65,6 +65,26 @@ function tasimaGideriToplami(bolgeler: readonly IlgiKaresi["bolgeler"][number][]
       && l.akislar.every((a) => a.tasimaBedeliMiliSaat !== undefined);
   })) return undefined;
   return bolgeler.reduce((toplam, b) => toplam + b.ozel!.lojistik!.tasimaBedeliMiliSaat!, 0);
+}
+
+/** Kopyalanan kendi yük tekrar toplanmaz; bütün kaynaklar aynı plan ve tutarlı kenar sözlüğü vermelidir. */
+function lojistikYolVerisi(bolgeler: readonly IlgiKaresi["bolgeler"][number][]): { kenarlar: LojistikKenarGorunumu[]; guncellemeBekliyor: boolean } | undefined {
+  const ilk = bolgeler[0]?.ozel?.lojistik;
+  if (ilk?.kenarlar === undefined || ilk.guncellemeBekliyor === undefined) return undefined;
+  const kenarlar = new Map<number, LojistikKenarGorunumu>();
+  for (const b of bolgeler) {
+    const l = b.ozel?.lojistik;
+    if (l?.kenarlar === undefined || l.sonCozum !== ilk.sonCozum || l.guncellemeBekliyor !== ilk.guncellemeBekliyor) return undefined;
+    const kaynakKenarlar = new Set(l.kenarlar.map((e) => e.indeks));
+    if (l.akislar.some((a) => a.yol === undefined || a.yol.some((i) => !kaynakKenarlar.has(i)))) return undefined;
+    for (const e of l.kenarlar) {
+      const onceki = kenarlar.get(e.indeks);
+      if (onceki !== undefined && (onceki.a !== e.a || onceki.b !== e.b || onceki.tur !== e.tur || onceki.sureMs !== e.sureMs
+        || onceki.kapasiteMiliSaat !== e.kapasiteMiliSaat || onceki.kendiYukMiliSaat !== e.kendiYukMiliSaat)) return undefined;
+      if (onceki === undefined) kenarlar.set(e.indeks, e);
+    }
+  }
+  return { kenarlar: [...kenarlar.values()].sort((a, b) => a.indeks - b.indeks), guncellemeBekliyor: ilk.guncellemeBekliyor };
 }
 
 export interface WsSecenekleri {
@@ -407,10 +427,18 @@ export class WsBaglanti implements MulkBaglantisi {
     const lojistikTam = ilkLojistik !== undefined && kendiIsletmeleri.every((b) => b.ozel?.lojistik !== undefined && b.ozel.lojistik.sonCozum === ilkLojistik.sonCozum);
     const kendiKimlikleri = new Set(kendiIsletmeleri.map((b) => b.id));
     const tasimaBedeliMiliSaat = tasimaGideriToplami(kendiIsletmeleri);
+    const yolVerisi = lojistikYolVerisi(kendiIsletmeleri);
     const lojistik = lojistikTam && ilkLojistik !== undefined ? {
       sonCozum: ilkLojistik.sonCozum,
-      akislar: kendiIsletmeleri.flatMap((b) => b.ozel!.lojistik!.akislar.filter((a) => a.kaynak === b.id && kendiKimlikleri.has(a.hedef))),
+      akislar: kendiIsletmeleri.flatMap((b) => b.ozel!.lojistik!.akislar.filter((a) => a.kaynak === b.id && kendiKimlikleri.has(a.hedef))).map((a) => {
+        if (yolVerisi !== undefined) return a;
+        return {
+          mal: a.mal, kaynak: a.kaynak, hedef: a.hedef, oranMiliSaat: a.oranMiliSaat, sureMs: a.sureMs,
+          ...(a.tasimaBedeliMiliSaat === undefined ? {} : { tasimaBedeliMiliSaat: a.tasimaBedeliMiliSaat }),
+        };
+      }),
       ...(tasimaBedeliMiliSaat === undefined ? {} : { tasimaBedeliMiliSaat }),
+      ...(yolVerisi === undefined ? {} : { kenarlar: yolVerisi.kenarlar, guncellemeBekliyor: yolVerisi.guncellemeBekliyor, kapasiteZamani: k.t }),
     } : undefined;
     return {
       simZamani,

@@ -32,8 +32,8 @@
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, kamuSiparisGorunumu, kamuTeslimGorunumu, meclisGorunumu, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
-import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, IlceKamuSiparisGorunumu, KamuGrubu, KamuTeslimGorunumu, IlceSeviyesi, MeclisGorunumu, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok, YakitTedariki } from "@bolge/cekirdek";
+import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, kamuSiparisGorunumu, kamuTeslimGorunumu, lojistikYolGorunumu, meclisGorunumu, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
+import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, IlceKamuSiparisGorunumu, KamuGrubu, KamuTeslimGorunumu, IlceSeviyesi, LojistikKenarGorunumu as CekirdekLojistikKenarGorunumu, MeclisGorunumu, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok, YakitTedariki } from "@bolge/cekirdek";
 
 /** Güvenli çekirdek projeksiyonu: planlı baskınlar ve yabancı özel sonuçlar içermez. Yokluğu eski sunucu/kural bilinmezliğidir. */
 export type PveIlceKaresi = EskiyaIlceGorunumu;
@@ -41,6 +41,7 @@ export type PveOyuncuKaresi = EskiyaOyuncuGorunumu;
 export type KamuSiparisleriKaresi = IlceKamuSiparisGorunumu;
 export type KamuTeslimKaresi = KamuTeslimGorunumu;
 export type MeclisKaresi = MeclisGorunumu;
+export type LojistikKenarGorunumu = CekirdekLojistikKenarGorunumu;
 
 /** Kamu ilanına yalnız genel alanlar alınır; defter, üretici ve özel depo kayıtları tel nesnesine taşınmaz. */
 function kamuSiparisTelKaresi(g: KamuSiparisleriKaresi): KamuSiparisleriKaresi {
@@ -215,6 +216,8 @@ export interface LojistikAkisGorunumu {
   sureMs: Ms;
   /** Çekirdeğin bu sevk için son çözümde sabitlediği tam taşıma hizmeti gideri. 0 gerçek ücretsiz; yokluk bilinmeyen/kapalı kuraldır. */
   tasimaBedeliMiliSaat?: Mili;
+  /** Son çözümün gerçek kenar sırası. [] il içi havuz; alan yoksa yol bilinmiyor. */
+  yol?: number[];
 }
 
 /** Yalnız sahibine giden bölge verisi (ham çekirdek birimleri). */
@@ -271,13 +274,17 @@ export interface OzelBolgeKaresi {
   /**
    * Yalnız sahibinin mülk işletmesinde: bu kaynaktan yine sahibinin işletmelerine son çözümde planlanan iç sevkler.
    * Çözüm zamanı dünya `lojistik.sonCozum` alanıdır; bağlam gerekmez. `akislar: []` bilinen sevk yokluğu, alan yokluğu eski sunucu/kapsam dışıdır.
-   * Fiziksel yol/kapasite, kesin ETA ve yoldaki mal miktarı içermez; NPC ithalatı bu plana dahil değildir.
+   * Kenar kapasitesi günceldir, yük son çözümün kendi tahsisidir. Kesin ETA ve yoldaki mal miktarı içermez; NPC ithalatı dahil değildir.
    */
   lojistik?: {
     sonCozum: Ms;
     akislar: LojistikAkisGorunumu[];
     /** Bu kaynak düğümün gerçek rota bedelleri toplamı; etkin kuralda sevk yoksa 0. NPC ithalatı ve şebekeden ayrıdır. */
     tasimaBedeliMiliSaat?: Mili;
+    /** Yalnız bu kaynağın doğrulanmış yollarında geçen genel merkez kenarları; kendi yük tüm kendi mallar/iki yöndür. */
+    kenarlar?: LojistikKenarGorunumu[];
+    /** Son planın yeniden çözülmesi gerekiyor mu; yalnız kuyruktaki no-op çözüm bekleme sayılmaz. */
+    guncellemeBekliyor?: boolean;
   };
   /**
    * Yalnız sahibinin mülk işletmesinde: depolanabilir malların stok `gelenOran` değerleri (yalnız > 0, mal indeksine göre).
@@ -626,10 +633,14 @@ export function ilgiKaresiCikar(
   const bolgeler: BolgeKaresi[] = [];
   const gorunum = dukkanGorunumleri(kaynak, oyuncu);
   const tasimaEtkin = kaynak.ic.param.lojistik.tasima?.etkin === true;
+  const yolGorunumu = oyuncu === null ? undefined : lojistikYolGorunumu(d, kaynak.ic, oyuncu);
+  const akisYollari = new Map<number, number[] | undefined>(yolGorunumu?.akislar.map((a) => [a.indeks, a.yol]));
+  const kaynakKenarIndeksleri = new Map<number, Set<number>>();
   // Akışlar tüm dünya için bir kez taranır; kaynak/hedefin gerçek sahipliği de doğrulanır.
   const kaynakAkislari = new Map<number, LojistikAkisGorunumu[]>();
   if (oyuncu !== null && kaynak.ic.mulk !== undefined) {
-    for (const a of d.lojistik.akislar) {
+    for (let ai = 0; ai < d.lojistik.akislar.length; ai++) {
+      const a = d.lojistik.akislar[ai]!;
       if (a.sahip !== oyuncu || a.oranSaat <= 0) continue;
       const kaynakBolge = d.bolgeler[a.kaynak];
       const hedefBolge = d.bolgeler[a.hedef];
@@ -637,9 +648,16 @@ export function ilgiKaresiCikar(
       if (kaynakBolge?.sahip !== oyuncu || hedefBolge?.sahip !== oyuncu || kaynakBolge.merkez === undefined || hedefBolge.merkez === undefined || mal === undefined || mal.depolanabilir === false) continue;
       let liste = kaynakAkislari.get(a.kaynak);
       if (liste === undefined) kaynakAkislari.set(a.kaynak, (liste = []));
+      const yol = akisYollari.get(ai);
+      if (yol !== undefined) {
+        let kenarlar = kaynakKenarIndeksleri.get(a.kaynak);
+        if (kenarlar === undefined) kaynakKenarIndeksleri.set(a.kaynak, (kenarlar = new Set()));
+        for (const indeks of yol) kenarlar.add(indeks);
+      }
       liste.push({
         mal: mal.id, kaynak: kaynakBolge.id, hedef: hedefBolge.id, oranMiliSaat: a.oranSaat, sureMs: a.sureMs,
         ...(tasimaEtkin && a.tasimaBedeliMiliSaat !== undefined ? { tasimaBedeliMiliSaat: a.tasimaBedeliMiliSaat } : {}),
+        ...(yol === undefined ? {} : { yol: [...yol] }),
       });
     }
   }
@@ -690,6 +708,13 @@ export function ilgiKaresiCikar(
           sonCozum: d.lojistik.sonCozum,
           akislar: kaynakAkislari.get(i) ?? [],
           ...(tasimaEtkin && b.tasimaBedeliMiliSaat !== undefined ? { tasimaBedeliMiliSaat: b.tasimaBedeliMiliSaat } : {}),
+          ...(yolGorunumu === undefined ? {} : {
+            guncellemeBekliyor: yolGorunumu.guncellemeBekliyor,
+            kenarlar: yolGorunumu.kenarlar.filter((e) => kaynakKenarIndeksleri.get(i)?.has(e.indeks)).map((e) => ({
+              indeks: e.indeks, a: e.a, b: e.b, tur: e.tur, sureMs: e.sureMs,
+              kapasiteMiliSaat: e.kapasiteMiliSaat, kendiYukMiliSaat: e.kendiYukMiliSaat,
+            })),
+          }),
         };
         girdi.ozel.gelenOran = b.stoklar.flatMap((stok, mal): Array<[string, Mili]> => {
           const tanim = kaynak.ic.mallar[mal];

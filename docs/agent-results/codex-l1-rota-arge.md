@@ -2,8 +2,9 @@
 
 2 Ekim 2026. A6 salt kaynak incelemesi; B2 ile veri sözleşmesi tartışıldı ve
 aşağıdaki ayrımlarda uzlaşıldı. L1 protokol sahibine aynı sözleşme iletildi.
-Bu belge uygulama önerisidir; protokol/çekirdek/UI değiştirilmedi.
-Test/build/ağ çalıştırılmadı. Yeni fiziksel gider bu dilimde yok.
+İlk inceleme uygulama önerisidir; o görevde protokol/çekirdek/UI değiştirilmedi
+ve test/build/ağ çalıştırılmadı. Sonraki L1.2 uygulama ve L4 kesin sözleşme
+notları aşağıdadır; güncel kabul kanıtı devam kaydında tutulur.
 
 ## Mevcut durum ve saklama sınırı
 
@@ -89,10 +90,10 @@ Bu plan mevcut otomatik sürekli akış modelinin korunacağını varsayar.
 Rota başına kesin ETA/teslim geçmişi istenirse olaylarda rota kimliği + kalıcı
 başlangıç/varış defteri gerekir; bu ayrı durum/göç dilimidir, görünürlük işi değildir.
 Global ortak yol yoğunluğu bilgi olarak istenirse ayrıca genel veri kararı gerekir;
-own-only ilk dilim bunu yayımlamaz. Yeni fiziksel transit gideri hâlâ uygulanmamıştır.
-Sonraki kenar diliminde gerçek yol kimliği/kenar tanımı birlikte taşınır; kapasite
-gösterilecekse yalnız oyuncunun son çözüm tahsisi toplanır. Fiilî teslim veya
-global kalan kapasite diye sunulmaz. L1.2 kodu mevcut gider checkpoint'i sonrası başlar.
+own-only ilk dilim bunu yayımlamaz. İlk incelemeden sonra L3 iç taşıma
+hizmet bedeli uygulanmıştır; bu fiyat kuralı ile L4 yol görünürlüğü ayrıdır.
+Gerçek kenar bilgisi ve kendi tahsisinin sonraki sözleşmesi aşağıdadır;
+fiilî teslim veya global kalan kapasite diye sunulmaz.
 
 ## Uygulama notu
 
@@ -101,3 +102,39 @@ Gider checkpoint'i `189722c` sonrasında bu dar sözleşme mevcut ekip tarafınd
 bölümüne uygulandı. Açık/kapalı durum ile form odağı güncellemelerde korunur.
 Kontrol ve teslim kanıtı `codex-devam-durumu.md` kaydındadır; yukarıdaki
 ilk inceleme sırasında test çalıştırılmadığı bilgisi tarihsel kalır.
+
+## L4 kesin güncel sözleşme — yol ve kendi kapasite kullanımı
+
+[Root sözleşmesi](codex-l4-yol-sozlesmesi.md) uygulanacak alanları kapattı:
+flow `yol?:number[]`; kaynak özel `lojistik` alanında birlikte optional
+`kenarlar` ve `guncellemeBekliyor`. Kenar satırı
+`{indeks,a,b,tur,sureMs,kapasiteMiliSaat,kendiYukMiliSaat}`; sadece o kaynağın
+doğrulanmış yol kenarları, artan indeksle tekil gönderilir. `a/b` gerçek genel
+harita merkez kimlikleridir; indeks isim değildir. Kaynak/iki uç sahipliği,
+mülk merkezleri ve gerçek yol bağlantısı doğrulanır; geçersiz yol bilinmiyor
+kalır. Dünya/transit aboneliği genişletilmez.
+
+Kendi yük, sahibin **tüm doğrulanmış final akışlarının** kenar başına
+pozitif `oranSaat` toplamıdır: tüm kaynaklar, mallar ve iki yön dahil.
+Seçili kaynak toplamı veya yönler arası net değildir; ortak kenar sözlük
+kopyaları bridge'de yeniden toplanmaz. Global `kullanilanSaat`, kalan kapasite,
+yabancı yük veya final akışta bulunmayan askerî/sivil ayrımı aktarılmaz.
+
+Kapasite canlı kenar değeridir, yük `sonCozum` tahsisidir. Wire'da bekleme
+alanının adı **`guncellemeBekliyor`**, kaynağı `d.lojistik.kirli`dir; sırf
+no-op çözüm kuyrukta diye true olmaz. B2'nin delta itirazıyla source-local
+zaman alanı kaldırıldı: bridge **`kapasiteZamani=kare.t`** üretir. Yeni frozen
+kapasite durumu yoktur; eski plan güncel kapasiteyi aşarsa sayılar kesilmez.
+Farklı çözüm/kapasite anı, çelişen aynı indeks veya eksik yeni alan birleşik
+yolu bilinmiyor yapar; mevcut sevk özeti kaybolmaz. Okuma çözüm tetiklemez.
+
+Tedarik → İç sevkiyat → **Yol ve kapasite** isteğe bağlı ayrıntısı gerçek
+yol sırasıyla merkez `A ↔ B`, tür/süre, "Son planda kendi yükün" ve
+"Güncel toplam kapasite" gösterir; bekleyen çözüm kısa metinle belirtilir.
+Boş yol gerçek il içi havuzdur; alan yoksa bilgi alınmadıdır. İki sayıdan
+boş kapasite/global doluluk veya belirli kenarın kesin darboğaz olduğu
+çıkarılmaz; `kapsam.neden` yalnız bölge/mal açıklamasıdır. ETA, yolda stok,
+haritaya uydurma çizgi, rota seçimi/yükseltme düğmesi eklenmez.
+Mevcut tedarik/stok/üretim konumu kararını bilgilendirir; **L3 bedeli,
+kasa, stok, parametre ve kalıcı durum kuralları değişmez**. Bu belge
+test/build yapıldığı iddiası değildir; uygulama/kabul devam kaydındadır.

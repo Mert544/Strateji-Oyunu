@@ -284,8 +284,13 @@ const bolgeKaresiSemasi = z.object({
       // Yalnız sahibine: son çözümün kendi işletmeleri arasındaki sevk planı; kesin varış zamanı değildir.
       lojistik: z.object({
         sonCozum: tam,
-        akislar: z.array(z.object({ mal: z.string(), kaynak: z.string(), hedef: z.string(), oranMiliSaat: tam, sureMs: tam, tasimaBedeliMiliSaat: tam.optional() })),
+        akislar: z.array(z.object({ mal: z.string(), kaynak: z.string(), hedef: z.string(), oranMiliSaat: tam, sureMs: tam, tasimaBedeliMiliSaat: tam.optional(), yol: z.array(tam.nonnegative()).optional() })),
         tasimaBedeliMiliSaat: tam.optional(),
+        kenarlar: z.array(z.object({
+          indeks: tam.nonnegative(), a: z.string(), b: z.string(), tur: z.enum(["kara", "deniz", "hava"]),
+          sureMs: tam, kapasiteMiliSaat: tam, kendiYukMiliSaat: tam,
+        })).optional(),
+        guncellemeBekliyor: z.boolean().optional(),
       }).optional(),
       // Gecikmeli varışları uygulanmış gerçek stok ağ giriş hızı; NPC ithalatını içermez. [] bilinen yok, absent bilinmeyen.
       gelenOran: z.array(z.tuple([z.string(), tam])).optional(),

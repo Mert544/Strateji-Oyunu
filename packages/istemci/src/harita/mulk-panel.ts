@@ -623,6 +623,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   });
   const tedarikPaneli: TedarikPaneli | undefined = b.tedarikDurumu && b.tedarikKomutu ? new TedarikPaneli({
     ic,
+    merkezAdi: (merkez) => s.hiyerarsi.bolgeler.get(merkez)?.ad ?? merkez,
     durum: () => {
       const d = b.tedarikDurumu!();
       return d ? { ...d, bolgeler: d.bolgeler.map((x) => ({ ...x, ad: ad.il(x.il) })) } : null;
