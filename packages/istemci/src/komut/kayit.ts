@@ -439,6 +439,8 @@ const gubreDozu = tanim({
 });
 
 const limanMi = (b: Baglam): boolean => b.dizin.bolgeler[b.bolge]?.etiketler.includes("liman") === true;
+/** Mülk kipinde işletme düğümü (`<il>#<oyuncu>`): çekirdek ticaret emrinde liman şartı aramaz (yerel NPC pazarı; `ekonomi/komut.ts`); liman şartı bölge kipine özgüdür. */
+const mulkDugumuMu = (b: Baglam): boolean => b.ic.param.mulk !== undefined && b.dizin.bolgeler[b.bolge]?.id.includes("#") === true;
 
 const ticaretEmri = tanim({
   id: "ticaret_emri",
@@ -447,7 +449,7 @@ const ticaretEmri = tanim({
   kapsam: "bolge",
   aciklama: "Limandan sürekli ihracat (satış) ya da ithalat (alış) emri. Oran 0 girilirse emir kaldırılır. Fiyat dünya referansıdır; makas ve liman primi ayrıca düşer.",
   gonder: "Emri ver",
-  uygun: (b) => (limanMi(b) ? null : "Yalnızca liman bölgelerinde"),
+  uygun: (b) => (limanMi(b) || mulkDugumuMu(b) ? null : "Yalnızca liman bölgelerinde"),
   alanlar(b) {
     const mallar: Secenek[] = b.ic.mallar.flatMap((m): Secenek[] => (m.depolanabilir ? [{ deger: m.id, etiket: m.ad }] : [])).sort((x, y) => x.etiket.localeCompare(y.etiket, "tr"));
     return [

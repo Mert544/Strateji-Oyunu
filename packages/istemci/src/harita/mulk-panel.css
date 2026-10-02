@@ -63,3 +63,19 @@ body.mulk-paneli #harita-hazine .hz-saat { padding-left: 0; border-left: 0; }
 .bk-satir[data-durum="yipraniyor"] :is(.ikon, .bk-durum) { color: var(--uyari-ink); }
 .bk-satir[data-durum="kritik"] :is(.ikon, .bk-durum, .bk-parca) { color: var(--hata-ink); }
 .bk-satir[data-durum="kritik"] { padding-left: var(--s-2); box-shadow: inset 2px 0 0 var(--hata); }
+/* Pazar'da sat (Mal sekmesi; T1 pazar-sat-oneri): satır altı ek satır (sütun açılmaz), emir durumu, düğme ve inline form; dokunma hedefleri 44 px, 360 px'te hızlı seçimler alt alta */
+.mini-tablo tr.mal-eylem > td { padding-top: 0; padding-bottom: var(--s-2); text-align: left; white-space: normal; }
+.mal-eylem .pz-durum { margin: 0 0 var(--s-1); font-size: var(--yazi-sm); line-height: var(--satir-sm); }
+.mal-eylem :is(.eylem, .mini-dugme, .birincil) { min-height: 44px; white-space: normal; }
+.pz-form { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-2); padding: var(--s-3); border: 1px solid var(--cizgi-ince); border-radius: var(--r-lg); background: var(--yuzey-2); box-shadow: inset 3px 0 0 var(--birincil); }
+.pz-form p { margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); }
+.pz-form label { font-size: var(--yazi-sm); color: var(--murekkep-2); }
+.pz-hizli { display: flex; flex-direction: column; gap: var(--s-1); align-items: flex-start; }
+.pz-oran { width: 100%; min-height: 44px; padding: 0 var(--s-3); border: 1px solid var(--cizgi-guclu); border-radius: var(--r-md); background: var(--yuzey); color: var(--murekkep); font-size: var(--yazi-md); font-variant-numeric: tabular-nums; scroll-margin-block: 96px; }
+.pz-eylemler { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.pz-eylemler .birincil { flex: 1 1 100%; }
+.pz-eylemler [data-eylem="pazar-birak"] { color: var(--murekkep-3); }
+.pz-form [aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
+@media (min-width: 821px) {
+  .pz-eylemler .birincil { flex: none; }
+}

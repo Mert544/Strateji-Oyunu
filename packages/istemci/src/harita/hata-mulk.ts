@@ -4,6 +4,7 @@
  */
 import { paraMili } from "../arayuz/bicim";
 import { dukkanMetni } from "./dukkan-metin";
+import { pazarRetMetni } from "./pazar-sat-metin";
 import { YONTEM_RET_KALIPLARI, yontemMetni } from "./yontem-metin";
 import { KAMU_TUR_ADI } from "./kamu";
 import type { KamuTuru } from "./kamu";
@@ -136,6 +137,11 @@ export function mulkHatasiTurkce(ham: string, ad: (id: string) => string = (x) =
 export function yontemHatasiTurkce(ham: string, ad: (id: string) => string = (x) => x): string {
   for (const [re, a] of YONTEM_RET_KALIPLARI) if (re.test(ham)) return yontemMetni(a);
   return mulkHatasiTurkce(ham, ad);
+}
+
+/** `ticaret_emri` reddi (Pazar'da sat): A1 `pazar.ret.*` metni (yuva dolu, depolanamaz mal, sahip değil, geçersiz oran...); tanınmayan metin genel eşlemeye düşer. */
+export function pazarHatasiTurkce(ham: string, ad: (id: string) => string = (x) => x): string {
+  return pazarRetMetni(ham) ?? mulkHatasiTurkce(ham, ad);
 }
 
 /** Hücre kimliği ("x:y") ham metinde geçiyorsa çıkarır (hata hücresini işaretlemek için). */

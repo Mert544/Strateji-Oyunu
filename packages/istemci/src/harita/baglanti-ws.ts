@@ -18,8 +18,8 @@
 import type { HucreId, Komut, OyuncuId } from "@bolge/cekirdek";
 import { KomutSemasi, PROTOKOL_SURUMU, deltaUygula, stokAraDeger, sunucuMesajiCoz } from "@bolge/protokol";
 import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, SunucuMesaji } from "@bolge/protokol";
-import type { DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
-import { hataHucresi, mulkHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
+import type { DukkanKaresi, DukkanKomutSonucu, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
+import { hataHucresi, mulkHatasiTurkce, pazarHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
 import type { InsaatBilgisi } from "../yuru/arsa";
 import { parselToplamFiyatiMili } from "./fiyat";
 import { yapilardanInsaatlar } from "./yapi-yuruyus";
@@ -300,6 +300,17 @@ export class WsBaglanti implements MulkBaglantisi {
     }
   }
 
+  /** Pazar'da sat: `ticaret_emri` (ihracat, sürekli saatlik emir; `oranSaat` 0 = kaldır). Mülk kipinde liman şartı yoktur (çekirdek `ekonomi/komut.ts`); ret nedeni Türkçe (`pazarHatasiTurkce`, A1 `pazar.ret.*`). */
+  async ticaretEmri(i: TicaretEmriIstegi): Promise<TesisSonucu> {
+    try {
+      const r = await this.komutGonder({ tur: "ticaret_emri", bolge: i.bolge, mal: i.mal, yon: "ihracat", oranSaat: i.oranSaat });
+      if (r.tamam) return { tamam: true, t: r.t };
+      return { tamam: false, hata: "sunucu", mesaj: pazarHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)) };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
   /** Oyuncunun araştırdığı teknolojilerin kimlikleri (`oyuncu.teknolojiler` dizin indeksleri); oyuncu karesi ya da dizin yoksa null. */
   acikTeknolojiler(): ReadonlySet<string> | null {
     const o = this.kare?.oyuncu;
@@ -516,12 +527,14 @@ export class WsBaglanti implements MulkBaglantisi {
       const yontem = insaatYontemi(o, id);
       yapilar.push({ anahtar, durum: "insaat", tur: ek ?? turler[hedef] ?? "", ...(il ? { il } : {}), ...yer.get(anahtar), ...baslangic, bitis, ...(yontem !== undefined ? { yontem } : {}) });
     }
-    const stok = new Map<number, { stokMili: number; uretimMili: number; satisMili: number; alisMili: number }>();
-    const mal = (m: number): { stokMili: number; uretimMili: number; satisMili: number; alisMili: number } => {
+    const stok = new Map<number, { stokMili: number; uretimMili: number; satisMili: number; alisMili: number; satisBolge?: string; satisEmirMili?: number; satisNetPpm?: number }>();
+    const mal = (m: number): { stokMili: number; uretimMili: number; satisMili: number; alisMili: number; satisBolge?: string; satisEmirMili?: number; satisNetPpm?: number } => {
       let x = stok.get(m);
       if (!x) stok.set(m, (x = { stokMili: 0, uretimMili: 0, satisMili: 0, alisMili: 0 }));
       return x;
     };
+    // Pazar'da sat: malın satış emrinin yeri. Emri olan düğüm kazanır; emri yoksa malı en çok tutan düğüm (eşitlikte ilk).
+    const satisAdayi = new Map<number, number>();
     for (const b of k.bolgeler) {
       const oz = b.ozel;
       if (!oz) continue;
@@ -537,15 +550,35 @@ export class WsBaglanti implements MulkBaglantisi {
       for (const [m, q] of oz.sebeke ?? []) if (q > 0) sebeke.set(m, (sebeke.get(m) ?? 0) + q);
       oz.stoklar.forEach((f, m) => {
         const v = stokAraDeger(f, t);
-        if (v > 0) mal(m).stokMili += v;
+        if (v > 0) {
+          mal(m).stokMili += v;
+          if (mal(m).satisEmirMili === undefined && v > (satisAdayi.get(m) ?? 0)) {
+            satisAdayi.set(m, v);
+            mal(m).satisBolge = b.id;
+          }
+        }
       });
       oz.uretimOrani.forEach((r, m) => {
         if (r > 0) mal(m).uretimMili += r;
       });
-      for (const [m, yon, , gercek] of oz.emirler) {
-        if (yon === 0) mal(m).satisMili += gercek;
-        else mal(m).alisMili += gercek;
+      for (const [m, yon, oran, gercek] of oz.emirler) {
+        if (yon === 0) {
+          const x = mal(m);
+          x.satisMili += gercek;
+          if (x.satisEmirMili === undefined) x.satisBolge = b.id; // ilk emri olan düğüm (mal başına tek emir; çok düğümde toplam oran)
+          x.satisEmirMili = (x.satisEmirMili ?? 0) + oran;
+        } else mal(m).alisMili += gercek;
       }
+    }
+    // Pazar'da sat: emrin yerindeki düğümün ihracat net çarpanı (sunucu `ozel.ihrNetPpm`, isteğe bağlı: yoksa alan YAZILMAZ ve istemci "Eline geçen"i göstermez)
+    const dugumNet = new Map<string, number>();
+    for (const b of k.bolgeler) {
+      const n = (b.ozel as { ihrNetPpm?: unknown } | undefined)?.ihrNetPpm;
+      if (typeof n === "number" && Number.isFinite(n) && n > 0) dugumNet.set(b.id, n);
+    }
+    for (const x of stok.values()) {
+      const n = x.satisBolge === undefined ? undefined : dugumNet.get(x.satisBolge);
+      if (n !== undefined) x.satisNetPpm = n;
     }
     const mk = o.mulk;
     return {

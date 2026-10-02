@@ -69,6 +69,13 @@ export interface YontemDegistirIstegi {
   yontem: string;
 }
 
+/** Pazar'da sat (`ticaret_emri`, ihracat): SÜREKLİ saatlik emir. `oranSaat` mili-birim/sa (tamsayı; 0 = emri kaldırır). `bolge`: işletme düğümü kimliği (`<il>#<oyuncu>`). */
+export interface TicaretEmriIstegi {
+  bolge: string;
+  mal: string;
+  oranSaat: number;
+}
+
 /**
  * Ölçek büyütme isteği (çekirdek `tesis_olcek_yukselt`): `bolge` oyuncunun işletme düğümünün kimliği (`<il>#<oyuncu>`), `tesis`
  * tesis kimliği, `olcek` hedef (1 = M, 2 = L). `ekHucreler` ayak izinin büyümesi için gereken EK bitişik hücreler (ek hücre
@@ -231,7 +238,18 @@ export interface IsletmeDurumu {
   indirimliYapiKalan: number | null;
   yapilar: IsletmeYapisi[];
   /** Mal kimliği başına stok (mili-birim), üretim ve satış/alış oranı (mili-birim/saat). */
-  mallar: Array<{ mal: string; stokMili: number; uretimMili: number; satisMili: number; alisMili: number }>;
+  mallar: Array<{
+    mal: string;
+    stokMili: number;
+    uretimMili: number;
+    satisMili: number;
+    alisMili: number;
+    /** Pazar'da sat: satış emrinin yeri (emri olan ya da malı en çok tutan işletme düğümü) ve emrin oranı (mili-birim/sa; emir yoksa tanımsız). `satisMili` GERÇEKLEŞEN orandır. */
+    satisBolge?: string;
+    satisEmirMili?: number;
+    /** Emrin yerindeki işletme düğümünün ihracat net çarpanı (ppm; sunucunun `ozel.ihrNetPpm`'i: makas x (1 - liman primi) x (1 - komisyon), Ticaret ofisi indirimi dahil). Sunucu vermiyorsa tanımsız: "Eline geçen" satırı GİZLENİR (sabit çarpanla rakam gösterilmez). */
+    satisNetPpm?: number;
+  }>;
   /** Şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (`kare.ozel.sebeke`; işletme düğümleri toplanmış; alım yoksa tanımsız). Bedel istemcide: miktar x şebeke fiyatı. */
   sebeke?: Array<[mal: string, miliSaat: number]>;
 }
@@ -258,6 +276,8 @@ export interface MulkBaglantisi {
   yapiYerlestir?(i: YerlestirIstegi): Promise<TesisSonucu>;
   /** Biten tesisin yöntemini değiştirir (`yontem_degistir`; ücretsiz, anlık). Tanımsızsa "Yöntemi değiştir" gösterilmez. Ret nedeni Türkçe (`yontem.ret.*`). */
   yontemDegistir?(i: YontemDegistirIstegi): Promise<TesisSonucu>;
+  /** Pazar'da sat (`ticaret_emri`, ihracat; mülk kipinde liman şartı yok): sürekli saatlik emir ver/güncelle (`oranSaat` 0 = kaldır). Tanımsızsa Mal sekmesinde "Pazar'da sat" gösterilmez. Ret nedeni Türkçe (`pazar.ret.*`). */
+  ticaretEmri?(i: TicaretEmriIstegi): Promise<TesisSonucu>;
   /** Oyuncunun araştırdığı teknolojilerin kimlikleri (yöntem seçicide kilitli/açık ayrımı); bilinmiyorsa tanımsız/null (teknoloji isteyen yöntem kilitli sayılır; teknolojisiz yöntemler her zaman açıktır). */
   acikTeknolojiler?(): ReadonlySet<string> | null;
   /** Bu bağlantıda (sunucuda) atomik yerleşim komutu var mı? Yoksa zincir (iki komut) kullanılır. */

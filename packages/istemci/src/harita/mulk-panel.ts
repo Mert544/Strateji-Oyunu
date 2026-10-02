@@ -35,6 +35,7 @@ import { dukkanTuruMallari } from "./etkin";
 import type { Defter } from "@bolge/protokol";
 import { bildir } from "../arayuz/bildirim";
 import { sebekeBolumuHtml, sebekeFiyatlari, sebekeSatirlari } from "./sebeke-gider";
+import { PazarSatPaneli, pazarOrani, pazarSatEylemiOku } from "./pazar-sat";
 import { YontemPaneli, yontemEylemiOku } from "./yontem-panel";
 import mulkCss from "./mulk-panel.css?inline";
 import dukkanCss from "./dukkan-panel.css?inline";
@@ -86,6 +87,8 @@ export interface MulkAdlari {
   buyut?: (y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]) => boolean;
   /** Tesis satırı için "Yöntemi değiştir" parçaları (`yontem-panel.ts`: düğme satırın düğmeleri arasında, seçici ve onay satırın altında); tanımsızsa hiçbiri çıkmaz. */
   yontem?: (y: IsletmeYapisi) => { dugme: string; alt: string };
+  /** Mal satırının altındaki ek satırın içeriği (`pazar-sat.ts` `satirEki`: emir durumu, "Pazar'da sat", form); boş dizge = ek satır yok; tanımsızsa Mal sekmesi salt okunur. */
+  pazar?: (x: IsletmeDurumu["mallar"][number]) => string;
 }
 
 const sure = (ms: number): string => sureMetni(Math.max(0, ms) / SAAT);
@@ -247,7 +250,11 @@ export function mulkMalPaneli(d: IsletmeDurumu | null, ad: MulkAdlari): string {
   if (!d.mallar.length) return `<div class="bos-durum">${ikon("package", 28)}<p class="ipucu-metin">Deponda henüz mal yok. Yapıların üretmeye başlayınca stok ve satış burada görünür.</p></div>`;
   const m = (x: number): string => fmt(Math.round(x / 1000));
   let s = `<div class="tablo-kap"><table class="mini-tablo"><thead><tr><th>Mal</th><th class="sayi">Stok</th><th class="sayi">Üretim/sa</th><th class="sayi">Satış/sa</th></tr></thead><tbody>`;
-  for (const x of d.mallar) s += `<tr><td>${esc(ad.mal(x.mal))}</td><td class="sayi">${m(x.stokMili)}</td><td class="sayi">${x.uretimMili ? m(x.uretimMili) : "—"}</td><td class="sayi">${x.satisMili ? m(x.satisMili) : x.alisMili ? `alış ${m(x.alisMili)}` : "—"}</td></tr>`;
+  for (const x of d.mallar) {
+    s += `<tr><td>${esc(ad.mal(x.mal))}</td><td class="sayi">${m(x.stokMili)}</td><td class="sayi">${x.uretimMili ? m(x.uretimMili) : "—"}</td><td class="sayi">${x.satisMili ? m(x.satisMili) : x.alisMili ? `alış ${m(x.alisMili)}` : "—"}</td></tr>`;
+    const ek = ad.pazar?.(x);
+    if (ek) s += `<tr class="mal-eylem"><td colspan="4">${ek}</td></tr>`;
+  }
   return s + `</tbody></table></div><p class="ipucu-metin">Satış: işletme emirlerinin gerçekleşen saatlik miktarı.</p>`;
 }
 
@@ -472,7 +479,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   // Yöntem seçici ("Yöntemi değiştir") ve Hazine'de şebeke gideri: komut `yontem_degistir` bağdaştırıcının ucundan; sahte bağdaştırıcıda ve içerik olmadan çıkmaz.
   const sebekeFiyat = sebekeFiyatlari(ic);
   const yenidenCiz = (): void => {
-    const geri = yontemPaneli?.odagiYakala(document);
+    const geri = yontemPaneli?.odagiYakala(document) ?? pazarSat?.odagiYakala(document);
     yenile?.();
     if (geri) window.setTimeout(geri, 0);
   };
@@ -504,6 +511,53 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End", " ", "Spacebar", "Enter"].includes(e.key)) return;
       e.preventDefault();
       if (id !== null) void yontemPaneli.eylem({ eylem: "sec", yontem: id }).then(() => window.setTimeout(() => document.querySelector<HTMLElement>(`.ym-degistir .ym-kart[data-yontem="${id.replace(/"/g, "")}"]`)?.focus(), 0));
+    });
+  }
+  // Pazar'da sat (Mal sekmesi): `ticaret_emri` (ihracat; mülk kipinde liman şartı yok) bağdaştırıcının ucundan; sahte bağdaştırıcıda çıkmaz.
+  const pazarSat: PazarSatPaneli | undefined = b.ticaretEmri
+    ? new PazarSatPaneli({
+        ic,
+        malAdi: ad.mal,
+        isletme: () => son ?? b.isletme?.() ?? null,
+        referans: (mal) => referansFiyati(ic, b.dukkanKaresi?.() ?? null)(mal),
+        kalkan: () => (son ?? b.isletme?.() ?? null)?.korumaBitis != null,
+        ilkSatisOdulu: () => defter?.siradaki.find((k) => k.kavram === "ilk_satis")?.odul?.degerMili ?? null,
+        ilkDukkanSatisi: () => dukkanKaynagi?.gorunum()?.ilkSatisT != null,
+        komut: (i) => b.ticaretEmri!(i),
+        degisti: yenidenCiz,
+        bildir: (metin, tur) => bildir(metin, tur),
+      })
+    : undefined;
+  /** Form kapanınca (Esc, Vazgeç, emir verildi) odak satırın "Pazar'da sat" düğmesine döner. */
+  const satirDugmesineDon = (mal: string): void => void window.setTimeout(() => document.querySelector<HTMLElement>(`[data-eylem="pazar-ac"][data-mal="${mal.replace(/"/g, "")}"]`)?.focus(), 0);
+  if (pazarSat) {
+    ad.pazar = (x) => pazarSat.satirEki(x);
+    // Sayı alanına yazılırken yalnız özet (fiyat, net, gelir, uyarı) ve "Satış emri ver" kilidi yamalanır (yeniden çizim odağı bozardı); Enter emri verir, Esc vazgeçer
+    document.addEventListener("input", (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement) || t.id !== "pz-oran") return;
+      pazarSat.girdi(t.value);
+      const mal = pazarSat.durum.acik;
+      const ozet = document.querySelector('[data-alan="pazar-ozet"]');
+      if (mal !== null && ozet) ozet.innerHTML = pazarSat.ozetHtml(mal);
+      const ver = document.querySelector<HTMLElement>('[data-eylem="pazar-ver"]');
+      if (ver) {
+        if (pazarOrani(t.value) === null) ver.setAttribute("aria-disabled", "true");
+        else ver.removeAttribute("aria-disabled");
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement) || !t.closest(".pz-form")) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        const mal = pazarSat.durum.acik;
+        pazarSat.kapat();
+        if (mal !== null) satirDugmesineDon(mal);
+      } else if (e.key === "Enter" && t instanceof HTMLInputElement) {
+        e.preventDefault();
+        void pazarSat.eylem({ eylem: "ver" });
+      }
     });
   }
   const dukkanDikkat = (): MulkDikkatMaddesi[] =>
@@ -599,6 +653,16 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         void dukkanPaneli.eylem(pe);
         return true;
       }
+      const pz = pazarSat ? pazarSatEylemiOku(t) : null;
+      if (pz && pazarSat) {
+        const mal = pazarSat.durum.acik;
+        void pazarSat.eylem(pz).then(() => {
+          if (pz.eylem === "ac" && pazarSat.durum.acik !== null) window.setTimeout(() => document.getElementById("pz-oran")?.focus(), 0);
+          else if (pz.eylem === "oran") window.setTimeout(() => document.getElementById("pz-oran")?.focus(), 0);
+          else if (mal !== null && pazarSat.durum.acik === null) satirDugmesineDon(mal); // aç-kapa, Vazgeç, emir verildi/bırakıldı
+        });
+        return true;
+      }
       const ye = yontemPaneli ? yontemEylemiOku(t) : null;
       if (ye && yontemPaneli) {
         void yontemPaneli.eylem(ye);
@@ -632,7 +696,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         }
         const g = dukkanGorunumu();
         if (g && ilkSatis.kontrol(g.ilkSatisT)) bildir(dukkanMetni("dukkan.D8.ilk_satis"), "bilgi");
-        const geri = yontemPaneli?.odagiYakala(document); // yeniden çizim (inşaat süreleri) açık seçicinin odağını düşürmesin
+        const geri = yontemPaneli?.odagiYakala(document) ?? pazarSat?.odagiYakala(document); // yeniden çizim (inşaat süreleri) açık seçicinin / sayı alanının odağını düşürmesin
         f();
         if (geri) window.setTimeout(geri, 0);
       }, 2000);
