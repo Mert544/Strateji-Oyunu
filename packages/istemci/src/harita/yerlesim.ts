@@ -560,7 +560,7 @@ export class YerlesimKipi {
         <dt>Süre</dt><dd data-yk-alan="sure">${sure}</dd>
         <dt class="yk-toplam">Toplam</dt><dd class="yk-toplam" data-yk-alan="toplam"><b>${paraMili(p.toplamMili, "yukari")}</b>${oz?.hazineMili != null ? ` <small>Hazine ${paraMili(oz.hazineMili, "asagi")}</small>` : ""}</dd>
       </dl>
-      ${p.neden ? `<span data-yk-neden-yer></span>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için tıkla.</p>`}`;
+      ${p.neden ? `<span data-yk-neden-yer></span>` : sabit ? "" : `<p class="yk-ipucu">Yeri sabitlemek için seç.</p>`}`;
   }
 
   /** Seçili yapının yöntemleri (içerikten; ek yapı ve içerik yoksa boş). Teknolojisi açık olmayanlar kilitli; açık teknolojiler bilinmiyorsa (sahte bağdaştırıcı, kare henüz yok) teknoloji isteyen yöntem temkinli biçimde kilitli sayılır (sunucu zaten reddederdi). */
