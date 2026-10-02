@@ -304,7 +304,7 @@ describe("T-3: ahır seçicisi stok notu (girdi depoda yoksa soluk not)", () => 
 
   it("T3 ipuçları: ahır yöntemleri", () => {
     expect(ahir.find((s) => s.id === "ahir_besi")!.ipucu).toBe("Tahılın yeter; başlamak için en kolay yöntem.");
-    expect(ahir.find((s) => s.id === "sut_kepekli")!.ipucu).toBe("Tahıl ve kepek ister; süt dükkânında satılır.");
+    expect(ahir.find((s) => s.id === "sut_kepekli")!.ipucu).toBe("Tahıl ve kepek ister; sütü dükkânında satabilirsin.");
   });
 });
 

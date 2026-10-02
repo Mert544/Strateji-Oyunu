@@ -92,7 +92,7 @@ export const ICERIK_METIN: Readonly<Record<IcerikTuru, Readonly<Record<string, I
     degirmen: { aciklama: "Tahılı una çevirir; yanında kepek de çıkar.", ipucu: "Kepeği ahıra götür." },
     ekmek_firini: { aciklama: "Unu, yakıt ve elektrikle ekmeğe çevirir.", ipucu: "Ekmek çabuk bayatlar: rafa yakın kur." },
     kepek_gubresi: { aciklama: "Değirmenden artan kepeği gübreye çevirir.", ipucu: "Kepek ister; kepeği gıda fabrikasının değirmen yöntemi verir." },
-    sut_kepekli: { aciklama: "Tahıl ve kepekle hayvan besler; süt ve biraz gübre verir.", ipucu: "Tahıl ve kepek ister; süt dükkânında satılır." },
+    sut_kepekli: { aciklama: "Tahıl ve kepekle hayvan besler; süt ve biraz gübre verir.", ipucu: "Tahıl ve kepek ister; sütü dükkânında satabilirsin." },
     cam_firini: { aciklama: "Silisi yakıt ve elektrikle cama çevirir.", ipucu: "Camı pencere hattına ver; hat ayrı bir fabrikada çalışır." },
     celik_dograma: { aciklama: "Çelik, cam ve parçadan pencere yapar.", ipucu: "Camı ayrı bir fabrikada üret; pencere dükkân inşaatında ve yapı markette işe yarar." },
   },

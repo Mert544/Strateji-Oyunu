@@ -81,7 +81,7 @@ export interface MulkAdlari {
   ayrilmisGun?: number;
   /** İlk yapı indirimi yüzdesi ("%30"; `mulk.yeniOyuncu.ilkYapiIndirimPpm`'den); yoksa metin yüzdesiz. */
   indirimYuzde?: string;
-  /** İlçedeki (açık) dükkânın kimliği ("Dükkânın hazır" maddesindeki "Rafa git"); dükkân yoksa null. */
+  /** İlçedeki (açık) dükkânın kimliği ("Dükkân hazır" maddesindeki "Rafa git"); dükkân yoksa null. */
   dukkanRafa?: (ilce?: string) => number | null;
   /** Tesis satırında "Büyüt" gösterilsin mi (`olcek.ts` `olcekBuyutulebilir`); tanımsızsa gösterilmez. */
   buyut?: (y: IsletmeYapisi, tumu: readonly IsletmeYapisi[]) => boolean;
@@ -114,7 +114,7 @@ export interface BitenInsaatKaydi {
 }
 
 /**
- * "Biten inşaat" cümlesi: Dikkat maddesinin başlığı VE inşa bitişi bildirimi aynı kaynaktan (`dikkat.insaat_bitti` "Gebze: Çiftlik hazır."; dükkânda `dukkan.D4.hazir` "Gebze: Dükkânın hazır.").
+ * "Biten inşaat" cümlesi: Dikkat maddesinin başlığı VE inşa bitişi bildirimi aynı kaynaktan (`dikkat.insaat_bitti` "Gebze: Çiftlik hazır."; dükkânda `dukkan.D4.hazir` "Gebze: Dükkân hazır.").
  * Ton bilgi verici: kutlama ya da ödül sözü yok.
  */
 export function insaatBittiMetni(b: Pick<BitenInsaatKaydi, "tur" | "ilce" | "yukseltme">, ad: Pick<MulkAdlari, "yapi" | "ilce">): string {
@@ -180,7 +180,7 @@ export function mulkDikkatMaddeleri(
   }
   for (const [, b] of bitenler) {
     if (t - b.bitis > BITTI_SAAT * SAAT || t < b.bitis) continue;
-    // Biten dükkân inşaatı: "Dükkânın hazır." ve raf düzenlemeye giden "Rafa git" (A1 bulgusu: metinler kodda kullanılmıyordu)
+    // Biten dükkân inşaatı: "Dükkân hazır." ve raf düzenlemeye giden "Rafa git" (A1 bulgusu: metinler kodda kullanılmıyordu)
     const hazirDukkan = b.tur === "dukkan" && !b.yukseltme ? (ad.dukkanRafa?.(b.ilce) ?? null) : null;
     if (b.tur === "dukkan" && !b.yukseltme) {
       l.push({ tur: "bitti", baslik: insaatBittiMetni(b, ad), ayrinti: t - b.bitis >= SAAT ? `${gecenSureMetni(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis, ...(hazirDukkan !== null ? { rafaGit: { dukkan: hazirDukkan, etiket: dukkanMetni("dukkan.D4.dugme_rafa_git") } } : {}) });

@@ -78,7 +78,7 @@ export const DUKKAN_METIN = {
   "dukkan.D4.dugme_rafa_git": "Rafa git",
   "dukkan.D4.etiket_ad": "{ad} · {asama} · {sure}",
   "dukkan.D4.geri_alma": "Geri alma: {sure}",
-  "dukkan.D4.hazir": "Dükkânın hazır.",
+  "dukkan.D4.hazir": "Dükkân hazır.",
   "dukkan.D4.iptal_onay": "İnşaatı iptal edersen ödediğin paranın ve malzemenin {yuzde} kadarı geri gelir. İptal edilsin mi?",
   "dukkan.D4.raf_oneri": "Rafına mal koy.",
   "dukkan.D4.sen_yokken": "{yapi} bitti",
