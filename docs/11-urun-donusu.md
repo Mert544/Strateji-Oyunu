@@ -252,7 +252,7 @@ Kararların tam metni [00 §2](00-vizyon-ve-kararlar.md#2-kararlar-tablosu) içi
 | A0-4 | 100 bot ile yük testi: tik gecikmesi ve çözüm süresi raporlandı | Plan |
 | A0-5 | Kural dönemi dağıtım provası yapıldı | Plan |
 | A0-6 | Uçtan uca Playwright akışı (giriş → Yerleş → hücre al → Tarla kur → tamamlanır → satış görünür), masaüstü ve mobil | Plan |
-| A0-7 | Atıf ekranı (© OpenStreetMap katkıcıları, Protomaps, Copernicus/Mapterhorn, Natural Earth ...) görünür; OSM türevi veri ayrı klasörde | Plan, K24 |
+| A0-7 | **Kullanılan kaynakların atfı** görünür: bugün OSM/ODbL (© OpenStreetMap katkıcıları), Protomaps, TÜİK (ilçe nüfusu), Natural Earth, USGS; üçüncü taraf lisans dosyası (LICENSES) dağıtılır ve ⓘ kutusundan bağlantılıdır; DEM bağlanınca Mapterhorn/Copernicus atfı Mapterhorn `attribution.json`'dan gelir. OSM türevi veri ayrı klasörde | Plan, K24; baş lider kararı (2 Ekim: ölçüt "kullanılan kaynaklar") |
 | A0-8 | Bot ölçümü (worktree, parsel kipi): H5, H6, H7 ve H8 raporu üretildi | Plan |
 
 ### 6.2 Alfa-1 kapısı (açık alfaya geçmeden önce)
