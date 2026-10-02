@@ -9,7 +9,7 @@ A0-5 = "kural dönemi dağıtım provası (24 sa gölge yeniden oynatma, sapma r
 - **K-A, aynı içerik (determinizm):** gölge canlıyla aynı imaj ve içerikle açılır. Sapma **0** bir determinizm KURALIDIR (sahip eşiği değil): tek fark bile HATA. (Yeniden oynatma kuralı: aynı günlük, aynı özet.) Bu, dönem sınırından önce "yedek + yeniden oynatma güvenilir" kanıtıdır.
 - **K-B, yeni içerik göçü:** gölge yeni kural sürümüyle `BOLGE_GOC=1` açılır (yalnız sona ekleme), sonra aynı akış oynatılır. Beklenen sapma YALNIZ yeni kimliklerin dokunduğu alanlarda olabilir ve önceden LİSTELENİR; listede olmayan her sapma = göç hatası. `ihlalSayisi` 0. Göç raporu (`kurtarma.goc`: `eklenen`, `ihlalSayisi` 0, `yenidenIndekslendi`) ve geri dönüş (`--yedekten-don`) de bu kipte denenir.
 
-`kural_surumu_gec` komutu kodda YOK (A3, AÖ-16 "yapılacak"): Alfa-0'da kanıt komutsuz yapılır (kapat → yedek → `BOLGE_GOC=1`); komutun kendisi baş lider kapsam kararıdır.
+**Baş lider kararı:** `kural_surumu_gec` komutu kodda YOK (A3, AÖ-16 "yapılacak") ve Alfa-0'da OLMADAN kanıtlanır. Yol: kapat → yedek → `BOLGE_GOC=1` → 24 sa gölge oynatma; K-A sapma 0. Komut Alfa-1'e kalır. **Kapalı 20 kişilik testte elle dönem geçişi kabul edilebilir; Alfa-1 öncesi komut zorunludur.**
 
 ## 2. Ne koşar
 
@@ -75,4 +75,4 @@ Karara bağlanan: (1) gölge tanımı §1'deki gibi (docs/11:580), canlıyla par
 - Süre: günlüğün kapsadığı sim-saat (24 sa gerekir; saat başı kontrol noktaları) ve kendi kaydettiği saat başı `durumOzeti` ya da son özet (karşılaştırma için; yoksa canlı koşu O3'te yeniden üretilir).
 - Kişisel veri YOK (opak oyuncu kimliği, adres yok).
 
-Kalan: Aşama 2 makinesi (kim, ne zaman); süre ve bellek eşikleri.
+Kalan: süre ve bellek eşikleri (sahibin). Aşama 2 (daemon'lu makine): baş lider kararıyla SAHİP LİSTESİNDE (makine ve takvim sahipte).
