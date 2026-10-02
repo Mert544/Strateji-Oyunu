@@ -634,6 +634,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     acikTeknolojiler: () => b.acikTeknolojiler?.() ?? null,
     yontemDestegi: b.yontemDegistir !== undefined,
     yontemBekliyor: () => yontemPaneli?.durum.gonderiyor === true,
+    ...(b.tedarikDurumu && b.tedarikKomutu ? { tedarikDurumu: () => b.tedarikDurumu!() } : {}),
     tesisAdi: (y) => `${ad.yapi(y.tur)}${y.ilce ? ` · ${ad.ilce(y.ilce)}` : y.il ? ` · ${ad.il(y.il)}` : ""}`,
     degisti: yenidenCiz,
   });
@@ -654,6 +655,19 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     // ve komut sonucu aynı formda güncellenir.
     degisti: () => { yenidenCiz(); tedarikPaneli?.yamala(document); },
   }) : undefined;
+  const tedarikeAc = (secim: { mal: string; bolge?: string }): boolean => {
+    if (secim.bolge !== undefined && !b.tedarikDurumu?.()?.bolgeler.some((x) => x.id === secim.bolge && x.uygun)) {
+      bildir("Bu işletmede tedarik uygunluğu doğrulanamadı. Güncel bilgileri yeniden incele.", "bilgi");
+      return false;
+    }
+    if (!tedarikPaneli?.ac(secim)) {
+      bildir("Tedarik açılamadı. Güncel işletme ve mal bilgilerini kontrol et.", "bilgi");
+      return false;
+    }
+    sekmeIstegi = "tedarik";
+    bekleyenOdak.iste("input[data-tedarik-oran]", odakKoku);
+    return true;
+  };
   if (tedarikPaneli) {
     document.addEventListener("input", (e) => {
       if (e.target instanceof HTMLInputElement) tedarikPaneli.girdi(e.target);
@@ -668,15 +682,16 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     ilceAdi: ad.ilce,
     ilAdi: ad.il,
     malAdi: ad.mal,
+    tedarikDestegi: tedarikPaneli !== undefined,
     ...(b.kamuTeslim ? { komut: b.kamuTeslim.bind(b) } : {}),
     ...(b.meclisKatil ? { meclisKomutu: b.meclisKatil.bind(b) } : {}),
     degisti: () => { yenidenCiz(); ilcePaneli.yamala(document); },
   });
   document.addEventListener("pointerdown", (e) => {
-    if (e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); tesisDurumPaneli?.teklifYakala(e.target); }
+    if (e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); tesisDurumPaneli?.teklifYakala(e.target); orduPaneli?.teklifYakala(e.target); }
   }, { signal: pazarOlaylari.signal, capture: true });
   document.addEventListener("keydown", (e) => {
-    if (!e.repeat && (e.key === "Enter" || e.key === " ") && e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); tesisDurumPaneli?.teklifYakala(e.target); }
+    if (!e.repeat && (e.key === "Enter" || e.key === " ") && e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); tesisDurumPaneli?.teklifYakala(e.target); orduPaneli?.teklifYakala(e.target); }
   }, { signal: pazarOlaylari.signal, capture: true });
   const orduPaneli: OrduPaneli | undefined = b.orduDurumu && b.orduKomutu ? new OrduPaneli({
     ic,
@@ -915,10 +930,26 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         void ilcePaneli.eylem(kamuEylemi);
         return true;
       }
+      const kamuTedariki = ilcePaneli.kamuTedarikEylemOku(t);
+      if (kamuTedariki) {
+        tedarikeAc(kamuTedariki);
+        return true;
+      }
+      const orduYonlendirme = orduPaneli?.yonlendirmeOku(t);
+      if (t.closest("[data-ordu-gecis]")) {
+        const hedef = orduYonlendirme && orduPaneli?.yonlendirme(orduYonlendirme);
+        if (hedef?.eylem === "tedarik") tedarikeAc(hedef);
+        else if (hedef?.eylem === "teknoloji") {
+          if (teknolojiPaneli?.ac(hedef.teknoloji)) {
+            sekmeIstegi = "teknoloji";
+            bekleyenOdak.iste(`[data-teknoloji-kart="${CSS.escape(hedef.teknoloji)}"]`, odakKoku);
+          } else bildir("Bu araştırmanın bilgisi henüz alınmadı.", "bilgi");
+        } else bildir("Birlik bilgileri değişmiş. Güncel bilgileri yeniden incele.", "bilgi");
+        return true;
+      }
       const tedarikeGit = t.closest<HTMLElement>("[data-mulk-tedarik]");
       if (tedarikeGit && tedarikPaneli) {
-        sekmeIstegi = "tedarik";
-        tedarikPaneli.ac({ mal: tedarikeGit.dataset["mulkTedarik"] ?? "", ...(tedarikeGit.dataset["bolge"] ? { bolge: tedarikeGit.dataset["bolge"]! } : {}) });
+        tedarikeAc({ mal: tedarikeGit.dataset["mulkTedarik"] ?? "", ...(tedarikeGit.dataset["bolge"] ? { bolge: tedarikeGit.dataset["bolge"]! } : {}) });
         return true;
       }
       const uretimeGit = t.closest<HTMLElement>("[data-mulk-uretim]");
@@ -931,16 +962,17 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       if (ue) {
         if (ue.eylem === "mal-sec") uretimPaneli.malSec(ue.mal);
         else if (ue.eylem === "tesis") tesisteYontemleriAc(ue.tesis, ue.yontem);
+        else if (ue.eylem === "tesis-tedarik") {
+          if (uretimPaneli.tesisTedarikiUygunMu(ue)) tedarikeAc({ mal: ue.mal, bolge: ue.bolge });
+          else bildir("Bu tesisin girdi veya işletme bilgileri değişmiş. Güncel tesisi yeniden incele.", "bilgi");
+        }
         else if (ue.eylem === "teknoloji") {
           if (teknolojiPaneli?.ac(ue.teknoloji)) {
             sekmeIstegi = "teknoloji";
             bekleyenOdak.iste(`[data-teknoloji-kart="${CSS.escape(ue.teknoloji)}"]`);
           } else bildir("Bu araştırmanın bilgisi henüz alınmadı.", "bilgi");
         }
-        else if (tedarikPaneli) {
-          sekmeIstegi = "tedarik";
-          tedarikPaneli.ac({ mal: ue.mal });
-        } else bildir("Tedarik bu bağlantıda kullanılamıyor.", "bilgi");
+        else tedarikeAc({ mal: ue.mal });
         return true;
       }
       const te = tedarikPaneli ? tedarikEylemiOku(t) : null;

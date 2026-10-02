@@ -51,6 +51,32 @@ export interface KamuSiparisParam {
   malAdi: (id: string) => string;
   /** Gerçek komut bağlantısı varlığını entegrasyon katmanı bildirir. */
   destek?: boolean;
+  /** Mevcut Tedarik paneli gerçek mal ve depo seçimini açabiliyorsa true. */
+  tedarikDestegi?: boolean;
+}
+
+export interface KamuTedarikHedefi {
+  ilce: string;
+  siparis: string;
+  bolge: string;
+  mal: string;
+  paketMili: number;
+}
+
+/** Yalnız gerçek ilandaki malın eksik olduğu kendi teslim kaynağına salt okuma geçişi. */
+export function kamuTedarikHedefi(p: Pick<KamuSiparisParam, "ilce" | "ilan" | "kaynaklar" | "bekliyor" | "tedarikDestegi">, bolge?: string): KamuTedarikHedefi | null {
+  const s = p.ilan?.siparis;
+  if (p.tedarikDestegi !== true || p.bekliyor || !p.ilan?.etkin || !s || s.ilce !== p.ilce || s.durum !== "acik" || !s.id || !s.mal || !Number.isSafeInteger(s.kalanPaket) || s.kalanPaket <= 0 || !Number.isSafeInteger(s.paketMili) || s.paketMili <= 0) return null;
+  const kaynak = p.kaynaklar?.find((k) => k.siparis === s.id && (bolge === undefined || k.bolge === bolge));
+  if (!kaynak?.bolge || kaynak.paketMili !== s.paketMili || !Number.isSafeInteger(kaynak.stokMili) || kaynak.stokMili < 0 || kaynak.stokMili >= s.paketMili) return null;
+  return { ilce: p.ilce, siparis: s.id, bolge: kaynak.bolge, mal: s.mal, paketMili: s.paketMili };
+}
+
+/** Görülen hedef yalnız güncel ilan/kendi kaynakla birebir eşleşiyorsa açılabilir. */
+export function kamuTedarikRotasi(p: Parameters<typeof kamuTedarikHedefi>[0], gorulen: KamuTedarikHedefi): { bolge: string; mal: string } | null {
+  const guncel = kamuTedarikHedefi(p, gorulen.bolge);
+  return guncel && guncel.ilce === gorulen.ilce && guncel.siparis === gorulen.siparis && guncel.mal === gorulen.mal && guncel.paketMili === gorulen.paketMili
+    ? { bolge: guncel.bolge, mal: guncel.mal } : null;
 }
 
 const miktar = (mili: number): string => `${sayi(mili / 1000, 3)} birim`;
@@ -103,6 +129,8 @@ export function kamuSiparisHtml(p: KamuSiparisParam): string {
       const attr = kaynak ? ` data-siparis="${esc(s.id)}" data-bolge="${esc(kaynak.bolge)}" data-bedel-mili="${esc(kaynak.bedelMili)}" data-teslim-sirasi="${esc(kaynak.teslimSirasi)}"` : "";
       h += `<button type="button" class="ks-teslim" data-kamu-siparis-eylem="teslim"${attr}${neden ? ' disabled aria-disabled="true"' : ""}>${p.bekliyor ? "Teslim bekleniyor…" : `1 paket teslim et · ${esc(paraMili(bedel))}`}</button>`;
       if (neden) h += `<p class="ks-neden">${esc(neden)}</p>`;
+      const tedarik = kamuTedarikHedefi(p);
+      if (tedarik) h += `<button type="button" class="ks-tedarik" data-kamu-siparis-eylem="tedarik" data-ilce="${esc(tedarik.ilce)}" data-siparis="${esc(tedarik.siparis)}" data-bolge="${esc(tedarik.bolge)}" data-mal="${esc(tedarik.mal)}" data-paket-mili="${tedarik.paketMili}">Bu depoya ${esc(p.malAdi(tedarik.mal))} tedarik et</button><p class="ks-neden">Tedarik emri ve paket teslimi ayrı işlemlerdir. İthalat ücretlidir.</p>`;
       h += '<p class="ipucu-metin">Her teslim bir pakettir. Gösterilen bedel veya sipariş değişirse işlem durur; yeniden inceleyerek teslim et.</p>';
     }
     h += `<details class="ks-detay" data-kamu-siparis-detay="${esc(s.id)}"><summary>İlan ve ödeme kaydı</summary><dl>`;

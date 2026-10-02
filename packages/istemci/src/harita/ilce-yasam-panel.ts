@@ -5,7 +5,8 @@ import { esc, fmt, paraMili, sayi } from "../arayuz/bicim";
 import { ikon } from "../tasarim/ikon";
 import type { DukkanKaresi, TesisSonucu } from "./baglanti";
 import { baskinGorunumuHtml } from "./baskin-gorunum";
-import { kamuSiparisHtml } from "./kamu-siparis";
+import { kamuSiparisHtml, kamuTedarikRotasi } from "./kamu-siparis";
+import type { KamuTedarikHedefi } from "./kamu-siparis";
 import { meclisKatilimHtml } from "./meclis-katilim";
 import "./baskin-gorunum.css";
 import "./kamu-siparis.css";
@@ -147,6 +148,7 @@ export interface IlceYasamPanelParam extends IlceYasamAdlari {
   ilce: () => string | null;
   komut?: (komut: Extract<Komut, { tur: "kamu_teslim" }>) => Promise<TesisSonucu>;
   meclisKomutu?: (komut: Extract<Komut, { tur: "meclis_katil" }>) => Promise<TesisSonucu>;
+  tedarikDestegi?: boolean;
   degisti?: () => void;
 }
 
@@ -185,6 +187,16 @@ export function kamuSiparisEylemiOku(hedef: HTMLElement): KamuSiparisEylemi | nu
   return { ilce, siparis, bolge, bedelMili, teslimSirasi };
 }
 
+function kamuTedarikHedefiOku(hedef: HTMLElement): KamuTedarikHedefi | null {
+  const b = hedef.closest<HTMLButtonElement>('button[data-kamu-siparis-eylem="tedarik"]');
+  if (!b || b.disabled) return null;
+  const ilce = b.closest<HTMLElement>("[data-ilce-kamu-siparis]")?.dataset["ilceKamuSiparis"];
+  const siparis = b.dataset["siparis"], bolge = b.dataset["bolge"], mal = b.dataset["mal"], paket = b.dataset["paketMili"];
+  if (!ilce || b.dataset["ilce"] !== ilce || !siparis || !bolge || !mal || paket === undefined || !/^\d+$/.test(paket)) return null;
+  const paketMili = Number(paket);
+  return Number.isSafeInteger(paketMili) && paketMili > 0 ? { ilce, siparis, bolge, mal, paketMili } : null;
+}
+
 export class IlceYasamPaneli {
   private bekliyor = false;
   private sonuc = "";
@@ -193,6 +205,7 @@ export class IlceYasamPaneli {
   private readonly acikDetaylar = new Set<string>();
   private gorulenTeklif: KamuSiparisEylemi | null = null;
   private gorulenMeclis: MeclisKatilimEylemi | null = null;
+  private gorulenTedarik: KamuTedarikHedefi | null = null;
   private meclisBekliyor = false;
   private meclisSonuc = "";
   private meclisHata = false;
@@ -206,6 +219,7 @@ export class IlceYasamPaneli {
   teklifYakala(hedef: HTMLElement): void {
     this.gorulenTeklif = kamuSiparisEylemiOku(hedef);
     this.gorulenMeclis = meclisKatilimEylemiOku(hedef);
+    this.gorulenTedarik = kamuTedarikHedefiOku(hedef);
   }
 
   eylemOku(hedef: HTMLElement): KamuSiparisEylemi | null {
@@ -222,6 +236,22 @@ export class IlceYasamPaneli {
     return simdiki && gorulen ? gorulen : simdiki;
   }
 
+  /** Görülen ilan/depo hedefi canlı çizimde başka hedefe dönüştürülmez; komut göndermez. */
+  kamuTedarikEylemOku(hedef: HTMLElement): { bolge: string; mal: string } | null {
+    const simdiki = kamuTedarikHedefiOku(hedef), gorulen = this.gorulenTedarik;
+    this.gorulenTedarik = null;
+    if (!simdiki) return null;
+    const i = gorulen ?? simdiki;
+    const ayni = (a: KamuTedarikHedefi, b: KamuTedarikHedefi): boolean => a.ilce === b.ilce && a.siparis === b.siparis && a.bolge === b.bolge && a.mal === b.mal && a.paketMili === b.paketMili;
+    const kare = this.p.kare(), g = ilceYasamGorunumuKur(kare, this.p.ilce());
+    const guncel = g && g.id === i.ilce ? kamuTedarikRotasi({ ilce: g.id, ilan: g.kamuSiparis, kaynaklar: kare?.oyuncu?.kamuTeslim, bekliyor: this.bekliyor || this.meclisBekliyor, tedarikDestegi: this.p.tedarikDestegi }, i) : null;
+    if (!guncel || !ayni(i, simdiki)) {
+      this.bildir(g?.id ?? i.ilce, "Sipariş, stok veya depo bilgisi değişti. Güncel ilanı yeniden incele.");
+      return null;
+    }
+    return { bolge: guncel.bolge, mal: guncel.mal };
+  }
+
   private kartHtml(g: IlceYasamGorunumu): string {
     const kaynaklar = this.p.kare()?.oyuncu?.kamuTeslim;
     const son = this.teslimEdilen;
@@ -236,6 +266,7 @@ export class IlceYasamPaneli {
       hata: this.hata,
       malAdi: this.p.malAdi,
       destek: this.p.komut !== undefined,
+      tedarikDestegi: this.p.tedarikDestegi === true && !this.meclisBekliyor,
     });
     return this.detayAcikliginiKoru(html);
   }
@@ -385,12 +416,12 @@ export class IlceYasamPaneli {
         d?.querySelector<HTMLElement>("summary")?.focus({ preventScroll: true });
       };
     }
-    if (!(aktif instanceof HTMLButtonElement) || !aktif.matches('[data-kamu-siparis-eylem="teslim"]')) return null;
-    const ilce = slot.dataset["ilceKamuSiparis"], siparis = aktif.dataset["siparis"], bolge = aktif.dataset["bolge"];
+    if (!(aktif instanceof HTMLButtonElement) || !aktif.matches('[data-kamu-siparis-eylem="teslim"], [data-kamu-siparis-eylem="tedarik"]')) return null;
+    const ilce = slot.dataset["ilceKamuSiparis"], siparis = aktif.dataset["siparis"], bolge = aktif.dataset["bolge"], eylem = aktif.dataset["kamuSiparisEylem"], mal = aktif.dataset["mal"], paket = aktif.dataset["paketMili"];
     return () => {
       const yeniSlot = kok.querySelector<HTMLElement>("[data-ilce-kamu-siparis]");
       if (!yeniSlot || yeniSlot.dataset["ilceKamuSiparis"] !== ilce) return;
-      const b = [...yeniSlot.querySelectorAll<HTMLButtonElement>('[data-kamu-siparis-eylem="teslim"]')].find((x) => x.dataset["siparis"] === siparis && x.dataset["bolge"] === bolge);
+      const b = [...yeniSlot.querySelectorAll<HTMLButtonElement>('button[data-kamu-siparis-eylem]')].find((x) => x.dataset["kamuSiparisEylem"] === eylem && x.dataset["siparis"] === siparis && x.dataset["bolge"] === bolge && (eylem !== "tedarik" || x.dataset["mal"] === mal && x.dataset["paketMili"] === paket));
       if (b && !b.disabled) b.focus({ preventScroll: true });
     };
   }

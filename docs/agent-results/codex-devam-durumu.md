@@ -2,6 +2,33 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — ortak Ar-Ge ve N1 kaynaklı tedarik
+
+S3 `95b3bef` üstüne mevcut altı uzman üretim/sanayi, lojistik, kamu/yönetim,
+askerî, harita/grafik ve operasyon eksiklerini koddan inceledi.
+[Ortak kalan işler planı](codex-kalan-isler-arge-2026-10-02.md) hazır.
+[N1](codex-n1-kaynakli-tedarik-sozlesmesi.md) ile Üretim hedef yönteminin
+girdileri, kamu siparişinin eksik paket malı ve ordu eğitim maliyeti doğru
+kendi il deposunda Tedarik açıyor; askerî teknoloji eksiği gerçek araştırma
+kartına gidiyor. Görülen kaynak yeniden denetleniyor, uygunsuz veya kaybolan
+depoya sessiz alternatif seçilmiyor. Yeni ekonomi/komut yok; geçişler ithalat,
+teslim, eğitim veya araştırma başlatmıyor. Taslaklar ve onaylar korunuyor.
+
+B6 yalnız `harita-yontem-panel.test.ts -t 'N1'` seçimini çalıştırdı: ilk
+koşuda iki test verisi hatası (içerikte olmayan yöntem kimliği ve callback
+klonlama) düzeltildi; aynı iki vaka yeniden geçti, önceki 12 vaka atlandı.
+Hedef yöntem/tek yöntem, gerçek depo, şebeke-yakıt ayrımı, elektrik reddi,
+geçersiz kaynakta alternatif seçmeme, asker adedi/stok/teknoloji ve kamu
+ilanı/paket/kaynak değişimi kapsandı. İstemci tip kontrolü ve son derleme
+birer kez başarılı. Dünya gzip 392,4KB/400KB, harita 510,9KB, toplam JS
+931,3KB. Root birleşik kaynak incelemesini yaptı. Rutin tarayıcı/ekran ve
+eski/geniş test paketi çalıştırılmadı; DOM tıklama akışı tarayıcıda sınanmadı.
+
+Sonraki sıra: gerçek mevcut değerle oyuncu genelinde bakım düzeyi, haritada
+kesin tesis odağı/durma işareti, ayrı teklifli onarım/sondaj. K2b/PvP/sokak
+varlıkları engelleri ve hazine sınır muhasebesi ayrı kaydedildi; bu teslimde
+sessiz yeni ekonomi veya güvence/seçim kuralı eklenmedi.
+
 ## Güncel teslim — S3 üretim tesisini durdur / başlat
 
 R1 `142bcc4` GitHub'a gönderildi. Kullanıcının son yönüyle rutin ekran alma

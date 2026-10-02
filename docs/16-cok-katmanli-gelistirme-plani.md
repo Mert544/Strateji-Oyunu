@@ -1,5 +1,10 @@
 # Çok katmanlı geliştirme planı — 2 Ekim 2026
 
+> **Güncel ortak sıra:** [Kalan işler — 2 Ekim](agent-results/codex-kalan-isler-arge-2026-10-02.md)
+> ve [devam kaydı](agent-results/codex-devam-durumu.md) son uygulama/engel
+> durumunu tutar. Aşağıdaki “uygulama öncesi”, “mevcut/eksik” ve dalga tabloları
+> ilk planın tarihsel durumudur; bugün tamamlanma kanıtı olarak okunmaz.
+
 > **Uygulama güncellemesi:** D2-0 birleştirme, D2-1 harita kaynak bağlantıları,
 > D2-2 teknoloji erişimi, D2-3 balıkçılık ve D2-4 askerî backend temeli
 > uygulandı. Gerçek sokak karosu yokluğu ve askerî ekranın henüz kapalı olması

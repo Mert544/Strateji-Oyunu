@@ -13,6 +13,10 @@ import { isletmePaneli, mulkHazinePaneli } from "../src/harita/mulk-panel";
 import type { MulkAdlari } from "../src/harita/mulk-panel";
 import { YontemPaneli, yontemEylemiOku } from "../src/harita/yontem-panel";
 import { sebekeBolumuHtml, sebekeFiyatlari, sebekeSatirlari } from "../src/harita/sebeke-gider";
+import { UretimAgiPaneli } from "../src/harita/uretim-agi-panel";
+import { TedarikPaneli, type TedarikDurumu } from "../src/harita/tedarik-panel";
+import { OrduPaneli, type OrduDurumu } from "../src/harita/ordu-panel";
+import { kamuTedarikHedefi, kamuTedarikRotasi, type KamuSiparisParam } from "../src/harita/kamu-siparis";
 
 const ic = icerikTablosu(icerikHam as unknown as IcerikDosyasi, paramHam as unknown as Parametreler);
 
@@ -42,6 +46,86 @@ function kur(yapilar: IsletmeYapisi[], ek: { acik?: ReadonlySet<string> | null; 
   });
   return { p, komutlar, bildirimler, cizim: () => ciz };
 }
+
+describe("N1 kaynaklı gezinme", () => {
+  it("N1 üretim: hedef yöntemin girdisi gerçek kendi depoyu açar; tek yöntem desteklenir, stale/uygunsuz kaynak ve elektrik başka depoya düşmez, komut gönderilmez", () => {
+    let isletme = durum([fabrika(), { ...tek(), yontem: "standart_elektronik" }]);
+    const bolge = "sn_m_ova#ali";
+    const kaynak = (id: string) => ({ id, il: id.split("#")[0]!, ad: id, stoklar: new Map<string, number>(), emirler: [], uygun: true });
+    let tedarik: TedarikDurumu = { simZamani: 0, bolgeler: [kaynak("sn_m_liman#ali"), kaynak(bolge)] };
+    const u = new UretimAgiPaneli({ ic, isletme: () => isletme, acikTeknolojiler: () => new Set(), tedarikDurumu: () => tedarik, degisti: () => {} });
+    const e = { eylem: "tesis-tedarik" as const, tesis: "t12", yontem: "ekmek_firini", mal: "un", bolge };
+    expect(u.tesisTedarikiUygunMu(e)).toBe(true); // Mevcut değirmen yerine incelenen fırının unu.
+    const tekYontem = ic.yontemler.find((y) => y.id === "standart_elektronik")!;
+    const tekGirdi = tekYontem.girdi.find(([mi, q]) => q > 0 && ic.mallar[mi]!.depolanabilir && !ic.param.mulk?.sebeke?.mallar.some((m) => m.mal === ic.mallar[mi]!.id))!;
+    expect(u.tesisTedarikiUygunMu({ ...e, tesis: "t13", yontem: tekYontem.id, mal: ic.mallar[tekGirdi[0]]!.id })).toBe(true);
+    for (const kotu of [{ ...e, mal: "elektrik" }, { ...e, mal: "gida" }, { ...e, bolge: "sn_m_liman#ali" }, { ...e, tesis: "t999" }]) expect(u.tesisTedarikiUygunMu(kotu)).toBe(false);
+    expect(u.tesisTedarikiUygunMu({ ...e, mal: "yakit" })).toBe(false); // Şebeke snapshot'ı bilinmiyor.
+    tedarik.bolgeler[1]!.yakitTedariki = { mal: "yakit", tuketimMiliSaat: 0, stokMiliSaat: 0, sebekeMiliSaat: 0 };
+    expect(u.tesisTedarikiUygunMu({ ...e, mal: "yakit" })).toBe(true); // Bilinen gerçek sıfır desteklidir.
+    const komutlar: unknown[] = [];
+    const p = new TedarikPaneli({ ic, durum: () => tedarik, referans: () => undefined, komut: async (k) => { komutlar.push(k); return { tamam: true }; }, degisti: () => {} });
+    expect(p.ac({ bolge, mal: e.mal })).toBe(true);
+    expect(p.html()).toContain(`value="${bolge}" selected`);
+    expect(p.html()).toContain('value="un" selected');
+    for (const kotu of [{ bolge: "yok#ali", mal: "un" }, { bolge, mal: "elektrik" }]) expect(p.ac(kotu)).toBe(false);
+    expect(p.html()).toContain(`value="${bolge}" selected`);
+    expect(p.html()).toContain('value="un" selected');
+    tedarik.bolgeler[1]!.uygun = false;
+    expect(u.tesisTedarikiUygunMu(e)).toBe(false);
+    tedarik = { ...tedarik, bolgeler: [tedarik.bolgeler[0]!] };
+    expect(u.tesisTedarikiUygunMu(e)).toBe(false);
+    expect(p.ac({ bolge, mal: e.mal })).toBe(false);
+    expect(p.html()).toContain("Seçilen işletmenin bilgisi artık bulunamadı");
+    isletme = durum([]);
+    expect(u.tesisTedarikiUygunMu(e)).toBe(false);
+    expect(komutlar).toEqual([]);
+  });
+
+  it("N1 Ordu/Kamu: yalnız güncel bilinen eksik mal ve kapalı teknolojiye gider, adet/stok/ilan/depo değişince salt okuma hedefi kapanır", () => {
+    const bolge = "sn_m_ova#ali", komutlar: unknown[] = [];
+    const birlik = ic.birlikler.find((b) => b.maliyet.some(([mi, q]) => q > 0 && ic.mallar[mi]!.depolanabilir))!;
+    const [mi, gereken] = birlik.maliyet.find(([m, q]) => q > 0 && ic.mallar[m]!.depolanabilir)!;
+    const mal = ic.mallar[mi]!.id;
+    let d: OrduDurumu = { simZamani: 0, erkenOyunPpm: 1_000_000, teknolojiler: new Set(), bolgeler: [{ id: bolge, ad: "Ova", birlikler: new Map(), stoklar: new Map([[mal, 0]]), kapasite: 12, ordugahSayisi: 1, ikmalPpm: 1_000_000, durus: "normal", partiler: [] }] };
+    const p = new OrduPaneli({ ic, durum: () => d, komut: async (k) => { komutlar.push(k); return { tamam: true }; }, degisti: () => {} });
+    const e = { eylem: "tedarik" as const, bolge, birlik: birlik.id, mal, adet: 1 };
+    expect(p.yonlendirme(e)).toEqual({ eylem: "tedarik", bolge, mal });
+    for (const kotu of [{ ...e, bolge: "yok#ali" }, { ...e, mal: "elektrik" }, { ...e, adet: 0 }, { ...e, adet: 101 }, { ...e, adet: 2 }]) expect(p.yonlendirme(kotu)).toBeNull();
+    for (const stok of [undefined, gereken, Number.NaN, -1]) {
+      d.bolgeler[0]!.stoklar = stok === undefined ? new Map() : new Map([[mal, stok]]);
+      expect(p.yonlendirme(e)).toBeNull();
+    }
+    const tekBirlik = ic.birlikler.find((b) => b.gerekliTeknoloji)!;
+    const tech = { eylem: "teknoloji" as const, bolge, birlik: tekBirlik.id, teknoloji: tekBirlik.gerekliTeknoloji! };
+    expect(p.yonlendirme(tech)).toEqual({ eylem: "teknoloji", teknoloji: tech.teknoloji });
+    d = { ...d, teknolojiler: new Set([tech.teknoloji]) };
+    expect(p.yonlendirme(tech)).toBeNull();
+    d = { ...d, bolgeler: [] };
+    expect(p.yonlendirme(e)).toBeNull();
+
+    const kamu: KamuSiparisParam = { ilce: "sn_m_ova_merkez", bekliyor: false, tedarikDestegi: true, malAdi: (m) => m, ilan: { etkin: true, toplamTeslimMili: 0, toplamOdemeMili: 0, siparis: { id: "kamu:1", ilce: "sn_m_ova_merkez", mal: "gida", paketMili: 1000, hedefPaket: 3, kalanPaket: 3, teslimSirasi: 0, ilanBirimFiyatMili: 90_000, ilanPaketBedeliMili: 90_000, guncelPaketBedeliMili: 80_000, acilisZamani: 0, bitis: 86_400_000, durum: "acik", rezervMili: 270_000, odenenMili: 0, serbestMili: 0 } }, kaynaklar: [{ siparis: "kamu:1", bolge, stokMili: 0, paketMili: 1000, bedelMili: 80_000, teslimSirasi: 0, uygun: false }] };
+    const kopya = (): KamuSiparisParam => ({ ...kamu, ilan: structuredClone(kamu.ilan), kaynaklar: structuredClone(kamu.kaynaklar) });
+    const once = kopya();
+    const gorulen = kamuTedarikHedefi(kamu, bolge)!;
+    expect(gorulen).toEqual({ ilce: kamu.ilce, siparis: "kamu:1", bolge, mal: "gida", paketMili: 1000 });
+    expect(kamuTedarikRotasi(kamu, gorulen)).toEqual({ bolge, mal: "gida" });
+    expect(kamu).toEqual(once);
+    const kapali = kopya(); kapali.ilan!.siparis!.durum = "suresi_doldu";
+    const eskiIlan = kopya(); eskiIlan.kaynaklar![0]!.siparis = "kamu:eski";
+    const stokTam = kopya(); stokTam.kaynaklar![0]!.stokMili = 1000;
+    const yanlisPaket = kopya(); yanlisPaket.kaynaklar![0]!.paketMili = 2000;
+    for (const kotu of [kapali, eskiIlan, stokTam, yanlisPaket, { ...kamu, bekliyor: true }, { ...kamu, kaynaklar: [] }]) {
+      expect(kamuTedarikHedefi(kotu, bolge)).toBeNull();
+      expect(kamuTedarikRotasi(kotu, gorulen)).toBeNull();
+    }
+    const baskaMal = kopya(); baskaMal.ilan!.siparis!.mal = "tahil";
+    expect(kamuTedarikRotasi(baskaMal, gorulen)).toBeNull();
+    expect(kamuTedarikRotasi(kamu, { ...gorulen, ilce: "baska_ilce" })).toBeNull();
+    expect(kamuTedarikHedefi(kamu, "yok#ali")).toBeNull();
+    expect(komutlar).toEqual([]);
+  });
+});
 
 describe("tesis satırı", () => {
   it("çok yöntemli türde biten tesiste 'Yöntemi değiştir' düğmesi (aria-expanded, etiket yapı adıyla); tek yöntemli türde ve yöntemi bilinmeyen tesiste HİÇBİR ŞEY", () => {

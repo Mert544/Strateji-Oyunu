@@ -47,6 +47,12 @@ export interface OrduPanelParam {
 export type OrduEylemi =
   | { eylem: "uret"; bolge: string; birlik: string; adet: string }
   | { eylem: "durus"; bolge: string; durus: OrduDurusu };
+export type OrduYonlendirmeEylemi =
+  | { eylem: "tedarik"; bolge: string; birlik: string; mal: string; adet: number }
+  | { eylem: "teknoloji"; bolge: string; birlik: string; teknoloji: string };
+export type OrduYonlendirmesi =
+  | { eylem: "tedarik"; bolge: string; mal: string }
+  | { eylem: "teknoloji"; teknoloji: string };
 
 const DURUS_ADI: Record<OrduDurusu, string> = { normal: "Normal", savunma: "Savunmada kal", geri_cekil: "Geri çekil" };
 const anahtar = (bolge: string, birlik: string): string => JSON.stringify([bolge, birlik]);
@@ -77,11 +83,26 @@ export function orduEylemiOku(t: HTMLElement): OrduEylemi | null {
   return b.dataset["orduEylem"] === "durus" && (durus === "normal" || durus === "savunma" || durus === "geri_cekil") ? { eylem: "durus", bolge, durus } : null;
 }
 
+/** Eğitim engeline ait görülen hedef; güncel sahiplik ve eksik stok ayrıca controllerda doğrulanır. */
+export function orduYonlendirmeOku(t: HTMLElement): OrduYonlendirmeEylemi | null {
+  const b = t.closest<HTMLButtonElement>("button[data-ordu-gecis]");
+  if (!b || b.disabled) return null;
+  const bolge = b.dataset["bolge"], birlik = b.dataset["birlik"];
+  if (!bolge || !birlik) return null;
+  if (b.dataset["orduGecis"] === "teknoloji") {
+    const teknoloji = b.dataset["teknoloji"];
+    return teknoloji ? { eylem: "teknoloji", bolge, birlik, teknoloji } : null;
+  }
+  const mal = b.dataset["mal"], adet = birlikAdedi(b.dataset["adet"] ?? "");
+  return b.dataset["orduGecis"] === "tedarik" && mal && adet !== null ? { eylem: "tedarik", bolge, birlik, mal, adet } : null;
+}
+
 export class OrduPaneli {
   private readonly girdiler = new Map<string, string>();
   private gonderiliyor = false;
   private sonuc = "";
   private hata = false;
+  private yakalananYonlendirme: OrduYonlendirmeEylemi | null | undefined;
 
   constructor(private readonly p: OrduPanelParam) {}
 
@@ -137,6 +158,58 @@ export class OrduPaneli {
     return null;
   }
 
+  /** Yalnız bilinen yerel stoktan gerçekten eksik, depolanabilir eğitim girdileri. */
+  private eksikMallari(b: OrduBolgesi, birlik: BirlikT, adet: number): string[] {
+    return birlik.maliyet.flatMap(([mi, q]) => {
+      const mal = this.p.ic.mallar[mi], gereken = q * adet;
+      const stok = mal === undefined ? undefined : b.stoklar.get(mal.id);
+      return mal?.depolanabilir === true && Number.isSafeInteger(gereken) && gereken > 0 && stok !== undefined && Number.isSafeInteger(stok) && stok >= 0 && stok < gereken ? [mal.id] : [];
+    });
+  }
+
+  /** Hiç komut göndermez; eylemin güncel kendi işletmesinde hâlâ aynı eğitim engeli olduğunu doğrular. */
+  yonlendirme(e: OrduYonlendirmeEylemi): OrduYonlendirmesi | null {
+    if (this.gonderiliyor) return null;
+    const d = this.p.durum(), b = d?.bolgeler.find((x) => x.id === e.bolge);
+    const birlik = this.p.ic.birlikler.find((x) => x.id === e.birlik);
+    if (!d || !b || !birlik || b.ordugahSayisi < 1) return null;
+    if (e.eylem === "teknoloji") {
+      return birlik.gerekliTeknoloji === e.teknoloji && !d.teknolojiler.has(e.teknoloji) && this.p.ic.teknolojiler.some((t) => t.id === e.teknoloji)
+        ? { eylem: "teknoloji", teknoloji: e.teknoloji } : null;
+    }
+    const adet = birlikAdedi(this.adetMetni(b.id, birlik.id));
+    return adet !== null && adet === e.adet && this.eksikMallari(b, birlik, adet).includes(e.mal)
+      ? { eylem: "tedarik", bolge: b.id, mal: e.mal } : null;
+  }
+
+  /** Pointer/klavye başlangıcında görülen hedef, canlı çizimde başka hedefle değiştirilmez. */
+  teklifYakala(t: HTMLElement): boolean {
+    this.yakalananYonlendirme = undefined;
+    if (!t.closest("button[data-ordu-gecis]")) return false;
+    this.yakalananYonlendirme = orduYonlendirmeOku(t);
+    return true;
+  }
+
+  yonlendirmeOku(t: HTMLElement): OrduYonlendirmeEylemi | null {
+    if (!t.closest("button[data-ordu-gecis]")) return null;
+    const gorulen = this.yakalananYonlendirme;
+    this.yakalananYonlendirme = undefined;
+    const simdiki = orduYonlendirmeOku(t);
+    return gorulen === undefined ? simdiki : JSON.stringify(gorulen) === JSON.stringify(simdiki) ? gorulen : null;
+  }
+
+  private yonlendirmeHtml(b: OrduBolgesi, birlik: BirlikT, d: OrduDurumu, adet: number | null): string {
+    const temel = `data-bolge="${esc(b.id)}" data-birlik="${esc(birlik.id)}"${this.gonderiliyor ? " disabled" : ""}`;
+    const teknoloji = birlik.gerekliTeknoloji;
+    let h = teknoloji !== undefined && !d.teknolojiler.has(teknoloji) && this.p.ic.teknolojiler.some((t) => t.id === teknoloji)
+      ? `<button type="button" class="eylem" data-ordu-gecis="teknoloji" data-teknoloji="${esc(teknoloji)}" ${temel}>Araştırmayı gör</button>` : "";
+    if (adet !== null) for (const mal of this.eksikMallari(b, birlik, adet)) {
+      const ad = this.p.ic.mallar.find((m) => m.id === mal)?.ad ?? mal;
+      h += `<button type="button" class="eylem" data-ordu-gecis="tedarik" data-mal="${esc(mal)}" data-adet="${adet}" ${temel}>${esc(ad)} tedarikine git</button>`;
+    }
+    return h ? `<div class="ord-gecis">${h}</div>` : "";
+  }
+
   private teklifHtml(b: OrduBolgesi, birlik: BirlikT, d: OrduDurumu): string {
     const adet = birlikAdedi(this.adetMetni(b.id, birlik.id));
     const teklif = birlikTeklifi(birlik, adet ?? 1, d.erkenOyunPpm);
@@ -145,7 +218,7 @@ export class OrduPaneli {
     if (adet !== null) h += `<p>Tamamlandıktan sonra ek maaş: ${paraMili(adet * this.p.ic.param.askeri.birlikMaasiSaat, "yukari")}/sa. İkmal ayrıca tüketilir.</p>`;
     const engel = this.engel(b, birlik, adet, d);
     if (engel) h += `<p class="ord-uyari">${esc(engel)}</p>`;
-    return h;
+    return h + this.yonlendirmeHtml(b, birlik, d, adet);
   }
 
   private ikmalHtml(b: OrduBolgesi): string {
@@ -214,10 +287,14 @@ export class OrduPaneli {
     return h;
   }
 
-  /** Form odağı nedeniyle tam çizim ertelenirken yalnız sunucu savunma kartı ve duruşu yenilenir. */
+  /** Form odağı nedeniyle tam çizim ertelenirken güncel savunma ve eğitim engelleri yenilenir. */
   yamala(kok: ParentNode): boolean {
     const d = this.p.durum();
-    if (!d) return false;
+    if (!d) {
+      for (const dugme of kok.querySelectorAll<HTMLButtonElement>("button[data-ordu-gecis]")) dugme.disabled = true;
+      return false;
+    }
+    const yonlendirmeOdaginiGeriKur = this.yonlendirmeOdagiYakala(kok);
     let bulundu = false;
     const baskin = kok.querySelector<HTMLElement>("[data-ordu-baskin]");
     if (baskin) {
@@ -234,6 +311,7 @@ export class OrduPaneli {
       if (!b) {
         slot.innerHTML = '<p class="ipucu-metin">Bu işletmenin savunma bilgisi artık bulunamadı.</p>';
         for (const dugme of panel.querySelectorAll<HTMLButtonElement>("button[data-ordu-eylem='durus']")) dugme.disabled = true;
+        for (const dugme of panel.querySelectorAll<HTMLButtonElement>("button[data-ordu-gecis]")) dugme.disabled = true;
         continue;
       }
       slot.innerHTML = savunmaGorunumuHtml({ savunma: b.savunma, durus: b.durus });
@@ -273,6 +351,7 @@ export class OrduPaneli {
         if (uret) uret.disabled = this.gonderiliyor || this.engel(b, birlik, birlikAdedi(input.value), d) !== null;
       }
     }
+    yonlendirmeOdaginiGeriKur?.();
     return bulundu;
   }
 
@@ -297,8 +376,9 @@ export class OrduPaneli {
 
   odagiYakala(kok: ParentNode): (() => void) | null {
     const baskinGorunumunuGeriKur = this.baskinGorunumunuYakala(kok);
+    const yonlendirmeOdaginiGeriKur = this.yonlendirmeOdagiYakala(kok);
     const a = typeof document === "undefined" ? null : document.activeElement;
-    if (!(a instanceof HTMLInputElement) || !a.hasAttribute("data-ordu-adet")) return baskinGorunumunuGeriKur;
+    if (!(a instanceof HTMLInputElement) || !a.hasAttribute("data-ordu-adet")) return yonlendirmeOdaginiGeriKur === null ? baskinGorunumunuGeriKur : () => { baskinGorunumunuGeriKur?.(); yonlendirmeOdaginiGeriKur(); };
     const bolge = a.dataset["bolge"], birlik = a.dataset["birlik"], bas = a.selectionStart, son = a.selectionEnd;
     this.girdiler.set(anahtar(bolge ?? "", birlik ?? ""), a.value);
     return () => {
@@ -307,6 +387,20 @@ export class OrduPaneli {
       if (!y) return;
       y.focus({ preventScroll: true });
       if (bas !== null && son !== null) y.setSelectionRange(bas, son);
+    };
+  }
+
+  private yonlendirmeOdagiYakala(kok: ParentNode): (() => void) | null {
+    const a = typeof document === "undefined" ? null : document.activeElement;
+    if (a === null || !(a instanceof HTMLElement)) return null;
+    const b = a.closest<HTMLButtonElement>("button[data-ordu-gecis]");
+    if (!b) return null;
+    const gorulen = orduYonlendirmeOku(b);
+    if (!gorulen) return null;
+    return () => {
+      const yenisi = [...kok.querySelectorAll<HTMLButtonElement>("button[data-ordu-gecis]")].find((x) => JSON.stringify(orduYonlendirmeOku(x)) === JSON.stringify(gorulen));
+      if (yenisi) yenisi.focus({ preventScroll: true });
+      else [...kok.querySelectorAll<HTMLInputElement>("input[data-ordu-adet]")].find((x) => x.dataset["bolge"] === gorulen.bolge && x.dataset["birlik"] === gorulen.birlik)?.focus({ preventScroll: true });
     };
   }
 

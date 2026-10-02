@@ -6,7 +6,8 @@ import { IKONLAR, ikon } from "../tasarim/ikon";
 import type { IkonAdi } from "../tasarim/ikon";
 import { yontemSimgesi } from "../tasarim/yontem";
 import type { IsletmeDurumu, IsletmeYapisi } from "./baglanti";
-import { yakitTedarikiHtml } from "./sebeke-gider";
+import { yakitTedarikiHtml, yakitStokOncelikliMi } from "./sebeke-gider";
+import type { TedarikDurumu } from "./tedarik-panel";
 import { uretimTesisleri } from "./uretim-tesisleri";
 import type { UretimTesisi } from "./uretim-tesisleri";
 import { rezervGorunumuHtml } from "./rezerv-gorunum";
@@ -18,6 +19,7 @@ export interface UretimAgiPanelParam {
   acikTeknolojiler: () => ReadonlySet<string> | null;
   yontemDestegi?: boolean;
   yontemBekliyor?: () => boolean;
+  tedarikDurumu?: () => TedarikDurumu | null;
   tesisAdi?: (tesis: Readonly<IsletmeYapisi>) => string;
   ilAdi?: (il: string) => string;
   degisti: () => void;
@@ -26,6 +28,7 @@ export interface UretimAgiPanelParam {
 export type UretimAgiEylemi =
   | { eylem: "mal-sec"; mal: string }
   | { eylem: "tedarik"; mal: string }
+  | { eylem: "tesis-tedarik"; tesis: string; yontem: string; mal: string; bolge: string }
   | { eylem: "teknoloji"; teknoloji: string }
   | { eylem: "tesis"; tesis: string; yontem: string };
 
@@ -34,6 +37,8 @@ export function uretimAgiEylemiOku(hedef: HTMLElement): UretimAgiEylemi | null {
   const dugme = hedef.closest<HTMLElement>("[data-uretim-mal], [data-uretim-tedarik], [data-uretim-teknoloji], [data-uretim-tesis]");
   if (!dugme || dugme.hasAttribute("disabled") || dugme.getAttribute("aria-disabled") === "true") return null;
   const tesis = dugme.dataset["uretimTesis"], yontem = dugme.dataset["uretimYontem"];
+  const girdi = dugme.dataset["uretimTesisTedarik"], bolge = dugme.dataset["uretimBolge"];
+  if (girdi !== undefined) return tesis && yontem && girdi && bolge ? { eylem: "tesis-tedarik", tesis, yontem, mal: girdi, bolge } : null;
   if (tesis !== undefined) return tesis && yontem ? { eylem: "tesis", tesis, yontem } : null;
   const mal = dugme.dataset["uretimMal"];
   if (mal !== undefined) return { eylem: "mal-sec", mal };
@@ -80,7 +85,7 @@ export class UretimAgiPaneli {
   private seciliMal: string;
   private readonly acikTesisler = new Set<string>();
   private malSecimiAcik = false;
-  private gorulenTesis: Extract<UretimAgiEylemi, { eylem: "tesis" }> | null = null;
+  private gorulenTesis: Extract<UretimAgiEylemi, { eylem: "tesis" | "tesis-tedarik" }> | null = null;
 
   constructor(private readonly p: UretimAgiPanelParam) {
     this.seciliMal = p.ic.malIdx["tahil"] !== undefined ? "tahil" : p.ic.mallar[0]?.id ?? "";
@@ -90,13 +95,26 @@ export class UretimAgiPaneli {
 
   teklifYakala(t: HTMLElement): void {
     const e = uretimAgiEylemiOku(t);
-    this.gorulenTesis = e?.eylem === "tesis" ? e : null;
+    this.gorulenTesis = e?.eylem === "tesis" || e?.eylem === "tesis-tedarik" ? e : null;
   }
 
   eylemOku(t: HTMLElement): UretimAgiEylemi | null {
     const e = uretimAgiEylemiOku(t), gorulen = this.gorulenTesis;
     this.gorulenTesis = null;
+    if (gorulen?.eylem === "tesis-tedarik" || (gorulen && e?.eylem === "tesis-tedarik")) return e?.eylem === gorulen?.eylem ? gorulen : null;
     return e?.eylem === "tesis" && gorulen ? gorulen : e;
+  }
+
+  /** İncelenen hedef tarifeyi gerçek tesise bağlar; tüketim veya eksik miktar hesaplamaz. */
+  tesisTedarikiUygunMu(i: Extract<UretimAgiEylemi, { eylem: "tesis-tedarik" }>): boolean {
+    const t = uretimTesisleri(this.p.ic, this.p.isletme(), i.yontem)?.find((x) => x.yapi.anahtar === i.tesis && x.yapi.bolge === i.bolge);
+    if (!t || t.durum === "insaat" || t.durum === "bilgi_eksik" || !t.mevcut) return false;
+    const mi = this.p.ic.malIdx[i.mal], mal = this.p.ic.mallar[mi ?? -1];
+    if (!mal?.depolanabilir || mal.id === "elektrik" || !t.hedef.girdi.some(([m, q]) => m === mi && q > 0)) return false;
+    const bolge = this.p.tedarikDurumu?.()?.bolgeler.find((b) => b.id === i.bolge);
+    if (!bolge?.uygun) return false;
+    const sebeke = this.p.ic.param.mulk?.sebeke?.mallar.some((m) => m.mal === mal.id) === true;
+    return !sebeke || (yakitStokOncelikliMi(this.p.ic, mal.id) && bolge.yakitTedariki?.mal === mal.id);
   }
 
   /** İçerikteki mallardan birini seçer; seçim değiştiyse yeniden çizim ister. */
@@ -159,6 +177,12 @@ export class UretimAgiPaneli {
         h += `<button type="button" class="ua-tesis-git" data-uretim-tesis="${esc(t.yapi.anahtar)}" data-uretim-yontem="${esc(t.hedef.id)}"${!destek || bekliyor ? " disabled" : ""}>Tesiste yöntemleri gör</button>`;
         if (!destek || bekliyor) h += `<p class="ua-tesis-durum">${bekliyor ? "Yöntem işleminin yanıtı bekleniyor." : "Yöntem seçimi bu bağlantıda kullanılamıyor."}</p>`;
       } else if (t.engel) h += `<p class="ua-tesis-durum">${esc(t.engel)}</p>`;
+      const girdiler = t.hedef.girdi.flatMap(([mi, q]) => {
+        const mal = this.p.ic.mallar[mi];
+        if (!mal || q <= 0 || !t.yapi.bolge || !this.tesisTedarikiUygunMu({ eylem: "tesis-tedarik", tesis: t.yapi.anahtar, yontem: t.hedef.id, mal: mal.id, bolge: t.yapi.bolge })) return [];
+        return [`<button type="button" class="ua-tesis-git" data-uretim-tesis="${esc(t.yapi.anahtar)}" data-uretim-yontem="${esc(t.hedef.id)}" data-uretim-tesis-tedarik="${esc(mal.id)}" data-uretim-bolge="${esc(t.yapi.bolge)}">Bu ilde ${esc(mal.ad)} tedarik et</button>`];
+      });
+      if (girdiler.length) h += `<p class="ua-tesis-durum">İncelediğin ${esc(t.hedef.ad)} yönteminin girdileri için tedarik planı aç. Yöntem değişmez; ithalat emri ayrıca verilir.</p>` + girdiler.join("");
       h += '</li>';
     }
     return h + '</ul><p class="ua-tesis-durum">Bir tesis aynı anda tek yöntem çalıştırır; zincirin tüm aşamaları birlikte çalışmaz. Bu düğme yöntemi değiştirmez; seçim ve onay ayrıca yapılır.</p></details>';
@@ -264,7 +288,7 @@ export class UretimAgiPaneli {
     const id = detay?.dataset["uretimTesisler"];
     const malBasligi = detay?.classList.contains("ua-mal-secimi") === true;
     const kart = a.closest<HTMLElement>("[data-uretim-yontem-kart]")?.dataset["uretimYontemKart"];
-    const alanlar = ["data-uretim-mal", "data-uretim-tedarik", "data-uretim-teknoloji", "data-uretim-tesis", "data-uretim-yontem"].filter((alan) => a.hasAttribute(alan)).map((alan) => [alan, a.getAttribute(alan)] as const);
+    const alanlar = ["data-uretim-mal", "data-uretim-tedarik", "data-uretim-teknoloji", "data-uretim-tesis", "data-uretim-yontem", "data-uretim-tesis-tedarik", "data-uretim-bolge"].filter((alan) => a.hasAttribute(alan)).map((alan) => [alan, a.getAttribute(alan)] as const);
     return () => {
       const panel = kok.querySelector<HTMLElement>(".ua-panel");
       if (!panel) return;
