@@ -1,6 +1,6 @@
 # Davet metni taslağı (sahibin onayına; A1)
 
-> Taslak, yalnız belge. Kaynak: A3 `uc-ilce-pilot-davet.md` (ilçe dağılımı), A1 ilk saat akışı (`alfa0-ilk-saat-akisi.md`, 344dd73), kod ve veri `5c8e704`. Üslup: sade, "sen" kipi; **tamamı büyük harfli sözcük yok** (cümle başı ve özel adlar normal yazılır; "büyük harf yok" kuralını bu şekilde okudum, sahip hepsi küçük harf isterse tek geçişle değişir). **Kelime sayısı: ana metin 80 (sınır 150); ilçe varyantları ayrı: Gemlik 10, Körfez 11, Gebze 13.**
+> Taslak, yalnız belge. Kaynak: A3 `uc-ilce-pilot-davet.md` (ilçe dağılımı), A1 ilk saat akışı (`alfa0-ilk-saat-akisi.md`, 344dd73), kod ve veri `5c8e704`. Üslup: sade, "sen" kipi; **tamamı büyük harfli sözcük yok** (cümle başı ve özel adlar normal yazılır; "büyük harf yok" kuralını bu şekilde okudum, sahip hepsi küçük harf isterse tek geçişle değişir). **Kelime sayısı: ana metin 82 (sınır 150); ilçe varyantları ayrı: Gemlik 10, Körfez 11, Gebze 13.**
 
 ## Ana metin
 
@@ -8,7 +8,7 @@ Bölge Stratejisi, kendi çiftliğini, dükkânını ve üretimini adım adım k
 
 İlçeni sen seçersin. Yumuşak bir önerimiz var: {onerilen_ilce}. Başka bir ilçeyi seçmen de olur.
 
-İlk saatte bedava yurdunda çiftliğini kurarsın, tahılını Pazar'da satarsın, sonra ilk dükkânını açarsın. Tahıl satışı saat başlarında işlenir; paran ya da Defter satırın hemen görünmeyebilir.
+İlk saatte bedava yurdunda çiftliğini kurar, dükkânını açar ve tahılını Pazar'da satarsın; sırayı sen seçersin. Tahıl satışı saat başlarında işlenir; paran ya da Defter satırın hemen görünmeyebilir.
 
 Takıldığın ya da şaşırdığın her yeri bize yaz: {destek_eposta}. Adresin yalnız giriş için kullanılır; ayrıntılar ve rıza metni: {kvkk_url}.
 
