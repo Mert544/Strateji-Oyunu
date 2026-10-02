@@ -172,6 +172,9 @@ function diziTasi<T>(eski: readonly T[], e: Esleme, varsayilan: (yeniIndeks: num
  * çağrılır; böylece bozuk bir görüntü yeniden indekslemede sessizce yanlış yere taşınmaz.
  */
 export function dunyaTabloUyumu(tablo: IcerikKimlikTablosu, d: Dunya, hata: GocHatasiUretici): void {
+  for (const [i, c] of (d.mulk?.kamuSiparis?.ilceler ?? []).entries()) {
+    if (!tablo.mallar.includes(c.siparis.mal)) throw hata(`$.mulk.kamuSiparis.ilceler[${i}].siparis.mal`, "kimlik tablosunda olmayan siparis mali");
+  }
   const m = tablo.mallar.length;
   const nb = tablo.birlikler.length;
   const nt = tablo.tesisTurleri.length;

@@ -23,6 +23,7 @@ import { iklimGunluk, tarimKomutu } from "./tarim";
 import { odulVer } from "./odul";
 import { hibeKaydet } from "./paraSayac";
 import { kamuSahibiMi, mulkKomutu, mulkOyuncuAl, mulkOyuncuBul } from "./mulk";
+import { kamuSiparisKuraliUyarla, kamuSiparisSaatlik, kamuTeslim } from "./mulk/kamuSiparis";
 import { markaSifirla } from "./mulk/dukkanKomut";
 import { MULKSUZ_PAKET } from "./mulksuz";
 import { yurtPlanla, yurtUygula } from "./mulk/yurt";
@@ -153,6 +154,7 @@ export class Simulasyon {
     if (tedarikGocu) for (const b of dunya.bolgeler) for (let m = 0; m < b.stoklar.length; m++) stokUzlastir(dunya, b.indeks, m);
     if (goc.yenidenIndekslendi || tedarikGocu) s.baglam.kirlet(s.dunya, tedarikGocu);
     if (tedarikGocu) s.calistirKadar(s.dunya.zaman);
+    if (goc.kuralDegisti && !MULKSUZ_PAKET) kamuSiparisKuraliUyarla(dunya, ic);
     const sonuclar: KomutSonucu[] = [];
     for (const k of kalanGunluk) {
       const r = s.uygula(k);
@@ -222,6 +224,8 @@ export class Simulasyon {
     const d = this.dunya;
     const ctx = this.baglam;
     switch (komut.tur) {
+      case "kamu_teslim":
+        return MULKSUZ_PAKET ? hata("Kamu siparişleri kapalı.") : kamuTeslim(d, ctx, oyuncu, komut);
       case "tesis_insa":
       case "yontem_degistir":
       case "tesis_durum":
@@ -461,6 +465,7 @@ export class Simulasyon {
       case "saatlik_tik": {
         if (!MULKSUZ_PAKET && d.eskiyaTakvim !== undefined && ctx.ic.param.askeri.eskiya?.etkin !== true) eskiyaTakvimiUyarla(d, ctx);
         saatlikTik(d, ctx);
+        if (!MULKSUZ_PAKET) kamuSiparisSaatlik(d, ctx);
         // Sonraki tam saate yeni tık (d.zaman tam saat değilse de sonraki tam saate denk gelir).
         ctx.planla(d, (Math.floor(d.zaman / SAAT) + 1) * SAAT, { tur: "saatlik_tik" });
         break;

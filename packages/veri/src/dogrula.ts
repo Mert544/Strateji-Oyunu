@@ -650,11 +650,17 @@ export function dogrulaParametreler(ham: unknown, icerik?: IcerikDosyasi): Dogru
   if (p.sanayi !== undefined) sanayiKontrolu(hatalar, p.sanayi);
   pazarKontrolu(hatalar, p.pazar);
   if (p.mulk !== undefined) mulkKontrolu(hatalar, p.mulk, p.sanayi);
+  if (p.mulk?.kamuSiparis?.etkin === true && p.mulk.kasa === undefined) {
+    hatalar.push("mulk.kamuSiparis.etkin: mulk.kasa gerekli");
+  }
 
   if (icerik !== undefined) {
     const mallar = new Set(icerik.mallar.map((m) => m.id));
     const birlikler = new Set(icerik.birlikler.map((b) => b.id));
     const depolanamaz = new Set(icerik.mallar.filter((m) => m.depolanabilir === false).map((m) => m.id));
+    if (p.mulk?.kamuSiparis?.etkin === true && (!mallar.has("gida") || depolanamaz.has("gida"))) {
+      hatalar.push("mulk.kamuSiparis.etkin: bilinen ve depolanabilir gida mali gerekli");
+    }
     if (p.lojistik.tasima?.etkin === true && (!mallar.has("yakit") || depolanamaz.has("yakit"))) {
       hatalar.push("lojistik.tasima.etkin: bilinen ve depolanabilir yakit mali gerekli");
     }

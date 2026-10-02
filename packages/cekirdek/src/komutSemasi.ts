@@ -34,6 +34,7 @@ export const KOMUT_SEMASI: { [K in KomutTuru]: KomutBilgisi<K> } = {
   tesis_durum: { yol: "oyuncu", alanlar: { bolge: "kimlik", tesis: "kimlik", aktif: "bayrak" } },
   ticaret_emri: { yol: "oyuncu", alanlar: { bolge: "kimlik", mal: "kimlik", yon: "secim", oranSaat: "miktar" } },
   vergi_ayarla: { yol: "oyuncu", alanlar: { oranPpm: "oran" } },
+  kamu_teslim: { yol: "oyuncu", alanlar: { siparis: "kimlik", bolge: "kimlik", bedelMili: "miktar", teslimSirasi: "adet" } },
   // Tarım
   ekim_plani: { yol: "oyuncu", alanlar: { bolge: "kimlik", ekimPpm: "oran" } },
   gubre_dozu: { yol: "oyuncu", alanlar: { bolge: "kimlik", doz: "secim" } },

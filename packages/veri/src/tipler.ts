@@ -635,6 +635,24 @@ export interface MulkKasaParametreleri {
   haftalikButcePpm: number;
 }
 
+/** Sistem kaynaklı ilçe gıda siparişi; makam yetkisi veya yeni kamu geliri sağlamaz. */
+export interface MulkKamuSiparisParametreleri {
+  /** Yoksa veya false ise yeni sipariş açılmaz; mevcut siparişlerin rezervi çözülür. */
+  etkin: boolean;
+  /** Tek teslim paketindeki gıda (mili-birim); tam birim olması gerekmez. */
+  paketMili: number;
+  /** İlan başına paket üst sınırı; gerçek sayı mevcut kasa bütçesine sığdırılır. */
+  azamiPaket: number;
+  /** İlanın açık kalma süresi (saat). */
+  sureSaat: number;
+  /** Referans fiyat çarpanı (ppm); siparişte donar, canlı fiyat ve kamu tavanı ayrıca uygulanır. */
+  fiyatPpm: number;
+  /** Kapanıştan sonra yeni ilan için bekleme (saat). */
+  tekrarSaat: number;
+  /** Ödenek bulunamadığında yeniden deneme aralığı (saat). */
+  denemeSaat: number;
+}
+
 /** Ek yapı tanımı (mülk kipi). Para mili-para, malzeme mili-birim, oranlar ppm. Etki alanları yoksa yapı etkisizdir (yer tutucu). */
 export interface MulkEkYapiTanimi {
   ad: string;
@@ -919,6 +937,8 @@ export interface MulkParametreleri {
   kamu?: MulkKamuParametreleri;
   /** Kamu kasaları ve para defteri (docs/06 §15.7); yoksa kapalıdır (dünya `mulk.para` taşımaz). */
   kasa?: MulkKasaParametreleri;
+  /** Sistem ilanı ve oyuncu gıda teslimi; yoksa/etkin false ise kapalıdır. Mevcut kasa sınırları korunur. */
+  kamuSiparis?: MulkKamuSiparisParametreleri;
   /** Hareketsizlik merdiveni (docs/11 §7.8): yalnız veri yeri; kurallar sonraki iş. */
   hareketsizlik: {
     uykuGun: number;

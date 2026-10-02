@@ -32,12 +32,32 @@
  * Delta: `kareFarki(eski, yeni)` yalnız değişen bölgeleri (tam girdi olarak), çıkan bölgeleri ve değişen genel alanları
  * verir; `deltaUygula(eski, delta)` yeni kareyi geri kurar (`deltaUygula(a, kareFarki(a, b))` ≡ `b`).
  */
-import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
-import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, KamuGrubu, IlceSeviyesi, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok, YakitTedariki } from "@bolge/cekirdek";
+import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eskiyaIlceGorunumu, eskiyaOyuncuGorunumu, ikmalTalebi, ilceYasamGorunumu, ithalatKirilimi, kamuBloklari, kamuSiparisGorunumu, kamuTeslimGorunumu, savunmaGucuGorunumu, teknolojiYayilimiPpm, ticaretCarpanlari, ticaretEmirYuvasi, ticaretNakitCarpanlari, yerelPazarGorunumu } from "@bolge/cekirdek";
+import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, IlceKamuSiparisGorunumu, KamuGrubu, KamuTeslimGorunumu, IlceSeviyesi, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok, YakitTedariki } from "@bolge/cekirdek";
 
 /** Güvenli çekirdek projeksiyonu: planlı baskınlar ve yabancı özel sonuçlar içermez. Yokluğu eski sunucu/kural bilinmezliğidir. */
 export type PveIlceKaresi = EskiyaIlceGorunumu;
 export type PveOyuncuKaresi = EskiyaOyuncuGorunumu;
+export type KamuSiparisleriKaresi = IlceKamuSiparisGorunumu;
+export type KamuTeslimKaresi = KamuTeslimGorunumu;
+
+/** Kamu ilanına yalnız genel alanlar alınır; defter, üretici ve özel depo kayıtları tel nesnesine taşınmaz. */
+function kamuSiparisTelKaresi(g: KamuSiparisleriKaresi): KamuSiparisleriKaresi {
+  const s = g.siparis;
+  return {
+    etkin: g.etkin,
+    toplamTeslimMili: g.toplamTeslimMili,
+    toplamOdemeMili: g.toplamOdemeMili,
+    ...(s === undefined ? {} : { siparis: {
+      id: s.id, ilce: s.ilce, mal: s.mal, paketMili: s.paketMili,
+      hedefPaket: s.hedefPaket, kalanPaket: s.kalanPaket, teslimSirasi: s.teslimSirasi,
+      ilanBirimFiyatMili: s.ilanBirimFiyatMili, ilanPaketBedeliMili: s.ilanPaketBedeliMili,
+      guncelPaketBedeliMili: s.guncelPaketBedeliMili, acilisZamani: s.acilisZamani, bitis: s.bitis,
+      durum: s.durum, rezervMili: s.rezervMili, odenenMili: s.odenenMili, serbestMili: s.serbestMili,
+      ...(s.kapanisZamani === undefined ? {} : { kapanisZamani: s.kapanisZamani }),
+    } }),
+  };
+}
 
 /** Yalnız izinli görünüm alanları kopyalanır; çekirdek plan/katılımcı nesnesi tel nesnesine yayılmaz. */
 function pveTelOlaylari(olaylar: PveIlceKaresi["olaylar"], simZamani: Ms): PveIlceKaresi["olaylar"] {
@@ -316,6 +336,8 @@ export interface IlceKaresi {
   hucreler: HucreKaresi[];
   /** Yalnız duyurulmuş genel baskınlar. etkin:false kapalı bayraktır; geçmiş sonuçlar korunabilir. */
   pve?: PveIlceKaresi;
+  /** Genel kamu gıda ilanı ve gerçek teslim/ödeme sayaçları. Yokluk eski/kapalı altyapı; etkin:false bilinen kapalı kuraldır. */
+  kamuSiparis?: KamuSiparisleriKaresi;
   /** Kamu arsası hücre sayısı (satılmaz; kamu kuralı kapalıysa ya da ilçede kamu yoksa alan yok). */
   kamuAdet?: number;
   /**
@@ -379,6 +401,8 @@ export type ErkenOyunFormulu = [katilma: Ms, baslangicPpm: number, sabitMs: Ms, 
 
 /** Oyuncunun kendi durumu (yalnız kendisine). */
 export interface OyuncuKaresi {
+  /** Yalnız bu oyuncunun ilgi alanındaki kamu ilanları için kendi il deposundan teslim uygunluğu. [] bilinen kaynak yokluğudur. */
+  kamuTeslim?: KamuTeslimKaresi[];
   id: OyuncuId;
   /** Yalnız kendisinin duyuru ilgisi, gerçekleşmiş sonuçları ve revir hakları; kapalı bayrak geçmiş hakları silmez. */
   pve?: PveOyuncuKaresi;
@@ -870,6 +894,22 @@ export function ilgiKaresiCikar(
         const girdi: IlceKaresi = { id: c.id, il: c.il, seviye: c.seviye, uygunHucre: c.uygunHucre, satilmisHucre: c.satilmisHucre, hucreler: hucreler.get(c.id) ?? [] };
         const pve = eskiyaIlceGorunumu(d, kaynak.ic, c.id);
         if (pve !== undefined) girdi.pve = { etkin: pve.etkin, olaylar: pveTelOlaylari(pve.olaylar, d.zaman).filter((x) => x.ilce === c.id) };
+        const kamuSiparis = kamuSiparisGorunumu(d, kaynak.ic, c.id);
+        if (kamuSiparis !== undefined) {
+          girdi.kamuSiparis = kamuSiparisTelKaresi(kamuSiparis);
+          if (oyuncu !== null && kare.oyuncu !== undefined) {
+            const teslimler = (kare.oyuncu.kamuTeslim ??= []);
+            for (const r of kamuTeslimGorunumu(d, kaynak.ic, oyuncu, c.id)) {
+              const kaynakBolge = d.bolgeler.find((b) => b.id === r.bolge);
+              if (r.siparis !== kamuSiparis.siparis?.id || kaynakBolge?.sahip !== oyuncu || kaynakBolge.merkez === undefined || kaynak.ic.mulk?.ilMerkezi.get(c.il) !== kaynakBolge.merkez) continue;
+              teslimler.push({
+                siparis: r.siparis, bolge: r.bolge, stokMili: r.stokMili, paketMili: r.paketMili,
+                bedelMili: r.bedelMili, teslimSirasi: r.teslimSirasi, uygun: r.uygun,
+                ...(r.engel === undefined ? {} : { engel: r.engel }),
+              });
+            }
+          }
+        }
         const yasam = ilceYasamGorunumu(d as Dunya, kaynak.ic, c.id);
         if (yasam !== undefined) {
           girdi.yasam = { nufus: yasam.nufus, nufusKaynak: yasam.nufusKaynak, talep: yasam.talep, karsilanma: yasam.karsilanma };

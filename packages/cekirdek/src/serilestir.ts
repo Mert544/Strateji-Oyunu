@@ -598,7 +598,7 @@ export function dunyaDogrula(deger: unknown): Dunya {
   }
 
   // Mülk (isteğe bağlı)
-  if (d.mulk !== undefined) mulkDogrula(d.mulk, bolgeler, n);
+  if (d.mulk !== undefined) mulkDogrula(d.mulk, bolgeler, n, tamsayi(d.zaman, "$.zaman", 0), tamsayi(nesne(d.sayac, "$.sayac").kimlik, "$.sayac.kimlik", 0));
 
   // PRNG: tam olarak bilinen akışlar, her biri 4 adet uint32
   const rng = nesne(d.rng, "$.rng");
@@ -743,7 +743,7 @@ function kesinArtan(dizi: unknown[], yol: string, anahtar: (x: Nesne, y: string)
 }
 
 /** Mülk durumu biçimi: sıralı listeler, hücre/ilçe/işletme/oyuncu alanları, işletme düğümü indeksleri. */
-function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
+function mulkDogrula(v: unknown, bolgeler: unknown[], n: number, zaman: number, kimlikSayaci: number): void {
   const m = nesne(v, "$.mulk");
   alanlar(m, "$.mulk", ["hucreler", "ilceler", "isletmeler", "oyuncular"]);
   const hucreler = dizi(m.hucreler, "$.mulk.hucreler");
@@ -895,10 +895,69 @@ function mulkDogrula(v: unknown, bolgeler: unknown[], n: number): void {
     });
   }
   if (m.para !== undefined) paraDogrula(m.para);
+  if (m.kamuSiparis !== undefined) kamuSiparisDogrula(m, zaman, kimlikSayaci);
   // Her işletme düğümü kayıtlı olmalı
   let dugum = 0;
   for (const b of bolgeler) if ((b as Nesne).merkez !== undefined) dugum++;
   if (dugum !== dizi(m.isletmeler, "$.mulk.isletmeler").length) hata("$.mulk.isletmeler", `isletme kaydi ${dizi(m.isletmeler, "$.mulk.isletmeler").length}, isletme dugumu ${dugum}`);
+}
+
+/** Yeni sipariş alt kaydı strict; fiyat üst sınırı ve rezerv her paket için ayrı korunur. */
+function kamuSiparisDogrula(m: Nesne, zaman: number, kimlikSayaci: number): void {
+  const y = "$.mulk.kamuSiparis";
+  const strict = (v: unknown, yol: string, zorunlu: readonly string[], istege: readonly string[] = []): Nesne => {
+    const o = nesne(v, yol);
+    alanlar(o, yol, zorunlu);
+    const izin = new Set([...zorunlu, ...istege]);
+    for (const k of Object.keys(o)) if (!izin.has(k)) hata(`${yol}.${k}`, "bilinmeyen kamu siparis alani");
+    return o;
+  };
+  const p = strict(m.kamuSiparis, y, ["sonDenemeSaati", "ilceler"]);
+  tamsayi(p.sonDenemeSaati, `${y}.sonDenemeSaati`, 0, Math.floor(zaman / SAAT));
+  if (m.para === undefined) hata(y, "kamu siparisi para defteri gerektirir");
+  const para = nesne(m.para, "$.mulk.para");
+  const ids = new Set<string>();
+  const ilceler = new Set((m.ilceler as Nesne[]).map((c) => c.id));
+  kesinArtan(dizi(p.ilceler, `${y}.ilceler`), `${y}.ilceler`, (cv, cy) => {
+    const c = strict(cv, cy, ["ilce", "siparis", "toplamTeslimMili", "toplamOdemeMili"]);
+    const ilce = dize(c.ilce, `${cy}.ilce`);
+    if (!ilceler.has(ilce)) hata(`${cy}.ilce`, "kayitli olmayan ilce");
+    const sy = `${cy}.siparis`;
+    const a = strict(c.siparis, sy, ["id", "ilce", "mal", "paketMili", "hedefPaket", "kalanPaket", "teslimSirasi", "ilanBirimFiyatMili", "ilanPaketBedeliMili", "fiyatPpm", "acilisZamani", "bitis", "tekrarMs", "durum", "rezervMili", "odenenMili", "serbestMili"], ["kapanisZamani"]);
+    const id = dize(a.id, `${sy}.id`);
+    if (!/^kamu:[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(Number(id.slice(5))) || Number(id.slice(5)) >= kimlikSayaci || ids.has(id)) hata(`${sy}.id`, "gecersiz veya tekrarlanan siparis kimligi");
+    ids.add(id);
+    if (a.ilce !== ilce || a.mal !== "gida") hata(sy, "siparis ilcesi/mali uyusmuyor");
+    const paket = tamsayi(a.paketMili, `${sy}.paketMili`, 1, 1000000);
+    const hedef = tamsayi(a.hedefPaket, `${sy}.hedefPaket`, 1, 100);
+    const kalan = tamsayi(a.kalanPaket, `${sy}.kalanPaket`, 0, hedef);
+    const teslim = tamsayi(a.teslimSirasi, `${sy}.teslimSirasi`, 0, hedef);
+    if (kalan + teslim !== hedef) hata(sy, "paket sayilari korunmuyor");
+    const fiyat = tamsayi(a.ilanBirimFiyatMili, `${sy}.ilanBirimFiyatMili`, 1);
+    const bedel = tamsayi(a.ilanPaketBedeliMili, `${sy}.ilanPaketBedeliMili`, 1);
+    if (BigInt(bedel) !== BigInt(paket) * BigInt(fiyat) / 1000n) hata(`${sy}.ilanPaketBedeliMili`, "paket bedeli birim fiyatla uyusmuyor");
+    tamsayi(a.fiyatPpm, `${sy}.fiyatPpm`, 1, PPM);
+    const acilis = tamsayi(a.acilisZamani, `${sy}.acilisZamani`, 0, zaman);
+    const bitis = tamsayi(a.bitis, `${sy}.bitis`, acilis + SAAT, acilis + 168 * SAAT);
+    const tekrar = tamsayi(a.tekrarMs, `${sy}.tekrarMs`, SAAT, 168 * SAAT);
+    if (acilis % SAAT !== 0 || (bitis - acilis) % SAAT !== 0 || tekrar % SAAT !== 0) hata(sy, "siparis saat kosullari tam saat olmali");
+    const rezerv = tamsayi(a.rezervMili, `${sy}.rezervMili`, 0);
+    const odenen = tamsayi(a.odenenMili, `${sy}.odenenMili`, teslim);
+    const serbest = tamsayi(a.serbestMili, `${sy}.serbestMili`, 0);
+    if (BigInt(rezerv) + BigInt(odenen) + BigInt(serbest) !== BigInt(hedef) * BigInt(bedel) || BigInt(odenen) > BigInt(teslim) * BigInt(bedel)) hata(sy, "siparis rezerv/odeme korunumu bozuk");
+    if (a.durum === "acik") {
+      if (kalan === 0 || a.kapanisZamani !== undefined || BigInt(rezerv) !== BigInt(kalan) * BigInt(bedel)) hata(sy, "acik siparis paket/rezerv uyumsuz");
+    } else {
+      if (a.durum !== "tamamlandi" && a.durum !== "suresi_doldu" && a.durum !== "iptal") hata(`${sy}.durum`, "bilinmeyen siparis durumu");
+      const kapanis = tamsayi(a.kapanisZamani, `${sy}.kapanisZamani`, acilis, zaman);
+      if (rezerv !== 0 || (a.durum === "tamamlandi" && kalan !== 0) || (a.durum === "suresi_doldu" && kapanis < bitis)) hata(sy, "kapali siparis rezerv/vade uyumsuz");
+    }
+    tamsayi(c.toplamTeslimMili, `${cy}.toplamTeslimMili`, teslim * paket);
+    tamsayi(c.toplamOdemeMili, `${cy}.toplamOdemeMili`, odenen);
+    const kasa = (para.kasalar as Nesne[]).find((k) => k.sahip === `k:ilce:${ilce}`);
+    if (kasa === undefined || (kasa.rezervOyuncu as number) < rezerv) hata(`${sy}.rezervMili`, "siparisin kasa rezervi yok");
+    return ilce;
+  });
 }
 
 /**
@@ -1006,6 +1065,12 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
     const mk = ic.mulk;
     if (d.mulk.ilceler.length !== mk.ilceler.size) hata("$.mulk.ilceler", `ilce sayisi ${d.mulk.ilceler.length}, fiksturde ${mk.ilceler.size}`);
     if (d.mulk.para !== undefined && mk.p.kasa === undefined) hata("$.mulk.para", "para defteri var ama kasa parametresi (mulk.kasa) tanimli degil");
+    for (const [i, c] of (d.mulk.kamuSiparis?.ilceler ?? []).entries()) {
+      const y = `$.mulk.kamuSiparis.ilceler[${i}]`;
+      if (!mk.ilceler.has(c.ilce)) hata(`${y}.ilce`, "icerikte olmayan siparis ilcesi");
+      const mal = ic.malIndeks[c.siparis.mal];
+      if (mal === undefined || ic.mallar[mal]?.depolanabilir === false) hata(`${y}.siparis.mal`, "siparis mali bilinmeyen veya depolanamaz");
+    }
     // Marka sınırları (G7-3; sartname §11.1-11.2): perakende tanımlıyken sayı <= `marka.hesapBasinaEnFazla`, simge < `simgeSayisi`, renk < `renkSayisi`; perakende yokken marka olamaz.
     d.mulk.oyuncular.forEach((o, i) => {
       if (MULKSUZ_PAKET || o.markalar === undefined) return;

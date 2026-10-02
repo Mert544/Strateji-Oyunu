@@ -169,6 +169,31 @@ pay 3,999 ve şebeke açığı 6,001 birim/saat; yakıt şebeke gideri 621,103 �
 sayfa hatası yok. [Rafineri ve yakıt ekranları](../ekran-goruntuleri/2026-10-02-rafineri/README.md)
 ve gerçek veri özeti kaydedildi. L4 canlı sahne doğrulaması yapılmadı.
 
+### 2 Ekim — K1 kamu gıda siparişi tamamlandı
+
+Kullanıcının devam talimatıyla mevcut altı uzman + koordinatör, L3
+`8af179c` üzerine ilk kamu siparişi dilimine geçti. [Kesin sözleşme](codex-k1-kamu-sozlesmesi.md):
+sistem bütçeyle gıda siparişi açar, oyuncu kendi il ortak deposundan bir
+paket teslim eder; kasa→oyuncu transferi ve ayrılmış ödenek birlikte
+izlenir. Makam yetkisi ve halk refahı bonusu bu dilimde yoktur. Veri A6,
+çekirdek L1, protokol/köprü B2, panel A3, kart B4, tek kontrol B6.
+Üç hedefli `kare-kamu-siparis.test.ts` vakası doğrulandı: gerçek gelirle
+bütçeli ilan, stok/para/rezerv korunumu ve dinamik fiyat farkı; retlerde
+aynı-an dünya değişmezliği; kayıt/kuyruk, parçalı zaman, replay ve kapatma
+kuralında geçmişi koruyarak rezerv iadesi. İlk koşu 2/3 geçti; özel depo
+projeksiyonunda il kimliği ile merkez bölge kimliği varsayımı hatalıydı.
+B2 gerçek `ilMerkezi` eşlemesine çevirdi, yalnız başarısız vaka yenilendi
+ve geçti. Kök/istemci tip kontrolleri ve son derleme başarılı: dünya gzip
+391,9KB/400KB, harita 497,8KB, yürüyüş 109,6KB. Geniş test turu açılmadı.
+B4 ve L1 uygulama tesliminden sonra ajan kullanım sınırına ulaştı; B6
+kontrolleri tamamladı, hazır tek ekran betiğini koordinatör devraldı.
+Gerçek Gebze ithalat geliriyle 6. saatte iki paketlik ilan açıldı. 7. saatte
+İlçe kartından bir paket teslim kabul edildi: stok −1000 mili-gıda, oyuncu
++86625 mili-₺, kasa çıkışı aynı tutar; fiyat farkından 17718 mili-₺ rezerv
+serbest kaldı. Kalan paket 1, rezerv 104343 mili-₺. Sayfa/konsol hatası yok;
+[gerçek teslim ekranı ve veri özeti](../ekran-goruntuleri/2026-10-02-kamu/README.md)
+kaydedildi. Ekran koşusu ilk denemede başarılı, ek test/build turu yok.
+
 ### 2 Ekim — L3 iç taşıma hizmet bedeli tamamlandı
 
 Kullanıcının yedi ajanla devam talimatıyla mevcut altı uzman + koordinatör
@@ -252,10 +277,11 @@ Dükkâna tek başına dönmek yok; harita, üretim, askerî ve kamu hatları ko
 5. Askerî hat: [PvE kararı](codex-d4-pve-karari.md) kalan sayısal sözleşmesini
    kapat; sonra bayraklı ön duyuru/sonuç/serileştirme/özel-genel UI tek dilimi.
    D3 birlik/duruş açık kalır; PvE bayrağı yalnız baskını yönetir.
-6. Kamu hat: mevcut kasa yardımcıları oyuncuya makam/proje harcama yetkisi
-   vermiyor. İlk oynanabilir aday sistem gıda siparişine yerel stok teslimi;
-   katalog/fiyat/takvim/teslim/rezerv sözleşmesi Ar-Ge raporundan kapanacak.
-   Oyuncunun kamu bütçesini yönetmesi ayrı makam/yetki dilimidir.
+6. **K1 tamamlandı:** sistemin bütçeli kamu gıda siparişine kendi il
+   deposundan paket teslimi, fiyat/sıra koruması ve kasa transferi oynanabilir.
+   Sonraki kamu işi makam/yetki/karar döngüsünün açık sözleşmesidir; mevcut
+   tedarikçi eylemi kamu bütçesini yönetme yetkisi değildir. Halk etkisi
+   şimdilik gerçek dağıtıma teslim miktarıdır, refah bonusu yoktur.
 7. Tarayıcı/mobil kabulü birleşik geliştirme sonunda; her adımda yeniden koşma.
 
 ## Gerçek sınırlar ve yeniden başlama

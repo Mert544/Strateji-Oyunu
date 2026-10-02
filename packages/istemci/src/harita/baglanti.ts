@@ -322,6 +322,8 @@ export interface MulkBaglantisi {
   tedarikDurumu?(): TedarikDurumu | null;
   /** Sürekli ithalat emri ver/güncelle; oranSaat mili-birim/saat, 0 emri kaldırır. */
   tedarikKomutu?(i: TicaretEmriIstegi): Promise<TesisSonucu>;
+  /** Kamuya tek gıda paketi teslim eder; görülen bedel ve teslim sırası sunucuda korunur. Kasa/ödenek istemciden alınmaz. */
+  kamuTeslim?(komut: Extract<Komut, { tur: "kamu_teslim" }>): Promise<TesisSonucu>;
   /** Oyuncunun araştırdığı teknolojilerin kimlikleri (yöntem seçicide kilitli/açık ayrımı); bilinmiyorsa tanımsız/null (teknoloji isteyen yöntem kilitli sayılır; teknolojisiz yöntemler her zaman açıktır). */
   acikTeknolojiler?(): ReadonlySet<string> | null;
   /** Sahibinin araştırmaları ve sunucudan alınan yayılım teklifi. */

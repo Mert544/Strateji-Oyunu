@@ -287,6 +287,15 @@
       "tekAlimTavaniPpm": 400000,
       "haftalikButcePpm": 250000
     },
+    "kamuSiparis": {
+      "etkin": true,
+      "paketMili": 1000,
+      "azamiPaket": 3,
+      "sureSaat": 24,
+      "fiyatPpm": 900000,
+      "tekrarSaat": 24,
+      "denemeSaat": 6
+    },
     "kamu": {
       "mahallePaketi": [
         { "tur": "meydan", "hucre": 5 },

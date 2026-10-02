@@ -30,6 +30,22 @@ import type { TedarikDurumu } from "./tedarik-panel";
 
 type Mesaj<T extends SunucuMesaji["tur"]> = Extract<SunucuMesaji, { tur: T }>;
 
+/** Kamu teslim çekirdeğinin oyuncuya yönelik sabit Türkçe retleri; bilinmeyen iç hatalar gösterilmez. */
+const KAMU_TESLIM_RET_MESAJLARI = new Set([
+  "Kamu siparişleri kapalı.",
+  "Sipariş bulunamadı; ilanı yenileyin.",
+  "Teslim sırası değişmiş; ilanı yenileyin.",
+  "Paket bedeli değişmiş; güncel teklifi yenileyin.",
+  "Sipariş kapanmış.",
+  "Siparişin süresi dolmuş.",
+  "Aynı ilin kendi işletme deposundan teslim edin.",
+  "Bu ilçede size ait en az bir arsa gerekiyor.",
+  "İl ortak deposunda tam paket gıda bulunmuyor.",
+  "Güncel paket bedeli sıfır; teslim yapılamıyor.",
+  "Hazine kapasitesi ödemenin tamamını alamıyor.",
+  "Sipariş ödeneği yetersiz.",
+]);
+
 /** Ücret çekirdekten gelir; bütün kendi kaynaklarının aynı çözümüne ait bedeller yalnız toplanır. */
 function tasimaGideriToplami(bolgeler: readonly IlgiKaresi["bolgeler"][number][]): number | undefined {
   const sonCozum = bolgeler[0]?.ozel?.lojistik?.sonCozum;
@@ -337,6 +353,19 @@ export class WsBaglanti implements MulkBaglantisi {
         : /^(gecersiz oran|bilinmeyen mal|ticaret emri yuvasi dolu|bolge oyuncunun degil|bilinmeyen bolge)/.test(r.hata)
           ? pazarHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x))
           : "Tedarik emri uygulanamadı. Güncel durumunu kontrol edip yeniden deneyebilirsin.";
+      return { tamam: false, hata: "sunucu", mesaj };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
+  /** Tek kamu gıda paketinin gerçek teslimi; fiyat ve sıra değişirse sunucu kabul etmez. */
+  async kamuTeslim(komut: Extract<Komut, { tur: "kamu_teslim" }>): Promise<TesisSonucu> {
+    try {
+      const r = await this.komutGonder(komut);
+      if (r.tamam) return { tamam: true, t: r.t };
+      const mesaj = KAMU_TESLIM_RET_MESAJLARI.has(r.hata) ? r.hata
+        : "Kamuya teslim uygulanamadı. Güncel sipariş ve deponu kontrol edip yeniden deneyebilirsin.";
       return { tamam: false, hata: "sunucu", mesaj };
     } catch (e) {
       return this.agHatasi(e);

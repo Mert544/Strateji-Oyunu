@@ -1,6 +1,11 @@
 # İlk kamu dilimi: ilçe gıda siparişine tedarik
 
-**Öneri — uygulanmadı.** Sistem ilçe kasasından tek gıda talebi açar; oyuncu “stoğumu kamuya mı, üretim/ticarete mi ayırayım?” kararını alır. Politik yönetim hazır değildir; proje önceliğini oyuncunun seçmesi ayrı makam/yetki dilimini gerektirir.
+**Güncel durum:** Bu Ar-Ge önerisinin ilk tedarik dilimi K1'de uygulandı;
+[kesin fiyat/rezerv/teslim sözleşmesi](codex-k1-kamu-sozlesmesi.md) ve
+[kabul kaydı](codex-devam-durumu.md) günceldir. Aşağıdaki ilk inceleme
+makam/yetki ile sistem siparişini ayıran kararın gerekçesidir.
+
+**İlk öneri.** Sistem ilçe kasasından tek gıda talebi açar; oyuncu “stoğumu kamuya mı, üretim/ticarete mi ayırayım?” kararını alır. Politik yönetim hazır değildir; proje önceliğini oyuncunun seçmesi ayrı makam/yetki dilimini gerektirir.
 
 **Mevcut / taslak ayrımı.**
 - `packages/cekirdek/src/mulk/kasa.ts:384–494`: alıcı/rezerv/iptal/ödeme/fiyat tavanı çalışır; oyuncuya ödeme kasadan transfer, NPC ödemesi `kamuNpc` lavabosudur. Rezervler toplamdır; projeye özel sahiplik yoktur.

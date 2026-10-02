@@ -358,9 +358,27 @@ const pveOyuncuSemasi = z.object({
     evre: z.enum(["bekliyor", "dondu", "iptal"]),
   })),
 });
+const kamuSiparisSemasi = z.object({
+  etkin: z.boolean(),
+  toplamTeslimMili: tam,
+  toplamOdemeMili: tam,
+  siparis: z.object({
+    id: z.string(), ilce: z.string(), mal: z.string(), paketMili: tam,
+    hedefPaket: tam, kalanPaket: tam, teslimSirasi: tam,
+    ilanBirimFiyatMili: tam, ilanPaketBedeliMili: tam, guncelPaketBedeliMili: tam,
+    acilisZamani: tam, bitis: tam, kapanisZamani: tam.optional(),
+    durum: z.enum(["acik", "tamamlandi", "suresi_doldu", "iptal"]),
+    rezervMili: tam, odenenMili: tam, serbestMili: tam,
+  }).optional(),
+});
+const kamuTeslimSemasi = z.object({
+  siparis: z.string(), bolge: z.string(), stokMili: tam, paketMili: tam,
+  bedelMili: tam, teslimSirasi: tam, uygun: z.boolean(), engel: z.string().optional(),
+});
 const ilceKaresiSemasi = z.object({
   id: z.string(),
   pve: pveIlceSemasi.optional(),
+  kamuSiparis: kamuSiparisSemasi.optional(),
   yasam: z.object({
     nufus: tam,
     nufusKaynak: z.enum(["kayit", "esdeger"]),
@@ -394,6 +412,7 @@ const ilceKaresiSemasi = z.object({
 const oyuncuKaresiSemasi = z.object({
   id: z.string(),
   pve: pveOyuncuSemasi.optional(),
+  kamuTeslim: z.array(kamuTeslimSemasi).optional(),
   hazine: stokFormuluSemasi,
   vergiPpm: tam,
   askeriRezervPpm: tam,

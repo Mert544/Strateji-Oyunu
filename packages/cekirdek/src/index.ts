@@ -177,3 +177,5 @@ export type { InsaatAsamasi, YurtPlani, IlceFiyatDurumu, HucreHaritasi, HucreKay
 export { bolgeIndeksiBul, haritaIndeksi, komsuKenarlariBul } from "./dugum";
 export { kuyrukSuz } from "./kuyruk";
 export { eskimisEsikleriBuda } from "./stok";
+
+export { kamuSiparisGorunumu, kamuTeslimGorunumu } from "./mulk/kamuSiparis";

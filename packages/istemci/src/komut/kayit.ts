@@ -865,6 +865,7 @@ export const komutTanimi = (id: string): KomutTanimi | undefined => ID_INDEKS.ge
 
 /** Komutun Türkçe tek cümlelik özeti (bildirim metni, geçmiş zaman); kayıtta yoksa tür adı. */
 export function komutOzeti(k: Komut, o: OzetBaglami): string {
+  if (k.tur === "kamu_teslim") return "Kamuya gıda teslimi";
   return TUR_INDEKS.get(k.tur)?.ozet(k, o) ?? k.tur;
 }
 

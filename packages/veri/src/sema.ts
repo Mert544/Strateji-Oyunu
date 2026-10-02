@@ -407,6 +407,18 @@ const mulkKasaSema = z
   })
   .strict();
 
+const mulkKamuSiparisSema = z
+  .object({
+    etkin: z.boolean(),
+    paketMili: pozitif.max(1_000_000, "en fazla 1000000 olabilir"),
+    azamiPaket: pozitif.max(100, "en fazla 100 olabilir"),
+    sureSaat: pozitif.max(168, "en fazla 168 olabilir"),
+    fiyatPpm: pozitif.max(1_000_000, "en fazla 1000000 olabilir"),
+    tekrarSaat: pozitif.max(168, "en fazla 168 olabilir"),
+    denemeSaat: pozitif.max(168, "en fazla 168 olabilir"),
+  })
+  .strict();
+
 const odulSema = z
   .object({
     surum: z.literal(1),
@@ -506,6 +518,7 @@ const mulkSema = z
       .optional(),
     kamu: mulkKamuSema.optional(),
     kasa: mulkKasaSema.optional(),
+    kamuSiparis: mulkKamuSiparisSema.optional(),
     hareketsizlik: z
       .object({
         uykuGun: negatifOlmayan,

@@ -74,6 +74,8 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
     yontem: kimlik.optional(),
   }),
   z.object({ tur: z.literal("parsel_birak"), ilce: kimlik, hucreler: z.array(kimlik).max(DIZI_EN_UZUN) }),
+  // Tek kamu gıda paketi; istemcinin gördüğü bedel ve teslim sırası sunucuda yeniden doğrulanır. Kasa, miktar ve fiyat seçilemez.
+  z.object({ tur: z.literal("kamu_teslim"), siparis: kimlik, bolge: kimlik, bedelMili: tamsayi.positive(), teslimSirasi: tamsayi.nonnegative() }),
   // Perakende / dükkân (G7; sartname §10.1): TUTAR, MİKTAR, ORAN, ADET alanı yok (`fiyat` bir kademe indeksidir); protokol yalnız BİÇİM denetler (sözdizimi çekirdektedir: `cekirdek/src/ad.ts`; `ad` 2..24 = `AD_KURALI.min/max`, protokol çekirdeği çalışma zamanında içe aktarmaz: eşitlik protokol testinde bağlanır).
   z.object({ tur: z.literal("dukkan_raf"), dukkan: tamsayi, yuva: tamsayi, mal: z.union([kimlik, z.null()]) }),
   z.object({ tur: z.literal("dukkan_fiyat"), dukkan: tamsayi, yuva: tamsayi, fiyat: tamsayi }),

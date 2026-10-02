@@ -1,0 +1,364 @@
+{
+  "kaynak": "Gerçek standalone oyun + gerçek Türkiye manifesti ve varsayılan Gebze başlangıç paketi. Kasa geliri gerçek gıda ithalatı makasından; sipariş sistem tarafından bütçeyle açıldı. Teslim yerel UI düğmesi ve sunucunun fiyat/sıra teklifiyle yapıldı. Hibe/kasa/stok/DOM enjeksiyonu yok.",
+  "masaustu": [
+    1440,
+    1000
+  ],
+  "hazirlikKomutlari": [
+    {
+      "komut": {
+        "tur": "ticaret_emri",
+        "bolge": "tr_41#ekran",
+        "mal": "gida",
+        "yon": "ithalat",
+        "oranSaat": 75000
+      },
+      "sonuc": {
+        "tur": "komutSonucu",
+        "anahtar": "kamu-hazirlik-1",
+        "seq": 2,
+        "t": 0,
+        "komut": {
+          "tur": "ticaret_emri",
+          "bolge": "tr_41#ekran",
+          "mal": "gida",
+          "yon": "ithalat",
+          "oranSaat": 75000
+        },
+        "sonuc": {
+          "tamam": true
+        },
+        "tekrar": false
+      }
+    },
+    {
+      "komut": {
+        "tur": "ticaret_emri",
+        "bolge": "tr_41#ekran",
+        "mal": "gida",
+        "yon": "ithalat",
+        "oranSaat": 0
+      },
+      "sonuc": {
+        "tur": "komutSonucu",
+        "anahtar": "kamu-hazirlik-2",
+        "seq": 3,
+        "t": 21601000,
+        "komut": {
+          "tur": "ticaret_emri",
+          "bolge": "tr_41#ekran",
+          "mal": "gida",
+          "yon": "ithalat",
+          "oranSaat": 0
+        },
+        "sonuc": {
+          "tamam": true
+        },
+        "tekrar": false
+      }
+    }
+  ],
+  "saatlikGercekDurum": [
+    {
+      "simZamani": 3601000,
+      "hazineMili": 49997256,
+      "gidaStokMili": 199854,
+      "gidaFiyatiMili": 115937,
+      "ilan": {
+        "etkin": true,
+        "toplamTeslimMili": 0,
+        "toplamOdemeMili": 0
+      },
+      "kendiTeslim": []
+    },
+    {
+      "simZamani": 7201000,
+      "hazineMili": 40121598,
+      "gidaStokMili": 274688,
+      "gidaFiyatiMili": 115937,
+      "kamuKasa": {
+        "bakiyeMili": 173905,
+        "vergiToplamMili": 0,
+        "girisToplamMili": 173905,
+        "cikisToplamMili": 0,
+        "rezervMili": 0,
+        "muhasebeT": 7200000
+      },
+      "ilan": {
+        "etkin": true,
+        "toplamTeslimMili": 0,
+        "toplamOdemeMili": 0
+      },
+      "kendiTeslim": []
+    },
+    {
+      "simZamani": 10801000,
+      "hazineMili": 30245940,
+      "gidaStokMili": 349522,
+      "gidaFiyatiMili": 115937,
+      "kamuKasa": {
+        "bakiyeMili": 347810,
+        "vergiToplamMili": 0,
+        "girisToplamMili": 347810,
+        "cikisToplamMili": 0,
+        "rezervMili": 0,
+        "muhasebeT": 10800000
+      },
+      "ilan": {
+        "etkin": true,
+        "toplamTeslimMili": 0,
+        "toplamOdemeMili": 0
+      },
+      "kendiTeslim": []
+    },
+    {
+      "simZamani": 14401000,
+      "hazineMili": 20370282,
+      "gidaStokMili": 424356,
+      "gidaFiyatiMili": 115937,
+      "kamuKasa": {
+        "bakiyeMili": 521715,
+        "vergiToplamMili": 0,
+        "girisToplamMili": 521715,
+        "cikisToplamMili": 0,
+        "rezervMili": 0,
+        "muhasebeT": 14400000
+      },
+      "ilan": {
+        "etkin": true,
+        "toplamTeslimMili": 0,
+        "toplamOdemeMili": 0
+      },
+      "kendiTeslim": []
+    },
+    {
+      "simZamani": 18001000,
+      "hazineMili": 10494624,
+      "gidaStokMili": 499190,
+      "gidaFiyatiMili": 115937,
+      "kamuKasa": {
+        "bakiyeMili": 695620,
+        "vergiToplamMili": 0,
+        "girisToplamMili": 695620,
+        "cikisToplamMili": 0,
+        "rezervMili": 0,
+        "muhasebeT": 18000000
+      },
+      "ilan": {
+        "etkin": true,
+        "toplamTeslimMili": 0,
+        "toplamOdemeMili": 0
+      },
+      "kendiTeslim": []
+    },
+    {
+      "simZamani": 21601000,
+      "hazineMili": 621537,
+      "gidaStokMili": 574005,
+      "gidaFiyatiMili": 115937,
+      "kamuKasa": {
+        "bakiyeMili": 660839,
+        "vergiToplamMili": 0,
+        "girisToplamMili": 869525,
+        "cikisToplamMili": 0,
+        "rezervMili": 208686,
+        "muhasebeT": 21600000
+      },
+      "ilan": {
+        "etkin": true,
+        "toplamTeslimMili": 0,
+        "toplamOdemeMili": 0,
+        "siparis": {
+          "id": "kamu:145",
+          "ilce": "tr_41_gebze",
+          "mal": "gida",
+          "paketMili": 1000,
+          "hedefPaket": 2,
+          "kalanPaket": 2,
+          "teslimSirasi": 0,
+          "ilanBirimFiyatMili": 104343,
+          "ilanPaketBedeliMili": 104343,
+          "guncelPaketBedeliMili": 104343,
+          "acilisZamani": 21600000,
+          "bitis": 108000000,
+          "durum": "acik",
+          "rezervMili": 208686,
+          "odenenMili": 0,
+          "serbestMili": 0
+        }
+      },
+      "kendiTeslim": [
+        {
+          "siparis": "kamu:145",
+          "bolge": "tr_41#ekran",
+          "stokMili": 574005,
+          "paketMili": 1000,
+          "bedelMili": 104343,
+          "teslimSirasi": 0,
+          "uygun": true
+        }
+      ]
+    }
+  ],
+  "before": {
+    "simZamani": 25201000,
+    "hazineMili": 621537,
+    "gidaStokMili": 573527,
+    "gidaFiyatiMili": 96250,
+    "kamuKasa": {
+      "bakiyeMili": 660842,
+      "vergiToplamMili": 0,
+      "girisToplamMili": 869528,
+      "cikisToplamMili": 0,
+      "rezervMili": 208686,
+      "muhasebeT": 25201000
+    },
+    "ilan": {
+      "etkin": true,
+      "toplamTeslimMili": 0,
+      "toplamOdemeMili": 0,
+      "siparis": {
+        "id": "kamu:145",
+        "ilce": "tr_41_gebze",
+        "mal": "gida",
+        "paketMili": 1000,
+        "hedefPaket": 2,
+        "kalanPaket": 2,
+        "teslimSirasi": 0,
+        "ilanBirimFiyatMili": 104343,
+        "ilanPaketBedeliMili": 104343,
+        "guncelPaketBedeliMili": 86625,
+        "acilisZamani": 21600000,
+        "bitis": 108000000,
+        "durum": "acik",
+        "rezervMili": 208686,
+        "odenenMili": 0,
+        "serbestMili": 0
+      }
+    },
+    "kendiTeslim": [
+      {
+        "siparis": "kamu:145",
+        "bolge": "tr_41#ekran",
+        "stokMili": 573527,
+        "paketMili": 1000,
+        "bedelMili": 86625,
+        "teslimSirasi": 0,
+        "uygun": true
+      }
+    ]
+  },
+  "domQuote": {
+    "siparis": "kamu:145",
+    "bolge": "tr_41#ekran",
+    "bedelMili": 86625,
+    "teslimSirasi": 0,
+    "text": "1 paket teslim et · 86 ₺"
+  },
+  "deliveryResponses": [
+    {
+      "tur": "komutSonucu",
+      "anahtar": "pvrse8dj4j-3-n3i1m",
+      "seq": 4,
+      "t": 25201000,
+      "komut": {
+        "tur": "kamu_teslim",
+        "siparis": "kamu:145",
+        "bolge": "tr_41#ekran",
+        "bedelMili": 86625,
+        "teslimSirasi": 0
+      },
+      "sonuc": {
+        "tamam": true
+      },
+      "tekrar": false
+    }
+  ],
+  "after": {
+    "simZamani": 25201000,
+    "hazineMili": 708162,
+    "gidaStokMili": 572527,
+    "gidaFiyatiMili": 96250,
+    "kamuKasa": {
+      "bakiyeMili": 678560,
+      "vergiToplamMili": 0,
+      "girisToplamMili": 869528,
+      "cikisToplamMili": 86625,
+      "rezervMili": 104343,
+      "muhasebeT": 25201000
+    },
+    "ilan": {
+      "etkin": true,
+      "toplamTeslimMili": 1000,
+      "toplamOdemeMili": 86625,
+      "siparis": {
+        "id": "kamu:145",
+        "ilce": "tr_41_gebze",
+        "mal": "gida",
+        "paketMili": 1000,
+        "hedefPaket": 2,
+        "kalanPaket": 1,
+        "teslimSirasi": 1,
+        "ilanBirimFiyatMili": 104343,
+        "ilanPaketBedeliMili": 104343,
+        "guncelPaketBedeliMili": 86625,
+        "acilisZamani": 21600000,
+        "bitis": 108000000,
+        "durum": "acik",
+        "rezervMili": 104343,
+        "odenenMili": 86625,
+        "serbestMili": 17718
+      }
+    },
+    "kendiTeslim": [
+      {
+        "siparis": "kamu:145",
+        "bolge": "tr_41#ekran",
+        "stokMili": 572527,
+        "paketMili": 1000,
+        "bedelMili": 86625,
+        "teslimSirasi": 1,
+        "uygun": true
+      }
+    ]
+  },
+  "uiSnapshot": {
+    "kamuSiparis": {
+      "etkin": true,
+      "toplamTeslimMili": 1000,
+      "toplamOdemeMili": 86625,
+      "siparis": {
+        "id": "kamu:145",
+        "ilce": "tr_41_gebze",
+        "mal": "gida",
+        "paketMili": 1000,
+        "hedefPaket": 2,
+        "kalanPaket": 1,
+        "teslimSirasi": 1,
+        "ilanBirimFiyatMili": 104343,
+        "ilanPaketBedeliMili": 104343,
+        "guncelPaketBedeliMili": 86625,
+        "acilisZamani": 21600000,
+        "bitis": 108000000,
+        "durum": "acik",
+        "rezervMili": 104343,
+        "odenenMili": 86625,
+        "serbestMili": 17718
+      }
+    },
+    "kamuTeslim": [
+      {
+        "siparis": "kamu:145",
+        "bolge": "tr_41#ekran",
+        "stokMili": 572527,
+        "paketMili": 1000,
+        "bedelMili": 86625,
+        "teslimSirasi": 1,
+        "uygun": true
+      }
+    ],
+    "kartMetni": " Kamu gıda siparişiBir paket teslim edildi; ödeme Hazine’ne geçti.Gıda · 1 birim / paketTeslimata açıkSon teslim: 2 Ekim · 06:00Toplam sipariş2 birimKamuya teslim edildi1 birimKalan1 birimİldeki ortak stoğun572,527 birimGüncel paket bedeli86 ₺1 paket teslim et · 86 ₺Her teslim bir pakettir. Gösterilen bedel veya sipariş değişirse işlem durur; yeniden inceleyerek teslim et.İlan ve ödeme kaydıİlanın paket üst bedeli104 ₺Kalan ayrılmış ödenek104 ₺Bu siparişte ödenen86 ₺Serbest kalan ödenek17 ₺İlan: 1 Ekim · 06:00. Paket bedeli, ilan üst bedelini aşmadan güncellenebilir.İlçenin kayıtlı kamu teslimleriToplam dağıtıma teslim1 birimToplam tedarikçi ödemesi86 ₺Kamu dağıtımına teslim edilen gıda ve yapılan ödemelerin kaydıdır."
+  },
+  "pageErrors": [],
+  "consoleErrors": []
+}

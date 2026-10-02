@@ -1,10 +1,13 @@
-/** İlçenin nüfus, hane talebi ve kamu muhasebesi; işletme stoğundan ayrı, salt okunur görünüm. */
+/** İlçenin nüfusu, kamu muhasebesi ve gerçek siparişlere oyuncunun teslimi. */
 import type { IlceKaresi } from "@bolge/protokol";
+import type { Komut } from "@bolge/cekirdek";
 import { esc, fmt, paraMili, sayi } from "../arayuz/bicim";
 import { ikon } from "../tasarim/ikon";
-import type { DukkanKaresi } from "./baglanti";
+import type { DukkanKaresi, TesisSonucu } from "./baglanti";
 import { baskinGorunumuHtml } from "./baskin-gorunum";
+import { kamuSiparisHtml } from "./kamu-siparis";
 import "./baskin-gorunum.css";
+import "./kamu-siparis.css";
 
 export interface IlceYasamGorunumu {
   id: string;
@@ -23,6 +26,7 @@ export interface IlceYasamGorunumu {
   simZamani?: number;
   /** Yalnız seçili ilçenin duyurulmuş genel baskın verisi. */
   pve?: IlceKaresi["pve"];
+  kamuSiparis?: IlceKaresi["kamuSiparis"];
 }
 
 /** Harita seçimi varsa onu korur; seçilen ilçe henüz karede yoksa başka ilçenin sayılarını göstermez. */
@@ -41,6 +45,7 @@ export function ilceYasamGorunumuKur(kare: DukkanKaresi | null, secili: string |
   if (c) {
     g.il = c.il;
     if (c.pve !== undefined) g.pve = c.pve;
+    if (c.kamuSiparis !== undefined) g.kamuSiparis = c.kamuSiparis;
     // Çok hücreli dükkân bir kez sayılır. İnşa hâlindeki dükkân sayılmaz.
     g.dukkanSayisi = new Set(c.hucreler.filter((h) => h[3] >= 0 && h[5] === "dukkan").map((h) => h[3])).size;
     if (c.kamuAdet !== undefined) g.kamuHucre = c.kamuAdet;
@@ -72,7 +77,7 @@ function sayiKarti(ad: string, deger: string, aciklama?: string): string {
 }
 
 /** Belirsiz değerler sıfırla doldurulmaz; kamu kasası verilmediyse kasa bölümü çıkmaz. */
-export function ilceYasamHtml(g: IlceYasamGorunumu | null, ad: IlceYasamAdlari): string {
+export function ilceYasamHtml(g: IlceYasamGorunumu | null, ad: IlceYasamAdlari, ek = ""): string {
   if (!g) return `<div class="iy-bos">${ikon("map-pin", 26)}<p>Haritadan bir ilçe seçerek nüfusunu ve yerel pazarını incele.</p></div>`;
   const yer = ad.ilceAdi(g.id);
   const il = g.il ? ad.ilAdi(g.il) : "";
@@ -124,6 +129,7 @@ export function ilceYasamHtml(g: IlceYasamGorunumu | null, ad: IlceYasamAdlari):
     if (g.muhasebeT !== undefined) s += `<p class="iy-zaman">Tutarlar en az ${sayi(g.muhasebeT / 3_600_000, 2)}. oyun saatine kadar muhasebeleştirilmiş.</p>`;
     s += "</section>";
   }
+  s += ek;
   if (g.benimHucre !== undefined) s += `<p class="iy-isletme">${ikon("building", 16)} Senin işletmen bu ilçede ${fmt(g.benimHucre)} hücreye sahip.</p>`;
   return s + "</section>";
 }
@@ -132,11 +138,170 @@ export interface IlceYasamPanelParam extends IlceYasamAdlari {
   kare: () => DukkanKaresi | null;
   /** Haritada seçilen ilçe; il/bölge görünümünde null. */
   ilce: () => string | null;
+  komut?: (komut: Extract<Komut, { tur: "kamu_teslim" }>) => Promise<TesisSonucu>;
+  degisti?: () => void;
+}
+
+export interface KamuSiparisEylemi {
+  ilce: string;
+  siparis: string;
+  bolge: string;
+  bedelMili: number;
+  teslimSirasi: number;
+}
+
+/** Yalnız oyuncunun gördüğü paket teklifi gönderilir; yeni fiyat sessizce yerine konmaz. */
+export function kamuSiparisEylemiOku(hedef: HTMLElement): KamuSiparisEylemi | null {
+  const b = hedef.closest<HTMLButtonElement>('button[data-kamu-siparis-eylem="teslim"]');
+  if (!b || b.disabled) return null;
+  const ilce = b.closest<HTMLElement>("[data-ilce-kamu-siparis]")?.dataset["ilceKamuSiparis"];
+  const siparis = b.dataset["siparis"], bolge = b.dataset["bolge"];
+  const bedelMili = Number(b.dataset["bedelMili"]), teslimSirasi = Number(b.dataset["teslimSirasi"]);
+  if (!ilce || !siparis || !bolge || !Number.isSafeInteger(bedelMili) || bedelMili <= 0 || !Number.isSafeInteger(teslimSirasi) || teslimSirasi < 0) return null;
+  return { ilce, siparis, bolge, bedelMili, teslimSirasi };
 }
 
 export class IlceYasamPaneli {
+  private bekliyor = false;
+  private sonuc = "";
+  private hata = false;
+  private sonucIlce: string | null = null;
+  private readonly acikDetaylar = new Set<string>();
+  private gorulenTeklif: KamuSiparisEylemi | null = null;
+  /** Kabul edilmiş aynı paket teklifi yeni teslim özeti gelene kadar tekrar gönderilmez. */
+  private teslimEdilen: KamuSiparisEylemi | null = null;
   constructor(private readonly p: IlceYasamPanelParam) {}
+
+  /** Basma ile click arasındaki canlı fiyat güncellemesi görülen bedeli değiştirmez. */
+  teklifYakala(hedef: HTMLElement): void {
+    this.gorulenTeklif = kamuSiparisEylemiOku(hedef);
+  }
+
+  eylemOku(hedef: HTMLElement): KamuSiparisEylemi | null {
+    const simdiki = kamuSiparisEylemiOku(hedef);
+    const gorulen = this.gorulenTeklif;
+    this.gorulenTeklif = null;
+    return simdiki && gorulen && simdiki.ilce === gorulen.ilce && simdiki.siparis === gorulen.siparis && simdiki.bolge === gorulen.bolge ? gorulen : simdiki;
+  }
+
+  private kartHtml(g: IlceYasamGorunumu): string {
+    const kaynaklar = this.p.kare()?.oyuncu?.kamuTeslim;
+    const son = this.teslimEdilen;
+    const html = kamuSiparisHtml({
+      ilce: g.id,
+      ilan: g.kamuSiparis,
+      kaynaklar: kaynaklar?.map((k) => son && k.siparis === son.siparis && k.bolge === son.bolge && k.teslimSirasi === son.teslimSirasi
+        ? { ...k, uygun: false, engel: "Teslim alındı; güncel paket bilgisi bekleniyor." } : k),
+      bekliyor: this.bekliyor,
+      sonuc: this.sonucIlce === g.id ? this.sonuc : "",
+      hata: this.hata,
+      malAdi: this.p.malAdi,
+      destek: this.p.komut !== undefined,
+    });
+    return html.replace(/<details\b([^>]*)>/g, (etiket: string, ozellikler: string) => {
+      const d = /data-kamu-siparis-(detay|toplam)="([^"]*)"/.exec(ozellikler);
+      return d && this.acikDetaylar.has(`${d[1]}:${d[2]}`) ? etiket.slice(0, -1) + " open>" : etiket;
+    });
+  }
+
   html(): string {
-    return ilceYasamHtml(ilceYasamGorunumuKur(this.p.kare(), this.p.ilce()), this.p);
+    if (typeof document !== "undefined") this.detaylariYakala(document);
+    const g = ilceYasamGorunumuKur(this.p.kare(), this.p.ilce());
+    return ilceYasamHtml(g, this.p, g ? `<div data-ilce-kamu-siparis="${esc(g.id)}">${this.kartHtml(g)}</div>` : "");
+  }
+
+  private bildir(ilce: string, mesaj: string, hata = true): void {
+    this.sonucIlce = ilce;
+    this.sonuc = mesaj;
+    this.hata = hata;
+    this.p.degisti?.();
+  }
+
+  async eylem(i: KamuSiparisEylemi): Promise<void> {
+    if (this.bekliyor) return;
+    const kare = this.p.kare();
+    const g = ilceYasamGorunumuKur(kare, this.p.ilce());
+    if (!g || g.id !== i.ilce) {
+      this.bildir(i.ilce, "İlçe seçimi değişti. Görmek istediğin siparişi yeniden aç.");
+      return;
+    }
+    if (!this.p.komut) { this.bildir(g.id, "Bu bağlantıda kamu siparişine teslim yapılamıyor."); return; }
+    const ilan = g.kamuSiparis;
+    const siparis = ilan?.siparis;
+    const kaynak = kare?.oyuncu?.kamuTeslim?.find((k) => k.siparis === i.siparis && k.bolge === i.bolge);
+    if (!ilan?.etkin || !siparis || siparis.id !== i.siparis || siparis.ilce !== g.id || siparis.durum !== "acik" || siparis.kalanPaket <= 0) {
+      this.bildir(g.id, "Bu sipariş şu an teslim almıyor. Güncel ilanı kontrol et."); return;
+    }
+    if (!kaynak) { this.bildir(g.id, "İşletmenin güncel teslim teklifi henüz bilinmiyor."); return; }
+    if (i.bedelMili !== kaynak.bedelMili || i.teslimSirasi !== kaynak.teslimSirasi || i.bedelMili !== siparis.guncelPaketBedeliMili || i.teslimSirasi !== siparis.teslimSirasi || kaynak.paketMili !== siparis.paketMili) {
+      this.bildir(g.id, "Paket bedeli veya kalan miktar değişti. Güncel teklifi inceleyip yeniden teslim et."); return;
+    }
+    if (!kaynak.uygun) { this.bildir(g.id, kaynak.engel || "Bu işletme şu an teslim yapamıyor."); return; }
+    if (kaynak.stokMili < kaynak.paketMili) { this.bildir(g.id, "İlin ortak deposunda bir paket için yeterli stok yok."); return; }
+    if (this.teslimEdilen?.siparis === i.siparis && this.teslimEdilen.bolge === i.bolge && this.teslimEdilen.teslimSirasi === i.teslimSirasi) return;
+    this.bekliyor = true;
+    this.bildir(g.id, "", false);
+    try {
+      const r = await this.p.komut({ tur: "kamu_teslim", siparis: i.siparis, bolge: i.bolge, bedelMili: i.bedelMili, teslimSirasi: i.teslimSirasi });
+      if (r.tamam) this.teslimEdilen = i;
+      this.sonucIlce = g.id;
+      this.hata = !r.tamam;
+      this.sonuc = r.tamam ? "Bir paket teslim edildi; ödeme Hazine’ne geçti." : r.mesaj;
+    } catch {
+      this.sonucIlce = g.id;
+      this.hata = true;
+      this.sonuc = "Teslim sonucu alınamadı. İlan, stok ve Hazine’ni kontrol ederek yeniden deneyebilirsin.";
+    } finally {
+      this.bekliyor = false;
+      this.p.degisti?.();
+    }
+  }
+
+  /** Sipariş kartını dar günceller; diğer İlçe bölümlerini ve seçimi yeniden kurmaz. */
+  yamala(kok: ParentNode): boolean {
+    const g = ilceYasamGorunumuKur(this.p.kare(), this.p.ilce());
+    const slot = kok.querySelector<HTMLElement>("[data-ilce-kamu-siparis]");
+    if (!g || !slot || slot.dataset["ilceKamuSiparis"] !== g.id) return false;
+    this.detaylariYakala(kok);
+    const geriOdak = this.odagiYakala(kok);
+    slot.innerHTML = this.kartHtml(g);
+    geriOdak?.();
+    return true;
+  }
+
+  odagiYakala(kok: ParentNode): (() => void) | null {
+    this.detaylariYakala(kok);
+    const aktif = typeof document === "undefined" ? null : document.activeElement;
+    if (!(aktif instanceof HTMLElement)) return null;
+    const slot = kok.querySelector<HTMLElement>("[data-ilce-kamu-siparis]");
+    if (!slot?.contains(aktif)) return null;
+    if (aktif.matches("summary")) {
+      const detay = aktif.parentElement;
+      const tip = detay?.hasAttribute("data-kamu-siparis-detay") ? "detay" : "toplam";
+      const id = detay?.getAttribute(`data-kamu-siparis-${tip}`);
+      return id === null || id === undefined ? null : () => {
+        const d = [...kok.querySelectorAll<HTMLDetailsElement>(`details[data-kamu-siparis-${tip}]`)].find((x) => x.getAttribute(`data-kamu-siparis-${tip}`) === id);
+        d?.querySelector<HTMLElement>("summary")?.focus({ preventScroll: true });
+      };
+    }
+    if (!(aktif instanceof HTMLButtonElement) || !aktif.matches('[data-kamu-siparis-eylem="teslim"]')) return null;
+    const ilce = slot.dataset["ilceKamuSiparis"], siparis = aktif.dataset["siparis"], bolge = aktif.dataset["bolge"];
+    return () => {
+      const yeniSlot = kok.querySelector<HTMLElement>("[data-ilce-kamu-siparis]");
+      if (!yeniSlot || yeniSlot.dataset["ilceKamuSiparis"] !== ilce) return;
+      const b = [...yeniSlot.querySelectorAll<HTMLButtonElement>('[data-kamu-siparis-eylem="teslim"]')].find((x) => x.dataset["siparis"] === siparis && x.dataset["bolge"] === bolge);
+      if (b && !b.disabled) b.focus({ preventScroll: true });
+    };
+  }
+
+  private detaylariYakala(kok: ParentNode): void {
+    for (const d of kok.querySelectorAll<HTMLDetailsElement>("[data-ilce-kamu-siparis] details")) {
+      const tip = d.hasAttribute("data-kamu-siparis-detay") ? "detay" : "toplam";
+      const id = d.getAttribute(`data-kamu-siparis-${tip}`);
+      if (id === null) continue;
+      const anahtar = `${tip}:${esc(id)}`;
+      if (d.open) this.acikDetaylar.add(anahtar);
+      else this.acikDetaylar.delete(anahtar);
+    }
   }
 }

@@ -481,7 +481,7 @@ export function kamuOdenekOde(d: Dunya, ic: DerlenmisIcerik, kasa: string, tutar
  * hesaplanır, oyuncu durumuna bakmaz): NPC'den ithalatla alıp kamuya satmak HİÇBİR oyuncu için pozitif marj bırakmaz, yalnız gerçek üretim kâr eder.
  * Kalıcı çözüm (sipariş komutları gelince tavanın teslim edenin kendi nakit çarpanıyla denetlenmesi) sonraki iştir. `mal` mal indeksidir.
  */
-export function kamuFiyatTavani(d: Dunya, ic: DerlenmisIcerik, mal: number): Mili {
+export function kamuFiyatTavani(d: Readonly<Dunya>, ic: DerlenmisIcerik, mal: number): Mili {
   const ref = d.pazar.fiyat[mal];
   if (ref === undefined) throw new RangeError(`kamuFiyatTavani: gecersiz mal: ${mal}`);
   const c = ic.mulk?.kamuIthalatCarpaniPpm;
@@ -489,6 +489,6 @@ export function kamuFiyatTavani(d: Dunya, ic: DerlenmisIcerik, mal: number): Mil
   return carpBol(ref, c, PPM);
 }
 
-export function kamuFiyatGecerli(d: Dunya, ic: DerlenmisIcerik, mal: number, birimFiyat: Mili): boolean {
+export function kamuFiyatGecerli(d: Readonly<Dunya>, ic: DerlenmisIcerik, mal: number, birimFiyat: Mili): boolean {
   return Number.isSafeInteger(birimFiyat) && birimFiyat >= 0 && birimFiyat <= kamuFiyatTavani(d, ic, mal);
 }

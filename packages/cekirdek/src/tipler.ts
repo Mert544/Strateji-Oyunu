@@ -872,6 +872,7 @@ export type Komut =
   | { tur: "tesis_durum"; bolge: string; tesis: number; aktif: boolean }
   | { tur: "ticaret_emri"; bolge: string; mal: string; yon: TicaretYonu; oranSaat: Mili }
   | { tur: "vergi_ayarla"; oranPpm: number }
+  | { tur: "kamu_teslim"; siparis: string; bolge: string; bedelMili: number; teslimSirasi: number }
   // Tarım (B1)
   | { tur: "ekim_plani"; bolge: string; ekimPpm: number[] }
   | { tur: "gubre_dozu"; bolge: string; doz: number }
@@ -1060,6 +1061,8 @@ export interface MulkDurumu {
    * mülksüz kip özeti eskisiyle aynı).
    */
   para?: ParaDurumu;
+  /** İlçe başına güncel/son bütçeli gıda siparişi; kural kapalı eski dünyada yoktur. */
+  kamuSiparis?: KamuSiparisDurumu;
 }
 
 // ---------------------------------------------------------------------------
@@ -1240,3 +1243,71 @@ export type MulkKomutu =
   | { tur: "marka_tanimla"; marka: number; ad: string; simge: number; renk: number }
   | { tur: "dukkan_marka"; dukkan: number; marka: number }
   | { tur: "dukkan_yik"; dukkan: number };
+
+/** Kamu gıda siparişinin dondurulmuş koşulları ve kendi ödenek defteri. */
+export type KamuSiparisEvre = "acik" | "tamamlandi" | "suresi_doldu" | "iptal";
+export interface KamuSiparisi {
+  id: string;
+  ilce: string;
+  mal: string;
+  paketMili: number;
+  hedefPaket: number;
+  kalanPaket: number;
+  teslimSirasi: number;
+  ilanBirimFiyatMili: number;
+  ilanPaketBedeliMili: number;
+  fiyatPpm: number;
+  acilisZamani: number;
+  bitis: number;
+  tekrarMs: number;
+  kapanisZamani?: number;
+  durum: KamuSiparisEvre;
+  rezervMili: number;
+  odenenMili: number;
+  serbestMili: number;
+}
+export interface KamuSiparisIlcesi {
+  ilce: string;
+  siparis: KamuSiparisi;
+  toplamTeslimMili: number;
+  toplamOdemeMili: number;
+}
+export interface KamuSiparisDurumu {
+  sonDenemeSaati: number;
+  ilceler: KamuSiparisIlcesi[];
+}
+export interface KamuSiparisGorunumu {
+  id: string;
+  ilce: string;
+  mal: string;
+  paketMili: number;
+  hedefPaket: number;
+  kalanPaket: number;
+  teslimSirasi: number;
+  ilanBirimFiyatMili: number;
+  ilanPaketBedeliMili: number;
+  guncelPaketBedeliMili: number;
+  acilisZamani: number;
+  bitis: number;
+  kapanisZamani?: number;
+  durum: KamuSiparisEvre;
+  rezervMili: number;
+  odenenMili: number;
+  serbestMili: number;
+}
+export interface IlceKamuSiparisGorunumu {
+  etkin: boolean;
+  siparis?: KamuSiparisGorunumu;
+  toplamTeslimMili: number;
+  toplamOdemeMili: number;
+}
+export interface KamuTeslimGorunumu {
+  siparis: string;
+  bolge: string;
+  stokMili: number;
+  paketMili: number;
+  bedelMili: number;
+  teslimSirasi: number;
+  uygun: boolean;
+  engel?: string;
+}
