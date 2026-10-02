@@ -18,10 +18,10 @@
 | Konu | Sahip | Durum | Kanıt |
 |---|---|---|---|
 | **Site adresi ve barındırma** (sağlayıcı, alan adı, `SITE_ADRESI`) | sahip (A-2) | **sahip kararı** | `docs/15` §5; README'de `SITE_ADRESI` zorunlu (9308807). Caddy gerçek makinede **denenmedi** (`docs/15` §4.7) |
-| Pilot dünyası ve açılış kanıtı (`test_<ad>`, gerçek harita + manifest, botsuz) | O3 (P14-7) | kısmen hazır | Yerel açılış kanıtı: `izgara ilce=3`, `/hazir` 200, 3,2 sn (`izgara-varsayilan-o3.md`, 45ac5b0). Docker imajı, pg ve `--uretim` açılışı: **kanıt yok** (bu ortamda Docker yok; sahip kararı/ortam) |
-| **Yedek** (günde bir, 7 yedek) ve geri yükleme tatbikatı | O3 | tanımlı, **tatbikat kanıtı yok** | `alfa0-isletim.md` §4 (compose `yedek` servisi, kontrol listesi adım 14, tatbikat adım 5); gerçek makinede çalıştığına dair kanıt bulunamadı |
-| **İzleme** (ekonomi metrikleri, `/metrik`) | O3 + A2 | kısmen hazır | `bc6087c` (K2-1…K2-6 gauge'ları, `METRIK_TOKEN`); A2 canlı izleme listesi `alfa0-ekonomi-izleme.md` (10 metrik); `/metrik`'te oyuncu ve ilçe etiketi yok (ilçe kararı O2 oynatmasından, `uc-ilce-pilot-davet.md` §3); O3 `metrik-baglanti` 831d4e2 (P12b). **Kim izleyecek ve kırmızıda kime haber gidecek: kanıt yok** |
-| E-posta sağlayıcısı (SMTP/SES) | sahip | **sahip kararı** | `docs/15` §5; giriş postasının gerçek sağlayıcıyla gittiğine dair kanıt yok |
+| Pilot dünyası ve açılış kanıtı (`test_<ad>`, gerçek harita + manifest, botsuz) | O3 (P14-7) | **kısmen** | Docker imajı, pg ve `--uretim` açılışı **denenmedi** (daemon'lu makine yok). Kısmi kanıt: O3 yerel açılış `ed7b4c6` (geliştirme kipi, `/hazir` 200; `izgara ilce=3`, 3,2 sn: `izgara-varsayilan-o3.md`), `pg-dogrula` şema 6/6 @ 2103af0 |
+| **Yedek** (günde bir, 7 yedek) ve geri yükleme tatbikatı | O3 | **tatbikat YOK**; **P13 sonrası** | Tanım: `alfa0-isletim.md` §4 (compose `yedek` servisi, kontrol listesi adım 14, tatbikat adım 5). O3, P12b'den sonra yerel pg'de yapacak: yedek → sil → geri yükle → `/hazir` 200 → `durumOzeti` aynı |
+| **İzleme** (ekonomi metrikleri, `/metrik`) | O3 + A2 (kim/neye/ne sıklıkla tablosu: O2) | metrikler hazır; **sorumlu ve kanal: sahip kararı** | `bc6087c` (K2-1…K2-6 gauge'ları, `METRIK_TOKEN`); A2 canlı izleme listesi `alfa0-ekonomi-izleme.md` (10 metrik); O2 izleme belgesine "kim / neye / ne sıklıkla" tablosu ekleniyor (`b6f338b`); kişi ve alarm kanalı sahip; `/metrik`'te oyuncu ve ilçe etiketi yok (`uc-ilce-pilot-davet.md` §3); O3 `metrik-baglanti` 831d4e2 (P12b) |
+| **E-posta sağlayıcısı** (giriş bağlantısı postası) | **kod işi** (sağlayıcı seçimi: sahip) | **ÇALIŞMIYOR (yok, kod işi)** | SMTP/SES bağdaştırıcısı yok (`deploy/docker-compose.yml:52` @ 45ac5b0); bağlantılar `/veri/posta` dosyasına düşer, elle iletilir. **E-posta girişi buna bağlıdır: davet öncesi kırmızı çizgi** |
 | **Davet listesi** (en çok 200, ilk dalga ~20) | sahip | **sahip kararı** | `docs/15` §5; denetim kontrol listesi adım 12 |
 
 ## Hukuk
@@ -43,7 +43,7 @@
 | **Gözlem formu** (zaman damgalı olaylar, takılma/soru/kilit algısı, 5 soru, ekran işaretleri) | A1 | **hazır** | `takim/a1/pilot-gozlem-formu` 1b4a95d (kuyruk 142) |
 | Pilot paketi (adım betiği S0–S2, ölçüt tablosu) | A1 | **hazır** | `takim/a1/pilot-paketi` 080f670 (kuyruk 43; entegrasyonda değil, **kanıt: kuyruk satırı**) |
 | **Davet metni** | A1 → sahip | taslak, **sahip onayı** | `takim/a1/davet-metni` 893a189 (kuyruk 143); P13 sonrası gider |
-| **Oturum takvimi** (tarih, saat, kişi başına süre, ilçe dağılımı 2/2/1) | sahip + A1 | **kanıt yok** | Dağılım ve ölçüt `uc-ilce-pilot-davet.md` (99912ca); tarih ya da saat içeren belge bulunamadı |
+| **Oturum takvimi** (tarih, saat, kişi başına süre, ilçe dağılımı 2/2/1) | sahip + A1 | **sahip kararı; kanıt yok** | Dağılım ve ölçüt `uc-ilce-pilot-davet.md` (99912ca); tarih ya da saat içeren belge bulunamadı |
 | Pilot ancak ekranlar düzeldikten sonra | O3, K1 | **P14** | P14-8 bağımlılığı: P14-1, P14-3, P14-4, P14-7 (`uc-ilce-p14-paketleri.md`) |
 
-**Davet gitmeden kırmızı çizgiler (kanıt satırlarından):** Pazar'da sat (P13; kod hazır, push bekliyor), inşa bitiş toast'ı (P13 listesinde, kod yok; yetişmezse P14'ün ilk işi), üç ilçe `f4 --uretim` koşusu, KVKK rıza metni + destek e-postası (ikisi şu an boş), barındırma/site adresi ve e-posta sağlayıcısı, bir gözlemci ve oturum takvimi. Yedek tatbikatı ve izleme sorumlusu için kanıt yok.
+**Davet gitmeden kırmızı çizgiler (kanıt satırlarından):** Pazar'da sat (P13; kod hazır, push bekliyor), inşa bitiş toast'ı (P13 listesinde, kod yok; yetişmezse P14'ün ilk işi), **e-posta sağlayıcısı (bağdaştırıcı yok; giriş postası elle iletiliyor)**, üç ilçe `f4 --uretim` koşusu, KVKK rıza metni + destek e-postası (ikisi şu an boş), barındırma/site adresi, bir gözlemci ve oturum takvimi. Yedek tatbikatı yok (P13 sonrası, O3); izleme sorumlusu ve alarm kanalı sahip kararı.
