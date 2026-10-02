@@ -61,7 +61,7 @@ describe("kart HTML", () => {
     expect(sira.every((i) => i >= 0), sira.join()).toBe(true);
     expect([...sira].sort((a, b) => a - b)).toEqual(sira);
     expect(h).toContain('role="radio" aria-checked="true" data-ilce="tr_41_gebze"');
-    expect(h).toContain("Kocaeli&#39;nin en kalabalık ilçesi; sanayi iş bulur.");
+    expect(h).toContain("Kocaeli&#39;nin en kalabalık ilçesi; sanayi için iyi bir yer.");
     expect(h).toContain("Bilinen yanı: Gebze bayram çöreği");
     expect(h).toContain("Açılış önerisi: <b>Sanayi</b>");
     expect(h).toContain("Çiftlikle başla; sonra parça fabrikası kur, çelikten makine parçası üret.");
