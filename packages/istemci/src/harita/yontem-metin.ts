@@ -17,6 +17,8 @@ export const YONTEM_METIN = {
   "yontem.secici.zincir_not": "Ekmek için bir değirmen ve bir fırın gerekir; ikisi ayrı fabrikadır.",
   "yontem.secici.teknoloji": "Teknolojisini açman gerekir.",
   "yontem.secici.sec": "Bir yöntem seç.",
+  /** (ek) Seçili yöntemin girdisi depoda yok (T-3, T3 tesis-rol-metin.md): `{mal}` mal adı (küçük harf). */
+  "yontem.secici.stok_yok": "Depoda {mal} yok.",
   /** (ek) `.ym-isaret` (renk dışı işaret): seçili kartta. */
   "yontem.secici.secili": "Seçili",
   "yontem.etiket": "{yapi} · {yontem}",

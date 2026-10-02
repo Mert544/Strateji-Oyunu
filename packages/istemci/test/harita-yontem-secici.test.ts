@@ -275,3 +275,36 @@ describe("metinler ve ret çevirisi", () => {
     for (const [, a] of YONTEM_RET_KALIPLARI) expect(YONTEM_METIN[a], a).toBeTruthy();
   });
 });
+
+describe("T-3: ahır seçicisi stok notu (girdi depoda yoksa soluk not)", () => {
+  const ahir = yontemSecenekleri(ic, "ahir", HEPSI_ACIK);
+
+  it("girdi malları şebeke malı hariç içerikten (kepekli yöntemde kepek)", () => {
+    const kepek = ahir.find((s) => s.id === "kepek_gubresi")!;
+    expect(kepek.girdiMallar.map((m) => m.id)).toContain("kepek");
+    expect(kepek.girdiMallar.map((m) => m.id)).not.toContain("elektrik"); // şebekeden gelir, depoda aranmaz
+    expect(kepek.girdiMallar.find((m) => m.id === "kepek")!.ad).toBe("kepek");
+  });
+
+  it("seçili yöntemin girdisi depoda yoksa 'Depoda kepek yok.'; stok varsa not yok; stok bilgisi verilmezse not yok", () => {
+    const yok = (): number => 0;
+    expect(seciciNotu({ secenekler: ahir, secili: "kepek_gubresi", stok: yok })).toContain("Depoda kepek yok.");
+    expect(seciciNotu({ secenekler: ahir, secili: "kepek_gubresi", stok: () => 5000 })).not.toContain("Depoda");
+    expect(seciciNotu({ secenekler: ahir, secili: "kepek_gubresi" })).not.toContain("Depoda");
+    // yalnız eksik mal yazılır: tahıl var, kepek yok
+    const n = seciciNotu({ secenekler: ahir, secili: "sut_kepekli", stok: (m) => (m === "tahil" ? 9000 : 0) });
+    expect(n).toContain("Depoda kepek yok.");
+    expect(n).not.toContain("Depoda tahıl yok.");
+  });
+
+  it("seçili olmayan yöntemin eksiği yazılmaz; notta kepeğin kaynağı ipucundan ('değirmen yöntemi verir')", () => {
+    expect(seciciNotu({ secenekler: ahir, secili: "ahir_besi", stok: (m) => (m === "tahil" ? 9000 : 0) })).not.toContain("kepek");
+    expect(seciciNotu({ secenekler: ahir, secili: "kepek_gubresi", stok: () => 0 })).toContain("Kepeği gıda fabrikasının değirmen yöntemi verir.".replace("Kepeği", "kepeği"));
+  });
+
+  it("T3 ipuçları: ahır yöntemleri", () => {
+    expect(ahir.find((s) => s.id === "ahir_besi")!.ipucu).toBe("Tahılın yeter; başlamak için en kolay yöntem.");
+    expect(ahir.find((s) => s.id === "sut_kepekli")!.ipucu).toBe("Tahıl ve kepek ister; süt dükkânında satılır.");
+  });
+});
+

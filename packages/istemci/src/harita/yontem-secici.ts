@@ -42,6 +42,8 @@ export interface YontemSecenegi {
   sebekeli: boolean;
   aciklama?: string;
   ipucu?: string;
+  /** Girdi malları (şebeke malı elektrik/yakıt HARİÇ: o depodan değil şebekeden gelir); depoda yoksa seçili yöntemin altına "Depoda {mal} yok." yazılır (T-3). Mal adı küçük harf. */
+  girdiMallar: ReadonlyArray<{ id: string; ad: string }>;
 }
 
 export interface SeciciBaglami {
@@ -78,6 +80,7 @@ export function yontemSecenekleri(ic: Icerik, turId: string, b: SeciciBaglami): 
       simge: yontemSimgesi(y.id),
       kilitli: tk !== undefined && !b.acik(tk),
       sebekeli,
+      girdiMallar: y.girdi.filter(([mi]) => !b.sebeke?.birim.has(ic.mallar[mi]?.id ?? "")).map(([mi]) => ({ id: ic.mallar[mi]?.id ?? String(mi), ad: (ic.mallar[mi]?.ad ?? String(mi)).toLocaleLowerCase("tr") })),
     };
     if (tk !== undefined) t.teknoloji = { id: tk, ad: ic.teknolojiler[ic.teknolojiIdx[tk] ?? -1]?.ad ?? tk };
     if (gider > 0) t.giderMili = gider;
@@ -137,6 +140,8 @@ export interface SeciciGirdisi {
   kimlik: string;
   /** Başlık (varsayılan: "{yapi} ne yapsın?"); "Yöntemi değiştir" bunu kendi başlığıyla verir. */
   baslik?: string;
+  /** Depodaki mal stoğu (mili-birim); verilirse seçili yöntemin girdisi depoda yoksa soluk not ("Depoda kepek yok."). */
+  stok?: (mal: string) => number;
 }
 
 function kart(s: YontemSecenegi, g: SeciciGirdisi, tab: string | null): string {
@@ -152,12 +157,14 @@ function kart(s: YontemSecenegi, g: SeciciGirdisi, tab: string | null): string {
 }
 
 /** Seçilen yöntemin altındaki durum satırı: seçim yoksa "Bir yöntem seç."; varsa ipucu (T3), şebeke ve zincir notları, tarım notu; son satır "ücret yok" (alt). */
-export function seciciNotu(g: Pick<SeciciGirdisi, "secenekler" | "secili">): string {
+export function seciciNotu(g: Pick<SeciciGirdisi, "secenekler" | "secili" | "stok">): string {
   const s = g.secenekler.find((x) => x.id === g.secili);
   const satirlar: string[] = [];
   if (!s) satirlar.push(yontemMetni("yontem.secici.sec"));
   else {
     if (s.ipucu) satirlar.push(s.ipucu);
+    // T-3: seçilen yöntemin girdisi depoda yoksa soluk not (kaynağı ipucunda: "Kepeği gıda fabrikasının değirmen yöntemi verir.")
+    if (g.stok) for (const m of s.girdiMallar) if (g.stok(m.id) <= 0) satirlar.push(yontemMetni("yontem.secici.stok_yok", { mal: m.ad }));
     if (s.tarimsal) satirlar.push(yontemMetni("yontem.secici.degisir"));
     if (s.sebekeli) satirlar.push(yontemMetni("yontem.secici.sebeke_not"));
     if (ZINCIR_YONTEMLERI.has(s.id)) satirlar.push(yontemMetni("yontem.secici.zincir_not"));
