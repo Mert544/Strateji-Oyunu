@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { IsletmeDurumu } from "../src/harita/baglanti";
-import { isletmePaneli, korumaSatirlari, MULK_SEKMELERI, mulkDikkatMaddeleri, mulkDikkatPaneli, mulkHazinePaneli, mulkMalPaneli } from "../src/harita/mulk-panel";
+import { gecenSureMetni, isletmePaneli, korumaSatirlari, MULK_SEKMELERI, mulkDikkatMaddeleri, mulkDikkatPaneli, mulkHazinePaneli, mulkMalPaneli } from "../src/harita/mulk-panel";
 import type { MulkAdlari } from "../src/harita/mulk-panel";
 
 const SA = 3_600_000;
@@ -53,9 +53,9 @@ describe("mülk kipi paneli", () => {
     expect(h).toContain("İlk yapı indirimi");
     expect(h).not.toMatch(/savaş|devlet|bölge/i);
     expect(h).toContain('data-mulk-ilce="tr_41_gebze"');
-    expect(h).toMatch(/Ahır<\/b><span class="soluk">İnşaat · Temel · 3 sa kaldı · Gebze/);
+    expect(h).toMatch(/Ahır<\/b><span class="soluk">İnşa sürüyor · Temel · 3 sa kaldı\u00a0· Gebze/);
     expect(h).toContain("Çalışıyor · verim %40");
-    expect(h).toContain("Durdu · Kocaeli");
+    expect(h).toContain("Durdu\u00a0· Kocaeli");
     expect(h).toContain("Rehber görevler yakında.");
     // Kalkan bittiyse satır yok; arsasız oyuncu için boş durum
     expect(korumaSatirlari(durum({ korumaBitis: null, ayrilmisBitis: null, indirimliYapiKalan: 0 }))).toBe("");
@@ -68,7 +68,7 @@ describe("mülk kipi paneli", () => {
     expect(l.map((m) => m.tur)).toEqual(["eksik", "bosta", "bitti"]);
     expect(l[0]!.baslik).toBe("Gebze: Çiftlik: girdi eksik");
     expect(l[1]!.baslik).toBe("Kocaeli: Çiftlik boşta");
-    expect(l[2]!.baslik).toBe("Gebze: Çiftlik inşaatı bitti");
+    expect(l[2]!.baslik).toBe("Gebze: Çiftlik hazır.");
     expect(l[2]!.ayrinti).toBe("2 sa önce");
     const h = mulkDikkatPaneli(l);
     expect(h).toContain("Yapılarında ilgilenmen gerekenler");
@@ -99,13 +99,13 @@ describe("mülk kipi paneli", () => {
     expect(h).toContain('data-mulk-buyut="t3"');
     expect(h).toContain('data-mulk-buyut-ilce="tr_41_gebze"');
     expect(h).not.toContain('data-mulk-buyut="t5"'); // büyütmesi sürüyor
-    expect(h).toMatch(/Çiftlik<\/b><span class="soluk">Ölçek büyütme sürüyor · M · 1 sa kaldı · Gebze/);
+    expect(h).toMatch(/Çiftlik<\/b><span class="soluk">Ölçek büyütme sürüyor · M · 1 sa kaldı\u00a0· Gebze/);
     expect(h).toContain("Büyüt</button>");
     // buyut tanımsızsa (bağdaştırıcı desteklemiyor) düğme yok
     expect(isletmePaneli(d, { ad: "Ali" }, ad)).not.toContain("data-mulk-buyut");
     // biten büyütme: "inşaatı" değil "büyütmesi bitti"
     const dikkat = mulkDikkatMaddeleri(durum({ yapilar: [] }), ad, new Map([["9", { tur: "ciftlik", ilce: "tr_41_gebze", bitis: 99 * SA, yukseltme: true }]]));
-    expect(dikkat[0]?.baslik).toBe("Gebze: Çiftlik büyütmesi bitti");
+    expect(dikkat[0]?.baslik).toBe("Gebze: Çiftlik büyütmesi hazır.");
   });
 });
 
@@ -137,12 +137,27 @@ describe("İşletmem dükkân yüzeyleri (G9 iskeleti)", () => {
     const d = l.find((m) => m.baslik.includes("Dükkânın hazır."))!;
     expect(d.baslik).toBe("Gebze: Dükkânın hazır.");
     expect(d.rafaGit).toEqual({ dukkan: 7, etiket: "Rafa git" });
-    expect(l.find((m) => m.baslik.includes("Çiftlik inşaatı bitti"))?.rafaGit).toBeUndefined();
+    expect(l.find((m) => m.baslik.includes("Çiftlik hazır"))?.rafaGit).toBeUndefined();
     const h = mulkDikkatPaneli(l);
     expect(h).toContain('data-eylem="dukkan-rafa" data-dukkan="7">Rafa git</button>');
     // dükkân bulunamazsa ("açık dükkân yok") metin kalır, düğme yok
     const yok = mulkDikkatMaddeleri(durum(), { ...ad, dukkanRafa: () => null }, biten).find((m) => m.baslik.includes("Dükkânın hazır."))!;
     expect(yok.rafaGit).toBeUndefined();
     expect(mulkDikkatPaneli([yok])).not.toContain("Rafa git");
+  });
+
+  it("Yapılar listesinde dükkân yok (yalnız Dükkânlarım'da); Dikkat 'önce' süresi ondalıksız", () => {
+    const dd = durum({ yapilar: [{ anahtar: "i9", durum: "insaat", tur: "dukkan", ilce: "tr_41_gebze", baslangic: 99 * SA, bitis: 103 * SA }, { anahtar: "t3", durum: "tesis", tur: "ciftlik", ilce: "tr_41_gebze", aktif: true, verimPpm: 1_000_000 }] });
+    const h = isletmePaneli(dd, { ad: "Ali" }, ad);
+    expect(h).toContain("Çiftlik</b>");
+    expect(h).not.toContain("Dükkân</b>");
+    expect(gecenSureMetni(36 * 60_000)).toBe("36 dk");
+    expect(gecenSureMetni(96 * 60_000)).toBe("1 sa 36 dk");
+    expect(gecenSureMetni(120 * 60_000)).toBe("2 sa");
+    expect(gecenSureMetni(2.8 * 3_600_000)).toBe("2 sa 48 dk");
+    expect(gecenSureMetni(3.4 * 3_600_000)).toBe("yaklaşık 3 sa");
+    expect(gecenSureMetni(30 * 3_600_000)).toBe("yaklaşık 1 gün");
+    const biten = new Map([["12", { tur: "ciftlik", ilce: "tr_41_gebze", bitis: 98.4 * SA }]]);
+    expect(mulkDikkatMaddeleri(durum(), ad, biten).find((m) => m.baslik.includes("Çiftlik hazır"))?.ayrinti).toBe("1 sa 36 dk önce");
   });
 });

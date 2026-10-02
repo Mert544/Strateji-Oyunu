@@ -41,7 +41,7 @@ function kur(g: DukkanGorunumu | null, sonuc: (k: Komut) => DukkanKomutSonucu = 
       if (bekle !== null) await new Promise<void>((r) => (bekle = r));
       return sonuc(k);
     },
-    param: { kasaBirimSa: 100, pencereSaat: 6, iadeYuzde: "%50", esnafPayiYuzde: "%20" },
+    param: { kasaBirimSa: 100, pencereSaat: 6, iadeYuzde: "%50", esnafPayiYuzde: "%20", normalKademePpm: 1_050_000 },
     degisti: () => degisti++,
     bildir: (m) => bildirimler.push(m),
   };
@@ -50,8 +50,8 @@ function kur(g: DukkanGorunumu | null, sonuc: (k: Komut) => DukkanKomutSonucu = 
 
 describe("dukkanPanelParam", () => {
   it("kasa birimi, pencere süresi, iade ve esnaf payı içerikten; dükkân kuralı yoksa tanımsız", () => {
-    const ic = { param: { mulk: { insaatIptalIadePpm: 500_000, perakende: { fiyatDegisimEnAzSaat: 6, olcekler: [{ kasaMiliSaat: 100_000, giderMiliSaat: 1 }], esnaf: { tabanPayPpm: 200_000 }, dukkanTurleri: [], fiyatKademeleriPpm: [] } } } } as unknown as Icerik;
-    expect(dukkanPanelParam(ic)).toEqual({ kasaBirimSa: 100, pencereSaat: 6, iadeYuzde: "%50", esnafPayiYuzde: "%20" });
+    const ic = { param: { mulk: { insaatIptalIadePpm: 500_000, perakende: { fiyatDegisimEnAzSaat: 6, olcekler: [{ kasaMiliSaat: 100_000, giderMiliSaat: 1 }], esnaf: { tabanPayPpm: 200_000 }, dukkanTurleri: [], fiyatKademeleriPpm: [850_000, 950_000, 1_050_000, 1_150_000], varsayilanFiyatKademesi: 2 } } } } as unknown as Icerik;
+    expect(dukkanPanelParam(ic)).toEqual({ kasaBirimSa: 100, pencereSaat: 6, iadeYuzde: "%50", esnafPayiYuzde: "%20", normalKademePpm: 1_050_000 });
     expect(dukkanPanelParam({ param: { mulk: {} } } as unknown as Icerik)).toBeUndefined();
     expect(dukkanPanelParam({ param: {} } as unknown as Icerik)).toBeUndefined();
   });
@@ -70,6 +70,15 @@ describe("DukkanPaneli: seçim ve raf", () => {
     expect(p.html()).toBe("");
   });
 
+  it('marka düğmesi: markasızken "Marka adı ver", markalıyken "Markayı değiştir"', async () => {
+    const a = kur(gorunum([dukkan()]));
+    await a.p.eylem({ eylem: "dukkan-sec", dukkan: 7 });
+    expect(a.p.html()).toContain('data-eylem="marka-ac">Marka adı ver</button>');
+    const b = kur(gorunum([dukkan({ markaAd: "bereket" })]));
+    await b.p.eylem({ eylem: "dukkan-sec", dukkan: 7 });
+    expect(b.p.html()).toContain('data-eylem="marka-ac">Markayı değiştir</button>');
+  });
+
   it('"Rafa git" (Dikkat): dükkânı her zaman açar (Raf düğmesi gibi kapatmaz)', async () => {
     const { p } = kur(gorunum([dukkan()]));
     await p.eylem({ eylem: "dukkan-rafa", dukkan: 7 });
@@ -86,7 +95,7 @@ describe("DukkanPaneli: seçim ve raf", () => {
     expect(t.p.durum.secici).toBe(1);
     const h = t.p.html();
     expect(h).toContain("Bu yuvaya hangi malı koyacaksın?");
-    expect(h).toContain("Tahıl · stokta 9");
+    expect(h).toMatch(/Tahıl · stokta 9 · 42\s₺/); // referans 40 ₺ x Normal kademe 1,05 (uygulanacak fiyat; taban değil)
     expect(h).not.toContain("Gıda · stokta"); // gida zaten başka yuvada
     await t.p.eylem({ eylem: "mal", mal: "tahil" });
     expect(t.komutlar).toEqual([{ tur: "dukkan_raf", dukkan: 7, yuva: 1, mal: "tahil" }]);

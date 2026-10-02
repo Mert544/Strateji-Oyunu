@@ -242,6 +242,18 @@ describe("D-3 maliyet satırları", () => {
   });
 });
 
+describe("D0 kartı: ilk yapı inşadayken Defter satırı", () => {
+  it('Defter adımı "İlk yapını kur" iken yapı inşadaysa "İlk yapın kuruluyor; bitince Defter\'e işlenir."; değilse eski satır', () => {
+    const adim = { metin: "İlk yapını kur", odulHtml: "", kavram: "ilk_yapi" };
+    const insada = ustKartHtml("dukkan", adim, true, true);
+    expect(insada).toContain("İlk yapın kuruluyor; bitince Defter&#39;e işlenir.");
+    expect(insada).not.toContain("İlk yapını kur");
+    expect(ustKartHtml("dukkan", adim, true, false)).toContain("İlk yapını kur");
+    // başka Defter adımında (ilk satış) inşa durumu satırı değiştirmez
+    expect(ustKartHtml("dukkan", { ...adim, kavram: "ilk_satis", metin: "Çiftliğinin tahılını Pazar'da sat." }, true, true)).toContain("Pazar&#39;da sat");
+  });
+});
+
 describe("D-8 özet: boş rafta gelir/gider/net gizli", () => {
   it("boş rafta yalnız yönlendirme (zarar gibi okunan net yok); dolu rafta dört satır", () => {
     const bos = ozetHtml(dukkan({ yuvalar: [yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null }), yuva({ mal: null })], gelirMiliSa: 0, giderMiliSa: 132_000 }), null);

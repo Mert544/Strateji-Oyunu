@@ -12,6 +12,7 @@ import type { Komut } from "../komut/tipler";
 import type { Icerik } from "../komut/tablo";
 import { rozetAlabilir, rozetNedenleri } from "../veri/rozet";
 import type { RozetTuru } from "../veri/rozet";
+import { mulkMetni } from "../harita/mulk-metin";
 import { esc, sureMetni, yuzde } from "./bicim";
 import { NEDEN_KISA, oyuncuAd } from "./govde";
 import type { GovdeDurumu } from "./govde";
@@ -132,7 +133,7 @@ export function dikkatMaddeleri(g: GovdeDurumu): DikkatMaddesi[] {
     if (n.bitti) {
       const tesisAd = n.bitti.tesisTuru >= 0 ? dizin.tesisTurleri[n.bitti.tesisTuru]?.ad : undefined;
       const once = kare.saat - n.bitti.saat;
-      liste.push({ tur: "bitti", bolge: i, baslik: `${ad}: ${tesisAd ? `${tesisAd} inşaatı` : "inşaat"} bitti`, ayrinti: once >= 1 ? `${sureMetni(once)} önce` : "az önce", sira: -n.bitti.saat });
+      liste.push({ tur: "bitti", bolge: i, baslik: mulkMetni("dikkat.insaat_bitti", { ilce: ad, ad: tesisAd ?? "Yapı" }), ayrinti: once >= 1 ? `${sureMetni(once)} önce` : "az önce", sira: -n.bitti.saat });
     }
   }
   return liste.sort((a, b) => TUR_SIRA[a.tur] - TUR_SIRA[b.tur] || a.sira - b.sira || a.bolge - b.bolge);

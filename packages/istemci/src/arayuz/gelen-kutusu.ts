@@ -7,6 +7,7 @@ import { ikon } from "../tasarim/ikon";
 import type { Dizin, Kare } from "../veri/kare-tipleri";
 import type { BitenInsaat } from "../veri/rozet";
 import { olayEvresi, olaySimgesi } from "../veri/tarim";
+import { mulkMetni } from "../harita/mulk-metin";
 import { esc, sureMetni, tarihSaatMetni } from "./bicim";
 import { oyuncuAd } from "./govde";
 
@@ -50,7 +51,7 @@ export function gelenOlaylari(onceki: Kare | null, simdi: Kare, dizin: Dizin, be
     for (const b of bitenler) {
       if (!b.benim) continue;
       const ad = b.tesisTuru >= 0 ? dizin.tesisTurleri[b.tesisTuru]?.ad : undefined;
-      cikti.push({ saat: b.saat, bolge: b.bolge, tur: "insaat", metin: `${bolgeAd(b.bolge)}: ${ad ? `${ad} inşaatı` : "inşaat"} bitti.` });
+      cikti.push({ saat: b.saat, bolge: b.bolge, tur: "insaat", metin: mulkMetni("dikkat.insaat_bitti", { ilce: bolgeAd(b.bolge), ad: ad ?? "Yapı" }) });
     }
   }
   const tarim = dizin.tarim;

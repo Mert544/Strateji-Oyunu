@@ -90,6 +90,18 @@ export interface MulkAdlari {
 
 const sure = (ms: number): string => sureMetni(Math.max(0, ms) / SAAT);
 
+/**
+ * "önce" için geçen süre (Dikkat): ondalıklı saat ("1,6 sa") yok; 1 saatin altı "N dk", üç saate dek "S sa D dk", sonrası "yaklaşık N sa" (24 saatten sonra gün).
+ * Çağıran "önce" ekler.
+ */
+export function gecenSureMetni(ms: number): string {
+  const dk = Math.max(1, Math.round(Math.max(0, ms) / 60_000));
+  if (dk < 60) return `${dk} dk`;
+  if (dk < 180) return dk % 60 === 0 ? `${dk / 60} sa` : `${Math.floor(dk / 60)} sa ${dk % 60} dk`;
+  const sa = Math.round(dk / 60);
+  return sa < 24 ? `yaklaşık ${sa} sa` : `yaklaşık ${Math.round(sa / 24)} gün`;
+}
+
 /** Dikkat maddeleri (saf): yalnız oyuncunun kendi yapılarından. `bitenler`: bu oturumda biten inşaatlar (anahtar → bitiş). */
 export function mulkDikkatMaddeleri(
   d: IsletmeDurumu,
@@ -114,10 +126,11 @@ export function mulkDikkatMaddeleri(
     // Biten dükkân inşaatı: "Dükkânın hazır." ve raf düzenlemeye giden "Rafa git" (A1 bulgusu: metinler kodda kullanılmıyordu)
     const hazirDukkan = b.tur === "dukkan" && !b.yukseltme ? (ad.dukkanRafa?.(b.ilce) ?? null) : null;
     if (b.tur === "dukkan" && !b.yukseltme) {
-      l.push({ tur: "bitti", baslik: `${yer}${dukkanMetni("dukkan.D4.hazir")}`, ayrinti: t - b.bitis >= SAAT ? `${sure(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis, ...(hazirDukkan !== null ? { rafaGit: { dukkan: hazirDukkan, etiket: dukkanMetni("dukkan.D4.dugme_rafa_git") } } : {}) });
+      l.push({ tur: "bitti", baslik: `${yer}${dukkanMetni("dukkan.D4.hazir")}`, ayrinti: t - b.bitis >= SAAT ? `${gecenSureMetni(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis, ...(hazirDukkan !== null ? { rafaGit: { dukkan: hazirDukkan, etiket: dukkanMetni("dukkan.D4.dugme_rafa_git") } } : {}) });
       continue;
     }
-    l.push({ tur: "bitti", baslik: `${yer}${ad.yapi(b.tur)} ${b.yukseltme ? "büyütmesi" : "inşaatı"} bitti`, ayrinti: t - b.bitis >= SAAT ? `${sure(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis });
+    const yapiAd = `${ad.yapi(b.tur)}${b.yukseltme ? " büyütmesi" : ""}`;
+    l.push({ tur: "bitti", baslik: b.ilce ? mulkMetni("dikkat.insaat_bitti", { ilce: ad.ilce(b.ilce), ad: yapiAd }) : `${yapiAd} hazır.`, ayrinti: t - b.bitis >= SAAT ? `${gecenSureMetni(t - b.bitis)} önce` : "az önce", ...(b.ilce ? { ilce: b.ilce } : {}), sira: -b.bitis });
   }
   l.push(...dukkan);
   return l.sort((a, b) => TUR_SIRA[a.tur] - TUR_SIRA[b.tur] || a.sira - b.sira);
@@ -168,7 +181,7 @@ function yapiDurumu(y: IsletmeYapisi, t: number): string {
   if (y.durum === "insaat" && y.yukseltme) return `Ölçek büyütme sürüyor${y.yukseltme.olcek ? ` · ${OLCEK_AD[y.yukseltme.olcek]}` : ""}${y.bitis !== undefined && y.bitis > t ? ` · ${sure(y.bitis - t)} kaldı` : ""}`;
   if (y.durum === "insaat") {
     const a = yapiAsamasi(y, t, SAAT);
-    return `İnşaat · ${ASAMA_ADI[a]}${y.bitis !== undefined && y.bitis > t ? ` · ${sure(y.bitis - t)} kaldı` : ""}`;
+    return `İnşa sürüyor · ${ASAMA_ADI[a]}${y.bitis !== undefined && y.bitis > t ? ` · ${sure(y.bitis - t)} kaldı` : ""}`;
   }
   if (y.aktif === false) return "Durdu";
   if (y.verimPpm !== undefined) return y.verimPpm > 0 ? `Çalışıyor · verim ${yuzde(Math.round(y.verimPpm / 10_000))}` : "Boşta";
@@ -194,12 +207,13 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
     s += `<ul class="mulk-liste">`;
     for (const [ilce, n] of d.ilceHucre) {
       const yapi = d.yapilar.filter((y) => y.ilce === ilce).length;
-      s += `<li><span class="ml-ad"><b>${esc(ad.ilce(ilce))}</b><span class="soluk">${fmt(n)} hücre${yapi ? ` · ${fmt(yapi)} yapı` : ""}</span></span>${gitDugmesi(ilce)}</li>`;
+      s += `<li><span class="ml-ad"><b>${esc(ad.ilce(ilce))}</b><span class="soluk">${fmt(n)} hücre${yapi ? `\u00a0· ${fmt(yapi)} yapı` : ""}</span></span>${gitDugmesi(ilce)}</li>`;
     }
     s += `</ul>`;
   }
   s += `<h3>Yapılar</h3>`;
-  const sirali = [...d.yapilar].sort((a, b) => (a.durum === b.durum ? 0 : a.durum === "insaat" ? -1 : 1) || (a.bitis ?? 0) - (b.bitis ?? 0));
+  // Dükkân yalnız Dükkânlarım'da görünür (iki listede yinelenmez)
+  const sirali = d.yapilar.filter((y) => y.tur !== "dukkan").sort((a, b) => (a.durum === b.durum ? 0 : a.durum === "insaat" ? -1 : 1) || (a.bitis ?? 0) - (b.bitis ?? 0));
   if (!sirali.length) s += `<p class="ipucu-metin">Henüz yapın yok. Haritada “Yapı kur” ile arsana ilk yapını yerleştir.</p>`;
   else {
     s += `<ul class="mulk-liste">`;
@@ -207,7 +221,7 @@ export function isletmePaneli(d: IsletmeDurumu | null, ben: { ad: string }, ad: 
       const yer = y.ilce ? ad.ilce(y.ilce) : y.il ? ad.il(y.il) : "";
       const buyut = ad.buyut?.(y, d.yapilar) ? `<button type="button" class="eylem" data-mulk-buyut="${esc(y.anahtar)}" data-mulk-buyut-ilce="${esc(y.ilce ?? "")}" title="Tesisi bir üst ölçeğe büyüt">${ikon("hammer", 15)}Büyüt</button>` : "";
       const yp = ad.yontem?.(y) ?? { dugme: "", alt: "" };
-      s += `<li data-yapi-durum="${y.durum}"><span class="ml-ad"><b>${esc(ad.yapi(y.tur))}</b><span class="soluk">${esc(yapiDurumu(y, d.simZamani))}${yer ? ` · ${esc(yer)}` : ""}</span></span>${buyut}${yp.dugme}${gitDugmesi(y.ilce)}${yp.alt}</li>`;
+      s += `<li data-yapi-durum="${y.durum}"><span class="ml-ad"><b>${esc(ad.yapi(y.tur))}</b><span class="soluk">${esc(yapiDurumu(y, d.simZamani))}${yer ? `\u00a0· ${esc(yer)}` : ""}</span></span>${buyut}${yp.dugme}${gitDugmesi(y.ilce)}${yp.alt}</li>`;
     }
     s += `</ul>`;
   }
@@ -522,7 +536,9 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         case "isletme": {
           const durum = ustDurum(d);
           oneriIsareti(durum);
-          const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal), dukkanKurulabilir());
+          // İlk yapı (üretim tesisi) inşadayken D0 kartındaki Defter satırı "İlk yapını kur" demez (D0.defter_adim_insada)
+          const ilkYapiInsada = d?.yapilar.some((y) => y.durum === "insaat" && !ekYapiMi(y.tur)) ?? false;
+          const ust = ustKartHtml(durum, defterUstKarti(defter, ad.mal), dukkanKurulabilir(), ilkYapiInsada);
           const dukkan = dukkanBolumuHtml(dukkanGorunumu(), { ilceAdi: ad.ilce, simdi: d?.simZamani ?? 0, secili: dukkanPaneli?.durum.secili ?? null }) + (dukkanPaneli?.html() ?? "");
           return isletmePaneli(d, b.ben, ad, b.defterAl ? defterHtml(defter, ad.mal, epoch()) : undefined, { ust, dukkan });
         }

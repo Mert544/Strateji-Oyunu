@@ -29,6 +29,8 @@ export interface DukkanPanelParam {
   iadeYuzde: string;
   /** Esnaf payı ("%20"); veri yoksa tanımsız. */
   esnafPayiYuzde?: string;
+  /** Rafa konan malın uygulanacak (Normal kademe) fiyat çarpanı (ppm; `fiyatKademeleriPpm[varsayilanFiyatKademesi]`): seçicide referans fiyat değil bu fiyat yazılır. */
+  normalKademePpm: number;
 }
 
 /** Panel parametreleri içerikten (sabit yazılmaz); dükkân kuralı yoksa tanımsız. */
@@ -39,7 +41,10 @@ export function dukkanPanelParam(ic: Icerik): DukkanPanelParam | undefined {
   const kasa = (pk.olcekler[0] as { kasaMiliSaat?: number } | undefined)?.kasaMiliSaat ?? 0;
   const esnaf = (pk as { esnaf?: { tabanPayPpm?: number } }).esnaf?.tabanPayPpm;
   const iade = (mulk as { insaatIptalIadePpm?: number }).insaatIptalIadePpm ?? 500_000;
+  const kademeler = (pk as { fiyatKademeleriPpm?: readonly number[] }).fiyatKademeleriPpm ?? [];
+  const varsayilan = (pk as { varsayilanFiyatKademesi?: number }).varsayilanFiyatKademesi ?? 2;
   return {
+    normalKademePpm: kademeler[varsayilan] ?? 1_000_000,
     kasaBirimSa: Math.round(kasa / 1000),
     pencereSaat: pk.fiyatDegisimEnAzSaat,
     iadeYuzde: yuzde(iade / 10_000),
@@ -189,13 +194,14 @@ export class DukkanPaneli {
   /** Mal seçicisinin adayları: türün malları, başka yuvada olmayanlar. */
   adaylar(d: DukkanKaydi): SeciciMali[] {
     const rafta = new Set(d.yuvalar.map((y) => y.mal).filter((m): m is string => m !== null));
-    return this.g.turMallari(d.tur).filter((m) => !rafta.has(m)).map((mal) => ({ mal, stokMili: this.g.stokMili(mal), fiyatMili: this.g.referans(mal)?.mili ?? 0 }));
+    return this.g.turMallari(d.tur).filter((m) => !rafta.has(m)).map((mal) => ({ mal, stokMili: this.g.stokMili(mal), fiyatMili: Math.floor(((this.g.referans(mal)?.mili ?? 0) * this.g.param.normalKademePpm) / 1_000_000) }));
   }
 
   private markaHtml(d: DukkanKaydi): string {
     const m = this.marka;
     const ad = d.markaAd ? `<p class="dk-ipucu" data-alan="marka-ad">${esc(d.markaAd)}</p>` : "";
-    if (m === null) return `<div class="dk-marka-satir">${ad}<button type="button" class="eylem" data-eylem="marka-ac">${esc(dukkanMetni("dukkan.D7.baslik"))}</button></div>`;
+    // Düğme markasızken "Marka adı ver", markalıyken "Markayı değiştir"
+    if (m === null) return `<div class="dk-marka-satir">${ad}<button type="button" class="eylem" data-eylem="marka-ac">${esc(dukkanMetni(d.markaAd ? "dukkan.D7.dugme_degistir" : "dukkan.D7.dugme_ad_ver"))}</button></div>`;
     return markaFormuHtml({ ad: m.ad, simge: m.simge, renk: m.renk, gonder: m.gonder, gonderiyor: this.gonderiyor, ...(m.ret !== undefined ? { retMetin: m.ret } : {}) });
   }
 

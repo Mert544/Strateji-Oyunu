@@ -139,7 +139,7 @@ describe("Dikkat paneli", () => {
     expect(m[3]?.eylem?.komut).toEqual({ tur: "tesis_durum", bolge: "b0", tesis: 41, aktif: true });
     expect(m[4]?.ayrinti).toContain("verim %10");
     expect(m[4]?.eylem).toBeUndefined();
-    expect(m[5]?.baslik).toBe("Bucak: Çiftlik inşaatı bitti");
+    expect(m[5]?.baslik).toBe("Bucak: Çiftlik hazır.");
   });
   it("panel en çok DIKKAT_EN_COK madde, her birinde Git; fazlası sayılır; boşken sakin metin", () => {
     const kare = oyuncuKaresi(kareKur({ savaslar: [savas], kapsam: [[1, 1, 20, 2, -1]] }));
@@ -165,7 +165,7 @@ describe("gelen kutusu: toast olmayan olaylar", () => {
     const once = kareKur();
     const simdi = kareKur({ saat: 101, savaslar: [savas, { ...savas, id: 10, saldiran: 1, savunan: 1 }] });
     const o = gelenOlaylari(once, simdi, dizin, 0, [biten(2, 101), { ...biten(3, 101), benim: false }], ad);
-    expect(o.map((x) => x.metin)).toEqual(["İsvend, Ankara Platosu bölgenize savaş ilan etti.", "Bucak: Çiftlik inşaatı bitti."]);
+    expect(o.map((x) => x.metin)).toEqual(["İsvend, Ankara Platosu bölgenize savaş ilan etti.", "Bucak: Çiftlik hazır."]);
     expect(gelenOlaylari(null, simdi, dizin, 0, [], ad)).toEqual([]);
   });
   it("savaş bitişi ve izleme kipinde tüm savaşlar", () => {
