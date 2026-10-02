@@ -210,7 +210,17 @@
   content: ""; flex: none; width: 13px; height: 13px; margin-top: 1px; background: currentColor;
   -webkit-mask: var(--ikon-ucgen) center / 13px no-repeat; mask: var(--ikon-ucgen) center / 13px no-repeat;
 }
-/* Raf detayı (D6) etiket/değer satırları: 84 px etiket sütunu, değer kalanı (360 px'te "Birim fiyat" ≈ 72 px sığar) */
-.dk-satirlar, .dk-panel .yk-satirlar { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: var(--s-1) var(--s-3); margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); }
-.dk-satirlar dt, .dk-panel .yk-satirlar dt { color: var(--murekkep-3); }
-.dk-satirlar dd, .dk-panel .yk-satirlar dd { margin: 0; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+/* Raf detayı (D6; K2: dl.yk-satirlar.dk-raf-satirlar, .dk-panel içinde) etiket/değer satırları: 84 px etiket sütunu, değer kalanı (360 px'te "Birim fiyat" ≈ 72 px sığar) */
+.dk-raf-satirlar, .dk-panel .yk-satirlar { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: var(--s-1) var(--s-3); margin: 0; font-size: var(--yazi-sm); line-height: var(--satir-sm); }
+.dk-raf-satirlar dt, .dk-panel .yk-satirlar dt { color: var(--murekkep-3); }
+.dk-raf-satirlar dd, .dk-panel .yk-satirlar dd { margin: 0; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+
+/* K2 yuva-net sınıfları (907f2e7): kart başlığı, kartın içindeki neden, İşletmem satırında span.soluk.dk-net-yok.
+   Net ≤ 0 satırı hem .dk-net-yok hem .dk-ozet-satir.dk-uyari ile eşleşir: ikisi AYNI ::before'u biçimler (tek simge). */
+.dk-ozet-baslik { margin: 0; font-size: var(--yazi-xs); line-height: var(--satir-xs); font-weight: 600; color: var(--murekkep-2); }
+.dk-ozet .dk-neden { margin: 0; }
+.dk-ozet-satir.dk-net-yok { align-items: center; }
+.dk-ozet-satir.dk-net-yok::before { margin-top: 0; }
+/* İşletmem satırı: iki satırlı ad bloğunda soluk net satırı; satır ağırlığı normal kalır (kalın yalnız kartta) */
+.ml-ad > .soluk.dk-net-yok { display: flex; align-items: center; gap: 4px; font-weight: 400; }
+.ml-ad > .soluk.dk-net-yok::before { width: 13px; height: 13px; margin-top: 0; -webkit-mask-size: 13px; mask-size: 13px; }
