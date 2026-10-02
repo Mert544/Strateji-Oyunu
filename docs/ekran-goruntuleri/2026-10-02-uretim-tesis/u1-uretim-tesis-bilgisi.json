@@ -1,0 +1,133 @@
+{
+  "kaynak": "Gerçek standalone oyun, Türkiye manifesti, varsayılan 6 Gebze başlangıç hücresi ve kabul edilen tekstil üretimhanesi inşa komutu. Üretim own tesis eylemi ve yöntem onayı native UI üzerinden yapıldı; özel hibe/stok/kasa/DOM enjeksiyonu yok.",
+  "masaustu": [
+    1440,
+    1000
+  ],
+  "commands": [
+    {
+      "komut": {
+        "tur": "tesis_insa_hucre",
+        "ilce": "tr_41_gebze",
+        "tesisTuru": "hafif_sanayi",
+        "yontem": "yun_egirme",
+        "hucreler": [
+          "610070:393780",
+          "610071:393780"
+        ]
+      },
+      "sonuc": {
+        "tur": "komutSonucu",
+        "anahtar": "u1-tekstil",
+        "seq": 2,
+        "t": 0,
+        "komut": {
+          "tur": "tesis_insa_hucre",
+          "ilce": "tr_41_gebze",
+          "tesisTuru": "hafif_sanayi",
+          "hucreler": [
+            "610070:393780",
+            "610071:393780"
+          ],
+          "yontem": "yun_egirme"
+        },
+        "sonuc": {
+          "tamam": true
+        },
+        "tekrar": false
+      }
+    }
+  ],
+  "before": {
+    "zaman": 2160000,
+    "tesis": {
+      "id": 146,
+      "yontem": "yun_egirme"
+    },
+    "hazineMili": 43000000
+  },
+  "screenshotState": {
+    "acik": true,
+    "anahtar": "[\"kumas\",\"ureten\",\"kumas_dokuma\"]",
+    "metin": "Kendi tesislerimdeTekstil üretimhanesi · Gebze · Tesis #146Bu yöntemi inceleyebilirsinMevcut yöntem: Yün eğirmeTesiste yöntemleri görBir tesis aynı anda tek yöntem çalıştırır; zincirin tüm aşamaları birlikte çalışmaz. Bu düğme yöntemi değiştirmez; seçim ve onay ayrıca yapılır.",
+    "kart": "Kumaş dokumaNominal içerik tarifesi · saatlik Girdi / saat25 Elektrik80 İplik Çıktı / saat76 KumaşS ölçek · tam kadro ve tam verim · 9.000 işçi. Bu tarife gerçekleşen üretim değildir.Mülk oyununda kendi elektrik üretiminin karşılamadığı ihtiyaç otomatik ücretli şebekeden alınır.Yöntem için araştırma gerekmiyor.İşletmende bu yöntemi kullanan 0 tesis · 0 etkinTekstil üretimhanesiMülk oyununda kurulabilirİşletmende 1 tesisKendi tesislerimdeTekstil üretimhanesi · Gebze · Tesis #146Bu yöntemi inceleyebilirsinMevcut yöntem: Yün eğirmeTesiste yöntemleri görBir tesis aynı anda tek yöntem çalıştırır; zincirin tüm aşamaları birlikte çalışmaz. Bu düğme yöntemi değiştirmez; seçim ve onay ayrıca yapılır.",
+    "button": [
+      {
+        "tesis": "t146",
+        "yontem": "kumas_dokuma",
+        "disabled": false
+      }
+    ]
+  },
+  "noAutomatic": {
+    "sentBefore": 0,
+    "sentAfterOpen": 0,
+    "selectorCount": 1,
+    "gercekYontem": "yun_egirme",
+    "opened": {
+      "tesis": "t146",
+      "secili": [
+        "yun_egirme"
+      ],
+      "hedefOdak": "kumas_dokuma",
+      "odak": {
+        "tag": "BUTTON",
+        "cls": "ym-kart",
+        "html": "<button type=\"button\" class=\"ym-kart\" role=\"radio\" data-yontem=\"kumas_dokuma\" data-durum=\"acik\" aria-checked=\"false\" tabindex=\"-1\"><span class=\"ym-simge\"><svg class=\"ikon\" width=\"20\" height=\"20\" aria-hidden=\"true\" focusable=\"false\"><use href=\"#i-layers\"></use></svg></span><span class=\"ym-ad\">Kumaş dokuma</span><span class=\"ym-satir ym-ozet\">saatte 25 elektrik · 80 iplik → 76 kumaş</span><span class=\"ym-satir ym-gider\">Şebeke gideri ≈ 259&nbsp;₺/sa</span></button>"
+      },
+      "confirmation": false,
+      "metin": "Şimdiki yöntem: Yün eğirmeTekstil üretimhanesi: yöntemi değiştirYün eğirmeSeçilisaatte 7 elektrik · 40 yün ve tiftik → 27 iplikŞebeke gideri ≈ 73 ₺/saKumaş dokumasaatte 25 elektrik · 80 iplik → 76 kumaşŞebeke gideri ≈ 259 ₺/saKonfeksiyonsaatte 15 elektrik · 76 kumaş → 60 hazır giyimŞebeke gideri ≈ 156 ₺/saİpliği Pazar'da satabilir ya da ayrı bir tesiste kumaşa dokuyabilirsin.Kendi üretiminin karşılamadığı elektrik ihtiyacı şebekeden gelir; santral kurman gerekmez.Seçimi sonradan değiştirebilirsin; ücret yok."
+    }
+  },
+  "shownConfirmation": {
+    "tesis": "t146",
+    "bolge": "tr_41#ekran",
+    "yontem": "kumas_dokuma",
+    "oncekiYontem": "yun_egirme"
+  },
+  "sent": [
+    {
+      "tur": "komut",
+      "anahtar": "bzduptqq5z-3-lpxa1",
+      "komut": {
+        "tur": "yontem_degistir",
+        "bolge": "tr_41#ekran",
+        "tesis": 146,
+        "yontem": "kumas_dokuma",
+        "oncekiYontem": "yun_egirme"
+      },
+      "istemciZamani": 8571.10000000149
+    }
+  ],
+  "responses": [
+    {
+      "tur": "komutSonucu",
+      "anahtar": "bzduptqq5z-3-lpxa1",
+      "seq": 3,
+      "t": 2160000,
+      "komut": {
+        "tur": "yontem_degistir",
+        "bolge": "tr_41#ekran",
+        "tesis": 146,
+        "yontem": "kumas_dokuma",
+        "oncekiYontem": "yun_egirme"
+      },
+      "sonuc": {
+        "tamam": true
+      },
+      "tekrar": false
+    }
+  ],
+  "after": {
+    "zaman": 2160000,
+    "tesis": {
+      "id": 146,
+      "yontem": "kumas_dokuma"
+    },
+    "hazineMili": 43000000,
+    "iplikStokMili": 0
+  },
+  "pageErrors": [],
+  "consoleErrors": [],
+  "sinir": "PNG Üretim kumaş yöntem kartı ve destekleyen own tesis eylemini gösterir. Sonraki manuel yöntem değişimi JSON ile doğrulanır. İplik eksikliği gerçekleşen kumaş üretimi gibi sunulmaz; foto nominal tarife/gerçek yöntem geçişini gösterir."
+}

@@ -207,6 +207,10 @@ incelenebilir. Stok eksikliği yöntem değiştirme hakkını engellemez; gerçe
 geçişinde teknoloji kimliği ve ilgili kart odağı korunur. Sulama yeni tesis,
 mekanize ordu birlik açar; tesis yöntemi gibi gösterilmez.
 
+**Üretimden tesis yöntemine (U1).** Yöntem kartındaki “Kendi tesislerimde”
+ayrıntısı gerçek tesis kimliğiyle aynı seçiciyi açıp odaklar; seçim ve onay
+oyuncudadır. Bir tesis aynı anda tek yöntem çalıştırır; zinciri otomatik tamamlamaz.
+
 **Görülen bedel / mevcut yöntem koruması (T2).** `arastir` optional
 `maliyetMili?:number` taşır (güvenli tamsayı ≥0). Çekirdek güncel yayılım
 maliyetini kendisi hesaplar; görülen değer verilmişse eşleşmeden ödeme

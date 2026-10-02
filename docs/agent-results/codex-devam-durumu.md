@@ -2,6 +2,35 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — U1 üretim kartından kendi tesisine
+
+T1–T2 `9b01521` GitHub'a gönderildi. [U1 sözleşmesi](codex-u1-uretim-tesis-sozlesmesi.md)
+ile Üretim ağı yöntem kartlarından gerçek sahipli tesiste mevcut yöntem
+seçicisini açma/odaklama tamamlandı. Altı mevcut ajan yeniden kullanıldı.
+Gerçek tesis numarası benzer tesisleri ayırıyor. İnşaat, eksik bilgi, mevcut
+kullanım ve uygun tesis durumları ayrılıyor; tek yöntemli tesis geçiş sunmuyor.
+Ayrıntılar ve klavye odağı canlı çizimde korunuyor. Yeni ekonomi kuralı yok.
+
+İstemci tip kontrolü ve tek son derleme ilk çalıştırmada başarılı. Dünya
+gzip 392,4KB/400KB, harita 505,9KB. Yeni test yazılmadı; önceki testler,
+kök tip kontrolü ve mobil/geniş matris çalıştırılmadı. İlk gerçek akışta
+seçicinin açılması sıfır komut gönderdi; mevcut yöntem ve kapalı onay korundu.
+Ancak fare bırakılınca ertelenen ikinci panel çizimi hedef kartın odağını
+BODY'ye düşürdü. A3 asıl DOM değişimini mevcut odak yakalama/geri verme
+callback'iyle korudu; bekleyen yeni odak isteği en son uygulanıyor. Bu kaynak
+düzeltmesi nedeniyle yalnız istemci tip kontrolü/derleme ve aynı ekran akışı
+yenilendi; hepsi başarılı. Güncel boyutlar aynı bütçe içinde.
+
+Gerçek Gebze tekstil tesisi #146'da yün eğirme→kumaş dokuma doğrulandı:
+Üretim kartından açılış sıfır komut, tek seçici, doğru hedef odak, değişmeyen
+mevcut seçim ve kapalı onay verdi. Ayrı manuel onay `oncekiYontem=yun_egirme`
+ile kabul edildi; gerçek yöntem değişti ve 43.000 ₺ hazine korunmuş oldu.
+İplik sıfır olduğundan kumaş üretildiği iddia edilmiyor. Sayfa/konsol hatası
+yok. Root güncel PNG ve JSON'u inceledi.
+[Gerçek üretim–tesis ekranı](../ekran-goruntuleri/2026-10-02-uretim-tesis/README.md).
+Sıradaki uygulanabilir öneri kendi gerçek maden rezervinin görünürlüğüdür;
+Kilimli'nin oynanabilir parsel/karo verisi hâlâ eksiktir.
+
 ## Güncel teslim — T1–T2 teknoloji ve yöntem kararı
 
 L4 `d7dba3a` ile gönderildi. Kullanıcının uzun süreli çalışma talimatıyla

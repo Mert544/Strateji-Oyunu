@@ -5,25 +5,33 @@ import { teknolojiAdi } from "../komut/tablo";
 import { IKONLAR, ikon } from "../tasarim/ikon";
 import type { IkonAdi } from "../tasarim/ikon";
 import { yontemSimgesi } from "../tasarim/yontem";
-import type { IsletmeDurumu } from "./baglanti";
+import type { IsletmeDurumu, IsletmeYapisi } from "./baglanti";
 import { yakitTedarikiHtml } from "./sebeke-gider";
+import { uretimTesisleri } from "./uretim-tesisleri";
+import type { UretimTesisi } from "./uretim-tesisleri";
 
 export interface UretimAgiPanelParam {
   ic: Icerik;
   isletme: () => IsletmeDurumu | null;
   acikTeknolojiler: () => ReadonlySet<string> | null;
+  yontemDestegi?: boolean;
+  yontemBekliyor?: () => boolean;
+  tesisAdi?: (tesis: Readonly<IsletmeYapisi>) => string;
   degisti: () => void;
 }
 
 export type UretimAgiEylemi =
   | { eylem: "mal-sec"; mal: string }
   | { eylem: "tedarik"; mal: string }
-  | { eylem: "teknoloji"; teknoloji: string };
+  | { eylem: "teknoloji"; teknoloji: string }
+  | { eylem: "tesis"; tesis: string; yontem: string };
 
 /** Kök panel seçimi ve diğer sekmelere yönlendirmeyi bu eylemlerle bağlar. */
 export function uretimAgiEylemiOku(hedef: HTMLElement): UretimAgiEylemi | null {
-  const dugme = hedef.closest<HTMLElement>("[data-uretim-mal], [data-uretim-tedarik], [data-uretim-teknoloji]");
+  const dugme = hedef.closest<HTMLElement>("[data-uretim-mal], [data-uretim-tedarik], [data-uretim-teknoloji], [data-uretim-tesis]");
   if (!dugme || dugme.hasAttribute("disabled") || dugme.getAttribute("aria-disabled") === "true") return null;
+  const tesis = dugme.dataset["uretimTesis"], yontem = dugme.dataset["uretimYontem"];
+  if (tesis !== undefined) return tesis && yontem ? { eylem: "tesis", tesis, yontem } : null;
   const mal = dugme.dataset["uretimMal"];
   if (mal !== undefined) return { eylem: "mal-sec", mal };
   const tedarik = dugme.dataset["uretimTedarik"];
@@ -67,12 +75,26 @@ export function uretimYollari(ic: Icerik): string[][] {
 
 export class UretimAgiPaneli {
   private seciliMal: string;
+  private readonly acikTesisler = new Set<string>();
+  private malSecimiAcik = false;
+  private gorulenTesis: Extract<UretimAgiEylemi, { eylem: "tesis" }> | null = null;
 
   constructor(private readonly p: UretimAgiPanelParam) {
     this.seciliMal = p.ic.malIdx["tahil"] !== undefined ? "tahil" : p.ic.mallar[0]?.id ?? "";
   }
 
   get mal(): string { return this.seciliMal; }
+
+  teklifYakala(t: HTMLElement): void {
+    const e = uretimAgiEylemiOku(t);
+    this.gorulenTesis = e?.eylem === "tesis" ? e : null;
+  }
+
+  eylemOku(t: HTMLElement): UretimAgiEylemi | null {
+    const e = uretimAgiEylemiOku(t), gorulen = this.gorulenTesis;
+    this.gorulenTesis = null;
+    return e?.eylem === "tesis" && gorulen ? gorulen : e;
+  }
 
   /** İçerikteki mallardan birini seçer; seçim değiştiyse yeniden çizim ister. */
   malSec(mal: string): boolean {
@@ -115,14 +137,39 @@ export class UretimAgiPaneli {
       + (t.gerekliTeknoloji ? this.teknoloji(t.gerekliTeknoloji, acik) : "") + "</li>";
   }
 
-  private yontem(y: YontemT, d: IsletmeDurumu | null, acik: ReadonlySet<string> | null): string {
+  private kendiTesisleri(yontem: string, yon: string, tesisler: readonly UretimTesisi[] | null): string {
+    const id = esc(JSON.stringify([this.seciliMal, yon, yontem]));
+    let h = `<details class="ua-kendi-tesisler" data-uretim-tesisler="${id}"${this.acikTesisler.has(id) ? " open" : ""}><summary>Kendi tesislerimde</summary>`;
+    if (tesisler === null) return h + '<p class="ua-tesis-durum">Tesis bilgilerin henüz alınmadı.</p></details>';
+    if (!tesisler.length) return h + '<p class="ua-tesis-durum">Bu yönteme uygun kendi tesisin veya inşaatın yok.</p></details>';
+    h += '<ul class="ua-kendi-tesis-listesi">';
+    for (const t of tesisler) {
+      const tur = this.p.ic.turler[this.p.ic.turIdx[t.yapi.tur] ?? -1];
+      const ad = this.p.tesisAdi?.(t.yapi) ?? tur?.ad ?? "Tesis bilgisi bekleniyor";
+      const tesisNo = /^t(?:0|[1-9]\d*)$/.test(t.yapi.anahtar) && Number.isSafeInteger(Number(t.yapi.anahtar.slice(1))) ? ` · Tesis #${t.yapi.anahtar.slice(1)}` : "";
+      const durum = t.durum === "insaat" ? "İnşa sürüyor" : t.durum === "bilgi_eksik" ? "Yöntem bilgisi bekleniyor" : t.durum === "kullaniyor" ? "Bu yöntemi zaten kullanıyor" : "Bu yöntemi inceleyebilirsin";
+      h += `<li class="ua-kendi-tesis"><strong>${esc(ad + tesisNo)}</strong><p class="ua-tesis-durum">${esc(durum)}</p>`;
+      if (t.yapi.durum === "tesis") h += `<p class="ua-tesis-durum">Mevcut yöntem: ${esc(t.mevcut?.ad ?? "Bilinmiyor")}</p>`;
+      if (t.gecis) {
+        const bekliyor = this.p.yontemBekliyor?.() === true;
+        const destek = this.p.yontemDestegi === true;
+        h += `<button type="button" class="ua-tesis-git" data-uretim-tesis="${esc(t.yapi.anahtar)}" data-uretim-yontem="${esc(t.hedef.id)}"${!destek || bekliyor ? " disabled" : ""}>Tesiste yöntemleri gör</button>`;
+        if (!destek || bekliyor) h += `<p class="ua-tesis-durum">${bekliyor ? "Yöntem işleminin yanıtı bekleniyor." : "Yöntem seçimi bu bağlantıda kullanılamıyor."}</p>`;
+      } else if (t.engel) h += `<p class="ua-tesis-durum">${esc(t.engel)}</p>`;
+      h += '</li>';
+    }
+    return h + '</ul><p class="ua-tesis-durum">Bir tesis aynı anda tek yöntem çalıştırır; zincirin tüm aşamaları birlikte çalışmaz. Bu düğme yöntemi değiştirmez; seçim ve onay ayrıca yapılır.</p></details>';
+  }
+
+  private yontem(y: YontemT, d: IsletmeDurumu | null, acik: ReadonlySet<string> | null, yon: string): string {
     const turler = this.p.ic.turler.filter((t) => t.yontemler.includes(y.indeks));
-    const mevcut = d?.yapilar.filter((t) => t.durum === "tesis" && t.yontem === y.id) ?? [];
+    const tesisler = uretimTesisleri(this.p.ic, d, y.id);
+    const mevcut = tesisler?.filter((t) => t.yapi.durum === "tesis" && t.mevcut?.id === y.id).map((t) => t.yapi) ?? [];
     const etkin = mevcut.filter((t) => t.aktif === true).length;
     const bilinmeyen = mevcut.filter((t) => t.aktif === undefined).length;
     const simge = yontemSimgesi(y.id);
     const simgeAdi: IkonAdi = simge && IKONLAR.includes(simge as IkonAdi) ? simge as IkonAdi : "factory";
-    let h = `<article class="ua-yontem"><header><h5>${ikon(simgeAdi, 18)}${esc(y.ad)}</h5><span class="ua-tarife-etiket">Nominal içerik tarifesi · saatlik</span></header>`;
+    let h = `<article class="ua-yontem" data-uretim-yontem-kart="${esc(JSON.stringify([this.seciliMal, yon, y.id]))}"><header><h5>${ikon(simgeAdi, 18)}${esc(y.ad)}</h5><span class="ua-tarife-etiket">Nominal içerik tarifesi · saatlik</span></header>`;
     h += `<div class="ua-tarife"><div class="ua-girdi"><h6>${ikon("inbox", 14)} Girdi / saat</h6><div class="ua-kalemler">${this.tarife(y.girdi, "Mal girdisi yok")}</div></div><span class="ua-ok" aria-hidden="true">${ikon("chevron-right", 18)}</span><div class="ua-cikti"><h6>${ikon("package", 14)} Çıktı / saat</h6><div class="ua-kalemler">${this.tarife(y.cikti, "Mal çıktısı yok")}</div></div></div>`;
     h += `<p class="ua-aciklama">S ölçek · tam kadro ve tam verim · ${fmt(y.isci)} işçi. Bu tarife gerçekleşen üretim değildir.</p>`;
     const sebekeMallari = this.p.ic.param.mulk?.sebeke?.mallar ?? [];
@@ -138,10 +185,12 @@ export class UretimAgiPaneli {
     else h += '<p class="ua-durum">Yöntem için araştırma gerekmiyor.</p>';
     h += `<p class="ua-oyuncu-yontemi">${d ? `İşletmende bu yöntemi kullanan ${fmt(mevcut.length)} tesis · ${fmt(etkin)} etkin${bilinmeyen ? ` · ${fmt(bilinmeyen)} tesisin çalışma durumu bekleniyor` : ""}` : "Yöntemi kullanan tesislerin bilgisi bekleniyor."}</p>`;
     h += `<ul class="ua-tesisler">${turler.length ? turler.map((t) => this.tesis(t, d, acik)).join("") : "<li>İçerikte bu yöntem için tesis eşleşmesi bulunmuyor.</li>"}</ul>`;
+    h += this.kendiTesisleri(y.id, yon, tesisler);
     return h + "</article>";
   }
 
   html(): string {
+    if (typeof document !== "undefined") this.detaylariYakala(document);
     const ic = this.p.ic;
     const mal = ic.mallar[ic.malIdx[this.seciliMal] ?? -1];
     if (!mal) return '<p class="ipucu-metin">Üretim içeriği yükleniyor…</p>';
@@ -165,7 +214,7 @@ export class UretimAgiPaneli {
       for (const yol of grup) h += `<div class="ua-yol">${yol.map((id) => this.malDugmesi(id)).join(`<span class="ua-yol-ok" aria-hidden="true">${ikon("chevron-right", 14)}</span>`)}</div>`;
       h += "</section>";
     }
-    h += '</nav><details class="ua-mal-secimi"><summary>Tüm mallar</summary><div class="ua-mallar">';
+    h += `</nav><details class="ua-mal-secimi"${this.malSecimiAcik ? " open" : ""}><summary>Tüm mallar</summary><div class="ua-mallar">`;
     h += ic.mallar.map((m) => this.malDugmesi(m.id)).join("") + "</div></details>";
     h += `<section class="ua-gercek" aria-label="Seçili malın işletme durumu"><h4>${ikon("package", 18)} ${esc(mal.ad)} <small>İşletmendeki gerçek durum</small></h4>`;
     if (d) {
@@ -179,14 +228,43 @@ export class UretimAgiPaneli {
     else h += '<p class="ua-aciklama">Bu mal depolanamaz ve pazardan ithal edilemez. Üretim yöntemlerini veya şebeke akışını inceleyebilirsin.</p>';
     h += "</section>";
     h += '<p class="ua-aciklama">Yol okları içerikteki girdi–çıktı bağını gösterir. Tesis sayısı, ölçek, kadro, verim, arazi ve girdi erişimi gerçekleşen üretimi değiştirir. Uygun konum yapı kurarken ayrıca denetlenir.</p>';
-    for (const [baslik, liste, bos] of [
-      ["Bu malı üreten yöntemler", bag.ureten, "İçerikte bu malı üreten bir yöntem bulunmuyor."],
-      ["Bu malı kullanan yöntemler", bag.kullanan, "İçerikte bu malı girdi olarak kullanan bir yöntem bulunmuyor."],
+    for (const [baslik, liste, bos, yon] of [
+      ["Bu malı üreten yöntemler", bag.ureten, "İçerikte bu malı üreten bir yöntem bulunmuyor.", "ureten"],
+      ["Bu malı kullanan yöntemler", bag.kullanan, "İçerikte bu malı girdi olarak kullanan bir yöntem bulunmuyor.", "kullanan"],
     ] as const) {
       h += `<section class="ua-baglantilar"><h4>${baslik} <span>${fmt(liste.length)}</span></h4>`;
-      h += liste.length ? liste.map((y) => this.yontem(y, d, acik)).join("") : `<p class="ua-bos">${bos}</p>`;
+      h += liste.length ? liste.map((y) => this.yontem(y, d, acik, yon)).join("") : `<p class="ua-bos">${bos}</p>`;
       h += "</section>";
     }
     return h + "</section>";
+  }
+
+  private detaylariYakala(kok: ParentNode): void {
+    const mallar = kok.querySelector<HTMLDetailsElement>(".ua-panel details.ua-mal-secimi");
+    if (mallar) this.malSecimiAcik = mallar.open;
+    for (const d of kok.querySelectorAll<HTMLDetailsElement>(".ua-panel details[data-uretim-tesisler]")) {
+      const id = d.dataset["uretimTesisler"];
+      if (id === undefined) continue;
+      if (d.open) this.acikTesisler.add(esc(id));
+      else this.acikTesisler.delete(esc(id));
+    }
+  }
+
+  odagiYakala(kok: ParentNode): (() => void) | null {
+    this.detaylariYakala(kok);
+    const a = typeof document === "undefined" ? null : document.activeElement;
+    if (!(a instanceof HTMLElement) || !a.closest(".ua-panel")) return null;
+    const detay = a.tagName === "SUMMARY" ? a.closest<HTMLDetailsElement>("details") : null;
+    const id = detay?.dataset["uretimTesisler"];
+    const malBasligi = detay?.classList.contains("ua-mal-secimi") === true;
+    const kart = a.closest<HTMLElement>("[data-uretim-yontem-kart]")?.dataset["uretimYontemKart"];
+    const alanlar = ["data-uretim-mal", "data-uretim-tedarik", "data-uretim-teknoloji", "data-uretim-tesis", "data-uretim-yontem"].filter((alan) => a.hasAttribute(alan)).map((alan) => [alan, a.getAttribute(alan)] as const);
+    return () => {
+      const panel = kok.querySelector<HTMLElement>(".ua-panel");
+      if (!panel) return;
+      const kapsam = kart ? [...panel.querySelectorAll<HTMLElement>("[data-uretim-yontem-kart]")].find((x) => x.dataset["uretimYontemKart"] === kart) : panel;
+      const hedef = id !== undefined ? [...panel.querySelectorAll<HTMLDetailsElement>("details[data-uretim-tesisler]")].find((d) => d.dataset["uretimTesisler"] === id)?.querySelector<HTMLElement>("summary") : malBasligi ? panel.querySelector<HTMLElement>(".ua-mal-secimi > summary") : alanlar.length ? [...(kapsam?.querySelectorAll<HTMLElement>("button") ?? [])].find((b) => alanlar.every(([alan, deger]) => b.getAttribute(alan) === deger)) : null;
+      (hedef ?? panel.querySelector<HTMLElement>("button[data-uretim-mal].ua-secili"))?.focus({ preventScroll: true });
+    };
   }
 }

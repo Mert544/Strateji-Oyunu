@@ -661,8 +661,10 @@ export class Panel {
         else acik.delete(ad);
       }
     }
+    const odagiGeriVer = this.mulk?.odagiYakala?.();
     kap.innerHTML = h;
     kap.scrollTop = ust;
+    odagiGeriVer?.();
     this.mulk?.cizildi?.(); // ertelenen çizimden sonra bekleyen odak (fareyle açılan Pazar formu, yöntem seçimi) şimdi verilir
   }
 }

@@ -56,15 +56,19 @@ gerçekten bağlıdır (`icerik.json`, `parametreler.json`, `uretim-agi-panel.ts
 üç aşamayı çalıştırmaz. İl etiketi/rezerv denetimi işletmeden veya bağlı
 merkezden gelir (`mulk/komut.ts:yapiPlani`); parsel kıyısı/jeolojisi ölçümü değildir.
 
-1. **İlk tercih: Üretim kartından kendi tesisinde yöntem seçicisine geçiş.**
-   `uretimAgiEylemiOku` bugün yalnız mal/tedarik/teknoloji taşır; araştırma
-   istemeyen koyun ve üç tekstil aşamasında karttan kendi tesise doğrudan
-   geçiş yoktur. T1'deki gerçek tesis anahtarıyla aç/odak akışını burada da
-   kullan: uygun tamamlanmış kendi tesisleri, mevcut yöntem/zaten kullanım,
-   inşaat ve eksik bilgi ayrımı. Aynı selector/onay/T2 guard, yeni komut veya
-   stok kapısı yok. İki panel ve gerekirse görünüm dosyası; kabul eylemi yalnız
-   seçiciyi açar, oyuncunun onayı gerçek yöntemi değiştirir. Yeni tesis gerekiyorsa
-   yöntem değişimi bütün zinciri tamamlamış gibi gösterilmez.
+1. **U1 uygulaması hazır: Üretim kartından kendi tesisinde yöntem seçicisine geçiş.**
+   Yöntem kartındaki “Kendi tesislerimde” ayrıntısı gerçek kendi tesislerini
+   türün desteklediği yöntemlerle eşler; bilgi bekleniyor, tesis yok, inşaat,
+   bilinmeyen mevcut yöntem ve zaten kullanım ayrıdır. Gerçek “Tesis #ID”
+   etiketi aynı ilçedeki tesisleri ayırır. Uygun tamamlanmış tesiste düğme
+   mevcut seçiciyi açıp odaklar; yöntem seçmez, onay açmaz veya komut göndermez.
+   Oyuncunun yöntem seçimi, mevcut onayı ve T2 `oncekiYontem` koruması sürer;
+   stok yokluğu geçişi engellemez, kilitli araştırma yöntemi incelenebilir.
+   Koyun yöntemi `mera_koyun_yun`, tekstil yöntemleri `yun_egirme`,
+   `kumas_dokuma`, `konfeksiyon`dur. Tek tesis aynı anda tek yöntem çalıştırır;
+   bu geçiş zincirin bütün aşamalarını birlikte çalıştırmaz. Yeni ekonomi,
+   tarife veya komut yoktur. Uygulama A3 tarafından READY bildirildi;
+   birleşik kullanım/doğrulama kanıtı root'un devam kaydındadır.
 2. **Kömür/cevher için gerçek kendi rezerv görünürlüğü.** Çıkarım ve derin
    yöntemler çalışır; `ozel.rezervKalan` zaten sahibine aktarılır. Bridge/Üretim
    kartında kendi işletme rezervi ve mevcut yöntemle tüketime bağlı sınır

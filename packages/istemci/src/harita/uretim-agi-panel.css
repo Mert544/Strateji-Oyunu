@@ -19,6 +19,15 @@
 .ua-tarife{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;margin:16px 0;align-items:center}.ua-tarife>div{min-width:0;padding:10px;border:1px solid var(--cizgi);border-radius:var(--r-md);background:var(--yuzey-2)}.ua-tarife>.ua-cikti{border-inline-start:3px solid var(--birincil)}.ua-tarife h6{display:flex;align-items:center;gap:6px;font:inherit;font-size:.8em;font-weight:600;margin:0 0 8px}.ua-cikti h6{color:var(--birincil-ink)}.ua-miktar{font-variant-numeric:tabular-nums;font-weight:650}.ua-ok{display:flex;color:var(--murekkep-2)}
 .ua-teknoloji{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;max-width:100%;padding:8px 10px;min-height:44px;border:1px solid var(--cizgi);border-radius:var(--r-md);background:var(--yuzey-2);color:inherit;font:inherit;font-size:.85em;overflow-wrap:anywhere;cursor:pointer}.ua-teknoloji span{font-size:.85em;color:var(--murekkep-2)}
 .ua-tesisler{list-style:none;padding:0;margin:12px 0 0;border-top:1px solid var(--cizgi-ince)}.ua-tesisler li{padding:12px 0 0}.ua-tesis-baslik{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:.85em}.ua-tesis-baslik span,.ua-tesisler p{font-size:.8em;line-height:1.5;color:var(--murekkep-2)}.ua-tesisler p{margin:6px 0}
+.ua-kendi-tesisler{min-width:0;margin-top:12px;padding-top:4px;border-top:1px solid var(--cizgi-ince)}
+.ua-kendi-tesisler>summary{min-height:44px;box-sizing:border-box;padding:12px 2px;cursor:pointer;font-size:.85em;font-weight:600;line-height:1.5;overflow-wrap:anywhere}
+.ua-kendi-tesisler>summary:focus-visible{outline:2px solid var(--odak);outline-offset:3px}
+.ua-kendi-tesis-listesi{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:10px;min-width:0}
+.ua-kendi-tesis{min-width:0;max-width:100%;box-sizing:border-box;border:1px solid var(--cizgi);border-radius:var(--r-md);padding:12px;background:var(--yuzey-2)}
+.ua-kendi-tesis strong{display:block;font-size:.85em;line-height:1.5;overflow-wrap:anywhere}
+.ua-tesis-durum{margin:6px 0;font-size:.8em;line-height:1.55;color:var(--murekkep-2);overflow-wrap:anywhere}
+.ua-tesis-git{display:block;width:100%;max-width:100%;min-height:44px;box-sizing:border-box;margin-top:10px;padding:10px 12px;border:1px solid var(--birincil);border-radius:var(--r-md);background:var(--birincil);color:var(--birincil-ustu);font:inherit;font-size:.85em;line-height:1.4;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.ua-tesis-git:disabled{border-color:var(--cizgi);background:var(--yuzey);color:var(--murekkep-2);cursor:default}
 @media(max-width:520px){.ua-gercek dl{grid-template-columns:1fr}.ua-tarife{grid-template-columns:1fr}.ua-ok{transform:rotate(90deg);justify-self:center}.ua-yontem,.ua-gercek{padding:12px}.ua-mal{max-width:100%;overflow-wrap:anywhere}}
 @media(prefers-reduced-motion:reduce){.ua-panel,.ua-panel *{animation:none;transition:none;scroll-behavior:auto}}
 @media(forced-colors:active){.ua-mal.ua-secili{border:2px solid Highlight;color:Highlight}.ua-panel button:focus-visible,.ua-mal-secimi summary:focus-visible{outline-color:Highlight}}

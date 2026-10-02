@@ -56,7 +56,8 @@ import meclisKatilimCss from "./meclis-katilim.css?inline";
 import { TedarikPaneli, tedarikEylemiOku } from "./tedarik-panel";
 import tedarikCss from "./tedarik-panel.css?inline";
 import lojistikCss from "./lojistik-gorunum.css?inline";
-import { UretimAgiPaneli, uretimAgiEylemiOku } from "./uretim-agi-panel";
+import { UretimAgiPaneli } from "./uretim-agi-panel";
+import { uretimTesisleri } from "./uretim-tesisleri";
 import uretimAgiCss from "./uretim-agi-panel.css?inline";
 
 const SAAT = 3_600_000;
@@ -623,6 +624,9 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     ic,
     isletme: () => b.isletme?.() ?? null,
     acikTeknolojiler: () => b.acikTeknolojiler?.() ?? null,
+    yontemDestegi: b.yontemDegistir !== undefined,
+    yontemBekliyor: () => yontemPaneli?.durum.gonderiyor === true,
+    tesisAdi: (y) => `${ad.yapi(y.tur)}${y.ilce ? ` · ${ad.ilce(y.ilce)}` : y.il ? ` · ${ad.il(y.il)}` : ""}`,
     degisti: yenidenCiz,
   });
   const tedarikPaneli: TedarikPaneli | undefined = b.tedarikDurumu && b.tedarikKomutu ? new TedarikPaneli({
@@ -661,10 +665,10 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
     degisti: () => { yenidenCiz(); ilcePaneli.yamala(document); },
   });
   document.addEventListener("pointerdown", (e) => {
-    if (e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); }
+    if (e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); }
   }, { signal: pazarOlaylari.signal, capture: true });
   document.addEventListener("keydown", (e) => {
-    if (!e.repeat && (e.key === "Enter" || e.key === " ") && e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); }
+    if (!e.repeat && (e.key === "Enter" || e.key === " ") && e.target instanceof HTMLElement) { ilcePaneli.teklifYakala(e.target); teknolojiPaneli?.teklifYakala(e.target); yontemPaneli?.teklifYakala(e.target); uretimPaneli.teklifYakala(e.target); }
   }, { signal: pazarOlaylari.signal, capture: true });
   const orduPaneli: OrduPaneli | undefined = b.orduDurumu && b.orduKomutu ? new OrduPaneli({
     ic,
@@ -713,6 +717,17 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       }
     });
   }
+  const tesisteYontemleriAc = (tesis: string, yontem: string): boolean => {
+    const eslesen = uretimTesisleri(ic, b.isletme?.() ?? null, yontem)?.find((t) => t.yapi.anahtar === tesis);
+    if (!eslesen?.gecis || !yontemPaneli?.ac(tesis, yontem)) {
+      bildir("Bu tesisin yöntem bilgisi değişmiş veya henüz alınmamış. Güncel tesislerini yeniden incele.", "hata");
+      return false;
+    }
+    sekmeIstegi = "isletme";
+    const hedef = yontemPaneli.durum.onayAcik ? `.ym-degistir[data-tesis="${CSS.escape(tesis)}"] [data-varsayilan-odak]` : `.ym-degistir[data-tesis="${CSS.escape(tesis)}"] .ym-kart[data-yontem="${CSS.escape(yontem)}"]`;
+    bekleyenOdak.iste(hedef);
+    return true;
+  };
   // Pazar'da sat (Mal sekmesi): `ticaret_emri` (ihracat; mülk kipinde liman şartı yok) bağdaştırıcının ucundan; sahte bağdaştırıcıda çıkmaz.
   // Kabuk form odağında çizimi ertelediğinde controller durumunu aynı satırda yamala.
   const pazarYamala = (): void => {
@@ -846,6 +861,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
       return t === undefined ? null : t / SAAT;
     },
     epochMs: epoch,
+    odagiYakala: () => pazarSat?.odagiYakala(document) ?? yontemPaneli?.odagiYakala(document) ?? orduPaneli?.odagiYakala(document) ?? tedarikPaneli?.odagiYakala(document) ?? teknolojiPaneli?.odagiYakala(document) ?? uretimPaneli.odagiYakala(document) ?? ilcePaneli.odagiYakala(document),
     cizildi() {
       bekleyenOdak.cizildi(odakKoku);
     },
@@ -877,9 +893,10 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         uretimPaneli.malSec(uretimeGit.dataset["mulkUretim"] ?? "");
         return true;
       }
-      const ue = uretimAgiEylemiOku(t);
+      const ue = uretimPaneli.eylemOku(t);
       if (ue) {
         if (ue.eylem === "mal-sec") uretimPaneli.malSec(ue.mal);
+        else if (ue.eylem === "tesis") tesisteYontemleriAc(ue.tesis, ue.yontem);
         else if (ue.eylem === "teknoloji") {
           if (teknolojiPaneli?.ac(ue.teknoloji)) {
             sekmeIstegi = "teknoloji";
@@ -911,13 +928,11 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         const y = b.isletme?.()?.yapilar.find((x) => x.anahtar === teknolojiTesisi.tesis && x.durum === "tesis");
         const yeni = ic.yontemler[ic.yontemIdx[teknolojiTesisi.yontem] ?? -1];
         const tur = y ? ic.turler[ic.turIdx[y.tur] ?? -1] : undefined;
-        if (!y || y.bolge === undefined || y.yontem === undefined || !yeni || yeni.gerekliTeknoloji !== teknolojiTesisi.teknoloji || !tur?.yontemler.includes(yeni.indeks) || !yontemPaneli?.ac(y.anahtar, yeni.id)) {
+        if (!y || y.bolge === undefined || y.yontem === undefined || !yeni || yeni.gerekliTeknoloji !== teknolojiTesisi.teknoloji || !tur?.yontemler.includes(yeni.indeks)) {
           bildir("Bu tesisin yöntem bilgisi değişmiş veya henüz alınmamış. Güncel tesislerini yeniden incele.", "hata");
           return true;
         }
-        sekmeIstegi = "isletme";
-        const hedef = yontemPaneli.durum.onayAcik ? `.ym-degistir[data-tesis="${CSS.escape(y.anahtar)}"] [data-varsayilan-odak]` : `.ym-degistir[data-tesis="${CSS.escape(y.anahtar)}"] .ym-kart[data-yontem="${CSS.escape(yeni.id)}"]`;
-        bekleyenOdak.iste(hedef);
+        tesisteYontemleriAc(y.anahtar, yeni.id);
         return true;
       }
       const arastir = teknolojiPaneli?.baslatEylemiOku(t);
@@ -1009,7 +1024,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
         {
           ...(b.dinle ? { bDinle: (cb: () => void) => b.dinle?.(cb) } : {}),
           defterOku,
-          yakala: () => pazarSat?.odagiYakala(document) ?? yontemPaneli?.odagiYakala(document) ?? orduPaneli?.odagiYakala(document) ?? tedarikPaneli?.odagiYakala(document) ?? teknolojiPaneli?.odagiYakala(document) ?? ilcePaneli.odagiYakala(document), // açık seçicinin / sayı alanının odağı yeniden çizimde düşmesin
+          yakala: () => pazarSat?.odagiYakala(document) ?? yontemPaneli?.odagiYakala(document) ?? orduPaneli?.odagiYakala(document) ?? tedarikPaneli?.odagiYakala(document) ?? teknolojiPaneli?.odagiYakala(document) ?? uretimPaneli.odagiYakala(document) ?? ilcePaneli.odagiYakala(document), // açık seçicinin / sayı alanının odağı yeniden çizimde düşmesin
           zamanla: (fn, ms) => {
             const z = window.setInterval(fn, ms);
             return () => window.clearInterval(z);
