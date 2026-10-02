@@ -190,7 +190,7 @@ Her seçenek `BOLGE_<AD>` ile verilebilir; komut satırı bayrağı ortam deği�
 | `BOLGE_DUNYA` | dünya adı (aynı veritabanında birden çok dünya olabilir) | `ana` |
 | `BOLGE_GELISTIRME_SIRRI` | geliştirme kimliğinin (`gel1.` token) imza sırrı; yalnız `BOLGE_KIMLIK=gelistirme`. `--uretim`'de yok sayılır (uyarı); üretimde sır `BOLGE_BILET_SIRRI`'dır | yerel geliştirme değeri |
 | `BOLGE_HOST` / `BOLGE_PORT` | ws + `/saglik` dinleme adresi | `127.0.0.1` / `8787` |
-| `BOLGE_HARITA`, `BOLGE_PARSEL`, `BOLGE_TOHUM` | harita (`mini`, `sentetik`, `gercek[:ad]`), mülk kipi, ilk açılış tohumu | `sentetik`, kapalı, `1` |
+| `BOLGE_HARITA`, `BOLGE_PARSEL`, `BOLGE_TOHUM` | harita (`mini`, `sentetik`, `gercek[:ad]`), mülk kipi, ilk açılış tohumu | `sentetik`, kapalı, `1` (CLI; compose/Alfa-0 varsayılanı `gercek` + ızgara manifesti, bkz. kontrol listesi adım 1b) |
 | `BOLGE_DUNYA_EPOCH` | yalnız YENİ dünyada duvar saati epoch'u (Türkiye gece yarısı); boş = `2026-09-30T21:00:00Z` | boş |
 | `BOLGE_GOC` | `1` = içerik göçüne izin (yalnız dönem sınırında) | kapalı |
 | `BOLGE_COMMIT_MS`, `BOLGE_GORUNTU_SAAT` | grup commit aralığı (ms), görüntü aralığı (sim-saat) | `75`, `6` |
@@ -364,6 +364,13 @@ $D exec sunucu whoami                     # beklenen: node
 $D logs sunucu | grep '"olay":"hazir"'    # beklenen: tek JSON satırı; port 8787, metrikPort 9464, kimlik "eposta", davetli (liste verildiyse adet, yoksa null); "olumcul" yok
 ```
 Sunucu "unhealthy" ya da yeniden başlıyorsa: `$D logs sunucu` son satırı (`olumcul` + neden). Sık nedenler: sır reddi (adım 4), `PG_SIFRE` ile pg'nin ilk kurulumdaki şifresi farklı (`pgdata` hacmi ilk şifreyle kurulur; şifre sonradan `.env`'de değişirse `docker volume rm bolge_pgdata` ile sıfırlayın, YALNIZ boş kurulumda).
+
+**1b. Arsa ızgarası yüklendi** (Alfa-0 varsayılanı: `BOLGE_HARITA=gercek` + `BOLGE_IZGARA_MANIFEST`; DENENMEDİ: Docker daemon yok, imaj derlenmedi; sunucu testleri ızgara CLI yolunu ayrıca örter)
+```sh
+$D logs sunucu | grep '"olay":"izgara"'    # beklenen: {"olay":"izgara","manifest":"/uygulama/packages/veri/haritalar/odbl/izgara/manifest.json","ilce":3,"hucre":<N>}  (Gemlik, Körfez, Gebze)
+$D exec sunucu ls packages/veri/haritalar/odbl/izgara/manifest.json packages/veri/haritalar/odbl/ornek/gebze-hucreler.bhi.gz   # beklenen: ikisi de var (imaja girdi)
+```
+`izgara` olayı YOKSA ya da `ilce` 3 değilse DURUN: sunucu ızgarasız (JSON'suz) açılmış demektir ve Yerleş ekranı üç ilçeyi oynatmaz. Açılış `olumcul` ile duruyorsa iletiye bakın: "ilcenin bolgesi haritada yok" = `BOLGE_HARITA` `gercek` değil; "birlikte verilemez/olmaz" = `BOLGE_PARSEL=1` ya da `BOLGE_BOTLAR` dolu; "sha256/bayt uyusmuyor" = ızgara dosyası bozuk ya da yanlış sürüm. Mevcut `.env`'sinde `BOLGE_HARITA=sentetik` olan operatör `gercek` yapmalı; haritayı değiştirmek var olan bir dünyayı değiştirmek demektir: Alfa-0 dünyası açılmadan önce yapın ya da yeni `BOLGE_DUNYA` verin.
 
 **2. Sağlık ve hazır uçları**
 ```sh

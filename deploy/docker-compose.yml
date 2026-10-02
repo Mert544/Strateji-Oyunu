@@ -61,7 +61,11 @@ services:
       BOLGE_DAVETLI_LISTE: ${DAVETLI_LISTE_DOSYA:+/davet/${DAVETLI_LISTE_DOSYA}}
       BOLGE_HOST: 0.0.0.0
       BOLGE_PORT: "8787"
-      BOLGE_HARITA: ${BOLGE_HARITA:-sentetik}
+      # Alfa-0 varsayilani: gercek harita + arsa izgarasi (Gemlik, Korfez, Gebze). Izgara ilcelerinin bolgesi harita icinde olmali: sentetik/mini haritayla
+      # acilis DURUR ("ilcenin bolgesi haritada yok"). Yol imajdaki /uygulama kokune gore; packages/veri imaja girer (Dockerfile.dockerignore odbl/'yi disarida birakmaz).
+      # Kapatmak (yalniz tani; Yerles ekrani ilceleri oynatmaz): .env'de IZGARA_MANIFEST= (bos). Kisitlar: BOLGE_PARSEL=1 ve sunucu botlari izgarayla BIRLIKTE OLMAZ.
+      BOLGE_HARITA: ${BOLGE_HARITA:-gercek}
+      BOLGE_IZGARA_MANIFEST: ${IZGARA_MANIFEST-/uygulama/packages/veri/haritalar/odbl/izgara/manifest.json}
       BOLGE_PARSEL: ${BOLGE_PARSEL:-0}
       BOLGE_TOHUM: ${BOLGE_TOHUM:-1}
       BOLGE_GOC: ${BOLGE_GOC:-0}
