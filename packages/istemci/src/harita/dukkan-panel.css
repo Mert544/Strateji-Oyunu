@@ -203,3 +203,6 @@
 
 /* Dükkân kare bulguları 24: yıkıcı menü öğeleri (Dükkânı kaldır, İptal et) hata tonunda metin; renk tek başına anlam taşımaz (sözcük zaten "kaldır"/"iptal") */
 .dk-menu-liste :is([data-eylem="dukkan-kaldir"], [data-eylem="insaat-iptal"]) { color: var(--hata-ink); }
+
+/* Koyu kip (D8): "Daha fazla" menüsü yalnız gölgeyle ayrılıyordu; koyu zeminde gölge görünmez, menü satırdan ayırt edilemiyordu. İnce kenarlık */
+.dk-menu-liste { border: 1px solid var(--cizgi); }
