@@ -22,7 +22,7 @@ export const EN_KISA_SURE: Ms = DAKIKA;
  * Oyuncunun o andaki süre çarpanı (ppm, (0, PPM]). Bilinmeyen oyuncu için PPM (hızlandırma yok).
  * Yalnızca tamsayı aritmetiği: ara değerler ms cinsindendir.
  */
-export function sureCarpaniPpm(d: Dunya, ctx: Baglam, oyuncu: OyuncuId): number {
+export function sureCarpaniPpm(d: Readonly<Dunya>, ctx: Pick<Baglam, "ic">, oyuncu: OyuncuId): number {
   const o = oyuncuBul(d, oyuncu);
   if (!o) return PPM;
   const e = ctx.ic.param.erkenOyun;
@@ -38,7 +38,7 @@ export function sureCarpaniPpm(d: Dunya, ctx: Baglam, oyuncu: OyuncuId): number 
 /**
  * Süreyi (ms) oyuncunun çarpanıyla kısaltır; en az EN_KISA_SURE (özgün süre bundan kısaysa özgün süre).
  */
-export function hizlandirilmisSure(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, sureMs: Ms): Ms {
+export function hizlandirilmisSure(d: Readonly<Dunya>, ctx: Pick<Baglam, "ic">, oyuncu: OyuncuId, sureMs: Ms): Ms {
   const c = sureCarpaniPpm(d, ctx, oyuncu);
   return carpliSure(sureMs, c);
 }

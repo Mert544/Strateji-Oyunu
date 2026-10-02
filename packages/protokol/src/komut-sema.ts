@@ -29,6 +29,20 @@ export const GenelOnarimTeklifiSemasi = z.object({
   durusMs: tamsayi.nonnegative(),
 }).strict();
 
+/** Görülen sondaj koşulları; sureMs değişen erken oyun hızına ait tahmindir. */
+export const SondajTeklifiSemasi = z.object({
+  mal: kimlik,
+  kullanilanHak: tamsayi.nonnegative(),
+  hakTavani: tamsayi.nonnegative(),
+  paraMili: tamsayi.nonnegative(),
+  malMaliyeti: z.array(z.tuple([kimlik, tamsayi.positive()])),
+  temelSureMs: tamsayi.nonnegative(),
+  sureMs: tamsayi.nonnegative(),
+  olasilikPpm: tamsayi.min(0).max(1_000_000),
+  ekMinPpm: tamsayi.min(0).max(1_000_000),
+  ekMaxPpm: tamsayi.min(0).max(10_000_000),
+}).strict().refine((t) => t.ekMinPpm <= t.ekMaxPpm, { message: "Sondaj ek aralığı geçersiz", path: ["ekMaxPpm"] });
+
 export const KomutSemasi = z.discriminatedUnion("tur", [
   // Ekonomi
   z.object({ tur: z.literal("tesis_insa"), bolge: kimlik, tesisTuru: kimlik }),
@@ -51,7 +65,7 @@ export const KomutSemasi = z.discriminatedUnion("tur", [
   }),
   z.object({ tur: z.literal("genel_onarim"), bolge: kimlik, gorulenTeklif: GenelOnarimTeklifiSemasi.optional() }),
   z.object({ tur: z.literal("bakim_duzeyi"), duzey: z.union([z.literal(0), z.literal(1), z.literal(2)]), oncekiDuzey: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional() }),
-  z.object({ tur: z.literal("arama_sondaji"), bolge: kimlik, mal: kimlik }),
+  z.object({ tur: z.literal("arama_sondaji"), bolge: kimlik, mal: kimlik, gorulenTeklif: SondajTeklifiSemasi.optional() }),
   // Lojistik
   z.object({ tur: z.literal("kenar_gelistir"), kenar: tamsayi }),
   z.object({ tur: z.literal("askeri_rezerv"), oranPpm: tamsayi }),

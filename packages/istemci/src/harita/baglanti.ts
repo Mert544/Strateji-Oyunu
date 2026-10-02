@@ -14,6 +14,8 @@ import type { ArsaSinifi, HucreId, Komut, Mili, MulkKomutu, OyuncuId } from "@bo
 import { DEFTER_DAMGALARI, DEFTER_GOSTERIM_SIRASI, defterSablonu } from "@bolge/protokol";
 import type { Defter, DefterKazanilan, DefterOdulu, DonusOzeti, GenelOnarimGorunumu, GenelOnarimTeklifi, IlgiKaresi, KamuGrubuKaresi, YakitTedarikiGorunumu } from "@bolge/protokol";
 export type { GenelOnarimGorunumu, GenelOnarimTeklifi } from "@bolge/protokol";
+import type { SondajTeklifi, SondajGorunumu, SondajOyuncuGorunumu } from "@bolge/protokol";
+export type { SondajTeklifi, SondajIsGorunumu, SondajGorunumu, SondajOyuncuGorunumu } from "@bolge/protokol";
 import { kavramEtkinBos } from "./etkin";
 import { arsaSinifi, bitisikMi, ILCE_HUCRE_SINIRI, ILCE_PAY_SINIRI, parselFiyatiMili } from "./fiyat";
 import { durumAl, engelNedeni, hucreId, idCoz, izgaraSay } from "./hucre";
@@ -93,6 +95,13 @@ export interface BakimDuzeyiDegistirIstegi {
 export interface GenelOnarimIstegi {
   bolge: string;
   gorulenTeklif: GenelOnarimTeklifi;
+}
+
+/** Görülen sondaj koşulları sunucuya aynen gönderilir; sonuç iyimser olarak üretilmez. */
+export interface AramaSondajiIstegi {
+  bolge: string;
+  mal: string;
+  gorulenTeklif: SondajTeklifi;
 }
 
 /** Pazar'da sat (`ticaret_emri`, ihracat): SÜREKLİ saatlik emir. `oranSaat` mili-birim/sa (tamsayı; 0 = emri kaldırır). `bolge`: işletme düğümü kimliği (`<il>#<oyuncu>`). */
@@ -282,6 +291,10 @@ export interface IsletmeDurumu {
   bakimDuzeyi?: 0 | 1 | 2;
   /** Sahibinin düğüm başına sunucu onarım görünümü; eksik özel veri kaynak satırını gizlemez. */
   onarimTeklifleri?: Array<{ bolge: string; il: string; onarim?: GenelOnarimGorunumu }>;
+  /** Güncel kendi kaynaklarının teklifleri; özel veri yoksa kaynak satırı bilinmiyor kalır. */
+  sondajTeklifleri?: Array<{ bolge: string; il: string; sondaj?: SondajGorunumu }>;
+  /** İşleri başlatan sahibin bekleyen işleri ve son gerçekleşmiş sonuçları. */
+  sondaj?: SondajOyuncuGorunumu;
   hazineMili: number | null;
   /** Hazinenin net akışı (mili-₺/saat; biliniyorsa). */
   hazineOraniMili: number | null;
@@ -357,6 +370,8 @@ export interface MulkBaglantisi {
   bakimDuzeyiDegistir?(i: BakimDuzeyiDegistirIstegi): Promise<TesisSonucu>;
   /** Gerçek genel_onarim komutu; görülen hedefler, mal/para bedeli ve duruş süresi aynen korunur. */
   genelOnarim?(i: GenelOnarimIstegi): Promise<TesisSonucu>;
+  /** Gerçek arama_sondaji komutu; ücret, hak ve koşullar görülen tekliften korunur. */
+  aramaSondaji?(i: AramaSondajiIstegi): Promise<TesisSonucu>;
   /** Pazar'da sat (`ticaret_emri`, ihracat; mülk kipinde liman şartı yok): sürekli saatlik emir ver/güncelle (`oranSaat` 0 = kaldır). Tanımsızsa Mal sekmesinde "Pazar'da sat" gösterilmez. Ret nedeni Türkçe (`pazar.ret.*`). */
   ticaretEmri?(i: TicaretEmriIstegi): Promise<TesisSonucu>;
   /** Sahibinin işletmelerindeki gerçek stok ve sürekli ithalat emirleri. */

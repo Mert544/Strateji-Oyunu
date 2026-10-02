@@ -172,6 +172,11 @@ function diziTasi<T>(eski: readonly T[], e: Esleme, varsayilan: (yeniIndeks: num
  * çağrılır; böylece bozuk bir görüntü yeniden indekslemede sessizce yanlış yere taşınmaz.
  */
 export function dunyaTabloUyumu(tablo: IcerikKimlikTablosu, d: Dunya, hata: GocHatasiUretici): void {
+  for (const [i, j] of (d.sondajlar ?? []).entries()) {
+    const y = `$.sondajlar[${i}]`;
+    if (!tablo.mallar.includes(j.mal)) throw hata(`${y}.mal`, "kimlik tablosunda olmayan sondaj mali");
+    for (const [k, [m]] of j.odenenTeklif.malMaliyeti.entries()) if (!tablo.mallar.includes(m)) throw hata(`${y}.odenenTeklif.malMaliyeti[${k}]`, "kimlik tablosunda olmayan odeme mali");
+  }
   for (const [i, c] of (d.mulk?.kamuSiparis?.ilceler ?? []).entries()) {
     if (!tablo.mallar.includes(c.siparis.mal)) throw hata(`$.mulk.kamuSiparis.ilceler[${i}].siparis.mal`, "kimlik tablosunda olmayan siparis mali");
   }
@@ -225,6 +230,10 @@ export function dunyaTabloUyumu(tablo: IcerikKimlikTablosu, d: Dunya, hata: GocH
   d.kuyruk.forEach((o, i) => {
     const v = o.veri;
     if (v.tur === "oran_delta" || v.tur === "esik" || v.tur === "sondaj_bitti") aralik(v.mal, m, `$.kuyruk[${i}].veri.mal`, "mal");
+    if (v.tur === "sondaj_bitti" && v.sondaj !== undefined) {
+      const j = d.sondajlar?.find((j) => j.id === v.sondaj);
+      if (j === undefined || tablo.mallar[v.mal] !== j.mal || d.bolgeler[v.bolge]?.id !== j.bolge) throw hata(`$.kuyruk[${i}].veri.sondaj`, "sondaj olayi eski kimlik tablosuyla uyumsuz");
+    }
   });
 }
 

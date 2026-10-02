@@ -39,10 +39,21 @@ kontrolün parçası değildir. Kabul sonucu devam kaydında tutulur.
 
 [O1 genel onarım](codex-o1-genel-onarim-sozlesmesi.md) tamamlandı:
 sunucuda tek saf teklif hesabı, gerçek hedef/bedel/duruş, görülen teklif
-koruması ve ayrı onay. Sondajı başlatan komut hazır olsa da başarısızlık ve
-sonuç geçmişi kalıcı olarak kaydedilmiyor; sondajın sonuç sözleşmesi ayrı
-[hazır](codex-sondaj-sonuc-arge.md). Rezerv değişiminden sonuç uydurulmayacak.
+koruması ve ayrı onay. O1 sonrasında sondajın eksik kalıcı sonucu için
+[Ar-Ge kaydı](codex-sondaj-sonuc-arge.md) hazırlandı; bu eksik aşağıdaki S1
+dilimine aktarıldı. Rezerv değişiminden sonuç uydurulmaz.
 O1 iki hedefli kontrol, kök/istemci tip kontrolü ve derleme ilk koşuda geçti.
+
+## S1 uygulama güncellemesi
+
+[S1 sondaj](codex-s1-sondaj-sozlesmesi.md) gerçek teklif, ayrı onay ve
+kalıcı iş/sonuç kaydını birleştirir. İki deneme kararlı kimlikle ayrılır;
+başarısızlık, sıfır ek rezerv ve eski bilinmeyen geçmiş ayrı korunur.
+Görülen maliyet/hak/koşullar sunucuda tekrar doğrulanır. Süre tahmini
+erken oyun rampası nedeniyle değişebilir; kesin bitiş kabul edilen iştedir.
+Eski iki RNG çekimi ve mevcut rezerv hesabı aynıdır. İçerik göçü ve kayıt
+uyumu bu dilimdedir. İki hedefli vaka, kök/istemci tip kontrolü ve derleme
+ilk koşuda geçti; ayrıntılı doğrulama sonucu devam kaydındadır.
 
 ## Uygulama sırası ve kalan kapsam
 
@@ -53,7 +64,7 @@ O1 iki hedefli kontrol, kök/istemci tip kontrolü ve derleme ilk koşuda geçti
 2. **Gerçek tesise harita odağı ve durma işareti — H1 uygulandı.** Mevcut tesis kimliği/
    hücrelerinden kesin hedefle; yalnız ilçeye uçuş tesis odağı değildir.
    Paused işareti aktif bilgisinden gelir, girdi/verim düşüklüğüyle karışmaz.
-3. **Genel onarım ve sondaj, ayrı teklifler.** `genel_onarim` aşınmış tesislerin
+3. **Genel onarım ve sondaj, ayrı teklifler — O1/S1.** `genel_onarim` aşınmış tesislerin
    ölçekli inşa bedeli/malı ve duruşunu; `arama_sondaji` bedel/süre/hak ve
    belirsiz sonucu zaten hesaplar. Gerçek hedef ve görülen teklif koruması
    olmadan tek “onar” düğmesine indirgeme; yeni denge veya garanti yok.
@@ -79,7 +90,7 @@ Eksik kare “sipariş yok”, nominal ikmal “gerçek gelecek tüketim” say�
 - **Sunucu kurtarma:** genel restart kapsamı var; K1/K2a/S3/taşıma eşiğinin
   gerçek depo yeniden başlatma kapsamı eksik. Kalıcılık bozuk denmiyor.
 - **Boyut bütçesi:** `istemci/scripts/derle.ts` aşımda yalnız yazı üretir,
-  başarısız çıkış vermez. Son dünya 392,4KB/400KB; bütçe kapısı ayrı borçtur.
+  başarısız çıkış vermez. S1 sonrası dünya 395,8KB/400KB; bütçe kapısı ayrı borçtur.
 
 Kaynaklar: `icerik.json`, `sanayi/{komut,carpan,gunluk}.ts`, `mulk/{kamuSiparis,
 meclis,isletme}.ts`, `askeri/{uretim,savas}.ts`, `protokol/src/kare.ts`,

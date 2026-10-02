@@ -21,6 +21,7 @@ import type { Defter, DonusOzeti, IlgiKaresi, IlceKaresi, IstemciMesaji, Lojisti
 import type { BakimDuzeyiDegistirIstegi, PazarKaynagi, PazarSatisIstegi, PazarSatisSonucu, DukkanKaresi, DukkanKomutSonucu, GenelOnarimIstegi, GeriAlIstegi, HucreSahipligi, IlceSahipligi, IsletmeDurumu, IsletmeYapisi, MulkBaglantisi, MulkOzeti, OlcekIstegi, Oyuncu, ParselKomutu, ParselSonucu, TesisDurumDegistirIstegi, TesisKomutu, TesisSonucu, TicaretEmriIstegi, YapiKaydi, YerlestirIstegi, YontemDegistirIstegi } from "./baglanti";
 import { hataHucresi, mulkHatasiTurkce, pazarHatasiTurkce, yontemHatasiTurkce } from "./hata-mulk";
 import type { InsaatBilgisi } from "../yuru/arsa";
+import type { AramaSondajiIstegi } from "./baglanti";
 import { parselToplamFiyatiMili } from "./fiyat";
 import { yapilardanInsaatlar } from "./yapi-yuruyus";
 import { sureCarpani } from "./yapi-sure";
@@ -345,6 +346,34 @@ export class WsBaglanti implements MulkBaglantisi {
       }
       const hucre = hataHucresi(r.hata);
       return { tamam: false, hata: "sunucu", mesaj: mulkHatasiTurkce(r.hata, (x) => this.oyuncuAdi(x)), ...(hucre ? { hucre } : {}) };
+    } catch (e) {
+      return this.agHatasi(e);
+    }
+  }
+
+  /** Sonuç yalnız sonraki özel kareden okunur; komut kabulü keşif başarısı değildir. */
+  async aramaSondaji(i: AramaSondajiIstegi): Promise<TesisSonucu> {
+    try {
+      const t = i.gorulenTeklif;
+      const r = await this.komutGonder({ tur: "arama_sondaji", bolge: i.bolge, mal: i.mal, gorulenTeklif: {
+        mal: t.mal, kullanilanHak: t.kullanilanHak, hakTavani: t.hakTavani, paraMili: t.paraMili,
+        malMaliyeti: t.malMaliyeti.map(([mal, miktar]): [string, number] => [mal, miktar]),
+        temelSureMs: t.temelSureMs, sureMs: t.sureMs, olasilikPpm: t.olasilikPpm, ekMinPpm: t.ekMinPpm, ekMaxPpm: t.ekMaxPpm,
+      } });
+      if (r.tamam) return { tamam: true, t: r.t };
+      const mesaj = r.hata === "sondaj teklifi degisti" ? "Sondaj teklifi değişmiş. Güncel hakları ve bedeli yeniden inceleyin."
+        : r.hata === "gecersiz sondaj teklifi" ? "Görülen sondaj teklifi geçersiz. Sondaj kartını yeniden açın."
+        : r.hata.startsWith("kesif hakki bitti") ? "Bu kaynağın sondaj hakları tükenmiş."
+        : r.hata.startsWith("bolgede bu malda damar yok") ? "Bu işletmede seçilen mal için sondaj yapılabilecek damar yok."
+        : r.hata.startsWith("sondaj yalniz ham mallarda yapilir") || r.hata.startsWith("tarim rezervinde sondaj yapilamaz") ? "Bu malda sondaj yapılamıyor."
+        : r.hata.startsWith("yetersiz stok") ? "Sondaj için gereken mallar bu işletmenin deposunda yeterli değil."
+        : r.hata === "yetersiz hazine" ? "Sondaj için hazineniz yeterli değil."
+        : r.hata.startsWith("bolge oyuncunun degil") ? "Bu işletme size ait değil."
+        : r.hata.startsWith("bilinmeyen bolge") ? "Sondaj yapılacak işletme bulunamadı. Güncel kaydı kontrol edin."
+        : r.hata.startsWith("bilinmeyen mal") ? "Sondaj yapılacak mal bulunamadı."
+        : r.hata === "sanayi katmani kapali" ? "Sanayi katmanı kapalı; sondaj şu anda kullanılamıyor."
+        : "Sondaj başlatılamadı. Güncel teklifi kontrol edip yeniden deneyin.";
+      return { tamam: false, hata: "sunucu", mesaj };
     } catch (e) {
       return this.agHatasi(e);
     }
@@ -811,6 +840,9 @@ export class WsBaglanti implements MulkBaglantisi {
     const sebeke = new Map<string, number>();
     const kendiIsletmeleri = k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`));
     const rezervDizini = this.hos?.dizin.mallar;
+    const sondajTeklifleri: IsletmeDurumu["sondajTeklifleri"] = o.mulk === undefined ? undefined : kendiIsletmeleri.map((b) => ({
+      bolge: b.id, il: b.id.split("#")[0]!, ...(b.ozel?.sondaj === undefined ? {} : { sondaj: b.ozel.sondaj }),
+    }));
     const onarimTeklifleri: IsletmeDurumu["onarimTeklifleri"] = o.mulk === undefined ? undefined : kendiIsletmeleri.map((b) => ({
       bolge: b.id, il: b.id.split("#")[0]!, ...(b.ozel?.onarim === undefined ? {} : { onarim: b.ozel.onarim }),
     }));
@@ -971,6 +1003,8 @@ export class WsBaglanti implements MulkBaglantisi {
       simZamani: t,
       ...(o.bakimDuzeyi === undefined ? {} : { bakimDuzeyi: o.bakimDuzeyi }),
       ...(onarimTeklifleri === undefined ? {} : { onarimTeklifleri }),
+      ...(sondajTeklifleri === undefined ? {} : { sondajTeklifleri }),
+      ...(o.sondaj === undefined ? {} : { sondaj: o.sondaj }),
       hazineMili: stokAraDeger(o.hazine, t),
       hazineOraniMili: o.hazine[1],
       araziDegeriMili: mk?.araziDegeriMili ?? null,

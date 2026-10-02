@@ -12,7 +12,8 @@ import type { IlgiKaresi } from "@bolge/protokol";
 import { icerikTablosu } from "../src/komut/tablo";
 import { BakimPaneli } from "../src/harita/bakim-panel";
 import { OnarimPaneli } from "../src/harita/onarim-panel";
-import type { GenelOnarimGorunumu, GenelOnarimTeklifi } from "../src/harita/baglanti";
+import { SondajPaneli } from "../src/harita/sondaj-panel";
+import type { GenelOnarimGorunumu, GenelOnarimTeklifi, SondajGorunumu, SondajOyuncuGorunumu, SondajTeklifi } from "../src/harita/baglanti";
 
 type Dinleyici = (e: { data?: string; code?: number }) => void;
 
@@ -123,6 +124,76 @@ async function bagla(ek: KareEk = {}): Promise<{ b: WsBaglanti; ws: SahteWs }> {
 
 afterEach(() => {
   SahteWs.ornekler = [];
+});
+
+it("S1 sondaj onayı: frozen maliyet WS'ye aynen gider; cancel/stale/pending korunur, ack sonuç üretmez, failure 0 unknown geçmişten ayrılır", async () => {
+  const { b, ws } = await bagla();
+  try {
+    const bolge = "il1#ali", mal = "silis";
+    const q: SondajTeklifi = { mal, kullanilanHak: 0, hakTavani: 2, paraMili: 8_000_000, malMaliyeti: [["parca", 20_000]], temelSureMs: 86_400_000, sureMs: 8_640_000, olasilikPpm: 400_000, ekMinPpm: 300_000, ekMaxPpm: 600_000 };
+    let secili = mal, rev = 1;
+    const guncelle = (sondaj?: SondajGorunumu, gecmis?: SondajOyuncuGorunumu) => {
+      const m = kare({}, ++rev), k = m["kare"] as unknown as IlgiKaresi;
+      if (sondaj) k.bolgeler[0]!.ozel!.sondaj = structuredClone(sondaj);
+      if (gecmis) k.oyuncu!.sondaj = structuredClone(gecmis);
+      ws.mesaj(m);
+    };
+    const komutlar = () => ws.gonderilen.filter((k) => k["tur"] === "komut");
+    const p = new SondajPaneli({ mal: () => secili, isletme: () => b.isletme(), komut: (i) => b.aramaSondaji(i), degisti: () => {} });
+    const teklif = { bolge, mal, gorulenTeklif: structuredClone(q) };
+    expect(b.isletme()!.sondajTeklifleri).toEqual([{ bolge, il: "il1" }]);
+    expect(b.isletme()).not.toHaveProperty("sondaj");
+    await p.eylem({ eylem: "ac", onay: teklif });
+    expect(p.durum.onay).toBeNull();
+    const kaynak = { teklifler: [{ teklif: q, uygun: true }], isler: [] };
+    guncelle(kaynak, { isler: [] });
+    await p.eylem({ eylem: "ac", onay: teklif });
+    teklif.gorulenTeklif.malMaliyeti[0]![1] = 999;
+    expect(p.durum.onay!.gorulenTeklif).toEqual(q);
+    await p.eylem({ eylem: "vazgec", bolge, mal });
+    expect(p.durum.onay).toBeNull();
+    expect(komutlar()).toEqual([]);
+    const onay = { bolge, mal, gorulenTeklif: structuredClone(q) };
+    await p.eylem({ eylem: "ac", onay });
+    guncelle({ ...kaynak, teklifler: [{ teklif: { ...q, kullanilanHak: 1 }, uygun: true }] });
+    await p.eylem({ eylem: "onayla", onay });
+    expect(p.durum.hata).toContain("değişmiş");
+    expect(komutlar()).toEqual([]);
+    p.kapat(bolge, mal); guncelle(kaynak, { isler: [] });
+    await p.eylem({ eylem: "ac", onay });
+    secili = "bakir";
+    await p.eylem({ eylem: "onayla", onay });
+    expect(komutlar()).toEqual([]);
+    secili = mal; p.kapat(bolge, mal);
+    await p.eylem({ eylem: "ac", onay });
+    // Canlı süre değişebilir; göndereceğimiz teklif açılışta görülmüş tahmini korur.
+    guncelle({ ...kaynak, teklifler: [{ teklif: { ...q, sureMs: q.sureMs + 1 }, uygun: true }] }, { isler: [] });
+    const bekleyen = p.eylem({ eylem: "onayla", onay });
+    expect(p.durum.bekliyor).toBe(true);
+    await p.eylem({ eylem: "onayla", onay }); p.kapat(bolge, mal);
+    expect(komutlar()).toHaveLength(1);
+    const k = komutlar()[0]!;
+    expect(k["komut"]).toEqual({ tur: "arama_sondaji", bolge, mal, gorulenTeklif: q });
+    ws.mesaj({ tur: "komutSonucu", anahtar: k["anahtar"], seq: 1, t: 1, komut: k["komut"], sonuc: { tamam: true }, tekrar: false });
+    await bekleyen;
+    expect(p.durum).toMatchObject({ onay: null, bekliyor: false });
+    expect(b.isletme()!.sondaj!.isler).toEqual([]);
+    const is = { id: JSON.stringify(["sondaj", bolge, mal, 1]), sahip: "ali", bolge, mal, deneme: 1, baslangic: 1, bitis: q.sureMs + 1, odenenTeklif: q, evre: "bitti" as const, sonuc: { basarili: false, ekMili: 0 } };
+    guncelle(kaynak, { isler: [is] });
+    expect(b.isletme()!.sondaj!.isler[0]!.sonuc).toEqual({ basarili: false, ekMili: 0 });
+    expect(p.html()).toContain("Keşif başarısız.");
+    guncelle();
+    expect(b.isletme()).not.toHaveProperty("sondaj");
+    expect(p.html()).not.toContain("Keşif başarısız.");
+    guncelle(kaynak, { isler: [is] });
+    await p.eylem({ eylem: "ac", onay });
+    const ret = p.eylem({ eylem: "onayla", onay }), son = komutlar().at(-1)!;
+    ws.mesaj({ tur: "komutSonucu", anahtar: son["anahtar"], seq: 2, t: 2, komut: son["komut"], sonuc: { tamam: false, hata: "sondaj teklifi degisti" }, tekrar: false });
+    await ret;
+    expect(p.durum.hata).toContain("değişmiş");
+    expect(b.isletme()!.sondaj!.isler).toEqual([is]);
+    expect(b.sunucuHatalari).toEqual([]);
+  } finally { b.kapat(); }
 });
 
 it("O1 onarım onayı: teklif derin dondurulur; iptal ve stale komutsuzdur, exact WS/pending/ack/ret kaynağı optimistik değiştirmez", async () => {

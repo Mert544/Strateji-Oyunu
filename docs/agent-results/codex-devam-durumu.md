@@ -2,6 +2,42 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — S1 sondaj başlatma ve kalıcı sonuç
+
+O1 `c1328c6` üstüne mevcut altı uzmanla
+[S1](codex-s1-sondaj-sozlesmesi.md) geliştirildi. Üretim'de seçili maden
+için kendi işletmelerinin gerçek bedel/malzeme, kullanılmış hak, olasılık
+ve süre tahmini gösterilir. Ayrı onay, görülen teklifi sunucuya taşır;
+bedel/hak/koşul değişmişse mutasyon öncesinde reddedilir. Süre tahmini
+erken oyun rampasında değişebilir; gerçek bitiş kabul edilen iş kaydındadır.
+
+İki deneme kararlı kimlikle ayrı saklanır. Bekleyen işler ve oyuncu genelinde
+son 10 sonuç yalnız başlatan sahibine gösterilir; kayıtların tamamı korunur.
+Başarısızlık 0 ek rezerv olarak bilinir, geçmiş kaydı olmayan sondajla
+karışmaz. Eklenecek stok hesaplanmaz: sonuç gerçek rezerv artışıdır. Eski
+iki RNG çekimi, maliyet/hak ve rezerv hesabı değişmedi. Kimliksiz eski
+olaylara geçmiş uydurulmaz. Kayıt yükleme ve içerik indeks göçü yeni iş/olay
+bağını doğrular; sanayi kapalı bitiş ayrı nedenle kaydolur.
+
+Canlı yenilemede açılmış koşullar/geçmiş ayrıntıları ve odak korunur.
+Root birleşik kaynakları inceledi; B2'nin bağımsız incelemesindeki geçmiş
+sınırı düzeltildi: önce oyuncunun son 10 sonucu seçilir, sonra düğüme süzülür.
+B6 tek S1 seçiminde iki vaka ilk koşuda geçti, eski 9 vaka atlandı: gerçek
+iki iş/ödeme/hak, doğal başarısızlık ve başarı, eski teklif/yabancı sahip
+için saf ret; legacy komut ve kimliksiz eski kuyrukla aynı RNG/ekonomi;
+aynı hash/kuyrukla yükleme, replay ve araya mal eklenmiş içerik göçü.
+İstemci vakası gerçek controller→WS teklif kopyası, iptal, kaynak/hak
+değişimi, pending tekrar engeli, gerçek ack ve 0–bilinmeyen ayrımını kapsar.
+Kök/istemci tip kontrolleri ve son derleme birer kez başarılı; kaynak veya
+test düzeltmesi/tekrar koşusu gerekmedi. Dünya gzip 395,8KB/400KB (4,2KB
+pay), harita 520,6KB, toplam JS 944,6KB, CSS 15,7KB. Rutin tarayıcı/ekran
+ve geniş paket yok; DOM odağı gerçek tarayıcıda sınanmadı. Önceden bilinen
+eksik PMTiles ve derleme uyarıları sürüyor.
+
+Sıradaki dar seçenekler asker eğitim adedinin nominal ek ikmali ve yalnız
+alınmış kendi ilçe karelerinden açık kamu siparişine geçiştir. K2b/PvP/sokak
+varlıkları ile muhasebe sınırı ve boyut bütçesi ayrı Ar-Ge borçlarıdır.
+
 ## Güncel teslim — O1 gerçek teklifli genel onarım
 
 M1–H1 `c0e77ef` üstüne mevcut altı uzmanla [O1](codex-o1-genel-onarim-sozlesmesi.md)

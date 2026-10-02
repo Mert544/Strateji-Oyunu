@@ -478,7 +478,7 @@ export class Simulasyon {
         iklimGunluk(d, ctx);
         break;
       case "sondaj_bitti":
-        sondajBitti(d, ctx, v.bolge, v.mal);
+        sondajBitti(d, ctx, v.bolge, v.mal, v.sondaj);
         break;
       case "cozum": {
         const l = d.lojistik;

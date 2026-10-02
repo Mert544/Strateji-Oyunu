@@ -5,6 +5,7 @@
  */
 export { sanayiKomutu } from "./komut";
 export { genelOnarimGorunumu } from "./onarim";
+export { sondajGorunumu, sondajOyuncuGorunumu } from "./sondaj";
 export { sondajBitti } from "./damar";
 export { sanayiSaatlik, sanayiGunluk } from "./gunluk";
 export { elektrikDagit } from "./elektrik";

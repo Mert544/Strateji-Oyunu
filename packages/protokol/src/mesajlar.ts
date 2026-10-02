@@ -14,7 +14,7 @@
  */
 import { z } from "zod";
 import type { Komut, KomutSonucu, Ms, OyuncuId } from "@bolge/cekirdek";
-import { GenelOnarimTeklifiSemasi, KomutSemasi } from "./komut-sema";
+import { GenelOnarimTeklifiSemasi, KomutSemasi, SondajTeklifiSemasi } from "./komut-sema";
 import { DefterSemasi } from "./defter";
 import type { Defter } from "./defter";
 import { DonusOzetiSemasi } from "./donus";
@@ -231,6 +231,19 @@ export type SunucuMesaji =
 // İstemci tarafı doğrulama için sunucu mesajı şemaları (kare içeriği yapısal olarak denetlenir).
 const tam = z.number().int();
 const stokFormuluSemasi = z.tuple([tam, tam, tam, tam, tam]);
+const sondajSayisi = z.number().int().safe().nonnegative();
+const sondajIsSemasi = z.object({
+  id: z.string().min(1).max(512), sahip: z.string().min(1).max(64), bolge: z.string().min(1).max(64), mal: z.string().min(1).max(64),
+  deneme: sondajSayisi, baslangic: sondajSayisi, bitis: sondajSayisi,
+  odenenTeklif: SondajTeklifiSemasi,
+  evre: z.enum(["suruyor", "bitti"]),
+  sonuc: z.object({ basarili: z.boolean(), ekMili: sondajSayisi, neden: z.literal("sanayi_kapali").optional() }).strict().optional(),
+}).strict();
+const sondajGorunumuSemasi = z.object({
+  teklifler: z.array(z.object({ teklif: SondajTeklifiSemasi, uygun: z.boolean(), engel: z.string().optional() }).strict()),
+  isler: z.array(sondajIsSemasi),
+}).strict();
+const sondajOyuncuSemasi = z.object({ isler: z.array(sondajIsSemasi) }).strict();
 const bolgeKaresiSemasi = z.object({
   i: tam,
   id: z.string(),
@@ -269,6 +282,7 @@ const bolgeKaresiSemasi = z.object({
         uygun: z.boolean(),
         engel: z.string().optional(),
       }).optional(),
+      sondaj: sondajGorunumuSemasi.optional(),
       // Yalnız ekleme: şebekeden son çözümde alınan miktar `[mal, mili-birim/saat]` (demete öğe eklenmez; eski istemci bilinmeyen anahtarı atar).
       sebeke: z.array(z.tuple([z.string(), tam])).optional(),
       // Yalnız sahibine: [] bilinen sıfır, alan yokluğu bilinmeyen/kapsam dışı. Eski şebeke demeti büyütülmez.
@@ -422,6 +436,7 @@ const ilceKaresiSemasi = z.object({
 });
 const oyuncuKaresiSemasi = z.object({
   id: z.string(),
+  sondaj: sondajOyuncuSemasi.optional(),
   pve: pveOyuncuSemasi.optional(),
   kamuTeslim: z.array(kamuTeslimSemasi).optional(),
   // Oyuncunun kendi meclis katılımı; genel ilçede etkinlik veya üyelik listesi yayımlanmaz.

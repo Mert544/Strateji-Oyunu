@@ -226,6 +226,41 @@ export interface GenelOnarimGorunumu {
   engel?: string;
 }
 
+/** Sondajın gerçek başlatma teklifi; sureMs canlı tahmindir ve görülen teklif guard'ına girmez. */
+export interface SondajTeklifi {
+  mal: string;
+  kullanilanHak: number;
+  hakTavani: number;
+  paraMili: Mili;
+  malMaliyeti: Array<[mal: string, miktarMili: Mili]>;
+  temelSureMs: Ms;
+  sureMs: Ms;
+  olasilikPpm: number;
+  ekMinPpm: number;
+  ekMaxPpm: number;
+}
+
+/** Başlatıldığı anda ödenen koşullar ve gerçek tamamlanma sonucu; güncel node sahipliği geçmişi değiştirmez. */
+export interface SondajDurumu {
+  id: string;
+  sahip: OyuncuId;
+  bolge: string;
+  mal: string;
+  deneme: number;
+  baslangic: Ms;
+  bitis: Ms;
+  odenenTeklif: SondajTeklifi;
+  evre: "suruyor" | "bitti";
+  sonuc?: { basarili: boolean; ekMili: Mili; neden?: "sanayi_kapali" };
+}
+
+export type SondajIsGorunumu = SondajDurumu;
+export interface SondajGorunumu {
+  teklifler: Array<{ teklif: SondajTeklifi; uygun: boolean; engel?: string }>;
+  isler: SondajIsGorunumu[];
+}
+export interface SondajOyuncuGorunumu { isler: SondajIsGorunumu[] }
+
 export interface TesisDurumu {
   id: number;
   /** tesisTurleri indeksi */
@@ -761,7 +796,7 @@ export type OlayVerisi =
   | { tur: "savas_pencere_kapa"; savas: number }
   | { tur: "saatlik_tik" }
   | { tur: "iklim_gunluk" }
-  | { tur: "sondaj_bitti"; bolge: number; mal: number }
+  | { tur: "sondaj_bitti"; bolge: number; mal: number; sondaj?: string }
   | { tur: "cozum" };
 
 export type OlayTuru = OlayVerisi["tur"];
@@ -794,6 +829,8 @@ export interface Dunya {
   /** PvE kayıtları yalnız özellik açıldığında doğar; sonuçlar yeniden ödeme kaynağı değildir. */
   baskinlar?: BaskinDurumu[];
   eskiyaTakvim?: { sonGun: number; etkin: boolean };
+  /** Yalnız kayıtlı yeni sondaj başlatılınca doğar; eski kimliksiz olaylara geçmiş uydurulmaz. */
+  sondajlar?: SondajDurumu[];
   anlasmalar: AnlasmaDurumu[];
   yaptirimlar: YaptirimDurumu[];
   insaatlar: InsaatDurumu[];
@@ -899,7 +936,7 @@ export type Komut =
   | { tur: "tesis_olcek_yukselt"; bolge: string; tesis: number; olcek: 1 | 2; ekHucreler?: HucreId[]; sinif?: ArsaSinifi }
   | { tur: "genel_onarim"; bolge: string; gorulenTeklif?: GenelOnarimTeklifi }
   | { tur: "bakim_duzeyi"; duzey: 0 | 1 | 2; oncekiDuzey?: 0 | 1 | 2 }
-  | { tur: "arama_sondaji"; bolge: string; mal: string }
+  | { tur: "arama_sondaji"; bolge: string; mal: string; gorulenTeklif?: SondajTeklifi }
   // Lojistik
   | { tur: "kenar_gelistir"; kenar: number }
   | { tur: "askeri_rezerv"; oranPpm: number }

@@ -48,6 +48,8 @@ export type { TarimTablosu } from "./tarim";
 export {
   sanayiKomutu,
   genelOnarimGorunumu,
+  sondajGorunumu,
+  sondajOyuncuGorunumu,
   sondajBitti,
   sanayiSaatlik,
   sanayiGunluk,

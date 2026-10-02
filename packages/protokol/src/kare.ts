@@ -36,6 +36,8 @@ import { GUN, MILI, PPM, anlikMiktar, carpBol, ekYapiSayisi, ekYapiToplami, eski
 import type { ArsaSinifi, Baglam, DerlenmisIcerik, DukkanGorunumu, DerlenmisMulk, Dunya, EskiyaIlceGorunumu, EskiyaOyuncuGorunumu, IlceKamuSiparisGorunumu, KamuGrubu, KamuTeslimGorunumu, IlceSeviyesi, LojistikKenarGorunumu as CekirdekLojistikKenarGorunumu, MeclisGorunumu, Mili, Ms, OyuncuId, SavunmaGucuGorunumu, Stok, YakitTedariki } from "@bolge/cekirdek";
 import { genelOnarimGorunumu } from "@bolge/cekirdek";
 import type { GenelOnarimGorunumu as CekirdekGenelOnarimGorunumu, GenelOnarimTeklifi as CekirdekGenelOnarimTeklifi } from "@bolge/cekirdek";
+import { sondajGorunumu, sondajOyuncuGorunumu } from "@bolge/cekirdek";
+import type { SondajTeklifi as CekirdekSondajTeklifi, SondajIsGorunumu as CekirdekSondajIsGorunumu, SondajGorunumu as CekirdekSondajGorunumu, SondajOyuncuGorunumu as CekirdekSondajOyuncuGorunumu } from "@bolge/cekirdek";
 
 /** Güvenli çekirdek projeksiyonu: planlı baskınlar ve yabancı özel sonuçlar içermez. Yokluğu eski sunucu/kural bilinmezliğidir. */
 export type PveIlceKaresi = EskiyaIlceGorunumu;
@@ -46,6 +48,31 @@ export type MeclisKaresi = MeclisGorunumu;
 export type LojistikKenarGorunumu = CekirdekLojistikKenarGorunumu;
 export type GenelOnarimTeklifi = CekirdekGenelOnarimTeklifi;
 export type GenelOnarimGorunumu = CekirdekGenelOnarimGorunumu;
+export type SondajTeklifi = CekirdekSondajTeklifi;
+export type SondajIsGorunumu = CekirdekSondajIsGorunumu;
+export type SondajGorunumu = CekirdekSondajGorunumu;
+export type SondajOyuncuGorunumu = CekirdekSondajOyuncuGorunumu;
+
+function sondajTeklifiTelKaresi(t: SondajTeklifi): SondajTeklifi {
+  return { mal: t.mal, kullanilanHak: t.kullanilanHak, hakTavani: t.hakTavani, paraMili: t.paraMili,
+    malMaliyeti: t.malMaliyeti.map(([mal, miktar]): [string, number] => [mal, miktar]),
+    temelSureMs: t.temelSureMs, sureMs: t.sureMs, olasilikPpm: t.olasilikPpm, ekMinPpm: t.ekMinPpm, ekMaxPpm: t.ekMaxPpm };
+}
+
+/** Geçmiş iş yalnız onu başlatan sahibine gider; mevcut düğüm sahibiyle değiştirilmez. */
+function sondajIsleriTelKaresi(isler: SondajIsGorunumu[], oyuncu: OyuncuId): SondajIsGorunumu[] {
+  return isler.filter((is) => is.sahip === oyuncu).map((is) => ({
+    id: is.id, sahip: is.sahip, bolge: is.bolge, mal: is.mal, deneme: is.deneme,
+    baslangic: is.baslangic, bitis: is.bitis, odenenTeklif: sondajTeklifiTelKaresi(is.odenenTeklif), evre: is.evre,
+    ...(is.sonuc === undefined ? {} : { sonuc: { basarili: is.sonuc.basarili, ekMili: is.sonuc.ekMili,
+      ...(is.sonuc.neden === undefined ? {} : { neden: is.sonuc.neden }) } }),
+  }));
+}
+
+function sondajTelKaresi(g: SondajGorunumu, oyuncu: OyuncuId): SondajGorunumu {
+  return { teklifler: g.teklifler.map((x) => ({ teklif: sondajTeklifiTelKaresi(x.teklif), uygun: x.uygun,
+    ...(x.engel === undefined ? {} : { engel: x.engel }) })), isler: sondajIsleriTelKaresi(g.isler, oyuncu) };
+}
 
 /** Sahip onarım görünümü yalnız izinli alanları taşır; çekirdek nesneleri tele paylaşılmaz. */
 function onarimTelKaresi(g: GenelOnarimGorunumu): GenelOnarimGorunumu {
@@ -268,6 +295,8 @@ export interface OzelBolgeKaresi {
   tesisAsinma?: Array<[id: number, asinmaPpm: number]>;
   /** Yalnız sahip mülk düğümüne ortak saf onarım teklifi ve gerçek duruş hedefleri; alan yokluğu eski/kapalı özellik demektir. */
   onarim?: GenelOnarimGorunumu;
+  /** Yalnız mevcut sahibine güncel sondaj teklifleri; işler ayrıca ilk sahibine göre süzülür. */
+  sondaj?: SondajGorunumu;
   /**
    * Yalnız ekleme (isteğe bağlı, yalnız sahibine; G6 şebeke, G9 faturası için): düğümün şebekeden SON ÇÖZÜMDE aldığı miktar `[mal kimliği, mili-birim/saat]`: önce elektrik
    * (`b.elektrik.sebekeMili`, depolanamaz anlık denge yolu), sonra stoksuz tüketim anı yolundaki depolanabilir mallar (`b.sebekeTuketim`; mal kimliğine göre sıralı). Yalnız `> 0`
@@ -437,6 +466,8 @@ export interface OyuncuKaresi {
   id: OyuncuId;
   /** Yalnız kendisinin duyuru ilgisi, gerçekleşmiş sonuçları ve revir hakları; kapalı bayrak geçmiş hakları silmez. */
   pve?: PveOyuncuKaresi;
+  /** İşleri başlatan sahibine tüm bekleyen ve son on tamamlanan sondaj; yabancı iş bilgisi yoktur. */
+  sondaj?: SondajOyuncuGorunumu;
   hazine: StokFormulu;
   vergiPpm: number;
   askeriRezervPpm: number;
@@ -720,6 +751,8 @@ export function ilgiKaresiCikar(
       if (kaynak.ic.mulk !== undefined && b.merkez !== undefined) {
         const onarim = genelOnarimGorunumu(d, kaynak.ic, oyuncu, b.id);
         if (onarim !== undefined) girdi.ozel.onarim = onarimTelKaresi(onarim);
+        const sondaj = sondajGorunumu(d, kaynak.ic, oyuncu, b.id);
+        if (sondaj !== undefined) girdi.ozel.sondaj = sondajTelKaresi(sondaj, oyuncu);
         const yakit = b.yakitTedariki;
         if (yakit !== undefined && kaynak.ic.mulk.sebeke?.stoksuz.some((x) => x.stokOncelikli === true && kaynak.ic.mallar[x.mal]?.id === yakit.mal)) {
           girdi.ozel.yakitTedariki = {
@@ -879,6 +912,8 @@ export function ilgiKaresiCikar(
       kare.oyuncu.partiler = d.partiler.filter((x) => x.sahip === oyuncu).map((x) => ({ id: x.id, bolge: x.bolge, birlik: x.birlik, adet: x.adet, bitis: x.bitis }));
       const pve = eskiyaOyuncuGorunumu(d, kaynak.ic, oyuncu);
       if (pve !== undefined) kare.oyuncu.pve = pveOyuncuTelKaresi(pve, d.zaman);
+      const sondaj = sondajOyuncuGorunumu(d, kaynak.ic, oyuncu);
+      if (sondaj !== undefined) kare.oyuncu.sondaj = { isler: sondajIsleriTelKaresi(sondaj.isler, oyuncu) };
       if (yontemler.length > 0) kare.oyuncu.insaatYontem = yontemler;
       const eo = kaynak.ic.param.erkenOyun;
       if (eo) kare.oyuncu.erkenOyun = [o.katilmaZamani, eo.baslangicCarpaniPpm, eo.sabitSaat * 3_600_000, eo.bitisSaat * 3_600_000];

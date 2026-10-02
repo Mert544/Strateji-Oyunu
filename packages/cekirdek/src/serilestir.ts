@@ -244,7 +244,71 @@ const DUNYA_ZORUNLU = [
   "sayac",
   "kuyruk",
 ] as const;
-const DUNYA_ISTEGE_BAGLI = ["iklim", "mulk", "baskinlar", "eskiyaTakvim"] as const;
+const DUNYA_ISTEGE_BAGLI = ["iklim", "mulk", "baskinlar", "eskiyaTakvim", "sondajlar"] as const;
+
+function sondajNesne(v: unknown, yol: string, zorunlu: readonly string[], istegeBagli: readonly string[] = []): Nesne {
+  const x = nesne(v, yol);
+  alanlar(x, yol, zorunlu);
+  const izinli = new Set([...zorunlu, ...istegeBagli]);
+  for (const k of Object.keys(x)) if (!izinli.has(k)) hata(`${yol}.${k}`, "bilinmeyen sondaj alani");
+  return x;
+}
+
+/** İçerik indeksinden bağımsız kayıtlar; pending olay bağları ayrıca kuyrukla denetlenir. */
+function sondajlariDogrula(d: Nesne, zaman: number): Map<string, Nesne> {
+  const kayitlar = new Map<string, Nesne>();
+  if (d.sondajlar === undefined) return kayitlar;
+  const sahipler = new Set((d.oyuncular as Nesne[]).map((o) => o.id));
+  const dugumler = new Set((d.bolgeler as Nesne[]).map((b) => b.id));
+  for (const [i, v] of dizi(d.sondajlar, "$.sondajlar").entries()) {
+    const y = `$.sondajlar[${i}]`;
+    const j = sondajNesne(v, y, ["id", "sahip", "bolge", "mal", "deneme", "baslangic", "bitis", "odenenTeklif", "evre"], ["sonuc"]);
+    const id = dize(j.id, `${y}.id`);
+    if (id.length > 512 || kayitlar.has(id)) hata(`${y}.id`, "tekrarlanan veya uzun sondaj kimligi");
+    const sahip = dize(j.sahip, `${y}.sahip`);
+    const bolge = dize(j.bolge, `${y}.bolge`);
+    const mal = dize(j.mal, `${y}.mal`);
+    if (!sahipler.has(sahip) || !dugumler.has(bolge) || mal.length === 0) hata(y, "sondaj sahip/dugum/mal baglantisi gecersiz");
+    const deneme = tamsayi(j.deneme, `${y}.deneme`, 1);
+    if (id !== JSON.stringify(["sondaj", bolge, mal, deneme])) hata(`${y}.id`, "sondaj kimligi kaynak ve denemeyle uyumsuz");
+    const baslangic = tamsayi(j.baslangic, `${y}.baslangic`, 0, zaman);
+    const bitis = tamsayi(j.bitis, `${y}.bitis`, baslangic);
+    const ty = `${y}.odenenTeklif`;
+    const t = sondajNesne(j.odenenTeklif, ty, ["mal", "kullanilanHak", "hakTavani", "paraMili", "malMaliyeti", "temelSureMs", "sureMs", "olasilikPpm", "ekMinPpm", "ekMaxPpm"]);
+    if (dize(t.mal, `${ty}.mal`) !== mal) hata(`${ty}.mal`, "odenen teklif sondaj maliyla uyumsuz");
+    const kullanilan = tamsayi(t.kullanilanHak, `${ty}.kullanilanHak`, 0);
+    const tavan = tamsayi(t.hakTavani, `${ty}.hakTavani`, 1);
+    if (kullanilan + 1 !== deneme || deneme > tavan) hata(ty, "odenen teklif kesif hakkiyla uyumsuz");
+    tamsayi(t.paraMili, `${ty}.paraMili`, 0);
+    tamsayi(t.temelSureMs, `${ty}.temelSureMs`, 0);
+    const sure = tamsayi(t.sureMs, `${ty}.sureMs`, 0);
+    if (bitis - baslangic !== sure || sure > (t.temelSureMs as number)) hata(`${ty}.sureMs`, "odenen sure baslangic/bitis/temel sureyle uyumsuz");
+    tamsayi(t.olasilikPpm, `${ty}.olasilikPpm`, 0, PPM);
+    const min = tamsayi(t.ekMinPpm, `${ty}.ekMinPpm`, 0, PPM);
+    tamsayi(t.ekMaxPpm, `${ty}.ekMaxPpm`, min, 10 * PPM);
+    let sonMal: string | undefined;
+    for (const [k, c] of dizi(t.malMaliyeti, `${ty}.malMaliyeti`).entries()) {
+      const cy = `${ty}.malMaliyeti[${k}]`;
+      const p = dizi(c, cy, 2);
+      const mid = dize(p[0], `${cy}[0]`);
+      if (mid.length === 0 || (sonMal !== undefined && sonMal >= mid)) hata(cy, "maliyet mallari tekil ve kanonik sirali olmali");
+      sonMal = mid;
+      tamsayi(p[1], `${cy}[1]`, 1);
+    }
+    if (j.evre === "suruyor") {
+      if (bitis < zaman || j.sonuc !== undefined) hata(y, "bekleyen sondaj zaman/sonuc uyumsuz");
+    } else if (j.evre === "bitti") {
+      if (bitis > zaman) hata(`${y}.bitis`, "bitmis sondaj gelecekte olamaz");
+      const s = sondajNesne(j.sonuc, `${y}.sonuc`, ["basarili", "ekMili"], ["neden"]);
+      mantik(s.basarili, `${y}.sonuc.basarili`);
+      const ek = tamsayi(s.ekMili, `${y}.sonuc.ekMili`, 0);
+      if (s.basarili === false && ek !== 0) hata(`${y}.sonuc.ekMili`, "basarisiz sondaj ek rezerv uretemez");
+      if (s.neden !== undefined && (s.neden !== "sanayi_kapali" || s.basarili !== false || ek !== 0)) hata(`${y}.sonuc.neden`, "sondaj nedeni sonucuyla uyumsuz");
+    } else hata(`${y}.evre`, "bilinmeyen sondaj evresi");
+    kayitlar.set(id, j);
+  }
+  return kayitlar;
+}
 
 /** Yeni PvE kayıtları strict'tir; bilinmeyen alt alan sessizce kabul edilmez. */
 function pveNesne(v: unknown, yol: string, zorunlu: readonly string[], istegeBagli: readonly string[] = []): Nesne {
@@ -613,6 +677,8 @@ export function dunyaDogrula(deger: unknown): Dunya {
   tamsayi(sayac.kimlik, "$.sayac.kimlik", 0);
   const kuyruk = dizi(d.kuyruk, "$.kuyruk");
   const baskinKimlikleri = baskinlariDogrula(d, zaman);
+  const sondajKayitlari = sondajlariDogrula(d, zaman);
+  const sondajOlaySayilari = new Map<string, number>();
   let eskiyaGunlukSayisi = 0;
   const siralar = new Set<number>();
   let tikVar = false;
@@ -650,6 +716,15 @@ export function dunyaDogrula(deger: unknown): Dunya {
       indeks(veri.bolge, `${y}.veri.bolge`, n);
       indeks(veri.mal, `${y}.veri.mal`, m);
     }
+    if (tur === "sondaj_bitti" && veri.sondaj !== undefined) {
+      sondajNesne(veri, `${y}.veri`, ["tur", "bolge", "mal", "sondaj"]);
+      const sid = dize(veri.sondaj, `${y}.veri.sondaj`);
+      const j = sondajKayitlari.get(sid);
+      if (j === undefined || (bolgeler[veri.bolge as number] as Nesne).id !== j.bolge || o.t !== j.bitis) hata(`${y}.veri.sondaj`, "sondaj olayi kayit/dugum/bitisle uyumsuz");
+      const b = bolgeler[veri.bolge as number] as Nesne;
+      if (b.kesifSayisi === undefined || tamsayi((b.kesifSayisi as unknown[])[veri.mal as number], `${y}.veri.mal`, 0) < (j.deneme as number)) hata(`${y}.veri.sondaj`, "sondaj icin kesif hakki harcanmamis");
+      sondajOlaySayilari.set(sid, (sondajOlaySayilari.get(sid) ?? 0) + 1);
+    }
     // Yığın düzeni: ebeveyn çocuktan sonra gelemez
     if (i > 0) {
       const ebeveyn = kuyruk[(i - 1) >> 1] as Dunya["kuyruk"][number];
@@ -657,6 +732,11 @@ export function dunyaDogrula(deger: unknown): Dunya {
     }
   }
   if (!tikVar) hata("$.kuyruk", "bekleyen saatlik_tik yok (saatlik tik zinciri kopuk)");
+  for (const [id, j] of sondajKayitlari) {
+    const adet = sondajOlaySayilari.get(id) ?? 0;
+    if (j.evre === "suruyor" && adet !== 1) hata("$.sondajlar", "bekleyen sondajin tek bitis olayi olmali");
+    if (j.evre === "bitti" && adet !== 0) hata("$.sondajlar", "bitmis sondajin bekleyen olayi olamaz");
+  }
   return d as unknown as Dunya;
 }
 
@@ -1128,6 +1208,20 @@ export function dunyaIcerikUyumu(ic: DerlenmisIcerik, d: Dunya): void {
         if (c.uygunHucre !== tanim.uygunHucre - sayi) hata(`$.mulk.ilceler[${i}].uygunHucre`, `uygunHucre ${c.uygunHucre}, beklenen ${tanim.uygunHucre - sayi} (fikstur ${tanim.uygunHucre} - kamu ${sayi})`);
       }
     });
+  }
+  for (const [i, j] of (d.sondajlar ?? []).entries()) {
+    const y = `$.sondajlar[${i}]`;
+    const b = d.bolgeler.find((b) => b.id === j.bolge);
+    const m = ic.malIndeks[j.mal];
+    if (b === undefined || !d.oyuncular.some((o) => o.id === j.sahip) || m === undefined) hata(y, "sondaj dugum/sahip/mal kimligi icerikte yok");
+    if ((b.kesifSayisi?.[m] ?? 0) < j.deneme) hata(`${y}.deneme`, "kayitli deneme harcanan hakki asamaz");
+    for (const [k, [id]] of j.odenenTeklif.malMaliyeti.entries()) if (ic.malIndeks[id] === undefined) hata(`${y}.odenenTeklif.malMaliyeti[${k}]`, "icerikte olmayan odeme mali");
+  }
+  for (const [i, e] of d.kuyruk.entries()) {
+    const v = e.veri;
+    if (v.tur !== "sondaj_bitti" || v.sondaj === undefined) continue;
+    const j = d.sondajlar?.find((j) => j.id === v.sondaj);
+    if (j === undefined || ic.mallar[v.mal]?.id !== j.mal || d.bolgeler[v.bolge]?.id !== j.bolge) hata(`$.kuyruk[${i}].veri.sondaj`, "sondaj olayi mal/dugum kimlikleriyle uyumsuz");
   }
   const tarimAcik = ic.param.tarim !== undefined;
   if (tarimAcik !== (d.iklim !== undefined)) hata("$.iklim", tarimAcik ? "tarim acik ama iklim durumu yok" : "tarim kapali ama iklim durumu var");

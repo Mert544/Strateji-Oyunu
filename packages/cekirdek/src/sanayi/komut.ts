@@ -17,6 +17,7 @@ import type { Baglam, BolgeDurumu, Dunya, HucreDurumu, InsaatDurumu, Komut, Komu
 import { olcekKademesi } from "./carpan";
 import { sanayiTablosu } from "./tablo";
 import { genelOnarimGorunumu, genelOnarimTeklifiGecerliMi, genelOnarimTeklifleriAyniMi } from "./onarim";
+import { sondajGorunumu, sondajKimligi, sondajTeklifiGecerliMi, sondajTeklifleriAyniMi } from "./sondaj";
 
 function hata(mesaj: string): KomutSonucu {
   return { tamam: false, hata: mesaj };
@@ -158,21 +159,25 @@ export function sanayiKomutu(d: Dunya, ctx: Baglam, oyuncu: OyuncuId, k: Komut):
       if ((b.rezervIlk[mi] as number) <= 0) return hata(`bolgede bu malda damar yok: ${k.mal}`);
       const kullanilan = b.kesifSayisi?.[mi] ?? 0;
       if (kullanilan >= sn.p.damar.kesifHakkiBolgeMal) return hata(`kesif hakki bitti: ${k.bolge} / ${k.mal}`);
-      const dp = sn.p.damar;
-      const mal: Array<[number, number]> = [];
-      for (const malId of Object.keys(dp.kesifMaliyetMal).sort()) {
-        const m = ic.malIndeks[malId];
-        const q = dp.kesifMaliyetMal[malId] as number;
-        if (m !== undefined && q > 0) mal.push([m, q]);
+      const teklif = sondajGorunumu(d, ic, oyuncu, b.id)?.teklifler.find((x) => x.teklif.mal === k.mal)?.teklif;
+      if (k.gorulenTeklif !== undefined) {
+        if (!sondajTeklifiGecerliMi(k.gorulenTeklif)) return hata("gecersiz sondaj teklifi");
+        if (teklif === undefined || !sondajTeklifleriAyniMi(k.gorulenTeklif, teklif)) return hata("sondaj teklifi degisti");
       }
+      if (teklif === undefined) return hata("sondaj teklifi olusturulamadi");
+      const deneme = kullanilan + 1;
+      const id = sondajKimligi(b.id, k.mal, deneme);
+      if (d.sondajlar?.some((j) => j.id === id)) return hata("sondaj kaydi zaten var");
+      const mal: Array<[number, number]> = teklif.malMaliyeti.map(([m, q]) => [ic.malIndeks[m]!, q]);
       mal.sort((x, y) => x[0] - y[0]);
-      const eksik = maliyetYeterliMi(d, b.indeks, oyuncu, mal, dp.kesifMaliyetPara);
+      const eksik = maliyetYeterliMi(d, b.indeks, oyuncu, mal, teklif.paraMili);
       if (eksik !== null) return hata(eksik);
-      if (!maliyetiDus(d, ctx, b.indeks, oyuncu, mal, dp.kesifMaliyetPara)) return hata("yetersiz hazine");
+      if (!maliyetiDus(d, ctx, b.indeks, oyuncu, mal, teklif.paraMili)) return hata("yetersiz hazine");
       if (b.kesifSayisi === undefined) b.kesifSayisi = new Array<number>(tb.malSayisi).fill(0);
-      b.kesifSayisi[mi] = kullanilan + 1;
-      const bitis = d.zaman + hizlandirilmisSure(d, ctx, oyuncu, dp.kesifSureSaat * SAAT);
-      ctx.planla(d, bitis, { tur: "sondaj_bitti", bolge: b.indeks, mal: mi });
+      b.kesifSayisi[mi] = deneme;
+      const bitis = d.zaman + teklif.sureMs;
+      (d.sondajlar ??= []).push({ id, sahip: oyuncu, bolge: b.id, mal: k.mal, deneme, baslangic: d.zaman, bitis, odenenTeklif: teklif, evre: "suruyor" });
+      ctx.planla(d, bitis, { tur: "sondaj_bitti", bolge: b.indeks, mal: mi, sondaj: id });
       return TAMAM;
     }
     default:

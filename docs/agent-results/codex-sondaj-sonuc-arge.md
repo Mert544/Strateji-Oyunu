@@ -1,7 +1,10 @@
-# Sondaj sonucu — sonraki dar dilim
+# Sondaj sonucu — başlangıç Ar-Ge kaydı
 
 2 Ekim 2026. O1 genel onarım tesliminden ayrı kaynak incelemesi; aşağıdaki
-sonuç sözleşmesi öneridir, sondaj uygulaması değiştirilmedi.
+sonuç sözleşmesi o aşamadaki öneridir. Devamında
+[S1 uygulama sözleşmesi](codex-s1-sondaj-sozlesmesi.md) ile kalıcı iş,
+sonuç ve başlatma arayüzü geliştirildi. Aşağıdaki eksikler S1 öncesini
+anlatır; güncel kabul sonucu [devam kaydında](codex-devam-durumu.md) tutulur.
 
 ## Mevcut davranış ve gerçek eksik
 

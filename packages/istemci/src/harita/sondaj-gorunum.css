@@ -1,0 +1,19 @@
+.sdj-panel{min-width:0;max-width:100%;box-sizing:border-box;margin:18px 0;padding:14px;border:1px solid var(--cizgi);border-radius:var(--r-md);background:var(--yuzey);overflow-wrap:anywhere}
+.sdj-panel>h4{margin:0 0 6px;font-size:1em;line-height:1.5}
+.sdj-panel .sdj-kaynak,.sdj-panel .sdj-onay{margin-top:12px;padding:12px;min-width:0;box-sizing:border-box;border:1px solid var(--cizgi);border-radius:var(--r-sm)}
+.sdj-panel .sdj-onay{background:var(--yuzey-2);border-color:var(--cizgi-guclu)}
+.sdj-panel h5,.sdj-panel h6{margin:0 0 8px;font-size:.9em;line-height:1.5}
+.sdj-panel .sdj-bilgi,.sdj-panel .sdj-hata,.sdj-panel .sdj-sonuc{margin:8px 0;font-size:.85em;line-height:1.55;overflow-wrap:anywhere}
+.sdj-panel .sdj-bilgi{color:var(--murekkep-2)}.sdj-panel .sdj-hata{color:var(--hata-ink)}
+.sdj-panel .sdj-bedel{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin:10px 0;font-size:.85em;line-height:1.5}
+.sdj-panel .sdj-bedel>div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;min-width:0}.sdj-panel dt{color:var(--murekkep-2)}.sdj-panel dd{margin:0;font-weight:600}
+.sdj-panel .sdj-ayrinti{margin:10px 0;min-width:0}.sdj-panel summary{padding:10px 0;min-height:44px;box-sizing:border-box;font-size:.85em;line-height:1.5;cursor:pointer}
+.sdj-panel .sdj-mallar{list-style:none;padding:0;margin:8px 0;font-size:.85em;line-height:1.5}.sdj-panel .sdj-mallar>li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;min-width:0}
+.sdj-panel .sdj-is{margin:10px 0;padding:10px 0;border-top:1px solid var(--cizgi)}
+.sdj-panel .sdj-eylemler{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;min-width:0}
+.sdj-panel .sdj-dugme{min-width:0;max-width:100%;min-height:44px;box-sizing:border-box;padding:10px 12px;border:1px solid var(--cizgi);border-radius:var(--r-sm);background:var(--yuzey);color:var(--murekkep);font:inherit;font-size:.85em;line-height:1.4;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.sdj-panel .sdj-eylemler .sdj-dugme{flex:1 1 100px}.sdj-panel .sdj-onayla{background:var(--birincil);color:var(--birincil-ustu);border-color:var(--birincil)}
+.sdj-panel .sdj-dugme:disabled{background:var(--yuzey);color:var(--murekkep-2);border-color:var(--cizgi);cursor:default}
+.sdj-panel button:focus-visible,.sdj-panel summary:focus-visible,.sdj-panel [data-sondaj-baslik]:focus-visible{outline:2px solid var(--odak);outline-offset:3px}
+@media(max-width:480px){.sdj-panel .sdj-bedel>div,.sdj-panel .sdj-mallar>li{display:block}.sdj-panel .sdj-eylemler{display:grid;grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.sdj-panel,.sdj-panel *{animation:none;transition:none}}
