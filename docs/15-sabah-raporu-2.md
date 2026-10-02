@@ -1,10 +1,10 @@
 # Sabah raporu 2: gece neler oldu (2 Ekim 2026)
 
-> Baş liderden sahibe. Yalnız ürün ve oyun. Ana dal: `2103af0` (GitHub'da). Gece 9 paket birleşti, hepsi tam kapıdan, Postgres doğrulamasından ve uçtan uca tarayıcı testinden geçti.
+> Baş liderden sahibe. Yalnız ürün ve oyun. Ana dal: `c1bd311` (GitHub'da). Gece 10 paket birleşti; hepsi tam kapıdan, gerekenler Postgres doğrulamasından, hepsi uçtan uca tarayıcı testinden geçti.
 
 ## Tek cümlede
 
-**Dükkân artık oynanıyor ve üç ilçe açık.** Oyuncu bedava yurdunda çiftliğini kurup tahılını satabiliyor; ilk dükkânını kurup rafını doldurabiliyor, fiyat kademesini seçip ilk satışı görebiliyor. Gebze, Gemlik ve Körfez'de başlanabiliyor. Ekmek zinciri ile cam → pencere hattı çekirdekte ve veride hazır. **Ancak bu iki hattı ekrandan seçmeyi sağlayan "yöntem seçici" bu gece ana dala yetişmedi;** sabahın ilk paketi o.
+**Dükkân artık oynanıyor ve üç ilçe açık.** Oyuncu bedava yurdunda çiftliğini kurup tahılını satabiliyor; ilk dükkânını kurup rafını doldurabiliyor, fiyat kademesini seçip ilk satışı görebiliyor. Gebze, Gemlik ve Körfez'de başlanabiliyor. Ekmek zinciri (değirmen, fırın) ve cam → pencere hattı artık **ekrandan seçilebiliyor**: yapı kurarken yöntem seçici son pakette (03:41 UTC) girdi.
 
 ## 1. Oyuncu bugün ne yaşıyor
 
@@ -17,14 +17,14 @@
 | İlk satış (~25–30. dk) | Defter "Çiftliğinin tahılını sat." der; başlangıç gıdası rafa saklanır | **Oynanır** |
 | İlk dükkân (~50–60. dk) | Öneri kartı → "Dükkân kur" → tür (bakkal, fırın, şarküteri, şekerci, yapı market) → maliyet → inşa → "Dükkânın hazır" → "Rafa git" → raf, fiyat kademesi, marka | **Oynanır** |
 | İlk dükkân satışı | "Dükkânında ilk satış oldu; hayırlı olsun." + Defter ödülü (10 çelik) | **Oynanır** |
-| Ekmek zinciri | Gıda fabrikasında değirmen + fırın; elektrik ve yakıt şebekeden kendiliğinden | Çekirdek ve veri **hazır**; ekranda yöntem seçimi **sabah paketinde** |
-| Cam → pencere | Cam fırını + çelik doğrama; yapı market cam/pencere/çelik satar; "ilk pencere" 8 parça ödül | Veri **hazır** (bu gece girdi); yöntem seçimi **sabah paketinde** |
+| Ekmek zinciri | Gıda fabrikasında değirmen + fırın seçer (varsayılan yok, bilerek seçer); elektrik ve yakıt şebekeden kendiliğinden; panelde "Yöntemi değiştir" (ücretsiz) | **Oynanır** (son paketle) |
+| Cam → pencere | Cam fırını + çelik doğrama; yapı market cam/pencere/çelik satar; "ilk pencere" 8 parça ödül | **Oynanır** (son paketle) |
 | Bakım | Yapılar zamanla aşınır, makine parçası ister; aşınma ekranda görünecek | Mekanizma **oynanır**; aşınma gösterimi kısmen |
 | Dönüş | "Sen yokken" kartı: net sonuç, biten işler, dükkân satışı dahil | **Oynanır** |
 
 Davetli oyuncu kısa adresle girer: `https://<site>/` (barındırma senden; bkz. §5).
 
-### Ekran görüntüleri (ana dal `2103af0`, T2'nin gece seti)
+### Ekran görüntüleri (`2103af0`, yöntem seçiciden önceki uç; T2'nin gece seti)
 
 | | |
 |---|---|
@@ -60,7 +60,7 @@ Tam set (yaklaşık 60 kare, açık/koyu, masaüstü/telefon) ekipte duruyor; is
 
 ## 4. Riskler ve bilinen açıklar
 
-1. **Yöntem seçici ana dalda değil** (sabahın ilk paketi): ekmek zinciri ve cam → pencere ekrandan seçilemiyor. Seçici yazıldı, gerçek sunucuda değirmen+fırın kurulup ekmek üretildi; uçtan uca testte kart haritanın yarısını örttüğü görüldü, kompakt kart (≤ ~300 px) ve kart konumu düzeltmesiyle birlikte girecek.
+1. **Yöntem seçici yeni girdi** (son paket): gerçek sunucu testinde değirmen + fırın kuruldu, ekmek üretildi; uçtan uca test geçti. Kartın haritayı örtmesi kompakt liste, kart konumu ve telefonda %55 tavanla giderildi; gerçek telefonda henüz gözle görülmedi (ekran görüntüleri bu paketten önceki uçtan).
 2. **Fiyat kademesinde üst kademe hep kazanıyor** (talep modeli fiyata duyarsız): Alfa-0'da kabul, canlıda izleniyor; Alfa-1 için tek parametrelik çözüm notu yazıldı.
 3. **İthal edip dükkânda 1,15'te satmak** küçük ama gerçek yeni para üretiyor: Alfa-0'da kabul, %15 eşikli izleme.
 4. **Bakım C**, satışın kamu talebiyle sınırlı olduğu zincirlerde kendini ödemiyor: ilk canlı hafta ölçülecek.
@@ -83,7 +83,7 @@ Ayrıntılı liste ekte (aynı içeriğin tamamı `docs/13` §4 ve gece listesin
 
 ## 6. Alfa-0'a kalan yol
 
-1. **Sabah paketi:** yöntem seçici + kompakt kart + kart konumu → ekmek zinciri ve cam → pencere ekrandan oynanır.
+1. **Dükkân ekranı düzeltmeleri** (24 madde), yürüyüş görünümünün gerçek yapılara bağlanması, aşınmanın 3B'de görünmesi ve Alfa-0 sunucu ayarı (gerçek harita + üç ilçe ızgarası): hepsi hazırlanıyor, bugünün ilk paketleri.
 2. Dükkân akışı uçtan uca test betiği kapıya (yazıldı, koşuluyor).
 3. Barındırma ve gerçek makinede kurulum provası (Caddy dahil) — senin A-2 kararınla.
 4. **İnsan testi** (pilot paketi hazır): ilk saat, ilk dükkân, seyrek oyuncu gözlemleri.
