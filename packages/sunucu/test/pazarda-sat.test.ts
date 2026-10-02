@@ -110,6 +110,10 @@ interface Kosu {
   netPpm: number;
   /** Düğümün liman primi (ppm; limansızda 0). */
   primPpm: number;
+  /** Defter toplam ödülü (Defter okuması), kazanılan kavramların tablo değerleri toplamı (`odulDegeri`) ve `ilk_satis` ödülünün tablo değeri (hepsi mili-para). */
+  odulMili: number;
+  kazanilanDegerMili: number;
+  ilkSatisOdulMili: number;
 }
 
 /** Aynı dünya, aynı süre: `emir` verilirse tahıl ihracat emri (saatte 100 birim) çiftlik bittikten sonra verilir; 10 dakikalık adımlarla 6 saat işler (gerçekleşme ve ödül anları ölçülür). */
@@ -158,6 +162,9 @@ async function kos(emir: boolean, yer: Yer = OVA, mal = "tahil"): Promise<Kosu> 
     fiyat,
     netPpm: gerceklesen > 0 ? Math.floor((ihracat * 1000 * PPM) / (gerceklesen * fiyat)) : 0,
     primPpm: limanli ? prim : 0,
+    odulMili: d.odulMili,
+    kazanilanDegerMili: d.kazanilan.reduce((t, kv) => t + (odulDegeri(y.sim.ic, kv) ?? 0), 0),
+    ilkSatisOdulMili: odulDegeri(y.sim.ic, "ilk_satis") ?? 0,
   };
   await kapat();
   return sonuc;
@@ -176,6 +183,10 @@ describe("Pazar'da sat: mülk kipinde limansız düğümde tahıl satışı (ger
     expect(e.odulSatiri).toBe(1);
     expect(k.kazanilan).not.toContain("ilk_satis");
     expect(k.odulSatiri).toBe(0);
+    // ilk_satis ödülünün TUTARI: tablo değeri (odul.kavramlar.ilk_satis) pozitif; Defter toplamı kazanılan kavramların tablo değerleri toplamıdır; emirli ve emirsiz koşunun farkı tam ilk_satis ödülüdür
+    expect(e.ilkSatisOdulMili).toBeGreaterThan(0);
+    expect(e.odulMili).toBe(e.kazanilanDegerMili);
+    expect(e.odulMili - k.odulMili).toBe(e.ilkSatisOdulMili);
   }, 120_000);
 
   it("SAAT SINIRI: emir saat ortasında verilir; ilk gerçekleşme bir sonraki TAM sim-saatinde (saatlik tık), ilk_satis ödülü de saat sınırında ve gerçekleşmeden sonra; UI sayacı (kalan = bir sonraki tam saate) bununla örtüşür", async () => {
