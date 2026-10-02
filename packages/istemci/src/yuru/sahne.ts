@@ -19,7 +19,7 @@ import type { IlceSahipligi, MulkBaglantisi } from "../harita/baglanti";
 import { arsaSinifi, hucreFiyati, SINIF_ADI } from "../harita/fiyat";
 import { ARAZI_ADLARI, durumAl, durumSinifi, engelNedeni, hucreId, kisaAd, satinAlinabilir } from "../harita/hucre";
 import type { Izgara } from "../harita/hucre";
-import { ArsaKatmani, ASAMA_ADI, insaatKaynagiMi, ornekInsaatlar } from "./arsa";
+import { ArsaKatmani, ASAMA_ADI, asinmaEsle, insaatKaynagiMi, ornekInsaatlar } from "./arsa";
 import type { InsaatBilgisi } from "./arsa";
 import { daireyiCoz, gorusVar, ilerle, kameraEngeli, karoEngeli, ortenVar } from "./carpisma";
 import { Girdi } from "./girdi";
@@ -418,6 +418,7 @@ export class YuruSahnesi {
     } catch (e) {
       console.warn("Arsa verisi alınamadı:", e);
     }
+    insaatlar = asinmaEsle(insaatlar, this.sahiplik, this.ben);
     this.insaatlar = insaatlar;
     this.arsa?.veriAyarla(this.sahiplik, this.ben, insaatlar);
     this.insaatEngeli();

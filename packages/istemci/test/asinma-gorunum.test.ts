@@ -4,8 +4,8 @@ import { Scene, ShaderMaterial } from "three";
 import type { InstancedBufferGeometry } from "three";
 import type { IlceSahipligi } from "../src/harita/baglanti";
 import { asinmaOpakligi } from "../src/harita/stil";
-import { ASINMA_ESIKLERI, ASINMA_OPAKLIK, ASINMA_SOLMA, asinmaKademesi } from "../src/tasarim/asinma";
-import { ArsaKatmani } from "../src/yuru/arsa";
+import { ASINMA_ESIKLERI, ASINMA_OPAKLIK, ASINMA_SOLMA, asinmaKademesi, asinmaOzelligi } from "../src/tasarim/asinma";
+import { ArsaKatmani, asinmaEsle } from "../src/yuru/arsa";
 import type { InsaatBilgisi } from "../src/yuru/arsa";
 import type { YuruPaleti } from "../src/yuru/palet";
 
@@ -106,5 +106,33 @@ describe("L3: `w` alanı (sahte GeoJSON özellikleri)", () => {
     expect(degerle(e, { a: 3, w: 1 })).toBeCloseTo(0.92 * ASINMA_OPAKLIK[1], 10);
     expect(degerle(e, { a: 3, w: 2 })).toBeCloseTo(0.92 * ASINMA_OPAKLIK[2], 10);
     expect(degerle(asinmaOpakligi(0.7), { a: 3, w: 2 })).toBeCloseTo(0.7 * ASINMA_OPAKLIK[2], 10);
+  });
+});
+
+describe("bağlama: L3 `w` yazımı ve yürüyüş eşlemesi", () => {
+  it("w yalnız kendi tesisinde ve kademe > 0 iken yazılır; başkasının tesisinde, kademe 0 ve tanımsızda alan hiç yok", () => {
+    expect(asinmaOzelligi("ali", "ali", 150_000)).toEqual({ w: 1 });
+    expect(asinmaOzelligi("ali", "ali", 700_000)).toEqual({ w: 2 });
+    for (const g of [asinmaOzelligi("bot", "ali", 700_000), asinmaOzelligi("ali", "ali", 99_999), asinmaOzelligi("ali", "ali", 0), asinmaOzelligi("ali", "ali", undefined)]) {
+      expect(g).toEqual({});
+      expect("w" in g).toBe(false);
+    }
+  });
+  it("yürüyüş eşlemesi: kendi bitmiş tesisinin hücresine asinmaPpm; diğerlerinde alan yok ve girdi aynen", () => {
+    const s = {
+      ilce: "x", uygun: 1, satilmis: 3, hucreler: new Map(),
+      yapilar: [
+        { id: 1, anahtar: "t1", durum: "tesis" as const, sahip: "ali", hucreler: ["10:10"], asinmaPpm: 450_000 },
+        { id: 2, anahtar: "t2", durum: "tesis" as const, sahip: "bot", hucreler: ["11:10"], asinmaPpm: 900_000 },
+        { id: 3, anahtar: "i3", durum: "insaat" as const, sahip: "ali", hucreler: ["12:10"], asinmaPpm: 900_000 },
+      ],
+    } as unknown as IlceSahipligi;
+    const l: InsaatBilgisi[] = [{ hucre: "10:10", asama: 3 }, { hucre: "11:10", asama: 3 }, { hucre: "12:10", asama: 1 }];
+    const e = asinmaEsle(l, s, "ali");
+    expect(e[0]).toEqual({ hucre: "10:10", asama: 3, asinmaPpm: 450_000 });
+    expect(e[1]).toBe(l[1]);
+    expect(e[2]).toBe(l[2]);
+    expect(asinmaEsle(l, null, "ali")).toBe(l);
+    expect(asinmaEsle(l, { ...s, yapilar: undefined } as unknown as IlceSahipligi, "ali")).toBe(l);
   });
 });

@@ -51,6 +51,17 @@ export function insaatKaynagiMi(b: unknown): b is InsaatKaynagi {
   return !!b && typeof (b as Partial<InsaatKaynagi>).insaatlarAl === "function";
 }
 
+/**
+ * Aşınma eşlemesi (saf): oyuncunun KENDİ bitmiş tesisinin (sahiplik.yapilar, durum "tesis", asinmaPpm > 0) hücrelerindeki
+ * inşaat girdilerine `asinmaPpm` ekler; tanımsızsa ya da eşleşme yoksa girdi aynen döner (alan hiç yazılmaz).
+ */
+export function asinmaEsle(insaatlar: InsaatBilgisi[], s: IlceSahipligi | null, ben: string): InsaatBilgisi[] {
+  const ppm = new Map<string, number>();
+  for (const y of s?.yapilar ?? []) if (y.sahip === ben && y.durum === "tesis" && (y.asinmaPpm ?? 0) > 0) for (const h of y.hucreler) ppm.set(h, y.asinmaPpm as number);
+  if (ppm.size === 0) return insaatlar;
+  return insaatlar.map((i) => (ppm.has(i.hucre) ? { ...i, asinmaPpm: ppm.get(i.hucre) as number } : i));
+}
+
 /** Örnek dükkân türleri (sahte veri; gerçek tür sunucudan gelir). */
 const ORNEK_DUKKANLAR = ["bakkal", "firin", "sarkuteri", "sekerci"] as const;
 

@@ -22,3 +22,13 @@ export const ASINMA_SOLMA = [0, 0.18, 0.4] as const;
 
 /** L3 yapı dolgu/kenar opaklığının kademe çarpanı (özellik `w`; yok ya da 0: 1). */
 export const ASINMA_OPAKLIK = [1, 0.8, 0.6] as const;
+
+/**
+ * L3 yapı özelliği `w` (aşınma kademesi 1 | 2): YALNIZ oyuncunun kendi tesisinde ve kademe > 0 iken; aksi halde boş nesne
+ * (alan hiç yazılmaz; 0 da yazılmaz). `gorunum.ts yapilariCiz` bunu özelliklere yayar.
+ */
+export function asinmaOzelligi(sahip: string, ben: string, asinmaPpm: number | undefined): { w?: 1 | 2 } {
+  if (sahip !== ben) return {};
+  const k = asinmaKademesi(asinmaPpm);
+  return k > 0 ? { w: k as 1 | 2 } : {};
+}

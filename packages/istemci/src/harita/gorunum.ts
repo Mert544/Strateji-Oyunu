@@ -35,6 +35,7 @@ import { parselZinciri } from "./zincir";
 import { kavramEtkin } from "./etkin";
 import { ASAMA_ADI, yapiAsamasi, yapiKatalogu, yapiKatmani, yapiRengiCss } from "./yapi";
 import { altlikKatmanlari, ayrilmisKatmanlari, boyalar, IZGARA_CIZGI_ZOOM, L3_ZOOM, oyunKatmanlari, sahiplikBoyasi, SERIT_ONCESI, seritRengi, sinirKatmanlari, zeminKatmanlari } from "./stil";
+import { asinmaOzelligi } from "../tasarim/asinma";
 import { ikon } from "../tasarim/ikon";
 import type { YapiTanimi } from "./yapi";
 import { dukkanKaynagiKur, dukkanKurBilgisi, referansFiyati } from "./dukkan-kaynak";
@@ -1249,7 +1250,7 @@ export class HaritaGorunumu {
     const ben = this.baglanti.ben.id;
     const sure = (y: (typeof yapilar)[number]): number => (this.katalog.find((k) => k.id === y.tur)?.ilkGunSureSaat ?? 1) * 3_600_000;
     // Aşama ancak birkaç saatte bir değişir: iki saniyelik tazelemede aynıysa kaynak yeniden yüklenmez (harita boşta kalsın)
-    const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${y.bitis === undefined ? 0 : 1}${cizim.etiket && y.bitis !== undefined && y.bitis > simdi ? `:${Math.ceil((y.bitis - simdi) / 60_000)}` : ""}`).join(";")}`; // etiketteki kalan süre dakikada bir tazelenir (B6)
+    const imza = `${cizim.etiket ? 1 : 0}|${ben}|${yapilar.map((y) => `${y.anahtar}:${y.sahip}:${y.tur ?? ""}:${y.hucreler.join(",")}:${yapiAsamasi(y, simdi, sure(y))}:${asinmaOzelligi(y.sahip, ben, y.asinmaPpm).w ?? 0}:${y.bitis === undefined ? 0 : 1}${cizim.etiket && y.bitis !== undefined && y.bitis > simdi ? `:${Math.ceil((y.bitis - simdi) / 60_000)}` : ""}`).join(";")}`; // etiketteki kalan süre dakikada bir tazelenir (B6)
     if (!zorla && imza === this.yapiImzasi) return;
     this.yapiImzasi = imza;
     for (const m of this.yapiEtiketleri) m.remove();
@@ -1270,7 +1271,7 @@ export class HaritaGorunumu {
       for (const id of y.hucreler) {
         const c = idCoz(id);
         if (!c) continue;
-        f.push(hucreCokgeni(c.x, c.y, { a, ben: y.sahip === ben ? 1 : 0, c: katmanRengi(y.tur) }));
+        f.push(hucreCokgeni(c.x, c.y, { a, ben: y.sahip === ben ? 1 : 0, c: katmanRengi(y.tur), ...asinmaOzelligi(y.sahip, ben, y.asinmaPpm) }));
         sx += c.x + 0.5;
         sy += c.y + 0.5;
       }
