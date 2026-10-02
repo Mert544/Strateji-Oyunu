@@ -4,27 +4,11 @@
  * sahip, ilçe, hücre sayısı (`yurtHucre`), bedel 0, kamu arsası değil, kenar-bitişik tek küme; işletme düğümü açılır; oyuncu karesi `katilimIlcesi` taşır; başka ilçe/oyuncu sızmaz.
  * Ağır olduğu için (Gebze > 500 bin hücre) `izgara-gercek.test.ts` katılımı koşmaz; burada tek sunucu, üç katılım.
  */
-import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import type { CekirdekVeriPaketi } from "@bolge/cekirdek";
 import { hucreXY, kenarBitisikMi } from "@bolge/cekirdek";
-import { gercekVeriyiYukle } from "@bolge/veri";
-import { hiyerarsiOku, izgaraGirdisiKur, izgaraManifestiOku, izgaralariYukle, izgarayiVeriyeBagla, varsayilanIzgaraBagimliliklari, varsayilanIzgaraKoku } from "../src/izgara/manifest";
 import { kareBekle, kamuKumesi, testSunucusu } from "./yardimci";
 import type { TestSunucusu } from "./yardimci";
-
-const MANIFEST = fileURLToPath(new URL("../../veri/haritalar/odbl/izgara/manifest.json", import.meta.url));
-const ILCELER = ["tr_41_gebze", "tr_16_gemlik", "tr_41_korfez"] as const;
-
-/** CLI'nin `--izgara-manifest` kurulumunun aynısı (`f4-sunucu.ts manifestVerisi` ile aynı): gerçek veri paketi + manifesttteki bütün ilçeler. */
-function uretimVerisi(): CekirdekVeriPaketi {
-  const kok = varsayilanIzgaraKoku(MANIFEST);
-  const yuklenen = izgaralariYukle(izgaraManifestiOku(MANIFEST), kok, varsayilanIzgaraBagimliliklari);
-  const veri = gercekVeriyiYukle();
-  izgarayiVeriyeBagla(veri, izgaraGirdisiKur(yuklenen, { ad: "izgara-manifest", harita: veri.harita.ad, hiyerarsi: hiyerarsiOku(`${kok}/hiyerarsi.json`), haritaBolgeleri: new Set(veri.harita.bolgeler.map((b) => b.id)) }));
-  return veri;
-}
+import { ILCELER, MANIFEST_VAR, ilceyeKatil, uretimVerisi } from "./uretim-yardimci";
 
 let ts: TestSunucusu | null = null;
 afterEach(async () => {
@@ -32,7 +16,7 @@ afterEach(async () => {
   ts = null;
 });
 
-describe.skipIf(!existsSync(MANIFEST))("üretim yapılandırması: gerçek ızgarada yurtlu katılım (WS)", () => {
+describe.skipIf(!MANIFEST_VAR)("üretim yapılandırması: gerçek ızgarada yurtlu katılım (WS)", () => {
   it("üç ilçe: oyuncu katil {ilce} -> bedava yurt o ilçede (6 hücre, bedel 0, kamu değil, bitişik), işletme düğümü, katilimIlcesi yalnız sahibinde", async () => {
     const veri = uretimVerisi();
     const yurtHucre = veri.param.mulk?.yeniOyuncu.yurtHucre ?? 0;
@@ -77,4 +61,38 @@ describe.skipIf(!existsSync(MANIFEST))("üretim yapılandırması: gerçek ızga
       for (const { ilce: baska } of oyuncular) if (baska !== ilce) expect(ham, `${id}: ${baska} sızmamalı`).not.toContain(`"katilimIlcesi":"${baska}"`);
     }
   }, 300_000);
+  it("K2: 20 ardışık katılım (üç ilçeye dağıtılmış 7 / 7 / 6): ret 0, katılım isteği zaman aşımına girmez, her yurt 6 bitişik hücre ve hiçbir hücre iki oyuncuda değil; süre raporlu", async () => {
+    const veri = uretimVerisi();
+    const yurtHucre = veri.param.mulk?.yeniOyuncu.yurtHucre ?? 0;
+    ts = await testSunucusu({ veri });
+    const sureler: Record<string, number[]> = { tr_41_gebze: [], tr_16_gemlik: [], tr_41_korfez: [] };
+    const sahipler: { id: string; ilce: string }[] = [];
+    for (let i = 0; i < 20; i++) {
+      const ilce = ILCELER[i % 3] as string;
+      const id = `k2_${i}`;
+      const { sureMs } = await ilceyeKatil(ts, id, ilce); // reddedilirse Error: ret 0
+      (sureler[ilce] as number[]).push(sureMs);
+      sahipler.push({ id, ilce });
+    }
+    const dunya = ts.yazar.sim.dunya;
+    const kullanilan = new Set<string>();
+    for (const { id, ilce } of sahipler) {
+      const hucreler = (dunya.mulk?.hucreler ?? []).filter((h) => h.sahip === id);
+      expect(hucreler, `${id}/${ilce}`).toHaveLength(yurtHucre);
+      expect(kenarBitisikMi(hucreler.map((h) => h.id)), `${id}: bitişik`).toBe(true);
+      for (const h of hucreler) {
+        expect(h.ilce).toBe(ilce);
+        expect(kullanilan.has(h.id), `${h.id} iki oyuncuda`).toBe(false);
+        kullanilan.add(h.id);
+      }
+    }
+    expect(kullanilan.size).toBe(20 * yurtHucre);
+    // Süre raporu (ilçe başına en az / medyan / en çok, ms): katılım isteği zaman aşımına (varsayılan 10 sn bekleme) girmedi; üst sınır 20 sn.
+    const rapor = Object.entries(sureler).map(([ilce, l]) => {
+      const sirali = [...l].sort((a, b) => a - b);
+      return `${ilce}: n=${l.length} en az ${sirali[0]} / medyan ${sirali[Math.floor(sirali.length / 2)]} / en çok ${sirali[sirali.length - 1]} ms`;
+    });
+    console.log(`K2 katılım süresi (WS, tek sunucu, ardışık): ${rapor.join(" | ")}`);
+    for (const l of Object.values(sureler)) for (const ms of l) expect(ms).toBeLessThan(20_000);
+  }, 600_000);
 });
