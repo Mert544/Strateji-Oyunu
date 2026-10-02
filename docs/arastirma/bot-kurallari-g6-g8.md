@@ -59,7 +59,18 @@ Kaynak: A1 `bot-kurallari-bakis.md` (1–5). Amaç **gerçek oyuncuya yakınlık
 | Yöntem: fab #2 | Tesis tamamlanınca | `ekmek_firini` | A2 §1.4 |
 | Ahır + `kepek_gubresi` | İlk ekmekten ≥ 24 sa sonra; ahır sayısı 0 | hazine ≥ 8.000 × 0,7 = **5.600 ₺** (+ 28 çelik, 10,5 parça) | A2 §1.6, §1.12 (ahır saat 26) |
 | İhracat emirleri | Mevcut `ihracatEmirleri` (`:444`): net çıktı oranında | ekmek, kepek (gübre ahırdan sonra) | `netCikti` `:419` |
-| İthalat emirleri | Mevcut `ithalatEmirleri` (`:470`): eksik malzeme 1 sa'te kapanacak oranda; yakıt/elektrik **şebekeden** (emir yok, yuva harcamaz) | çelik/parça; parça eşiği 24 sa → 72 sa (`:622`) | A2 §1.3-B1 |
+| İthalat emirleri | Mevcut `ithalatEmirleri` (`:470`): **yapı malzemesi** eksiği (çelik/parça) 1 sa'te kapanacak oranda; yakıt/elektrik **şebekeden** (emir yok, yuva harcamaz). **Bakım parçası AYRI kural (§2.1)**: eski "eşik 24 sa → 72 sa tamamla" (`bakimKomutlari` `:737-741`) bu satırdan çıkarıldı | çelik/parça | A2 §1.3-B1 (**düzeltildi**, §2.1) |
+
+### 2.1 Bakım parçası ithalatı (düzeltme; O2 mini-6 bulgusu: 72 sa stok bir anda alınıyor)
+
+**Hata:** `bakimKomutlari` (`parsel.ts:737-741`) `stok < q × 24` ise açığı `q × 72 − stok` yapar ve `ithalatEmirleri` bunu 1 sa'te kapatır. Zincir tesisleri (Tarla 0,5 + 2 fabrika 0,8 + 0,8 = **2,1 parça/sa**; `icerik.json` yöntem `bakim`) kit stoğu inşaatlarda bitince (40 − 7 − 14 − 14 = 5 parça) açık ≈ 146 parça ≈ **33 bin ₺** olur (≈ 226 ₺/parça: R ≈ 204 × ithalat 1,10; limanlıda ×1,0325): hazine saat 12'de ≈ 0, 2. fabrika ve dükkân ≈ saat 18'e kayar (beklenen ≈ saat 1–2). Bu bot politikasıdır (oyuncu ithalat emri **oran**'dır, tek seferlik 72 sa değil), ama önceki satırım nakit tabanı vermediği için kural eksikti.
+
+**Yeni kural (3 parça):**
+1. **Muafiyet:** yatırım penceresi bitene kadar parça ithalatı **yok**: `t < 24 sa` **ya da** ilk dükkân kurulmadı **ya da** planlı yapı kuyruğu (2. fabrika, dükkân, ahır) bitmedi; hangisi sonra gelirse. Gerekçe: bakımsızlığın bedeli ilk günde ≈ 1,3 bin ₺ (kıtlık aşınması %1/gün, `mulk.bakim` ×0,5 ⇒ 10.000 ppm/gün; verim kaybı = aşınma, tavan %25), parça bedeli 24 sa'te ≈ 10 bin ₺. Kıtlık aşınması geri alınmaz ama genel onarım ve parça alımı sonradan yapılabilir.
+2. **Stok ufku:** tetik `stok < q × 12`, hedef `q × 24` (eski 24 / 72); emir oranı açığı **6 sa'e yayar** (`açık / 6`), 1 sa'te değil. Kararlı hâlde bir alım ≈ 25 parça ≈ 5,6 bin ₺.
+3. **Nakit tabanı:** parça alım tutarı ≤ `hazine − sonraki planlı yapının para + malzeme bedeli − 1.000 ₺`; plan bittiyse ≤ `hazinenin %25'i`. Taban altında alım yok (aşınma bekler). İstisna: herhangi tesisin aşınması ≥ %20 ise taban yok, ufuk 24 sa (`genel_onarim` kuralı `:622` değişmez).
+
+**Beklenen etki (kâğıt, doğrulanmadı):** ilk 24 sa parça ithalatı 0 ₺ (kâğıtta ≈ 10 bin ₺ kalkar); saat 12 hazinesi ≥ 7.000 ₺ (fab #2 bedeli) + 1.000 ₺; 2. fabrika ve dükkân saat ≈ 1–6 (A2 §1.1-a). O2 mini-6 ölçümü: 2. fabrika / dükkân zamanı ve saat 12 hazinesi; bakım aşınması gün 7'de ≤ %7 olmalı. Parametre: muafiyet süresi 24 sa, ufuk 12/24 sa, yayma 6 sa, taban %25 (hepsi ortam parametresi).
 
 **Yöntem komutu:** `{ tur: "yontem_degistir", bolge: dugum.id, tesis: t.id, yontem: "degirmen" | "ekmek_firini" }` (`ekonomi/komut.ts:78-89`; `tesis` = `BolgeDurumu.tesisler[].id`, bu yüzden bot **tesis kimliğini** okur; `yontemAcikMi` `mulkKipi` yöntemlerini mülk kipinde açar). Karar bir kez verilir (tesis başına); tekrar değiştirme yok.
 
