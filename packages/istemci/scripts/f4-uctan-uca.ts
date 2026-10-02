@@ -25,7 +25,7 @@ import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
 import type { Browser, BrowserContext, Page } from "playwright-core";
-import { mulkOyuncuBul } from "@bolge/cekirdek";
+import { anlikHazine, mulkOyuncuBul } from "@bolge/cekirdek";
 import { f4SunucuBaslat, GEBZE } from "./f4-sunucu";
 import type { F4Sunucu } from "./f4-sunucu";
 
@@ -649,6 +649,48 @@ async function ali(tarayici: Browser, adres: string, ts: F4Sunucu, konsol: strin
   const bildirimler = (await sayfa.locator("#bildirimler").textContent()) ?? "";
   kontrol(`${e} Defter: ilk yapı defterine işlendi (tarih ve çelik ödülü), sıradakilerden düştü; bildirim geldi`, /Defterine işlenenler/.test(defterM) && /İlk yapın kuruldu; kolay gelsin\. \d{1,2} (Ekim|Kasım) · 5 çelik/.test(defterM) && !/İlk yapını kur/.test(defterM) && /Defter: İlk yapın kuruldu|Defterine \d+ adım işlendi/.test(bildirimler), defterM.slice(defterM.indexOf("Defter"), defterM.indexOf("Defter") + 320));
   await ekran("13b-defter");
+
+  // --- Pazar'da sat (T-1; alfa-0 ilk saat): Mal sekmesi -> "Pazar'da sat" -> saatlik emir -> kasa artar -> Defter "ilk satış". Gebze düğümü bu sunucuda `m_ova` (LİMANSIZ):
+  // mülk kipinde liman şartı yoktur. Süre sim-saatiyle ilerler (yönetici zamanIlerlet); dedektör sim-saat sınırında çalışır.
+  {
+    const SA = 3_600_000;
+    await sayfa.locator("#sek-mal").click();
+    await sayfa.waitForSelector("[data-eylem='pazar-ac'][data-mal='tahil']", { timeout: 20000 }).catch(() => undefined);
+    const malSekme = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
+    kontrol(`${e} Mal sekmesi: tahıl satırında "Pazar'da sat" (elektrik gibi depolanamaz malda düğme yok)`, (await sayfa.locator("[data-eylem='pazar-ac'][data-mal='tahil']").count()) === 1 && (await sayfa.locator("[data-eylem='pazar-ac'][data-mal='elektrik']").count()) === 0, malSekme.slice(0, 200));
+    await sayfa.locator("[data-eylem='pazar-ac'][data-mal='tahil']").click();
+    await sayfa.waitForSelector("#pz-oran", { timeout: 10000 });
+    const form = (await sayfa.locator(".pz-form").innerText()).replace(/\s+/g, " ");
+    const oranAlani = await sayfa.locator("#pz-oran").inputValue();
+    kontrol(`${e} Pazar'da sat formu: sürekli emir dili, piyasa fiyatı; "Eline geçen" yalnız sunucu çarpanı verirse (rakam sabitlenmez); alan üretimin kadar dolu; odak sayı alanında`, /Saatte kaç birim satılsın\? Satış sen bırakana kadar sürer\./.test(form) && /Piyasa fiyatı: \d/.test(form) && (!/Eline geçen/.test(form) || (/Eline geçen ≈ \d[\d.]* ₺\/birim/.test(form) && /Eline geçen en çok ≈ \d[\d.]* ₺\/sa/.test(form))) && Number(oranAlani) >= 1 && (await sayfa.evaluate(() => document.activeElement?.id)) === "pz-oran", `${oranAlani} · ${form.slice(0, 260)}`);
+    await ekran("13c-pazarda-sat-form");
+    const hazineOnce = anlikHazine(ts.yazar.sim.dunya, "ali");
+    const emirT = ts.yazar.sim.dunya.zaman;
+    await sayfa.locator("[data-eylem='pazar-ver']").click();
+    await sayfa.waitForFunction(() => /Tahıl satışa çıktı: saatte \d+ birim\./.test(document.getElementById("bildirimler")?.textContent ?? ""), null, { timeout: 25000 }).catch(() => undefined);
+    const emirler = ts.yazar.sim.dunya.bolgeler.filter((b) => b.sahip === "ali" && b.merkez !== undefined).flatMap((b) => b.ticaretEmirleri);
+    kontrol(`${e} emir sunucuda: tahıl ihracat, oran = girilen (birim/sa x 1000); toast "Tahıl satışa çıktı: saatte N birim."`, emirler.some((m) => m.yon === "ihracat" && m.oranSaat === Number(oranAlani) * 1000) && /Tahıl satışa çıktı: saatte \d+ birim\./.test((await sayfa.locator("#bildirimler").textContent()) ?? ""), JSON.stringify(emirler));
+    await sayfa.locator("#sek-mal").click();
+    await sayfa.waitForSelector("[data-alan='pazar-durum']", { timeout: 10000 }).catch(() => undefined);
+    const durum = (await sayfa.locator("[data-alan='pazar-durum']").first().innerText().catch(() => "")).replace(/\s+/g, " ");
+    kontrol(`${e} emirden sonra durum satırı "Satış saat başında yapılır · ilk gelir ≈ … sonra" (gerçekleşen 0 burada beklemedendir; "satılacak mal yok" çıkmaz)`, /Satış saat başında yapılır · ilk gelir ≈ .+ sonra/.test(durum) && !/satılacak mal yok/.test(durum), durum);
+    await ekran("13d-pazarda-sat-bekliyor");
+    // İlk gerçekleşme bir sonraki tam sim-saatinde (saatlik tık), ilk_satis ödülü bir sonraki sınırda: iki sınırı geç
+    await ts.yonetici.zamanIlerlet((Math.floor(emirT / SA) + 2) * SA + 60_000);
+    await sayfa.evaluate(() => (window.__harita?.baglanti() as unknown as { zamanEsitle?: () => Promise<void> }).zamanEsitle?.());
+    await sayfa.locator("#sek-isletme").click();
+    await sayfa.waitForFunction(() => /İlk satışın yapıldı/.test(document.getElementById("sekme-icerik")?.textContent ?? ""), null, { timeout: 30000 }).catch(() => undefined);
+    const hazineSonra = anlikHazine(ts.yazar.sim.dunya, "ali");
+    const defterS = (await sayfa.locator("#sekme-icerik").innerText()).replace(/\s+/g, " ");
+    kontrol(`${e} ilk satış sonrası kasa ARTTI (ihracat geliri; gider kalemlerini aşar)`, hazineSonra > hazineOnce, `${hazineOnce} -> ${hazineSonra}`);
+    kontrol(`${e} Defter: "İlk satışın yapıldı" defterine işlendi (500 ₺ ödül), sıradakilerden düştü`, /İlk satışın yapıldı/.test(defterS) && /500\s₺/.test(defterS) && !/Çiftliğinin tahılını Pazar'da sat/.test(defterS.slice(defterS.indexOf("Sıradaki") >= 0 ? defterS.indexOf("Sıradaki") : 0)), defterS.slice(defterS.indexOf("Defter"), defterS.indexOf("Defter") + 300));
+    await ekran("13e-pazarda-sat-defter");
+    await sayfa.locator("#sek-mal").click();
+    await sayfa.waitForTimeout(300);
+    const durumSonra = (await sayfa.locator("[data-alan='pazar-durum']").first().innerText().catch(() => "")).replace(/\s+/g, " ");
+    kontrol(`${e} gerçekleşince durum satırı "Satışta: saatte N birim · şu an G/sa"`, /Satışta: saatte \d+ birim · şu an \d+\/sa/.test(durumSonra), durumSonra);
+    await sayfa.locator("#sek-isletme").click();
+  }
   kontrol(`${e}/[veli] veli de tamamlananı görüyor (delta)`, veli2.tesis === 2 && veli2.insaat === 0, JSON.stringify(veli2));
   await sayfa.evaluate((h) => {
     const c = h.split(":").map(Number) as [number, number];
