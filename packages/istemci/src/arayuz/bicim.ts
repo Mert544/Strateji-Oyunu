@@ -68,8 +68,10 @@ export const PARA_ARASI = "\u00a0";
 export const EKSI = "\u2212";
 
 /**
- * Mili-para -> tam lira yuvarlaması (B4, TEK kural; "en yakın" hiçbir yerde yok): hazine, gelir, net akış, ödül, dönüş ve
- * varlık değeri AŞAĞI (varsayılan); fiyat, maliyet, gereken ve ödenen bedel YUKARI.
+ * Mili-para -> tam lira yuvarlaması (B4, TEK kural; "en yakın" hiçbir yerde yok). Ölçüt: paranın yönü.
+ *  - YUKARI: oyuncunun ÖDEDİĞİ fiyat, maliyet, gereken ve ödenen bedel (alış fiyatı, yapı/arsa bedeli, iade edilmeyen tutar).
+ *  - AŞAĞI (varsayılan): oyuncunun ELİNE GEÇEN tutar: satış birim fiyatı, hazine, gelir, net akış, ödül, dönüş ve varlık değeri.
+ * Aynı kelime ("fiyat") iki yönde olabilir: oyuncu öderse YUKARI, oyuncu alırsa (satış birim fiyatı) AŞAĞI.
  */
 export type ParaYuvarlama = "asagi" | "yukari";
 
