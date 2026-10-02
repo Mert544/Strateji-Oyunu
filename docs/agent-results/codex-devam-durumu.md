@@ -2,6 +2,30 @@
 
 2 Ekim 2026. Depo `/workspace/Strateji-Oyunu`.
 
+## Güncel teslim — R1 kendi işletmesinin maden rezervi
+
+U1 `6a1ee0d` GitHub'a gönderildi. [R1 sözleşmesi](codex-r1-rezerv-sozlesmesi.md)
+ile Üretim görünümünde kendi işletmesinin kaynak bazında kaydedilmiş kalan
+rezervi bağlandı. Mevcut özel kare kullanılıyor, yeni ekonomi kuralı yok.
+Kalan rezerv depo stoğu veya anlık projeksiyon değil; sıfır üretimin durması
+anlamına gelmiyor.
+
+Tek kontrol dalgası ilk koşuda başarılı: `harita-pazar-sat.test.ts -t 'R1 rezerv'`
+bir vaka geçti, diğer 21 vaka atlandı. Gerçek mesaj şeması ve delta yolunda
+iki bağımsız own kaynak, yabancı/merkez dışlama, stoktan bağımsız sıfır rezerv,
+eksik/bozuk kayıt, canlı değişim ve []/undefined ayrımı doğrulandı. İstemci
+tip kontrolü ve tek son derleme başarılı; dünya gzip 392,4KB/400KB, harita
+506,6KB. Yeni çekirdek kuralı/testi veya geniş/mobil matris yok.
+Gerçek Gebze silis ocağı #146'da kayıtlı rezerv 80.000→79.916,01 birim,
+depo stoğu 0→121 birim oldu. Önce/sonra çekirdek, özel mesaj, bridge ve DOM
+miktarları birebir eşleşti. Son sim zamanı 9.420.000 ms, üretim muhasebesi
+7.200.000 ms olduğundan doğru kayıtlı değer etiketi önemlidir; anlık rezerv
+iddiası yok. Root PNG/JSON incelemesinde üst kartın üç sütunlu CSS kuralının
+rezerv listesini daralttığını buldu. B4 yalnız kapsamlı tek sütun CSS'ini
+düzeltti; yalnız build ve aynı ekran yenilendi, test/tsc tekrarlanmadı.
+Son görüntü düzgün; sayfa/konsol hatası yok. Root güncel PNG/JSON'u inceledi.
+[Gerçek silis rezervi ekranı](../ekran-goruntuleri/2026-10-02-rezerv/README.md).
+
 ## Güncel teslim — U1 üretim kartından kendi tesisine
 
 T1–T2 `9b01521` GitHub'a gönderildi. [U1 sözleşmesi](codex-u1-uretim-tesis-sozlesmesi.md)

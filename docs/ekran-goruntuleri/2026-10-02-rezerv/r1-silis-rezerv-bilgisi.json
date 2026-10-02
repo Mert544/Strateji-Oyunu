@@ -1,0 +1,117 @@
+{
+  "kaynak": "Gerçek standalone oyun, Türkiye manifesti ve varsayılan 6 Gebze başlangıç hücresi. Silis ocağı kabul edilen gerçek inşa komutuyla kuruldu; gerçek saat ilerlemesi üretim muhasebesini uyguladı. Özel stok/kasa/rezerv/DOM enjeksiyonu yok.",
+  "masaustu": [
+    1440,
+    1000
+  ],
+  "commands": [
+    {
+      "komut": {
+        "tur": "tesis_insa_hucre",
+        "ilce": "tr_41_gebze",
+        "tesisTuru": "silis_ocagi",
+        "yontem": "silis_cikarim",
+        "hucreler": [
+          "610070:393780",
+          "610071:393780"
+        ]
+      },
+      "sonuc": {
+        "tur": "komutSonucu",
+        "anahtar": "r1-silis",
+        "seq": 2,
+        "t": 0,
+        "komut": {
+          "tur": "tesis_insa_hucre",
+          "ilce": "tr_41_gebze",
+          "tesisTuru": "silis_ocagi",
+          "hucreler": [
+            "610070:393780",
+            "610071:393780"
+          ],
+          "yontem": "silis_cikarim"
+        },
+        "sonuc": {
+          "tamam": true
+        },
+        "tekrar": false
+      }
+    }
+  ],
+  "before": {
+    "core": {
+      "zaman": 2160000,
+      "uretimT0": 2160000,
+      "kaydedilmisKalanMili": 80000000,
+      "stokMili": 0,
+      "brutUretimMiliSaat": 60000,
+      "tesis": {
+        "id": 146,
+        "yontem": "silis_cikarim"
+      },
+      "hazineMili": 45800000
+    },
+    "wire": {
+      "kareZamani": 2160000,
+      "bolge": "tr_41#ekran",
+      "sahip": "ekran",
+      "malIndeks": 6,
+      "kaydedilmisKalanMili": 80000000
+    },
+    "ui": {
+      "bridgeMiktarMili": 80000000,
+      "uiMiktarMili": 80000000,
+      "il": "Kocaeli · kendi işletmen",
+      "kartMetni": "Kaydedilmiş kalan rezervKocaeli · kendi işletmen80.000 birimSon üretim hesabında kaydedilen değerdir; ildeki kendi işletmene aittir. Depo stoğundan ayrıdır, ortak ilçe veya parsel damarı değildir.",
+      "stok": {
+        "mal": "silis",
+        "stokMili": 0,
+        "uretimMili": 60000,
+        "satisMili": 0,
+        "alisMili": 0
+      }
+    }
+  },
+  "after": {
+    "core": {
+      "zaman": 9420000,
+      "uretimT0": 7200000,
+      "kaydedilmisKalanMili": 79916010,
+      "stokMili": 121000,
+      "brutUretimMiliSaat": 59968,
+      "tesis": {
+        "id": 146,
+        "yontem": "silis_cikarim"
+      },
+      "hazineMili": 45574668
+    },
+    "wire": {
+      "kareZamani": 9420000,
+      "bolge": "tr_41#ekran",
+      "sahip": "ekran",
+      "malIndeks": 6,
+      "kaydedilmisKalanMili": 79916010
+    },
+    "ui": {
+      "bridgeMiktarMili": 79916010,
+      "uiMiktarMili": 79916010,
+      "il": "Kocaeli · kendi işletmen",
+      "kartMetni": "Kaydedilmiş kalan rezervKocaeli · kendi işletmen79.916,01 birimSon üretim hesabında kaydedilen değerdir; ildeki kendi işletmene aittir. Depo stoğundan ayrıdır, ortak ilçe veya parsel damarı değildir.",
+      "stok": {
+        "mal": "silis",
+        "stokMili": 121000,
+        "uretimMili": 59968,
+        "satisMili": 0,
+        "alisMili": 0,
+        "satisBolge": "tr_41#ekran",
+        "satisNetPpm": 870750
+      }
+    }
+  },
+  "kayitliAzalmaMili": 83990,
+  "sent": [],
+  "responses": [],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "sinir": "Kaydedilmiş kalan miktar gösterilir; muhasebe zamanı uretimT0 yalnız core JSON kanıtıdır, wire/UI kare zamanı bu muhasebe zamanı sayılmaz. İlde oyuncuya ait rezerv başlangıç kopyasıdır; ortak ilçe/parsel damarı veya ömür tahmini değildir."
+}

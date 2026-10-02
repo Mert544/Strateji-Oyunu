@@ -69,12 +69,22 @@ merkezden gelir (`mulk/komut.ts:yapiPlani`); parsel kıyısı/jeolojisi ölçüm
    bu geçiş zincirin bütün aşamalarını birlikte çalıştırmaz. Yeni ekonomi,
    tarife veya komut yoktur. Uygulama A3 tarafından READY bildirildi;
    birleşik kullanım/doğrulama kanıtı root'un devam kaydındadır.
-2. **Kömür/cevher için gerçek kendi rezerv görünürlüğü.** Çıkarım ve derin
-   yöntemler çalışır; `ozel.rezervKalan` zaten sahibine aktarılır. Bridge/Üretim
-   kartında kendi işletme rezervi ve mevcut yöntemle tüketime bağlı sınır
-   gösterilebilir; kalan süre tahmin edilmez. `isletmeAl` merkez rezervini her
-   oyuncuya kopyalar: bu ortak damar veya gerçek ilçe maden stoğu değildir.
-   Yeni değer, keşif bonusu veya rezerv paylaşımı önerilmez.
+2. **R1 uygulaması hazır: kendi işletmesinin kayıtlı maden rezervi.** Üretim
+   kartındaki “Kaydedilmiş kalan rezerv”, tarım dışı tesis türünün
+   `gerekliRezerv` malı için kendi özel karedeki `rezervKalan` değerini gerçek
+   il adıyla işletme başına gösterir: cevher, kömür, bakır, silis, petrol.
+   Bilgi bekleniyor, bilinen işletme yok, satır verisi eksik ve gerçek sıfır
+   ayrıdır. Depo stoğundan ayrıdır; son üretim muhasebesinin kaydıdır, anlık
+   projeksiyon veya kare zamanına ait rezerv ölçümü değildir. Kalan süre,
+   yüzde veya bütün işletmelerin toplamı hesaplanmaz. Sıfır rezerv otomatik
+   üretim durması sayılmaz; mevcut sanayi verim tabanı korunur. Tahıl,
+   balık ve yün maden değildir. `isletmeAl` merkez başlangıç rezervini her
+   işletmeye bağımsız kopyalar: ortak il/ilçe/parsel damarı veya gerçek jeoloji
+   değildir. Mevcut harita eşlemesinde Gebze/Körfez silis, Gemlik kömür
+   rezervlidir; gerçek kalan ve olağan inşa koşulları kurulabilirliği belirler.
+   [R1 sözleşmesi](codex-r1-rezerv-sozlesmesi.md) uygulanmıştır; A3/B2/B4
+   READY bildirdi. Bu not ekran ölçümü değildir; kabul kanıtı root'un devam
+   kaydında tutulur. Yeni ekonomi, çekirdek kuralı veya wire alanı yoktur.
 3. **Zonguldak/Kilimli pilotu erişilebilir gerçek veriden sonra.** Kilimli'nin
    OSM sınırı var; oynanabilir ızgara manifesti yalnız Gemlik/Gebze/Körfez.
    İl sınırı, yürüyüşteki dosya adı veya Batı Karadeniz merkez kömürü oynanabilir

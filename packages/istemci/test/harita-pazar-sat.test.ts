@@ -4,6 +4,7 @@
  * `WsBaglanti` mal satırına emir yeri ve oranını taşır ve komutu gerçek komut çerçevesiyle yollar. DOM yok: HTML dizgesi, sahte öğe ve sahte WebSocket.
  */
 import { afterEach, describe, expect, it } from "vitest";
+import { kareFarki, type IlgiKaresi } from "@bolge/protokol";
 import type { IcerikDosyasi, Parametreler } from "@bolge/veri";
 import icerikHam from "../../veri/icerik/icerik.json";
 import paramHam from "../../veri/icerik/parametreler.json";
@@ -413,6 +414,56 @@ afterEach(() => {
 });
 
 describe("WsBaglanti: Pazar'da sat", () => {
+  it("R1 rezerv: kendi kaynakları ayrı kalır, sıfır stoktan bağımsızdır, eksik veya bozuk kayıt bilinmez ve canlı delta kalan değeri taşır", async () => {
+    const { b, ws } = await bagla();
+    try {
+      const mesaj = kare();
+      const ilk = mesaj["kare"] as unknown as IlgiKaresi;
+      ilk.bolgeler[0]!.ozel!.rezervKalan = [0, 9_000];
+      ilk.bolgeler[1]!.ozel!.rezervKalan = [123_000, 0];
+      const kaynak = ilk.bolgeler[0]!;
+      ilk.bolgeler.push(
+        { ...structuredClone(kaynak), i: 3, id: "il3#ali", ozel: undefined },
+        { ...structuredClone(kaynak), i: 4, id: "il4#ali", ozel: { ...structuredClone(kaynak.ozel!), rezervKalan: [77] } },
+        { ...structuredClone(kaynak), i: 5, id: "il5#ali", ozel: { ...structuredClone(kaynak.ozel!), rezervKalan: [0, -1] } },
+        { ...structuredClone(kaynak), i: 6, id: "yabanci#ali", genel: { ...kaynak.genel, sahip: "veli" } },
+        { ...structuredClone(kaynak), i: 7, id: "il1", ozel: { ...structuredClone(kaynak.ozel!), stoklar: [] } },
+        { ...structuredClone(kaynak), i: 8, id: "il1#veli", ozel: { ...structuredClone(kaynak.ozel!), stoklar: [] } },
+      );
+      ws.mesaj(mesaj);
+      expect(b.isletme()!.rezervler).toEqual([
+        { bolge: "il1#ali", il: "il1", rezervKalan: [["tahil", 0], ["gida", 9_000]] },
+        { bolge: "il2#ali", il: "il2", rezervKalan: [["tahil", 123_000], ["gida", 0]] },
+        { bolge: "il3#ali", il: "il3" },
+        { bolge: "il4#ali", il: "il4" },
+        { bolge: "il5#ali", il: "il5" },
+      ]);
+      // Rezerv sıfırken pozitif depo stoğu vardır; rezerv tutarı stoğa eklenmez.
+      const stoklar = b.isletme()!.mallar.map((m) => [m.mal, m.stokMili]);
+      expect(stoklar).toEqual([["tahil", 70_000], ["gida", 5_000]]);
+
+      const sonraki = structuredClone(ilk);
+      sonraki.t = 60_000;
+      sonraki.bolgeler[0]!.ozel!.rezervKalan = [0, 8_750];
+      ws.mesaj({ tur: "delta", onceki: 1, rev: 2, seq: 0, delta: kareFarki(ilk, sonraki) });
+      expect(b.isletme()!.rezervler![0]!.rezervKalan).toEqual([["tahil", 0], ["gida", 8_750]]);
+      expect(b.isletme()!.rezervler![1]!.rezervKalan).toEqual([["tahil", 123_000], ["gida", 0]]);
+      expect(b.isletme()!.mallar.map((m) => [m.mal, m.stokMili])).toEqual(stoklar);
+
+      const bos = structuredClone(sonraki);
+      bos.bolgeler = [];
+      ws.mesaj({ tur: "delta", onceki: 2, rev: 3, seq: 0, delta: kareFarki(sonraki, bos) });
+      expect(b.isletme()!.rezervler).toEqual([]);
+      const eski = structuredClone(bos);
+      delete eski.oyuncu!.mulk;
+      ws.mesaj({ tur: "delta", onceki: 3, rev: 4, seq: 0, delta: kareFarki(bos, eski) });
+      expect(b.isletme()!.rezervler).toBeUndefined();
+      expect(b.sunucuHatalari).toEqual([]);
+    } finally {
+      b.kapat();
+    }
+  });
+
   it("isletme().mallar: emri olan düğüm kazanır (satisBolge, satisEmirMili = emir oranı, satisMili = gerçekleşen); emri olmayan malda stoğu en çok tutan düğüm", async () => {
     const { b } = await bagla();
     const m = b.isletme()!.mallar;

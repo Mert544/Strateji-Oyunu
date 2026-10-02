@@ -9,6 +9,8 @@ import type { IsletmeDurumu, IsletmeYapisi } from "./baglanti";
 import { yakitTedarikiHtml } from "./sebeke-gider";
 import { uretimTesisleri } from "./uretim-tesisleri";
 import type { UretimTesisi } from "./uretim-tesisleri";
+import { rezervGorunumuHtml } from "./rezerv-gorunum";
+import "./rezerv-gorunum.css";
 
 export interface UretimAgiPanelParam {
   ic: Icerik;
@@ -17,6 +19,7 @@ export interface UretimAgiPanelParam {
   yontemDestegi?: boolean;
   yontemBekliyor?: () => boolean;
   tesisAdi?: (tesis: Readonly<IsletmeYapisi>) => string;
+  ilAdi?: (il: string) => string;
   degisti: () => void;
 }
 
@@ -224,6 +227,9 @@ export class UretimAgiPaneli {
       else if (sebeke) h += `<p class="ua-aciklama">Şebekeden alınan: ${sayi(sebeke[1] / 1000, 3)} birim/saat.</p>`;
       h += '<p class="ua-aciklama">Son sunucu işletme özeti; bütün sahipli işletmelerin toplamı. Üretim, satış veya kâr anlamına gelmez.</p>';
     } else h += '<p role="status">İşletme verisi bekleniyor. Aşağıdaki tarifeler içerik bilgisidir.</p>';
+    if (ic.turler.some((tur) => !tur.tarimTesisi && tur.gerekliRezerv === ic.malIdx[mal.id])) {
+      h += rezervGorunumuHtml({ mal: mal.id, ...(d?.rezervler !== undefined ? { rezervler: d.rezervler } : {}), ...(this.p.ilAdi ? { ilAdi: this.p.ilAdi } : {}) });
+    }
     if (mal.depolanabilir) h += `<button type="button" class="eylem" data-uretim-tedarik="${esc(mal.id)}">${ikon("truck", 16)} ${esc(mal.ad)} tedarikine git</button>`;
     else h += '<p class="ua-aciklama">Bu mal depolanamaz ve pazardan ithal edilemez. Üretim yöntemlerini veya şebeke akışını inceleyebilirsin.</p>';
     h += "</section>";

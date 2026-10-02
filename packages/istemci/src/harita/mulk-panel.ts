@@ -59,6 +59,7 @@ import lojistikCss from "./lojistik-gorunum.css?inline";
 import { UretimAgiPaneli } from "./uretim-agi-panel";
 import { uretimTesisleri } from "./uretim-tesisleri";
 import uretimAgiCss from "./uretim-agi-panel.css?inline";
+import rezervCss from "./rezerv-gorunum.css?inline";
 
 const SAAT = 3_600_000;
 /** Biten inşaat Dikkat'te bu kadar sim saati kalır. */
@@ -454,7 +455,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   if (!document.getElementById("mulk-panel-stil")) {
     const st = document.createElement("style");
     st.id = "mulk-panel-stil";
-    st.textContent = mulkCss + dukkanCss + teknolojiCss + teknolojiEtkiCss + orduCss + orduSavunmaCss + baskinCss + ilceCss + kamuSiparisCss + meclisKatilimCss + tedarikCss + lojistikCss + uretimAgiCss;
+    st.textContent = mulkCss + dukkanCss + teknolojiCss + teknolojiEtkiCss + orduCss + orduSavunmaCss + baskinCss + ilceCss + kamuSiparisCss + meclisKatilimCss + tedarikCss + lojistikCss + uretimAgiCss + rezervCss;
     document.head.append(st);
   }
   isletmeDugmesiKur();
@@ -622,6 +623,7 @@ export function mulkPaneliKur(s: MulkPaneliSecenekleri): MulkPaneli {
   }) : undefined;
   const uretimPaneli = new UretimAgiPaneli({
     ic,
+    ilAdi: ad.il,
     isletme: () => b.isletme?.() ?? null,
     acikTeknolojiler: () => b.acikTeknolojiler?.() ?? null,
     yontemDestegi: b.yontemDegistir !== undefined,

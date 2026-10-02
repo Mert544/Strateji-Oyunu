@@ -288,6 +288,10 @@ export interface IsletmeDurumu {
   yakitTedariki?: YakitTedarikiGorunumu;
   /** Bütün sahipli işletmelerin aynı çözümdeki gerçek iç taşıma hizmeti gideri. Eksik kaynak/ücret varsa bilinmez; 0 gerçek sıfırdır. */
   tasimaGideriMiliSaat?: number;
+  /** Sahibinin işletme başına kayıtlı kalan rezervi; depo stoku veya kare anındaki miktar değildir.
+   * Alan yoksa bilgi alınmadı, [] bilinen işletme yoktur. Eksik/bozuk özel dizide kaynak satırı korunur ve rezervKalan verilmez.
+   */
+  rezervler?: Array<{ bolge: string; il: string; rezervKalan?: Array<[mal: string, miktarMili: number]> }>;
   /** Sahibinin karede doğrulanan düğüm bazlı satış kaynakları. */
   pazar?: PazarKaynagi[];
   /** Oyuncunun istenen oranı > 0 olan en az bir İHRACAT emri var mı (`kare.ozel.emirler`; yalnız true iken yazılır). Defter "satışın yolda" gösterimi için (`defter.ts` `ilkSatisBekliyor`). */

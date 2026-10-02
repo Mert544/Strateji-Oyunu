@@ -748,6 +748,14 @@ export class WsBaglanti implements MulkBaglantisi {
     const yontemler = this.hos?.dizin.yontemler ?? [];
     const sebeke = new Map<string, number>();
     const kendiIsletmeleri = k.bolgeler.filter((b) => o.mulk !== undefined && b.genel.sahip === o.id && b.id.endsWith(`#${o.id}`));
+    const rezervDizini = this.hos?.dizin.mallar;
+    // Rezerv muhasebesinin zamanı wire'da yoktur; yalnız kaydedilmiş değerler aktarılır.
+    // Özel verisi eksik kaynaklar görünür kalır, public merkezden rezerv kopyalanmaz.
+    const rezervler: IsletmeDurumu["rezervler"] = o.mulk === undefined || rezervDizini === undefined ? undefined : kendiIsletmeleri.map((b) => {
+      const kalan = b.ozel?.rezervKalan;
+      const biliniyor = Array.isArray(kalan) && kalan.length === rezervDizini.length && kalan.every((n) => Number.isSafeInteger(n) && n >= 0);
+      return { bolge: b.id, il: b.id.split("#")[0]!, ...(biliniyor ? { rezervKalan: rezervDizini.map((mal, mi): [string, number] => [mal, kalan[mi]!]) } : {}) };
+    });
     const ilkYakit = kendiIsletmeleri[0]?.ozel?.yakitTedariki;
     const tasimaGideriMiliSaat = tasimaGideriToplami(kendiIsletmeleri);
     const yakitCozumu = kendiIsletmeleri[0]?.ozel?.lojistik?.sonCozum;
@@ -911,6 +919,7 @@ export class WsBaglanti implements MulkBaglantisi {
       ...(sebekeGiderleri === undefined ? {} : { sebekeGiderleri: [...sebekeGiderleri.values()].sort((a, b) => a.mal.localeCompare(b.mal)) }),
       ...(yakitTedariki === undefined ? {} : { yakitTedariki }),
       ...(tasimaGideriMiliSaat === undefined ? {} : { tasimaGideriMiliSaat }),
+      ...(rezervler === undefined ? {} : { rezervler }),
       ...(ihracatEmriVar ? { ihracatEmriVar: true } : {}),
     };
   }

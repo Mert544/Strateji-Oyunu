@@ -211,6 +211,11 @@ mekanize ordu birlik açar; tesis yöntemi gibi gösterilmez.
 ayrıntısı gerçek tesis kimliğiyle aynı seçiciyi açıp odaklar; seçim ve onay
 oyuncudadır. Bir tesis aynı anda tek yöntem çalıştırır; zinciri otomatik tamamlamaz.
 
+**Kendi maden rezervi (R1).** Üretim kartı tarım dışı `gerekliRezerv` malının
+kendi işletmesindeki kayıtlı kalanını depo stoğundan ayrı gösterir. Bu son
+üretim hesabının kaydıdır; anlık rezerv, ortak damar veya gerçek jeoloji değildir.
+Eksik veri sıfır sayılmaz; sıfır rezerv mevcut sanayi verim tabanını kaldırmaz.
+
 **Görülen bedel / mevcut yöntem koruması (T2).** `arastir` optional
 `maliyetMili?:number` taşır (güvenli tamsayı ≥0). Çekirdek güncel yayılım
 maliyetini kendisi hesaplar; görülen değer verilmişse eşleşmeden ödeme
